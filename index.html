@@ -3,130 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finpath Pro v15 - Professional Edition</title>
+    <title>Finpath v15 Professional</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        /* CSS v15 PROFESSIONAL */
+        /* CSS-v15-PROFESSIONAL.txt */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --finpath-cyan: #00D4D4; --finpath-blue: #0066FF; --finpath-navy: #1A1D3F;
             --cyan: #00D4D4; --blue: #0066FF; --green: #00C896; --red: #FF5252;
-            --gray-50: #F8F9FA; --gray-100: #E9ECEF; --gray-900: #1A1D3F;
+            --orange: #FFB800; --gray-50: #F8F9FA; --gray-100: #E9ECEF;
+            --gray-200: #DEE2E6; --gray-500: #6C757D; --gray-900: #1A1D3F;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-900); }
+        body { font-family: -apple-system, sans-serif; background: var(--gray-50); color: var(--gray-900); line-height: 1.6; }
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-        .header { background: linear-gradient(135deg, #1A1D3F 0%, #2D3561 100%); padding: 2rem; color: white; border-radius: 0 0 24px 24px; }
         .view { display: none; } .view.active { display: block; }
-        .btn { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.3s; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,212,212,0.4); }
-        .card { background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
-        .expert-card { border-left: 5px solid var(--cyan); background: white; padding: 1.5rem; margin-bottom: 1rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .priority-high { color: var(--red); font-weight: bold; }
-        input, select { width: 100%; padding: 0.8rem; margin: 0.5rem 0; border: 1px solid #ddd; border-radius: 8px; }
-    </style>
-</head>
-<body>
-
-    <div id="viewOnboarding" class="view active">
-        <div class="container" style="max-width: 500px; margin-top: 10vh;">
-            <div class="card">
-                <h1 style="text-align: center; color: var(--blue);">Finpath Pro v15</h1>
-                <input type="text" id="userName" placeholder="Tu Nombre">
-                <select id="userCurrency">
-                    <option value="COP">COP - Peso Colombiano</option>
-                    <option value="USD">USD - Dólar</option>
-                </select>
-                <button class="btn" style="width: 100%;" onclick="startApp()">Entrar al Sistema</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="viewDashboard" class="view">
-        <div class="header">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 id="welcomeText">Hola</h2>
-                <div>
-                    <button class="btn" onclick="showView('viewDashboard')">📊 Datos</button>
-                    <button class="btn" onclick="showView('viewCoach')">🤖 Coach IA</button>
-                </div>
-            </div>
-        </div>
-        <div class="container">
-            <div class="card">
-                <h3>Añadir Gasto</h3>
-                <input type="text" id="expDesc" placeholder="Descripción (ej: Arriendo)">
-                <input type="number" id="expAmt" placeholder="Monto">
-                <button class="btn" onclick="addExpense()">+ Guardar Gasto</button>
-            </div>
-            <div class="card">
-                <h3>Resumen Mensual</h3>
-                <div id="summaryList"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="viewCoach" class="view">
-        <div class="header"><h1>🤖 Coach de Expertos v15</h1><button class="btn" onclick="showView('viewDashboard')">Volver</button></div>
-        <div class="container" id="expertsPanel">
-            </div>
-    </div>
-
-    <script>
-        let userData = { name: '', currency: 'COP', expenses: [], assets: [], debts: [] };
-
-        function showView(id) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if(id === 'viewCoach') renderExperts();
-        }
-
-        function startApp() {
-            userData.name = document.getElementById('userName').value || 'Usuario';
-            userData.currency = document.getElementById('userCurrency').value;
-            document.getElementById('welcomeText').innerText = "Bienvenido, " + userData.name;
-            showView('viewDashboard');
-        }
-
-        function addExpense() {
-            const desc = document.getElementById('expDesc').value;
-            const amt = parseFloat(document.getElementById('expAmt').value);
-            if(desc && amt) {
-                userData.expenses.push({ description: desc, amount: amt });
-                updateSummary();
-            }
-        }
-
-        function updateSummary() {
-            const list = document.getElementById('summaryList');
-            list.innerHTML = userData.expenses.map(e => `<div>${e.description}: $${e.amount}</div>`).join('');
-        }
-
-        // --- LÓGICA DE EXPERTOS v15 ---
-        function renderExperts() {
-            const panel = document.getElementById('expertsPanel');
-            let html = "";
-
-            // Experto de Presupuesto
-            const totalExp = userData.expenses.reduce((s, e) => s + e.amount, 0);
-            const budgetExpert = {
-                title: "💰 Experto en Presupuesto",
-                grade: totalExp > 0 ? 80 : 100,
-                diag: totalExp > 5000000 ? "Gastos elevados detectados." : "Presupuesto bajo control.",
-                priority: totalExp > 5000000 ? "ALTA" : "BAJA"
-            };
-
-            [budgetExpert].forEach(exp => {
-                html += `
-                <div class="expert-card">
-                    <h3>${exp.title} - ${exp.grade}/100</h3>
-                    <p><strong>Diagnóstico:</strong> ${exp.diag}</p>
-                    <p class="priority-high">Prioridad: ${exp.priority}</p>
-                </div>`;
-            });
-
-            panel.innerHTML = html || "<p>Agrega datos para generar el análisis.</p>";
-        }
-    </script>
-</body>
-</html>
+        .header { background: linear-gradient(135deg, #1A1D3F 0%, #2D3561 100%); padding: 2rem; border-radius: 0 0 24px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); margin-bottom: 2rem; color: white; }
+        .header h1 { background: linear-gradient(135deg, var(--cyan), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2rem; }
+        .onboarding-box { background: white; padding: 3rem; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); max-
