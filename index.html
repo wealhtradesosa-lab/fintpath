@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        /* CSS-v15-PROFESSIONAL.txt */
+        /* CSS-v15-PROFESSIONAL [cite: 1] */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --finpath-cyan: #00D4D4; --finpath-blue: #0066FF; --finpath-navy: #1A1D3F;
@@ -20,4 +20,117 @@
         .view { display: none; } .view.active { display: block; }
         .header { background: linear-gradient(135deg, #1A1D3F 0%, #2D3561 100%); padding: 2rem; border-radius: 0 0 24px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); margin-bottom: 2rem; color: white; }
         .header h1 { background: linear-gradient(135deg, var(--cyan), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2rem; }
-        .onboarding-box { background: white; padding: 3rem; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); max-
+        .onboarding-box { background: white; padding: 3rem; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); max-width: 600px; margin: 3rem auto; }
+        .input-field { width: 100%; padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; margin-bottom: 1rem; }
+        .btn { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: white; border: none; padding: 1rem; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; transition: 0.3s; }
+        .expert-card { background: linear-gradient(135deg, rgba(0,212,212,0.05), rgba(0,102,255,0.05)); border-left: 4px solid var(--finpath-cyan); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
+        .expert-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--finpath-cyan); padding-bottom: 1rem; margin-bottom: 1rem; }
+        .expert-grade { font-size: 2rem; font-weight: 700; color: var(--finpath-cyan); }
+        .priority-badge { padding: 0.375rem 0.875rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600; }
+        .priority-high { background: rgba(255,82,82,0.1); color: var(--red); }
+        .priority-medium { background: rgba(255,184,0,0.1); color: var(--orange); }
+        .priority-low { background: rgba(0,200,150,0.1); color: var(--green); }
+    </style>
+</head>
+<body>
+
+<div id="viewOnboarding" class="view active">
+    <div class="onboarding-box">
+        <h1 style="color: var(--finpath-blue)">Finpath Pro v15</h1>
+        <p style="margin-bottom: 1rem">Configura tu perfil profesional</p>
+        <input type="text" id="userName" class="input-field" placeholder="Tu Nombre">
+        <select id="userCurrency" class="input-field"><option value="COP">COP</option><option value="USD">USD</option></select>
+        <button class="btn" onclick="startApp()">Comenzar Análisis</button>
+    </div>
+</div>
+
+<div id="viewDashboard" class="view">
+    <div class="header">
+        <h1 id="userDisplay">Hola</h1>
+        <div style="margin-top:1rem; display:flex; gap:10px; flex-wrap: wrap;">
+            <button onclick="showView('viewDashboard')" class="btn" style="width:auto">Dashboard</button>
+            <button onclick="showView('viewCoach')" class="btn" style="width:auto">Coach IA</button>
+            <button onclick="showView('viewSimulator')" class="btn" style="width:auto">Simulador</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="section" style="background: white; padding: 2rem; border-radius: 12px; border: 1px solid var(--gray-200);">
+            <h2>Resumen General</h2>
+            <p>Agrega activos y gastos para activar los diagnósticos de los expertos.</p>
+        </div>
+    </div>
+</div>
+
+<div id="viewCoach" class="view">
+    <div class="header"><h1>👥 Panel de Expertos IA v15</h1></div>
+    <div class="container" id="alertsContainer"></div>
+</div>
+
+<div id="viewSimulator" class="view">
+    <div class="header"><h1>🎚️ Simulador Detallado</h1></div>
+    <div class="container" id="simResults"></div>
+</div>
+
+<script>
+let userData = { name: '', currency: 'COP', expenses: [], assets: [], debts: [] };
+
+function startApp() {
+    userData.name = document.getElementById('userName').value || 'Usuario';
+    userData.currency = document.getElementById('userCurrency').value;
+    document.getElementById('userDisplay').innerText = `👋 Bienvenido, ${userData.name}`;
+    showView('viewDashboard');
+}
+
+function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if(id === 'viewCoach') renderCoachAnalysis();
+    if(id === 'viewSimulator') initializeSimulator();
+}
+
+/* --- FUNCIONES DE EXPERTOS v15 [cite: 52] --- */
+function evaluateInvestmentExpert() {
+    const assets = userData.assets;
+    let grade = 100; let diagnosis = []; let recommendations = []; let priority = 'low';
+    if (assets.length < 2) { 
+        grade -= 40; diagnosis.push('⚠️ Portafolio muy concentrado'); 
+        recommendations.push('Diversificar en al menos 3 tipos diferentes de activos');
+        priority = 'high';
+    } else { diagnosis.push('✅ Buena diversificación de activos'); }
+    return { title: '📈 Experto en Inversiones', grade, diagnosis, recommendations, priority };
+}
+
+function renderExpertsPanel() {
+    const experts = [evaluateInvestmentExpert()]; // Se pueden añadir más expertos aquí [cite: 120]
+    let html = '';
+    experts.forEach(expert => {
+        const pClass = `priority-${expert.priority}`;
+        html += `
+        <div class="expert-card">
+            <div class="expert-header">
+                <div class="expert-title" style="font-weight:700; color:var(--finpath-blue)">${expert.title}</div>
+                <div class="expert-grade">${expert.grade}/100</div>
+            </div>
+            <div style="margin-bottom: 1rem">
+                <strong>📋 Diagnóstico:</strong>
+                <ul style="margin-left:1.5rem">${expert.diagnosis.map(d => `<li>${d}</li>`).join('')}</ul>
+            </div>
+            <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--gray-200)">
+                <span class="priority-badge ${pClass}">Prioridad: ${expert.priority.toUpperCase()}</span>
+            </div>
+        </div>`;
+    });
+    return html;
+}
+
+function renderCoachAnalysis() {
+    document.getElementById('alertsContainer').innerHTML = renderExpertsPanel();
+}
+
+/* --- SIMULADOR DETALLADO v15 [cite: 135] --- */
+function initializeSimulator() {
+    document.getElementById('simResults').innerHTML = '<div class="expert-card"><h3>Simulador Activo</h3><p>Configure sus activos para ver los controles.</p></div>';
+}
+</script>
+</body>
+</html>
