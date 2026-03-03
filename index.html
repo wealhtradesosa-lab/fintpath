@@ -37,7 +37,7 @@
 <div id="viewOnboarding" class="view active">
     <div class="onboarding-box">
         <h1 style="color: var(--finpath-blue)">Finpath Pro v15</h1>
-        <p style="margin-bottom: 1.5rem; color: var(--gray-500);">Configura tu perfil profesional para comenzar.</p>
+        <p style="margin-bottom: 1.5rem; color: var(--gray-500);">Bienvenido a la Edición Profesional.</p>
         <input type="text" id="userName" class="input-field" placeholder="Tu Nombre">
         <select id="userCurrency" class="input-field">
             <option value="COP">COP - Peso Colombiano</option>
@@ -58,14 +58,14 @@
     </div>
     <div class="container">
         <div class="section">
-            <h2>Resumen General</h2>
-            <p>Ingresa tus activos y deudas para activar el Panel de Expertos.</p>
+            <h2>Panel de Control</h2>
+            <p>Ingresa tus datos para activar los diagnósticos de los expertos.</p>
         </div>
     </div>
 </div>
 
 <div id="viewCoach" class="view">
-    <div class="header"><h1>👥 Panel de Expertos IA v15</h1></div>
+    <div class="header"><h1>🤖 Panel de Expertos IA v15</h1></div>
     <div class="container" id="alertsContainer"></div>
 </div>
 
@@ -75,6 +75,7 @@
 </div>
 
 <script>
+/* DATA BASE */
 let userData = { name: '', currency: 'COP', expenses: [], assets: [], debts: [] };
 
 function startApp() {
@@ -91,7 +92,7 @@ function showView(id) {
     if(id === 'viewSimulator') initializeSimulator();
 }
 
-/* --- LOGICA DE EXPERTOS v15 --- */
+/* FUNCIONES-EXPERTOS-v15.txt Limpias */
 function evaluateInvestmentExpert() {
     const assets = userData.assets;
     let grade = 100; let diagnosis = []; let recommendations = []; let priority = 'low';
@@ -131,9 +132,8 @@ function renderCoachAnalysis() {
     document.getElementById('alertsContainer').innerHTML = renderExpertsPanel();
 }
 
-/* --- SIMULADOR v15 --- */
 function initializeSimulator() {
-    document.getElementById('simResults').innerHTML = '<div class="section"><h3>Simulador Activo</h3><p>Configure sus activos para ver los controles deslizantes.</p></div>';
+    document.getElementById('simResults').innerHTML = '<div class="expert-card"><h3>Simulador Activo</h3><p>Configure sus activos y gastos para activar los controles.</p></div>';
 }
 </script>
 </body>
