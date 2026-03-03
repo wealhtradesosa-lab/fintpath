@@ -3,607 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finpath Pro v15 - Financial Planning</title>
+    <title>Finpath Pro v15 - Professional Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        /* FINPATH v15 PROFESSIONAL EDITION */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        /* CSS v15 PROFESSIONAL */
         :root {
-            --finpath-cyan: #00D4D4;
-            --finpath-blue: #0066FF;
-            --finpath-navy: #1A1D3F;
-            --cyan: #00D4D4;
-            --blue: #0066FF;
-            --green: #00C896;
-            --red: #FF5252;
-            --orange: #FFB800;
-            --gray-50: #F8F9FA;
-            --gray-100: #E9ECEF;
-            --gray-200: #DEE2E6;
-            --gray-500: #6C757D;
-            --gray-900: #1A1D3F;
+            --finpath-cyan: #00D4D4; --finpath-blue: #0066FF; --finpath-navy: #1A1D3F;
+            --cyan: #00D4D4; --blue: #0066FF; --green: #00C896; --red: #FF5252;
+            --gray-50: #F8F9FA; --gray-100: #E9ECEF; --gray-900: #1A1D3F;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--gray-50);
-            color: var(--gray-900);
-            line-height: 1.6;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-900); }
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-        .view { display: none; }
-        .view.active { display: block; }
-
-        .header {
-            background: linear-gradient(135deg, #1A1D3F 0%, #2D3561 100%);
-            padding: 2rem;
-            border-radius: 0 0 24px 24px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-            margin-bottom: 2rem;
-        }
-
-        .header h1 {
-            background: linear-gradient(135deg, var(--cyan), var(--blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .header > div {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .onboarding-box {
-            background: white;
-            padding: 3rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-            max-width: 600px;
-            margin: 3rem auto;
-            border: 1px solid var(--gray-200);
-        }
-
-        .input-group { margin-bottom: 1.5rem; }
-        .input-label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--gray-900);
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid var(--gray-200);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: var(--cyan);
-            box-shadow: 0 0 0 3px rgba(0, 212, 212, 0.1);
-        }
-
-        .checkbox-group { margin: 1rem 0; }
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            border: 2px solid var(--gray-200);
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .checkbox-item:hover {
-            border-color: var(--cyan);
-            background: rgba(0, 212, 212, 0.05);
-        }
-
-        .checkbox-item:has(input:checked) {
-            border-color: var(--cyan);
-            background: rgba(0, 212, 212, 0.1);
-        }
-
-        .checkbox-item input {
-            width: 20px;
-            height: 20px;
-            margin-right: 0.75rem;
-            cursor: pointer;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, var(--cyan), var(--blue));
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 12px;
-            font-size: 1.125rem;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 1rem;
-            transition: all 0.3s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0, 212, 212, 0.3);
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .metric-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border: 1px solid var(--gray-200);
-            transition: all 0.3s;
-        }
-
-        .metric-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
-        }
-
-        .metric-label {
-            color: var(--gray-500);
-            font-size: 0.875rem;
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-        }
-
-        .metric-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--gray-900);
-        }
-
-        .section {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
-            border: 1px solid var(--gray-200);
-        }
-
-        .section h2 { margin-bottom: 1rem; color: var(--gray-900); }
-
-        table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--gray-200); }
-        th { background: var(--gray-100); font-weight: 600; }
-
-        .btn-secondary {
-            background: var(--gray-100);
-            color: var(--gray-900);
-            border: 2px solid var(--gray-200);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .btn-secondary:hover { background: var(--gray-200); }
-
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .action-btn {
-            padding: 0.5rem 0.75rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.875rem;
-            margin: 0 0.25rem;
-            transition: all 0.2s;
-        }
-
-        .btn-edit { background: var(--cyan); color: white; }
-        .btn-delete { background: var(--red); color: white; }
-
-        /* EXPERT CARDS v15 */
-        .expert-card {
-            background: linear-gradient(135deg, rgba(0,212,212,0.05) 0%, rgba(0,102,255,0.05) 100%);
-            border-left: 4px solid var(--finpath-cyan);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
-        }
-
-        .expert-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--finpath-cyan);
-        }
-
-        .expert-title { font-size: 1.25rem; font-weight: 700; color: var(--finpath-blue); }
-        .expert-grade { font-size: 2rem; font-weight: 700; color: var(--finpath-cyan); }
-
-        .priority-badge {
-            display: inline-block;
-            padding: 0.375rem 0.875rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-
-        .priority-high { background: rgba(255, 82, 82, 0.1); color: var(--red); }
-        .priority-medium { background: rgba(255, 184, 0, 0.1); color: var(--orange); }
-        .priority-low { background: rgba(0, 200, 150, 0.1); color: var(--green); }
+        .header { background: linear-gradient(135deg, #1A1D3F 0%, #2D3561 100%); padding: 2rem; color: white; border-radius: 0 0 24px 24px; }
+        .view { display: none; } .view.active { display: block; }
+        .btn { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,212,212,0.4); }
+        .card { background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        .expert-card { border-left: 5px solid var(--cyan); background: white; padding: 1.5rem; margin-bottom: 1rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .priority-high { color: var(--red); font-weight: bold; }
+        input, select { width: 100%; padding: 0.8rem; margin: 0.5rem 0; border: 1px solid #ddd; border-radius: 8px; }
     </style>
 </head>
 <body>
 
     <div id="viewOnboarding" class="view active">
-        <div class="onboarding-box">
-            <h1 style="text-align: center; margin-bottom: 2rem; color: var(--finpath-blue);">Bienvenido a Finpath Pro</h1>
-            <div class="input-group">
-                <label class="input-label">Tu Nombre</label>
-                <input type="text" id="userName" class="input-field" placeholder="Ej: Juan">
-            </div>
-            <div class="input-group">
-                <label class="input-label">Apellido o Familia</label>
-                <input type="text" id="userFamily" class="input-field" placeholder="Ej: Pérez">
-            </div>
-            <div class="input-group">
-                <label class="input-label">Moneda Principal</label>
-                <select id="userCurrency" class="input-field">
-                    <option value="COP">🇨🇴 COP - Peso Colombiano</option>
-                    <option value="USD">🇺🇸 USD - Dólar</option>
-                    <option value="EUR">🇪🇺 EUR - Euro</option>
-                    <option value="MXN">🇲🇽 MXN - Peso Mexicano</option>
+        <div class="container" style="max-width: 500px; margin-top: 10vh;">
+            <div class="card">
+                <h1 style="text-align: center; color: var(--blue);">Finpath Pro v15</h1>
+                <input type="text" id="userName" placeholder="Tu Nombre">
+                <select id="userCurrency">
+                    <option value="COP">COP - Peso Colombiano</option>
+                    <option value="USD">USD - Dólar</option>
                 </select>
+                <button class="btn" style="width: 100%;" onclick="startApp()">Entrar al Sistema</button>
             </div>
-            <div class="checkbox-group">
-                <label class="input-label">Tus Objetivos:</label>
-                <label class="checkbox-item"><input type="checkbox" id="goal_freedom"> Libertad Financiera</label>
-                <label class="checkbox-item"><input type="checkbox" id="goal_debts"> Salir de Deudas</label>
-                <label class="checkbox-item"><input type="checkbox" id="goal_passive"> Generar Ingreso Pasivo</label>
-            </div>
-            <button class="btn" onclick="completeOnboarding()">Empezar Análisis</button>
         </div>
     </div>
 
     <div id="viewDashboard" class="view">
         <div class="header">
-            <div>
-                <h1 id="userDisplay">Hola</h1>
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn-secondary" onclick="showView('viewDashboard')">📊 Dashboard</button>
-                    <button class="btn-secondary" onclick="showView('viewCoach')">🤖 Coach IA</button>
-                    <button class="btn-secondary" onclick="showView('viewSimulator')">🎚️ Simulador</button>
-                    <button class="btn-secondary" onclick="showChangeCurrencyModal()" id="currencyDisplay">COP</button>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="welcomeText">Hola</h2>
+                <div>
+                    <button class="btn" onclick="showView('viewDashboard')">📊 Datos</button>
+                    <button class="btn" onclick="showView('viewCoach')">🤖 Coach IA</button>
                 </div>
             </div>
         </div>
-
         <div class="container">
-            <div class="dashboard-grid">
-                <div class="metric-card">
-                    <div class="metric-label">Ingresos Mensuales</div>
-                    <div class="metric-value" id="totalIncome">$0</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Gastos Mensuales</div>
-                    <div class="metric-value" id="totalExpenses" style="color: var(--red);">$0</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Patrimonio Neto</div>
-                    <div class="metric-value" id="netWorth" style="color: var(--finpath-blue);">$0</div>
-                </div>
+            <div class="card">
+                <h3>Añadir Gasto</h3>
+                <input type="text" id="expDesc" placeholder="Descripción (ej: Arriendo)">
+                <input type="number" id="expAmt" placeholder="Monto">
+                <button class="btn" onclick="addExpense()">+ Guardar Gasto</button>
             </div>
-
-            <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h2>💸 Gastos Mensuales</h2>
-                    <button class="btn-secondary" onclick="showAddExpenseForm()">+ Agregar</button>
-                </div>
-                <table>
-                    <thead><tr><th>Descripción</th><th>Categoría</th><th>Monto</th><th>Acciones</th></tr></thead>
-                    <tbody id="expensesBody"></tbody>
-                </table>
-            </div>
-
-            <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h2>💼 Activos e Inversiones</h2>
-                    <button class="btn-secondary" onclick="showAddAssetForm()">+ Agregar</button>
-                </div>
-                <table>
-                    <thead><tr><th>Nombre</th><th>Tipo</th><th>Valor</th><th>Net Income</th><th>Acciones</th></tr></thead>
-                    <tbody id="assetsBody"></tbody>
-                </table>
-            </div>
-
-            <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h2>💳 Deudas y Pasivos</h2>
-                    <button class="btn-secondary" onclick="showAddDebtForm()">+ Agregar</button>
-                </div>
-                <table>
-                    <thead><tr><th>Descripción</th><th>Tipo</th><th>Balance</th><th>Pago Mes</th><th>Acciones</th></tr></thead>
-                    <tbody id="debtsBody"></tbody>
-                </table>
-            </div>
-
-            <div class="section" style="background: #f0f7ff;">
-                <h3>📥 Importar desde Excel</h3>
-                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                    <select id="importType" class="input-field" style="width: auto;">
-                        <option value="expenses">Gastos</option>
-                        <option value="assets">Activos</option>
-                        <option value="debts">Deudas</option>
-                    </select>
-                    <input type="file" id="excelUpload" onchange="handleFileUpload(event)" style="display: none;">
-                    <button class="btn-secondary" onclick="document.getElementById('excelUpload').click()">📁 Seleccionar Archivo</button>
-                </div>
-                <div id="importStatus" style="margin-top: 0.5rem;"></div>
+            <div class="card">
+                <h3>Resumen Mensual</h3>
+                <div id="summaryList"></div>
             </div>
         </div>
     </div>
 
     <div id="viewCoach" class="view">
-        <div class="header"><h1>🤖 Coach IA Finpath Pro</h1><button class="btn-secondary" onclick="showView('viewDashboard')">Volver</button></div>
-        <div class="container">
-            <div class="metric-card" style="background: var(--finpath-navy); color: white; margin-bottom: 2rem; text-align: center;">
-                <div class="metric-label" style="color: rgba(255,255,255,0.7);">Financial Health Score</div>
-                <div class="metric-value" id="healthScoreValue" style="font-size: 4rem; color: var(--cyan);">0</div>
-                <div id="healthScoreLabel" style="font-weight: 700; font-size: 1.5rem;">Cargando...</div>
-                <p id="healthScoreDescription" style="opacity: 0.8; margin-top: 0.5rem;"></p>
+        <div class="header"><h1>🤖 Coach de Expertos v15</h1><button class="btn" onclick="showView('viewDashboard')">Volver</button></div>
+        <div class="container" id="expertsPanel">
             </div>
-            
-            <div id="healthDimensions" class="dashboard-grid" style="margin-bottom: 2rem;"></div>
-            
-            <div id="alertsContainer"></div>
-            
-            <div id="expertsPanelContainer"></div>
-
-            <div class="section">
-                <h2>📈 Plan de Acción Estratégico</h2>
-                <div id="actionPlanContainer"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="viewSimulator" class="view">
-        <div class="header"><h1>🎚️ Simulador Libertad Financiera</h1><button class="btn-secondary" onclick="showView('viewDashboard')">Volver</button></div>
-        <div class="container">
-            <div id="simResults"></div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()"></div>
-    
-    <div class="modal" id="expenseModal">
-        <h3 id="expenseModalTitle">Agregar Gasto</h3>
-        <input type="hidden" id="expenseEditId">
-        <div class="input-group"><label class="input-label">Descripción</label><input type="text" id="expenseDescription" class="input-field"></div>
-        <div class="input-group"><label class="input-label">Monto</label><input type="number" id="expenseAmount" class="input-field"></div>
-        <div class="input-group">
-            <label class="input-label">Categoría</label>
-            <select id="expenseCategory" class="input-field">
-                <option value="otros">Otros</option><option value="Vivienda">Vivienda</option><option value="Alimentación">Alimentación</option>
-            </select>
-        </div>
-        <button class="btn" onclick="saveExpense()">Guardar</button>
-    </div>
-
-    <div class="modal" id="assetModal">
-        <h3 id="assetModalTitle">Agregar Activo</h3>
-        <input type="hidden" id="assetEditId">
-        <div class="input-group"><label class="input-label">Nombre</label><input type="text" id="assetName" class="input-field"></div>
-        <div class="input-group"><label class="input-label">Valor</label><input type="number" id="assetValue" class="input-field"></div>
-        <div class="input-group"><label class="input-label">Ingreso Mensual (Neto)</label><input type="number" id="assetIncome" class="input-field"></div>
-        <button class="btn" onclick="saveAsset()">Guardar</button>
-    </div>
-
-    <div class="modal" id="debtModal">
-        <h3 id="debtModalTitle">Agregar Deuda</h3>
-        <input type="hidden" id="debtEditId">
-        <div class="input-group"><label class="input-label">Descripción</label><input type="text" id="debtDescription" class="input-field"></div>
-        <div class="input-group"><label class="input-label">Balance</label><input type="number" id="debtBalance" class="input-field"></div>
-        <div class="input-group"><label class="input-label">Pago Mensual</label><input type="number" id="debtPayment" class="input-field"></div>
-        <button class="btn" onclick="saveDebt()">Guardar</button>
     </div>
 
     <script>
-        // DATA CENTRAL
-        let userData = {
-            name: '', family: '', currency: 'COP', goals: [],
-            expenses: [], income: [], assets: [], debts: []
-        };
+        let userData = { name: '', currency: 'COP', expenses: [], assets: [], debts: [] };
 
-        // --- FUNCIONES CORE ---
-        function completeOnboarding() {
-            userData.name = document.getElementById('userName').value;
-            userData.family = document.getElementById('userFamily').value;
-            userData.currency = document.getElementById('userCurrency').value;
-            showView('viewDashboard');
-            updateDisplay();
-        }
-
-        function showView(viewId) {
+        function showView(id) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            if (viewId === 'viewCoach') renderCoachAnalysis();
-            if (viewId === 'viewSimulator') initializeSimulator();
+            document.getElementById(id).classList.add('active');
+            if(id === 'viewCoach') renderExperts();
         }
 
-        function formatMoney(value) {
-            return '$' + Math.round(value).toLocaleString('es-CO') + ' ' + userData.currency;
+        function startApp() {
+            userData.name = document.getElementById('userName').value || 'Usuario';
+            userData.currency = document.getElementById('userCurrency').value;
+            document.getElementById('welcomeText').innerText = "Bienvenido, " + userData.name;
+            showView('viewDashboard');
         }
 
-        function updateDisplay() {
-            document.getElementById('userDisplay').textContent = `👋 Hola, ${userData.name}`;
-            updateMetrics();
-            renderExpenses();
-            renderAssets();
-            renderDebts();
+        function addExpense() {
+            const desc = document.getElementById('expDesc').value;
+            const amt = parseFloat(document.getElementById('expAmt').value);
+            if(desc && amt) {
+                userData.expenses.push({ description: desc, amount: amt });
+                updateSummary();
+            }
         }
 
-        function updateMetrics() {
-            const totalExpenses = userData.expenses.reduce((sum, e) => sum + e.amount, 0) + userData.debts.reduce((sum, d) => sum + d.payment, 0);
-            const totalIncome = userData.assets.reduce((sum, a) => sum + (a.netIncome || 0), 0);
-            const totalAssets = userData.assets.reduce((sum, a) => sum + a.value, 0);
-            const totalDebts = userData.debts.reduce((sum, d) => sum + d.balance, 0);
-            
-            document.getElementById('totalIncome').textContent = formatMoney(totalIncome);
-            document.getElementById('totalExpenses').textContent = formatMoney(totalExpenses);
-            document.getElementById('netWorth').textContent = formatMoney(totalAssets - totalDebts);
+        function updateSummary() {
+            const list = document.getElementById('summaryList');
+            list.innerHTML = userData.expenses.map(e => `<div>${e.description}: $${e.amount}</div>`).join('');
         }
 
-        // --- RENDERERS ---
-        function renderExpenses() {
-            const tbody = document.getElementById('expensesBody');
-            tbody.innerHTML = userData.expenses.map(e => `<tr><td>${e.description}</td><td>${e.category}</td><td>${formatMoney(e.amount)}</td><td><button class="action-btn btn-delete" onclick="deleteExpense('${e.id}')">🗑️</button></td></tr>`).join('');
-        }
-        function renderAssets() {
-            const tbody = document.getElementById('assetsBody');
-            tbody.innerHTML = userData.assets.map(a => `<tr><td>${a.name}</td><td>${a.type}</td><td>${formatMoney(a.value)}</td><td>${formatMoney(a.netIncome)}</td><td><button class="action-btn btn-delete" onclick="deleteAsset('${a.id}')">🗑️</button></td></tr>`).join('');
-        }
-        function renderDebts() {
-            const tbody = document.getElementById('debtsBody');
-            tbody.innerHTML = userData.debts.map(d => `<tr><td>${d.description}</td><td>${d.type}</td><td>${formatMoney(d.balance)}</td><td>${formatMoney(d.payment)}</td><td><button class="action-btn btn-delete" onclick="deleteDebt('${d.id}')">🗑️</button></td></tr>`).join('');
-        }
+        // --- LÓGICA DE EXPERTOS v15 ---
+        function renderExperts() {
+            const panel = document.getElementById('expertsPanel');
+            let html = "";
 
-        // --- CRUD SIMPLE ---
-        function showModal(id) { document.getElementById('modalOverlay').style.display = 'block'; document.getElementById(id).style.display = 'block'; }
-        function closeAllModals() { document.getElementById('modalOverlay').style.display = 'none'; document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
-        
-        function showAddExpenseForm() { showModal('expenseModal'); }
-        function saveExpense() {
-            userData.expenses.push({ id: Date.now(), description: document.getElementById('expenseDescription').value, amount: parseFloat(document.getElementById('expenseAmount').value), category: document.getElementById('expenseCategory').value });
-            closeAllModals(); updateDisplay();
-        }
-        function deleteExpense(id) { userData.expenses = userData.expenses.filter(e => e.id != id); updateDisplay(); }
+            // Experto de Presupuesto
+            const totalExp = userData.expenses.reduce((s, e) => s + e.amount, 0);
+            const budgetExpert = {
+                title: "💰 Experto en Presupuesto",
+                grade: totalExp > 0 ? 80 : 100,
+                diag: totalExp > 5000000 ? "Gastos elevados detectados." : "Presupuesto bajo control.",
+                priority: totalExp > 5000000 ? "ALTA" : "BAJA"
+            };
 
-        function showAddAssetForm() { showModal('assetModal'); }
-        function saveAsset() {
-            userData.assets.push({ id: Date.now(), name: document.getElementById('assetName').value, value: parseFloat(document.getElementById('assetValue').value), netIncome: parseFloat(document.getElementById('assetIncome').value), type: 'Inmueble' });
-            closeAllModals(); updateDisplay();
-        }
-        function deleteAsset(id) { userData.assets = userData.assets.filter(a => a.id != id); updateDisplay(); }
-
-        function showAddDebtForm() { showModal('debtModal'); }
-        function saveDebt() {
-            userData.debts.push({ id: Date.now(), description: document.getElementById('debtDescription').value, balance: parseFloat(document.getElementById('debtBalance').value), payment: parseFloat(document.getElementById('debtPayment').value), type: 'Crédito' });
-            closeAllModals(); updateDisplay();
-        }
-        function deleteDebt(id) { userData.debts = userData.debts.filter(d => d.id != id); updateDisplay(); }
-
-        // ==================== FUNCIONES DE EXPERTOS v15 ====================
-        function evaluateInvestmentExpert() {
-            const assets = userData.assets;
-            let grade = 100; let diagnosis = []; let recommendations = []; let priority = 'low';
-            if (assets.length < 2) { grade -= 40; diagnosis.push('⚠️ Portafolio muy concentrado'); recommendations.push('Diversificar activos'); priority = 'high'; }
-            else { diagnosis.push('✅ Buena diversificación'); }
-            return { title: '📈 Experto en Inversiones', grade, diagnosis, recommendations, priority };
-        }
-
-        function evaluateBudgetExpert() {
-            const monthlyIncome = userData.assets.reduce((sum, a) => sum + (a.netIncome || 0), 0);
-            const totalExpenses = userData.expenses.reduce((sum, e) => sum + e.amount, 0) + userData.debts.reduce((sum, d) => sum + d.payment, 0);
-            const cashflow = monthlyIncome - totalExpenses;
-            let grade = 100; let diagnosis = []; let recommendations = []; let priority = 'low';
-            if (cashflow < 0) { grade = 0; diagnosis.push('🚨 CRÍTICO: Gastas más de lo que ganas'); recommendations.push('Reducir gastos'); priority = 'high'; }
-            else { diagnosis.push('✅ Flujo de caja positivo'); }
-            return { title: '💰 Experto en Presupuesto', grade, diagnosis, recommendations, priority };
-        }
-
-        function renderExpertsPanel() {
-            const experts = [evaluateInvestmentExpert(), evaluateBudgetExpert()];
-            let html = '<div class="section"><h2>👥 Panel de Expertos IA v15</h2>';
-            experts.forEach(expert => {
-                const pClass = `priority-${expert.priority}`;
-                html += `<div class="expert-card">
-                    <div class="expert-header"><div class="expert-title">${expert.title}</div><div class="expert-grade">${expert.grade}/100</div></div>
-                    <div><h4>📋 Diagnóstico:</h4><ul>${expert.diagnosis.map(d => `<li>${d}</li>`).join('')}</ul></div>
-                    <div style="margin-top:1rem"><span class="priority-badge ${pClass}">Prioridad: ${expert.priority}</span></div>
+            [budgetExpert].forEach(exp => {
+                html += `
+                <div class="expert-card">
+                    <h3>${exp.title} - ${exp.grade}/100</h3>
+                    <p><strong>Diagnóstico:</strong> ${exp.diag}</p>
+                    <p class="priority-high">Prioridad: ${exp.priority}</p>
                 </div>`;
             });
-            return html + '</div>';
-        }
 
-        function renderCoachAnalysis() {
-            // Lógica de Health Score simplificada para el ejemplo
-            document.getElementById('healthScoreValue').textContent = "75";
-            document.getElementById('healthScoreLabel').textContent = "Bueno";
-            document.getElementById('expertsPanelContainer').innerHTML = renderExpertsPanel();
-        }
-
-        // ==================== SIMULADOR DETALLADO v15 ====================
-        function renderDetailedSimulator() {
-            let html = '<div class="section"><h2>🎚️ Simulador Detallado</h2><div id="simControls">';
-            userData.expenses.forEach((e, i) => {
-                html += `<div style="margin-bottom:1rem"><label>${e.description}</label>
-                <input type="range" min="0" max="${e.amount * 2}" value="${e.amount}" oninput="updateDetailedSimulation()"></div>`;
-            });
-            html += '</div><div id="detailedSimNew" style="font-size:2rem; font-weight:bold; color:var(--blue)"></div></div>';
-            return html;
-        }
-
-        function initializeSimulator() {
-            const res = document.getElementById('simResults');
-            res.innerHTML = renderDetailedSimulator();
-            updateDetailedSimulation();
-        }
-
-        function updateDetailedSimulation() {
-            document.getElementById('detailedSimNew').textContent = "Simulación Activa";
-        }
-
-        // EXCEL IMPORT (Simplificado)
-        async function handleFileUpload(event) {
-            const file = event.target.files[0];
-            const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data, { type: 'array' });
-            alert("Archivo cargado. En una versión real aquí procesaríamos las celdas.");
+            panel.innerHTML = html || "<p>Agrega datos para generar el análisis.</p>";
         }
     </script>
 </body>
