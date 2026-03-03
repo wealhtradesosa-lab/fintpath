@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finpath Pro - Financial Planning v15</title>
+    <title>Finpath Pro - v15 Professional</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <style>
-        /* CSS v15 PROFESSIONAL INTEGRATED */
+        /* INTEGRACIÓN CSS-v15-PROFESSIONAL */
         :root {
             --finpath-cyan: #00D4D4;
             --finpath-blue: #0066FF;
@@ -24,31 +24,269 @@
             --gray-500: #6C757D;
             --gray-900: #1A1D3F;
         }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-900); }
-        .header { background: linear-gradient(135deg, #1A1D3F 0%, #2D3561 100%); padding: 2.5rem; border-radius: 0 0 24px 24px; color: white; margin-bottom: 2rem; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-900); line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
         
-        /* Estilos Expertos v15 */
-        .expert-card {
-            background: white;
-            border-left: 5px solid var(--finpath-cyan);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        .header {
+            background: linear-gradient(135deg, #1A1D3F 0%, #2D3561 100%);
+            padding: 3rem 2rem;
+            border-radius: 0 0 32px 32px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            margin-bottom: 2.5rem;
+            text-align: center;
         }
-        .expert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .expert-grade { font-size: 1.4rem; font-weight: 800; color: var(--finpath-blue); }
-        .priority-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+
+        .header h1 { 
+            font-size: 2.8rem; 
+            background: linear-gradient(135deg, var(--cyan), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .card { background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 2rem; border: 1px solid var(--gray-100); }
+        
+        /* EXPERT CARDS v15 */
+        .expert-card {
+            background: linear-gradient(135deg, rgba(0,212,212,0.05) 0%, rgba(0,102,255,0.05) 100%);
+            border-left: 5px solid var(--finpath-cyan);
+            border-radius: 15px;
+            padding: 1.8rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .expert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,212,212,0.2);
+            padding-bottom: 0.8rem;
+        }
+
+        .expert-grade { font-size: 1.6rem; font-weight: 800; color: var(--finpath-blue); }
+        
+        .priority-badge { padding: 5px 14px; border-radius: 25px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
         .priority-high { background: #fee2e2; color: #dc2626; }
         .priority-medium { background: #fef3c7; color: #d97706; }
         .priority-low { background: #dcfce7; color: #16a34a; }
-        
-        /* Simulador Detallado */
-        .sim-slider-container { background: white; padding: 1.5rem; border-radius: 12px; margin-top: 2rem; border: 1px solid var(--gray-200); }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
         input[type=range] { width: 100%; height: 8px; border-radius: 5px; background: var(--gray-200); outline: none; margin: 15px 0; accent-color: var(--finpath-blue); }
         
-        /* Reutilización de estilos v14 necesarios */
-        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-        .card { background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(3
+        .btn { padding: 0.8rem 1.8rem; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .btn-primary { background: var(--finpath-blue); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,102,255,0.3); }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container">
+            <h1>Finpath <span style="color:white">Pro</span></h1>
+            <p>Version 15.0 Professional Edition</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div style="margin-bottom: 2rem; display: flex; gap: 10px; justify-content: center;">
+            <button class="btn btn-primary" onclick="showView('dashboard')">Dashboard</button>
+            <button class="btn btn-primary" onclick="showView('simulator')">Simulador Pro</button>
+            <button class="btn btn-primary" onclick="exportToExcel()">Exportar Excel</button>
+        </div>
+
+        <div id="dashboard" class="view active">
+            <div id="expertsContainer" class="grid-3"></div>
+            <div id="actionPlanContainer" class="card" style="margin-top:2rem"></div>
+        </div>
+
+        <div id="simulator" class="view">
+            <div class="card">
+                <h2>🎚️ Simulador Detallado v15</h2>
+                <p>Ajusta tus finanzas en tiempo real y observa el impacto en tu Libertad Financiera.</p>
+                <div id="detailedSimUI" style="margin-top:2rem"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LÓGICA BASE v14
+        let userData = JSON.parse(localStorage.getItem('finpath_data')) || {
+            currency: 'USD',
+            expenses: [
+                {description: 'Vivienda', amount: 1200},
+                {description: 'Comida', amount: 600}
+            ],
+            assets: [
+                {type: 'Inversión', value: 20000, netIncome: 150}
+            ],
+            debts: [
+                {description: 'Tarjeta', balance: 3000, payment: 150, rate: 24}
+            ]
+        };
+
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            if(viewId === 'simulator') renderDetailedSimulator();
+        }
+
+        const formatMoney = (v) => new Intl.NumberFormat('es-US', { style: 'currency', currency: userData.currency }).format(v);
+
+        // ==================== FUNCIONES DE EXPERTOS v15 (COMPLETO) ====================
+        function evaluateInvestmentExpert() {
+            let grade = 100;
+            let diagnosis = [];
+            let recommendations = [];
+            let priority = 'low';
+
+            if (userData.assets.length === 0) {
+                grade = 20;
+                diagnosis.push("No tienes activos que generen ingresos.");
+                recommendations.push("Empieza con un fondo de inversión indexado.");
+                priority = 'high';
+            } else {
+                diagnosis.push("Tienes activos activos trabajando.");
+                recommendations.push("Reinvierte los dividendos para interés compuesto.");
+            }
+
+            return { title: '📈 Experto en Inversiones', grade, diagnosis, recommendations, priority };
+        }
+
+        function evaluateDebtExpert() {
+            let grade = 100;
+            let diagnosis = [];
+            let recommendations = [];
+            let priority = 'low';
+
+            const highInterestDebt = userData.debts.filter(d => d.rate > 15);
+            if (highInterestDebt.length > 0) {
+                grade = 40;
+                diagnosis.push(`Tienes ${highInterestDebt.length} deudas con interés > 15%.`);
+                recommendations.push("Usa el método Avalancha: paga primero la tasa más alta.");
+                priority = 'high';
+            } else {
+                diagnosis.push("Tus deudas están bajo control o son inexistentes.");
+            }
+
+            return { title: '💳 Experto en Deuda', grade, diagnosis, recommendations, priority };
+        }
+
+        function evaluateRetirementExpert() {
+            const passiveIncome = userData.assets.reduce((sum, a) => sum + (a.netIncome || 0), 0);
+            const totalExpenses = userData.expenses.reduce((sum, e) => sum + e.amount, 0);
+            const ratio = totalExpenses > 0 ? (passiveIncome / totalExpenses) * 100 : 0;
+            
+            let grade = Math.min(Math.round(ratio), 100);
+            return { 
+                title: '🏖️ Experto en Retiro', 
+                grade, 
+                diagnosis: [`Tu ingreso pasivo cubre el ${grade}% de tus gastos.`], 
+                recommendations: ["Aumenta tu capital semilla para llegar al 100%."], 
+                priority: grade < 50 ? 'medium' : 'low' 
+            };
+        }
+
+        function renderExperts() {
+            const experts = [evaluateInvestmentExpert(), evaluateDebtExpert(), evaluateRetirementExpert()];
+            let html = '';
+            experts.forEach(e => {
+                html += `
+                <div class="expert-card">
+                    <div class="expert-header">
+                        <span style="font-weight:bold; color:var(--finpath-navy)">${e.title}</span>
+                        <span class="expert-grade">${e.grade}/100</span>
+                    </div>
+                    <p style="font-size:0.9rem"><strong>Diagnóstico:</strong> ${e.diagnosis[0]}</p>
+                    <p style="font-size:0.9rem; margin: 10px 0;"><strong>Acción:</strong> ${e.recommendations[0]}</p>
+                    <span class="priority-badge priority-${e.priority}">Prioridad ${e.priority}</span>
+                </div>`;
+            });
+            document.getElementById('expertsContainer').innerHTML = html;
+        }
+
+        // ==================== SIMULADOR DETALLADO v15 ====================
+        function renderDetailedSimulator() {
+            let html = '<div class="grid-3">';
+            
+            // Columna Gastos
+            html += '<div><h3>💸 Ajustar Gastos</h3>';
+            userData.expenses.forEach((exp, i) => {
+                html += `
+                <div style="margin-bottom:1.5rem">
+                    <label>${exp.description}: <strong id="val-e-${i}">${formatMoney(exp.amount)}</strong></label>
+                    <input type="range" min="0" max="${exp.amount * 2}" value="${exp.amount}" 
+                           oninput="updateSimValue('e', ${i}, this.value)">
+                </div>`;
+            });
+            html += '</div>';
+
+            // Columna Ingresos Pasivos
+            html += '<div><h3>💰 Ajustar Retornos</h3>';
+            userData.assets.forEach((ast, i) => {
+                html += `
+                <div style="margin-bottom:1.5rem">
+                    <label>${ast.type}: <strong id="val-a-${i}">${formatMoney(ast.netIncome)}</strong></label>
+                    <input type="range" min="0" max="${ast.netIncome * 3}" value="${ast.netIncome}" 
+                           oninput="updateSimValue('a', ${i}, this.value)">
+                </div>`;
+            });
+            html += '</div>';
+
+            // Columna Resultados
+            html += '<div id="simResultSummary" class="expert-card" style="background:var(--finpath-navy); color:white;">';
+            html += '<h3>Impacto Total</h3><div id="liveRatio" style="font-size:3rem; text-align:center; margin:20px 0;">--%</div>';
+            html += '</div></div>';
+
+            document.getElementById('detailedSimUI').innerHTML = html;
+            calculateLiveRatio();
+        }
+
+        function updateSimValue(type, i, val) {
+            document.getElementById(`val-${type}-${i}`).innerText = formatMoney(val);
+            calculateLiveRatio();
+        }
+
+        function calculateLiveRatio() {
+            // Lógica de cálculo en tiempo real para el simulador
+            let totalExp = 0;
+            userData.expenses.forEach((e, i) => {
+                const slider = document.querySelector(`input[oninput*="updateSimValue('e', ${i}"]`);
+                totalExp += slider ? parseFloat(slider.value) : e.amount;
+            });
+            
+            let totalInc = 0;
+            userData.assets.forEach((a, i) => {
+                const slider = document.querySelector(`input[oninput*="updateSimValue('a', ${i}"]`);
+                totalInc += slider ? parseFloat(slider.value) : a.netIncome;
+            });
+
+            const ratio = totalExp > 0 ? (totalInc / totalExp) * 100 : 0;
+            document.getElementById('liveRatio').innerText = ratio.toFixed(1) + '%';
+        }
+
+        function exportToExcel() {
+            const ws = XLSX.utils.json_to_sheet(userData.expenses);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Gastos");
+            XLSX.writeFile(wb, "Finpath_v15_Report.xlsx");
+        }
+
+        // Inicialización
+        window.onload = () => {
+            renderExperts();
+            if(localStorage.getItem('finpath_data')) {
+                console.log("Datos cargados correctamente.");
+            }
+        };
+    </script>
+</body>
+</html>
