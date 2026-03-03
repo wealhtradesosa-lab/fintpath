@@ -1,0 +1,3109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finpath Pro - Financial Planning</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --cyan: #00d4d4;
+            --blue: #0066ff;
+            --green: #00c896;
+            --red: #ff5252;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-500: #6b7280;
+            --gray-900: #111827;
+        }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: var(--gray-50);
+            color: var(--gray-900);
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        
+        /* Views */
+        .view { display: none; }
+        .view.active { display: block; }
+        
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 2px solid var(--gray-200);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+        }
+        .header > div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .header h1 {
+            background: linear-gradient(135deg, var(--cyan), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Onboarding */
+        .onboarding-box {
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 3rem auto;
+        }
+        
+        .input-group { margin-bottom: 1.5rem; }
+        .input-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--gray-900);
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--cyan);
+        }
+        
+        .checkbox-group { margin: 1rem 0; }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+        .checkbox-item:has(input:checked) {
+            border-color: var(--cyan);
+            background: rgba(0, 212, 212, 0.1);
+        }
+        .checkbox-item input {
+            width: 20px;
+            height: 20px;
+            margin-right: 0.75rem;
+            cursor: pointer;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--cyan), var(--blue));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 212, 212, 0.3);
+        }
+        
+        /* Dashboard */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .metric-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .metric-label {
+            color: var(--gray-500);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        .section h2 {
+            margin-bottom: 1rem;
+            color: var(--gray-900);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        th {
+            background: var(--gray-100);
+            font-weight: 600;
+        }
+        
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-900);
+            border: 2px solid var(--gray-200);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+        
+        .help-text {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            margin-top: 0.25rem;
+        }
+        
+        /* Modales */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-500);
+        }
+        
+        /* Action buttons */
+        .action-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn-edit, .btn-delete {
+            padding: 0.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .btn-edit {
+            background: var(--blue);
+            color: white;
+        }
+        .btn-delete {
+            background: var(--red);
+            color: white;
+        }
+        
+        .btn-add {
+            background: linear-gradient(135deg, var(--cyan), var(--blue));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        /* MODALES */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .btn-cancel {
+            background: var(--gray-500);
+        }
+        
+        .btn-cancel:hover {
+            background: #555;
+        }
+        
+        /* BOTONES DE ACCIÓN EN TABLAS */
+        .action-btn {
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin: 0 0.25rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-edit {
+            background: var(--cyan);
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #00a0a0;
+            transform: translateY(-2px);
+        }
+        
+        .btn-delete {
+            background: var(--red);
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #cc0000;
+            transform: translateY(-2px);
+        }
+        
+        .add-button {
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+        
+    </style>
+</head>
+<body>
+    <!-- ONBOARDING VIEW -->
+    <div id="viewOnboarding" class="view active">
+        <div class="onboarding-box">
+            <h1 style="text-align: center; margin-bottom: 1rem;">🎯 Finpath Pro</h1>
+            <p style="text-align: center; color: var(--gray-500); margin-bottom: 2rem;">
+                Tu plataforma profesional de planificación financiera
+            </p>
+            
+            <div class="input-group">
+                <label class="input-label">Nombre y Apellido *</label>
+                <input type="text" class="input-field" id="userName" placeholder="Ej: Juan García">
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">Nombre Familia (opcional)</label>
+                <input type="text" class="input-field" id="userFamily" placeholder="Ej: Familia García">
+                <span class="help-text">Deja vacío si es solo para ti</span>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">💰 ¿En qué moneda manejas tus finanzas? *</label>
+                <select class="input-field" id="userCurrency">
+                    <option value="COP">🇨🇴 COP - Peso Colombiano (valores típicos: $500K - $50M)</option>
+                    <option value="USD">🇺🇸 USD - Dólar (valores típicos: $100 - $100K)</option>
+                    <option value="EUR">🇪🇺 EUR - Euro (valores típicos: €100 - €100K)</option>
+                    <option value="MXN">🇲🇽 MXN - Peso Mexicano (valores típicos: $1K - $10M)</option>
+                </select>
+                <span class="help-text">Esto ayuda a validar que tus valores sean correctos</span>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">Tus Objetivos Financieros * (Selecciona al menos uno)</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="goal_freedom" value="freedom">
+                        <span>💰 Libertad Financiera</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="goal_debts" value="debts">
+                        <span>💳 Pagar Deudas</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="goal_passive" value="passive">
+                        <span>💵 Aumentar Ingreso Pasivo</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="goal_retirement" value="retirement">
+                        <span>🏖️ Retiro Anticipado</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="goal_wealth" value="wealth">
+                        <span>📈 Construir Patrimonio</span>
+                    </label>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="completeOnboarding()">
+                Comenzar →
+            </button>
+        </div>
+    </div>
+    
+    <!-- MAIN DASHBOARD VIEW -->
+    <div id="viewDashboard" class="view">
+        <div class="container">
+            <div class="header">
+                <h1>💼 Finpath Pro</h1>
+                <div style="display: flex; align-items: center; gap: 2rem;">
+                    <p id="userDisplay">👋 Bienvenido</p>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-weight: 600;">💰</span>
+                        <span id="currencyDisplay" style="font-weight: 700; color: var(--cyan);">COP 🇨🇴</span>
+                        <button class="btn" onclick="showChangeCurrencyModal()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">⚙️ Cambiar</button>
+                    </div>
+                    <button class="btn" onclick="showView('viewCoach')" style="background: linear-gradient(135deg, var(--cyan), var(--blue)); padding: 0.75rem 1.5rem;">
+                        🤖 Coach IA
+                    </button>
+                    <button class="btn" onclick="showView('viewProjections')" style="background: linear-gradient(135deg, var(--green), var(--cyan)); padding: 0.75rem 1.5rem;">
+                        📈 Proyecciones
+                    </button>
+                    <button class="btn" onclick="showView('viewCharts')" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f); padding: 0.75rem 1.5rem;">
+                        📊 Gráficos
+                    </button>
+                    <button class="btn" onclick="showView('viewSimulator')" style="background: linear-gradient(135deg, #9c27b0, #e91e63); padding: 0.75rem 1.5rem;">
+                        🎯 Simulador
+                    </button>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Activos Totales</div>
+                    <div class="metric-value" id="totalAssets">$0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Deudas Totales</div>
+                    <div class="metric-value" id="totalDebts" style="color: var(--red);">$0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Gastos Mensuales</div>
+                    <div class="metric-value" id="totalExpenses">$0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Ingresos Mensuales</div>
+                    <div class="metric-value" id="totalIncome">$0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Patrimonio Neto</div>
+                    <div class="metric-value" id="netWorth">$0</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>📥 Importar Datos</h2>
+                <p style="margin-bottom: 1rem; color: var(--gray-500);">
+                    Carga un archivo Excel con tus gastos, ingresos o activos
+                </p>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">
+                        ¿Qué tipo de datos contiene tu archivo?
+                    </label>
+                    <select id="importType" style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem;">
+                        <option value="expenses">💸 Gastos</option>
+                        <option value="assets">💼 Activos</option>
+                        <option value="income">💰 Ingresos</option>
+                        <option value="debts">💳 Deudas</option>
+                    </select>
+                </div>
+                
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleFileUpload(event)">
+                <button class="btn-secondary" onclick="document.getElementById('fileInput').click()">
+                    📄 Seleccionar Archivo
+                </button>
+                <div id="importStatus" style="margin-top: 1rem; font-weight: 600;"></div>
+            </div>
+            
+            <div class="section">
+                <h2>💸 Gastos</h2>
+                <button class="btn add-button" onclick="showAddExpenseForm()">➕ Agregar Gasto</button>
+                <table id="expensesTable">
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Monto Mensual</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesBody">
+                        <tr><td colspan="4" style="text-align: center; color: var(--gray-500);">No hay gastos registrados</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h2>💼 Activos</h2>
+                <button class="btn add-button" onclick="showAddAssetForm()">➕ Agregar Activo</button>
+                <table id="assetsTable">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Valor</th>
+                            <th>Ingreso Mensual</th>
+                            <th>Gasto Mensual</th>
+                            <th>Net Income</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assetsBody">
+                        <tr><td colspan="7" style="text-align: center; color: var(--gray-500);">No hay activos registrados</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h2>💳 Deudas</h2>
+                <button class="btn add-button" onclick="showAddDebtForm()">➕ Agregar Deuda</button>
+                <table id="debtsTable">
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Tipo</th>
+                            <th>Balance</th>
+                            <th>Pago Mensual</th>
+                            <th>Tasa (%)</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="debtsBody">
+                        <tr><td colspan="6" style="text-align: center; color: var(--gray-500);">No hay deudas registradas</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- VISTA COACH IA -->
+    <div id="viewCoach" class="view">
+        <div class="container">
+            <div class="header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h1>🤖 Coach IA - Análisis Financiero</h1>
+                    <button class="btn" onclick="showView('viewDashboard')" style="background: var(--gray-500);">
+                        ← Volver al Dashboard
+                    </button>
+                </div>
+            </div>
+            
+            <!-- HEALTH SCORE -->
+            <div class="section" style="background: linear-gradient(135deg, var(--cyan), var(--blue)); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+                <h2 style="color: white; margin-bottom: 1rem;">📊 Health Score Financiero</h2>
+                <div style="display: flex; align-items: center; gap: 2rem;">
+                    <div style="font-size: 4rem; font-weight: 700;" id="healthScoreValue">--</div>
+                    <div style="flex: 1;">
+                        <div id="healthScoreLabel" style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">Calculando...</div>
+                        <div id="healthScoreDescription" style="opacity: 0.9;">Analizando tu situación financiera...</div>
+                    </div>
+                </div>
+                
+                <!-- 5 Dimensiones -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem;" id="healthDimensions">
+                    <!-- Se llena con JS -->
+                </div>
+            </div>
+            
+            <!-- ALERTAS -->
+            <div class="section">
+                <h2>⚠️ Alertas y Recomendaciones</h2>
+                <div id="alertsContainer">
+                    <p style="color: var(--gray-500);">Cargando análisis...</p>
+                </div>
+            </div>
+            
+            <!-- ANÁLISIS POR ACTIVO -->
+            <div class="section">
+                <h2>📈 Análisis Individual de Activos</h2>
+                <div id="assetsAnalysisContainer">
+                    <p style="color: var(--gray-500);">Analizando tus inversiones...</p>
+                </div>
+            </div>
+            
+            <!-- PLAN DE ACCIÓN -->
+            <div class="section">
+                <h2>🎯 Plan de Acción Personalizado</h2>
+                <div id="actionPlanContainer">
+                    <p style="color: var(--gray-500);">Generando plan...</p>
+                </div>
+            </div>
+            
+            <!-- DISCLAIMER -->
+            <div style="background: #fff3cd; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #ffc107; margin-top: 2rem;">
+                <strong>⚠️ Aviso Legal:</strong><br>
+                Este análisis es generado automáticamente por un algoritmo y tiene fines informativos únicamente. 
+                No constituye asesoría financiera profesional. Para decisiones de inversión importantes, 
+                consulta con un asesor financiero certificado.
+            </div>
+        </div>
+    </div>
+    
+    <!-- VISTA PROYECCIONES -->
+    <div id="viewProjections" class="view">
+        <div class="container">
+            <div class="header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h1>📈 Proyecciones Financieras</h1>
+                    <button class="btn" onclick="showView('viewDashboard')" style="background: var(--gray-500);">
+                        ← Volver al Dashboard
+                    </button>
+                </div>
+            </div>
+            
+            <!-- SUPUESTOS -->
+            <div class="section">
+                <h2>⚙️ Supuestos para las Proyecciones</h2>
+                <p style="color: var(--gray-500); margin-bottom: 1.5rem;">
+                    Ajusta estos parámetros para ver cómo evolucionará tu patrimonio en el tiempo
+                </p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                    <div class="input-group">
+                        <label class="input-label">💰 Ahorro Mensual Adicional</label>
+                        <input type="number" class="input-field" id="projAhorroMensual" value="0" step="100000">
+                        <span class="help-text">Cuánto planeas ahorrar cada mes adicional a tus ingresos actuales</span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">📈 Retorno Esperado Anual (%)</label>
+                        <input type="number" class="input-field" id="projRetorno" value="7" step="0.5" min="0" max="30">
+                        <span class="help-text">Rendimiento esperado de tus inversiones (ej: 7% conservador, 12% agresivo)</span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">📉 Inflación Anual (%)</label>
+                        <input type="number" class="input-field" id="projInflacion" value="5" step="0.5" min="0" max="20">
+                        <span class="help-text">Inflación esperada (reduce poder adquisitivo)</span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">💵 Crecimiento Ingreso Anual (%)</label>
+                        <input type="number" class="input-field" id="projCrecimientoIngreso" value="3" step="0.5" min="0" max="20">
+                        <span class="help-text">Cuánto esperas que crezcan tus ingresos cada año</span>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="calculateProjections()" style="margin-top: 1.5rem; padding: 1rem 2rem; font-size: 1.1rem;">
+                    🚀 Calcular Proyecciones
+                </button>
+            </div>
+            
+            <!-- RESUMEN RÁPIDO -->
+            <div id="projectionsSummary" style="display: none;">
+                <div class="section" style="background: linear-gradient(135deg, var(--green), var(--cyan)); color: white; padding: 2rem; border-radius: 12px;">
+                    <h2 style="color: white; margin-bottom: 1.5rem;">🎯 Resumen de Proyecciones</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                        <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 8px;">
+                            <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">1 Año</div>
+                            <div style="font-size: 1.75rem; font-weight: 700;" id="proj1Year">--</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 8px;">
+                            <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">3 Años</div>
+                            <div style="font-size: 1.75rem; font-weight: 700;" id="proj3Years">--</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 8px;">
+                            <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">5 Años</div>
+                            <div style="font-size: 1.75rem; font-weight: 700;" id="proj5Years">--</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 8px;">
+                            <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">10 Años</div>
+                            <div style="font-size: 1.75rem; font-weight: 700;" id="proj10Years">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TABLA DETALLADA -->
+            <div id="projectionsTable" style="display: none;">
+                <div class="section">
+                    <h2>📊 Proyección Año por Año</h2>
+                    <div style="overflow-x: auto;">
+                        <table id="projTable">
+                            <thead>
+                                <tr>
+                                    <th>Año</th>
+                                    <th>Patrimonio Neto</th>
+                                    <th>Ingreso Pasivo</th>
+                                    <th>Gastos</th>
+                                    <th>Cashflow</th>
+                                    <th>ROI %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projTableBody">
+                                <!-- Se llena con JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- NOTA METODOLOGÍA -->
+            <div style="background: var(--gray-100); padding: 1.5rem; border-radius: 12px; margin-top: 2rem;">
+                <strong>📝 Metodología:</strong><br>
+                Las proyecciones se calculan usando fórmulas de interés compuesto y consideran:
+                <ul style="margin-left: 1.5rem; margin-top: 0.5rem; line-height: 1.8;">
+                    <li>Valor actual de tu patrimonio neto</li>
+                    <li>Ahorro mensual adicional que aportas</li>
+                    <li>Retorno esperado de inversiones (compuesto anualmente)</li>
+                    <li>Inflación (ajusta gastos e ingresos)</li>
+                    <li>Crecimiento de ingresos por encima de inflación</li>
+                </ul>
+                <strong>⚠️ Importante:</strong> Estas son estimaciones matemáticas. Los resultados reales pueden variar 
+                según condiciones de mercado, cambios personales y otros factores impredecibles.
+            </div>
+        </div>
+    </div>
+    
+    <!-- VISTA GRÁFICOS -->
+    <div id="viewCharts" class="view">
+        <div class="container">
+            <div class="header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h1>📊 Gráficos Visuales</h1>
+                    <button class="btn" onclick="showView('viewDashboard')" style="background: var(--gray-500);">
+                        ← Volver al Dashboard
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Gráfico 1: Composición de Patrimonio -->
+            <div class="section">
+                <h2>🥧 Composición de Patrimonio por Tipo de Activo</h2>
+                <div style="max-width: 600px; margin: 0 auto;">
+                    <canvas id="chartPatrimonio"></canvas>
+                </div>
+            </div>
+            
+            <!-- Gráfico 2: Ingresos vs Gastos -->
+            <div class="section">
+                <h2>💰 Ingresos vs Gastos Mensuales</h2>
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <canvas id="chartIngresosGastos"></canvas>
+                </div>
+            </div>
+            
+            <!-- Gráfico 3: Gastos por Categoría -->
+            <div class="section">
+                <h2>📋 Distribución de Gastos por Categoría</h2>
+                <div style="max-width: 700px; margin: 0 auto;">
+                    <canvas id="chartGastosCategorias"></canvas>
+                </div>
+            </div>
+            
+            <!-- Gráfico 4: ROI de Activos -->
+            <div class="section">
+                <h2>📈 ROI de cada Activo (Retorno sobre Inversión)</h2>
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <canvas id="chartROI"></canvas>
+                </div>
+            </div>
+            
+            <!-- Gráfico 5: Proyección de Patrimonio -->
+            <div class="section" id="chartProjectionSection" style="display: none;">
+                <h2>🚀 Proyección de Patrimonio (10 años)</h2>
+                <p style="color: var(--gray-500); margin-bottom: 1rem;">
+                    Este gráfico se muestra después de calcular proyecciones
+                </p>
+                <div style="max-width: 1000px; margin: 0 auto;">
+                    <canvas id="chartProjection"></canvas>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 2rem;">
+                <button class="btn" onclick="renderAllCharts()" style="padding: 1rem 2rem;">
+                    🔄 Actualizar Gráficos
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- VISTA SIMULADOR LIBERTAD FINANCIERA -->
+    <div id="viewSimulator" class="view">
+        <div class="container">
+            <div class="header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h1>🎯 Simulador de Libertad Financiera</h1>
+                    <button class="btn" onclick="showView('viewDashboard')" style="background: var(--gray-500);">
+                        ← Volver al Dashboard
+                    </button>
+                </div>
+            </div>
+            
+            <!-- ESTADO ACTUAL -->
+            <div class="section" style="background: linear-gradient(135deg, #9c27b0, #e91e63); color: white; padding: 2rem; border-radius: 12px;">
+                <h2 style="color: white; margin-bottom: 1.5rem;">📊 Tu Situación Actual</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                    <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 8px;">
+                        <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Ingreso Pasivo Mensual</div>
+                        <div style="font-size: 1.75rem; font-weight: 700;" id="simCurrentIncome">$0</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 8px;">
+                        <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Gastos Mensuales</div>
+                        <div style="font-size: 1.75rem; font-weight: 700;" id="simCurrentExpenses">$0</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 8px;">
+                        <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Patrimonio Neto</div>
+                        <div style="font-size: 1.75rem; font-weight: 700;" id="simCurrentNetWorth">$0</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 8px;">
+                        <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Ratio Libertad</div>
+                        <div style="font-size: 1.75rem; font-weight: 700;" id="simCurrentRatio">0%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SIMULADOR INTERACTIVO -->
+            <div class="section">
+                <h2>🎚️ Simula Diferentes Escenarios</h2>
+                <p style="color: var(--gray-500); margin-bottom: 2rem;">
+                    Ajusta los sliders para ver cómo cambios en tus finanzas afectan tu camino a la libertad financiera
+                </p>
+                
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <!-- Slider 1: Ingreso Pasivo -->
+                    <div style="margin-bottom: 2.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <label style="font-weight: 600;">💰 Ingreso Pasivo Mensual</label>
+                            <span id="simIncomeValue" style="font-size: 1.25rem; font-weight: 700; color: var(--green);">$0</span>
+                        </div>
+                        <input type="range" id="simIncomeSlider" min="0" max="200000000" step="1000000" value="0" 
+                               oninput="updateSimulation()" 
+                               style="width: 100%; height: 12px; border-radius: 10px; background: linear-gradient(to right, #00c896 0%, #00c896 50%, #ddd 50%, #ddd 100%); outline: none;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">
+                            <span>$0</span>
+                            <span>$200M</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Slider 2: Gastos -->
+                    <div style="margin-bottom: 2.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <label style="font-weight: 600;">💸 Gastos Mensuales</label>
+                            <span id="simExpensesValue" style="font-size: 1.25rem; font-weight: 700; color: var(--red);">$0</span>
+                        </div>
+                        <input type="range" id="simExpensesSlider" min="0" max="150000000" step="1000000" value="0" 
+                               oninput="updateSimulation()" 
+                               style="width: 100%; height: 12px; border-radius: 10px; background: linear-gradient(to right, #ff5252 0%, #ff5252 50%, #ddd 50%, #ddd 100%); outline: none;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">
+                            <span>$0</span>
+                            <span>$150M</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Slider 3: Patrimonio -->
+                    <div style="margin-bottom: 2.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <label style="font-weight: 600;">📈 Patrimonio Neto</label>
+                            <span id="simNetWorthValue" style="font-size: 1.25rem; font-weight: 700; color: var(--cyan);">$0</span>
+                        </div>
+                        <input type="range" id="simNetWorthSlider" min="0" max="30000000000" step="100000000" value="0" 
+                               oninput="updateSimulation()" 
+                               style="width: 100%; height: 12px; border-radius: 10px; background: linear-gradient(to right, #00d4d4 0%, #00d4d4 50%, #ddd 50%, #ddd 100%); outline: none;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">
+                            <span>$0</span>
+                            <span>$30B</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Slider 4: ROI Esperado -->
+                    <div style="margin-bottom: 2.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <label style="font-weight: 600;">📊 ROI Esperado Anual</label>
+                            <span id="simROIValue" style="font-size: 1.25rem; font-weight: 700; color: var(--blue);">7%</span>
+                        </div>
+                        <input type="range" id="simROISlider" min="0" max="20" step="0.5" value="7" 
+                               oninput="updateSimulation()" 
+                               style="width: 100%; height: 12px; border-radius: 10px; background: linear-gradient(to right, #0066ff 0%, #0066ff 35%, #ddd 35%, #ddd 100%); outline: none;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">
+                            <span>0%</span>
+                            <span>20%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- RESULTADOS SIMULACIÓN -->
+            <div class="section" id="simResults">
+                <h2>🎯 Resultados de la Simulación</h2>
+                
+                <div id="simStatusCard" style="padding: 2rem; border-radius: 12px; margin-bottom: 2rem; border-left: 6px solid;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 id="simStatusTitle" style="font-size: 1.75rem; margin: 0;">Cargando...</h3>
+                        <div id="simStatusIcon" style="font-size: 3rem;">⏳</div>
+                    </div>
+                    <p id="simStatusMessage" style="font-size: 1.1rem; margin: 0;">Ajusta los sliders para ver tu progreso</p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                    <div class="metric-card">
+                        <div class="metric-label">Ratio Ingreso/Gastos</div>
+                        <div class="metric-value" id="simRatioValue" style="font-size: 2.5rem;">0%</div>
+                        <div id="simRatioStatus" style="font-size: 0.875rem; margin-top: 0.5rem;"></div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-label">Cashflow Mensual</div>
+                        <div class="metric-value" id="simCashflow">$0</div>
+                        <div id="simCashflowStatus" style="font-size: 0.875rem; margin-top: 0.5rem;"></div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-label">Ingreso del Patrimonio</div>
+                        <div class="metric-value" id="simPatrimonioIncome">$0</div>
+                        <div style="font-size: 0.875rem; margin-top: 0.5rem; color: var(--gray-500);">Con ROI actual</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-label">Años para Libertad</div>
+                        <div class="metric-value" id="simYearsToFreedom">--</div>
+                        <div id="simYearsStatus" style="font-size: 0.875rem; margin-top: 0.5rem;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- DONACIONES -->
+            <div class="section" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 2.5rem; border-radius: 12px; text-align: center;">
+                <h2 style="color: white; margin-bottom: 1rem;">❤️ ¿Te gusta Finpath Pro?</h2>
+                <p style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">
+                    App 100% GRATIS para todos
+                </p>
+                <p style="font-size: 1rem; margin-bottom: 2rem; opacity: 0.95;">
+                    Si te ayuda en tu camino a la libertad financiera, 
+                    considera apoyar su desarrollo con una donación voluntaria.
+                </p>
+                
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-top: 2rem;">
+                    <button onclick="window.open('https://www.paypal.com', '_blank')" class="btn" style="background: white; color: #667eea; padding: 1.25rem 2rem; font-size: 1.1rem; font-weight: 700; min-width: 220px;">
+                        ☕ Café - $5 USD
+                    </button>
+                    <button onclick="window.open('https://www.paypal.com', '_blank')" class="btn" style="background: white; color: #667eea; padding: 1.25rem 2rem; font-size: 1.1rem; font-weight: 700; min-width: 220px;">
+                        🏖️ Martini en la playa - $20 USD
+                    </button>
+                    <button onclick="window.open('https://www.paypal.com', '_blank')" class="btn" style="background: white; color: #667eea; padding: 1.25rem 2rem; font-size: 1.1rem; font-weight: 700; min-width: 220px;">
+                        💰 Mecenas - $100+ USD
+                    </button>
+                </div>
+                
+                <p style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.9;">
+                    🙏 Gracias por tu apoyo. Cada donación ayuda a mantener esta herramienta gratuita para todos.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL OVERLAY -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()"></div>
+    
+    <!-- MODAL GASTO -->
+    <div class="modal" id="expenseModal">
+        <h3 id="expenseModalTitle">Agregar Gasto</h3>
+        <input type="hidden" id="expenseEditId">
+        
+        <div class="input-group">
+            <label class="input-label">Descripción *</label>
+            <input type="text" class="input-field" id="expenseDescription" placeholder="Netflix, Gasolina, etc.">
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Categoría *</label>
+            <select class="input-field" id="expenseCategory">
+                <option value="vivienda">🏠 Vivienda</option>
+                <option value="alimentacion">🍔 Alimentación</option>
+                <option value="transporte">🚗 Transporte</option>
+                <option value="entretenimiento">🎮 Entretenimiento</option>
+                <option value="salud">🏥 Salud</option>
+                <option value="educacion">🎓 Educación</option>
+                <option value="seguros">🛡️ Seguros</option>
+                <option value="otros">📦 Otros</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Monto Mensual *</label>
+            <input type="number" class="input-field" id="expenseAmount" placeholder="50000">
+        </div>
+        
+        <div class="modal-buttons">
+            <button class="btn" onclick="saveExpense()">💾 Guardar</button>
+            <button class="btn btn-cancel" onclick="closeAllModals()">Cancelar</button>
+        </div>
+    </div>
+    
+    <!-- MODAL ACTIVO -->
+    <div class="modal" id="assetModal">
+        <h3 id="assetModalTitle">Agregar Activo</h3>
+        <input type="hidden" id="assetEditId">
+        
+        <div class="input-group">
+            <label class="input-label">Nombre *</label>
+            <input type="text" class="input-field" id="assetName" placeholder="Casa, Inversión, etc.">
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Tipo *</label>
+            <select class="input-field" id="assetType">
+                <option value="real_estate">🏠 Bienes Raíces</option>
+                <option value="stocks">📈 Acciones</option>
+                <option value="crypto">₿ Crypto</option>
+                <option value="business">🏢 Negocio</option>
+                <option value="savings">💰 Ahorro</option>
+                <option value="other">📦 Otro</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Valor *</label>
+            <input type="number" class="input-field" id="assetValue" placeholder="100000000">
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Ingreso Mensual</label>
+            <input type="number" class="input-field" id="assetIncome" placeholder="5000000">
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Gasto Mensual</label>
+            <input type="number" class="input-field" id="assetExpense" placeholder="2000000">
+        </div>
+        
+        <div class="modal-buttons">
+            <button class="btn" onclick="saveAsset()">💾 Guardar</button>
+            <button class="btn btn-cancel" onclick="closeAllModals()">Cancelar</button>
+        </div>
+    </div>
+    
+    <!-- MODAL DEUDA -->
+    <div class="modal" id="debtModal">
+        <h3 id="debtModalTitle">Agregar Deuda</h3>
+        <input type="hidden" id="debtEditId">
+        
+        <div class="input-group">
+            <label class="input-label">Descripción *</label>
+            <input type="text" class="input-field" id="debtDescription" placeholder="Hipoteca, Tarjeta, etc.">
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Tipo *</label>
+            <select class="input-field" id="debtType">
+                <option value="mortgage">🏠 Hipoteca</option>
+                <option value="credit_card">💳 Tarjeta de Crédito</option>
+                <option value="auto">🚗 Préstamo Auto</option>
+                <option value="personal">💰 Préstamo Personal</option>
+                <option value="student">🎓 Préstamo Estudiantil</option>
+                <option value="other">📋 Otro</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Balance *</label>
+            <input type="number" class="input-field" id="debtBalance" placeholder="50000000">
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Pago Mensual *</label>
+            <input type="number" class="input-field" id="debtPayment" placeholder="2000000">
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Tasa de Interés (%)</label>
+            <input type="number" class="input-field" id="debtRate" placeholder="7.5" step="0.1">
+        </div>
+        
+        <div class="modal-buttons">
+            <button class="btn" onclick="saveDebt()">💾 Guardar</button>
+            <button class="btn btn-cancel" onclick="closeAllModals()">Cancelar</button>
+        </div>
+    </div>
+    
+    <!-- MODAL CAMBIAR MONEDA -->
+    <div class="modal" id="currencyModal">
+        <h3>💰 Cambiar Moneda</h3>
+        
+        <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid #ffc107;">
+            <strong>⚠️ IMPORTANTE:</strong><br>
+            Cambiar la moneda <strong>NO convierte</strong> los valores.<br>
+            Solo cambia el símbolo que se muestra.<br><br>
+            <strong>Ejemplo:</strong><br>
+            Si tienes $15,000,000 y cambias de COP a USD,<br>
+            seguirás viendo $15,000,000 pero con símbolo USD.
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Moneda actual:</label>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--cyan); margin-bottom: 1rem;">
+                <span id="currentCurrencyDisplay"></span>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">Nueva moneda:</label>
+            <select class="input-field" id="newCurrency">
+                <option value="COP">🇨🇴 COP - Peso Colombiano</option>
+                <option value="USD">🇺🇸 USD - Dólar</option>
+                <option value="EUR">🇪🇺 EUR - Euro</option>
+                <option value="MXN">🇲🇽 MXN - Peso Mexicano</option>
+            </select>
+        </div>
+        
+        <div class="modal-buttons">
+            <button class="btn" onclick="changeCurrency()">✅ Confirmar Cambio</button>
+            <button class="btn btn-cancel" onclick="closeAllModals()">Cancelar</button>
+        </div>
+    </div>
+    
+    <script>
+        // DATA
+        let userData = {
+            name: '',
+            family: '',
+            currency: 'COP', // COP, USD, EUR, MXN
+            goals: [],
+            expenses: [],
+            income: [],
+            assets: [],
+            debts: []
+        };
+        
+        // ONBOARDING
+        function completeOnboarding() {
+            console.log('✅ completeOnboarding() ejecutándose...');
+            
+            const name = document.getElementById('userName').value.trim();
+            const family = document.getElementById('userFamily').value.trim();
+            const currency = document.getElementById('userCurrency').value;
+            
+            const goals = [];
+            ['freedom', 'debts', 'passive', 'retirement', 'wealth'].forEach(goal => {
+                const checkbox = document.getElementById(`goal_${goal}`);
+                if (checkbox && checkbox.checked) {
+                    goals.push(goal);
+                }
+            });
+            
+            if (!name || goals.length === 0) {
+                alert('Por favor completa tu nombre y selecciona al menos un objetivo');
+                return;
+            }
+            
+            userData.name = name;
+            userData.family = family;
+            userData.currency = currency;
+            userData.goals = goals;
+            
+            console.log('✅ Datos guardados:', userData);
+            
+            showView('viewDashboard');
+            updateDisplay();
+        }
+        
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            // Si es Coach IA, ejecutar análisis
+            if (viewId === 'viewCoach') {
+                setTimeout(() => renderCoachAnalysis(), 100);
+            }
+            
+            // Si es Gráficos, renderizar todos
+            if (viewId === 'viewCharts') {
+                setTimeout(() => renderAllCharts(), 100);
+            }
+            
+            // Si es Simulador, inicializar
+            if (viewId === 'viewSimulator') {
+                setTimeout(() => initializeSimulator(), 100);
+            }
+        }
+        
+        function updateDisplay() {
+            const displayName = userData.family ? 
+                `${userData.name} ${userData.family}` : userData.name;
+            document.getElementById('userDisplay').textContent = `👋 ${displayName}`;
+            
+            // Actualizar display de moneda
+            const currencyFlags = {
+                'COP': '🇨🇴',
+                'USD': '🇺🇸',
+                'EUR': '🇪🇺',
+                'MXN': '🇲🇽'
+            };
+            const flag = currencyFlags[userData.currency] || '';
+            document.getElementById('currencyDisplay').textContent = `${userData.currency} ${flag}`;
+            
+            updateMetrics();
+            renderExpenses();
+            renderAssets();
+            renderDebts();
+        }
+        
+        function updateMetrics() {
+            const totalExpenses = userData.expenses.reduce((sum, e) => sum + e.amount, 0);
+            const totalIncome = userData.income.reduce((sum, i) => sum + i.amount, 0);
+            const totalAssets = userData.assets.reduce((sum, a) => sum + a.value, 0);
+            const totalDebts = userData.debts.reduce((sum, d) => sum + d.balance, 0);
+            const assetsIncome = userData.assets.reduce((sum, a) => sum + (a.netIncome || 0), 0);
+            const debtPayments = userData.debts.reduce((sum, d) => sum + (d.payment || 0), 0);
+            
+            const netWorth = totalAssets - totalDebts;
+            
+            document.getElementById('totalExpenses').textContent = formatMoney(totalExpenses + debtPayments);
+            document.getElementById('totalIncome').textContent = formatMoney(totalIncome + assetsIncome);
+            document.getElementById('totalAssets').textContent = formatMoney(totalAssets);
+            document.getElementById('totalDebts').textContent = formatMoney(totalDebts);
+            document.getElementById('netWorth').textContent = formatMoney(netWorth);
+            
+            // Actualizar Coach IA si está visible
+            const coachView = document.getElementById('viewCoach');
+            if (coachView && coachView.classList.contains('active')) {
+                renderCoachAnalysis();
+            }
+        }
+        
+        function renderExpenses() {
+            const tbody = document.getElementById('expensesBody');
+            
+            if (userData.expenses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray-500);">No hay gastos registrados</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = userData.expenses.map(e => `
+                <tr>
+                    <td>${e.description}</td>
+                    <td>${e.category}</td>
+                    <td>${formatMoney(e.amount)}</td>
+                    <td style="text-align: center;">
+                        <button class="action-btn btn-edit" onclick="editExpense('${e.id}')">✏️ Editar</button>
+                        <button class="action-btn btn-delete" onclick="deleteExpense('${e.id}')">🗑️ Borrar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function renderAssets() {
+            const tbody = document.getElementById('assetsBody');
+            
+            if (userData.assets.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--gray-500);">No hay activos registrados</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = userData.assets.map(a => `
+                <tr>
+                    <td>${a.name}</td>
+                    <td>${a.type}</td>
+                    <td>${formatMoney(a.value)}</td>
+                    <td>${formatMoney(a.income || 0)}</td>
+                    <td>${formatMoney(a.expenses || 0)}</td>
+                    <td style="color: ${a.netIncome >= 0 ? 'var(--green)' : 'var(--red)'}; font-weight: 600;">
+                        ${formatMoney(a.netIncome || 0)}
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="action-btn btn-edit" onclick="editAsset('${a.id}')">✏️ Editar</button>
+                        <button class="action-btn btn-delete" onclick="deleteAsset('${a.id}')">🗑️ Borrar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function renderDebts() {
+            const tbody = document.getElementById('debtsBody');
+            
+            if (userData.debts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--gray-500);">No hay deudas registradas</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = userData.debts.map(d => `
+                <tr>
+                    <td>${d.description}</td>
+                    <td>${d.type}</td>
+                    <td style="color: var(--red); font-weight: 600;">${formatMoney(d.balance)}</td>
+                    <td>${formatMoney(d.payment || 0)}</td>
+                    <td>${d.rate ? d.rate.toFixed(2) : '0.00'}%</td>
+                    <td style="text-align: center;">
+                        <button class="action-btn btn-edit" onclick="editDebt('${d.id}')">✏️ Editar</button>
+                        <button class="action-btn btn-delete" onclick="deleteDebt('${d.id}')">🗑️ Borrar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function formatMoney(value, showCurrency = true) {
+            const formatted = '$' + Math.round(value).toLocaleString('es-CO');
+            if (showCurrency && userData.currency) {
+                return formatted + ' ' + userData.currency;
+            }
+            return formatted;
+        }
+        
+        // IMPORT
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const importType = document.getElementById('importType').value;
+            const statusDiv = document.getElementById('importStatus');
+            
+            statusDiv.innerHTML = '<span style="color: var(--blue);">⏳ Procesando archivo...</span>';
+            
+            try {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                
+                console.log('📊 Archivo leído:', rows.length, 'filas');
+                
+                if (importType === 'expenses') {
+                    importExpenses(rows);
+                    validateCurrencyAfterImport('expenses');
+                } else if (importType === 'assets') {
+                    importAssets(rows);
+                    validateCurrencyAfterImport('assets');
+                } else if (importType === 'debts') {
+                    importDebts(rows);
+                    validateCurrencyAfterImport('debts');
+                }
+                
+                updateDisplay();
+                statusDiv.innerHTML = `<span style="color: var(--green);">✅ Importación completada</span>`;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.innerHTML = `<span style="color: var(--red);">❌ Error: ${error.message}</span>`;
+            }
+            
+            event.target.value = '';
+        }
+        
+        function importExpenses(rows) {
+            // LIMPIAR gastos anteriores antes de importar
+            userData.expenses = [];
+            
+            let imported = 0;
+            
+            // Detectar columnas
+            let nameCol = -1;
+            let amountCol = -1;
+            
+            // PASO 1: Buscar por HEADERS (MES, MENSUAL, etc)
+            for (let row = 0; row < Math.min(10, rows.length); row++) {
+                for (let col = 0; col < 10; col++) {
+                    const cell = rows[row][col];
+                    if (cell && typeof cell === 'string') {
+                        const cellStr = cell.toString().toLowerCase();
+                        // Buscar headers de columna mensual
+                        if (cellStr.includes('x mes') || cellStr.includes('mensual') || cellStr.includes('x month') || cellStr.includes('monthly')) {
+                            if (amountCol === -1) amountCol = col;
+                            console.log(`✅ Columna MENSUAL detectada en col ${col} por header: "${cell}"`);
+                        }
+                    }
+                }
+            }
+            
+            // PASO 2: Buscar columna con texto para nombres
+            for (let col = 0; col < 10; col++) {
+                let hasText = 0;
+                for (let row = 0; row < Math.min(30, rows.length); row++) {
+                    const cell = rows[row][col];
+                    if (cell && typeof cell === 'string' && cell.trim().length > 2) hasText++;
+                }
+                if (hasText > 5 && nameCol === -1) {
+                    nameCol = col;
+                }
+            }
+            
+            // PASO 3: Si no encontró por headers, buscar columna con números MÁS PEQUEÑOS (mensual < anual)
+            if (amountCol === -1) {
+                let candidateColumns = [];
+                for (let col = 0; col < 10; col++) {
+                    let hasNumbers = 0;
+                    let sum = 0;
+                    let count = 0;
+                    
+                    for (let row = 0; row < Math.min(50, rows.length); row++) {
+                        const cell = rows[row][col];
+                        if (cell && typeof cell === 'number' && cell > 0) {
+                            hasNumbers++;
+                            sum += cell;
+                            count++;
+                        }
+                    }
+                    
+                    if (hasNumbers > 5) {
+                        const avg = sum / count;
+                        candidateColumns.push({ col, avg, count: hasNumbers });
+                    }
+                }
+                
+                // Ordenar por promedio (más pequeño primero = mensual)
+                candidateColumns.sort((a, b) => a.avg - b.avg);
+                
+                if (candidateColumns.length > 0) {
+                    amountCol = candidateColumns[0].col;
+                    console.log(`📊 Usando columna ${amountCol} (promedio: ${candidateColumns[0].avg.toFixed(0)})`);
+                    if (candidateColumns.length > 1) {
+                        console.log(`⚠️ Ignorando columna ${candidateColumns[1].col} (promedio: ${candidateColumns[1].avg.toFixed(0)}) - probablemente anual`);
+                    }
+                }
+            }
+            
+            console.log('📍 Columnas detectadas: nombre=' + nameCol + ', monto=' + amountCol);
+            
+            if (nameCol === -1 || amountCol === -1) {
+                alert('No se pudieron detectar las columnas. Asegúrate que el archivo tenga nombres y montos.');
+                return;
+            }
+            
+            // Importar
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                
+                const name = row[nameCol];
+                const amount = row[amountCol];
+                
+                if (!name || !amount) continue;
+                
+                const nameStr = String(name).trim();
+                if (nameStr.length < 2 || nameStr.toUpperCase().includes('TOTAL')) continue;
+                
+                let numAmount = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
+                if (numAmount === 0) continue;
+                
+                // NO convertir automáticamente - respetar valores del Excel tal cual
+                
+                userData.expenses.push({
+                    id: Date.now() + '_' + imported,
+                    description: nameStr,
+                    category: classifyExpense(nameStr),
+                    amount: numAmount
+                });
+                
+                imported++;
+            }
+            
+            console.log('✅ Importados:', imported, 'gastos');
+        }
+        
+        function classifyExpense(name) {
+            const n = name.toLowerCase();
+            
+            if (n.match(/seguro|insurance|poliza|sura/)) return 'Seguros';
+            if (n.match(/renta|arriendo|luz|agua|internet/)) return 'Vivienda';
+            if (n.match(/gasolina|uber|taxi|transporte/)) return 'Transporte';
+            if (n.match(/mercado|supermercado|comida|restaurante/)) return 'Alimentación';
+            if (n.match(/netflix|spotify|gym|cine|viaje|hotel/)) return 'Entretenimiento';
+            if (n.match(/doctor|hospital|farmacia|medicina/)) return 'Salud';
+            if (n.match(/colegio|escuela|universidad|curso/)) return 'Educación';
+            
+            return 'Otros';
+        }
+        
+        // IMPORT ASSETS
+        function importAssets(rows) {
+            // LIMPIAR activos anteriores antes de importar
+            userData.assets = [];
+            
+            let imported = 0;
+            
+            console.log('📊 Importando activos...');
+            console.log('Primeras 10 filas:', rows.slice(0, 10));
+            
+            // Detectar columnas
+            let nameCol = -1;
+            let valueCol = -1;
+            let incomeCol = -1;
+            let expensesCol = -1;
+            
+            // Buscar en primeras 10 filas por headers
+            for (let i = 0; i < Math.min(10, rows.length); i++) {
+                const row = rows[i];
+                if (!row) continue;
+                
+                for (let j = 0; j < row.length; j++) {
+                    const cell = String(row[j] || '').toLowerCase();
+                    
+                    if (cell.includes('activo') || cell.includes('nombre') && nameCol === -1) {
+                        nameCol = j;
+                    }
+                    if (cell.includes('valor') || cell.includes('value') && valueCol === -1) {
+                        valueCol = j;
+                    }
+                    if (cell.includes('ingreso') || cell.includes('income') && incomeCol === -1) {
+                        incomeCol = j;
+                    }
+                    if (cell.includes('gasto') || cell.includes('expense') && expensesCol === -1) {
+                        expensesCol = j;
+                    }
+                }
+            }
+            
+            // Si no encontró por headers, buscar por contenido
+            if (nameCol === -1 || valueCol === -1) {
+                for (let col = 0; col < 10; col++) {
+                    let hasText = 0;
+                    let hasNumbers = 0;
+                    let hasLargeNumbers = 0;
+                    
+                    for (let row = 0; row < Math.min(30, rows.length); row++) {
+                        const cell = rows[row][col];
+                        if (cell && typeof cell === 'string' && cell.trim().length > 2) hasText++;
+                        if (cell && typeof cell === 'number' && cell > 0) hasNumbers++;
+                        // Para COP: activos típicos son 50M+ (casa, inversión)
+                        // Umbral: 5M (~$1,250 USD) para detectar columna de valores
+                        if (cell && typeof cell === 'number' && cell > 5000000) hasLargeNumbers++;
+                    }
+                    
+                    if (hasText > 5 && nameCol === -1) nameCol = col;
+                    if (hasLargeNumbers > 3 && valueCol === -1) valueCol = col;
+                    if (hasNumbers > 3 && incomeCol === -1 && col !== valueCol) incomeCol = col;
+                    if (hasNumbers > 3 && expensesCol === -1 && col !== valueCol && col !== incomeCol) expensesCol = col;
+                }
+            }
+            
+            console.log('📍 Columnas detectadas:');
+            console.log('  Nombre:', nameCol);
+            console.log('  Valor:', valueCol);
+            console.log('  Ingreso:', incomeCol);
+            console.log('  Gastos:', expensesCol);
+            
+            if (nameCol === -1 || valueCol === -1) {
+                alert('No se pudieron detectar las columnas de activos. Asegúrate que el archivo tenga: Nombre y Valor como mínimo.');
+                return;
+            }
+            
+            // Importar activos
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                
+                const name = row[nameCol];
+                const value = row[valueCol];
+                const income = incomeCol !== -1 ? row[incomeCol] : 0;
+                const expenses = expensesCol !== -1 ? row[expensesCol] : 0;
+                
+                if (!name || !value) continue;
+                
+                const nameStr = String(name).trim();
+                if (nameStr.length < 2 || nameStr.toUpperCase().includes('TOTAL') || 
+                    nameStr.toUpperCase() === 'ACTIVOS') continue;
+                
+                const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+                const numIncome = typeof income === 'number' ? income : parseFloat(income) || 0;
+                const numExpenses = typeof expenses === 'number' ? expenses : parseFloat(expenses) || 0;
+                
+                if (numValue === 0) continue;
+                
+                const netIncome = numIncome - numExpenses;
+                const assetType = classifyAsset(nameStr);
+                
+                userData.assets.push({
+                    id: Date.now() + '_' + imported,
+                    name: nameStr,
+                    type: assetType,
+                    value: numValue,
+                    income: numIncome,
+                    expenses: numExpenses,
+                    netIncome: netIncome
+                });
+                
+                imported++;
+                console.log(`✅ ${nameStr} → ${assetType} → Valor: ${numValue}, Net: ${netIncome}`);
+            }
+            
+            console.log('✅ Importados:', imported, 'activos');
+        }
+        
+        function classifyAsset(name) {
+            const n = name.toLowerCase();
+            
+            if (n.match(/casa|apartamento|propiedad|local|bodega|madero|orlando|district/)) return '🏠 Inmueble';
+            if (n.match(/bolsa|stock|acciones|etf/)) return '📈 Acciones';
+            if (n.match(/crypto|btc|eth|bitcoin/)) return '₿ Crypto';
+            if (n.match(/negocio|empresa|socio|rapicredit/)) return '🏢 Negocio';
+            if (n.match(/cuenta|ahorro|saving|banco/)) return '💰 Ahorro';
+            
+            return '📦 Otro';
+        }
+        
+        // IMPORT DEBTS
+        function importDebts(rows) {
+            // LIMPIAR deudas anteriores antes de importar
+            userData.debts = [];
+            
+            let imported = 0;
+            
+            console.log('💳 Importando deudas...');
+            
+            // Detectar columnas
+            let descCol = -1;
+            let balanceCol = -1;
+            let paymentCol = -1;
+            let rateCol = -1;
+            
+            // Buscar por headers
+            for (let i = 0; i < Math.min(10, rows.length); i++) {
+                const row = rows[i];
+                if (!row) continue;
+                
+                for (let j = 0; j < row.length; j++) {
+                    const cell = String(row[j] || '').toLowerCase();
+                    
+                    if ((cell.includes('descripcion') || cell.includes('nombre') || cell.includes('deuda')) && descCol === -1) {
+                        descCol = j;
+                    }
+                    if ((cell.includes('balance') || cell.includes('saldo') || cell.includes('monto')) && balanceCol === -1) {
+                        balanceCol = j;
+                    }
+                    if ((cell.includes('pago') || cell.includes('cuota') || cell.includes('payment')) && paymentCol === -1) {
+                        paymentCol = j;
+                    }
+                    if ((cell.includes('tasa') || cell.includes('interes') || cell.includes('rate')) && rateCol === -1) {
+                        rateCol = j;
+                    }
+                }
+            }
+            
+            // Si no encontró por headers, detectar por contenido
+            if (descCol === -1 || balanceCol === -1) {
+                for (let col = 0; col < 10; col++) {
+                    let hasText = 0;
+                    let hasLargeNumbers = 0;
+                    let hasSmallNumbers = 0;
+                    
+                    for (let row = 0; row < Math.min(30, rows.length); row++) {
+                        const cell = rows[row][col];
+                        if (cell && typeof cell === 'string' && cell.trim().length > 2) hasText++;
+                        // Para COP: balances de deuda típicos son 10M+ (hipoteca, préstamos)
+                        // Umbral: 5M (~$1,250 USD) para detectar columna de balances
+                        if (cell && typeof cell === 'number' && cell > 5000000) hasLargeNumbers++;
+                        // Para COP: pagos mensuales típicos son 100K-5M
+                        // Umbral: < 5M para detectar columna de pagos
+                        if (cell && typeof cell === 'number' && cell > 0 && cell < 5000000) hasSmallNumbers++;
+                    }
+                    
+                    if (hasText > 5 && descCol === -1) descCol = col;
+                    if (hasLargeNumbers > 3 && balanceCol === -1) balanceCol = col;
+                    if (hasSmallNumbers > 3 && paymentCol === -1 && col !== balanceCol) paymentCol = col;
+                }
+            }
+            
+            console.log('📍 Columnas detectadas:');
+            console.log('  Descripción:', descCol);
+            console.log('  Balance:', balanceCol);
+            console.log('  Pago:', paymentCol);
+            console.log('  Tasa:', rateCol);
+            
+            if (descCol === -1 || balanceCol === -1) {
+                alert('No se pudieron detectar las columnas de deudas. Asegúrate que el archivo tenga: Descripción y Balance como mínimo.');
+                return;
+            }
+            
+            // Importar deudas
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                
+                const desc = row[descCol];
+                const balance = row[balanceCol];
+                const payment = paymentCol !== -1 ? row[paymentCol] : 0;
+                const rate = rateCol !== -1 ? row[rateCol] : 0;
+                
+                if (!desc || !balance) continue;
+                
+                const descStr = String(desc).trim();
+                if (descStr.length < 2 || descStr.toUpperCase().includes('TOTAL') || 
+                    descStr.toUpperCase() === 'DEUDAS') continue;
+                
+                const numBalance = typeof balance === 'number' ? balance : parseFloat(balance) || 0;
+                const numPayment = typeof payment === 'number' ? payment : parseFloat(payment) || 0;
+                const numRate = typeof rate === 'number' ? rate : parseFloat(rate) || 0;
+                
+                if (numBalance === 0) continue;
+                
+                const debtType = classifyDebt(descStr);
+                
+                userData.debts.push({
+                    id: Date.now() + '_' + imported,
+                    description: descStr,
+                    type: debtType,
+                    balance: numBalance,
+                    payment: numPayment,
+                    rate: numRate
+                });
+                
+                imported++;
+                console.log(`✅ ${descStr} → ${debtType} → Balance: ${numBalance}, Pago: ${numPayment}`);
+            }
+            
+            console.log('✅ Importadas:', imported, 'deudas');
+        }
+        
+        function classifyDebt(name) {
+            const n = name.toLowerCase();
+            
+            if (n.match(/hipoteca|mortgage|casa|vivienda/)) return '🏠 Hipoteca';
+            if (n.match(/tarjeta|credit card|visa|mastercard/)) return '💳 Tarjeta';
+            if (n.match(/auto|carro|vehiculo|car loan/)) return '🚗 Auto';
+            if (n.match(/prestamo|loan|credito/)) return '💰 Préstamo';
+            if (n.match(/estudiante|student|educacion/)) return '🎓 Estudiante';
+            
+            return '📋 Otra';
+        }
+        
+        // ==================== FUNCIONES CRUD ====================
+        
+        function closeAllModals() {
+            document.getElementById('modalOverlay').style.display = 'none';
+            document.getElementById('expenseModal').style.display = 'none';
+            document.getElementById('assetModal').style.display = 'none';
+            document.getElementById('debtModal').style.display = 'none';
+            document.getElementById('currencyModal').style.display = 'none';
+        }
+        
+        function showModal(modalId) {
+            document.getElementById('modalOverlay').style.display = 'block';
+            document.getElementById(modalId).style.display = 'block';
+        }
+        
+        // ========== GASTOS ==========
+        function showAddExpenseForm() {
+            document.getElementById('expenseModalTitle').textContent = 'Agregar Gasto';
+            document.getElementById('expenseEditId').value = '';
+            document.getElementById('expenseDescription').value = '';
+            document.getElementById('expenseCategory').value = 'otros';
+            document.getElementById('expenseAmount').value = '';
+            showModal('expenseModal');
+        }
+        
+        function editExpense(id) {
+            const expense = userData.expenses.find(e => e.id === id);
+            if (!expense) return;
+            
+            document.getElementById('expenseModalTitle').textContent = 'Editar Gasto';
+            document.getElementById('expenseEditId').value = id;
+            document.getElementById('expenseDescription').value = expense.description;
+            document.getElementById('expenseCategory').value = expense.category;
+            document.getElementById('expenseAmount').value = expense.amount;
+            showModal('expenseModal');
+        }
+        
+        function saveExpense() {
+            const description = document.getElementById('expenseDescription').value.trim();
+            const category = document.getElementById('expenseCategory').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value) || 0;
+            
+            if (!description || amount === 0) {
+                alert('Por favor completa descripción y monto');
+                return;
+            }
+            
+            const editId = document.getElementById('expenseEditId').value;
+            
+            if (editId) {
+                // Editar existente
+                const index = userData.expenses.findIndex(e => e.id === editId);
+                if (index !== -1) {
+                    userData.expenses[index] = {
+                        ...userData.expenses[index],
+                        description, category, amount
+                    };
+                }
+            } else {
+                // Agregar nuevo
+                userData.expenses.push({
+                    id: Date.now().toString() + '_' + Math.random(),
+                    description, category, amount,
+                    frequency: 'monthly',
+                    type: 'fixed'
+                });
+            }
+            
+            closeAllModals();
+            renderExpenses();
+            updateMetrics();
+        }
+        
+        function deleteExpense(id) {
+            if (!confirm('¿Estás seguro de eliminar este gasto?')) return;
+            userData.expenses = userData.expenses.filter(e => e.id !== id);
+            renderExpenses();
+            updateMetrics();
+        }
+        
+        // ========== ACTIVOS ==========
+        function showAddAssetForm() {
+            document.getElementById('assetModalTitle').textContent = 'Agregar Activo';
+            document.getElementById('assetEditId').value = '';
+            document.getElementById('assetName').value = '';
+            document.getElementById('assetType').value = 'real_estate';
+            document.getElementById('assetValue').value = '';
+            document.getElementById('assetIncome').value = '';
+            document.getElementById('assetExpense').value = '';
+            showModal('assetModal');
+        }
+        
+        function editAsset(id) {
+            const asset = userData.assets.find(a => a.id === id);
+            if (!asset) return;
+            
+            document.getElementById('assetModalTitle').textContent = 'Editar Activo';
+            document.getElementById('assetEditId').value = id;
+            document.getElementById('assetName').value = asset.name;
+            document.getElementById('assetType').value = asset.type;
+            document.getElementById('assetValue').value = asset.value;
+            document.getElementById('assetIncome').value = asset.income || '';
+            document.getElementById('assetExpense').value = asset.expenses || '';
+            showModal('assetModal');
+        }
+        
+        function saveAsset() {
+            const name = document.getElementById('assetName').value.trim();
+            const type = document.getElementById('assetType').value;
+            const value = parseFloat(document.getElementById('assetValue').value) || 0;
+            const income = parseFloat(document.getElementById('assetIncome').value) || 0;
+            const expenses = parseFloat(document.getElementById('assetExpense').value) || 0;
+            
+            if (!name || value === 0) {
+                alert('Por favor completa nombre y valor');
+                return;
+            }
+            
+            const editId = document.getElementById('assetEditId').value;
+            
+            if (editId) {
+                // Editar existente
+                const index = userData.assets.findIndex(a => a.id === editId);
+                if (index !== -1) {
+                    userData.assets[index] = {
+                        ...userData.assets[index],
+                        name, type, value, income, expenses,
+                        netIncome: income - expenses
+                    };
+                }
+            } else {
+                // Agregar nuevo
+                userData.assets.push({
+                    id: Date.now().toString() + '_' + Math.random(),
+                    name, type, value, income, expenses,
+                    netIncome: income - expenses
+                });
+            }
+            
+            closeAllModals();
+            renderAssets();
+            updateMetrics();
+        }
+        
+        function deleteAsset(id) {
+            if (!confirm('¿Estás seguro de eliminar este activo?')) return;
+            userData.assets = userData.assets.filter(a => a.id !== id);
+            renderAssets();
+            updateMetrics();
+        }
+        
+        // ========== DEUDAS ==========
+        function showAddDebtForm() {
+            document.getElementById('debtModalTitle').textContent = 'Agregar Deuda';
+            document.getElementById('debtEditId').value = '';
+            document.getElementById('debtDescription').value = '';
+            document.getElementById('debtType').value = 'personal';
+            document.getElementById('debtBalance').value = '';
+            document.getElementById('debtPayment').value = '';
+            document.getElementById('debtRate').value = '';
+            showModal('debtModal');
+        }
+        
+        function editDebt(id) {
+            const debt = userData.debts.find(d => d.id === id);
+            if (!debt) return;
+            
+            document.getElementById('debtModalTitle').textContent = 'Editar Deuda';
+            document.getElementById('debtEditId').value = id;
+            document.getElementById('debtDescription').value = debt.description;
+            document.getElementById('debtType').value = debt.type;
+            document.getElementById('debtBalance').value = debt.balance;
+            document.getElementById('debtPayment').value = debt.payment;
+            document.getElementById('debtRate').value = debt.rate || '';
+            showModal('debtModal');
+        }
+        
+        function saveDebt() {
+            const description = document.getElementById('debtDescription').value.trim();
+            const type = document.getElementById('debtType').value;
+            const balance = parseFloat(document.getElementById('debtBalance').value) || 0;
+            const payment = parseFloat(document.getElementById('debtPayment').value) || 0;
+            const rate = parseFloat(document.getElementById('debtRate').value) || 0;
+            
+            if (!description || balance === 0 || payment === 0) {
+                alert('Por favor completa descripción, balance y pago');
+                return;
+            }
+            
+            const editId = document.getElementById('debtEditId').value;
+            
+            if (editId) {
+                // Editar existente
+                const index = userData.debts.findIndex(d => d.id === editId);
+                if (index !== -1) {
+                    userData.debts[index] = {
+                        ...userData.debts[index],
+                        description, type, balance, payment, rate
+                    };
+                }
+            } else {
+                // Agregar nuevo
+                userData.debts.push({
+                    id: Date.now().toString() + '_' + Math.random(),
+                    description, type, balance, payment, rate
+                });
+            }
+            
+            closeAllModals();
+            renderDebts();
+            updateMetrics();
+        }
+        
+        function deleteDebt(id) {
+            if (!confirm('¿Estás seguro de eliminar esta deuda?')) return;
+            userData.debts = userData.debts.filter(d => d.id !== id);
+            renderDebts();
+            updateMetrics();
+        }
+        
+        // ==================== VALIDACIÓN DE MONEDA ====================
+        
+        function validateCurrencyAfterImport(type) {
+            let values = [];
+            
+            if (type === 'expenses') {
+                values = userData.expenses.map(e => e.amount);
+            } else if (type === 'assets') {
+                values = userData.assets.map(a => a.value);
+            } else if (type === 'debts') {
+                values = userData.debts.map(d => d.balance);
+            }
+            
+            if (values.length === 0) return;
+            
+            const avg = values.reduce((a,b) => a+b, 0) / values.length;
+            const max = Math.max(...values);
+            
+            // Rangos típicos por moneda
+            const ranges = {
+                'COP': { avgMin: 500000, avgMax: 50000000, name: 'Pesos Colombianos', flag: '🇨🇴' },
+                'USD': { avgMin: 100, avgMax: 100000, name: 'Dólares', flag: '🇺🇸' },
+                'EUR': { avgMin: 100, avgMax: 100000, name: 'Euros', flag: '🇪🇺' },
+                'MXN': { avgMin: 5000, avgMax: 1000000, name: 'Pesos Mexicanos', flag: '🇲🇽' }
+            };
+            
+            const range = ranges[userData.currency];
+            let warning = false;
+            let suggestedCurrency = null;
+            
+            // Valores demasiado BAJOS para la moneda elegida
+            if (avg < range.avgMin * 0.1) {
+                warning = true;
+                suggestedCurrency = userData.currency === 'COP' ? 'USD' : 'COP';
+            }
+            
+            // Valores demasiado ALTOS para la moneda elegida
+            if (avg > range.avgMax * 10) {
+                warning = true;
+                suggestedCurrency = userData.currency === 'USD' ? 'COP' : userData.currency === 'EUR' ? 'COP' : 'USD';
+            }
+            
+            if (warning && suggestedCurrency) {
+                const suggestedRange = ranges[suggestedCurrency];
+                const message = `⚠️ POSIBLE ERROR DE MONEDA\n\n` +
+                    `Elegiste: ${range.name} ${range.flag}\n` +
+                    `Pero tus valores parecen estar en ${suggestedRange.name}:\n\n` +
+                    `• Promedio: $${Math.round(avg).toLocaleString('es-CO')}\n` +
+                    `• Máximo: $${Math.round(max).toLocaleString('es-CO')}\n\n` +
+                    `En ${range.name}, valores típicos son:\n` +
+                    `$${range.avgMin.toLocaleString('es-CO')} - $${range.avgMax.toLocaleString('es-CO')}\n\n` +
+                    `¿Quieres cambiar a ${suggestedCurrency}?`;
+                
+                if (confirm(message)) {
+                    userData.currency = suggestedCurrency;
+                    updateDisplay();
+                    updateMetrics();
+                    alert(`✅ Moneda cambiada a ${suggestedCurrency}`);
+                }
+            }
+        }
+        
+        // ==================== SIMULADOR LIBERTAD FINANCIERA ====================
+        
+        function initializeSimulator() {
+            // Cargar datos actuales
+            const currentIncome = userData.assets.reduce((sum, a) => sum + (a.netIncome || 0), 0);
+            const currentExpenses = userData.expenses.reduce((sum, e) => sum + e.amount, 0) +
+                                   userData.debts.reduce((sum, d) => sum + (d.payment || 0), 0);
+            const currentNetWorth = userData.assets.reduce((sum, a) => sum + a.value, 0) -
+                                   userData.debts.reduce((sum, d) => sum + d.balance, 0);
+            
+            // Establecer valores actuales
+            document.getElementById('simCurrentIncome').textContent = formatMoney(currentIncome);
+            document.getElementById('simCurrentExpenses').textContent = formatMoney(currentExpenses);
+            document.getElementById('simCurrentNetWorth').textContent = formatMoney(currentNetWorth);
+            
+            const ratio = currentExpenses > 0 ? (currentIncome / currentExpenses) * 100 : 0;
+            document.getElementById('simCurrentRatio').textContent = ratio.toFixed(0) + '%';
+            
+            // Inicializar sliders con valores actuales
+            document.getElementById('simIncomeSlider').value = currentIncome;
+            document.getElementById('simExpensesSlider').value = currentExpenses;
+            document.getElementById('simNetWorthSlider').value = currentNetWorth;
+            document.getElementById('simROISlider').value = 7;
+            
+            // Actualizar simulación
+            updateSimulation();
+        }
+        
+        function updateSimulation() {
+            const income = parseFloat(document.getElementById('simIncomeSlider').value);
+            const expenses = parseFloat(document.getElementById('simExpensesSlider').value);
+            const netWorth = parseFloat(document.getElementById('simNetWorthSlider').value);
+            const roi = parseFloat(document.getElementById('simROISlider').value);
+            
+            // Actualizar displays de sliders
+            document.getElementById('simIncomeValue').textContent = formatMoney(income);
+            document.getElementById('simExpensesValue').textContent = formatMoney(expenses);
+            document.getElementById('simNetWorthValue').textContent = formatMoney(netWorth);
+            document.getElementById('simROIValue').textContent = roi + '%';
+            
+            // Actualizar colores de sliders (progreso)
+            updateSliderProgress('simIncomeSlider', income, 200000000);
+            updateSliderProgress('simExpensesSlider', expenses, 150000000);
+            updateSliderProgress('simNetWorthSlider', netWorth, 30000000000);
+            updateSliderProgress('simROISlider', roi, 20);
+            
+            // Calcular métricas
+            const ratio = expenses > 0 ? (income / expenses) * 100 : 0;
+            const cashflow = income - expenses;
+            const patrimonioIncome = netWorth * (roi / 100) / 12; // Mensual
+            const totalIncome = income + patrimonioIncome;
+            const totalRatio = expenses > 0 ? (totalIncome / expenses) * 100 : 0;
+            
+            // Mostrar resultados
+            document.getElementById('simRatioValue').textContent = ratio.toFixed(0) + '%';
+            document.getElementById('simCashflow').textContent = formatMoney(cashflow);
+            document.getElementById('simPatrimonioIncome').textContent = formatMoney(patrimonioIncome);
+            
+            // Status del ratio
+            let ratioStatus = '';
+            if (ratio >= 150) {
+                ratioStatus = '🌟 Excelente - Libertad financiera alcanzada';
+            } else if (ratio >= 100) {
+                ratioStatus = '✅ Bueno - Cubres tus gastos';
+            } else if (ratio >= 70) {
+                ratioStatus = '⚠️ Regular - Cerca pero no suficiente';
+            } else {
+                ratioStatus = '🚨 Crítico - Ingreso insuficiente';
+            }
+            document.getElementById('simRatioStatus').textContent = ratioStatus;
+            
+            // Status del cashflow
+            let cashflowStatus = '';
+            if (cashflow >= expenses * 0.5) {
+                cashflowStatus = '🌟 Excelente capacidad de ahorro';
+            } else if (cashflow >= expenses * 0.2) {
+                cashflowStatus = '✅ Buen margen de ahorro';
+            } else if (cashflow > 0) {
+                cashflowStatus = '⚠️ Margen ajustado';
+            } else {
+                cashflowStatus = '🚨 Déficit mensual';
+            }
+            document.getElementById('simCashflowStatus').textContent = cashflowStatus;
+            
+            // Calcular años para libertad
+            let yearsToFreedom = '--';
+            let yearsStatus = 'Ajusta los valores para calcular';
+            
+            if (totalRatio >= 150) {
+                yearsToFreedom = '¡Ya llegaste!';
+                yearsStatus = '🎉 Tienes libertad financiera ahora';
+            } else if (cashflow > 0 && roi > 0) {
+                // Calcular cuánto patrimonio necesitas
+                const patrimonioNecesario = (expenses * 1.5) * 12 / (roi / 100);
+                const faltante = patrimonioNecesario - netWorth;
+                
+                if (faltante > 0) {
+                    // Años = faltante / (cashflow anual + retorno compuesto)
+                    const cashflowAnual = cashflow * 12;
+                    let years = 0;
+                    let patrimonioSimulado = netWorth;
+                    
+                    while (patrimonioSimulado < patrimonioNecesario && years < 50) {
+                        patrimonioSimulado = patrimonioSimulado * (1 + roi/100) + cashflowAnual;
+                        years++;
+                    }
+                    
+                    if (years < 50) {
+                        yearsToFreedom = years + (years === 1 ? ' año' : ' años');
+                        if (years <= 3) {
+                            yearsStatus = '🚀 Muy cerca de tu meta';
+                        } else if (years <= 10) {
+                            yearsStatus = '✅ En buen camino';
+                        } else {
+                            yearsStatus = '⏰ Camino largo pero alcanzable';
+                        }
+                    } else {
+                        yearsToFreedom = '50+ años';
+                        yearsStatus = '⚠️ Necesitas aumentar ingresos o ROI';
+                    }
+                } else {
+                    yearsToFreedom = '¡Ya llegaste!';
+                    yearsStatus = '🎉 Ya tienes el patrimonio suficiente';
+                }
+            } else if (cashflow <= 0) {
+                yearsToFreedom = 'Imposible';
+                yearsStatus = '🚨 Cashflow negativo - aumenta ingresos';
+            }
+            
+            document.getElementById('simYearsToFreedom').textContent = yearsToFreedom;
+            document.getElementById('simYearsStatus').textContent = yearsStatus;
+            
+            // Actualizar tarjeta de status principal
+            updateSimStatusCard(totalRatio, yearsToFreedom);
+        }
+        
+        function updateSliderProgress(sliderId, value, max) {
+            const slider = document.getElementById(sliderId);
+            const percentage = (value / max) * 100;
+            const colors = {
+                'simIncomeSlider': '#00c896',
+                'simExpensesSlider': '#ff5252',
+                'simNetWorthSlider': '#00d4d4',
+                'simROISlider': '#0066ff'
+            };
+            const color = colors[sliderId];
+            slider.style.background = `linear-gradient(to right, ${color} 0%, ${color} ${percentage}%, #ddd ${percentage}%, #ddd 100%)`;
+        }
+        
+        function updateSimStatusCard(ratio, yearsToFreedom) {
+            const card = document.getElementById('simStatusCard');
+            const title = document.getElementById('simStatusTitle');
+            const icon = document.getElementById('simStatusIcon');
+            const message = document.getElementById('simStatusMessage');
+            
+            if (ratio >= 150) {
+                card.style.background = '#e8f5e9';
+                card.style.borderColor = '#00c896';
+                title.textContent = '🎉 ¡Libertad Financiera Alcanzada!';
+                title.style.color = '#00c896';
+                icon.textContent = '🏆';
+                message.textContent = 'Tu ingreso pasivo cubre tus gastos con un margen de 50%. ¡Felicitaciones!';
+                message.style.color = '#2e7d32';
+            } else if (ratio >= 100) {
+                card.style.background = '#fff3cd';
+                card.style.borderColor = '#ff9800';
+                title.textContent = '🎯 Muy Cerca de la Meta';
+                title.style.color = '#ff9800';
+                icon.textContent = '📈';
+                message.textContent = `Cubres tus gastos pero aún no tienes margen de seguridad. Te faltan ${yearsToFreedom} para libertad financiera completa.`;
+                message.style.color = '#856404';
+            } else if (ratio >= 70) {
+                card.style.background = '#fff3cd';
+                card.style.borderColor = '#ff9800';
+                title.textContent = '⚠️ En Camino';
+                title.style.color = '#ff9800';
+                icon.textContent = '🚶';
+                message.textContent = `Cubres el ${ratio.toFixed(0)}% de tus gastos. Necesitas aumentar ingresos pasivos o reducir gastos.`;
+                message.style.color = '#856404';
+            } else {
+                card.style.background = '#fee';
+                card.style.borderColor = '#ff5252';
+                title.textContent = '🚨 Lejos de la Meta';
+                title.style.color = '#ff5252';
+                icon.textContent = '📉';
+                message.textContent = `Solo cubres el ${ratio.toFixed(0)}% de tus gastos. Enfócate en aumentar ingresos pasivos significativamente.`;
+                message.style.color = '#c62828';
+            }
+        }
+        
+        // ==================== GRÁFICOS ====================
+        
+        let chartInstances = {};
+        
+        function destroyChart(chartId) {
+            if (chartInstances[chartId]) {
+                chartInstances[chartId].destroy();
+                delete chartInstances[chartId];
+            }
+        }
+        
+        function renderAllCharts() {
+            renderPatrimonioChart();
+            renderIngresosGastosChart();
+            renderGastosCategoriasChart();
+            renderROIChart();
+        }
+        
+        function renderPatrimonioChart() {
+            destroyChart('patrimonio');
+            
+            const assetsByType = {};
+            userData.assets.forEach(asset => {
+                const type = asset.type || 'Otro';
+                assetsByType[type] = (assetsByType[type] || 0) + asset.value;
+            });
+            
+            const labels = Object.keys(assetsByType);
+            const values = Object.values(assetsByType);
+            
+            if (values.length === 0) {
+                document.getElementById('chartPatrimonio').parentElement.innerHTML = 
+                    '<p style="text-align: center; color: var(--gray-500);">No hay activos para mostrar</p>';
+                return;
+            }
+            
+            const ctx = document.getElementById('chartPatrimonio').getContext('2d');
+            chartInstances['patrimonio'] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            '#00d4d4',
+                            '#0066ff',
+                            '#00c896',
+                            '#ff9800',
+                            '#e91e63',
+                            '#9c27b0',
+                            '#607d8b'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 15, font: { size: 12 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = formatMoney(context.parsed, false);
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderIngresosGastosChart() {
+            destroyChart('ingresosGastos');
+            
+            const ingresoMensual = userData.assets.reduce((sum, a) => sum + (a.netIncome || 0), 0);
+            const gastosMensuales = userData.expenses.reduce((sum, e) => sum + e.amount, 0);
+            const debtPayments = userData.debts.reduce((sum, d) => sum + (d.payment || 0), 0);
+            const totalGastos = gastosMensuales + debtPayments;
+            const cashflow = ingresoMensual - totalGastos;
+            
+            const ctx = document.getElementById('chartIngresosGastos').getContext('2d');
+            chartInstances['ingresosGastos'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Ingresos', 'Gastos', 'Cashflow'],
+                    datasets: [{
+                        label: 'Monto Mensual',
+                        data: [ingresoMensual, totalGastos, cashflow],
+                        backgroundColor: [
+                            '#00c896',
+                            '#ff5252',
+                            cashflow >= 0 ? '#00d4d4' : '#ff9800'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatMoney(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatMoney(value, false);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderGastosCategoriasChart() {
+            destroyChart('gastosCategorias');
+            
+            const gastosByCategory = {};
+            userData.expenses.forEach(expense => {
+                const cat = expense.category || 'Otros';
+                gastosByCategory[cat] = (gastosByCategory[cat] || 0) + expense.amount;
+            });
+            
+            const labels = Object.keys(gastosByCategory);
+            const values = Object.values(gastosByCategory);
+            
+            if (values.length === 0) {
+                document.getElementById('chartGastosCategorias').parentElement.innerHTML = 
+                    '<p style="text-align: center; color: var(--gray-500);">No hay gastos para mostrar</p>';
+                return;
+            }
+            
+            const ctx = document.getElementById('chartGastosCategorias').getContext('2d');
+            chartInstances['gastosCategorias'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Gasto Mensual',
+                        data: values,
+                        backgroundColor: '#ff5252',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatMoney(context.parsed.x);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatMoney(value, false);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderROIChart() {
+            destroyChart('roi');
+            
+            const assetsWithROI = userData.assets.map(asset => {
+                const roi = asset.value > 0 ? ((asset.netIncome || 0) * 12 / asset.value) * 100 : 0;
+                return {
+                    name: asset.name,
+                    roi: roi
+                };
+            }).sort((a, b) => b.roi - a.roi);
+            
+            if (assetsWithROI.length === 0) {
+                document.getElementById('chartROI').parentElement.innerHTML = 
+                    '<p style="text-align: center; color: var(--gray-500);">No hay activos para mostrar</p>';
+                return;
+            }
+            
+            const labels = assetsWithROI.map(a => a.name);
+            const values = assetsWithROI.map(a => a.roi);
+            
+            const ctx = document.getElementById('chartROI').getContext('2d');
+            chartInstances['roi'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ROI %',
+                        data: values,
+                        backgroundColor: values.map(v => 
+                            v >= 10 ? '#00c896' : 
+                            v >= 5 ? '#00d4d4' : 
+                            v >= 0 ? '#ff9800' : '#ff5252'
+                        ),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `ROI: ${context.parsed.x.toFixed(2)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderProjectionChart(proyecciones) {
+            if (!proyecciones || proyecciones.length === 0) return;
+            
+            destroyChart('projection');
+            document.getElementById('chartProjectionSection').style.display = 'block';
+            
+            const labels = proyecciones.map(p => p.year === 0 ? 'Actual' : 'Año ' + p.year);
+            const values = proyecciones.map(p => p.netWorth);
+            
+            const ctx = document.getElementById('chartProjection').getContext('2d');
+            chartInstances['projection'] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Patrimonio Neto',
+                        data: values,
+                        borderColor: '#00d4d4',
+                        backgroundColor: 'rgba(0, 212, 212, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#00d4d4',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Patrimonio: ' + formatMoney(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatMoney(value, false);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // ==================== PROYECCIONES ====================
+        
+        function calculateProjections() {
+            // Obtener supuestos
+            const ahorroMensual = parseFloat(document.getElementById('projAhorroMensual').value) || 0;
+            const retornoAnual = parseFloat(document.getElementById('projRetorno').value) / 100 || 0.07;
+            const inflacionAnual = parseFloat(document.getElementById('projInflacion').value) / 100 || 0.05;
+            const crecimientoIngreso = parseFloat(document.getElementById('projCrecimientoIngreso').value) / 100 || 0.03;
+            
+            // Calcular métricas actuales
+            const totalAssets = userData.assets.reduce((sum, a) => sum + a.value, 0);
+            const totalDebts = userData.debts.reduce((sum, d) => sum + d.balance, 0);
+            const netWorthInicial = totalAssets - totalDebts;
+            
+            const ingresoMensualInicial = userData.assets.reduce((sum, a) => sum + (a.netIncome || 0), 0);
+            const gastosMensualesInicial = userData.expenses.reduce((sum, e) => sum + e.amount, 0);
+            const debtPaymentsInicial = userData.debts.reduce((sum, d) => sum + (d.payment || 0), 0);
+            
+            // Calcular proyecciones año por año
+            const proyecciones = [];
+            let netWorth = netWorthInicial;
+            let ingresoMensual = ingresoMensualInicial;
+            let gastosMensuales = gastosMensualesInicial;
+            let debtPayments = debtPaymentsInicial;
+            
+            // Año 0 (actual)
+            proyecciones.push({
+                year: 0,
+                netWorth: netWorth,
+                ingresoMensual: ingresoMensual,
+                gastosMensuales: gastosMensuales + debtPayments,
+                cashflow: ingresoMensual - gastosMensuales - debtPayments + ahorroMensual,
+                roi: 0
+            });
+            
+            // Proyectar 10 años
+            for (let year = 1; year <= 10; year++) {
+                // Ajustar ingresos (crecen por encima de inflación)
+                ingresoMensual = ingresoMensual * (1 + crecimientoIngreso);
+                
+                // Ajustar gastos (crecen con inflación)
+                gastosMensuales = gastosMensuales * (1 + inflacionAnual);
+                
+                // Ajustar pagos de deuda (asumimos que se mantienen o reducen)
+                // Simplificación: después de 5 años, asumimos que deudas se redujeron 50%
+                if (year >= 5) {
+                    debtPayments = debtPaymentsInicial * 0.5;
+                }
+                
+                // Cashflow anual
+                const cashflowMensual = ingresoMensual - gastosMensuales - debtPayments + ahorroMensual;
+                const cashflowAnual = cashflowMensual * 12;
+                
+                // Aplicar retorno al patrimonio existente
+                const gananciasInversion = netWorth * retornoAnual;
+                
+                // Nuevo patrimonio
+                netWorth = netWorth + gananciasInversion + cashflowAnual;
+                
+                // ROI efectivo
+                const roi = netWorthInicial > 0 ? ((netWorth - netWorthInicial) / netWorthInicial) * 100 : 0;
+                
+                proyecciones.push({
+                    year: year,
+                    netWorth: netWorth,
+                    ingresoMensual: ingresoMensual,
+                    gastosMensuales: gastosMensuales + debtPayments,
+                    cashflow: cashflowMensual,
+                    roi: roi
+                });
+            }
+            
+            // Renderizar resultados
+            renderProjections(proyecciones);
+        }
+        
+        function renderProjections(proyecciones) {
+            // Mostrar secciones
+            document.getElementById('projectionsSummary').style.display = 'block';
+            document.getElementById('projectionsTable').style.display = 'block';
+            
+            // Resumen rápido
+            const proj1 = proyecciones.find(p => p.year === 1);
+            const proj3 = proyecciones.find(p => p.year === 3);
+            const proj5 = proyecciones.find(p => p.year === 5);
+            const proj10 = proyecciones.find(p => p.year === 10);
+            
+            document.getElementById('proj1Year').textContent = formatMoney(proj1.netWorth, false);
+            document.getElementById('proj3Years').textContent = formatMoney(proj3.netWorth, false);
+            document.getElementById('proj5Years').textContent = formatMoney(proj5.netWorth, false);
+            document.getElementById('proj10Years').textContent = formatMoney(proj10.netWorth, false);
+            
+            // Tabla detallada
+            const tbody = document.getElementById('projTableBody');
+            tbody.innerHTML = proyecciones.map(p => {
+                const cashflowColor = p.cashflow >= 0 ? 'var(--green)' : 'var(--red)';
+                return `
+                    <tr>
+                        <td style="font-weight: 600;">${p.year === 0 ? 'Actual' : 'Año ' + p.year}</td>
+                        <td style="font-weight: 700;">${formatMoney(p.netWorth)}</td>
+                        <td style="color: var(--green);">${formatMoney(p.ingresoMensual)}</td>
+                        <td style="color: var(--red);">${formatMoney(p.gastosMensuales)}</td>
+                        <td style="color: ${cashflowColor}; font-weight: 600;">${formatMoney(p.cashflow)}</td>
+                        <td style="font-weight: 600;">${p.roi.toFixed(1)}%</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Scroll a resultados
+            document.getElementById('projectionsSummary').scrollIntoView({ behavior: 'smooth' });
+            
+            // Renderizar gráfico de proyección
+            renderProjectionChart(proyecciones);
+        }
+        
+        // ==================== COACH IA ====================
+        
+        function calculateHealthScore() {
+            const totalAssets = userData.assets.reduce((sum, a) => sum + a.value, 0);
+            const totalDebts = userData.debts.reduce((sum, d) => sum + d.balance, 0);
+            const monthlyIncome = userData.assets.reduce((sum, a) => sum + (a.netIncome || 0), 0);
+            const monthlyExpenses = userData.expenses.reduce((sum, e) => sum + e.amount, 0);
+            const debtPayments = userData.debts.reduce((sum, d) => sum + (d.payment || 0), 0);
+            
+            const netWorth = totalAssets - totalDebts;
+            const monthlyCashflow = monthlyIncome - monthlyExpenses - debtPayments;
+            
+            // 5 Dimensiones del Health Score
+            const dimensions = {
+                liquidez: calculateLiquidityScore(monthlyCashflow, monthlyExpenses),
+                deudas: calculateDebtScore(totalDebts, totalAssets, monthlyIncome),
+                diversificacion: calculateDiversificationScore(),
+                pasivo: calculatePassiveIncomeScore(monthlyIncome, monthlyExpenses),
+                ahorro: calculateSavingsScore(monthlyCashflow, monthlyIncome)
+            };
+            
+            // Promedio ponderado
+            const weights = { liquidez: 0.25, deudas: 0.25, diversificacion: 0.15, pasivo: 0.20, ahorro: 0.15 };
+            const totalScore = 
+                dimensions.liquidez * weights.liquidez +
+                dimensions.deudas * weights.deudas +
+                dimensions.diversificacion * weights.diversificacion +
+                dimensions.pasivo * weights.pasivo +
+                dimensions.ahorro * weights.ahorro;
+            
+            return {
+                total: Math.round(totalScore),
+                dimensions: dimensions,
+                metrics: {
+                    totalAssets, totalDebts, netWorth,
+                    monthlyIncome, monthlyExpenses, monthlyCashflow
+                }
+            };
+        }
+        
+        function calculateLiquidityScore(cashflow, expenses) {
+            if (expenses === 0) return 50;
+            const ratio = cashflow / expenses;
+            if (ratio >= 0.5) return 100;
+            if (ratio >= 0.3) return 80;
+            if (ratio >= 0.1) return 60;
+            if (ratio >= 0) return 40;
+            if (ratio >= -0.2) return 20;
+            return 0;
+        }
+        
+        function calculateDebtScore(debts, assets, income) {
+            if (debts === 0) return 100;
+            if (assets === 0) return 0;
+            
+            const debtToAsset = debts / assets;
+            const debtToIncome = income > 0 ? debts / (income * 12) : 10;
+            
+            let score = 100;
+            if (debtToAsset > 0.7) score -= 40;
+            else if (debtToAsset > 0.5) score -= 25;
+            else if (debtToAsset > 0.3) score -= 10;
+            
+            if (debtToIncome > 5) score -= 30;
+            else if (debtToIncome > 3) score -= 15;
+            
+            return Math.max(0, score);
+        }
+        
+        function calculateDiversificationScore() {
+            const types = {};
+            userData.assets.forEach(a => {
+                types[a.type] = (types[a.type] || 0) + 1;
+            });
+            
+            const numTypes = Object.keys(types).length;
+            if (numTypes >= 4) return 100;
+            if (numTypes === 3) return 75;
+            if (numTypes === 2) return 50;
+            if (numTypes === 1) return 25;
+            return 0;
+        }
+        
+        function calculatePassiveIncomeScore(income, expenses) {
+            if (expenses === 0) return 50;
+            const ratio = income / expenses;
+            if (ratio >= 1.5) return 100;
+            if (ratio >= 1.2) return 85;
+            if (ratio >= 1.0) return 70;
+            if (ratio >= 0.7) return 50;
+            if (ratio >= 0.5) return 30;
+            return 10;
+        }
+        
+        function calculateSavingsScore(cashflow, income) {
+            if (income === 0) return 0;
+            const savingsRate = cashflow / income;
+            if (savingsRate >= 0.3) return 100;
+            if (savingsRate >= 0.2) return 80;
+            if (savingsRate >= 0.1) return 60;
+            if (savingsRate >= 0.05) return 40;
+            if (savingsRate >= 0) return 20;
+            return 0;
+        }
+        
+        function generateAlerts(score, metrics) {
+            const alerts = { critical: [], warning: [], opportunity: [] };
+            
+            // Alertas críticas
+            if (metrics.monthlyCashflow < 0) {
+                alerts.critical.push({
+                    title: '🚨 Flujo de Caja Negativo',
+                    message: `Tus gastos superan tus ingresos en ${formatMoney(Math.abs(metrics.monthlyCashflow))}. Esto es insostenible a largo plazo.`,
+                    action: 'Reducir gastos o aumentar ingresos inmediatamente'
+                });
+            }
+            
+            if (metrics.totalDebts > metrics.totalAssets * 0.7) {
+                alerts.critical.push({
+                    title: '🚨 Alto Nivel de Endeudamiento',
+                    message: `Tus deudas representan ${((metrics.totalDebts / metrics.totalAssets) * 100).toFixed(0)}% de tus activos.`,
+                    action: 'Priorizar pago de deudas con mayor tasa de interés'
+                });
+            }
+            
+            // Advertencias
+            if (score.dimensions.liquidez < 50) {
+                alerts.warning.push({
+                    title: '⚠️ Liquidez Baja',
+                    message: 'Tu capacidad de ahorro mensual es limitada.',
+                    action: 'Revisar gastos no esenciales y buscar optimizaciones'
+                });
+            }
+            
+            if (score.dimensions.diversificacion < 60) {
+                alerts.warning.push({
+                    title: '⚠️ Concentración de Riesgo',
+                    message: 'Tus activos están poco diversificados.',
+                    action: 'Considerar diversificar en diferentes tipos de inversión'
+                });
+            }
+            
+            // Oportunidades
+            if (metrics.monthlyIncome > metrics.monthlyExpenses * 1.2 && score.dimensions.diversificacion < 80) {
+                alerts.opportunity.push({
+                    title: '💡 Oportunidad de Diversificación',
+                    message: 'Tienes buen flujo de caja para explorar nuevas inversiones.',
+                    action: 'Investigar ETFs, fondos indexados o bienes raíces'
+                });
+            }
+            
+            if (userData.debts.length > 0) {
+                const highInterestDebt = userData.debts.find(d => d.rate > 15);
+                if (highInterestDebt) {
+                    alerts.opportunity.push({
+                        title: '💡 Refinanciación de Deuda',
+                        message: `Tienes deudas con tasas superiores al 15%. Refinanciar podría ahorrarte dinero.`,
+                        action: 'Explorar opciones de consolidación o refinanciación'
+                    });
+                }
+            }
+            
+            return alerts;
+        }
+        
+        function analyzeAssets() {
+            return userData.assets.map(asset => {
+                const roi = asset.value > 0 ? ((asset.netIncome || 0) * 12 / asset.value) * 100 : 0;
+                
+                let status, statusColor, diagnosis, recommendations;
+                
+                if (roi >= 10) {
+                    status = 'Excelente';
+                    statusColor = 'var(--green)';
+                    diagnosis = 'Alto retorno sobre inversión. Mantener y considerar aumentar posición.';
+                    recommendations = ['Mantener estrategia actual', 'Considerar escalar inversión si hay capital disponible'];
+                } else if (roi >= 5) {
+                    status = 'Bueno';
+                    statusColor = 'var(--cyan)';
+                    diagnosis = 'Retorno sólido y sostenible.';
+                    recommendations = ['Mantener', 'Revisar oportunidades de optimización de costos'];
+                } else if (roi >= 0) {
+                    status = 'Regular';
+                    statusColor = 'orange';
+                    diagnosis = 'Retorno bajo. Revisar viabilidad a mediano plazo.';
+                    recommendations = ['Analizar si los gastos pueden reducirse', 'Evaluar estrategias para aumentar ingresos'];
+                } else {
+                    status = 'Crítico';
+                    statusColor = 'var(--red)';
+                    diagnosis = 'Activo genera pérdidas. Requiere atención inmediata.';
+                    recommendations = ['Evaluar venta o liquidación', 'Identificar y cortar gastos innecesarios', 'Considerar cambio de uso o estrategia'];
+                }
+                
+                return {
+                    name: asset.name,
+                    type: asset.type,
+                    value: asset.value,
+                    income: asset.income || 0,
+                    expenses: asset.expenses || 0,
+                    netIncome: asset.netIncome || 0,
+                    roi: roi,
+                    status: status,
+                    statusColor: statusColor,
+                    diagnosis: diagnosis,
+                    recommendations: recommendations
+                };
+            });
+        }
+        
+        function generateActionPlan(score, metrics, alerts) {
+            const plan = {
+                immediate: [],
+                shortTerm: [],
+                mediumTerm: [],
+                longTerm: []
+            };
+            
+            // 0-30 días (Inmediato)
+            if (alerts.critical.length > 0) {
+                plan.immediate.push('🚨 Atender alertas críticas de inmediato');
+                alerts.critical.forEach(alert => {
+                    plan.immediate.push(`   → ${alert.action}`);
+                });
+            }
+            
+            if (metrics.monthlyCashflow < metrics.monthlyExpenses * 0.1) {
+                plan.immediate.push('📊 Crear presupuesto detallado de gastos');
+                plan.immediate.push('✂️ Identificar y eliminar gastos no esenciales');
+            }
+            
+            // 90 días (Corto plazo)
+            if (score.dimensions.deudas < 70 && userData.debts.length > 0) {
+                plan.shortTerm.push('💳 Implementar estrategia de pago de deudas (avalancha o bola de nieve)');
+                plan.shortTerm.push('📉 Negociar tasas de interés con acreedores');
+            }
+            
+            if (score.dimensions.liquidez < 60) {
+                plan.shortTerm.push('💰 Establecer fondo de emergencia (3-6 meses de gastos)');
+            }
+            
+            // 12 meses (Mediano plazo)
+            if (score.dimensions.diversificacion < 70) {
+                plan.mediumTerm.push('📊 Diversificar portafolio en al menos 3 tipos de activos diferentes');
+            }
+            
+            if (score.dimensions.pasivo < 70) {
+                plan.mediumTerm.push('💰 Aumentar fuentes de ingreso pasivo en 20%');
+                plan.mediumTerm.push('🏢 Explorar inversiones con flujo de caja positivo');
+            }
+            
+            plan.mediumTerm.push('📈 Revisar y optimizar inversiones existentes');
+            
+            // 3 años (Largo plazo)
+            plan.longTerm.push('🎯 Objetivo: Health Score superior a 80');
+            
+            if (metrics.monthlyIncome < metrics.monthlyExpenses * 1.5) {
+                plan.longTerm.push('💰 Lograr que ingreso pasivo supere gastos en 50%');
+            }
+            
+            plan.longTerm.push('📊 Construir portafolio diversificado que genere 4-5% anual');
+            plan.longTerm.push('🏖️ Establecer fecha objetivo para libertad financiera');
+            
+            return plan;
+        }
+        
+        function renderCoachAnalysis() {
+            const score = calculateHealthScore();
+            const alerts = generateAlerts(score, score.metrics);
+            const assetsAnalysis = analyzeAssets();
+            const actionPlan = generateActionPlan(score, score.metrics, alerts);
+            
+            // Renderizar Health Score
+            document.getElementById('healthScoreValue').textContent = score.total;
+            
+            let scoreLabel, scoreDesc;
+            if (score.total >= 80) {
+                scoreLabel = '🌟 Excelente';
+                scoreDesc = 'Tu situación financiera es muy sólida. Mantén el rumbo.';
+            } else if (score.total >= 60) {
+                scoreLabel = '✅ Bueno';
+                scoreDesc = 'Vas por buen camino. Hay oportunidades de mejora.';
+            } else if (score.total >= 40) {
+                scoreLabel = '⚠️ Regular';
+                scoreDesc = 'Necesitas trabajar en varios aspectos. Prioriza las alertas críticas.';
+            } else {
+                scoreLabel = '🚨 Crítico';
+                scoreDesc = 'Situación requiere atención inmediata. Actúa ya.';
+            }
+            
+            document.getElementById('healthScoreLabel').textContent = scoreLabel;
+            document.getElementById('healthScoreDescription').textContent = scoreDesc;
+            
+            // Renderizar 5 dimensiones
+            const dimensionsHTML = `
+                <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">💧 Liquidez</div>
+                    <div style="font-size: 1.5rem; font-weight: 700;">${Math.round(score.dimensions.liquidez)}</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">💳 Deudas</div>
+                    <div style="font-size: 1.5rem; font-weight: 700;">${Math.round(score.dimensions.deudas)}</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">📊 Diversificación</div>
+                    <div style="font-size: 1.5rem; font-weight: 700;">${Math.round(score.dimensions.diversificacion)}</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">💰 Ingreso Pasivo</div>
+                    <div style="font-size: 1.5rem; font-weight: 700;">${Math.round(score.dimensions.pasivo)}</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">📈 Ahorro</div>
+                    <div style="font-size: 1.5rem; font-weight: 700;">${Math.round(score.dimensions.ahorro)}</div>
+                </div>
+            `;
+            document.getElementById('healthDimensions').innerHTML = dimensionsHTML;
+            
+            // Renderizar Alertas
+            let alertsHTML = '';
+            
+            if (alerts.critical.length > 0) {
+                alertsHTML += '<div style="margin-bottom: 1.5rem;"><h3 style="color: var(--red); margin-bottom: 1rem;">🚨 Críticas (Acción Inmediata)</h3>';
+                alerts.critical.forEach(alert => {
+                    alertsHTML += `
+                        <div style="background: #fee; padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--red); margin-bottom: 1rem;">
+                            <div style="font-weight: 700; margin-bottom: 0.5rem;">${alert.title}</div>
+                            <div style="margin-bottom: 0.5rem;">${alert.message}</div>
+                            <div style="color: var(--red); font-weight: 600;">→ ${alert.action}</div>
+                        </div>
+                    `;
+                });
+                alertsHTML += '</div>';
+            }
+            
+            if (alerts.warning.length > 0) {
+                alertsHTML += '<div style="margin-bottom: 1.5rem;"><h3 style="color: orange; margin-bottom: 1rem;">⚠️ Advertencias (Revisar Pronto)</h3>';
+                alerts.warning.forEach(alert => {
+                    alertsHTML += `
+                        <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; border-left: 4px solid orange; margin-bottom: 1rem;">
+                            <div style="font-weight: 700; margin-bottom: 0.5rem;">${alert.title}</div>
+                            <div style="margin-bottom: 0.5rem;">${alert.message}</div>
+                            <div style="color: #856404; font-weight: 600;">→ ${alert.action}</div>
+                        </div>
+                    `;
+                });
+                alertsHTML += '</div>';
+            }
+            
+            if (alerts.opportunity.length > 0) {
+                alertsHTML += '<div><h3 style="color: var(--cyan); margin-bottom: 1rem;">💡 Oportunidades (Optimización)</h3>';
+                alerts.opportunity.forEach(alert => {
+                    alertsHTML += `
+                        <div style="background: #e7f7ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--cyan); margin-bottom: 1rem;">
+                            <div style="font-weight: 700; margin-bottom: 0.5rem;">${alert.title}</div>
+                            <div style="margin-bottom: 0.5rem;">${alert.message}</div>
+                            <div style="color: var(--blue); font-weight: 600;">→ ${alert.action}</div>
+                        </div>
+                    `;
+                });
+                alertsHTML += '</div>';
+            }
+            
+            if (alertsHTML === '') {
+                alertsHTML = '<p style="color: var(--green); font-weight: 600;">✅ No hay alertas. Tu situación financiera es saludable.</p>';
+            }
+            
+            document.getElementById('alertsContainer').innerHTML = alertsHTML;
+            
+            // Renderizar Análisis de Activos
+            let assetsHTML = '';
+            if (assetsAnalysis.length === 0) {
+                assetsHTML = '<p style="color: var(--gray-500);">No hay activos para analizar.</p>';
+            } else {
+                assetsAnalysis.forEach(asset => {
+                    assetsHTML += `
+                        <div style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--gray-200);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <div>
+                                    <div style="font-size: 1.25rem; font-weight: 700;">${asset.name}</div>
+                                    <div style="color: var(--gray-500);">${asset.type}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: ${asset.statusColor};">${asset.status}</div>
+                                    <div style="font-weight: 600;">ROI: ${asset.roi.toFixed(2)}%</div>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+                                <div>
+                                    <div style="color: var(--gray-500); font-size: 0.875rem;">Valor</div>
+                                    <div style="font-weight: 600;">${formatMoney(asset.value)}</div>
+                                </div>
+                                <div>
+                                    <div style="color: var(--gray-500); font-size: 0.875rem;">Ingreso</div>
+                                    <div style="font-weight: 600; color: var(--green);">${formatMoney(asset.income)}</div>
+                                </div>
+                                <div>
+                                    <div style="color: var(--gray-500); font-size: 0.875rem;">Gastos</div>
+                                    <div style="font-weight: 600; color: var(--red);">${formatMoney(asset.expenses)}</div>
+                                </div>
+                                <div>
+                                    <div style="color: var(--gray-500); font-size: 0.875rem;">Net Income</div>
+                                    <div style="font-weight: 600; color: ${asset.netIncome >= 0 ? 'var(--green)' : 'var(--red)'};">${formatMoney(asset.netIncome)}</div>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <div style="font-weight: 600; margin-bottom: 0.5rem;">📋 Diagnóstico:</div>
+                                <div>${asset.diagnosis}</div>
+                            </div>
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 0.5rem;">💡 Recomendaciones:</div>
+                                <ul style="margin-left: 1.5rem;">
+                                    ${asset.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('assetsAnalysisContainer').innerHTML = assetsHTML;
+            
+            // Renderizar Plan de Acción
+            const planHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                    <div style="background: #fee; padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--red);">
+                        <h3 style="color: var(--red); margin-bottom: 1rem;">🚨 0-30 Días</h3>
+                        <ul style="margin-left: 1.5rem; line-height: 1.8;">
+                            ${actionPlan.immediate.map(action => `<li>${action}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; border-left: 4px solid orange;">
+                        <h3 style="color: orange; margin-bottom: 1rem;">⚠️ 90 Días</h3>
+                        <ul style="margin-left: 1.5rem; line-height: 1.8;">
+                            ${actionPlan.shortTerm.map(action => `<li>${action}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div style="background: #e7f7ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--cyan);">
+                        <h3 style="color: var(--cyan); margin-bottom: 1rem;">📅 12 Meses</h3>
+                        <ul style="margin-left: 1.5rem; line-height: 1.8;">
+                            ${actionPlan.mediumTerm.map(action => `<li>${action}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div style="background: #e8f5e9; padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--green);">
+                        <h3 style="color: var(--green); margin-bottom: 1rem;">🎯 3 Años</h3>
+                        <ul style="margin-left: 1.5rem; line-height: 1.8;">
+                            ${actionPlan.longTerm.map(action => `<li>${action}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+            document.getElementById('actionPlanContainer').innerHTML = planHTML;
+        }
+        
+        // ==================== CAMBIO DE MONEDA ====================
+        
+        function showChangeCurrencyModal() {
+            const currencyNames = {
+                'COP': '🇨🇴 COP - Peso Colombiano',
+                'USD': '🇺🇸 USD - Dólar',
+                'EUR': '🇪🇺 EUR - Euro',
+                'MXN': '🇲🇽 MXN - Peso Mexicano'
+            };
+            
+            document.getElementById('currentCurrencyDisplay').textContent = currencyNames[userData.currency];
+            document.getElementById('newCurrency').value = userData.currency;
+            showModal('currencyModal');
+        }
+        
+        function changeCurrency() {
+            const newCurrency = document.getElementById('newCurrency').value;
+            
+            if (newCurrency === userData.currency) {
+                alert('Ya estás usando esa moneda');
+                return;
+            }
+            
+            userData.currency = newCurrency;
+            updateDisplay();
+            updateMetrics();
+            closeAllModals();
+            
+            alert(`✅ Moneda cambiada a ${newCurrency}\n\nRecuerda: Los valores NO se convirtieron, solo cambió el símbolo.`);
+        }
+        
+    </script>
+</body>
+</html>
