@@ -3,134 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finpath v15 Professional</title>
+    <title>Finpath Pro - Financial Planning v15</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
     <style>
-        /* CSS-v15-PROFESSIONAL INTEGRADO */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* CSS v15 PROFESSIONAL INTEGRATED */
         :root {
-            --finpath-cyan: #00D4D4; --finpath-blue: #0066FF; --finpath-navy: #1A1D3F;
-            --cyan: #00D4D4; --blue: #0066FF; --green: #00C896; --red: #FF5252;
-            --orange: #FFB800; --gray-50: #F8F9FA; --gray-100: #E9ECEF;
-            --gray-200: #DEE2E6; --gray-500: #6C757D; --gray-900: #1A1D3F;
+            --finpath-cyan: #00D4D4;
+            --finpath-blue: #0066FF;
+            --finpath-navy: #1A1D3F;
+            --cyan: #00D4D4;
+            --blue: #0066FF;
+            --green: #00C896;
+            --red: #FF5252;
+            --orange: #FFB800;
+            --gray-50: #F8F9FA;
+            --gray-100: #E9ECEF;
+            --gray-200: #DEE2E6;
+            --gray-500: #6C757D;
+            --gray-900: #1A1D3F;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-900); line-height: 1.6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-900); }
+        .header { background: linear-gradient(135deg, #1A1D3F 0%, #2D3561 100%); padding: 2.5rem; border-radius: 0 0 24px 24px; color: white; margin-bottom: 2rem; }
+        
+        /* Estilos Expertos v15 */
+        .expert-card {
+            background: white;
+            border-left: 5px solid var(--finpath-cyan);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .expert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .expert-grade { font-size: 1.4rem; font-weight: 800; color: var(--finpath-blue); }
+        .priority-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .priority-high { background: #fee2e2; color: #dc2626; }
+        .priority-medium { background: #fef3c7; color: #d97706; }
+        .priority-low { background: #dcfce7; color: #16a34a; }
+        
+        /* Simulador Detallado */
+        .sim-slider-container { background: white; padding: 1.5rem; border-radius: 12px; margin-top: 2rem; border: 1px solid var(--gray-200); }
+        input[type=range] { width: 100%; height: 8px; border-radius: 5px; background: var(--gray-200); outline: none; margin: 15px 0; accent-color: var(--finpath-blue); }
+        
+        /* Reutilización de estilos v14 necesarios */
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-        .view { display: none; } .view.active { display: block; }
-        .header { background: linear-gradient(135deg, #1A1D3F 0%, #2D3561 100%); padding: 2rem; border-radius: 0 0 24px 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); margin-bottom: 2rem; color: white; }
-        .header h1 { background: linear-gradient(135deg, var(--cyan), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2rem; }
-        .onboarding-box { background: white; padding: 3rem; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); max-width: 600px; margin: 3rem auto; border: 1px solid var(--gray-200); color: var(--gray-900); }
-        .input-field { width: 100%; padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; margin-bottom: 1rem; }
-        .btn { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: white; border: none; padding: 1rem; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; transition: 0.3s; }
-        .expert-card { background: linear-gradient(135deg, rgba(0,212,212,0.05) 0%, rgba(0,102,255,0.05) 100%); border-left: 4px solid var(--finpath-cyan); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--gray-200); }
-        .expert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--finpath-cyan); }
-        .expert-grade { font-size: 2rem; font-weight: 700; color: var(--finpath-cyan); }
-        .priority-badge { display: inline-block; padding: 0.375rem 0.875rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600; }
-        .priority-high { background: rgba(255, 82, 82, 0.1); color: var(--red); }
-    </style>
-</head>
-<body>
-
-    <div id="viewOnboarding" class="view active">
-        <div class="onboarding-box">
-            <h1>Finpath Pro v15</h1>
-            <p style="margin-bottom: 1.5rem; color: var(--gray-500);">Configura tu perfil para iniciar el análisis profesional.</p>
-            <input type="text" id="userName" class="input-field" placeholder="Tu Nombre">
-            <select id="userCurrency" class="input-field">
-                <option value="COP">COP - Peso Colombiano</option>
-                <option value="USD">USD - Dólar</option>
-            </select>
-            <button class="btn" onclick="startApp()">Comenzar Análisis</button>
-        </div>
-    </div>
-
-    <div id="viewDashboard" class="view">
-        <div class="header">
-            <h1 id="userDisplay">Hola</h1>
-            <div style="margin-top: 1rem; display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn" style="width: auto;" onclick="showView('viewDashboard')">Dashboard</button>
-                <button class="btn" style="width: auto;" onclick="showView('viewCoach')">Coach IA</button>
-                <button class="btn" style="width: auto;" onclick="showView('viewSimulator')">Simulador</button>
-            </div>
-        </div>
-        <div class="container">
-            <div style="background: white; padding: 2rem; border-radius: 12px; border: 1px solid var(--gray-200);">
-                <h2>Resumen de Datos</h2>
-                <p>Ingresa activos y deudas para activar el Panel de Expertos.</p>
-            </div>
-        </div>
-    </div>
-
-    <div id="viewCoach" class="view">
-        <div class="header"><h1>🤖 Panel de Expertos IA</h1></div>
-        <div class="container" id="alertsContainer"></div>
-    </div>
-
-    <div id="viewSimulator" class="view">
-        <div class="header"><h1>🎚️ Simulador Detallado</h1></div>
-        <div class="container" id="simResults"></div>
-    </div>
-
-    <script>
-        let userData = { name: '', currency: 'COP', expenses: [], assets: [], debts: [] };
-
-        function startApp() {
-            userData.name = document.getElementById('userName').value || 'Usuario';
-            userData.currency = document.getElementById('userCurrency').value;
-            document.getElementById('userDisplay').innerText = `👋 Bienvenido, ${userData.name}`;
-            showView('viewDashboard');
-        }
-
-        function showView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            if (viewId === 'viewCoach') renderCoachAnalysis();
-        }
-
-        /* FUNCIONES DE EXPERTOS v15 (Basado en archivos compartidos) */
-        function evaluateInvestmentExpert() {
-            const assets = userData.assets;
-            let grade = 100; let diagnosis = []; let recommendations = []; let priority = 'low';
-            if (assets.length < 2) {
-                grade -= 40;
-                diagnosis.push('⚠️ Portafolio muy concentrado en un solo tipo de activo'); [cite: 57]
-                recommendations.push('Diversificar en al menos 3 tipos diferentes de activos'); [cite: 57]
-                priority = 'high'; [cite: 58]
-            } else { diagnosis.push('✅ Buena diversificación de activos'); [cite: 60] }
-            return { title: '📈 Experto en Inversiones', grade: Math.max(0, grade), diagnosis, recommendations, priority }; [cite: 70]
-        }
-
-        function renderExpertsPanel() {
-            const experts = [evaluateInvestmentExpert()]; 
-            let html = '';
-            experts.forEach(expert => {
-                const pClass = expert.priority === 'high' ? 'priority-high' : '';
-                html += `
-                <div class="expert-card">
-                    <div class="expert-header">
-                        <div style="font-weight:700; color:var(--finpath-blue); font-size:1.2rem;">${expert.title}</div>
-                        <div class="expert-grade">${expert.grade}/100</div> [cite: 123]
-                    </div>
-                    <div style="margin-bottom:1rem;">
-                        <strong>Diagnóstico:</strong>
-                        <ul style="margin-left:1.5rem;">${expert.diagnosis.map(d => `<li>${d}</li>`).join('')}</ul> [cite: 124]
-                    </div>
-                    <div style="margin-top:1rem; border-top:1px solid var(--gray-200); padding-top:1rem;">
-                        <span class="priority-badge ${pClass}">Prioridad: ${expert.priority.toUpperCase()}</span> [cite: 129]
-                    </div>
-                </div>`;
-            });
-            return html;
-        }
-
-        function renderCoachAnalysis() {
-            document.getElementById('alertsContainer').innerHTML = renderExpertsPanel();
-        }
-
-        function initializeSimulator() {
-            document.getElementById('simResults').innerHTML = '<div class="expert-card"><h3>Simulador Activo</h3><p>Configure sus datos para ver controles.</p></div>';
-        }
-    </script>
-</body>
-</html>
+        .card { background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(3
