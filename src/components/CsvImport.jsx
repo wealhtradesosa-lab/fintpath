@@ -84,44 +84,99 @@ function excelToText(workbook) {
 
 async function analyzeWithAI(excelText, modulePrompt) {
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    // Try AI-powered analysis via our API route
+    const response = await fetch("/api/analyze-excel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4000,
-        messages: [{
-          role: "user",
-          content: `Eres un experto en análisis de datos financieros. Analiza este contenido de un archivo Excel y extrae los datos según las instrucciones.
-
-INSTRUCCIONES:
-${modulePrompt}
-
-DATOS DEL EXCEL:
-${excelText}
-
-IMPORTANTE:
-- Responde SOLO con un array JSON válido, sin texto adicional, sin backticks, sin markdown
-- Cada elemento del array es un objeto con los campos indicados
-- Si un campo no existe en el Excel, pon un valor por defecto ("" para strings, 0 para números)
-- Los montos deben ser NÚMEROS, no strings
-- Si el Excel tiene valores en pesos colombianos (COP), déjalos como están
-- Si detectas fórmulas o cálculos, usa el valor resultante
-- NO incluyas filas de TOTAL, SUBTOTAL o resumen
-- Incluye TODAS las filas de datos individuales`
-        }],
-      }),
+      body: JSON.stringify({ excelText, modulePrompt }),
     });
-
     const data = await response.json();
-    const text = data.content?.map(i => i.text || "").join("") || "";
-    // Clean and parse
-    const clean = text.replace(/```json|```/g, "").trim();
-    return JSON.parse(clean);
+    if (data.items && data.items.length > 0) return data.items;
+    if (data.fallback) throw new Error("fallback");
+    if (data.error) throw new Error(data.error);
+    return [];
   } catch (err) {
-    console.error("AI analysis error:", err);
-    throw new Error("Error analizando con IA: " + err.message);
+    console.warn("AI not available, using smart parser:", err.message);
+    // Fallback: smart column detection without AI
+    return smartParse(excelText);
   }
+}
+
+function smartParse(excelText) {
+  const lines = excelText.split("\n").filter(l => l.startsWith("Fila "));
+  if (lines.length === 0) return [];
+  
+  // Parse all rows into arrays of {col, value}
+  const rows = lines.map(line => {
+    const pairs = line.replace(/^Fila \d+: /, "").split(" | ");
+    return pairs.map(p => {
+      const m = p.match(/^Col(\d+)=(.+)$/);
+      return m ? { col: parseInt(m[1]), val: m[2] } : null;
+    }).filter(Boolean);
+  });
+  
+  // Find header row (first row where most values are text, not numbers)
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const textCount = rows[i].filter(c => isNaN(Number(c.val)) && c.val.length > 1).length;
+    if (textCount >= 2) { headerIdx = i; break; }
+  }
+  
+  // Get column positions from header
+  const headers = {};
+  const KEYWORDS = {
+    name: ["nombre", "activo", "activos", "name", "concepto", "descripcion", "item", "propiedad"],
+    value: ["valor", "value", "precio", "monto", "saldo", "total", "balance"],
+    income: ["ingreso", "income", "renta", "revenue", "entrada"],
+    expense: ["gasto", "expense", "egreso", "salida", "costo"],
+    location: ["ubicacion", "ubicación", "ciudad", "location", "lugar"],
+    type: ["tipo", "type", "categoria", "categoría"],
+    rate: ["tasa", "rate", "interes", "interés"],
+    payment: ["pago", "cuota", "payment"],
+  };
+  
+  rows[headerIdx]?.forEach(c => {
+    const v = c.val.toLowerCase().trim();
+    for (const [key, words] of Object.entries(KEYWORDS)) {
+      if (words.some(w => v.includes(w))) {
+        if (!headers[key]) headers[key] = c.col;
+      }
+    }
+  });
+  
+  // If no headers detected, use position: first text col = name, first number = value
+  const dataRows = rows.slice(headerIdx + 1);
+  const items = [];
+  
+  for (const row of dataRows) {
+    if (row.length < 1) continue;
+    const vals = {};
+    row.forEach(c => { vals[c.col] = c.val; });
+    
+    // Skip total/subtotal rows
+    const firstText = row.find(c => isNaN(Number(c.val)));
+    if (firstText && /^(total|subtotal|sum)/i.test(firstText.val.trim())) continue;
+    
+    // Extract fields
+    const name = headers.name ? vals[headers.name] : (firstText?.val || "");
+    const value = headers.value ? Number(vals[headers.value]) || 0 : 0;
+    const income = headers.income ? Number(vals[headers.income]) || 0 : 0;
+    const expense = headers.expense ? Number(vals[headers.expense]) || 0 : 0;
+    
+    if (!name && !value) continue;
+    
+    items.push({
+      n: String(name).trim(),
+      ub: headers.location ? String(vals[headers.location] || "").trim() : "",
+      tp: "Real Estate",
+      va: value,
+      vc: 0,
+      ig: income > 0 ? [{ c: "Ingreso", m: income, t: "f" }] : [],
+      gs: expense > 0 ? [{ c: "Gasto", m: expense, t: "f" }] : [],
+    });
+  }
+  
+  return items;
 }
 
 export default function CsvImport({ onImport, onClose }) {
