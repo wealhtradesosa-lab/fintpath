@@ -24,7 +24,7 @@ const MODULES = {
       n: String(row.nombre || "").trim(),
       ub: String(row.ubicacion || "").trim(),
       tp: "Real Estate",
-      va: Math.abs(Number(row.valor)) || 0,
+      va: Math.abs(parseFloat(String(row.valor || 0).replace(/[,$]/g, ""))) || 0,
       vc: 0,
       ig: row.ingreso ? [{ c: "Ingreso", m: Math.abs(Number(row.ingreso)) || 0, t: "f" }] : [],
       gs: row.gasto ? [{ c: "Gasto", m: Math.abs(Number(row.gasto)) || 0, t: "f" }] : [],
@@ -53,9 +53,9 @@ const MODULES = {
       { key: "categoria", label: "Categoría", aliases: ["categoria", "categoría", "tipo", "grupo"] },
     ],
     build: (row) => ({
-      cat: String(row.categoria || "Otro").trim(),
-      c: String(row.concepto || "").trim(),
-      m: Math.abs(Number(row.monto)) || 0,
+      cat: String(row.categoria || row.concepto || "Otro").trim(),
+      c: String(row.concepto || row.nombre || "").trim(),
+      m: Math.abs(parseFloat(String(row.monto || row.valor || 0).replace(/[,$]/g, ""))) || 0,
       t: "f",
     }),
   },
@@ -140,7 +140,7 @@ export default function CsvImport({ onImport, onClose }) {
         for (let i = 0; i < Math.min(allRows.length, 20); i++) {
           const row = allRows[i] || [];
           const textCells = row.filter((v) => v !== null && v !== undefined && String(v).trim() !== "" && isNaN(Number(String(v).replace(/,/g, ""))));
-          if (textCells.length >= 2) { headerIdx = i; break; }
+          if (textCells.length >= 1) { headerIdx = i; break; }
         }
 
         if (headerIdx < 0) {
@@ -214,9 +214,8 @@ export default function CsvImport({ onImport, onClose }) {
       item.id = mod.key[0] + "_" + Date.now() + "_" + i;
 
       // Check if item has at least a name or a value
-      const hasContent = Object.values(item).some((v) =>
-        typeof v === "string" ? v.trim().length > 0 : typeof v === "number" ? v > 0 : false
-      );
+      const nameVal = item.n || item.nombre || item.tk || item.c || item.cat || "";
+      const hasContent = nameVal.trim().length > 0 || Object.values(item).some((v) => typeof v === "number" && v > 0);
       if (hasContent) items.push(item);
     });
     setParsed(items);
