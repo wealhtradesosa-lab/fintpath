@@ -41,6 +41,16 @@ function calcMetrics(inv, deudas) {
   return { ig, gs, noi, roi, cap, coc, debtTotal, debtPayment, equity };
 }
 
+const In = ({ l, value, onChange, type, placeholder, options }) => (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
+      {options
+        ? <select value={value || ""} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+        : <input type={type || "text"} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }} />
+      }
+    </div>
+  );
+
 export default function InversionesModule({ inversiones, deudas, onUpdate }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -65,11 +75,11 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
 
   const openEdit = (inv) => {
     setForm({
-      nombre: getName(inv),
-      ubicacion: getLoc(inv),
-      tipo: getType(inv),
-      va: getVA(inv),
-      vc: getVC(inv),
+      nombre: String(getName(inv) || ""),
+      ubicacion: String(getLoc(inv) || ""),
+      tipo: String(getType(inv) || "Real Estate"),
+      va: String(getVA(inv) || ""),
+      vc: String(getVC(inv) || ""),
     });
     setEditId(inv.id);
     setShowForm(true);
@@ -82,35 +92,34 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
   };
 
   const handleSave = () => {
-    const item = {
-      n: form.nombre || "",
-      ub: form.ubicacion || "",
+    const updated = {
+      n: String(form.nombre || "").trim(),
+      nombre: String(form.nombre || "").trim(),
+      name: String(form.nombre || "").trim(),
+      ub: String(form.ubicacion || "").trim(),
+      ubicacion: String(form.ubicacion || "").trim(),
       tp: form.tipo || "Other",
-      va: +form.va || 0,
-      vc: +form.vc || 0,
+      tipo: form.tipo || "Other",
+      va: Math.abs(parseFloat(form.va)) || 0,
+      vc: Math.abs(parseFloat(form.vc)) || 0,
     };
     if (editId) {
-      onUpdate(items.map((i) => (i.id === editId ? { ...i, ...item } : i)));
+      onUpdate(items.map((i) => {
+        if (i.id !== editId) return i;
+        return { ...i, ...updated };
+      }));
     } else {
-      item.id = "i_" + Date.now();
-      item.ig = [];
-      item.gs = [];
-      onUpdate([...items, item]);
+      updated.id = "i_" + Date.now();
+      updated.ig = [];
+      updated.gs = [];
+      onUpdate([...items, updated]);
     }
     setShowForm(false);
     setEditId(null);
     setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "" });
   };
 
-  const In = ({ l, value, onChange, type, placeholder, options }) => (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
-      {options
-        ? <select value={value} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={o} value={o}>{o}</option>)}</select>
-        : <input type={type || "text"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }} />
-      }
-    </div>
-  );
+  
 
   return (
     <div>

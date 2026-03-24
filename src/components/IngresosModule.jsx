@@ -13,6 +13,15 @@ const T = {
 const fm = (n) => "$" + Math.round(n).toLocaleString("en-US");
 const CATS = ["Salario", "Freelance", "Arriendo", "Inversión", "Negocio", "Dividendos", "Pensión", "Otro"];
 
+const In = ({ l, value, onChange, type, placeholder, options }) => (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
+      {options
+        ? <select value={value} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+        : <input type={type || "text"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }} />}
+    </div>
+  );
+
 export default function IngresosModule({ ingresos, onUpdate }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -48,14 +57,7 @@ export default function IngresosModule({ ingresos, onUpdate }) {
     setEditId(item.id); setShowForm(true);
   };
 
-  const In = ({ l, value, onChange, type, placeholder, options }) => (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
-      {options
-        ? <select value={value} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={o} value={o}>{o}</option>)}</select>
-        : <input type={type || "text"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }} />}
-    </div>
-  );
+  
 
   return (
     <div>
