@@ -110,7 +110,7 @@ export default function DeudasModule({ deudas, inversiones, onUpdate }) {
               {items.length === 0 ? (
                 <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay deudas. Agrega o importa desde Excel.</td></tr>
               ) : items.map((d) => {
-                const lk = (inversiones || []).find((i) => i.id === d.la);
+                const lk = d.la ? (inversiones || []).find((i) => i.id === d.la) : null;
                 return (
                   <tr key={d.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(d.id) ? T.redDim : "transparent" }}>
                     <td style={{ padding: "10px 12px" }}>
@@ -124,7 +124,7 @@ export default function DeudasModule({ deudas, inversiones, onUpdate }) {
                     <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.red, fontFamily: "monospace" }}>{fm(d.mt)}</td>
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>{fm(d.pg)}</td>
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>{d.ts}%</td>
-                    <td style={{ padding: "10px 14px" }}>{lk ? <span style={{ background: T.blue + "15", color: T.blue, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{lk.n}</span> : <span style={{ color: T.txt3 }}>—</span>}</td>
+                    <td style={{ padding: "10px 14px" }}>{lk ? <span style={{ background: T.blue + "15", color: T.blue, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{lk.n || lk.nombre || lk.name || "—"}</span> : <span style={{ color: T.txt3 }}>—</span>}</td>
                     <td style={{ padding: "10px 14px" }}>
                       <button onClick={() => openEdit(d)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
                       <button onClick={() => { if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== d.id)); }}
@@ -152,7 +152,7 @@ export default function DeudasModule({ deudas, inversiones, onUpdate }) {
               <In l="Saldo" value={form.mt} onChange={(v) => setForm((p) => ({ ...p, mt: v }))} type="number" placeholder="0" />
               <In l="Cuota/mes" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v }))} type="number" placeholder="0" />
               <In l="Tasa %" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="0" />
-              <In l="Activo Vinculado" value={form.la} onChange={(v) => setForm((p) => ({ ...p, la: v }))} options={[{ v: "", l: "Ninguno" }, ...(inversiones || []).map((i) => ({ v: i.id, l: i.n }))]} />
+              <In l="Activo Vinculado" value={form.la} onChange={(v) => setForm((p) => ({ ...p, la: v }))} options={[{ v: "", l: "Ninguno" }, ...(inversiones || []).filter(i => i).map((i) => ({ v: i.id || "", l: i.n || i.nombre || i.name || "Sin nombre" }))]} />
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
               <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
