@@ -208,6 +208,7 @@ export default function SimuladorAvanzado({ user, totals }) {
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       items.forEach((g, gi) => { nv[`gf_${cat}_${gi}`] = Math.round(g.m * f.g); });
     });
+    (user.ingresos || []).forEach((ing, ii) => { nv[`ing_${ii}`] = Math.round((ing.mensual || 0) * f.i); });
     (user.deudas || []).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
     // Standalone ingresos
     (user.ingresos || []).forEach((ing, ii) => { nv[`ing_${ii}`] = Math.round((ing.mensual || 0) * f.i); });
@@ -228,16 +229,19 @@ export default function SimuladorAvanzado({ user, totals }) {
         ((inv.gastos||inv.gs||[])).forEach((g, gi) => { tG += getVal(`g_${inv.id}_${gi}`, g.m); });
       }
     });
+    // Standalone ingresos
+    let tIng = 0;
+    (user.ingresos || []).forEach((ing, ii) => {
+      tIng += getVal(`ing_${ii}`, ing.mensual || 0);
+    });
+    tI += tIng;
+
     let tGF = 0;
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       items.forEach((g, gi) => { tGF += getVal(`gf_${cat}_${gi}`, g.m); });
     });
     let tD = 0;
     (user.deudas || []).forEach((d, di) => { tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
-    // Standalone ingresos
-    let tIng = 0;
-    (user.ingresos || []).forEach((ing, ii) => { tIng += getVal(`ing_${ii}`, ing.mensual || 0); });
-    tI += tIng;
     const ni = tI - tG, te = tGF + tD, cf = ni - te;
     return { tI, tG, ni, tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0 };
   }, [user, simVals, getVal]);
@@ -344,6 +348,18 @@ export default function SimuladorAvanzado({ user, totals }) {
               </div>
             );
           })}
+
+          {/* Standalone income sliders */}
+          {(user.ingresos || []).length > 0 && (
+            <>
+              <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Ingresos Personales</h4>
+              {(user.ingresos || []).map((ing, ii) => (
+                <Slider key={`ing_${ii}`} label={ing.nombre || "Ingreso"} value={getVal(`ing_${ii}`, ing.mensual || 0)} base={ing.mensual || 0}
+                  max={Math.max((ing.mensual || 0) * 3, 1000)} color="#22d3ee"
+                  onChange={(v) => setVal(`ing_${ii}`, v)} sub={ing.categoria || ing.tipo || ""} />
+              ))}
+            </>
+          )}
 
           {/* Family expense sliders */}
           <h4 style={{ fontSize: 13, color: T.rd, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💳 Gastos Familiares</h4>
