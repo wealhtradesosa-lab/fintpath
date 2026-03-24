@@ -37,7 +37,7 @@ const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div sty
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 export default function FinPath(){
-  const[u,setU]=useState(null);const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[sel,setSel]=useState({inv:new Set(),deu:new Set(),ibk:new Set()});const[showAuth,setShowAuth]=useState(false);
+  const[u,setU]=useState(null);const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[showAuth,setShowAuth]=useState(false);
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
   useEffect(()=>{if(mb)sSb(false)},[mb]);
   useEffect(()=>{(async()=>{const d=await sL();if(d)setU(d);setLd(false)})()},[]);
@@ -62,16 +62,6 @@ export default function FinPath(){
   const handleImport=(key,rows,isGastos)=>{if(isGastos){const g={...u.gas};rows.forEach(r=>{const cat=r.cat||"Otro";if(!g[cat])g[cat]=[];g[cat].push({c:r.c,m:r.m,t:r.t});});upd("gas",g);}else{upd(key,[...(u[key]||[]),...rows]);}};
   const add=(m,it)=>upd(m,[...(u[m]||[]),{...it,id:m[0]+Date.now()}]);
   const del=(m,id)=>{if(confirm("¿Eliminar?"))upd(m,(u[m]||[]).filter(i=>i.id!==id))};
-  const toggleSel=(mod,id)=>setSel(p=>{const n={...p};const s=new Set(p[mod]||[]);s.has(id)?s.delete(id):s.add(id);n[mod]=s;return n;});
-  const toggleAll=(mod,items)=>setSel(p=>{const n={...p};n[mod]=(p[mod]||new Set()).size===items.length?new Set():new Set(items.map(i=>i.id));return n;});
-  const bulkDel=(mod)=>{const s=sel[mod];if(!s||!s.size)return;if(!confirm(`¿Eliminar ${s.size} items?`))return;upd(mod,(u[mod]||[]).filter(i=>!s.has(i.id)));setSel(p=>({...p,[mod]:new Set()}));};
-  const[editId,setEditId]=useState(null);
-  const editInv=(inv)=>{sF({n:inv.n,ub:inv.ub,tp:inv.tp,va:inv.va,vc:inv.vc});setEditId(inv.id);setMd("inv")};
-  const editDeu=(d)=>{sF({n:d.n,tp:d.tp,mt:d.mt,pg:d.pg,ts:d.ts,la:d.la||""});setEditId(d.id);setMd("d")};
-  const editGasto=(cat,idx,g)=>{sF({cat,c:g.c,m:g.m,t:g.t,_editCat:cat,_editIdx:idx});setMd("ge")};
-  const saveEdit=(mod,item)=>{upd(mod,(u[mod]||[]).map(i=>i.id===editId?{...i,...item}:i));setMd(null);setEditId(null);sF({});};
-  const delGasto=(cat,idx)=>{const g={...u.gas};g[cat]=g[cat].filter((_,i)=>i!==idx);if(g[cat].length===0)delete g[cat];upd("gas",g);};
-  const delCat=(cat)=>{if(!confirm("¿Eliminar categoría "+cat+"?"))return;const g={...u.gas};delete g[cat];upd("gas",g);};
 
   if(ld)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui"}}><div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:T.gn}}>FINPATH</div><div style={{color:T.tx3,marginTop:8,fontSize:13}}>Cargando...</div></div></div>;
 
