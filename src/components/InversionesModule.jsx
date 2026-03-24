@@ -52,6 +52,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
   );
 
 export default function InversionesModule({ inversiones, deudas, onUpdate }) {
+  // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "" });
