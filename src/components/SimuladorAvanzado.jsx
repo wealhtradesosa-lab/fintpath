@@ -194,21 +194,21 @@ export default function SimuladorAvanzado({ user, totals }) {
     const f = { conservador: { i: 0.8, g: 1.1 }, optimista: { i: 1.3, g: 0.85 }, crisis: { i: 0.6, g: 1.05 } }[id] || { i: 1, g: 1 };
     const nv = {};
     (user.inv || []).forEach((inv) => {
-      const items = inv.unidades||inv.un
-        ? inv.unidades||inv.un.flatMap((u, ui) => [
-            ...(u.ingresos||u.ig || []).map((ig, ii) => ({ key: `i_${inv.id}_u${ui}_${ii}`, base: ig.m, isI: true })),
-            ...(u.gastos||u.gs || []).map((g, gi) => ({ key: `g_${inv.id}_u${ui}_${gi}`, base: g.m, isI: false })),
+      const items = (inv.unidades||inv.un)
+        ? (inv.unidades||inv.un).flatMap((u, ui) => [
+            ...((u.ingresos||u.ig||[])).map((ig, ii) => ({ key: `i_${inv.id}_u${ui}_${ii}`, base: ig.m, isI: true })),
+            ...((u.gastos||u.gs||[])).map((g, gi) => ({ key: `g_${inv.id}_u${ui}_${gi}`, base: g.m, isI: false })),
           ])
         : [
-            ...(inv.ingresos||inv.ig || []).map((ig, ii) => ({ key: `i_${inv.id}_${ii}`, base: ig.m, isI: true })),
-            ...(inv.gastos||inv.gs || []).map((g, gi) => ({ key: `g_${inv.id}_${gi}`, base: g.m, isI: false })),
+            ...((inv.ingresos||inv.ig||[])).map((ig, ii) => ({ key: `i_${inv.id}_${ii}`, base: ig.m, isI: true })),
+            ...((inv.gastos||inv.gs||[])).map((g, gi) => ({ key: `g_${inv.id}_${gi}`, base: g.m, isI: false })),
           ];
       items.forEach((it) => { nv[it.key] = Math.round(it.base * (it.isI ? f.i : f.g)); });
     });
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       items.forEach((g, gi) => { nv[`gf_${cat}_${gi}`] = Math.round(g.m * f.g); });
     });
-    (user.deudas || []).forEach((d, di) => { nv[`debt_${di}`] = d.pago||d.pg; });
+    (user.deudas || []).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
     setSimVals(nv);
   };
 
@@ -217,13 +217,13 @@ export default function SimuladorAvanzado({ user, totals }) {
     let tI = 0, tG = 0;
     (user.inv || []).forEach((inv) => {
       if (inv.unidades||inv.un) {
-        inv.unidades||inv.un.forEach((u, ui) => {
-          (u.ingresos||u.ig || []).forEach((ig, ii) => { tI += getVal(`i_${inv.id}_u${ui}_${ii}`, ig.m); });
-          (u.gastos||u.gs || []).forEach((g, gi) => { tG += getVal(`g_${inv.id}_u${ui}_${gi}`, g.m); });
+        (inv.unidades||inv.un).forEach((u, ui) => {
+          ((u.ingresos||u.ig||[])).forEach((ig, ii) => { tI += getVal(`i_${inv.id}_u${ui}_${ii}`, ig.m); });
+          ((u.gastos||u.gs||[])).forEach((g, gi) => { tG += getVal(`g_${inv.id}_u${ui}_${gi}`, g.m); });
         });
       } else {
-        (inv.ingresos||inv.ig || []).forEach((ig, ii) => { tI += getVal(`i_${inv.id}_${ii}`, ig.m); });
-        (inv.gastos||inv.gs || []).forEach((g, gi) => { tG += getVal(`g_${inv.id}_${gi}`, g.m); });
+        ((inv.ingresos||inv.ig||[])).forEach((ig, ii) => { tI += getVal(`i_${inv.id}_${ii}`, ig.m); });
+        ((inv.gastos||inv.gs||[])).forEach((g, gi) => { tG += getVal(`g_${inv.id}_${gi}`, g.m); });
       }
     });
     let tGF = 0;
@@ -231,7 +231,7 @@ export default function SimuladorAvanzado({ user, totals }) {
       items.forEach((g, gi) => { tGF += getVal(`gf_${cat}_${gi}`, g.m); });
     });
     let tD = 0;
-    (user.deudas || []).forEach((d, di) => { tD += getVal(`debt_${di}`, d.pago||d.pg); });
+    (user.deudas || []).forEach((d, di) => { tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
     const ni = tI - tG, te = tGF + tD, cf = ni - te;
     return { tI, tG, ni, tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0 };
   }, [user, simVals, getVal]);
@@ -300,14 +300,14 @@ export default function SimuladorAvanzado({ user, totals }) {
           {/* Investment sliders */}
           <h4 style={{ fontSize: 13, color: T.gn, fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>📈 Activos — Ingresos & Gastos</h4>
           {(user.inv || []).map((inv) => {
-            const items = inv.unidades||inv.un
-              ? inv.unidades||inv.un.flatMap((u, ui) => [
-                  ...(u.ingresos||u.ig || []).map((ig, ii) => ({ key: `i_${inv.id}_u${ui}_${ii}`, label: u.nombre||u.n + ": " + ig.c, base: ig.m, tp: "i" })),
-                  ...(u.gastos||u.gs || []).map((g, gi) => ({ key: `g_${inv.id}_u${ui}_${gi}`, label: u.nombre||u.n + ": " + g.c, base: g.m, tp: "g" })),
+            const items = (inv.unidades||inv.un)
+              ? (inv.unidades||inv.un).flatMap((u, ui) => [
+                  ...((u.ingresos||u.ig||[])).map((ig, ii) => ({ key: `i_${inv.id}_u${ui}_${ii}`, label: (u.nombre||u.n) + ": " + ig.c, base: ig.m, tp: "i" })),
+                  ...((u.gastos||u.gs||[])).map((g, gi) => ({ key: `g_${inv.id}_u${ui}_${gi}`, label: (u.nombre||u.n) + ": " + g.c, base: g.m, tp: "g" })),
                 ])
               : [
-                  ...(inv.ingresos||inv.ig || []).map((ig, ii) => ({ key: `i_${inv.id}_${ii}`, label: ig.c, base: ig.m, tp: "i" })),
-                  ...(inv.gastos||inv.gs || []).map((g, gi) => ({ key: `g_${inv.id}_${gi}`, label: g.c, base: g.m, tp: "g" })),
+                  ...((inv.ingresos||inv.ig||[])).map((ig, ii) => ({ key: `i_${inv.id}_${ii}`, label: ig.c, base: ig.m, tp: "i" })),
+                  ...((inv.gastos||inv.gs||[])).map((g, gi) => ({ key: `g_${inv.id}_${gi}`, label: g.c, base: g.m, tp: "g" })),
                 ];
             if (!items.length) return null;
             const sI = items.filter((x) => x.tp === "i").reduce((s, x) => s + getVal(x.key, x.base), 0);
@@ -317,7 +317,7 @@ export default function SimuladorAvanzado({ user, totals }) {
               <div key={inv.id} style={{ marginBottom: 10, background: "rgba(255,255,255,0.02)", borderRadius: 10, border: "1px solid " + T.gn + "20", overflow: "hidden" }}>
                 <div style={{ padding: "8px 12px", background: T.bg2, borderBottom: "1px solid " + T.gn + "15", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>{inv.nombre||inv.n}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>{inv.nombre||inv.n||"Sin nombre"}</span>
                     <span style={{ fontSize: 10, color: T.txt3, marginLeft: 6 }}>{inv.ubi||inv.ub||inv.ubi||inv.ubcacion||inv.ub}</span>
                   </div>
                   <div style={{ display: "flex", gap: 10 }}>
@@ -355,12 +355,12 @@ export default function SimuladorAvanzado({ user, totals }) {
           {/* Debt payment sliders */}
           <h4 style={{ fontSize: 13, color: T.pr, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>📋 Cuotas de Deudas</h4>
           {(user.deudas || []).map((d, di) => {
-            const lk = (user.inv || []).find((i) => i.id === (d.link||d.la));
+            const lk = (user.inv || []).find((i) => i.id === ((d.link||d.la)));
             return (
-              <Slider key={`debt_${di}`} label={d.nombre||d.n||d.n} value={getVal(`debt_${di}`, d.pago||d.pg||d.pg)} base={d.pago||d.pg||d.pg}
-                max={Math.max((d.pago||d.pg||d.pg) * 3, 500)} color={T.pr}
+              <Slider key={`debt_${di}`} label={(d.nombre||d.n||"")||d.n} value={getVal(`debt_${di}`, (d.pago||d.pg||0)||d.pg)} base={(d.pago||d.pg||0)||d.pg}
+                max={Math.max(((d.pago||d.pg||0)||d.pg) * 3, 500)} color={T.pr}
                 onChange={(v) => setVal(`debt_${di}`, v)}
-                sub={lk ? "→ " + (lk.nombre||lk.n||lk.n) : (d.tasa||d.ts) > 0 ? (d.tasa||d.ts) + "%" : ""} />
+                sub={lk ? "→ " + ((lk.nombre||lk.n||"")||lk.n) : ((d.tasa||d.ts||0)) > 0 ? ((d.tasa||d.ts||0)) + "%" : ""} />
             );
           })}
 
