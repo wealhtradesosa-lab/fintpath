@@ -209,6 +209,8 @@ export default function SimuladorAvanzado({ user, totals }) {
       items.forEach((g, gi) => { nv[`gf_${cat}_${gi}`] = Math.round(g.m * f.g); });
     });
     (user.deudas || []).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
+    // Standalone ingresos
+    (user.ingresos || []).forEach((ing, ii) => { nv[`ing_${ii}`] = Math.round((ing.mensual || 0) * f.i); });
     setSimVals(nv);
   };
 
@@ -232,6 +234,10 @@ export default function SimuladorAvanzado({ user, totals }) {
     });
     let tD = 0;
     (user.deudas || []).forEach((d, di) => { tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
+    // Standalone ingresos
+    let tIng = 0;
+    (user.ingresos || []).forEach((ing, ii) => { tIng += getVal(`ing_${ii}`, ing.mensual || 0); });
+    tI += tIng;
     const ni = tI - tG, te = tGF + tD, cf = ni - te;
     return { tI, tG, ni, tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0 };
   }, [user, simVals, getVal]);
@@ -363,6 +369,16 @@ export default function SimuladorAvanzado({ user, totals }) {
                 sub={lk ? "→ " + ((lk.nombre||lk.n||"")||lk.n) : ((d.tasa||d.ts||0)) > 0 ? ((d.tasa||d.ts||0)) + "%" : ""} />
             );
           })}
+
+          {/* Standalone Ingresos */}
+          {(user.ingresos || []).length > 0 && <>
+          <h4 style={{ fontSize: 13, color: T.gn, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Ingresos Independientes</h4>
+          {(user.ingresos || []).map((ing, ii) => (
+            <Slider key={`ing_${ii}`} label={ing.nombre || "Ingreso"} value={getVal(`ing_${ii}`, ing.mensual || 0)} base={ing.mensual || 0}
+              max={Math.max((ing.mensual || 0) * 3, 1000)} color={T.gn}
+              onChange={(v) => setVal(`ing_${ii}`, v)} sub={ing.categoria || ing.tipo || ""} />
+          ))}
+          </>}
 
           <button onClick={() => { setSimVals({}); setScenario("actual"); }}
             style={{ padding: "10px 20px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 12, width: "100%" }}>
