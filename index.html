@@ -11,82 +11,50 @@
     <meta http-equiv="Expires" content="0" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%2309090b'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-size='40' font-weight='800' fill='%2322c55e'%3EF%3C/text%3E%3C/svg%3E" />
   <style>
+    <style>
       @media print {
-        /* Force portrait & white background for clean report */
-        @page { size: letter portrait; margin: 18mm 15mm; }
-        
-        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        
-        /* White background, dark text */
-        body { background: #fff !important; color: #111 !important; margin: 0 !important; font-family: -apple-system, system-ui, sans-serif !important; }
-        
-        /* Hide everything non-essential */
-        aside, header, button, input[type="range"], [data-no-print] { display: none !important; }
-        
-        /* Full width layout */
-        #root, #root > div, #root > div > div, main { display: block !important; width: 100% !important; max-width: 100% !important; flex: none !important; padding: 0 !important; margin: 0 !important; }
+        @page { size: letter portrait; margin: 10mm; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box !important; }
+        body { background: #fff !important; color: #222 !important; margin: 0 !important; font-size: 9px !important; line-height: 1.2 !important; }
+        aside, header, nav, button, input, select, textarea, [data-no-print], footer { display: none !important; }
+        #root, #root>*, #root>*>*, main, main>div { display: block !important; width: 100% !important; max-width: 100% !important; padding: 0 !important; margin: 0 !important; flex: none !important; }
         [style*="overflow"] { overflow: visible !important; max-height: none !important; height: auto !important; }
-        [style*="max-height"] { max-height: none !important; }
-        [style*="70vh"], [style*="85vh"] { max-height: none !important; height: auto !important; }
-        
-        /* Cards: white bg, subtle border */
-        div[style*="border-radius"] { background: #fff !important; border: 1px solid #ddd !important; box-shadow: none !important; margin-bottom: 10px !important; }
-        
-        /* Text colors for readability */
-        h1, h2, h3, h4 { color: #111 !important; page-break-after: avoid !important; }
-        p, span, div, td, th, label { color: #333 !important; }
-        
-        /* Preserve accent colors for key numbers */
-        [style*="color: rgb(34, 197, 94)"], [style*="color:#22c55e"] { color: #16a34a !important; }
-        [style*="color: rgb(239, 68, 68)"], [style*="color:#ef4444"] { color: #dc2626 !important; }
-        [style*="color: rgb(59, 130, 246)"], [style*="color:#3b82f6"] { color: #2563eb !important; }
-        [style*="color: rgb(34, 211, 238)"], [style*="color:#22d3ee"] { color: #0891b2 !important; }
-        
-        /* Grids → single column for portrait */
-        div[style*="gridTemplateColumns"], div[style*="grid-template-columns"] { display: block !important; }
-        div[style*="gridTemplateColumns"] > *, div[style*="grid-template-columns"] > * { 
-          margin-bottom: 8px !important; 
-          page-break-inside: avoid !important; 
-          break-inside: avoid !important;
-          width: 100% !important;
-          box-sizing: border-box !important;
-        }
-        
-        /* Keep 4-column KPIs as a 2x2 grid */
-        div[style*="repeat(auto-fit"] { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-        
-        /* Tables */
-        table { width: 100% !important; border-collapse: collapse !important; font-size: 11px !important; }
-        th { background: #f5f5f5 !important; color: #555 !important; padding: 8px !important; border-bottom: 2px solid #ddd !important; }
-        td { padding: 8px !important; border-bottom: 1px solid #eee !important; color: #333 !important; }
-        
-        /* Charts */
-        .recharts-wrapper { page-break-inside: avoid !important; break-inside: avoid !important; max-width: 100% !important; }
+        [style*="max-height"], [style*="70vh"], [style*="85vh"], [style*="88vh"] { max-height: none !important; height: auto !important; }
+        div[style*="border-radius"] { background: #fafafa !important; border: 1px solid #e0e0e0 !important; box-shadow: none !important; margin-bottom: 4px !important; border-radius: 4px !important; }
+        div[style*="gridTemplateColumns"], div[style*="grid-template-columns"] { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 4px !important; }
+        div[style*="repeat(auto-fit"] { display: grid !important; grid-template-columns: 1fr 1fr 1fr 1fr !important; gap: 3px !important; }
+        div[style*="repeat(5"] { display: grid !important; grid-template-columns: repeat(5,1fr) !important; gap: 2px !important; }
+        h1 { font-size: 14px !important; margin: 0 0 2px !important; color: #111 !important; }
+        h2 { font-size: 12px !important; margin: 0 0 2px !important; color: #111 !important; }
+        h3, h4 { font-size: 10px !important; margin: 2px 0 !important; color: #111 !important; }
+        h1,h2,h3,h4 { page-break-after: avoid !important; }
+        p { margin: 1px 0 !important; font-size: 9px !important; }
+        div[style*="fontSize:22"], div[style*="fontSize: 22"], div[style*="fontSize:24"], div[style*="fontSize: 24"] { font-size: 14px !important; }
+        div[style*="fontSize:18"], div[style*="fontSize: 18"] { font-size: 12px !important; }
+        div[style*="fontSize:26"], div[style*="fontSize: 26"] { font-size: 16px !important; }
+        div[style*="clamp(1"] { font-size: 16px !important; }
+        div[style*="clamp(2"] { font-size: 18px !important; }
+        [style*="color:#22c55e"], [style*="color: #22c55e"], [style*="color: rgb(34, 197, 94)"] { color: #16a34a !important; }
+        [style*="color:#ef4444"], [style*="color: #ef4444"], [style*="color: rgb(239, 68, 68)"] { color: #dc2626 !important; }
+        [style*="color:#3b82f6"], [style*="color: #3b82f6"] { color: #2563eb !important; }
+        [style*="color:#22d3ee"], [style*="color: #22d3ee"] { color: #0891b2 !important; }
+        table { width: 100% !important; border-collapse: collapse !important; font-size: 8px !important; }
+        th { background: #f0f0f0 !important; color: #555 !important; padding: 3px 4px !important; border-bottom: 1px solid #ccc !important; }
+        td { padding: 3px 4px !important; border-bottom: 1px solid #eee !important; }
+        .recharts-wrapper, .recharts-responsive-container { height: 100px !important; max-height: 100px !important; }
+        .recharts-wrapper { page-break-inside: avoid !important; max-width: 100% !important; }
         svg { max-width: 100% !important; }
-        svg text { fill: #555 !important; }
-        
-        /* Progress bars - make visible on white */
-        div[style*="background: linear-gradient"] { border: 1px solid #ddd !important; }
-        
-        /* Report header */
-        body::before { 
-          content: "FINPATH — Reporte Financiero"; 
-          display: block; 
-          font-size: 22px; font-weight: 800; 
-          color: #16a34a; 
-          padding: 0 0 12px; 
-          border-bottom: 3px solid #16a34a; 
-          margin-bottom: 20px; 
-        }
-        body::after { 
-          content: "Generado el " attr(data-date) " • FINPATH — fintpath.vercel.app"; 
-          display: block; 
-          font-size: 9px; color: #999; 
-          padding: 12px 0 0; 
-          border-top: 1px solid #ddd; 
-          margin-top: 20px; 
-          text-align: center;
-        }
+        svg text { fill: #555 !important; font-size: 7px !important; }
+        div[style*="padding: 24"], div[style*="padding:24"], div[style*="padding: 28"], div[style*="padding:28"], div[style*="padding: 32"], div[style*="padding:32"] { padding: 6px !important; }
+        div[style*="padding: 20"], div[style*="padding:20"], div[style*="padding: 16"], div[style*="padding:16"] { padding: 4px !important; }
+        div[style*="padding:"12"], div[style*="padding: 12"] { padding: 3px !important; }
+        div[style*="marginBottom: 20"], div[style*="marginBottom:20"], div[style*="marginBottom: 24"], div[style*="marginBottom:24"] { margin-bottom: 4px !important; }
+        div[style*="marginBottom: 16"], div[style*="marginBottom:16"], div[style*="marginBottom: 14"], div[style*="marginBottom:14"] { margin-bottom: 3px !important; }
+        div[style*="gap: 14"], div[style*="gap:14"], div[style*="gap: 16"], div[style*="gap:16"], div[style*="gap: 20"], div[style*="gap:20"] { gap: 4px !important; }
+        div[style*="gap: 10"], div[style*="gap:10"], div[style*="gap: 12"], div[style*="gap:12"] { gap: 3px !important; }
+        div[style*="height: 36"], div[style*="height:36"] { height: 16px !important; }
+        body::before { content: "FINPATH — Reporte Financiero"; display: block; font-size: 14px !important; font-weight: 800; color: #16a34a !important; padding-bottom: 4px; border-bottom: 2px solid #16a34a; margin-bottom: 8px; }
+        body::after { content: "Generado: " attr(data-date) " — fintpath.vercel.app"; display: block; font-size: 7px !important; color: #999 !important; padding-top: 4px; border-top: 1px solid #ddd; margin-top: 6px; text-align: center; }
       }
     </style>
     </head>
