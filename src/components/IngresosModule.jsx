@@ -22,25 +22,44 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, onUpdate }) {
+export default function IngresosModule({ ingresos, inversiones, onUpdate }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = ingresos || [];
-  const totalMes = items.reduce((s, i) => s + (i.mensual || 0), 0);
-  const fijos = items.filter((i) => i.tipo === "fijo").reduce((s, i) => s + i.mensual, 0);
+  
+  // Derive income from investments that generate rent
+  const invIncome = [];
+  (inversiones || []).forEach((inv) => {
+    const name = inv.n || inv.nombre || inv.name || "Inversión";
+    const tipo = inv.tp || inv.tipo || "Investment";
+    // From sub-units
+    (inv.unidades || inv.un || []).forEach((u) => {
+      (u.ingresos || u.ig || []).forEach((ig) => {
+        if (ig.m > 0) invIncome.push({ id: "inv_" + inv.id + "_" + ig.c, nombre: name + ": " + (ig.c || "Renta"), categoria: tipo, mensual: ig.m, tipo: "fijo", fuente: name, _fromInv: true });
+      });
+    });
+    // Direct income
+    (inv.ingresos || inv.ig || []).forEach((ig) => {
+      if (ig.m > 0) invIncome.push({ id: "inv_" + inv.id + "_" + ig.c, nombre: name + ": " + (ig.c || "Renta"), categoria: tipo, mensual: ig.m, tipo: "fijo", fuente: name, _fromInv: true });
+    });
+  });
+  
+  const allItems = [...items, ...invIncome];
+  const totalMes = allItems.reduce((s, i) => s + (i.mensual || 0), 0);
+  const fijos = allItems.filter((i) => i.tipo === "fijo").reduce((s, i) => s + i.mensual, 0);
   const variables = totalMes - fijos;
   const byCat = {};
-  items.forEach((i) => { byCat[i.categoria] = (byCat[i.categoria] || 0) + i.mensual; });
+  allItems.forEach((i) => { byCat[i.categoria] = (byCat[i.categoria] || 0) + i.mensual; });
   const pieData = Object.entries(byCat).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
   const toggleSelect = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
+  const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((i) => i.id)));
   const deleteSelected = () => {
     if (!selected.size || !confirm(`¿Eliminar ${selected.size} ingreso(s)?`)) return;
-    onUpdate(items.filter((i) => !selected.has(i.id)));
+    onUpdate(items.filter((i) => !selected.has(i.id))); // only deletes standalone, not inv-derived
     setSelected(new Set());
   };
   const handleSave = () => {
@@ -64,7 +83,7 @@ export default function IngresosModule({ ingresos, onUpdate }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Ingresos</h2>
-          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{items.length} fuentes • Total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalMes)}/mes</span></p>
+          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{allItems.length} fuentes • Total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalMes)}/mes</span></p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {selected.size > 0 && (
@@ -96,7 +115,7 @@ export default function IngresosModule({ ingresos, onUpdate }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead><tr>
                 <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${T.border}` }}>
-                  <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
+                  <input type="checkbox" checked={allItems.length > 0 && selected.size === allItems.length} onChange={toggleAll}
                     style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
                 </th>
                 {["Nombre", "Categoría", "Tipo", "Mensual", "Fuente", ""].map((h) => (
@@ -104,9 +123,9 @@ export default function IngresosModule({ ingresos, onUpdate }) {
                 ))}
               </tr></thead>
               <tbody>
-                {items.length === 0 ? (
+                {allItems.length === 0 ? (
                   <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay ingresos. Agrega o importa desde Excel.</td></tr>
-                ) : items.map((item) => (
+                ) : allItems.map((item) => (
                   <tr key={item.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.id) ? T.greenDim : "transparent" }}>
                     <td style={{ padding: "10px 12px" }}>
                       <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)}
