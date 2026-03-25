@@ -55,7 +55,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "" });
+  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = inversiones || [];
@@ -81,18 +81,22 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
       tipo: String(getType(inv) || "Real Estate"),
       va: String(getVA(inv) || ""),
       vc: String(getVC(inv) || ""),
+      tasa: String(inv.tasa || ""),
     });
     setEditId(inv.id);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "" });
     setEditId(null);
     setShowForm(true);
   };
 
   const handleSave = () => {
+    const va = Math.abs(parseFloat(form.va)) || 0;
+    const tasa = parseFloat(form.tasa) || 0;
+    const ingresoCalc = tasa > 0 ? Math.round((va * tasa / 100) / 12) : 0;
     const updated = {
       n: String(form.nombre || "").trim(),
       nombre: String(form.nombre || "").trim(),
@@ -101,9 +105,14 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
       ubicacion: String(form.ubicacion || "").trim(),
       tp: form.tipo || "Other",
       tipo: form.tipo || "Other",
-      va: Math.abs(parseFloat(form.va)) || 0,
+      va,
       vc: Math.abs(parseFloat(form.vc)) || 0,
+      tasa,
     };
+    // Auto-generate income from tasa if provided
+    if (tasa > 0) {
+      updated.ig = [{ c: "Rendimiento " + tasa + "%", m: ingresoCalc, t: "f" }];
+    }
     if (editId) {
       onUpdate(items.map((i) => {
         if (i.id !== editId) return i;
@@ -117,7 +126,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "" });
   };
 
   
@@ -187,7 +196,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
                     </td>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ fontWeight: 600 }}>{name}</div>
-                      <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo].filter(Boolean).join(" • ")}</div>
+                      <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? inv.tasa + "% anual" : ""].filter(Boolean).join(" • ")}</div>
                     </td>
                     <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700 }}>{fm(va)}</td>
                     <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: m.roi >= 0 ? T.green : T.red }}>{pc(m.roi)}</td>
@@ -223,6 +232,18 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["Real Estate", "Investment", "Trading", "Income", "Cash", "Crypto"]} />
               <In l="Valor Actual" value={form.va} onChange={(v) => setForm((p) => ({ ...p, va: v }))} type="number" placeholder="0" />
               <In l="Valor Compra" value={form.vc} onChange={(v) => setForm((p) => ({ ...p, vc: v }))} type="number" placeholder="0" />
+              <In l="% Rentabilidad Anual" value={form.tasa} onChange={(v) => setForm((p) => ({ ...p, tasa: v }))} type="number" placeholder="Ej: 24 para 24% anual" />
+              {form.tasa && parseFloat(form.tasa) > 0 && parseFloat(form.va) > 0 && (
+                <div style={{ gridColumn: "1/-1", background: T.greenDim, borderRadius: 10, padding: 14 }}>
+                  <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Ingreso mensual calculado:</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: T.green, marginTop: 4 }}>
+                    {"$" + Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12).toLocaleString() + "/mes"}
+                  </div>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+                    = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString() + "/año"} ({form.tasa}% de {"$" + Math.round(parseFloat(form.va)).toLocaleString()})
+                  </div>
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
               <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>

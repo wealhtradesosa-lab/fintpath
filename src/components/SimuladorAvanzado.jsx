@@ -328,7 +328,7 @@ export default function SimuladorAvanzado({ user, totals }) {
                 <div style={{ padding: "8px 12px", background: T.bg2, borderBottom: "1px solid " + T.gn + "15", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>{inv.nombre||inv.n||"Sin nombre"}</span>
-                    <span style={{ fontSize: 10, color: T.txt3, marginLeft: 6 }}>{inv.ubi||inv.ub||inv.ubi||inv.ubcacion||inv.ub}</span>
+                    <span style={{ fontSize: 10, color: T.txt3, marginLeft: 6 }}>{(inv.ubi||inv.ub||"")}{inv.tasa ? " • " + inv.tasa + "% anual" : ""}</span>
                   </div>
                   <div style={{ display: "flex", gap: 10 }}>
                     {sI > 0 && <span style={{ fontSize: 11, color: T.gn, fontWeight: 600 }}>↑{fm(sI)}</span>}
@@ -336,6 +336,8 @@ export default function SimuladorAvanzado({ user, totals }) {
                     <span style={{ fontSize: 12, fontWeight: 700, color: sNOI >= 0 ? T.gn : T.rd, background: "rgba(255,255,255,0.05)", padding: "2px 8px", borderRadius: 6 }}>
                       NOI: {fm(sNOI)}
                     </span>
+                    {(inv.va||inv.valor_actual||0) > 0 && <span style={{ fontSize: 10, color: T.txt3 }}>Capital: {fm(inv.va||inv.valor_actual||0)}</span>}
+                    {inv.tasa > 0 && sI > 0 && <span style={{ fontSize: 10, color: T.txt3 }}>Necesitas: {fm(Math.round(sI * 12 / (inv.tasa/100)))} al {inv.tasa}%</span>}
                   </div>
                 </div>
                 <div style={{ padding: "6px 8px" }}>
