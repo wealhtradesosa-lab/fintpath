@@ -22,7 +22,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, inversiones, onUpdate }) {
+export default function IngresosModule({ ingresos, onUpdate }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "" });
@@ -30,51 +30,8 @@ export default function IngresosModule({ ingresos, inversiones, onUpdate }) {
 
   const items = ingresos || [];
   
-  // Derive income from investments that generate rent
-  const invIncome = [];
-  (inversiones || []).forEach((inv) => {
-    const name = inv.n || inv.nombre || inv.name || "Inversión";
-    const tipo = inv.tp || inv.tipo || "Investment";
-    const va = Number(inv.va || inv.valor_actual || 0);
-    const tasa = Number(inv.tasa || 0);
-    let hasIncome = false;
+  const allItems = items;
 
-    // From sub-units
-    (inv.unidades || inv.un || []).forEach((u) => {
-      (u.ingresos || u.ig || []).forEach((ig) => {
-        if (ig.m > 0) {
-          invIncome.push({ id: "inv_" + inv.id + "_u_" + ig.c, nombre: name + ": " + (ig.c || "Renta"), categoria: tipo, mensual: ig.m, tipo: "fijo", fuente: name, _fromInv: true });
-          hasIncome = true;
-        }
-      });
-    });
-    // Direct income from ig array
-    (inv.ingresos || inv.ig || []).forEach((ig) => {
-      if (ig.m > 0) {
-        invIncome.push({ id: "inv_" + inv.id + "_" + ig.c, nombre: name + ": " + (ig.c || "Renta"), categoria: tipo, mensual: ig.m, tipo: "fijo", fuente: name, _fromInv: true });
-        hasIncome = true;
-      }
-    });
-    // If no ig but has tasa + valor, calculate income
-    if (!hasIncome && tasa > 0 && va > 0) {
-      const mensualCalc = Math.round((va * tasa / 100) / 12);
-      invIncome.push({ id: "inv_" + inv.id + "_tasa", nombre: name + " (" + tasa + "% anual)", categoria: tipo, mensual: mensualCalc, tipo: "fijo", fuente: name + " • Capital: $" + Math.round(va).toLocaleString(), _fromInv: true });
-    }
-  });
-  
-  // Deduplicate: if a standalone ingreso matches an investment name, skip it
-  const invNames = new Set();
-  (inversiones || []).forEach(inv => {
-    const name = (inv.n || inv.nombre || "").toLowerCase();
-    if (name) { invNames.add(name); name.split(" ").forEach(w => { if (w.length > 3) invNames.add(w); }); }
-  });
-  const cleanItems = items.filter(ing => {
-    const ingName = (ing.nombre || "").toLowerCase();
-    const isDup = [...invNames].some(n => ingName.includes(n) || n.includes(ingName));
-    if (isDup) return false; // this standalone ingreso duplicates an investment
-    return true;
-  });
-  const allItems = [...cleanItems, ...invIncome];
   const totalMes = allItems.reduce((s, i) => s + (i.mensual || 0), 0);
   const fijos = allItems.filter((i) => i.tipo === "fijo").reduce((s, i) => s + i.mensual, 0);
   const variables = totalMes - fijos;

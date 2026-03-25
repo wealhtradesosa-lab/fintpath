@@ -208,10 +208,7 @@ export default function SimuladorAvanzado({ user, totals }) {
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       items.forEach((g, gi) => { nv[`gf_${cat}_${gi}`] = Math.round(g.m * f.g); });
     });
-    // Dedup ingresos in scenario too
-    const _sInvN2 = new Set();
-    (user.inv || []).forEach(inv => { const n = (inv.n||inv.nombre||"").toLowerCase(); if (n) { _sInvN2.add(n); n.split(" ").forEach(w => { if (w.length > 3) _sInvN2.add(w); }); } });
-    (user.ingresos || []).forEach((ing, ii) => { const n = (ing.nombre||"").toLowerCase(); if (![..._sInvN2].some(v => n.includes(v)||v.includes(n))) nv[`ing_${ii}`] = Math.round((ing.mensual || 0) * f.i); });
+    (user.ingresos || []).forEach((ing, ii) => { nv[`ing_${ii}`] = Math.round((ing.mensual || 0) * f.i); });
     (user.deudas || []).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
     // Standalone ingresos
     // Dedup ingresos in scenario too
@@ -240,17 +237,10 @@ export default function SimuladorAvanzado({ user, totals }) {
         }
       }
     });
-    // Standalone ingresos (dedup: skip if matches an investment name)
-    const _invN = new Set();
-    (user.inv || []).forEach(inv => {
-      const n = (inv.n || inv.nombre || "").toLowerCase();
-      if (n) { _invN.add(n); n.split(" ").forEach(w => { if (w.length > 3) _invN.add(w); }); }
-    });
+    // Standalone ingresos
     let tIng = 0;
     (user.ingresos || []).forEach((ing, ii) => {
-      const ingN = (ing.nombre || "").toLowerCase();
-      const isDup = [..._invN].some(v => ingN.includes(v) || v.includes(ingN));
-      if (!isDup) tIng += getVal(`ing_${ii}`, ing.mensual || 0);
+      tIng += getVal(`ing_${ii}`, ing.mensual || 0);
     });
     tI += tIng;
 
@@ -379,42 +369,17 @@ export default function SimuladorAvanzado({ user, totals }) {
             );
           })}
 
-          {/* Standalone income - filter out any that duplicate investment income */}
-          {(() => {
-            // Build list of investment names to detect duplicates
-            const invNames = new Set();
-            (user.inv || []).forEach(inv => {
-              const name = (inv.n || inv.nombre || "").toLowerCase();
-              if (name) invNames.add(name);
-              // Also add partial matches
-              name.split(" ").forEach(w => { if (w.length > 3) invNames.add(w); });
-            });
-            // Filter standalone ingresos that are NOT duplicates of investment income
-            const standalone = (user.ingresos || []).filter((ing, ii) => {
-              const ingName = (ing.nombre || "").toLowerCase();
-              // Check if this ingreso matches any investment name
-              const isDuplicate = [...invNames].some(invName => 
-                ingName.includes(invName) || invName.includes(ingName)
-              );
-              return !isDuplicate;
-            });
-            // Map back to original indices for slider keys
-            const standaloneWithIdx = standalone.map(ing => {
-              const origIdx = (user.ingresos || []).indexOf(ing);
-              return { ...ing, _idx: origIdx };
-            });
-            if (standaloneWithIdx.length === 0) return null;
-            return (
-              <>
-                <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Ingresos Independientes</h4>
-                {standaloneWithIdx.map((ing) => (
-                  <Slider key={`ing_${ing._idx}`} label={ing.nombre || "Ingreso"} value={getVal(`ing_${ing._idx}`, ing.mensual || 0)} base={ing.mensual || 0}
-                    max={Math.max((ing.mensual || 0) * 3, 1000)} color="#22d3ee"
-                    onChange={(v) => setVal(`ing_${ing._idx}`, v)} sub={ing.categoria || ing.tipo || ""} />
-                ))}
-              </>
-            );
-          })()}
+          {/* Ingresos independientes (salario, freelance, etc.) */}
+          {(user.ingresos || []).length > 0 && (
+            <>
+              <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Ingresos Independientes</h4>
+              {(user.ingresos || []).map((ing, ii) => (
+                <Slider key={`ing_${ii}`} label={ing.nombre || "Ingreso"} value={getVal(`ing_${ii}`, ing.mensual || 0)} base={ing.mensual || 0}
+                  max={Math.max((ing.mensual || 0) * 3, 1000)} color="#22d3ee"
+                  onChange={(v) => setVal(`ing_${ii}`, v)} sub={ing.categoria || ing.tipo || ""} />
+              ))}
+            </>
+          )}
 
           {/* Family expense sliders */}
           <h4 style={{ fontSize: 13, color: T.rd, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💳 Gastos Familiares</h4>
