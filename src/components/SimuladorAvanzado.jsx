@@ -301,7 +301,10 @@ export default function SimuladorAvanzado({ user, totals }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>Simulador de Independencia Financiera</h2><button onClick={()=>{document.querySelectorAll("aside,header,[data-no-print]").forEach(e=>e.style.display="none");window.print();setTimeout(()=>document.querySelectorAll("aside,header,[data-no-print]").forEach(e=>e.style.display=""),500)}} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,marginLeft:12}}>📄 Exportar PDF</button>
+      <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>Simulador de Independencia Financiera</h2><button onClick={()=>{
+              document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO"));
+              window.print();
+            }} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,marginLeft:12}}>📄 Exportar PDF</button>
       <p style={{ color: T.txt3, fontSize: 13, marginBottom: 20 }}>Ajusta cada ingreso y gasto — la barra de libertad reacciona en tiempo real</p>
 
       {/* ═══ FREEDOM BAR — reacts to simulated values ═══ */}

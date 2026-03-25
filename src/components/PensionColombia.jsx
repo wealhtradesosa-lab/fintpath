@@ -50,7 +50,7 @@ export default function PensionBTC({trm:pTrm}){
         <div><h1 style={{fontSize:24,fontWeight:800,margin:0,color:T.orange}}>Pensionarse con Bitcoin</h1><p style={{fontSize:13,color:T.txt3,margin:0}}>Simulador profesional • Sistema pensional colombiano + DCA Bitcoin</p></div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={()=>window.print()} style={{background:T.orange,color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>📄 Exportar PDF</button>
+        <button onClick={()=>{document.body.setAttribute("data-date",new Date().toLocaleDateString("es-CO"));window.print()}} style={{background:T.orange,color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>📄 Exportar PDF</button>
         <div style={{textAlign:"right"}}><div style={{fontSize:13,color:T.green}}>● BTC {fU(pBTC)}</div><div style={{fontSize:13,color:T.orange}}>● USD/COP {"$"+trm.toLocaleString()}</div></div>
       </div>
     </div>

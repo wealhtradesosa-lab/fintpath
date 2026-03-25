@@ -12,15 +12,42 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%2309090b'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-size='40' font-weight='800' fill='%2322c55e'%3EF%3C/text%3E%3C/svg%3E" />
   <style>
       @media print {
-        body { background: #fff !important; color: #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        * { color: #000 !important; border-color: #ccc !important; }
-        [style*="overflow"] { overflow: visible !important; max-height: none !important; }
-        aside, header, button, [data-no-print] { display: none !important; }
-        main { padding: 20px !important; }
-        div[style*="grid"] { display: block !important; }
-        div[style*="grid"] > * { margin-bottom: 16px !important; page-break-inside: avoid; }
-        svg text { fill: #000 !important; }
-        .recharts-wrapper { page-break-inside: avoid; }
+        /* Keep dark theme - it prints better than forcing white */
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+        
+        /* Hide nav elements */
+        aside, [data-no-print] { display: none !important; }
+        header { display: none !important; }
+        button, input[type="range"] { display: none !important; }
+        
+        /* Make main content full width */
+        main { margin: 0 !important; padding: 16px !important; width: 100% !important; }
+        body { background: #09090b !important; margin: 0 !important; }
+        #root { display: block !important; }
+        #root > div { display: block !important; }
+        #root > div > main { display: block !important; flex: none !important; }
+        
+        /* Fix overflow - show everything */
+        [style*="overflow"] { overflow: visible !important; max-height: none !important; height: auto !important; }
+        [style*="max-height"] { max-height: none !important; }
+        [style*="70vh"] { max-height: none !important; }
+        
+        /* Fix grids - make them stack on print */
+        [style*="grid-template-columns: 1fr 1fr"] { display: block !important; }
+        [style*="gridTemplateColumns"] { display: block !important; }
+        [style*="grid"] > * { margin-bottom: 12px !important; page-break-inside: avoid !important; break-inside: avoid !important; }
+        
+        /* Charts */
+        .recharts-wrapper { page-break-inside: avoid !important; break-inside: avoid !important; max-width: 100% !important; }
+        .recharts-surface { max-width: 100% !important; }
+        svg { max-width: 100% !important; }
+        
+        /* Page breaks */
+        h1, h2, h3, h4 { page-break-after: avoid !important; }
+        
+        /* Print header */
+        body::before { content: "FINPATH — Reporte Financiero"; display: block; font-size: 20px; font-weight: 800; color: #22c55e; padding: 16px; border-bottom: 2px solid #22c55e; margin-bottom: 16px; }
+        body::after { content: "Generado: " attr(data-date); display: block; font-size: 10px; color: #666; padding: 16px; border-top: 1px solid #333; margin-top: 16px; }
       }
     </style>
     </head>

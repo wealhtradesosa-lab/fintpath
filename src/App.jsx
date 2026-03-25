@@ -118,8 +118,13 @@ export default function FinPath(){
 
     return<div>
       {/* Greeting */}
-      <h1 style={{fontSize:26,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>{new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}, {u.p.name.split(" ")[0]}</h1>
-      <p style={{color:T.tx3,fontSize:13,margin:"0 0 24px"}}>Resumen de tu situación financiera</p>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
+        <div>
+          <h1 style={{fontSize:26,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>{new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}, {u.p.name.split(" ")[0]}</h1>
+          <p style={{color:T.tx3,fontSize:13,margin:0}}>Resumen de tu situación financiera</p>
+        </div>
+        <button onClick={()=>{document.body.setAttribute("data-date",new Date().toLocaleDateString("es-CO"));window.print()}} style={{background:T.gn,color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>📄 Exportar PDF</button>
+      </div>
 
       {!has&&<div style={{background:"linear-gradient(135deg,rgba(34,197,94,.08),rgba(6,182,212,.05))",border:"1px solid rgba(34,197,94,.15)",borderRadius:16,padding:24,marginBottom:20,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}><div style={{flex:1}}><h3 style={{fontSize:16,fontWeight:700,margin:"0 0 6px"}}>Bienvenido a FINPATH</h3><p style={{color:T.tx2,fontSize:13,margin:0}}>Carga datos demo para explorar</p></div><Bt sz="s" onClick={demo}>Cargar Demo</Bt></div>}
 
