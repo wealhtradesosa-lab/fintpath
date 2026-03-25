@@ -286,11 +286,36 @@ export default function SimuladorAvanzado({ user, totals }) {
         {/* LEFT: Sliders */}
         <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: 8 }}>
           <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>💰 Ingresos</h4>
-          {(user.ingresos || []).map((ing, ii) => (
-            <Slider key={`ing_${ii}`} label={ing.nombre || "Ingreso"} value={getVal(`ing_${ii}`, ing.mensual || 0)} base={ing.mensual || 0}
-              max={Math.max((ing.mensual || 0) * 3, 1000)} color="#22d3ee"
-              onChange={(v) => setVal(`ing_${ii}`, v)} sub={(ing.capital > 0 ? "Capital: $" + Math.round(ing.capital).toLocaleString() + (ing.tasa ? " • " + ing.tasa + "% anual" : "") : ing.categoria || ing.tipo || "")} />
-          ))}
+          {(user.ingresos || []).map((ing, ii) => {
+            const val = getVal(`ing_${ii}`, ing.mensual || 0);
+            const cap = Number(ing.capital) || 0;
+            const tasa = Number(ing.tasa) || 0;
+            const capitalNeeded = tasa > 0 && val > 0 ? Math.round((val * 12) / (tasa / 100)) : 0;
+            return (
+              <div key={`ing_${ii}`} style={{ marginBottom: 6, background: "#22d3ee08", padding: "10px 14px", borderRadius: 10, borderLeft: "3px solid #22d3ee30" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>{ing.nombre || "Ingreso"}</div>
+                    <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+                      {ing.categoria || ""}
+                      {cap > 0 && <span style={{ marginLeft: 6, color: "#22d3ee" }}>Capital: <strong>${Math.round(cap).toLocaleString()}</strong></span>}
+                      {tasa > 0 && <span style={{ marginLeft: 6, color: "#22d3ee" }}>Tasa: <strong>{tasa}%</strong> anual</span>}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#22d3ee" }}>{fm(val)}<span style={{ fontSize: 10, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
+                    {val !== (ing.mensual || 0) && <div style={{ fontSize: 10, color: val > (ing.mensual || 0) ? T.gn : T.rd }}>{val > (ing.mensual || 0) ? "+" : ""}{fm(val - (ing.mensual || 0))}</div>}
+                  </div>
+                </div>
+                {tasa > 0 && <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>
+                  Para generar {fm(val)}/mes al {tasa}% necesitas invertir: <strong style={{ color: "#22d3ee" }}>{fm(capitalNeeded)}</strong>
+                </div>}
+                <input type="range" min="0" max={Math.max((ing.mensual || 0) * 3, 1000)} step={Math.max(Math.round((ing.mensual || 0) * 0.01), 5)} value={val}
+                  onChange={(e) => setVal(`ing_${ii}`, Number(e.target.value))}
+                  style={{ width: "100%", accentColor: "#22d3ee", height: 4, cursor: "pointer" }} />
+              </div>
+            );
+          })}
 
           {/* Family expense sliders */}
           <h4 style={{ fontSize: 13, color: T.rd, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💳 Gastos Familiares</h4>

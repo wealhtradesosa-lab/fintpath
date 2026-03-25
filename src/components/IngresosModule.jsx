@@ -156,20 +156,20 @@ export default function IngresosModule({ ingresos, onUpdate }) {
               <In l="Monto Mensual" value={form.mensual} onChange={(v) => setForm((p) => ({ ...p, mensual: v }))} type="number" placeholder="0" />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
               <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa / Cliente" />
-              <In l="Capital invertido (opcional)" value={form.capital} onChange={(v) => {
+              <In l="💼 Capital invertido" value={form.capital} onChange={(v) => {
                 const newForm = { ...form, capital: v };
                 if (v && form.tasa && Number(v) > 0 && Number(form.tasa) > 0) {
                   newForm.mensual = String(Math.round((Number(v) * Number(form.tasa) / 100) / 12));
                 }
                 setForm(p => ({ ...p, ...newForm }));
-              }} type="number" placeholder="Ej: 3270000000" />
-              <In l="% Rentabilidad anual (opcional)" value={form.tasa} onChange={(v) => {
+              }} type="number" placeholder="Si es fondo/inversión, cuánto tienes invertido" />
+              <In l="📈 % Rentabilidad anual" value={form.tasa} onChange={(v) => {
                 const newForm = { ...form, tasa: v };
                 if (v && form.capital && Number(v) > 0 && Number(form.capital) > 0) {
                   newForm.mensual = String(Math.round((Number(form.capital) * Number(v) / 100) / 12));
                 }
                 setForm(p => ({ ...p, ...newForm }));
-              }} type="number" placeholder="Ej: 24 para 24% anual" />
+              }} type="number" placeholder="Ej: 24 → calcula ingreso automático" />
               {form.capital && form.tasa && Number(form.capital) > 0 && Number(form.tasa) > 0 && (
                 <div style={{ gridColumn: "1/-1", background: T.greenDim, borderRadius: 10, padding: 14 }}>
                   <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Ingreso mensual calculado automáticamente:</div>
@@ -177,7 +177,7 @@ export default function IngresosModule({ ingresos, onUpdate }) {
                     {"$" + Math.round((Number(form.capital) * Number(form.tasa) / 100) / 12).toLocaleString() + "/mes"}
                   </div>
                   <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                    Capital: {"$" + Number(form.capital).toLocaleString()} × {form.tasa}% anual ÷ 12 meses
+                    {"$" + Number(form.capital).toLocaleString()} × {form.tasa}% ÷ 12 = {"$" + Math.round((Number(form.capital) * Number(form.tasa) / 100) / 12).toLocaleString() + "/mes"}
                   </div>
                 </div>
               )}
