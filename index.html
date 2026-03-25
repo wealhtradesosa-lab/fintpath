@@ -12,42 +12,81 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%2309090b'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-size='40' font-weight='800' fill='%2322c55e'%3EF%3C/text%3E%3C/svg%3E" />
   <style>
       @media print {
-        /* Keep dark theme - it prints better than forcing white */
-        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+        /* Force portrait & white background for clean report */
+        @page { size: letter portrait; margin: 18mm 15mm; }
         
-        /* Hide nav elements */
-        aside, [data-no-print] { display: none !important; }
-        header { display: none !important; }
-        button, input[type="range"] { display: none !important; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         
-        /* Make main content full width */
-        main { margin: 0 !important; padding: 16px !important; width: 100% !important; }
-        body { background: #09090b !important; margin: 0 !important; }
-        #root { display: block !important; }
-        #root > div { display: block !important; }
-        #root > div > main { display: block !important; flex: none !important; }
+        /* White background, dark text */
+        body { background: #fff !important; color: #111 !important; margin: 0 !important; font-family: -apple-system, system-ui, sans-serif !important; }
         
-        /* Fix overflow - show everything */
+        /* Hide everything non-essential */
+        aside, header, button, input[type="range"], [data-no-print] { display: none !important; }
+        
+        /* Full width layout */
+        #root, #root > div, #root > div > div, main { display: block !important; width: 100% !important; max-width: 100% !important; flex: none !important; padding: 0 !important; margin: 0 !important; }
         [style*="overflow"] { overflow: visible !important; max-height: none !important; height: auto !important; }
         [style*="max-height"] { max-height: none !important; }
-        [style*="70vh"] { max-height: none !important; }
+        [style*="70vh"], [style*="85vh"] { max-height: none !important; height: auto !important; }
         
-        /* Fix grids - make them stack on print */
-        [style*="grid-template-columns: 1fr 1fr"] { display: block !important; }
-        [style*="gridTemplateColumns"] { display: block !important; }
-        [style*="grid"] > * { margin-bottom: 12px !important; page-break-inside: avoid !important; break-inside: avoid !important; }
+        /* Cards: white bg, subtle border */
+        div[style*="border-radius"] { background: #fff !important; border: 1px solid #ddd !important; box-shadow: none !important; margin-bottom: 10px !important; }
+        
+        /* Text colors for readability */
+        h1, h2, h3, h4 { color: #111 !important; page-break-after: avoid !important; }
+        p, span, div, td, th, label { color: #333 !important; }
+        
+        /* Preserve accent colors for key numbers */
+        [style*="color: rgb(34, 197, 94)"], [style*="color:#22c55e"] { color: #16a34a !important; }
+        [style*="color: rgb(239, 68, 68)"], [style*="color:#ef4444"] { color: #dc2626 !important; }
+        [style*="color: rgb(59, 130, 246)"], [style*="color:#3b82f6"] { color: #2563eb !important; }
+        [style*="color: rgb(34, 211, 238)"], [style*="color:#22d3ee"] { color: #0891b2 !important; }
+        
+        /* Grids → single column for portrait */
+        div[style*="gridTemplateColumns"], div[style*="grid-template-columns"] { display: block !important; }
+        div[style*="gridTemplateColumns"] > *, div[style*="grid-template-columns"] > * { 
+          margin-bottom: 8px !important; 
+          page-break-inside: avoid !important; 
+          break-inside: avoid !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
+        }
+        
+        /* Keep 4-column KPIs as a 2x2 grid */
+        div[style*="repeat(auto-fit"] { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+        
+        /* Tables */
+        table { width: 100% !important; border-collapse: collapse !important; font-size: 11px !important; }
+        th { background: #f5f5f5 !important; color: #555 !important; padding: 8px !important; border-bottom: 2px solid #ddd !important; }
+        td { padding: 8px !important; border-bottom: 1px solid #eee !important; color: #333 !important; }
         
         /* Charts */
         .recharts-wrapper { page-break-inside: avoid !important; break-inside: avoid !important; max-width: 100% !important; }
-        .recharts-surface { max-width: 100% !important; }
         svg { max-width: 100% !important; }
+        svg text { fill: #555 !important; }
         
-        /* Page breaks */
-        h1, h2, h3, h4 { page-break-after: avoid !important; }
+        /* Progress bars - make visible on white */
+        div[style*="background: linear-gradient"] { border: 1px solid #ddd !important; }
         
-        /* Print header */
-        body::before { content: "FINPATH — Reporte Financiero"; display: block; font-size: 20px; font-weight: 800; color: #22c55e; padding: 16px; border-bottom: 2px solid #22c55e; margin-bottom: 16px; }
-        body::after { content: "Generado: " attr(data-date); display: block; font-size: 10px; color: #666; padding: 16px; border-top: 1px solid #333; margin-top: 16px; }
+        /* Report header */
+        body::before { 
+          content: "FINPATH — Reporte Financiero"; 
+          display: block; 
+          font-size: 22px; font-weight: 800; 
+          color: #16a34a; 
+          padding: 0 0 12px; 
+          border-bottom: 3px solid #16a34a; 
+          margin-bottom: 20px; 
+        }
+        body::after { 
+          content: "Generado el " attr(data-date) " • FINPATH — fintpath.vercel.app"; 
+          display: block; 
+          font-size: 9px; color: #999; 
+          padding: 12px 0 0; 
+          border-top: 1px solid #ddd; 
+          margin-top: 20px; 
+          text-align: center;
+        }
       }
     </style>
     </head>
