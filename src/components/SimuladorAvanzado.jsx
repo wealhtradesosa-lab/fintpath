@@ -369,47 +369,16 @@ export default function SimuladorAvanzado({ user, totals }) {
             );
           })}
 
-          {/* ALL INCOME: standalone + investment-derived */}
-          <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Todos los Ingresos</h4>
-          {/* Standalone income */}
-          {(user.ingresos || []).map((ing, ii) => (
-            <Slider key={`ing_${ii}`} label={ing.nombre || "Ingreso"} value={getVal(`ing_${ii}`, ing.mensual || 0)} base={ing.mensual || 0}
-              max={Math.max((ing.mensual || 0) * 3, 1000)} color="#22d3ee"
-              onChange={(v) => setVal(`ing_${ii}`, v)} sub={ing.categoria || ing.tipo || ""} />
-          ))}
-          {/* Income from investments with tasa */}
-          {(user.inv || []).filter(inv => {
-            const hasTasa = Number(inv.tasa||0) > 0 && Number(inv.va||0) > 0;
-            const hasIg = ((inv.ingresos||inv.ig||[])).some(i => i.m > 0);
-            const hasUn = ((inv.unidades||inv.un||[])).some(u => ((u.ingresos||u.ig||[])).some(i => i.m > 0));
-            return hasTasa || hasIg || hasUn;
-          }).map((inv) => {
-            const name = inv.n || inv.nombre || "Inversión";
-            const va = Number(inv.va||0);
-            const tasa = Number(inv.tasa||0);
-            // Collect all income items from this investment
-            const incItems = [];
-            ((inv.unidades||inv.un||[])).forEach(u => {
-              ((u.ingresos||u.ig||[])).forEach(ig => {
-                if (ig.m > 0) incItems.push({ label: (u.nombre||u.n||"") + ": " + ig.c, m: ig.m });
-              });
-            });
-            ((inv.ingresos||inv.ig||[])).forEach(ig => {
-              if (ig.m > 0) incItems.push({ label: ig.c, m: ig.m });
-            });
-            if (incItems.length === 0 && tasa > 0 && va > 0) {
-              incItems.push({ label: "Rendimiento " + tasa + "%", m: Math.round((va * tasa / 100) / 12) });
-            }
-            const totalInc = incItems.reduce((s, i) => s + i.m, 0);
-            return (
-              <div key={"inv_inc_" + inv.id} style={{ background: "#22d3ee08", borderRadius: 8, padding: "6px 8px", marginBottom: 4, borderLeft: "3px solid #22d3ee30" }}>
-                <div style={{ fontSize: 11, color: "#22d3ee", fontWeight: 700, marginBottom: 2 }}>🔗 {name} {tasa > 0 && <span style={{ fontWeight: 400, color: T.txt3 }}>({tasa}% de {fm(va)})</span>}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#22d3ee" }}>{fm(totalInc)}/mes</div>
-              </div>
-            );
-          })}
-          {(user.ingresos || []).length === 0 && (user.inv || []).every(inv => !Number(inv.tasa||0) && !((inv.ingresos||inv.ig||[])).some(i=>i.m>0) && !((inv.unidades||inv.un||[])).some(u=>((u.ingresos||u.ig||[])).some(i=>i.m>0))) && (
-            <div style={{ fontSize: 12, color: T.txt3, padding: "8px 0" }}>No hay ingresos. Agrega en el módulo de Ingresos o en Inversiones con % rentabilidad.</div>
+          {/* Standalone income sliders - NOT investment income (those are in Activos above) */}
+          {(user.ingresos || []).length > 0 && (
+            <>
+              <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Ingresos Independientes</h4>
+              {(user.ingresos || []).map((ing, ii) => (
+                <Slider key={`ing_${ii}`} label={ing.nombre || "Ingreso"} value={getVal(`ing_${ii}`, ing.mensual || 0)} base={ing.mensual || 0}
+                  max={Math.max((ing.mensual || 0) * 3, 1000)} color="#22d3ee"
+                  onChange={(v) => setVal(`ing_${ii}`, v)} sub={ing.categoria || ing.tipo || ""} />
+              ))}
+            </>
           )}
 
           {/* Family expense sliders */}
