@@ -272,7 +272,7 @@ export default function SimuladorAvanzado({ user, totals }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>Simulador Financiero</h2><button onClick={()=>window.print()} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,marginLeft:12}}>📄 PDF</button>
+      <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>Simulador de Independencia Financiera</h2><button onClick={()=>window.print()} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,marginLeft:12}}>📄 PDF</button>
       <p style={{ color: T.txt3, fontSize: 13, marginBottom: 20 }}>Ajusta cada ingreso y gasto — la barra de libertad reacciona en tiempo real</p>
 
       {/* ═══ FREEDOM BAR — reacts to simulated values ═══ */}
@@ -316,7 +316,7 @@ export default function SimuladorAvanzado({ user, totals }) {
         {/* LEFT: Sliders */}
         <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: 8 }}>
           {/* Investment sliders */}
-          <h4 style={{ fontSize: 13, color: T.gn, fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>📈 Activos — Ingresos & Gastos</h4>
+          <h4 style={{ fontSize: 13, color: T.gn, fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>🏦 Patrimonio — Gastos de tus activos</h4>
           {(user.inv || []).map((inv) => {
             let items;
             if (inv.unidades||inv.un) {
@@ -372,7 +372,7 @@ export default function SimuladorAvanzado({ user, totals }) {
           {/* Ingresos independientes (salario, freelance, etc.) */}
           {(user.ingresos || []).length > 0 && (
             <>
-              <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Ingresos Independientes</h4>
+              <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Ingresos — Todo lo que recibes</h4>
               {(user.ingresos || []).map((ing, ii) => (
                 <Slider key={`ing_${ii}`} label={ing.nombre || "Ingreso"} value={getVal(`ing_${ii}`, ing.mensual || 0)} base={ing.mensual || 0}
                   max={Math.max((ing.mensual || 0) * 3, 1000)} color="#22d3ee"
@@ -408,7 +408,7 @@ export default function SimuladorAvanzado({ user, totals }) {
 
           {/* Standalone Ingresos */}
           {(user.ingresos || []).length > 0 && <>
-          <h4 style={{ fontSize: 13, color: T.gn, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Ingresos Independientes</h4>
+          <h4 style={{ fontSize: 13, color: T.gn, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Ingresos — Todo lo que recibes</h4>
           {(user.ingresos || []).map((ing, ii) => (
             <Slider key={`ing_${ii}`} label={ing.nombre || "Ingreso"} value={getVal(`ing_${ii}`, ing.mensual || 0)} base={ing.mensual || 0}
               max={Math.max((ing.mensual || 0) * 3, 1000)} color={T.gn}

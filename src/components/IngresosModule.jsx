@@ -11,7 +11,7 @@ const T = {
   ch: ["#22c55e", "#3b82f6", "#f97316", "#a78bfa", "#ec4899", "#22d3ee", "#eab308"],
 };
 const fm = (n) => "$" + Math.round(n).toLocaleString("en-US");
-const CATS = ["Salario", "Freelance", "Arriendo", "Inversión", "Negocio", "Dividendos", "Pensión", "Otro"];
+const CATS = ["Salario", "Arriendo", "Rendimiento", "Dividendos", "Freelance", "Negocio", "Pensión", "Comisiones", "Otro"];
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
@@ -67,7 +67,7 @@ export default function IngresosModule({ ingresos, onUpdate }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Ingresos</h2>
-          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{allItems.length} fuentes • Total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalMes)}/mes</span></p>
+          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{allItems.length} fuentes de ingreso • Total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalMes)}/mes</span></p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {selected.size > 0 && (
@@ -108,7 +108,7 @@ export default function IngresosModule({ ingresos, onUpdate }) {
               </tr></thead>
               <tbody>
                 {allItems.length === 0 ? (
-                  <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay ingresos. Agrega o importa desde Excel.</td></tr>
+                  <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay ingresos. Agrega TODO lo que recibes: salario, arriendos, rendimientos de fondos, dividendos, freelance, etc.</td></tr>
                 ) : allItems.map((item) => (
                   <tr key={item.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.id) ? T.greenDim : "transparent" }}>
                     <td style={{ padding: "10px 12px" }}>

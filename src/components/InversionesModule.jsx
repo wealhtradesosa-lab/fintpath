@@ -69,7 +69,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
   const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
 
   const deleteSelected = () => {
-    if (!selected.size || !confirm(`¿Eliminar ${selected.size} inversión(es)?`)) return;
+    if (!selected.size || !confirm(`¿Eliminar ${selected.size} activo(s)?`)) return;
     onUpdate(items.filter((i) => !selected.has(i.id)));
     setSelected(new Set());
   };
@@ -137,7 +137,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Portfolio de Inversiones</h2>
           <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>
-            {items.length} inversiones • Valor: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalValor)}</span>
+            {items.length} activos • Valor total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalValor)}</span>
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -153,9 +153,9 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
-          { l: "Valor Total", v: fm(totalValor), c: T.green },
-          { l: "Ingreso Neto", v: fm(totalIncome) + "/mes", c: T.blue },
-          { l: "Inversiones", v: items.length, c: T.txt },
+          { l: "Patrimonio Total", v: fm(totalValor), c: T.green },
+          { l: "Renta Mensual", v: fm(totalIncome) + "/mes", c: T.blue },
+          { l: "Activos", v: items.length, c: T.txt },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
             <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
@@ -181,7 +181,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
             </thead>
             <tbody>
               {items.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay inversiones. Agrega o importa desde Excel.</td></tr>
+                <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay activos. Agrega propiedades, fondos, acciones, crypto, etc.</td></tr>
               ) : items.map((inv) => {
                 const m = calcMetrics(inv, deudas);
                 const name = getName(inv);
@@ -221,18 +221,21 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
         <div onClick={() => setShowForm(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 20, width: "100%", maxWidth: 560, padding: 32 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editId ? "Editar Inversión" : "Agregar Inversión"}</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editId ? "Editar Activo" : "Agregar Activo"}</h3>
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ gridColumn: "1/-1" }}>
-                <In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Casa Playa, Fondo inversión" />
+                <In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Apartamento, Fondo, Acciones, Terreno" />
               </div>
               <In l="Ubicación" value={form.ubicacion} onChange={(v) => setForm((p) => ({ ...p, ubicacion: v }))} placeholder="Miami, FL" />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["Real Estate", "Investment", "Trading", "Income", "Cash", "Crypto"]} />
               <In l="Valor Actual" value={form.va} onChange={(v) => setForm((p) => ({ ...p, va: v }))} type="number" placeholder="0" />
               <In l="Valor Compra" value={form.vc} onChange={(v) => setForm((p) => ({ ...p, vc: v }))} type="number" placeholder="0" />
-              <In l="% Rentabilidad Anual" value={form.tasa} onChange={(v) => setForm((p) => ({ ...p, tasa: v }))} type="number" placeholder="Ej: 24 para 24% anual" />
+              <In l="% Rendimiento Anual (si genera renta)" value={form.tasa} onChange={(v) => setForm((p) => ({ ...p, tasa: v }))} type="number" placeholder="Ej: 24 para 24% anual" />
+              {!form.tasa && <div style={{ gridColumn: "1/-1", background: T.blue + "10", borderRadius: 10, padding: 12 }}>
+                <div style={{ fontSize: 12, color: T.blue }}>💡 Si este activo genera renta mensual (arriendo, dividendos, rendimientos), ponla en el módulo de <strong>Ingresos</strong>. Aquí solo va el valor del activo.</div>
+              </div>}
               {form.tasa && parseFloat(form.tasa) > 0 && parseFloat(form.va) > 0 && (
                 <div style={{ gridColumn: "1/-1", background: T.greenDim, borderRadius: 10, padding: 14 }}>
                   <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Ingreso mensual calculado:</div>

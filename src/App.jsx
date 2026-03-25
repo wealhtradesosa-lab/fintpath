@@ -86,7 +86,7 @@ export default function FinPath(){
   </div>;
 
   const has=(u.inv?.length||u.deu?.length||Object.keys(u.gas||{}).length)>0;
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"ing",i:"💰",l:"Ingresos"},{id:"inv",i:"📈",l:"Inversiones"},{id:"trd",i:"💹",l:"Trading"},{id:"gas",i:"💳",l:"Gastos"},{id:"deu",i:"📋",l:"Deudas"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"pat",i:"🏦",l:"Patrimonio"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Gastos"},{id:"deu",i:"📋",l:"Deudas"},{id:"trd",i:"💹",l:"Trading"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"pat",i:"📊",l:"Distribución"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
 
   const rp=()=>{switch(pg){
     case"dash":{const fd=[{name:"Ingresos",a:t.ti},{name:"Gastos",a:-(t.gfm+t.tg)},{name:"Deudas",a:-t.tc},{name:"Cash Flow",a:t.cf}];const tp=(u.inv||[]).map(i=>({...i,...iM(i,u.deu)})).sort((a,b)=>b.noi-a.noi).slice(0,5);const pj=[0,1,3,5,10].map(y=>({yr:y===0?"Hoy":`+${y}a`,v:t.nw*Math.pow(1.08,y)+t.cf*12*y}));
