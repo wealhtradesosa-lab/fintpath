@@ -78,13 +78,13 @@ export default function PensionBTC({trm:pTrm}){
 
     {tab==="simulador"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
       <div><Cd style={{padding:24,marginBottom:16}}><div style={{fontSize:16,fontWeight:700,marginBottom:20}}>⚙️ Parámetros de Simulación</div>
-        <Sl label="Salario" value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" SMMLV ("+fC(salSM*SM)+")"} color={T.txt}/>
+        <Sl label="Salario mensual" value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" SMMLV ("+fC(salSM*SM)+"/mes)"} color={T.txt} sub={"Aporte mensual a pensión (16%): "+fC(salSM*SM*0.16)+"/mes → "+fC(salSM*SM*0.16/trm)+" USD/mes a BTC"}/>
         <Sl label="Años Cotizando" value={anios} onChange={setAnios} min={1} max={30} step={1} display={anios+" años"} color={T.green}/>
         <Sl label="CAGR Bitcoin" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)} color={T.orange} sub="Histórico: 69.8% • Conservador: 20-30% • Muy conservador: 10-20%"/>
         <Sl label="Precio BTC" value={pBTC} onChange={setPBTC} min={10000} max={200000} step={1000} display={fU(pBTC)} color={T.gold}/>
       </Cd>
       <Cd glow={T.orange} style={{padding:24}}><div style={{fontSize:16,fontWeight:700,marginBottom:16}}>Tu Resultado</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-        <div><div style={{fontSize:12,color:T.txt3}}>Inversión Total</div><div style={{fontSize:22,fontWeight:800,marginTop:4}}>{fC(btc.ti)}</div></div>
+        <div><div style={{fontSize:12,color:T.txt3}}>Aporte mensual</div><div style={{fontSize:22,fontWeight:800,marginTop:4}}>{fC(apMes)}/mes</div></div>
         <div><div style={{fontSize:12,color:T.txt3}}>Valor BTC</div><div style={{fontSize:22,fontWeight:800,color:T.green,marginTop:4}}>{fU(btc.vf)}</div></div>
         <div><div style={{fontSize:12,color:T.txt3}}>BTC Acumulado</div><div style={{fontSize:22,fontWeight:800,marginTop:4}}>{fB(btc.ba)}</div></div>
         <div><div style={{fontSize:12,color:T.txt3}}>Retorno</div><div style={{fontSize:22,fontWeight:800,color:T.orange,marginTop:4}}>+{pc(btc.ret)}</div></div>
