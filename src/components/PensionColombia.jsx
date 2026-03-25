@@ -37,9 +37,9 @@ export default function PensionBTC({trm:pTrm}){
 
   const penMes=salMes*(tasaR/100);
   const penAI=penMes*12*0.19;
-  const pen20=penMes*12*20;
+  const penTotal=penMes*12*anios;
   const mult=penMes>0?btc.rMC/penMes:0;
-  const btcR20=btc.rMC*12*20;
+  const btcTotal=btc.rMC*12*anios;
   const tabs=[{id:"resumen",i:"📊",l:"Resumen"},{id:"simulador",i:"⚙️",l:"Simulador"},{id:"proyeccion",i:"📈",l:"Proyección"},{id:"analisis",i:"🔍",l:"Análisis"}];
 
   return<div style={{maxWidth:1100,margin:"0 auto"}}>
@@ -53,17 +53,25 @@ export default function PensionBTC({trm:pTrm}){
     <div style={{display:"flex",gap:4,marginBottom:24}}>{tabs.map(t=>{const a=tab===t.id;return<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"10px 20px",borderRadius:10,border:a?`1px solid ${T.orange}`:`1px solid ${T.border}`,background:a?T.orangeDim:"transparent",color:a?T.orange:T.txt3,cursor:"pointer",fontSize:14,fontWeight:a?700:500}}>{t.i} {t.l}</button>})}</div>
 
     {tab==="resumen"&&<div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}><MC l="Total Aportado" v={fC(btc.ti)} sub={anios+" años"}/><MC l="Valor Final BTC" v={fU(btc.vf)} sub={"+"+pc(btc.ret)} color={T.green}/><MC l="Pensión Mensual" v={fC(penMes)} sub={tasaR+"% salario"} color={T.blue}/><MC l={"Retiro BTC ("+regla+"%)"} v={fC(btc.rMC)} sub={mult.toFixed(1)+"x pensión"} color={T.orange}/></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}><MC l={"Tu inversión ("+anios+" años)"} v={fC(btc.ti)} sub={"Aporte mensual: "+fC(apMes)}/><MC l={"Valor BTC acumulado"} v={fU(btc.vf)} sub={fB(btc.ba)+" Bitcoin"} color={T.green}/><MC l="Pensión mensual" v={fC(penMes)} sub={"Sistema tradicional"} color={T.blue}/><MC l="Retiro mensual BTC" v={fC(btc.rMC)} sub={mult.toFixed(1)+"x más que pensión"} color={T.orange}/></div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
         <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>₿ Acumulación BTC (USD)</div><ResponsiveContainer width="100%" height={220}><BarChart data={btc.yd}><XAxis dataKey="anio" tick={{fill:T.txt3,fontSize:11}} axisLine={false} tickLine={false}/><YAxis tick={{fill:T.txt3,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"$"+(v/1e6).toFixed(1)+"M"}/><Tooltip contentStyle={TT} formatter={v=>fU(v)}/><Bar dataKey="valorUSD" radius={[4,4,0,0]}>{btc.yd.map((_,i)=><Cell key={i} fill={T.orange}/>)}</Bar></BarChart></ResponsiveContainer></Cd>
         <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,marginBottom:20}}>Ingreso Mensual en Retiro</div>
           <div style={{marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:T.txt2}}>Pensión</span><span style={{fontSize:13,fontWeight:700,color:T.blue}}>{fC(penMes)}</span></div><div style={{height:28,background:T.bg3,borderRadius:8,overflow:"hidden"}}><div style={{width:`${Math.min((penMes/Math.max(btc.rMC,1))*100,100)}%`,height:"100%",background:T.blue,borderRadius:8,minWidth:20}}/></div></div>
           <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:T.txt2}}>BTC {regla}%</span><span style={{fontSize:13,fontWeight:700,color:T.orange}}>{fC(btc.rMC)}</span></div><div style={{height:28,background:T.bg3,borderRadius:8,overflow:"hidden"}}><div style={{width:"100%",height:"100%",background:T.orange,borderRadius:8}}/></div></div>
-          <div style={{background:T.bg3,borderRadius:14,padding:20,textAlign:"center"}}><div style={{fontSize:14,color:T.txt2}}>Con BTC recibes</div><div style={{fontSize:48,fontWeight:800,color:T.green}}>{mult.toFixed(1)}x</div><div style={{fontSize:13,color:T.txt3}}>más que la pensión</div></div>
+          <div style={{background:T.bg3,borderRadius:14,padding:20,textAlign:"center"}}>
+            <div style={{fontSize:12,color:T.txt3,marginBottom:8}}>Después de {anios} años ahorrando</div>
+            <div style={{fontSize:14,color:T.txt2}}>Tu retiro mensual con BTC</div>
+            <div style={{fontSize:42,fontWeight:800,color:T.orange,margin:"4px 0"}}>{fC(btc.rMC)}</div>
+            <div style={{fontSize:13,color:T.txt3,marginBottom:12}}>vs pensión: {fC(penMes)}/mes</div>
+            <div style={{fontSize:36,fontWeight:800,color:T.green}}>{mult.toFixed(1)}x</div>
+            <div style={{fontSize:13,color:T.txt3}}>más que la pensión tradicional</div>
+            <div style={{fontSize:12,color:T.txt3,marginTop:8,borderTop:"1px solid "+T.border,paddingTop:8}}>En {anios} años con BTC: {fC(btcTotal)} total • Con pensión: {fC(penTotal)} total</div>
+          </div>
         </Cd>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-        <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,color:T.blue,marginBottom:16}}>🏛️ Pensión Tradicional</div><Rw l="Mensual:" v={fC(penMes)} color={T.blue} bold/><Rw l="Impuesto anual:" v={"-"+fC(penAI)} color={T.red}/><Rw l="En 20 años:" v={fC(pen20)} bold/><div style={{padding:"12px 16px",fontSize:13,color:T.red}}>⚠ No heredable • Sujeto a reformas</div></Cd>
+        <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,color:T.blue,marginBottom:16}}>🏛️ Pensión Tradicional</div><Rw l="Mensual:" v={fC(penMes)} color={T.blue} bold/><Rw l="Impuesto anual:" v={"-"+fC(penAI)} color={T.red}/><Rw l={"En " + anios + " años:"} v={fC(penTotal)} bold/><div style={{padding:"12px 16px",fontSize:13,color:T.red}}>⚠ No heredable • Sujeto a reformas</div></Cd>
         <Cd glow={T.orange} style={{padding:24}}><div style={{fontSize:15,fontWeight:700,color:T.orange,marginBottom:16}}>🟠 Estrategia Bitcoin</div><Rw l="BTC acumulado:" v={fB(btc.ba)} color={T.orange} bold/><Rw l={"Retiro mensual ("+regla+"%):"} v={fC(btc.rMC)} color={T.orange} bold/><Rw l="Multiplicador:" v={mult.toFixed(1)+"x"} color={T.green} bold/><div style={{padding:"12px 16px",fontSize:13,color:T.green}}>✓ Heredable • Auto-custodia • Escasez absoluta</div></Cd>
       </div>
     </div>}
@@ -88,8 +96,8 @@ export default function PensionBTC({trm:pTrm}){
     {tab==="proyeccion"&&<div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}><MC l="Ventaja BTC" v={mult.toFixed(1)+"x"} color={T.green}/><MC l="Capital Heredable" v={fU(btc.vf)} color={T.green}/><MC l={"BTC Año "+anios} v={fU(btc.yd[btc.yd.length-1]?.valorUSD||0)} color={T.orange}/><MC l="Total BTC" v={fB(btc.ba)} color={T.orange}/></div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
-        <Cd glow={T.blue} style={{padding:28}}><div style={{fontSize:15,fontWeight:700,color:T.blue,marginBottom:12}}>🏛️ Pensión Tradicional (20 años)</div><div style={{fontSize:32,fontWeight:800}}>{fC(pen20)}</div><div style={{fontSize:13,color:T.txt3,marginTop:4}}>Total recibido en 20 años de retiro</div><div style={{fontSize:13,color:T.red,marginTop:12}}>⚠ Al fallecer, se pierde todo</div></Cd>
-        <Cd glow={T.green} style={{padding:28}}><div style={{fontSize:15,fontWeight:700,color:T.green,marginBottom:12}}>🟠 Estrategia BTC ({regla}% anual)</div><div style={{fontSize:32,fontWeight:800}}>{fC(btcR20+btc.vfC)}</div><div style={{fontSize:13,color:T.txt3,marginTop:4}}>Total retirado + capital preservado</div><div style={{fontSize:13,color:T.green,marginTop:12}}>✓ Heredas ~{fU(btc.vf)} en BTC</div></Cd>
+        <Cd glow={T.blue} style={{padding:28}}><div style={{fontSize:15,fontWeight:700,color:T.blue,marginBottom:12}}>🏛️ Pensión Tradicional (" + anios + " años)</div><div style={{fontSize:32,fontWeight:800}}>{fC(penTotal)}</div><div style={{fontSize:13,color:T.txt3,marginTop:4}}>{`Total recibido en ${anios} años de retiro`}</div><div style={{fontSize:13,color:T.red,marginTop:12}}>⚠ Al fallecer, se pierde todo</div></Cd>
+        <Cd glow={T.green} style={{padding:28}}><div style={{fontSize:15,fontWeight:700,color:T.green,marginBottom:12}}>🟠 Estrategia BTC ({regla}% anual)</div><div style={{fontSize:32,fontWeight:800}}>{fC(btcTotal+btc.vfC)}</div><div style={{fontSize:13,color:T.txt3,marginTop:4}}>Total retirado + capital preservado</div><div style={{fontSize:13,color:T.green,marginTop:12}}>✓ Heredas ~{fU(btc.vf)} en BTC</div></Cd>
       </div>
       <Cd glow={T.green} style={{padding:40,textAlign:"center",background:"linear-gradient(135deg,rgba(34,197,94,0.05),rgba(34,197,94,0.02))"}}>
         <div style={{fontSize:16,color:T.txt2}}>Con la estrategia Bitcoin recibes</div>
