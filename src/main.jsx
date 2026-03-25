@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
-// V5.8 — 2026-03-24 BTC explainer
+// FINPATH V6.2 build 20260324-1500
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
