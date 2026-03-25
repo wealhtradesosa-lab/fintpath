@@ -242,7 +242,7 @@ export default function SimuladorAvanzado({ user, totals }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>Simulador de Independencia Financiera</h2><button onClick={()=>window.print()} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,marginLeft:12}}>📄 PDF</button>
+      <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>Simulador de Independencia Financiera</h2><button onClick={()=>{document.querySelectorAll("aside,header,[data-no-print]").forEach(e=>e.style.display="none");window.print();setTimeout(()=>document.querySelectorAll("aside,header,[data-no-print]").forEach(e=>e.style.display=""),500)}} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,marginLeft:12}}>📄 Exportar PDF</button>
       <p style={{ color: T.txt3, fontSize: 13, marginBottom: 20 }}>Ajusta cada ingreso y gasto — la barra de libertad reacciona en tiempo real</p>
 
       {/* ═══ FREEDOM BAR — reacts to simulated values ═══ */}
@@ -317,15 +317,6 @@ export default function SimuladorAvanzado({ user, totals }) {
             );
           })}
 
-          {/* Standalone Ingresos */}
-          {(user.ingresos || []).length > 0 && <>
-          <h4 style={{ fontSize: 13, color: T.gn, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💰 Ingresos</h4>
-          {(user.ingresos || []).map((ing, ii) => (
-            <Slider key={`ing_${ii}`} label={ing.nombre || "Ingreso"} value={getVal(`ing_${ii}`, ing.mensual || 0)} base={ing.mensual || 0}
-              max={Math.max((ing.mensual || 0) * 3, 1000)} color={T.gn}
-              onChange={(v) => setVal(`ing_${ii}`, v)} sub={ing.categoria || ing.tipo || ""} />
-          ))}
-          </>}
 
           <button onClick={() => { setSimVals({}); setScenario("actual"); }}
             style={{ padding: "10px 20px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 12, width: "100%" }}>
