@@ -107,6 +107,31 @@ export default function PensionBTC({trm:pTrm}){
         <div style={{fontSize:13,color:T.txt3,marginTop:12}}>{fC(btc.rMC)}/mes con BTC vs {fC(penMes)}/mes con pensión</div>
       </Cd>
 
+      {/* EXPLICACIÓN PASO A PASO */}
+      <Cd style={{padding:28,marginBottom:20,border:"1px solid "+T.orange+"20"}}>
+        <div style={{fontSize:16,fontWeight:800,color:T.orange,marginBottom:16}}>📖 ¿Cómo funciona? — Explicado paso a paso</div>
+        <div style={{fontSize:14,color:T.txt2,lineHeight:2}}>
+          <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:10}}>
+            <strong style={{color:T.green}}>1. Ahorras cada mes:</strong> De tu salario de {fC(salSM*SM)} mensuales, destinas {fC(apMes)} cada mes a comprar Bitcoin. Haces esto durante <strong>{anios} años</strong> ({anios*12} meses).
+          </div>
+          <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:10}}>
+            <strong style={{color:T.green}}>2. Tu inversión total:</strong> En {anios} años habrás invertido {fC(btc.ti)} en total.
+          </div>
+          <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:10}}>
+            <strong style={{color:T.green}}>3. Tu Bitcoin se valoriza:</strong> Gracias al crecimiento del Bitcoin ({pc(cagr)} anual), tus {fC(btc.ti)} se convierten en <strong style={{color:T.orange}}>{fU(btc.vf)} USD</strong> ({fC(btc.vfC)}).
+          </div>
+          <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:10}}>
+            <strong style={{color:T.green}}>4. Vives de tu Bitcoin:</strong> No vendes todo. Solo retiras el <strong style={{color:T.orange}}>{regla}% al año</strong> para vivir. Ejemplo: si tienes {fU(btc.vf)} USD, el {regla}% es {fU(btc.vf*regla/100)}/año = <strong style={{color:T.orange}}>{fC(btc.rMC)} al mes</strong>.
+          </div>
+          <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:10}}>
+            <strong style={{color:T.green}}>5. Tu capital se preserva:</strong> El otro <strong>{100-regla}%</strong> queda invertido (<strong style={{color:T.green}}>{fU(btc.vf*(1-regla/100))} USD</strong>). Este capital sigue creciendo y al fallecer se <strong>hereda a tu familia</strong>.
+          </div>
+          <div style={{background:T.orange+"10",borderRadius:12,padding:16,border:"1px solid "+T.orange+"20"}}>
+            <strong style={{color:T.orange}}>Comparación:</strong> Con pensión recibes {fC(penMes)}/mes pero al morir se pierde todo. Con Bitcoin recibes <strong style={{color:T.green}}>{fC(btc.rMC)}/mes</strong> ({mult.toFixed(1)}x más) y dejas {fU(btc.vf*(1-regla/100))} USD a tus hijos.
+          </div>
+        </div>
+      </Cd>
+
       {/* GRÁFICO: Ingreso mensual comparado */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
         <Cd style={{padding:24}}>
