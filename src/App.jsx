@@ -86,21 +86,152 @@ export default function FinPath(){
   </div>;
 
   const has=(u.inv?.length||u.deu?.length||Object.keys(u.gas||{}).length)>0;
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Gastos"},{id:"deu",i:"📋",l:"Deudas"},{id:"trd",i:"💹",l:"Trading"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"pat",i:"📊",l:"Distribución"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Gastos"},{id:"deu",i:"📋",l:"Deudas"},{id:"trd",i:"💹",l:"Trading"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
 
   const rp=()=>{switch(pg){
-    case"dash":{const fd=[{name:"Ingresos",a:t.ti},{name:"Gastos",a:-(t.gfm+t.tg)},{name:"Deudas",a:-t.tc},{name:"Cash Flow",a:t.cf}];const tp=(u.inv||[]).map(i=>({...i,...iM(i,u.deu)})).sort((a,b)=>b.noi-a.noi).slice(0,5);const pj=[0,1,3,5,10].map(y=>({yr:y===0?"Hoy":`+${y}a`,v:t.nw*Math.pow(1.08,y)+t.cf*12*y}));
-    return<div><h1 style={{fontSize:26,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 24px"}}>{new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}, {u.p.name.split(" ")[0]}</h1>
-      {!has&&<div style={{background:`linear-gradient(135deg,rgba(34,197,94,.08),rgba(6,182,212,.05))`,border:`1px solid rgba(34,197,94,.15)`,borderRadius:16,padding:24,marginBottom:20,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}><div style={{flex:1}}><h3 style={{fontSize:16,fontWeight:700,margin:"0 0 6px"}}>Bienvenido a FINPATH</h3><p style={{color:T.tx2,fontSize:13,margin:0}}>Carga datos demo para explorar</p></div><Bt sz="s" onClick={demo}>Cargar Demo</Bt></div>}
-      <div style={{textAlign:"center",padding:"36px 0 20px",background:`radial-gradient(ellipse at 50% 0%,rgba(34,197,94,.04)0%,transparent 70%)`}}><div style={{fontSize:11,color:T.tx3,letterSpacing:2,fontWeight:600}}>PATRIMONIO NETO</div><div style={{fontSize:"clamp(2.2rem,6vw,3.5rem)",fontWeight:800,letterSpacing:"-0.04em",marginTop:4,background:`linear-gradient(180deg,${T.tx},${T.tx2})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{fm(t.nw)}</div>
-        <div style={{display:"flex",justifyContent:"center",gap:28,marginTop:16,flexWrap:"wrap"}}>{[{l:"ACTIVOS",v:fm(t.ab),c:T.gn},{l:"DEUDA",v:fm(t.td),c:T.rd},{l:"CASH FLOW",v:`${fm(t.cf)}/mes`,c:t.cf>=0?T.gn:T.rd},{l:"INDEPENDENCIA",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2}].map(k=><div key={k.l}><div style={{fontSize:10,color:T.tx3,letterSpacing:1}}>{k.l}</div><div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:2}}>{k.v}</div></div>)}</div></div>
-      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginBottom:14}}>
-        <Cd s={{padding:20}}><div style={{fontSize:12,fontWeight:600,color:T.tx2,marginBottom:14}}>Flujo de Caja</div><ResponsiveContainer width="100%" height={160}><BarChart data={fd}><XAxis dataKey="name" tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickLine={false}/><YAxis tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickLine={false}/><Tooltip contentStyle={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx,fontSize:12}} formatter={v=>fm(v)}/><Bar dataKey="a" radius={[6,6,0,0]}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?T.gn:T.rd}/>)}</Bar></BarChart></ResponsiveContainer><div style={{borderTop:`1px solid ${T.border}`,paddingTop:10,display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:600,fontSize:13}}>Neto</span><span style={{fontSize:22,fontWeight:700,color:t.cf>=0?T.gn:T.rd}}>{fm(t.cf)}</span></div></Cd>
-        <Cd s={{padding:20}}><div style={{fontSize:12,fontWeight:600,color:T.tx2,marginBottom:14}}>Proyección</div><ResponsiveContainer width="100%" height={190}><AreaChart data={pj}><CartesianGrid strokeDasharray="3 3" stroke={T.border}/><XAxis dataKey="yr" tick={{fill:T.tx3,fontSize:10}} axisLine={false}/><YAxis tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickFormatter={v=>"$"+(v/1e3).toFixed(0)+"k"}/><Tooltip contentStyle={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx,fontSize:12}} formatter={v=>fm(v)}/><Area type="monotone" dataKey="v" stroke={T.gn} fill={`${T.gn}15`}/></AreaChart></ResponsiveContainer></Cd>
+    case"dash":{
+    // Data prep
+    const fd=[{name:"Ingresos",a:t.ti},{name:"Gastos",a:-(t.gfm+t.tg)},{name:"Deudas",a:-t.tc},{name:"Neto",a:t.cf}];
+    const pj=[0,1,3,5,10].map(y=>({yr:y===0?"Hoy":`+${y}a`,v:t.nw*Math.pow(1.08,y)+t.cf*12*y}));
+    // Patrimonio distribution
+    const bc={};(u.inv||[]).forEach(i=>{const tp=(i.tp&&isNaN(Number(i.tp))&&i.tp!=="undefined")?i.tp:"Otro";bc[tp]=(bc[tp]||0)+(i.va||0)});if(ib.tv>0)bc.Trading=ib.tv;
+    const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
+    const totalPat=t.ab+ib.tv;
+    // Income by category
+    const incByCat={};(u.ingresos||[]).forEach(i=>{incByCat[i.categoria||"Otro"]=(incByCat[i.categoria||"Otro"]||0)+(i.mensual||0)});
+    const incPie=Object.entries(incByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
+    // Expense by category
+    const expByCat={};Object.entries(u.gas||{}).forEach(([cat,its])=>{expByCat[cat]=its.reduce((s,g)=>s+(g.m||0),0)});
+    const expPie=Object.entries(expByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
+    // Top income sources
+    const topInc=[...(u.ingresos||[])].sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,5);
+    // Health score (0-100)
+    const healthScore=Math.min(100,Math.round(
+      (t.ind>=100?30:t.ind*0.3) + // independence: 30 pts
+      (t.dta<50?25:t.dta<80?15:0) + // debt ratio: 25 pts
+      (t.cf>0?25:t.cf>-1000?10:0) + // cash flow positive: 25 pts
+      ((u.ingresos||[]).length>=3?10:((u.ingresos||[]).length>=2?5:0)) + // diversification: 10 pts
+      ((u.inv||[]).length>=3?10:((u.inv||[]).length>=1?5:0))  // assets: 10 pts
+    ));
+    const healthColor=healthScore>=80?T.gn:healthScore>=50?"#eab308":T.rd;
+    const healthLabel=healthScore>=80?"Excelente":healthScore>=60?"Buena":healthScore>=40?"Regular":"Necesita atención";
+
+    return<div>
+      {/* Greeting */}
+      <h1 style={{fontSize:26,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>{new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}, {u.p.name.split(" ")[0]}</h1>
+      <p style={{color:T.tx3,fontSize:13,margin:"0 0 24px"}}>Resumen de tu situación financiera</p>
+
+      {!has&&<div style={{background:"linear-gradient(135deg,rgba(34,197,94,.08),rgba(6,182,212,.05))",border:"1px solid rgba(34,197,94,.15)",borderRadius:16,padding:24,marginBottom:20,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}><div style={{flex:1}}><h3 style={{fontSize:16,fontWeight:700,margin:"0 0 6px"}}>Bienvenido a FINPATH</h3><p style={{color:T.tx2,fontSize:13,margin:0}}>Carga datos demo para explorar</p></div><Bt sz="s" onClick={demo}>Cargar Demo</Bt></div>}
+
+      {/* ═══ ROW 1: Net Worth Hero + Health Score ═══ */}
+      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14,marginBottom:14}}>
+        <Cd s={{padding:0,background:"radial-gradient(ellipse at 30% 0%,rgba(34,197,94,.06)0%,transparent 60%)"}}>
+          <div style={{padding:"32px 28px"}}>
+            <div style={{fontSize:11,color:T.tx3,letterSpacing:2,fontWeight:600}}>PATRIMONIO NETO</div>
+            <div style={{fontSize:"clamp(2rem,5vw,3rem)",fontWeight:800,letterSpacing:"-0.04em",marginTop:4}}>{fm(t.nw)}</div>
+            <div style={{display:"flex",gap:20,marginTop:20,flexWrap:"wrap"}}>
+              {[{l:"Activos",v:fm(totalPat),c:T.gn},{l:"Deuda",v:fm(t.td),c:T.rd},{l:"Ratio D/A",v:pc(t.dta),c:t.dta<50?T.gn:T.rd}].map(k=>
+                <div key={k.l}><div style={{fontSize:10,color:T.tx3,letterSpacing:1}}>{k.l}</div><div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:2}}>{k.v}</div></div>
+              )}
+            </div>
+          </div>
+        </Cd>
+        <Cd s={{padding:"28px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center"}}>
+          <div style={{width:90,height:90,borderRadius:"50%",border:"4px solid "+healthColor,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:12}}>
+            <div style={{fontSize:28,fontWeight:800,color:healthColor}}>{healthScore}</div>
+          </div>
+          <div style={{fontSize:13,fontWeight:700,color:healthColor}}>{healthLabel}</div>
+          <div style={{fontSize:11,color:T.tx3,marginTop:2}}>Salud Financiera</div>
+        </Cd>
       </div>
-      {tp.length>0&&<Cd s={{padding:0}}><div style={{padding:"14px 20px",fontSize:12,fontWeight:600,color:T.tx2}}>Top Rendimiento</div><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><thead><tr>{["Activo","NOI/mes","ROI","Cap"].map(h=><th key={h} style={{padding:"8px 16px",textAlign:h==="Activo"?"left":"right",color:T.tx3,fontWeight:600,fontSize:10,textTransform:"uppercase",borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead><tbody>{tp.map((s,i)=><tr key={i} style={{borderBottom:`1px solid ${T.border}`}}><td style={{padding:"10px 16px",fontWeight:600}}>{s.n||s.nombre||"Sin nombre"}</td><td style={{padding:"10px 16px",textAlign:"right",color:T.gn,fontWeight:600}}>{fm(s.noi)}</td><td style={{padding:"10px 16px",textAlign:"right",color:s.roi>=0?T.gn:T.rd}}>{pc(s.roi)}</td><td style={{padding:"10px 16px",textAlign:"right",color:T.bl}}>{pc(s.cap)}</td></tr>)}</tbody></table></Cd>}
+
+      {/* ═══ ROW 2: 4 KPI Cards ═══ */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:14}}>
+        {[
+          {l:"Ingresos/mes",v:fm(t.ti),c:T.gn,i:"💰"},
+          {l:"Gastos/mes",v:fm(t.gfm+t.tg),c:T.rd,i:"💳"},
+          {l:"Cash Flow",v:fm(t.cf)+"/mes",c:t.cf>=0?T.gn:T.rd,i:"📊"},
+          {l:"Independencia",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2,i:t.ind>=100?"🏆":"📈"},
+        ].map(k=><Cd key={k.l} s={{padding:"18px 20px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:10,color:T.tx3,textTransform:"uppercase",fontWeight:600,letterSpacing:1}}>{k.l}</div><div style={{fontSize:22,fontWeight:700,color:k.c,marginTop:6}}>{k.v}</div></div><div style={{fontSize:22}}>{k.i}</div></div></Cd>)}
+      </div>
+
+      {/* ═══ ROW 3: Charts ═══ */}
+      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginBottom:14}}>
+        {/* Cash Flow Waterfall */}
+        <Cd s={{padding:20}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Flujo de Caja Mensual</div>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={fd}><XAxis dataKey="name" tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickLine={false}/><YAxis tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>fm(v)}/><Tooltip contentStyle={{background:T.bg2,border:"1px solid "+T.border,borderRadius:8,color:T.tx,fontSize:12}} formatter={v=>fm(v)}/><Bar dataKey="a" radius={[6,6,0,0]}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?T.gn:T.rd}/>)}</Bar></BarChart>
+          </ResponsiveContainer>
+        </Cd>
+        {/* Patrimonio Distribution */}
+        <Cd s={{padding:20}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Distribución Patrimonial</div>
+          {pie.length>0?<ResponsiveContainer width="100%" height={180}>
+            <PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>{pie.map((_,i)=><Cell key={i} fill={T.ch[i%T.ch.length]}/>)}</Pie><Tooltip contentStyle={{background:T.bg2,border:"1px solid "+T.border,borderRadius:8,color:T.tx,fontSize:12}} formatter={v=>fm(v)}/><Legend wrapperStyle={{fontSize:11}}/></PieChart>
+          </ResponsiveContainer>:<div style={{height:180,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>Agrega activos en Patrimonio</div>}
+        </Cd>
+      </div>
+
+      {/* ═══ ROW 4: Income + Expenses breakdown ═══ */}
+      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginBottom:14}}>
+        {/* Top Ingresos */}
+        <Cd s={{padding:0}}>
+          <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+T.border}}>
+            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>💰 Ingresos por fuente</span>
+            <span style={{fontSize:13,fontWeight:700,color:T.gn}}>{fm(t.ti)}/mes</span>
+          </div>
+          {topInc.length>0?topInc.map((inc,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
+            <div><div style={{fontSize:13,fontWeight:600}}>{inc.nombre||"—"}</div><div style={{fontSize:10,color:T.tx3}}>{inc.categoria}{inc.capital>0?" • Capital: "+fm(inc.capital):""}{inc.tasa?" • "+inc.tasa+"%":""}</div></div>
+            <div style={{fontWeight:700,fontFamily:"monospace",color:T.gn}}>{fm(inc.mensual||0)}</div>
+          </div>):<div style={{padding:28,textAlign:"center",color:T.tx3,fontSize:13}}>Agrega ingresos</div>}
+        </Cd>
+        {/* Gastos by category */}
+        <Cd s={{padding:0}}>
+          <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+T.border}}>
+            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>💳 Gastos por categoría</span>
+            <span style={{fontSize:13,fontWeight:700,color:T.rd}}>{fm(t.gfm)}/mes</span>
+          </div>
+          {expPie.length>0?expPie.map((exp,i)=><div key={exp.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{exp.name}</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontFamily:"monospace",color:T.rd}}>{fm(exp.value)}</span><span style={{fontSize:10,color:T.tx3}}>{t.gfm>0?pc((exp.value/t.gfm)*100):""}</span></div>
+          </div>):<div style={{padding:28,textAlign:"center",color:T.tx3,fontSize:13}}>Agrega gastos</div>}
+        </Cd>
+      </div>
+
+      {/* ═══ ROW 5: Projection + Independence Meter ═══ */}
+      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14}}>
+        <Cd s={{padding:20}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Proyección Patrimonial (8% anual)</div>
+          <ResponsiveContainer width="100%" height={180}>
+            <AreaChart data={pj}><CartesianGrid strokeDasharray="3 3" stroke={T.border}/><XAxis dataKey="yr" tick={{fill:T.tx3,fontSize:10}} axisLine={false}/><YAxis tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickFormatter={v=>fm(v)}/><Tooltip contentStyle={{background:T.bg2,border:"1px solid "+T.border,borderRadius:8,color:T.tx,fontSize:12}} formatter={v=>fm(v)}/><Area type="monotone" dataKey="v" stroke={T.gn} fill={T.gn+"15"}/></AreaChart>
+          </ResponsiveContainer>
+        </Cd>
+        {/* Independence Progress */}
+        <Cd s={{padding:"24px",display:"flex",flexDirection:"column",justifyContent:"center"}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>Independencia Financiera</div>
+          <div style={{position:"relative",height:14,background:T.bg3,borderRadius:7,overflow:"hidden",marginBottom:8}}>
+            <div style={{height:"100%",width:Math.min(t.ind,150)+"%",maxWidth:"100%",background:t.ind>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#ef4444,#eab308)",borderRadius:7,transition:"width 0.5s"}}/>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.tx3}}>
+            <span>0%</span><span style={{color:t.ind>=100?T.gn:T.tx2,fontWeight:700}}>{pc(t.ind)}</span><span>100%</span>
+          </div>
+          <div style={{marginTop:16,fontSize:12,color:T.tx2,lineHeight:1.6}}>
+            {t.ind>=100
+              ?<span style={{color:T.gn}}>🏆 ¡Tus ingresos cubren todos tus gastos y deudas!</span>
+              :t.ind>=60
+                ?<span>📈 Te falta {fm(t.te-t.ni)}/mes para cubrir todos tus gastos.</span>
+                :<span style={{color:T.rd}}>⚠ Tus gastos superan tus ingresos en {fm(t.te-t.ni)}/mes.</span>
+            }
+          </div>
+          {t.ind<100&&t.cf!==0&&<div style={{marginTop:8,fontSize:11,color:T.tx3}}>
+            Meta: necesitas {fm(t.te)}/mes de ingresos para ser independiente.
+          </div>}
+        </Cd>
+      </div>
     </div>}
-        case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={v=>upd("inv",v)}/>;
+        
+case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={v=>upd("inv",v)}/>;
     case"ing":return<IngresosModule ingresos={u.ingresos||[]} onUpdate={v=>upd("ingresos",v)}/>;
     case"trd":return<div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:0}}>Trading</h2><Bt sz="s" onClick={()=>{sF({});setMd("ib")}}>+ Posición</Bt>{(u.ibk||[]).length>1&&<Bt v="d" sz="s" onClick={()=>{if(confirm("¿Eliminar todas las posiciones?"))upd("ibk",[])}}>🗑️ Limpiar</Bt>}</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:16}}><Cd><St l="Valor" v={fm(ib.tv)} cl={T.gn}/></Cd><Cd><St l="P/L" v={fm(ib.pnl)} cl={ib.pnl>=0?T.gn:T.rd} sub={pc(ib.pp)}/></Cd><Cd><St l="Posiciones" v={ib.pos.length}/></Cd></div><Cd s={{padding:0}}><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><thead><tr>{["Ticker","Nombre","Qty","Costo","Precio","Valor","P/L","%","Upside"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Ticker","Nombre"].includes(h)?"left":"right",color:T.tx3,fontWeight:600,fontSize:10,textTransform:"uppercase",borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead><tbody>{ib.pos.map((p,i)=><tr key={i} style={{borderBottom:`1px solid ${T.border}`}}><td style={{padding:"9px 12px",fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{p.tk}</td><td style={{padding:"9px 12px"}}>{p.n}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>{p.sh}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>${p.cb.toFixed(2)}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>${p.pr.toFixed(2)}</td><td style={{padding:"9px 12px",textAlign:"right",fontWeight:600}}>{fm(p.va)}</td><td style={{padding:"9px 12px",textAlign:"right",fontWeight:600,color:p.pnl>=0?T.gn:T.rd}}>{fm(p.pnl)}</td><td style={{padding:"9px 12px",textAlign:"right",color:p.pp>=0?T.gn:T.rd}}>{pc(p.pp)}</td><td style={{padding:"9px 12px",textAlign:"right",color:T.bl}}>{pc(p.up)}</td></tr>)}</tbody></table></div></Cd><Md open={md==="ib"} onClose={()=>setMd(null)} title="Agregar Posición"><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>{[["tk","Ticker"],["n","Nombre"],["sh","Cantidad","number"],["cb","Costo","number"],["pr","Precio","number"],["tg","Objetivo","number"]].map(([k,l,tp])=><In key={k} l={l} value={f[k]} onChange={v=>sF(p=>({...p,[k]:v}))} type={tp}/>)}</div><div style={{display:"flex",gap:12,justifyContent:"flex-end"}}><Bt v="s" onClick={()=>setMd(null)}>Cancelar</Bt><Bt onClick={()=>{add("ibk",{tk:f.tk||"",n:f.n||"",sh:+f.sh||0,cb:+f.cb||0,pr:+f.pr||0,tg:+f.tg||0});setMd(null);sF({})}}>Agregar</Bt></div></Md></div>;
         case"gas":return<GastosModule gastos={u.gas} onUpdate={v=>upd("gas",v)}/>;
