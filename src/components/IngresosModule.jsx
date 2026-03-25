@@ -62,7 +62,19 @@ export default function IngresosModule({ ingresos, inversiones, onUpdate }) {
     }
   });
   
-  const allItems = [...items, ...invIncome];
+  // Deduplicate: if a standalone ingreso matches an investment name, skip it
+  const invNames = new Set();
+  (inversiones || []).forEach(inv => {
+    const name = (inv.n || inv.nombre || "").toLowerCase();
+    if (name) { invNames.add(name); name.split(" ").forEach(w => { if (w.length > 3) invNames.add(w); }); }
+  });
+  const cleanItems = items.filter(ing => {
+    const ingName = (ing.nombre || "").toLowerCase();
+    const isDup = [...invNames].some(n => ingName.includes(n) || n.includes(ingName));
+    if (isDup) return false; // this standalone ingreso duplicates an investment
+    return true;
+  });
+  const allItems = [...cleanItems, ...invIncome];
   const totalMes = allItems.reduce((s, i) => s + (i.mensual || 0), 0);
   const fijos = allItems.filter((i) => i.tipo === "fijo").reduce((s, i) => s + i.mensual, 0);
   const variables = totalMes - fijos;
