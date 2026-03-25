@@ -344,6 +344,24 @@ export default function SimuladorAvanzado({ user, totals }) {
         ))}
       </div>
 
+      {/* DISPONIBLE - Hero section */}
+      <div style={{ background: simT.cf >= 0 ? "linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02))" : "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.02))", border: "1px solid " + (simT.cf >= 0 ? T.gn : T.rd) + "20", borderRadius: 16, padding: "20px 28px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+        <div>
+          <div style={{ fontSize: 12, color: T.txt3, fontWeight: 600, letterSpacing: 1 }}>{simT.cf >= 0 ? "💰 DISPONIBLE CADA MES" : "⚠️ DÉFICIT MENSUAL"}</div>
+          <div style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, letterSpacing: "-0.03em", marginTop: 4 }}>{fm(simT.cf)}<span style={{ fontSize: 14, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
+        </div>
+        <div style={{ display: "flex", gap: 24 }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: T.txt3 }}>AL AÑO</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd }}>{fm(simT.cf * 12)}</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: T.txt3 }}>AL DÍA</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: T.txt2 }}>{fm(Math.round(simT.cf / 30))}</div>
+          </div>
+        </div>
+      </div>
+
       {/* Sliders + Chart */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         {/* LEFT: Sliders */}
