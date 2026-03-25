@@ -350,73 +350,61 @@ export default function SimuladorAvanzado({ user, totals }) {
             const baseCap = Number(ing.capital) || 0;
             const tasa = Number(ing.tasa) || 0;
             const baseRenta = Number(ing.mensual) || 0;
-            const isFund = tasa > 0 && baseCap > 0;
+            const hasFundData = tasa > 0 && baseCap > 0;
+            const simCap = hasFundData ? getVal(`cap_${ii}`, baseCap) : 0;
+            const simRenta = hasFundData ? Math.round((simCap * tasa / 100) / 12) : getVal(`ing_${ii}`, baseRenta);
+            const capDiff = simCap - baseCap;
+            const rentDiff = simRenta - baseRenta;
 
-            if (isFund) {
-              // FUND/CDT: slider moves CAPITAL, rent is calculated
-              const simCap = getVal(`cap_${ii}`, baseCap);
-              const simRenta = Math.round((simCap * tasa / 100) / 12);
-              const capDiff = simCap - baseCap;
-              return (
-                <div key={`ing_${ii}`} style={{ marginBottom: 8, background: "#22d3ee06", borderRadius: 12, border: "1px solid #22d3ee15", overflow: "hidden" }}>
-                  <div style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{ing.nombre || "Inversión"}</div>
-                        <div style={{ fontSize: 11, color: "#22d3ee", marginTop: 2 }}>{ing.categoria || "Rendimiento"} • <strong>{tasa}% anual</strong></div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: "#22d3ee" }}>{fm(simRenta)}<span style={{ fontSize: 10, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
-                        {capDiff !== 0 && <div style={{ fontSize: 10, color: capDiff > 0 ? T.gn : T.rd, fontWeight: 600 }}>{capDiff > 0 ? "+" : ""}{fm(capDiff)} capital</div>}
-                      </div>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 10 }}>
-                      <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
-                        <div style={{ fontSize: 10, color: T.txt3 }}>Capital invertido</div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: T.txt, marginTop: 2 }}>{fm(simCap)}</div>
-                      </div>
-                      <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
-                        <div style={{ fontSize: 10, color: T.txt3 }}>Renta mensual ({tasa}%)</div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: "#22d3ee", marginTop: 2 }}>{fm(simRenta)}</div>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 10, color: T.txt3, marginBottom: 6 }}>Mueve el slider para simular más o menos capital:</div>
-                    <input type="range" min={0} max={Math.max(baseCap * 3, 1000000)} step={Math.max(Math.round(baseCap * 0.01), 10000)} value={simCap}
-                      onChange={(e) => {
-                        const newCap = Number(e.target.value);
-                        const newRenta = Math.round((newCap * tasa / 100) / 12);
-                        setVal(`cap_${ii}`, newCap);
-                        setVal(`ing_${ii}`, newRenta);
-                      }}
-                      style={{ width: "100%", accentColor: "#22d3ee", height: 6, cursor: "pointer" }} />
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.txt3, marginTop: 4 }}>
-                      <span>$0</span>
-                      <span>{fm(baseCap * 3)}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            } else {
-              // REGULAR INCOME: slider moves rent directly
-              const val = getVal(`ing_${ii}`, baseRenta);
-              return (
-                <div key={`ing_${ii}`} style={{ marginBottom: 6, background: "#22d3ee08", padding: "10px 14px", borderRadius: 10, borderLeft: "3px solid #22d3ee30" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+            return (
+              <div key={`ing_${ii}`} style={{ marginBottom: 8, background: "#22d3ee06", borderRadius: 12, border: "1px solid #22d3ee12", overflow: "hidden" }}>
+                <div style={{ padding: "12px 16px" }}>
+                  {/* Header: nombre + renta */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>{ing.nombre || "Ingreso"}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{ing.nombre || "Ingreso"}</div>
                       <div style={{ fontSize: 11, color: T.txt3 }}>{ing.categoria || ""}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "#22d3ee" }}>{fm(val)}<span style={{ fontSize: 10, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
-                      {val !== baseRenta && <div style={{ fontSize: 10, color: val > baseRenta ? T.gn : T.rd }}>{val > baseRenta ? "+" : ""}{fm(val - baseRenta)}</div>}
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#22d3ee" }}>{fm(simRenta)}<span style={{ fontSize: 10, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
+                      {rentDiff !== 0 && <div style={{ fontSize: 10, color: rentDiff > 0 ? T.gn : T.rd, fontWeight: 600 }}>{rentDiff > 0 ? "+" : ""}{fm(rentDiff)}</div>}
                     </div>
                   </div>
-                  <input type="range" min="0" max={Math.max(baseRenta * 3, 1000)} step={Math.max(Math.round(baseRenta * 0.01), 5)} value={val}
-                    onChange={(e) => setVal(`ing_${ii}`, Number(e.target.value))}
-                    style={{ width: "100%", accentColor: "#22d3ee", height: 4, cursor: "pointer" }} />
+
+                  {hasFundData ? (
+                    <>
+                      {/* FUND MODE: show capital + rent side by side, slider moves capital */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
+                          <div style={{ fontSize: 10, color: T.txt3 }}>Capital invertido</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: T.txt }}>{fm(simCap)}</div>
+                          {capDiff !== 0 && <div style={{ fontSize: 10, color: capDiff > 0 ? T.gn : T.rd }}>{capDiff > 0 ? "+" : ""}{fm(capDiff)}</div>}
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
+                          <div style={{ fontSize: 10, color: T.txt3 }}>Renta mensual ({tasa}%)</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: "#22d3ee" }}>{fm(simRenta)}</div>
+                          {rentDiff !== 0 && <div style={{ fontSize: 10, color: rentDiff > 0 ? T.gn : T.rd }}>{rentDiff > 0 ? "+" : ""}{fm(rentDiff)}</div>}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>↔ Mueve para simular más o menos capital invertido:</div>
+                      <input type="range" min={0} max={Math.max(baseCap * 3, 1000000)} step={Math.max(Math.round(baseCap * 0.01), 10000)} value={simCap}
+                        onChange={(e) => { const c = Number(e.target.value); setVal(`cap_${ii}`, c); setVal(`ing_${ii}`, Math.round((c * tasa / 100) / 12)); }}
+                        style={{ width: "100%", accentColor: "#22d3ee", height: 6, cursor: "pointer" }} />
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.txt3, marginTop: 2 }}>
+                        <span>$0</span><span>Capital actual: {fm(baseCap)}</span><span>{fm(baseCap * 3)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* REGULAR MODE: slider moves rent directly */}
+                      <input type="range" min={0} max={Math.max(baseRenta * 3, 1000)} step={Math.max(Math.round(baseRenta * 0.01), 5)} value={simRenta}
+                        onChange={(e) => setVal(`ing_${ii}`, Number(e.target.value))}
+                        style={{ width: "100%", accentColor: "#22d3ee", height: 4, cursor: "pointer" }} />
+                    </>
+                  )}
                 </div>
-              );
-            }
+              </div>
+            );
           })}
 
           {/* Family expense sliders */}
