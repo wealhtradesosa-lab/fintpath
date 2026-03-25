@@ -6,7 +6,7 @@ const fC=v=>{if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)
 const fU=v=>"$"+Math.round(v).toLocaleString("en-US");
 const fB=v=>v.toFixed(4)+" ₿";
 const pc=v=>(v||0).toFixed(1)+"%";
-const TT={background:"#1e1e24",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,color:"#fafafa",fontSize:12};
+const TT={background:"#1e1e24",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,color:"#fafafa",fontSize:12};
 const Cd=({children,style:s,glow})=><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",...(glow?{borderColor:glow+"30",boxShadow:`0 0 20px ${glow}10`}:{}),...s}}>{children}</div>;
 const MC=({l,v,sub,color})=><Cd><div style={{padding:"20px 24px"}}><div style={{fontSize:12,color:T.txt3,marginBottom:6}}>{l}</div><div style={{fontSize:26,fontWeight:800,color:color||T.txt,letterSpacing:"-0.03em"}}>{v}</div>{sub&&<div style={{fontSize:12,color:color||T.txt3,marginTop:3}}>{sub}</div>}</div></Cd>;
 const Rw=({l,v,color,bold})=><div style={{display:"flex",justifyContent:"space-between",padding:"10px 16px",borderBottom:`1px solid ${T.border}`}}><span style={{fontSize:14,color:T.txt2}}>{l}</span><span style={{fontSize:14,fontWeight:bold?700:600,color:color||T.txt,fontFamily:"monospace"}}>{v}</span></div>;
@@ -141,7 +141,7 @@ export default function PensionBTC({trm:pTrm}){
         <Cd style={{padding:24}}>
           <div style={{fontSize:15,fontWeight:700,marginBottom:16}}>₿ Tu BTC crece así (USD)</div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={btc.yd}><XAxis dataKey="anio" tick={{fill:T.txt3,fontSize:11}} axisLine={false} tickLine={false}/><YAxis tick={{fill:T.txt3,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"$"+(v/1e6).toFixed(1)+"M"}/><Tooltip contentStyle={TT} formatter={v=>fU(v)}/><Bar dataKey="valorUSD" radius={[4,4,0,0]}>{btc.yd.map((_,i)=><Cell key={i} fill={T.orange}/>)}</Bar></BarChart>
+            <BarChart data={btc.yd}><XAxis dataKey="anio" tick={{fill:T.txt3,fontSize:11}} axisLine={false} tickLine={false}/><YAxis tick={{fill:T.txt3,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"$"+(v/1e6).toFixed(1)+"M"}/><Tooltip contentStyle={TT} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={v=>fU(v)}/><Bar dataKey="valorUSD" radius={[4,4,0,0]}>{btc.yd.map((_,i)=><Cell key={i} fill={T.orange}/>)}</Bar></BarChart>
           </ResponsiveContainer>
         </Cd>
         <Cd style={{padding:24}}>
@@ -230,7 +230,7 @@ export default function PensionBTC({trm:pTrm}){
         <div style={{fontSize:16,color:T.txt2}}>más ingreso que la pensión tradicional</div>
         <div style={{fontSize:14,color:T.txt3,marginTop:8}}>Y el capital es 100% heredable</div>
       </Cd>
-      <Cd style={{padding:24,marginTop:20}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Crecimiento Portafolio BTC</div><ResponsiveContainer width="100%" height={250}><AreaChart data={btc.yd}><CartesianGrid strokeDasharray="3 3" stroke={T.border}/><XAxis dataKey="anio" tick={{fill:T.txt3,fontSize:11}} axisLine={false}/><YAxis tick={{fill:T.txt3,fontSize:10}} axisLine={false} tickFormatter={v=>"$"+(v/1e6).toFixed(1)+"M"}/><Tooltip contentStyle={TT} formatter={v=>fU(v)}/><defs><linearGradient id="btcG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={T.orange} stopOpacity={0.3}/><stop offset="100%" stopColor={T.orange} stopOpacity={0}/></linearGradient></defs><Area type="monotone" dataKey="valorUSD" stroke={T.orange} fill="url(#btcG)" strokeWidth={2.5}/></AreaChart></ResponsiveContainer></Cd>
+      <Cd style={{padding:24,marginTop:20}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Crecimiento Portafolio BTC</div><ResponsiveContainer width="100%" height={250}><AreaChart data={btc.yd}><CartesianGrid strokeDasharray="3 3" stroke={T.border}/><XAxis dataKey="anio" tick={{fill:T.txt3,fontSize:11}} axisLine={false}/><YAxis tick={{fill:T.txt3,fontSize:10}} axisLine={false} tickFormatter={v=>"$"+(v/1e6).toFixed(1)+"M"}/><Tooltip contentStyle={TT} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={v=>fU(v)}/><defs><linearGradient id="btcG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={T.orange} stopOpacity={0.3}/><stop offset="100%" stopColor={T.orange} stopOpacity={0}/></linearGradient></defs><Area type="monotone" dataKey="valorUSD" stroke={T.orange} fill="url(#btcG)" strokeWidth={2.5}/></AreaChart></ResponsiveContainer></Cd>
     </div>}
 
     {tab==="analisis"&&<div>

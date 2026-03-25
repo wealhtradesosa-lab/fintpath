@@ -348,7 +348,7 @@ export default function PensionesColpensiones({ trm }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
                 <XAxis dataKey="anio" tick={{ fill: T.txt3, fontSize: 11 }} axisLine={false} />
                 <YAxis tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} tickFormatter={(v) => fCOP(v)} />
-                <Tooltip contentStyle={TT} formatter={(v) => fCOP(v)} />
+                <Tooltip contentStyle={TT} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={(v) => fCOP(v)} />
                 <defs><linearGradient id="raisG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={T.green} stopOpacity={0.3} /><stop offset="100%" stopColor={T.green} stopOpacity={0} /></linearGradient></defs>
                 <Area type="monotone" dataKey="saldo" stroke={T.green} fill="url(#raisG)" strokeWidth={2} />
               </AreaChart>

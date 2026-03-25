@@ -136,7 +136,7 @@ export default function IngresosModule({ ingresos, onUpdate }) {
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 12 }}>Por Categoría</div>
             <ResponsiveContainer width="100%" height={200}>
-              <PieChart><Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>{pieData.map((_, i) => <Cell key={i} fill={T.ch[i % T.ch.length]} />)}</Pie><Tooltip contentStyle={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 }} formatter={(v) => fm(v)} /><Legend /></PieChart>
+              <PieChart><Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>{pieData.map((_, i) => <Cell key={i} fill={T.ch[i % T.ch.length]} />)}</Pie><Tooltip contentStyle={{ background: "#1e1e24", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, color: "#fafafa", fontSize: 12 }} labelStyle={{ color: "#fafafa" }} itemStyle={{ color: "#fafafa" }} formatter={(v) => fm(v)} /><Legend /></PieChart>
             </ResponsiveContainer>
           </div>
         )}

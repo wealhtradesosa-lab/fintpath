@@ -480,7 +480,7 @@ export default function SimuladorAvanzado({ user, totals }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
                 <XAxis dataKey="m" tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} />
                 <YAxis tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} tickFormatter={(v) => "$" + (v / 1e3).toFixed(0) + "k"} />
-                <Tooltip contentStyle={TT} formatter={(v) => fm(v)} />
+                <Tooltip contentStyle={TT} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={(v) => fm(v)} />
                 <Area type="monotone" dataKey="actual" stroke={T.txt3} fill={T.txt3 + "08"} strokeDasharray="5 5" name="Actual" />
                 <defs>
                   <linearGradient id="gsim2" x1="0" y1="0" x2="0" y2="1">
