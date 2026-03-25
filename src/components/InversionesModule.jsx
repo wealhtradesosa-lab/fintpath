@@ -109,10 +109,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
       vc: Math.abs(parseFloat(form.vc)) || 0,
       tasa,
     };
-    // Auto-generate income from tasa if provided
-    if (tasa > 0) {
-      updated.ig = [{ c: "Rendimiento " + tasa + "%", m: ingresoCalc, t: "f" }];
-    }
+    // tasa is stored for display only - actual income goes in Ingresos module
     if (editId) {
       onUpdate(items.map((i) => {
         if (i.id !== editId) return i;
@@ -238,12 +235,15 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
               </div>}
               {form.tasa && parseFloat(form.tasa) > 0 && parseFloat(form.va) > 0 && (
                 <div style={{ gridColumn: "1/-1", background: T.greenDim, borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Ingreso mensual calculado:</div>
+                  <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Este activo generaría:</div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: T.green, marginTop: 4 }}>
                     {"$" + Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12).toLocaleString() + "/mes"}
                   </div>
                   <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
                     = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString() + "/año"} ({form.tasa}% de {"$" + Math.round(parseFloat(form.va)).toLocaleString()})
+                  </div>
+                  <div style={{ fontSize: 11, color: T.blue, marginTop: 6, fontWeight: 600 }}>
+                    👉 Agrega este ingreso en el módulo de Ingresos con categoría "Rendimiento"
                   </div>
                 </div>
               )}

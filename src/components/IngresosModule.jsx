@@ -25,7 +25,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
 export default function IngresosModule({ ingresos, onUpdate }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "" });
+  const [form, setForm] = useState({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = ingresos || [];
@@ -47,16 +47,16 @@ export default function IngresosModule({ ingresos, onUpdate }) {
     setSelected(new Set());
   };
   const handleSave = () => {
-    const item = { ...form, mensual: Number(form.mensual) || 0 };
+    const item = { ...form, mensual: Number(form.mensual) || 0, capital: Number(form.capital) || 0, tasa: Number(form.tasa) || 0 };
     let updated;
     if (editId) { updated = items.map((i) => (i.id === editId ? { ...item, id: editId } : i)); }
     else { item.id = "ing_" + Date.now(); updated = [...items, item]; }
     onUpdate(updated);
     setShowForm(false); setEditId(null);
-    setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "" });
+    setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "" });
   };
   const handleEdit = (item) => {
-    setForm({ nombre: item.nombre, categoria: item.categoria, mensual: item.mensual, tipo: item.tipo, fuente: item.fuente || "" });
+    setForm({ nombre: item.nombre, categoria: item.categoria, mensual: item.mensual, tipo: item.tipo, fuente: item.fuente || "", capital: item.capital || "", tasa: item.tasa || "" });
     setEditId(item.id); setShowForm(true);
   };
 
@@ -75,7 +75,7 @@ export default function IngresosModule({ ingresos, onUpdate }) {
               🗑️ Eliminar ({selected.size})
             </button>
           )}
-          <button onClick={() => { setEditId(null); setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "" }); setShowForm(true); }}
+          <button onClick={() => { setEditId(null); setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "" }); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             + Agregar
           </button>
@@ -102,7 +102,7 @@ export default function IngresosModule({ ingresos, onUpdate }) {
                   <input type="checkbox" checked={allItems.length > 0 && selected.size === allItems.length} onChange={toggleAll}
                     style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
                 </th>
-                {["Nombre", "Categoría", "Tipo", "Mensual", "Fuente", ""].map((h) => (
+                {["Nombre", "Categoría", "Tipo", "Mensual", "Capital / Fuente", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: h === "Mensual" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr></thead>
@@ -119,7 +119,7 @@ export default function IngresosModule({ ingresos, onUpdate }) {
                     <td style={{ padding: "10px 14px" }}><span style={{ background: T.greenDim, color: T.green, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.categoria}</span></td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: (item.tipo === "fijo" ? T.blue : T.orange) + "15", color: item.tipo === "fijo" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.tipo}</span></td>
                     <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{fm(item.mensual)}</td>
-                    <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.fuente || "—"}</td>
+                    <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString() + (item.tasa ? " • " + item.tasa + "%" : "") : item.fuente || "—"}</td>
                     <td style={{ padding: "10px 14px" }}>
                       <button onClick={() => handleEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
                       <button onClick={() => { if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== item.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
@@ -156,6 +156,31 @@ export default function IngresosModule({ ingresos, onUpdate }) {
               <In l="Monto Mensual" value={form.mensual} onChange={(v) => setForm((p) => ({ ...p, mensual: v }))} type="number" placeholder="0" />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
               <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa / Cliente" />
+              <In l="Capital invertido (opcional)" value={form.capital} onChange={(v) => {
+                const newForm = { ...form, capital: v };
+                if (v && form.tasa && Number(v) > 0 && Number(form.tasa) > 0) {
+                  newForm.mensual = String(Math.round((Number(v) * Number(form.tasa) / 100) / 12));
+                }
+                setForm(p => ({ ...p, ...newForm }));
+              }} type="number" placeholder="Ej: 3270000000" />
+              <In l="% Rentabilidad anual (opcional)" value={form.tasa} onChange={(v) => {
+                const newForm = { ...form, tasa: v };
+                if (v && form.capital && Number(v) > 0 && Number(form.capital) > 0) {
+                  newForm.mensual = String(Math.round((Number(form.capital) * Number(v) / 100) / 12));
+                }
+                setForm(p => ({ ...p, ...newForm }));
+              }} type="number" placeholder="Ej: 24 para 24% anual" />
+              {form.capital && form.tasa && Number(form.capital) > 0 && Number(form.tasa) > 0 && (
+                <div style={{ gridColumn: "1/-1", background: T.greenDim, borderRadius: 10, padding: 14 }}>
+                  <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Ingreso mensual calculado automáticamente:</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: T.green, marginTop: 4 }}>
+                    {"$" + Math.round((Number(form.capital) * Number(form.tasa) / 100) / 12).toLocaleString() + "/mes"}
+                  </div>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+                    Capital: {"$" + Number(form.capital).toLocaleString()} × {form.tasa}% anual ÷ 12 meses
+                  </div>
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
               <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
