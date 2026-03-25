@@ -412,7 +412,7 @@ export default function SimuladorAvanzado({ user, totals }) {
                         </div>
                       </div>
                       <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>↔ Capital invertido:</div>
-                      <input type="range" min={0} max={Math.max(simCap * 3, baseCap * 3, 1000000)} step={Math.max(Math.round((baseCap || simCap || baseRenta * 100) * 0.01), 10000)} value={simCap}
+                      <input type="range" min={0} max={Math.round(baseCap * 2)} step={Math.max(Math.round(baseCap * 0.002), 1000)} value={simCap}
                         onChange={(e) => { const c = Number(e.target.value); setVal(`cap_${ii}`, c); setVal(`ing_${ii}`, Math.round((c * simTasa / 100) / 12)); }}
                         style={{ width: "100%", accentColor: "#22d3ee", height: 6, cursor: "pointer" }} />
                     </>
