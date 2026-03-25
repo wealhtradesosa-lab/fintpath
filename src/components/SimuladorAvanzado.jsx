@@ -15,12 +15,24 @@ const TT = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 1
 
 // ─── Tony Robbins 5 Levels ───
 const LEVELS = [
-  { id: 1, name: "Seguridad", icon: "🛡️", color: "#3b82f6", factor: 0.65, desc: "Pasivos cubren necesidades básicas" },
-  { id: 2, name: "Vitalidad", icon: "⚡", color: "#22d3ee", factor: 0.825, desc: "Seguridad + mitad estilo de vida" },
-  { id: 3, name: "Independencia", icon: "🏆", color: "#22c55e", factor: 1.0, desc: "Pasivos cubren 100% gastos" },
-  { id: 4, name: "Libertad", icon: "🚀", color: "#f97316", factor: 1.5, desc: "Independencia + lujos" },
-  { id: 5, name: "Absoluta", icon: "👑", color: "#eab308", factor: 2.5, desc: "Sin límites" },
+  { id: 1, name: "Seguridad", icon: "🛡️", color: "#3b82f6", factor: 0.65,
+    desc: "Pasivos cubren necesidades básicas",
+    detail: "Tus ingresos cubren el 65% de tus gastos totales. Esto cubre vivienda, alimentación, servicios, transporte y seguros básicos. Si perdieras tu trabajo principal, podrías sobrevivir con lo que generan tus activos." },
+  { id: 2, name: "Vitalidad", icon: "⚡", color: "#22d3ee", factor: 0.825,
+    desc: "Seguridad + mitad de tu estilo de vida",
+    detail: "Tus ingresos cubren el 82.5% de tus gastos. Además de las necesidades básicas, puedes mantener la mitad de tu estilo de vida actual: algo de entretenimiento, vacaciones modestas y educación." },
+  { id: 3, name: "Independencia", icon: "🏆", color: "#22c55e", factor: 1.0,
+    desc: "Tus ingresos cubren el 100% de tus gastos",
+    detail: "¡El punto de quiebre! Tus ingresos pasivos y activos cubren TODOS tus gastos actuales. Ya no necesitas un empleo para mantener tu nivel de vida. Podrías dejar de trabajar mañana y seguir viviendo igual." },
+  { id: 4, name: "Libertad", icon: "🚀", color: "#f97316", factor: 1.5,
+    desc: "Independencia + 50% extra para lujos",
+    detail: "Tus ingresos son 1.5 veces tus gastos. Tienes margen para lujos, viajes, hobbies costosos, donar a causas que te importan. Puedes mejorar tu estilo de vida sin preocuparte por el dinero." },
+  { id: 5, name: "Absoluta", icon: "👑", color: "#eab308", factor: 2.5,
+    desc: "Tus ingresos son 2.5 veces tus gastos",
+    detail: "El nivel máximo. Tus ingresos son 2.5 veces tus gastos. Puedes hacer lo que quieras, cuando quieras, donde quieras. Puedes financiar los sueños de tu familia, invertir en negocios, impactar tu comunidad. El dinero dejó de ser una limitación." },
 ];
+
+const fadeStyle = typeof document !== "undefined" ? (() => { const s = document.createElement("style"); s.textContent = "@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}"; if (!document.querySelector("[data-finpath-anim]")) { s.setAttribute("data-finpath-anim","1"); document.head.appendChild(s); } return null; })() : null;
 
 function Slider({ label, value, base, max, color, onChange, sub }) {
   const perc = base > 0 ? Math.round((value / base) * 100) : 100;
@@ -48,6 +60,7 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
 
 // ─── FREEDOM BAR (inline, reactive) ───
 function FreedomBarLive({ ni, te, cf }) {
+  const [expandedLvl, setExpandedLvl] = useState(null);
   const ratio = te > 0 ? ni / te : 0;
   let currentLevel = 0;
   for (let i = 0; i < LEVELS.length; i++) {
@@ -130,11 +143,11 @@ function FreedomBarLive({ ni, te, cf }) {
           const current = currentLevel === l.id;
           const needed = l.factor * te;
           return (
-            <div key={l.id} style={{
+            <div key={l.id} onClick={() => setExpandedLvl(expandedLvl === l.id ? null : l.id)} style={{
               background: current ? l.color + "12" : reached ? "rgba(255,255,255,0.02)" : T.bg3,
               border: "1px solid " + (current ? l.color + "40" : reached ? l.color + "20" : T.border),
               borderRadius: 12, padding: "10px 8px", textAlign: "center", position: "relative",
-              opacity: reached || current ? 1 : 0.4,
+              opacity: reached || current ? 1 : 0.5, cursor: "pointer", transition: "all 0.2s",
             }}>
               {reached && <div style={{ position: "absolute", top: 5, right: 5, width: 6, height: 6, borderRadius: "50%", background: l.color }} />}
               <div style={{ fontSize: 18, marginBottom: 4 }}>{l.icon}</div>
@@ -142,10 +155,40 @@ function FreedomBarLive({ ni, te, cf }) {
               <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
                 {fm(needed)}<span style={{ fontSize: 8 }}>/m</span>
               </div>
+              <div style={{ fontSize: 8, color: T.txt3, marginTop: 3 }}>click para info ▾</div>
             </div>
           );
         })}
       </div>
+
+      {/* Expanded level explanation */}
+      {expandedLvl && (() => {
+        const l = LEVELS.find(x => x.id === expandedLvl);
+        if (!l) return null;
+        const needed = l.factor * te;
+        const reached = currentLevel >= l.id;
+        return (
+          <div style={{ background: l.color + "08", border: "1px solid " + l.color + "20", borderRadius: 14, padding: "16px 20px", marginBottom: 16, animation: "fadeIn 0.2s ease" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 24 }}>{l.icon}</span>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: l.color }}>{l.name}</div>
+                  <div style={{ fontSize: 11, color: T.txt3 }}>Nivel {l.id}/5 — Necesitas {fm(needed)}/mes de ingresos</div>
+                </div>
+              </div>
+              <button onClick={() => setExpandedLvl(null)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 14 }}>✕</button>
+            </div>
+            <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.7 }}>{l.detail}</div>
+            <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(255,255,255,0.03)", borderRadius: 10, fontSize: 12 }}>
+              {reached
+                ? <span style={{ color: l.color, fontWeight: 700 }}>✅ ¡Ya alcanzaste este nivel! Tus ingresos ({fm(ni)}/mes) superan los {fm(needed)}/mes necesarios.</span>
+                : <span style={{ color: T.txt3 }}>📊 Te faltan <strong style={{ color: l.color }}>{fm(needed - ni)}/mes</strong> para alcanzar este nivel. Tus ingresos actuales: {fm(ni)}/mes.</span>
+              }
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Next level info */}
       {nextData && (
@@ -285,14 +328,15 @@ export default function SimuladorAvanzado({ user, totals }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
         {[
           { l: "Ingreso Neto", v: fm(simT.ni), c: T.gn, d: fm(simT.ni - (totals.ni || 0)) },
-          { l: "Gastos Total", v: fm(simT.te), c: T.rd, d: fm(simT.te - (totals.te || 0)) },
-          { l: "Cash Flow", v: fm(simT.cf), c: simT.cf >= 0 ? T.gn : T.rd, d: fm(simT.cf - (totals.cf || 0)) },
-          { l: "Independencia", v: pc(simT.ind), c: simT.ind >= 100 ? T.gn : T.txt2 },
+          { l: "Egresos Totales", v: fm(simT.te), c: T.rd, d: fm(simT.te - (totals.te || 0)), tip: "Gastos familiares + cuotas de deudas" },
+          { l: "Cash Flow", v: fm(simT.cf), c: simT.cf >= 0 ? T.gn : T.rd, d: fm(simT.cf - (totals.cf || 0)), tip: "Dinero que te sobra (o falta) cada mes después de pagar todo" },
+          { l: "Independencia", v: pc(simT.ind), c: simT.ind >= 100 ? T.gn : T.txt2, tip: "% de tus gastos que cubren tus ingresos. 100% = no necesitas empleo" },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 14, padding: 16 }}>
             <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: m.c, marginTop: 4 }}>{m.v}</div>
             {m.d && <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Δ {m.d}</div>}
+            {m.tip && <div style={{ fontSize: 9, color: T.txt3, marginTop: 4, lineHeight: 1.3, opacity: 0.7 }}>{m.tip}</div>}
           </div>
         ))}
       </div>
