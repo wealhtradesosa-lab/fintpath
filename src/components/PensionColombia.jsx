@@ -104,8 +104,7 @@ export default function PensionBTC({trm:pTrm}){
         <div style={{fontSize:13,fontWeight:700,color:T.orange,marginBottom:4}}>Tu ingreso mensual en retiro: {fC(btc.rMC)}</div>
         <div style={{fontSize:12,color:T.txt3}}>Esto es {mult.toFixed(1)}x más de lo que recibirías con pensión tradicional ({fC(penMes)}/mes)</div>
       </div>
-    </Cd>
-      </div></Cd></div>
+    </Cd></div>
       <Cd style={{padding:24}}><div style={{fontSize:16,fontWeight:700,marginBottom:16}}>📊 Proyección Año por Año</div><div style={{maxHeight:500,overflowY:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr>{["Año","Precio BTC","BTC","Valor USD"].map(h=><th key={h} style={{padding:"10px 12px",textAlign:h==="Año"?"left":"right",color:T.txt3,fontWeight:600,fontSize:11,textTransform:"uppercase",borderBottom:`1px solid ${T.border}`,position:"sticky",top:0,background:T.card}}>{h}</th>)}</tr></thead>
         <tbody>{btc.yd.map(d=><tr key={d.anio} style={{borderBottom:`1px solid ${T.border}`}}><td style={{padding:"10px 12px",fontWeight:600}}>{d.anio}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",color:T.txt2}}>{fU(d.precioBTC)}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",color:T.orange}}>{d.btcAcum.toFixed(4)}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",fontWeight:700,color:T.green}}>{d.valorUSD>=1e6?"$"+(d.valorUSD/1e6).toFixed(2)+"M":"$"+(d.valorUSD/1e3).toFixed(0)+"K"}</td></tr>)}</tbody></table></div></Cd>
     </div>}
