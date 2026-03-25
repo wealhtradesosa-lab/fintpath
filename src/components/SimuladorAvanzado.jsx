@@ -195,7 +195,16 @@ export default function SimuladorAvanzado({ user, totals }) {
     const nv = {};
 
 
-    (user.ingresos || []).forEach((ing, ii) => { nv[`ing_${ii}`] = Math.round((ing.mensual || 0) * f.i); });
+    (user.ingresos || []).forEach((ing, ii) => {
+      const baseCap = Number(ing.capital) || 0;
+      const tasa = Number(ing.tasa) || 0;
+      if (tasa > 0 && baseCap > 0) {
+        nv[`cap_${ii}`] = Math.round(baseCap * f.i);
+        nv[`ing_${ii}`] = Math.round((baseCap * f.i * tasa / 100) / 12);
+      } else {
+        nv[`ing_${ii}`] = Math.round((ing.mensual || 0) * f.i);
+      }
+    });
     (user.deudas || []).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
     // Standalone ingresos
     // Dedup ingresos in scenario too
@@ -207,10 +216,17 @@ export default function SimuladorAvanzado({ user, totals }) {
     let tI = 0, tG = 0;
 
 
-    // Standalone ingresos
+    // Ingresos: funds use capital slider, others use rent slider
     let tIng = 0;
     (user.ingresos || []).forEach((ing, ii) => {
-      tIng += getVal(`ing_${ii}`, ing.mensual || 0);
+      const baseCap = Number(ing.capital) || 0;
+      const tasa = Number(ing.tasa) || 0;
+      if (tasa > 0 && baseCap > 0) {
+        const simCap = getVal(`cap_${ii}`, baseCap);
+        tIng += Math.round((simCap * tasa / 100) / 12);
+      } else {
+        tIng += getVal(`ing_${ii}`, ing.mensual || 0);
+      }
     });
     tI += tIng;
 
@@ -287,34 +303,76 @@ export default function SimuladorAvanzado({ user, totals }) {
         <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: 8 }}>
           <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>💰 Ingresos</h4>
           {(user.ingresos || []).map((ing, ii) => {
-            const val = getVal(`ing_${ii}`, ing.mensual || 0);
-            const cap = Number(ing.capital) || 0;
+            const baseCap = Number(ing.capital) || 0;
             const tasa = Number(ing.tasa) || 0;
-            const capitalNeeded = tasa > 0 && val > 0 ? Math.round((val * 12) / (tasa / 100)) : 0;
-            return (
-              <div key={`ing_${ii}`} style={{ marginBottom: 6, background: "#22d3ee08", padding: "10px 14px", borderRadius: 10, borderLeft: "3px solid #22d3ee30" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>{ing.nombre || "Ingreso"}</div>
-                    <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                      {ing.categoria || ""}
-                      {cap > 0 && <span style={{ marginLeft: 6, color: "#22d3ee" }}>Capital: <strong>${Math.round(cap).toLocaleString()}</strong></span>}
-                      {tasa > 0 && <span style={{ marginLeft: 6, color: "#22d3ee" }}>Tasa: <strong>{tasa}%</strong> anual</span>}
+            const baseRenta = Number(ing.mensual) || 0;
+            const isFund = tasa > 0 && baseCap > 0;
+
+            if (isFund) {
+              // FUND/CDT: slider moves CAPITAL, rent is calculated
+              const simCap = getVal(`cap_${ii}`, baseCap);
+              const simRenta = Math.round((simCap * tasa / 100) / 12);
+              const capDiff = simCap - baseCap;
+              return (
+                <div key={`ing_${ii}`} style={{ marginBottom: 8, background: "#22d3ee06", borderRadius: 12, border: "1px solid #22d3ee15", overflow: "hidden" }}>
+                  <div style={{ padding: "12px 16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{ing.nombre || "Inversión"}</div>
+                        <div style={{ fontSize: 11, color: "#22d3ee", marginTop: 2 }}>{ing.categoria || "Rendimiento"} • <strong>{tasa}% anual</strong></div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: "#22d3ee" }}>{fm(simRenta)}<span style={{ fontSize: 10, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
+                        {capDiff !== 0 && <div style={{ fontSize: 10, color: capDiff > 0 ? T.gn : T.rd, fontWeight: 600 }}>{capDiff > 0 ? "+" : ""}{fm(capDiff)} capital</div>}
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 10 }}>
+                      <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
+                        <div style={{ fontSize: 10, color: T.txt3 }}>Capital invertido</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: T.txt, marginTop: 2 }}>{fm(simCap)}</div>
+                      </div>
+                      <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
+                        <div style={{ fontSize: 10, color: T.txt3 }}>Renta mensual ({tasa}%)</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: "#22d3ee", marginTop: 2 }}>{fm(simRenta)}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 10, color: T.txt3, marginBottom: 6 }}>Mueve el slider para simular más o menos capital:</div>
+                    <input type="range" min={0} max={Math.max(baseCap * 3, 1000000)} step={Math.max(Math.round(baseCap * 0.01), 10000)} value={simCap}
+                      onChange={(e) => {
+                        const newCap = Number(e.target.value);
+                        const newRenta = Math.round((newCap * tasa / 100) / 12);
+                        setVal(`cap_${ii}`, newCap);
+                        setVal(`ing_${ii}`, newRenta);
+                      }}
+                      style={{ width: "100%", accentColor: "#22d3ee", height: 6, cursor: "pointer" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.txt3, marginTop: 4 }}>
+                      <span>$0</span>
+                      <span>{fm(baseCap * 3)}</span>
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#22d3ee" }}>{fm(val)}<span style={{ fontSize: 10, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
-                    {val !== (ing.mensual || 0) && <div style={{ fontSize: 10, color: val > (ing.mensual || 0) ? T.gn : T.rd }}>{val > (ing.mensual || 0) ? "+" : ""}{fm(val - (ing.mensual || 0))}</div>}
-                  </div>
                 </div>
-                {tasa > 0 && <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>
-                  Para generar {fm(val)}/mes al {tasa}% necesitas invertir: <strong style={{ color: "#22d3ee" }}>{fm(capitalNeeded)}</strong>
-                </div>}
-                <input type="range" min="0" max={Math.max((ing.mensual || 0) * 3, 1000)} step={Math.max(Math.round((ing.mensual || 0) * 0.01), 5)} value={val}
-                  onChange={(e) => setVal(`ing_${ii}`, Number(e.target.value))}
-                  style={{ width: "100%", accentColor: "#22d3ee", height: 4, cursor: "pointer" }} />
-              </div>
-            );
+              );
+            } else {
+              // REGULAR INCOME: slider moves rent directly
+              const val = getVal(`ing_${ii}`, baseRenta);
+              return (
+                <div key={`ing_${ii}`} style={{ marginBottom: 6, background: "#22d3ee08", padding: "10px 14px", borderRadius: 10, borderLeft: "3px solid #22d3ee30" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>{ing.nombre || "Ingreso"}</div>
+                      <div style={{ fontSize: 11, color: T.txt3 }}>{ing.categoria || ""}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#22d3ee" }}>{fm(val)}<span style={{ fontSize: 10, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
+                      {val !== baseRenta && <div style={{ fontSize: 10, color: val > baseRenta ? T.gn : T.rd }}>{val > baseRenta ? "+" : ""}{fm(val - baseRenta)}</div>}
+                    </div>
+                  </div>
+                  <input type="range" min="0" max={Math.max(baseRenta * 3, 1000)} step={Math.max(Math.round(baseRenta * 0.01), 5)} value={val}
+                    onChange={(e) => setVal(`ing_${ii}`, Number(e.target.value))}
+                    style={{ width: "100%", accentColor: "#22d3ee", height: 4, cursor: "pointer" }} />
+                </div>
+              );
+            }
           })}
 
           {/* Family expense sliders */}
