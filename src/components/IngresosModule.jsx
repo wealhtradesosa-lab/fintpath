@@ -35,16 +35,31 @@ export default function IngresosModule({ ingresos, inversiones, onUpdate }) {
   (inversiones || []).forEach((inv) => {
     const name = inv.n || inv.nombre || inv.name || "Inversión";
     const tipo = inv.tp || inv.tipo || "Investment";
+    const va = Number(inv.va || inv.valor_actual || 0);
+    const tasa = Number(inv.tasa || 0);
+    let hasIncome = false;
+
     // From sub-units
     (inv.unidades || inv.un || []).forEach((u) => {
       (u.ingresos || u.ig || []).forEach((ig) => {
-        if (ig.m > 0) invIncome.push({ id: "inv_" + inv.id + "_" + ig.c, nombre: name + ": " + (ig.c || "Renta"), categoria: tipo, mensual: ig.m, tipo: "fijo", fuente: name, _fromInv: true });
+        if (ig.m > 0) {
+          invIncome.push({ id: "inv_" + inv.id + "_u_" + ig.c, nombre: name + ": " + (ig.c || "Renta"), categoria: tipo, mensual: ig.m, tipo: "fijo", fuente: name, _fromInv: true });
+          hasIncome = true;
+        }
       });
     });
-    // Direct income
+    // Direct income from ig array
     (inv.ingresos || inv.ig || []).forEach((ig) => {
-      if (ig.m > 0) invIncome.push({ id: "inv_" + inv.id + "_" + ig.c, nombre: name + ": " + (ig.c || "Renta"), categoria: tipo, mensual: ig.m, tipo: "fijo", fuente: name, _fromInv: true });
+      if (ig.m > 0) {
+        invIncome.push({ id: "inv_" + inv.id + "_" + ig.c, nombre: name + ": " + (ig.c || "Renta"), categoria: tipo, mensual: ig.m, tipo: "fijo", fuente: name, _fromInv: true });
+        hasIncome = true;
+      }
     });
+    // If no ig but has tasa + valor, calculate income
+    if (!hasIncome && tasa > 0 && va > 0) {
+      const mensualCalc = Math.round((va * tasa / 100) / 12);
+      invIncome.push({ id: "inv_" + inv.id + "_tasa", nombre: name + " (" + tasa + "% anual)", categoria: tipo, mensual: mensualCalc, tipo: "fijo", fuente: name + " • Capital: $" + Math.round(va).toLocaleString(), _fromInv: true });
+    }
   });
   
   const allItems = [...items, ...invIncome];

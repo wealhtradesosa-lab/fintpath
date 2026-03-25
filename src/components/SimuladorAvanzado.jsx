@@ -227,6 +227,14 @@ export default function SimuladorAvanzado({ user, totals }) {
       } else {
         ((inv.ingresos||inv.ig||[])).forEach((ig, ii) => { tI += getVal(`i_${inv.id}_${ii}`, ig.m); });
         ((inv.gastos||inv.gs||[])).forEach((g, gi) => { tG += getVal(`g_${inv.id}_${gi}`, g.m); });
+        // Tasa-derived income if no ig
+        const hasIg = ((inv.ingresos||inv.ig||[])).length > 0;
+        const invVa = Number(inv.va||inv.valor_actual||0);
+        const invTasa = Number(inv.tasa||0);
+        if (!hasIg && invTasa > 0 && invVa > 0) {
+          const tasaMensual = Math.round((invVa * invTasa / 100) / 12);
+          tI += getVal(`i_${inv.id}_tasa`, tasaMensual);
+        }
       }
     });
     // Standalone ingresos
@@ -310,15 +318,25 @@ export default function SimuladorAvanzado({ user, totals }) {
           {/* Investment sliders */}
           <h4 style={{ fontSize: 13, color: T.gn, fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>📈 Activos — Ingresos & Gastos</h4>
           {(user.inv || []).map((inv) => {
-            const items = (inv.unidades||inv.un)
-              ? (inv.unidades||inv.un).flatMap((u, ui) => [
-                  ...((u.ingresos||u.ig||[])).map((ig, ii) => ({ key: `i_${inv.id}_u${ui}_${ii}`, label: (u.nombre||u.n) + ": " + ig.c, base: ig.m, tp: "i" })),
-                  ...((u.gastos||u.gs||[])).map((g, gi) => ({ key: `g_${inv.id}_u${ui}_${gi}`, label: (u.nombre||u.n) + ": " + g.c, base: g.m, tp: "g" })),
-                ])
-              : [
-                  ...((inv.ingresos||inv.ig||[])).map((ig, ii) => ({ key: `i_${inv.id}_${ii}`, label: ig.c, base: ig.m, tp: "i" })),
-                  ...((inv.gastos||inv.gs||[])).map((g, gi) => ({ key: `g_${inv.id}_${gi}`, label: g.c, base: g.m, tp: "g" })),
-                ];
+            let items;
+            if (inv.unidades||inv.un) {
+              items = (inv.unidades||inv.un).flatMap((u, ui) => [
+                ...((u.ingresos||u.ig||[])).map((ig, ii) => ({ key: `i_${inv.id}_u${ui}_${ii}`, label: (u.nombre||u.n) + ": " + ig.c, base: ig.m, tp: "i" })),
+                ...((u.gastos||u.gs||[])).map((g, gi) => ({ key: `g_${inv.id}_u${ui}_${gi}`, label: (u.nombre||u.n) + ": " + g.c, base: g.m, tp: "g" })),
+              ]);
+            } else {
+              items = [
+                ...((inv.ingresos||inv.ig||[])).map((ig, ii) => ({ key: `i_${inv.id}_${ii}`, label: ig.c, base: ig.m, tp: "i" })),
+                ...((inv.gastos||inv.gs||[])).map((g, gi) => ({ key: `g_${inv.id}_${gi}`, label: g.c, base: g.m, tp: "g" })),
+              ];
+            }
+            // If no items but has tasa + va, generate income slider
+            const va = Number(inv.va||inv.valor_actual||0);
+            const tasa = Number(inv.tasa||0);
+            if (items.length === 0 && tasa > 0 && va > 0) {
+              const mensual = Math.round((va * tasa / 100) / 12);
+              items = [{ key: `i_${inv.id}_tasa`, label: `Rendimiento ${tasa}%`, base: mensual, tp: "i" }];
+            }
             if (!items.length) return null;
             const sI = items.filter((x) => x.tp === "i").reduce((s, x) => s + getVal(x.key, x.base), 0);
             const sG = items.filter((x) => x.tp === "g").reduce((s, x) => s + getVal(x.key, x.base), 0);
