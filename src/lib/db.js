@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from "./supabase";
 
-const SK = "finpath-v3";
+const SK = "fp3";
 
 /* ═══════════════════════════════════════════════════
    DATA LAYER — Supabase when configured, localStorage fallback
