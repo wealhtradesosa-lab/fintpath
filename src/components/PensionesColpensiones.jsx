@@ -428,47 +428,61 @@ export default function PensionesColpensiones({ trm }) {
             </div>
           </Cd>
 
-          {/* ═══ ESCENARIOS POR AÑO ═══ */}
+          {/* ═══ ESCENARIOS: SI SIGO PAGANDO X AÑOS MÁS ═══ */}
           <Cd style={{ padding: 24, marginTop: 16 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📅 Escenarios por año — ¿Cuánto recibiría si me jubilo en X años?</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📅 ¿Qué pasa si sigo cotizando X años más?</h3>
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>
-              Cada fila muestra tu pensión si dejas de cotizar en ese momento y esperas a la edad de jubilación.
+              Hoy tienes <strong style={{ color: T.blue }}>{semanas.toLocaleString()} semanas</strong>. Cada año sumas ~52 semanas. Mira cómo cambia tu pensión:
             </p>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
                   <tr>
-                    {["Escenario","Edad","Años cotizando","Semanas","Sem. extras","Bonus 1.5%","Tasa reemplazo","Pensión bruta","Neta (−12%)","vs Actual"].map(h => (
-                      <th key={h} style={{ padding: "10px 8px", textAlign: h === "Escenario" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: "2px solid " + T.border, whiteSpace: "nowrap" }}>{h}</th>
+                    {["Si pago...","Tendrás","Semanas","Extras","Bloques","Tasa","Pensión neta","Ganas vs hoy","En 20 años"].map(h => (
+                      <th key={h} style={{ padding: "10px 8px", textAlign: h === "Si pago..." ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: "2px solid " + T.border, whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {[0, 3, 5, 7, 10, Math.max(0, edadJub - edad)].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b).map((extraAnios) => {
-                    const sc = calcColpensiones({ sexo, edad: edad, semanasActuales: semanas + extraAnios * 52, ibcSM, ipc, edadJub: Math.max(edadJub, edad + extraAnios) });
-                    const esActual = extraAnios === 0;
-                    const esJubilacion = extraAnios === Math.max(0, edadJub - edad);
-                    return (
-                      <tr key={extraAnios} style={{ background: esJubilacion ? T.blue + "10" : esActual ? T.bg3 : "transparent", borderBottom: "1px solid " + T.border }}>
-                        <td style={{ padding: "10px 8px", fontWeight: 700, color: esJubilacion ? T.blue : esActual ? T.orange : T.txt }}>
-                          {esActual ? "🔵 HOY" : esJubilacion ? "🏆 Jubilación" : "📅 En " + extraAnios + " años"}
-                        </td>
-                        <td style={{ padding: "10px 8px", textAlign: "right" }}>{edad + extraAnios} años</td>
-                        <td style={{ padding: "10px 8px", textAlign: "right" }}>{extraAnios} más</td>
-                        <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{sc.semanasTotales.toLocaleString()}</td>
-                        <td style={{ padding: "10px 8px", textAlign: "right", color: T.green }}>{sc.semanasExtra > 0 ? "+" + sc.semanasExtra : "—"}</td>
-                        <td style={{ padding: "10px 8px", textAlign: "right", color: T.green, fontWeight: 600 }}>{sc.bonusSemanas > 0 ? "+" + pc(sc.bonusSemanas) : "—"}</td>
-                        <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700, color: sc.tasaTotal >= 65 ? T.green : sc.tasaTotal >= 55 ? T.blue : T.orange, fontSize: 14 }}>{pc(sc.tasaTotal)}</td>
-                        <td style={{ padding: "10px 8px", textAlign: "right", fontFamily: "monospace" }}>{fCOP(sc.pensionBruta)}</td>
-                        <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: T.blue }}>{fCOP(sc.pensionFinal)}</td>
-                        <td style={{ padding: "10px 8px", textAlign: "right", color: esActual ? T.txt3 : T.green, fontWeight: 600 }}>
-                          {esActual ? "—" : "+" + fCOP(sc.pensionFinal - colp.pensionFinal)}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {(() => {
+                    const hoy = calcColpensiones({ sexo, edad, semanasActuales: semanas, ibcSM, ipc, edadJub });
+                    const aniosArr = [0, 1, 2, 3, 5, 7, 10, 15, Math.max(0, edadJub - edad)].filter((v, i, a) => v >= 0 && a.indexOf(v) === i).sort((a, b) => a - b);
+                    return aniosArr.map(a => {
+                      const semFuturas = semanas + a * 52;
+                      const sc = calcColpensiones({ sexo, edad, semanasActuales: semFuturas, ibcSM, ipc, edadJub });
+                      const diff = sc.pensionFinal - hoy.pensionFinal;
+                      const esHoy = a === 0;
+                      const esJub = a === Math.max(0, edadJub - edad);
+                      const total20 = sc.pensionFinal * 12 * 20;
+                      return (
+                        <tr key={a} style={{ background: esJub ? T.blue + "10" : esHoy ? T.bg3 : "transparent", borderBottom: "1px solid " + T.border }}>
+                          <td style={{ padding: "10px 8px", fontWeight: 700, color: esJub ? T.blue : esHoy ? T.orange : T.txt }}>
+                            {esHoy ? "🔵 Paro hoy" : esJub ? "🏆 Hasta jubilación (" + a + "a)" : a + " año" + (a > 1 ? "s" : "") + " más"}
+                          </td>
+                          <td style={{ padding: "10px 8px", textAlign: "right" }}>{edad + a} años</td>
+                          <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{semFuturas.toLocaleString()}</td>
+                          <td style={{ padding: "10px 8px", textAlign: "right", color: sc.semanasExtra > 0 ? T.green : T.txt3 }}>{sc.semanasExtra > 0 ? "+" + sc.semanasExtra : "—"}</td>
+                          <td style={{ padding: "10px 8px", textAlign: "right", color: T.green }}>{Math.floor(sc.semanasExtra / 50)}</td>
+                          <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700, fontSize: 13, color: sc.tasaTotal >= 70 ? T.green : sc.tasaTotal >= 60 ? T.blue : T.orange }}>{pc(sc.tasaTotal)}</td>
+                          <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: T.blue, fontSize: 14 }}>{fCOP(sc.pensionFinal)}/mes</td>
+                          <td style={{ padding: "10px 8px", textAlign: "right", color: diff > 0 ? T.green : T.txt3, fontWeight: 600 }}>
+                            {esHoy ? "—" : diff > 0 ? "+" + fCOP(diff) + "/mes" : "igual"}
+                          </td>
+                          <td style={{ padding: "10px 8px", textAlign: "right", fontFamily: "monospace", color: T.txt2 }}>{fCOP(total20)}</td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
+            </div>
+            <div style={{ marginTop: 12, padding: 14, background: T.bg3, borderRadius: 10, fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
+              <strong style={{ color: T.green }}>📖 Cómo leer esta tabla:</strong> Si hoy tienes {semanas.toLocaleString()} semanas y pagas <strong>5 años más</strong>, acumulas {(semanas + 5 * 52).toLocaleString()} semanas.
+              {(() => {
+                const sc5 = calcColpensiones({ sexo, edad, semanasActuales: semanas + 5 * 52, ibcSM, ipc, edadJub });
+                const hoy2 = calcColpensiones({ sexo, edad, semanasActuales: semanas, ibcSM, ipc, edadJub });
+                return ` Tu tasa sube de ${pc(hoy2.tasaTotal)} a ${pc(sc5.tasaTotal)} y tu pensión pasa de ${fCOP(hoy2.pensionFinal)} a ${fCOP(sc5.pensionFinal)}/mes — una diferencia de ${fCOP(sc5.pensionFinal - hoy2.pensionFinal)}/mes de por vida.`;
+              })()}
             </div>
           </Cd>
 
