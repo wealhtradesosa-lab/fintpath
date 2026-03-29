@@ -299,6 +299,106 @@ export default function PensionesColpensiones({ trm }) {
               </Cd>
             </div>
           </div>
+
+          {/* ═══ ESCENARIOS DE JUBILACIÓN ═══ */}
+          <Cd style={{ padding: 24, marginTop: 16 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📊 Escenarios: ¿Qué pasa si me jubilo en X años?</h3>
+            <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>
+              Por cada 50 semanas adicionales después de 1,300, tu tasa sube 1.5%. Mínimo 55%, máximo 80%.
+            </p>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr>
+                    {["Escenario","Edad","Años cotizando","Semanas","Sem. extras","Bonus 1.5%","Tasa reemplazo","Pensión bruta","Neta (−12%)","vs Actual"].map(h => (
+                      <th key={h} style={{ padding: "10px 8px", textAlign: h === "Escenario" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: "2px solid " + T.border, whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[0, 3, 5, 7, 10, Math.max(0, edadJub - edad)].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b).map((extraAnios) => {
+                    const sc = calcColpensiones({ sexo, edad: edad, semanasActuales: semanas + extraAnios * 52, ibcSM, ipc, edadJub: Math.max(edadJub, edad + extraAnios) });
+                    const esActual = extraAnios === 0;
+                    const esJubilacion = extraAnios === Math.max(0, edadJub - edad);
+                    return (
+                      <tr key={extraAnios} style={{ background: esJubilacion ? T.blue + "10" : esActual ? T.bg3 : "transparent", borderBottom: "1px solid " + T.border }}>
+                        <td style={{ padding: "10px 8px", fontWeight: 700, color: esJubilacion ? T.blue : esActual ? T.orange : T.txt }}>
+                          {esActual ? "🔵 HOY" : esJubilacion ? "🏆 Jubilación" : "📅 En " + extraAnios + " años"}
+                        </td>
+                        <td style={{ padding: "10px 8px", textAlign: "right" }}>{edad + extraAnios} años</td>
+                        <td style={{ padding: "10px 8px", textAlign: "right" }}>{extraAnios} más</td>
+                        <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{sc.semanasTotales.toLocaleString()}</td>
+                        <td style={{ padding: "10px 8px", textAlign: "right", color: T.green }}>{sc.semanasExtra > 0 ? "+" + sc.semanasExtra : "—"}</td>
+                        <td style={{ padding: "10px 8px", textAlign: "right", color: T.green, fontWeight: 600 }}>{sc.bonusSemanas > 0 ? "+" + pc(sc.bonusSemanas) : "—"}</td>
+                        <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700, color: sc.tasaTotal >= 65 ? T.green : sc.tasaTotal >= 55 ? T.blue : T.orange, fontSize: 14 }}>{pc(sc.tasaTotal)}</td>
+                        <td style={{ padding: "10px 8px", textAlign: "right", fontFamily: "monospace" }}>{fCOP(sc.pensionBruta)}</td>
+                        <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: T.blue }}>{fCOP(sc.pensionFinal)}</td>
+                        <td style={{ padding: "10px 8px", textAlign: "right", color: esActual ? T.txt3 : T.green, fontWeight: 600 }}>
+                          {esActual ? "—" : "+" + fCOP(sc.pensionFinal - colp.pensionFinal)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Cd>
+
+          {/* ═══ FÓRMULA DEL 1.5% EXPLICADA ═══ */}
+          <Cd style={{ padding: 24, marginTop: 16 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.green, marginBottom: 12 }}>📖 ¿Cómo sube tu pensión? — Fórmula del 1.5%</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.8 }}>
+                  <div style={{ background: T.bg3, borderRadius: 10, padding: 14, marginBottom: 8 }}>
+                    <strong style={{ color: T.blue }}>Tasa base:</strong> 65.5% − 0.5% por cada SMMLV de tu IBL<br/>
+                    <span style={{ color: T.txt3 }}>Tu IBL: {(colp.IBL / SM_2026).toFixed(1)} SMMLV → Tasa base: {pc(colp.tasaBase)}</span>
+                  </div>
+                  <div style={{ background: T.bg3, borderRadius: 10, padding: 14, marginBottom: 8 }}>
+                    <strong style={{ color: T.green }}>Bonus por semanas extras:</strong><br/>
+                    Por cada <strong>50 semanas</strong> después de 1,300 → <strong>+1.5%</strong><br/>
+                    <span style={{ color: T.txt3 }}>Tus semanas extras: {colp.semanasExtra} → +{pc(colp.bonusSemanas)}</span>
+                  </div>
+                  <div style={{ background: T.bg3, borderRadius: 10, padding: 14 }}>
+                    <strong style={{ color: T.orange }}>Tope máximo:</strong> 80% (no puede pasar de ahí)<br/>
+                    <span style={{ color: T.txt3 }}>Tu tasa final: <strong style={{ color: T.blue, fontSize: 16 }}>{pc(colp.tasaTotal)}</strong></span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Ejemplo con tus datos:</div>
+                <div style={{ background: T.bg3, borderRadius: 10, padding: 16 }}>
+                  <div style={{ fontSize: 12, color: T.txt2, lineHeight: 2 }}>
+                    Tasa base: <strong>{pc(colp.tasaBase)}</strong><br/>
+                    + Bonus ({colp.semanasExtra} semanas ÷ 50 × 1.5%): <strong style={{ color: T.green }}>+{pc(colp.bonusSemanas)}</strong><br/>
+                    <div style={{ borderTop: "1px solid " + T.border, marginTop: 8, paddingTop: 8 }}>
+                      = Tasa total: <strong style={{ color: T.blue, fontSize: 18 }}>{pc(colp.tasaTotal)}</strong><br/>
+                      Tu IBL: {fCOP(colp.IBL)}<br/>
+                      Pensión: {fCOP(colp.IBL)} × {pc(colp.tasaTotal)} = <strong style={{ color: T.blue, fontSize: 16 }}>{fCOP(colp.pensionBruta)}</strong>
+                    </div>
+                  </div>
+                </div>
+                {colp.tasaTotal < 80 && <div style={{ marginTop: 8, fontSize: 11, color: T.green }}>
+                  💡 Si cotizas {Math.ceil((80 - colp.tasaTotal) / 1.5) * 50} semanas más llegas al tope de 80%
+                </div>}
+              </div>
+            </div>
+          </Cd>
+
+          {/* ═══ BARRA VISUAL DE TASA ═══ */}
+          <Cd style={{ padding: 20, marginTop: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Tu tasa de reemplazo vs máximos</div>
+            <div style={{ position: "relative", height: 32, background: T.bg3, borderRadius: 16, overflow: "hidden", marginBottom: 8 }}>
+              <div style={{ height: "100%", width: Math.min(colp.tasaTotal / 80 * 100, 100) + "%", background: "linear-gradient(90deg, #ef4444 0%, #eab308 30%, #22c55e 60%, #3b82f6 100%)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 12, minWidth: 60 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{pc(colp.tasaTotal)}</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.txt3 }}>
+              <span>55% mínimo</span>
+              <span>65.5% base</span>
+              <span>80% máximo</span>
+            </div>
+          </Cd>
         </div>
       )}
 
