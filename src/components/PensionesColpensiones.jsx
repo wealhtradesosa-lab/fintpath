@@ -78,7 +78,7 @@ function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ipc, edadJub }) 
   const bonusSemanas = Math.floor(semanasExtra / 50) * 1.5;
   const s = IBL / SM_2026; // Cuántos salarios mínimos es el IBL
   let tasaBase = 65.50 - 0.50 * s;
-  if (tasaBase < 33.99) tasaBase = 33.99;
+  if (tasaBase < 55) tasaBase = 55; // Piso legal: 55% por 1300 semanas
   let tasaTotal = tasaBase + bonusSemanas;
   if (tasaTotal > 80) tasaTotal = 80; // Tope máximo 80%
 
@@ -300,11 +300,139 @@ export default function PensionesColpensiones({ trm }) {
             </div>
           </div>
 
-          {/* ═══ ESCENARIOS DE JUBILACIÓN ═══ */}
+          {/* ═══ HITOS DE SEMANAS — Como un actuario ═══ */}
           <Cd style={{ padding: 24, marginTop: 16 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📊 Escenarios: ¿Qué pasa si me jubilo en X años?</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📊 Hitos de Semanas — ¿Cuánto ganas por seguir cotizando?</h3>
+            <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 8px" }}>
+              Por cada <strong>50 semanas</strong> adicionales después de 1,300 → tu tasa sube <strong>1.5%</strong>. Tope: 80%.
+            </p>
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>
-              Por cada 50 semanas adicionales después de 1,300, tu tasa sube 1.5%. Mínimo 55%, máximo 80%.
+              Con IBL topado en 25 SMMLV, cada bloque de 50 semanas agrega ~<strong>{fCOP(colp.IBL * 0.015)}</strong>/mes a tu pensión.
+            </p>
+
+            {/* Milestone table like an actuary would show */}
+            <div style={{ overflowX: "auto", marginBottom: 16 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr>
+                    {["Semanas","Extras","Bloques×50","Bonus","Tasa total","Pensión bruta","Neta (−12%)","Estado"].map(h => (
+                      <th key={h} style={{ padding: "8px 6px", textAlign: h === "Estado" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: "2px solid " + T.border, whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1300,1350,1400,1450,1500,1550,1600,1650,1700,1750,1800,1850,1900,1950,2000,2100,2150].map(sem => {
+                    const extras = Math.max(0, sem - 1300);
+                    const bloques = Math.floor(extras / 50);
+                    const bonus = bloques * 1.5;
+                    const s = colp.IBL / SM_2026;
+                    let tasaB = 65.50 - 0.50 * s;
+                    if (tasaB < 55) tasaB = 55;
+                    const tasaT = Math.min(tasaB + bonus, 80);
+                    const bruta = colp.IBL * tasaT / 100;
+                    const tope = 25 * SM_2026;
+                    const aplicada = Math.min(bruta, tope);
+                    const neta = aplicada * 0.88;
+                    const esActual = Math.abs(sem - colp.semanasTotales) < 25;
+                    const esAlcanzable = sem <= colp.semanasTotales + aniosFaltantes * 52;
+                    const yaAlcanzo = sem <= colp.semanasTotales;
+                    const esTope = tasaT >= 80;
+                    return (
+                      <tr key={sem} style={{ background: esActual ? T.blue + "15" : esTope ? T.green + "08" : "transparent", borderBottom: "1px solid " + T.border }}>
+                        <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: esActual ? 800 : 600, color: esActual ? T.blue : T.txt }}>{sem.toLocaleString()}</td>
+                        <td style={{ padding: "8px 6px", textAlign: "right", color: T.txt3 }}>{extras > 0 ? "+" + extras : "—"}</td>
+                        <td style={{ padding: "8px 6px", textAlign: "right", color: T.green }}>{bloques}</td>
+                        <td style={{ padding: "8px 6px", textAlign: "right", color: T.green, fontWeight: 600 }}>+{bonus.toFixed(1)}%</td>
+                        <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: esTope ? T.green : T.blue, fontSize: 13 }}>{tasaT.toFixed(1)}%</td>
+                        <td style={{ padding: "8px 6px", textAlign: "right", fontFamily: "monospace" }}>{fCOP(bruta)}</td>
+                        <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: T.blue }}>{fCOP(neta)}</td>
+                        <td style={{ padding: "8px 6px", fontSize: 11, color: yaAlcanzo ? T.green : esAlcanzable ? T.orange : T.txt3 }}>
+                          {esActual ? "← Tú estás aquí" : yaAlcanzo ? "✅ Ya alcanzado" : esAlcanzable ? "📅 Alcanzable" : esTope ? "🏆 Tope 80%" : ""}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Cd>
+
+          {/* ═══ ANÁLISIS ACTUARIAL ═══ */}
+          <Cd style={{ padding: 24, marginTop: 16 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.green, marginBottom: 12 }}>🧮 Análisis Actuarial — ¿Vale la pena seguir cotizando?</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div>
+                <div style={{ background: T.bg3, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 8 }}>📋 Tu situación actual</div>
+                  <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
+                    Semanas cotizadas: <strong>{semanas.toLocaleString()}</strong><br/>
+                    Semanas al jubilarte: <strong>{colp.semanasTotales.toLocaleString()}</strong><br/>
+                    Semanas extras (sobre 1,300): <strong>{colp.semanasExtra}</strong><br/>
+                    Bloques de 50: <strong>{Math.floor(colp.semanasExtra / 50)}</strong><br/>
+                    Tasa actual: <strong style={{ color: T.blue }}>{pc(colp.tasaTotal)}</strong><br/>
+                    Pensión proyectada: <strong style={{ color: T.blue }}>{fCOP(colp.pensionFinal)}/mes</strong>
+                  </div>
+                </div>
+                <div style={{ background: T.bg3, borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 8 }}>💡 Costo de cada bloque</div>
+                  <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
+                    Cada 50 semanas (~1 año) te compra:<br/>
+                    <strong style={{ color: T.green }}>+1.5% de tasa = +{fCOP(colp.IBL * 0.015 * 0.88)}/mes neto</strong><br/><br/>
+                    Aportas: {fCOP(colp.IBC * 0.16)}/mes × 12 = <strong>{fCOP(colp.IBC * 0.16 * 12)}/año</strong><br/><br/>
+                    Ganancia: {fCOP(colp.IBL * 0.015 * 0.88)} × 12 meses × 20 años =<br/>
+                    <strong style={{ color: T.green }}>{fCOP(colp.IBL * 0.015 * 0.88 * 12 * 20)} en pensión total</strong><br/><br/>
+                    vs Costo: {fCOP(colp.IBC * 0.16 * 12)}<br/>
+                    <strong style={{ color: T.green }}>Retorno: {((colp.IBL * 0.015 * 0.88 * 12 * 20) / (colp.IBC * 0.16 * 12)).toFixed(1)}x tu inversión</strong>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div style={{ background: T.bg3, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>🎯 Para llegar al 80% (tope máximo)</div>
+                  {(() => {
+                    const tasaActual = colp.tasaTotal;
+                    const falta = Math.max(0, 80 - tasaActual);
+                    const bloquesNecesarios = Math.ceil(falta / 1.5);
+                    const semanasNecesarias = bloquesNecesarios * 50;
+                    const aniosNecesarios = (semanasNecesarias / 52).toFixed(1);
+                    const pensionAl80 = Math.min(colp.IBL * 0.80, 25 * SM_2026) * 0.88;
+                    return (
+                      <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
+                        Te falta: <strong style={{ color: T.orange }}>{pc(falta)}</strong> para llegar al 80%<br/>
+                        Necesitas: <strong>{bloquesNecesarios} bloques</strong> × 50 = <strong>{semanasNecesarias.toLocaleString()} semanas</strong><br/>
+                        Equivale a: <strong>~{aniosNecesarios} años</strong> más cotizando<br/><br/>
+                        Pensión al 80%: <strong style={{ color: T.green }}>{fCOP(pensionAl80)}/mes</strong><br/>
+                        vs tu actual: {fCOP(colp.pensionFinal)}/mes<br/>
+                        Diferencia: <strong style={{ color: T.green }}>+{fCOP(pensionAl80 - colp.pensionFinal)}/mes</strong>
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.08), rgba(59,130,246,0.05))", border: "1px solid " + T.green + "20", borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>📌 Recomendación actuarial</div>
+                  <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
+                    {colp.tasaTotal >= 75 ? (
+                      <span>Estás muy cerca del tope. <strong style={{ color: T.green }}>Sigue cotizando al tope de 25 SMMLV</strong> hasta alcanzar el 80%. La diferencia es significativa.</span>
+                    ) : colp.tasaTotal >= 65 ? (
+                      <span>Tu tasa es buena. Cada año adicional agrega ~{fCOP(colp.IBL * 0.015 * 0.88)}/mes a tu pensión. <strong style={{ color: T.blue }}>Vale la pena seguir al tope si puedes.</strong></span>
+                    ) : colp.tasaTotal >= 55 ? (
+                      <span>Tu tasa está en el rango base. <strong style={{ color: T.orange }}>Cada 50 semanas extras son valiosas</strong> — no dejes de cotizar si puedes mantener el IBC alto.</span>
+                    ) : (
+                      <span style={{ color: T.orange }}>Aún no cumples los requisitos mínimos. Enfócate en llegar a 1,300 semanas.</span>
+                    )}
+                    <br/><br/>
+                    <strong>Regla clave:</strong> No sobrecotizar por encima de 25 SMMLV agregados. No baja beneficio. Mantener el IBC al tope es lo que importa.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Cd>
+
+          {/* ═══ ESCENARIOS POR AÑO ═══ */}
+          <Cd style={{ padding: 24, marginTop: 16 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📅 Escenarios por año — ¿Cuánto recibiría si me jubilo en X años?</h3>
+            <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>
+              Cada fila muestra tu pensión si dejas de cotizar en ese momento y esperas a la edad de jubilación.
             </p>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
