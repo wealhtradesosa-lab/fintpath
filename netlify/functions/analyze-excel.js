@@ -82,4 +82,3 @@ Responde SOLO con el array JSON:`;
   }
 }
 
-export const config = { path: "/api/analyze-excel" };

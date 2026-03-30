@@ -3,6 +3,23 @@
   publish = "dist"
   functions = "netlify/functions"
 
+# API routes -> Netlify Functions (MUST be before SPA catch-all)
+[[redirects]]
+  from = "/api/trm"
+  to = "/.netlify/functions/trm"
+  status = 200
+
+[[redirects]]
+  from = "/api/analyze-excel"
+  to = "/.netlify/functions/analyze-excel"
+  status = 200
+
+[[redirects]]
+  from = "/api/stripe-webhook"
+  to = "/.netlify/functions/stripe-webhook"
+  status = 200
+
+# SPA fallback (LAST - catches everything else)
 [[redirects]]
   from = "/*"
   to = "/index.html"
