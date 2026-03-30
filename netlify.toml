@@ -24,6 +24,11 @@
   to = "/.netlify/functions/stripe-webhook"
   status = 200
 
+[[redirects]]
+  from = "/api/stock-prices"
+  to = "/.netlify/functions/stock-prices"
+  status = 200
+
 # SPA fallback (LAST - catches everything else)
 [[redirects]]
   from = "/*"
