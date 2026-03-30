@@ -55,7 +55,7 @@ const MODULES = {
 - "la": null`,
   },
   trading: {
-    label: "Trading / Acciones", icon: "💹", key: "ibkr",
+    label: "Trading / Acciones", icon: "💹", key: "ibk",
     prompt: `Extrae cada posición bursátil. Para CADA fila devuelve un JSON con:
 - "tk": ticker/símbolo (string, OBLIGATORIO)
 - "n": nombre completo (string)
