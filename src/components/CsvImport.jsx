@@ -88,14 +88,34 @@ function excelToText(workbook) {
 
 // Call our API route which calls Claude
 async function analyzeWithAI(excelText, modulePrompt) {
-  const res = await fetch("/api/analyze-excel", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ excelText, modulePrompt }),
-  });
-  const data = await res.json();
+  // Trim excel text if too long (API limit)
+  const trimmedText = excelText.length > 15000 ? excelText.slice(0, 15000) + "\n...datos truncados..." : excelText;
+  
+  let res;
+  try {
+    res = await fetch("/api/analyze-excel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ excelText: trimmedText, modulePrompt }),
+    });
+  } catch (fetchErr) {
+    throw new Error("No se pudo conectar con el servidor. Verifica tu conexión.");
+  }
+  
+  if (!res.ok) {
+    throw new Error("Error del servidor: " + res.status + ". Verifica que ANTHROPIC_API_KEY esté configurada en Netlify.");
+  }
+  
+  let data;
+  try {
+    const text = await res.text();
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("Respuesta inválida del servidor. Verifica la configuración de la API.");
+  }
+  
   if (data.error) throw new Error(data.error);
-  if (data.fallback) throw new Error("API key not configured");
+  if (data.fallback) throw new Error("Para importar con IA necesitas configurar ANTHROPIC_API_KEY en Netlify → Site configuration → Environment variables.");
   return data.items || [];
 }
 
