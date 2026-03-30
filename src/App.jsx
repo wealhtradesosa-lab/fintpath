@@ -150,6 +150,40 @@ export default function FinPath(){
         </Cd>
       </div>
 
+      {/* ═══ ROW 1b: Wealth Percentile ═══ */}
+      {(() => {
+        const nwUSD = trm > 0 ? t.nw / trm : t.nw / 4200;
+        // Colombia thresholds (Credit Suisse/UBS 2024, adjusted)
+        const colPerc = nwUSD < 1000 ? 30 : nwUSD < 5000 ? 45 : nwUSD < 10000 ? 55 : nwUSD < 30000 ? 70 : nwUSD < 50000 ? 80 : nwUSD < 100000 ? 90 : nwUSD < 250000 ? 95 : nwUSD < 500000 ? 97 : nwUSD < 1000000 ? 99 : nwUSD < 5000000 ? 99.5 : 99.9;
+        // Global thresholds (UBS Global Wealth Report 2024)
+        const gloPerc = nwUSD < 1000 ? 20 : nwUSD < 7087 ? 40 : nwUSD < 10000 ? 50 : nwUSD < 30000 ? 65 : nwUSD < 50000 ? 75 : nwUSD < 109430 ? 85 : nwUSD < 250000 ? 90 : nwUSD < 500000 ? 95 : nwUSD < 936430 ? 98 : nwUSD < 5000000 ? 99 : 99.9;
+        const colLabel = colPerc >= 99 ? "Top 1% Colombia" : colPerc >= 95 ? "Top 5% Colombia" : colPerc >= 90 ? "Top 10% Colombia" : colPerc >= 80 ? "Top 20% Colombia" : "Top " + (100 - colPerc) + "% Colombia";
+        const gloLabel = gloPerc >= 99 ? "Top 1% Mundial" : gloPerc >= 95 ? "Top 5% Mundial" : gloPerc >= 90 ? "Top 10% Mundial" : gloPerc >= 80 ? "Top 20% Mundial" : "Top " + (100 - gloPerc) + "% Mundial";
+        return (
+          <Cd s={{padding:"16px 24px",marginBottom:14,background:"linear-gradient(135deg,rgba(168,85,247,0.04),rgba(59,130,246,0.03))"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:16}}>
+              <div>
+                <div style={{fontSize:11,color:T.tx3,fontWeight:600,letterSpacing:1}}>📍 TU POSICIÓN EN RIQUEZA</div>
+                <div style={{fontSize:13,color:T.tx2,marginTop:4}}>Con un patrimonio neto de <strong style={{color:T.gn}}>{fm(t.nw)}</strong> (≈ USD ${Math.round(nwUSD).toLocaleString()})</div>
+              </div>
+              <div style={{display:"flex",gap:16}}>
+                <div style={{textAlign:"center",background:"rgba(168,85,247,0.08)",border:"1px solid rgba(168,85,247,0.15)",borderRadius:12,padding:"10px 20px"}}>
+                  <div style={{fontSize:10,color:"#a78bfa"}}>🇨🇴 COLOMBIA</div>
+                  <div style={{fontSize:20,fontWeight:800,color:"#a78bfa"}}>{colLabel}</div>
+                  <div style={{fontSize:10,color:T.tx3}}>Superas al {colPerc}% de la población</div>
+                </div>
+                <div style={{textAlign:"center",background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:12,padding:"10px 20px"}}>
+                  <div style={{fontSize:10,color:T.bl}}>🌍 GLOBAL</div>
+                  <div style={{fontSize:20,fontWeight:800,color:T.bl}}>{gloLabel}</div>
+                  <div style={{fontSize:10,color:T.tx3}}>Superas al {gloPerc}% del mundo</div>
+                </div>
+              </div>
+            </div>
+            <div style={{fontSize:10,color:T.tx3,marginTop:8}}>Fuente: UBS Global Wealth Report 2024 / Credit Suisse Wealth Databook</div>
+          </Cd>
+        );
+      })()}
+
       {/* ═══ ROW 2: 4 KPI Cards ═══ */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:14}}>
         {[
