@@ -56,13 +56,17 @@ const MODULES = {
   },
   trading: {
     label: "Trading / Acciones", icon: "💹", key: "ibk",
-    prompt: `Extrae cada posición bursátil. Para CADA fila devuelve un JSON con:
-- "tk": ticker/símbolo (string, OBLIGATORIO)
-- "n": nombre completo (string)
-- "sh": cantidad de acciones (número)
-- "cb": precio de compra promedio (número)
-- "pr": precio actual (número)
-- "tg": precio objetivo (número, 0 si no hay)`,
+    prompt: `Extrae cada posición bursátil/acción/ETF. Busca columnas como: Ticker, Symbol, Name, Nombre, Quantity, Qty, Shares, Cantidad, Cost, Costo, Average Cost, Precio Compra, Price, Precio, Market Value, Valor, Current Price, Last Price, Target, Objetivo.
+
+Para CADA posición devuelve un JSON con:
+- "tk": ticker/símbolo en MAYÚSCULAS (string, OBLIGATORIO, ej: "AAPL", "MSFT")
+- "n": nombre completo de la acción (string, ej: "Apple Inc")
+- "sh": cantidad de acciones/participaciones (número, buscar en Quantity/Shares/Qty/Cantidad)
+- "cb": costo promedio por acción (número, buscar en Average Cost/Cost Basis/Costo/Precio Compra)
+- "pr": precio ACTUAL por acción (número, buscar en Price/Last Price/Current Price/Precio Actual/Market Price)
+- "tg": precio objetivo (número, 0 si no hay, buscar en Target/Objetivo)
+
+IMPORTANTE: Los campos sh, cb, pr DEBEN ser números mayores que 0. Si ves valores como "$150.25" extrae solo el número 150.25. Si el precio está en otra moneda, conviértelo. NO devuelvas 0 en pr o cb si hay un precio visible en los datos.`,
   },
 };
 
@@ -162,8 +166,26 @@ export default function CsvImport({ onImport, onClose }) {
       if (!Array.isArray(items) || items.length === 0) {
         setError("La IA no encontró datos válidos. Verifica que el archivo tenga la información correcta.");
       } else {
-        // Add IDs
-        items.forEach((item, i) => { item.id = mod.key[0] + "_" + Date.now() + "_" + i; });
+        // Coerce all numeric fields to actual numbers
+        items.forEach((item, i) => {
+          item.id = mod.key[0] + "_" + Date.now() + "_" + i;
+          // Trading fields
+          if (item.sh !== undefined) item.sh = parseFloat(String(item.sh).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.cb !== undefined) item.cb = parseFloat(String(item.cb).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.pr !== undefined) item.pr = parseFloat(String(item.pr).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.tg !== undefined) item.tg = parseFloat(String(item.tg).replace(/[^0-9.-]/g, "")) || 0;
+          // Investment fields
+          if (item.va !== undefined) item.va = parseFloat(String(item.va).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.vc !== undefined) item.vc = parseFloat(String(item.vc).replace(/[^0-9.-]/g, "")) || 0;
+          // Income fields
+          if (item.mensual !== undefined) item.mensual = parseFloat(String(item.mensual).replace(/[^0-9.-]/g, "")) || 0;
+          // Expense fields
+          if (item.m !== undefined) item.m = parseFloat(String(item.m).replace(/[^0-9.-]/g, "")) || 0;
+          // Debt fields
+          if (item.mt !== undefined) item.mt = parseFloat(String(item.mt).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.pg !== undefined) item.pg = parseFloat(String(item.pg).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.ts !== undefined) item.ts = parseFloat(String(item.ts).replace(/[^0-9.-]/g, "")) || 0;
+        });
         setParsed(items);
       }
       setStep(3);
