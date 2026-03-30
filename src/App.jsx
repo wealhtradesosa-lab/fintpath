@@ -159,6 +159,9 @@ export default function FinPath(){
         const gloPerc = nwUSD < 1000 ? 20 : nwUSD < 7087 ? 40 : nwUSD < 10000 ? 50 : nwUSD < 30000 ? 65 : nwUSD < 50000 ? 75 : nwUSD < 109430 ? 85 : nwUSD < 250000 ? 90 : nwUSD < 500000 ? 95 : nwUSD < 936430 ? 98 : nwUSD < 5000000 ? 99 : 99.9;
         const colLabel = colPerc >= 99 ? "Top 1% Colombia" : colPerc >= 95 ? "Top 5% Colombia" : colPerc >= 90 ? "Top 10% Colombia" : colPerc >= 80 ? "Top 20% Colombia" : "Top " + (100 - colPerc) + "% Colombia";
         const gloLabel = gloPerc >= 99 ? "Top 1% Mundial" : gloPerc >= 95 ? "Top 5% Mundial" : gloPerc >= 90 ? "Top 10% Mundial" : gloPerc >= 80 ? "Top 20% Mundial" : "Top " + (100 - gloPerc) + "% Mundial";
+        // USA thresholds (Federal Reserve Survey of Consumer Finances 2022)
+        const usPerc = nwUSD < 12000 ? 20 : nwUSD < 44000 ? 30 : nwUSD < 105000 ? 40 : nwUSD < 192700 ? 50 : nwUSD < 400000 ? 60 : nwUSD < 650000 ? 70 : nwUSD < 1060000 ? 80 : nwUSD < 1900000 ? 90 : nwUSD < 5000000 ? 95 : nwUSD < 11100000 ? 99 : 99.5;
+        const usLabel = usPerc >= 99 ? "Top 1% en USA" : usPerc >= 95 ? "Top 5% en USA" : usPerc >= 90 ? "Top 10% en USA" : usPerc >= 80 ? "Top 20% en USA" : usPerc >= 50 ? "Top " + (100 - usPerc) + "% en USA" : "Percentil " + usPerc + " en USA";
         return (
           <Cd s={{padding:"16px 24px",marginBottom:14,background:"linear-gradient(135deg,rgba(168,85,247,0.04),rgba(59,130,246,0.03))"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:16}}>
@@ -166,20 +169,27 @@ export default function FinPath(){
                 <div style={{fontSize:11,color:T.tx3,fontWeight:600,letterSpacing:1}}>📍 TU POSICIÓN EN RIQUEZA</div>
                 <div style={{fontSize:13,color:T.tx2,marginTop:4}}>Con un patrimonio neto de <strong style={{color:T.gn}}>{fm(t.nw)}</strong> (≈ USD ${Math.round(nwUSD).toLocaleString()})</div>
               </div>
-              <div style={{display:"flex",gap:16}}>
-                <div style={{textAlign:"center",background:"rgba(168,85,247,0.08)",border:"1px solid rgba(168,85,247,0.15)",borderRadius:12,padding:"10px 20px"}}>
+              <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                <div style={{textAlign:"center",background:"rgba(168,85,247,0.08)",border:"1px solid rgba(168,85,247,0.15)",borderRadius:12,padding:"10px 16px",flex:1,minWidth:130}}>
                   <div style={{fontSize:10,color:"#a78bfa"}}>🇨🇴 COLOMBIA</div>
-                  <div style={{fontSize:20,fontWeight:800,color:"#a78bfa"}}>{colLabel}</div>
-                  <div style={{fontSize:10,color:T.tx3}}>Superas al {colPerc}% de la población</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"#a78bfa",marginTop:2}}>{colLabel}</div>
+                  <div style={{fontSize:10,color:T.tx3}}>Superas al {colPerc}%</div>
                 </div>
-                <div style={{textAlign:"center",background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:12,padding:"10px 20px"}}>
+                <div style={{textAlign:"center",background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:12,padding:"10px 16px",flex:1,minWidth:130}}>
                   <div style={{fontSize:10,color:T.bl}}>🌍 GLOBAL</div>
-                  <div style={{fontSize:20,fontWeight:800,color:T.bl}}>{gloLabel}</div>
-                  <div style={{fontSize:10,color:T.tx3}}>Superas al {gloPerc}% del mundo</div>
+                  <div style={{fontSize:18,fontWeight:800,color:T.bl,marginTop:2}}>{gloLabel}</div>
+                  <div style={{fontSize:10,color:T.tx3}}>Superas al {gloPerc}%</div>
+                </div>
+                <div style={{textAlign:"center",background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:12,padding:"10px 16px",flex:1,minWidth:130}}>
+                  <div style={{fontSize:10,color:T.gn}}>🇺🇸 ESTADOS UNIDOS</div>
+                  <div style={{fontSize:18,fontWeight:800,color:T.gn,marginTop:2}}>{usLabel}</div>
+                  <div style={{fontSize:10,color:T.tx3}}>Superas al {usPerc}%</div>
                 </div>
               </div>
             </div>
-            <div style={{fontSize:10,color:T.tx3,marginTop:8}}>Fuente: UBS Global Wealth Report 2024 / Credit Suisse Wealth Databook</div>
+            <div style={{fontSize:10,color:T.tx3,marginTop:10,lineHeight:1.6}}>
+              <strong>Fuentes:</strong> 🌍 UBS Global Wealth Report 2024 (umbral top 10%: USD $109,430 · top 1%: USD $936,430) · 🇨🇴 Credit Suisse Wealth Databook 2023 — Colombia (mediana adulto: ~USD $6,500) · 🇺🇸 Federal Reserve Survey of Consumer Finances 2022 (mediana hogar: USD $192,700 · top 10%: USD $1.9M · top 1%: USD $11.1M)
+            </div>
           </Cd>
         );
       })()}
