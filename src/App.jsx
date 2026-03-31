@@ -278,6 +278,96 @@ export default function FinPath(){
           </div>}
         </Cd>
       </div>
+      {/* ═══ ROW 6: Family Office KPIs ═══ */}
+      {(() => {
+        const nwUSD = trm > 0 ? t.nw / trm : t.nw / 4200;
+        // Liquid assets (cash + investments, not real estate)
+        const liquidAssets = (u.inv||[]).filter(i => ["Investment","Fondo de Inversión","CDT","Acciones","Crypto","Renta Fija","Cash"].includes(i.tp||i.tipo)).reduce((s,i) => s + (i.va||0), 0);
+        const runway = t.te > 0 ? Math.round(liquidAssets / t.te) : 999;
+        const burnRate = t.nw > 0 ? ((t.te * 12) / t.nw * 100) : 0;
+        const savingsRate = t.ti > 0 ? (t.cf / t.ti * 100) : 0;
+        const fireNumber = t.te * 12 * 25;
+        const fireProgress = fireNumber > 0 ? Math.min((t.nw / fireNumber) * 100, 100) : 0;
+        const debtService = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
+        // Passive vs active income
+        const passCats = ["Arriendo","Rendimiento","Dividendos","Inversión"];
+        const passiveInc = (u.ingresos||[]).filter(i => passCats.includes(i.categoria)).reduce((s,i) => s + (i.mensual||0), 0);
+        const passiveRatio = t.ti > 0 ? (passiveInc / t.ti * 100) : 0;
+        // Yield on cost
+        const totalInvested = (u.inv||[]).reduce((s,i) => s + (i.vc||0), 0);
+        const yieldOnCost = totalInvested > 0 ? (t.ti * 12 / totalInvested * 100) : 0;
+        // Concentration risk
+        const maxAsset = (u.inv||[]).reduce((max,i) => (i.va||0) > max.v ? {n:i.n||i.nombre||"",v:i.va||0} : max, {n:"",v:0});
+        const concRisk = t.ab > 0 ? (maxAsset.v / t.ab * 100) : 0;
+
+        return (
+          <Cd s={{padding:20,marginTop:14}}>
+            <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:14}}>🏦 Indicadores Family Office</div>
+            <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(4,1fr)",gap:10,marginBottom:14}}>
+              {[
+                {l:"Runway",v:runway >= 999 ? "∞" : runway + " meses",c:runway>=12?T.gn:runway>=6?"#eab308":T.rd,tip:"Meses que aguantas sin ningún ingreso. Ideal: 12-24.",i:"🛡️"},
+                {l:"Burn rate",v:pc(burnRate),c:burnRate<=4?T.gn:burnRate<=8?"#eab308":T.rd,tip:"% del patrimonio que gastas al año. Ideal: <4%.",i:"🔥"},
+                {l:"Tasa de ahorro",v:pc(savingsRate),c:savingsRate>=20?T.gn:savingsRate>=10?"#eab308":T.rd,tip:"% del ingreso que ahorras. Ideal: >20%.",i:"💰"},
+                {l:"Debt service",v:pc(debtService),c:debtService<=30?T.gn:debtService<=50?"#eab308":T.rd,tip:"% del ingreso que va a pagar deudas. Ideal: <30%.",i:"📋"},
+              ].map(k => (
+                <div key={k.l} style={{background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span style={{fontSize:10,color:T.tx3,fontWeight:600,textTransform:"uppercase"}}>{k.l}</span>
+                    <span style={{fontSize:14}}>{k.i}</span>
+                  </div>
+                  <div style={{fontSize:22,fontWeight:800,color:k.c,marginTop:6}}>{k.v}</div>
+                  <div style={{fontSize:9,color:T.tx3,marginTop:4,lineHeight:1.3}}>{k.tip}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(4,1fr)",gap:10,marginBottom:14}}>
+              {[
+                {l:"Ingreso pasivo",v:pc(passiveRatio),c:passiveRatio>=80?T.gn:passiveRatio>=50?"#eab308":T.rd,tip:"% del ingreso que NO depende de tu trabajo.",i:"🔄"},
+                {l:"Yield on cost",v:pc(yieldOnCost),c:yieldOnCost>=8?T.gn:yieldOnCost>=4?"#eab308":T.rd,tip:"Ingreso anual ÷ costo de inversión. Qué tan bien rentan tus activos.",i:"📈"},
+                {l:"Concentración",v:pc(concRisk),c:concRisk<=30?T.gn:concRisk<=50?"#eab308":T.rd,tip:concRisk>30?"⚠ "+maxAsset.n+" es "+pc(concRisk)+" de tu patrimonio":"Ningún activo supera el 30%. Bien diversificado.",i:"⚠️"},
+                {l:"FIRE progress",v:pc(fireProgress),c:fireProgress>=100?T.gn:fireProgress>=50?"#eab308":T.rd,tip:"Patrimonio ÷ (gastos×25 años). 100% = nunca más necesitas trabajar.",i:"🔥"},
+              ].map(k => (
+                <div key={k.l} style={{background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span style={{fontSize:10,color:T.tx3,fontWeight:600,textTransform:"uppercase"}}>{k.l}</span>
+                    <span style={{fontSize:14}}>{k.i}</span>
+                  </div>
+                  <div style={{fontSize:22,fontWeight:800,color:k.c,marginTop:6}}>{k.v}</div>
+                  <div style={{fontSize:9,color:T.tx3,marginTop:4,lineHeight:1.3}}>{k.tip}</div>
+                </div>
+              ))}
+            </div>
+            {/* FIRE Number */}
+            <div style={{background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div>
+                  <div style={{fontSize:11,color:T.tx3,fontWeight:600}}>🔥 FIRE NUMBER — ¿Cuánto necesitas para no trabajar más?</div>
+                  <div style={{fontSize:10,color:T.tx3,marginTop:2}}>Fórmula: gastos mensuales × 12 × 25 años (regla del 4%)</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:18,fontWeight:800,color:fireProgress>=100?T.gn:"#eab308"}}>{fm(fireNumber)}</div>
+                  <div style={{fontSize:10,color:T.tx3}}>necesitas en total</div>
+                </div>
+              </div>
+              <div style={{height:12,background:"rgba(255,255,255,0.05)",borderRadius:6,overflow:"hidden",marginBottom:6}}>
+                <div style={{height:"100%",width:Math.min(fireProgress,100)+"%",background:fireProgress>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#eab308,#f97316)",borderRadius:6,transition:"width 0.5s"}}/>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:T.tx3}}>
+                <span>Tienes: {fm(t.nw)}</span>
+                <span style={{color:fireProgress>=100?T.gn:"#eab308",fontWeight:700}}>{pc(fireProgress)}</span>
+                <span>Meta: {fm(fireNumber)}</span>
+              </div>
+              {fireProgress<100&&<div style={{fontSize:10,color:T.tx3,marginTop:6}}>
+                Te falta: {fm(fireNumber - t.nw)}. {t.cf>0 ? "Al ritmo actual ("+fm(t.cf)+"/mes de ahorro), llegas en ~"+Math.ceil((fireNumber-t.nw)/(t.cf*12))+" años." : "Necesitas generar ahorro mensual positivo."}
+              </div>}
+              {fireProgress>=100&&<div style={{fontSize:11,color:T.gn,fontWeight:700,marginTop:6}}>
+                🏆 ¡Ya superaste tu FIRE number! Técnicamente puedes dejar de trabajar y vivir de tu patrimonio por 25+ años.
+              </div>}
+            </div>
+          </Cd>
+        );
+      })()}
+
     </div>}
         
 case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={v=>upd("inv",v)}/>;
