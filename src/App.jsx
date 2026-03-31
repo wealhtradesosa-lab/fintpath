@@ -729,6 +729,171 @@ export default function FinPath(){
               })()}
             </div>
           </Cd>
+
+      {/* ═══ ROW 9: Liquidez Real + Costo de Vida ═══ */}
+      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginTop:14}}>
+        {/* LIQUIDEZ REAL */}
+        <Cd s={{padding:20}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.bl,marginBottom:12}}>💧 Liquidez Real — ¿Cuánto puedes tener en efectivo?</div>
+          {(() => {
+            const cats = {
+              inmediata: {label:"Inmediata (48h)",types:["Cash","CDT","Renta Fija"],color:T.gn,icon:"⚡"},
+              corto: {label:"Corto plazo (30 días)",types:["Investment","Fondo de Inversión","Acciones","Crypto"],color:"#eab308",icon:"📅"},
+              largo: {label:"Largo plazo (6+ meses)",types:["Real Estate","Bodega","Lote","Local Comercial","Negocio","Vehículo"],color:T.rd,icon:"🏗️"},
+            };
+            const totals2 = {};
+            let grandTotal = 0;
+            Object.entries(cats).forEach(([key, cat]) => {
+              const val = (u.inv||[]).filter(i => cat.types.includes(i.tp||i.tipo||"")).reduce((s,i) => s + (i.va||0), 0);
+              totals2[key] = val;
+              grandTotal += val;
+            });
+
+            return (
+              <>
+                {Object.entries(cats).map(([key, cat]) => {
+                  const val = totals2[key];
+                  const pct = grandTotal > 0 ? (val / grandTotal * 100) : 0;
+                  return (
+                    <div key={key} style={{marginBottom:10}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
+                        <span style={{color:T.tx2}}>{cat.icon} {cat.label}</span>
+                        <span style={{fontWeight:700,color:cat.color,fontFamily:"monospace"}}>{fm(val)} <span style={{fontWeight:400,fontSize:10}}>({pct.toFixed(0)}%)</span></span>
+                      </div>
+                      <div style={{height:8,background:T.bg3,borderRadius:4,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:4}}/>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div style={{marginTop:8,padding:10,background:T.bg3,borderRadius:8,fontSize:11,color:T.tx2,lineHeight:1.6}}>
+                  {totals2.inmediata >= t.te * 6 
+                    ? <span style={{color:T.gn}}>✅ Tu liquidez inmediata cubre {Math.round(totals2.inmediata / (t.te||1))} meses de gastos. Bien protegido.</span>
+                    : <span style={{color:"#eab308"}}>⚠ Tu liquidez inmediata solo cubre {Math.round(totals2.inmediata / (t.te||1))} meses. Un asesor recomendaría al menos 6 meses en activos líquidos.</span>
+                  }
+                  <br/><strong>{((totals2.largo / (grandTotal||1)) * 100).toFixed(0)}%</strong> de tu patrimonio está en activos ilíquidos (no puedes vender rápido).
+                </div>
+              </>
+            );
+          })()}
+        </Cd>
+
+        {/* COSTO DE VIDA */}
+        <Cd s={{padding:20}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#f97316",marginBottom:12}}>⏱️ Tu Estilo de Vida en Números</div>
+          {(() => {
+            const gastoMes = t.te || 0;
+            const gastoDia = gastoMes / 30;
+            const gastoHora = gastoDia / 24;
+            const gastoMin = gastoHora / 60;
+            const ingresoHora = t.ti > 0 ? t.ti / (30 * 8) : 0; // 8h laborales
+            const horasLibertad = ingresoHora > 0 ? gastoHora / ingresoHora : 0;
+
+            return (
+              <>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                  {[
+                    {l:"Por mes",v:fm(gastoMes),icon:"📅"},
+                    {l:"Por día",v:fm(Math.round(gastoDia)),icon:"☀️"},
+                    {l:"Por hora",v:fm(Math.round(gastoHora)),icon:"⏰"},
+                    {l:"Por minuto",v:fm(Math.round(gastoMin)),icon:"⚡"},
+                  ].map(k => (
+                    <div key={k.l} style={{background:T.bg3,borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+                      <div style={{fontSize:10,color:T.tx3}}>{k.icon} {k.l}</div>
+                      <div style={{fontSize:16,fontWeight:800,color:"#f97316",marginTop:2}}>{k.v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{background:T.bg3,borderRadius:8,padding:12,marginBottom:8}}>
+                  <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
+                    💼 Tu ingreso por hora laboral: <strong style={{color:T.gn}}>{fm(Math.round(ingresoHora))}/hora</strong><br/>
+                    ⚖️ Necesitas trabajar <strong style={{color:"#f97316"}}>{horasLibertad.toFixed(1)} horas</strong> por cada hora de gastos<br/>
+                    {horasLibertad <= 1 
+                      ? <span style={{color:T.gn}}>✅ Ganas más por hora de lo que gastas. Cada hora trabajada genera excedente.</span>
+                      : <span style={{color:T.rd}}>⚠ Gastas más por hora de lo que ganas. Revisa tu estructura de costos.</span>
+                    }
+                  </div>
+                </div>
+                <div style={{fontSize:11,color:T.tx3,lineHeight:1.6}}>
+                  💡 Cuando evalúes un gasto, piensa: <em>"¿Esto vale {fm(Math.round(ingresoHora))} × las horas que representa?"</em>
+                  <br/>Un gasto de {fm(1000000)} = <strong>{ingresoHora > 0 ? (1000000 / ingresoHora).toFixed(1) : "∞"} horas</strong> de tu trabajo.
+                </div>
+              </>
+            );
+          })()}
+        </Cd>
+      </div>
+
+      {/* ═══ ROW 10: Alertas Inteligentes ═══ */}
+      <Cd s={{padding:20,marginTop:14,background:"linear-gradient(135deg,rgba(239,68,68,0.03),rgba(234,179,8,0.02))"}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#eab308",marginBottom:12}}>🔔 Alertas del Asesor — Rebalanceo y Optimización</div>
+        {(() => {
+          const alerts = [];
+          const inv = u.inv||[];
+          const ing = u.ingresos||[];
+          const totalA = inv.reduce((s,i) => s + (i.va||0), 0);
+          
+          // 1. Real estate concentration
+          const reVal = inv.filter(i => ["Real Estate","Bodega","Lote","Local Comercial"].includes(i.tp||i.tipo)).reduce((s,i) => s + (i.va||0), 0);
+          const rePct = totalA > 0 ? (reVal / totalA * 100) : 0;
+          if (rePct > 60) alerts.push({type:"🔴",title:"Concentración inmobiliaria extrema",msg:"El "+rePct.toFixed(0)+"% de tu patrimonio está en inmuebles. Si el mercado inmobiliario cae, tu patrimonio se impacta fuertemente. Considera diversificar al menos "+fm(reVal*0.15)+" hacia renta fija, fondos o acciones internacionales.",cat:"Diversificación"});
+          else if (rePct > 45) alerts.push({type:"🟡",title:"Alta exposición inmobiliaria",msg:"El "+rePct.toFixed(0)+"% está en inmuebles. Es común en Colombia pero te expone a riesgo de liquidez. Un portafolio balanceado tiene máximo 40% en un solo tipo de activo.",cat:"Diversificación"});
+
+          // 2. Single asset risk
+          const maxAsset = inv.reduce((max,i) => (i.va||0) > max.v ? {n:i.n||i.nombre||"",v:i.va||0} : max, {n:"",v:0});
+          const maxPct = totalA > 0 ? (maxAsset.v / totalA * 100) : 0;
+          if (maxPct > 35) alerts.push({type:"🟡",title:maxAsset.n+" = "+maxPct.toFixed(0)+"% del patrimonio",msg:"Ningún activo debería superar el 30%. Considera vender una porción o no seguir incrementando esta posición. Mover "+fm(maxAsset.v*0.1)+" a otros activos reduciría tu riesgo.",cat:"Concentración"});
+
+          // 3. Income dependency
+          const maxIng = ing.reduce((max,i) => (i.mensual||0) > max.v ? {n:i.nombre||"",v:i.mensual||0} : max, {n:"",v:0});
+          const maxIngPct = t.ti > 0 ? (maxIng.v / t.ti * 100) : 0;
+          if (maxIngPct > 40) alerts.push({type:"🟡",title:"Dependencia de ingreso: "+maxIng.n,msg:"El "+maxIngPct.toFixed(0)+"% de tus ingresos viene de una sola fuente. Si esa fuente falla, tu cash flow cae "+fm(maxIng.v)+"/mes. Diversifica fuentes de ingreso.",cat:"Riesgo de ingreso"});
+
+          // 4. Debt-to-income
+          const dti = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
+          if (dti > 40) alerts.push({type:"🔴",title:"Carga de deuda alta: "+dti.toFixed(0)+"%",msg:"Más del 40% de tu ingreso va a cuotas. Prioriza pagar la deuda de mayor tasa. Meta: bajar a menos del 30%.",cat:"Deuda"});
+
+          // 5. Savings rate
+          const savR = t.ti > 0 ? (t.cf / t.ti * 100) : 0;
+          if (savR < 10 && savR >= 0) alerts.push({type:"🟡",title:"Tasa de ahorro baja: "+savR.toFixed(0)+"%",msg:"Los family offices recomiendan ahorrar al menos 20% del ingreso. Busca reducir gastos variables o incrementar ingresos pasivos.",cat:"Ahorro"});
+          if (savR < 0) alerts.push({type:"🔴",title:"Ahorro negativo — estás descapitalizándote",msg:"Gastas "+fm(Math.abs(t.cf))+"/mes más de lo que ganas. Esto erosiona tu patrimonio. Acción urgente: recortar gastos o generar más ingresos.",cat:"Cash Flow"});
+
+          // 6. Vehicles depreciating
+          const vehiculos = inv.filter(i => (i.tp||i.tipo) === "Vehículo");
+          const vehVal = vehiculos.reduce((s,i) => s + (i.va||0), 0);
+          const vehPct = totalA > 0 ? (vehVal / totalA * 100) : 0;
+          if (vehPct > 5) alerts.push({type:"🟡",title:"Vehículos = "+vehPct.toFixed(1)+"% del patrimonio",msg:"Los vehículos pierden ~15% de valor por año. "+fm(vehVal)+" en activos que se deprecian. Un family office los considera gastos, no inversiones.",cat:"Depreciación"});
+
+          // 7. Positive alerts
+          const passI = ing.filter(i => ["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i) => s + (i.mensual||0), 0);
+          const passR = t.ti > 0 ? (passI / t.ti * 100) : 0;
+          if (passR >= 80) alerts.push({type:"🟢",title:"Ingreso pasivo "+passR.toFixed(0)+"% — excelente",msg:"La mayoría de tu ingreso no depende de tu trabajo. Esto te da libertad y reduce riesgo. Mantén esta estructura.",cat:"Independencia"});
+
+          const fireN = t.te * 12 * 25;
+          const fireP = fireN > 0 ? (t.nw / fireN * 100) : 0;
+          if (fireP >= 100) alerts.push({type:"🟢",title:"FIRE alcanzado — libertad financiera",msg:"Tu patrimonio supera tu FIRE number. Técnicamente puedes vivir de tus activos por 25+ años sin trabajar.",cat:"Libertad"});
+          else if (fireP >= 70) alerts.push({type:"🟢",title:"FIRE al "+fireP.toFixed(0)+"% — muy cerca",msg:"Te falta "+fm(fireN - t.nw)+" para la independencia total. Al ritmo actual, "+( t.cf>0 ? "llegas en ~"+Math.ceil((fireN-t.nw)/(t.cf*12))+" años." : "necesitas generar ahorro."),cat:"Progreso"});
+
+          if (alerts.length === 0) alerts.push({type:"🟢",title:"Sin alertas",msg:"Tu situación financiera está bien balanceada. Sigue monitoreando mensualmente.",cat:"General"});
+
+          return (
+            <div style={{display:"grid",gap:8}}>
+              {alerts.sort((a,b) => {const o={"🔴":0,"🟡":1,"🟢":2};return (o[a.type]||2)-(o[b.type]||2)}).map((a,i) => (
+                <div key={i} style={{display:"flex",gap:10,padding:12,background:a.type==="🔴"?"rgba(239,68,68,0.06)":a.type==="🟡"?"rgba(234,179,8,0.04)":"rgba(34,197,94,0.04)",border:"1px solid "+(a.type==="🔴"?"rgba(239,68,68,0.12)":a.type==="🟡"?"rgba(234,179,8,0.1)":"rgba(34,197,94,0.1)"),borderRadius:10}}>
+                  <span style={{fontSize:18,flexShrink:0,marginTop:2}}>{a.type}</span>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:12,fontWeight:700,color:a.type==="🔴"?T.rd:a.type==="🟡"?"#eab308":T.gn}}>{a.title}</span>
+                      <span style={{fontSize:9,color:T.tx3,background:T.bg3,padding:"2px 8px",borderRadius:4}}>{a.cat}</span>
+                    </div>
+                    <div style={{fontSize:11,color:T.tx2,marginTop:4,lineHeight:1.6}}>{a.msg}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+      </Cd>
         );
       })()}
 
