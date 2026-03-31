@@ -581,6 +581,149 @@ export default function FinPath(){
                 );
               })()}
             </div>
+
+            {/* PLANIFICACIÓN TRIBUTARIA */}
+            <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>🏛️ ESTIMACIÓN TRIBUTARIA — Colombia 2026</div>
+              {(() => {
+                const ingAnual = t.ti * 12;
+                const uvt2026 = 49799; // UVT 2026 estimado
+                const ingUVT = ingAnual / uvt2026;
+                // Tabla de renta personas naturales Colombia 2026
+                let impuesto = 0;
+                if (ingUVT > 1700) {
+                  if (ingUVT <= 4100) impuesto = (ingUVT - 1700) * 0.19 * uvt2026;
+                  else if (ingUVT <= 8670) impuesto = ((4100-1700)*0.19 + (ingUVT-4100)*0.28) * uvt2026;
+                  else if (ingUVT <= 18970) impuesto = ((4100-1700)*0.19 + (8670-4100)*0.28 + (ingUVT-8670)*0.33) * uvt2026;
+                  else if (ingUVT <= 31000) impuesto = ((4100-1700)*0.19 + (8670-4100)*0.28 + (18970-8670)*0.33 + (ingUVT-18970)*0.35) * uvt2026;
+                  else impuesto = ((4100-1700)*0.19 + (8670-4100)*0.28 + (18970-8670)*0.33 + (31000-18970)*0.35 + (ingUVT-31000)*0.39) * uvt2026;
+                }
+                const tasaEfectiva = ingAnual > 0 ? (impuesto / ingAnual * 100) : 0;
+                const impMes = impuesto / 12;
+                const patrimonio4x1000 = t.ab * 0.004; // Impuesto al patrimonio simplificado
+                const ganOcasional = (u.inv||[]).reduce((s,i) => s + Math.max(0, (i.va||0) - (i.vc||0)), 0);
+                const impGanOcasional = ganOcasional * 0.15; // 15% ganancia ocasional
+
+                return (
+                  <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>Renta estimada 2026</div>
+                      <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
+                        Ingreso anual: <strong>{fm(ingAnual)}</strong><br/>
+                        En UVT: <strong>{Math.round(ingUVT).toLocaleString()} UVT</strong><br/>
+                        Impuesto estimado: <strong style={{color:T.rd}}>{fm(impuesto)}/año</strong><br/>
+                        Tasa efectiva: <strong style={{color:T.rd}}>{tasaEfectiva.toFixed(1)}%</strong><br/>
+                        Equivale a: <strong style={{color:T.rd}}>{fm(impMes)}/mes</strong>
+                      </div>
+                      <div style={{marginTop:8,fontSize:10,color:T.tx3}}>Tabla art. 241 E.T. — UVT 2026 estimado: ${uvt2026.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#eab308",marginBottom:8}}>Otros impuestos estimados</div>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                        <span style={{color:T.tx2}}>4×1000 (GMF estimado)</span>
+                        <span style={{color:"#eab308",fontFamily:"monospace"}}>{fm(patrimonio4x1000)}/año</span>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                        <span style={{color:T.tx2}}>Ganancia ocasional (15%)</span>
+                        <span style={{color:"#eab308",fontFamily:"monospace"}}>{fm(impGanOcasional)} potencial</span>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                        <span style={{color:T.tx2}}>Valorización acumulada</span>
+                        <span style={{color:T.gn,fontFamily:"monospace"}}>{fm(ganOcasional)}</span>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"8px 0",fontWeight:700}}>
+                        <span style={{color:T.tx}}>Carga fiscal total estimada</span>
+                        <span style={{color:T.rd}}>{fm(impuesto + patrimonio4x1000)}/año</span>
+                      </div>
+                      <div style={{fontSize:10,color:T.tx3,marginTop:4}}>Estas son estimaciones. Consulta con tu contador para optimizar.</div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* FONDO EDUCACIÓN HIJOS */}
+            {(() => {
+              const gastosEdu = Object.values(u.gas||{}).flat().filter(g => 
+                (g.c||"").toLowerCase().includes("colegio") || (g.c||"").toLowerCase().includes("universidad") || (g.c||"").toLowerCase().includes("educación")
+              );
+              const gastoEduMes = gastosEdu.reduce((s,g) => s + (g.m||0), 0);
+              if (gastoEduMes === 0) return null;
+              const costoUni = 180000000; // Semestre universidad privada Colombia ~$180M
+              const aniosUni = 5;
+              const totalUni = costoUni * 2 * aniosUni; // 2 semestres x 5 años
+              const inflEdu = 0.08; // 8% inflación educativa
+              const totalUniInflado = totalUni * Math.pow(1 + inflEdu, 6); // en 6 años
+              const ahorroPorHijo = totalUniInflado / (6 * 12); // mensual por 6 años
+              const numHijos = gastosEdu.filter(g => (g.c||"").toLowerCase().includes("colegio")).length || 1;
+              
+              return (
+                <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
+                  <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>🎓 FONDO DE EDUCACIÓN — Proyección universitaria</div>
+                  <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:6}}>Gasto educativo actual</div>
+                      <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
+                        Mensual en educación: <strong style={{color:"#a78bfa"}}>{fm(gastoEduMes)}</strong><br/>
+                        Anual: <strong>{fm(gastoEduMes * 12)}</strong><br/>
+                        Hijos detectados: <strong>{numHijos}</strong>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:6}}>Universidad (por hijo)</div>
+                      <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
+                        Semestre top Colombia: <strong>~{fm(costoUni)}</strong><br/>
+                        5 años (10 semestres): <strong>{fm(totalUni)}</strong><br/>
+                        Con inflación educativa (8%): <strong style={{color:"#eab308"}}>{fm(totalUniInflado)}</strong><br/>
+                        Ahorrar mensual (6 años): <strong style={{color:"#a78bfa"}}>{fm(ahorroPorHijo)}/mes</strong><br/>
+                        Por {numHijos} hijos: <strong style={{color:T.rd}}>{fm(ahorroPorHijo * numHijos)}/mes</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{fontSize:10,color:T.tx3,marginTop:8}}>
+                    Basado en universidad privada top de Colombia. La inflación educativa (~8% anual) supera la inflación general.
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ACCIONES RECOMENDADAS */}
+            <div style={{marginTop:14,background:"linear-gradient(135deg,rgba(34,197,94,0.06),rgba(59,130,246,0.03))",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"14px 20px"}}>
+              <div style={{fontSize:11,color:T.gn,fontWeight:700,marginBottom:10}}>✅ ACCIONES RECOMENDADAS — Prioridades para tu situación</div>
+              {(() => {
+                const actions = [];
+                // Check each area
+                const runway2 = t.te > 0 ? Math.round(((u.inv||[]).filter(i => ["Investment","Fondo de Inversión","CDT","Cash","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i) => s + (i.va||0), 0)) / t.te) : 999;
+                if (runway2 < 6) actions.push({pri:"🔴",text:"Fondo de emergencia insuficiente. Necesitas al menos 6 meses de gastos en activos líquidos.",cat:"Liquidez"});
+                else if (runway2 < 12) actions.push({pri:"🟡",text:"Fondo de emergencia aceptable ("+runway2+" meses). Ideal: 12-24 meses.",cat:"Liquidez"});
+                
+                const debtSrv = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
+                if (debtSrv > 50) actions.push({pri:"🔴",text:"Más del 50% de tu ingreso va a deudas. Prioriza pagar la de mayor tasa.",cat:"Deuda"});
+                else if (debtSrv > 30) actions.push({pri:"🟡",text:"El " + debtSrv.toFixed(0) + "% de tu ingreso va a deudas. Busca reducirlo debajo del 30%.",cat:"Deuda"});
+                
+                const maxA = (u.inv||[]).reduce((max,i) => (i.va||0) > max.v ? {n:i.n||i.nombre||"",v:i.va||0} : max, {n:"",v:0});
+                const concR = t.ab > 0 ? (maxA.v / t.ab * 100) : 0;
+                if (concR > 40) actions.push({pri:"🟡",text:maxA.n + " es " + concR.toFixed(0) + "% de tu patrimonio. Diversifica para reducir riesgo.",cat:"Riesgo"});
+                
+                if (t.cf < 0) actions.push({pri:"🔴",text:"Tu cash flow es negativo. Gastas más de lo que ganas. Revisa gastos o busca más ingresos.",cat:"Cash Flow"});
+                else if (t.ti > 0 && (t.cf/t.ti*100) < 10) actions.push({pri:"🟡",text:"Tu tasa de ahorro es baja (" + (t.cf/t.ti*100).toFixed(0) + "%). Intenta ahorrar al menos el 20%.",cat:"Ahorro"});
+                
+                const passI = (u.ingresos||[]).filter(i => ["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i) => s + (i.mensual||0), 0);
+                if (t.ti > 0 && (passI/t.ti*100) < 50) actions.push({pri:"🟡",text:"Solo el " + (passI/t.ti*100).toFixed(0) + "% de tu ingreso es pasivo. Invierte más en activos que generen renta.",cat:"Independencia"});
+                
+                if (actions.length === 0) actions.push({pri:"🟢",text:"¡Excelente situación financiera! Mantén tu estrategia actual y sigue diversificando.",cat:"General"});
+                
+                return actions.map((a,i) => (
+                  <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:i<actions.length-1?"1px solid rgba(255,255,255,0.04)":"none"}}>
+                    <span style={{fontSize:14}}>{a.pri}</span>
+                    <div>
+                      <span style={{fontSize:10,color:T.tx3,fontWeight:600}}>{a.cat}</span>
+                      <div style={{fontSize:12,color:T.tx2}}>{a.text}</div>
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
           </Cd>
         );
       })()}
