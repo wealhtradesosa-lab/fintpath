@@ -5,6 +5,7 @@ import InversionesModule from "./components/InversionesModule";
 import DeudasModule from "./components/DeudasModule";
 import PensionesColpensiones from "./components/PensionesColpensiones";
 import CsvImport from "./components/CsvImport";
+import MetasModule from "./components/MetasModule";
 import PensionColombia from "./components/PensionColombia";
 import SimuladorAvanzado from "./components/SimuladorAvanzado";
 import { useState, useEffect, useMemo } from "react";
@@ -16,7 +17,7 @@ const pc=n=>(n||0).toFixed(1)+"%";
 const SK="fp3";
 const sL=async()=>{try{const r=localStorage.getItem(SK);return r?JSON.parse(r):null}catch{return null}};
 const sS=async d=>{try{localStorage.setItem(SK,JSON.stringify(d))}catch{}};
-const mkU=(n,e)=>({p:{name:n,email:e,plan:"free"},trm:4200,inv:[],deu:[],gas:{},ibk:[],ingresos:[],pen:{age:35,rAge:60,sv:2500,cur:120000,ret:7,inf:3,des:6000,btcC:56,btcP:50000}});
+const mkU=(n,e)=>({p:{name:n,email:e,plan:"free"},trm:4200,inv:[],deu:[],gas:{},ibk:[],ingresos:[],pen:{age:35,rAge:60,sv:2500,cur:120000,ret:7,inf:3,des:6000,btcC:56,btcP:50000},metas:[]});
 
 const DI=[{id:"i1",n:"Beach House Alpha",ub:"Miami, FL",tp:"Real Estate",vc:460000,va:599000,un:[{n:"Main Suite",ig:[{c:"Airbnb",m:4200,t:"v"}],gs:[{c:"Mgmt",m:275,t:"f"},{c:"HOA",m:642,t:"f"},{c:"Utilities",m:768,t:"v"},{c:"Insurance",m:150,t:"f"},{c:"Taxes",m:400,t:"f"}]},{n:"Guest Studio",ig:[{c:"Airbnb",m:1800,t:"v"}],gs:[{c:"Cleaning",m:300,t:"v"}]}]},{id:"i2",n:"Mountain Retreat",ub:"Aspen, CO",tp:"Real Estate",vc:320000,va:480000,ig:[{c:"Rental",m:3500,t:"v"}],gs:[{c:"Caretaker",m:500,t:"f"},{c:"Utilities",m:350,t:"v"}]},{id:"i3",n:"Commercial Unit",ub:"Austin, TX",tp:"Real Estate",vc:197000,va:240000,ig:[{c:"Lease",m:1420,t:"f"}],gs:[{c:"Admin",m:183,t:"f"}]},{id:"i4",n:"P2P Lending",ub:"Online",tp:"Investment",vc:280000,va:280000,ig:[{c:"21% Return",m:4900,t:"f"}],gs:[]},{id:"i5",n:"Growth Equity",ub:"Online",tp:"Investment",vc:105000,va:210000,ig:[{c:"Dividends",m:1316,t:"v"}],gs:[]},{id:"i6",n:"Warehouse",ub:"Denver",tp:"Real Estate",vc:132000,va:265000,ig:[{c:"Rent",m:2370,t:"f"}],gs:[{c:"Admin",m:237,t:"f"}]},{id:"i7",n:"Lakeside Land",ub:"Tahoe",tp:"Real Estate",vc:67000,va:184000,ig:[],gs:[]},{id:"i8",n:"Business",ub:"Local",tp:"Income",vc:0,va:0,ig:[{c:"Distribution",m:1658,t:"f"}],gs:[]},{id:"i9",n:"Emergency Fund",ub:"HYSA",tp:"Cash",vc:150000,va:150000,ig:[],gs:[]}];
 const DD=[{id:"d1",n:"Beach Mortgage",la:"i1",tp:"mortgage",mt:354000,pg:3486,ts:6.5},{id:"d2",n:"Construction",la:"i6",tp:"loan",mt:120000,pg:1200,ts:8},{id:"d3",n:"Personal LOC",la:null,tp:"loan",mt:63000,pg:1100,ts:12},{id:"d4",n:"Family Loan",la:null,tp:"personal",mt:41000,pg:410,ts:0},{id:"d5",n:"Auto Loan",la:null,tp:"loan",mt:42000,pg:420,ts:10},{id:"d6",n:"Credit Card",la:null,tp:"credit_card",mt:12000,pg:120,ts:15}];
@@ -86,7 +87,7 @@ export default function FinPath(){
   </div>;
 
   const has=(u.inv?.length||u.deu?.length||Object.keys(u.gas||{}).length)>0;
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Gastos"},{id:"deu",i:"📋",l:"Deudas"},{id:"trd",i:"💹",l:"Trading"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Gastos"},{id:"deu",i:"📋",l:"Deudas"},{id:"trd",i:"💹",l:"Trading"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"met",i:"🎯",l:"Metas"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
 
   const rp=()=>{switch(pg){
     case"dash":{
@@ -123,7 +124,10 @@ export default function FinPath(){
           <h1 style={{fontSize:26,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>{new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}, {u.p.name.split(" ")[0]}</h1>
           <p style={{color:T.tx3,fontSize:13,margin:0}}>Resumen de tu situación financiera</p>
         </div>
-        <button onClick={()=>{document.body.setAttribute("data-date",new Date().toLocaleDateString("es-CO"));window.print()}} style={{background:T.gn,color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>📄 Exportar PDF</button>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={()=>setPg("resumen")} style={{background:T.bl,color:"#fff",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📋 Resumen</button>
+          <button onClick={()=>{document.body.setAttribute("data-date",new Date().toLocaleDateString("es-CO"));window.print()}} style={{background:T.gn,color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📄 PDF</button>
+        </div>
       </div>
 
       {!has&&<div style={{background:"linear-gradient(135deg,rgba(34,197,94,.08),rgba(6,182,212,.05))",border:"1px solid rgba(34,197,94,.15)",borderRadius:16,padding:24,marginBottom:20,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}><div style={{flex:1}}><h3 style={{fontSize:16,fontWeight:700,margin:"0 0 6px"}}>Bienvenido a FINPATH</h3><p style={{color:T.tx2,fontSize:13,margin:0}}>Carga datos demo para explorar</p></div><Bt sz="s" onClick={demo}>Cargar Demo</Bt></div>}
@@ -751,12 +755,142 @@ case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={
             }} st={{background:"#3b82f6",color:"#fff"}}>📊 Actualizar Precios</Bt><Bt sz="s" onClick={()=>{sF({});setMd("ib")}}>+ Posición</Bt>{(u.ibk||[]).length>1&&<Bt v="d" sz="s" onClick={()=>{if(confirm("¿Eliminar todas las posiciones?"))upd("ibk",[])}}>🗑️ Limpiar</Bt>}</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:16}}><Cd><St l="Valor" v={fm(ib.tv)} cl={T.gn}/></Cd><Cd><St l="P/L" v={fm(ib.pnl)} cl={ib.pnl>=0?T.gn:T.rd} sub={pc(ib.pp)}/></Cd><Cd><St l="Posiciones" v={ib.pos.length}/></Cd></div><Cd s={{padding:0}}><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><thead><tr>{["Ticker","Nombre","Qty","Costo","Precio","Valor","P/L","%","Upside"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Ticker","Nombre"].includes(h)?"left":"right",color:T.tx3,fontWeight:600,fontSize:10,textTransform:"uppercase",borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead><tbody>{ib.pos.map((p,i)=><tr key={i} style={{borderBottom:`1px solid ${T.border}`}}><td style={{padding:"9px 12px",fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{p.tk}</td><td style={{padding:"9px 12px"}}>{p.n}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>{p.sh}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>${p.cb.toFixed(2)}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>${p.pr.toFixed(2)}</td><td style={{padding:"9px 12px",textAlign:"right",fontWeight:600}}>{fm(p.va)}</td><td style={{padding:"9px 12px",textAlign:"right",fontWeight:600,color:p.pnl>=0?T.gn:T.rd}}>{fm(p.pnl)}</td><td style={{padding:"9px 12px",textAlign:"right",color:p.pp>=0?T.gn:T.rd}}>{pc(p.pp)}</td><td style={{padding:"9px 12px",textAlign:"right",color:T.bl}}>{pc(p.up)}</td></tr>)}</tbody></table></div></Cd><Md open={md==="ib"} onClose={()=>setMd(null)} title="Agregar Posición"><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>{[["tk","Ticker"],["n","Nombre"],["sh","Cantidad","number"],["cb","Costo","number"],["pr","Precio","number"],["tg","Objetivo","number"]].map(([k,l,tp])=><In key={k} l={l} value={f[k]} onChange={v=>sF(p=>({...p,[k]:v}))} type={tp}/>)}</div><div style={{display:"flex",gap:12,justifyContent:"flex-end"}}><Bt v="s" onClick={()=>setMd(null)}>Cancelar</Bt><Bt onClick={()=>{add("ibk",{tk:f.tk||"",n:f.n||"",sh:+f.sh||0,cb:+f.cb||0,pr:+f.pr||0,tg:+f.tg||0});setMd(null);sF({})}}>Agregar</Bt></div></Md></div>;
         case"gas":return<GastosModule gastos={u.gas} onUpdate={v=>upd("gas",v)}/>;
         case"deu":return<DeudasModule deudas={u.deu} inversiones={u.inv} onUpdate={v=>upd("deu",v)}/>;
+    case"met":return<MetasModule metas={u.metas||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf}/>;
     case"sim":return<SimuladorAvanzado user={{inv:u.inv||[],gastos:u.gas||{},deudas:u.deu||[],ibkr:u.ibk||[],ingresos:u.ingresos||[]}} totals={t}/>;
     case"pat":{const bc={};(u.inv||[]).forEach(i=>{const tp=(i.tp&&isNaN(Number(i.tp))&&i.tp!=="undefined")?i.tp:"Otro";bc[tp]=(bc[tp]||0)+(i.va||0)});if(ib.tv>0)bc.Trading=ib.tv;const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);const gr=t.ab+ib.tv;return<div><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 20px"}}>Patrimonio</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:16}}><Cd><St l="Activos" v={fm(gr)} cl={T.gn}/></Cd><Cd><St l="Pasivos" v={fm(t.td)} cl={T.rd}/></Cd><Cd><St l="Neto" v={fm(t.nw)} cl={T.bl}/></Cd></div><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14}}><Cd s={{padding:20}}><div style={{fontSize:12,fontWeight:600,color:T.tx2,marginBottom:14}}>Distribución</div>{pie.length>0?<ResponsiveContainer width="100%" height={220}><PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={2}>{pie.map((_,i)=><Cell key={i} fill={T.ch[i%T.ch.length]}/>)}</Pie><Tooltip contentStyle={{background:"#1e1e24",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,color:"#fafafa",fontSize:12}} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={v=>fm(v)}/><Legend/></PieChart></ResponsiveContainer>:<div style={{height:220,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3}}>Agrega datos</div>}</Cd><Cd s={{padding:20}}><div style={{fontSize:12,fontWeight:600,color:T.tx2,marginBottom:14}}>Desglose</div>{pie.map((a,i)=><div key={a.name} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{a.name}</span></div><span style={{fontWeight:600,fontFamily:"monospace"}}>{fm(a.value)} <span style={{fontSize:11,color:T.tx3}}>{pc((a.value/gr)*100)}</span></span></div>)}</Cd></div></div>}
     case"pen":return<PensionesColpensiones trm={u.trm||4200}/>;
     case"btc":return<PensionColombia trm={u.trm||4200}/>;
     case"coach":{const msgs=adv?getCoach(adv.id):[];return<div><div style={{textAlign:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 6px"}}>Coaches Financieros IA</h2><p style={{color:T.tx3,fontSize:13}}>5 asesores analizan tus datos</p></div><div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center",marginBottom:20}}>{ADV.map(a=>{const ac=adv?.id===a.id;return<button key={a.id} onClick={()=>sAdv(a)} style={{background:ac?`linear-gradient(135deg,${a.cl}20,${a.cl}10)`:T.card,border:`1px solid ${ac?a.cl:T.border}`,color:T.tx,padding:"14px 20px",borderRadius:14,cursor:"pointer",textAlign:"center",minWidth:90}}><div style={{fontSize:22,marginBottom:4}}>{a.av}</div><div style={{fontWeight:700,fontSize:11,color:ac?a.cl:T.tx}}>{a.nm}</div><div style={{fontSize:9,color:ac?`${a.cl}aa`:T.tx3}}>{a.ti}</div></button>})}</div><Cd>{adv?<div style={{padding:20}}><div style={{display:"flex",alignItems:"center",gap:10,paddingBottom:14,borderBottom:`2px solid ${adv.cl}`,marginBottom:20}}><span style={{fontSize:28}}>{adv.av}</span><div><div style={{fontWeight:700,fontSize:15}}>{adv.nm}</div><div style={{fontSize:12,color:T.tx3}}>{adv.ti}</div></div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:6,marginBottom:20}}>{[{l:"Patrimonio",v:fm(t.nw),c:T.tx},{l:"Cash Flow",v:fm(t.cf),c:t.cf>=0?T.gn:T.rd},{l:"Independencia",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2},{l:"Deuda/Act",v:pc(t.dta),c:t.dta<30?T.gn:T.rd}].map(m=><div key={m.l} style={{background:T.bg3,padding:8,borderRadius:8,borderLeft:`3px solid ${m.c}`}}><div style={{fontSize:9,color:T.tx3,textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:15,fontWeight:700,color:m.c}}>{m.v}</div></div>)}</div>{msgs.map((msg,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:14}}><div style={{width:32,height:32,borderRadius:"50%",background:adv.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{adv.av}</div><div style={{flex:1,background:adv.bg,padding:"14px 18px",borderRadius:"0 14px 14px 14px",border:`1px solid ${adv.cl}10`}}><div style={{fontWeight:700,fontSize:13,color:adv.cl,marginBottom:6}}>{msg.t}</div><div style={{fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",color:T.tx}}>{msg.c}</div></div></div>)}</div>:<div style={{padding:56,textAlign:"center",color:T.tx3}}><div style={{fontSize:40,marginBottom:12}}>👆</div><p>Selecciona un coach</p></div>}</Cd></div>}
     case"price":return<div><div style={{textAlign:"center",marginBottom:32}}><h2 style={{fontSize:26,fontWeight:800,margin:"0 0 8px"}}>Precios simples</h2><p style={{color:T.tx3,fontSize:15}}>Menos que un café al mes</p></div><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr 1fr",gap:16,maxWidth:900,margin:"0 auto"}}>{[{n:"Free",p:"$0",pr:"siempre",f:["Dashboard","5 inversiones","Gastos y deudas","Simulador básico"],cur:plan==="free"},{n:"Pro",p:"$29",pr:"/año",f:["Todo en Free","Ilimitado","5 Coaches IA","Pensión + BTC","Simulador avanzado","CSV / PDF"],cur:plan==="pro",ac:true},{n:"Familia",p:"$49",pr:"/año",f:["Todo en Pro","3 miembros","Vista consolidada","Presupuesto compartido"],cur:plan==="family"}].map(pl=><Cd key={pl.n} s={{border:pl.ac?`2px solid ${T.gn}`:`1px solid ${T.border}`}}>{pl.ac&&<div style={{background:`linear-gradient(135deg,${T.gn},#16a34a)`,color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>MÁS POPULAR</div>}<div style={{padding:28}}><div style={{fontSize:18,fontWeight:700,marginBottom:4}}>{pl.n}</div><div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:16}}><span style={{fontSize:36,fontWeight:800}}>{pl.p}</span><span style={{color:T.tx3,fontSize:14}}>{pl.pr}</span></div><div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>{pl.f.map(f=><div key={f} style={{fontSize:13,color:T.tx2}}><span style={{color:T.gn,marginRight:8}}>✓</span>{f}</div>)}</div><Bt v={pl.ac?"p":pl.cur?"s":"p"} sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{if(!pl.cur)setU(pr=>({...pr,p:{...pr.p,plan:pl.n.toLowerCase()}}))}}>{pl.cur?"Plan Actual":"Elegir"}</Bt></div></Cd>)}</div><div style={{textAlign:"center",marginTop:24,color:T.tx3,fontSize:13}}>🔒 Stripe • Cancela cuando quieras • $29/año = ~$2.40/mes ☕</div></div>;
+    case"resumen":{
+      const nwUSD=trm>0?t.nw/trm:t.nw/4200;
+      const passI=(u.ingresos||[]).filter(i=>["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i)=>s+(i.mensual||0),0);
+      const passR=t.ti>0?(passI/t.ti*100):0;
+      const totalInv=(u.inv||[]).reduce((s,i)=>s+(i.vc||0),0);
+      const totalVal=(u.inv||[]).reduce((s,i)=>s+(i.va||0),0);
+      const gainPct=totalInv>0?((totalVal/totalInv)-1)*100:0;
+      const fireN=t.te*12*25;
+      const fireProg=fireN>0?Math.min((t.nw/fireN)*100,100):0;
+      const fecha=new Date().toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
+      return<div style={{maxWidth:800,margin:"0 auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <button onClick={()=>setPg("dash")} style={{background:T.bg3,border:"none",color:T.tx2,padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:13}}>← Dashboard</button>
+          <button onClick={()=>{document.body.setAttribute("data-date",fecha);window.print()}} style={{background:T.gn,color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📄 Exportar PDF</button>
+        </div>
+        <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:20,padding:32}}>
+          <div style={{borderBottom:"2px solid "+T.gn,paddingBottom:16,marginBottom:20}}>
+            <div style={{fontSize:22,fontWeight:800,color:T.gn}}>FINPATH — Resumen Ejecutivo</div>
+            <div style={{fontSize:13,color:T.tx3,marginTop:4}}>{u.p.name} • {fecha}</div>
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:24}}>
+            <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
+              <div style={{fontSize:10,color:T.tx3}}>PATRIMONIO NETO</div>
+              <div style={{fontSize:24,fontWeight:800,color:T.gn,marginTop:4}}>{fm(t.nw)}</div>
+              <div style={{fontSize:10,color:T.tx3}}>≈ USD ${Math.round(nwUSD).toLocaleString()}</div>
+            </div>
+            <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
+              <div style={{fontSize:10,color:T.tx3}}>CASH FLOW MENSUAL</div>
+              <div style={{fontSize:24,fontWeight:800,color:t.cf>=0?T.gn:T.rd,marginTop:4}}>{fm(t.cf)}</div>
+              <div style={{fontSize:10,color:T.tx3}}>{fm(t.cf*12)}/año</div>
+            </div>
+            <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
+              <div style={{fontSize:10,color:T.tx3}}>INDEPENDENCIA</div>
+              <div style={{fontSize:24,fontWeight:800,color:t.ind>=100?T.gn:"#eab308",marginTop:4}}>{(t.ind).toFixed(0)}%</div>
+              <div style={{fontSize:10,color:T.tx3}}>FIRE: {fireProg.toFixed(0)}%</div>
+            </div>
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>💰 Ingresos mensuales</div>
+              {(u.ingresos||[]).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,6).map((i,idx)=>(
+                <div key={idx} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
+                  <span style={{color:T.tx2}}>{i.nombre}</span>
+                  <span style={{fontWeight:600,fontFamily:"monospace",color:T.gn}}>{fm(i.mensual||0)}</span>
+                </div>
+              ))}
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:13,padding:"6px 0",fontWeight:700}}>
+                <span>Total</span><span style={{color:T.gn}}>{fm(t.ti)}/mes</span>
+              </div>
+            </div>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>💳 Egresos principales</div>
+              {Object.entries(u.gas||{}).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+(g.m||0),0)})).sort((a,b)=>b.total-a.total).slice(0,5).map((g,idx)=>(
+                <div key={idx} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
+                  <span style={{color:T.tx2}}>{g.cat}</span>
+                  <span style={{fontWeight:600,fontFamily:"monospace",color:T.rd}}>{fm(g.total)}</span>
+                </div>
+              ))}
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
+                <span style={{color:T.tx2}}>Cuotas deudas</span>
+                <span style={{fontWeight:600,fontFamily:"monospace",color:T.rd}}>{fm(t.tc)}</span>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:13,padding:"6px 0",fontWeight:700}}>
+                <span>Total</span><span style={{color:T.rd}}>{fm(t.te)}/mes</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:24}}>
+            {[
+              {l:"Activos",v:fm(totalVal),c:T.gn},
+              {l:"Deuda total",v:fm(t.td),c:T.rd},
+              {l:"Valorización",v:(gainPct>=0?"+":"")+gainPct.toFixed(1)+"%",c:gainPct>=0?T.gn:T.rd},
+              {l:"Ingreso pasivo",v:passR.toFixed(0)+"%",c:passR>=80?T.gn:"#eab308"},
+            ].map(k=>(
+              <div key={k.l} style={{textAlign:"center",padding:10,background:T.bg3,borderRadius:8}}>
+                <div style={{fontSize:9,color:T.tx3}}>{k.l}</div>
+                <div style={{fontSize:16,fontWeight:800,color:k.c,marginTop:2}}>{k.v}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{marginBottom:24}}>
+            <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>🏦 Patrimonio por tipo</div>
+            {(() => {
+              const byType={};(u.inv||[]).forEach(i=>{const tp=i.tp||i.tipo||"Otro";byType[tp]=(byType[tp]||0)+(i.va||0)});
+              return Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([tp,val],idx)=>{
+                const pct=totalVal>0?(val/totalVal*100):0;
+                return(
+                  <div key={tp} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <div style={{width:8,height:8,borderRadius:2,background:T.ch[idx%T.ch.length],flexShrink:0}}/>
+                    <span style={{fontSize:12,color:T.tx2,flex:1}}>{tp}</span>
+                    <div style={{width:120,height:6,background:T.bg3,borderRadius:3,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:pct+"%",background:T.ch[idx%T.ch.length],borderRadius:3}}/>
+                    </div>
+                    <span style={{fontSize:11,color:T.tx3,minWidth:70,textAlign:"right",fontFamily:"monospace"}}>{fm(val)} ({pct.toFixed(0)}%)</span>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+
+          {(u.deu||[]).length>0&&<div style={{marginBottom:24}}>
+            <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>📋 Obligaciones financieras</div>
+            {(u.deu||[]).map((d,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
+                <span style={{color:T.tx2}}>{d.n||d.nombre||"Deuda"} <span style={{color:T.tx3}}>({d.ts||0}%)</span></span>
+                <div><span style={{color:T.rd,fontFamily:"monospace"}}>{fm(d.mt||0)}</span><span style={{color:T.tx3,marginLeft:8}}>cuota: {fm(d.pg||0)}</span></div>
+              </div>
+            ))}
+          </div>}
+
+          <div style={{background:"linear-gradient(135deg,rgba(34,197,94,0.06),rgba(59,130,246,0.03))",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:16}}>
+            <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:8}}>📌 Diagnóstico</div>
+            <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
+              {t.ind>=100?"✅ Tus ingresos cubren el 100% de tus gastos y deudas. Estás en nivel de independencia financiera.":"⚠ Tus ingresos cubren el "+t.ind.toFixed(0)+"% de tus gastos. Te falta "+fm(t.te-t.ni)+"/mes para independencia total."}
+              <br/>{t.cf>=0?"✅ Cash flow positivo de "+fm(t.cf)+"/mes disponible para inversión.":"❌ Cash flow negativo. Gastas "+fm(Math.abs(t.cf))+"/mes más de lo que ganas."}
+              <br/>{passR>=80?"✅ El "+passR.toFixed(0)+"% de tus ingresos son pasivos. Excelente independencia.":"📈 Solo el "+passR.toFixed(0)+"% es ingreso pasivo. Meta: superar 80%."}
+              <br/>{fireProg>=100?"🏆 Ya superaste tu FIRE number. Puedes vivir de tu patrimonio 25+ años.":"🔥 FIRE progress: "+fireProg.toFixed(0)+"%. Meta: "+fm(fireN)+". Te falta: "+fm(Math.max(0,fireN-t.nw))+"."}
+            </div>
+          </div>
+
+          <div style={{textAlign:"center",marginTop:20,fontSize:10,color:T.tx3,borderTop:"1px solid "+T.border,paddingTop:12}}>
+            FINPATH — Reporte generado el {fecha} • finpathia.netlify.app
+          </div>
+        </div>
+      </div>}
     case"set":return<div><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 20px"}}>Configuración</h2><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:20}}><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Perfil</h3><div style={{display:"flex",flexDirection:"column",gap:14}}><In l="Nombre" value={u.p.name} onChange={v=>setU(p=>({...p,p:{...p.p,name:v}}))}/><In l="Email" value={u.p.email} onChange={v=>setU(p=>({...p,p:{...p.p,email:v}}))}/><In l="TRM" value={u.trm} onChange={v=>setU(p=>({...p,trm:+v||4200}))} type="number"/></div></Cd><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Datos</h3><div style={{display:"flex",flexDirection:"column",gap:10}}><div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan:</strong> {plan} {plan==="free"&&<span onClick={()=>setPg("price")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}> → Upgrade</span>}</div><Bt v="s" onClick={demo} st={{justifyContent:"center"}}>Cargar Demo</Bt><Bt v="s" onClick={()=>{const d=localStorage.getItem(SK);if(!d)return alert("No hay datos");const b=new Blob([d],{type:"application/json"});const u2=URL.createObjectURL(b);const a=document.createElement("a");a.href=u2;a.download="finpath-backup-"+new Date().toISOString().split("T")[0]+".json";a.click()}} st={{justifyContent:"center"}}>📥 Exportar Datos (JSON)</Bt>
               <Bt v="s" onClick={()=>{const inp=document.createElement("input");inp.type="file";inp.accept=".json";inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);localStorage.setItem(SK,JSON.stringify(d));setU(d);alert("✅ Datos importados correctamente. Recarga la página.")}catch{alert("Error: archivo no válido")}};r.readAsText(f)};inp.click()}} st={{justifyContent:"center"}}>📤 Importar Datos (JSON)</Bt>
               <Bt v="d" onClick={()=>{if(confirm("¿Borrar?"))setU(mkU(u.p.name,u.p.email))}} st={{justifyContent:"center"}}>Borrar Datos</Bt><Bt v="d" onClick={logout} st={{justifyContent:"center"}}>Cerrar Sesión</Bt></div></Cd></div></div>;
