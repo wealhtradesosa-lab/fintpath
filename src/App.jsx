@@ -304,7 +304,7 @@ export default function FinPath(){
         const maxAsset = (u.inv||[]).reduce((max,i) => (i.va||0) > max.v ? {n:i.n||i.nombre||"",v:i.va||0} : max, {n:"",v:0});
         const concRisk = t.ab > 0 ? (maxAsset.v / t.ab * 100) : 0;
 
-        return (
+        return (<>
           <Cd s={{padding:20,marginTop:14}}>
             <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:14}}>🏦 Indicadores Family Office</div>
             <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:14}}>
@@ -893,6 +893,7 @@ export default function FinPath(){
             </div>
           );
         })()}
+      </Cd>
       </>);
       })()}
 
