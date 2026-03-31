@@ -463,6 +463,124 @@ export default function FinPath(){
                 });
               })()}
             </div>
+
+            {/* CONCENTRACIÓN DE RIESGO */}
+            <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>⚠️ CONCENTRACIÓN DE RIESGO — ¿Qué tan diversificado estás?</div>
+              {(() => {
+                const assets = (u.inv||[]).filter(i => (i.va||0) > 0).map(i => ({name:i.n||i.nombre||"",value:i.va||0,type:i.tp||i.tipo||"Otro"}));
+                const totalA = assets.reduce((s,a) => s + a.value, 0);
+                if (totalA === 0) return <div style={{fontSize:11,color:T.tx3}}>Agrega activos en Patrimonio para ver el análisis.</div>;
+                const sorted = [...assets].sort((a,b) => b.value - a.value);
+                const top3 = sorted.slice(0,5);
+                // Herfindahl index (0-10000, lower = more diversified)
+                const hhi = assets.reduce((s,a) => s + Math.pow((a.value/totalA)*100, 2), 0);
+                const hhiLabel = hhi < 1500 ? "Bien diversificado" : hhi < 2500 ? "Moderadamente concentrado" : "Muy concentrado";
+                const hhiColor = hhi < 1500 ? T.gn : hhi < 2500 ? "#eab308" : T.rd;
+                // By type
+                const byType = {};
+                assets.forEach(a => { byType[a.type] = (byType[a.type]||0) + a.value; });
+                const typeArr = Object.entries(byType).sort((a,b) => b[1] - a[1]);
+
+                return (
+                  <>
+                    <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
+                      <div>
+                        <div style={{fontSize:11,fontWeight:700,color:T.tx2,marginBottom:6}}>Top 5 activos por valor</div>
+                        {top3.map((a,i) => {
+                          const pct = (a.value / totalA * 100);
+                          const risk = pct > 40;
+                          return (
+                            <div key={i} style={{marginBottom:4}}>
+                              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:2}}>
+                                <span style={{color:risk?T.rd:T.tx2}}>{risk?"⚠ ":""}{a.name}</span>
+                                <span style={{color:risk?T.rd:T.tx3,fontWeight:600}}>{pct.toFixed(1)}% — {fm(a.value)}</span>
+                              </div>
+                              <div style={{height:6,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
+                                <div style={{height:"100%",width:pct+"%",background:pct>40?T.rd:pct>25?"#eab308":T.gn,borderRadius:3}}/>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div>
+                        <div style={{fontSize:11,fontWeight:700,color:T.tx2,marginBottom:6}}>Diversificación por tipo</div>
+                        {typeArr.map(([type,val],i) => {
+                          const pct = (val / totalA * 100);
+                          return (
+                            <div key={type} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"4px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                <div style={{width:8,height:8,borderRadius:2,background:T.ch[i%T.ch.length]}}/>
+                                <span style={{color:T.tx2}}>{type}</span>
+                              </div>
+                              <span style={{color:T.tx3,fontFamily:"monospace"}}>{pct.toFixed(1)}% ({fm(val)})</span>
+                            </div>
+                          );
+                        })}
+                        <div style={{marginTop:8,fontSize:11,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                          <span style={{color:T.tx3}}>Índice Herfindahl:</span>
+                          <span style={{fontWeight:700,color:hhiColor}}>{Math.round(hhi)} — {hhiLabel}</span>
+                        </div>
+                        <div style={{fontSize:9,color:T.tx3,marginTop:2}}>&lt;1500 diversificado · 1500-2500 moderado · &gt;2500 concentrado</div>
+                      </div>
+                    </div>
+                    {sorted.filter(a => (a.value/totalA*100) > 30).length > 0 && (
+                      <div style={{marginTop:10,background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.15)",borderRadius:8,padding:10,fontSize:11,color:T.rd}}>
+                        <strong>⚠ Alerta de concentración:</strong> {sorted.filter(a => (a.value/totalA*100) > 30).map(a => a.name + " (" + (a.value/totalA*100).toFixed(0) + "%)").join(", ")} representan más del 30% de tu patrimonio. Un family office recomendaría diversificar para reducir riesgo.
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* BENCHMARK: ¿Cómo rinde tu patrimonio? */}
+            <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>📊 BENCHMARK — ¿Cómo rinde tu patrimonio vs alternativas?</div>
+              {(() => {
+                const totalInvested = (u.inv||[]).reduce((s,i) => s + (i.vc||0), 0);
+                const totalValue = (u.inv||[]).reduce((s,i) => s + (i.va||0), 0);
+                const gain = totalValue - totalInvested;
+                const gainPct = totalInvested > 0 ? ((totalValue / totalInvested) - 1) * 100 : 0;
+                const incomeYield = totalInvested > 0 ? (t.ti * 12 / totalInvested * 100) : 0;
+                const totalReturn = gainPct + incomeYield;
+                
+                const benchmarks = [
+                  {name:"Tu portafolio (valoriz.)",pct:gainPct,color:gainPct>=0?T.gn:T.rd},
+                  {name:"Tu portafolio (total: valoriz. + renta)",pct:totalReturn,color:totalReturn>=0?T.gn:T.rd},
+                  {name:"S&P 500 (promedio 10 años)",pct:12.5,color:"#3b82f6"},
+                  {name:"CDT Colombia (promedio)",pct:10.5,color:"#a78bfa"},
+                  {name:"Inflación Colombia 2024",pct:5.2,color:"#f97316"},
+                  {name:"Colchón (cuenta de ahorros)",pct:1.5,color:T.tx3},
+                ];
+                const maxPct = Math.max(...benchmarks.map(b => Math.abs(b.pct)), 1);
+                
+                return (
+                  <>
+                    {benchmarks.map((b,i) => (
+                      <div key={i} style={{marginBottom:6}}>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:2}}>
+                          <span style={{color:i<2?T.tx:T.tx2,fontWeight:i<2?700:400}}>{b.name}</span>
+                          <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{b.pct.toFixed(1)}%</span>
+                        </div>
+                        <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:4,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:Math.max((Math.abs(b.pct)/maxPct)*100,2)+"%",background:b.color,borderRadius:4,opacity:i<2?1:0.6}}/>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{marginTop:8,fontSize:10,color:T.tx3,lineHeight:1.5}}>
+                      {totalReturn > 12.5 
+                        ? <span style={{color:T.gn}}>✅ Tu portafolio supera al S&P 500. Excelente gestión.</span>
+                        : totalReturn > 5.2
+                          ? <span style={{color:"#eab308"}}>📈 Tu portafolio supera la inflación pero está por debajo del S&P 500. Revisa si puedes mejorar la asignación.</span>
+                          : <span style={{color:T.rd}}>⚠ Tu portafolio no supera la inflación. Tu dinero está perdiendo poder adquisitivo.</span>
+                      }
+                      <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%) · Renta anual: {fm(t.ti*12)} ({incomeYield.toFixed(1)}%)
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
           </Cd>
         );
       })()}
