@@ -893,8 +893,7 @@ export default function FinPath(){
             </div>
           );
         })()}
-      </Cd>
-        );
+      </>);
       })()}
 
     </div>}

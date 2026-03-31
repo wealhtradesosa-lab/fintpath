@@ -301,8 +301,104 @@ export default function SimuladorAvanzado({ user, totals }) {
   return (
     <div>
       <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>Simulador de Independencia Financiera</h2><button onClick={()=>{
-              document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO"));
-              window.print();
+              const w = window.open("","_blank");
+              const fecha = new Date().toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
+              const niveles = ["Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
+              const nivel = simT.ind >= 250 ? 4 : simT.ind >= 150 ? 3 : simT.ind >= 100 ? 2 : simT.ind >= 75 ? 1 : 0;
+              
+              // Build income rows
+              const ingRows = (user.ingresos||[]).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).map(i => {
+                const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: $${(i.capital/1e6).toFixed(0)}M × ${i.tasa}%</span>` : "";
+                return `<tr><td>${i.nombre||""}</td><td style="color:#888">${i.categoria||""}</td><td style="text-align:right;font-weight:600;color:#16a34a">$${Math.round(i.mensual||0).toLocaleString()}</td><td>${cap}</td></tr>`;
+              }).join("");
+              
+              // Build expense rows by category
+              const gasCats = Object.entries(user.gastos||{}).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+(g.m||0),0),items})).sort((a,b)=>b.total-a.total);
+              const gasRows = gasCats.map(g => {
+                const detail = g.items.slice(0,3).map(i=>i.c).join(", ");
+                return `<tr><td>${g.cat}</td><td style="color:#888;font-size:10px">${detail}</td><td style="text-align:right;font-weight:600;color:#dc2626">$${Math.round(g.total).toLocaleString()}</td></tr>`;
+              }).join("");
+              
+              // Build debt rows
+              const deuRows = (user.deudas||[]).filter(d=>(d.mt||0)>0).map(d => 
+                `<tr><td>${d.n||d.nombre||""}</td><td style="text-align:right">$${Math.round(d.mt||0).toLocaleString()}</td><td style="text-align:right">$${Math.round(d.pg||0).toLocaleString()}/mes</td><td style="text-align:right">${d.ts||0}%</td></tr>`
+              ).join("");
+              
+              const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>FINPATH Simulador</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,system-ui,sans-serif;font-size:11px;color:#222;padding:20px 28px;max-width:800px;margin:0 auto}
+h1{font-size:18px;font-weight:800;color:#16a34a;margin:0 0 2px}
+h2{font-size:13px;font-weight:700;color:#333;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:3px}
+.sub{font-size:10px;color:#888;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.kpi{background:#f8f8f8;border:1px solid #e5e5e5;border-radius:6px;padding:8px 10px;text-align:center}
+.kpi .label{font-size:9px;color:#888;text-transform:uppercase;font-weight:600}
+.kpi .val{font-size:18px;font-weight:800;margin-top:2px}
+.gn{color:#16a34a}.rd{color:#dc2626}.bl{color:#2563eb}.or{color:#d97706}
+table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px}
+th{background:#f5f5f5;padding:4px 6px;text-align:left;font-size:9px;font-weight:600;color:#666;border-bottom:1px solid #ddd}
+td{padding:4px 6px;border-bottom:1px solid #f0f0f0}
+.bar-container{height:14px;background:#f0f0f0;border-radius:7px;margin:4px 0;overflow:hidden}
+.bar-fill{height:100%;border-radius:7px}
+.footer{margin-top:16px;padding-top:8px;border-top:1px solid #ddd;font-size:9px;color:#aaa;text-align:center}
+.diag{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;font-size:11px;line-height:1.6}
+@media print{@page{size:letter portrait;margin:12mm}}
+</style></head><body>
+<h1>FINPATH — Informe del Simulador</h1>
+<div class="sub">${user.ingresos?.[0]?.fuente ? "" : ""}${fecha}</div>
+
+<div class="grid4">
+  <div class="kpi"><div class="label">Ingreso neto</div><div class="val gn">$${Math.round(simT.ni).toLocaleString()}</div></div>
+  <div class="kpi"><div class="label">Egresos totales</div><div class="val rd">$${Math.round(simT.te).toLocaleString()}</div></div>
+  <div class="kpi"><div class="label">Cash flow</div><div class="val ${simT.cf>=0?"gn":"rd"}">$${Math.round(simT.cf).toLocaleString()}</div></div>
+  <div class="kpi"><div class="label">Independencia</div><div class="val ${simT.ind>=100?"gn":"or"}">${simT.ind.toFixed(0)}%</div></div>
+</div>
+
+<div class="grid3">
+  <div class="kpi"><div class="label">Nivel</div><div class="val bl">${niveles[nivel]} (${nivel+1}/5)</div></div>
+  <div class="kpi"><div class="label">Disponible/mes</div><div class="val gn">$${Math.round(simT.cf).toLocaleString()}</div></div>
+  <div class="kpi"><div class="label">Disponible/año</div><div class="val gn">$${Math.round(simT.cf*12).toLocaleString()}</div></div>
+</div>
+
+<h2>💰 Ingresos Mensuales</h2>
+<table><thead><tr><th>Fuente</th><th>Categoría</th><th style="text-align:right">Monto</th><th>Detalle</th></tr></thead>
+<tbody>${ingRows}</tbody>
+<tfoot><tr style="font-weight:700;border-top:2px solid #16a34a"><td colspan="2">TOTAL INGRESOS</td><td style="text-align:right;color:#16a34a">$${Math.round(simT.ni).toLocaleString()}</td><td></td></tr></tfoot>
+</table>
+
+<h2>💳 Gastos Familiares</h2>
+<table><thead><tr><th>Categoría</th><th>Principales</th><th style="text-align:right">Total</th></tr></thead>
+<tbody>${gasRows}</tbody>
+<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td colspan="2">TOTAL GASTOS</td><td style="text-align:right;color:#dc2626">$${Math.round(simT.gfm).toLocaleString()}</td></tr></tfoot>
+</table>
+
+${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
+<table><thead><tr><th>Deuda</th><th style="text-align:right">Saldo</th><th style="text-align:right">Cuota</th><th style="text-align:right">Tasa</th></tr></thead>
+<tbody>${deuRows}</tbody>
+<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td>TOTAL CUOTAS</td><td></td><td style="text-align:right;color:#dc2626">$${Math.round((user.deudas||[]).filter(d=>(d.mt||0)>0).reduce((s,d)=>s+(d.pg||0),0)).toLocaleString()}/mes</td><td></td></tr></tfoot>
+</table>` : ""}
+
+<h2>📊 Resumen</h2>
+<div class="grid2">
+  <div>
+    <div class="bar-container"><div class="bar-fill" style="width:${Math.min(simT.ind,100)}%;background:${simT.ind>=100?"#16a34a":"#eab308"}"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${simT.ind.toFixed(0)}%</span><span>100%</span></div>
+  </div>
+  <div class="diag">
+    ${simT.ind>=100?"✅ Independencia financiera alcanzada":"⚠ Falta $"+Math.round(simT.te-simT.ni).toLocaleString()+"/mes"}<br>
+    ${simT.cf>=0?"✅ Cash flow positivo: $"+Math.round(simT.cf).toLocaleString()+"/mes":"❌ Cash flow negativo"}<br>
+    📅 Disponible al día: $${Math.round(simT.cf/30).toLocaleString()}
+  </div>
+</div>
+
+<div class="footer">FINPATH — Informe generado el ${fecha} • finpathia.netlify.app</div>
+</body></html>`;
+              w.document.write(html);
+              w.document.close();
+              setTimeout(()=>w.print(), 500);
             }} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,marginLeft:12}}>📄 Exportar PDF</button>
       <p style={{ color: T.txt3, fontSize: 13, marginBottom: 20 }}>Ajusta cada ingreso y gasto — la barra de libertad reacciona en tiempo real</p>
 
