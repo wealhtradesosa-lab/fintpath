@@ -248,7 +248,7 @@ export default function SimuladorAvanzado({ user, totals }) {
         nv[`ing_${ii}`] = Math.round((ing.mensual || 0) * f.i);
       }
     });
-    (user.deudas || []).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
+    (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
     // Standalone ingresos
     // Dedup ingresos in scenario too
     setSimVals(nv);
@@ -278,7 +278,7 @@ export default function SimuladorAvanzado({ user, totals }) {
       items.forEach((g, gi) => { tGF += getVal(`gf_${cat}_${gi}`, g.m); });
     });
     let tD = 0;
-    (user.deudas || []).forEach((d, di) => { tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
+    (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
     const ni = tI - tG, te = tGF + tD, cf = ni - te;
     return { tI, tG, ni, tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0 };
   }, [user, simVals, getVal]);
@@ -453,7 +453,7 @@ export default function SimuladorAvanzado({ user, totals }) {
 
           {/* Debt payment sliders */}
           <h4 style={{ fontSize: 13, color: T.pr, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>📋 Cuotas de Deudas</h4>
-          {(user.deudas || []).map((d, di) => {
+          {(user.deudas || []).filter(d => (d.mt||0) > 0).map((d, di) => {
             const lk = (user.inv || []).find((i) => i.id === ((d.link||d.la)));
             return (
               <Slider key={`debt_${di}`} label={(d.nombre||d.n||"")||d.n} value={getVal(`debt_${di}`, (d.pago||d.pg||0)||d.pg)} base={(d.pago||d.pg||0)||d.pg}
