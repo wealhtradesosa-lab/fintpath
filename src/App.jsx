@@ -364,6 +364,105 @@ export default function FinPath(){
                 🏆 ¡Ya superaste tu FIRE number! Técnicamente puedes dejar de trabajar y vivir de tu patrimonio por 25+ años.
               </div>}
             </div>
+
+            {/* FECHA LIBRE DE DEUDA */}
+            {t.td > 0 && (() => {
+              const deudas = (u.deu||[]).map(d => ({...d, mt: d.mt||0, pg: d.pg||0, ts: d.ts||0})).filter(d => d.mt > 0 && d.pg > 0);
+              const totalDeuda = deudas.reduce((s,d) => s + d.mt, 0);
+              const totalCuota = deudas.reduce((s,d) => s + d.pg, 0);
+              const mesesLibre = totalCuota > 0 ? Math.ceil(totalDeuda / totalCuota) : 0;
+              const aniosLibre = (mesesLibre / 12).toFixed(1);
+              const fechaLibre = new Date();
+              fechaLibre.setMonth(fechaLibre.getMonth() + mesesLibre);
+              const fechaStr = fechaLibre.toLocaleDateString("es-CO", {month:"long", year:"numeric"});
+              // Avalancha: order by highest rate first
+              const avalancha = [...deudas].sort((a,b) => (b.ts||0) - (a.ts||0));
+              // Bola de nieve: order by smallest balance first
+              const bolaNieve = [...deudas].sort((a,b) => a.mt - b.mt);
+              
+              return (
+                <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <div>
+                      <div style={{fontSize:11,color:T.tx3,fontWeight:600}}>📋 FECHA LIBRE DE DEUDA</div>
+                      <div style={{fontSize:10,color:T.tx3,marginTop:2}}>Al ritmo actual de pago de cuotas</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:20,fontWeight:800,color:mesesLibre<=36?T.gn:mesesLibre<=72?"#eab308":T.rd}}>{fechaStr}</div>
+                      <div style={{fontSize:10,color:T.tx3}}>en {aniosLibre} años ({mesesLibre} meses)</div>
+                    </div>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
+                    <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:12}}>
+                      <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:6}}>🏔️ Estrategia Avalancha (ahorra más intereses)</div>
+                      <div style={{fontSize:10,color:T.tx3,marginBottom:6}}>Paga primero la de mayor tasa de interés</div>
+                      {avalancha.slice(0,4).map((d,i) => (
+                        <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                          <span style={{color:i===0?T.rd:T.tx2}}>{i+1}. {d.n||d.nombre||"Deuda"}</span>
+                          <span style={{color:T.tx3,fontFamily:"monospace"}}>{d.ts||0}% → {fm(d.pg)}/mes</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:12}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#eab308",marginBottom:6}}>⛄ Estrategia Bola de Nieve (motivación rápida)</div>
+                      <div style={{fontSize:10,color:T.tx3,marginBottom:6}}>Paga primero la más pequeña</div>
+                      {bolaNieve.slice(0,4).map((d,i) => (
+                        <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                          <span style={{color:i===0?"#eab308":T.tx2}}>{i+1}. {d.n||d.nombre||"Deuda"}</span>
+                          <span style={{color:T.tx3,fontFamily:"monospace"}}>{fm(d.mt)} saldo</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{fontSize:10,color:T.tx3,marginTop:8}}>
+                    Al quedar libre de deuda, tu cash flow sube <strong style={{color:T.gn}}>+{fm(totalCuota)}/mes</strong> ({fm(totalCuota*12)}/año) — ese dinero pasa directo a inversión o ahorro.
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* TIMELINE DE INDEPENDENCIA */}
+            <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:8}}>🎯 CAMINO A LA INDEPENDENCIA FINANCIERA</div>
+              {(() => {
+                const hitos = [];
+                // Milestone 1: Emergency fund (6 months)
+                const emerFund = t.te * 6;
+                const liquidA = (u.inv||[]).filter(i => ["Investment","Fondo de Inversión","CDT","Cash","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i) => s + (i.va||0), 0);
+                hitos.push({name:"Fondo de emergencia (6 meses)",target:emerFund,current:liquidA,icon:"🛡️"});
+                // Milestone 2: Debt free
+                const totalD = (u.deu||[]).reduce((s,d) => s + (d.mt||0), 0);
+                hitos.push({name:"Libre de deudas",target:totalD,current:Math.max(0,totalD - t.td),icon:"📋"});
+                // Milestone 3: 50% independence
+                const half = t.te * 12 * 12.5;
+                hitos.push({name:"50% independencia",target:half,current:t.nw,icon:"⚡"});
+                // Milestone 4: FIRE number
+                hitos.push({name:"FIRE number (25× gastos)",target:fireNumber,current:t.nw,icon:"🔥"});
+                // Milestone 5: Absolute freedom (2.5x gastos)
+                const absol = t.te * 12 * 62.5;
+                hitos.push({name:"Libertad absoluta (62.5× gastos)",target:absol,current:t.nw,icon:"👑"});
+                
+                return hitos.map((h,i) => {
+                  const prog = h.target > 0 ? Math.min((h.current / h.target) * 100, 100) : 0;
+                  const done = prog >= 100;
+                  return (
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                      <span style={{fontSize:14,width:20}}>{h.icon}</span>
+                      <div style={{flex:1}}>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:2}}>
+                          <span style={{color:done?T.gn:T.tx2,fontWeight:done?700:400}}>{h.name}</span>
+                          <span style={{color:done?T.gn:T.tx3}}>{done?"✅ Logrado":fm(h.target)}</span>
+                        </div>
+                        <div style={{height:6,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:prog+"%",background:done?T.gn:prog>50?"#eab308":"#ef4444",borderRadius:3}}/>
+                        </div>
+                      </div>
+                      <span style={{fontSize:10,color:done?T.gn:T.tx3,minWidth:36,textAlign:"right"}}>{Math.round(prog)}%</span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
           </Cd>
         );
       })()}
