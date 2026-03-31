@@ -307,7 +307,7 @@ export default function FinPath(){
         return (
           <Cd s={{padding:20,marginTop:14}}>
             <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:14}}>🏦 Indicadores Family Office</div>
-            <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(4,1fr)",gap:10,marginBottom:14}}>
+            <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:14}}>
               {[
                 {l:"Runway",v:runway >= 999 ? "∞" : runway + " meses",c:runway>=12?T.gn:runway>=6?"#eab308":T.rd,tip:"Meses que aguantas sin ningún ingreso. Ideal: 12-24.",i:"🛡️"},
                 {l:"Burn rate",v:pc(burnRate),c:burnRate<=4?T.gn:burnRate<=8?"#eab308":T.rd,tip:"% del patrimonio que gastas al año. Ideal: <4%.",i:"🔥"},
@@ -324,7 +324,7 @@ export default function FinPath(){
                 </div>
               ))}
             </div>
-            <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(4,1fr)",gap:10,marginBottom:14}}>
+            <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:14}}>
               {[
                 {l:"Ingreso pasivo",v:pc(passiveRatio),c:passiveRatio>=80?T.gn:passiveRatio>=50?"#eab308":T.rd,tip:"% del ingreso que NO depende de tu trabajo.",i:"🔄"},
                 {l:"Yield on cost",v:pc(yieldOnCost),c:yieldOnCost>=8?T.gn:yieldOnCost>=4?"#eab308":T.rd,tip:"Ingreso anual ÷ costo de inversión. Qué tan bien rentan tus activos.",i:"📈"},
@@ -659,7 +659,7 @@ export default function FinPath(){
               const inflEdu = 0.08; // 8% inflación educativa
               const totalUniInflado = totalUni * Math.pow(1 + inflEdu, 6); // en 6 años
               const ahorroPorHijo = totalUniInflado / (6 * 12); // mensual por 6 años
-              const numHijos = gastosEdu.filter(g => (g.c||"").toLowerCase().includes("colegio")).length || 1;
+              const numHijos = Math.max(1, gastosEdu.filter(g => (g.c||"").toLowerCase().includes("colegio")).length);
               
               return (
                 <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
@@ -786,7 +786,7 @@ export default function FinPath(){
             const gastoDia = gastoMes / 30;
             const gastoHora = gastoDia / 24;
             const gastoMin = gastoHora / 60;
-            const ingresoHora = t.ti > 0 ? t.ti / (30 * 8) : 0; // 8h laborales
+            const ingresoHora = t.ti > 0 ? t.ti / 176 : 0; // 8h laborales
             const horasLibertad = ingresoHora > 0 ? gastoHora / ingresoHora : 0;
 
             return (
@@ -969,7 +969,7 @@ case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
             <div>
               <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>💰 Ingresos mensuales</div>
-              {(u.ingresos||[]).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,6).map((i,idx)=>(
+              {(u.ingresos||[]).filter(i=>(i.mensual||0)>0).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,6).map((i,idx)=>(
                 <div key={idx} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
                   <span style={{color:T.tx2}}>{i.nombre}</span>
                   <span style={{fontWeight:600,fontFamily:"monospace",color:T.gn}}>{fm(i.mensual||0)}</span>
