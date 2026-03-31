@@ -410,7 +410,7 @@ export default function SimuladorAvanzado({ user, totals }) {
                           {rentDiff !== 0 && <div style={{ fontSize: 10, color: rentDiff > 0 ? T.gn : T.rd }}>{rentDiff > 0 ? "+" : ""}{fm(rentDiff)}</div>}
                         </div>
                       </div>
-                      <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>↔ Capital invertido:</div>
+                      <div data-no-print="true" style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>↔ Capital invertido:</div>
                       <input type="range" min={0} max={Math.round(baseCap * 2)} step={Math.max(Math.round(baseCap * 0.002), 1000)} value={simCap}
                         onChange={(e) => { const c = Number(e.target.value); setVal(`cap_${ii}`, c); setVal(`ing_${ii}`, Math.round((c * simTasa / 100) / 12)); }}
                         style={{ width: "100%", accentColor: "#22d3ee", height: 6, cursor: "pointer" }} />
@@ -418,7 +418,7 @@ export default function SimuladorAvanzado({ user, totals }) {
                   ) : isInvType && !hasCap ? (
                     <>
                       {/* Investment-type but no capital yet: show prompt + slider */}
-                      <div style={{ background: "rgba(34,211,238,0.06)", borderRadius: 8, padding: "8px 12px", marginBottom: 8, fontSize: 11, color: "#22d3ee" }}>
+                      <div data-no-print="true" style={{ background: "rgba(34,211,238,0.06)", borderRadius: 8, padding: "8px 12px", marginBottom: 8, fontSize: 11, color: "#22d3ee" }}>
                         💡 Edita este ingreso y agrega <strong>Capital invertido</strong> y <strong>% Tasa</strong> para simular cuánto invertir
                       </div>
                       <input type="range" min={0} max={Math.max(baseRenta * 3, 1000)} step={Math.max(Math.round(baseRenta * 0.01), 5)} value={simRenta}
