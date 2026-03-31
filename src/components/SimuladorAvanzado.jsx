@@ -284,11 +284,10 @@ export default function SimuladorAvanzado({ user, totals }) {
   }, [user, simVals, getVal]);
 
   const proj = useMemo(() => {
-    const nw = totals.nw || 0;
     return Array.from({ length: 13 }, (_, i) => ({
       m: "M" + i,
-      actual: nw + (totals.cf || 0) * i,
-      simulado: nw + simT.cf * i,
+      actual: (totals.cf || 0) * i,
+      simulado: simT.cf * i,
     }));
   }, [totals, simT]);
 
@@ -474,12 +473,12 @@ export default function SimuladorAvanzado({ user, totals }) {
         {/* RIGHT: Chart + Summary */}
         <div>
           <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 20, position: "sticky", top: 80 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 14 }}>Proyección 12 Meses</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 14 }}>Acumulación Cash Flow — 12 Meses</div>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={proj}>
                 <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
                 <XAxis dataKey="m" tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} />
-                <YAxis tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} tickFormatter={(v) => "$" + (v / 1e3).toFixed(0) + "k"} />
+                <YAxis tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(0)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v}} />
                 <Tooltip contentStyle={TT} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={(v) => fm(v)} />
                 <Area type="monotone" dataKey="actual" stroke={T.txt3} fill={T.txt3 + "08"} strokeDasharray="5 5" name="Actual" />
                 <defs>
