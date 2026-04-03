@@ -71,6 +71,12 @@ export default function FinPath(){
     }
     setLd(false);
     try{const r=await fetch('/api/trm');const j=await r.json();if(j.trm)setU(p=>p?{...p,trm:j.trm,trmSrc:j.source}:p)}catch{}
+    // Handle Stripe success redirect
+    const params=new URLSearchParams(window.location.search);
+    if(params.get('success')==='true'){
+      setU(p=>p?{...p,p:{...p.p,plan:'pro'}}:p);
+      window.history.replaceState({},'',window.location.pathname);
+    }
   })()},[]);
   useEffect(()=>{if(u)sS(u,authUser?.id)},[u]);
   const trm=u?.trm||4200;
@@ -1022,7 +1028,24 @@ case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={
                   {pl.f.map(f=><div key={f} style={{fontSize:13,color:T.tx2}}><span style={{color:T.gn,marginRight:8}}>✓</span>{f}</div>)}
                   {(pl.no||[]).map(f=><div key={f} style={{fontSize:13,color:T.tx3}}><span style={{color:T.tx3,marginRight:8}}>✗</span>{f}</div>)}
                 </div>
-                <Bt v={pl.ac?"p":pl.cur?"s":"p"} sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{if(!pl.cur)alert("Stripe checkout próximamente. Por ahora todos los features están habilitados.")}}>{pl.cur?"Plan actual":"Comenzar"}</Bt>
+                <Bt v={pl.ac?"p":pl.cur?"s":"p"} sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{if(!pl.cur)(async()=>{
+                  try{
+                    const prices={
+                      "Básico":{mensual:"price_1TIGRWKEnhNr9wQd2oEgNin9",anual:"price_1TIGRWKEnhNr9wQdJTMTGfYa"},
+                      "Pro":{mensual:"price_1TIGRXKEnhNr9wQdC8eKj2xS",anual:"price_1TIGRYKEnhNr9wQd7QTFxT6z"}
+                    };
+                    const priceId=prices[pl.n]?.[billingCycle];
+                    if(!priceId)return;
+                    const r=await fetch("/.netlify/functions/stripe-checkout",{
+                      method:"POST",
+                      headers:{"Content-Type":"application/json"},
+                      body:JSON.stringify({priceId,email:u?.p?.email||"",userId:authUser?.id||"",successUrl:window.location.origin+"/?success=true",cancelUrl:window.location.origin+"/?canceled=true"})
+                    });
+                    const d=await r.json();
+                    if(d.url)window.location.href=d.url;
+                    else alert("Error: "+(d.error||"No se pudo crear la sesión"));
+                  }catch(e){alert("Error conectando con Stripe: "+e.message)}
+                })()}}>{pl.cur?"Plan actual":"Comenzar"}</Bt>
               </div>
             </Cd>
           ))}
