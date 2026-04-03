@@ -25,11 +25,15 @@ const sL=async(uid)=>{
     const r=localStorage.getItem(SK);return r?JSON.parse(r):null;
   }catch{return null}
 };
+let _saveTimer=null;
 const sS=async(d,uid)=>{
   try{
     localStorage.setItem(SK,JSON.stringify(d));
     if(isSupabaseConfigured&&uid){
-      await supabase.from("user_data").upsert({id:uid,data:d,updated_at:new Date().toISOString()},{onConflict:"id"});
+      clearTimeout(_saveTimer);
+      _saveTimer=setTimeout(async()=>{
+        try{await supabase.from("user_data").upsert({id:uid,data:d,updated_at:new Date().toISOString()},{onConflict:"id"})}catch{}
+      },2000);
     }
   }catch{}
 };
@@ -74,11 +78,12 @@ export default function FinPath(){
     // Handle Stripe success redirect
     const params=new URLSearchParams(window.location.search);
     if(params.get('success')==='true'){
-      setU(p=>p?{...p,p:{...p.p,plan:'pro'}}:p);
+      const paidPlan=params.get('plan')||'pro';
+      setU(p=>p?{...p,p:{...p.p,plan:paidPlan}}:p);
       window.history.replaceState({},'',window.location.pathname);
     }
   })()},[]);
-  useEffect(()=>{if(u)sS(u,authUser?.id)},[u]);
+  useEffect(()=>{if(u)sS(u,authUser?.id)},[u,authUser]);
   const trm=u?.trm||4200;
   const fm=n=>{const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
   const upd=(k,v)=>setU(p=>({...p,[k]:v}));
@@ -1050,7 +1055,7 @@ case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={
                     const r=await fetch("/.netlify/functions/stripe-checkout",{
                       method:"POST",
                       headers:{"Content-Type":"application/json"},
-                      body:JSON.stringify({priceId,email:u?.p?.email||"",userId:authUser?.id||"",successUrl:window.location.origin+"/?success=true",cancelUrl:window.location.origin+"/?canceled=true"})
+                      body:JSON.stringify({priceId,email:u?.p?.email||"",userId:authUser?.id||"",successUrl:window.location.origin+"/?success=true&plan="+(pl.n==="Básico"?"basico":"pro"),cancelUrl:window.location.origin+"/?canceled=true"})
                     });
                     const d=await r.json();
                     if(d.url)window.location.href=d.url;
