@@ -125,26 +125,33 @@ export default function LandingPage({ onGetStarted }) {
         <Section>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Precios que hacen sentido</h2>
-            <p style={{ fontSize: 16, color: T.txt2 }}>Menos que un café al mes. Mucho más que una hoja de Excel.</p>
+            <p style={{ fontSize: 16, color: T.txt2 }}>Herramientas de family office al alcance de todos</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, maxWidth: 950, margin: "0 auto" }}>
             {[
-              { name: "Free", price: "$0", per: "siempre", features: ["Dashboard completo", "5 inversiones", "Gastos y deudas", "Simulador básico", "Patrimonio"], cta: "Empezar Gratis" },
-              { name: "Pro", price: "$29", per: "/año", features: ["Todo en Free", "Inversiones ilimitadas", "5 Coaches IA", "Pensiones + BTC", "Simulador avanzado con sliders", "Import CSV / Export PDF", "Barra de libertad Robbins"], accent: true, cta: "Elegir Pro" },
-              { name: "Familia", price: "$49", per: "/año", features: ["Todo en Pro", "Hasta 3 miembros", "Vista familiar consolidada", "Presupuesto compartido", "Soporte prioritario"], cta: "Elegir Familia" },
+              { name: "Free", price: "$0", per: "gratis", features: ["Dashboard básico", "3 inversiones", "Gastos y deudas", "Simulador limitado", "1 meta financiera"], no: ["Coaches IA", "Pensiones", "Trading", "Alertas", "PDF"], cta: "Empezar Gratis" },
+              { name: "Básico", price: "$8", per: "/mes", sub: "$6/mes anual — Ahorra 25%", features: ["Todo en Free", "10 inversiones y 10 metas", "Simulador avanzado", "Pensiones Colpensiones + BTC", "Trading portfolio", "CSV import + PDF export"], no: ["Coaches IA", "Family Office KPIs", "Alertas inteligentes"], cta: "Comenzar" },
+              { name: "Pro", price: "$16", per: "/mes", sub: "$12/mes anual — Ahorra 25%", features: ["Todo en Básico", "Inversiones ilimitadas", "5 Coaches IA", "Family Office KPIs", "Alertas inteligentes", "Percentil de riqueza", "Benchmark vs mercado", "Resumen ejecutivo", "Soporte prioritario"], no: [], accent: true, cta: "Comenzar Pro" },
             ].map((p) => (
               <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative" }}>
                 {p.accent && <div style={{ background: T.grad, color: "#000", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>MÁS POPULAR</div>}
                 <div style={{ padding: 32 }}>
                   <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{p.name}</div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 20 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
                     <span style={{ fontSize: 44, fontWeight: 900, letterSpacing: "-0.04em" }}>{p.price}</span>
                     <span style={{ color: T.txt3, fontSize: 15 }}>{p.per}</span>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+                  {p.sub && <div style={{ fontSize: 12, color: T.green, fontWeight: 600, marginBottom: 16 }}>{p.sub}</div>}
+                  {!p.sub && <div style={{ marginBottom: 16 }} />}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
                     {p.features.map((f) => (
                       <div key={f} style={{ fontSize: 14, color: T.txt2, display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ color: T.green, fontSize: 14 }}>✓</span> {f}
+                      </div>
+                    ))}
+                    {(p.no || []).map((f) => (
+                      <div key={f} style={{ fontSize: 14, color: T.txt3, display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ color: T.txt3, fontSize: 14 }}>✗</span> {f}
                       </div>
                     ))}
                   </div>
@@ -155,7 +162,7 @@ export default function LandingPage({ onGetStarted }) {
               </div>
             ))}
           </div>
-          <p style={{ textAlign: "center", marginTop: 20, color: T.txt3, fontSize: 13 }}>$29/año = ~$2.40/mes = ~$10,000 COP/mes ☕</p>
+          <p style={{ textAlign: "center", marginTop: 20, color: T.txt3, fontSize: 13 }}>🔒 Pagos seguros con Stripe • Cancela cuando quieras • Sin compromisos</p>
         </Section>
       </div>
 
