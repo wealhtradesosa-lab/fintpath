@@ -60,23 +60,22 @@ const PL={
   basico:{inv:10,met:10,trd:true,sim:"full",pen:true,btc:true,coach:false,pdf:true,csv:true,kpi:false,alerts:false,exec:false},
   pro:{inv:999,met:999,trd:true,sim:"full",pen:true,btc:true,coach:true,pdf:true,csv:true,kpi:true,alerts:true,exec:true}
 };
-const canUse=(plan,feat)=>(PL[plan]||PL.free)[feat];
-const Gate=({plan,feat,children,setPg})=>{
-  const lim=PL[plan]||PL.free;
+function Gate({plan,feat,children,setPg}){
+  const lim=({"free":{inv:3,met:1,trd:false,pen:false,btc:false,coach:false},"basico":{inv:10,met:10,trd:true,pen:true,btc:true,coach:false},"pro":{inv:999,met:999,trd:true,pen:true,btc:true,coach:true}})[plan]||{inv:3,met:1,trd:false,pen:false,btc:false,coach:false};
   const ok=feat?lim[feat]:true;
   if(ok)return children;
-  const planName=feat==="coach"?"Pro":feat==="kpi"?"Pro":"Básico";
+  const planName=feat==="coach"?"Pro":"Básico";
   return<div style={{position:"relative"}}><div style={{filter:"blur(4px)",pointerEvents:"none",opacity:.3,maxHeight:400,overflow:"hidden"}}>{children}</div>
     <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>
-      <div style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:16,padding:"32px 40px",textAlign:"center",boxShadow:"0 8px 32px rgba(0,0,0,.4)"}}>
+      <div style={{background:"#18181b",border:"1px solid rgba(255,255,255,0.06)",borderRadius:16,padding:"32px 40px",textAlign:"center",boxShadow:"0 8px 32px rgba(0,0,0,.4)"}}>
         <div style={{fontSize:32,marginBottom:8}}>🔒</div>
         <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Feature {planName}</div>
-        <div style={{fontSize:13,color:T.tx3,marginBottom:16}}>Disponible en el plan {planName}</div>
-        <button onClick={()=>setPg("price")} style={{background:`linear-gradient(135deg,${T.gn},#16a34a)`,color:"#fff",padding:"10px 20px",borderRadius:10,border:"none",cursor:"pointer",fontWeight:600,fontSize:14}}>Ver Planes</button>
+        <div style={{fontSize:13,color:"#71717a",marginBottom:16}}>Disponible en el plan {planName}</div>
+        <button onClick={()=>setPg("price")} style={{background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",padding:"10px 20px",borderRadius:10,border:"none",cursor:"pointer",fontWeight:600,fontSize:14}}>Ver Planes</button>
       </div>
     </div>
   </div>;
-};
+}
 
 const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div style={{display:"flex",flexDirection:"column",gap:5}}>{l&&<label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{l}</label>}{opts?<select value={v||""} onChange={e=>oc(e.target.value)} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}>{opts.map(o=><option key={o.v!=null?o.v:o} value={o.v!=null?o.v:o}>{o.l||o}</option>)}</select>:<input type={tp||"text"} value={v!=null?v:""} onChange={e=>oc(e.target.value)} placeholder={ph} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}/>}</div>;
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
