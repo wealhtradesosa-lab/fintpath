@@ -8,15 +8,31 @@ import CsvImport from "./components/CsvImport";
 import MetasModule from "./components/MetasModule";
 import PensionColombia from "./components/PensionColombia";
 import SimuladorAvanzado from "./components/SimuladorAvanzado";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
 const T={bg:"#09090b",bg2:"#18181b",bg3:"#27272a",card:"#111113",border:"rgba(255,255,255,0.06)",borderL:"rgba(255,255,255,0.1)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f59e0b",gd:"#eab308",ch:["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"]};
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>(n||0).toFixed(1)+"%";
 const SK="fp3";
-const sL=async()=>{try{const r=localStorage.getItem(SK);return r?JSON.parse(r):null}catch{return null}};
-const sS=async d=>{try{localStorage.setItem(SK,JSON.stringify(d))}catch{}};
+const sL=async(uid)=>{
+  try{
+    if(isSupabaseConfigured&&uid){
+      const{data,error}=await supabase.from("user_data").select("data").eq("id",uid).single();
+      if(!error&&data?.data){localStorage.setItem(SK,JSON.stringify(data.data));return data.data}
+    }
+    const r=localStorage.getItem(SK);return r?JSON.parse(r):null;
+  }catch{return null}
+};
+const sS=async(d,uid)=>{
+  try{
+    localStorage.setItem(SK,JSON.stringify(d));
+    if(isSupabaseConfigured&&uid){
+      await supabase.from("user_data").upsert({id:uid,data:d,updated_at:new Date().toISOString()},{onConflict:"id"});
+    }
+  }catch{}
+};
 const mkU=(n,e)=>({p:{name:n,email:e,plan:"free"},trm:4200,inv:[],deu:[],gas:{},ibk:[],ingresos:[],pen:{age:35,rAge:60,sv:2500,cur:120000,ret:7,inf:3,des:6000,btcC:56,btcP:50000},metas:[]});
 
 const DI=[{id:"i1",n:"Beach House Alpha",ub:"Miami, FL",tp:"Real Estate",vc:460000,va:599000,un:[{n:"Main Suite",ig:[{c:"Airbnb",m:4200,t:"v"}],gs:[{c:"Mgmt",m:275,t:"f"},{c:"HOA",m:642,t:"f"},{c:"Utilities",m:768,t:"v"},{c:"Insurance",m:150,t:"f"},{c:"Taxes",m:400,t:"f"}]},{n:"Guest Studio",ig:[{c:"Airbnb",m:1800,t:"v"}],gs:[{c:"Cleaning",m:300,t:"v"}]}]},{id:"i2",n:"Mountain Retreat",ub:"Aspen, CO",tp:"Real Estate",vc:320000,va:480000,ig:[{c:"Rental",m:3500,t:"v"}],gs:[{c:"Caretaker",m:500,t:"f"},{c:"Utilities",m:350,t:"v"}]},{id:"i3",n:"Commercial Unit",ub:"Austin, TX",tp:"Real Estate",vc:197000,va:240000,ig:[{c:"Lease",m:1420,t:"f"}],gs:[{c:"Admin",m:183,t:"f"}]},{id:"i4",n:"P2P Lending",ub:"Online",tp:"Investment",vc:280000,va:280000,ig:[{c:"21% Return",m:4900,t:"f"}],gs:[]},{id:"i5",n:"Growth Equity",ub:"Online",tp:"Investment",vc:105000,va:210000,ig:[{c:"Dividends",m:1316,t:"v"}],gs:[]},{id:"i6",n:"Warehouse",ub:"Denver",tp:"Real Estate",vc:132000,va:265000,ig:[{c:"Rent",m:2370,t:"f"}],gs:[{c:"Admin",m:237,t:"f"}]},{id:"i7",n:"Lakeside Land",ub:"Tahoe",tp:"Real Estate",vc:67000,va:184000,ig:[],gs:[]},{id:"i8",n:"Business",ub:"Local",tp:"Income",vc:0,va:0,ig:[{c:"Distribution",m:1658,t:"f"}],gs:[]},{id:"i9",n:"Emergency Fund",ub:"HYSA",tp:"Cash",vc:150000,va:150000,ig:[],gs:[]}];
@@ -41,8 +57,22 @@ export default function FinPath(){
   const[u,setU]=useState(null);const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState("COP");const[showAuth,setShowAuth]=useState(false);
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
   useEffect(()=>{if(mb)sSb(false)},[mb]);
-  useEffect(()=>{(async()=>{const d=await sL();if(d)setU(d);setLd(false);try{const r=await fetch('/api/trm');const j=await r.json();if(j.trm)setU(p=>p?{...p,trm:j.trm,trmSrc:j.source}:p)}catch{}})()},[]);
-  useEffect(()=>{if(u)sS(u)},[u]);
+  useEffect(()=>{(async()=>{
+    if(isSupabaseConfigured&&supabase){
+      const{data:{session}}=await supabase.auth.getSession();
+      if(session?.user){
+        setAuthUser(session.user);
+        const d=await sL(session.user.id);
+        if(d)setU(d);
+      }
+    }else{
+      const d=await sL();
+      if(d)setU(d);
+    }
+    setLd(false);
+    try{const r=await fetch('/api/trm');const j=await r.json();if(j.trm)setU(p=>p?{...p,trm:j.trm,trmSrc:j.source}:p)}catch{}
+  })()},[]);
+  useEffect(()=>{if(u)sS(u,authUser?.id)},[u]);
   const trm=u?.trm||4200;
   const fm=n=>{const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
   const upd=(k,v)=>setU(p=>({...p,[k]:v}));
@@ -59,8 +89,31 @@ export default function FinPath(){
   else if(ok)v={kiyosaki:"🟡 Filo de navaja. "+fm(t.cf)+"/mes pero frágil.",robbins:"🟡 ¡Casi! 90 días más.",dalio:"🟡 Riesgo medio-alto.",buffett:"🟡 Paciencia. 3-6 meses más.",munger:"🟡 Todavía no."};
   else v={kiyosaki:"🔴 TODAVÍA NO. Gap "+fm(gap)+"/mes.",robbins:"🔴 Hoy no, pero PRONTO.",dalio:"🔴 Déficit insostenible sin empleo.",buffett:"🔴 No te apures.",munger:"🔴 Sería estúpido hoy."};
   msgs.push({t:"⚡ ¿Puedes Renunciar?",c:v[id]});return msgs};
-  const auth=()=>{if(!aF.e||!aF.p)return;setU(mkU(aF.n||"Usuario",aF.e))};
-  const logout=async()=>{try{localStorage.removeItem(SK)}catch{}setU(null)};
+  const[authUser,setAuthUser]=useState(null);
+  const[authLoading,setAuthLoading]=useState(false);
+  const[authError,setAuthError]=useState("");
+  const auth=async()=>{
+    if(!aF.e||!aF.p)return;
+    setAuthLoading(true);setAuthError("");
+    if(isSupabaseConfigured){
+      if(aM==="login"){
+        const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
+        if(error){setAuthError(error.message);setAuthLoading(false);return}
+        setAuthUser(data.user);
+        const d=await sL(data.user.id);
+        if(d)setU(d);else{const nd=mkU(aF.n||"Usuario",aF.e);setU(nd);await sS(nd,data.user.id)}
+      }else{
+        const{data,error}=await supabase.auth.signUp({email:aF.e,password:aF.p,options:{data:{name:aF.n||""}}});
+        if(error){setAuthError(error.message);setAuthLoading(false);return}
+        if(data.user){setAuthUser(data.user);const nd=mkU(aF.n||"Usuario",aF.e);setU(nd);await sS(nd,data.user.id)}
+      }
+    }else{setU(mkU(aF.n||"Usuario",aF.e))}
+    setAuthLoading(false);
+  };
+  const logout=async()=>{
+    try{if(isSupabaseConfigured&&supabase)await supabase.auth.signOut();localStorage.removeItem(SK)}catch{}
+    setU(null);setAuthUser(null);
+  };
   const demo=()=>setU(p=>({...p,inv:[...DI],deu:[...DD],gas:JSON.parse(JSON.stringify(DG)),ibk:[...DIB],ingresos:[...DING]}));
   const handleImport=(key,rows,isGastos)=>{if(isGastos){const g={...u.gas};rows.forEach(r=>{const cat=r.cat||"Otro";if(!g[cat])g[cat]=[];g[cat].push({c:r.c,m:r.m,t:r.t});});upd("gas",g);}else{upd(key,[...(u[key]||[]),...rows]);}};
   const add=(m,it)=>upd(m,[...(u[m]||[]),{...it,id:m[0]+Date.now()}]);
