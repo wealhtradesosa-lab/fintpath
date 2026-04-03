@@ -13,29 +13,6 @@ import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
 const T={bg:"#09090b",bg2:"#18181b",bg3:"#27272a",card:"#111113",border:"rgba(255,255,255,0.06)",borderL:"rgba(255,255,255,0.1)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f59e0b",gd:"#eab308",ch:["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"]};
-// ═══ PLAN LIMITS ═══
-const PL={
-  free:{inv:3,met:1,trd:false,sim:"basic",pen:false,btc:false,coach:false,pdf:false,csv:false,kpi:false,alerts:false,exec:false},
-  basico:{inv:10,met:10,trd:true,sim:"full",pen:true,btc:true,coach:false,pdf:true,csv:true,kpi:false,alerts:false,exec:false},
-  pro:{inv:999,met:999,trd:true,sim:"full",pen:true,btc:true,coach:true,pdf:true,csv:true,kpi:true,alerts:true,exec:true}
-};
-const canUse=(plan,feat)=>(PL[plan]||PL.free)[feat];
-const Gate=({plan,feat,children,setPg})=>{
-  const lim=PL[plan]||PL.free;
-  const ok=feat?lim[feat]:true;
-  if(ok)return children;
-  const planName=feat==="coach"?"Pro":feat==="kpi"?"Pro":"Básico";
-  return<div style={{position:"relative"}}><div style={{filter:"blur(4px)",pointerEvents:"none",opacity:.3,maxHeight:400,overflow:"hidden"}}>{children}</div>
-    <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>
-      <div style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:16,padding:"32px 40px",textAlign:"center",boxShadow:"0 8px 32px rgba(0,0,0,.4)"}}>
-        <div style={{fontSize:32,marginBottom:8}}>🔒</div>
-        <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Feature {planName}</div>
-        <div style={{fontSize:13,color:T.tx3,marginBottom:16}}>Disponible en el plan {planName}</div>
-        <Bt onClick={()=>setPg("price")} st={{justifyContent:"center"}}>Ver Planes</Bt>
-      </div>
-    </div>
-  </div>;
-};
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>(n||0).toFixed(1)+"%";
 const SK="fp3";
@@ -77,6 +54,30 @@ const Cd=({children,s,...p})=><div style={{background:T.card,border:`1px solid $
 const St=({l,v,sub,cl})=><div style={{padding:"16px 20px"}}><div style={{fontSize:10,color:T.tx3,textTransform:"uppercase",letterSpacing:1,fontWeight:600,marginBottom:6}}>{l}</div><div style={{fontSize:24,fontWeight:700,color:cl||T.tx,letterSpacing:"-0.03em"}}>{v}</div>{sub&&<div style={{fontSize:12,color:T.tx3,marginTop:3}}>{sub}</div>}</div>;
 const Bg=({children,cl})=><span style={{background:`${cl||T.gn}15`,color:cl||T.gn,fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{children}</span>;
 const Bt=({children,onClick,v,sz,dis,st})=>{const vs={p:{background:`linear-gradient(135deg,${T.gn},#16a34a)`,color:"#fff"},s:{background:"transparent",color:T.tx2,border:`1px solid ${T.border}`},d:{background:T.rdB,color:T.rd}};const ss={s:{padding:"6px 14px",fontSize:12},m:{padding:"10px 20px",fontSize:14},l:{padding:"14px 28px",fontSize:16}};return<button onClick={onClick} disabled={dis} style={{...(vs[v||"p"]),...(ss[sz||"m"]),borderRadius:10,border:"none",cursor:dis?"not-allowed":"pointer",display:"inline-flex",alignItems:"center",gap:6,fontWeight:600,opacity:dis?.5:1,...(st||{})}}>{children}</button>};
+// ═══ PLAN LIMITS ═══
+const PL={
+  free:{inv:3,met:1,trd:false,sim:"basic",pen:false,btc:false,coach:false,pdf:false,csv:false,kpi:false,alerts:false,exec:false},
+  basico:{inv:10,met:10,trd:true,sim:"full",pen:true,btc:true,coach:false,pdf:true,csv:true,kpi:false,alerts:false,exec:false},
+  pro:{inv:999,met:999,trd:true,sim:"full",pen:true,btc:true,coach:true,pdf:true,csv:true,kpi:true,alerts:true,exec:true}
+};
+const canUse=(plan,feat)=>(PL[plan]||PL.free)[feat];
+const Gate=({plan,feat,children,setPg})=>{
+  const lim=PL[plan]||PL.free;
+  const ok=feat?lim[feat]:true;
+  if(ok)return children;
+  const planName=feat==="coach"?"Pro":feat==="kpi"?"Pro":"Básico";
+  return<div style={{position:"relative"}}><div style={{filter:"blur(4px)",pointerEvents:"none",opacity:.3,maxHeight:400,overflow:"hidden"}}>{children}</div>
+    <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>
+      <div style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:16,padding:"32px 40px",textAlign:"center",boxShadow:"0 8px 32px rgba(0,0,0,.4)"}}>
+        <div style={{fontSize:32,marginBottom:8}}>🔒</div>
+        <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Feature {planName}</div>
+        <div style={{fontSize:13,color:T.tx3,marginBottom:16}}>Disponible en el plan {planName}</div>
+        <Bt onClick={()=>setPg("price")} st={{justifyContent:"center"}}>Ver Planes</Bt>
+      </div>
+    </div>
+  </div>;
+};
+
 const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div style={{display:"flex",flexDirection:"column",gap:5}}>{l&&<label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{l}</label>}{opts?<select value={v||""} onChange={e=>oc(e.target.value)} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}>{opts.map(o=><option key={o.v!=null?o.v:o} value={o.v!=null?o.v:o}>{o.l||o}</option>)}</select>:<input type={tp||"text"} value={v!=null?v:""} onChange={e=>oc(e.target.value)} placeholder={ph} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}/>}</div>;
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
