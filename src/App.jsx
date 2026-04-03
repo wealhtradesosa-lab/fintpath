@@ -110,9 +110,17 @@ export default function FinPath(){
         const d=await sL(data.user.id);
         if(d)setU(d);else{const nd=mkU(aF.n||"Usuario",aF.e);setU(nd);await sS(nd,data.user.id)}
       }else{
-        const{data,error}=await supabase.auth.signUp({email:aF.e,password:aF.p,options:{data:{name:aF.n||""}}});
+        // Signup via Netlify function (auto-confirms email)
+        const sr=await fetch("/.netlify/functions/auth-signup",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({email:aF.e,password:aF.p,name:aF.n||""})
+        });
+        const srd=await sr.json();
+        if(!sr.ok){setAuthError(srd.error||"Error creando cuenta");setAuthLoading(false);return}
+        // Now sign in with the new account
+        const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        if(data.user){setAuthUser(data.user);const nd=mkU(aF.n||"Usuario",aF.e);setU(nd);await sS(nd,data.user.id)}
+        setAuthUser(data.user);const nd=mkU(aF.n||"Usuario",aF.e);setU(nd);await sS(nd,data.user.id);
       }
     }else{setU(mkU(aF.n||"Usuario",aF.e))}
     }catch(e){setAuthError("Error: "+e.message)}
