@@ -99,8 +99,9 @@ export default function FinPath(){
   const[authLoading,setAuthLoading]=useState(false);
   const[authError,setAuthError]=useState("");
   const auth=async()=>{
-    if(!aF.e||!aF.p)return;
+    if(!aF.e||!aF.p){setAuthError("Ingresa email y contraseña");return}
     setAuthLoading(true);setAuthError("");
+    try{
     if(isSupabaseConfigured){
       if(aM==="login"){
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
@@ -114,6 +115,7 @@ export default function FinPath(){
         if(data.user){setAuthUser(data.user);const nd=mkU(aF.n||"Usuario",aF.e);setU(nd);await sS(nd,data.user.id)}
       }
     }else{setU(mkU(aF.n||"Usuario",aF.e))}
+    }catch(e){setAuthError("Error: "+e.message)}
     setAuthLoading(false);
   };
   const logout=async()=>{
@@ -140,7 +142,8 @@ export default function FinPath(){
         <In l="Email" value={aF.e} onChange={v=>sAF(p=>({...p,e:v}))} type="email" placeholder="tu@email.com"/>
         <In l="Contraseña" value={aF.p} onChange={v=>sAF(p=>({...p,p:v}))} type="password" placeholder="••••••••"/>
       </div>
-      <Bt sz="l" onClick={auth} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{aM==="login"?"Ingresar":"Crear Cuenta Gratis"}</Bt>
+      <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":"Crear Cuenta Gratis"}</Bt>
+      {authError&&<div style={{color:T.rd,fontSize:12,textAlign:"center",marginTop:8,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{authError}</div>}
       <p style={{textAlign:"center",marginTop:20,color:T.tx3,fontSize:14}}>{aM==="login"?"¿Sin cuenta? ":"¿Ya tienes? "}<span onClick={()=>sAM(aM==="login"?"signup":"login")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{aM==="login"?"Regístrate":"Ingresa"}</span></p>
     </div>
   </div>;
