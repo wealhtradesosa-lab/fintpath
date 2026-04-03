@@ -72,7 +72,7 @@ const Gate=({plan,feat,children,setPg})=>{
         <div style={{fontSize:32,marginBottom:8}}>🔒</div>
         <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Feature {planName}</div>
         <div style={{fontSize:13,color:T.tx3,marginBottom:16}}>Disponible en el plan {planName}</div>
-        <Bt onClick={()=>setPg("price")} st={{justifyContent:"center"}}>Ver Planes</Bt>
+        <button onClick={()=>setPg("price")} style={{background:`linear-gradient(135deg,${T.gn},#16a34a)`,color:"#fff",padding:"10px 20px",borderRadius:10,border:"none",cursor:"pointer",fontWeight:600,fontSize:14}}>Ver Planes</button>
       </div>
     </div>
   </div>;
