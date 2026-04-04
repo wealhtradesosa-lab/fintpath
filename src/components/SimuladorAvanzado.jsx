@@ -231,6 +231,7 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
   const [lastHash, setLastHash] = useState(dataHash);
   if(dataHash !== lastHash) { setSimVals({}); setLastHash(dataHash); }
   const [scenario, setScenario] = useState("actual");
+  const [simName, setSimName] = useState("");
 
   const setVal = useCallback((key, val) => {
     setSimVals((prev) => ({ ...prev, [key]: val }));
@@ -298,11 +299,14 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>Simulador de Independencia Financiera</h2><button onClick={()=>{
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,flexWrap:"wrap",gap:8}}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Simulador de Independencia Financiera</h2>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <input type="text" value={simName} onChange={e=>setSimName(e.target.value)} placeholder="Nombre del escenario..." style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"8px 12px",color:T.txt,fontSize:12,width:200,outline:"none"}} />
+          <button onClick={()=>{
               const w = window.open("","_blank");
               const fecha = new Date().toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
-              const scenarioNames = {actual:"Escenario Actual",conservador:"Escenario Conservador",optimista:"Escenario Optimista",crisis:"Escenario de Crisis"};
-              const scenarioName = scenarioNames[scenario] || "Escenario Actual";
+              const scenarioName = simName || "Simulación";
               const niveles = ["Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
               const nivel = simT.ind >= 250 ? 4 : simT.ind >= 150 ? 3 : simT.ind >= 100 ? 2 : simT.ind >= 75 ? 1 : 0;
               
@@ -399,7 +403,9 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               w.document.write(html);
               w.document.close();
               setTimeout(()=>w.print(), 500);
-            }} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,marginLeft:12}}>📄 Exportar PDF</button>
+            }} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📄 PDF</button>
+        </div>
+      </div>
       <p style={{ color: T.txt3, fontSize: 13, marginBottom: 20 }}>Ajusta cada ingreso y gasto — la barra de libertad reacciona en tiempo real</p>
 
       {/* ═══ FREEDOM BAR — reacts to simulated values ═══ */}
