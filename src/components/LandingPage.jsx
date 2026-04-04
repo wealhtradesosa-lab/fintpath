@@ -123,17 +123,21 @@ export default function LandingPage({ onGetStarted }) {
       {/* ─── PRICING ─── */}
       <div style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, padding: "80px 0" }}>
         <Section>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, maxWidth: 800, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 8 }}>Tu privacidad es prioridad</h2>
+            <p style={{ fontSize: 15, color: T.txt2 }}>Construido con los más altos estándares de seguridad</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, maxWidth: 860, margin: "0 auto" }}>
             {[
-              { i: "🔒", t: "Datos encriptados", d: "Protegidos con Row Level Security" },
-              { i: "👤", t: "Solo tú accedes", d: "Cada usuario solo ve sus datos" },
-              { i: "🚫", t: "Sin publicidad", d: "No vendemos tu información" },
-              { i: "🗑️", t: "Control total", d: "Borra tus datos cuando quieras" },
+              { i: "🔒", t: "Encriptación", d: "Tus datos protegidos con Row Level Security. Nadie más puede verlos." },
+              { i: "👤", t: "Acceso privado", d: "Cada usuario tiene su espacio aislado. Solo tú ves tu información." },
+              { i: "🚫", t: "Cero publicidad", d: "No vendemos ni compartimos tus datos. Tu información no es el producto." },
+              { i: "✊", t: "Tú mandas", d: "Exporta o borra tus datos en cualquier momento con un click." },
             ].map((item) => (
-              <div key={item.t} style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 24, textAlign: "center" }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>{item.i}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{item.t}</div>
-                <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>{item.d}</div>
+              <div key={item.t} style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: "24px 20px", textAlign: "center" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(34,197,94,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 12 }}>{item.i}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{item.t}</div>
+                <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.6 }}>{item.d}</div>
               </div>
             ))}
           </div>
