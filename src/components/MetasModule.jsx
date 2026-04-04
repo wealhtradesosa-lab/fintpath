@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const ve = {
+const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
   card: "#141418", border: "rgba(255,255,255,0.06)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
@@ -49,40 +49,40 @@ export default function MetasModule({ metas, onUpdate, cashFlow }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 4px" }}>🎯 Metas Financieras</h2>
-          <p style={{ fontSize: 13, color: ve.txt3, margin: 0 }}>{items.length} metas • Necesitas: {fm(totalNeeded)}</p>
+          <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>{items.length} metas • Necesitas: {fm(totalNeeded)}</p>
         </div>
         <button onClick={() => { setEditId(null); setForm({ nombre: "", categoria: "Ahorro", monto: "", fechaMeta: "", ahorrado: "", icono: "🎯", prioridad: "media" }); setShowForm(true); }}
-          style={{ background: ve.green, color: "#000", border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Nueva Meta</button>
+          style={{ background: T.green, color: "#000", border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Nueva Meta</button>
       </div>
 
       {/* Resumen */}
       {items.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
-          <div style={{ background: ve.card, border: "1px solid " + ve.border, borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ fontSize: 10, color: ve.txt3, fontWeight: 600 }}>TOTAL METAS</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: ve.blue, marginTop: 4 }}>{fm(totalMeta)}</div>
+          <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 12, padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>TOTAL METAS</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: T.blue, marginTop: 4 }}>{fm(totalMeta)}</div>
           </div>
-          <div style={{ background: ve.card, border: "1px solid " + ve.border, borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ fontSize: 10, color: ve.txt3, fontWeight: 600 }}>AHORRADO</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: ve.green, marginTop: 4 }}>{fm(totalAhorrado)}</div>
+          <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 12, padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>AHORRADO</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: T.green, marginTop: 4 }}>{fm(totalAhorrado)}</div>
           </div>
-          <div style={{ background: ve.card, border: "1px solid " + ve.border, borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ fontSize: 10, color: ve.txt3, fontWeight: 600 }}>FALTA</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: ve.orange, marginTop: 4 }}>{fm(totalNeeded)}</div>
+          <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 12, padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>FALTA</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: T.orange, marginTop: 4 }}>{fm(totalNeeded)}</div>
           </div>
-          <div style={{ background: ve.card, border: "1px solid " + ve.border, borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ fontSize: 10, color: ve.txt3, fontWeight: 600 }}>CASH FLOW DISPONIBLE</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: cfMensual >= 0 ? ve.green : ve.red, marginTop: 4 }}>{fm(cfMensual)}/mes</div>
+          <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 12, padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>CASH FLOW DISPONIBLE</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: cfMensual >= 0 ? T.green : T.red, marginTop: 4 }}>{fm(cfMensual)}/mes</div>
           </div>
         </div>
       )}
 
       {/* Metas cards */}
       {items.length === 0 ? (
-        <div style={{ background: ve.card, border: "1px solid " + ve.border, borderRadius: 16, padding: 40, textAlign: "center" }}>
+        <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 40, textAlign: "center" }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
-          <p style={{ color: ve.txt2, fontSize: 14 }}>No tienes metas. Agrega tu primera meta financiera.</p>
-          <p style={{ color: ve.txt3, fontSize: 12 }}>Ejemplos: comprar casa, carro nuevo, fondo universidad, viaje familiar, retiro anticipado.</p>
+          <p style={{ color: T.txt2, fontSize: 14 }}>No tienes metas. Agrega tu primera meta financiera.</p>
+          <p style={{ color: T.txt3, fontSize: 12 }}>Ejemplos: comprar casa, carro nuevo, fondo universidad, viaje familiar, retiro anticipado.</p>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
@@ -98,16 +98,16 @@ export default function MetasModule({ metas, onUpdate, cashFlow }) {
             const ahorroPorMes = mesesFalta && mesesFalta > 0 ? Math.round(falta / mesesFalta) : null;
             const alcanzable = cfMensual > 0 && ahorroPorMes && cfMensual >= ahorroPorMes;
             const mesesConCF = cfMensual > 0 && falta > 0 ? Math.ceil(falta / cfMensual) : null;
-            const priColor = meta.prioridad === "alta" ? ve.red : meta.prioridad === "media" ? ve.orange : ve.green;
+            const priColor = meta.prioridad === "alta" ? T.red : meta.prioridad === "media" ? T.orange : T.green;
 
             return (
-              <div key={meta.id} style={{ background: ve.card, border: "1px solid " + (done ? ve.green + "30" : ve.border), borderRadius: 16, padding: "20px 24px", position: "relative" }}>
+              <div key={meta.id} style={{ background: T.card, border: "1px solid " + (done ? T.green + "30" : T.border), borderRadius: 16, padding: "20px 24px", position: "relative" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                   <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                     <span style={{ fontSize: 28 }}>{meta.icono || "🎯"}</span>
                     <div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: done ? ve.green : ve.txt }}>{meta.nombre || "Meta"}</div>
-                      <div style={{ fontSize: 11, color: ve.txt3 }}>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: done ? T.green : T.txt }}>{meta.nombre || "Meta"}</div>
+                      <div style={{ fontSize: 11, color: T.txt3 }}>
                         {meta.categoria}
                         <span style={{ marginLeft: 8, color: priColor, fontWeight: 600 }}>● {meta.prioridad || "media"}</span>
                         {fechaObj && <span style={{ marginLeft: 8 }}>📅 {fechaObj.toLocaleDateString("es-CO", { month: "short", year: "numeric" })}</span>}
@@ -115,45 +115,45 @@ export default function MetasModule({ metas, onUpdate, cashFlow }) {
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 4 }}>
-                    <button onClick={() => handleEdit(meta)} style={{ background: ve.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: ve.txt2, fontSize: 11 }}>✏️</button>
-                    <button onClick={() => { if (confirm("¿Eliminar?")) onUpdate(items.filter(i => i.id !== meta.id)); }} style={{ background: ve.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: ve.red, fontSize: 11 }}>🗑️</button>
+                    <button onClick={() => handleEdit(meta)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11 }}>✏️</button>
+                    <button onClick={() => { if (confirm("¿Eliminar?")) onUpdate(items.filter(i => i.id !== meta.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
                   </div>
                 </div>
 
                 {/* Progress bar */}
                 <div style={{ marginBottom: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-                    <span style={{ color: ve.txt3 }}>Progreso</span>
-                    <span style={{ color: done ? ve.green : ve.txt2, fontWeight: 700 }}>{progreso.toFixed(0)}%</span>
+                    <span style={{ color: T.txt3 }}>Progreso</span>
+                    <span style={{ color: done ? T.green : T.txt2, fontWeight: 700 }}>{progreso.toFixed(0)}%</span>
                   </div>
-                  <div style={{ height: 10, background: ve.bg3, borderRadius: 5, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: progreso + "%", background: done ? ve.green : progreso > 50 ? ve.blue : ve.orange, borderRadius: 5, transition: "width 0.3s" }} />
+                  <div style={{ height: 10, background: T.bg3, borderRadius: 5, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: progreso + "%", background: done ? T.green : progreso > 50 ? T.blue : T.orange, borderRadius: 5, transition: "width 0.3s" }} />
                   </div>
                 </div>
 
                 {/* Numbers */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
-                    <div style={{ fontSize: 10, color: ve.txt3 }}>Meta</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: ve.txt }}>{fm(monto)}</div>
+                    <div style={{ fontSize: 10, color: T.txt3 }}>Meta</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: T.txt }}>{fm(monto)}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, color: ve.txt3 }}>Ahorrado</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: ve.green }}>{fm(ahorrado)}</div>
+                    <div style={{ fontSize: 10, color: T.txt3 }}>Ahorrado</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: T.green }}>{fm(ahorrado)}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, color: ve.txt3 }}>Falta</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: done ? ve.green : ve.orange }}>{done ? "✅ Logrado" : fm(falta)}</div>
+                    <div style={{ fontSize: 10, color: T.txt3 }}>Falta</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: done ? T.green : T.orange }}>{done ? "✅ Logrado" : fm(falta)}</div>
                   </div>
                 </div>
 
                 {/* Plan */}
                 {!done && (
-                  <div style={{ background: ve.bg3, borderRadius: 10, padding: 12, fontSize: 12, color: ve.txt2, lineHeight: 1.7 }}>
-                    {ahorroPorMes && <div>📅 Para llegar a tiempo: ahorra <strong style={{ color: ve.cyan }}>{fm(ahorroPorMes)}/mes</strong> por {mesesFalta} meses</div>}
-                    {mesesConCF && <div>📊 Con tu cash flow actual ({fm(cfMensual)}/mes): llegas en <strong style={{ color: alcanzable ? ve.green : ve.orange }}>{mesesConCF} meses ({(mesesConCF / 12).toFixed(1)} años)</strong></div>}
-                    {ahorroPorMes && !alcanzable && cfMensual > 0 && <div style={{ color: ve.orange }}>⚠ Tu cash flow no alcanza para llegar a la fecha. Necesitas {fm(ahorroPorMes - cfMensual)}/mes adicionales.</div>}
-                    {cfMensual <= 0 && <div style={{ color: ve.red }}>⚠ Sin cash flow positivo no puedes ahorrar. Revisa ingresos y gastos.</div>}
+                  <div style={{ background: T.bg3, borderRadius: 10, padding: 12, fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
+                    {ahorroPorMes && <div>📅 Para llegar a tiempo: ahorra <strong style={{ color: T.cyan }}>{fm(ahorroPorMes)}/mes</strong> por {mesesFalta} meses</div>}
+                    {mesesConCF && <div>📊 Con tu cash flow actual ({fm(cfMensual)}/mes): llegas en <strong style={{ color: alcanzable ? T.green : T.orange }}>{mesesConCF} meses ({(mesesConCF / 12).toFixed(1)} años)</strong></div>}
+                    {ahorroPorMes && !alcanzable && cfMensual > 0 && <div style={{ color: T.orange }}>⚠ Tu cash flow no alcanza para llegar a la fecha. Necesitas {fm(ahorroPorMes - cfMensual)}/mes adicionales.</div>}
+                    {cfMensual <= 0 && <div style={{ color: T.red }}>⚠ Sin cash flow positivo no puedes ahorrar. Revisa ingresos y gastos.</div>}
                   </div>
                 )}
               </div>
@@ -165,47 +165,47 @@ export default function MetasModule({ metas, onUpdate, cashFlow }) {
       {/* Form Modal */}
       {showForm && (
         <div onClick={() => setShowForm(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: ve.bg2, border: "1px solid " + ve.border, borderRadius: 20, width: "100%", maxWidth: 520, maxHeight: "85vh", overflow: "auto", padding: 32 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 20, width: "100%", maxWidth: 520, maxHeight: "85vh", overflow: "auto", padding: 32 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editId ? "Editar Meta" : "Nueva Meta"}</h3>
-              <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: ve.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
+              <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ gridColumn: "1/-1" }}>
-                <label style={{ fontSize: 10, fontWeight: 600, color: ve.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Nombre de la meta</label>
-                <input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} placeholder="Ej: Casa en la playa, Carro nuevo, Fondo universidad" style={{ width: "100%", background: ve.bg3, border: "1px solid " + ve.border, borderRadius: 10, padding: "10px 14px", color: ve.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                <label style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Nombre de la meta</label>
+                <input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} placeholder="Ej: Casa en la playa, Carro nuevo, Fondo universidad" style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
               </div>
               <div>
-                <label style={{ fontSize: 10, fontWeight: 600, color: ve.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Categoría</label>
-                <select value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))} style={{ width: "100%", background: ve.bg3, border: "1px solid " + ve.border, borderRadius: 10, padding: "10px 14px", color: ve.txt, fontSize: 14, outline: "none" }}>
+                <label style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Categoría</label>
+                <select value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))} style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 14, outline: "none" }}>
                   {CATS.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 10, fontWeight: 600, color: ve.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Prioridad</label>
-                <select value={form.prioridad} onChange={e => setForm(p => ({ ...p, prioridad: e.target.value }))} style={{ width: "100%", background: ve.bg3, border: "1px solid " + ve.border, borderRadius: 10, padding: "10px 14px", color: ve.txt, fontSize: 14, outline: "none" }}>
+                <label style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Prioridad</label>
+                <select value={form.prioridad} onChange={e => setForm(p => ({ ...p, prioridad: e.target.value }))} style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 14, outline: "none" }}>
                   <option value="alta">🔴 Alta</option>
                   <option value="media">🟡 Media</option>
                   <option value="baja">🟢 Baja</option>
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 10, fontWeight: 600, color: ve.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Monto necesario</label>
-                <input type="number" value={form.monto} onChange={e => setForm(p => ({ ...p, monto: e.target.value }))} placeholder="500000000" style={{ width: "100%", background: ve.bg3, border: "1px solid " + ve.border, borderRadius: 10, padding: "10px 14px", color: ve.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                <label style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Monto necesario</label>
+                <input type="number" value={form.monto} onChange={e => setForm(p => ({ ...p, monto: e.target.value }))} placeholder="500000000" style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
               </div>
               <div>
-                <label style={{ fontSize: 10, fontWeight: 600, color: ve.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Ya ahorrado</label>
-                <input type="number" value={form.ahorrado} onChange={e => setForm(p => ({ ...p, ahorrado: e.target.value }))} placeholder="100000000" style={{ width: "100%", background: ve.bg3, border: "1px solid " + ve.border, borderRadius: 10, padding: "10px 14px", color: ve.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                <label style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Ya ahorrado</label>
+                <input type="number" value={form.ahorrado} onChange={e => setForm(p => ({ ...p, ahorrado: e.target.value }))} placeholder="100000000" style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
               </div>
               <div>
-                <label style={{ fontSize: 10, fontWeight: 600, color: ve.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Fecha meta</label>
-                <input type="date" value={form.fechaMeta} onChange={e => setForm(p => ({ ...p, fechaMeta: e.target.value }))} style={{ width: "100%", background: ve.bg3, border: "1px solid " + ve.border, borderRadius: 10, padding: "10px 14px", color: ve.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                <label style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Fecha meta</label>
+                <input type="date" value={form.fechaMeta} onChange={e => setForm(p => ({ ...p, fechaMeta: e.target.value }))} style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
               </div>
               <div>
-                <label style={{ fontSize: 10, fontWeight: 600, color: ve.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Ícono</label>
+                <label style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Ícono</label>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                   {ICONS.map(ic => (
-                    <button key={ic} onClick={() => setForm(p => ({ ...p, icono: ic }))} style={{ width: 36, height: 36, borderRadius: 8, border: form.icono === ic ? "2px solid " + ve.blue : "1px solid " + ve.border, background: form.icono === ic ? ve.blue + "15" : ve.bg3, cursor: "pointer", fontSize: 18 }}>{ic}</button>
+                    <button key={ic} onClick={() => setForm(p => ({ ...p, icono: ic }))} style={{ width: 36, height: 36, borderRadius: 8, border: form.icono === ic ? "2px solid " + T.blue : "1px solid " + T.border, background: form.icono === ic ? T.blue + "15" : T.bg3, cursor: "pointer", fontSize: 18 }}>{ic}</button>
                   ))}
                 </div>
               </div>
@@ -215,18 +215,18 @@ export default function MetasModule({ metas, onUpdate, cashFlow }) {
               const meses = Math.max(1, Math.round((new Date(form.fechaMeta) - new Date()) / (1000 * 60 * 60 * 24 * 30.44)));
               const mensual = Math.round(falta / meses);
               return (
-                <div style={{ marginTop: 16, background: ve.greenDim, borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontSize: 12, color: ve.green, fontWeight: 600 }}>📊 Plan de ahorro:</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: ve.green, marginTop: 4 }}>Ahorrar {fm(mensual)}/mes por {meses} meses</div>
-                  <div style={{ fontSize: 11, color: ve.txt3, marginTop: 2 }}>
+                <div style={{ marginTop: 16, background: T.greenDim, borderRadius: 10, padding: 14 }}>
+                  <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>📊 Plan de ahorro:</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: T.green, marginTop: 4 }}>Ahorrar {fm(mensual)}/mes por {meses} meses</div>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
                     {cfMensual >= mensual ? "✅ Tu cash flow actual (" + fm(cfMensual) + "/mes) cubre esta meta" : "⚠ Necesitas " + fm(mensual - cfMensual) + "/mes adicionales — tu cash flow actual es " + fm(cfMensual) + "/mes"}
                   </div>
                 </div>
               );
             })()}
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
-              <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: "1px solid " + ve.border, color: ve.txt2, padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
-              <button onClick={handleSave} style={{ background: ve.green, color: "#000", border: "none", padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 700 }}>{editId ? "Guardar" : "Agregar"}</button>
+              <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: "1px solid " + T.border, color: T.txt2, padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
+              <button onClick={handleSave} style={{ background: T.green, color: "#000", border: "none", padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 700 }}>{editId ? "Guardar" : "Agregar"}</button>
             </div>
           </div>
         </div>

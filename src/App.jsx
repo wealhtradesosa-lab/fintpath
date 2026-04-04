@@ -25,15 +25,11 @@ const sL=async(uid)=>{
     const r=localStorage.getItem(SK);return r?JSON.parse(r):null;
   }catch{return null}
 };
-let _saveTimer=null;
 const sS=async(d,uid)=>{
   try{
     localStorage.setItem(SK,JSON.stringify(d));
     if(isSupabaseConfigured&&uid){
-      clearTimeout(_saveTimer);
-      _saveTimer=setTimeout(async()=>{
-        try{await supabase.from("user_data").upsert({id:uid,data:d,updated_at:new Date().toISOString()},{onConflict:"id"})}catch{}
-      },2000);
+      await supabase.from("user_data").upsert({id:uid,data:d,updated_at:new Date().toISOString()},{onConflict:"id"});
     }
   }catch{}
 };
@@ -54,14 +50,11 @@ const Cd=({children,s,...p})=><div style={{background:T.card,border:`1px solid $
 const St=({l,v,sub,cl})=><div style={{padding:"16px 20px"}}><div style={{fontSize:10,color:T.tx3,textTransform:"uppercase",letterSpacing:1,fontWeight:600,marginBottom:6}}>{l}</div><div style={{fontSize:24,fontWeight:700,color:cl||T.tx,letterSpacing:"-0.03em"}}>{v}</div>{sub&&<div style={{fontSize:12,color:T.tx3,marginTop:3}}>{sub}</div>}</div>;
 const Bg=({children,cl})=><span style={{background:`${cl||T.gn}15`,color:cl||T.gn,fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{children}</span>;
 const Bt=({children,onClick,v,sz,dis,st})=>{const vs={p:{background:`linear-gradient(135deg,${T.gn},#16a34a)`,color:"#fff"},s:{background:"transparent",color:T.tx2,border:`1px solid ${T.border}`},d:{background:T.rdB,color:T.rd}};const ss={s:{padding:"6px 14px",fontSize:12},m:{padding:"10px 20px",fontSize:14},l:{padding:"14px 28px",fontSize:16}};return<button onClick={onClick} disabled={dis} style={{...(vs[v||"p"]),...(ss[sz||"m"]),borderRadius:10,border:"none",cursor:dis?"not-allowed":"pointer",display:"inline-flex",alignItems:"center",gap:6,fontWeight:600,opacity:dis?.5:1,...(st||{})}}>{children}</button>};
-// ═══ PLAN LIMITS ═══
-// PL removed for debugging
-// Gate removed
 const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div style={{display:"flex",flexDirection:"column",gap:5}}>{l&&<label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{l}</label>}{opts?<select value={v||""} onChange={e=>oc(e.target.value)} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}>{opts.map(o=><option key={o.v!=null?o.v:o} value={o.v!=null?o.v:o}>{o.l||o}</option>)}</select>:<input type={tp||"text"} value={v!=null?v:""} onChange={e=>oc(e.target.value)} placeholder={ph} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}/>}</div>;
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 export default function FinPath(){
-  const[u,setU]=useState(null);const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState("COP");const[showAuth,setShowAuth]=useState(false);const[billingCycle,setBillingCycle]=useState("anual");
+  const[u,setU]=useState(null);const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState("COP");const[showAuth,setShowAuth]=useState(false);
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
   useEffect(()=>{if(mb)sSb(false)},[mb]);
   useEffect(()=>{(async()=>{
@@ -81,12 +74,11 @@ export default function FinPath(){
     // Handle Stripe success redirect
     const params=new URLSearchParams(window.location.search);
     if(params.get('success')==='true'){
-      const paidPlan=params.get('plan')||'pro';
-      setU(p=>p?{...p,p:{...p.p,plan:paidPlan}}:p);
+      setU(p=>p?{...p,p:{...p.p,plan:'pro'}}:p);
       window.history.replaceState({},'',window.location.pathname);
     }
   })()},[]);
-  useEffect(()=>{if(u)sS(u,authUser?.id)},[u,authUser]);
+  useEffect(()=>{if(u)sS(u,authUser?.id)},[u]);
   const trm=u?.trm||4200;
   const fm=n=>{const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
   const upd=(k,v)=>setU(p=>({...p,[k]:v}));
@@ -150,7 +142,6 @@ export default function FinPath(){
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
     <div style={{width:"100%",maxWidth:420,padding:"40px 32px"}}>
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
-      <div style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:10,padding:"10px 14px",marginBottom:20,fontSize:12,color:T.tx2,display:"flex",alignItems:"center",gap:8}}>🔒 Tus datos están protegidos con encriptación. Solo tú puedes acceder a tu información financiera.</div>
       <div style={{fontSize:28,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:24}}>FINPATH</div>
       <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Bienvenido":"Crea tu cuenta"}</h2>
       <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Ingresa a tu cuenta":"Empieza gratis — sin tarjeta"}</p>
@@ -162,7 +153,6 @@ export default function FinPath(){
       <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":"Crear Cuenta Gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:12,textAlign:"center",marginTop:8,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{authError}</div>}
       <p style={{textAlign:"center",marginTop:20,color:T.tx3,fontSize:14}}>{aM==="login"?"¿Sin cuenta? ":"¿Ya tienes? "}<span onClick={()=>sAM(aM==="login"?"signup":"login")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{aM==="login"?"Regístrate":"Ingresa"}</span></p>
-      {aM==="login"&&<p style={{textAlign:"center",marginTop:8}}><span onClick={async()=>{if(!aF.e){setAuthError("Escribe tu email primero");return}try{await supabase.auth.resetPasswordForEmail(aF.e);setAuthError("✅ Te enviamos un email para restablecer tu contraseña")}catch(e){setAuthError(e.message)}}} style={{color:T.tx3,cursor:"pointer",fontSize:12}}>¿Olvidaste tu contraseña?</span></p>}
     </div>
   </div>;
 
@@ -210,33 +200,7 @@ export default function FinPath(){
         </div>
       </div>
 
-      {!has&&<div style={{marginBottom:24}}>
-        <div style={{background:"linear-gradient(135deg,rgba(34,197,94,.08),rgba(6,182,212,.05))",border:"1px solid rgba(34,197,94,.15)",borderRadius:16,padding:28,marginBottom:16}}>
-          <h3 style={{fontSize:20,fontWeight:700,margin:"0 0 8px"}}>👋 Bienvenido a FINPATH</h3>
-          <p style={{color:T.tx2,fontSize:14,margin:"0 0 20px",lineHeight:1.6}}>Tu plataforma de gestión patrimonial. Empieza agregando tus datos o explora con datos demo.</p>
-          <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr 1fr",gap:10}}>
-            <button onClick={()=>setPg("inv")} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"left"}}>
-              <div style={{fontSize:20,marginBottom:6}}>🏦</div>
-              <div style={{fontSize:13,fontWeight:700,color:T.tx,marginBottom:2}}>Agrega inversiones</div>
-              <div style={{fontSize:11,color:T.tx3}}>Propiedades, fondos, acciones</div>
-            </button>
-            <button onClick={()=>setPg("gas")} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"left"}}>
-              <div style={{fontSize:20,marginBottom:6}}>💳</div>
-              <div style={{fontSize:13,fontWeight:700,color:T.tx,marginBottom:2}}>Registra gastos</div>
-              <div style={{fontSize:11,color:T.tx3}}>Vivienda, educación, transporte</div>
-            </button>
-            <button onClick={()=>setPg("ing")} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"left"}}>
-              <div style={{fontSize:20,marginBottom:6}}>💰</div>
-              <div style={{fontSize:13,fontWeight:700,color:T.tx,marginBottom:2}}>Agrega ingresos</div>
-              <div style={{fontSize:11,color:T.tx3}}>Salario, rentas, dividendos</div>
-            </button>
-          </div>
-          <div style={{marginTop:14,display:"flex",alignItems:"center",gap:12}}>
-            <Bt sz="s" onClick={demo} st={{background:T.bg3,color:T.tx2}}>📊 Cargar datos demo</Bt>
-            <span style={{fontSize:12,color:T.tx3}}>Explora la plataforma con datos de ejemplo</span>
-          </div>
-        </div>
-      </div>}
+      {!has&&<div style={{background:"linear-gradient(135deg,rgba(34,197,94,.08),rgba(6,182,212,.05))",border:"1px solid rgba(34,197,94,.15)",borderRadius:16,padding:24,marginBottom:20,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}><div style={{flex:1}}><h3 style={{fontSize:16,fontWeight:700,margin:"0 0 6px"}}>Bienvenido a FINPATH</h3><p style={{color:T.tx2,fontSize:13,margin:0}}>Carga datos demo para explorar</p></div><Bt sz="s" onClick={demo}>Cargar Demo</Bt></div>}
 
       {/* ═══ ROW 1: Net Worth Hero + Health Score ═══ */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14,marginBottom:14}}>
@@ -1007,7 +971,7 @@ export default function FinPath(){
         
 case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={v=>upd("inv",v)}/>;
     case"ing":return<IngresosModule ingresos={u.ingresos||[]} onUpdate={v=>upd("ingresos",v)}/>;
-    case"trd":return <div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:0}}>Trading</h2><Bt sz="s" onClick={async()=>{
+    case"trd":return<div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:0}}>Trading</h2><Bt sz="s" onClick={async()=>{
               const tickers=(u.ibk||[]).map(p=>p.tk).filter(Boolean).join(",");
               if(!tickers)return alert("No hay posiciones con ticker");
               try{
@@ -1024,7 +988,7 @@ case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={
                 }else{alert("No se encontraron precios")}
               }catch(e){alert("Error: "+e.message)}
             }} st={{background:"#3b82f6",color:"#fff"}}>📊 Actualizar Precios</Bt><Bt sz="s" onClick={()=>{sF({});setMd("ib")}}>+ Posición</Bt>{(u.ibk||[]).length>1&&<Bt v="d" sz="s" onClick={()=>{if(confirm("¿Eliminar todas las posiciones?"))upd("ibk",[])}}>🗑️ Limpiar</Bt>}</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:16}}><Cd><St l="Valor" v={fm(ib.tv)} cl={T.gn}/></Cd><Cd><St l="P/L" v={fm(ib.pnl)} cl={ib.pnl>=0?T.gn:T.rd} sub={pc(ib.pp)}/></Cd><Cd><St l="Posiciones" v={ib.pos.length}/></Cd></div><Cd s={{padding:0}}><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><thead><tr>{["Ticker","Nombre","Qty","Costo","Precio","Valor","P/L","%","Upside"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Ticker","Nombre"].includes(h)?"left":"right",color:T.tx3,fontWeight:600,fontSize:10,textTransform:"uppercase",borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead><tbody>{ib.pos.map((p,i)=><tr key={i} style={{borderBottom:`1px solid ${T.border}`}}><td style={{padding:"9px 12px",fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{p.tk}</td><td style={{padding:"9px 12px"}}>{p.n}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>{p.sh}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>${p.cb.toFixed(2)}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>${p.pr.toFixed(2)}</td><td style={{padding:"9px 12px",textAlign:"right",fontWeight:600}}>{fm(p.va)}</td><td style={{padding:"9px 12px",textAlign:"right",fontWeight:600,color:p.pnl>=0?T.gn:T.rd}}>{fm(p.pnl)}</td><td style={{padding:"9px 12px",textAlign:"right",color:p.pp>=0?T.gn:T.rd}}>{pc(p.pp)}</td><td style={{padding:"9px 12px",textAlign:"right",color:T.bl}}>{pc(p.up)}</td></tr>)}</tbody></table></div></Cd><Md open={md==="ib"} onClose={()=>setMd(null)} title="Agregar Posición"><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>{[["tk","Ticker"],["n","Nombre"],["sh","Cantidad","number"],["cb","Costo","number"],["pr","Precio","number"],["tg","Objetivo","number"]].map(([k,l,tp])=><In key={k} l={l} value={f[k]} onChange={v=>sF(p=>({...p,[k]:v}))} type={tp}/>)}</div><div style={{display:"flex",gap:12,justifyContent:"flex-end"}}><Bt v="s" onClick={()=>setMd(null)}>Cancelar</Bt><Bt onClick={()=>{add("ibk",{tk:f.tk||"",n:f.n||"",sh:+f.sh||0,cb:+f.cb||0,pr:+f.pr||0,tg:+f.tg||0});setMd(null);sF({})}}>Agregar</Bt></div></Md></div>;
-    case"gas":return<GastosModule gastos={u.gas} onUpdate={v=>upd("gas",v)}/>;
+        case"gas":return<GastosModule gastos={u.gas} onUpdate={v=>upd("gas",v)}/>;
         case"deu":return<DeudasModule deudas={u.deu} inversiones={u.inv} onUpdate={v=>upd("deu",v)}/>;
     case"met":return<MetasModule metas={u.metas||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf}/>;
     case"sim":return<SimuladorAvanzado user={{inv:u.inv||[],gastos:u.gas||{},deudas:u.deu||[],ibkr:u.ibk||[],ingresos:u.ingresos||[]}} totals={t}/>;
@@ -1033,6 +997,7 @@ case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={
     case"btc":return<PensionColombia trm={u.trm||4200}/>;
     case"coach":{const msgs=adv?getCoach(adv.id):[];return<div><div style={{textAlign:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 6px"}}>Coaches Financieros IA</h2><p style={{color:T.tx3,fontSize:13}}>5 asesores analizan tus datos</p></div><div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center",marginBottom:20}}>{ADV.map(a=>{const ac=adv?.id===a.id;return<button key={a.id} onClick={()=>sAdv(a)} style={{background:ac?`linear-gradient(135deg,${a.cl}20,${a.cl}10)`:T.card,border:`1px solid ${ac?a.cl:T.border}`,color:T.tx,padding:"14px 20px",borderRadius:14,cursor:"pointer",textAlign:"center",minWidth:90}}><div style={{fontSize:22,marginBottom:4}}>{a.av}</div><div style={{fontWeight:700,fontSize:11,color:ac?a.cl:T.tx}}>{a.nm}</div><div style={{fontSize:9,color:ac?`${a.cl}aa`:T.tx3}}>{a.ti}</div></button>})}</div><Cd>{adv?<div style={{padding:20}}><div style={{display:"flex",alignItems:"center",gap:10,paddingBottom:14,borderBottom:`2px solid ${adv.cl}`,marginBottom:20}}><span style={{fontSize:28}}>{adv.av}</span><div><div style={{fontWeight:700,fontSize:15}}>{adv.nm}</div><div style={{fontSize:12,color:T.tx3}}>{adv.ti}</div></div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:6,marginBottom:20}}>{[{l:"Patrimonio",v:fm(t.nw),c:T.tx},{l:"Cash Flow",v:fm(t.cf),c:t.cf>=0?T.gn:T.rd},{l:"Independencia",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2},{l:"Deuda/Act",v:pc(t.dta),c:t.dta<30?T.gn:T.rd}].map(m=><div key={m.l} style={{background:T.bg3,padding:8,borderRadius:8,borderLeft:`3px solid ${m.c}`}}><div style={{fontSize:9,color:T.tx3,textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:15,fontWeight:700,color:m.c}}>{m.v}</div></div>)}</div>{msgs.map((msg,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:14}}><div style={{width:32,height:32,borderRadius:"50%",background:adv.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{adv.av}</div><div style={{flex:1,background:adv.bg,padding:"14px 18px",borderRadius:"0 14px 14px 14px",border:`1px solid ${adv.cl}10`}}><div style={{fontWeight:700,fontSize:13,color:adv.cl,marginBottom:6}}>{msg.t}</div><div style={{fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",color:T.tx}}>{msg.c}</div></div></div>)}</div>:<div style={{padding:56,textAlign:"center",color:T.tx3}}><div style={{fontSize:40,marginBottom:12}}>👆</div><p>Selecciona un coach</p></div>}</Cd></div>}
     case"price":{
+      const[billingCycle,setBillingCycle]=useState("anual");
       const plans=[
         {n:"Free",p:{mensual:"$0",anual:"$0"},pr:{mensual:"gratis",anual:"gratis"},save:null,
          f:["Dashboard básico","3 inversiones","Gastos y deudas","Simulador limitado","1 meta financiera"],
@@ -1085,7 +1050,7 @@ case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={
                     const r=await fetch("/.netlify/functions/stripe-checkout",{
                       method:"POST",
                       headers:{"Content-Type":"application/json"},
-                      body:JSON.stringify({priceId,email:u?.p?.email||"",userId:authUser?.id||"",successUrl:window.location.origin+"/?success=true&plan="+(pl.n==="Básico"?"basico":"pro"),cancelUrl:window.location.origin+"/?canceled=true"})
+                      body:JSON.stringify({priceId,email:u?.p?.email||"",userId:authUser?.id||"",successUrl:window.location.origin+"/?success=true",cancelUrl:window.location.origin+"/?canceled=true"})
                     });
                     const d=await r.json();
                     if(d.url)window.location.href=d.url;

@@ -18,8 +18,8 @@ exports.handler = async (event) => {
       payment_method_types: ["card"],
       customer_email: email,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl || (process.env.SITE_URL || "https://finpathia.netlify.app") + "/?session_id={CHECKOUT_SESSION_ID}",
-      cancel_url: cancelUrl || (process.env.SITE_URL || "https://finpathia.netlify.app") + "/",
+      success_url: successUrl || "https://finpathia.netlify.app/?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: cancelUrl || "https://finpathia.netlify.app/",
       metadata: { userId },
     });
 
