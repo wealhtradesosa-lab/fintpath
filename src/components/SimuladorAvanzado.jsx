@@ -268,17 +268,11 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
     let tI = 0, tG = 0;
 
 
-    // Ingresos: funds use capital slider, others use rent slider
+    // Ingresos: always use mensual as base, slider can override
     let tIng = 0;
     (user.ingresos || []).forEach((ing, ii) => {
-      const baseCap = Number(ing.capital) || 0;
-      const tasa = Number(ing.tasa) || 0;
-      if (tasa > 0 && baseCap > 0) {
-        const simCap = getVal(`cap_${ii}`, baseCap);
-        tIng += Math.round((simCap * tasa / 100) / 12);
-      } else {
-        tIng += getVal(`ing_${ii}`, ing.mensual || 0);
-      }
+      const base = (ing.mensual || 0) * (ing.moneda === "USD" ? (4200) : 1);
+      tIng += getVal(`ing_${ii}`, base);
     });
     tI += tIng;
 
