@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const T = {
   bg2: "#18181b", bg3: "#1e1e24",
@@ -38,7 +37,6 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
   const variables = totalMes - fijos;
   const byCat = {};
   allItems.forEach((i) => { byCat[i.categoria] = (byCat[i.categoria] || 0) + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)); });
-  const pieData = Object.entries(byCat).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
   const toggleSelect = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((i) => i.id)));
@@ -133,15 +131,6 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
           </div>
         </div>
 
-        {/* Pie */}
-        {pieData.length > 1 && (
-          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 12 }}>Por Categoría</div>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart><Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>{pieData.map((_, i) => <Cell key={i} fill={T.ch[i % T.ch.length]} />)}</Pie><Tooltip contentStyle={{ background: "#1e1e24", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, color: "#fafafa", fontSize: 12 }} labelStyle={{ color: "#fafafa" }} itemStyle={{ color: "#fafafa" }} formatter={(v) => fm(v)} /><Legend /></PieChart>
-            </ResponsiveContainer>
-          </div>
-        )}
       </div>
 
       {/* Form Modal */}
