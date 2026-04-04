@@ -539,17 +539,19 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
           {Object.entries(user.gastos || {}).map(([cat, items]) => (
             <div key={cat}>
               <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 700, margin: "8px 0 4px", paddingTop: 4, borderTop: "1px solid " + T.border }}>{cat}</div>
-              {items.map((g, gi) => (
-                <Slider key={`gf_${cat}_${gi}`} label={g.c} value={getVal(`gf_${cat}_${gi}`, g.m)} base={g.m}
+              {items.map((g, gi) => {
+                if (g.sim === false) return null;
+                return <Slider key={`gf_${cat}_${gi}`} label={g.c} value={getVal(`gf_${cat}_${gi}`, g.m)} base={g.m}
                   max={Math.max(g.m * 3, 500)} color={T.rd}
-                  onChange={(v) => setVal(`gf_${cat}_${gi}`, v)} sub={g.t === "fijo" || g.t === "f" ? "fijo" : "var"} />
-              ))}
+                  onChange={(v) => setVal(`gf_${cat}_${gi}`, v)} sub={g.t === "fijo" || g.t === "f" ? "fijo" : "var"} />;
+              })}
             </div>
           ))}
 
           {/* Debt payment sliders */}
           <h4 style={{ fontSize: 13, color: T.pr, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>📋 Cuotas de Deudas</h4>
           {(user.deudas || []).filter(d => (d.mt||0) > 0).map((d, di) => {
+            if (d.sim === false) return null;
             const lk = (user.inv || []).find((i) => i.id === ((d.link||d.la)));
             return (
               <Slider key={`debt_${di}`} label={(d.nombre||d.n||"")||d.n} value={getVal(`debt_${di}`, (d.pago||d.pg||0)||d.pg)} base={(d.pago||d.pg||0)||d.pg}
