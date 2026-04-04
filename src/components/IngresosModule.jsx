@@ -157,25 +157,43 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
               <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
 
-              <In l="💵 Monto mensual" value={form.mensual} onChange={(v) => setForm((p) => ({ ...p, mensual: v }))} type="number" placeholder="¿Cuánto recibes al mes?" />
+              <In l="💵 Monto mensual" value={form.mensual} onChange={(v) => {
+                const nf = { mensual: v };
+                const m = Number(v) || 0;
+                const cap = Number(form.capital) || 0;
+                const tas = Number(form.tasa) || 0;
+                if (m > 0 && cap > 0) nf.tasa = String(Math.round((m * 12 / cap) * 1000) / 10);
+                else if (m > 0 && tas > 0) nf.capital = String(Math.round((m * 12) / (tas / 100)));
+                setForm(p => ({ ...p, ...nf }));
+              }} type="number" placeholder="¿Cuánto recibes al mes?" />
               <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa, propiedad, fondo..." />
               {["Rendimiento","Dividendos","Arriendo","Inversión"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
-                  <div style={{fontSize:11,color:T.txt3,marginBottom:10}}>📊 Opcional — si conoces el capital y la tasa, calcula el monto automáticamente</div>
+                  <div style={{fontSize:11,color:T.txt3,marginBottom:10}}>📊 Con 2 de 3 valores se calcula el tercero automáticamente</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                    <In l="Capital invertido" value={form.capital} onChange={(v) => {
+                    <In l="💼 Capital invertido" value={form.capital} onChange={(v) => {
                       const nf = { capital: v };
-                      if (v && form.tasa && Number(v) > 0 && Number(form.tasa) > 0) nf.mensual = String(Math.round((Number(v) * Number(form.tasa) / 100) / 12));
+                      const cap = Number(v) || 0;
+                      const m = Number(form.mensual) || 0;
+                      const tas = Number(form.tasa) || 0;
+                      if (cap > 0 && tas > 0) nf.mensual = String(Math.round((cap * tas / 100) / 12));
+                      else if (cap > 0 && m > 0) nf.tasa = String(Math.round((m * 12 / cap) * 1000) / 10);
                       setForm(p => ({ ...p, ...nf }));
-                    }} type="number" placeholder="Opcional" />
-                    <In l="% Rentabilidad anual" value={form.tasa} onChange={(v) => {
+                    }} type="number" placeholder="Valor del activo" />
+                    <In l="📈 % Rentabilidad anual" value={form.tasa} onChange={(v) => {
                       const nf = { tasa: v };
-                      if (v && form.capital && Number(v) > 0 && Number(form.capital) > 0) nf.mensual = String(Math.round((Number(form.capital) * Number(v) / 100) / 12));
+                      const tas = Number(v) || 0;
+                      const cap = Number(form.capital) || 0;
+                      const m = Number(form.mensual) || 0;
+                      if (tas > 0 && cap > 0) nf.mensual = String(Math.round((cap * tas / 100) / 12));
+                      else if (tas > 0 && m > 0) nf.capital = String(Math.round((m * 12) / (tas / 100)));
                       setForm(p => ({ ...p, ...nf }));
-                    }} type="number" placeholder="Opcional" />
+                    }} type="number" placeholder="Ej: 24" />
                   </div>
-                  {form.capital && form.tasa && Number(form.capital) > 0 && Number(form.tasa) > 0 && (
-                    <div style={{marginTop:10,fontSize:12,color:T.green}}>💰 Calculado: {"$" + Math.round((Number(form.capital) * Number(form.tasa) / 100) / 12).toLocaleString() + "/mes"}</div>
+                  {Number(form.capital) > 0 && Number(form.tasa) > 0 && Number(form.mensual) > 0 && (
+                    <div style={{marginTop:10,padding:"10px 12px",background:"rgba(34,197,94,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.6}}>
+                      💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString()} × {form.tasa}% anual = {"$" + Math.round(Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString()}/mes
+                    </div>
                   )}
                 </div>
               )}
