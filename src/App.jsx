@@ -48,7 +48,7 @@ const ADV=[{id:"kiyosaki",nm:"Kiyosaki",av:"🟡",cl:"#eab308",bg:"rgba(234,179,
 
 const dfa=(ds,a)=>{const d=(ds||[]).filter(x=>x.la===a);return{s:d.reduce((a,x)=>a+(x.mt||0),0),p:d.reduce((a,x)=>a+(x.pg||0),0)}};
 const iM=(inv,ds)=>{let ig=0,gs=0;if(inv.un)inv.un.forEach(u=>{(u.ig||[]).forEach(i=>ig+=i.m);(u.gs||[]).forEach(g=>gs+=g.m)});else{(inv.ig||[]).forEach(i=>ig+=i.m);(inv.gs||[]).forEach(g=>gs+=g.m)}const noi=ig-gs,db=dfa(ds,inv.id),eq=inv.va-db.s,gn=inv.va-inv.vc;return{ig,gs,noi,gn,roi:inv.vc>0?(gn/inv.vc)*100:0,cap:inv.va>0?((noi*12)/inv.va)*100:0,ds:db.s,dp:db.p,eq,coc:eq>0?(((noi-db.p)*12)/eq)*100:0}};
-const cT=(inv,ds,gf,ing)=>{let ab=0,ti=0,tg=0;(inv||[]).forEach(i=>{ab+=i.va});const ingT=(ing||[]).reduce((s,i)=>i.sim===false?s:s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);ti=ingT;const td=(ds||[]).reduce((s,d)=>s+(d.mt||0),0),tc=(ds||[]).filter(d=>(d.mt||0)>0).reduce((s,d)=>s+(d.pg||0),0),gfm=Object.values(gf||{}).flat().reduce((s,g)=>s+(g.m||0),0),ni=ti-tg,te=gfm+tc,cf=ni-te;return{ab,td,nw:ab-td,ti,tg,ni,gfm,tc,te,cf,ind:te>0?(ni/te)*100:0,dta:ab>0?(td/ab)*100:0,ingT}};
+const cT=(inv,ds,gf,ing)=>{let ab=0,ti=0,tg=0;(inv||[]).forEach(i=>{ab+=i.va});const ingT=(ing||[]).reduce((s,i)=>i.sim===false?s:s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);ti=ingT;const td=(ds||[]).reduce((s,d)=>s+(d.mt||0),0),tc=(ds||[]).filter(d=>(d.mt||0)>0&&d.sim!==false).reduce((s,d)=>s+(d.pg||0),0),gfm=Object.values(gf||{}).flat().reduce((s,g)=>g.sim===false?s:s+(g.m||0),0),ni=ti-tg,te=gfm+tc,cf=ni-te;return{ab,td,nw:ab-td,ti,tg,ni,gfm,tc,te,cf,ind:te>0?(ni/te)*100:0,dta:ab>0?(td/ab)*100:0,ingT}};
 
 const Cd=({children,s,...p})=><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",...s}} {...p}>{children}</div>;
 const St=({l,v,sub,cl})=><div style={{padding:"16px 20px"}}><div style={{fontSize:10,color:T.tx3,textTransform:"uppercase",letterSpacing:1,fontWeight:600,marginBottom:6}}>{l}</div><div style={{fontSize:24,fontWeight:700,color:cl||T.tx,letterSpacing:"-0.03em"}}>{v}</div>{sub&&<div style={{fontSize:12,color:T.tx3,marginTop:3}}>{sub}</div>}</div>;
@@ -201,7 +201,7 @@ export default function FinPath(){
       {/* Greeting */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
         <div>
-          <h1 style={{fontSize:26,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>{new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}, {u.p.name.split(" ")[0]}</h1>
+          <h1 style={{fontSize:26,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>{new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}, {(u.p.name&&u.p.name!=="Usuario")?u.p.name.split(" ")[0]:(u.p.email||"").split("@")[0]}</h1>
           <p style={{color:T.tx3,fontSize:13,margin:0}}>Resumen de tu situación financiera</p>
         </div>
         <div style={{display:"flex",gap:6}}>
