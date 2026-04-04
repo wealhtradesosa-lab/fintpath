@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const T = {
+const lt = {
   bg2: "#18181b", bg3: "#1e1e24",
   card: "#111113", border: "rgba(255,255,255,0.06)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
@@ -13,10 +13,10 @@ const pc = (n) => (n || 0).toFixed(1) + "%";
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
+      <label style={{ fontSize: 11, fontWeight: 600, color: lt.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
       {options
-        ? <select value={value} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={o.v ?? o} value={o.v ?? o}>{o.l ?? o}</option>)}</select>
-        : <input type={type || "text"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }} />
+        ? <select value={value} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: lt.bg3, border: `1px solid ${lt.border}`, borderRadius: 8, padding: "10px 12px", color: lt.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={o.v ?? o} value={o.v ?? o}>{o.l ?? o}</option>)}</select>
+        : <input type={type || "text"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", background: lt.bg3, border: `1px solid ${lt.border}`, borderRadius: 8, padding: "10px 12px", color: lt.txt, fontSize: 14, outline: "none" }} />
       }
     </div>
   );
@@ -66,11 +66,11 @@ export default function DeudasModule({ deudas, inversiones, onUpdate }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Obligaciones Financieras</h2>
-          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{items.length} deudas • Saldo: <span style={{ color: T.red, fontWeight: 700 }}>{fm(totalDeuda)}</span> • Cuotas: {fm(totalCuotas)}/mes</p>
+          <p style={{ color: lt.txt3, fontSize: 13, margin: "3px 0 0" }}>{items.length} deudas • Saldo: <span style={{ color: lt.red, fontWeight: 700 }}>{fm(totalDeuda)}</span> • Cuotas: {fm(totalCuotas)}/mes</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
+            <button onClick={deleteSelected} style={{ background: lt.redDim, border: `1px solid ${lt.red}30`, color: lt.red, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
           )}
           <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "" }); setShowForm(true); }}
             style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
@@ -80,55 +80,55 @@ export default function DeudasModule({ deudas, inversiones, onUpdate }) {
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
-          { l: "Deuda Total", v: fm(totalDeuda), c: T.red },
-          { l: "Cuotas/mes", v: fm(totalCuotas), c: T.orange },
-          { l: "Cuotas/año", v: fm(totalCuotas * 12), c: T.purple },
+          { l: "Deuda Total", v: fm(totalDeuda), c: lt.red },
+          { l: "Cuotas/mes", v: fm(totalCuotas), c: lt.orange },
+          { l: "Cuotas/año", v: fm(totalCuotas * 12), c: lt.purple },
         ].map((m) => (
-          <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
-            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
+          <div key={m.l} style={{ background: lt.card, border: `1px solid ${lt.border}`, borderRadius: 14, padding: "16px 20px" }}>
+            <div style={{ fontSize: 10, color: lt.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: m.c, marginTop: 4 }}>{m.v}</div>
           </div>
         ))}
       </div>
 
       {/* Table */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ background: lt.card, border: `1px solid ${lt.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr>
-                <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${T.border}` }}>
+                <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${lt.border}` }}>
                   <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
                     style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
                 </th>
                 {["Deuda", "Tipo", "Saldo", "Cuota", "Tasa", "Activo", ""].map((h) => (
-                  <th key={h} style={{ padding: "12px 14px", textAlign: ["Deuda", "Activo", ""].includes(h) ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                  <th key={h} style={{ padding: "12px 14px", textAlign: ["Deuda", "Activo", ""].includes(h) ? "left" : "right", color: lt.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${lt.border}` }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay deudas. Agrega o importa desde Excel.</td></tr>
+                <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: lt.txt3 }}>No hay deudas. Agrega o importa desde Excel.</td></tr>
               ) : items.map((d) => {
                 const lk = d.la ? (inversiones || []).find((i) => i.id === d.la) : null;
                 return (
-                  <tr key={d.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(d.id) ? T.redDim : "transparent" }}>
+                  <tr key={d.id} style={{ borderBottom: `1px solid ${lt.border}`, background: selected.has(d.id) ? lt.redDim : "transparent" }}>
                     <td style={{ padding: "10px 12px" }}>
                       <input type="checkbox" checked={selected.has(d.id)} onChange={() => toggleSel(d.id)}
                         style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
                     </td>
                     <td style={{ padding: "10px 14px", fontWeight: 600 }}>{d.n}</td>
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>
-                      <span style={{ background: T.orange + "15", color: T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{d.tp}</span>
+                      <span style={{ background: lt.orange + "15", color: lt.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{d.tp}</span>
                     </td>
-                    <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.red, fontFamily: "monospace" }}>{fm(d.mt)}</td>
+                    <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: lt.red, fontFamily: "monospace" }}>{fm(d.mt)}</td>
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>{fm(d.pg)}</td>
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>{d.ts}%</td>
-                    <td style={{ padding: "10px 14px" }}>{lk ? <span style={{ background: T.blue + "15", color: T.blue, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{lk.n || lk.nombre || lk.name || "—"}</span> : <span style={{ color: T.txt3 }}>—</span>}</td>
+                    <td style={{ padding: "10px 14px" }}>{lk ? <span style={{ background: lt.blue + "15", color: lt.blue, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{lk.n || lk.nombre || lk.name || "—"}</span> : <span style={{ color: lt.txt3 }}>—</span>}</td>
                     <td style={{ padding: "10px 14px" }}>
-                      <button onClick={() => openEdit(d)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
+                      <button onClick={() => openEdit(d)} style={{ background: lt.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: lt.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
                       <button onClick={() => { if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== d.id)); }}
-                        style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
+                        style={{ background: lt.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: lt.red, fontSize: 11 }}>🗑️</button>
                     </td>
                   </tr>
                 );
@@ -141,10 +141,10 @@ export default function DeudasModule({ deudas, inversiones, onUpdate }) {
       {/* Form */}
       {showForm && (
         <div onClick={() => setShowForm(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 20, width: "100%", maxWidth: 520, padding: 32 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: lt.bg2, border: `1px solid ${lt.border}`, borderRadius: 20, width: "100%", maxWidth: 520, padding: 32 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editId ? "Editar Deuda" : "Agregar Deuda"}</h3>
-              <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
+              <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: lt.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <In l="Nombre" value={form.n} onChange={(v) => setForm((p) => ({ ...p, n: v }))} placeholder="Hipoteca casa" />
@@ -155,7 +155,7 @@ export default function DeudasModule({ deudas, inversiones, onUpdate }) {
               <In l="Activo Vinculado" value={form.la} onChange={(v) => setForm((p) => ({ ...p, la: v }))} options={[{ v: "", l: "Ninguno" }, ...(inversiones || []).filter(i => i).map((i) => ({ v: i.id || "", l: i.n || i.nombre || i.name || "Sin nombre" }))]} />
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
-              <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
+              <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${lt.border}`, color: lt.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
               <button onClick={handleSave} style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 700 }}>{editId ? "Guardar" : "Agregar"}</button>
             </div>
           </div>

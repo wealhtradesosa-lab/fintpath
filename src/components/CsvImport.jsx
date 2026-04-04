@@ -6,7 +6,7 @@ import * as XLSX from "xlsx";
    Reads ANY Excel format → Claude analyzes → structured data
    ═══════════════════════════════════════════════════ */
 
-const T = {
+const Xe = {
   bg2: "#18181b", bg3: "#1e1e24",
   card: "#111113", border: "rgba(255,255,255,0.06)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
@@ -211,30 +211,30 @@ export default function CsvImport({ onImport, onClose }) {
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 24, width: "100%", maxWidth: 780, maxHeight: "88vh", overflow: "auto", padding: 32 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: Xe.bg2, border: `1px solid ${Xe.border}`, borderRadius: 24, width: "100%", maxWidth: 780, maxHeight: "88vh", overflow: "auto", padding: 32 }}>
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
           <div>
-            <h3 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: T.txt }}>🧠 Importar Excel con IA</h3>
-            <p style={{ fontSize: 13, color: T.txt3, margin: "6px 0 0" }}>
+            <h3 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: Xe.txt }}>🧠 Importar Excel con IA</h3>
+            <p style={{ fontSize: 13, color: Xe.txt3, margin: "6px 0 0" }}>
               Sube cualquier Excel — la inteligencia artificial detecta y organiza tus datos automáticamente
             </p>
           </div>
-          <button onClick={onClose} style={{ background: T.bg3, border: "none", color: T.txt3, cursor: "pointer", width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>✕</button>
+          <button onClick={onClose} style={{ background: Xe.bg3, border: "none", color: Xe.txt3, cursor: "pointer", width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>✕</button>
         </div>
 
         {/* ─── STEP 1: Choose Module ─── */}
         {step === 1 && (
           <div>
-            <p style={{ color: T.txt2, fontSize: 14, marginBottom: 20 }}>¿Qué tipo de datos contiene tu archivo?</p>
+            <p style={{ color: Xe.txt2, fontSize: 14, marginBottom: 20 }}>¿Qué tipo de datos contiene tu archivo?</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {Object.entries(MODULES).map(([key, m]) => (
                 <button key={key} onClick={() => { setModule(key); setStep(2); }}
-                  style={{ padding: 24, borderRadius: 16, border: `1px solid ${T.border}`, background: T.card, cursor: "pointer", textAlign: "left", transition: "border-color 0.2s" }}>
+                  style={{ padding: 24, borderRadius: 16, border: `1px solid ${Xe.border}`, background: Xe.card, cursor: "pointer", textAlign: "left", transition: "border-color 0.2s" }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>{m.icon}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4 }}>{m.label}</div>
-                  <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: Xe.txt, marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 12, color: Xe.txt3, lineHeight: 1.4 }}>
                     La IA detecta las columnas automáticamente sin importar el formato
                   </div>
                 </button>
@@ -248,15 +248,15 @@ export default function CsvImport({ onImport, onClose }) {
           <div>
             <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
               <button onClick={() => { setStep(1); setModule(null); }}
-                style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt3, padding: "8px 16px", borderRadius: 10, cursor: "pointer", fontSize: 13 }}>← Cambiar</button>
-              <span style={{ background: T.purple + "15", color: T.purple, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 10 }}>
+                style={{ background: "transparent", border: `1px solid ${Xe.border}`, color: Xe.txt3, padding: "8px 16px", borderRadius: 10, cursor: "pointer", fontSize: 13 }}>← Cambiar</button>
+              <span style={{ background: Xe.purple + "15", color: Xe.purple, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 10 }}>
                 {MODULES[module].icon} {MODULES[module].label}
               </span>
             </div>
 
-            <div style={{ background: T.card, borderRadius: 16, padding: 20, marginBottom: 20, border: `1px solid ${T.purple}20` }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: T.purple, marginBottom: 8 }}>🧠 ¿Cómo funciona?</div>
-              <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.7 }}>
+            <div style={{ background: Xe.card, borderRadius: 16, padding: 20, marginBottom: 20, border: `1px solid ${Xe.purple}20` }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: Xe.purple, marginBottom: 8 }}>🧠 ¿Cómo funciona?</div>
+              <div style={{ fontSize: 13, color: Xe.txt2, lineHeight: 1.7 }}>
                 1. Subes tu archivo Excel — cualquier formato, cualquier estructura<br />
                 2. La IA de Claude analiza el contenido y entiende qué es cada columna<br />
                 3. Te muestra un preview de los datos detectados<br />
@@ -264,16 +264,16 @@ export default function CsvImport({ onImport, onClose }) {
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
                 {["Columnas en cualquier orden", "Headers en cualquier fila", "Fórmulas y cálculos", "Español o inglés", "COP o USD"].map((t) => (
-                  <span key={t} style={{ background: T.purple + "10", color: T.purple, fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 6 }}>{t}</span>
+                  <span key={t} style={{ background: Xe.purple + "10", color: Xe.purple, fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 6 }}>{t}</span>
                 ))}
               </div>
             </div>
 
             <div onClick={() => fileRef.current?.click()}
-              style={{ border: `2px dashed ${T.purple}40`, borderRadius: 20, padding: 56, textAlign: "center", cursor: "pointer", transition: "border-color 0.2s" }}>
+              style={{ border: `2px dashed ${Xe.purple}40`, borderRadius: 20, padding: 56, textAlign: "center", cursor: "pointer", transition: "border-color 0.2s" }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
-              <p style={{ color: T.txt, margin: "0 0 6px", fontSize: 16, fontWeight: 600 }}>Click para subir tu archivo</p>
-              <p style={{ color: T.txt3, fontSize: 13 }}>.xlsx, .xls, .csv — cualquier formato</p>
+              <p style={{ color: Xe.txt, margin: "0 0 6px", fontSize: 16, fontWeight: 600 }}>Click para subir tu archivo</p>
+              <p style={{ color: Xe.txt3, fontSize: 13 }}>.xlsx, .xls, .csv — cualquier formato</p>
               <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.txt" onChange={handleFile} style={{ display: "none" }} />
             </div>
           </div>
@@ -282,11 +282,11 @@ export default function CsvImport({ onImport, onClose }) {
         {/* ─── LOADING ─── */}
         {loading && (
           <div style={{ textAlign: "center", padding: 60 }}>
-            <div style={{ width: 64, height: 64, margin: "0 auto 20px", borderRadius: 20, background: T.purple + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 64, height: 64, margin: "0 auto 20px", borderRadius: 20, background: Xe.purple + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ fontSize: 32, animation: "spin 2s ease-in-out infinite" }}>🧠</div>
             </div>
-            <p style={{ color: T.purple, fontWeight: 700, fontSize: 16 }}>La IA está analizando tu archivo...</p>
-            <p style={{ color: T.txt3, fontSize: 13, marginTop: 6 }}>Detectando columnas, interpretando datos y organizando la información</p>
+            <p style={{ color: Xe.purple, fontWeight: 700, fontSize: 16 }}>La IA está analizando tu archivo...</p>
+            <p style={{ color: Xe.txt3, fontSize: 13, marginTop: 6 }}>Detectando columnas, interpretando datos y organizando la información</p>
             <style>{`@keyframes spin{0%{transform:rotate(0deg)}25%{transform:rotate(10deg)}75%{transform:rotate(-10deg)}100%{transform:rotate(0deg)}}`}</style>
           </div>
         )}
@@ -294,14 +294,14 @@ export default function CsvImport({ onImport, onClose }) {
         {/* ─── STEP 3: Preview & Confirm ─── */}
         {step === 3 && !loading && (
           <div>
-            <p style={{ fontSize: 13, color: T.txt3, marginBottom: 12 }}>📄 {fileName}</p>
+            <p style={{ fontSize: 13, color: Xe.txt3, marginBottom: 12 }}>📄 {fileName}</p>
 
             {/* Error */}
             {error && (
-              <div style={{ background: T.redDim, borderRadius: 14, padding: 20, marginBottom: 16, border: `1px solid ${T.red}20` }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: T.red, marginBottom: 6 }}>⚠ {error}</div>
+              <div style={{ background: Xe.redDim, borderRadius: 14, padding: 20, marginBottom: 16, border: `1px solid ${Xe.red}20` }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: Xe.red, marginBottom: 6 }}>⚠ {error}</div>
                 <button onClick={() => { setStep(2); setError(""); setParsed([]); setFileName(""); }}
-                  style={{ background: T.bg3, border: "none", color: T.txt2, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, marginTop: 8 }}>
+                  style={{ background: Xe.bg3, border: "none", color: Xe.txt2, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, marginTop: 8 }}>
                   Intentar con otro archivo
                 </button>
               </div>
@@ -311,28 +311,28 @@ export default function CsvImport({ onImport, onClose }) {
             {parsed.length > 0 && (
               <>
                 <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-                  <span style={{ background: T.greenDim, color: T.green, fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 10 }}>
+                  <span style={{ background: Xe.greenDim, color: Xe.green, fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 10 }}>
                     ✓ {parsed.length} registros detectados
                   </span>
-                  <span style={{ background: T.purple + "15", color: T.purple, fontSize: 13, fontWeight: 600, padding: "6px 16px", borderRadius: 10 }}>
+                  <span style={{ background: Xe.purple + "15", color: Xe.purple, fontSize: 13, fontWeight: 600, padding: "6px 16px", borderRadius: 10 }}>
                     🧠 Análisis IA completado
                   </span>
                 </div>
 
-                <div style={{ overflowX: "auto", maxHeight: 360, borderRadius: 14, border: `1px solid ${T.border}`, marginBottom: 20 }}>
+                <div style={{ overflowX: "auto", maxHeight: 360, borderRadius: 14, border: `1px solid ${Xe.border}`, marginBottom: 20 }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
                       <tr>
                         {Object.keys(parsed[0]).filter((k) => k !== "id" && k !== "la" && k !== "link").map((k) => (
-                          <th key={k} style={{ padding: "10px 14px", color: T.txt3, borderBottom: `1px solid ${T.border}`, textAlign: "left", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", position: "sticky", top: 0, background: T.bg2 }}>{k}</th>
+                          <th key={k} style={{ padding: "10px 14px", color: Xe.txt3, borderBottom: `1px solid ${Xe.border}`, textAlign: "left", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", position: "sticky", top: 0, background: Xe.bg2 }}>{k}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {parsed.slice(0, 15).map((row, i) => (
-                        <tr key={i} style={{ borderBottom: `1px solid ${T.border}` }}>
+                        <tr key={i} style={{ borderBottom: `1px solid ${Xe.border}` }}>
                           {Object.entries(row).filter(([k]) => k !== "id" && k !== "la" && k !== "link").map(([k, v]) => (
-                            <td key={k} style={{ padding: "10px 14px", color: T.txt, fontWeight: ["n", "nombre", "tk", "c"].includes(k) ? 700 : 400 }}>
+                            <td key={k} style={{ padding: "10px 14px", color: Xe.txt, fontWeight: ["n", "nombre", "tk", "c"].includes(k) ? 700 : 400 }}>
                               {fmt(v)}
                             </td>
                           ))}
@@ -341,17 +341,17 @@ export default function CsvImport({ onImport, onClose }) {
                     </tbody>
                   </table>
                   {parsed.length > 15 && (
-                    <p style={{ padding: 14, color: T.txt3, fontSize: 12, textAlign: "center" }}>...y {parsed.length - 15} registros más</p>
+                    <p style={{ padding: 14, color: Xe.txt3, fontSize: 12, textAlign: "center" }}>...y {parsed.length - 15} registros más</p>
                   )}
                 </div>
 
                 <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
                   <button onClick={() => { setStep(2); setParsed([]); setError(""); setFileName(""); }}
-                    style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "12px 24px", borderRadius: 12, cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
+                    style={{ background: "transparent", border: `1px solid ${Xe.border}`, color: Xe.txt2, padding: "12px 24px", borderRadius: 12, cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
                     ← Otro archivo
                   </button>
                   <button onClick={handleConfirm}
-                    style={{ background: T.green, color: "#000", padding: "12px 28px", borderRadius: 12, cursor: "pointer", fontWeight: 800, border: "none", fontSize: 14 }}>
+                    style={{ background: Xe.green, color: "#000", padding: "12px 28px", borderRadius: 12, cursor: "pointer", fontWeight: 800, border: "none", fontSize: 14 }}>
                     ✓ Importar {parsed.length} registros
                   </button>
                 </div>
@@ -360,10 +360,10 @@ export default function CsvImport({ onImport, onClose }) {
 
             {/* No results and no error */}
             {!error && parsed.length === 0 && (
-              <div style={{ textAlign: "center", padding: 40, color: T.txt3 }}>
+              <div style={{ textAlign: "center", padding: 40, color: Xe.txt3 }}>
                 <p style={{ fontSize: 14 }}>No se detectaron datos en el archivo.</p>
                 <button onClick={() => { setStep(2); setError(""); }}
-                  style={{ background: T.bg3, border: "none", color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", marginTop: 12, fontSize: 13 }}>
+                  style={{ background: Xe.bg3, border: "none", color: Xe.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", marginTop: 12, fontSize: 13 }}>
                   Intentar de nuevo
                 </button>
               </div>

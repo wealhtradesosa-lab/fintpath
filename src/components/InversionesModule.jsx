@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 
-const T = {
+const Ue = {
   bg2: "#18181b", bg3: "#1e1e24",
   card: "#111113", border: "rgba(255,255,255,0.06)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
@@ -43,10 +43,10 @@ function calcMetrics(inv, deudas) {
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
+      <label style={{ fontSize: 11, fontWeight: 600, color: Ue.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
       {options
-        ? <select value={value || ""} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={o} value={o}>{o}</option>)}</select>
-        : <input type={type || "text"} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }} />
+        ? <select value={value || ""} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: Ue.bg3, border: `1px solid ${Ue.border}`, borderRadius: 8, padding: "10px 12px", color: Ue.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+        : <input type={type || "text"} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", background: Ue.bg3, border: `1px solid ${Ue.border}`, borderRadius: 8, padding: "10px 12px", color: Ue.txt, fontSize: 14, outline: "none" }} />
       }
     </div>
   );
@@ -133,52 +133,52 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Portfolio de Inversiones</h2>
-          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>
-            {items.length} activos • Valor total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalValor)}</span>
+          <p style={{ color: Ue.txt3, fontSize: 13, margin: "3px 0 0" }}>
+            {items.length} activos • Valor total: <span style={{ color: Ue.green, fontWeight: 700 }}>{fm(totalValor)}</span>
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            <button onClick={deleteSelected} style={{ background: Ue.redDim, border: `1px solid ${Ue.red}30`, color: Ue.red, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
               🗑️ Eliminar ({selected.size})
             </button>
           )}
-          <button onClick={openAdd} style={{ background: T.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
+          <button onClick={openAdd} style={{ background: Ue.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </div>
       </div>
 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
-          { l: "Patrimonio Total", v: fm(totalValor), c: T.green },
-          { l: "Renta Mensual", v: fm(totalIncome) + "/mes", c: T.blue },
-          { l: "Activos", v: items.length, c: T.txt },
+          { l: "Patrimonio Total", v: fm(totalValor), c: Ue.green },
+          { l: "Renta Mensual", v: fm(totalIncome) + "/mes", c: Ue.blue },
+          { l: "Activos", v: items.length, c: Ue.txt },
         ].map((m) => (
-          <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
-            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
+          <div key={m.l} style={{ background: Ue.card, border: `1px solid ${Ue.border}`, borderRadius: 14, padding: "16px 20px" }}>
+            <div style={{ fontSize: 10, color: Ue.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: m.c, marginTop: 4 }}>{m.v}</div>
           </div>
         ))}
       </div>
 
       {/* Table */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ background: Ue.card, border: `1px solid ${Ue.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr>
-                <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${T.border}` }}>
+                <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${Ue.border}` }}>
                   <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
-                    style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
+                    style={{ accentColor: Ue.green, cursor: "pointer", width: 16, height: 16 }} />
                 </th>
                 {["Inversión", "Valor", "ROI", "NOI/mes", "Deuda", "Cap", ""].map((h) => (
-                  <th key={h} style={{ padding: "12px 14px", textAlign: h === "Inversión" || h === "" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                  <th key={h} style={{ padding: "12px 14px", textAlign: h === "Inversión" || h === "" ? "left" : "right", color: Ue.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${Ue.border}` }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay activos. Agrega propiedades, fondos, acciones, crypto, etc.</td></tr>
+                <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: Ue.txt3 }}>No hay activos. Agrega propiedades, fondos, acciones, crypto, etc.</td></tr>
               ) : items.map((inv) => {
                 const m = calcMetrics(inv, deudas);
                 const name = getName(inv);
@@ -186,24 +186,24 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
                 const tipo = getType(inv);
                 const va = getVA(inv);
                 return (
-                  <tr key={inv.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(inv.id) ? T.greenDim : "transparent" }}>
+                  <tr key={inv.id} style={{ borderBottom: `1px solid ${Ue.border}`, background: selected.has(inv.id) ? Ue.greenDim : "transparent" }}>
                     <td style={{ padding: "10px 12px" }}>
                       <input type="checkbox" checked={selected.has(inv.id)} onChange={() => toggleSel(inv.id)}
-                        style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
+                        style={{ accentColor: Ue.green, cursor: "pointer", width: 16, height: 16 }} />
                     </td>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ fontWeight: 600 }}>{name}</div>
-                      <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? inv.tasa + "% anual" : ""].filter(Boolean).join(" • ")}</div>
+                      <div style={{ fontSize: 11, color: Ue.txt3 }}>{[loc, tipo, inv.tasa ? inv.tasa + "% anual" : ""].filter(Boolean).join(" • ")}</div>
                     </td>
                     <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700 }}>{fm(va)}</td>
-                    <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: m.roi >= 0 ? T.green : T.red }}>{pc(m.roi)}</td>
-                    <td style={{ padding: "12px 14px", textAlign: "right", color: m.noi >= 0 ? T.green : T.red }}>{fm(m.noi)}</td>
-                    <td style={{ padding: "12px 14px", textAlign: "right", color: m.debtTotal > 0 ? T.red : T.txt3 }}>{fm(m.debtTotal)}</td>
-                    <td style={{ padding: "12px 14px", textAlign: "right", color: T.blue }}>{pc(m.cap)}</td>
+                    <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: m.roi >= 0 ? Ue.green : Ue.red }}>{pc(m.roi)}</td>
+                    <td style={{ padding: "12px 14px", textAlign: "right", color: m.noi >= 0 ? Ue.green : Ue.red }}>{fm(m.noi)}</td>
+                    <td style={{ padding: "12px 14px", textAlign: "right", color: m.debtTotal > 0 ? Ue.red : Ue.txt3 }}>{fm(m.debtTotal)}</td>
+                    <td style={{ padding: "12px 14px", textAlign: "right", color: Ue.blue }}>{pc(m.cap)}</td>
                     <td style={{ padding: "12px 14px" }}>
-                      <button onClick={() => openEdit(inv)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
+                      <button onClick={() => openEdit(inv)} style={{ background: Ue.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: Ue.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
                       <button onClick={() => { if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }}
-                        style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
+                        style={{ background: Ue.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: Ue.red, fontSize: 11 }}>🗑️</button>
                     </td>
                   </tr>
                 );
@@ -216,10 +216,10 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
       {/* Form Modal */}
       {showForm && (
         <div onClick={() => setShowForm(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 20, width: "100%", maxWidth: 560, padding: 32 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: Ue.bg2, border: `1px solid ${Ue.border}`, borderRadius: 20, width: "100%", maxWidth: 560, padding: 32 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editId ? "Editar Activo" : "Agregar Activo"}</h3>
-              <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
+              <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: Ue.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ gridColumn: "1/-1" }}>
@@ -230,27 +230,27 @@ export default function InversionesModule({ inversiones, deudas, onUpdate }) {
               <In l="Valor Actual" value={form.va} onChange={(v) => setForm((p) => ({ ...p, va: v }))} type="number" placeholder="0" />
               <In l="Valor Compra" value={form.vc} onChange={(v) => setForm((p) => ({ ...p, vc: v }))} type="number" placeholder="0" />
               <In l="% Rendimiento Anual (si genera renta)" value={form.tasa} onChange={(v) => setForm((p) => ({ ...p, tasa: v }))} type="number" placeholder="Ej: 24 para 24% anual" />
-              {!form.tasa && <div style={{ gridColumn: "1/-1", background: T.blue + "10", borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 12, color: T.blue }}>💡 Si este activo genera renta mensual (arriendo, dividendos, rendimientos), ponla en el módulo de <strong>Ingresos</strong>. Aquí solo va el valor del activo.</div>
+              {!form.tasa && <div style={{ gridColumn: "1/-1", background: Ue.blue + "10", borderRadius: 10, padding: 12 }}>
+                <div style={{ fontSize: 12, color: Ue.blue }}>💡 Si este activo genera renta mensual (arriendo, dividendos, rendimientos), ponla en el módulo de <strong>Ingresos</strong>. Aquí solo va el valor del activo.</div>
               </div>}
               {form.tasa && parseFloat(form.tasa) > 0 && parseFloat(form.va) > 0 && (
-                <div style={{ gridColumn: "1/-1", background: T.greenDim, borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Este activo generaría:</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: T.green, marginTop: 4 }}>
+                <div style={{ gridColumn: "1/-1", background: Ue.greenDim, borderRadius: 10, padding: 14 }}>
+                  <div style={{ fontSize: 12, color: Ue.green, fontWeight: 600 }}>💰 Este activo generaría:</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: Ue.green, marginTop: 4 }}>
                     {"$" + Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12).toLocaleString() + "/mes"}
                   </div>
-                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: Ue.txt3, marginTop: 2 }}>
                     = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString() + "/año"} ({form.tasa}% de {"$" + Math.round(parseFloat(form.va)).toLocaleString()})
                   </div>
-                  <div style={{ fontSize: 11, color: T.blue, marginTop: 6, fontWeight: 600 }}>
+                  <div style={{ fontSize: 11, color: Ue.blue, marginTop: 6, fontWeight: 600 }}>
                     👉 Agrega este ingreso en el módulo de Ingresos con categoría "Rendimiento"
                   </div>
                 </div>
               )}
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
-              <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
-              <button onClick={handleSave} style={{ background: T.green, color: "#000", border: "none", padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 700 }}>{editId ? "Guardar" : "Agregar"}</button>
+              <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${Ue.border}`, color: Ue.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
+              <button onClick={handleSave} style={{ background: Ue.green, color: "#000", border: "none", padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 700 }}>{editId ? "Guardar" : "Agregar"}</button>
             </div>
           </div>
         </div>
