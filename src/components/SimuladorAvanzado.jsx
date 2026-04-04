@@ -301,6 +301,8 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
       <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>Simulador de Independencia Financiera</h2><button onClick={()=>{
               const w = window.open("","_blank");
               const fecha = new Date().toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
+              const scenarioNames = {actual:"Escenario Actual",conservador:"Escenario Conservador",optimista:"Escenario Optimista",crisis:"Escenario de Crisis"};
+              const scenarioName = scenarioNames[scenario] || "Escenario Actual";
               const niveles = ["Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
               const nivel = simT.ind >= 250 ? 4 : simT.ind >= 150 ? 3 : simT.ind >= 100 ? 2 : simT.ind >= 75 ? 1 : 0;
               
@@ -322,7 +324,7 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
                 `<tr><td>${d.n||d.nombre||""}</td><td style="text-align:right">$${Math.round(d.mt||0).toLocaleString()}</td><td style="text-align:right">$${Math.round(d.pg||0).toLocaleString()}/mes</td><td style="text-align:right">${d.ts||0}%</td></tr>`
               ).join("");
               
-              const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>FINPATH Simulador</title>
+              const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>FINPATH — ${scenarioName}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,system-ui,sans-serif;font-size:11px;color:#222;padding:20px 28px;max-width:800px;margin:0 auto}
@@ -345,8 +347,8 @@ td{padding:4px 6px;border-bottom:1px solid #f0f0f0}
 .diag{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;font-size:11px;line-height:1.6}
 @media print{@page{size:letter portrait;margin:12mm}}
 </style></head><body>
-<h1>FINPATH — Informe del Simulador</h1>
-<div class="sub">${user.ingresos?.[0]?.fuente ? "" : ""}${fecha}</div>
+<h1>FINPATH — ${scenarioName}</h1>
+<div class="sub">${scenarioName} • ${fecha}</div>
 
 <div class="grid4">
   <div class="kpi"><div class="label">Ingreso neto</div><div class="val gn">$${Math.round(simT.ni).toLocaleString()}</div></div>
