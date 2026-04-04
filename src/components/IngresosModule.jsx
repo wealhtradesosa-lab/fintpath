@@ -35,8 +35,6 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
   const totalMes = allItems.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
   const fijos = allItems.filter((i) => i.tipo === "fijo").reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
   const variables = totalMes - fijos;
-  const byCat = {};
-  allItems.forEach((i) => { byCat[i.categoria] = (byCat[i.categoria] || 0) + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)); });
 
   const toggleSelect = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((i) => i.id)));
@@ -91,7 +89,7 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: pieData.length > 1 ? "2fr 1fr" : "1fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
         {/* Table with checkboxes */}
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
