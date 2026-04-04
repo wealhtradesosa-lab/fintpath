@@ -123,23 +123,6 @@ export default function LandingPage({ onGetStarted }) {
       {/* ─── PRICING ─── */}
       <div style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, padding: "80px 0" }}>
         <Section>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, maxWidth: 800, margin: "0 auto" }}>
-            {[
-              { i: "🔒", t: "Datos encriptados", d: "Tu información financiera protegida con Row Level Security" },
-              { i: "👤", t: "Solo tú accedes", d: "Cada usuario solo puede ver sus propios datos" },
-              { i: "🚫", t: "Sin publicidad", d: "No vendemos tu información. Nunca." },
-              { i: "🗑️", t: "Borras cuando quieras", d: "Tus datos son tuyos. Control total." },
-            ].map((item) => (
-              <div key={item.t} style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 24, textAlign: "center" }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>{item.i}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{item.t}</div>
-                <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>{item.d}</div>
-              </div>
-            ))}
-          </div>
-        </Section>
-
-        <Section>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Precios que hacen sentido</h2>
             <p style={{ fontSize: 16, color: T.txt2 }}>Herramientas de family office al alcance de todos</p>
