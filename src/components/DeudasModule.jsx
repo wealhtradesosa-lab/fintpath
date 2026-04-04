@@ -8,7 +8,7 @@ const T = {
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
 };
-const _fm = (n) => "$" + Math.round(n).toLocaleString("en-US");
+const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
 const pc = (n) => (n || 0).toFixed(1) + "%";
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (

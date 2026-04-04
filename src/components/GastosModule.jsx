@@ -8,7 +8,7 @@ const T = {
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", orange: "#f97316",
 };
-const _fm = (n) => "$" + Math.round(n).toLocaleString("en-US");
+const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>

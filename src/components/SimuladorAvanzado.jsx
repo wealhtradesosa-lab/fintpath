@@ -9,7 +9,7 @@ const T = {
   rd: "#ef4444", rdD: "rgba(239,68,68,0.08)",
   bl: "#3b82f6", pr: "#a78bfa", or: "#f97316", gd: "#eab308", cy: "#22d3ee",
 };
-const _fm = (n) => "$" + Math.round(n).toLocaleString("en-US");
+const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
 const pc = (n) => (n || 0).toFixed(1) + "%";
 const TT = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 };
 
@@ -281,7 +281,7 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
     let tD = 0;
     (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
     const ni = tI - tG, te = tGF + tD, cf = ni - te;
-    return { tI, tG, ni, tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0 };
+    return { tI, tG, ni, tGF, gfm:tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0 };
   }, [user, simVals, getVal]);
 
   const proj = useMemo(() => {

@@ -84,7 +84,7 @@ export default function FinPath(){
   })()},[]);
   useEffect(()=>{if(u)sS(u,authUser?.id)},[u]);
   const trm=u?.trm||4200;
-  const fm=n=>{const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
+  const fm=n=>{if(n==null||isNaN(n))return"$0";const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
   const upd=(k,v)=>setU(p=>({...p,[k]:v}));
   const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";const plan=isAdmin?"pro":(u?.p?.plan||"free");
   const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos):{},[u]);
