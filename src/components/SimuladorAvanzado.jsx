@@ -248,14 +248,8 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
 
 
     (user.ingresos || []).forEach((ing, ii) => {
-      const baseCap = Number(ing.capital) || 0;
-      const tasa = Number(ing.tasa) || 0;
-      if (tasa > 0 && baseCap > 0) {
-        nv[`cap_${ii}`] = Math.round(baseCap * f.i);
-        nv[`ing_${ii}`] = Math.round((baseCap * f.i * tasa / 100) / 12);
-      } else {
-        nv[`ing_${ii}`] = Math.round((ing.mensual || 0) * f.i);
-      }
+      const base = (ing.mensual || 0) * (ing.moneda === "USD" ? 4200 : 1);
+      nv[`ing_${ii}`] = Math.round(base * f.i);
     });
     (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
     // Standalone ingresos
@@ -466,72 +460,25 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
         <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: 8 }}>
           <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>💰 Ingresos</h4>
           {(user.ingresos || []).map((ing, ii) => {
-            const baseRenta = Number(ing.mensual) || 0;
-            const baseCap = Number(ing.capital) || 0;
-            const baseTasa = Number(ing.tasa) || 0;
-            // Use simulated capital if set, otherwise base
-            const simCap = getVal(`cap_${ii}`, baseCap);
-            const simTasa = baseTasa || (simCap > 0 && baseRenta > 0 ? Math.round((baseRenta * 12 / simCap) * 1000) / 10 : 0);
-            const hasCap = simCap > 0 && simTasa > 0;
-            const simRenta = hasCap ? Math.round((simCap * simTasa / 100) / 12) : getVal(`ing_${ii}`, baseRenta);
-            const rentDiff = simRenta - baseRenta;
-            const capDiff = simCap - baseCap;
-            // Detect if this looks like an investment income
-            const isInvType = ["Inversión","Rendimiento","Dividendos","Arriendo","Fondo","CDT"].some(t => (ing.categoria||"").includes(t) || (ing.nombre||"").toLowerCase().includes(t.toLowerCase()));
-
+            const base = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? 4200 : 1);
+            const simVal = getVal(`ing_${ii}`, base);
+            const diff = simVal - base;
             return (
               <div key={`ing_${ii}`} style={{ marginBottom: 8, background: "#22d3ee06", borderRadius: 12, border: "1px solid #22d3ee12", overflow: "hidden" }}>
                 <div style={{ padding: "12px 16px" }}>
-                  {/* Header */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{ing.nombre || "Ingreso"}</div>
-                      <div style={{ fontSize: 11, color: T.txt3 }}>{ing.categoria || ""}{simTasa > 0 ? " • " + simTasa + "% anual" : ""}</div>
+                      <div style={{ fontSize: 11, color: T.txt3 }}>{ing.categoria || ""}{ing.moneda === "USD" ? " • USD" : ""}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#22d3ee" }}>{fm(simRenta)}<span style={{ fontSize: 10, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
-                      {rentDiff !== 0 && <div style={{ fontSize: 10, color: rentDiff > 0 ? T.gn : T.rd, fontWeight: 600 }}>{rentDiff > 0 ? "+" : ""}{fm(rentDiff)}</div>}
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#22d3ee" }}>{fm(simVal)}<span style={{ fontSize: 10, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
+                      {diff !== 0 && <div style={{ fontSize: 10, color: diff > 0 ? T.gn : T.rd, fontWeight: 600 }}>{diff > 0 ? "+" : ""}{fm(diff)}</div>}
                     </div>
                   </div>
-
-                  {hasCap ? (
-                    <>
-                      {/* FUND: capital + renta side by side */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 8 }}>
-                        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
-                          <div style={{ fontSize: 10, color: T.txt3 }}>Capital invertido</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: T.txt }}>{fm(simCap)}</div>
-                          {capDiff !== 0 && <div style={{ fontSize: 10, color: capDiff > 0 ? T.gn : T.rd }}>{capDiff > 0 ? "+" : ""}{fm(capDiff)}</div>}
-                        </div>
-                        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
-                          <div style={{ fontSize: 10, color: T.txt3 }}>Renta mensual ({simTasa}%)</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: "#22d3ee" }}>{fm(simRenta)}</div>
-                          {rentDiff !== 0 && <div style={{ fontSize: 10, color: rentDiff > 0 ? T.gn : T.rd }}>{rentDiff > 0 ? "+" : ""}{fm(rentDiff)}</div>}
-                        </div>
-                      </div>
-                      <div data-no-print="true" style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>↔ Capital invertido:</div>
-                      <input type="range" min={0} max={Math.round(baseCap * 2)} step={Math.max(Math.round(baseCap * 0.002), 1000)} value={simCap}
-                        onChange={(e) => { const c = Number(e.target.value); setVal(`cap_${ii}`, c); setVal(`ing_${ii}`, Math.round((c * simTasa / 100) / 12)); }}
-                        style={{ width: "100%", accentColor: "#22d3ee", height: 6, cursor: "pointer" }} />
-                    </>
-                  ) : isInvType && !hasCap ? (
-                    <>
-                      {/* Investment-type but no capital yet: show prompt + slider */}
-                      <div data-no-print="true" style={{ background: "rgba(34,211,238,0.06)", borderRadius: 8, padding: "8px 12px", marginBottom: 8, fontSize: 11, color: "#22d3ee" }}>
-                        💡 Edita este ingreso y agrega <strong>Capital invertido</strong> y <strong>% Tasa</strong> para simular cuánto invertir
-                      </div>
-                      <input type="range" min={0} max={Math.max(baseRenta * 3, 1000)} step={Math.max(Math.round(baseRenta * 0.01), 5)} value={simRenta}
-                        onChange={(e) => setVal(`ing_${ii}`, Number(e.target.value))}
-                        style={{ width: "100%", accentColor: "#22d3ee", height: 4, cursor: "pointer" }} />
-                    </>
-                  ) : (
-                    <>
-                      {/* Simple income: just slider */}
-                      <input type="range" min={0} max={Math.max(baseRenta * 3, 1000)} step={Math.max(Math.round(baseRenta * 0.01), 5)} value={simRenta}
-                        onChange={(e) => setVal(`ing_${ii}`, Number(e.target.value))}
-                        style={{ width: "100%", accentColor: "#22d3ee", height: 4, cursor: "pointer" }} />
-                    </>
-                  )}
+                  <input type="range" min={0} max={Math.max(base * 3, 1000)} step={Math.max(Math.round(base * 0.01), 5)} value={simVal}
+                    onChange={(e) => setVal(`ing_${ii}`, Number(e.target.value))}
+                    style={{ width: "100%", accentColor: "#22d3ee", height: 4, cursor: "pointer" }} />
                 </div>
               </div>
             );
