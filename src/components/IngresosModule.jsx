@@ -155,7 +155,7 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
               <In l="Categoría" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
-              <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={[{v:"COP",l:"🇨🇴 Pesos COP"},{v:"USD",l:"🇺🇸 Dólares USD"}]} />
+              <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
 
               <In l="💵 Monto mensual" value={form.mensual} onChange={(v) => setForm((p) => ({ ...p, mensual: v }))} type="number" placeholder="¿Cuánto recibes al mes?" />
               <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa, propiedad, fondo..." />
