@@ -25,11 +25,15 @@ const sL=async(uid)=>{
     const r=localStorage.getItem(SK);return r?JSON.parse(r):null;
   }catch{return null}
 };
+let _svT=null;
 const sS=async(d,uid)=>{
   try{
     localStorage.setItem(SK,JSON.stringify(d));
     if(isSupabaseConfigured&&uid){
-      await supabase.from("user_data").upsert({id:uid,data:d,updated_at:new Date().toISOString()},{onConflict:"id"});
+      clearTimeout(_svT);
+      _svT=setTimeout(async()=>{
+        try{await supabase.from("user_data").upsert({id:uid,data:d,updated_at:new Date().toISOString()},{onConflict:"id"})}catch{}
+      },2000);
     }
   }catch{}
 };
@@ -74,11 +78,12 @@ export default function FinPath(){
     // Handle Stripe success redirect
     const params=new URLSearchParams(window.location.search);
     if(params.get('success')==='true'){
-      setU(p=>p?{...p,p:{...p.p,plan:'pro'}}:p);
+      const paidPlan=params.get('plan')||'pro';
+      setU(p=>p?{...p,p:{...p.p,plan:paidPlan}}:p);
       window.history.replaceState({},'',window.location.pathname);
     }
   })()},[]);
-  useEffect(()=>{if(u)sS(u,authUser?.id)},[u]);
+  useEffect(()=>{if(u)sS(u,authUser?.id)},[u,authUser]);
   const trm=u?.trm||4200;
   const fm=n=>{const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
   const upd=(k,v)=>setU(p=>({...p,[k]:v}));
@@ -142,6 +147,7 @@ export default function FinPath(){
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
     <div style={{width:"100%",maxWidth:420,padding:"40px 32px"}}>
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
+      <div style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:10,padding:"10px 14px",marginBottom:20,fontSize:12,color:T.tx2,display:"flex",alignItems:"center",gap:8}}>🔒 Tus datos están protegidos con encriptación. Solo tú puedes acceder.</div>
       <div style={{fontSize:28,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:24}}>FINPATH</div>
       <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Bienvenido":"Crea tu cuenta"}</h2>
       <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Ingresa a tu cuenta":"Empieza gratis — sin tarjeta"}</p>
@@ -153,6 +159,7 @@ export default function FinPath(){
       <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":"Crear Cuenta Gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:12,textAlign:"center",marginTop:8,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{authError}</div>}
       <p style={{textAlign:"center",marginTop:20,color:T.tx3,fontSize:14}}>{aM==="login"?"¿Sin cuenta? ":"¿Ya tienes? "}<span onClick={()=>sAM(aM==="login"?"signup":"login")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{aM==="login"?"Regístrate":"Ingresa"}</span></p>
+      {aM==="login"&&<p style={{textAlign:"center",marginTop:8}}><span onClick={async()=>{if(!aF.e){setAuthError("Escribe tu email primero");return}try{await supabase.auth.resetPasswordForEmail(aF.e);setAuthError("✅ Email enviado para restablecer contraseña")}catch(e){setAuthError(e.message)}}} style={{color:T.tx3,cursor:"pointer",fontSize:12}}>¿Olvidaste tu contraseña?</span></p>}
     </div>
   </div>;
 
@@ -200,7 +207,18 @@ export default function FinPath(){
         </div>
       </div>
 
-      {!has&&<div style={{background:"linear-gradient(135deg,rgba(34,197,94,.08),rgba(6,182,212,.05))",border:"1px solid rgba(34,197,94,.15)",borderRadius:16,padding:24,marginBottom:20,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}><div style={{flex:1}}><h3 style={{fontSize:16,fontWeight:700,margin:"0 0 6px"}}>Bienvenido a FINPATH</h3><p style={{color:T.tx2,fontSize:13,margin:0}}>Carga datos demo para explorar</p></div><Bt sz="s" onClick={demo}>Cargar Demo</Bt></div>}
+      {!has&&<div style={{marginBottom:24}}>
+        <div style={{background:"linear-gradient(135deg,rgba(34,197,94,.08),rgba(6,182,212,.05))",border:"1px solid rgba(34,197,94,.15)",borderRadius:16,padding:28}}>
+          <h3 style={{fontSize:20,fontWeight:700,margin:"0 0 8px"}}>👋 Bienvenido a FINPATH</h3>
+          <p style={{color:T.tx2,fontSize:14,margin:"0 0 20px",lineHeight:1.6}}>Empieza agregando tus datos o explora con datos demo.</p>
+          <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr 1fr",gap:10}}>
+            <button onClick={()=>setPg("inv")} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"left",color:T.tx}}><div style={{fontSize:20,marginBottom:6}}>🏦</div><div style={{fontSize:13,fontWeight:700,marginBottom:2}}>Inversiones</div><div style={{fontSize:11,color:T.tx3}}>Propiedades, fondos, acciones</div></button>
+            <button onClick={()=>setPg("gas")} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"left",color:T.tx}}><div style={{fontSize:20,marginBottom:6}}>💳</div><div style={{fontSize:13,fontWeight:700,marginBottom:2}}>Gastos</div><div style={{fontSize:11,color:T.tx3}}>Vivienda, educación, transporte</div></button>
+            <button onClick={()=>setPg("ing")} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"left",color:T.tx}}><div style={{fontSize:20,marginBottom:6}}>💰</div><div style={{fontSize:13,fontWeight:700,marginBottom:2}}>Ingresos</div><div style={{fontSize:11,color:T.tx3}}>Salario, rentas, dividendos</div></button>
+          </div>
+          <div style={{marginTop:14,display:"flex",alignItems:"center",gap:12}}><Bt sz="s" onClick={demo} st={{background:T.bg3,color:T.tx2}}>📊 Cargar Demo</Bt><span style={{fontSize:12,color:T.tx3}}>Explora con datos de ejemplo</span></div>
+        </div>
+      </div>}
 
       {/* ═══ ROW 1: Net Worth Hero + Health Score ═══ */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14,marginBottom:14}}>
@@ -1050,7 +1068,7 @@ case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={
                     const r=await fetch("/.netlify/functions/stripe-checkout",{
                       method:"POST",
                       headers:{"Content-Type":"application/json"},
-                      body:JSON.stringify({priceId,email:u?.p?.email||"",userId:authUser?.id||"",successUrl:window.location.origin+"/?success=true",cancelUrl:window.location.origin+"/?canceled=true"})
+                      body:JSON.stringify({priceId,email:u?.p?.email||"",userId:authUser?.id||"",successUrl:window.location.origin+"/?success=true&plan="+(pl.n==="Básico"?"basico":"pro"),cancelUrl:window.location.origin+"/?canceled=true"})
                     });
                     const d=await r.json();
                     if(d.url)window.location.href=d.url;
