@@ -78,10 +78,10 @@ export default function LandingPage({ onGetStarted }) {
             {[
               { icon: "📊", title: "Dashboard Inteligente", desc: "Patrimonio neto, cash flow, salud financiera, top performers y proyección patrimonial. Todo de un vistazo.", color: T.green },
               { icon: "📈", title: "Inversiones con Sub-Unidades", desc: "Cada propiedad con sus propias unidades, ingresos y gastos. NOI, ROI, Cap Rate, Cash-on-Cash.", color: T.blue },
-              { icon: "🖥️", title: "Simulador con Sliders", desc: "Ajusta cada ingreso y gasto individualmente. La barra de libertad financiera (Robbins) reacciona en tiempo real.", color: T.purple },
+              { icon: "🖥️", title: "Simulador con Sliders", desc: "Ajusta cada ingreso y gasto individualmente. La barra de libertad financiera reacciona en tiempo real.", color: T.purple },
               { icon: "🏛️", title: "Pensiones Colombia", desc: "Cálculo actuarial real: Colpensiones (Ley 797/2003), Fondo Privado, comparador lado a lado.", color: T.cyan },
               { icon: "₿", title: "Ahorro con Bitcoin", desc: "Simulador DCA con CAGR, regla 4% de retiro, proyección año por año. Inspirado en @AndresFelArias.", color: T.orange },
-              { icon: "🧠", title: "5 Coaches IA Legendarios", desc: "Kiyosaki, Robbins, Dalio, Buffett y Munger analizan tus datos reales y te dan recomendaciones.", color: T.gold },
+              { icon: "🧠", title: "5 Coaches IA Legendarios", desc: "5 estilos de asesoría financiera analizan tus datos reales y te dan recomendaciones personalizadas.", color: T.gold },
               { icon: "💹", title: "Portfolio de Trading", desc: "Posiciones, P/L, upside, targets por acción. Conecta tu broker favorito.", color: T.green },
               { icon: "💳", title: "Gastos & Deudas", desc: "Categorización inteligente, gastos fijos vs variables, deudas vinculadas a activos.", color: T.red },
               { icon: "📤", title: "Importar CSV", desc: "Sube tus datos desde Excel en segundos. Plantillas descargables para cada módulo.", color: T.purple },
@@ -99,7 +99,7 @@ export default function LandingPage({ onGetStarted }) {
       {/* ─── FREEDOM LEVELS ─── */}
       <Section style={{ padding: "80px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Los 5 Niveles de Tony Robbins</h2>
+          <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Los 5 Niveles de Libertad Financiera</h2>
           <p style={{ fontSize: 16, color: T.txt2 }}>FINPATH te muestra exactamente en qué nivel estás y cómo avanzar</p>
         </div>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>

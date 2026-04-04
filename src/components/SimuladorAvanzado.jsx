@@ -13,7 +13,7 @@ const fm = (n) => "$" + Math.round(n).toLocaleString("en-US");
 const pc = (n) => (n || 0).toFixed(1) + "%";
 const TT = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 };
 
-// ─── Tony Robbins 5 Levels ───
+// ─── 5 Levels of Financial Freedom ───
 const LEVELS = [
   { id: 1, name: "Seguridad", icon: "🛡️", color: "#3b82f6", factor: 0.65,
     desc: "Pasivos cubren necesidades básicas",
@@ -77,7 +77,7 @@ function FreedomBarLive({ ni, te, cf }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
           <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Tu Nivel de Libertad Financiera</h3>
-          <p style={{ fontSize: 12, color: T.txt3, margin: "3px 0 0" }}>Tony Robbins — 5 niveles • Reacciona en tiempo real</p>
+          <p style={{ fontSize: 12, color: T.txt3, margin: "3px 0 0" }}>5 niveles de libertad • Reacciona en tiempo real</p>
         </div>
         {currentData && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: currentData.color + "15", border: "1px solid " + currentData.color + "25", borderRadius: 12, padding: "8px 16px" }}>
