@@ -222,6 +222,14 @@ function FreedomBarLive({ ni, te, cf }) {
 export default function SimuladorAvanzado({ user, totals, fmt}) {
 
   const [simVals, setSimVals] = useState({});
+  // Reset sliders when underlying data changes
+  const dataHash = JSON.stringify([
+    (user.ingresos||[]).map(i=>i.mensual),
+    Object.values(user.gastos||{}).flat().map(g=>g.m),
+    (user.deudas||[]).map(d=>d.pg||d.pago)
+  ]);
+  const [lastHash, setLastHash] = useState(dataHash);
+  if(dataHash !== lastHash) { setSimVals({}); setLastHash(dataHash); }
   const [scenario, setScenario] = useState("actual");
 
   const setVal = useCallback((key, val) => {
