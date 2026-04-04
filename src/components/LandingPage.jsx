@@ -120,33 +120,35 @@ export default function LandingPage({ onGetStarted }) {
         </div>
       </Section>
 
-      {/* ─── PRICING ─── */}
-      <div style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, padding: "80px 0" }}>
-        <Section>
-          <div style={{ textAlign: "center", marginBottom: 36 }}>
-            <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 8 }}>Tu privacidad es prioridad</h2>
-            <p style={{ fontSize: 15, color: T.txt2 }}>Construido con los más altos estándares de seguridad</p>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxWidth: 900, margin: "0 auto" }}>
-            {[
-              { i: "🔒", t: "Encriptación", d: "Datos protegidos con Row Level Security" },
-              { i: "👤", t: "Acceso privado", d: "Solo tú ves tu información financiera" },
-              { i: "🚫", t: "Cero publicidad", d: "Tu información no es el producto" },
-              { i: "✊", t: "Tú mandas", d: "Exporta o borra tus datos cuando quieras" },
-            ].map((item) => (
-              <div key={item.t} style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: "24px 16px", textAlign: "center" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(34,197,94,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 12 }}>{item.i}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{item.t}</div>
-                <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>{item.d}</div>
-              </div>
-            ))}
-          </div>
-        </Section>
+      {/* ─── TRUST ─── */}
+      <Section style={{ padding: "80px 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <h2 style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>Tu privacidad es nuestra prioridad</h2>
+          <p style={{ fontSize: 15, color: T.txt2, maxWidth: 480, margin: "0 auto" }}>Construido con los más altos estándares de seguridad financiera</p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, maxWidth: 900, margin: "0 auto" }}>
+          {[
+            { i: "🔒", t: "Encriptación", d: "Datos protegidos con Row Level Security" },
+            { i: "👤", t: "Acceso privado", d: "Solo tú ves tu información financiera" },
+            { i: "🚫", t: "Cero publicidad", d: "Tu información no es el producto" },
+            { i: "✊", t: "Tú mandas", d: "Exporta o borra tus datos cuando quieras" },
+          ].map((item) => (
+            <div key={item.t} style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 16, padding: "28px 16px", textAlign: "center" }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(34,197,94,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 14 }}>{item.i}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>{item.t}</div>
+              <div style={{ fontSize: 13, color: T.txt3, lineHeight: 1.5 }}>{item.d}</div>
+            </div>
+          ))}
+        </div>
+      </Section>
 
+      {/* ─── PRICING ─── */}
+      <div style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "80px 0" }}>
         <Section>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: "1px solid " + T.border, borderRadius: 99, padding: "6px 16px", marginBottom: 20, fontSize: 13, color: T.txt2 }}>💰 Planes flexibles</div>
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Proyecta tu futuro financiero hoy</h2>
-            <p style={{ fontSize: 16, color: T.txt2 }}>Regístrate gratis y toma control de tu patrimonio</p>
+            <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Regístrate gratis y toma control de tu patrimonio</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, maxWidth: 950, margin: "0 auto" }}>
             {[
