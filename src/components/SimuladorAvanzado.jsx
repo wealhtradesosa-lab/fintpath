@@ -248,7 +248,7 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
 
 
     (user.ingresos || []).forEach((ing, ii) => {
-      const base = (ing.mensual || 0) * (ing.moneda === "USD" ? 4200 : 1);
+      const base = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? 4200 : 1);
       nv[`ing_${ii}`] = Math.round(base * f.i);
     });
     (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
@@ -461,16 +461,14 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
           <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>💰 Ingresos</h4>
           {(user.ingresos || []).map((ing, ii) => {
             const baseRenta = Number(ing.mensual) || 0;
-            const baseConverted = baseRenta * (ing.moneda === "USD" ? 4200 : 1);
             const baseCap = Number(ing.capital) || 0;
             const baseTasa = Number(ing.tasa) || 0;
-            // Auto-calc tasa from mensual+capital if not set
-            const autoTasa = baseCap > 0 && baseConverted > 0 ? Math.round((baseConverted * 12 / baseCap) * 1000) / 10 : baseTasa;
+            // Use simulated capital if set, otherwise base
             const simCap = getVal(`cap_${ii}`, baseCap);
-            const simTasa = autoTasa || 0;
+            const baseConverted = baseRenta * (ing.moneda === "USD" ? 4200 : 1);
+            const simTasa = baseTasa || (simCap > 0 && baseConverted > 0 ? Math.round((baseConverted * 12 / simCap) * 1000) / 10 : 0);
             const hasCap = simCap > 0 && simTasa > 0;
-            // If user moves capital slider, recalculate renta; otherwise use mensual
-            const simRenta = simCap !== baseCap && hasCap ? Math.round((simCap * simTasa / 100) / 12) : getVal(`ing_${ii}`, baseConverted);
+            const simRenta = hasCap ? Math.round((simCap * simTasa / 100) / 12) : getVal(`ing_${ii}`, baseConverted);
             const rentDiff = simRenta - baseConverted;
             const capDiff = simCap - baseCap;
             // Detect if this looks like an investment income
