@@ -8,7 +8,7 @@ const T = {
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
 };
-const fm = (n) => "$" + Math.round(n || 0).toLocaleString("en-US");
+const _fm = (n) => "$" + Math.round(n || 0).toLocaleString("en-US");
 const pc = (n) => (n || 0).toFixed(1) + "%";
 
 // Get name from item (handles multiple field formats)
@@ -51,7 +51,8 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function InversionesModule({ inversiones, deudas, onUpdate }) {
+export default function InversionesModule({ inversiones, deudas, onUpdate, fmt}) {
+  const fm = fmt || _fm;
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);

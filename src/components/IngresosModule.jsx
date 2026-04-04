@@ -10,7 +10,7 @@ const T = {
   blue: "#3b82f6", orange: "#f97316",
   ch: ["#22c55e", "#3b82f6", "#f97316", "#a78bfa", "#ec4899", "#22d3ee", "#eab308"],
 };
-const fm = (n) => "$" + Math.round(n).toLocaleString("en-US");
+const _fm = (n) => "$" + Math.round(n).toLocaleString("en-US");
 const CATS = ["Salario", "Arriendo", "Rendimiento", "Dividendos", "Freelance", "Negocio", "Pensión", "Comisiones", "Otro"];
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
@@ -22,7 +22,8 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, onUpdate, trm }) {
+export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
+  const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP" });

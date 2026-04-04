@@ -8,7 +8,7 @@ const T = {
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
 };
-const fm = (n) => "$" + Math.round(n).toLocaleString("en-US");
+const _fm = (n) => "$" + Math.round(n).toLocaleString("en-US");
 const pc = (n) => (n || 0).toFixed(1) + "%";
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
@@ -21,7 +21,8 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function DeudasModule({ deudas, inversiones, onUpdate }) {
+export default function DeudasModule({ deudas, inversiones, onUpdate, fmt}) {
+  const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "" });

@@ -10,11 +10,12 @@ const T = {
   gold: "#eab308", cyan: "#22d3ee",
   ch: ["#22c55e","#3b82f6","#f97316","#a78bfa","#22d3ee","#eab308","#ef4444","#ec4899"],
 };
-const fm = (n) => { if (Math.abs(n) >= 1e9) return "$" + (n/1e9).toFixed(1) + "B"; if (Math.abs(n) >= 1e6) return "$" + (n/1e6).toFixed(1) + "M"; return "$" + Math.round(n).toLocaleString(); };
+const _fm = (n) => { if (Math.abs(n) >= 1e9) return "$" + (n/1e9).toFixed(1) + "B"; if (Math.abs(n) >= 1e6) return "$" + (n/1e6).toFixed(1) + "M"; return "$" + Math.round(n).toLocaleString(); };
 const ICONS = ["🏠","🚗","🎓","✈️","💼","🏖️","💰","🏥","👶","📱","🎯","🏆"];
 const CATS = ["Propiedad","Vehículo","Educación","Viaje","Negocio","Retiro","Ahorro","Salud","Familia","Otro"];
 
-export default function MetasModule({ metas, onUpdate, cashFlow }) {
+export default function MetasModule({ metas, onUpdate, cashFlow, fmt}) {
+  const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ nombre: "", categoria: "Ahorro", monto: "", fechaMeta: "", ahorrado: "", icono: "🎯", prioridad: "media" });
