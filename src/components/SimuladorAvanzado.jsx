@@ -9,7 +9,7 @@ const T = {
   rd: "#ef4444", rdD: "rgba(239,68,68,0.08)",
   bl: "#3b82f6", pr: "#a78bfa", or: "#f97316", gd: "#eab308", cy: "#22d3ee",
 };
-const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
+const fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
 const pc = (n) => (n || 0).toFixed(1) + "%";
 const TT = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 };
 
@@ -220,7 +220,7 @@ function FreedomBarLive({ ni, te, cf }) {
 // MAIN SIMULATOR
 // ═══════════════════════════════════════
 export default function SimuladorAvanzado({ user, totals, fmt}) {
-  const fm = fmt || _fm;
+
   const [simVals, setSimVals] = useState({});
   const [scenario, setScenario] = useState("actual");
 
