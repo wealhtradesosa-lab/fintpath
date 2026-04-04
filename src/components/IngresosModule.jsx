@@ -32,11 +32,11 @@ export default function IngresosModule({ ingresos, onUpdate, trm }) {
   
   const allItems = items;
 
-  const totalMes = allItems.reduce((s, i) => s + (i.mensual || 0), 0);
-  const fijos = allItems.filter((i) => i.tipo === "fijo").reduce((s, i) => s + i.mensual, 0);
+  const totalMes = allItems.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
+  const fijos = allItems.filter((i) => i.tipo === "fijo").reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
   const variables = totalMes - fijos;
   const byCat = {};
-  allItems.forEach((i) => { byCat[i.categoria] = (byCat[i.categoria] || 0) + i.mensual; });
+  allItems.forEach((i) => { byCat[i.categoria] = (byCat[i.categoria] || 0) + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)); });
   const pieData = Object.entries(byCat).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
   const toggleSelect = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -118,7 +118,7 @@ export default function IngresosModule({ ingresos, onUpdate, trm }) {
                     <td style={{ padding: "10px 14px", fontWeight: 600 }}>{item.nombre}</td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: T.greenDim, color: T.green, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.categoria}</span></td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: (item.tipo === "fijo" ? T.blue : T.orange) + "15", color: item.tipo === "fijo" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.tipo}</span></td>
-                    <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{(item.moneda==="USD"?"USD ":"")}{fm(item.mensual)}</td>
+                    <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{item.moneda==="USD" ? "USD $"+Math.round(item.mensual).toLocaleString() : fm(item.mensual)}</td>
                     <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString() + (item.tasa ? " • " + item.tasa + "%" : "") : item.fuente || "—"}</td>
                     <td style={{ padding: "10px 14px" }}>
                       <button onClick={() => handleEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
@@ -154,7 +154,7 @@ export default function IngresosModule({ ingresos, onUpdate, trm }) {
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
               <In l="Categoría" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
-              <div style={{display:"flex",flexDirection:"column",gap:5}}><label style={{fontSize:10,fontWeight:600,color:"#71717a",textTransform:"uppercase",letterSpacing:1}}>Moneda</label><div style={{display:"flex",gap:4}}>{["COP","USD"].map(m=><button key={m} type="button" onClick={()=>setForm(p=>({...p,moneda:m}))} style={{flex:1,padding:"10px",borderRadius:8,border:"1px solid "+(form.moneda===m?"#22c55e":"rgba(255,255,255,0.06)"),background:form.moneda===m?"rgba(34,197,94,0.1)":"#1e1e24",color:form.moneda===m?"#22c55e":"#a1a1aa",cursor:"pointer",fontWeight:600,fontSize:13}}>{m==="COP"?"🇨🇴 COP":"🇺🇸 USD"}</button>)}</div></div>
+              <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={[{v:"COP",l:"🇨🇴 Pesos COP"},{v:"USD",l:"🇺🇸 Dólares USD"}]} />
 
               <In l="💵 Monto mensual" value={form.mensual} onChange={(v) => setForm((p) => ({ ...p, mensual: v }))} type="number" placeholder="¿Cuánto recibes al mes?" />
               <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa, propiedad, fondo..." />
