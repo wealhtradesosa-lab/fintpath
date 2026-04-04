@@ -989,7 +989,7 @@ export default function FinPath(){
     </div>}
         
 case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={v=>upd("inv",v)}/>;
-    case"ing":return<IngresosModule ingresos={u.ingresos||[]} onUpdate={v=>upd("ingresos",v)}/>;
+    case"ing":return<IngresosModule ingresos={u.ingresos||[]} onUpdate={v=>upd("ingresos",v)} trm={u.trm||4200}/>;
     case"trd":return gated("trd","Básico",<div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:0}}>Trading</h2><Bt sz="s" onClick={async()=>{
               const tickers=(u.ibk||[]).map(p=>p.tk).filter(Boolean).join(",");
               if(!tickers)return alert("No hay posiciones con ticker");
