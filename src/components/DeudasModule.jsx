@@ -102,14 +102,14 @@ export default function DeudasModule({ deudas, inversiones, onUpdate, fmt}) {
                   <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
                     style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
                 </th>
-                {["Deuda", "Tipo", "Saldo", "Cuota", "Tasa", "Activo", ""].map((h) => (
+                {["Deuda", "Tipo", "Saldo", "Cuota", "Tasa", "Activo", "Sim", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: ["Deuda", "Activo", ""].includes(h) ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay deudas. Agrega o importa desde Excel.</td></tr>
+                <tr><td colSpan={9} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay deudas. Agrega o importa desde Excel.</td></tr>
               ) : items.map((d) => {
                 const lk = d.la ? (inversiones || []).find((i) => i.id === d.la) : null;
                 return (

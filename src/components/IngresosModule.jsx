@@ -103,7 +103,7 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
                   <input type="checkbox" checked={allItems.length > 0 && selected.size === allItems.length} onChange={toggleAll}
                     style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
                 </th>
-                {["Nombre", "Categoría", "Tipo", "Mensual", "Capital / Fuente", ""].map((h) => (
+                {["Nombre", "Categoría", "Tipo", "Mensual", "Capital / Fuente", "Sim", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: h === "Mensual" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr></thead>

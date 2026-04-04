@@ -136,7 +136,7 @@ export default function GastosModule({ gastos, onUpdate, fmt}) {
                 <input type="checkbox" checked={allItems.length > 0 && selected.size === allItems.length} onChange={toggleAll}
                   style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
               </th>
-              {["Concepto", "Categoría", "Tipo", "Monto/mes", ""].map((h) => (
+              {["Concepto", "Categoría", "Tipo", "Monto/mes", "Sim", ""].map((h) => (
                 <th key={h} style={{ padding: "12px 14px", textAlign: h === "Monto/mes" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
               ))}
             </tr>

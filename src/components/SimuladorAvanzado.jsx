@@ -222,8 +222,6 @@ function FreedomBarLive({ ni, te, cf }) {
 export default function SimuladorAvanzado({ user, totals, fmt}) {
 
   const [simVals, setSimVals] = useState({});
-  const [disabled, setDisabled] = useState({});
-  const toggleItem = (key) => setDisabled(p => ({...p, [key]: !p[key]}));
   // Reset sliders when underlying data changes
   const dataHash = JSON.stringify([
     (user.ingresos||[]).map(i=>i.mensual),
@@ -267,7 +265,7 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
     // Ingresos: always use mensual as base, slider can override
     let tIng = 0;
     (user.ingresos || []).forEach((ing, ii) => {
-      if (disabled[`ing_${ii}`]) return;
+      if (ing.sim===false) return;
       const base = (ing.mensual || 0) * (ing.moneda === "USD" ? (4200) : 1);
       tIng += getVal(`ing_${ii}`, base);
     });
@@ -275,13 +273,13 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
 
     let tGF = 0;
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
-      items.forEach((g, gi) => { if (!disabled[`gf_${cat}_${gi}`]) tGF += getVal(`gf_${cat}_${gi}`, g.m); });
+      items.forEach((g, gi) => { if (g.sim!==false) tGF += getVal(`gf_${cat}_${gi}`, g.m); });
     });
     let tD = 0;
-    (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { if (!disabled[`debt_${di}`]) tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
+    (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { if (d.sim!==false) tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
     const ni = tI - tG, te = tGF + tD, cf = ni - te;
     return { tI, tG, ni, tGF, gfm:tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0 };
-  }, [user, simVals, getVal, disabled]);
+  }, [user, simVals, getVal]);
 
   const proj = useMemo(() => {
     return Array.from({ length: 13 }, (_, i) => ({
@@ -463,6 +461,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
         <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: 8 }}>
           <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>💰 Ingresos</h4>
           {(user.ingresos || []).map((ing, ii) => {
+            if (ing.sim === false) return null;
             const baseRenta = Number(ing.mensual) || 0;
             const baseCap = Number(ing.capital) || 0;
             const baseTasa = Number(ing.tasa) || 0;
@@ -478,12 +477,12 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             const isInvType = ["Inversión","Rendimiento","Dividendos","Arriendo","Fondo","CDT"].some(t => (ing.categoria||"").includes(t) || (ing.nombre||"").toLowerCase().includes(t.toLowerCase()));
 
             return (
-              <div key={`ing_${ii}`} style={{ marginBottom: 8, background: disabled[`ing_${ii}`]?"transparent":"#22d3ee06", borderRadius: 12, border: "1px solid "+(disabled[`ing_${ii}`]?T.border:"#22d3ee12"), overflow: "hidden", opacity: disabled[`ing_${ii}`]?.5:1, transition:"opacity 0.2s" }}>
+              <div key={`ing_${ii}`} style={{ marginBottom: 8, background: "#22d3ee06", borderRadius: 12, border: "1px solid #22d3ee12", overflow: "hidden" }}>
                 <div style={{ padding: "12px 16px" }}>
                   {/* Header */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                     <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}><button onClick={()=>toggleItem(`ing_${ii}`)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:disabled[`ing_${ii}`]?.4:1,padding:0}}>{disabled[`ing_${ii}`]?"👁️‍🗨️":"👁️"}</button><div style={{ fontSize: 14, fontWeight: 700, color: disabled[`ing_${ii}`]?T.txt3:T.txt, textDecoration: disabled[`ing_${ii}`]?"line-through":"none" }}>{ing.nombre || "Ingreso"}</div></div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{ing.nombre || "Ingreso"}</div>
                       <div style={{ fontSize: 11, color: T.txt3 }}>{ing.categoria || ""}{simTasa > 0 ? " • " + simTasa + "% anual" : ""}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
@@ -541,7 +540,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             <div key={cat}>
               <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 700, margin: "8px 0 4px", paddingTop: 4, borderTop: "1px solid " + T.border }}>{cat}</div>
               {items.map((g, gi) => (
-                <Slider key={`gf_${cat}_${gi}`} label={g.c} value={disabled[`gf_${cat}_${gi}`]?0:getVal(`gf_${cat}_${gi}`, g.m)} base={g.m} disabled={disabled[`gf_${cat}_${gi}`]} onToggle={()=>toggleItem(`gf_${cat}_${gi}`)}
+                <Slider key={`gf_${cat}_${gi}`} label={g.c} value={getVal(`gf_${cat}_${gi}`, g.m)} base={g.m}
                   max={Math.max(g.m * 3, 500)} color={T.rd}
                   onChange={(v) => setVal(`gf_${cat}_${gi}`, v)} sub={g.t === "fijo" || g.t === "f" ? "fijo" : "var"} />
               ))}
