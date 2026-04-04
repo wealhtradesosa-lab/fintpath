@@ -155,44 +155,26 @@ export default function IngresosModule({ ingresos, onUpdate }) {
               <In l="Categoría" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
 
-              {["Rendimiento","Dividendos","Arriendo","Inversión"].includes(form.categoria) ? (
-                <>
-                  <In l="💼 Capital invertido" value={form.capital} onChange={(v) => {
-                    const newForm = { capital: v };
-                    if (v && form.tasa && Number(v) > 0 && Number(form.tasa) > 0) {
-                      newForm.mensual = String(Math.round((Number(v) * Number(form.tasa) / 100) / 12));
-                    }
-                    setForm(p => ({ ...p, ...newForm }));
-                  }} type="number" placeholder="Cuánto invertiste" />
-                  <In l="📈 % Rentabilidad anual" value={form.tasa} onChange={(v) => {
-                    const newForm = { tasa: v };
-                    if (v && form.capital && Number(v) > 0 && Number(form.capital) > 0) {
-                      newForm.mensual = String(Math.round((Number(form.capital) * Number(v) / 100) / 12));
-                    }
-                    setForm(p => ({ ...p, ...newForm }));
-                  }} type="number" placeholder="Ej: 23" />
-                </>
-              ) : (
-                <>
-                  <In l="Monto Mensual" value={form.mensual} onChange={(v) => setForm((p) => ({ ...p, mensual: v }))} type="number" placeholder="0" />
-                  <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa / Cliente" />
-                </>
-              )}
-
-              {form.capital && form.tasa && Number(form.capital) > 0 && Number(form.tasa) > 0 && (
-                <div style={{ gridColumn: "1/-1", background: T.greenDim, borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Ingreso mensual calculado:</div>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: T.green, marginTop: 4 }}>
-                    {"$" + Math.round((Number(form.capital) * Number(form.tasa) / 100) / 12).toLocaleString() + "/mes"}
+              <In l="💵 Monto mensual" value={form.mensual} onChange={(v) => setForm((p) => ({ ...p, mensual: v }))} type="number" placeholder="¿Cuánto recibes al mes?" />
+              <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa, propiedad, fondo..." />
+              {["Rendimiento","Dividendos","Arriendo","Inversión"].includes(form.categoria) && (
+                <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,color:T.txt3,marginBottom:10}}>📊 Opcional — si conoces el capital y la tasa, calcula el monto automáticamente</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                    <In l="Capital invertido" value={form.capital} onChange={(v) => {
+                      const nf = { capital: v };
+                      if (v && form.tasa && Number(v) > 0 && Number(form.tasa) > 0) nf.mensual = String(Math.round((Number(v) * Number(form.tasa) / 100) / 12));
+                      setForm(p => ({ ...p, ...nf }));
+                    }} type="number" placeholder="Opcional" />
+                    <In l="% Rentabilidad anual" value={form.tasa} onChange={(v) => {
+                      const nf = { tasa: v };
+                      if (v && form.capital && Number(v) > 0 && Number(form.capital) > 0) nf.mensual = String(Math.round((Number(form.capital) * Number(v) / 100) / 12));
+                      setForm(p => ({ ...p, ...nf }));
+                    }} type="number" placeholder="Opcional" />
                   </div>
-                  <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>
-                    Capital {"$" + Number(form.capital).toLocaleString()} × {form.tasa}% anual ÷ 12
-                  </div>
-                </div>
-              )}
-              {!["Rendimiento","Dividendos","Arriendo","Inversión"].includes(form.categoria) && !form.mensual && (
-                <div style={{ gridColumn: "1/-1" }}>
-                  <In l="Monto Mensual" value={form.mensual} onChange={(v) => setForm((p) => ({ ...p, mensual: v }))} type="number" placeholder="0" />
+                  {form.capital && form.tasa && Number(form.capital) > 0 && Number(form.tasa) > 0 && (
+                    <div style={{marginTop:10,fontSize:12,color:T.green}}>💰 Calculado: {"$" + Math.round((Number(form.capital) * Number(form.tasa) / 100) / 12).toLocaleString() + "/mes"}</div>
+                  )}
                 </div>
               )}
             </div>
