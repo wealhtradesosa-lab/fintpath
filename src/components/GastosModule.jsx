@@ -143,7 +143,7 @@ export default function GastosModule({ gastos, onUpdate, fmt}) {
           </thead>
           <tbody>
             {allItems.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay gastos. Agrega o importa desde Excel.</td></tr>
+              <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay gastos. Agrega o importa desde Excel.</td></tr>
             ) : allItems.map((item) => (
               <tr key={item.key} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.key) ? T.redDim : "transparent" }}>
                 <td style={{ padding: "10px 12px" }}>
