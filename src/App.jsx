@@ -21,11 +21,13 @@ const sL=async(uid)=>{
   try{
     if(isSupabaseConfigured&&uid){
       const{data,error}=await supabase.from("user_data").select("data").eq("id",uid).single();
-      if(!error&&data?.data){localStorage.setItem(SK,JSON.stringify(data.data));return data.data}
+      if(!error&&data?.data){const sd=sanitize(data.data);localStorage.setItem(SK,JSON.stringify(sd));return sd}
     }
-    const r=localStorage.getItem(SK);return r?JSON.parse(r):null;
+    const r=localStorage.getItem(SK);return r?sanitize(JSON.parse(r)):null;
   }catch{return null}
 };
+
+const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.inv)d.inv=[];if(!d.deu)d.deu=[];if(!d.gas)d.gas={};if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};return d};
 let _svT=null;
 const takeSnapshot=(d)=>{
   try{
@@ -84,11 +86,11 @@ export default function FinPath(){
       if(session?.user){
         setAuthUser(session.user);
         const d=await sL(session.user.id);
-        if(d)setU(d);
+        if(d)setU(sanitize(d));
       }
     }else{
       const d=await sL();
-      if(d)setU(d);
+      if(d)setU(sanitize(d));
     }
     setLd(false);
     try{const r=await fetch('/api/trm');const j=await r.json();if(j.trm)setU(p=>p?{...p,trm:j.trm,trmSrc:j.source}:p)}catch{}
@@ -1347,7 +1349,7 @@ case"inv":return<InversionesModule inversiones={(u&&u.inv)||[]} deudas={(u&&u.de
         </div>
       </div>}
     case"set":return<div><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 20px"}}>Configuración</h2><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:20}}><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Perfil</h3><div style={{display:"flex",flexDirection:"column",gap:14}}><In l="Nombre" value={u?.p?.name||""} onChange={v=>setU(p=>({...p,p:{...p.p,name:v}}))}/><In l="Email" value={u?.p?.email||""} onChange={v=>setU(p=>({...p,p:{...p.p,email:v}}))}/><In l="TRM (Tasa de cambio USD→COP)" value={(u&&u.trm)} onChange={v=>setU(p=>({...p,trm:+v||4200}))} type="number"/></div></Cd><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Datos</h3><div style={{display:"flex",flexDirection:"column",gap:10}}><div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan:</strong> {plan} {plan!=="pro"&&<span onClick={()=>setPg("price")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}> → Upgrade</span>}</div>{isAdmin&&<div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan manual:</strong> <select value={(u?.p?.plan)||"free"} onChange={e=>setU(p=>({...p,p:{...p.p,plan:e.target.value}}))} style={{background:T.bg2,border:"1px solid "+T.border,color:T.tx,padding:"4px 8px",borderRadius:6,marginLeft:8}}><option value="free">Free</option><option value="basico">Básico</option><option value="pro">Pro</option></select></div>}<Bt v="s" onClick={()=>{if(((u&&u.inv)||[]).length>0||Object.keys((u&&u.gas)||{}).length>0){if(!confirm("⚠️ Esto reemplazará tus datos actuales con datos de ejemplo. ¿Continuar?"))return}demo()}} st={{justifyContent:"center"}}>Cargar datos demo</Bt><Bt v="s" onClick={()=>{const d=localStorage.getItem(SK);if(!d)return alert("No hay datos");const b=new Blob([d],{type:"application/json"});const u2=URL.createObjectURL(b);const a=document.createElement("a");a.href=u2;a.download="finpathia-backup-"+new Date().toISOString().split("T")[0]+".json";a.click()}} st={{justifyContent:"center"}}>📥 Exportar Datos (JSON)</Bt>
-              <Bt v="s" onClick={()=>{const inp=document.createElement("input");inp.type="file";inp.accept=".json";inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);localStorage.setItem(SK,JSON.stringify(d));setU(d);alert("✅ Datos importados correctamente. Recarga la página.")}catch{alert("Error: archivo no válido")}};r.readAsText(f)};inp.click()}} st={{justifyContent:"center"}}>📤 Importar Datos (JSON)</Bt>
+              <Bt v="s" onClick={()=>{const inp=document.createElement("input");inp.type="file";inp.accept=".json";inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);localStorage.setItem(SK,JSON.stringify(d));setU(sanitize(d));alert("✅ Datos importados correctamente. Recarga la página.")}catch{alert("Error: archivo no válido")}};r.readAsText(f)};inp.click()}} st={{justifyContent:"center"}}>📤 Importar Datos (JSON)</Bt>
               <Bt v="d" onClick={()=>{if(confirm("⚠️ ¿Borrar TODOS tus datos financieros? Esta acción no se puede deshacer. Tus inversiones, gastos, ingresos y deudas se perderán."))setU(mkU(u?.p?.name||"Usuario",u?.p?.email||""))}} st={{justifyContent:"center"}}>Borrar Datos</Bt></div></Cd></div>
       <div style={{marginTop:20,padding:16,background:T.bg3,borderRadius:12,fontSize:11,color:T.tx3,lineHeight:1.6,textAlign:"center"}}>
         FINPATHIA v12.5 • Tus datos están protegidos con encriptación<br/>
