@@ -40,11 +40,11 @@ export default function LandingPage({ onGetStarted }) {
             Gestión patrimonial inteligente para familias
           </div>
           <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: 20, maxWidth: 800, margin: "0 auto 20px" }}>
-            Tu camino a la{" "}
-            <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>libertad financiera</span>
+            Tu family office, potenciado por{" "}
+            <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>inteligencia artificial</span>
           </h1>
           <p style={{ fontSize: 18, color: T.txt2, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 36px" }}>
-            Controla tu patrimonio, simula escenarios y recibe asesoría financiera personalizada con inteligencia artificial. Todo en un solo lugar.
+            Centraliza tu vida financiera en un sistema profesional: análisis, simulaciones, proyecciones y decisiones guiadas por expertos en patrimonio, pensiones y estrategia financiera.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
