@@ -189,33 +189,32 @@ export default function FinPath(){
     // Contextual quote based on situation
     const quotes = {
       cashflow: [
-        {cond:pctPasivo<30, q:""Los ricos no trabajan por dinero. Hacen que el dinero trabaje para ellos."", a:"— Filosofía del ingreso pasivo"},
-        {cond:pctPasivo>=30&&pctPasivo<70, q:""La clave no es cuánto ganas, sino cuánto conservas y cuánto trabaja para ti."", a:"— Principio del flujo de efectivo"},
-        {cond:pctPasivo>=70, q:""La verdadera riqueza se mide en tiempo: ¿cuántos meses puedes vivir sin trabajar?"", a:"— Definición de libertad financiera"},
+        {cond:pctPasivo<30, q:"\u00ABLos ricos no trabajan por dinero. Hacen que el dinero trabaje para ellos.\u00BB", a:"\u2014 Filosofía del ingreso pasivo"},
+        {cond:pctPasivo>=30&&pctPasivo<70, q:"\u00ABLa clave no es cuánto ganas, sino cuánto conservas y cuánto trabaja para ti.\u00BB", a:"\u2014 Principio del flujo de efectivo"},
+        {cond:pctPasivo>=70, q:"\u00ABLa verdadera riqueza se mide en tiempo: ¿cuántos meses puedes vivir sin trabajar?\u00BB", a:"\u2014 Definición de libertad financiera"},
       ],
       estratega: [
-        {cond:t.ind<65, q:""El viaje de mil millas comienza con un solo paso. Tu primer paso es cubrir lo básico."", a:"— Principio de seguridad financiera"},
-        {cond:t.ind>=65&&t.ind<100, q:""No se trata de ser rico, se trata de tener opciones. Estás construyendo opciones."", a:"— Filosofía de la vitalidad financiera"},
-        {cond:t.ind>=100&&t.ind<150, q:""La independencia no es tener millones, es que tus activos paguen tus cuentas."", a:"— Definición de independencia"},
-        {cond:t.ind>=150, q:""El dinero es un terrible amo pero un excelente sirviente. El tuyo ya trabaja para ti."", a:"— Sabiduría financiera clásica"},
+        {cond:t.ind<65, q:"\u00ABEl viaje de mil millas comienza con un solo paso. Tu primer paso es cubrir lo básico.\u00BB", a:"\u2014 Principio de seguridad financiera"},
+        {cond:t.ind>=65&&t.ind<100, q:"\u00ABNo se trata de ser rico, se trata de tener opciones. Estás construyendo opciones.\u00BB", a:"\u2014 Filosofía de la vitalidad financiera"},
+        {cond:t.ind>=100&&t.ind<150, q:"\u00ABLa independencia no es tener millones, es que tus activos paguen tus cuentas.\u00BB", a:"\u2014 Definición de independencia"},
+        {cond:t.ind>=150, q:"\u00ABEl dinero es un terrible amo pero un excelente sirviente. El tuyo ya trabaja para ti.\u00BB", a:"\u2014 Sabiduría financiera clásica"},
       ],
       riesgo: [
-        {cond:rePct>50, q:""La diversificación es protección contra la ignorancia. Concentración es para los que saben lo que hacen."", a:"— Principio de gestión de riesgo"},
-        {cond:runway<6, q:""La regla #1 es nunca perder dinero. La regla #2 es nunca olvidar la regla #1."", a:"— Filosofía de preservación de capital"},
-        {cond:rePct<=50&&runway>=6, q:""El riesgo viene de no saber lo que estás haciendo. Tú sí lo sabes."", a:"— Principio del inversionista informado"},
+        {cond:rePct>50, q:"\u00ABLa diversificación es protección contra la ignorancia. Concentración es para los que saben lo que hacen.\u00BB", a:"\u2014 Principio de gestión de riesgo"},
+        {cond:runway<6, q:"\u00ABRegla #1: nunca perder dinero. Regla #2: nunca olvidar la regla #1.\u00BB", a:"\u2014 Filosofía de preservación de capital"},
+        {cond:true, q:"\u00ABEl riesgo viene de no saber lo que estás haciendo. Tú sí lo sabes.\u00BB", a:"\u2014 Principio del inversionista informado"},
       ],
       valor: [
-        {cond:t.dta>40, q:""El precio es lo que pagas, el valor es lo que recibes. Asegúrate de recibir más."", a:"— Filosofía de inversión en valor"},
-        {cond:t.dta<=40&&topA.length>0&&iM(topA[0],deu).roi>10, q:""Solo compra algo que estarías feliz de tener si el mercado cerrara por 10 años."", a:"— Principio de inversión a largo plazo"},
-        {cond:true, q:""Es mucho mejor comprar una empresa maravillosa a un precio justo que una empresa justa a un precio maravilloso."", a:"— Filosofía de calidad sobre precio"},
+        {cond:t.dta>40, q:"\u00ABEl precio es lo que pagas, el valor es lo que recibes. Asegúrate de recibir más.\u00BB", a:"\u2014 Filosofía de inversión en valor"},
+        {cond:t.dta<=40&&topA.length>0, q:"\u00ABSolo compra algo que estarías feliz de tener si el mercado cerrara por 10 años.\u00BB", a:"\u2014 Principio de inversión a largo plazo"},
+        {cond:true, q:"\u00ABEs mejor comprar algo maravilloso a un precio justo que algo justo a un precio maravilloso.\u00BB", a:"\u2014 Filosofía de calidad sobre precio"},
       ],
       contrarian: [
-        {cond:t.dta>30, q:""No es lo que compras, es lo que pagas. Y la deuda cara es el precio más alto."", a:"— Principio de inversión inteligente"},
-        {cond:(100-pctPasivo)>80, q:""Todo el mundo tiene un plan hasta que la vida te golpea. ¿Cuál es tu plan B?"", a:"— Filosofía de preparación"},
-        {cond:true, q:""La sabiduría en inversiones se resume en saber qué evitar. Evita lo estúpido y lo brillante llega solo."", a:"— Principio de inversión por eliminación"},
+        {cond:t.dta>30, q:"\u00ABNo es lo que compras, es lo que pagas. Y la deuda cara es el precio más alto.\u00BB", a:"\u2014 Principio de inversión inteligente"},
+        {cond:(100-pctPasivo)>80, q:"\u00ABTodo el mundo tiene un plan hasta que la vida te golpea. ¿Cuál es tu plan B?\u00BB", a:"\u2014 Filosofía de preparación"},
+        {cond:true, q:"\u00ABLa sabiduría en inversiones: saber qué evitar. Evita lo estúpido y lo brillante llega solo.\u00BB", a:"\u2014 Principio de inversión por eliminación"},
       ],
     };
-
     const qs = quotes[id] || [];
     const q = qs.find(x => x.cond);
     if(q) msgs.push({t:"💬 Reflexión", c:q.q+"\n\n"+q.a});
