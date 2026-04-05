@@ -149,7 +149,7 @@ export default function FinPath(){
 
   if(!u&&!showAuth)return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
-    <style>{\`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}\`}</style>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
     <div style={{width:"100%",maxWidth:420,padding:"40px 32px"}}>
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
       <div style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:10,padding:"10px 14px",marginBottom:20,fontSize:12,color:T.tx2,display:"flex",alignItems:"center",gap:8}}>🔒 Tus datos financieros están protegidos con encriptación y solo tú puedes acceder.</div>
