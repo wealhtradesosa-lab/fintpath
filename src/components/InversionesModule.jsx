@@ -56,7 +56,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "" });
+  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = inversiones || [];
@@ -82,14 +82,14 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
       tipo: String(getType(inv) || "Real Estate"),
       va: String(getVA(inv) || ""),
       vc: String(getVC(inv) || ""),
-      tasa: String(inv.tasa || ""),
+      tasa: String(inv.tasa || ""), renta: String(inv.renta || ""),
     });
     setEditId(inv.id);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "" });
     setEditId(null);
     setShowForm(true);
   };
@@ -108,9 +108,9 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
       tipo: form.tipo || "Other",
       va,
       vc: Math.abs(parseFloat(form.vc)) || 0,
-      tasa,
+      tasa, renta: ingresoCalc||parseFloat(form.renta)||0, ig: (ingresoCalc||parseFloat(form.renta))>0?[{c:"Renta",m:ingresoCalc||parseFloat(form.renta)||0,t:"f"}]:[],
     };
-    // tasa is stored for display only - actual income goes in Ingresos module
+    // Store income directly on investment so coaches can read it
     if (editId) {
       onUpdate(items.map((i) => {
         if (i.id !== editId) return i;
@@ -124,7 +124,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "" });
   };
 
   
@@ -253,8 +253,23 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["Real Estate", "Fondo de Inversión", "CDT", "Acciones", "Crypto", "Bodega", "Lote", "Vehículo", "Local Comercial", "Renta Fija", "Negocio", "Cash", "Otro"]} />
               <In l="Valor Actual" value={form.va} onChange={(v) => setForm((p) => ({ ...p, va: v }))} type="number" placeholder="0" />
               <In l="Valor Compra" value={form.vc} onChange={(v) => setForm((p) => ({ ...p, vc: v }))} type="number" placeholder="0" />
-              <In l="% Rendimiento Anual (si genera renta)" value={form.tasa} onChange={(v) => setForm((p) => ({ ...p, tasa: v }))} type="number" placeholder="Ej: 24 para 24% anual" />
-              {!form.tasa && <div style={{ gridColumn: "1/-1", background: T.blue + "10", borderRadius: 10, padding: 12 }}>
+              <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
+                <div style={{fontSize:11,fontWeight:700,color:T.txt2,marginBottom:10}}>💰 ¿Este activo genera ingreso?</div>
+                <div style={{display:"flex",gap:8}}>
+                  <div style={{flex:1}}><In l="Renta mensual ($)" value={form.renta} onChange={(v) => {
+                    const va=parseFloat(form.va)||0;
+                    const newTasa=va>0&&v?((parseFloat(v)*12/va)*100).toFixed(1):"";
+                    setForm((p) => ({ ...p, renta: v, tasa: newTasa }));
+                  }} type="number" placeholder="Ej: 4200000" /></div>
+                  <div style={{flex:1}}><In l="% Rendimiento anual" value={form.tasa} onChange={(v) => {
+                    const va=parseFloat(form.va)||0;
+                    const newRenta=va>0&&v?Math.round(va*parseFloat(v)/100/12):"";
+                    setForm((p) => ({ ...p, tasa: v, renta: String(newRenta) }));
+                  }} type="number" placeholder="Ej: 12" /></div>
+                </div>
+                <div style={{fontSize:10,color:T.txt3,marginTop:6}}>Ingresa uno y el otro se calcula automáticamente. Si no genera ingreso, déjalos vacíos.</div>
+              </div>
+              {false && <div style={{ gridColumn: "1/-1", background: T.blue + "10", borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 12, color: T.blue }}>💡 Si este activo genera renta mensual (arriendo, dividendos, rendimientos), ponla en el módulo de <strong>Ingresos</strong>. Aquí solo va el valor del activo.</div>
               </div>}
               {form.tasa && parseFloat(form.tasa) > 0 && parseFloat(form.va) > 0 && (
