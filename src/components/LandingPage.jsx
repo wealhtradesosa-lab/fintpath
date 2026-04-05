@@ -26,8 +26,8 @@ export default function LandingPage({ onGetStarted }) {
           <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onGetStarted} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>Ingresar</button>
-          <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>Empezar Gratis</button>
+          <button onClick={onGetStarted} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>Iniciar Sesión</button>
+          <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>Prueba 14 días gratis</button>
         </div>
       </nav>
 
@@ -37,14 +37,14 @@ export default function LandingPage({ onGetStarted }) {
         <div style={{ position: "relative", zIndex: 1 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 99, padding: "6px 16px", marginBottom: 24, fontSize: 13, color: T.txt2 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, display: "inline-block" }} />
-            Plataforma financiera premium para familias
+            Gestión patrimonial inteligente para familias
           </div>
           <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: 20, maxWidth: 800, margin: "0 auto 20px" }}>
             Tu camino a la{" "}
             <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>libertad financiera</span>
           </h1>
           <p style={{ fontSize: 18, color: T.txt2, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 36px" }}>
-            Controla inversiones, gastos, deudas y patrimonio. Simula escenarios. Planifica tu pensión. 5 coaches IA legendarios te guían.
+            Controla tu patrimonio, simula escenarios y recibe asesoría financiera personalizada con inteligencia artificial. Todo en un solo lugar.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
@@ -119,8 +119,8 @@ export default function LandingPage({ onGetStarted }) {
                 ))}
               </div>
               <div style={{ marginTop: 24, display: "flex", alignItems: "center", gap: 12 }}>
-                <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "14px 32px", borderRadius: 12, cursor: "pointer", fontSize: 15, fontWeight: 700 }}>Comenzar con Plan Pro →</button>
-                <span style={{ fontSize: 12, color: T.txt3 }}>Incluido en Plan Pro • $16/mes</span>
+                <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "14px 32px", borderRadius: 12, cursor: "pointer", fontSize: 15, fontWeight: 700 }}>Probar 14 días gratis →</button>
+                <span style={{ fontSize: 12, color: T.txt3 }}>14 días gratis • Luego $16/mes</span>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -195,9 +195,9 @@ export default function LandingPage({ onGetStarted }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, maxWidth: 950, margin: "0 auto" }}>
             {[
-              { name: "Free", price: "$0", per: "gratis", features: ["Dashboard básico", "3 inversiones", "Gastos y deudas", "Simulador limitado", "1 meta financiera"], no: ["Coaches IA", "Pensiones", "Trading", "Alertas", "PDF"], cta: "Empezar Gratis" },
-              { name: "Básico", price: "$8", per: "/mes", sub: "$6/mes anual — Ahorra 25%", features: ["Todo en Free", "10 inversiones y 10 metas", "Simulador avanzado", "Pensiones Colpensiones + BTC", "Trading portfolio", "CSV import + PDF export"], no: ["Coaches IA", "Family Office KPIs", "Alertas inteligentes"], cta: "Comenzar" },
-              { name: "Pro", price: "$16", per: "/mes", sub: "$12/mes anual — Ahorra 25%", features: ["Todo en Básico", "Inversiones ilimitadas", "5 Coaches IA", "Family Office KPIs", "Alertas inteligentes", "Percentil de riqueza", "Benchmark vs mercado", "Resumen ejecutivo", "Soporte prioritario"], no: [], accent: true, cta: "Comenzar Pro" },
+              { name: "Free", price: "$0", per: "gratis", features: ["Dashboard básico", "3 inversiones", "Gastos y deudas", "Simulador limitado", "1 meta financiera"], no: ["Coaches IA", "Pensiones", "Trading", "Alertas", "PDF"], cta: "Comenzar gratis" },
+              { name: "Básico", price: "$8", per: "/mes", sub: "$6/mes anual — Ahorra 25%", features: ["Todo en Free", "10 inversiones y 10 metas", "Simulador avanzado", "Pensiones Colpensiones + BTC", "Trading portfolio", "CSV import + PDF export"], no: ["Coaches IA", "Family Office KPIs", "Alertas inteligentes"], cta: "Probar 14 días" },
+              { name: "Pro", price: "$16", per: "/mes", sub: "$12/mes anual — Ahorra 25%", features: ["Todo en Básico", "Inversiones ilimitadas", "5 Coaches IA", "Family Office KPIs", "Alertas inteligentes", "Percentil de riqueza", "Benchmark vs mercado", "Resumen ejecutivo", "Soporte prioritario"], no: [], accent: true, cta: "Probar 14 días Pro" },
             ].map((p) => (
               <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative" }}>
                 {p.accent && <div style={{ background: T.grad, color: "#000", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>MÁS POPULAR</div>}
@@ -235,10 +235,10 @@ export default function LandingPage({ onGetStarted }) {
       {/* ─── CTA FINAL ─── */}
       <Section style={{ padding: "80px 24px", textAlign: "center" }}>
         <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>
-          Empieza hoy. Es <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>gratis</span>.
+          Tu patrimonio merece atención profesional. Es <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>gratis</span>.
         </h2>
         <p style={{ fontSize: 16, color: T.txt2, marginBottom: 32, maxWidth: 480, margin: "0 auto 32px" }}>
-          Más de 12 módulos financieros. 5 coaches IA. Simulador de pensiones. Ahorro en BTC. Todo en un solo lugar.
+          Gestión patrimonial con inteligencia artificial. 14 días de prueba gratuita, sin tarjeta de crédito.
         </p>
         <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "18px 48px", borderRadius: 14, cursor: "pointer", fontSize: 18, fontWeight: 800, letterSpacing: "-0.01em" }}>
           Comenzar 14 días Pro gratis →
