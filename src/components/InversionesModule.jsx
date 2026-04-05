@@ -172,7 +172,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
                   <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
                     style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
                 </th>
-                {["Inversión", "Valor", "ROI", "NOI/mes", "Deuda", "Cap", ""].map((h) => (
+                {["Inversión", "Valor", "ROI", "NOI/mes", "Deuda", "Cap", "Sim", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: h === "Inversión" || h === "" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr>
@@ -222,11 +222,14 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
                     <td style={{ padding: "12px 14px", textAlign: "right", color: m.noi >= 0 ? T.green : T.red }}>{fm(m.noi)}</td>
                     <td style={{ padding: "12px 14px", textAlign: "right", color: m.debtTotal > 0 ? T.red : T.txt3 }}>{fm(m.debtTotal)}</td>
                     <td style={{ padding: "12px 14px", textAlign: "right", color: T.blue }}>{pc(m.cap)}</td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <button onClick={() => openEdit(inv)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
+                    <td style={{ padding: "12px 14px", textAlign: "center" }}>
+                      <button onClick={() => { onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{inv.sim===false?"⬜":"✅"}</button>
+                    </td>
+                    <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
+                      <button onClick={() => openEdit(inv)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11 }}>✏️</button>
                       <button onClick={() => { if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }}
                         style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
-                    </td>
+                    </div></td>
                   </tr>
                 );
               })}
