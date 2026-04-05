@@ -78,7 +78,26 @@ export default function AsesorIA({ user, totals, userId }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [remaining, setRemaining] = useState(30);
+  const DAILY_LIMIT = 15;
+  const getUsage = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("fp3_ai_usage") || "{}");
+      const today = new Date().toISOString().split("T")[0];
+      if (stored.date !== today) return { date: today, count: 0 };
+      return stored;
+    } catch { return { date: new Date().toISOString().split("T")[0], count: 0 }; }
+  };
+  const [remaining, setRemaining] = useState(() => {
+    const usage = getUsage();
+    return Math.max(0, DAILY_LIMIT - usage.count);
+  });
+  const trackUsage = () => {
+    const usage = getUsage();
+    usage.count++;
+    localStorage.setItem("fp3_ai_usage", JSON.stringify(usage));
+    setRemaining(Math.max(0, DAILY_LIMIT - usage.count));
+    return usage.count <= DAILY_LIMIT;
+  };
   const chatRef = useRef(null);
 
   useEffect(() => {
@@ -92,6 +111,10 @@ export default function AsesorIA({ user, totals, userId }) {
     setError("");
 
     const newMsgs = [...msgs, { role: "user", content: q }];
+    if (remaining <= 0) {
+      setError("Has alcanzado el límite de " + DAILY_LIMIT + " consultas diarias. Se renueva mañana.");
+      return;
+    }
     setMsgs(newMsgs);
     setLoading(true);
 
@@ -106,7 +129,7 @@ export default function AsesorIA({ user, totals, userId }) {
       });
 
       const data = await res.json();
-      if (data.remaining !== undefined) setRemaining(data.remaining);
+      trackUsage();
       if (data.error) {
         setError(data.error);
       } else {

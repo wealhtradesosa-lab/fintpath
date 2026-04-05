@@ -1,6 +1,6 @@
 // In-memory rate limit (resets on cold start, ~10min)
 const rateLimits = {};
-const LIMIT = 30;
+const LIMIT = 15;
 const WINDOW = 24 * 60 * 60 * 1000;
 
 const EXPERT_KNOWLEDGE = `
@@ -150,7 +150,7 @@ exports.handler = async (event) => {
     
     if (remaining < 0) {
       return { statusCode: 429, headers, body: JSON.stringify({ 
-        error: "Límite de 30 consultas diarias alcanzado. Se renueva en " + Math.round((rateLimits[key].start + WINDOW - now) / 3600000) + " horas.",
+        error: "Límite de 15 consultas diarias alcanzado. Se renueva en " + Math.round((rateLimits[key].start + WINDOW - now) / 3600000) + " horas.",
         remaining: 0
       })};
     }
