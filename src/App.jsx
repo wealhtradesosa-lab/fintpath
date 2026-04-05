@@ -229,9 +229,9 @@ export default function FinPath(){
       msgs.push({t:"🌐 Moneda",c:"COP: "+fm(currencies.COP)+"/mes ("+(100-usdPct).toFixed(0)+"%)\nUSD: "+fm(currencies.USD)+"/mes ("+usdPct.toFixed(0)+"%)\n\n"+(usdPct<15?"🟡 Muy expuesto al COP. Recomendación: 30%+ en USD.":usdPct>70?"🟡 Muy dolarizado.":"🟢 Buena diversificación.")});
     }
     else if(id==="valor"){
-      msgs.push({t:"📊 Ranking por Rendimiento",c:topA.slice(0,6).map((a,i)=>{const m=iM(a,deu);const coc=a.va>0?(m.noi*12/a.va*100):0;return(i+1)+". "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+"\n   NOI: "+fm(m.noi)+"/mes • ROI: "+pc(m.roi)+" • Cash/Cash: "+coc.toFixed(1)+"%"+(coc<5&&(a.va||0)>50000000?" ⚠ Bajo":"")}).join("\n\n")+"\n\n💡 Cash-on-Cash <5% es inferior a un CDT."});
-      const over=topA.filter(a=>iM(a,deu).roi<3&&(a.va||0)>100000000);
-      const under=topA.filter(a=>iM(a,deu).roi>15);
+      msgs.push({t:"📊 Ranking por Rendimiento",c:topA.slice(0,6).map((a,i)=>{const m=iM(a,deu);const tasa=+(a.tasa||0);const rendimiento=tasa>0?tasa:(m.cap>0?m.cap:m.roi);return(i+1)+". "+(a.n||a.nombre||"Sin nombre")+"\n   "+(m.noi>0?"NOI: "+fm(m.noi)+"/mes • ":"")+"Rendimiento: "+rendimiento.toFixed(1)+"%"+(tasa>0?" (tasa)":m.cap>0?" (cap rate)":" (plusvalía)")}).join("\n\n")});
+      const over=topA.filter(a=>{const m=iM(a,deu);const tasa=+(a.tasa||0);const totalReturn=Math.max(m.roi,tasa,m.cap);return totalReturn<3&&(a.va||0)>100000000});
+      const under=topA.filter(a=>{const m=iM(a,deu);const tasa=+(a.tasa||0);const totalReturn=Math.max(m.roi,tasa,m.cap);return totalReturn>15});
       msgs.push({t:"🔍 Optimización",c:(over.length>0?"Bajo rendimiento (<3%):\n"+over.map(a=>"  ⚠ "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+": "+fm(a.va)+" al "+pc(iM(a,deu).roi)+"\n    → En CDT al 10% generaría "+fm(a.va*0.1/12)+"/mes").join("\n")+"\n\n":"")+(under.length>0?"Estrellas (>15%):\n"+under.map(a=>"  ⭐ "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+": "+pc(iM(a,deu).roi)+" — Invierte más aquí").join("\n"):"Todo en rango normal.")});
       msgs.push({t:"💎 Margen de Seguridad",c:"Deuda/Activos: "+pc(t.dta)+"\n\n"+(t.dta<20?"🟢 Excelente margen. Puedes apalancarte.":t.dta<40?"🟡 Aceptable. No más deuda.":"🔴 Riesgo alto. Paga deuda primero.")+(worstDebt?"\n\nDeuda más cara: "+worstDebt.n+" al "+worstDebt.ts+"%. Pagarla = invertir al "+worstDebt.ts+"% garantizado.":"")});
     }
