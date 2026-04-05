@@ -61,7 +61,7 @@ const DD=[{id:"d1",n:"Hipoteca Apto Bogotá",tp:"Hipoteca",mt:380000000,ts:12,pg
 const DG={Vivienda:[{c:"Arriendo vivienda",m:4500000,t:"f"},{c:"Servicios públicos",m:450000,t:"f"},{c:"Internet + TV",m:180000,t:"f"}],Alimentación:[{c:"Mercado semanal",m:1800000,t:"f"},{c:"Restaurantes",m:600000,t:"v"}],Transporte:[{c:"Gasolina",m:400000,t:"v"},{c:"Parqueadero",m:250000,t:"f"},{c:"SOAT + Tecno",m:120000,t:"f"}],Educación:[{c:"Colegio hijo 1",m:2300000,t:"f"},{c:"Colegio hijo 2",m:2300000,t:"f"},{c:"Extracurriculares",m:400000,t:"v"}],Seguros:[{c:"Seguro vida",m:350000,t:"f"},{c:"Salud prepagada",m:680000,t:"f"}],Personal:[{c:"Ropa y cuidado",m:300000,t:"v"},{c:"Entretenimiento",m:500000,t:"v"},{c:"Suscripciones",m:120000,t:"f"}]};
 const DIB=[{tk:"AAPL",n:"Apple",sh:25,pr:198.5,cb:155,tg:220},{tk:"MSFT",n:"Microsoft",sh:15,pr:430,cb:310,tg:500},{tk:"TSLA",n:"Tesla",sh:8,pr:382,cb:442,tg:500},{tk:"NVDA",n:"NVIDIA",sh:12,pr:920,cb:480,tg:1100},{tk:"PLTR",n:"Palantir",sh:50,pr:25,cb:17.5,tg:35},{tk:"QQQ",n:"QQQ",sh:20,pr:485,cb:380,tg:550},{tk:"BTC",n:"Bitcoin",sh:0.15,pr:68000,cb:42000,tg:120000}];
 const DING=[{id:"ing_1",nombre:"Salario Principal",categoria:"Salario",mensual:12500000,tipo:"fijo",fuente:"Empresa Tech"},{id:"ing_2",nombre:"Arriendo Apto Bogotá",categoria:"Arriendo",mensual:4200000,tipo:"fijo",fuente:"Apto 301 Chapinero",capital:"850000000",tasa:"5.9"},{id:"ing_3",nombre:"Airbnb Orlando",categoria:"Arriendo",mensual:3200,tipo:"variable",fuente:"Casa Orlando",moneda:"USD"},{id:"ing_4",nombre:"Rendimiento CDT",categoria:"Rendimiento",mensual:860000,tipo:"fijo",fuente:"CDT Davivienda",capital:"86000000",tasa:"12"},{id:"ing_5",nombre:"Freelance Consultoría",categoria:"Freelance",mensual:3500000,tipo:"variable",fuente:"Clientes varios"}];
-const ADV=[{id:"kiyosaki",nm:"Inversionista",av:"🟡",cl:"#eab308",bg:"rgba(234,179,8,0.06)",ti:"Activos & Pasivos"},{id:"robbins",nm:"Estratega",av:"🔴",cl:"#ef4444",bg:"rgba(239,68,68,0.06)",ti:"Libertad Financiera"},{id:"dalio",nm:"Analista",av:"🔵",cl:"#3b82f6",bg:"rgba(59,130,246,0.06)",ti:"Macro & Riesgo"},{id:"buffett",nm:"Valorador",av:"🟢",cl:"#22c55e",bg:"rgba(34,197,94,0.06)",ti:"Valor & Paciencia"},{id:"munger",nm:"Pensador",av:"🟣",cl:"#a78bfa",bg:"rgba(167,139,250,0.06)",ti:"Modelos Mentales"}];
+const ADV=[{id:"cashflow",nm:"Cashflowista",av:"💰",cl:"#eab308",bg:"rgba(234,179,8,0.06)",ti:"Ingreso Pasivo"},{id:"estratega",nm:"Estratega",av:"🎯",cl:"#ef4444",bg:"rgba(239,68,68,0.06)",ti:"5 Niveles de Libertad"},{id:"riesgo",nm:"Ingeniero",av:"🔬",cl:"#3b82f6",bg:"rgba(59,130,246,0.06)",ti:"Riesgo & Diversificación"},{id:"valor",nm:"Fundamentalista",av:"📊",cl:"#22c55e",bg:"rgba(34,197,94,0.06)",ti:"Valor & Rendimiento"},{id:"contrarian",nm:"Contrarian",av:"🧠",cl:"#a78bfa",bg:"rgba(167,139,250,0.06)",ti:"Lo que NO hacer"}];
 
 const dfa=(ds,a)=>{const d=(ds||[]).filter(x=>x.la===a);return{s:d.reduce((a,x)=>a+(x.mt||0),0),p:d.reduce((a,x)=>a+(x.pg||0),0)}};
 const iM=(inv,ds)=>{let ig=0,gs=0;if(inv.un)inv.un.forEach(u=>{(u.ig||[]).forEach(i=>ig+=i.m);(u.gs||[]).forEach(g=>gs+=g.m)});else{(inv.ig||[]).forEach(i=>ig+=i.m);(inv.gs||[]).forEach(g=>gs+=g.m)}const noi=ig-gs,db=dfa(ds,inv.id),eq=inv.va-db.s,gn=inv.va-inv.vc;return{ig,gs,noi,gn,roi:inv.vc>0?(gn/inv.vc)*100:0,cap:inv.va>0?((noi*12)/inv.va)*100:0,ds:db.s,dp:db.p,eq,coc:eq>0?(((noi-db.p)*12)/eq)*100:0}};
@@ -117,76 +117,77 @@ export default function FinPath(){
   const gateOverlay=(planNeeded)=><div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10,background:"rgba(9,9,11,0.5)",backdropFilter:"blur(2px)",borderRadius:16}}><div style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:20,padding:"40px 48px",textAlign:"center",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:340}}><div style={{width:56,height:56,borderRadius:16,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 16px"}}>🔒</div><div style={{fontSize:18,fontWeight:800,marginBottom:6,letterSpacing:"-0.02em"}}>{"Plan "+planNeeded}</div><div style={{fontSize:13,color:T.tx3,marginBottom:20,lineHeight:1.5}}>{"Desbloquea esta función con el plan "+planNeeded}</div><Bt onClick={()=>setPg("price")} st={{width:"100%",justifyContent:"center"}}>Upgrade a {planNeeded}</Bt></div></div>;
   const gated=(feat,planNeeded,content)=>{const ok=plan==="pro"||(plan==="basico"&&["trd","pen","btc","sim"].includes(feat));if(ok||plan===planNeeded)return content;return<div style={{position:"relative"}}><div style={{filter:"blur(4px)",pointerEvents:"none",opacity:.3,maxHeight:400,overflow:"hidden"}}>{content}</div>{gateOverlay(planNeeded)}</div>};
 
-  const getCoach=id=>{if(!u||!t.ab)return[];const ok=t.cf>=0,gap=Math.abs(t.cf),topA=(u.inv||[]).map(i=>({...i,...iM(i,u.deu)})).sort((a,b)=>b.noi-a.noi).slice(0,5),hi=(u.deu||[]).sort((a,b)=>b.ts-a.ts),cv=t.tc>0?(t.ni/t.tc):99;const msgs=[];const intro={kiyosaki:"Veamos tu cuadrante. Estás pasando de Empleado a Inversionista.",robbins:"He revisado cada número. Posición MUY interesante.",dalio:"Analicemos tu máquina financiera.",buffett:"No necesitas ser genio — solo temperamento.",munger:"Antes de qué hacer, pensemos qué NO hacer."};
-  msgs.push({t:"📊 Diagnóstico",c:`${intro[id]}\n\n• Patrimonio: ${fm(t.nw)}\n• Ingreso Neto: ${fm(t.ni)}/mes\n• Egresos: ${fm(t.te)}/mes\n• Cash Flow: ${fm(t.cf)}/mes\n• Independencia: ${pc(t.ind)}${t.ind>=100?" ✅":""}\n• Deuda/Activos: ${pc(t.dta)} • Cobertura: ${cv.toFixed(1)}x`});
-  if(topA.length)msgs.push({t:"🏆 Top Activos",c:topA.map(a=>`• ${a.n}: NOI ${fm(a.noi)}/mes • ROI ${pc(a.roi)} • Cap ${pc(a.cap)}${a.ds>0?` • Deuda ${fm(a.ds)}`:""}`).join("\n")});
-  if(hi.length){const da={kiyosaki:"No toda deuda es mala — deuda que compra activos = buena.",robbins:"Ataca la de mayor tasa primero.",dalio:"¿Tu apalancamiento es sostenible bajo estrés?",buffett:"Yo evito deuda.",munger:"Deuda >15% es suicidio financiero."};msgs.push({t:"💳 Deudas",c:`${da[id]}\n\n${hi.slice(0,4).map(d=>`• ${d.n}: ${fm(d.mt)} al ${d.ts}% → ${fm(d.pg)}/mes`).join("\n")}\n\nTotal: ${fm(t.td)}`})}
-  let v;if(ok&&t.ind>120)v={kiyosaki:"🟢 ¡SÍ! Activos > gastos. ¡Cuadrante I!",robbins:"🟢 ¡La libertad está aquí!",dalio:"🟢 Sí, pero buffer 6 meses primero.",buffett:"🟢 Sí. Mantén disciplina.",munger:"🟢 Puedes. Pero libertad sin propósito es la peor."};
-  else if(ok)v={kiyosaki:"🟡 Filo de navaja. "+fm(t.cf)+"/mes pero frágil.",robbins:"🟡 ¡Casi! 90 días más.",dalio:"🟡 Riesgo medio-alto.",buffett:"🟡 Paciencia. 3-6 meses más.",munger:"🟡 Todavía no."};
-  else v={kiyosaki:"🔴 TODAVÍA NO. Gap "+fm(gap)+"/mes.",robbins:"🔴 Hoy no, pero PRONTO.",dalio:"🔴 Déficit insostenible sin empleo.",buffett:"🔴 No te apures.",munger:"🔴 Sería estúpido hoy."};
-  msgs.push({t:"⚡ ¿Puedes Renunciar?",c:v[id]});return msgs};
-  const[authUser,setAuthUser]=useState(null);
-  const[authLoading,setAuthLoading]=useState(false);
-  const[authError,setAuthError]=useState("");
-  const auth=async()=>{
-    if(!aF.e||!aF.p){setAuthError("Ingresa email y contraseña");return}
-    setAuthLoading(true);setAuthError("");
-    try{
-    if(isSupabaseConfigured){
-      if(aM==="login"){
-        const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
-        if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);
-        const d=await sL(data.user.id);
-        if(d)setU(d);else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id)}
-      }else{
-        // Signup via Netlify function (auto-confirms email)
-        const sr=await fetch("/.netlify/functions/auth-signup",{
-          method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({email:aF.e,password:aF.p,name:aF.n||""})
-        });
-        const srd=await sr.json();
-        if(!sr.ok){setAuthError(srd.error||"Error creando cuenta");setAuthLoading(false);return}
-        // Now sign in with the new account
-        const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
-        if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id);
-      }
-    }else{setU(mkU(aF.n||"Usuario",aF.e))}
-    }catch(e){setAuthError("Error: "+e.message)}
-    setAuthLoading(false);
-  };
-  const logout=async()=>{
-    try{if(isSupabaseConfigured&&supabase)await supabase.auth.signOut();localStorage.removeItem(SK)}catch{}
-    setU(null);setAuthUser(null);
-  };
-  const demo=()=>setU(p=>({...p,inv:[...DI],deu:[...DD],gas:JSON.parse(JSON.stringify(DG)),ibk:[...DIB],ingresos:[...DING]}));
-  const handleImport=(key,rows,isGastos)=>{if(isGastos){const g={...u.gas};rows.forEach(r=>{const cat=r.cat||"Otro";if(!g[cat])g[cat]=[];g[cat].push({c:r.c,m:r.m,t:r.t});});upd("gas",g);}else{upd(key,[...(u[key]||[]),...rows]);}};
-  const add=(m,it)=>upd(m,[...(u[m]||[]),{...it,id:m[0]+Date.now()}]);
-  const del=(m,id)=>{if(confirm("¿Eliminar este registro?"))upd(m,(u[m]||[]).filter(i=>i.id!==id))};
+  const getCoach=id=>{
+    if(!u)return[];
+    const msgs=[];
+    const inv=u.inv||[],deu=u.deu||[],gas=u.gas||{},ing=u.ingresos||[];
+    const topA=inv.map(i=>({...i,...iM(i,deu)})).sort((a,b)=>b.noi-a.noi);
+    const hiDebt=deu.filter(d=>(d.mt||0)>0).sort((a,b)=>b.ts-a.ts);
+    const gasCats=Object.entries(gas).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+(g.m||0),0),items})).sort((a,b)=>b.total-a.total);
+    const pasivos=ing.filter(i=>["Arriendo","Rendimiento","Dividendos","Inversión"].includes(i.categoria));
+    const activos=ing.filter(i=>!["Arriendo","Rendimiento","Dividendos","Inversión"].includes(i.categoria));
+    const ingPasivo=pasivos.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);
+    const ingActivo=activos.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);
+    const pctPasivo=t.ni>0?(ingPasivo/t.ni*100):0;
+    const runway=t.te>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i)=>s+(i.va||0),0)/t.te):0;
+    const fireNum=t.te*12*25;
+    const firePct=fireNum>0?(t.nw/fireNum*100):0;
+    const reVal=inv.filter(i=>(i.tp||i.tipo)==="Real Estate").reduce((s,i)=>s+(i.va||0),0);
+    const rePct=t.nw>0?(reVal/t.nw*100):0;
+    const topGasto=gasCats[0];
+    const worstDebt=hiDebt[0];
+    const worstAsset=topA.length>1?topA[topA.length-1]:null;
+    const currencies={COP:0,USD:0};
+    ing.forEach(i=>{if(i.moneda==="USD")currencies.USD+=(i.mensual||0)*4200;else currencies.COP+=(i.mensual||0)});
+    const usdPct=t.ni>0?(currencies.USD/t.ni*100):0;
 
-  if(ld)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui"}}><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:900,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>FINPATHIA</div><div style={{width:40,height:3,background:"linear-gradient(90deg,#22c55e,#3b82f6)",borderRadius:2,margin:"16px auto",animation:"pulse 1.5s infinite"}}></div><div style={{color:T.tx3,fontSize:12}}>Cargando tu patrimonio...</div></div></div>;
-
-  if(!u&&!showAuth)return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
-  if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}@keyframes slideUp{from{transform:translateX(-50%) translateY(20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
-    <div style={{width:"100%",maxWidth:420,padding:"40px 32px"}}>
-      <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
-      <div style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:10,padding:"10px 14px",marginBottom:20,fontSize:12,color:T.tx2,display:"flex",alignItems:"center",gap:8}}>🔒 Tus datos financieros están protegidos con encriptación y solo tú puedes acceder.</div>
-      <div style={{fontSize:28,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:24}}>FINPATHIA</div>
-      <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Inicia sesión":"Crea tu cuenta gratis"}</h2>
-      <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Ingresa a tu cuenta":"Empieza gratis — sin tarjeta"}</p>
-      <div style={{display:"flex",flexDirection:"column",gap:16,marginBottom:24}}>
-        {aM==="signup"&&<In l="Nombre" value={aF.n} onChange={v=>sAF(p=>({...p,n:v}))} placeholder="Tu nombre"/>}
-        <In l="Email" value={aF.e} onChange={v=>sAF(p=>({...p,e:v}))} type="email" placeholder="tu@email.com"/>
-        <In l="Contraseña" value={aF.p} onChange={v=>sAF(p=>({...p,p:v}))} type="password" placeholder="••••••••"/>
-      </div>
-      <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":"Crear cuenta — 14 días Pro gratis"}</Bt>
-      {authError&&<div style={{color:T.rd,fontSize:12,textAlign:"center",marginTop:8,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{authError}</div>}
-      <p style={{textAlign:"center",marginTop:20,color:T.tx3,fontSize:14}}>{aM==="login"?"¿No tienes cuenta? ":"¿Ya tienes cuenta? "}<span onClick={()=>sAM(aM==="login"?"signup":"login")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{aM==="login"?"Regístrate":"Ingresa"}</span></p>
-      {aM==="login"&&<p style={{textAlign:"center",marginTop:8}}><span onClick={async()=>{if(!aF.e){setAuthError("Escribe tu email primero");return}try{await supabase.auth.resetPasswordForEmail(aF.e);setAuthError("✅ Email enviado")}catch(e){setAuthError(e.message)}}} style={{color:T.tx3,cursor:"pointer",fontSize:12}}>¿Olvidaste tu contraseña?</span></p>}
-    </div>
-  </div>;
+    if(id==="cashflow"){
+      msgs.push({t:"💰 Cuadrante de Ingresos",c:"Ingresos activos (trabajo): "+fm(ingActivo)+"/mes ("+(100-pctPasivo).toFixed(0)+"%)\nIngresos pasivos (activos): "+fm(ingPasivo)+"/mes ("+pctPasivo.toFixed(0)+"%)\n\n"+(pctPasivo>=70?"🟢 EXCELENTE: Más del 70% es pasivo. Eres inversionista.":pctPasivo>=40?"🟡 EN TRANSICIÓN: "+pctPasivo.toFixed(0)+"% pasivo. Aún dependes del trabajo.":"🔴 DEPENDIENTE: Solo "+pctPasivo.toFixed(0)+"% pasivo. Si dejas de trabajar, pierdes el "+(100-pctPasivo).toFixed(0)+"%.")});
+      const prodA=inv.filter(i=>iM(i,deu).noi>0);
+      const deadA=inv.filter(i=>iM(i,deu).noi<=0&&(i.va||0)>0);
+      msgs.push({t:"📦 Activos Productivos vs Improductivos",c:"Productivos ("+prodA.length+"):\n"+prodA.slice(0,5).map(a=>"  ✅ "+a.n+": +"+fm(iM(a,deu).noi)+"/mes").join("\n")+(deadA.length>0?"\n\nImproductivos ("+deadA.length+"):\n"+deadA.slice(0,3).map(a=>"  ❌ "+a.n+": "+fm(a.va)+" sin generar ingreso").join("\n")+"\n\n💡 Capital dormido = oportunidad perdida.":"\n\n✅ Todos tus activos generan ingreso.")});
+      msgs.push({t:"🎯 Plan de Acción",c:"1. Convertir "+fm(deadA.reduce((s,i)=>s+(i.va||0),0))+" improductivos en productivos\n2. Reinvertir cash flow "+fm(t.cf)+"/mes en activos que generen ingreso\n3. Meta: ingreso pasivo > "+fm(t.te)+"/mes (hoy: "+fm(ingPasivo)+")\n4. Cada "+fm(Math.abs(t.cf)*12)+" ahorrado/año te acerca "+((t.te>0?Math.abs(t.cf)*12/t.te*100:0)).toFixed(0)+"% más"});
+    }
+    else if(id==="estratega"){
+      const level=t.ind>=250?5:t.ind>=150?4:t.ind>=100?3:t.ind>=82.5?2:t.ind>=65?1:0;
+      const names=["Pre-Seguridad","Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
+      const factors=[0.65,0.825,1.0,1.5,2.5];
+      const nextNeeded=t.te*(factors[Math.min(level,4)]||1);
+      const gap=Math.max(0,nextNeeded-t.ni);
+      msgs.push({t:"🏔️ Nivel "+level+"/5: "+names[level],c:"Independencia: "+pc(t.ind)+"\nIngresos: "+fm(t.ni)+"/mes vs Egresos: "+fm(t.te)+"/mes\n\n"+(level>=3?"🟢 ¡Independencia alcanzada! Tus ingresos cubren 100% de gastos.":"Siguiente: "+names[Math.min(level+1,5)]+" → necesitas "+fm(nextNeeded)+"/mes\nTe faltan: "+fm(gap)+"/mes de ingreso adicional")});
+      msgs.push({t:"📅 Proyección FIRE",c:"FIRE Number: "+fm(fireNum)+"\nProgreso: "+firePct.toFixed(0)+"% ("+fm(t.nw)+" / "+fm(fireNum)+")\n\n"+(firePct>=100?"🟢 Tu patrimonio ya supera tu FIRE number.":"Necesitas acumular "+fm(Math.max(fireNum-t.nw,0))+" más.")});
+      if(topGasto)msgs.push({t:"✂️ Aceleradores",c:"Mayor gasto: "+topGasto.cat+" ("+fm(topGasto.total)+"/mes)\n\nSi reduces gastos 15%: cash flow sube a "+fm(t.cf+t.gfm*0.15)+"/mes\nSi aumentas ingreso 20%: cash flow sube a "+fm(t.cf+t.ni*0.2)+"/mes\n\n💡 Combinar ambos te acelera al doble."});
+    }
+    else if(id==="riesgo"){
+      const types={};inv.forEach(i=>{const tp=i.tp||i.tipo||"Otro";types[tp]=(types[tp]||0)+(i.va||0)});
+      const te=Object.entries(types).sort((a,b)=>b[1]-a[1]);
+      const mx=te[0]||["",0];const mxP=t.nw>0?(mx[1]/t.nw*100):0;
+      msgs.push({t:"🔬 Concentración",c:te.map(([tp,v])=>"• "+tp+": "+fm(v)+" ("+((v/(t.nw||1))*100).toFixed(0)+"%)").join("\n")+"\n\n"+(mxP>50?"🔴 "+mx[0]+" = "+mxP.toFixed(0)+"%. Riesgo extremo.":mxP>35?"🟡 "+mx[0]+" = "+mxP.toFixed(0)+"%. Cerca del límite.":"🟢 Diversificación aceptable.")});
+      msgs.push({t:"⚡ Stress Test",c:"Caída inmobiliaria -20%:\n• Pierdes: "+fm(reVal*0.2)+"\n• Patrimonio: "+fm(t.nw-reVal*0.2)+"\n\nPierdes mayor ingreso"+(ing.length>0?" ("+ing.sort((a,b)=>(b.mensual||0)-(a.mensual||0))[0].nombre+")":"")+":\n• Cash flow: "+fm(t.cf-(ing.length>0?(ing.sort((a,b)=>(b.mensual||0)-(a.mensual||0))[0].mensual||0)*(ing.sort((a,b)=>(b.mensual||0)-(a.mensual||0))[0].moneda==="USD"?4200:1):0))+"/mes\n\nRunway sin ingresos: "+runway+" meses "+(runway<6?"🔴":"🟢")});
+      msgs.push({t:"🌐 Moneda",c:"COP: "+fm(currencies.COP)+"/mes ("+(100-usdPct).toFixed(0)+"%)\nUSD: "+fm(currencies.USD)+"/mes ("+usdPct.toFixed(0)+"%)\n\n"+(usdPct<15?"🟡 Muy expuesto al COP. Recomendación: 30%+ en USD.":usdPct>70?"🟡 Muy dolarizado.":"🟢 Buena diversificación.")});
+    }
+    else if(id==="valor"){
+      msgs.push({t:"📊 Ranking por Rendimiento",c:topA.slice(0,6).map((a,i)=>{const m=iM(a,deu);const coc=a.va>0?(m.noi*12/a.va*100):0;return(i+1)+". "+a.n+"\n   NOI: "+fm(m.noi)+"/mes • ROI: "+pc(m.roi)+" • Cash/Cash: "+coc.toFixed(1)+"%"+(coc<5&&(a.va||0)>50000000?" ⚠ Bajo":"")}).join("\n\n")+"\n\n💡 Cash-on-Cash <5% es inferior a un CDT."});
+      const over=topA.filter(a=>iM(a,deu).roi<3&&(a.va||0)>100000000);
+      const under=topA.filter(a=>iM(a,deu).roi>15);
+      msgs.push({t:"🔍 Optimización",c:(over.length>0?"Bajo rendimiento (<3%):\n"+over.map(a=>"  ⚠ "+a.n+": "+fm(a.va)+" al "+pc(iM(a,deu).roi)+"\n    → En CDT al 10% generaría "+fm(a.va*0.1/12)+"/mes").join("\n")+"\n\n":"")+(under.length>0?"Estrellas (>15%):\n"+under.map(a=>"  ⭐ "+a.n+": "+pc(iM(a,deu).roi)+" — Invierte más aquí").join("\n"):"Todo en rango normal.")});
+      msgs.push({t:"💎 Margen de Seguridad",c:"Deuda/Activos: "+pc(t.dta)+"\n\n"+(t.dta<20?"🟢 Excelente margen. Puedes apalancarte.":t.dta<40?"🟡 Aceptable. No más deuda.":"🔴 Riesgo alto. Paga deuda primero.")+(worstDebt?"\n\nDeuda más cara: "+worstDebt.n+" al "+worstDebt.ts+"%. Pagarla = invertir al "+worstDebt.ts+"% garantizado.":"")});
+    }
+    else if(id==="contrarian"){
+      const err=[];
+      if(rePct>60)err.push("🏠 Concentración inmobiliaria "+rePct.toFixed(0)+"% — No compres más inmuebles.");
+      if((100-pctPasivo)>80)err.push("💼 "+(100-pctPasivo).toFixed(0)+"% depende de trabajo — Si te enfermas, pierdes casi todo.");
+      if(runway<6)err.push("⏰ Solo "+runway+" meses de runway — Mínimo necesitas 6 meses líquidos.");
+      if(worstDebt&&worstDebt.ts>15)err.push("🔥 Deuda al "+worstDebt.ts+"% ("+worstDebt.n+") — Nada rinde eso consistentemente. Paga primero.");
+      const bigG=gasCats.find(g=>t.ni>0&&g.total>t.ni*0.25);
+      if(bigG)err.push("💸 "+bigG.cat+" = "+((bigG.total/t.ni)*100).toFixed(0)+"% del ingreso — Máx recomendado: 25%.");
+      if(t.dta>50)err.push("📉 Deuda/Activos "+pc(t.dta)+" — Más de la mitad está financiada con deuda.");
+      msgs.push({t:"🧠 ¿Qué Errores Estoy Cometiendo?",c:err.length>0?err.map(e=>"❌ "+e).join("\n\n"):"✅ No encuentro errores graves. Eso ya es mucho."});
+      msgs.push({t:"🚫 Antes de Agregar, Elimina",c:(hiDebt.length>0?"1. Pagar "+hiDebt[0].n+" ("+hiDebt[0].ts+"%) = invertir al "+hiDebt[0].ts+"% garantizado\n":"")+(worstAsset&&iM(worstAsset,deu).roi<3?"2. Vender "+worstAsset.n+" (ROI "+pc(iM(worstAsset,deu).roi)+") — capital mejor en otro lado\n":"")+(topGasto?"3. Recortar "+topGasto.cat+" 10% = +"+fm(topGasto.total*0.1)+"/mes\n":"")+"\n💡 Eliminar lo malo > agregar algo nuevo."});
+      msgs.push({t:"⚖️ La Pregunta Clave",c:t.dta>30?"¿Pagar deuda o invertir?\n→ Deuda más cara: "+(worstDebt?worstDebt.ts:0)+"%. Si no encuentras inversiones >"+((worstDebt||{}).ts||0)+"% consistentes, PAGA DEUDA.":"¿Dónde poner "+fm(t.cf>0?t.cf*6:0)+" (ahorro 6 meses)?\n→ Con deuda baja, invierte en lo que entiendas y puedas monitorear."});
+    }
+    return msgs;
+  };
 
   const has=(u.inv?.length||u.deu?.length||Object.keys(u.gas||{}).length)>0;
   const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:"MI DINERO"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Gastos"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"deu",i:"📋",l:"Deudas"},{id:"_sep2",sep:true,l:"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"met",i:"🎯",l:"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"_sep3",sep:true,l:"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:"Asesor IA"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
