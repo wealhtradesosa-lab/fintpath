@@ -73,11 +73,12 @@ function buildContext(user, totals) {
   return ctx;
 }
 
-export default function AsesorIA({ user, totals }) {
+export default function AsesorIA({ user, totals, userId }) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [remaining, setRemaining] = useState(30);
   const chatRef = useRef(null);
 
   useEffect(() => {
@@ -101,10 +102,11 @@ export default function AsesorIA({ user, totals }) {
       const res = await fetch("/api/ai-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMsgs, financialContext: ctx }),
+        body: JSON.stringify({ messages: apiMsgs, financialContext: ctx, userId: userId || "anon" }),
       });
 
       const data = await res.json();
+      if (data.remaining !== undefined) setRemaining(data.remaining);
       if (data.error) {
         setError(data.error);
       } else {
@@ -123,6 +125,7 @@ export default function AsesorIA({ user, totals }) {
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px" }}>🤖 Asesor Financiero IA</h2>
           <p style={{ color: T.txt3, fontSize: 13, margin: 0 }}>Analiza tus datos reales y te da recomendaciones personalizadas</p>
         </div>
+        <span style={{fontSize:11,color:remaining<=5?"#ef4444":"#71717a",background:"#1e1e24",padding:"4px 10px",borderRadius:6}}>{remaining} consultas restantes hoy</span>
         {msgs.length > 0 && (
           <button onClick={() => setMsgs([])} style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt3, padding: "6px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12 }}>Nueva consulta</button>
         )}

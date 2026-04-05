@@ -1,3 +1,8 @@
+// In-memory rate limit (resets on cold start, ~10min)
+const rateLimits = {};
+const LIMIT = 30; // per day
+const WINDOW = 24 * 60 * 60 * 1000;
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -8,9 +13,25 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method not allowed" };
 
   try {
-    const { messages, financialContext } = JSON.parse(event.body);
+    const { messages, financialContext, userId } = JSON.parse(event.body);
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-    if (!ANTHROPIC_KEY) return { statusCode: 500, headers, body: JSON.stringify({ error: "API key not configured" }) };
+    if (!ANTHROPIC_KEY) return { statusCode: 500, headers, body: JSON.stringify({ error: "API key no configurada. Contacta al administrador." }) };
+
+    // Rate limit by userId or IP
+    const key = userId || event.headers["x-forwarded-for"] || "anon";
+    const now = Date.now();
+    if (!rateLimits[key] || now - rateLimits[key].start > WINDOW) {
+      rateLimits[key] = { start: now, count: 0 };
+    }
+    rateLimits[key].count++;
+    const remaining = LIMIT - rateLimits[key].count;
+    
+    if (remaining < 0) {
+      return { statusCode: 429, headers, body: JSON.stringify({ 
+        error: "Has alcanzado el límite de 30 consultas diarias. Se renueva en " + Math.round((rateLimits[key].start + WINDOW - now) / 3600000) + " horas.",
+        remaining: 0
+      })};
+    }
 
     const systemPrompt = `Eres el Asesor Financiero IA de FINPATH, una plataforma premium de gestión patrimonial. 
 Respondes SIEMPRE en español. Eres directo, concreto y usas los datos reales del usuario.
@@ -45,10 +66,10 @@ REGLAS:
     });
 
     const data = await res.json();
-    if (data.error) return { statusCode: 400, headers, body: JSON.stringify({ error: data.error.message }) };
+    if (data.error) return { statusCode: 400, headers, body: JSON.stringify({ error: data.error.message, remaining }) };
     
     const reply = data.content?.map(b => b.text || "").join("") || "Sin respuesta";
-    return { statusCode: 200, headers, body: JSON.stringify({ reply }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ reply, remaining }) };
   } catch (e) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
   }
