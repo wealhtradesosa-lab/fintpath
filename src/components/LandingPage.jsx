@@ -101,7 +101,7 @@ export default function LandingPage({ onGetStarted }) {
         <Section>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "center", maxWidth: 950, margin: "0 auto" }}>
             <div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 99, padding: "6px 14px", marginBottom: 16, fontSize: 12, color: T.green }}>🤖 Nuevo</div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 99, padding: "6px 14px", marginBottom: 16, fontSize: 12, color: T.green }}>⭐ Exclusivo Plan Pro</div>
               <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12, lineHeight: 1.2 }}>Tu asesor financiero privado, disponible <span style={{ color: T.green }}>24/7</span></h2>
               <p style={{ fontSize: 15, color: T.txt2, lineHeight: 1.7, marginBottom: 24 }}>Un agente de inteligencia artificial que conoce cada número de tu patrimonio y te da recomendaciones personalizadas como un Family Office privado.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -118,7 +118,10 @@ export default function LandingPage({ onGetStarted }) {
                   </div>
                 ))}
               </div>
-              <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "14px 32px", borderRadius: 12, cursor: "pointer", fontSize: 15, fontWeight: 700, marginTop: 24 }}>Probar el Asesor IA →</button>
+              <div style={{ marginTop: 24, display: "flex", alignItems: "center", gap: 12 }}>
+                <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "14px 32px", borderRadius: 12, cursor: "pointer", fontSize: 15, fontWeight: 700 }}>Comenzar con Plan Pro →</button>
+                <span style={{ fontSize: 12, color: T.txt3 }}>Incluido en Plan Pro • $16/mes</span>
+              </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
