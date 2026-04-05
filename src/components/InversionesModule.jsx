@@ -56,7 +56,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "" });
+  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "", gastosMes: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = inversiones || [];
@@ -82,14 +82,14 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
       tipo: String(getType(inv) || "Real Estate"),
       va: String(getVA(inv) || ""),
       vc: String(getVC(inv) || ""),
-      tasa: String(inv.tasa || ""), renta: String(inv.renta || ""),
+      tasa: String(inv.tasa || ""), renta: String(inv.renta || ""), gastosMes: String(inv.gastosMes || ""),
     });
     setEditId(inv.id);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "", gastosMes: "" });
     setEditId(null);
     setShowForm(true);
   };
@@ -108,7 +108,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
       tipo: form.tipo || "Other",
       va,
       vc: Math.abs(parseFloat(form.vc)) || 0,
-      tasa, renta: ingresoCalc||parseFloat(form.renta)||0, ig: (ingresoCalc||parseFloat(form.renta))>0?[{c:"Renta",m:ingresoCalc||parseFloat(form.renta)||0,t:"f"}]:[],
+      tasa, renta: ingresoCalc||parseFloat(form.renta)||0, gastosMes: parseFloat(form.gastosMes)||0, ig: (ingresoCalc||parseFloat(form.renta))>0?[{c:"Renta",m:ingresoCalc||parseFloat(form.renta)||0,t:"f"}]:[], gs: parseFloat(form.gastosMes)>0?[{c:"Gastos operativos",m:parseFloat(form.gastosMes)||0,t:"f"}]:[],
     };
     // Store income directly on investment so coaches can read it
     if (editId) {
@@ -124,7 +124,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "", gastosMes: "" });
   };
 
   
@@ -268,6 +268,8 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
                   }} type="number" placeholder="Ej: 12" /></div>
                 </div>
                 <div style={{fontSize:10,color:T.txt3,marginTop:6}}>Ingresa uno y el otro se calcula automáticamente. Si no genera ingreso, déjalos vacíos.</div>
+                <div style={{marginTop:10}}><In l="Gastos mensuales del activo ($)" value={form.gastosMes} onChange={(v) => setForm((p) => ({ ...p, gastosMes: v }))} type="number" placeholder="Admin, predial, seguros, mantenimiento..." /></div>
+                <div style={{fontSize:10,color:T.txt3,marginTop:4}}>Gastos asociados a este activo: administración, predial, seguros, mantenimiento. NOI = Ingreso - Gastos.</div>
               </div>
               {false && <div style={{ gridColumn: "1/-1", background: T.blue + "10", borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 12, color: T.blue }}>💡 Si este activo genera renta mensual (arriendo, dividendos, rendimientos), ponla en el módulo de <strong>Ingresos</strong>. Aquí solo va el valor del activo.</div>
