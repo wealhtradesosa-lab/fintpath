@@ -222,7 +222,14 @@ export default function FinPath(){
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
     <div style={{width:"100%",maxWidth:420,padding:"40px 32px"}}>
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
-      <div style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:10,padding:"10px 14px",marginBottom:20,fontSize:12,color:T.tx2,display:"flex",alignItems:"center",gap:8}}>🔒 Tus datos financieros están protegidos con encriptación y solo tú puedes acceder.</div>
+      <div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"14px 16px",marginBottom:20}}>
+        <div style={{display:"flex",flexDirection:"column",gap:8,fontSize:11,color:T.tx3}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> Encriptación de grado bancario (TLS/SSL)</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> Solo tú puedes ver tus datos — ni nosotros accedemos</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> No vendemos ni compartimos tu información</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> Puedes borrar todo en cualquier momento</div>
+        </div>
+      </div>
       <div style={{fontSize:28,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:24}}>FINPATHIA</div>
       <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Inicia sesión":"Crea tu cuenta gratis"}</h2>
       <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Accede a tu patrimonio":"14 días de acceso Pro incluidos"}</p>
@@ -234,7 +241,7 @@ export default function FinPath(){
       <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":"Crear cuenta — 14 días Pro gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:12,textAlign:"center",marginTop:8,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{authError}</div>}
       <p style={{textAlign:"center",marginTop:20,color:T.tx3,fontSize:14}}>{"¿No tienes cuenta? "}<span onClick={()=>sAM(aM==="login"?"signup":"login")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{aM==="login"?"Regístrate":"Ingresa"}</span></p>
-      <div style={{marginTop:20,padding:"16px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,textAlign:"center"}}><div style={{fontSize:13,fontWeight:600,color:T.tx,marginBottom:6}}>🔒 ¿Prefieres no crear cuenta?</div><div style={{fontSize:11,color:T.tx3,marginBottom:10}}>Usa la plataforma completa sin registro. Tus datos se guardan solo en este navegador y nunca salen de tu dispositivo.</div><button onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{background:T.bl,color:"#fff",border:"none",padding:"10px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>Usar sin cuenta — Modo Privado</button></div>
+      <div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:11,color:T.tx3,cursor:"pointer",textDecoration:"underline"}}>Explorar sin cuenta (datos solo en este navegador)</span></div>
       {aM==="login"&&<p style={{textAlign:"center",marginTop:8}}><span onClick={async()=>{if(!aF.e){setAuthError("Escribe tu email primero");return}try{await supabase.auth.resetPasswordForEmail(aF.e);setAuthError("✅ Email enviado")}catch(e){setAuthError(e.message)}}} style={{color:T.tx3,cursor:"pointer",fontSize:12}}>¿Olvidaste tu contraseña?</span></p>}
     </div>
   </div>;
