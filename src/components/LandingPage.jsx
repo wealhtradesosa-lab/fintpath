@@ -169,7 +169,7 @@ export default function LandingPage({ onGetStarted }) {
           <h2 style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>Tu privacidad es nuestra prioridad</h2>
           <p style={{ fontSize: 15, color: T.txt2, maxWidth: 480, margin: "0 auto" }}>Construido con los más altos estándares de seguridad financiera</p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, maxWidth: 900, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, maxWidth: 900, margin: "0 auto" }}>
           {[
             { i: "🔒", t: "Encriptación", d: "Datos protegidos con Row Level Security" },
             { i: "👤", t: "Acceso privado", d: "Solo tú ves tu información financiera" },
@@ -193,7 +193,7 @@ export default function LandingPage({ onGetStarted }) {
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Proyecta tu futuro financiero hoy</h2>
             <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Regístrate gratis y toma control de tu patrimonio</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, maxWidth: 950, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, maxWidth: 950, margin: "0 auto" }}>
             {[
               { name: "Free", price: "$0", per: "gratis", features: ["Dashboard básico", "3 inversiones", "Gastos y deudas", "Simulador limitado", "1 meta financiera"], no: ["Coaches IA", "Pensiones", "Trading", "Alertas", "PDF"], cta: "Comenzar gratis" },
               { name: "Básico", price: "$8", per: "/mes", sub: "$6/mes anual — Ahorra 25%", features: ["Todo en Free", "10 inversiones y 10 metas", "Simulador avanzado", "Pensiones Colpensiones + BTC", "Trading portfolio", "CSV import + PDF export"], no: ["Coaches IA", "Family Office KPIs", "Alertas inteligentes"], cta: "Probar 14 días" },
