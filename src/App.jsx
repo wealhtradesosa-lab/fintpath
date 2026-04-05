@@ -186,6 +186,40 @@ export default function FinPath(){
       msgs.push({t:"🚫 Antes de Agregar, Elimina",c:(hiDebt.length>0?"1. Pagar "+hiDebt[0].n+" ("+hiDebt[0].ts+"%) = invertir al "+hiDebt[0].ts+"% garantizado\n":"")+(worstAsset&&iM(worstAsset,deu).roi<3?"2. Vender "+worstAsset.n+" (ROI "+pc(iM(worstAsset,deu).roi)+") — capital mejor en otro lado\n":"")+(topGasto?"3. Recortar "+topGasto.cat+" 10% = +"+fm(topGasto.total*0.1)+"/mes\n":"")+"\n💡 Eliminar lo malo > agregar algo nuevo."});
       msgs.push({t:"⚖️ La Pregunta Clave",c:t.dta>30?"¿Pagar deuda o invertir?\n→ Deuda más cara: "+(worstDebt?worstDebt.ts:0)+"%. Si no encuentras inversiones >"+((worstDebt||{}).ts||0)+"% consistentes, PAGA DEUDA.":"¿Dónde poner "+fm(t.cf>0?t.cf*6:0)+" (ahorro 6 meses)?\n→ Con deuda baja, invierte en lo que entiendas y puedas monitorear."});
     }
+    // Contextual quote based on situation
+    const quotes = {
+      cashflow: [
+        {cond:pctPasivo<30, q:""Los ricos no trabajan por dinero. Hacen que el dinero trabaje para ellos."", a:"— Filosofía del ingreso pasivo"},
+        {cond:pctPasivo>=30&&pctPasivo<70, q:""La clave no es cuánto ganas, sino cuánto conservas y cuánto trabaja para ti."", a:"— Principio del flujo de efectivo"},
+        {cond:pctPasivo>=70, q:""La verdadera riqueza se mide en tiempo: ¿cuántos meses puedes vivir sin trabajar?"", a:"— Definición de libertad financiera"},
+      ],
+      estratega: [
+        {cond:t.ind<65, q:""El viaje de mil millas comienza con un solo paso. Tu primer paso es cubrir lo básico."", a:"— Principio de seguridad financiera"},
+        {cond:t.ind>=65&&t.ind<100, q:""No se trata de ser rico, se trata de tener opciones. Estás construyendo opciones."", a:"— Filosofía de la vitalidad financiera"},
+        {cond:t.ind>=100&&t.ind<150, q:""La independencia no es tener millones, es que tus activos paguen tus cuentas."", a:"— Definición de independencia"},
+        {cond:t.ind>=150, q:""El dinero es un terrible amo pero un excelente sirviente. El tuyo ya trabaja para ti."", a:"— Sabiduría financiera clásica"},
+      ],
+      riesgo: [
+        {cond:rePct>50, q:""La diversificación es protección contra la ignorancia. Concentración es para los que saben lo que hacen."", a:"— Principio de gestión de riesgo"},
+        {cond:runway<6, q:""La regla #1 es nunca perder dinero. La regla #2 es nunca olvidar la regla #1."", a:"— Filosofía de preservación de capital"},
+        {cond:rePct<=50&&runway>=6, q:""El riesgo viene de no saber lo que estás haciendo. Tú sí lo sabes."", a:"— Principio del inversionista informado"},
+      ],
+      valor: [
+        {cond:t.dta>40, q:""El precio es lo que pagas, el valor es lo que recibes. Asegúrate de recibir más."", a:"— Filosofía de inversión en valor"},
+        {cond:t.dta<=40&&topA.length>0&&iM(topA[0],deu).roi>10, q:""Solo compra algo que estarías feliz de tener si el mercado cerrara por 10 años."", a:"— Principio de inversión a largo plazo"},
+        {cond:true, q:""Es mucho mejor comprar una empresa maravillosa a un precio justo que una empresa justa a un precio maravilloso."", a:"— Filosofía de calidad sobre precio"},
+      ],
+      contrarian: [
+        {cond:t.dta>30, q:""No es lo que compras, es lo que pagas. Y la deuda cara es el precio más alto."", a:"— Principio de inversión inteligente"},
+        {cond:(100-pctPasivo)>80, q:""Todo el mundo tiene un plan hasta que la vida te golpea. ¿Cuál es tu plan B?"", a:"— Filosofía de preparación"},
+        {cond:true, q:""La sabiduría en inversiones se resume en saber qué evitar. Evita lo estúpido y lo brillante llega solo."", a:"— Principio de inversión por eliminación"},
+      ],
+    };
+
+    const qs = quotes[id] || [];
+    const q = qs.find(x => x.cond);
+    if(q) msgs.push({t:"💬 Reflexión", c:q.q+"\n\n"+q.a});
+
     return msgs;
   };
 
