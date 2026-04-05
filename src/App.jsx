@@ -27,9 +27,25 @@ const sL=async(uid)=>{
   }catch{return null}
 };
 let _svT=null;
+const takeSnapshot=(d)=>{
+  try{
+    const snaps=JSON.parse(localStorage.getItem("fp3_snapshots")||"[]");
+    const now=new Date();
+    const key=now.getFullYear()+"-"+(now.getMonth()+1).toString().padStart(2,"0");
+    const exists=snaps.find(s=>s.k===key);
+    if(!exists&&d){
+      const inv=(d.inv||[]).reduce((s,i)=>s+(i.va||0),0);
+      const deu=(d.deu||[]).reduce((s,i)=>s+(i.mt||0),0);
+      snaps.push({k:key,d:now.toISOString().split("T")[0],nw:inv-deu,a:inv,de:deu});
+      if(snaps.length>60)snaps.shift();
+      localStorage.setItem("fp3_snapshots",JSON.stringify(snaps));
+    }
+  }catch{}
+};
 const sS=async(d,uid)=>{
   try{
     localStorage.setItem(SK,JSON.stringify(d));
+    takeSnapshot(d);
     if(isSupabaseConfigured&&uid){
       clearTimeout(_svT);
       _svT=setTimeout(async()=>{
@@ -819,6 +835,25 @@ export default function FinPath(){
               })()}
             </div>
           </Cd>
+
+      {/* ═══ ROW 8b: Historial Patrimonio ═══ */}
+      {(()=>{
+        const snaps=JSON.parse(localStorage.getItem("fp3_snapshots")||"[]");
+        if(snaps.length<2)return null;
+        const sorted=snaps.sort((a,b)=>a.k.localeCompare(b.k));
+        const last=sorted[sorted.length-1];
+        const prev=sorted[sorted.length-2];
+        const change=last.nw-prev.nw;
+        const months=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+        const maxVal=Math.max(...sorted.map(s=>s.nw));
+        const minVal=Math.min(...sorted.map(s=>s.nw));
+        const range=maxVal-minVal||1;
+        return<Cd s={{padding:20,marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div><div style={{fontSize:13,fontWeight:700,color:T.bl}}>📈 Historial Patrimonio Neto</div><div style={{fontSize:11,color:T.tx3}}>{sorted.length} meses registrados</div></div><div style={{textAlign:"right"}}><div style={{fontSize:11,color:T.tx3}}>Último mes</div><div style={{fontSize:14,fontWeight:700,color:change>=0?T.gn:T.rd}}>{change>=0?"+":""}{fm(change)}</div></div></div>
+          <div style={{display:"flex",alignItems:"flex-end",gap:3,height:100}}>
+            {sorted.map((s,i)=>{const h=((s.nw-minVal)/range)*80+20;const m=parseInt(s.k.split("-")[1])-1;return<div key={s.k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}} title={months[m]+" "+s.k.split("-")[0]+": "+fm(s.nw)}><div style={{width:"100%",height:h,background:s.nw>=0?"linear-gradient(to top,"+T.gn+"40,"+T.gn+")":"linear-gradient(to top,"+T.rd+"40,"+T.rd+")",borderRadius:"4px 4px 0 0",minHeight:4,transition:"height 0.3s"}}/><div style={{fontSize:8,color:T.tx3}}>{months[m]}</div></div>})}
+          </div>
+        </Cd>;
+      })()}
 
       {/* ═══ ROW 9: Liquidez Real + Costo de Vida ═══ */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginTop:14}}>
