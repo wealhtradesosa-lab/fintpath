@@ -174,6 +174,7 @@ export default function FinPath(){
 
   const getCoach=id=>{
     if(!u)return[];
+    try{
     const msgs=[];
     const inv=(u&&u.inv)||[],deu=(u&&u.deu)||[],gas=(u&&u.gas)||{},ing=(u&&u.ingresos)||[];
     const topA=inv.map(i=>({...i,...iM(i,deu)})).sort((a,b)=>b.noi-a.noi);
@@ -200,7 +201,7 @@ export default function FinPath(){
       msgs.push({t:"💰 Cuadrante de Ingresos",c:"Ingresos activos (trabajo): "+fm(ingActivo)+"/mes ("+(100-pctPasivo).toFixed(0)+"%)\nIngresos pasivos (activos): "+fm(ingPasivo)+"/mes ("+pctPasivo.toFixed(0)+"%)\n\n"+(pctPasivo>=70?"🟢 EXCELENTE: Más del 70% es pasivo. Eres inversionista.":pctPasivo>=40?"🟡 EN TRANSICIÓN: "+pctPasivo.toFixed(0)+"% pasivo. Aún dependes del trabajo.":"🔴 DEPENDIENTE: Solo "+pctPasivo.toFixed(0)+"% pasivo. Si dejas de trabajar, pierdes el "+(100-pctPasivo).toFixed(0)+"%.")});
       const prodA=inv.filter(i=>iM(i,deu).noi>0);
       const deadA=inv.filter(i=>iM(i,deu).noi<=0&&(i.va||0)>0);
-      msgs.push({t:"📦 Activos Productivos vs Improductivos",c:"Productivos ("+prodA.length+"):\n"+prodA.slice(0,5).map(a=>"  ✅ "+a.n+": +"+fm(iM(a,deu).noi)+"/mes").join("\n")+(deadA.length>0?"\n\nImproductivos ("+deadA.length+"):\n"+deadA.slice(0,3).map(a=>"  ❌ "+a.n+": "+fm(a.va)+" sin generar ingreso").join("\n")+"\n\n💡 Capital dormido = oportunidad perdida.":"\n\n✅ Todos tus activos generan ingreso.")});
+      msgs.push({t:"📦 Activos Productivos vs Improductivos",c:"Productivos ("+prodA.length+"):\n"+prodA.slice(0,5).map(a=>"  ✅ "+(a.n||a.nombre||"Sin nombre")+": +"+fm(iM(a,deu).noi)+"/mes").join("\n")+(deadA.length>0?"\n\nImproductivos ("+deadA.length+"):\n"+deadA.slice(0,3).map(a=>"  ❌ "+(a.n||a.nombre||"Sin nombre")+": "+fm(a.va)+" sin generar ingreso").join("\n")+"\n\n💡 Capital dormido = oportunidad perdida.":"\n\n✅ Todos tus activos generan ingreso.")});
       msgs.push({t:"🎯 Plan de Acción",c:"1. Convertir "+fm(deadA.reduce((s,i)=>s+(i.va||0),0))+" improductivos en productivos\n2. Reinvertir cash flow "+fm(t.cf)+"/mes en activos que generen ingreso\n3. Meta: ingreso pasivo > "+fm(t.te)+"/mes (hoy: "+fm(ingPasivo)+")\n4. Cada "+fm(Math.abs(t.cf)*12)+" ahorrado/año te acerca "+((t.te>0?Math.abs(t.cf)*12/t.te*100:0)).toFixed(0)+"% más"});
     }
     else if(id==="estratega"){
@@ -223,10 +224,10 @@ export default function FinPath(){
       msgs.push({t:"🌐 Moneda",c:"COP: "+fm(currencies.COP)+"/mes ("+(100-usdPct).toFixed(0)+"%)\nUSD: "+fm(currencies.USD)+"/mes ("+usdPct.toFixed(0)+"%)\n\n"+(usdPct<15?"🟡 Muy expuesto al COP. Recomendación: 30%+ en USD.":usdPct>70?"🟡 Muy dolarizado.":"🟢 Buena diversificación.")});
     }
     else if(id==="valor"){
-      msgs.push({t:"📊 Ranking por Rendimiento",c:topA.slice(0,6).map((a,i)=>{const m=iM(a,deu);const coc=a.va>0?(m.noi*12/a.va*100):0;return(i+1)+". "+a.n+"\n   NOI: "+fm(m.noi)+"/mes • ROI: "+pc(m.roi)+" • Cash/Cash: "+coc.toFixed(1)+"%"+(coc<5&&(a.va||0)>50000000?" ⚠ Bajo":"")}).join("\n\n")+"\n\n💡 Cash-on-Cash <5% es inferior a un CDT."});
+      msgs.push({t:"📊 Ranking por Rendimiento",c:topA.slice(0,6).map((a,i)=>{const m=iM(a,deu);const coc=a.va>0?(m.noi*12/a.va*100):0;return(i+1)+". "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+"\n   NOI: "+fm(m.noi)+"/mes • ROI: "+pc(m.roi)+" • Cash/Cash: "+coc.toFixed(1)+"%"+(coc<5&&(a.va||0)>50000000?" ⚠ Bajo":"")}).join("\n\n")+"\n\n💡 Cash-on-Cash <5% es inferior a un CDT."});
       const over=topA.filter(a=>iM(a,deu).roi<3&&(a.va||0)>100000000);
       const under=topA.filter(a=>iM(a,deu).roi>15);
-      msgs.push({t:"🔍 Optimización",c:(over.length>0?"Bajo rendimiento (<3%):\n"+over.map(a=>"  ⚠ "+a.n+": "+fm(a.va)+" al "+pc(iM(a,deu).roi)+"\n    → En CDT al 10% generaría "+fm(a.va*0.1/12)+"/mes").join("\n")+"\n\n":"")+(under.length>0?"Estrellas (>15%):\n"+under.map(a=>"  ⭐ "+a.n+": "+pc(iM(a,deu).roi)+" — Invierte más aquí").join("\n"):"Todo en rango normal.")});
+      msgs.push({t:"🔍 Optimización",c:(over.length>0?"Bajo rendimiento (<3%):\n"+over.map(a=>"  ⚠ "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+": "+fm(a.va)+" al "+pc(iM(a,deu).roi)+"\n    → En CDT al 10% generaría "+fm(a.va*0.1/12)+"/mes").join("\n")+"\n\n":"")+(under.length>0?"Estrellas (>15%):\n"+under.map(a=>"  ⭐ "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+": "+pc(iM(a,deu).roi)+" — Invierte más aquí").join("\n"):"Todo en rango normal.")});
       msgs.push({t:"💎 Margen de Seguridad",c:"Deuda/Activos: "+pc(t.dta)+"\n\n"+(t.dta<20?"🟢 Excelente margen. Puedes apalancarte.":t.dta<40?"🟡 Aceptable. No más deuda.":"🔴 Riesgo alto. Paga deuda primero.")+(worstDebt?"\n\nDeuda más cara: "+worstDebt.n+" al "+worstDebt.ts+"%. Pagarla = invertir al "+worstDebt.ts+"% garantizado.":"")});
     }
     else if(id==="contrarian"){
@@ -276,6 +277,7 @@ export default function FinPath(){
     if(q) msgs.push({t:"💬 Reflexión", c:q.q+"\n\n"+q.a});
 
     return msgs;
+    }catch(e){return[{t:"⚠️ Error",c:"No se pudo analizar tu portafolio. Verifica que tus activos tengan nombre y valor. Error: "+e.message}];}
   };
 
   const has=u?(u.inv?.length||u.deu?.length||Object.keys((u&&u.gas)||{}).length)>0:false;
