@@ -105,6 +105,35 @@ export default function FinPath(){
   const trm=u?.trm||4200;
   const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),3000)};
   const logout=async()=>{try{await supabase.auth.signOut()}catch{}localStorage.removeItem(SK);_setU(null);setShowAuth(false)};
+  const auth=async()=>{
+    if(!aF.e||!aF.p){setAuthError("Ingresa email y contraseña");return}
+    setAuthLoading(true);setAuthError("");
+    try{
+    if(isSupabaseConfigured){
+      if(aM==="login"){
+        const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
+        if(error){setAuthError(error.message);setAuthLoading(false);return}
+        setAuthUser(data.user);
+        const d=await sL(data.user.id);
+        if(d)setU(sanitize(d));else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id)}
+      }else{
+        const sr=await fetch("/.netlify/functions/auth-signup",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({email:aF.e,password:aF.p,name:aF.n||""})
+        });
+        const srd=await sr.json();
+        if(!sr.ok){setAuthError(srd.error||"Error creando cuenta");setAuthLoading(false);return}
+        const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
+        if(error){setAuthError(error.message);setAuthLoading(false);return}
+        setAuthUser(data.user);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id);
+      }
+    }else{setU(mkU(aF.n||"Usuario",aF.e))}
+    }catch(e){setAuthError("Error: "+e.message)}
+    setAuthLoading(false);
+  };
+  const demo=()=>{showToast("📊 Datos demo cargados");setU(p=>p?({...p,inv:[...DI],deu:[...DD],gas:JSON.parse(JSON.stringify(DG)),ingresos:[...DING]}):p)};
+  const handleImport=(key,rows,isGastos)=>{if(isGastos){const g={...(u&&u.gas||{})};rows.forEach(r=>{const cat=r.cat||"Otro";if(!g[cat])g[cat]=[];g[cat].push({c:r.c,m:r.m,t:r.t})});upd("gas",g)}else{upd(key,[...((u&&u[key])||[]),...rows])}};
+
   const fm=n=>{if(n==null||isNaN(n))return"$0";const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
   const upd=(k,v)=>{showToast("✅ Guardado");setU(p=>p?{...p,[k]:v}:p);};
   const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";
