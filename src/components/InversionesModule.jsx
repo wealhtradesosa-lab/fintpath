@@ -172,14 +172,14 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
                   <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
                     style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
                 </th>
-                {["Inversión", "Valor", "ROI", "NOI/mes", "Deuda", "Cap", "Sim", ""].map((h) => (
+                {["Inversión", "Tipo", "Valor", "Ganancia", "Deuda", "Sim", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: h === "Inversión" || h === "" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 0 }}>
+                <tr><td colSpan={7} style={{ padding: 0 }}>
                     <div style={{padding:"40px 32px",textAlign:"center"}}>
                       <div style={{fontSize:40,marginBottom:12}}>🏦</div>
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"#fafafa"}}>Agrega tu patrimonio</h3>
@@ -217,11 +217,10 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
                       <div style={{ fontWeight: 600 }}>{name}</div>
                       <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? inv.tasa + "% anual" : ""].filter(Boolean).join(" • ")}</div>
                     </td>
+                    <td style={{ padding: "12px 14px", fontSize: 11, color: T.txt3 }}>{tipo}</td>
                     <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700 }}>{fm(va)}</td>
-                    <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: m.roi >= 0 ? T.green : T.red }}>{pc(m.roi)}</td>
-                    <td style={{ padding: "12px 14px", textAlign: "right", color: m.noi >= 0 ? T.green : T.red }}>{fm(m.noi)}</td>
-                    <td style={{ padding: "12px 14px", textAlign: "right", color: m.debtTotal > 0 ? T.red : T.txt3 }}>{fm(m.debtTotal)}</td>
-                    <td style={{ padding: "12px 14px", textAlign: "right", color: T.blue }}>{pc(m.cap)}</td>
+                    <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: (va-getVC(inv)) >= 0 ? T.green : T.red }}>{fm(va-getVC(inv))}</td>
+                    <td style={{ padding: "12px 14px", textAlign: "right", color: m.debtTotal > 0 ? T.red : T.txt3 }}>{m.debtTotal>0?fm(m.debtTotal):"-"}</td>
                     <td style={{ padding: "12px 14px", textAlign: "center" }}>
                       <button onClick={() => { onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{inv.sim===false?"⬜":"✅"}</button>
                     </td>
