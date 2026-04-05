@@ -464,9 +464,9 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
       </div>
 
       {/* Sliders + Chart */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
         {/* LEFT: Sliders */}
-        <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: 8 }}>
+        <div style={{ paddingRight: 8 }}>
           <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>💰 Ingresos</h4>
           {(user.ingresos || []).map((ing, ii) => {
             if (ing.sim === false) return null;
@@ -580,7 +580,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
         <div>
           <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 20, position: "sticky", top: 80 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 14 }}>Acumulación Cash Flow — 12 Meses</div>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <AreaChart data={proj}>
                 <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
                 <XAxis dataKey="m" tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} />
