@@ -5,7 +5,7 @@ import App from "./App";
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
-  componentDidCatch(error, info) { console.error("FINPATH Error:", error, info); }
+  componentDidCatch(error, info) { console.error("FINPATHIA Error:", error, info); }
   render() {
     if (this.state.hasError) {
       return React.createElement("div", {style:{background:"#09090b",color:"#fafafa",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"system-ui"}},

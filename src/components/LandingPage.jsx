@@ -23,7 +23,7 @@ export default function LandingPage({ onGetStarted }) {
       {/* ─── NAV ─── */}
       <nav style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: "-0.04em" }}>
-          <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATH</span>
+          <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={onGetStarted} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>Ingresar</button>
@@ -143,7 +143,7 @@ export default function LandingPage({ onGetStarted }) {
       <Section style={{ padding: "80px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Los 5 Niveles de Libertad Financiera</h2>
-          <p style={{ fontSize: 16, color: T.txt2 }}>FINPATH te muestra exactamente en qué nivel estás y cómo avanzar</p>
+          <p style={{ fontSize: 16, color: T.txt2 }}>FINPATHIA te muestra exactamente en qué nivel estás y cómo avanzar</p>
         </div>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           {[
@@ -248,9 +248,9 @@ export default function LandingPage({ onGetStarted }) {
       {/* ─── FOOTER ─── */}
       <footer style={{ borderTop: `1px solid ${T.border}`, padding: "32px 24px", textAlign: "center" }}>
         <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
-          <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATH</span>
+          <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</span>
         </div>
-        <p style={{ fontSize: 12, color: T.txt3 }}>Tu camino a la libertad financiera • © 2026 FINPATH</p>
+        <p style={{ fontSize: 12, color: T.txt3 }}>Tu camino a la libertad financiera • © 2026 FINPATHIA</p>
       </footer>
     </div>
   );

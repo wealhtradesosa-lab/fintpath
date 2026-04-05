@@ -260,7 +260,7 @@ export default function CsvImport({ onImport, onClose }) {
                 1. Subes tu archivo Excel — cualquier formato, cualquier estructura<br />
                 2. La IA de Claude analiza el contenido y entiende qué es cada columna<br />
                 3. Te muestra un preview de los datos detectados<br />
-                4. Confirmas e importas a FINPATH
+                4. Confirmas e importas a FINPATHIA
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
                 {["Columnas en cualquier orden", "Headers en cualquier fila", "Fórmulas y cálculos", "Español o inglés", "COP o USD"].map((t) => (

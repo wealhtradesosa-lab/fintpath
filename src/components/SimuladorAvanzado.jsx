@@ -328,7 +328,7 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
                 `<tr><td>${d.n||d.nombre||""}</td><td style="text-align:right">$${Math.round(d.mt||0).toLocaleString()}</td><td style="text-align:right">$${Math.round(d.pg||0).toLocaleString()}/mes</td><td style="text-align:right">${d.ts||0}%</td></tr>`
               ).join("");
               
-              const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>FINPATH — ${scenarioName}</title>
+              const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>FINPATHIA — ${scenarioName}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,system-ui,sans-serif;font-size:11px;color:#222;padding:20px 28px;max-width:800px;margin:0 auto}
@@ -351,7 +351,7 @@ td{padding:4px 6px;border-bottom:1px solid #f0f0f0}
 .diag{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;font-size:11px;line-height:1.6}
 @media print{@page{size:letter portrait;margin:12mm}}
 </style></head><body>
-<h1>FINPATH — ${scenarioName}</h1>
+<h1>FINPATHIA — ${scenarioName}</h1>
 <div class="sub">${scenarioName} • ${fecha}</div>
 
 <div class="grid4">
@@ -398,7 +398,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
   </div>
 </div>
 
-<div class="footer">FINPATH — Informe generado el ${fecha} • finpathia.netlify.app</div>
+<div class="footer">FINPATHIA — Informe generado el ${fecha} • finpathia.netlify.app</div>
 </body></html>`;
               w.document.write(html);
               w.document.close();

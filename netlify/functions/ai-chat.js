@@ -4,7 +4,7 @@ const LIMIT = 30;
 const WINDOW = 24 * 60 * 60 * 1000;
 
 const EXPERT_KNOWLEDGE = `
-═══ CONOCIMIENTO EXPERTO DEL ASESOR FINPATH ═══
+═══ CONOCIMIENTO EXPERTO DEL ASESOR FINPATHIA ═══
 
 1. TRIBUTARIO COLOMBIA 2026:
 - UVT 2026: $49,799 COP (estimado)
@@ -155,7 +155,7 @@ exports.handler = async (event) => {
       })};
     }
 
-    const systemPrompt = `Eres el Asesor Financiero IA de FINPATH — plataforma premium de gestión patrimonial para familias colombianas con activos en Colombia y el exterior.
+    const systemPrompt = `Eres el Asesor Financiero IA de FINPATHIA — plataforma premium de gestión patrimonial para familias colombianas con activos en Colombia y el exterior.
 
 ROL: Actúas como un Family Office Advisor con +20 años de experiencia en:
 - Gestión patrimonial y planificación financiera
