@@ -51,7 +51,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function InversionesModule({ inversiones, deudas, onUpdate, fmt}) {
+export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, onImport}) {
   const fm = fmt || _fm;
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
@@ -179,7 +179,28 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt})
             </thead>
             <tbody>
               {items.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>🏦 Aquí va tu patrimonio: propiedades, fondos de inversión, CDTs, acciones, crypto, vehículos, cuentas de ahorro. Agrega cada activo con su valor actual. Si genera renta, regístrala en la sección Ingresos.</td></tr>
+                <tr><td colSpan={8} style={{ padding: 0 }}>
+                    <div style={{padding:"40px 32px",textAlign:"center"}}>
+                      <div style={{fontSize:40,marginBottom:12}}>🏦</div>
+                      <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"#fafafa"}}>Agrega tu patrimonio</h3>
+                      <p style={{fontSize:13,color:"#71717a",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Propiedades, fondos de inversión, CDTs, acciones, crypto, vehículos, cuentas de ahorro. Incluye el <strong style={{color:"#a1a1aa"}}>valor actual</strong> de cada activo.</p>
+                      <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
+                        <button onClick={openAdd} style={{background:"#22c55e",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar activo</button>
+                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>📥 Importar Excel</button>}
+                      </div>
+                      <div style={{background:"#1e1e24",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
+                        <div style={{fontSize:11,fontWeight:700,color:"#71717a",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Ejemplo de Excel para importar</div>
+                        <table style={{width:"100%",fontSize:11,color:"#a1a1aa"}}>
+                          <thead><tr style={{borderBottom:"1px solid rgba(255,255,255,0.06)"}}><th style={{padding:"4px 8px",textAlign:"left",color:"#71717a"}}>Activo</th><th style={{textAlign:"right",padding:"4px 8px",color:"#71717a"}}>Valor actual</th><th style={{padding:"4px 8px",color:"#71717a"}}>Tipo</th></tr></thead>
+                          <tbody>
+                            <tr><td style={{padding:"4px 8px"}}>Apto Bogotá</td><td style={{textAlign:"right",padding:"4px 8px"}}>$850,000,000</td><td style={{padding:"4px 8px"}}>Real Estate</td></tr>
+                            <tr><td style={{padding:"4px 8px"}}>Fondo Bancolombia</td><td style={{textAlign:"right",padding:"4px 8px"}}>$120,000,000</td><td style={{padding:"4px 8px"}}>Fondo</td></tr>
+                            <tr><td style={{padding:"4px 8px"}}>ETF VTI</td><td style={{textAlign:"right",padding:"4px 8px"}}>$45,000,000</td><td style={{padding:"4px 8px"}}>Acciones</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </td></tr>
               ) : items.map((inv) => {
                 const m = calcMetrics(inv, deudas);
                 const name = getName(inv);

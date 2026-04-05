@@ -21,7 +21,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function DeudasModule({ deudas, inversiones, onUpdate, fmt}) {
+export default function DeudasModule({ deudas, inversiones, onUpdate, fmt, onImport}) {
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -109,7 +109,27 @@ export default function DeudasModule({ deudas, inversiones, onUpdate, fmt}) {
             </thead>
             <tbody>
               {items.length === 0 ? (
-                <tr><td colSpan={9} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>📋 Aquí van tus deudas y créditos: hipotecas, préstamos personales, tarjetas de crédito, leasing. Incluye el saldo pendiente, la cuota mensual y la tasa de interés. Si la deuda financia un activo (ej: hipoteca de un apartamento), puedes vincularla.</td></tr>
+                <tr><td colSpan={9} style={{ padding: 0 }}>
+                    <div style={{padding:"40px 32px",textAlign:"center"}}>
+                      <div style={{fontSize:40,marginBottom:12}}>📋</div>
+                      <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"#fafafa"}}>Registra tus deudas y créditos</h3>
+                      <p style={{fontSize:13,color:"#71717a",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Hipotecas, préstamos, tarjetas de crédito, leasing. Incluye <strong style={{color:"#a1a1aa"}}>saldo pendiente, cuota mensual y tasa de interés</strong>. Puedes vincular cada deuda al activo que financia.</p>
+                      <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
+                        <button onClick={()=>setShowForm(true)} style={{background:"#22c55e",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar deuda</button>
+                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>📥 Importar Excel</button>}
+                      </div>
+                      <div style={{background:"#1e1e24",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
+                        <div style={{fontSize:11,fontWeight:700,color:"#71717a",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Ejemplo de Excel para importar</div>
+                        <table style={{width:"100%",fontSize:11,color:"#a1a1aa"}}>
+                          <thead><tr style={{borderBottom:"1px solid rgba(255,255,255,0.06)"}}><th style={{padding:"4px 8px",textAlign:"left",color:"#71717a"}}>Deuda</th><th style={{textAlign:"right",padding:"4px 8px",color:"#71717a"}}>Saldo</th><th style={{textAlign:"right",padding:"4px 8px",color:"#71717a"}}>Cuota/mes</th><th style={{textAlign:"right",padding:"4px 8px",color:"#71717a"}}>Tasa</th></tr></thead>
+                          <tbody>
+                            <tr><td style={{padding:"4px 8px"}}>Hipoteca apto</td><td style={{textAlign:"right",padding:"4px 8px"}}>$380M</td><td style={{textAlign:"right",padding:"4px 8px"}}>$4,800,000</td><td style={{textAlign:"right",padding:"4px 8px"}}>12%</td></tr>
+                            <tr><td style={{padding:"4px 8px"}}>Préstamo vehículo</td><td style={{textAlign:"right",padding:"4px 8px"}}>$45M</td><td style={{textAlign:"right",padding:"4px 8px"}}>$1,200,000</td><td style={{textAlign:"right",padding:"4px 8px"}}>18%</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </td></tr>
               ) : items.map((d) => {
                 const lk = d.la ? (inversiones || []).find((i) => i.id === d.la) : null;
                 return (

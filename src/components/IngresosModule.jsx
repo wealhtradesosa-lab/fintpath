@@ -21,7 +21,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
+export default function IngresosModule({ ingresos, onUpdate, trm, fmt, onImport}) {
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -105,7 +105,28 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
               </tr></thead>
               <tbody>
                 {allItems.length === 0 ? (
-                  <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>💰 Aquí van tus ingresos mensuales: salario, arriendos, rendimientos, dividendos, freelance. Haz click en <strong>+ Agregar</strong> arriba o importa un Excel con tus ingresos detallados usando el botón <strong>🧠 Importar Excel</strong> en la barra superior. No incluyas créditos ni deudas aquí — esos van en la sección Deudas.</td></tr>
+                  <tr><td colSpan={8} style={{ padding: 0 }}>
+                    <div style={{padding:"40px 32px",textAlign:"center"}}>
+                      <div style={{fontSize:40,marginBottom:12}}>💰</div>
+                      <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:T.txt}}>Agrega tus ingresos mensuales</h3>
+                      <p style={{fontSize:13,color:T.txt3,maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Registra todo lo que recibes cada mes: salario, arriendos, rendimientos, dividendos, freelance. <strong style={{color:T.txt2}}>No incluyas cuotas de créditos</strong> — esas van en Deudas.</p>
+                      <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
+                        <button onClick={()=>setShowForm(true)} style={{background:T.green,color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar ingreso</button>
+                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>📥 Importar Excel</button>}
+                      </div>
+                      <div style={{background:T.bg3,borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
+                        <div style={{fontSize:11,fontWeight:700,color:T.txt3,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Ejemplo de Excel para importar</div>
+                        <table style={{width:"100%",fontSize:11,color:T.txt2}}>
+                          <thead><tr style={{borderBottom:"1px solid "+T.border}}><th style={{padding:"4px 8px",textAlign:"left",color:T.txt3}}>Nombre</th><th style={{textAlign:"right",padding:"4px 8px",color:T.txt3}}>Monto/mes</th><th style={{padding:"4px 8px",color:T.txt3}}>Categoría</th></tr></thead>
+                          <tbody>
+                            <tr><td style={{padding:"4px 8px"}}>Salario empresa</td><td style={{textAlign:"right",padding:"4px 8px"}}>$8,500,000</td><td style={{padding:"4px 8px"}}>Salario</td></tr>
+                            <tr><td style={{padding:"4px 8px"}}>Arriendo apto</td><td style={{textAlign:"right",padding:"4px 8px"}}>$3,200,000</td><td style={{padding:"4px 8px"}}>Arriendo</td></tr>
+                            <tr><td style={{padding:"4px 8px"}}>Dividendos ETF</td><td style={{textAlign:"right",padding:"4px 8px"}}>$850,000</td><td style={{padding:"4px 8px"}}>Dividendos</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </td></tr>
                 ) : allItems.map((item) => (
                   <tr key={item.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.id) ? T.greenDim : "transparent" }}>
                     <td style={{ padding: "10px 12px" }}>
