@@ -77,7 +77,7 @@ export default function LandingPage({ onGetStarted }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
             {[
               { icon: "📊", title: "Dashboard Inteligente", desc: "Patrimonio neto, cash flow, salud financiera, top performers y proyección patrimonial. Todo de un vistazo.", color: T.green },
-              { icon: "📈", title: "Inversiones con Sub-Unidades", desc: "Cada propiedad con sus propias unidades, ingresos y gastos. NOI, ROI, Cap Rate, Cash-on-Cash.", color: T.blue },
+              { icon: "📈", title: "Radiografía de tu Patrimonio", desc: "Visualiza el rendimiento real de cada activo: cuánto genera, cuánto cuesta y cuánto te queda. Todo en un vistazo.", color: T.blue },
               { icon: "🖥️", title: "Simulador con Sliders", desc: "Ajusta cada ingreso y gasto individualmente. La barra de libertad financiera reacciona en tiempo real.", color: T.purple },
               { icon: "🏛️", title: "Pensiones Colombia", desc: "Cálculo actuarial real: Colpensiones (Ley 797/2003), Fondo Privado, comparador lado a lado.", color: T.cyan },
               { icon: "₿", title: "Ahorro con Bitcoin", desc: "Simulador DCA con CAGR, regla 4% de retiro, proyección año por año. Inspirado en @AndresFelArias.", color: T.orange },
