@@ -137,7 +137,7 @@ function FreedomBarLive({ ni, te, cf }) {
       </div>
 
       {/* 5 Level mini-cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 6, marginBottom: 16 }}>
         {LEVELS.map((l) => {
           const reached = currentLevel >= l.id;
           const current = currentLevel === l.id;
@@ -298,8 +298,8 @@ export default function SimuladorAvanzado({ user, totals, fmt}) {
   ];
 
   return (
-    <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,flexWrap:"wrap",gap:8}}>
+    <div style={{overflowX:"hidden"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,flexWrap:"wrap",gap:8,width:"100%"}}>
         <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Simulador de Independencia Financiera</h2>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <input type="text" value={simName} onChange={e=>setSimName(e.target.value)} placeholder="Nombre del escenario..." style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"8px 12px",color:T.txt,fontSize:12,width:200,outline:"none"}} />
@@ -412,7 +412,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
       <FreedomBarLive ni={simT.ni} te={simT.te} cf={simT.cf} />
 
       {/* Scenario presets */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 20 }}>
         {scs.map((sc) => {
           const a = scenario === sc.id;
           return (
@@ -429,7 +429,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
           { l: "Ingreso Neto", v: fm(simT.ni), c: T.gn, d: fm(simT.ni - (totals.ni || 0)) },
           { l: "Egresos Totales", v: fm(simT.te), c: T.rd, d: fm(simT.te - (totals.te || 0)), tip: "Gastos familiares + cuotas de deudas" },
