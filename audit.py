@@ -34,12 +34,11 @@ if 'sanitize(' in c: ok+=1; print(f"  ✅ sanitize()")
 else: fail+=1; print(f"  ❌ sanitize() faltante")
 
 if '_setU' in c: ok+=1; print(f"  ✅ setU wrapper")
-
-# 9. React.xxx references (debe usar import directo)
-bad_react = [m for m in __import__('re').finditer(r'React\.(use|create|memo|forwardRef)', c)]
-if not bad_react: ok+=1; print(f"  ✅ Sin React.xxx (imports directos)")
-else: fail+=1; print(f"  ❌ {len(bad_react)} React.xxx — usar import directo")
 else: fail+=1; print(f"  ❌ setU wrapper faltante")
+
+bad_react = len(re.findall(r'React\.(use|create|memo|forward)', c))
+if bad_react==0: ok+=1; print(f"  ✅ Sin React.xxx")
+else: fail+=1; print(f"  ❌ {bad_react} React.xxx — usar import directo")
 
 r = subprocess.run(['npx','vite','build'], capture_output=True, text=True)
 if r.returncode==0: ok+=1; print(f"  ✅ Build exitoso")
