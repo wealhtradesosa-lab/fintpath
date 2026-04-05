@@ -62,7 +62,7 @@ export default function LandingPage({ onGetStarted }) {
       <Section style={{ paddingBottom: 60 }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 40, flexWrap: "wrap", opacity: 0.5 }}>
           {["📊 12 Módulos", "🧠 5 Coaches IA", "₿ Pensión BTC", "🏛️ Colpensiones", "📈 Trading IBKR"].map((t) => (
-            <span key={t} style={{ fontSize: 14, color: T.txt3, fontWeight: 500 }}>{t}</span>
+            <span key={t} style={{ fontSize: 14, color: T.txt, fontWeight: 500 }}>{t}</span>
           ))}
         </div>
       </Section>
