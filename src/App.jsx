@@ -182,7 +182,7 @@ export default function FinPath(){
     if(!u)return[];
     try{
     const msgs=[];
-    const inv=(u&&u.inv)||[],deu=(u&&u.deu)||[],gas=(u&&u.gas)||{},ing=(u&&u.ingresos)||[];
+    const inv=((u&&u.inv)||[]).filter(i=>i.sim!==false),deu=((u&&u.deu)||[]).filter(d=>d.sim!==false),gas=(u&&u.gas)||{},ing=((u&&u.ingresos)||[]).filter(i=>i.sim!==false);
     const topA=inv.map(i=>({...i,...iM(i,deu,ing)})).sort((a,b)=>b.noi-a.noi);
     const hiDebt=deu.filter(d=>(d.mt||0)>0).sort((a,b)=>b.ts-a.ts);
     const gasCats=Object.entries(gas).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+(g.m||0),0),items})).sort((a,b)=>b.total-a.total);
