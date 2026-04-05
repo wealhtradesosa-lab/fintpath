@@ -1056,14 +1056,14 @@ case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={
       const plans=[
         {n:"Free",p:{mensual:"$0",anual:"$0"},pr:{mensual:"gratis",anual:"gratis"},save:null,
          f:["Dashboard básico","3 inversiones","Gastos y deudas","Simulador limitado","1 meta financiera"],
-         no:["Coaches IA","Pensiones actuarial","Trading","Alertas inteligentes","Resumen ejecutivo","PDF export"],
+         no:["🤖 Asesor IA","Coaches IA","Pensiones","Trading","Alertas","PDF export"],
          cur:plan==="free"},
         {n:"Básico",p:{mensual:"$8",anual:"$6"},pr:{mensual:"/mes",anual:"/mes"},save:"Ahorra 25%",
          f:["Todo en Free","10 inversiones","10 metas","Simulador avanzado","Pensiones Colpensiones","BTC Simulator","Trading portfolio","CSV import","PDF export"],
-         no:["Coaches IA","Family Office KPIs","Alertas inteligentes","Resumen ejecutivo"],
+         no:["🤖 Asesor IA","Coaches IA","Family Office KPIs","Alertas"],
          cur:plan==="basico",ac:false},
         {n:"Pro",p:{mensual:"$16",anual:"$12"},pr:{mensual:"/mes",anual:"/mes"},save:"Ahorra 25%",
-         f:["Todo en Básico","Inversiones ilimitadas","Metas ilimitadas","5 Coaches IA","Family Office KPIs","Alertas inteligentes","Percentil de riqueza","Concentración de riesgo","Benchmark vs mercado","Estimación tributaria","Fondo educación hijos","Resumen ejecutivo","Liquidez real","Costo de vida","Soporte prioritario"],
+         f:["Todo en Básico","Inversiones ilimitadas","Metas ilimitadas","🤖 Asesor Financiero IA","5 Coaches IA","Family Office KPIs","Alertas inteligentes","Percentil de riqueza","Concentración de riesgo","Benchmark vs mercado","Estimación tributaria","Fondo educación hijos","Resumen ejecutivo","Liquidez real","Costo de vida","Soporte prioritario"],
          no:[],
          cur:plan==="pro",ac:true}
       ];
