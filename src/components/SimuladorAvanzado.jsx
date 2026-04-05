@@ -570,12 +570,21 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                   max={Math.max(cuota * 3, 500)} color={T.pr}
                   onChange={(v) => setVal(`debt_${di}`, v)}
                   sub={""} />
-                <div style={{display:"flex",gap:12,paddingLeft:4,marginTop:2}}>
-                  <span style={{fontSize:10,color:T.txt3}}>Saldo: <strong style={{color:T.rd}}>{fm(saldo)}</strong></span>
-                  <span style={{fontSize:10,color:T.txt3}}>Cuota: <strong style={{color:T.pr}}>{fm(cuota)}/mes</strong></span>
-                  {tasa>0&&<span style={{fontSize:10,color:T.txt3}}>Tasa: <strong>{tasa}%</strong></span>}
-                  {lk&&<span style={{fontSize:10,color:T.txt3}}>→ {lk.nombre||lk.n||""}</span>}
-                </div>
+                {(()=>{
+                  const simCuota=getVal(`debt_${di}`, cuota);
+                  const tasaMes=tasa>0?(tasa/100/12):0;
+                  const mesesPago=simCuota>0&&tasaMes>0?Math.ceil(Math.log(simCuota/(simCuota-saldo*tasaMes))/Math.log(1+tasaMes)):simCuota>0?Math.ceil(saldo/simCuota):0;
+                  const mesesReal=mesesPago>0&&mesesPago<600?mesesPago:simCuota>0?Math.ceil(saldo/simCuota):0;
+                  const totalPagar=simCuota*mesesReal;
+                  const intereses=totalPagar-saldo;
+                  return<div style={{display:"flex",gap:10,paddingLeft:4,marginTop:2,flexWrap:"wrap"}}>
+                    <span style={{fontSize:10,color:T.txt3}}>Saldo: <strong style={{color:T.rd}}>{fm(saldo)}</strong></span>
+                    <span style={{fontSize:10,color:T.txt3}}>Cuota: <strong style={{color:T.pr}}>{fm(simCuota)}/mes</strong></span>
+                    {tasa>0&&<span style={{fontSize:10,color:T.txt3}}>Tasa: <strong>{tasa}%</strong></span>}
+                    {mesesReal>0&&<span style={{fontSize:10,color:simCuota>cuota?"#22c55e":simCuota<cuota?"#ef4444":T.txt3,fontWeight:600}}>Pagas en {mesesReal<12?mesesReal+" meses":Math.round(mesesReal/12*10)/10+" años"}{intereses>0?" • Intereses: "+fm(intereses):""}</span>}
+                    {lk&&<span style={{fontSize:10,color:T.txt3}}>→ {lk.nombre||lk.n||""}</span>}
+                  </div>
+                })()}
               </div>
             );
           })}
