@@ -66,7 +66,13 @@ const DING=[{id:"ing_1",nombre:"Salario Principal",categoria:"Salario",mensual:1
 const ADV=[{id:"cashflow",nm:"Cashflowista",av:"💰",cl:"#eab308",bg:"rgba(234,179,8,0.06)",ti:"Ingreso Pasivo"},{id:"estratega",nm:"Estratega",av:"🎯",cl:"#ef4444",bg:"rgba(239,68,68,0.06)",ti:"5 Niveles de Libertad"},{id:"riesgo",nm:"Auditor",av:"🔬",cl:"#3b82f6",bg:"rgba(59,130,246,0.06)",ti:"Riesgo & Concentración"},{id:"valor",nm:"Fundamentalista",av:"📊",cl:"#22c55e",bg:"rgba(34,197,94,0.06)",ti:"Valor & Rendimiento"},{id:"contrarian",nm:"Contrarian",av:"🧠",cl:"#a78bfa",bg:"rgba(167,139,250,0.06)",ti:"Lo que NO hacer"}];
 
 const dfa=(ds,a)=>{const d=(ds||[]).filter(x=>x.la===a);return{s:d.reduce((a,x)=>a+(x.mt||0),0),p:d.reduce((a,x)=>a+(x.pg||0),0)}};
-const iM=(inv,ds)=>{let ig=0,gs=0;const toArr=v=>Array.isArray(v)?v:[];if(inv.un&&Array.isArray(inv.un))inv.un.forEach(u=>{toArr(u.ig).forEach(i=>ig+=(+i.m||0));toArr(u.gs).forEach(g=>gs+=(+g.m||0))});else{toArr(inv.ig).forEach(i=>ig+=(+i.m||0));toArr(inv.gs).forEach(g=>gs+=(+g.m||0))}const va=+inv.va||0,vc=+inv.vc||0,noi=ig-gs,db=dfa(ds,inv.id),eq=va-db.s,gn=va-vc;return{ig,gs,noi,gn,roi:vc>0?(gn/vc)*100:0,cap:va>0?((noi*12)/va)*100:0,ds:db.s,dp:db.p,eq,coc:eq>0?(((noi-db.p)*12)/eq)*100:0}};
+const iM=(inv,ds,allIng)=>{let ig=0,gs=0;const toArr=v=>Array.isArray(v)?v:[];
+if(inv.un&&Array.isArray(inv.un))inv.un.forEach(u=>{toArr(u.ig).forEach(i=>ig+=(+i.m||0));toArr(u.gs).forEach(g=>gs+=(+g.m||0))});
+else{toArr(inv.ig).forEach(i=>ig+=(+i.m||0));toArr(inv.gs).forEach(g=>gs+=(+g.m||0))}
+if(ig===0&&allIng){const nm=(inv.n||inv.nombre||"").toLowerCase();toArr(allIng).forEach(i=>{const src=(i.fuente||i.nombre||"").toLowerCase();if(nm&&src&&(src.includes(nm)||nm.includes(src)))ig+=(+i.mensual||0)*(i.moneda==="USD"?4200:1)})}
+if(ig===0&&(+inv.renta||0)>0)ig=+inv.renta;
+const va=+inv.va||0,vc=+inv.vc||0,noi=ig-gs,db=dfa(ds,inv.id),eq=va-db.s,gn=va-vc;
+return{ig,gs,noi,gn,roi:vc>0?(gn/vc)*100:0,cap:va>0?((noi*12)/va)*100:0,ds:db.s,dp:db.p,eq,coc:eq>0?(((noi-db.p)*12)/eq)*100:0}};
 const cT=(inv,ds,gf,ing)=>{let ab=0,ti=0,tg=0;(inv||[]).forEach(i=>{ab+=i.va});const ingT=(ing||[]).reduce((s,i)=>i.sim===false?s:s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);ti=ingT;const td=(ds||[]).reduce((s,d)=>s+(d.mt||0),0),tc=(ds||[]).filter(d=>(d.mt||0)>0&&d.sim!==false).reduce((s,d)=>s+(d.pg||0),0),gfm=Object.values(gf||{}).flat().reduce((s,g)=>g.sim===false?s:s+(g.m||0),0),ni=ti-tg,te=gfm+tc,cf=ni-te;return{ab,td,nw:ab-td,ti,tg,ni,gfm,tc,te,cf,ind:te>0?(ni/te)*100:0,dta:ab>0?(td/ab)*100:0,ingT}};
 
 const Cd=({children,s,...p})=><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",...s}} {...p}>{children}</div>;
@@ -177,7 +183,7 @@ export default function FinPath(){
     try{
     const msgs=[];
     const inv=(u&&u.inv)||[],deu=(u&&u.deu)||[],gas=(u&&u.gas)||{},ing=(u&&u.ingresos)||[];
-    const topA=inv.map(i=>({...i,...iM(i,deu)})).sort((a,b)=>b.noi-a.noi);
+    const topA=inv.map(i=>({...i,...iM(i,deu,ing)})).sort((a,b)=>b.noi-a.noi);
     const hiDebt=deu.filter(d=>(d.mt||0)>0).sort((a,b)=>b.ts-a.ts);
     const gasCats=Object.entries(gas).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+(g.m||0),0),items})).sort((a,b)=>b.total-a.total);
     const pasivos=ing.filter(i=>["Arriendo","Rendimiento","Dividendos","Inversión"].includes(i.categoria));
@@ -201,7 +207,7 @@ export default function FinPath(){
       msgs.push({t:"💰 Cuadrante de Ingresos",c:"Ingresos activos (trabajo): "+fm(ingActivo)+"/mes ("+(100-pctPasivo).toFixed(0)+"%)\nIngresos pasivos (activos): "+fm(ingPasivo)+"/mes ("+pctPasivo.toFixed(0)+"%)\n\n"+(pctPasivo>=70?"🟢 EXCELENTE: Más del 70% es pasivo. Eres inversionista.":pctPasivo>=40?"🟡 EN TRANSICIÓN: "+pctPasivo.toFixed(0)+"% pasivo. Aún dependes del trabajo.":"🔴 DEPENDIENTE: Solo "+pctPasivo.toFixed(0)+"% pasivo. Si dejas de trabajar, pierdes el "+(100-pctPasivo).toFixed(0)+"%.")});
       const prodA=inv.filter(i=>iM(i,deu).noi>0);
       const deadA=inv.filter(i=>iM(i,deu).noi<=0&&(i.va||0)>0);
-      msgs.push({t:"📦 Activos Productivos vs Improductivos",c:"Productivos ("+prodA.length+"):\n"+prodA.slice(0,5).map(a=>"  ✅ "+(a.n||a.nombre||"Sin nombre")+": +"+fm(iM(a,deu).noi)+"/mes").join("\n")+(deadA.length>0?"\n\nImproductivos ("+deadA.length+"):\n"+deadA.slice(0,3).map(a=>"  ❌ "+(a.n||a.nombre||"Sin nombre")+": "+fm(a.va)+" sin generar ingreso").join("\n")+"\n\n💡 Capital dormido = oportunidad perdida.":"\n\n✅ Todos tus activos generan ingreso.")});
+      msgs.push({t:"📦 Activos Productivos vs Improductivos",c:"Productivos ("+prodA.length+"):\n"+prodA.slice(0,5).map(a=>"  ✅ "+(a.n||a.nombre||"Sin nombre")+": +"+fm(iM(a,deu,ing).noi)+"/mes").join("\n")+(deadA.length>0?"\n\nImproductivos ("+deadA.length+"):\n"+deadA.slice(0,3).map(a=>"  ❌ "+(a.n||a.nombre||"Sin nombre")+": "+fm(a.va)+" sin generar ingreso").join("\n")+"\n\n💡 Capital dormido = oportunidad perdida.":"\n\n✅ Todos tus activos generan ingreso.")});
       msgs.push({t:"🎯 Plan de Acción",c:"1. Convertir "+fm(deadA.reduce((s,i)=>s+(i.va||0),0))+" improductivos en productivos\n2. Reinvertir cash flow "+fm(t.cf)+"/mes en activos que generen ingreso\n3. Meta: ingreso pasivo > "+fm(t.te)+"/mes (hoy: "+fm(ingPasivo)+")\n4. Cada "+fm(Math.abs(t.cf)*12)+" ahorrado/año te acerca "+((t.te>0?Math.abs(t.cf)*12/t.te*100:0)).toFixed(0)+"% más"});
     }
     else if(id==="estratega"){
@@ -224,10 +230,10 @@ export default function FinPath(){
       msgs.push({t:"🌐 Moneda",c:"COP: "+fm(currencies.COP)+"/mes ("+(100-usdPct).toFixed(0)+"%)\nUSD: "+fm(currencies.USD)+"/mes ("+usdPct.toFixed(0)+"%)\n\n"+(usdPct<15?"🟡 Muy expuesto al COP. Recomendación: 30%+ en USD.":usdPct>70?"🟡 Muy dolarizado.":"🟢 Buena diversificación.")});
     }
     else if(id==="valor"){
-      msgs.push({t:"📊 Ranking por Rendimiento",c:topA.slice(0,6).map((a,i)=>{const m=iM(a,deu);const coc=a.va>0?(m.noi*12/a.va*100):0;return(i+1)+". "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+"\n   NOI: "+fm(m.noi)+"/mes • ROI: "+pc(m.roi)+" • Cash/Cash: "+coc.toFixed(1)+"%"+(coc<5&&(a.va||0)>50000000?" ⚠ Bajo":"")}).join("\n\n")+"\n\n💡 Cash-on-Cash <5% es inferior a un CDT."});
-      const over=topA.filter(a=>iM(a,deu).roi<3&&(a.va||0)>100000000);
-      const under=topA.filter(a=>iM(a,deu).roi>15);
-      msgs.push({t:"🔍 Optimización",c:(over.length>0?"Bajo rendimiento (<3%):\n"+over.map(a=>"  ⚠ "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+": "+fm(a.va)+" al "+pc(iM(a,deu).roi)+"\n    → En CDT al 10% generaría "+fm(a.va*0.1/12)+"/mes").join("\n")+"\n\n":"")+(under.length>0?"Estrellas (>15%):\n"+under.map(a=>"  ⭐ "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+": "+pc(iM(a,deu).roi)+" — Invierte más aquí").join("\n"):"Todo en rango normal.")});
+      msgs.push({t:"📊 Ranking por Rendimiento",c:topA.slice(0,6).map((a,i)=>{const m=iM(a,deu,ing);const coc=a.va>0?(m.noi*12/a.va*100):0;return(i+1)+". "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+"\n   NOI: "+fm(m.noi)+"/mes • ROI: "+pc(m.roi)+" • Cash/Cash: "+coc.toFixed(1)+"%"+(coc<5&&(a.va||0)>50000000?" ⚠ Bajo":"")}).join("\n\n")+"\n\n💡 Cash-on-Cash <5% es inferior a un CDT."});
+      const over=topA.filter(a=>iM(a,deu,ing).roi<3&&(a.va||0)>100000000);
+      const under=topA.filter(a=>iM(a,deu,ing).roi>15);
+      msgs.push({t:"🔍 Optimización",c:(over.length>0?"Bajo rendimiento (<3%):\n"+over.map(a=>"  ⚠ "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+": "+fm(a.va)+" al "+pc(iM(a,deu,ing).roi)+"\n    → En CDT al 10% generaría "+fm(a.va*0.1/12)+"/mes").join("\n")+"\n\n":"")+(under.length>0?"Estrellas (>15%):\n"+under.map(a=>"  ⭐ "+((a.n||a.nombre||"Sin nombre")||a.nombre||"Sin nombre")+": "+pc(iM(a,deu,ing).roi)+" — Invierte más aquí").join("\n"):"Todo en rango normal.")});
       msgs.push({t:"💎 Margen de Seguridad",c:"Deuda/Activos: "+pc(t.dta)+"\n\n"+(t.dta<20?"🟢 Excelente margen. Puedes apalancarte.":t.dta<40?"🟡 Aceptable. No más deuda.":"🔴 Riesgo alto. Paga deuda primero.")+(worstDebt?"\n\nDeuda más cara: "+worstDebt.n+" al "+worstDebt.ts+"%. Pagarla = invertir al "+worstDebt.ts+"% garantizado.":"")});
     }
     else if(id==="contrarian"){
