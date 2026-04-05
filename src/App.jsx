@@ -103,7 +103,11 @@ export default function FinPath(){
   const trm=u?.trm||4200;
   const fm=n=>{if(n==null||isNaN(n))return"$0";const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
   const upd=(k,v)=>setU(p=>({...p,[k]:v}));
-  const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";const plan=isAdmin?"pro":(u?.p?.plan||"free");
+  const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";
+  const trialEnd=u?.p?.trialEnd;
+  const trialActive=trialEnd&&new Date(trialEnd)>=new Date();
+  const trialDays=trialEnd?Math.max(0,Math.ceil((new Date(trialEnd)-new Date())/(86400000))):0;
+  const plan=isAdmin?"pro":trialActive?"pro":(u?.p?.plan||"free");
   const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos):{},[u]);
   const ib=useMemo(()=>{if(!u?.ibk?.length)return{tc:0,tv:0,pnl:0,pp:0,pos:[]};let tc=0,tv=0;const pos=u.ibk.map(p=>{const va=p.sh*p.pr,cbb=p.sh*p.cb,pnl=va-cbb,pp=cbb>0?((va/cbb)-1)*100:0,up=p.pr>0?((p.tg/p.pr)-1)*100:0;tc+=cbb;tv+=va;return{...p,va,cbb,pnl,pp,up}});return{tc,tv,pnl:tv-tc,pp:tc>0?((tv/tc)-1)*100:0,pos}},[u?.ibk]);
   const pen=useMemo(()=>{if(!u)return{};const p=u.pen||{},yrs=Math.max(0,(p.rAge||60)-(p.age||35)),mr=(p.ret||7)/100/12;let fv=+(p.cur||0);for(let m=0;m<yrs*12;m++)fv=fv*(1+mr)+(+(p.sv||0));const rfv=fv/Math.pow(1+(p.inf||3)/100,yrs),mo=rfv>0?rfv/360:0;const proj=[];let rv=+(p.cur||0);for(let y=0;y<=yrs;y++){proj.push({age:(p.age||35)+y,val:Math.round(rv)});for(let m=0;m<12&&y<yrs;m++)rv=rv*(1+mr)+(+(p.sv||0))}let ba=0;const bc=(p.btcC||56)/100,bp=p.btcP||50000;for(let y=1;y<=yrs;y++)for(let m=1;m<=12;m++)ba+=(+(p.sv||0))/(bp*Math.pow(1+bc,((y-1)*12+m)/12));const bfv=ba*bp*Math.pow(1+bc,yrs),bmo=(bfv*.04)/12;return{yrs,fv:Math.round(rfv),mo:Math.round(mo),ok:mo>=(p.des||6000),gap:Math.max(0,(p.des||6000)-mo),proj,ba,bfv,bmo:Math.round(bmo)}},[u?.pen]);
@@ -133,7 +137,7 @@ export default function FinPath(){
         if(error){setAuthError(error.message);setAuthLoading(false);return}
         setAuthUser(data.user);
         const d=await sL(data.user.id);
-        if(d)setU(d);else{const nd=mkU(aF.n||"Usuario",aF.e);setU(nd);await sS(nd,data.user.id)}
+        if(d)setU(d);else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id)}
       }else{
         // Signup via Netlify function (auto-confirms email)
         const sr=await fetch("/.netlify/functions/auth-signup",{
@@ -145,7 +149,7 @@ export default function FinPath(){
         // Now sign in with the new account
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);const nd=mkU(aF.n||"Usuario",aF.e);setU(nd);await sS(nd,data.user.id);
+        setAuthUser(data.user);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id);
       }
     }else{setU(mkU(aF.n||"Usuario",aF.e))}
     }catch(e){setAuthError("Error: "+e.message)}
@@ -219,6 +223,20 @@ export default function FinPath(){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
         <div>
           <h1 style={{fontSize:26,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>{new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}, {(u.p.name&&u.p.name!=="Usuario")?u.p.name.split(" ")[0]:(u.p.email||"").split("@")[0]}</h1>
+          {trialActive&&<div style={{background:"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(59,130,246,0.05))",border:"1px solid rgba(34,197,94,0.15)",borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:18}}>⭐</span>
+              <div><div style={{fontSize:13,fontWeight:700,color:T.gn}}>Plan Pro — Trial gratuito</div><div style={{fontSize:11,color:T.tx3}}>{trialDays<=3?"¡Solo te quedan "+trialDays+" días!":"Te quedan "+trialDays+" días de acceso Pro completo"}</div></div>
+            </div>
+            {trialDays<=5&&<button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"8px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Mantener Pro →</button>}
+          </div>}
+          {!trialActive&&trialEnd&&plan==="free"&&<div style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.12)",borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:18}}>😢</span>
+              <div><div style={{fontSize:13,fontWeight:700,color:T.rd}}>Tu trial Pro terminó</div><div style={{fontSize:11,color:T.tx3}}>Upgrade para recuperar el Asesor IA, Coaches y Simulador completo</div></div>
+            </div>
+            <button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"8px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Upgrade ahora →</button>
+          </div>}
           <p style={{color:T.tx3,fontSize:13,margin:0}}>Resumen de tu situación financiera</p>
         </div>
         <div style={{display:"flex",gap:6}}>
@@ -1257,7 +1275,7 @@ case"inv":return<InversionesModule inversiones={u.inv} deudas={u.deu} onUpdate={
 
   return<div style={{background:T.bg,minHeight:"100vh",display:"flex",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:${T.bg}}input:focus,select:focus{border-color:${T.gn}!important;outline:none}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${T.bg3};border-radius:3px}::selection{background:${T.gn}30}`}</style>
-    {sb&&<aside style={{width:220,minWidth:220,height:"100vh",position:mb?"fixed":"sticky",top:0,background:T.bg2,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",zIndex:100,overflowY:"auto"}}><div style={{padding:"20px 18px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div style={{fontSize:16,fontWeight:800,color:T.gn}}>FINPATH</div>{mb&&<button onClick={()=>sSb(false)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:16}}>✕</button>}</div><nav style={{flex:1,padding:"0 8px"}}>{nvs.map(n=>{const a=pg===n.id;return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span>{n.l}{n.id==="price"&&plan==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px"}}><div style={{width:28,height:28,borderRadius:99,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{u.p.name.charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u.p.name}</div><div style={{fontSize:10,color:T.tx3}}>{plan==="free"?"Free":plan==="basico"?"Básico ⚡":"Pro ⭐"}</div></div><button onClick={logout} title="Cerrar sesión" style={{background:T.bg3,border:"none",color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:12}}>🚪</button></div></div></aside>}
+    {sb&&<aside style={{width:220,minWidth:220,height:"100vh",position:mb?"fixed":"sticky",top:0,background:T.bg2,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",zIndex:100,overflowY:"auto"}}><div style={{padding:"20px 18px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div style={{fontSize:16,fontWeight:800,color:T.gn}}>FINPATH</div>{mb&&<button onClick={()=>sSb(false)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:16}}>✕</button>}</div><nav style={{flex:1,padding:"0 8px"}}>{nvs.map(n=>{const a=pg===n.id;return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span>{n.l}{n.id==="price"&&plan==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px"}}><div style={{width:28,height:28,borderRadius:99,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{u.p.name.charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u.p.name}</div><div style={{fontSize:10,color:T.tx3}}>{plan==="free"?(trialEnd?"Free":"Free"):plan==="basico"?"Básico ⚡":trialActive?"Pro ⭐ Trial":"Pro ⭐"}</div></div><button onClick={logout} title="Cerrar sesión" style={{background:T.bg3,border:"none",color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:12}}>🚪</button></div></div></aside>}
     {mb&&sb&&<div onClick={()=>sSb(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99}}/>}
     <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}><header style={{height:52,padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:10}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} style={{background:"none",border:"none",color:T.tx2,cursor:"pointer",fontSize:18}}>☰</button>}{!sb&&<span style={{fontSize:14,fontWeight:800,color:T.gn}}>FINPATH</span>}</div><div style={{display:"flex",alignItems:"center",gap:10}}><Bt v="s" sz="s" onClick={()=>setShowImport(true)} st={{marginRight:6}}>🧠 Importar Excel</Bt><Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#22c55e",border:"none",color:"#fff",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11,marginLeft:4}}>{cur==="USD"?"🇺🇸 USD":"🇨🇴 COP"}</button>{u.trm&&<span style={{fontSize:10,color:T.tx3,marginLeft:4}}>TRM: ${Math.round(u.trm).toLocaleString()}</span>}{plan==="free"&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}</div></header><div style={{flex:1,padding:mb?14:28,maxWidth:1200,width:"100%"}}>{rp()}</div>{showImport&&<CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/>}</main>
   </div>;

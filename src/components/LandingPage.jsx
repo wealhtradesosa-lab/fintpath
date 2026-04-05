@@ -48,13 +48,13 @@ export default function LandingPage({ onGetStarted }) {
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
-              Comenzar Gratis →
+              Comenzar 14 días gratis →
             </button>
             <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{ background: T.bg3, color: T.txt, border: `1px solid ${T.border}`, padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 600 }}>
               Ver Funciones
             </button>
           </div>
-          <p style={{ fontSize: 13, color: T.txt3, marginTop: 16 }}>✓ Gratis para siempre • ✓ Sin tarjeta de crédito • ✓ 30 segundos para empezar</p>
+          <p style={{ fontSize: 13, color: T.txt3, marginTop: 16 }}>✓ 14 días Pro gratis • ✓ Sin tarjeta de crédito • ✓ Asesor IA incluido</p>
         </div>
       </Section>
 
@@ -241,7 +241,7 @@ export default function LandingPage({ onGetStarted }) {
           Más de 12 módulos financieros. 5 coaches IA. Simulador de pensiones. Ahorro en BTC. Todo en un solo lugar.
         </p>
         <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "18px 48px", borderRadius: 14, cursor: "pointer", fontSize: 18, fontWeight: 800, letterSpacing: "-0.01em" }}>
-          Crear Mi Cuenta Gratis →
+          Comenzar 14 días Pro gratis →
         </button>
       </Section>
 
