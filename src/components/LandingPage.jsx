@@ -257,7 +257,7 @@ export default function LandingPage({ onGetStarted }) {
         <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
           <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</span>
         </div>
-        <p style={{ fontSize: 12, color: T.txt3 }}>Tu camino a la libertad financiera • © 2026 FINPATHIA</p>
+        <p style={{ fontSize: 12, color: T.txt3 }}>© 2026 FINPATHIA • <a href="/privacidad" style={{color:"#71717a"}}>Política de Privacidad</a></p>
       </footer>
     </div>
   );
