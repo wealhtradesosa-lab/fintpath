@@ -24,7 +24,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport}) {
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
-  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f" });
+  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes" });
   const [selected, setSelected] = useState(new Set()); // "cat|idx"
 
   const gas = gastos || {};
@@ -57,29 +57,29 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport}) {
         newGas[eCat] = newGas[eCat].filter((_, i) => i !== idx);
         if (newGas[eCat].length === 0) delete newGas[eCat];
         if (!newGas[form.cat]) newGas[form.cat] = [];
-        newGas[form.cat].push({ c: form.c || "", m: +form.m || 0, t: form.t || "f" });
+        newGas[form.cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes" });
       } else {
-        newGas[eCat][idx] = { c: form.c || "", m: +form.m || 0, t: form.t || "f" };
+        newGas[eCat][idx] = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes" };
       }
     } else {
       const cat = form.cat || "Otro";
       if (!newGas[cat]) newGas[cat] = [];
-      newGas[cat].push({ c: form.c || "", m: +form.m || 0, t: form.t || "f" });
+      newGas[cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes" });
     }
     onUpdate(newGas);
     setShowForm(false);
     setEditKey(null);
-    setForm({ cat: "", c: "", m: "", t: "f" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes" });
   };
 
   const openEdit = (item) => {
-    setForm({ cat: item.cat, c: item.c, m: item.m, t: item.t });
+    setForm({ cat: item.cat, c: item.c, m: item.freq==="año"?(item.m*12):item.m, t: item.t, freq: item.freq||"mes" });
     setEditKey(item.key);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ cat: "", c: "", m: "", t: "f" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes" });
     setEditKey(null);
     setShowForm(true);
   };
@@ -202,7 +202,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport}) {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <In l="Categoría" value={form.cat} onChange={(v) => setForm((p) => ({ ...p, cat: v }))} placeholder="Vivienda" />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
-              <In l="Monto Mensual" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" />
+              <div style={{display:"flex",gap:8}}><div style={{flex:1}}><In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" /></div><div style={{width:100}}><In l="Frecuencia" value={form.freq} onChange={(v) => setForm((p) => ({ ...p, freq: v }))} options={[{ v: "mes", l: "Mensual" }, { v: "año", l: "Anual" }]} /></div></div>
               <In l="Tipo" value={form.t} onChange={(v) => setForm((p) => ({ ...p, t: v }))} options={[{ v: "f", l: "Fijo" }, { v: "v", l: "Variable" }]} />
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
