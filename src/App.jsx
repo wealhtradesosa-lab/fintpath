@@ -184,7 +184,7 @@ export default function FinPath(){
   </div>;
 
   const has=(u.inv?.length||u.deu?.length||Object.keys(u.gas||{}).length)>0;
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Gastos"},{id:"deu",i:"📋",l:"Deudas"},{id:"trd",i:"💹",l:"Trading"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"met",i:"🎯",l:"Metas"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Gastos"},{id:"deu",i:"📋",l:"Deudas"},{id:"trd",i:"💹",l:"Trading"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"met",i:"🎯",l:"Metas"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"asesor",i:"🤖",l:"Asesor IA"},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
 
   const rp=()=>{switch(pg){
     case"dash":{
