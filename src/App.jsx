@@ -104,6 +104,7 @@ export default function FinPath(){
   useEffect(()=>{if(u)sS(u,authUser?.id)},[u]);
   const trm=u?.trm||4200;
   const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),3000)};
+  const logout=async()=>{try{await supabase.auth.signOut()}catch{}localStorage.removeItem(SK);_setU(null);setShowAuth(false)};
   const fm=n=>{if(n==null||isNaN(n))return"$0";const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
   const upd=(k,v)=>{showToast("✅ Guardado");setU(p=>p?{...p,[k]:v}:p);};
   const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";
