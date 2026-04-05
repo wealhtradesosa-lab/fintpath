@@ -14,7 +14,27 @@ const pc = (n) => (n || 0).toFixed(1) + "%";
 // Get name from item (handles multiple field formats)
 const getName = (i) => i.n || i.nombre || i.name || "Sin nombre";
 const getLoc = (i) => i.ub || i.ubicacion || i.location || "";
-const getType = (i) => i.tp || i.tipo || i.type || "Other";
+const getType = (i) => {
+  let tp = String(i.tp || i.tipo || i.type || "").trim();
+  if (!tp || !isNaN(Number(tp))) tp = "";
+  const typeMap = {"Other":"Otro","Investment":"Fondo de Inversión","Income":"Otro","Trading":"Acciones","Renta Fija":"CDT","Lote":"Real Estate"};
+  if (tp && typeMap[tp]) return typeMap[tp];
+  const valid = ["Real Estate","Fondo de Inversión","CDT","Acciones","Crypto","Bodega","Vehículo","Local Comercial","Renta Fija","Negocio","Cash","Otro"];
+  if (tp && valid.includes(tp)) return tp;
+  const nm = ((i.n||i.nombre||"")+" "+(i.ub||"")).toLowerCase();
+  if (/apart|apto|casa|lote|terreno|oficina|inmueble|propiedad|house|condo/i.test(nm)) return "Real Estate";
+  if (/bodega/i.test(nm)) return "Bodega";
+  if (/local/i.test(nm)) return "Local Comercial";
+  if (/fondo|fiduci|fund/i.test(nm)) return "Fondo de Inversión";
+  if (/cdt|renta fija|bonos/i.test(nm)) return "CDT";
+  if (/accion|etf|portafolio|vti|spy|stock/i.test(nm)) return "Acciones";
+  if (/btc|bitcoin|crypto|eth/i.test(nm)) return "Crypto";
+  if (/vehic|carro|moto|auto/i.test(nm)) return "Vehículo";
+  if (/negocio|empresa|sas/i.test(nm)) return "Negocio";
+  if (/cash|ahorro|cuenta/i.test(nm)) return "Cash";
+  if (/green|puerto|orlando|miami|backswing|district/i.test(nm)) return "Real Estate";
+  return "Otro";
+};
 const getVA = (i) => Number(i.va || i.valor_actual || i.valor || 0);
 const getVC = (i) => Number(i.vc || i.valor_compra || i.costo || 0);
 
