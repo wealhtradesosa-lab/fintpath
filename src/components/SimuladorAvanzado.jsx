@@ -557,15 +557,26 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
           ))}
 
           {/* Debt payment sliders */}
-          <h4 style={{ fontSize: 13, color: T.pr, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>📋 Cuotas de Deudas</h4>
+          <h4 style={{ fontSize: 13, color: T.pr, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>📋 Deudas</h4>
           {(user.deudas || []).filter(d => (d.mt||0) > 0).map((d, di) => {
             if (d.sim === false) return null;
             const lk = (user.inv || []).find((i) => i.id === ((d.link||d.la)));
+            const saldo = d.mt||0;
+            const cuota = d.pago||d.pg||0;
+            const tasa = d.tasa||d.ts||0;
             return (
-              <Slider key={`debt_${di}`} label={(d.nombre||d.n||"")||d.n} value={getVal(`debt_${di}`, (d.pago||d.pg||0)||d.pg)} base={(d.pago||d.pg||0)||d.pg}
-                max={Math.max(((d.pago||d.pg||0)||d.pg) * 3, 500)} color={T.pr}
-                onChange={(v) => setVal(`debt_${di}`, v)}
-                sub={lk ? "→ " + ((lk.nombre||lk.n||"")||lk.n) : ((d.tasa||d.ts||0)) > 0 ? ((d.tasa||d.ts||0)) + "%" : ""} />
+              <div key={`debt_${di}`} style={{marginBottom:10}}>
+                <Slider label={(d.nombre||d.n||"")} value={getVal(`debt_${di}`, cuota)} base={cuota}
+                  max={Math.max(cuota * 3, 500)} color={T.pr}
+                  onChange={(v) => setVal(`debt_${di}`, v)}
+                  sub={""} />
+                <div style={{display:"flex",gap:12,paddingLeft:4,marginTop:2}}>
+                  <span style={{fontSize:10,color:T.txt3}}>Saldo: <strong style={{color:T.rd}}>{fm(saldo)}</strong></span>
+                  <span style={{fontSize:10,color:T.txt3}}>Cuota: <strong style={{color:T.pr}}>{fm(cuota)}/mes</strong></span>
+                  {tasa>0&&<span style={{fontSize:10,color:T.txt3}}>Tasa: <strong>{tasa}%</strong></span>}
+                  {lk&&<span style={{fontSize:10,color:T.txt3}}>→ {lk.nombre||lk.n||""}</span>}
+                </div>
+              </div>
             );
           })}
 
