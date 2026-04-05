@@ -110,7 +110,7 @@ export default function FinPath(){
 
 
   // Session timeout — lock after 15 min inactivity
-  React.useEffect(()=>{
+  useEffect(()=>{
     if(!u)return;
     const pin=localStorage.getItem("fp3_pin");
     if(!pin)return;
@@ -123,7 +123,7 @@ export default function FinPath(){
   },[u]);
 
   // Auto-backup every 24h
-  React.useEffect(()=>{
+  useEffect(()=>{
     if(!u)return;
     const lastBackup=localStorage.getItem("fp3_last_backup");
     const now=Date.now();
