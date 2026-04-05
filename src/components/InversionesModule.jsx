@@ -179,7 +179,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt})
             </thead>
             <tbody>
               {items.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>No hay activos. Agrega propiedades, fondos, acciones, crypto, etc.</td></tr>
+                <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>🏦 Agrega tus activos: propiedades, fondos de inversión, CDTs, acciones, crypto, vehículos. Incluye el valor actual de cada uno.</td></tr>
               ) : items.map((inv) => {
                 const m = calcMetrics(inv, deudas);
                 const name = getName(inv);

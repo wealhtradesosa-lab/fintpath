@@ -245,16 +245,56 @@ export default function FinPath(){
         </div>
       </div>
 
-      {!has&&<div style={{marginBottom:24}}>
-        <div style={{background:"linear-gradient(135deg,rgba(34,197,94,.08),rgba(6,182,212,.05))",border:"1px solid rgba(34,197,94,.15)",borderRadius:16,padding:28}}>
-          <div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:36,marginBottom:8}}>👋</div><h3 style={{fontSize:22,fontWeight:800,margin:"0 0 6px",letterSpacing:"-0.02em"}}>Bienvenido a FINPATHIA</h3><p style={{color:T.tx2,fontSize:14,margin:0}}>Tu plataforma de gestión patrimonial</p></div>
-          <p style={{color:T.tx3,fontSize:13,marginBottom:20,textAlign:"center"}}>Elige por dónde empezar o carga datos demo para explorar</p>
-          <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr 1fr",gap:12}}>
-            {[{pg:"inv",icon:"🏦",title:"Inversiones",desc:"Propiedades, fondos, acciones, crypto",color:T.gn},{pg:"gas",icon:"💳",title:"Gastos",desc:"Vivienda, educación, transporte, seguros",color:T.rd},{pg:"ing",icon:"💰",title:"Ingresos",desc:"Salario, rentas, dividendos, freelance",color:T.bl}].map(item=><button key={item.pg} onClick={()=>setPg(item.pg)} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:14,padding:"20px",cursor:"pointer",textAlign:"left",color:T.tx,transition:"border-color 0.2s"}} onMouseOver={e=>e.currentTarget.style.borderColor=item.color} onMouseOut={e=>e.currentTarget.style.borderColor=T.border}><div style={{fontSize:24,marginBottom:8}}>{item.icon}</div><div style={{fontSize:14,fontWeight:700,marginBottom:4}}>{item.title}</div><div style={{fontSize:12,color:T.tx3,lineHeight:1.4}}>{item.desc}</div></button>)}
+      {(()=>{
+        const hasIng=(u.ingresos||[]).length>0;
+        const hasGas=Object.keys(u.gas||{}).length>0;
+        const hasInv=(u.inv||[]).length>0;
+        const hasDeu=(u.deu||[]).length>0;
+        const steps=[
+          {id:"ing",done:hasIng,icon:"💰",title:"Registra tus ingresos",desc:"Salario, rentas, dividendos — todo lo que entra cada mes",action:"Agregar ingresos",tip:"También puedes importar desde Excel con el botón 🧠 Importar Excel arriba"},
+          {id:"gas",done:hasGas,icon:"💳",title:"Registra tus gastos",desc:"Vivienda, educación, transporte, seguros, entretenimiento",action:"Agregar gastos",tip:"Importa tus gastos desde un Excel con categorías"},
+          {id:"inv",done:hasInv,icon:"🏦",title:"Agrega tu patrimonio",desc:"Propiedades, fondos, acciones, CDTs, crypto, vehículos",action:"Agregar inversiones",tip:"Incluye el valor actual de cada activo"},
+          {id:"deu",done:hasDeu,icon:"📋",title:"Registra tus deudas",desc:"Hipotecas, préstamos, tarjetas — con saldo y cuota",action:"Agregar deudas",tip:"Vincula cada deuda al activo que financia"},
+        ];
+        const done=steps.filter(s=>s.done).length;
+        const pct=Math.round((done/steps.length)*100);
+        if(done>=steps.length)return null;
+        return <div style={{marginBottom:24}}>
+        <div style={{background:"linear-gradient(135deg,rgba(34,197,94,.04),rgba(59,130,246,.03))",border:"1px solid rgba(34,197,94,.12)",borderRadius:20,padding:"32px 28px",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:T.bg3}}><div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#22c55e,#3b82f6)",borderRadius:2,transition:"width 0.5s"}}/></div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,flexWrap:"wrap",gap:12}}>
+            <div>
+              <h3 style={{fontSize:22,fontWeight:800,margin:"0 0 6px",letterSpacing:"-0.02em"}}>Configura tu FINPATHIA</h3>
+              <p style={{color:T.tx3,fontSize:13,margin:0}}>{done===0?"Sigue estos 4 pasos para activar tu dashboard completo":"¡Vas bien! "+done+" de 4 pasos completados"}</p>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{fontSize:13,fontWeight:700,color:T.gn}}>{pct}%</div>
+              <Bt sz="s" onClick={demo} st={{background:T.bg3,color:T.tx2}}>📊 Probar con datos demo</Bt>
+            </div>
           </div>
-          <div style={{marginTop:16,textAlign:"center"}}><Bt sz="s" onClick={demo} st={{background:T.bg3,color:T.tx2}}>📊 Cargar datos demo</Bt></div>
+          <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
+            {steps.map((s,i)=><button key={s.id} onClick={()=>setPg(s.id)} style={{background:s.done?"rgba(34,197,94,0.06)":T.bg2,border:"1px solid "+(s.done?"rgba(34,197,94,0.2)":T.border),borderRadius:14,padding:"16px 18px",cursor:"pointer",textAlign:"left",color:T.tx,transition:"all 0.2s",opacity:s.done?.6:1}} onMouseOver={e=>{if(!s.done)e.currentTarget.style.borderColor="#22c55e"}} onMouseOut={e=>{if(!s.done)e.currentTarget.style.borderColor=T.border}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+                <div style={{width:36,height:36,borderRadius:10,background:s.done?"rgba(34,197,94,0.12)":T.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{s.done?"✅":s.icon}</div>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{fontSize:10,color:s.done?T.gn:T.tx3,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Paso {i+1}</span>
+                    {s.done&&<span style={{fontSize:9,color:T.gn,fontWeight:600}}>✓ Listo</span>}
+                  </div>
+                  <div style={{fontSize:14,fontWeight:700,marginTop:2,color:s.done?T.tx3:T.tx,textDecoration:s.done?"line-through":"none"}}>{s.title}</div>
+                  <div style={{fontSize:11,color:T.tx3,marginTop:2,lineHeight:1.4}}>{s.done?s.action+" ✓":s.desc}</div>
+                  {!s.done&&<div style={{fontSize:10,color:T.bl,marginTop:6}}>💡 {s.tip}</div>}
+                </div>
+              </div>
+            </button>)}
+          </div>
+          {done===0&&<div style={{marginTop:16,padding:"12px 16px",background:"rgba(59,130,246,0.06)",borderRadius:10,display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:18}}>🧠</span>
+            <div style={{fontSize:12,color:T.tx2,lineHeight:1.5}}><strong>Tip:</strong> Si tienes tus datos en Excel, usa el botón <strong>🧠 Importar Excel</strong> en la barra superior para cargar todo de una vez — ingresos, gastos e inversiones.</div>
+          </div>}
         </div>
-      </div>}
+      </div>;
+      })()}
 
       {/* ═══ ROW 1: Net Worth Hero + Health Score ═══ */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14,marginBottom:14}}>
