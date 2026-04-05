@@ -129,7 +129,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport}) {
 
       {/* Table with checkboxes */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600 }}>
           <thead>
             <tr>
               <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${T.border}` }}>
@@ -188,7 +188,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport}) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       {/* Form Modal */}
