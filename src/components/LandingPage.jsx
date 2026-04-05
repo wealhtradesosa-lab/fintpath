@@ -17,7 +17,7 @@ export default function LandingPage({ onGetStarted }) {
   );
 
   return (
-    <div style={{ background: T.bg, color: T.txt, fontFamily: "'Inter', system-ui, sans-serif", minHeight: "100vh", overflowX: "hidden", backgroundImage: "url(/hero-bg.png)", backgroundSize: "cover", backgroundPosition: "center top", backgroundRepeat: "no-repeat", backgroundAttachment: "fixed" }}>
+    <div style={{ background: T.bg, color: T.txt, fontFamily: "'Inter', system-ui, sans-serif", minHeight: "100vh", overflowX: "hidden", backgroundImage: "linear-gradient(to bottom, rgba(9,9,11,0.7) 0%, rgba(9,9,11,0.85) 40%, rgba(9,9,11,0.95) 70%, #09090b 100%), url(/hero-bg.png)", backgroundSize: "cover, cover", backgroundPosition: "center, center top", backgroundRepeat: "no-repeat", backgroundAttachment: "scroll, fixed" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
 
       {/* ─── NAV ─── */}
