@@ -172,8 +172,17 @@ export default function DeudasModule({ deudas, inversiones, onUpdate, fmt, onImp
               <In l="Nombre" value={form.n} onChange={(v) => setForm((p) => ({ ...p, n: v }))} placeholder="Hipoteca casa" />
               <In l="Tipo" value={form.tp} onChange={(v) => setForm((p) => ({ ...p, tp: v }))} options={[{ v: "mortgage", l: "Hipoteca" }, { v: "loan", l: "Préstamo" }, { v: "personal", l: "Personal" }, { v: "credit_card", l: "Tarjeta" }]} />
               <In l="Saldo" value={form.mt} onChange={(v) => setForm((p) => ({ ...p, mt: v }))} type="number" placeholder="0" />
-              <In l="Cuota/mes" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v }))} type="number" placeholder="0" />
-              <In l="Tasa %" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="0" />
+              <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => {
+                const mt=parseFloat(form.mt)||0;
+                const newTs=mt>0&&v?((parseFloat(v)*12/mt)*100).toFixed(1):"";
+                setForm((p) => ({ ...p, pg: v, ts: newTs }));
+              }} type="number" placeholder="0" />
+              <In l="Tasa anual %" value={form.ts} onChange={(v) => {
+                const mt=parseFloat(form.mt)||0;
+                const newPg=mt>0&&v?Math.round(mt*parseFloat(v)/100/12):"";
+                setForm((p) => ({ ...p, ts: v, pg: String(newPg) }));
+              }} type="number" placeholder="Ej: 12" />
+              {form.mt&&form.pg&&form.ts&&<div style={{gridColumn:"1/-1",fontSize:11,color:"#a1a1aa",background:"#1e1e24",borderRadius:8,padding:"8px 12px"}}>Saldo {fmt(+form.mt||0)} al {form.ts}% anual = cuota estimada {fmt(+form.pg||0)}/mes. Ingresa uno y el otro se calcula.</div>}
               <In l="Activo Vinculado" value={form.la} onChange={(v) => setForm((p) => ({ ...p, la: v }))} options={[{ v: "", l: "Ninguno" }, ...(inversiones || []).filter(i => i).map((i) => ({ v: i.id || "", l: i.n || i.nombre || i.name || "Sin nombre" }))]} />
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
