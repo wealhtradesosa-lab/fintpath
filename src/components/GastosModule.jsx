@@ -143,7 +143,7 @@ export default function GastosModule({ gastos, onUpdate, fmt}) {
           </thead>
           <tbody>
             {allItems.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>💳 Registra tus gastos mensuales: vivienda, alimentación, transporte, educación, seguros. Haz click en "+ Agregar" arriba o importa desde Excel con el botón 🧠.</td></tr>
+              <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>💳 Aquí van tus gastos fijos y variables del mes: vivienda, alimentación, transporte, educación, seguros, entretenimiento. Haz click en <strong>+ Agregar</strong> arriba o importa un Excel con tus gastos detallados usando el botón <strong>🧠 Importar Excel</strong> en la barra superior. Solo gastos — no incluyas cuotas de créditos ni deudas.</td></tr>
             ) : allItems.map((item) => (
               <tr key={item.key} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.key) ? T.redDim : "transparent" }}>
                 <td style={{ padding: "10px 12px" }}>

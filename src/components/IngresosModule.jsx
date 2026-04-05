@@ -105,7 +105,7 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt}) {
               </tr></thead>
               <tbody>
                 {allItems.length === 0 ? (
-                  <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>💰 Empieza aquí — Agrega tus ingresos mensuales: salario, arriendos, rendimientos, dividendos, freelance. Haz click en "+ Agregar" arriba.</td></tr>
+                  <tr><td colSpan={8} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>💰 Aquí van tus ingresos mensuales: salario, arriendos, rendimientos, dividendos, freelance. Haz click en <strong>+ Agregar</strong> arriba o importa un Excel con tus ingresos detallados usando el botón <strong>🧠 Importar Excel</strong> en la barra superior. No incluyas créditos ni deudas aquí — esos van en la sección Deudas.</td></tr>
                 ) : allItems.map((item) => (
                   <tr key={item.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.id) ? T.greenDim : "transparent" }}>
                     <td style={{ padding: "10px 12px" }}>

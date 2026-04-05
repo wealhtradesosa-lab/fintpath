@@ -109,7 +109,7 @@ export default function DeudasModule({ deudas, inversiones, onUpdate, fmt}) {
             </thead>
             <tbody>
               {items.length === 0 ? (
-                <tr><td colSpan={9} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>📋 Registra tus deudas: hipotecas, préstamos, tarjetas de crédito. Incluye el saldo actual, la cuota mensual y la tasa de interés.</td></tr>
+                <tr><td colSpan={9} style={{ padding: 48, textAlign: "center", color: T.txt3 }}>📋 Aquí van tus deudas y créditos: hipotecas, préstamos personales, tarjetas de crédito, leasing. Incluye el saldo pendiente, la cuota mensual y la tasa de interés. Si la deuda financia un activo (ej: hipoteca de un apartamento), puedes vincularla.</td></tr>
               ) : items.map((d) => {
                 const lk = d.la ? (inversiones || []).find((i) => i.id === d.la) : null;
                 return (
