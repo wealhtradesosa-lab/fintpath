@@ -245,6 +245,13 @@ export default function LandingPage({ onGetStarted }) {
         </button>
       </Section>
 
+      {/* ─── DISCLAIMER ─── */}
+      <Section style={{ padding: "0 24px 32px" }}>
+        <div style={{ maxWidth: 700, margin: "0 auto", padding: "20px 24px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, fontSize: 11, color: T.txt3, lineHeight: 1.7, textAlign: "center" }}>
+          <strong style={{ color: T.txt2 }}>Aviso legal:</strong> FINPATHIA es una herramienta de simulación y gestión patrimonial con fines informativos y educativos. No constituye asesoría financiera, tributaria ni legal profesional. Las proyecciones, análisis y recomendaciones generadas por la plataforma y su agente de inteligencia artificial son estimaciones basadas en los datos proporcionados por el usuario y no garantizan resultados futuros. Cada persona es responsable de sus propias decisiones financieras. Consulte a un profesional certificado antes de tomar decisiones de inversión, tributarias o patrimoniales.
+        </div>
+      </Section>
+
       {/* ─── FOOTER ─── */}
       <footer style={{ borderTop: `1px solid ${T.border}`, padding: "32px 24px", textAlign: "center" }}>
         <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
