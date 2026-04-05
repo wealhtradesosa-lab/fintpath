@@ -81,7 +81,7 @@ export default function LandingPage({ onGetStarted }) {
               { icon: "🖥️", title: "Simulador con Sliders", desc: "Ajusta cada ingreso y gasto individualmente. La barra de libertad financiera reacciona en tiempo real.", color: T.purple },
               { icon: "🏛️", title: "Pensiones Colombia", desc: "Cálculo actuarial real: Colpensiones (Ley 797/2003), Fondo Privado, comparador lado a lado.", color: T.cyan },
               { icon: "₿", title: "Ahorro con Bitcoin", desc: "Simulador DCA con CAGR, regla 4% de retiro, proyección año por año. Inspirado en @AndresFelArias.", color: T.orange },
-              { icon: "🧠", title: "5 Coaches IA Legendarios", desc: "5 estilos de asesoría financiera analizan tus datos reales y te dan recomendaciones personalizadas.", color: T.gold },
+              { icon: "🤖", title: "Asesor Financiero IA", desc: "Agente inteligente que analiza tu patrimonio real: simula escenarios, optimiza impuestos, identifica riesgos y te da recomendaciones con montos exactos.", color: T.gold },
               { icon: "💹", title: "Portfolio de Trading", desc: "Posiciones, P/L, upside, targets por acción. Conecta tu broker favorito.", color: T.green },
               { icon: "💳", title: "Gastos & Deudas", desc: "Categorización inteligente, gastos fijos vs variables, deudas vinculadas a activos.", color: T.red },
               { icon: "📤", title: "Importar CSV", desc: "Sube tus datos desde Excel en segundos. Plantillas descargables para cada módulo.", color: T.purple },
@@ -92,6 +92,46 @@ export default function LandingPage({ onGetStarted }) {
                 <p style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6 }}>{f.desc}</p>
               </div>
             ))}
+          </div>
+        </Section>
+      </div>
+
+      {/* ─── AI ADVISOR ─── */}
+      <div style={{ background: "linear-gradient(135deg, #09090b 0%, #0a1a0f 50%, #09090b 100%)", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "80px 0" }}>
+        <Section>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "center", maxWidth: 950, margin: "0 auto" }}>
+            <div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 99, padding: "6px 14px", marginBottom: 16, fontSize: 12, color: T.green }}>🤖 Nuevo</div>
+              <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12, lineHeight: 1.2 }}>Tu asesor financiero privado, disponible <span style={{ color: T.green }}>24/7</span></h2>
+              <p style={{ fontSize: 15, color: T.txt2, lineHeight: 1.7, marginBottom: 24 }}>Un agente de inteligencia artificial que conoce cada número de tu patrimonio y te da recomendaciones personalizadas como un Family Office privado.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  "Analiza tu patrimonio completo con datos reales",
+                  "Simula escenarios: ¿qué pasa si vendo? ¿si invierto más?",
+                  "Identifica riesgos que no estás viendo",
+                  "Optimización tributaria Colombia + USA",
+                  "Estrategias de retiro y pensión personalizadas",
+                  "Planificación de sucesión patrimonial",
+                ].map(item => (
+                  <div key={item} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 14, color: T.txt2 }}>
+                    <span style={{ color: T.green, flexShrink: 0, marginTop: 2 }}>✓</span> {item}
+                  </div>
+                ))}
+              </div>
+              <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "14px 32px", borderRadius: 12, cursor: "pointer", fontSize: 15, fontWeight: 700, marginTop: 24 }}>Probar el Asesor IA →</button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { q: "¿Cómo puedo alcanzar independencia financiera en 3 años?", a: "Con tu cash flow actual de $28M/mes y patrimonio de $6.1B, necesitas aumentar ingresos pasivos en $14M/mes. Te recomiendo..." },
+                { q: "¿Debería pagar la hipoteca o invertir?", a: "Tu hipoteca es al 12% anual. CDTs están al 10.5%. Matemáticamente conviene pagar la deuda primero — te ahorras $4.8M/mes en intereses." },
+                { q: "¿Qué pasa si pierdo mi mayor ingreso?", a: "Sin Puerto Madero ($12M/mes), tu cash flow baja a $16M. Seguirías en nivel Independencia pero sin margen. Recomiendo diversificar..." },
+              ].map((chat, i) => (
+                <div key={i} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16 }}>
+                  <div style={{ fontSize: 12, color: T.green, fontWeight: 600, marginBottom: 6 }}>💬 {chat.q}</div>
+                  <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>{chat.a}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </Section>
       </div>
