@@ -222,7 +222,7 @@ export default function FinPath(){
     return msgs;
   };
 
-  const has=(u.inv?.length||u.deu?.length||Object.keys(u.gas||{}).length)>0;
+  const has=u?(u.inv?.length||u.deu?.length||Object.keys(u.gas||{}).length)>0:false;
   const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:"MI DINERO"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Gastos"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"deu",i:"📋",l:"Deudas"},{id:"_sep2",sep:true,l:"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"met",i:"🎯",l:"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"_sep3",sep:true,l:"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:"Asesor IA"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
 
   const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Gastos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",pen:"Pensiones",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",set:"Configuración"};
@@ -237,13 +237,13 @@ export default function FinPath(){
     const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     const totalPat=t.ab+ib.tv;
     // Income by category
-    const incByCat={};(u.ingresos||[]).forEach(i=>{incByCat[i.categoria||"Otro"]=(incByCat[i.categoria||"Otro"]||0)+(i.mensual||0)});
+    const incByCat={};((u&&u.ingresos)||[]).forEach(i=>{incByCat[i.categoria||"Otro"]=(incByCat[i.categoria||"Otro"]||0)+(i.mensual||0)});
     const incPie=Object.entries(incByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     // Expense by category
-    const expByCat={};Object.entries(u.gas||{}).forEach(([cat,its])=>{expByCat[cat]=its.reduce((s,g)=>s+(g.m||0),0)});
+    const expByCat={};Object.entries((u&&u.gas)||{}).forEach(([cat,its])=>{expByCat[cat]=its.reduce((s,g)=>s+(g.m||0),0)});
     const expPie=Object.entries(expByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     // Top income sources
-    const topInc=[...(u.ingresos||[])].sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,5);
+    const topInc=[...((u&&u.ingresos)||[])].sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,5);
     // Health score (0-100)
     const healthScore=Math.min(100,Math.round(
       (t.ind>=100?30:t.ind*0.3) + // independence: 30 pts
