@@ -251,10 +251,10 @@ export default function FinPath(){
         const hasInv=(u.inv||[]).length>0;
         const hasDeu=(u.deu||[]).length>0;
         const steps=[
-          {id:"ing",done:hasIng,icon:"💰",title:"Registra tus ingresos",desc:"Salario, rentas, dividendos — todo lo que entra cada mes",action:"Agregar ingresos",tip:"También puedes importar desde Excel con el botón 🧠 Importar Excel arriba"},
-          {id:"gas",done:hasGas,icon:"💳",title:"Registra tus gastos",desc:"Vivienda, educación, transporte, seguros, entretenimiento",action:"Agregar gastos",tip:"Importa tus gastos desde un Excel con categorías"},
-          {id:"inv",done:hasInv,icon:"🏦",title:"Agrega tu patrimonio",desc:"Propiedades, fondos, acciones, CDTs, crypto, vehículos",action:"Agregar inversiones",tip:"Incluye el valor actual de cada activo"},
-          {id:"deu",done:hasDeu,icon:"📋",title:"Registra tus deudas",desc:"Hipotecas, préstamos, tarjetas — con saldo y cuota",action:"Agregar deudas",tip:"Vincula cada deuda al activo que financia"},
+          {id:"ing",done:hasIng,icon:"💰",title:"Registra tus ingresos",desc:"Salario, rentas, dividendos — todo lo que entra cada mes",action:"Agregar ingresos",tip:"¿Tienes un Excel? Usa el botón azul 📥 Importar Excel en la barra superior"},
+          {id:"gas",done:hasGas,icon:"💳",title:"Registra tus gastos",desc:"Vivienda, educación, transporte, seguros, entretenimiento",action:"Agregar gastos",tip:"Solo gastos del hogar — créditos y deudas van en el Paso 4"},
+          {id:"inv",done:hasInv,icon:"🏦",title:"Agrega tu patrimonio",desc:"Propiedades, fondos, acciones, CDTs, crypto, vehículos",action:"Agregar inversiones",tip:"Propiedades, fondos, CDTs, acciones, crypto, cuentas de ahorro"},
+          {id:"deu",done:hasDeu,icon:"📋",title:"Registra tus deudas",desc:"Hipotecas, préstamos, tarjetas — con saldo y cuota",action:"Agregar deudas",tip:"Hipotecas, préstamos, tarjetas — con saldo, cuota y tasa"},
         ];
         const done=steps.filter(s=>s.done).length;
         const pct=Math.round((done/steps.length)*100);
@@ -290,7 +290,7 @@ export default function FinPath(){
           </div>
           {done===0&&<div style={{marginTop:16,padding:"12px 16px",background:"rgba(59,130,246,0.06)",borderRadius:10,display:"flex",alignItems:"center",gap:10}}>
             <span style={{fontSize:18}}>🧠</span>
-            <div style={{fontSize:12,color:T.tx2,lineHeight:1.5}}><strong>Tip:</strong> Si tienes tus datos en Excel, usa el botón <strong>🧠 Importar Excel</strong> en la barra superior para cargar todo de una vez — ingresos, gastos e inversiones.</div>
+            <div style={{fontSize:12,color:T.tx2,lineHeight:1.5}}><strong>Tip:</strong> Si tienes tus datos en Excel, usa el botón azul <strong>📥 Importar Excel</strong> en la barra superior. La IA analiza tu archivo y organiza los datos automáticamente en ingresos, gastos e inversiones.</div>
           </div>}
         </div>
       </div>;
