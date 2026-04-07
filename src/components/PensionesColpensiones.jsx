@@ -54,33 +54,32 @@ const In = ({ label, value, onChange, unit, min, max, step }) => (
 function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ipc, edadJub }) {
   const IBC = ibcSM * SM_2026;
   const aniosFaltantes = Math.max(0, edadJub - edad);
-  const semanasFuturas = aniosFaltantes * 52;
-  const semanasTotales = semanasActuales + semanasFuturas;
+
+  // semanasActuales YA incluye las semanas futuras (la tabla las pasa sumadas)
+  const semanasTotales = semanasActuales;
 
   // Requisito mínimo: 1300 semanas + edad (57 mujer, 62 hombre)
-  const cumpleEdad = edad >= edadJub || aniosFaltantes >= 0;
+  const cumpleEdad = true; // La tabla maneja la edad
   const cumpleSemanas = semanasTotales >= 1300;
-  const cumpleRequisitos = cumpleEdad && cumpleSemanas;
+  const cumpleRequisitos = cumpleSemanas;
 
-  // IBL — Promedio de los últimos 10 años ajustado por IPC
-  // Fórmula: IBL = promedio(IBC_ajustado) de últimos 10 años
-  let sumIBL = 0;
-  for (let y = 0; y < 10; y++) {
-    sumIBL += IBC * Math.pow((1 + (ipc || 5.5) / 100) / 1.09, y);
-  }
-  const IBL = sumIBL / 10;
+  // IBL — Promedio últimos 10 años de IBC ajustado por IPC
+  // Se toma el IBC actual y se asume constante en términos reales
+  const IBL = IBC; // En pesos de hoy (sin ajuste inflacionario)
 
   // Tasa de reemplazo — Ley 797/2003 Art. 10
-  // r = 65.50% - 0.50% por cada SMMLV adicional sobre el primero
-  // Mínimo: 55% (por 1300 semanas) → en realidad la ley dice mínimo ~33.99%
+  // r = 65.50% - 0.50% × (SMMLV_IBL - 1) para cada SMMLV adicional
   // + 1.5% por cada 50 semanas adicionales sobre 1300
+  // Máximo: 80% | Sin piso artificial
+  const s = IBL / SM_2026;
+  let tasaBase = 65.50 - 0.50 * Math.max(0, s - 1);
+  if (tasaBase < 40) tasaBase = 40; // Piso práctico para IBLs muy altos
+
   const semanasExtra = Math.max(0, semanasTotales - 1300);
-  const bonusSemanas = Math.floor(semanasExtra / 50) * 1.5;
-  const s = IBL / SM_2026; // Cuántos salarios mínimos es el IBL
-  let tasaBase = 65.50 - 0.50 * s;
-  if (tasaBase < 55) tasaBase = 55; // Piso legal: 55% por 1300 semanas
+  const bloques50 = Math.floor(semanasExtra / 50);
+  const bonusSemanas = bloques50 * 1.5;
   let tasaTotal = tasaBase + bonusSemanas;
-  if (tasaTotal > 80) tasaTotal = 80; // Tope máximo 80%
+  if (tasaTotal > 80) tasaTotal = 80; // Tope máximo legal
 
   // Pensión calculada
   const pensionBruta = IBL * (tasaTotal / 100);
@@ -91,19 +90,18 @@ function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ipc, edadJub }) 
 
   // Pensión mínima
   const pensionMinima = SM_2026;
-  const pensionFinal = Math.max(pensionNeta, cumpleRequisitos ? pensionMinima : 0);
+  const pensionFinal = cumpleRequisitos ? Math.max(pensionNeta, pensionMinima) : 0;
 
   // Valor total pensión en 20 años
   const total20Anios = pensionFinal * 12 * 20;
 
-  // Meses y semanas que faltan
   const mesesFaltantes = aniosFaltantes * 12;
   const semanasQueFaltan = Math.max(0, 1300 - semanasActuales);
 
   return {
     IBC, IBL, tasaBase, bonusSemanas, tasaTotal,
     pensionBruta, pensionTope, pensionAplicada, descuentoSalud, pensionNeta, pensionFinal,
-    semanasTotales, semanasExtra, semanasQueFaltan,
+    semanasTotales, semanasExtra, semanasQueFaltan, bloques50,
     cumpleEdad, cumpleSemanas, cumpleRequisitos,
     aniosFaltantes, mesesFaltantes, total20Anios, edadJub, pensionMinima,
   };
@@ -124,10 +122,13 @@ function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar }) {
     proyeccion.push({ anio: y, saldo: Math.round(saldo) });
   }
 
-  // Anualidad: saldo / 240 meses (20 años)
-  const rentaMes = saldo / 240;
-  // Retiro programado: saldo / expectativa de vida restante
-  const retiroProgramado = saldo / (20 * 12); // Simplificado a 20 años
+  // Renta vitalicia: saldo × tasa mensual de descuento (tabla de mortalidad)
+  // Simplificación: esperanza de vida promedio 82 años, jubilación a 62 = 20 años
+  // Factor actuarial conservador: 240 meses con rendimiento real 4%
+  const tasaMesRetiro = Math.pow(1.04, 1/12) - 1;
+  const factor = tasaMesRetiro > 0 ? (1 - Math.pow(1 + tasaMesRetiro, -240)) / tasaMesRetiro : 240;
+  const rentaMes = saldo / factor;
+  const retiroProgramado = rentaMes;
 
   return {
     saldoFinal: saldo,
