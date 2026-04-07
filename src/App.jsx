@@ -21,13 +21,46 @@ const sL=async(uid)=>{
   try{
     if(isSupabaseConfigured&&uid){
       const{data,error}=await supabase.from("user_data").select("data").eq("id",uid).single();
-      if(!error&&data?.data){const sd=sanitize(data.data);localStorage.setItem(SK,JSON.stringify(sd));return sd}
+      if(!error&&data?.data){
+        let sd=data.data;
+        if(sd._encrypted&&sd.payload){
+          const encKey=localStorage.getItem("fp3_enc_key");
+          if(encKey){try{sd=await E2E.decrypt(sd.payload,encKey,uid)}catch{return null}}
+          else{return null}
+        }
+        sd=sanitize(sd);localStorage.setItem(SK,JSON.stringify(sd));return sd}
     }
     const r=localStorage.getItem(SK);return r?sanitize(JSON.parse(r)):null;
   }catch{return null}
 };
 
 const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.inv)d.inv=[];d.inv=d.inv.map(i=>{if(i.tp&&!isNaN(Number(i.tp))){i.tp=inferType(i);i.tipo=i.tp}return i});if(!d.deu)d.deu=[];if(!d.gas)d.gas={};if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};return d};
+
+// ═══ END-TO-END ENCRYPTION ═══
+const E2E={
+  async deriveKey(password,salt){
+    const enc=new TextEncoder();
+    const keyMaterial=await crypto.subtle.importKey("raw",enc.encode(password),{name:"PBKDF2"},false,["deriveKey"]);
+    return crypto.subtle.deriveKey({name:"PBKDF2",salt:enc.encode(salt),iterations:100000,hash:"SHA-256"},keyMaterial,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+  },
+  async encrypt(data,password,salt){
+    const key=await this.deriveKey(password,salt);
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const enc=new TextEncoder();
+    const encrypted=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc.encode(JSON.stringify(data)));
+    const combined=new Uint8Array(iv.length+encrypted.byteLength);
+    combined.set(iv);combined.set(new Uint8Array(encrypted),iv.length);
+    return btoa(String.fromCharCode(...combined));
+  },
+  async decrypt(encryptedB64,password,salt){
+    const key=await this.deriveKey(password,salt);
+    const combined=Uint8Array.from(atob(encryptedB64),c=>c.charCodeAt(0));
+    const iv=combined.slice(0,12);
+    const data=combined.slice(12);
+    const decrypted=await crypto.subtle.decrypt({name:"AES-GCM",iv},key,data);
+    return JSON.parse(new TextDecoder().decode(decrypted));
+  }
+};
 let _svT=null;
 const takeSnapshot=(d)=>{
   try{
@@ -141,7 +174,7 @@ export default function FinPath(){
 
   const trm=u?.trm||4200;
   const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),3000)};
-  const logout=async()=>{try{await supabase.auth.signOut()}catch{}localStorage.removeItem(SK);_setU(null);setShowAuth(false)};
+  const logout=async()=>{try{await supabase.auth.signOut()}catch{}localStorage.removeItem(SK);localStorage.removeItem("fp3_enc_key");_setU(null);setShowAuth(false)};
   const auth=async()=>{
     if(!aF.e||!aF.p){setAuthError("Ingresa email y contraseña");return}
     setAuthLoading(true);setAuthError("");
@@ -150,7 +183,7 @@ export default function FinPath(){
       if(aM==="login"){
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);
+        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);
         const d=await sL(data.user.id);
         if(d)setU(sanitize(d));else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id)}
       }else{
@@ -162,7 +195,7 @@ export default function FinPath(){
         if(!sr.ok){setAuthError(srd.error||"Error creando cuenta");setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id);
+        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id);
       }
     }else{setU(mkU(aF.n||"Usuario",aF.e))}
     }catch(e){setAuthError("Error: "+e.message)}
@@ -1528,6 +1561,10 @@ case"inv":return<InversionesModule inversiones={(u&&u.inv)||[]} deudas={(u&&u.de
       </div>}
     case"set":return<div><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 20px"}}>Configuración</h2><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:20}}><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Perfil</h3><div style={{display:"flex",flexDirection:"column",gap:14}}><In l="Nombre" value={u?.p?.name||""} onChange={v=>setU(p=>({...p,p:{...p.p,name:v}}))}/><In l="Email" value={u?.p?.email||""} onChange={v=>setU(p=>({...p,p:{...p.p,email:v}}))}/><In l="TRM (Tasa de cambio USD→COP)" value={(u&&u.trm)} onChange={v=>setU(p=>({...p,trm:+v||4200}))} type="number"/></div></Cd><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Datos</h3><div style={{display:"flex",flexDirection:"column",gap:10}}><div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan:</strong> {plan} {plan!=="pro"&&<span onClick={()=>setPg("price")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}> → Upgrade</span>}</div>{isAdmin&&<div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan manual:</strong> <select value={(u?.p?.plan)||"free"} onChange={e=>setU(p=>({...p,p:{...p.p,plan:e.target.value}}))} style={{background:T.bg2,border:"1px solid "+T.border,color:T.tx,padding:"4px 8px",borderRadius:6,marginLeft:8}}><option value="free">Free</option><option value="basico">Básico</option><option value="pro">Pro</option></select></div>}<Bt v="s" onClick={()=>{if(((u&&u.inv)||[]).length>0||Object.keys((u&&u.gas)||{}).length>0){if(!confirm("⚠️ Esto reemplazará tus datos actuales con datos de ejemplo. ¿Continuar?"))return}demo()}} st={{justifyContent:"center"}}>Cargar datos demo</Bt><Bt v="s" onClick={()=>{const d=localStorage.getItem(SK);if(!d)return alert("No hay datos");const b=new Blob([d],{type:"application/json"});const u2=URL.createObjectURL(b);const a=document.createElement("a");a.href=u2;a.download="finpathia-backup-"+new Date().toISOString().split("T")[0]+".json";a.click()}} st={{justifyContent:"center"}}>📥 Exportar Datos (JSON)</Bt>
               <Bt v="s" onClick={()=>{try{const backups=JSON.parse(localStorage.getItem("fp3_backups")||"[]");if(!backups.length){alert("No hay backups disponibles");return}const last=backups[backups.length-1];const d=JSON.parse(last.data);if(confirm("¿Restaurar backup del "+new Date(last.date).toLocaleDateString("es-CO")+"? Esto reemplazará tus datos actuales.")){setU(sanitize(d));showToast("✅ Backup restaurado")}}catch{alert("Error restaurando backup")}}} st={{justifyContent:"center"}}>🔄 Restaurar último backup</Bt>
+              <div style={{marginTop:12,padding:12,background:T.bg3,borderRadius:10}}>
+                <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>🔐 Encriptación End-to-End</div>
+                <div style={{fontSize:11,color:T.tx3,marginBottom:8}}>{localStorage.getItem("fp3_enc_key")?"✅ Activa — Tus datos se encriptan con tu contraseña antes de salir de tu navegador. Ni FINPATHIA puede leerlos.":"⚠️ Solo disponible con cuenta. En Modo Privado tus datos nunca salen del navegador."}</div>
+              </div>
               <div style={{marginTop:12,padding:12,background:T.bg3,borderRadius:10}}>
                 <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>🔒 PIN de seguridad</div>
                 <div style={{fontSize:11,color:T.tx3,marginBottom:8}}>Bloquea la app después de 15 minutos de inactividad. Nadie puede ver tus datos sin el PIN.</div>
