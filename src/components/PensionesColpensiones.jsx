@@ -112,7 +112,18 @@ function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ipc, edadJub }) 
 // RAIS — Régimen de Ahorro Individual con Solidaridad (Fondos Privados)
 function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar }) {
   const IBC = ibcSM * SM_2026;
-  const aporteMes = IBC * 0.16; // 16% del IBC
+
+  // ═══ APORTE REAL AL AHORRO INDIVIDUAL ═══
+  // Total cotización: 16% del IBC
+  // Pero NO todo va a la cuenta individual:
+  //   - 11.5% → cuenta de ahorro individual (lo que crece)
+  //   - 1.5%  → Fondo Garantía Pensión Mínima
+  //   - 3.0%  → Administración + seguros
+  const aporteTotal = IBC * 0.16;
+  const aporteMes = IBC * 0.115; // Solo lo que va a la cuenta
+  const comisionMes = IBC * 0.03; // Lo que cobra la AFP
+  const fondoGarantia = IBC * 0.015;
+
   const rendMes = Math.pow(1 + rendAnual / 100, 1 / 12) - 1;
 
   let saldo = saldoActual;
@@ -124,23 +135,48 @@ function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar }) {
     proyeccion.push({ anio: y, saldo: Math.round(saldo) });
   }
 
-  // Renta vitalicia: saldo × tasa mensual de descuento (tabla de mortalidad)
-  // Simplificación: esperanza de vida promedio 82 años, jubilación a 62 = 20 años
-  // Factor actuarial conservador: 240 meses con rendimiento real 4%
-  const tasaMesRetiro = Math.pow(1.04, 1/12) - 1;
-  const factor = tasaMesRetiro > 0 ? (1 - Math.pow(1 + tasaMesRetiro, -240)) / tasaMesRetiro : 240;
-  const rentaMes = saldo / factor;
-  const retiroProgramado = rentaMes;
+  // ═══ MODALIDADES DE PENSIÓN ═══
+
+  // 1. RETIRO PROGRAMADO
+  // Saldo queda en la AFP, se recalcula cada año
+  // Esperanza de vida hombre 62 años: ~20.7 años (tabla RV08)
+  // Rendimiento real durante retiro: ~4% anual
+  const mesesVida = Math.round(20.7 * 12); // 248 meses
+  const rRetiro = Math.pow(1.04, 1/12) - 1;
+  const factorRP = rRetiro > 0 ? (1 - Math.pow(1 + rRetiro, -mesesVida)) / rRetiro : mesesVida;
+  const retiroProgramado = saldo / factorRP;
+
+  // 2. RENTA VITALICIA
+  // Se transfiere saldo a aseguradora, pago fijo de por vida
+  // Aseguradora usa tasa más conservadora (~3%) y esperanza 22 años
+  // Resultado: ~15-20% menos que retiro programado
+  const mesesVitalicia = Math.round(22 * 12); // 264 meses
+  const rVitalicia = Math.pow(1.03, 1/12) - 1;
+  const factorRV = rVitalicia > 0 ? (1 - Math.pow(1 + rVitalicia, -mesesVitalicia)) / rVitalicia : mesesVitalicia;
+  const rentaVitalicia = saldo / factorRV;
+
+  // Pensión mínima garantizada: si cualquier modalidad < 1 SMMLV,
+  // el Fondo de Garantía complementa hasta el mínimo
+  const pensionMinima = SM_2026;
+  const retiroFinal = Math.max(retiroProgramado, pensionMinima);
+  const rentaFinal = Math.max(rentaVitalicia, pensionMinima);
 
   return {
     saldoFinal: saldo,
+    aporteTotal,
     aporteMes,
+    comisionMes,
+    fondoGarantia,
     totalAportado: aporteMes * 12 * aniosCotizar + saldoActual,
+    totalComisiones: comisionMes * 12 * aniosCotizar,
     rendimiento: saldo - (aporteMes * 12 * aniosCotizar + saldoActual),
-    rentaMes,
-    retiroProgramado,
+    retiroProgramado: retiroFinal,
+    rentaVitalicia: rentaFinal,
+    rentaMes: retiroFinal, // Default to retiro programado
     proyeccion,
     heredable: true,
+    factorRP: factorRP.toFixed(1),
+    factorRV: factorRV.toFixed(1),
   };
 }
 
@@ -560,20 +596,26 @@ export default function PensionesColpensiones({ trm }) {
             <Cd style={{ padding: 20 }}>
               <h3 style={{ fontSize: 15, fontWeight: 700, color: T.green, marginBottom: 14 }}>🏦 Fondo Privado — Proyección</h3>
               <Row l="Saldo actual" v={fCOP(privSaldo)} />
-              <Row l="Aporte mensual (16%)" v={fCOP(rais.aporteMes)} color={T.green} />
+              <Row l="Aporte a tu cuenta (11.5%)" v={fCOP(rais.aporteMes)} sub="De 16% total: 11.5% ahorro + 3% admin + 1.5% garantía" color={T.green} />
               <Row l="Rendimiento anual" v={privRend + "%"} />
               <Row l={"Años cotizando más"} v={aniosFaltantes + " años"} />
-              <Row l="Total aportado" v={fCOP(rais.totalAportado)} />
+              <Row l="Total a tu cuenta" v={fCOP(rais.totalAportado)} />
+              <Row l="Total comisiones AFP" v={fCOP(rais.totalComisiones)} color={T.red} sub="3% del IBC por administración y seguros" />
               <Row l="Rendimientos ganados" v={fCOP(rais.rendimiento)} color={T.green} />
               <Row l="Saldo final proyectado" v={fCOP(rais.saldoFinal)} color={T.green} bold />
             </Cd>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Cd glow={T.green} style={{ padding: 28, textAlign: "center" }}>
-                <div style={{ fontSize: 12, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.1em" }}>Renta Vitalicia Mensual</div>
-                <div style={{ fontSize: 48, fontWeight: 800, color: T.green, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(rais.rentaMes)}</div>
-                <div style={{ fontSize: 14, color: T.txt3, marginTop: 4 }}>≈ {fUSD(rais.rentaMes, trm)}</div>
-                <div style={{ fontSize: 13, color: T.txt2, marginTop: 8 }}>Anualidad sobre 20 años</div>
+                <div style={{ fontSize: 12, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.1em" }}>Retiro Programado</div>
+                <div style={{ fontSize: 42, fontWeight: 800, color: T.green, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(rais.retiroProgramado)}</div>
+                <div style={{ fontSize: 13, color: T.txt3, marginTop: 4 }}>≈ {fUSD(rais.retiroProgramado, trm)}</div>
+                <div style={{ fontSize: 12, color: T.txt2, marginTop: 8, lineHeight: 1.6 }}>Heredable • Saldo en AFP • Tasa 4% real</div>
+                <div style={{ borderTop: "1px solid " + T.border, marginTop: 12, paddingTop: 12 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase" }}>Renta Vitalicia (aseguradora)</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: T.blue, marginTop: 4 }}>{fCOP(rais.rentaVitalicia)}</div>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>No heredable • Pago fijo de por vida • Tasa 3% real</div>
+                </div>
               </Cd>
 
               <Cd style={{ padding: 16 }}>
@@ -583,7 +625,7 @@ export default function PensionesColpensiones({ trm }) {
                   { t: "Retiro anticipado posible (cumpliendo requisitos)", c: T.green },
                   { t: "Rendimientos de mercado (pueden ser mayores)", c: T.blue },
                   { t: "Riesgo de mercado — rendimientos no garantizados", c: T.orange },
-                  { t: "No hay pensión mínima garantizada", c: T.red },
+                  { t: "Pensión mínima garantizada (1 SMMLV) si cumple requisitos", c: T.blue },
                 ].map((a, i) => (
                   <div key={i} style={{ fontSize: 12, color: a.c, padding: "4px 0", borderBottom: i < 4 ? `1px solid ${T.border}` : "none" }}>{a.t}</div>
                 ))}
