@@ -55,54 +55,56 @@ function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ipc, edadJub }) 
   const IBC = ibcSM * SM_2026;
   const aniosFaltantes = Math.max(0, edadJub - edad);
 
-  // semanasActuales YA incluye las semanas futuras (la tabla las pasa sumadas)
+  // semanasTotales = lo que se pasa (la tabla ya suma las futuras)
   const semanasTotales = semanasActuales;
-
-  // Requisito mínimo: 1300 semanas + edad (57 mujer, 62 hombre)
-  const cumpleEdad = true; // La tabla maneja la edad
   const cumpleSemanas = semanasTotales >= 1300;
   const cumpleRequisitos = cumpleSemanas;
 
-  // IBL — Promedio últimos 10 años de IBC ajustado por IPC
-  // Se toma el IBC actual y se asume constante en términos reales
-  const IBL = IBC; // En pesos de hoy (sin ajuste inflacionario)
+  // IBL = IBC (asume que el usuario ha cotizado al mismo nivel 10+ años)
+  // Si cotiza menos tiempo, el IBL real sería menor (promedio 10 años)
+  const IBL = IBC;
 
-  // Tasa de reemplazo — Ley 797/2003 Art. 10
-  // r = 65.50% - 0.50% × (SMMLV_IBL - 1) para cada SMMLV adicional
-  // + 1.5% por cada 50 semanas adicionales sobre 1300
-  // Máximo: 80% | Sin piso artificial
-  const s = IBL / SM_2026;
+  // ═══ TASA DE REEMPLAZO — Ley 797/2003 Art. 10 ═══
+  // Base: 65.50% - 0.50% por cada SMMLV adicional del IBC sobre el primero
+  // Se usa ibcSM (nivel de cotización), NO IBL/SMMLV
+  const s = ibcSM; // SMMLV del IBC (lo que cotiza)
   let tasaBase = 65.50 - 0.50 * Math.max(0, s - 1);
-  if (tasaBase < 40) tasaBase = 40; // Piso práctico para IBLs muy altos
+  if (tasaBase < 40) tasaBase = 40;
 
+  // Bonus: +1.5% por cada 50 semanas adicionales sobre 1300
   const semanasExtra = Math.max(0, semanasTotales - 1300);
   const bloques50 = Math.floor(semanasExtra / 50);
   const bonusSemanas = bloques50 * 1.5;
   let tasaTotal = tasaBase + bonusSemanas;
-  if (tasaTotal > 80) tasaTotal = 80; // Tope máximo legal
+  if (tasaTotal > 80) tasaTotal = 80; // Tope legal
 
-  // Pensión calculada
+  // Pensión bruta
   const pensionBruta = IBL * (tasaTotal / 100);
-  const pensionTope = 25 * SM_2026; // Tope máximo: 25 SMMLV
+  const pensionTope = 25 * SM_2026;
   const pensionAplicada = Math.min(pensionBruta, pensionTope);
-  const descuentoSalud = pensionAplicada * 0.12; // 12% salud
+
+  // ═══ DESCUENTOS — Salud 12% + Fondo Solidaridad ═══
+  // Fondo Solidaridad Pensional para pensiones altas:
+  const pensionSMLV = pensionAplicada / SM_2026;
+  let pctDescuento = 0.12; // Salud base 12%
+  if (pensionSMLV > 20) pctDescuento += 0.02; // >20 SMMLV: +2% solidaridad
+  else if (pensionSMLV > 10) pctDescuento += 0.01 + (pensionSMLV - 10) / 10 * 0.01; // 10-20: gradual
+  const descuentoSalud = pensionAplicada * pctDescuento;
   const pensionNeta = pensionAplicada - descuentoSalud;
 
   // Pensión mínima
   const pensionMinima = SM_2026;
   const pensionFinal = cumpleRequisitos ? Math.max(pensionNeta, pensionMinima) : 0;
 
-  // Valor total pensión en 20 años
   const total20Anios = pensionFinal * 12 * 20;
-
   const mesesFaltantes = aniosFaltantes * 12;
   const semanasQueFaltan = Math.max(0, 1300 - semanasActuales);
 
   return {
     IBC, IBL, tasaBase, bonusSemanas, tasaTotal,
     pensionBruta, pensionTope, pensionAplicada, descuentoSalud, pensionNeta, pensionFinal,
-    semanasTotales, semanasExtra, semanasQueFaltan, bloques50,
-    cumpleEdad, cumpleSemanas, cumpleRequisitos,
+    semanasTotales, semanasExtra, semanasQueFaltan, bloques50, pctDescuento,
+    cumpleSemanas, cumpleRequisitos,
     aniosFaltantes, mesesFaltantes, total20Anios, edadJub, pensionMinima,
   };
 }
@@ -492,6 +494,9 @@ export default function PensionesColpensiones({ trm }) {
 
           {/* ═══ FÓRMULA DEL 1.5% EXPLICADA ═══ */}
           <Cd style={{ padding: 24, marginTop: 16 }}>
+            <div style={{ background: T.orange + "10", border: "1px solid " + T.orange + "30", borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
+              <strong style={{ color: T.orange }}>⚠️ Nota importante:</strong> El IBL (Ingreso Base de Liquidación) se calcula como el promedio de los últimos 10 años de cotización. Si no has cotizado al nivel actual durante 10+ años, tu pensión real para "Paro hoy" será <strong>menor</strong> que la proyectada aquí. La proyección "Hasta jubilación" es más precisa porque asume que seguirás cotizando al nivel actual. Para un cálculo exacto con tu historial real, consulta un actuario profesional.
+            </div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: T.green, marginBottom: 12 }}>📖 ¿Cómo sube tu pensión? — Fórmula del 1.5%</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>
