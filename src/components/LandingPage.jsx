@@ -171,10 +171,10 @@ export default function LandingPage({ onGetStarted }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, maxWidth: 900, margin: "0 auto" }}>
           {[
-            { i: "🔒", t: "Encriptación", d: "Datos protegidos con Row Level Security" },
-            { i: "👤", t: "Acceso privado", d: "Solo tú ves tu información financiera" },
-            { i: "🚫", t: "Cero publicidad", d: "Tu información no es el producto" },
-            { i: "✊", t: "Tú mandas", d: "Exporta o borra tus datos cuando quieras" },
+            { i: "🔐", t: "Encriptación End-to-End", d: "Tus datos se encriptan con tu contraseña. Ni nosotros podemos leerlos. Nivel Signal." },
+            { i: "👤", t: "Sin registro obligatorio", d: "Usa la plataforma completa sin crear cuenta. Tus datos nunca salen de tu navegador." },
+            { i: "🚫", t: "No vendemos datos", d: "Cero publicidad, cero tracking financiero, cero venta de información." },
+            { i: "✊", t: "Tú mandas", d: "Exporta, borra o lleva tus datos cuando quieras. Sin contratos." },
           ].map((item) => (
             <div key={item.t} style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 16, padding: "28px 16px", textAlign: "center" }}>
               <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(34,197,94,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 14 }}>{item.i}</div>

@@ -258,10 +258,10 @@ export default function FinPath(){
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
       <div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"14px 16px",marginBottom:20}}>
         <div style={{display:"flex",flexDirection:"column",gap:8,fontSize:11,color:T.tx3}}>
-          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> Encriptación de grado bancario (TLS/SSL)</div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> Solo tú puedes ver tus datos — ni nosotros accedemos</div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> No vendemos ni compartimos tu información</div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> Puedes borrar todo en cualquier momento</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> <strong style={{color:T.tx2}}>Encriptación End-to-End</strong> — tus datos se encriptan con tu contraseña</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> Ni FINPATHIA puede leer tu información financiera</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> No vendemos ni compartimos datos. Cero publicidad</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> Exporta o borra todo en cualquier momento</div>
         </div>
       </div>
       <div style={{fontSize:28,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:24}}>FINPATHIA</div>
