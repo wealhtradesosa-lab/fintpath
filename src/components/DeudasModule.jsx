@@ -21,11 +21,11 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function DeudasModule({ deudas, inversiones, onUpdate, fmt, onImport}) {
+export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fmt, onImport}) {
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "" });
+  const [form, setForm] = useState({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "", owner: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = deudas || [];
@@ -42,7 +42,7 @@ export default function DeudasModule({ deudas, inversiones, onUpdate, fmt, onImp
   };
 
   const handleSave = () => {
-    const item = { n: form.n || "", tp: form.tp || "loan", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, la: form.la || null };
+    const item = { n: form.n || "", tp: form.tp || "loan", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, la: form.la || null, owner: form.owner || "" };
     if (editId) {
       onUpdate(items.map((i) => (i.id === editId ? { ...i, ...item } : i)));
     } else {
@@ -51,7 +51,7 @@ export default function DeudasModule({ deudas, inversiones, onUpdate, fmt, onImp
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "" });
+    setForm({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "", owner: "" });
   };
 
   const openEdit = (d) => {
@@ -73,7 +73,7 @@ export default function DeudasModule({ deudas, inversiones, onUpdate, fmt, onImp
           {selected.size > 0 && (
             <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
           )}
-          <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "" }); setShowForm(true); }}
+          <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "", owner: "" }); setShowForm(true); }}
             style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </div>
       </div>
@@ -183,6 +183,7 @@ export default function DeudasModule({ deudas, inversiones, onUpdate, fmt, onImp
                 setForm((p) => ({ ...p, ts: v, pg: String(newPg) }));
               }} type="number" placeholder="Ej: 12" />
               {form.mt&&form.pg&&form.ts&&<div style={{gridColumn:"1/-1",fontSize:11,color:"#a1a1aa",background:"#1e1e24",borderRadius:8,padding:"8px 12px"}}>Saldo {fmt(+form.mt||0)} al {form.ts}% anual = cuota estimada {fmt(+form.pg||0)}/mes. Ingresa uno y el otro se calcula.</div>}
+              <In l="Propietario" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"Personal"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
               <In l="Activo Vinculado" value={form.la} onChange={(v) => setForm((p) => ({ ...p, la: v }))} options={[{ v: "", l: "Ninguno" }, ...(inversiones || []).filter(i => i).map((i) => ({ v: i.id || "", l: i.n || i.nombre || i.name || "Sin nombre" }))]} />
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>

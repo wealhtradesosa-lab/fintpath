@@ -71,12 +71,12 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, onImport}) {
+export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport}) {
   const fm = fmt || _fm;
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "", gastosMes: "" });
+  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "", gastosMes: "", owner: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = inversiones || [];
@@ -125,6 +125,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
       ub: String(form.ubicacion || "").trim(),
       ubicacion: String(form.ubicacion || "").trim(),
       tp: form.tipo || "Other",
+      owner: form.owner || "",
       tipo: form.tipo || "Other",
       va,
       vc: Math.abs(parseFloat(form.vc)) || 0,
@@ -270,6 +271,7 @@ export default function InversionesModule({ inversiones, deudas, onUpdate, fmt, 
                 <In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Apartamento, Fondo, Acciones, Terreno" />
               </div>
               <In l="Ubicación" value={form.ubicacion} onChange={(v) => setForm((p) => ({ ...p, ubicacion: v }))} placeholder="Miami, FL" />
+              <In l="Propietario" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"Personal"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["Real Estate", "Fondo de Inversión", "CDT", "Acciones", "Crypto", "Bodega", "Lote", "Vehículo", "Local Comercial", "Renta Fija", "Negocio", "Cash", "Otro"]} />
               <In l="Valor Actual" value={form.va} onChange={(v) => setForm((p) => ({ ...p, va: v }))} type="number" placeholder="0" />
               <In l="Valor Compra" value={form.vc} onChange={(v) => setForm((p) => ({ ...p, vc: v }))} type="number" placeholder="0" />

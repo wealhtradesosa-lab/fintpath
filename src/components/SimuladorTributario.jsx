@@ -66,9 +66,23 @@ const In = ({ label, value, onChange, unit, min, max, step, sub }) => (
   </div>
 );
 
-export default function SimuladorTributario({ trm }) {
-  const [salarioMes, setSalarioMes] = useState(15000000);
-  const [otrosIngresos, setOtrosIngresos] = useState(0);
+export default function SimuladorTributario({ trm, user }) {
+  const owners = (user && user.owners) || [{ id: "own_1", name: "Personal", type: "natural" }];
+  const [selectedOwner, setSelectedOwner] = useState("own_1");
+  const selectedOwnerData = owners.find(o => o.id === selectedOwner) || owners[0];
+  const isJuridica = selectedOwnerData.type === "juridica";
+
+  // Auto-load from user data filtered by owner
+  const ownerIngresos = ((user && user.ingresos) || []).filter(i => (i.owner || "") === selectedOwner || (!i.owner && selectedOwner === "own_1"));
+  const autoSalario = ownerIngresos.filter(i => (i.catFiscal || "") === "salario").reduce((s, i) => s + (i.mensual || 0), 0);
+  const autoHonorarios = ownerIngresos.filter(i => (i.catFiscal || "") === "honorarios").reduce((s, i) => s + (i.mensual || 0), 0);
+  const autoArrendamiento = ownerIngresos.filter(i => (i.catFiscal || "") === "arrendamiento").reduce((s, i) => s + (i.mensual || 0), 0);
+  const autoRendimientos = ownerIngresos.filter(i => (i.catFiscal || "") === "rendimientos").reduce((s, i) => s + (i.mensual || 0), 0);
+  const autoDividendos = ownerIngresos.filter(i => (i.catFiscal || "") === "dividendos").reduce((s, i) => s + (i.mensual || 0), 0);
+  const autoOtros = ownerIngresos.filter(i => !["salario","honorarios","arrendamiento","rendimientos","dividendos"].includes(i.catFiscal || "")).reduce((s, i) => s + (i.mensual || 0), 0);
+
+  const [salarioMes, setSalarioMes] = useState(autoSalario || 15000000);
+  const [otrosIngresos, setOtrosIngresos] = useState(autoOtros + autoHonorarios + autoArrendamiento + autoRendimientos + autoDividendos);
   const [pensionVol, setPensionVol] = useState(0);
   const [afc, setAfc] = useState(0);
   const [dependientes, setDependientes] = useState(0);
@@ -120,7 +134,13 @@ export default function SimuladorTributario({ trm }) {
     const rentaLiquidaUVT = rentaLiquida / UVT_2026;
 
     // ═══ IMPUESTO ═══
-    const imp = calcImpuesto(rentaLiquidaUVT);
+    let imp;
+    if (selectedOwnerData.type === "juridica") {
+      const impJuridica = rentaLiquida * 0.35;
+      imp = { impuestoUVT: impJuridica / UVT_2026, impuestoPesos: impJuridica, rango: { tarifa: 35, desde: 0, hasta: Infinity, base: 0 }, rangoIdx: -1 };
+    } else {
+      imp = calcImpuesto(rentaLiquidaUVT);
+    }
     const impuestoAnual = imp.impuestoPesos;
     const impuestoMes = impuestoAnual / 12;
     const tasaEfectiva = ingresoBrutoAnual > 0 ? (impuestoAnual / ingresoBrutoAnual) * 100 : 0;
@@ -167,7 +187,7 @@ export default function SimuladorTributario({ trm }) {
       impuestoAnual, impuestoMes, tasaEfectiva, rango: imp.rango, rangoIdx: imp.rangoIdx,
       ahorro, recs, espacioGlobal,
     };
-  }, [salarioMes, otrosIngresos, pensionVol, afc, dependientes, medicinaPrepagada, interesesVivienda, donaciones]);
+  }, [salarioMes, otrosIngresos, pensionVol, afc, dependientes, medicinaPrepagada, interesesVivienda, donaciones, selectedOwner]);
 
   const pieData = [
     { name: "Impuesto", value: calc.impuestoAnual, color: T.red },
@@ -187,7 +207,7 @@ export default function SimuladorTributario({ trm }) {
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px", color: T.orange }}>Simulador Tributario — Colombia 2026</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px", color: T.orange }}>Simulador Tributario — {selectedOwnerData.name}</h1>
           <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>Estatuto Tributario • Ley 2277/2022 • UVT 2026: {fCOP(UVT_2026)}</p>
         </div>
       </div>
@@ -195,7 +215,24 @@ export default function SimuladorTributario({ trm }) {
       {/* Inputs */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 16, marginBottom: 16 }}>
         <Cd style={{ padding: 20 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>📋 Tus Ingresos</h3>
+          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>👤 Propietario Fiscal</h3>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+            {owners.map(ow => (
+              <button key={ow.id} onClick={() => setSelectedOwner(ow.id)} style={{
+                padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600,
+                border: "1px solid " + (selectedOwner === ow.id ? T.orange : T.border),
+                background: selectedOwner === ow.id ? T.orange + "15" : T.bg3,
+                color: selectedOwner === ow.id ? T.orange : T.txt2,
+              }}>{ow.type === "juridica" ? "🏢" : "👤"} {ow.name}</button>
+            ))}
+          </div>
+          {isJuridica && <div style={{ background: T.blue + "10", border: "1px solid " + T.blue + "20", borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 11, color: T.blue }}>
+            🏢 <strong>Persona Jurídica:</strong> Tarifa fija de renta del 35% sobre renta líquida gravable (régimen general colombiano).
+          </div>}
+          {ownerIngresos.length > 0 && <div style={{ background: T.green + "08", border: "1px solid " + T.green + "15", borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 11, color: T.green }}>
+            📊 Se encontraron {ownerIngresos.length} ingresos registrados para este propietario. Los valores se cargaron automáticamente.
+          </div>}
+          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>📋 Ingresos</h3>
           <In label="Salario mensual" value={salarioMes} onChange={setSalarioMes} unit="COP" sub={"= " + fCOP(salarioMes * 12) + "/año"} />
           <In label="Otros ingresos/mes" value={otrosIngresos} onChange={setOtrosIngresos} unit="COP" sub="Arriendos, honorarios, dividendos" />
 

@@ -21,11 +21,11 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, onUpdate, trm, fmt, onImport}) {
+export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport}) {
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP" });
+  const [form, setForm] = useState({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = ingresos || [];
@@ -50,7 +50,7 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt, onImport}
     else { item.id = "ing_" + Date.now(); updated = [...items, item]; }
     onUpdate(updated);
     setShowForm(false); setEditId(null);
-    setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP" });
+    setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" });
   };
   const handleEdit = (item) => {
     setForm({ nombre: item.nombre, categoria: item.categoria, mensual: item.mensual, tipo: item.tipo, fuente: item.fuente || "", capital: item.capital || "", tasa: item.tasa || "", moneda: item.moneda || "COP" });
@@ -72,7 +72,7 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt, onImport}
               🗑️ Eliminar ({selected.size})
             </button>
           )}
-          <button onClick={() => { setEditId(null); setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP" }); setShowForm(true); }}
+          <button onClick={() => { setEditId(null); setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" }); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             + Agregar
           </button>
@@ -162,6 +162,8 @@ export default function IngresosModule({ ingresos, onUpdate, trm, fmt, onImport}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
+              <In l="Propietario" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"Personal"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
+              <In l="Clasificación fiscal DIAN" value={form.catFiscal || ""} onChange={(v) => setForm((p) => ({ ...p, catFiscal: v }))} options={[{v:"",l:"— Seleccionar —"},{v:"salario",l:"💼 Salario / Nómina"},{v:"honorarios",l:"📋 Honorarios / Servicios"},{v:"arrendamiento",l:"🏠 Arrendamiento"},{v:"dividendos",l:"📊 Dividendos"},{v:"rendimientos",l:"💰 Rendimientos financieros"},{v:"venta_activos",l:"🏦 Venta de activos"},{v:"pension",l:"🏛️ Pensión"},{v:"otros",l:"📝 Otros ingresos"}]} />
               <In l="Categoría" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
               <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
