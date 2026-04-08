@@ -1566,15 +1566,25 @@ case"inv":return<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv
               <div style={{marginTop:12,padding:12,background:T.bg3,borderRadius:10}}>
                 <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>🧾 Planeación Tributaria</div>
                 <div style={{fontSize:11,color:T.tx3,marginBottom:10,lineHeight:1.6}}>Registra las personas o empresas <strong>en Colombia</strong> para las que quieras estimar impuestos. Al asignar un propietario a tus ingresos, la sección <strong>🧾 Impuestos</strong> calculará un aproximado del pago de renta por cada uno.<br/><br/>Es opcional: solo registra los que quieras analizar. Si tienes entidades en otros países (ej. USA), no las incluyas aquí.</div>
-                {(u?.owners||[]).map((ow,i)=><div key={ow.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,padding:"8px 10px",background:T.bg,borderRadius:8,border:"1px solid "+T.border}}>
-                  <span style={{fontSize:14}}>{ow.type==="juridica"?"🏢":"👤"}</span>
+                {(u?.owners||[]).map((ow,i)=><div key={ow.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,padding:"10px 12px",background:T.bg,borderRadius:10,border:"1px solid "+T.border}}>
+                  <span style={{fontSize:16}}>{ow.type==="juridica"?"🏢":"👤"}</span>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:600}}>{ow.name}</div>
+                    <div style={{fontSize:13,fontWeight:600}}>{ow.name}</div>
                     <div style={{fontSize:10,color:T.tx3}}>{ow.type==="juridica"?"Persona Jurídica":"Persona Natural"}</div>
                   </div>
-                  {i>0&&<button onClick={()=>{const nw=(u.owners||[]).filter(o=>o.id!==ow.id);setU({...u,owners:nw});showToast("Propietario eliminado")}} style={{background:"none",border:"none",color:T.rd,cursor:"pointer",fontSize:12}}>✕</button>}
+                  <div style={{display:"flex",gap:4}}>
+                    <button onClick={()=>{const el=document.getElementById("own_edit_"+ow.id);if(el){el.style.display=el.style.display==="none"?"block":"block"}else{const nm=window.prompt("Nuevo nombre:",ow.name);if(nm){const nw=(u.owners||[]).map(o=>o.id===ow.id?{...o,name:nm}:o);setU({...u,owners:nw});showToast("✅ Nombre actualizado")}}}} style={{background:T.bg3,border:"1px solid "+T.border,color:T.tx2,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:10}}>✏️ Editar</button>
+                    {i>0&&<button onClick={()=>{if(confirm("¿Eliminar "+ow.name+"?")){const nw=(u.owners||[]).filter(o=>o.id!==ow.id);setU({...u,owners:nw});showToast("Propietario eliminado")}}} style={{background:T.bg3,border:"1px solid "+T.border,color:T.rd,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:10}}>🗑️</button>}
+                  </div>
                 </div>)}
-                <button onClick={()=>{const nm=prompt("Nombre del propietario:");if(!nm)return;const tp=confirm("¿Es persona jurídica (empresa/SAS)?\n\nAceptar = Jurídica\nCancelar = Natural")?"juridica":"natural";const nw=[...(u.owners||[]),{id:"own_"+Date.now(),name:nm,type:tp}];setU({...u,owners:nw});showToast("✅ Propietario agregado")}} style={{width:"100%",padding:"8px",background:T.bg,border:"1px dashed "+T.border,borderRadius:8,color:T.gn,cursor:"pointer",fontSize:12,fontWeight:600,marginTop:4}}>+ Agregar propietario</button>
+                <div style={{marginTop:8,padding:12,background:T.bg,borderRadius:10,border:"1px dashed "+T.border}}>
+                  <div style={{fontSize:11,fontWeight:600,color:T.tx2,marginBottom:8}}>Agregar propietario</div>
+                  <input id="new_owner_name" placeholder="Nombre (ej: Mi empresa SAS)" style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",marginBottom:8}}/>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>{const el=document.getElementById("new_owner_name");const nm=el?.value?.trim();if(!nm){showToast("Escribe un nombre");return}const nw=[...(u.owners||[]),{id:"own_"+Date.now(),name:nm,type:"natural"}];setU({...u,owners:nw});el.value="";showToast("✅ "+nm+" agregado como Persona Natural")}} style={{flex:1,padding:"10px",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,color:T.gn,cursor:"pointer",fontSize:12,fontWeight:600}}>👤 Natural</button>
+                    <button onClick={()=>{const el=document.getElementById("new_owner_name");const nm=el?.value?.trim();if(!nm){showToast("Escribe un nombre");return}const nw=[...(u.owners||[]),{id:"own_"+Date.now(),name:nm,type:"juridica"}];setU({...u,owners:nw});el.value="";showToast("✅ "+nm+" agregado como Persona Jurídica")}} style={{flex:1,padding:"10px",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,color:T.bl,cursor:"pointer",fontSize:12,fontWeight:600}}>🏢 Jurídica</button>
+                  </div>
+                </div>
               </div>
               <div style={{marginTop:12,padding:12,background:T.bg3,borderRadius:10}}>
                 <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>🔐 Encriptación End-to-End</div>
