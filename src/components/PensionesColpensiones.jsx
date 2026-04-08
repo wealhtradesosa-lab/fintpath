@@ -15,7 +15,7 @@ const T = {
   red: "#ef4444", blue: "#3b82f6", purple: "#a78bfa",
   orange: "#f97316", gold: "#eab308", cyan: "#22d3ee",
 };
-const SM_2026 = 1_959_000;
+const SM_2026 = 1_750_905;
 const fCOP = (v) => {
   if (Math.abs(v) >= 1e9) return "$" + (v / 1e9).toFixed(2) + "B";
   if (Math.abs(v) >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
