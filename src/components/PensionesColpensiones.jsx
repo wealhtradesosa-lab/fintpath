@@ -197,6 +197,10 @@ export default function PensionesColpensiones({ trm }) {
     sexo, edad, semanasActuales: semanas, ibcSM, ipc, edadJub,
   }), [sexo, edad, semanas, ibcSM, ipc, edadJub]);
 
+  const colpJub = useMemo(() => calcColpensiones({
+    sexo, edad, semanasActuales: semanas + aniosFaltantes * 52, ibcSM, ipc, edadJub,
+  }), [sexo, edad, semanas, ibcSM, ipc, edadJub, aniosFaltantes]);
+
   const rais = useMemo(() => calcRAIS({
     saldoActual: privSaldo, ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes,
   }), [privSaldo, ibcSM, privRend, aniosFaltantes]);
@@ -238,15 +242,7 @@ export default function PensionesColpensiones({ trm }) {
           </div>
           <In label="Edad actual" value={edad} onChange={setEdad} unit="años" min={18} max={70} />
           <In label="Semanas cotizadas" value={semanas} onChange={setSemanas} unit="semanas" min={0} max={3000} />
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>IBC (Ingreso Base de Cotización)</label>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input type="number" value={Math.round(ibcSM * SM_2026)} onChange={(e) => setIbcSM(Math.round((Number(e.target.value) || 0) / SM_2026 * 10) / 10)}
-                style={{ flex: 1, background: T.bg3, border: `1px solid ${T.border}`, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 14, fontWeight: 600, textAlign: "right", outline: "none" }} />
-              <span style={{ fontSize: 12, color: T.txt3, minWidth: 30 }}>COP</span>
-            </div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>= {ibcSM.toFixed(1)} SMMLV ({fCOP(SM_2026)}/mes en 2026). Tope legal: 25 SMMLV</div>
-          </div>
+          <In label="IBC (Salarios mínimos)" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} />
           <In label="Saldo fondo privado" value={privSaldo} onChange={setPrivSaldo} unit="COP" min={0} />
           <In label="Rendimiento fondo %" value={privRend} onChange={setPrivRend} unit="%" min={0} max={20} step={0.5} />
         </div>
@@ -316,7 +312,13 @@ export default function PensionesColpensiones({ trm }) {
               <Cd glow={T.blue} style={{ padding: 28, textAlign: "center" }}>
                 <div style={{ fontSize: 12, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.1em" }}>Tu Pensión Mensual Neta</div>
                 <div style={{ fontSize: 48, fontWeight: 800, color: T.blue, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(colp.pensionFinal)}</div>
-                <div style={{ fontSize: 14, color: T.txt3, marginTop: 4 }}>≈ {fUSD(colp.pensionFinal, trm)}</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Si paras de cotizar hoy</div>
+                {aniosFaltantes > 0 && <div style={{ borderTop: "1px solid " + T.border, marginTop: 12, paddingTop: 12 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase" }}>Al jubilarte ({edad + aniosFaltantes} años)</div>
+                  <div style={{ fontSize: 36, fontWeight: 800, color: T.green, letterSpacing: "-0.04em", marginTop: 4 }}>{fCOP(colpJub.pensionFinal)}</div>
+                  <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>Tasa: {pc(colpJub.tasaTotal)} • {colpJub.semanasTotales.toLocaleString()} semanas</div>
+                </div>}
+                <div style={{ fontSize: 14, color: T.txt3, marginTop: 8 }}>≈ {fUSD(colp.pensionFinal, trm)}</div>
                 <div style={{ fontSize: 13, color: T.txt2, marginTop: 8 }}>Tasa de reemplazo: <strong style={{ color: T.blue }}>{pc(colp.tasaTotal)}</strong></div>
               </Cd>
 
