@@ -4,6 +4,7 @@ import GastosModule from "./components/GastosModule";
 import InversionesModule from "./components/InversionesModule";
 import DeudasModule from "./components/DeudasModule";
 import PensionesColpensiones from "./components/PensionesColpensiones";
+import SimuladorTributario from "./components/SimuladorTributario";
 import CsvImport from "./components/CsvImport";
 import MetasModule from "./components/MetasModule";
 import PensionColombia from "./components/PensionColombia";
