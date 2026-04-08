@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieCha
    Estatuto Tributario • Ley 2277/2022 • UVT 2026
    ═══════════════════════════════════════════════════ */
 
-const UVT_2026 = 49799; // Valor UVT 2026
+const UVT_2026 = 52374; // Valor UVT 2026
 const SM_2026 = 1750905;
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24", bg4: "#2a2a32",
