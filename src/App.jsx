@@ -1083,65 +1083,51 @@ export default function FinPath(){
               })()}
             </div>
 
-            {/* PLANIFICACIÓN TRIBUTARIA */}
-            <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>🏛️ ESTIMACIÓN TRIBUTARIA — Colombia 2026</div>
-              {(() => {
-                const ingAnual = t.ti * 12;
-                const uvt2026 = 49799; // UVT 2026 estimado
-                const ingUVT = ingAnual / uvt2026;
-                // Tabla de renta personas naturales Colombia 2026
-                let impuesto = 0;
-                if (ingUVT > 1700) {
-                  if (ingUVT <= 4100) impuesto = (ingUVT - 1700) * 0.19 * uvt2026;
-                  else if (ingUVT <= 8670) impuesto = ((4100-1700)*0.19 + (ingUVT-4100)*0.28) * uvt2026;
-                  else if (ingUVT <= 18970) impuesto = ((4100-1700)*0.19 + (8670-4100)*0.28 + (ingUVT-8670)*0.33) * uvt2026;
-                  else if (ingUVT <= 31000) impuesto = ((4100-1700)*0.19 + (8670-4100)*0.28 + (18970-8670)*0.33 + (ingUVT-18970)*0.35) * uvt2026;
-                  else impuesto = ((4100-1700)*0.19 + (8670-4100)*0.28 + (18970-8670)*0.33 + (31000-18970)*0.35 + (ingUVT-31000)*0.39) * uvt2026;
-                }
-                const tasaEfectiva = ingAnual > 0 ? (impuesto / ingAnual * 100) : 0;
-                const impMes = impuesto / 12;
-                const patrimonio4x1000 = t.ab * 0.004; // Impuesto al patrimonio simplificado
-                const ganOcasional = ((u&&u.inv)||[]).reduce((s,i) => s + Math.max(0, (i.va||0) - (i.vc||0)), 0);
-                const impGanOcasional = ganOcasional * 0.15; // 15% ganancia ocasional
-
-                return (
-                  <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
+            {/* PLANIFICACIÓN TRIBUTARIA — Usa estimarImpuesto() con propietarios + DIAN */}
+            {(()=>{const tx=estimarImpuesto(u);if(tx.total<=0)return null;return<div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>🧾 IMPUESTOS ESTIMADOS — Colombia 2026 (UVT: $52,374)</div>
+              <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
+                <div>
+                  <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>Impuesto de renta por propietario</div>
+                  {tx.detalle.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                     <div>
-                      <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>Renta estimada 2026</div>
-                      <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
-                        Ingreso anual: <strong>{fm(ingAnual)}</strong><br/>
-                        En UVT: <strong>{Math.round(ingUVT).toLocaleString()} UVT</strong><br/>
-                        Impuesto estimado: <strong style={{color:T.rd}}>{fm(impuesto)}/año</strong><br/>
-                        Tasa efectiva: <strong style={{color:T.rd}}>{tasaEfectiva.toFixed(1)}%</strong><br/>
-                        Equivale a: <strong style={{color:T.rd}}>{fm(impMes)}/mes</strong>
-                      </div>
-                      <div style={{marginTop:8,fontSize:10,color:T.tx3}}>Tabla art. 241 E.T. — UVT 2026 estimado: ${uvt2026.toLocaleString()}</div>
+                      <div style={{fontSize:12,fontWeight:600,color:T.tx2}}>{d.type==="juridica"?"🏢":"👤"} {d.name}</div>
+                      <div style={{fontSize:10,color:T.tx3}}>{d.type==="juridica"?"Tarifa 35%":"Tabla Art. 241 ET"} • Ingreso: {fm(d.ingreso)}/año</div>
                     </div>
-                    <div>
-                      <div style={{fontSize:11,fontWeight:700,color:"#eab308",marginBottom:8}}>Otros impuestos estimados</div>
-                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                        <span style={{color:T.tx2}}>4×1000 (GMF estimado)</span>
-                        <span style={{color:"#eab308",fontFamily:"monospace"}}>{fm(patrimonio4x1000)}/año</span>
-                      </div>
-                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                        <span style={{color:T.tx2}}>Ganancia ocasional (15%)</span>
-                        <span style={{color:"#eab308",fontFamily:"monospace"}}>{fm(impGanOcasional)} potencial</span>
-                      </div>
-                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                        <span style={{color:T.tx2}}>Valorización acumulada</span>
-                        <span style={{color:T.gn,fontFamily:"monospace"}}>{fm(ganOcasional)}</span>
-                      </div>
-                      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"8px 0",fontWeight:700}}>
-                        <span style={{color:T.tx}}>Carga fiscal total estimada</span>
-                        <span style={{color:T.rd}}>{fm(impuesto + patrimonio4x1000)}/año</span>
-                      </div>
-                      <div style={{fontSize:10,color:T.tx3,marginTop:4}}>Estas son estimaciones. Consulta con tu contador para optimizar.</div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:T.rd,fontFamily:"monospace"}}>{fm(d.impuesto)}</div>
+                      <div style={{fontSize:10,color:T.tx3}}>Tasa: {d.tasa.toFixed(1)}%</div>
                     </div>
+                  </div>)}
+                  <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",fontWeight:700,fontSize:13,borderTop:"2px solid "+T.border,marginTop:4}}>
+                    <span style={{color:T.tx}}>Total renta estimada</span>
+                    <span style={{color:T.rd}}>{fm(tx.total)}/año</span>
                   </div>
-                );
-              })()}
-            </div>
+                  <div style={{fontSize:11,color:T.tx2,marginTop:4}}>Equivale a: <strong style={{color:T.rd}}>{fm(tx.mes)}/mes</strong></div>
+                </div>
+                <div>
+                  <div style={{fontSize:11,fontWeight:700,color:T.pr,marginBottom:8}}>Resumen fiscal</div>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                    <span style={{color:T.tx2}}>Ingreso bruto total</span>
+                    <span style={{fontFamily:"monospace",color:T.tx2}}>{fm(tx.detalle.reduce((s,d)=>s+d.ingreso,0))}/año</span>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                    <span style={{color:T.tx2}}>Impuestos totales</span>
+                    <span style={{fontFamily:"monospace",color:T.rd}}>{fm(tx.total)}/año</span>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                    <span style={{color:T.tx2}}>Tasa efectiva global</span>
+                    <span style={{fontFamily:"monospace",color:T.rd}}>{(tx.detalle.reduce((s,d)=>s+d.ingreso,0)>0?(tx.total/tx.detalle.reduce((s,d)=>s+d.ingreso,0)*100):0).toFixed(1)}%</span>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                    <span style={{color:T.tx2}}>Neto después de impuestos</span>
+                    <span style={{fontFamily:"monospace",color:T.gn}}>{fm(tx.detalle.reduce((s,d)=>s+d.ingreso,0)-tx.total)}/año</span>
+                  </div>
+                  <button onClick={()=>setPg("tax")} style={{width:"100%",marginTop:12,padding:"10px",background:T.bg,border:"1px solid "+T.border,borderRadius:8,color:T.pr,cursor:"pointer",fontSize:12,fontWeight:600}}>📊 Ver detalle completo y optimizar → 🧾 Impuestos</button>
+                  <div style={{fontSize:9,color:T.tx3,marginTop:8,lineHeight:1.5}}>Estimación basada en ingresos y gastos clasificados por propietario. Los gastos deducibles se aplican según normativa DIAN. Consulta tu contador para declaración oficial.</div>
+                </div>
+              </div>
+            </div>})()}
 
             {/* FONDO EDUCACIÓN HIJOS */}
             {(() => {
