@@ -106,7 +106,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   };
 
   const openAdd = () => {
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", owner: "" });
     setEditId(null);
     setShowForm(true);
   };
@@ -142,7 +142,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", owner: "" });
   };
 
   
