@@ -224,8 +224,10 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <In l="Categoría" value={form.cat} onChange={(v) => setForm((p) => ({ ...p, cat: v }))} options={["Vivienda","Alimentación","Transporte","Educación","Salud","Seguros","Servicios","Entretenimiento","Vestimenta","Tecnología","Mascotas","Deporte","Personal","Ahorro","Otro"]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
-              <div style={{display:"flex",gap:8}}><div style={{flex:1}}><In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" /></div><div style={{width:100}}><In l="Propietario" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
+              <div style={{display:"flex",gap:8}}><div style={{flex:1}}><In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" /></div><div style={{flex:1}}>
               <In l="Frecuencia" value={form.freq} onChange={(v) => setForm((p) => ({ ...p, freq: v }))} options={[{ v: "mes", l: "Mensual" }, { v: "año", l: "Anual" }]} /></div></div>
+              <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
+              <div style={{fontSize:10,color:"#71717a",marginTop:-8,marginBottom:8,padding:"0 4px"}}>Si asignas propietario, se incluirá en el cálculo de impuestos. Si no, se omite.</div>
               <In l="Tipo" value={form.t} onChange={(v) => setForm((p) => ({ ...p, t: v }))} options={[{ v: "f", l: "Fijo" }, { v: "v", l: "Variable" }]} />
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
