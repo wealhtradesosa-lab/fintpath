@@ -10,7 +10,7 @@ const T = {
   ch: ["#22c55e", "#3b82f6", "#f97316", "#a78bfa", "#ec4899", "#22d3ee", "#eab308"],
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
-const CATS = ["Salario", "Arriendo", "Rendimiento", "Dividendos", "Freelance", "Negocio", "Pensión", "Comisiones", "Otro"];
+const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Rendimiento",l:"💰 Rendimientos financieros"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
@@ -162,10 +162,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
-              <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"Personal"},{v:"na",l:"🌐 N/A — No aplica tributariamente"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
-              <In l="Clasificación fiscal DIAN (opcional)" value={form.catFiscal || ""} onChange={(v) => setForm((p) => ({ ...p, catFiscal: v }))} options={[{v:"",l:"— Seleccionar —"},{v:"salario",l:"💼 Salario / Nómina"},{v:"honorarios",l:"📋 Honorarios / Servicios"},{v:"arrendamiento",l:"🏠 Arrendamiento"},{v:"dividendos",l:"📊 Dividendos"},{v:"rendimientos",l:"💰 Rendimientos financieros"},{v:"venta_activos",l:"🏦 Venta de activos"},{v:"pension",l:"🏛️ Pensión"},{v:"otros",l:"📝 Otros ingresos"}]} />
-              <div style={{fontSize:10,color:"#71717a",marginTop:-8,marginBottom:8,padding:"0 4px"}}>Clasifica el tipo de ingreso para calcular impuestos correctamente según la DIAN.</div>
-              <In l="Categoría" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} />
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"Personal"},{v:"na",l:"🌐 N/A — No aplica tributariamente"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
+              <In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} /></div>
+              <div style={{fontSize:10,color:"#71717a",marginTop:-4,marginBottom:8,padding:"0 4px"}}>El propietario define a quién se le calcula el impuesto. La categoría define cómo se clasifica ante la DIAN.</div>
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
               <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
 
