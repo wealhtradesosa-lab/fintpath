@@ -76,15 +76,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "", gastosMes: "", owner: "" });
+  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", owner: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = inversiones || [];
   const totalValor = items.reduce((s, i) => s + getVA(i), 0);
-  const totalIncome = items.reduce((s, i) => {
-    const m = calcMetrics(i, deudas);
-    return s + m.ig;
-  }, 0);
 
   const toggleSel = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
@@ -102,14 +98,14 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       tipo: String(getType(inv) || "Real Estate"),
       va: String(getVA(inv) || ""),
       vc: String(getVC(inv) || ""),
-      tasa: String(inv.tasa || ""), renta: String(inv.renta || ""), gastosMes: String(inv.gastosMes || ""),
+      tasa: String(inv.tasa || ""),
     });
     setEditId(inv.id);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "", gastosMes: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "" });
     setEditId(null);
     setShowForm(true);
   };
@@ -129,7 +125,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       tipo: form.tipo || "Other",
       va,
       vc: Math.abs(parseFloat(form.vc)) || 0,
-      tasa, renta: ingresoCalc||parseFloat(form.renta)||0, gastosMes: parseFloat(form.gastosMes)||0, ig: (ingresoCalc||parseFloat(form.renta))>0?[{c:"Renta",m:ingresoCalc||parseFloat(form.renta)||0,t:"f"}]:[], gs: parseFloat(form.gastosMes)>0?[{c:"Gastos operativos",m:parseFloat(form.gastosMes)||0,t:"f"}]:[],
+      tasa,
     };
     // Store income directly on investment so coaches can read it
     if (editId) {
@@ -145,7 +141,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", renta: "", gastosMes: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "" });
   };
 
   
@@ -173,7 +169,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
           { l: "Patrimonio Total", v: fm(totalValor), c: T.green },
-          { l: "Renta Mensual", v: fm(totalIncome) + "/mes", c: T.blue },
+          
           { l: "Activos", v: items.length, c: T.txt },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
