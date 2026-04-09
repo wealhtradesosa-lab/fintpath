@@ -219,7 +219,7 @@ function FreedomBarLive({ ni, te, cf }) {
 // ═══════════════════════════════════════
 // MAIN SIMULATOR
 // ═══════════════════════════════════════
-export default function SimuladorAvanzado({ user, impuestoMes, totals, fmt}) {
+export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
 
   const [simVals, setSimVals] = useState({});
   // Reset sliders when underlying data changes
@@ -253,6 +253,8 @@ export default function SimuladorAvanzado({ user, impuestoMes, totals, fmt}) {
       nv[`ing_${ii}`] = Math.round(base * f.i);
     });
     (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
+    // Tax per owner
+    ((impuestoData && impuestoData.detalle) || []).forEach((td, ti) => { if(td.impuesto > 0) nv[`tax_${ti}`] = Math.round(td.impuesto / 12); });
     // Standalone ingresos
     // Dedup ingresos in scenario too
     setSimVals(nv);
@@ -278,9 +280,14 @@ export default function SimuladorAvanzado({ user, impuestoMes, totals, fmt}) {
     });
     let tD = 0;
     (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { if (d.sim!==false) tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
+    // Add taxes
+    let tTax = 0;
+    ((impuestoData && impuestoData.detalle) || []).forEach((td, ti) => { if(td.impuesto > 0) tTax += getVal(`tax_${ti}`, Math.round(td.impuesto / 12)); });
+    tD += tTax;
+    const taxTotal = tTax;
     const ni = tI - tG, te = tGF + tD, cf = ni - te;
-    return { tI, tG, ni, tGF, gfm:tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0 };
-  }, [user, simVals, getVal]);
+    return { tI, tG, ni, tGF, gfm:tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0, tTax };
+  }, [user, simVals, getVal, impuestoData]);
 
   const proj = useMemo(() => {
     return Array.from({ length: 13 }, (_, i) => ({
@@ -432,8 +439,9 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
           { l: "Ingreso Neto", v: fm(simT.ni), c: T.gn, d: fm(simT.ni - (totals.ni || 0)) },
-          { l: "Egresos Totales", v: fm(simT.te), c: T.rd, d: fm(simT.te - (totals.te || 0)), tip: "Gastos familiares + cuotas de deudas" },
-          { l: "Impuestos (est.)", v: fm(impuestoMes||0), c: "#a78bfa", tip: "Estimación mensual de renta" },
+          { l: "Egresos Totales", v: fm(simT.te), c: T.rd, d: fm(simT.te - (totals.te || 0)), tip: "Gastos + deudas + impuestos" },
+          { l: "Impuestos (est.)", v: fm(simT.tTax||0), c: "#a78bfa", tip: "Suma de impuestos de todos los propietarios" },
+
           { l: "Cash Flow", v: fm(simT.cf), c: simT.cf >= 0 ? T.gn : T.rd, d: fm(simT.cf - (totals.cf || 0)), tip: "Dinero que te sobra (o falta) cada mes después de pagar todo" },
           { l: "Independencia", v: pc(simT.ind), c: simT.ind >= 100 ? T.gn : T.txt2, tip: "% de tus gastos que cubren tus ingresos. 100% = no necesitas empleo" },
         ].map((m) => (
@@ -585,6 +593,31 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             );
           })}
 
+
+          {/* Tax sliders */}
+          {((impuestoData && impuestoData.detalle) || []).filter(td => td.impuesto > 0).length > 0 && <>
+            <h4 style={{ fontSize: 13, color: "#a78bfa", fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>🧾 Impuestos Estimados</h4>
+            {((impuestoData && impuestoData.detalle) || []).map((td, ti) => {
+              if (td.impuesto <= 0) return null;
+              const impMes = Math.round(td.impuesto / 12);
+              const simImp = getVal(`tax_${ti}`, impMes);
+              return (
+                <div key={`tax_${ti}`} style={{marginBottom:10}}>
+                  <Slider label={(td.type === "juridica" ? "🏢 " : "👤 ") + td.name} value={simImp} base={impMes}
+                    max={Math.max(impMes * 2, 1000000)} color={"#a78bfa"}
+                    onChange={(v) => setVal(`tax_${ti}`, v)}
+                    sub="" />
+                  <div style={{display:"flex",gap:10,paddingLeft:4,marginTop:2,flexWrap:"wrap"}}>
+                    <span style={{fontSize:10,color:T.txt3}}>Impuesto: <strong style={{color:"#a78bfa"}}>{fm(simImp)}/mes</strong></span>
+                    <span style={{fontSize:10,color:T.txt3}}>Tasa: <strong>{td.tasa.toFixed(1)}%</strong></span>
+                    <span style={{fontSize:10,color:T.txt3}}>{td.type === "juridica" ? "Tarifa 35%" : "Art. 241 ET"}</span>
+                    {simImp !== impMes && <span style={{fontSize:10,color:simImp < impMes ? "#22c55e" : "#ef4444",fontWeight:600}}>{simImp < impMes ? "▼ " + fm(impMes - simImp) + " menos" : "▲ " + fm(simImp - impMes) + " más"}</span>}
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{fontSize:10,color:T.txt3,marginTop:4,padding:"0 4px"}}>Mueve los sliders para simular optimizaciones tributarias. El impuesto afecta tu cash flow real.</div>
+          </>}
 
           <button onClick={() => { setSimVals({}); setScenario("actual"); }}
             style={{ padding: "10px 20px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 12, width: "100%" }}>
