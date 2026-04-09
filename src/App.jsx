@@ -359,7 +359,7 @@ export default function FinPath(){
       "Personal":[{c:"Ropa y cuidado personal",m:500000,t:"v",owner:"own_1"}],
     };
     return nd;
-  })};
+  });setTimeout(()=>showToast("🧾 Impuestos calculados para Pedro Pérez y Pérez SAS"),1500)};
   const generatePDF=()=>{
     const fecha=new Date().toLocaleDateString("es-CO",{year:"numeric",month:"long",day:"numeric"});
     const inv=(u&&u.inv)||[];const deu=(u&&u.deu)||[];const gas=(u&&u.gas)||{};const ing=(u&&u.ingresos)||[];
