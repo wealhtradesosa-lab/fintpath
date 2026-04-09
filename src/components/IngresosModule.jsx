@@ -53,7 +53,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" });
   };
   const handleEdit = (item) => {
-    setForm({ nombre: item.nombre, categoria: item.categoria, mensual: item.mensual, tipo: item.tipo, fuente: item.fuente || "", capital: item.capital || "", tasa: item.tasa || "", moneda: item.moneda || "COP" });
+    setForm({ nombre: item.nombre, categoria: item.categoria, mensual: item.mensual, tipo: item.tipo, fuente: item.fuente || "", capital: item.capital || "", tasa: item.tasa || "", moneda: item.moneda || "COP", owner: item.owner || "" });
     setEditId(item.id); setShowForm(true);
   };
 
@@ -162,7 +162,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"Personal"},{v:"na",l:"🌐 N/A — No aplica tributariamente"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
               <In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} /></div>
               <div style={{fontSize:10,color:"#71717a",marginTop:-4,marginBottom:8,padding:"0 4px"}}>El propietario define a quién se le calcula el impuesto. La categoría define cómo se clasifica ante la DIAN.</div>
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />

@@ -127,7 +127,7 @@ const estimarImpuesto=(u)=>{
   const detalle=[];
   
   // Contar ingresos sin clasificar (sin owner o sin catFiscal)
-  const sinClasificar=ing.filter(i=>!i.catFiscal || i.catFiscal==="").length;
+  const sinClasificar=ing.filter(i=>!i.owner || i.owner==="").length;
   
   owners.forEach(ow=>{
     // Solo tomar ingresos que EXPLÍCITAMENTE tienen este owner asignado
@@ -135,7 +135,7 @@ const estimarImpuesto=(u)=>{
     const oIng=ing.filter(i=>{
       if(i.owner==="na")return false; // N/A excluido
       if(i.owner===ow.id)return true; // Explícitamente asignado
-      if(ow.id==="own_1" && (!i.owner || i.owner==="") && i.catFiscal && i.catFiscal!=="")return true; // Personal + clasificado
+      if(ow.id==="own_1" && (!i.owner || i.owner==="") && i.categoria)return true; // Personal + clasificado
       return false;
     });
     
