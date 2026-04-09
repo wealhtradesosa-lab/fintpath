@@ -1,455 +1,395 @@
 import { useState, useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 /* ═══════════════════════════════════════════════════
-   SIMULADOR TRIBUTARIO COLOMBIA 2026
-   Estatuto Tributario • Ley 2277/2022 • UVT 2026
+   PLANEACIÓN TRIBUTARIA COLOMBIA 2026
+   Estatuto Tributario • Ley 2277/2022 • UVT $52,374
    ═══════════════════════════════════════════════════ */
 
-const UVT_2026 = 52374; // Valor UVT 2026
-const SM_2026 = 1750905;
+const UVT = 52374;
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24", bg4: "#2a2a32",
+  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
   border: "rgba(255,255,255,0.06)", txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   green: "#22c55e", red: "#ef4444", blue: "#3b82f6", purple: "#a78bfa",
-  orange: "#f97316", gold: "#eab308", cyan: "#22d3ee",
+  orange: "#f97316", gold: "#eab308",
 };
-const fCOP = (v) => {
+const fm = (v) => {
   if (Math.abs(v) >= 1e9) return "$" + (v / 1e9).toFixed(2) + "B";
   if (Math.abs(v) >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
   return "$" + Math.round(v).toLocaleString("es-CO");
 };
-const pc = (v) => (v || 0).toFixed(1) + "%";
 
-// Tabla de tarifas de renta personas naturales 2026 (Art. 241 ET)
-const TABLA_RENTA = [
-  { desde: 0,     hasta: 1090,  tarifa: 0,    base: 0 },
-  { desde: 1090,  hasta: 1700,  tarifa: 19,   base: 0 },
-  { desde: 1700,  hasta: 4100,  tarifa: 28,   base: 115.86 },
-  { desde: 4100,  hasta: 8670,  tarifa: 33,   base: 787.86 },
-  { desde: 8670,  hasta: 18970, tarifa: 35,   base: 2295.96 },
-  { desde: 18970, hasta: 31000, tarifa: 37,   base: 5900.96 },
-  { desde: 31000, hasta: Infinity, tarifa: 39, base: 10352.96 },
+const TABLA = [
+  { d: 0, h: 1090, t: 0, b: 0 }, { d: 1090, h: 1700, t: 19, b: 0 },
+  { d: 1700, h: 4100, t: 28, b: 115.86 }, { d: 4100, h: 8670, t: 33, b: 787.86 },
+  { d: 8670, h: 18970, t: 35, b: 2295.96 }, { d: 18970, h: 31000, t: 37, b: 5900.96 },
+  { d: 31000, h: Infinity, t: 39, b: 10352.96 },
 ];
+const calcImp = (uvtBase) => { for (let i = TABLA.length - 1; i >= 0; i--) { if (uvtBase > TABLA[i].d) return (TABLA[i].b + (uvtBase - TABLA[i].d) * TABLA[i].t / 100) * UVT; } return 0; };
 
-function calcImpuesto(baseGravableUVT) {
-  for (let i = TABLA_RENTA.length - 1; i >= 0; i--) {
-    const r = TABLA_RENTA[i];
-    if (baseGravableUVT > r.desde) {
-      const exceso = baseGravableUVT - r.desde;
-      const impuestoUVT = r.base + exceso * (r.tarifa / 100);
-      return { impuestoUVT, impuestoPesos: impuestoUVT * UVT_2026, rango: r, rangoIdx: i };
-    }
-  }
-  return { impuestoUVT: 0, impuestoPesos: 0, rango: TABLA_RENTA[0], rangoIdx: 0 };
-}
+const DEDUC_NAT = { "Salud": 1, "Vivienda": 1, "Seguros": 0.5 };
+const DEDUC_JUR = { "Vivienda": 1, "Servicios": 1, "Transporte": 1, "Seguros": 1, "Educación": 0.5, "Otro": 0.5 };
+const LIM_NAT = { "Salud": 16 * UVT, "Vivienda": 100 * UVT, "Seguros": 16 * UVT };
+
+const CAT_FISCAL_LABELS = { salario: "💼 Salario", honorarios: "📋 Honorarios", arrendamiento: "🏠 Arrendamiento", dividendos: "📊 Dividendos", rendimientos: "💰 Rendimientos", venta_activos: "🏦 Venta activos", pension: "🏛️ Pensión", otros: "📝 Otros" };
 
 const Cd = ({ children, style: s }) => (
   <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", ...s }}>{children}</div>
 );
-const Row = ({ l, v, color, bold, sub, tip }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${T.border}` }} title={tip || ""}>
-    <div><span style={{ fontSize: 13, color: T.txt2 }}>{l}</span>{sub && <div style={{ fontSize: 10, color: T.txt3 }}>{sub}</div>}</div>
-    <span style={{ fontSize: 13, fontWeight: bold ? 700 : 600, color: color || T.txt, fontFamily: "monospace" }}>{v}</span>
-  </div>
-);
-const In = ({ label, value, onChange, unit, min, max, step, sub }) => (
-  <div style={{ marginBottom: 14 }}>
-    <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{label}</label>
-    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-      <input type="number" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)}
-        min={min || 0} max={max} step={step || 1}
-        style={{ flex: 1, background: T.bg3, border: `1px solid ${T.border}`, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 14, fontWeight: 600, textAlign: "right", outline: "none" }} />
-      {unit && <span style={{ fontSize: 11, color: T.txt3, minWidth: 40 }}>{unit}</span>}
-    </div>
-    {sub && <div style={{ fontSize: 10, color: T.txt3, marginTop: 3 }}>{sub}</div>}
-  </div>
-);
+
+function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ }) {
+  const [showOpt, setShowOpt] = useState(false);
+
+  const calc = useMemo(() => {
+    // Ingresos por categoría fiscal
+    const ingByCat = {};
+    let ingTotal = 0;
+    ingresos.forEach(i => {
+      const m = (i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1);
+      const cat = i.catFiscal || "otros";
+      ingByCat[cat] = (ingByCat[cat] || 0) + m;
+      ingTotal += m;
+    });
+    const ingAnual = ingTotal * 12;
+
+    // Gastos por categoría + deducibilidad
+    const reglas = isJ ? DEDUC_JUR : DEDUC_NAT;
+    const limites = isJ ? null : LIM_NAT;
+    const gastosByCat = {};
+    let gastosTotal = 0, gastosDeducTotal = 0;
+    gastos.forEach(g => {
+      const cat = g.cat || "Otro";
+      const m = g.m || 0;
+      gastosTotal += m;
+      const pct = reglas[cat] || 0;
+      let deducMes = m * pct;
+      if (limites && limites[cat]) deducMes = Math.min(deducMes, limites[cat]);
+      gastosDeducTotal += deducMes;
+      if (!gastosByCat[cat]) gastosByCat[cat] = { total: 0, deduc: 0, pct };
+      gastosByCat[cat].total += m;
+      gastosByCat[cat].deduc += deducMes;
+    });
+    const gastosDeducAnual = gastosDeducTotal * 12;
+
+    // Patrimonio de este owner
+    const patTotal = inv.reduce((s, i) => s + (+i.va || 0), 0);
+    const deuTotal = deu.reduce((s, d) => s + (d.mt || 0), 0);
+
+    let impuesto = 0, baseGravable = 0, tasaEfectiva = 0;
+    let detalleCalc = [];
+
+    if (isJ) {
+      const utilidad = Math.max(0, ingAnual - gastosDeducAnual);
+      impuesto = utilidad * 0.35;
+      baseGravable = utilidad;
+      detalleCalc = [
+        { l: "Ingresos brutos anuales", v: ingAnual, bold: true },
+        { l: "(-) Gastos deducibles", v: -gastosDeducAnual, color: T.green },
+        { l: "= Utilidad gravable", v: utilidad, bold: true },
+        { l: "Tarifa renta (35%)", v: null, sub: "Régimen general sociedades" },
+        { l: "= IMPUESTO DE RENTA", v: impuesto, color: T.red, bold: true },
+      ];
+    } else {
+      const noConst = ingAnual * 0.08;
+      const neto = ingAnual - noConst;
+      const exenta25 = Math.min(neto * 0.25, 790 * UVT);
+      const totalBenef = exenta25 + gastosDeducAnual;
+      const lim40 = neto * 0.40;
+      const benAplic = Math.min(totalBenef, lim40);
+      const excedido = totalBenef > lim40;
+      baseGravable = Math.max(0, neto - benAplic);
+      impuesto = calcImp(baseGravable / UVT);
+      detalleCalc = [
+        { l: "Ingresos brutos anuales", v: ingAnual, bold: true },
+        { l: "(-) Aportes obligatorios (8%)", v: -noConst, color: T.blue, sub: "Salud 4% + Pensión 4%" },
+        { l: "= Ingreso neto", v: neto, bold: true },
+        { l: "(-) Renta exenta 25%", v: -exenta25, color: T.green, sub: "Máx 790 UVT = " + fm(790 * UVT) },
+        { l: "(-) Gastos deducibles DIAN", v: -gastosDeducAnual, color: T.green },
+        ...(excedido ? [{ l: "⚠️ Tope 40% aplicado", v: null, sub: "Beneficios exceden " + fm(lim40) + ". Se aplican " + fm(benAplic), color: T.orange }] : []),
+        { l: "= Renta líquida gravable", v: baseGravable, bold: true, sub: Math.round(baseGravable / UVT).toLocaleString() + " UVT" },
+        { l: "→ Tabla Art. 241 ET", v: null, sub: "Tarifa marginal: " + TABLA.find((r, i) => baseGravable / UVT > r.d && (i === TABLA.length - 1 || baseGravable / UVT <= TABLA[i].h))?.t + "%" },
+        { l: "= IMPUESTO DE RENTA", v: impuesto, color: T.red, bold: true },
+      ];
+    }
+    tasaEfectiva = ingAnual > 0 ? (impuesto / ingAnual * 100) : 0;
+
+    // Optimizaciones
+    const opts = [];
+    if (!isJ) {
+      const espacioGlobal = Math.max(0, (ingAnual - ingAnual * 0.08) * 0.40 - (Math.min((ingAnual - ingAnual * 0.08) * 0.25, 790 * UVT) + gastosDeducAnual));
+      if (espacioGlobal > 100000) {
+        const aportePV = Math.min(espacioGlobal, (ingAnual - ingAnual * 0.08) * 0.25, 2500 * UVT);
+        if (aportePV > 0) {
+          const newBase = Math.max(0, baseGravable - aportePV);
+          const newImp = calcImp(newBase / UVT);
+          const ahorro = impuesto - newImp;
+          if (ahorro > 10000) opts.push({ icon: "💰", title: "Pensión voluntaria", desc: "Aporta hasta " + fm(aportePV / 12) + "/mes a un fondo de pensión voluntaria.", ahorro, color: T.green });
+        }
+        const aporteAFC = Math.min(espacioGlobal, (ingAnual - ingAnual * 0.08) * 0.30, 3800 * UVT);
+        if (aporteAFC > 0) {
+          const newBase2 = Math.max(0, baseGravable - aporteAFC);
+          const newImp2 = calcImp(newBase2 / UVT);
+          const ahorro2 = impuesto - newImp2;
+          if (ahorro2 > 10000) opts.push({ icon: "🏠", title: "Cuenta AFC", desc: "Ahorra hasta " + fm(aporteAFC / 12) + "/mes en una Cuenta AFC (Ahorro para el Fomento de Construcción).", ahorro: ahorro2, color: T.blue });
+        }
+      }
+      const tieneSalud = Object.keys(gastosByCat).includes("Salud");
+      if (!tieneSalud && ingAnual > 1090 * UVT) {
+        opts.push({ icon: "🏥", title: "Medicina prepagada", desc: "Si pagas medicina prepagada, es deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → categoría Salud.", ahorro: 0, color: T.purple });
+      }
+    } else {
+      const gastosNoDeduc = gastos.filter(g => !(DEDUC_JUR[g.cat || "Otro"])).reduce((s, g) => s + (g.m || 0), 0);
+      if (gastosNoDeduc > 0) {
+        opts.push({ icon: "⚠️", title: "Gastos no deducibles", desc: fm(gastosNoDeduc) + "/mes en gastos personales no son deducibles para la empresa (Alimentación, Entretenimiento, etc.).", ahorro: 0, color: T.orange });
+      }
+    }
+
+    return { ingTotal, ingAnual, ingByCat, gastosTotal, gastosDeducTotal, gastosDeducAnual, gastosByCat, patTotal, deuTotal, impuesto, baseGravable, tasaEfectiva, detalleCalc, opts };
+  }, [ingresos, gastos, inv, deu, trm, isJ]);
+
+  const pieData = [
+    { name: "Impuesto", value: calc.impuesto, color: T.red },
+    { name: "Neto", value: Math.max(0, calc.ingAnual - calc.impuesto), color: T.green },
+  ].filter(d => d.value > 0);
+
+  if (calc.ingAnual <= 0) return (
+    <Cd style={{ padding: 24, marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <span style={{ fontSize: 20 }}>{isJ ? "🏢" : "👤"}</span>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>{owner.name}</div>
+          <div style={{ fontSize: 11, color: T.txt3 }}>{isJ ? "Persona Jurídica" : "Persona Natural"}</div>
+        </div>
+      </div>
+      <div style={{ padding: 20, textAlign: "center", color: T.txt3, fontSize: 13 }}>
+        No hay ingresos clasificados para este propietario.<br />
+        Ve a <strong style={{ color: T.blue }}>💰 Ingresos</strong> y asigna este propietario + clasificación DIAN.
+      </div>
+    </Cd>
+  );
+
+  return (
+    <Cd style={{ padding: 0, marginBottom: 16 }}>
+      {/* Header */}
+      <div style={{ padding: "20px 24px", borderBottom: "1px solid " + T.border, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 24 }}>{isJ ? "🏢" : "👤"}</span>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>{owner.name}</div>
+            <div style={{ fontSize: 11, color: T.txt3 }}>{isJ ? "Persona Jurídica — Tarifa 35%" : "Persona Natural — Tabla Art. 241 ET"}</div>
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>{fm(calc.impuesto)}/año</div>
+          <div style={{ fontSize: 12, color: T.txt3 }}>{fm(calc.impuesto / 12)}/mes • Tasa: {calc.tasaEfectiva.toFixed(1)}%</div>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+        {/* Left: Radiografía */}
+        <div style={{ padding: 20, borderRight: "1px solid " + T.border }}>
+          {/* Ingresos */}
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginBottom: 8 }}>💰 Ingresos ({ingresos.length} fuentes)</div>
+          {Object.entries(calc.ingByCat).map(([cat, m]) => (
+            <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, borderBottom: "1px solid " + T.border }}>
+              <span style={{ color: T.txt2 }}>{CAT_FISCAL_LABELS[cat] || cat}</span>
+              <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{fm(m)}/mes</span>
+            </div>
+          ))}
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, fontWeight: 700, marginTop: 4 }}>
+            <span>Total ingresos</span>
+            <span style={{ color: T.green }}>{fm(calc.ingTotal)}/mes</span>
+          </div>
+
+          {/* Gastos deducibles */}
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.blue, marginTop: 16, marginBottom: 8 }}>📝 Gastos deducibles</div>
+          {Object.entries(calc.gastosByCat).filter(([, v]) => v.deduc > 0).map(([cat, v]) => (
+            <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, borderBottom: "1px solid " + T.border }}>
+              <span style={{ color: T.txt2 }}>{cat} <span style={{ color: T.txt3 }}>({v.pct === 1 ? "100%" : Math.round(v.pct * 100) + "%"})</span></span>
+              <span style={{ fontFamily: "monospace", color: T.green }}>{fm(v.deduc)}/mes</span>
+            </div>
+          ))}
+          {Object.entries(calc.gastosByCat).filter(([, v]) => v.deduc > 0).length === 0 && (
+            <div style={{ fontSize: 11, color: T.txt3, padding: "8px 0" }}>No hay gastos deducibles registrados.</div>
+          )}
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, fontWeight: 700, marginTop: 4 }}>
+            <span>Total deducible</span>
+            <span style={{ color: T.green }}>{fm(calc.gastosDeducTotal)}/mes</span>
+          </div>
+
+          {/* Gastos no deducibles */}
+          {Object.entries(calc.gastosByCat).filter(([, v]) => v.total > v.deduc).length > 0 && <>
+            <div style={{ fontSize: 11, fontWeight: 600, color: T.txt3, marginTop: 12, marginBottom: 6 }}>Gastos no deducibles</div>
+            {Object.entries(calc.gastosByCat).filter(([, v]) => v.total > v.deduc).map(([cat, v]) => (
+              <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 10, color: T.txt3 }}>
+                <span>{cat}</span>
+                <span>{fm(v.total - v.deduc)}/mes</span>
+              </div>
+            ))}
+          </>}
+
+          {/* Patrimonio y deudas */}
+          {(calc.patTotal > 0 || calc.deuTotal > 0) && <>
+            <div style={{ fontSize: 12, fontWeight: 700, color: T.purple, marginTop: 16, marginBottom: 8 }}>🏦 Patrimonio</div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "4px 0" }}>
+              <span style={{ color: T.txt2 }}>Activos ({inv.length})</span>
+              <span style={{ fontFamily: "monospace" }}>{fm(calc.patTotal)}</span>
+            </div>
+            {calc.deuTotal > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "4px 0" }}>
+              <span style={{ color: T.txt2 }}>Deudas ({deu.length})</span>
+              <span style={{ fontFamily: "monospace", color: T.red }}>{fm(calc.deuTotal)}</span>
+            </div>}
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, padding: "6px 0", borderTop: "1px solid " + T.border }}>
+              <span>Patrimonio neto</span>
+              <span>{fm(calc.patTotal - calc.deuTotal)}</span>
+            </div>
+          </>}
+        </div>
+
+        {/* Right: Cálculo + Pie */}
+        <div style={{ padding: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <div style={{ width: 90, height: 90 }}>
+              <ResponsiveContainer width="100%" height={90}>
+                <PieChart><Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={24} outerRadius={40} paddingAngle={2}>{pieData.map((p, i) => <Cell key={i} fill={p.color} />)}</Pie></PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: T.txt3 }}>Del ingreso bruto</div>
+              <div style={{ fontSize: 13 }}><span style={{ color: T.red, fontWeight: 700 }}>{calc.tasaEfectiva.toFixed(1)}%</span> va a impuestos</div>
+              <div style={{ fontSize: 13 }}><span style={{ color: T.green, fontWeight: 700 }}>{(100 - calc.tasaEfectiva).toFixed(1)}%</span> queda neto</div>
+            </div>
+          </div>
+
+          {/* Cálculo paso a paso */}
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>📊 Cálculo del impuesto</div>
+          {calc.detalleCalc.map((r, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: r.bold ? "2px solid " + T.border : "1px solid " + T.border }}>
+              <div>
+                <span style={{ fontSize: 11, color: r.color || T.txt2, fontWeight: r.bold ? 700 : 400 }}>{r.l}</span>
+                {r.sub && <div style={{ fontSize: 9, color: T.txt3 }}>{r.sub}</div>}
+              </div>
+              {r.v !== null && <span style={{ fontSize: 12, fontWeight: r.bold ? 700 : 600, fontFamily: "monospace", color: r.color || T.txt }}>{r.v < 0 ? "- " + fm(Math.abs(r.v)) : fm(r.v)}</span>}
+            </div>
+          ))}
+
+          {/* Optimizaciones */}
+          {calc.opts.length > 0 && <>
+            <div style={{ fontSize: 12, fontWeight: 700, color: T.orange, marginTop: 16, marginBottom: 8, cursor: "pointer" }} onClick={() => setShowOpt(!showOpt)}>
+              💡 {calc.opts.length} oportunidad{calc.opts.length > 1 ? "es" : ""} de optimización {showOpt ? "▲" : "▼"}
+            </div>
+            {showOpt && calc.opts.map((o, i) => (
+              <div key={i} style={{ background: o.color + "08", border: "1px solid " + o.color + "20", borderRadius: 10, padding: 12, marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: o.color }}>{o.icon} {o.title}</div>
+                <div style={{ fontSize: 11, color: T.txt2, marginTop: 4, lineHeight: 1.5 }}>{o.desc}</div>
+                {o.ahorro > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginTop: 6 }}>Ahorro potencial: {fm(o.ahorro)}/año ({fm(o.ahorro / 12)}/mes)</div>}
+              </div>
+            ))}
+          </>}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: "10px 24px", borderTop: "1px solid " + T.border, fontSize: 9, color: T.txt3, textAlign: "center" }}>
+        Estimación basada en datos registrados. Clasificación DIAN automática. Consulta tu contador para la declaración oficial.
+      </div>
+    </Cd>
+  );
+}
 
 export default function SimuladorTributario({ trm, user }) {
   const owners = (user && user.owners) || [{ id: "own_1", name: "Personal", type: "natural" }];
-  const [selectedOwner, setSelectedOwner] = useState("own_1");
-  const selectedOwnerData = owners.find(o => o.id === selectedOwner) || owners[0];
-  const isJuridica = selectedOwnerData.type === "juridica";
+  const ing = (user && user.ingresos) || [];
+  const gas = user && user.gas ? user.gas : {};
+  const inv = (user && user.inv) || [];
+  const deu = (user && user.deu) || [];
 
-  // Auto-load from user data filtered by owner
-  const ownerIngresos = ((user && user.ingresos) || []).filter(i => (i.owner || "") === selectedOwner || (!i.owner && selectedOwner === "own_1"));
-  const autoSalario = ownerIngresos.filter(i => (i.catFiscal || "") === "salario").reduce((s, i) => s + (i.mensual || 0), 0);
-  const autoHonorarios = ownerIngresos.filter(i => (i.catFiscal || "") === "honorarios").reduce((s, i) => s + (i.mensual || 0), 0);
-  const autoArrendamiento = ownerIngresos.filter(i => (i.catFiscal || "") === "arrendamiento").reduce((s, i) => s + (i.mensual || 0), 0);
-  const autoRendimientos = ownerIngresos.filter(i => (i.catFiscal || "") === "rendimientos").reduce((s, i) => s + (i.mensual || 0), 0);
-  const autoDividendos = ownerIngresos.filter(i => (i.catFiscal || "") === "dividendos").reduce((s, i) => s + (i.mensual || 0), 0);
-  // Gastos deducibles — clasificación automática DIAN
-  const ownerGastos = [];
-  Object.entries((user && user.gas) || {}).forEach(([cat, items]) => {
-    (items || []).forEach(g => {
-      if ((g.owner || "") === selectedOwner || (!g.owner && selectedOwner === "own_1")) {
-        ownerGastos.push({ ...g, cat });
-      }
-    });
+  const sinClasificar = ing.filter(i => !i.catFiscal || i.catFiscal === "").length;
+
+  // Build flat gastos array
+  const gastosFlat = [];
+  Object.entries(gas).forEach(([cat, items]) => {
+    (items || []).forEach(g => gastosFlat.push({ ...g, cat }));
   });
-
-  // Reglas DIAN por categoría y tipo de persona
-  const DIAN_DEDUCIBLE = isJuridica ? {
-    // Persona Jurídica: gastos operativos del negocio son deducibles
-    "Vivienda": 1.0,       // Arriendo oficina, bodega
-    "Servicios": 1.0,      // Servicios públicos del negocio
-    "Transporte": 1.0,     // Transporte operativo
-    "Seguros": 1.0,        // Pólizas del negocio
-    "Educación": 0.5,      // Capacitación parcial
-    "Alimentación": 0.0,   // No deducible (gasto personal)
-    "Salud": 0.0,          // No deducible (gasto personal)
-    "Entretenimiento": 0.0,// No deducible
-    "Personal": 0.0,       // No deducible
-    "Vestimenta": 0.0,     // No deducible
-    "Ahorro": 0.0,         // No es gasto
-    "Otro": 0.5,           // Parcial (depende del caso)
-  } : {
-    // Persona Natural: deducciones limitadas por ley
-    "Salud": 1.0,          // Medicina prepagada (máx 16 UVT/mes)
-    "Vivienda": 1.0,       // Intereses vivienda (máx 100 UVT/mes)
-    "Seguros": 0.5,        // Seguros de vida/salud parcial
-    "Educación": 0.0,      // No directamente deducible (solo dependientes)
-    "Alimentación": 0.0,   // No deducible
-    "Transporte": 0.0,     // No deducible
-    "Servicios": 0.0,      // No deducible
-    "Entretenimiento": 0.0,// No deducible
-    "Personal": 0.0,       // No deducible
-    "Vestimenta": 0.0,     // No deducible
-    "Ahorro": 0.0,         // No es gasto (AFC/Pensión ya están arriba)
-    "Otro": 0.0,           // No deducible por defecto
-  };
-
-  // Límites DIAN para persona natural
-  const LIMITES_NATURAL = {
-    "Salud": 16 * UVT_2026,       // 16 UVT/mes medicina prepagada
-    "Vivienda": 100 * UVT_2026,   // 100 UVT/mes intereses vivienda
-    "Seguros": 16 * UVT_2026,     // 16 UVT/mes seguros
-  };
-
-  let totalDeducibleGastos = 0;
-  const gastosDetalle = [];
-  const gastosPorCat = {};
-  ownerGastos.forEach(g => {
-    const cat = g.cat || "Otro";
-    const pct = DIAN_DEDUCIBLE[cat] ?? 0;
-    const monto = (g.m || 0) * pct;
-    if (!gastosPorCat[cat]) gastosPorCat[cat] = 0;
-    gastosPorCat[cat] += monto;
-  });
-
-  Object.entries(gastosPorCat).forEach(([cat, montoMes]) => {
-    if (montoMes <= 0) return;
-    const limite = LIMITES_NATURAL[cat];
-    const aplicado = (!isJuridica && limite) ? Math.min(montoMes, limite) : montoMes;
-    totalDeducibleGastos += aplicado * 12;
-    const pct = DIAN_DEDUCIBLE[cat] ?? 0;
-    gastosDetalle.push({ cat, montoMes, aplicadoMes: aplicado, pct, limiteMsg: (!isJuridica && limite) ? "Máx " + fCOP(limite) + "/mes" : null });
-  });
-
-  const autoOtros = ownerIngresos.filter(i => !["salario","honorarios","arrendamiento","rendimientos","dividendos"].includes(i.catFiscal || "")).reduce((s, i) => s + (i.mensual || 0), 0);
-
-  const [salarioMes, setSalarioMes] = useState(autoSalario || 15000000);
-  const [otrosIngresos, setOtrosIngresos] = useState(autoOtros + autoHonorarios + autoArrendamiento + autoRendimientos + autoDividendos);
-  const [pensionVol, setPensionVol] = useState(0);
-  const [afc, setAfc] = useState(0);
-  const [dependientes, setDependientes] = useState(0);
-  const [medicinaPrepagada, setMedicinaPrepagada] = useState(0);
-  const [interesesVivienda, setInteresesVivienda] = useState(0);
-  const [donaciones, setDonaciones] = useState(0);
-
-  const calc = useMemo(() => {
-    const salarioAnual = salarioMes * 12;
-    const ingresoBrutoAnual = salarioAnual + otrosIngresos * 12;
-
-    // ═══ INGRESOS NO CONSTITUTIVOS DE RENTA ═══
-    const aporteSaludOblig = salarioAnual * 0.04; // 4% salud empleado
-    const aportePensionOblig = salarioAnual * 0.04; // 4% pensión empleado
-    const totalNoConstitutivo = aporteSaludOblig + aportePensionOblig;
-    const ingresoNeto = ingresoBrutoAnual - totalNoConstitutivo;
-
-    // ═══ RENTAS EXENTAS (Art. 206 ET) ═══
-    // 25% del ingreso laboral (limitado a 790 UVT anuales = 240 UVT mensuales)
-    const renta25pct = Math.min(ingresoNeto * 0.25, 790 * UVT_2026);
-
-    // ═══ DEDUCCIONES ═══
-    // Dependientes: 10% ingreso bruto, máx 32 UVT/mes = 384 UVT/año
-    const deducDependientes = dependientes > 0 ? Math.min(ingresoBrutoAnual * 0.10, 384 * UVT_2026) : 0;
-    // Medicina prepagada: máx 16 UVT/mes = 192 UVT/año
-    const deducMedicina = Math.min(medicinaPrepagada * 12, 192 * UVT_2026);
-    // Intereses vivienda: máx 100 UVT/mes = 1200 UVT/año
-    const deducVivienda = Math.min(interesesVivienda * 12, 1200 * UVT_2026);
-    // Donaciones: máx 25% renta líquida
-    const deducDonaciones = donaciones * 12;
-    const deducGastos = totalDeducibleGastos;
-    const totalDeducciones = deducDependientes + deducMedicina + deducVivienda + deducDonaciones + deducGastos;
-
-    // ═══ RENTAS EXENTAS ADICIONALES ═══
-    // Pensión voluntaria: exenta hasta 25% ingreso o 2500 UVT/año
-    const pensionVolAnual = pensionVol * 12;
-    const exentaPensionVol = Math.min(pensionVolAnual, ingresoNeto * 0.25, 2500 * UVT_2026);
-    // AFC: exenta hasta 30% ingreso o 3800 UVT/año
-    const afcAnual = afc * 12;
-    const exentaAFC = Math.min(afcAnual, ingresoNeto * 0.30, 3800 * UVT_2026);
-
-    // ═══ LÍMITE GLOBAL 40% (Art. 336 ET - Ley 2277/2022) ═══
-    // Deducciones + Rentas exentas NO pueden superar el 40% del ingreso neto
-    const totalBeneficios = renta25pct + totalDeducciones + exentaPensionVol + exentaAFC;
-    const limite40 = ingresoNeto * 0.40;
-    const beneficioAplicado = Math.min(totalBeneficios, limite40);
-
-    // ═══ RENTA LÍQUIDA GRAVABLE ═══
-    const rentaLiquida = Math.max(0, ingresoNeto - beneficioAplicado);
-    const rentaLiquidaUVT = rentaLiquida / UVT_2026;
-
-    // ═══ IMPUESTO ═══
-    let imp;
-    if (selectedOwnerData.type === "juridica") {
-      const impJuridica = rentaLiquida * 0.35;
-      imp = { impuestoUVT: impJuridica / UVT_2026, impuestoPesos: impJuridica, rango: { tarifa: 35, desde: 0, hasta: Infinity, base: 0 }, rangoIdx: -1 };
-    } else {
-      imp = calcImpuesto(rentaLiquidaUVT);
-    }
-    const impuestoAnual = imp.impuestoPesos;
-    const impuestoMes = impuestoAnual / 12;
-    const tasaEfectiva = ingresoBrutoAnual > 0 ? (impuestoAnual / ingresoBrutoAnual) * 100 : 0;
-
-    // ═══ ESCENARIO SIN OPTIMIZACIÓN ═══
-    const rentaSinOpt = Math.max(0, ingresoNeto - renta25pct);
-    const impSinOpt = calcImpuesto(rentaSinOpt / UVT_2026);
-    const ahorro = impSinOpt.impuestoPesos - impuestoAnual;
-
-    // ═══ RECOMENDACIONES ═══
-    const recs = [];
-    const espacioPensionVol = Math.max(0, Math.min(ingresoNeto * 0.25, 2500 * UVT_2026) - pensionVolAnual);
-    const espacioAFC = Math.max(0, Math.min(ingresoNeto * 0.30, 3800 * UVT_2026) - afcAnual);
-    const espacioGlobal = Math.max(0, limite40 - beneficioAplicado);
-
-    if (espacioGlobal > 0 && espacioPensionVol > 0 && pensionVolAnual === 0) {
-      const aporteRec = Math.min(espacioPensionVol, espacioGlobal);
-      const impConAporte = calcImpuesto(Math.max(0, rentaLiquida - aporteRec) / UVT_2026);
-      recs.push({ t: "💰 Aporte a pensión voluntaria", d: "Puedes aportar hasta " + fCOP(aporteRec / 12) + "/mes y ahorrar ~" + fCOP((impuestoAnual - impConAporte.impuestoPesos)) + "/año en impuestos.", ahorro: impuestoAnual - impConAporte.impuestoPesos, color: T.green });
-    }
-    if (espacioGlobal > 0 && espacioAFC > 0 && afcAnual === 0) {
-      const aporteRec = Math.min(espacioAFC, espacioGlobal);
-      const impConAporte = calcImpuesto(Math.max(0, rentaLiquida - aporteRec) / UVT_2026);
-      recs.push({ t: "🏠 Cuenta AFC (Ahorro para el Fomento de Construcción)", d: "Abre una cuenta AFC y ahorra hasta " + fCOP(aporteRec / 12) + "/mes. Ahorro: ~" + fCOP((impuestoAnual - impConAporte.impuestoPesos)) + "/año.", ahorro: impuestoAnual - impConAporte.impuestoPesos, color: T.blue });
-    }
-    if (dependientes === 0 && ingresoBrutoAnual > 1090 * UVT_2026) {
-      recs.push({ t: "👨‍👩‍👧 Dependientes", d: "Si tienes hijos menores, padres o cónyuge a cargo, puedes deducir hasta " + fCOP(384 * UVT_2026 / 12) + "/mes.", ahorro: 0, color: T.purple });
-    }
-    if (medicinaPrepagada === 0 && ingresoBrutoAnual > 2000 * UVT_2026) {
-      recs.push({ t: "🏥 Medicina prepagada", d: "Si pagas medicina prepagada, puedes deducir hasta " + fCOP(16 * UVT_2026) + "/mes.", ahorro: 0, color: T.cyan });
-    }
-    if (totalBeneficios > limite40) {
-      recs.push({ t: "⚠️ Tope del 40% alcanzado", d: "Ya usas el máximo de beneficios tributarios permitidos. No puedes deducir más (" + fCOP(totalBeneficios - limite40) + " no aplicados).", ahorro: 0, color: T.orange });
-    }
-    // Check if there are non-deducible gastos that could be restructured
-    if (!isJuridica) {
-      const gastoVivienda = ownerGastos.filter(g => g.cat === "Vivienda").reduce((s, g) => s + (g.m || 0), 0);
-      if (gastoVivienda > 0 && interesesVivienda === 0) {
-        recs.push({ t: "🏠 ¿Pagas crédito de vivienda?", d: "Si tienes crédito hipotecario, los intereses son deducibles hasta " + fCOP(100 * UVT_2026) + "/mes. Agrégalos arriba en 'Intereses vivienda'.", ahorro: 0, color: T.blue });
-      }
-      const gastoSalud = ownerGastos.filter(g => g.cat === "Salud").reduce((s, g) => s + (g.m || 0), 0);
-      if (gastoSalud > 0) {
-        recs.push({ t: "🏥 Gastos de salud detectados", d: "Tus gastos de salud (" + fCOP(gastoSalud) + "/mes) se clasificaron como deducibles automáticamente. Máximo: " + fCOP(16 * UVT_2026) + "/mes.", ahorro: 0, color: T.green });
-      }
-    }
-    if (isJuridica) {
-      const gastosNoDeduc = ownerGastos.filter(g => (DIAN_DEDUCIBLE[g.cat || "Otro"] ?? 0) === 0).reduce((s, g) => s + (g.m || 0), 0);
-      if (gastosNoDeduc > 0) {
-        recs.push({ t: "🏢 Gastos no deducibles", d: fCOP(gastosNoDeduc) + "/mes en gastos personales (Alimentación, Salud, etc.) no son deducibles para la empresa.", ahorro: 0, color: T.orange });
-      }
-    }
-    if (recs.length === 0 && impuestoAnual > 0) {
-      recs.push({ t: "✅ Buena optimización", d: "Estás aprovechando tus beneficios tributarios. Tu tasa efectiva es " + pc(tasaEfectiva) + ".", ahorro: 0, color: T.green });
-    }
-
-    return {
-      ingresoBrutoAnual, salarioAnual, totalNoConstitutivo, ingresoNeto,
-      renta25pct, deducDependientes, deducMedicina, deducVivienda, deducDonaciones,
-      totalDeducciones, deducGastos, gastosDetalle, exentaPensionVol, exentaAFC, totalBeneficios, limite40,
-      beneficioAplicado, rentaLiquida, rentaLiquidaUVT,
-      impuestoAnual, impuestoMes, tasaEfectiva, rango: imp.rango, rangoIdx: imp.rangoIdx,
-      ahorro, recs, espacioGlobal,
-    };
-  }, [salarioMes, otrosIngresos, pensionVol, afc, dependientes, medicinaPrepagada, interesesVivienda, donaciones, selectedOwner]);
-
-  const pieData = [
-    { name: "Impuesto", value: calc.impuestoAnual, color: T.red },
-    { name: "Beneficios tributarios", value: calc.beneficioAplicado, color: T.green },
-    { name: "No constitutivo", value: calc.totalNoConstitutivo, color: T.blue },
-    { name: "Neto después de impuesto", value: Math.max(0, calc.ingresoBrutoAnual - calc.impuestoAnual - calc.totalNoConstitutivo - calc.beneficioAplicado), color: T.txt3 },
-  ].filter(d => d.value > 0);
-
-  const tablaRango = TABLA_RENTA.map((r, i) => ({
-    rango: r.hasta === Infinity ? ">" + r.desde.toLocaleString() : r.desde.toLocaleString() + " – " + r.hasta.toLocaleString(),
-    tarifa: r.tarifa + "%",
-    enPesos: r.hasta === Infinity ? ">" + fCOP(r.desde * UVT_2026) : fCOP(r.desde * UVT_2026) + " – " + fCOP(r.hasta * UVT_2026),
-    activo: i === calc.rangoIdx,
-  }));
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px", color: T.orange }}>Simulador Tributario — {selectedOwnerData.name}</h1>
-          <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>Estatuto Tributario • Ley 2277/2022 • UVT 2026: {fCOP(UVT_2026)}</p>
-        </div>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px", color: T.orange }}>🧾 Planeación Tributaria — Colombia 2026</h1>
+        <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>Radiografía fiscal por propietario • Estatuto Tributario • UVT 2026: {fm(UVT)} • Ley 2277/2022</p>
       </div>
 
-      {/* Inputs */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 16, marginBottom: 16 }}>
-        <Cd style={{ padding: 20 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>👤 Propietario Fiscal</h3>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
-            {owners.map(ow => (
-              <button key={ow.id} onClick={() => setSelectedOwner(ow.id)} style={{
-                padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600,
-                border: "1px solid " + (selectedOwner === ow.id ? T.orange : T.border),
-                background: selectedOwner === ow.id ? T.orange + "15" : T.bg3,
-                color: selectedOwner === ow.id ? T.orange : T.txt2,
-              }}>{ow.type === "juridica" ? "🏢" : "👤"} {ow.name}</button>
-            ))}
-          </div>
-          {isJuridica && <div style={{ background: T.blue + "10", border: "1px solid " + T.blue + "20", borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 11, color: T.blue }}>
-            🏢 <strong>Persona Jurídica:</strong> Tarifa fija de renta del 35% sobre renta líquida gravable (régimen general colombiano).
-          </div>}
-          {ownerIngresos.length > 0 && <div style={{ background: T.green + "08", border: "1px solid " + T.green + "15", borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 11, color: T.green }}>
-            📊 Se encontraron {ownerIngresos.length} ingresos registrados para este propietario. Los valores se cargaron automáticamente.
-          </div>}
-          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>📋 Ingresos</h3>
-          <In label="Salario mensual" value={salarioMes} onChange={setSalarioMes} unit="COP" sub={"= " + fCOP(salarioMes * 12) + "/año"} />
-          <In label="Otros ingresos/mes" value={otrosIngresos} onChange={setOtrosIngresos} unit="COP" sub="Arriendos, honorarios, dividendos" />
+      {sinClasificar > 0 && (
+        <div style={{ background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.15)", borderRadius: 12, padding: "14px 18px", marginBottom: 16, fontSize: 12, color: T.orange, lineHeight: 1.6 }}>
+          ⚠️ <strong>{sinClasificar} ingreso(s)</strong> sin clasificación fiscal. Para un cálculo más preciso, ve a <strong>💰 Ingresos</strong> y asigna <strong>Propietario</strong> + <strong>Clasificación DIAN</strong> a cada ingreso.
+          Solo los ingresos clasificados se incluyen en el cálculo.
+        </div>
+      )}
 
-          <h3 style={{ fontSize: 15, fontWeight: 700, margin: "20px 0 14px" }}>💰 Beneficios Tributarios</h3>
-          <In label="Pensión voluntaria/mes" value={pensionVol} onChange={setPensionVol} unit="COP" sub={"Exenta hasta " + fCOP(Math.min(calc.ingresoNeto * 0.25, 2500 * UVT_2026) / 12) + "/mes"} />
-          <In label="Cuenta AFC/mes" value={afc} onChange={setAfc} unit="COP" sub={"Exenta hasta " + fCOP(Math.min(calc.ingresoNeto * 0.30, 3800 * UVT_2026) / 12) + "/mes"} />
-
-          <h3 style={{ fontSize: 15, fontWeight: 700, margin: "20px 0 14px" }}>📝 Deducciones</h3>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>Dependientes</label>
-            <div style={{ display: "flex", gap: 6 }}>
-              {[0, 1, 2, 3, 4].map(n => (
-                <button key={n} onClick={() => setDependientes(n)} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${dependientes === n ? T.green : T.border}`, background: dependientes === n ? T.green + "15" : T.bg3, color: dependientes === n ? T.green : T.txt2, cursor: "pointer", fontWeight: 700, fontSize: 14 }}>{n}</button>
-              ))}
-            </div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 3 }}>Hijos, cónyuge o padres a cargo</div>
-          </div>
-          <In label="Medicina prepagada/mes" value={medicinaPrepagada} onChange={setMedicinaPrepagada} unit="COP" sub={"Máx " + fCOP(16 * UVT_2026) + "/mes"} />
-          <In label="Intereses vivienda/mes" value={interesesVivienda} onChange={setInteresesVivienda} unit="COP" sub={"Máx " + fCOP(100 * UVT_2026) + "/mes"} />
-          <In label="Donaciones/mes" value={donaciones} onChange={setDonaciones} unit="COP" sub="A entidades autorizadas" />
-        </Cd>
-
-        {/* Results */}
-        <div>
-          {/* Big number */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-            <Cd style={{ padding: 28, textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.1em" }}>Impuesto de Renta Anual</div>
-              <div style={{ fontSize: 42, fontWeight: 800, color: T.red, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(calc.impuestoAnual)}</div>
-              <div style={{ fontSize: 14, color: T.txt3, marginTop: 4 }}>{fCOP(calc.impuestoMes)}/mes</div>
-              <div style={{ fontSize: 13, color: T.orange, marginTop: 8, fontWeight: 600 }}>Tasa efectiva: {pc(calc.tasaEfectiva)}</div>
-              <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Rango: {calc.rango.tarifa}% (marginal)</div>
-            </Cd>
-
-            <Cd style={{ padding: 28, textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.1em" }}>Ahorro por Beneficios</div>
-              <div style={{ fontSize: 42, fontWeight: 800, color: T.green, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(calc.ahorro)}</div>
-              <div style={{ fontSize: 14, color: T.txt3, marginTop: 4 }}>{fCOP(calc.ahorro / 12)}/mes</div>
-              <div style={{ fontSize: 13, color: T.txt2, marginTop: 8 }}>Espacio restante: {fCOP(calc.espacioGlobal)}</div>
-              <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Límite 40%: {fCOP(calc.limite40)}</div>
-            </Cd>
-          </div>
-
-          {/* Distribution pie */}
+      {/* Resumen global */}
+      {(()=> {
+        let totalImp = 0;
+        owners.forEach(ow => {
+          const oIng = ing.filter(i => {
+            if (i.owner === "na") return false;
+            if (i.owner === ow.id) return true;
+            if (ow.id === "own_1" && (!i.owner || i.owner === "") && i.catFiscal && i.catFiscal !== "") return true;
+            return false;
+          });
+          if (oIng.reduce((s, i) => s + (i.mensual || 0), 0) <= 0) return;
+          totalImp++; // count owners with income
+        });
+        return totalImp > 1 ? (
           <Cd style={{ padding: 20, marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Distribución de tu Ingreso Bruto</div>
-            <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-              <div style={{ width: 140, height: 140, flexShrink: 0 }}>
-                <ResponsiveContainer width="100%" height={140}>
-                  <PieChart><Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={32} outerRadius={60} paddingAngle={2}>{pieData.map((p, i) => <Cell key={i} fill={p.color} />)}</Pie></PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ flex: 1, fontSize: 12 }}>
-                {pieData.map((p, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid " + T.border }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 2, background: p.color }} />
-                      <span style={{ color: T.txt2 }}>{p.name}</span>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <span style={{ fontWeight: 600, fontFamily: "monospace" }}>{fCOP(p.value)}</span>
-                      <span style={{ color: T.txt3, fontSize: 10 }}>{calc.ingresoBrutoAnual > 0 ? pc(p.value / calc.ingresoBrutoAnual * 100) : "—"}</span>
-                    </div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>📊 Resumen Global</div>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+              {owners.map(ow => {
+                const oIng = ing.filter(i => {
+                  if (i.owner === "na") return false;
+                  if (i.owner === ow.id) return true;
+                  if (ow.id === "own_1" && (!i.owner || i.owner === "") && i.catFiscal) return true;
+                  return false;
+                });
+                const ingAnual = oIng.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
+                if (ingAnual <= 0) return null;
+                const isJ = ow.type === "juridica";
+                const oGas = gastosFlat.filter(g => g.owner === ow.id || (ow.id === "own_1" && (!g.owner || g.owner === "")));
+                const reglas = isJ ? DEDUC_JUR : DEDUC_NAT;
+                let gastosD = 0;
+                oGas.forEach(g => { const p = reglas[g.cat || "Otro"] || 0; gastosD += (g.m || 0) * p; });
+                const imp = isJ ? Math.max(0, ingAnual - gastosD * 12) * 0.35 : (()=> {
+                  const nc = ingAnual * 0.08; const n = ingAnual - nc; const ex = Math.min(n * 0.25, 790 * UVT);
+                  const bn = Math.min(ex + gastosD * 12, n * 0.4); return calcImp(Math.max(0, n - bn) / UVT);
+                })();
+                return (
+                  <div key={ow.id} style={{ flex: 1, minWidth: 200, background: T.bg3, borderRadius: 12, padding: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>{isJ ? "🏢" : "👤"} {ow.name}</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: T.red, marginTop: 4 }}>{fm(imp)}/año</div>
+                    <div style={{ fontSize: 10, color: T.txt3 }}>{fm(imp / 12)}/mes • {(ingAnual > 0 ? (imp / ingAnual * 100) : 0).toFixed(1)}% tasa</div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </Cd>
+        ) : null;
+      })()}
 
-          {/* Cálculo detallado */}
-          <Cd style={{ padding: 20, marginBottom: 16 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>📊 Cálculo Detallado</h3>
-            <Row l="Ingreso bruto anual" v={fCOP(calc.ingresoBrutoAnual)} bold />
-            <Row l="(-) Aportes obligatorios" v={"- " + fCOP(calc.totalNoConstitutivo)} color={T.blue} sub="Salud 4% + Pensión 4%" />
-            <Row l="= Ingreso neto" v={fCOP(calc.ingresoNeto)} bold />
-            <div style={{ height: 8 }} />
-            <Row l="(-) Renta exenta 25%" v={"- " + fCOP(calc.renta25pct)} color={T.green} sub={"Máx 790 UVT/año = " + fCOP(790 * UVT_2026)} />
-            {calc.exentaPensionVol > 0 && <Row l="(-) Pensión voluntaria" v={"- " + fCOP(calc.exentaPensionVol)} color={T.green} />}
-            {calc.exentaAFC > 0 && <Row l="(-) Cuenta AFC" v={"- " + fCOP(calc.exentaAFC)} color={T.green} />}
-            {calc.deducDependientes > 0 && <Row l="(-) Dependientes" v={"- " + fCOP(calc.deducDependientes)} color={T.green} />}
-            {calc.deducMedicina > 0 && <Row l="(-) Medicina prepagada" v={"- " + fCOP(calc.deducMedicina)} color={T.green} />}
-            {calc.deducVivienda > 0 && <Row l="(-) Intereses vivienda" v={"- " + fCOP(calc.deducVivienda)} color={T.green} />}
-            {calc.deducGastos > 0 && <Row l="(-) Gastos deducibles DIAN" v={"- " + fCOP(calc.deducGastos)} color={T.green} sub={calc.gastosDetalle && calc.gastosDetalle.length > 0 ? calc.gastosDetalle.map(g => g.cat + ": " + fCOP(g.aplicadoMes) + "/mes" + (g.pct < 1 ? " (" + Math.round(g.pct * 100) + "%)" : "") + (g.limiteMsg ? " [" + g.limiteMsg + "]" : "")).join(" • ") : "Clasificación automática según normativa DIAN"} />}
-            {calc.deducDonaciones > 0 && <Row l="(-) Donaciones" v={"- " + fCOP(calc.deducDonaciones)} color={T.green} />}
-            <Row l="Total beneficios" v={fCOP(calc.totalBeneficios)} sub={calc.totalBeneficios > calc.limite40 ? "⚠️ Excede tope 40% → aplicado: " + fCOP(calc.beneficioAplicado) : "Dentro del tope 40%"} color={calc.totalBeneficios > calc.limite40 ? T.orange : T.green} />
-            <div style={{ height: 8 }} />
-            <Row l="= Renta líquida gravable" v={fCOP(calc.rentaLiquida)} bold sub={Math.round(calc.rentaLiquidaUVT).toLocaleString() + " UVT"} />
-            <Row l="= IMPUESTO DE RENTA" v={fCOP(calc.impuestoAnual)} color={T.red} bold />
-          </Cd>
-
-          {/* Tabla de tarifas */}
-          <Cd style={{ padding: 20, marginBottom: 16 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>📋 Tabla de Tarifas (Art. 241 ET)</h3>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead>
-                <tr>
-                  {["Rango (UVT)", "En pesos", "Tarifa"].map(h => (
-                    <th key={h} style={{ padding: "8px", textAlign: h === "Tarifa" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: "2px solid " + T.border }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {tablaRango.map((r, i) => (
-                  <tr key={i} style={{ background: r.activo ? T.orange + "15" : "transparent", borderBottom: "1px solid " + T.border }}>
-                    <td style={{ padding: "8px", fontWeight: r.activo ? 700 : 400, color: r.activo ? T.orange : T.txt2 }}>{r.activo ? "👉 " : ""}{r.rango}</td>
-                    <td style={{ padding: "8px", fontSize: 11, color: r.activo ? T.txt : T.txt3 }}>{r.enPesos}</td>
-                    <td style={{ padding: "8px", textAlign: "right", fontWeight: 700, color: r.activo ? T.orange : T.txt2 }}>{r.tarifa}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Cd>
-
-          {/* Recomendaciones */}
-          {calc.recs.length > 0 && (
-            <Cd style={{ padding: 20 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>💡 Recomendaciones para Optimizar</h3>
-              {calc.recs.map((r, i) => (
-                <div key={i} style={{ background: r.color + "08", border: "1px solid " + r.color + "20", borderRadius: 12, padding: 16, marginBottom: 10 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: r.color, marginBottom: 4 }}>{r.t}</div>
-                  <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>{r.d}</div>
-                  {r.ahorro > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginTop: 6 }}>Ahorro potencial: {fCOP(r.ahorro)}/año ({fCOP(r.ahorro / 12)}/mes)</div>}
-                </div>
-              ))}
-            </Cd>
-          )}
-        </div>
-      </div>
+      {/* Card por cada propietario */}
+      {owners.map(ow => {
+        const oIng = ing.filter(i => {
+          if (i.owner === "na") return false;
+          if (i.owner === ow.id) return true;
+          if (ow.id === "own_1" && (!i.owner || i.owner === "") && i.catFiscal && i.catFiscal !== "") return true;
+          return false;
+        });
+        const oGas = gastosFlat.filter(g => (g.owner === ow.id) || (ow.id === "own_1" && (!g.owner || g.owner === "")));
+        const oInv = inv.filter(i => i.owner === ow.id || (ow.id === "own_1" && (!i.owner || i.owner === "")));
+        const oDeu = deu.filter(d => d.owner === ow.id || (ow.id === "own_1" && (!d.owner || d.owner === "")));
+        return <OwnerCard key={ow.id} owner={ow} ingresos={oIng} gastos={oGas} inv={oInv} deu={oDeu} trm={trm} isJ={ow.type === "juridica"} />;
+      })}
 
       <div style={{ fontSize: 10, color: T.txt3, textAlign: "center", marginTop: 16, lineHeight: 1.6 }}>
-        Este simulador es una herramienta informativa basada en la normativa tributaria colombiana vigente (ET, Ley 2277/2022). Los resultados son estimaciones y no constituyen asesoría fiscal. Consulta a un contador certificado para tu declaración de renta.
+        Estimaciones basadas en la normativa tributaria colombiana vigente (ET, Ley 2277/2022). UVT 2026: {fm(UVT)} (Resolución DIAN 000238). No constituye asesoría fiscal. Consulta un contador certificado.
       </div>
     </div>
   );
