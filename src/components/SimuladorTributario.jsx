@@ -28,7 +28,7 @@ const TABLA = [
 const calcImp = (uvtBase) => { for (let i = TABLA.length - 1; i >= 0; i--) { if (uvtBase > TABLA[i].d) return (TABLA[i].b + (uvtBase - TABLA[i].d) * TABLA[i].t / 100) * UVT; } return 0; };
 
 const DEDUC_NAT = { "Salud": 1, "Vivienda": 1, "Seguros": 0.5, "Pensión voluntaria": 1, "Seguridad Social": 0 };
-const DEDUC_JUR = { "Vivienda": 1, "Servicios": 1, "Transporte": 1, "Seguros": 1, "Educación": 0.5, "Otro": 0.5, "Seguridad Social": 0 };
+const DEDUC_JUR = { "Vivienda": 1, "Servicios": 1, "Transporte": 1, "Seguros": 1, "Educación": 0.5, "Salud prepagada": 0, "Seguridad social": 0, "Impuestos": 1, "Otro": 0.5 };
 const LIM_NAT = { "Salud": 16 * UVT, "Vivienda": 100 * UVT, "Seguros": 16 * UVT, "Pensión voluntaria": 208 * UVT };
 
 const CAT_FISCAL_LABELS = { "Salario": "💼 Salario", "Honorarios": "📋 Honorarios", "Arriendo": "🏠 Arrendamiento", "Rendimiento": "💰 Rendimientos", "Dividendos": "📊 Dividendos", "Inversión": "🏦 Inversión", "Pensión": "🏛️ Pensión", "Negocio": "🏢 Negocio", "Otro": "📝 Otros" };

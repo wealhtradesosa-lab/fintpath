@@ -114,8 +114,8 @@ const UVT=52374;
 const TABLA_IMP=[{d:0,h:1090,t:0,b:0},{d:1090,h:1700,t:19,b:0},{d:1700,h:4100,t:28,b:115.86},{d:4100,h:8670,t:33,b:787.86},{d:8670,h:18970,t:35,b:2295.96},{d:18970,h:31000,t:37,b:5900.96},{d:31000,h:Infinity,t:39,b:10352.96}];
 const calcImpRenta=(uvtBase)=>{for(let i=TABLA_IMP.length-1;i>=0;i--){if(uvtBase>TABLA_IMP[i].d)return(TABLA_IMP[i].b+(uvtBase-TABLA_IMP[i].d)*TABLA_IMP[i].t/100)*UVT}return 0};
 
-const DEDUC_NAT={"Salud":1,"Vivienda":1,"Seguros":0.5,"Seguridad Social":0};
-const DEDUC_JUR={"Vivienda":1,"Servicios":1,"Transporte":1,"Seguros":1,"Educación":0.5,"Otro":0.5,"Seguridad Social":0};
+const DEDUC_NAT={"Salud prepagada":1,"Vivienda":1,"Seguros":0.5,"Seguridad social":0,"Impuestos":0};
+const DEDUC_JUR={"Vivienda":1,"Servicios":1,"Transporte":1,"Seguros":1,"Educación":0.5,"Salud prepagada":0,"Seguridad social":0,"Impuestos":1,"Otro":0.5};
 const LIM_NAT={"Salud":16*UVT,"Vivienda":100*UVT,"Seguros":16*UVT,"Pensión voluntaria":208*UVT};
 
 const estimarImpuesto=(u)=>{
@@ -495,9 +495,9 @@ export default function FinPath(){
   };
 
   const has=u?(u.inv?.length||u.deu?.length||Object.keys((u&&u.gas)||{}).length)>0:false;
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:"MI DINERO"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Gastos"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"deu",i:"📋",l:"Deudas"},{id:"tax",i:"🧾",l:"Impuestos"},{id:"_sep2",sep:true,l:"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"met",i:"🎯",l:"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"_sep3",sep:true,l:"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:"Asesor IA"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:"MI DINERO"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Egresos"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"deu",i:"📋",l:"Deudas"},{id:"tax",i:"🧾",l:"Impuestos"},{id:"_sep2",sep:true,l:"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"met",i:"🎯",l:"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"_sep3",sep:true,l:"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:"Asesor IA"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
 
-  const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Gastos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",pen:"Pensiones",tax:"Simulador Tributario",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",set:"Configuración"};
+  const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",pen:"Pensiones",tax:"Simulador Tributario",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",set:"Configuración"};
   if(typeof document!=="undefined")document.title="FINPATHIA"+(secNames[pg]?" — "+secNames[pg]:"");
   const rp=()=>{if(!u)return null;switch(pg){
     case"dash":{
