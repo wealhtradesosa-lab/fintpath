@@ -79,6 +79,19 @@ export default function SimuladorTributario({ trm, user }) {
   const autoArrendamiento = ownerIngresos.filter(i => (i.catFiscal || "") === "arrendamiento").reduce((s, i) => s + (i.mensual || 0), 0);
   const autoRendimientos = ownerIngresos.filter(i => (i.catFiscal || "") === "rendimientos").reduce((s, i) => s + (i.mensual || 0), 0);
   const autoDividendos = ownerIngresos.filter(i => (i.catFiscal || "") === "dividendos").reduce((s, i) => s + (i.mensual || 0), 0);
+  // Gastos deducibles del propietario
+  const ownerGastos = [];
+  Object.entries((user && user.gas) || {}).forEach(([cat, items]) => {
+    (items || []).forEach(g => {
+      if ((g.owner || "") === selectedOwner || (!g.owner && selectedOwner === "own_1")) {
+        ownerGastos.push({ ...g, cat });
+      }
+    });
+  });
+  const gastosDeducibles = ownerGastos.filter(g => g.deducible === "total").reduce((s, g) => s + (g.m || 0), 0);
+  const gastosParciales = ownerGastos.filter(g => g.deducible === "parcial").reduce((s, g) => s + (g.m || 0), 0) * 0.5;
+  const totalDeducibleGastos = (gastosDeducibles + gastosParciales) * 12;
+
   const autoOtros = ownerIngresos.filter(i => !["salario","honorarios","arrendamiento","rendimientos","dividendos"].includes(i.catFiscal || "")).reduce((s, i) => s + (i.mensual || 0), 0);
 
   const [salarioMes, setSalarioMes] = useState(autoSalario || 15000000);
@@ -113,7 +126,8 @@ export default function SimuladorTributario({ trm, user }) {
     const deducVivienda = Math.min(interesesVivienda * 12, 1200 * UVT_2026);
     // Donaciones: máx 25% renta líquida
     const deducDonaciones = donaciones * 12;
-    const totalDeducciones = deducDependientes + deducMedicina + deducVivienda + deducDonaciones;
+    const deducGastos = totalDeducibleGastos;
+    const totalDeducciones = deducDependientes + deducMedicina + deducVivienda + deducDonaciones + deducGastos;
 
     // ═══ RENTAS EXENTAS ADICIONALES ═══
     // Pensión voluntaria: exenta hasta 25% ingreso o 2500 UVT/año
@@ -182,7 +196,7 @@ export default function SimuladorTributario({ trm, user }) {
     return {
       ingresoBrutoAnual, salarioAnual, totalNoConstitutivo, ingresoNeto,
       renta25pct, deducDependientes, deducMedicina, deducVivienda, deducDonaciones,
-      totalDeducciones, exentaPensionVol, exentaAFC, totalBeneficios, limite40,
+      totalDeducciones, deducGastos, exentaPensionVol, exentaAFC, totalBeneficios, limite40,
       beneficioAplicado, rentaLiquida, rentaLiquidaUVT,
       impuestoAnual, impuestoMes, tasaEfectiva, rango: imp.rango, rangoIdx: imp.rangoIdx,
       ahorro, recs, espacioGlobal,
@@ -315,6 +329,7 @@ export default function SimuladorTributario({ trm, user }) {
             {calc.deducDependientes > 0 && <Row l="(-) Dependientes" v={"- " + fCOP(calc.deducDependientes)} color={T.green} />}
             {calc.deducMedicina > 0 && <Row l="(-) Medicina prepagada" v={"- " + fCOP(calc.deducMedicina)} color={T.green} />}
             {calc.deducVivienda > 0 && <Row l="(-) Intereses vivienda" v={"- " + fCOP(calc.deducVivienda)} color={T.green} />}
+            {calc.deducGastos > 0 && <Row l="(-) Gastos deducibles" v={"- " + fCOP(calc.deducGastos)} color={T.green} sub="Gastos marcados como deducibles" />}
             {calc.deducDonaciones > 0 && <Row l="(-) Donaciones" v={"- " + fCOP(calc.deducDonaciones)} color={T.green} />}
             <Row l="Total beneficios" v={fCOP(calc.totalBeneficios)} sub={calc.totalBeneficios > calc.limite40 ? "⚠️ Excede tope 40% → aplicado: " + fCOP(calc.beneficioAplicado) : "Dentro del tope 40%"} color={calc.totalBeneficios > calc.limite40 ? T.orange : T.green} />
             <div style={{ height: 8 }} />
