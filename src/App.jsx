@@ -414,13 +414,11 @@ export default function FinPath(){
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
     <div style={{width:"100%",maxWidth:420,padding:"40px 32px"}}>
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
-      <div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"14px 16px",marginBottom:20}}>
-        <div style={{display:"flex",flexDirection:"column",gap:8,fontSize:11,color:T.tx3}}>
-          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> <strong style={{color:T.tx2}}>Encriptación End-to-End</strong> — tus datos se encriptan con tu contraseña</div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> Ni FINPATHIA puede leer tu información financiera</div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> No vendemos ni compartimos datos. Cero publicidad</div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:T.gn}}>✓</span> Exporta o borra todo en cualquier momento</div>
-        </div>
+      <div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"12px 16px",marginBottom:20,fontSize:12,color:T.tx3,lineHeight:2}}>
+        <span style={{color:T.gn}}>✓</span> <strong style={{color:T.tx2}}>Encriptación End-to-End</strong> · tus datos se encriptan con tu contraseña<br/>
+        <span style={{color:T.gn}}>✓</span> Ni FINPATHIA puede leer tu información financiera<br/>
+        <span style={{color:T.gn}}>✓</span> No vendemos ni compartimos datos. Cero publicidad<br/>
+        <span style={{color:T.gn}}>✓</span> Exporta o borra todo en cualquier momento
       </div>
       <div style={{fontSize:28,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:24}}>FINPATHIA</div>
       <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Inicia sesión":"Crea tu cuenta gratis"}</h2>
