@@ -312,7 +312,54 @@ export default function FinPath(){
     }catch(e){setAuthError("Error: "+e.message)}
     setAuthLoading(false);
   };
-  const demo=()=>{showToast("📊 Datos demo cargados");setU(p=>p?({...p,inv:[...DI],deu:[...DD],gas:JSON.parse(JSON.stringify(DG)),ingresos:[...DING]}):p)};
+  const demo=()=>{showToast("📊 Datos demo cargados — Pedro Pérez");setU(p=>{
+    const nd=p?{...p}:mkU("Pedro Pérez","demo@finpathia.com");
+    nd.p={...nd.p,name:"Pedro Pérez",email:"demo@finpathia.com"};
+    nd.owners=[
+      {id:"own_1",name:"Pedro Pérez",type:"natural"},
+      {id:"own_j1",name:"Inversiones Pérez SAS",type:"juridica"},
+    ];
+    nd.inv=[
+      {id:"d_i1",n:"Apartamento Chapinero",ub:"Bogotá",tp:"Real Estate",va:850000000,vc:520000000,tasa:"",owner:"own_j1"},
+      {id:"d_i2",n:"Casa Campestre Tabio",ub:"Tabio, Cundinamarca",tp:"Real Estate",va:1200000000,vc:800000000,tasa:"",owner:"own_1"},
+      {id:"d_i3",n:"Bodega Fontibón",ub:"Bogotá",tp:"Bodega",va:650000000,vc:400000000,tasa:"",owner:"own_j1"},
+      {id:"d_i4",n:"Local Centro Comercial",ub:"Bogotá",tp:"Local Comercial",va:420000000,vc:350000000,tasa:"",owner:"own_j1"},
+      {id:"d_i5",n:"Fondo Bancolombia",ub:"Colombia",tp:"Fondo de Inversión",va:180000000,vc:150000000,tasa:"8",owner:"own_1"},
+      {id:"d_i6",n:"CDT Davivienda",ub:"Colombia",tp:"CDT",va:120000000,vc:120000000,tasa:"11.5",owner:"own_1"},
+      {id:"d_i7",n:"Acciones ETF S&P500",ub:"USA",tp:"Acciones",va:95000000,vc:60000000,tasa:"",owner:"na"},
+      {id:"d_i8",n:"Bitcoin",ub:"",tp:"Crypto",va:45000000,vc:20000000,tasa:"",owner:"na"},
+      {id:"d_i9",n:"Ranger Raptor 2024",ub:"Bogotá",tp:"Vehículo",va:220000000,vc:280000000,tasa:"",owner:"own_1"},
+      {id:"d_i10",n:"Rapicredit Fondeo",ub:"Colombia",tp:"Fondo de Inversión",va:500000000,vc:500000000,tasa:"20",owner:"own_j1"},
+    ];
+    nd.ingresos=[
+      {id:"d_ig1",nombre:"Salario Empresa Tech",categoria:"Salario",mensual:18000000,tipo:"fijo",fuente:"TechCorp",owner:"own_1",moneda:"COP"},
+      {id:"d_ig2",nombre:"Arriendo Apto Chapinero",categoria:"Arriendo",mensual:4500000,tipo:"fijo",fuente:"Apto Chapinero",owner:"own_j1",moneda:"COP",capital:"850000000",tasa:"6.4"},
+      {id:"d_ig3",nombre:"Arriendo Bodega",categoria:"Arriendo",mensual:8500000,tipo:"fijo",fuente:"Bodega Fontibón",owner:"own_j1",moneda:"COP"},
+      {id:"d_ig4",nombre:"Arriendo Local",categoria:"Arriendo",mensual:3800000,tipo:"fijo",fuente:"Local CC",owner:"own_j1",moneda:"COP"},
+      {id:"d_ig5",nombre:"Rendimiento CDT",categoria:"Rendimiento",mensual:1150000,tipo:"fijo",fuente:"CDT Davivienda",owner:"own_1",moneda:"COP",capital:"120000000",tasa:"11.5"},
+      {id:"d_ig6",nombre:"Rendimiento Rapicredit",categoria:"Rendimiento",mensual:8333000,tipo:"fijo",fuente:"Rapicredit",owner:"own_j1",moneda:"COP",capital:"500000000",tasa:"20"},
+      {id:"d_ig7",nombre:"Freelance consultoría",categoria:"Honorarios",mensual:5000000,tipo:"variable",fuente:"Clientes",owner:"own_1",moneda:"COP"},
+    ];
+    nd.deu=[
+      {id:"d_d1",n:"Hipoteca Casa Tabio",tp:"mortgage",mt:480000000,pg:5200000,ts:12,owner:"own_1"},
+      {id:"d_d2",n:"Crédito Bodega",tp:"loan",mt:180000000,pg:3100000,ts:14,owner:"own_j1"},
+      {id:"d_d3",n:"Tarjeta Visa",tp:"credit_card",mt:8500000,pg:1200000,ts:28,owner:"own_1"},
+      {id:"d_d4",n:"Leasing Ranger Raptor",tp:"loan",mt:150000000,pg:3800000,ts:16,owner:"own_1"},
+    ];
+    nd.gas={
+      "Vivienda":[{c:"Administración casa",m:1800000,t:"f",owner:"own_1"},{c:"Arriendo oficina",m:3500000,t:"f",owner:"own_j1"},{c:"Predial casa",m:450000,t:"f",owner:"own_1"},{c:"Predial bodega",m:380000,t:"f",owner:"own_j1"}],
+      "Alimentación":[{c:"Mercado familiar",m:2800000,t:"f",owner:"own_1"},{c:"Restaurantes",m:1200000,t:"v",owner:"own_1"}],
+      "Transporte":[{c:"Gasolina",m:800000,t:"v",owner:"own_1"},{c:"SOAT + Seguros",m:350000,t:"f",owner:"own_1"},{c:"Transporte empresa",m:600000,t:"f",owner:"own_j1"}],
+      "Educación":[{c:"Colegio hijos",m:4500000,t:"f",owner:"own_1"},{c:"Cursos online",m:200000,t:"v",owner:"own_1"}],
+      "Salud":[{c:"Medicina prepagada familiar",m:1800000,t:"f",owner:"own_1"},{c:"Farmacia",m:300000,t:"v",owner:"own_1"}],
+      "Seguros":[{c:"Seguro de vida",m:450000,t:"f",owner:"own_1"},{c:"Póliza todo riesgo propiedades",m:680000,t:"f",owner:"own_j1"}],
+      "Servicios":[{c:"Servicios casa",m:850000,t:"f",owner:"own_1"},{c:"Internet y telefonía empresa",m:350000,t:"f",owner:"own_j1"}],
+      "Seguridad Social":[{c:"Pensión + EPS + ARL",m:3200000,t:"f",owner:"own_1"}],
+      "Entretenimiento":[{c:"Streaming y suscripciones",m:250000,t:"f",owner:"own_1"},{c:"Vacaciones (mensualizado)",m:2000000,t:"v",owner:"own_1"}],
+      "Personal":[{c:"Ropa y cuidado personal",m:500000,t:"v",owner:"own_1"}],
+    };
+    return nd;
+  })};
   const generatePDF=()=>{
     const fecha=new Date().toLocaleDateString("es-CO",{year:"numeric",month:"long",day:"numeric"});
     const inv=(u&&u.inv)||[];const deu=(u&&u.deu)||[];const gas=(u&&u.gas)||{};const ing=(u&&u.ingresos)||[];
