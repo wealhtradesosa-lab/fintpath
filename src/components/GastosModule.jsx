@@ -20,6 +20,11 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
+const DIAN_REGLAS = {
+  natural: { "Salud": "✅ Deducible", "Vivienda": "✅ Deducible", "Seguros": "📊 50%", "Alimentación": "❌", "Transporte": "❌", "Servicios": "❌", "Educación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Ahorro": "❌", "Otro": "❌" },
+  juridica: { "Salud": "❌", "Vivienda": "✅ Deducible", "Seguros": "✅ Deducible", "Servicios": "✅ Deducible", "Transporte": "✅ Deducible", "Educación": "📊 50%", "Alimentación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Ahorro": "❌", "Otro": "📊 50%" }
+};
+
 export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners}) {
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
@@ -136,7 +141,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
                 <input type="checkbox" checked={allItems.length > 0 && selected.size === allItems.length} onChange={toggleAll}
                   style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
               </th>
-              {["Concepto", "Categoría", "Tipo", "Monto/mes", "Sim", ""].map((h) => (
+              {["Concepto", "Categoría", "DIAN", "Monto/mes", "Sim", ""].map((h) => (
                 <th key={h} style={{ padding: "12px 14px", textAlign: h === "Monto/mes" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
               ))}
             </tr>
@@ -171,9 +176,26 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
                   <input type="checkbox" checked={selected.has(item.key)} onChange={() => toggleSel(item.key)}
                     style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
                 </td>
-                <td style={{ padding: "10px 14px", fontWeight: 600 }}>{item.c || "—"}</td>
+                <td style={{ padding: "10px 14px" }}>
+                  <div style={{fontWeight: 600}}>{item.c || "—"}</div>
+                  {item.owner && item.owner!=="" && item.owner!=="na" && (()=>{
+                    const ow=(owners||[]).find(o=>o.id===item.owner);
+                    return ow ? <div style={{fontSize:9,color:"#71717a",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
+                  })()}
+                  {item.owner==="na" && <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>}
+                </td>
                 <td style={{ padding: "10px 14px" }}>
                   <span style={{ background: T.redDim, color: T.red, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.cat}</span>
+                </td>
+                <td style={{ padding: "10px 14px", fontSize: 10 }}>
+                  {(()=>{
+                    if(!item.owner || item.owner==="" || item.owner==="na") return <span style={{color:"#71717a"}}>—</span>;
+                    const ow = (owners||[]).find(o=>o.id===item.owner);
+                    const tipo = ow?.type === "juridica" ? "juridica" : "natural";
+                    const regla = DIAN_REGLAS[tipo]?.[item.cat] || "❌";
+                    const color = regla.includes("✅") ? "#22c55e" : regla.includes("📊") ? "#eab308" : "#71717a";
+                    return <span style={{color,fontWeight:600}}>{regla}</span>;
+                  })()}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <span style={{ background: (item.t === "f" ? T.blue : T.orange) + "15", color: item.t === "f" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.t === "f" ? "fijo" : "variable"}</span>
