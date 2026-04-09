@@ -78,7 +78,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
   };
 
   const openEdit = (item) => {
-    setForm({ cat: item.cat, c: item.c, m: item.freq==="año"?(item.m*12):item.m, t: item.t, freq: item.freq||"mes", owner: item.owner||"", deducible: item.deducible||"no" });
+    setForm({ cat: item.cat, c: item.c, m: item.freq==="año"?(item.m*12):item.m, t: item.t, freq: item.freq||"mes", owner: item.owner||"" });
     setEditKey(item.key);
     setShowForm(true);
   };
