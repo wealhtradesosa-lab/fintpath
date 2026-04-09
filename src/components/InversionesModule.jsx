@@ -233,6 +233,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ fontWeight: 600 }}>{name}</div>
                       <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? inv.tasa + "% anual" : ""].filter(Boolean).join(" • ")}</div>
+                      {inv.owner && inv.owner!=="" && inv.owner!=="na" && (()=>{
+                        const ow=(owners||[]).find(o=>o.id===inv.owner);
+                        return ow ? <div style={{fontSize:9,color:"#71717a",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
+                      })()}
+                      {inv.owner==="na" && <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>}
                     </td>
                     <td style={{ padding: "12px 14px", fontSize: 11, color: T.txt3 }}>{tipo}</td>
                     <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700 }}>{fm(va)}</td>
