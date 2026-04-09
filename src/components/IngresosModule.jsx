@@ -163,8 +163,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
-              <In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} /></div>
-              <div style={{fontSize:10,color:"#71717a",marginTop:-4,marginBottom:8,padding:"0 4px"}}>El propietario define a quién se le calcula el impuesto. La categoría define cómo se clasifica ante la DIAN.</div>
+              <In l="Clasificación DIAN" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} /></div>
+              <div style={{fontSize:10,color:"#71717a",marginTop:-4,marginBottom:8,padding:"0 4px",gridColumn:"1/-1"}}>Propietario = a quién se le calcula impuesto. Clasificación = cómo lo ve la DIAN.</div>
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
               <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
 
