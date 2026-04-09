@@ -109,74 +109,109 @@ return{ig,gs,noi,gn,roi:vc>0?(gn/vc)*100:0,cap:va>0?((noi*12)/va)*100:0,ds:db.s,
 const inferType=(i)=>{let tp=String(i.tp||i.tipo||i.type||"").trim();if(!tp||!isNaN(Number(tp)))tp="";const typeMap={"Other":"Otro","Investment":"Fondo de Inversión","Income":"Otro","Trading":"Acciones","Renta Fija":"CDT","Lote":"Real Estate"};if(tp&&typeMap[tp])return typeMap[tp];const validTypes=["Real Estate","Fondo de Inversión","CDT","Acciones","Crypto","Bodega","Vehículo","Local Comercial","Negocio","Cash","Otro"];if(tp&&validTypes.includes(tp))return tp;const nm=((i.n||i.nombre||"")+" "+(i.ub||"")).toLowerCase();if(/apart|apto|casa|lote|terreno|oficina|inmueble|propiedad|house|condo/i.test(nm))return"Real Estate";if(/bodega/i.test(nm))return"Bodega";if(/local/i.test(nm))return"Local Comercial";if(/fondo|fiduci|fund/i.test(nm))return"Fondo de Inversión";if(/cdt|renta fija|bonos|tes /i.test(nm))return"CDT";if(/accion|etf|portafolio|vti|spy|stock|share/i.test(nm))return"Acciones";if(/btc|bitcoin|crypto|eth|usdt/i.test(nm))return"Crypto";if(/vehic|carro|moto|auto/i.test(nm))return"Vehículo";if(/negocio|empresa|sas|company/i.test(nm))return"Negocio";if(/cash|ahorro|cuenta|saving/i.test(nm))return"Cash";if(/green|puerto|orlando|miami|backswing|district/i.test(nm))return"Real Estate";return"Otro"};
 
 // ═══ ESTIMACIÓN TRIBUTARIA ═══
-// Solo calcula impuestos para ingresos que tienen propietario Y clasificación fiscal asignados
 const UVT=52374;
 const TABLA_IMP=[{d:0,h:1090,t:0,b:0},{d:1090,h:1700,t:19,b:0},{d:1700,h:4100,t:28,b:115.86},{d:4100,h:8670,t:33,b:787.86},{d:8670,h:18970,t:35,b:2295.96},{d:18970,h:31000,t:37,b:5900.96},{d:31000,h:Infinity,t:39,b:10352.96}];
 const calcImpRenta=(uvtBase)=>{for(let i=TABLA_IMP.length-1;i>=0;i--){if(uvtBase>TABLA_IMP[i].d)return(TABLA_IMP[i].b+(uvtBase-TABLA_IMP[i].d)*TABLA_IMP[i].t/100)*UVT}return 0};
-
-const DEDUC_NAT={"Salud prepagada":1,"Vivienda":1,"Seguros":0.5,"Seguridad social":0,"Impuestos":0};
-const DEDUC_JUR={"Vivienda":1,"Servicios":1,"Transporte":1,"Seguros":1,"Educación":0.5,"Salud prepagada":0,"Seguridad social":0,"Impuestos":1,"Otro":0.5};
-const LIM_NAT={"Salud":16*UVT,"Vivienda":100*UVT,"Seguros":16*UVT,"Pensión voluntaria":208*UVT};
 
 const estimarImpuesto=(u)=>{
   if(!u)return{total:0,mes:0,detalle:[],sinClasificar:0};
   const owners=(u.owners||[{id:"own_1",name:"Personal",type:"natural"}]);
   const ing=(u.ingresos||[]);
   const gas=u.gas||{};
+  const deu=(u.deu||[]);
   let totalImp=0;
   const detalle=[];
-  
-  // Contar ingresos sin clasificar (sin owner o sin catFiscal)
   const sinClasificar=ing.filter(i=>!i.owner || i.owner==="").length;
   
   owners.forEach(ow=>{
-    // Solo tomar ingresos que EXPLÍCITAMENTE tienen este owner asignado
-    // O: si es "own_1" (Personal), tomar los que tienen owner="" SOLO si tienen catFiscal
     const oIng=ing.filter(i=>{
-      if(i.owner==="na")return false; // N/A excluido
-      if(i.owner===ow.id)return true; // Explícitamente asignado
-      if(ow.id==="own_1" && (!i.owner || i.owner==="") && i.categoria)return true; // Personal + clasificado
+      if(i.owner==="na")return false;
+      if(i.owner===ow.id)return true;
+      if(ow.id==="own_1" && (!i.owner || i.owner==="") && i.categoria)return true;
       return false;
     });
-    
     const ingAnual=oIng.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u.trm||4200):1)),0)*12;
     if(ingAnual<=0)return;
     
     const isJ=ow.type==="juridica";
-    const reglas=isJ?DEDUC_JUR:DEDUC_NAT;
-    const limites=isJ?null:LIM_NAT;
     
-    // Gastos deducibles de este owner
-    let gastosDeducAnual=0;
+    // Gastos de este owner
+    const oGas=[];
     Object.entries(gas).forEach(([cat,items])=>{
       (items||[]).forEach(g=>{
-        const esDeEsteOwner=(g.owner===ow.id)||(ow.id==="own_1"&&(!g.owner||g.owner===""));
-        if(!esDeEsteOwner||g.owner==="na")return;
-        const pct=reglas[cat]||0;
-        let mAnual=(g.m||0)*pct*12;
-        if(limites&&limites[cat])mAnual=Math.min(mAnual,limites[cat]*12);
-        gastosDeducAnual+=mAnual;
+        const esDeEste=(g.owner===ow.id)||(ow.id==="own_1"&&(!g.owner||g.owner===""));
+        if(!esDeEste||g.owner==="na")return;
+        oGas.push({...g,cat});
       });
     });
     
+    // Deudas de este owner (intereses son deducibles)
+    const oDeu=deu.filter(d=>(d.owner===ow.id)||(ow.id==="own_1"&&(!d.owner||d.owner==="")));
+    const interesesAnual=oDeu.reduce((s,d)=>{
+      const saldo=d.mt||0;const tasa=(d.ts||d.tasa||0)/100;
+      return s+saldo*tasa; // Intereses anuales aprox
+    },0);
+    
     if(isJ){
-      // Jurídica: 35% sobre utilidad (ingresos - gastos deducibles)
-      const utilidad=Math.max(0,ingAnual-gastosDeducAnual);
+      // ═══ PERSONA JURÍDICA ═══
+      // Todos los gastos operativos son deducibles (excepto personales)
+      const noDeducJ=["Alimentación","Entretenimiento","Personal","Vestimenta","Mascotas","Deporte"];
+      const gastosDeducJ=oGas.filter(g=>!noDeducJ.includes(g.cat)).reduce((s,g)=>s+(g.m||0),0)*12;
+      const utilidad=Math.max(0,ingAnual-gastosDeducJ-interesesAnual);
       const imp=utilidad*0.35;
       totalImp+=imp;
-      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosDeduc:gastosDeducAnual,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
+      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosDeduc:gastosDeducJ+interesesAnual,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
     }else{
-      // Natural: tabla progresiva con deducciones
+      // ═══ PERSONA NATURAL ═══
       const noConst=ingAnual*0.08; // Salud 4% + Pensión 4%
       const neto=ingAnual-noConst;
+      
+      // Renta exenta 25%
       const exenta25=Math.min(neto*0.25,790*UVT);
-      const totalBenef=exenta25+gastosDeducAnual;
+      
+      // Gastos deducibles por categoría
+      const LIM={"Salud":16*UVT*12,"Vivienda":100*UVT*12,"Seguros":16*UVT*12};
+      const DEDUC={"Salud":1,"Vivienda":1,"Seguros":0.5};
+      let gastosDeducN=0;
+      oGas.forEach(g=>{
+        const pct=DEDUC[g.cat]||0;
+        let anual=(g.m||0)*pct*12;
+        if(LIM[g.cat])anual=Math.min(anual,LIM[g.cat]);
+        gastosDeducN+=anual;
+      });
+      
+      // Dependientes (detectar si hay gastos de educación hijos o similar)
+      const tieneDepend=oGas.some(g=>g.cat==="Educación"&&(g.m||0)>0);
+      const deducDepend=tieneDepend?Math.min(ingAnual*0.10,384*UVT):0;
+      
+      // Intereses de vivienda (de deudas hipotecarias)
+      const interesesViv=Math.min(interesesAnual,1200*UVT);
+      
+      // Total beneficios con tope 40%
+      const totalBenef=exenta25+gastosDeducN+deducDepend+interesesViv;
       const lim40=neto*0.40;
       const benAplic=Math.min(totalBenef,lim40);
+      
+      // Espacio disponible para optimizar (pensión vol, AFC)
+      const espacioOpt=Math.max(0,lim40-benAplic);
+      
       const rentaLiq=Math.max(0,neto-benAplic);
       const imp=calcImpRenta(rentaLiq/UVT);
+      
+      // Calcular cuánto PODRÍA ahorrar si llena el tope 40%
+      const rentaOptima=Math.max(0,neto-lim40);
+      const impOptimo=calcImpRenta(rentaOptima/UVT);
+      const ahorroOptimo=imp-impOptimo;
+      
       totalImp+=imp;
-      detalle.push({name:ow.name,type:"natural",ingreso:ingAnual,gastosDeduc:gastosDeducAnual,baseGravable:rentaLiq,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
+      detalle.push({
+        name:ow.name,type:"natural",ingreso:ingAnual,
+        gastosDeduc:gastosDeducN+deducDepend+interesesViv,
+        exenta25,lim40,benAplic,espacioOpt,
+        baseGravable:rentaLiq,impuesto:imp,
+        tasa:ingAnual>0?(imp/ingAnual*100):0,
+        impOptimo,ahorroOptimo
+      });
     }
   });
   return{total:totalImp,mes:totalImp/12,detalle,sinClasificar};
@@ -702,7 +737,10 @@ export default function FinPath(){
           <div style={{fontSize:11,color:T.tx3,marginBottom:8}}>{fm(tx.mes)}/mes estimado</div>
           {tx.detalle.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid "+T.border,fontSize:11}}>
             <span style={{color:T.tx2}}>{d.type==="juridica"?"🏢":"👤"} {d.name}</span>
-            <span style={{color:T.tx2}}>{fm(d.impuesto)} <span style={{color:T.tx3}}>({d.tasa.toFixed(1)}%)</span></span>
+            <div style={{textAlign:"right"}}>
+                    <span style={{color:T.tx2}}>{fm(d.impuesto)} <span style={{color:T.tx3}}>({d.tasa.toFixed(1)}%)</span></span>
+                    {d.ahorroOptimo>100000&&<div style={{fontSize:9,color:T.gn}}>Optimizable: -{fm(d.ahorroOptimo)}</div>}
+                  </div>
           </div>)}
           <button onClick={()=>setPg("tax")} style={{width:"100%",marginTop:10,padding:"8px",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,color:T.pr,cursor:"pointer",fontSize:11,fontWeight:600}}>Ver detalle → 🧾 Impuestos</button>
         </Cd>:null})()}

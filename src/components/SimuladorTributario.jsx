@@ -53,6 +53,7 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ }) {
     const ingAnual = ingTotal * 12;
 
     // Gastos por categoría + deducibilidad
+    const noDeducJ = ["Alimentación","Entretenimiento","Personal","Vestimenta","Mascotas","Deporte"];
     const reglas = isJ ? DEDUC_JUR : DEDUC_NAT;
     const limites = isJ ? null : LIM_NAT;
     const gastosByCat = {};
@@ -354,7 +355,8 @@ export default function SimuladorTributario({ trm, user }) {
                 if (ingAnual <= 0) return null;
                 const isJ = ow.type === "juridica";
                 const oGas = gastosFlat.filter(g => g.owner === ow.id || (ow.id === "own_1" && (!g.owner || g.owner === "")));
-                const reglas = isJ ? DEDUC_JUR : DEDUC_NAT;
+                const noDeducJ = ["Alimentación","Entretenimiento","Personal","Vestimenta","Mascotas","Deporte"];
+    const reglas = isJ ? DEDUC_JUR : DEDUC_NAT;
                 let gastosD = 0;
                 oGas.forEach(g => { const p = reglas[g.cat || "Otro"] || 0; gastosD += (g.m || 0) * p; });
                 const imp = isJ ? Math.max(0, ingAnual - gastosD * 12) * 0.35 : (()=> {
