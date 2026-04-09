@@ -107,6 +107,73 @@ if(ig===0&&(+inv.renta||0)>0)ig=+inv.renta;
 const va=+inv.va||0,vc=+inv.vc||0,noi=ig-gs,db=dfa(ds,inv.id),eq=va-db.s,gn=va-vc;
 return{ig,gs,noi,gn,roi:vc>0?(gn/vc)*100:0,cap:va>0?((noi*12)/va)*100:0,ds:db.s,dp:db.p,eq,coc:eq>0?(((noi-db.p)*12)/eq)*100:0}};
 const inferType=(i)=>{let tp=String(i.tp||i.tipo||i.type||"").trim();if(!tp||!isNaN(Number(tp)))tp="";const typeMap={"Other":"Otro","Investment":"Fondo de Inversión","Income":"Otro","Trading":"Acciones","Renta Fija":"CDT","Lote":"Real Estate"};if(tp&&typeMap[tp])return typeMap[tp];const validTypes=["Real Estate","Fondo de Inversión","CDT","Acciones","Crypto","Bodega","Vehículo","Local Comercial","Negocio","Cash","Otro"];if(tp&&validTypes.includes(tp))return tp;const nm=((i.n||i.nombre||"")+" "+(i.ub||"")).toLowerCase();if(/apart|apto|casa|lote|terreno|oficina|inmueble|propiedad|house|condo/i.test(nm))return"Real Estate";if(/bodega/i.test(nm))return"Bodega";if(/local/i.test(nm))return"Local Comercial";if(/fondo|fiduci|fund/i.test(nm))return"Fondo de Inversión";if(/cdt|renta fija|bonos|tes /i.test(nm))return"CDT";if(/accion|etf|portafolio|vti|spy|stock|share/i.test(nm))return"Acciones";if(/btc|bitcoin|crypto|eth|usdt/i.test(nm))return"Crypto";if(/vehic|carro|moto|auto/i.test(nm))return"Vehículo";if(/negocio|empresa|sas|company/i.test(nm))return"Negocio";if(/cash|ahorro|cuenta|saving/i.test(nm))return"Cash";if(/green|puerto|orlando|miami|backswing|district/i.test(nm))return"Real Estate";return"Otro"};
+
+// ═══ ESTIMACIÓN TRIBUTARIA RÁPIDA ═══
+const UVT=52374;
+const estimarImpuesto=(u)=>{
+  if(!u)return{total:0,detalle:[]};
+  const owners=(u.owners||[{id:"own_1",name:"Personal",type:"natural"}]);
+  const ing=(u.ingresos||[]);
+  const gas=u.gas||{};
+  let totalImp=0;const detalle=[];
+  
+  const TABLA=[{d:0,h:1090,t:0,b:0},{d:1090,h:1700,t:19,b:0},{d:1700,h:4100,t:28,b:115.86},{d:4100,h:8670,t:33,b:787.86},{d:8670,h:18970,t:35,b:2295.96},{d:18970,h:31000,t:37,b:5900.96},{d:31000,h:Infinity,t:39,b:10352.96}];
+  const calcImp=(uvt)=>{for(let i=TABLA.length-1;i>=0;i--){if(uvt>TABLA[i].d)return(TABLA[i].b+(uvt-TABLA[i].d)*TABLA[i].t/100)*UVT}return 0};
+  
+  const DEDUC_N={"Salud":1,"Vivienda":1,"Seguros":0.5};
+  const DEDUC_J={"Vivienda":1,"Servicios":1,"Transporte":1,"Seguros":1,"Educación":0.5,"Otro":0.5};
+  const LIM={"Salud":16*UVT,"Vivienda":100*UVT,"Seguros":16*UVT};
+  
+  owners.forEach(ow=>{
+    const oIng=ing.filter(i=>(i.owner||"")===(ow.id)||(!(i.owner)&&ow.id==="own_1"));
+    const ingAnual=oIng.reduce((s,i)=>s+(i.mensual||0),0)*12;
+    if(ingAnual<=0)return;
+    
+    const isJ=ow.type==="juridica";
+    
+    if(isJ){
+      // Jurídica: 35% sobre renta líquida
+      let gastosD=0;
+      Object.entries(gas).forEach(([cat,items])=>{
+        (items||[]).forEach(g=>{
+          if((g.owner||"")===ow.id){
+            const pct=DEDUC_J[cat]||0;
+            gastosD+=(g.m||0)*pct*12;
+          }
+        });
+      });
+      const renta=Math.max(0,ingAnual-gastosD);
+      const imp=renta*0.35;
+      totalImp+=imp;
+      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
+    }else{
+      // Natural: tabla progresiva
+      const noConst=ingAnual*0.08;
+      const neto=ingAnual-noConst;
+      const exenta25=Math.min(neto*0.25,790*UVT);
+      let gastosD=0;
+      Object.entries(gas).forEach(([cat,items])=>{
+        (items||[]).forEach(g=>{
+          if((g.owner||"")===ow.id||(!g.owner&&ow.id==="own_1")){
+            const pct=DEDUC_N[cat]||0;
+            let m=(g.m||0)*pct*12;
+            if(LIM[cat])m=Math.min(m,LIM[cat]*12);
+            gastosD+=m;
+          }
+        });
+      });
+      const totalBenef=exenta25+gastosD;
+      const lim40=neto*0.40;
+      const benAplic=Math.min(totalBenef,lim40);
+      const rentaLiq=Math.max(0,neto-benAplic);
+      const imp=calcImp(rentaLiq/UVT);
+      totalImp+=imp;
+      detalle.push({name:ow.name,type:"natural",ingreso:ingAnual,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
+    }
+  });
+  return{total:totalImp,mes:totalImp/12,detalle};
+};
+
 const cT=(inv,ds,gf,ing)=>{let ab=0,ti=0,tg=0;(inv||[]).forEach(i=>{ab+=i.va});const ingT=(ing||[]).reduce((s,i)=>i.sim===false?s:s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);ti=ingT;const td=(ds||[]).reduce((s,d)=>s+(d.mt||0),0),tc=(ds||[]).filter(d=>(d.mt||0)>0&&d.sim!==false).reduce((s,d)=>s+(d.pg||0),0),gfm=Object.values(gf||{}).flat().reduce((s,g)=>g.sim===false?s:s+(g.m||0),0),ni=ti-tg,te=gfm+tc,cf=ni-te;return{ab,td,nw:ab-td,ti,tg,ni,gfm,tc,te,cf,ind:te>0?(ni/te)*100:0,dta:ab>0?(td/ab)*100:0,ingT}};
 
 const Cd=({children,s,...p})=><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",...s}} {...p}>{children}</div>;
@@ -617,6 +684,20 @@ export default function FinPath(){
             <BarChart data={fd}><XAxis dataKey="name" tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickLine={false}/><YAxis tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>fm(v)}/><Tooltip contentStyle={{background:"#1e1e24",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,color:"#fafafa",fontSize:12}} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={v=>fm(v)}/><Bar dataKey="a" radius={[6,6,0,0]}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?T.gn:T.rd}/>)}</Bar></BarChart>
           </ResponsiveContainer>
         </Cd>
+        {/* Tax Estimate */}
+        {(()=>{const tx=estimarImpuesto(u);return tx.total>0?<Cd s={{padding:16}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:10}}>🧾 Impuestos Estimados (Anual)</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{fontSize:11,color:T.tx3}}>Total estimado</span>
+            <span style={{fontSize:18,fontWeight:800,color:T.pr,fontFamily:"monospace"}}>{fm(tx.total)}/año</span>
+          </div>
+          <div style={{fontSize:11,color:T.tx3,marginBottom:8}}>{fm(tx.mes)}/mes estimado</div>
+          {tx.detalle.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid "+T.border,fontSize:11}}>
+            <span style={{color:T.tx2}}>{d.type==="juridica"?"🏢":"👤"} {d.name}</span>
+            <span style={{color:T.tx2}}>{fm(d.impuesto)} <span style={{color:T.tx3}}>({d.tasa.toFixed(1)}%)</span></span>
+          </div>)}
+          <button onClick={()=>setPg("tax")} style={{width:"100%",marginTop:10,padding:"8px",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,color:T.pr,cursor:"pointer",fontSize:11,fontWeight:600}}>Ver detalle → 🧾 Impuestos</button>
+        </Cd>:null})()}
         {/* Patrimonio Distribution */}
         <Cd s={{padding:20}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Distribución Patrimonial</div>

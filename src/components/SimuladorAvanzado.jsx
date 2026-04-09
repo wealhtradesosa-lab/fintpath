@@ -219,7 +219,7 @@ function FreedomBarLive({ ni, te, cf }) {
 // ═══════════════════════════════════════
 // MAIN SIMULATOR
 // ═══════════════════════════════════════
-export default function SimuladorAvanzado({ user, totals, fmt}) {
+export default function SimuladorAvanzado({ user, impuestoMes, totals, fmt}) {
 
   const [simVals, setSimVals] = useState({});
   // Reset sliders when underlying data changes
@@ -433,6 +433,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
         {[
           { l: "Ingreso Neto", v: fm(simT.ni), c: T.gn, d: fm(simT.ni - (totals.ni || 0)) },
           { l: "Egresos Totales", v: fm(simT.te), c: T.rd, d: fm(simT.te - (totals.te || 0)), tip: "Gastos familiares + cuotas de deudas" },
+          { l: "Impuestos (est.)", v: fm(impuestoMes||0), c: "#a78bfa", tip: "Estimación mensual de renta" },
           { l: "Cash Flow", v: fm(simT.cf), c: simT.cf >= 0 ? T.gn : T.rd, d: fm(simT.cf - (totals.cf || 0)), tip: "Dinero que te sobra (o falta) cada mes después de pagar todo" },
           { l: "Independencia", v: pc(simT.ind), c: simT.ind >= 100 ? T.gn : T.txt2, tip: "% de tus gastos que cubren tus ingresos. 100% = no necesitas empleo" },
         ].map((m) => (
