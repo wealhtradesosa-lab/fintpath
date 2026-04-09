@@ -178,11 +178,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <div style={{fontWeight: 600}}>{item.c || "—"}</div>
-                  {item.owner && item.owner!=="" && item.owner!=="na" && (()=>{
+                  {(()=>{
+                    if(!item.owner || item.owner==="") return null;
+                    if(item.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;
+                    if(item.owner==="own_1") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>👤 Personal</div>;
                     const ow=(owners||[]).find(o=>o.id===item.owner);
                     return ow ? <div style={{fontSize:9,color:"#71717a",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
                   })()}
-                  {item.owner==="na" && <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <span style={{ background: T.redDim, color: T.red, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.cat}</span>

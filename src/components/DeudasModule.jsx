@@ -140,11 +140,13 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                     </td>
                     <td style={{ padding: "10px 14px" }}>
                       <div style={{fontWeight: 600}}>{d.n}</div>
-                      {d.owner && d.owner!=="" && d.owner!=="na" && (()=>{
+                      {(()=>{
+                        if(!d.owner || d.owner==="") return null;
+                        if(d.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;
+                        if(d.owner==="own_1") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>👤 Personal</div>;
                         const ow=(owners||[]).find(o=>o.id===d.owner);
                         return ow ? <div style={{fontSize:9,color:"#71717a",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
                       })()}
-                      {d.owner==="na" && <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>}
                     </td>
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>
                       <span style={{ background: T.orange + "15", color: T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{d.tp}</span>

@@ -135,11 +135,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     </td>
                     <td style={{ padding: "10px 14px" }}>
                       <div style={{fontWeight: 600}}>{item.nombre}</div>
-                      {item.owner && item.owner!=="" && item.owner!=="na" && (()=>{
+                      {(()=>{
+                        if(!item.owner || item.owner==="") return null;
+                        if(item.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;
+                        if(item.owner==="own_1") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>👤 Personal</div>;
                         const ow=(owners||[]).find(o=>o.id===item.owner);
                         return ow ? <div style={{fontSize:9,color:"#71717a",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
                       })()}
-                      {item.owner==="na" && <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>}
                     </td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: T.greenDim, color: T.green, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.categoria}</span></td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: (item.tipo === "fijo" ? T.blue : T.orange) + "15", color: item.tipo === "fijo" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.tipo}</span></td>
