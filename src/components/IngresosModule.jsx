@@ -133,7 +133,14 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)}
                         style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
                     </td>
-                    <td style={{ padding: "10px 14px", fontWeight: 600 }}>{item.nombre}</td>
+                    <td style={{ padding: "10px 14px" }}>
+                      <div style={{fontWeight: 600}}>{item.nombre}</div>
+                      {item.owner && item.owner!=="" && item.owner!=="na" && (()=>{
+                        const ow=(owners||[]).find(o=>o.id===item.owner);
+                        return ow ? <div style={{fontSize:9,color:"#71717a",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
+                      })()}
+                      {item.owner==="na" && <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>}
+                    </td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: T.greenDim, color: T.green, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.categoria}</span></td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: (item.tipo === "fijo" ? T.blue : T.orange) + "15", color: item.tipo === "fijo" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.tipo}</span></td>
                     <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{fm(item.moneda==="USD" ? (item.mensual||0)*(trm||4200) : (item.mensual||0))}{item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(item.mensual).toLocaleString()}</span>}</td>
