@@ -114,9 +114,9 @@ const UVT=52374;
 const TABLA_IMP=[{d:0,h:1090,t:0,b:0},{d:1090,h:1700,t:19,b:0},{d:1700,h:4100,t:28,b:115.86},{d:4100,h:8670,t:33,b:787.86},{d:8670,h:18970,t:35,b:2295.96},{d:18970,h:31000,t:37,b:5900.96},{d:31000,h:Infinity,t:39,b:10352.96}];
 const calcImpRenta=(uvtBase)=>{for(let i=TABLA_IMP.length-1;i>=0;i--){if(uvtBase>TABLA_IMP[i].d)return(TABLA_IMP[i].b+(uvtBase-TABLA_IMP[i].d)*TABLA_IMP[i].t/100)*UVT}return 0};
 
-const DEDUC_NAT={"Salud":1,"Vivienda":1,"Seguros":0.5};
-const DEDUC_JUR={"Vivienda":1,"Servicios":1,"Transporte":1,"Seguros":1,"Educación":0.5,"Otro":0.5};
-const LIM_NAT={"Salud":16*UVT,"Vivienda":100*UVT,"Seguros":16*UVT};
+const DEDUC_NAT={"Salud":1,"Vivienda":1,"Seguros":0.5,"Seguridad Social":0};
+const DEDUC_JUR={"Vivienda":1,"Servicios":1,"Transporte":1,"Seguros":1,"Educación":0.5,"Otro":0.5,"Seguridad Social":0};
+const LIM_NAT={"Salud":16*UVT,"Vivienda":100*UVT,"Seguros":16*UVT,"Pensión voluntaria":208*UVT};
 
 const estimarImpuesto=(u)=>{
   if(!u)return{total:0,mes:0,detalle:[],sinClasificar:0};
