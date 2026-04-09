@@ -79,7 +79,7 @@ export default function SimuladorTributario({ trm, user }) {
   const autoArrendamiento = ownerIngresos.filter(i => (i.catFiscal || "") === "arrendamiento").reduce((s, i) => s + (i.mensual || 0), 0);
   const autoRendimientos = ownerIngresos.filter(i => (i.catFiscal || "") === "rendimientos").reduce((s, i) => s + (i.mensual || 0), 0);
   const autoDividendos = ownerIngresos.filter(i => (i.catFiscal || "") === "dividendos").reduce((s, i) => s + (i.mensual || 0), 0);
-  // Gastos deducibles del propietario
+  // Gastos deducibles — clasificación automática DIAN
   const ownerGastos = [];
   Object.entries((user && user.gas) || {}).forEach(([cat, items]) => {
     (items || []).forEach(g => {
@@ -88,9 +88,64 @@ export default function SimuladorTributario({ trm, user }) {
       }
     });
   });
-  const gastosDeducibles = ownerGastos.filter(g => g.deducible === "total").reduce((s, g) => s + (g.m || 0), 0);
-  const gastosParciales = ownerGastos.filter(g => g.deducible === "parcial").reduce((s, g) => s + (g.m || 0), 0) * 0.5;
-  const totalDeducibleGastos = (gastosDeducibles + gastosParciales) * 12;
+
+  // Reglas DIAN por categoría y tipo de persona
+  const DIAN_DEDUCIBLE = isJuridica ? {
+    // Persona Jurídica: gastos operativos del negocio son deducibles
+    "Vivienda": 1.0,       // Arriendo oficina, bodega
+    "Servicios": 1.0,      // Servicios públicos del negocio
+    "Transporte": 1.0,     // Transporte operativo
+    "Seguros": 1.0,        // Pólizas del negocio
+    "Educación": 0.5,      // Capacitación parcial
+    "Alimentación": 0.0,   // No deducible (gasto personal)
+    "Salud": 0.0,          // No deducible (gasto personal)
+    "Entretenimiento": 0.0,// No deducible
+    "Personal": 0.0,       // No deducible
+    "Vestimenta": 0.0,     // No deducible
+    "Ahorro": 0.0,         // No es gasto
+    "Otro": 0.5,           // Parcial (depende del caso)
+  } : {
+    // Persona Natural: deducciones limitadas por ley
+    "Salud": 1.0,          // Medicina prepagada (máx 16 UVT/mes)
+    "Vivienda": 1.0,       // Intereses vivienda (máx 100 UVT/mes)
+    "Seguros": 0.5,        // Seguros de vida/salud parcial
+    "Educación": 0.0,      // No directamente deducible (solo dependientes)
+    "Alimentación": 0.0,   // No deducible
+    "Transporte": 0.0,     // No deducible
+    "Servicios": 0.0,      // No deducible
+    "Entretenimiento": 0.0,// No deducible
+    "Personal": 0.0,       // No deducible
+    "Vestimenta": 0.0,     // No deducible
+    "Ahorro": 0.0,         // No es gasto (AFC/Pensión ya están arriba)
+    "Otro": 0.0,           // No deducible por defecto
+  };
+
+  // Límites DIAN para persona natural
+  const LIMITES_NATURAL = {
+    "Salud": 16 * UVT_2026,       // 16 UVT/mes medicina prepagada
+    "Vivienda": 100 * UVT_2026,   // 100 UVT/mes intereses vivienda
+    "Seguros": 16 * UVT_2026,     // 16 UVT/mes seguros
+  };
+
+  let totalDeducibleGastos = 0;
+  const gastosDetalle = [];
+  const gastosPorCat = {};
+  ownerGastos.forEach(g => {
+    const cat = g.cat || "Otro";
+    const pct = DIAN_DEDUCIBLE[cat] ?? 0;
+    const monto = (g.m || 0) * pct;
+    if (!gastosPorCat[cat]) gastosPorCat[cat] = 0;
+    gastosPorCat[cat] += monto;
+  });
+
+  Object.entries(gastosPorCat).forEach(([cat, montoMes]) => {
+    if (montoMes <= 0) return;
+    const limite = LIMITES_NATURAL[cat];
+    const aplicado = (!isJuridica && limite) ? Math.min(montoMes, limite) : montoMes;
+    totalDeducibleGastos += aplicado * 12;
+    const pct = DIAN_DEDUCIBLE[cat] ?? 0;
+    gastosDetalle.push({ cat, montoMes, aplicadoMes: aplicado, pct, limiteMsg: (!isJuridica && limite) ? "Máx " + fCOP(limite) + "/mes" : null });
+  });
 
   const autoOtros = ownerIngresos.filter(i => !["salario","honorarios","arrendamiento","rendimientos","dividendos"].includes(i.catFiscal || "")).reduce((s, i) => s + (i.mensual || 0), 0);
 
@@ -189,6 +244,23 @@ export default function SimuladorTributario({ trm, user }) {
     if (totalBeneficios > limite40) {
       recs.push({ t: "⚠️ Tope del 40% alcanzado", d: "Ya usas el máximo de beneficios tributarios permitidos. No puedes deducir más (" + fCOP(totalBeneficios - limite40) + " no aplicados).", ahorro: 0, color: T.orange });
     }
+    // Check if there are non-deducible gastos that could be restructured
+    if (!isJuridica) {
+      const gastoVivienda = ownerGastos.filter(g => g.cat === "Vivienda").reduce((s, g) => s + (g.m || 0), 0);
+      if (gastoVivienda > 0 && interesesVivienda === 0) {
+        recs.push({ t: "🏠 ¿Pagas crédito de vivienda?", d: "Si tienes crédito hipotecario, los intereses son deducibles hasta " + fCOP(100 * UVT_2026) + "/mes. Agrégalos arriba en 'Intereses vivienda'.", ahorro: 0, color: T.blue });
+      }
+      const gastoSalud = ownerGastos.filter(g => g.cat === "Salud").reduce((s, g) => s + (g.m || 0), 0);
+      if (gastoSalud > 0) {
+        recs.push({ t: "🏥 Gastos de salud detectados", d: "Tus gastos de salud (" + fCOP(gastoSalud) + "/mes) se clasificaron como deducibles automáticamente. Máximo: " + fCOP(16 * UVT_2026) + "/mes.", ahorro: 0, color: T.green });
+      }
+    }
+    if (isJuridica) {
+      const gastosNoDeduc = ownerGastos.filter(g => (DIAN_DEDUCIBLE[g.cat || "Otro"] ?? 0) === 0).reduce((s, g) => s + (g.m || 0), 0);
+      if (gastosNoDeduc > 0) {
+        recs.push({ t: "🏢 Gastos no deducibles", d: fCOP(gastosNoDeduc) + "/mes en gastos personales (Alimentación, Salud, etc.) no son deducibles para la empresa.", ahorro: 0, color: T.orange });
+      }
+    }
     if (recs.length === 0 && impuestoAnual > 0) {
       recs.push({ t: "✅ Buena optimización", d: "Estás aprovechando tus beneficios tributarios. Tu tasa efectiva es " + pc(tasaEfectiva) + ".", ahorro: 0, color: T.green });
     }
@@ -196,7 +268,7 @@ export default function SimuladorTributario({ trm, user }) {
     return {
       ingresoBrutoAnual, salarioAnual, totalNoConstitutivo, ingresoNeto,
       renta25pct, deducDependientes, deducMedicina, deducVivienda, deducDonaciones,
-      totalDeducciones, deducGastos, exentaPensionVol, exentaAFC, totalBeneficios, limite40,
+      totalDeducciones, deducGastos, gastosDetalle, exentaPensionVol, exentaAFC, totalBeneficios, limite40,
       beneficioAplicado, rentaLiquida, rentaLiquidaUVT,
       impuestoAnual, impuestoMes, tasaEfectiva, rango: imp.rango, rangoIdx: imp.rangoIdx,
       ahorro, recs, espacioGlobal,
@@ -329,7 +401,7 @@ export default function SimuladorTributario({ trm, user }) {
             {calc.deducDependientes > 0 && <Row l="(-) Dependientes" v={"- " + fCOP(calc.deducDependientes)} color={T.green} />}
             {calc.deducMedicina > 0 && <Row l="(-) Medicina prepagada" v={"- " + fCOP(calc.deducMedicina)} color={T.green} />}
             {calc.deducVivienda > 0 && <Row l="(-) Intereses vivienda" v={"- " + fCOP(calc.deducVivienda)} color={T.green} />}
-            {calc.deducGastos > 0 && <Row l="(-) Gastos deducibles" v={"- " + fCOP(calc.deducGastos)} color={T.green} sub="Gastos marcados como deducibles" />}
+            {calc.deducGastos > 0 && <Row l="(-) Gastos deducibles DIAN" v={"- " + fCOP(calc.deducGastos)} color={T.green} sub={calc.gastosDetalle && calc.gastosDetalle.length > 0 ? calc.gastosDetalle.map(g => g.cat + ": " + fCOP(g.aplicadoMes) + "/mes" + (g.pct < 1 ? " (" + Math.round(g.pct * 100) + "%)" : "") + (g.limiteMsg ? " [" + g.limiteMsg + "]" : "")).join(" • ") : "Clasificación automática según normativa DIAN"} />}
             {calc.deducDonaciones > 0 && <Row l="(-) Donaciones" v={"- " + fCOP(calc.deducDonaciones)} color={T.green} />}
             <Row l="Total beneficios" v={fCOP(calc.totalBeneficios)} sub={calc.totalBeneficios > calc.limite40 ? "⚠️ Excede tope 40% → aplicado: " + fCOP(calc.beneficioAplicado) : "Dentro del tope 40%"} color={calc.totalBeneficios > calc.limite40 ? T.orange : T.green} />
             <div style={{ height: 8 }} />

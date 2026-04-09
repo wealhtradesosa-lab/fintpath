@@ -24,7 +24,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
-  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", deducible: "no" });
+  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "" });
   const [selected, setSelected] = useState(new Set()); // "cat|idx"
 
   const gas = gastos || {};
@@ -57,19 +57,19 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
         newGas[eCat] = newGas[eCat].filter((_, i) => i !== idx);
         if (newGas[eCat].length === 0) delete newGas[eCat];
         if (!newGas[form.cat]) newGas[form.cat] = [];
-        newGas[form.cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", deducible: form.deducible||"no" });
+        newGas[form.cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"" });
       } else {
-        newGas[eCat][idx] = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", deducible: form.deducible||"no" };
+        newGas[eCat][idx] = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"" };
       }
     } else {
       const cat = form.cat || "Otro";
       if (!newGas[cat]) newGas[cat] = [];
-      newGas[cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", deducible: form.deducible||"no" });
+      newGas[cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"" });
     }
     onUpdate(newGas);
     setShowForm(false);
     setEditKey(null);
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", deducible: "no" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "" });
   };
 
   const openEdit = (item) => {
@@ -203,7 +203,6 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
               <In l="Categoría" value={form.cat} onChange={(v) => setForm((p) => ({ ...p, cat: v }))} options={["Vivienda","Alimentación","Transporte","Educación","Salud","Seguros","Servicios","Entretenimiento","Vestimenta","Tecnología","Mascotas","Deporte","Personal","Ahorro","Otro"]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
               <div style={{display:"flex",gap:8}}><div style={{flex:1}}><In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" /></div><div style={{width:100}}><In l="Propietario" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
-              <In l="¿Es deducible de impuestos?" value={form.deducible} onChange={(v) => setForm((p) => ({ ...p, deducible: v }))} options={[{v:"no",l:"No deducible"},{v:"total",l:"✅ Deducible 100%"},{v:"parcial",l:"📊 Deducible parcial"}]} />
               <In l="Frecuencia" value={form.freq} onChange={(v) => setForm((p) => ({ ...p, freq: v }))} options={[{ v: "mes", l: "Mensual" }, { v: "año", l: "Anual" }]} /></div></div>
               <In l="Tipo" value={form.t} onChange={(v) => setForm((p) => ({ ...p, t: v }))} options={[{ v: "f", l: "Fijo" }, { v: "v", l: "Variable" }]} />
             </div>
