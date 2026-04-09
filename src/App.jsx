@@ -108,70 +108,78 @@ const va=+inv.va||0,vc=+inv.vc||0,noi=ig-gs,db=dfa(ds,inv.id),eq=va-db.s,gn=va-v
 return{ig,gs,noi,gn,roi:vc>0?(gn/vc)*100:0,cap:va>0?((noi*12)/va)*100:0,ds:db.s,dp:db.p,eq,coc:eq>0?(((noi-db.p)*12)/eq)*100:0}};
 const inferType=(i)=>{let tp=String(i.tp||i.tipo||i.type||"").trim();if(!tp||!isNaN(Number(tp)))tp="";const typeMap={"Other":"Otro","Investment":"Fondo de Inversión","Income":"Otro","Trading":"Acciones","Renta Fija":"CDT","Lote":"Real Estate"};if(tp&&typeMap[tp])return typeMap[tp];const validTypes=["Real Estate","Fondo de Inversión","CDT","Acciones","Crypto","Bodega","Vehículo","Local Comercial","Negocio","Cash","Otro"];if(tp&&validTypes.includes(tp))return tp;const nm=((i.n||i.nombre||"")+" "+(i.ub||"")).toLowerCase();if(/apart|apto|casa|lote|terreno|oficina|inmueble|propiedad|house|condo/i.test(nm))return"Real Estate";if(/bodega/i.test(nm))return"Bodega";if(/local/i.test(nm))return"Local Comercial";if(/fondo|fiduci|fund/i.test(nm))return"Fondo de Inversión";if(/cdt|renta fija|bonos|tes /i.test(nm))return"CDT";if(/accion|etf|portafolio|vti|spy|stock|share/i.test(nm))return"Acciones";if(/btc|bitcoin|crypto|eth|usdt/i.test(nm))return"Crypto";if(/vehic|carro|moto|auto/i.test(nm))return"Vehículo";if(/negocio|empresa|sas|company/i.test(nm))return"Negocio";if(/cash|ahorro|cuenta|saving/i.test(nm))return"Cash";if(/green|puerto|orlando|miami|backswing|district/i.test(nm))return"Real Estate";return"Otro"};
 
-// ═══ ESTIMACIÓN TRIBUTARIA RÁPIDA ═══
+// ═══ ESTIMACIÓN TRIBUTARIA ═══
+// Solo calcula impuestos para ingresos que tienen propietario Y clasificación fiscal asignados
 const UVT=52374;
+const TABLA_IMP=[{d:0,h:1090,t:0,b:0},{d:1090,h:1700,t:19,b:0},{d:1700,h:4100,t:28,b:115.86},{d:4100,h:8670,t:33,b:787.86},{d:8670,h:18970,t:35,b:2295.96},{d:18970,h:31000,t:37,b:5900.96},{d:31000,h:Infinity,t:39,b:10352.96}];
+const calcImpRenta=(uvtBase)=>{for(let i=TABLA_IMP.length-1;i>=0;i--){if(uvtBase>TABLA_IMP[i].d)return(TABLA_IMP[i].b+(uvtBase-TABLA_IMP[i].d)*TABLA_IMP[i].t/100)*UVT}return 0};
+
+const DEDUC_NAT={"Salud":1,"Vivienda":1,"Seguros":0.5};
+const DEDUC_JUR={"Vivienda":1,"Servicios":1,"Transporte":1,"Seguros":1,"Educación":0.5,"Otro":0.5};
+const LIM_NAT={"Salud":16*UVT,"Vivienda":100*UVT,"Seguros":16*UVT};
+
 const estimarImpuesto=(u)=>{
-  if(!u)return{total:0,detalle:[]};
+  if(!u)return{total:0,mes:0,detalle:[],sinClasificar:0};
   const owners=(u.owners||[{id:"own_1",name:"Personal",type:"natural"}]);
   const ing=(u.ingresos||[]);
   const gas=u.gas||{};
-  let totalImp=0;const detalle=[];
+  let totalImp=0;
+  const detalle=[];
   
-  const TABLA=[{d:0,h:1090,t:0,b:0},{d:1090,h:1700,t:19,b:0},{d:1700,h:4100,t:28,b:115.86},{d:4100,h:8670,t:33,b:787.86},{d:8670,h:18970,t:35,b:2295.96},{d:18970,h:31000,t:37,b:5900.96},{d:31000,h:Infinity,t:39,b:10352.96}];
-  const calcImp=(uvt)=>{for(let i=TABLA.length-1;i>=0;i--){if(uvt>TABLA[i].d)return(TABLA[i].b+(uvt-TABLA[i].d)*TABLA[i].t/100)*UVT}return 0};
-  
-  const DEDUC_N={"Salud":1,"Vivienda":1,"Seguros":0.5};
-  const DEDUC_J={"Vivienda":1,"Servicios":1,"Transporte":1,"Seguros":1,"Educación":0.5,"Otro":0.5};
-  const LIM={"Salud":16*UVT,"Vivienda":100*UVT,"Seguros":16*UVT};
+  // Contar ingresos sin clasificar (sin owner o sin catFiscal)
+  const sinClasificar=ing.filter(i=>!i.catFiscal || i.catFiscal==="").length;
   
   owners.forEach(ow=>{
-    const oIng=ing.filter(i=>(i.owner||"")===(ow.id)||(!(i.owner)&&ow.id==="own_1"));
-    const ingAnual=oIng.reduce((s,i)=>s+(i.mensual||0),0)*12;
+    // Solo tomar ingresos que EXPLÍCITAMENTE tienen este owner asignado
+    // O: si es "own_1" (Personal), tomar los que tienen owner="" SOLO si tienen catFiscal
+    const oIng=ing.filter(i=>{
+      if(i.owner==="na")return false; // N/A excluido
+      if(i.owner===ow.id)return true; // Explícitamente asignado
+      if(ow.id==="own_1" && (!i.owner || i.owner==="") && i.catFiscal && i.catFiscal!=="")return true; // Personal + clasificado
+      return false;
+    });
+    
+    const ingAnual=oIng.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u.trm||4200):1)),0)*12;
     if(ingAnual<=0)return;
     
     const isJ=ow.type==="juridica";
+    const reglas=isJ?DEDUC_JUR:DEDUC_NAT;
+    const limites=isJ?null:LIM_NAT;
+    
+    // Gastos deducibles de este owner
+    let gastosDeducAnual=0;
+    Object.entries(gas).forEach(([cat,items])=>{
+      (items||[]).forEach(g=>{
+        const esDeEsteOwner=(g.owner===ow.id)||(ow.id==="own_1"&&(!g.owner||g.owner===""));
+        if(!esDeEsteOwner||g.owner==="na")return;
+        const pct=reglas[cat]||0;
+        let mAnual=(g.m||0)*pct*12;
+        if(limites&&limites[cat])mAnual=Math.min(mAnual,limites[cat]*12);
+        gastosDeducAnual+=mAnual;
+      });
+    });
     
     if(isJ){
-      // Jurídica: 35% sobre renta líquida
-      let gastosD=0;
-      Object.entries(gas).forEach(([cat,items])=>{
-        (items||[]).forEach(g=>{
-          if((g.owner||"")===ow.id){
-            const pct=DEDUC_J[cat]||0;
-            gastosD+=(g.m||0)*pct*12;
-          }
-        });
-      });
-      const renta=Math.max(0,ingAnual-gastosD);
-      const imp=renta*0.35;
+      // Jurídica: 35% sobre utilidad (ingresos - gastos deducibles)
+      const utilidad=Math.max(0,ingAnual-gastosDeducAnual);
+      const imp=utilidad*0.35;
       totalImp+=imp;
-      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
+      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosDeduc:gastosDeducAnual,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
     }else{
-      // Natural: tabla progresiva
-      const noConst=ingAnual*0.08;
+      // Natural: tabla progresiva con deducciones
+      const noConst=ingAnual*0.08; // Salud 4% + Pensión 4%
       const neto=ingAnual-noConst;
       const exenta25=Math.min(neto*0.25,790*UVT);
-      let gastosD=0;
-      Object.entries(gas).forEach(([cat,items])=>{
-        (items||[]).forEach(g=>{
-          if((g.owner||"")===ow.id||(!g.owner&&ow.id==="own_1")){
-            const pct=DEDUC_N[cat]||0;
-            let m=(g.m||0)*pct*12;
-            if(LIM[cat])m=Math.min(m,LIM[cat]*12);
-            gastosD+=m;
-          }
-        });
-      });
-      const totalBenef=exenta25+gastosD;
+      const totalBenef=exenta25+gastosDeducAnual;
       const lim40=neto*0.40;
       const benAplic=Math.min(totalBenef,lim40);
       const rentaLiq=Math.max(0,neto-benAplic);
-      const imp=calcImp(rentaLiq/UVT);
+      const imp=calcImpRenta(rentaLiq/UVT);
       totalImp+=imp;
-      detalle.push({name:ow.name,type:"natural",ingreso:ingAnual,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
+      detalle.push({name:ow.name,type:"natural",ingreso:ingAnual,gastosDeduc:gastosDeducAnual,baseGravable:rentaLiq,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
     }
   });
-  return{total:totalImp,mes:totalImp/12,detalle};
+  return{total:totalImp,mes:totalImp/12,detalle,sinClasificar};
 };
 
 const cT=(inv,ds,gf,ing)=>{let ab=0,ti=0,tg=0;(inv||[]).forEach(i=>{ab+=i.va});const ingT=(ing||[]).reduce((s,i)=>i.sim===false?s:s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);ti=ingT;const td=(ds||[]).reduce((s,d)=>s+(d.mt||0),0),tc=(ds||[]).filter(d=>(d.mt||0)>0&&d.sim!==false).reduce((s,d)=>s+(d.pg||0),0),gfm=Object.values(gf||{}).flat().reduce((s,g)=>g.sim===false?s:s+(g.m||0),0),ni=ti-tg,te=gfm+tc,cf=ni-te;return{ab,td,nw:ab-td,ti,tg,ni,gfm,tc,te,cf,ind:te>0?(ni/te)*100:0,dta:ab>0?(td/ab)*100:0,ingT}};
@@ -1086,6 +1094,7 @@ export default function FinPath(){
             {/* PLANIFICACIÓN TRIBUTARIA — Usa estimarImpuesto() con propietarios + DIAN */}
             {(()=>{const tx=estimarImpuesto(u);if(tx.total<=0)return null;return<div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
               <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>🧾 IMPUESTOS ESTIMADOS — Colombia 2026 (UVT: $52,374)</div>
+              {tx.sinClasificar>0&&<div style={{background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:T.orange}}>⚠️ {tx.sinClasificar} ingreso(s) sin clasificación fiscal. Ve a <strong>💰 Ingresos</strong> y asigna propietario + clasificación DIAN para un cálculo más preciso.</div>}
               <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                 <div>
                   <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>Impuesto de renta por propietario</div>
