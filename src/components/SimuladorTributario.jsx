@@ -88,11 +88,21 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       const impActual = utilidadActual * 0.35;
       const tasaActual = ingAnual > 0 ? (impActual / ingAnual * 100) : 0;
 
-      // CON ESTRATEGIA: estimar gastos faltantes típicos
+      // CON ESTRATEGIA: optimizaciones activas para reducir utilidad
       const pctGastos = ingAnual > 0 ? (totalDeduc / ingAnual * 100) : 0;
-      const gastosEsperados = ingAnual * 0.55; // Una empresa bien gestionada ~55% gastos
-      const gastosAdicionales = Math.max(0, gastosEsperados - totalDeduc);
-      const utilidadOptima = Math.max(0, ingAnual - Math.max(totalDeduc, gastosEsperados));
+      
+      // Estrategias activas (siempre aplican, incluso con gastos altos)
+      const bonificaciones = gastosByCat["Nómina"] ? (gastosByCat["Nómina"].total || 0) * 12 * 0.15 : 0;
+      const donacionSugerida = Math.min(utilidadActual * 0.25, utilidadActual * 0.10);
+      const provisionCartera = ingAnual * 0.02;
+      const deprecExtra = inv.reduce((s, i) => {
+        const tp = (i.tp || i.tipo || "").toLowerCase();
+        if (/real estate|bodega|local|oficina/i.test(tp)) return s + (i.va || 0) * 0.03;
+        return s;
+      }, 0);
+      const estrategiasTotal = bonificaciones + donacionSugerida + provisionCartera + deprecExtra;
+      const gastosExtra = pctGastos < 50 ? Math.max(0, ingAnual * 0.55 - totalDeduc) : 0;
+      const utilidadOptima = Math.max(0, utilidadActual - estrategiasTotal - gastosExtra);
       const impOptimo = utilidadOptima * 0.35;
       const ahorro = impActual - impOptimo;
 
@@ -102,7 +112,14 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       if (!gastosByCat["Honorarios"]) recs.push({ icon: "📋", title: "Honorarios profesionales", desc: "Contador, abogado, revisor fiscal. Registra estos gastos como deducibles.", impact: 0, color: T.blue });
       if (!gastosByCat["Mantenimiento"]) recs.push({ icon: "🔧", title: "Mantenimiento de propiedades", desc: "Reparaciones, pintura, plomería — todo deducible para inmuebles de la empresa.", impact: 0, color: T.blue });
       if (!gastosByCat["Predial"]) recs.push({ icon: "🏛️", title: "Predial e impuestos locales", desc: "Predial, ICA, contribuciones — impuestos pagados son deducibles.", impact: 0, color: T.blue });
-      if (pctGastos < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + pctGastos.toFixed(0) + "% de ingresos", desc: "Una empresa operativa típica tiene 40-70% en gastos. Revisa si faltan gastos por registrar.", impact: ahorro > 0 ? ahorro : 0, color: T.orange });
+      if (pctGastos < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + pctGastos.toFixed(0) + "% de ingresos", desc: "Una empresa operativa típica tiene 40-70%. Revisa si faltan gastos por registrar.", impact: gastosExtra > 0 ? gastosExtra * 0.35 : 0, color: T.orange });
+      if (utilidadActual > 50e6) {
+        if (bonificaciones > 500000) recs.push({ icon: "🎁", title: "Bonificaciones a empleados", desc: "Primas extralegales y bonificaciones son 100% deducibles. Motiva al equipo y reduce utilidad gravable. Estimado: " + fm(bonificaciones) + "/año.", impact: bonificaciones * 0.35, color: T.green });
+        if (donacionSugerida > 1e6) recs.push({ icon: "🤝", title: "Donaciones deducibles", desc: "Dona a fundaciones certificadas (sin ánimo de lucro). Deducibles hasta 25% de renta líquida. Sugerido: " + fm(donacionSugerida) + "/año.", impact: donacionSugerida * 0.35, color: T.green });
+        if (provisionCartera > 1e6) recs.push({ icon: "📋", title: "Provisión de cartera", desc: "Si tienes cuentas por cobrar, la provisión es deducible. Estimado: " + fm(provisionCartera) + "/año.", impact: provisionCartera * 0.35, color: T.green });
+        if (deprecExtra > 1e6) recs.push({ icon: "🏗️", title: "Revisar depreciación", desc: "Evalúa con tu contador depreciación acelerada o revaluación de activos. Potencial: " + fm(deprecExtra) + "/año.", impact: deprecExtra * 0.35, color: T.green });
+        recs.push({ icon: "📈", title: "Reinvertir utilidades", desc: "Compra equipos, vehículos, mejoras a propiedades. Genera depreciación deducible en años siguientes y reduce utilidad gravable futura.", impact: 0, color: T.purple });
+      }
 
       return { type: "juridica", ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, totalDeduc, intereses, deprec, patTotal, deuTotal, utilidad: utilidadActual, impActual, tasaActual, pctGastos, impOptimo, ahorro, recs };
     } else {
