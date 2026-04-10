@@ -609,9 +609,9 @@ export default function FinPath(){
   };
 
   const has=u?(u.inv?.length||u.deu?.length||Object.keys((u&&u.gas)||{}).length)>0:false;
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:"MI DINERO"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Egresos"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"deu",i:"📋",l:"Deudas"},{id:"tax",i:"🧾",l:"Impuestos"},{id:"_sep2",sep:true,l:"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"met",i:"🎯",l:"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"_sep3",sep:true,l:"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:"Asesor IA"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:"MI DINERO"},{id:"ing",i:"💰",l:"Ingresos"},{id:"gas",i:"💳",l:"Egresos"},{id:"inv",i:"🏦",l:"Patrimonio"},{id:"deu",i:"📋",l:"Deudas"},{id:"tax",i:"🧾",l:"Tributaria"},{id:"_sep2",sep:true,l:"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:"Simulador"},{id:"met",i:"🎯",l:"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC"},{id:"_sep3",sep:true,l:"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:"Asesor IA"},{id:"coach",i:"🧠",l:"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"set",i:"⚙️",l:"Config"}];
 
-  const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",pen:"Pensiones",tax:"Simulador Tributario",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",set:"Configuración"};
+  const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",pen:"Pensiones",tax:"Planeación Tributaria",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",set:"Configuración"};
   if(typeof document!=="undefined")document.title="FINPATHIA"+(secNames[pg]?" — "+secNames[pg]:"");
   const rp=()=>{if(!u)return null;switch(pg){
     case"dash":{
