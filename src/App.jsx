@@ -158,7 +158,7 @@ const estimarImpuesto=(u)=>{
       const utilidad=Math.max(0,ingAnual-totalDeduc);
       const imp=utilidad*0.35;
       totalImp+=imp;
-      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
+      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosExplicitos:gastosDeducJ,intereses:interesesJ,deprec,deducContador,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
     }else{
       // ═══ PERSONA NATURAL: tabla progresiva con TODAS las deducciones ═══
       // Separar ingresos por tipo para calcular aportes correctamente

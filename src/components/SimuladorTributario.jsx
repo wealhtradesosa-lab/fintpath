@@ -80,19 +80,41 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
     let detalleCalc = [];
 
     if (isJ) {
-      // Jurídica: deducir intereses de deudas + depreciación
+      // Jurídica: todas las deducciones que aplica un contador
       const interesesJ = deu.reduce((s,d) => s + (d.mt||0) * ((d.ts||d.tasa||0)/100), 0);
-      const totalDeduc = gastosDeducAnual + interesesJ;
+      // Depreciación
+      const deprecJ = inv.reduce((s,i) => {
+        const tp = (i.tp||i.tipo||"").toLowerCase();
+        if (/real estate|bodega|local|oficina/i.test(tp)) return s + (i.va||0)*0.05;
+        if (/vehículo|vehiculo/i.test(tp)) return s + (i.va||0)*0.20;
+        return s;
+      }, 0);
+      // Deducciones estándar del contador
+      const salarioGerente = Math.min(ingAnual*0.25, 25000000*12);
+      const segSocial = salarioGerente * 0.21;
+      const honorarios = Math.min(ingAnual*0.04, 5000000*12);
+      const gastosAdm = Math.min(ingAnual*0.03, 3000000*12);
+      const ica = ingAnual * 0.01;
+      const gmf = ingAnual * 0.004;
+      const deducContador = salarioGerente + segSocial + honorarios + gastosAdm + ica + gmf;
+      
+      const totalDeduc = gastosDeducAnual + interesesJ + deprecJ + deducContador;
       const utilidad = Math.max(0, ingAnual - totalDeduc);
       impuesto = utilidad * 0.35;
       baseGravable = utilidad;
       detalleCalc = [
         { l: "Ingresos brutos anuales", v: ingAnual, bold: true },
-        { l: "(-) Gastos operativos deducibles", v: -gastosDeducAnual, color: T.green },
+        ...(gastosDeducAnual > 0 ? [{ l: "(-) Gastos operativos registrados", v: -gastosDeducAnual, color: T.green }] : []),
         ...(interesesJ > 0 ? [{ l: "(-) Intereses de deudas", v: -interesesJ, color: T.green }] : []),
+        ...(deprecJ > 0 ? [{ l: "(-) Depreciación activos", v: -deprecJ, color: T.green }] : []),
+        { l: "(-) Salario gerente (est.)", v: -salarioGerente, color: T.green, sub: "~25% ingresos — deducible para la empresa" },
+        { l: "(-) Seg. social patronal (est.)", v: -segSocial, color: T.green, sub: "~21% del salario gerente" },
+        { l: "(-) Honorarios profesionales (est.)", v: -honorarios, color: T.green, sub: "Contador, abogado, revisor fiscal" },
+        { l: "(-) Gastos admin + bancarios (est.)", v: -(gastosAdm + ica + gmf), color: T.green, sub: "Admin, ICA, GMF 4×1000" },
         { l: "= Utilidad gravable", v: utilidad, bold: true },
-        { l: "Tarifa renta (35%)", v: null, sub: "Régimen general sociedades" },
+        { l: "Tarifa renta (35%)", v: null, sub: "Régimen general sociedades colombianas" },
         { l: "= IMPUESTO DE RENTA", v: impuesto, color: T.red, bold: true },
+        { l: "* Valores con (est.) son estimaciones", v: null, sub: "Basados en porcentajes típicos. Tu contador puede ajustarlos.", color: T.blue },
       ];
     } else {
       // ── Persona Natural: cálculo completo como contador ──
