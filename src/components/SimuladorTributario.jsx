@@ -37,7 +37,7 @@ const Cd = ({ children, style: s }) => (
   <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", ...s }}>{children}</div>
 );
 
-function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ }) {
+function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
   const [showOpt, setShowOpt] = useState(false);
 
   const calc = useMemo(() => {
@@ -210,7 +210,7 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ }) {
   return (
     <Cd style={{ padding: 0, marginBottom: 16 }}>
       {/* Header */}
-      <div style={{ padding: "20px 24px", borderBottom: "1px solid " + T.border, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ padding: mb ? "16px" : "20px 24px", borderBottom: "1px solid " + T.border, display: "flex", justifyContent: "space-between", alignItems: mb ? "flex-start" : "center", flexWrap: "wrap", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 24 }}>{isJ ? "🏢" : "👤"}</span>
           <div>
@@ -219,14 +219,14 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ }) {
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>{fm(calc.impuesto)}/año</div>
+          <div style={{ fontSize: mb ? 18 : 24, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>{fm(calc.impuesto)}/año</div>
           <div style={{ fontSize: 12, color: T.txt3 }}>{fm(calc.impuesto / 12)}/mes • Tasa: {calc.tasaEfectiva.toFixed(1)}%</div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr 1fr", gap: 0 }}>
         {/* Left: Radiografía */}
-        <div style={{ padding: 20, borderRight: "1px solid " + T.border }}>
+        <div style={{ padding: mb ? 16 : 20, borderRight: mb ? "none" : "1px solid " + T.border, borderBottom: mb ? "1px solid " + T.border : "none" }}>
           {/* Ingresos */}
           <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginBottom: 8 }}>💰 Ingresos ({ingresos.length} fuentes)</div>
           {Object.entries(calc.ingByCat).map(([cat, m]) => (
@@ -286,7 +286,7 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ }) {
         </div>
 
         {/* Right: Cálculo + Pie */}
-        <div style={{ padding: 20 }}>
+        <div style={{ padding: mb ? 16 : 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
             <div style={{ width: 90, height: 90 }}>
               <ResponsiveContainer width="100%" height={90}>
@@ -337,6 +337,7 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ }) {
 }
 
 export default function SimuladorTributario({ trm, user }) {
+  const mb = typeof window !== "undefined" && window.innerWidth < 768;
   const owners = (user && user.owners) || [{ id: "own_1", name: "Personal", type: "natural" }];
   const ing = (user && user.ingresos) || [];
   const gas = user && user.gas ? user.gas : {};
@@ -354,7 +355,7 @@ export default function SimuladorTributario({ trm, user }) {
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px", color: T.orange }}>🧾 Planeación Tributaria — Colombia 2026</h1>
+        <h1 style={{ fontSize: mb ? 18 : 24, fontWeight: 800, margin: "0 0 4px", color: T.orange }}>🧾 Planeación Tributaria — Colombia 2026</h1>
         <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>Radiografía fiscal por propietario • Estatuto Tributario • UVT 2026: {fm(UVT)} • Ley 2277/2022</p>
       </div>
 
@@ -381,7 +382,7 @@ export default function SimuladorTributario({ trm, user }) {
         return totalImp > 1 ? (
           <Cd style={{ padding: 20, marginBottom: 16 }}>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>📊 Resumen Global</div>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
               {owners.map(ow => {
                 const oIng = ing.filter(i => {
                   if (i.owner === "na") return false;
@@ -425,7 +426,7 @@ export default function SimuladorTributario({ trm, user }) {
         const oGas = gastosFlat.filter(g => (g.owner === ow.id) || (ow.id === "own_1" && (!g.owner || g.owner === "")));
         const oInv = inv.filter(i => i.owner === ow.id || (ow.id === "own_1" && (!i.owner || i.owner === "")));
         const oDeu = deu.filter(d => d.owner === ow.id || (ow.id === "own_1" && (!d.owner || d.owner === "")));
-        return <OwnerCard key={ow.id} owner={ow} ingresos={oIng} gastos={oGas} inv={oInv} deu={oDeu} trm={trm} isJ={ow.type === "juridica"} />;
+        return <OwnerCard key={ow.id} owner={ow} ingresos={oIng} gastos={oGas} inv={oInv} deu={oDeu} trm={trm} isJ={ow.type === "juridica"} mb={mb} />;
       })}
 
       <div style={{ fontSize: 10, color: T.txt3, textAlign: "center", marginTop: 16, lineHeight: 1.6 }}>
