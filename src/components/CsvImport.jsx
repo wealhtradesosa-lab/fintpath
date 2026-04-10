@@ -218,7 +218,7 @@ export default function CsvImport({ onImport, onClose }) {
           <div>
             <h3 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: T.txt }}>🧠 Importar Excel con IA</h3>
             <p style={{ fontSize: 13, color: T.txt3, margin: "6px 0 0" }}>
-              Sube cualquier Excel — la inteligencia artificial detecta y organiza tus datos automáticamente
+              Sube una tabla Excel por cada categoría: gastos, ingresos, activos o deudas. La IA organiza los datos automáticamente.
             </p>
           </div>
           <button onClick={onClose} style={{ background: T.bg3, border: "none", color: T.txt3, cursor: "pointer", width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>✕</button>
