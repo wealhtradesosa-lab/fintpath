@@ -253,8 +253,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
       nv[`ing_${ii}`] = Math.round(base * f.i);
     });
     (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
-    // Tax per owner
-    ((impuestoData && impuestoData.detalle) || []).forEach((td, ti) => { if(td.impuesto > 0) nv[`tax_${ti}`] = Math.round(td.impuesto / 12); });
+    // Tax per owner - NOT initialized here, uses getVal fallback to stay fresh
     // Standalone ingresos
     // Dedup ingresos in scenario too
     setSimVals(nv);
@@ -608,7 +607,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                     onChange={(v) => setVal(`tax_${ti}`, v)}
                     sub="" />
                   <div style={{display:"flex",gap:10,paddingLeft:4,marginTop:2,flexWrap:"wrap"}}>
-                    <span style={{fontSize:10,color:T.txt3}}>Impuesto: <strong style={{color:"#a78bfa"}}>{fm(simImp)}/mes</strong></span>
+                    <span style={{fontSize:10,color:T.txt3}}>Impuesto: <strong style={{color:"#a78bfa"}}>{fm(simImp)}/mes</strong> ({fm(simImp*12)}/año)</span>
                     <span style={{fontSize:10,color:T.txt3}}>Tasa: <strong>{td.tasa.toFixed(1)}%</strong></span>
                     <span style={{fontSize:10,color:T.txt3}}>{td.type === "juridica" ? "Tarifa 35%" : "Art. 241 ET"}</span>
                     {simImp !== impMes && <span style={{fontSize:10,color:simImp < impMes ? "#22c55e" : "#ef4444",fontWeight:600}}>{simImp < impMes ? "▼ " + fm(impMes - simImp) + " menos" : "▲ " + fm(simImp - impMes) + " más"}</span>}
