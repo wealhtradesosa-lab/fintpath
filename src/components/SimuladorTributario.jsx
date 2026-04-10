@@ -302,7 +302,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
             <div style={{ fontSize: 18, fontWeight: 800, color: ahorro > 100000 ? T.green : T.txt3 }}>{ahorro > 100000 ? "-" + (impActual > 0 ? (ahorro / impActual * 100).toFixed(0) : 0) + "%" : "✅ Optimizado"}</div>
           </div>
         </div>
-      )
+      )}
 
       {/* Recommendations */}
       {calc.recs.length > 0 && (
