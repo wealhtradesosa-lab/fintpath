@@ -201,8 +201,8 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
         </div>
       </div>
       <div style={{ padding: 20, textAlign: "center", color: T.txt3, fontSize: 13 }}>
-        No hay ingresos clasificados para este propietario.<br />
-        Ve a <strong style={{ color: T.blue }}>💰 Ingresos</strong> y asigna este propietario + clasificación DIAN.
+        No hay ingresos asignados a este propietario.<br />
+        Ve a <strong style={{ color: T.blue }}>💰 Ingresos</strong> y asigna <strong>{owner.name}</strong> como propietario en cada ingreso que le corresponda.
       </div>
     </Cd>
   );
