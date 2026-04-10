@@ -21,7 +21,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
   );
 
 const DIAN_REGLAS = {
-  natural: { "Salud": "✅ Deducible", "Vivienda": "✅ Deducible", "Seguros": "📊 50%", "Seguridad Social": "❌ (ya en 8%)", "Nómina": "❌", "Honorarios": "❌", "Mantenimiento": "❌", "Predial": "❌", "Representación": "❌", "Alimentación": "❌", "Transporte": "❌", "Servicios": "❌", "Educación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Tecnología": "❌", "Ahorro": "❌", "Otro": "❌" },
+  natural: { "Salud": "✅ Deducible", "Vivienda": "✅ Deducible", "Seguros": "📊 50%", "Seguridad Social": "✅ Ya incluido", "Nómina": "❌", "Honorarios": "❌", "Mantenimiento": "❌", "Predial": "❌", "Representación": "❌", "Alimentación": "❌", "Transporte": "❌", "Servicios": "❌", "Educación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Tecnología": "❌", "Ahorro": "❌", "Otro": "❌" },
   juridica: { "Nómina": "✅ Deducible", "Honorarios": "✅ Deducible", "Vivienda": "✅ Deducible", "Servicios": "✅ Deducible", "Mantenimiento": "✅ Deducible", "Seguros": "✅ Deducible", "Transporte": "✅ Deducible", "Predial": "✅ Deducible", "Representación": "✅ Deducible", "Tecnología": "✅ Deducible", "Educación": "✅ Deducible", "Seguridad Social": "✅ Deducible", "Salud": "❌", "Alimentación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Mascotas": "❌", "Deporte": "❌", "Ahorro": "❌", "Otro": "📊 50%" }
 };
 
