@@ -93,16 +93,19 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       
       // Estrategias activas (siempre aplican, incluso con gastos altos)
       const bonificaciones = gastosByCat["Nómina"] ? (gastosByCat["Nómina"].total || 0) * 12 * 0.15 : 0;
-      const donacionSugerida = Math.min(utilidadActual * 0.25, utilidadActual * 0.10);
+      const donacionSugerida = Math.min(utilidadActual * 0.25, utilidadActual * 0.05);
       const provisionCartera = ingAnual * 0.02;
-      const deprecExtra = inv.reduce((s, i) => {
+      const deprecExtra = Math.min(inv.reduce((s, i) => {
         const tp = (i.tp || i.tipo || "").toLowerCase();
         if (/real estate|bodega|local|oficina/i.test(tp)) return s + (i.va || 0) * 0.03;
         return s;
-      }, 0);
+      }, 0), utilidadActual * 0.05);
       const estrategiasTotal = bonificaciones + donacionSugerida + provisionCartera + deprecExtra;
       const gastosExtra = pctGastos < 50 ? Math.max(0, ingAnual * 0.55 - totalDeduc) : 0;
-      const utilidadOptima = Math.max(0, utilidadActual - estrategiasTotal - gastosExtra);
+      // Cap: las estrategias no pueden reducir más del 30% de la utilidad (realista)
+      const maxReduccion = utilidadActual * 0.30;
+      const reduccionAplicada = Math.min(estrategiasTotal + gastosExtra, maxReduccion);
+      const utilidadOptima = Math.max(utilidadActual * 0.50, utilidadActual - reduccionAplicada);
       const impOptimo = utilidadOptima * 0.35;
       const ahorro = impActual - impOptimo;
 
