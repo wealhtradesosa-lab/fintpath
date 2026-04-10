@@ -348,7 +348,7 @@ export default function FinPath(){
   };
   const demo=()=>{showToast("📊 Datos demo cargados — Pedro Pérez");setU(p=>{
     const nd=mkU("Pedro Pérez","demo@finpathia.com");
-    nd.p={...nd.p,name:"Pedro Pérez",email:"demo@finpathia.com"};
+    nd.p={...nd.p,name:"Pedro Pérez",email:"demo@finpathia.com",plan:"pro",trialEnd:new Date(Date.now()+14*86400000).toISOString().split("T")[0],demo:true};
     nd.owners=[
       {id:"own_1",name:"Pedro Pérez",type:"natural"},
       {id:"own_j1",name:"Inversiones Pérez SAS",type:"juridica"},
