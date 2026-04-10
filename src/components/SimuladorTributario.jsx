@@ -38,7 +38,7 @@ const Cd = ({ children, style: s }) => (
 );
 
 function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
-  const [showOpt, setShowOpt] = useState(false);
+  
 
   const calc = useMemo(() => {
     // Ingresos por categoría fiscal
@@ -165,34 +165,95 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
     }
     tasaEfectiva = ingAnual > 0 ? (impuesto / ingAnual * 100) : 0;
 
-    // Optimizaciones
+    // ═══ DIAGNÓSTICO TRIBUTARIO EXPERTO ═══
     const opts = [];
-    if (!isJ) {
-      const espacioGlobal = Math.max(0, (ingAnual - ingAnual * 0.08) * 0.40 - (Math.min((ingAnual - ingAnual * 0.08) * 0.25, 790 * UVT) + gastosDeducAnual));
-      if (espacioGlobal > 100000) {
-        const aportePV = Math.min(espacioGlobal, (ingAnual - ingAnual * 0.08) * 0.25, 2500 * UVT);
-        if (aportePV > 0) {
-          const newBase = Math.max(0, baseGravable - aportePV);
-          const newImp = calcImp(newBase / UVT);
-          const ahorro = impuesto - newImp;
-          if (ahorro > 10000) opts.push({ icon: "💰", title: "Pensión voluntaria", desc: "Aporta hasta " + fm(aportePV / 12) + "/mes a un fondo de pensión voluntaria.", ahorro, color: T.green });
-        }
-        const aporteAFC = Math.min(espacioGlobal, (ingAnual - ingAnual * 0.08) * 0.30, 3800 * UVT);
-        if (aporteAFC > 0) {
-          const newBase2 = Math.max(0, baseGravable - aporteAFC);
-          const newImp2 = calcImp(newBase2 / UVT);
-          const ahorro2 = impuesto - newImp2;
-          if (ahorro2 > 10000) opts.push({ icon: "🏠", title: "Cuenta AFC", desc: "Ahorra hasta " + fm(aporteAFC / 12) + "/mes en una Cuenta AFC (Ahorro para el Fomento de Construcción).", ahorro: ahorro2, color: T.blue });
+    const pctGastos = ingAnual > 0 ? (gastosDeducTotal * 12 / ingAnual * 100) : 0;
+    
+    if (isJ) {
+      // ── JURÍDICA: diagnóstico operativo ──
+      const totalGastosMes = gastos.reduce((s,g) => s + (g.m||0), 0);
+      const totalGastosAnual = totalGastosMes * 12;
+      const pctGastosReal = ingAnual > 0 ? (totalGastosAnual / ingAnual * 100) : 0;
+      
+      if (pctGastosReal < 20) {
+        opts.push({ icon: "🚨", title: "Gastos muy bajos — revisa tu registro", desc: "Solo " + pctGastosReal.toFixed(0) + "% de los ingresos están registrados como gastos. Una empresa operativa típica tiene 40-70%. Probablemente faltan gastos por registrar:", ahorro: 0, color: T.orange });
+      }
+      
+      // Check specific missing categories
+      const cats = {};
+      gastos.forEach(g => { cats[g.cat] = (cats[g.cat]||0) + (g.m||0); });
+      
+      if (!cats["Nómina"]) opts.push({ icon: "👥", title: "Registra nómina y empleados", desc: "Los salarios, prestaciones y aportes patronales son 100% deducibles. Si la empresa paga empleados, regístralos aquí.", ahorro: 0, color: T.blue });
+      if (!cats["Honorarios"]) opts.push({ icon: "📋", title: "Honorarios profesionales", desc: "Contador, abogado, revisor fiscal, consultores. Todos 100% deducibles. ¿Ya los registraste?", ahorro: 0, color: T.blue });
+      if (!cats["Mantenimiento"]) opts.push({ icon: "🔧", title: "Mantenimiento y reparaciones", desc: "Reparaciones de propiedades, pintura, plomería, electricidad — todo deducible si es de activos de la empresa.", ahorro: 0, color: T.blue });
+      if (!cats["Predial"] && inv.length > 0) opts.push({ icon: "🏛️", title: "Predial e impuestos", desc: "El predial de las propiedades de la empresa, ICA, y otros impuestos locales son 100% deducibles.", ahorro: 0, color: T.blue });
+      if (!cats["Servicios"] && inv.length > 0) opts.push({ icon: "💡", title: "Servicios públicos", desc: "Energía, agua, gas, internet de las propiedades y oficinas de la empresa. Todos deducibles.", ahorro: 0, color: T.blue });
+      
+      // Show potential savings
+      if (pctGastosReal < 50 && impuesto > 0) {
+        const gastosEsperados = ingAnual * 0.50;
+        const utilidadEsperada = Math.max(0, ingAnual - gastosEsperados);
+        const impEsperado = utilidadEsperada * 0.35;
+        const ahorroEstimado = impuesto - impEsperado;
+        if (ahorroEstimado > 100000) {
+          opts.push({ icon: "💡", title: "Ahorro potencial si registras todos los gastos", desc: "Si tus gastos reales son ~50% de ingresos (típico), tu impuesto bajaría de " + fm(impuesto) + " a ~" + fm(impEsperado) + "/año.", ahorro: ahorroEstimado, color: T.green });
         }
       }
-      const tieneSalud = Object.keys(gastosByCat).includes("Salud");
-      if (!tieneSalud && ingAnual > 1090 * UVT) {
-        opts.push({ icon: "🏥", title: "Medicina prepagada", desc: "Si pagas medicina prepagada, es deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → categoría Salud.", ahorro: 0, color: T.purple });
-      }
+      
     } else {
-      const gastosNoDeduc = gastos.filter(g => !(DEDUC_JUR[g.cat || "Otro"])).reduce((s, g) => s + (g.m || 0), 0);
-      if (gastosNoDeduc > 0) {
-        opts.push({ icon: "⚠️", title: "Gastos no deducibles", desc: fm(gastosNoDeduc) + "/mes en gastos personales no son deducibles para la empresa (Alimentación, Entretenimiento, etc.).", ahorro: 0, color: T.orange });
+      // ── PERSONA NATURAL: optimización tributaria ──
+      const neto = ingAnual * 0.92;
+      const lim40 = neto * 0.40;
+      const exenta25 = Math.min(neto * 0.25, 790 * UVT);
+      const benefUsados = exenta25 + gastosDeducTotal * 12;
+      const espacioDisponible = Math.max(0, lim40 - benefUsados);
+      const pctUsado = lim40 > 0 ? (Math.min(benefUsados, lim40) / lim40 * 100) : 0;
+      
+      // Tope 40% usage
+      if (pctUsado < 100 && espacioDisponible > 500000) {
+        opts.push({ icon: "📊", title: "Tope 40% — Espacio disponible: " + fm(espacioDisponible), desc: "Solo usas el " + pctUsado.toFixed(0) + "% de tu tope de deducciones. Tienes " + fm(espacioDisponible) + " de espacio para reducir impuestos con aportes voluntarios.", ahorro: 0, color: T.orange });
+        
+        const pvMax = Math.min(espacioDisponible, neto * 0.25, 2500 * UVT);
+        if (pvMax > 500000) {
+          const newBase = Math.max(0, baseGravable - pvMax);
+          const newImp = calcImp(newBase / UVT);
+          opts.push({ icon: "💰", title: "Pensión voluntaria", desc: "Aporta hasta " + fm(pvMax / 12) + "/mes. Se deduce de tu renta y además ahorras para el futuro. Los aportes son retirables después de 10 años sin penalización.", ahorro: impuesto - newImp, color: T.green });
+        }
+        
+        const afcMax = Math.min(espacioDisponible, neto * 0.30, 3800 * UVT);
+        if (afcMax > 500000) {
+          const newBase2 = Math.max(0, baseGravable - afcMax);
+          const newImp2 = calcImp(newBase2 / UVT);
+          opts.push({ icon: "🏠", title: "Cuenta AFC", desc: "Ahorra hasta " + fm(afcMax / 12) + "/mes. Ideal si planeas comprar vivienda. Exento de impuestos si se usa para vivienda.", ahorro: impuesto - newImp2, color: T.blue });
+        }
+      } else if (pctUsado >= 95) {
+        opts.push({ icon: "✅", title: "Tope 40% casi lleno", desc: "Estás aprovechando " + pctUsado.toFixed(0) + "% de tu tope de deducciones. Bien optimizado.", ahorro: 0, color: T.green });
+      }
+      
+      // Check specific deductions
+      const cats = {};
+      gastos.forEach(g => { cats[g.cat] = (cats[g.cat]||0) + (g.m||0); });
+      
+      if (!cats["Salud"] && ingAnual > 2000 * UVT) {
+        opts.push({ icon: "🏥", title: "Medicina prepagada", desc: "Si pagas medicina prepagada, es deducible hasta " + fm(16 * UVT) + "/mes (" + fm(16 * UVT * 12) + "/año). Regístrala como gasto con categoría Salud.", ahorro: 0, color: T.purple });
+      }
+      
+      if (deu.length > 0) {
+        const hipotecas = deu.filter(d => /hipoteca|vivienda|casa|apto|mortgage/i.test((d.tp||"")+(d.n||"")));
+        if (hipotecas.length > 0) {
+          const intHip = hipotecas.reduce((s,d) => s + (d.mt||0) * ((d.ts||d.tasa||0)/100), 0);
+          if (intHip > 0) opts.push({ icon: "🏠", title: "Intereses de vivienda: " + fm(intHip) + "/año", desc: "Los intereses de tu hipoteca ya se están deduciendo automáticamente (máx 1200 UVT/año = " + fm(1200 * UVT) + ").", ahorro: 0, color: T.green });
+        }
+      }
+      
+      const gastoEduc = cats["Educación"] || 0;
+      if (gastoEduc > 500000) {
+        opts.push({ icon: "👨‍👩‍👧", title: "Dependientes detectados", desc: "Tus gastos de educación (" + fm(gastoEduc) + "/mes) indican dependientes. Se deduce 10% del ingreso bruto (máx 384 UVT = " + fm(384 * UVT) + "/año).", ahorro: 0, color: T.green });
+      }
+      
+      // Suggest moving income to jurídica
+      if (ingAnual > 300e6 && impuesto > 20e6) {
+        opts.push({ icon: "🏢", title: "Considera una estructura jurídica", desc: "Con ingresos de " + fm(ingAnual) + "/año, una SAS puede reducir tu carga fiscal. La empresa paga 35% sobre utilidad (después de TODOS los gastos), no sobre ingreso bruto. Consulta tu contador.", ahorro: 0, color: T.purple });
       }
     }
 
@@ -327,10 +388,10 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
 
           {/* Optimizaciones */}
           {calc.opts.length > 0 && <>
-            <div style={{ fontSize: 12, fontWeight: 700, color: T.orange, marginTop: 16, marginBottom: 8, cursor: "pointer" }} onClick={() => setShowOpt(!showOpt)}>
-              💡 {calc.opts.length} oportunidad{calc.opts.length > 1 ? "es" : ""} de optimización {showOpt ? "▲" : "▼"}
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginTop: 16, marginBottom: 10 }}>
+              💡 Diagnóstico tributario ({calc.opts.length} recomendaciones)
             </div>
-            {showOpt && calc.opts.map((o, i) => (
+            {calc.opts.map((o, i) => (
               <div key={i} style={{ background: o.color + "08", border: "1px solid " + o.color + "20", borderRadius: 10, padding: 12, marginBottom: 8 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: o.color }}>{o.icon} {o.title}</div>
                 <div style={{ fontSize: 11, color: T.txt2, marginTop: 4, lineHeight: 1.5 }}>{o.desc}</div>
