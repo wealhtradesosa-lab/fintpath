@@ -429,8 +429,18 @@ export default function SimuladorTributario({ trm, user }) {
         return <OwnerCard key={ow.id} owner={ow} ingresos={oIng} gastos={oGas} inv={oInv} deu={oDeu} trm={trm} isJ={ow.type === "juridica"} mb={mb} />;
       })}
 
-      <div style={{ fontSize: 10, color: T.txt3, textAlign: "center", marginTop: 16, lineHeight: 1.6 }}>
-        Estimaciones basadas en la normativa tributaria colombiana vigente (ET, Ley 2277/2022). UVT 2026: {fm(UVT)} (Resolución DIAN 000238). No constituye asesoría fiscal. Consulta un contador certificado.
+      <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, padding: 16, marginTop: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.txt2, marginBottom: 8 }}>📋 ¿De dónde salen estos datos?</div>
+        <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.8 }}>
+          <strong style={{color: T.green}}>💰 Ingresos</strong> → Base gravable (solo los que tienen propietario asignado)<br/>
+          <strong style={{color: T.red}}>💳 Gastos</strong> → Deducciones automáticas según categoría DIAN<br/>
+          <strong style={{color: T.blue}}>📋 Deudas</strong> → Intereses deducibles (hipotecas)<br/>
+          <strong style={{color: T.txt3}}>🏦 Patrimonio</strong> → No afecta este cálculo (la DIAN cobra sobre ingresos, no sobre patrimonio)<br/><br/>
+          <strong>Sin propietario = no se calcula.</strong> Solo se incluyen los items que tú asignes explícitamente a un propietario fiscal.
+        </div>
+      </div>
+      <div style={{ fontSize: 10, color: T.txt3, textAlign: "center", marginTop: 10, lineHeight: 1.6 }}>
+        Estimación con optimización tributaria (PV + AFC). UVT 2026: {fm(UVT)}. No constituye asesoría fiscal.
       </div>
     </div>
   );

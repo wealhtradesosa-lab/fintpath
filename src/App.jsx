@@ -154,16 +154,7 @@ const estimarImpuesto=(u)=>{
       const gastosDeducJ=oGas.filter(g=>!noDeducJ.includes(g.cat)).reduce((s,g)=>s+(g.m||0),0)*12;
       // Intereses de deudas
       const interesesJ=oDeu.reduce((s,d)=>{const saldo=d.mt||0;const tasa=(d.ts||d.tasa||0)/100;return s+saldo*tasa},0);
-      // Depreciación estimada de activos (edificios 5% anual, vehículos 20%)
-      const oInv=(u.inv||[]).filter(i=>i.owner===ow.id);
-      const deprec=oInv.reduce((s,i)=>{
-        const tp=(i.tp||i.tipo||"").toLowerCase();
-        if(/real estate|bodega|local|oficina/i.test(tp))return s+(i.va||0)*0.05;
-        if(/vehículo|vehiculo/i.test(tp))return s+(i.va||0)*0.20;
-        return s;
-      },0);
-      
-      const totalDeduc=gastosDeducJ+interesesJ+deprec;
+      const totalDeduc=gastosDeducJ+interesesJ;
       const utilidad=Math.max(0,ingAnual-totalDeduc);
       const imp=utilidad*0.35;
       totalImp+=imp;
