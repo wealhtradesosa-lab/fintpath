@@ -437,30 +437,28 @@ export default function SimuladorTributario({ trm, user }) {
     const key = owner.id;
     setAiLoading(p => ({...p, [key]: true}));
     try {
-      const prompt = \`Eres un asesor tributario colombiano experto con 30 años de experiencia. Analiza estos datos y da recomendaciones CONCRETAS para minimizar impuestos legalmente.
-
-PROPIETARIO: \${owner.name} (\${owner.type === "juridica" ? "Persona Jurídica — SAS" : "Persona Natural"})
-
-DATOS FINANCIEROS:
-- Ingresos anuales: $\${Math.round(calc.ingAnual).toLocaleString()} COP
-- Ingresos por categoría: \${Object.entries(calc.ingByCat).map(([k,v]) => k + ": $" + Math.round(v).toLocaleString() + "/mes").join(", ")}
-- Gastos deducibles registrados: $\${Math.round(calc.gastosDeducTotal * 12).toLocaleString()}/año
-- Gastos por categoría: \${Object.entries(calc.gastosByCat).map(([k,v]) => k + ": $" + Math.round(v.total).toLocaleString() + "/mes (deduc: " + Math.round(v.pct * 100) + "%)").join(", ")}
-- Patrimonio: $\${Math.round(calc.patTotal).toLocaleString()}
-- Deudas: $\${Math.round(calc.deuTotal).toLocaleString()}
-- Base gravable estimada: $\${Math.round(calc.baseGravable).toLocaleString()}
-- Impuesto estimado: $\${Math.round(calc.impuesto).toLocaleString()}/año ($\${Math.round(calc.impuesto/12).toLocaleString()}/mes)
-- Tasa efectiva: \${calc.tasaEfectiva.toFixed(1)}%
-
-NORMATIVA: UVT 2026 = $52,374. SMMLV = $1,750,905. Tabla Art. 241 ET. Tope 40% Art. 336 ET. Ley 2277/2022.
-
-Da tu análisis en este formato exacto:
-1. SITUACIÓN: resumen en 2 líneas
-2. ALERTAS: qué gastos faltan o problemas detectados (máx 3)
-3. ESTRATEGIAS: las 3 mejores para reducir impuestos, con ahorro estimado en pesos y artículo del ET
-4. PLAN: 3 acciones concretas que debe hacer YA
-
-Sé directo, práctico, en español colombiano. No más de 400 palabras.\`;
+      const tipo = owner.type === "juridica" ? "Persona Jurídica — SAS" : "Persona Natural";
+      const ingCats = Object.entries(calc.ingByCat).map(function(e) { return e[0] + ": $" + Math.round(e[1]).toLocaleString() + "/mes"; }).join(", ");
+      const gasCats = Object.entries(calc.gastosByCat).map(function(e) { return e[0] + ": $" + Math.round(e[1].total).toLocaleString() + "/mes (" + Math.round(e[1].pct * 100) + "% deduc)"; }).join(", ");
+      const prompt = "Eres un asesor tributario colombiano experto con 30 años de experiencia. Analiza estos datos y da recomendaciones CONCRETAS para minimizar impuestos legalmente.\n\n" +
+        "PROPIETARIO: " + owner.name + " (" + tipo + ")\n\n" +
+        "DATOS FINANCIEROS:\n" +
+        "- Ingresos anuales: $" + Math.round(calc.ingAnual).toLocaleString() + " COP\n" +
+        "- Ingresos por categoría: " + ingCats + "\n" +
+        "- Gastos deducibles registrados: $" + Math.round(calc.gastosDeducTotal * 12).toLocaleString() + "/año\n" +
+        "- Gastos por categoría: " + gasCats + "\n" +
+        "- Patrimonio: $" + Math.round(calc.patTotal).toLocaleString() + "\n" +
+        "- Deudas: $" + Math.round(calc.deuTotal).toLocaleString() + "\n" +
+        "- Base gravable estimada: $" + Math.round(calc.baseGravable).toLocaleString() + "\n" +
+        "- Impuesto estimado: $" + Math.round(calc.impuesto).toLocaleString() + "/año ($" + Math.round(calc.impuesto/12).toLocaleString() + "/mes)\n" +
+        "- Tasa efectiva: " + (calc.tasaEfectiva||0).toFixed(1) + "%\n\n" +
+        "NORMATIVA: UVT 2026 = $52,374. SMMLV = $1,750,905. Tabla Art. 241 ET. Tope 40% Art. 336 ET. Ley 2277/2022.\n\n" +
+        "Da tu análisis en este formato exacto:\n" +
+        "1. SITUACIÓN: resumen en 2 líneas\n" +
+        "2. ALERTAS: qué gastos faltan o problemas detectados (máx 3)\n" +
+        "3. ESTRATEGIAS: las 3 mejores para reducir impuestos, con ahorro estimado en pesos y artículo del ET\n" +
+        "4. PLAN: 3 acciones concretas que debe hacer YA\n\n" +
+        "Sé directo, práctico, en español colombiano. No más de 400 palabras.";
 
       const resp = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
