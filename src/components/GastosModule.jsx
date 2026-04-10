@@ -159,6 +159,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
               🗑️ Eliminar ({selected.size})
             </button>
           )}
+          <button onClick={scanImage} disabled={scanning} style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 600, fontSize: 13, opacity: scanning ? 0.6 : 1 }}>{scanning ? "🔄 Leyendo..." : "📸 Subir factura"}</button>
           <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </div>
       </div>
