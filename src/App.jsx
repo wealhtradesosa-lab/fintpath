@@ -108,7 +108,7 @@ const va=+inv.va||0,vc=+inv.vc||0,noi=ig-gs,db=dfa(ds,inv.id),eq=va-db.s,gn=va-v
 return{ig,gs,noi,gn,roi:vc>0?(gn/vc)*100:0,cap:va>0?((noi*12)/va)*100:0,ds:db.s,dp:db.p,eq,coc:eq>0?(((noi-db.p)*12)/eq)*100:0}};
 const inferType=(i)=>{let tp=String(i.tp||i.tipo||i.type||"").trim();if(!tp||!isNaN(Number(tp)))tp="";const typeMap={"Other":"Otro","Investment":"Fondo de Inversión","Income":"Otro","Trading":"Acciones","Renta Fija":"CDT","Lote":"Real Estate"};if(tp&&typeMap[tp])return typeMap[tp];const validTypes=["Real Estate","Fondo de Inversión","CDT","Acciones","Crypto","Bodega","Vehículo","Local Comercial","Negocio","Cash","Otro"];if(tp&&validTypes.includes(tp))return tp;const nm=((i.n||i.nombre||"")+" "+(i.ub||"")).toLowerCase();if(/apart|apto|casa|lote|terreno|oficina|inmueble|propiedad|house|condo/i.test(nm))return"Real Estate";if(/bodega/i.test(nm))return"Bodega";if(/local/i.test(nm))return"Local Comercial";if(/fondo|fiduci|fund/i.test(nm))return"Fondo de Inversión";if(/cdt|renta fija|bonos|tes /i.test(nm))return"CDT";if(/accion|etf|portafolio|vti|spy|stock|share/i.test(nm))return"Acciones";if(/btc|bitcoin|crypto|eth|usdt/i.test(nm))return"Crypto";if(/vehic|carro|moto|auto/i.test(nm))return"Vehículo";if(/negocio|empresa|sas|company/i.test(nm))return"Negocio";if(/cash|ahorro|cuenta|saving/i.test(nm))return"Cash";if(/green|puerto|orlando|miami|backswing|district/i.test(nm))return"Real Estate";return"Otro"};
 
-// ═══ ESTIMACIÓN TRIBUTARIA ═══
+// ═══ ESTIMACIÓN TRIBUTARIA (como contador colombiano experto) ═══
 const UVT=52374;
 const TABLA_IMP=[{d:0,h:1090,t:0,b:0},{d:1090,h:1700,t:19,b:0},{d:1700,h:4100,t:28,b:115.86},{d:4100,h:8670,t:33,b:787.86},{d:8670,h:18970,t:35,b:2295.96},{d:18970,h:31000,t:37,b:5900.96},{d:31000,h:Infinity,t:39,b:10352.96}];
 const calcImpRenta=(uvtBase)=>{for(let i=TABLA_IMP.length-1;i>=0;i--){if(uvtBase>TABLA_IMP[i].d)return(TABLA_IMP[i].b+(uvtBase-TABLA_IMP[i].d)*TABLA_IMP[i].t/100)*UVT}return 0};
@@ -130,8 +130,7 @@ const estimarImpuesto=(u)=>{
       if(ow.id==="own_1" && (!i.owner || i.owner==="") && i.categoria)return true;
       return false;
     });
-    const ingAnual=oIng.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u.trm||4200):1)),0)*12;
-    if(ingAnual<=0)return;
+    if(oIng.length===0)return;
     
     const isJ=ow.type==="juridica";
     
@@ -145,72 +144,115 @@ const estimarImpuesto=(u)=>{
       });
     });
     
-    // Deudas de este owner (intereses son deducibles)
+    // Deudas de este owner
     const oDeu=deu.filter(d=>(d.owner===ow.id)||(ow.id==="own_1"&&(!d.owner||d.owner==="")));
-    const interesesAnual=oDeu.reduce((s,d)=>{
-      const saldo=d.mt||0;const tasa=(d.ts||d.tasa||0)/100;
-      return s+saldo*tasa; // Intereses anuales aprox
-    },0);
     
     if(isJ){
-      // ═══ PERSONA JURÍDICA ═══
-      // Todos los gastos operativos son deducibles (excepto personales)
-      const noDeducJ=["Alimentación","Entretenimiento","Personal","Vestimenta","Mascotas","Deporte"];
+      // ═══ PERSONA JURÍDICA: 35% sobre utilidad ═══
+      const ingAnual=oIng.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u.trm||4200):1)),0)*12;
+      // Todos los gastos operativos son deducibles excepto personales
+      const noDeducJ=["Alimentación","Entretenimiento","Personal","Vestimenta","Mascotas","Deporte","Seguridad Social"];
       const gastosDeducJ=oGas.filter(g=>!noDeducJ.includes(g.cat)).reduce((s,g)=>s+(g.m||0),0)*12;
-      const utilidad=Math.max(0,ingAnual-gastosDeducJ-interesesAnual);
+      // Intereses de deudas
+      const interesesJ=oDeu.reduce((s,d)=>{const saldo=d.mt||0;const tasa=(d.ts||d.tasa||0)/100;return s+saldo*tasa},0);
+      // Depreciación estimada de activos (edificios 5% anual, vehículos 20%)
+      const oInv=(u.inv||[]).filter(i=>i.owner===ow.id);
+      const deprec=oInv.reduce((s,i)=>{
+        const tp=(i.tp||i.tipo||"").toLowerCase();
+        if(/real estate|bodega|local|oficina/i.test(tp))return s+(i.va||0)*0.05;
+        if(/vehículo|vehiculo/i.test(tp))return s+(i.va||0)*0.20;
+        return s;
+      },0);
+      
+      const totalDeduc=gastosDeducJ+interesesJ+deprec;
+      const utilidad=Math.max(0,ingAnual-totalDeduc);
       const imp=utilidad*0.35;
       totalImp+=imp;
-      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosDeduc:gastosDeducJ+interesesAnual,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
+      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0});
     }else{
-      // ═══ PERSONA NATURAL ═══
-      const noConst=ingAnual*0.08; // Salud 4% + Pensión 4%
-      const neto=ingAnual-noConst;
+      // ═══ PERSONA NATURAL: tabla progresiva con TODAS las deducciones ═══
+      // Separar ingresos por tipo para calcular aportes correctamente
+      const salarioAnual=oIng.filter(i=>i.categoria==="Salario").reduce((s,i)=>s+(i.mensual||0),0)*12;
+      const honorariosAnual=oIng.filter(i=>i.categoria==="Honorarios").reduce((s,i)=>s+(i.mensual||0),0)*12;
+      const otrosAnual=oIng.filter(i=>!["Salario","Honorarios"].includes(i.categoria)).reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u.trm||4200):1)),0)*12;
+      const ingAnual=salarioAnual+honorariosAnual+otrosAnual;
+      if(ingAnual<=0)return;
       
-      // Renta exenta 25%
+      // ── 1. INGRESOS NO CONSTITUTIVOS DE RENTA ──
+      // Salario: 8% (4% salud + 4% pensión del empleado)
+      const noConstSalario=salarioAnual*0.08;
+      // Independientes: aportan sobre 40% del ingreso (IBC)
+      const ibcIndep=honorariosAnual*0.40;
+      const noConstIndep=ibcIndep*0.08;
+      // Otros ingresos: no tienen aportes obligatorios
+      const totalNoConst=noConstSalario+noConstIndep;
+      const neto=ingAnual-totalNoConst;
+      
+      // ── 2. RENTA EXENTA 25% (Art. 206 ET) ──
       const exenta25=Math.min(neto*0.25,790*UVT);
       
-      // Gastos deducibles por categoría
-      const LIM={"Salud":16*UVT*12,"Vivienda":100*UVT*12,"Seguros":16*UVT*12};
-      const DEDUC={"Salud":1,"Vivienda":1,"Seguros":0.5};
-      let gastosDeducN=0;
-      oGas.forEach(g=>{
-        const pct=DEDUC[g.cat]||0;
-        let anual=(g.m||0)*pct*12;
-        if(LIM[g.cat])anual=Math.min(anual,LIM[g.cat]);
-        gastosDeducN+=anual;
-      });
+      // ── 3. DEDUCCIONES ──
+      // Dependientes: 10% ingreso bruto, máx 384 UVT/año
+      // Detectar si tiene hijos/dependientes (gastos de educación)
+      const gastoEduc=oGas.filter(g=>g.cat==="Educación").reduce((s,g)=>s+(g.m||0),0);
+      const tieneDep=gastoEduc>500000; // Si gasta >500K/mes en educación → tiene dependientes
+      const deducDep=tieneDep?Math.min(ingAnual*0.10,384*UVT):0;
       
-      // Dependientes (detectar si hay gastos de educación hijos o similar)
-      const tieneDepend=oGas.some(g=>g.cat==="Educación"&&(g.m||0)>0);
-      const deducDepend=tieneDepend?Math.min(ingAnual*0.10,384*UVT):0;
+      // Medicina prepagada: máx 16 UVT/mes = 192 UVT/año
+      const gastoSalud=oGas.filter(g=>g.cat==="Salud").reduce((s,g)=>s+(g.m||0),0)*12;
+      const deducMedicina=Math.min(gastoSalud,16*UVT*12);
       
-      // Intereses de vivienda (de deudas hipotecarias)
-      const interesesViv=Math.min(interesesAnual,1200*UVT);
+      // Intereses vivienda: máx 100 UVT/mes = 1200 UVT/año (de hipotecas)
+      const interesesHip=oDeu.reduce((s,d)=>{
+        const saldo=d.mt||0;const tasa=(d.ts||d.tasa||0)/100;
+        const tp=(d.tp||"").toLowerCase();
+        // Solo hipotecas/mortgage son deducibles para natural
+        if(/mortgage|hipoteca|vivienda/i.test(tp)||/hipoteca|vivienda|casa|apto/i.test(d.n||""))
+          return s+saldo*tasa;
+        return s;
+      },0);
+      const deducVivienda=Math.min(interesesHip,1200*UVT);
       
-      // Total beneficios con tope 40%
-      const totalBenef=exenta25+gastosDeducN+deducDepend+interesesViv;
+      // Seguros: 50% deducible, máx 16 UVT/mes
+      const gastoSeguros=oGas.filter(g=>g.cat==="Seguros").reduce((s,g)=>s+(g.m||0),0)*12;
+      const deducSeguros=Math.min(gastoSeguros*0.5,16*UVT*12);
+      
+      // ── 4. TOTAL BENEFICIOS CON TOPE 40% ──
+      const totalDeducciones=deducDep+deducMedicina+deducVivienda+deducSeguros;
+      const totalBenef=exenta25+totalDeducciones;
       const lim40=neto*0.40;
-      const benAplic=Math.min(totalBenef,lim40);
       
-      // Espacio disponible para optimizar (pensión vol, AFC)
-      const espacioOpt=Math.max(0,lim40-benAplic);
+      // Un buen contador llena el tope 40% con pensión voluntaria y AFC
+      // Simular que el contador optimiza hasta el tope
+      const espacioParaPVyAFC=Math.max(0,lim40-totalBenef);
+      const pensionVol=Math.min(espacioParaPVyAFC,neto*0.25,2500*UVT);
+      const espacioRestante=Math.max(0,lim40-totalBenef-pensionVol);
+      const afc=Math.min(espacioRestante,neto*0.30,3800*UVT);
       
+      const totalConOptimizacion=totalBenef+pensionVol+afc;
+      const benAplic=Math.min(totalConOptimizacion,lim40);
+      
+      // ── 5. RENTA LÍQUIDA GRAVABLE ──
       const rentaLiq=Math.max(0,neto-benAplic);
       const imp=calcImpRenta(rentaLiq/UVT);
       
-      // Calcular cuánto PODRÍA ahorrar si llena el tope 40%
-      const rentaOptima=Math.max(0,neto-lim40);
-      const impOptimo=calcImpRenta(rentaOptima/UVT);
-      const ahorroOptimo=imp-impOptimo;
+      // Impuesto SIN optimización (para mostrar ahorro)
+      const benSinOpt=Math.min(exenta25+totalDeducciones,lim40);
+      const rentaSinOpt=Math.max(0,neto-benSinOpt);
+      const impSinOpt=calcImpRenta(rentaSinOpt/UVT);
+      const ahorroOpt=impSinOpt-imp;
       
       totalImp+=imp;
       detalle.push({
         name:ow.name,type:"natural",ingreso:ingAnual,
-        gastosDeduc:gastosDeducN+deducDepend+interesesViv,
-        exenta25,lim40,benAplic,espacioOpt,
+        noConst:totalNoConst,neto,
+        exenta25,deducDep,deducMedicina,deducVivienda,deducSeguros,
+        pensionVol,afc,totalDeducciones,
+        lim40,benAplic,
         baseGravable:rentaLiq,impuesto:imp,
         tasa:ingAnual>0?(imp/ingAnual*100):0,
-        impOptimo,ahorroOptimo
+        impSinOpt,ahorroOptimo:ahorroOpt,
+        espacioParaPVyAFC
       });
     }
   });

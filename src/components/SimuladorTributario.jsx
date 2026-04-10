@@ -80,36 +80,74 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ }) {
     let detalleCalc = [];
 
     if (isJ) {
-      const utilidad = Math.max(0, ingAnual - gastosDeducAnual);
+      // Jurídica: deducir intereses de deudas + depreciación
+      const interesesJ = deu.reduce((s,d) => s + (d.mt||0) * ((d.ts||d.tasa||0)/100), 0);
+      const totalDeduc = gastosDeducAnual + interesesJ;
+      const utilidad = Math.max(0, ingAnual - totalDeduc);
       impuesto = utilidad * 0.35;
       baseGravable = utilidad;
       detalleCalc = [
         { l: "Ingresos brutos anuales", v: ingAnual, bold: true },
-        { l: "(-) Gastos deducibles", v: -gastosDeducAnual, color: T.green },
+        { l: "(-) Gastos operativos deducibles", v: -gastosDeducAnual, color: T.green },
+        ...(interesesJ > 0 ? [{ l: "(-) Intereses de deudas", v: -interesesJ, color: T.green }] : []),
         { l: "= Utilidad gravable", v: utilidad, bold: true },
         { l: "Tarifa renta (35%)", v: null, sub: "Régimen general sociedades" },
         { l: "= IMPUESTO DE RENTA", v: impuesto, color: T.red, bold: true },
       ];
     } else {
-      const noConst = ingAnual * 0.08;
+      // ── Persona Natural: cálculo completo como contador ──
+      // Separar salario vs independiente para aportes
+      const salAnual = ingresos.filter(i => i.categoria === "Salario").reduce((s,i) => s + (i.mensual||0), 0) * 12;
+      const honAnual = ingresos.filter(i => i.categoria === "Honorarios").reduce((s,i) => s + (i.mensual||0), 0) * 12;
+      const otrosAnual = ingAnual - salAnual - honAnual;
+      
+      // No constitutivo: 8% salario + 8% del 40% de honorarios
+      const noConst = salAnual * 0.08 + honAnual * 0.40 * 0.08;
       const neto = ingAnual - noConst;
       const exenta25 = Math.min(neto * 0.25, 790 * UVT);
-      const totalBenef = exenta25 + gastosDeducAnual;
+      
+      // Dependientes
+      const gastoEduc = gastos.filter(g => g.cat === "Educación").reduce((s,g) => s + (g.m||0), 0);
+      const deducDep = gastoEduc > 500000 ? Math.min(ingAnual * 0.10, 384 * UVT) : 0;
+      
+      // Intereses hipoteca
+      const interesesHip = deu.reduce((s,d) => {
+        if (/mortgage|hipoteca|vivienda|casa|apto/i.test((d.tp||"")+(d.n||"")))
+          return s + (d.mt||0) * ((d.ts||d.tasa||0)/100);
+        return s;
+      }, 0);
+      const deducViv = Math.min(interesesHip, 1200 * UVT);
+      
+      const totalDeduc = gastosDeducAnual + deducDep + deducViv;
+      const totalBenef = exenta25 + totalDeduc;
       const lim40 = neto * 0.40;
-      const benAplic = Math.min(totalBenef, lim40);
-      const excedido = totalBenef > lim40;
+      
+      // Contador llena tope con PV + AFC
+      const espacio = Math.max(0, lim40 - totalBenef);
+      const pv = Math.min(espacio, neto * 0.25, 2500 * UVT);
+      const afcEsp = Math.max(0, lim40 - totalBenef - pv);
+      const afcVal = Math.min(afcEsp, neto * 0.30, 3800 * UVT);
+      
+      const totalConOpt = totalBenef + pv + afcVal;
+      const benAplic = Math.min(totalConOpt, lim40);
+      const excedido = totalConOpt > lim40;
       baseGravable = Math.max(0, neto - benAplic);
       impuesto = calcImp(baseGravable / UVT);
       detalleCalc = [
         { l: "Ingresos brutos anuales", v: ingAnual, bold: true },
-        { l: "(-) Aportes obligatorios (8%)", v: -noConst, color: T.blue, sub: "Salud 4% + Pensión 4%" },
+        { l: "(-) Aportes obligatorios", v: -noConst, color: T.blue, sub: "Salario 8% + Independiente 3.2%" },
         { l: "= Ingreso neto", v: neto, bold: true },
         { l: "(-) Renta exenta 25%", v: -exenta25, color: T.green, sub: "Máx 790 UVT = " + fm(790 * UVT) },
-        { l: "(-) Gastos deducibles DIAN", v: -gastosDeducAnual, color: T.green },
-        ...(excedido ? [{ l: "⚠️ Tope 40% aplicado", v: null, sub: "Beneficios exceden " + fm(lim40) + ". Se aplican " + fm(benAplic), color: T.orange }] : []),
+        ...(gastosDeducAnual > 0 ? [{ l: "(-) Gastos deducibles DIAN", v: -gastosDeducAnual, color: T.green, sub: "Salud, seguros" }] : []),
+        ...(deducDep > 0 ? [{ l: "(-) Dependientes", v: -deducDep, color: T.green, sub: "10% ingreso, máx 384 UVT" }] : []),
+        ...(deducViv > 0 ? [{ l: "(-) Intereses vivienda", v: -deducViv, color: T.green, sub: "Hipoteca, máx 1200 UVT" }] : []),
+        ...(pv > 0 ? [{ l: "(-) Pensión voluntaria*", v: -pv, color: T.green, sub: "Optimización del contador" }] : []),
+        ...(afcVal > 0 ? [{ l: "(-) Cuenta AFC*", v: -afcVal, color: T.green, sub: "Optimización del contador" }] : []),
+        { l: "Tope 40% del ingreso neto", v: null, sub: "Máximo: " + fm(lim40) + " | Usado: " + fm(benAplic), color: excedido ? T.orange : T.green },
         { l: "= Renta líquida gravable", v: baseGravable, bold: true, sub: Math.round(baseGravable / UVT).toLocaleString() + " UVT" },
-        { l: "→ Tabla Art. 241 ET", v: null, sub: "Tarifa marginal: " + TABLA.find((r, i) => baseGravable / UVT > r.d && (i === TABLA.length - 1 || baseGravable / UVT <= TABLA[i].h))?.t + "%" },
+        { l: "→ Tabla Art. 241 ET", v: null, sub: "Tarifa marginal: " + (TABLA.find((r, i) => baseGravable / UVT > r.d && (i === TABLA.length - 1 || baseGravable / UVT <= TABLA[i].h))?.t || 0) + "%" },
         { l: "= IMPUESTO DE RENTA", v: impuesto, color: T.red, bold: true },
+        ...(pv > 0 || afcVal > 0 ? [{ l: "* Incluye optimización tributaria", v: null, sub: "PV + AFC que un contador recomendaría para llenar el tope 40%", color: T.blue }] : []),
       ];
     }
     tasaEfectiva = ingAnual > 0 ? (impuesto / ingAnual * 100) : 0;
