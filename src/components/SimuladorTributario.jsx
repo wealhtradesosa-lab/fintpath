@@ -402,6 +402,24 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
         </div>
       </div>
 
+      {/* AI Tax Advisor */}
+      <div style={{ padding: "16px 24px", borderTop: "1px solid " + T.border }}>
+        {!aiAdvice[owner.id] ? (
+          <button onClick={() => getAiAdvice(owner, calc)} disabled={aiLoading[owner.id]}
+            style={{ width: "100%", padding: "12px", background: "linear-gradient(135deg, #a78bfa15, #3b82f615)", border: "1px solid #a78bfa30", borderRadius: 12, color: "#a78bfa", cursor: aiLoading[owner.id] ? "wait" : "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {aiLoading[owner.id] ? "🔄 Analizando..." : "🧠 Consultar Asesor Tributario IA"}
+          </button>
+        ) : (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#a78bfa" }}>🧠 Asesor Tributario IA</div>
+              <button onClick={() => getAiAdvice(owner, calc)} style={{ background: "none", border: "1px solid " + T.border, color: T.txt3, cursor: "pointer", padding: "4px 10px", borderRadius: 6, fontSize: 10 }}>🔄 Regenerar</button>
+            </div>
+            <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{aiAdvice[owner.id]}</div>
+          </div>
+        )}
+      </div>
+
       {/* Footer */}
       <div style={{ padding: "10px 24px", borderTop: "1px solid " + T.border, fontSize: 9, color: T.txt3, textAlign: "center" }}>
         Estimación basada en datos registrados. Clasificación DIAN automática. Consulta tu contador para la declaración oficial.
@@ -412,6 +430,55 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
 
 export default function SimuladorTributario({ trm, user }) {
   const mb = typeof window !== "undefined" && window.innerWidth < 768;
+  const [aiAdvice, setAiAdvice] = useState({});
+  const [aiLoading, setAiLoading] = useState({});
+
+  const getAiAdvice = async (owner, calc) => {
+    const key = owner.id;
+    setAiLoading(p => ({...p, [key]: true}));
+    try {
+      const prompt = \`Eres un asesor tributario colombiano experto con 30 años de experiencia. Analiza estos datos y da recomendaciones CONCRETAS para minimizar impuestos legalmente.
+
+PROPIETARIO: \${owner.name} (\${owner.type === "juridica" ? "Persona Jurídica — SAS" : "Persona Natural"})
+
+DATOS FINANCIEROS:
+- Ingresos anuales: $\${Math.round(calc.ingAnual).toLocaleString()} COP
+- Ingresos por categoría: \${Object.entries(calc.ingByCat).map(([k,v]) => k + ": $" + Math.round(v).toLocaleString() + "/mes").join(", ")}
+- Gastos deducibles registrados: $\${Math.round(calc.gastosDeducTotal * 12).toLocaleString()}/año
+- Gastos por categoría: \${Object.entries(calc.gastosByCat).map(([k,v]) => k + ": $" + Math.round(v.total).toLocaleString() + "/mes (deduc: " + Math.round(v.pct * 100) + "%)").join(", ")}
+- Patrimonio: $\${Math.round(calc.patTotal).toLocaleString()}
+- Deudas: $\${Math.round(calc.deuTotal).toLocaleString()}
+- Base gravable estimada: $\${Math.round(calc.baseGravable).toLocaleString()}
+- Impuesto estimado: $\${Math.round(calc.impuesto).toLocaleString()}/año ($\${Math.round(calc.impuesto/12).toLocaleString()}/mes)
+- Tasa efectiva: \${calc.tasaEfectiva.toFixed(1)}%
+
+NORMATIVA: UVT 2026 = $52,374. SMMLV = $1,750,905. Tabla Art. 241 ET. Tope 40% Art. 336 ET. Ley 2277/2022.
+
+Da tu análisis en este formato exacto:
+1. SITUACIÓN: resumen en 2 líneas
+2. ALERTAS: qué gastos faltan o problemas detectados (máx 3)
+3. ESTRATEGIAS: las 3 mejores para reducir impuestos, con ahorro estimado en pesos y artículo del ET
+4. PLAN: 3 acciones concretas que debe hacer YA
+
+Sé directo, práctico, en español colombiano. No más de 400 palabras.\`;
+
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await resp.json();
+      const text = data.content?.map(b => b.text || "").join("") || "No se pudo generar el análisis.";
+      setAiAdvice(p => ({...p, [key]: text}));
+    } catch (e) {
+      setAiAdvice(p => ({...p, [key]: "Error al conectar con el asesor. Intenta de nuevo."}));
+    }
+    setAiLoading(p => ({...p, [key]: false}));
+  };
   const owners = (user && user.owners) || [{ id: "own_1", name: "Personal", type: "natural" }];
   const ing = (user && user.ingresos) || [];
   const gas = user && user.gas ? user.gas : {};
