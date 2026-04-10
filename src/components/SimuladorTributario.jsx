@@ -80,41 +80,32 @@ function OwnerCard({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
     let detalleCalc = [];
 
     if (isJ) {
-      // Jurídica: todas las deducciones que aplica un contador
+      // Jurídica: solo gastos registrados por el usuario
       const interesesJ = deu.reduce((s,d) => s + (d.mt||0) * ((d.ts||d.tasa||0)/100), 0);
-      // Depreciación
       const deprecJ = inv.reduce((s,i) => {
         const tp = (i.tp||i.tipo||"").toLowerCase();
         if (/real estate|bodega|local|oficina/i.test(tp)) return s + (i.va||0)*0.05;
         if (/vehículo|vehiculo/i.test(tp)) return s + (i.va||0)*0.20;
         return s;
       }, 0);
-      // Deducciones estándar del contador
-      const salarioGerente = Math.min(ingAnual*0.25, 25000000*12);
-      const segSocial = salarioGerente * 0.21;
-      const honorarios = Math.min(ingAnual*0.04, 5000000*12);
-      const gastosAdm = Math.min(ingAnual*0.03, 3000000*12);
-      const ica = ingAnual * 0.01;
-      const gmf = ingAnual * 0.004;
-      const deducContador = salarioGerente + segSocial + honorarios + gastosAdm + ica + gmf;
       
-      const totalDeduc = gastosDeducAnual + interesesJ + deprecJ + deducContador;
+      // TODOS los gastos asignados a esta empresa son deducibles
+      const totalGastos = gastos.reduce((s,g) => s + (g.m||0), 0) * 12;
+      const totalDeduc = totalGastos + interesesJ + deprecJ;
       const utilidad = Math.max(0, ingAnual - totalDeduc);
       impuesto = utilidad * 0.35;
       baseGravable = utilidad;
+      const pctGastos = ingAnual > 0 ? (totalDeduc / ingAnual * 100) : 0;
       detalleCalc = [
         { l: "Ingresos brutos anuales", v: ingAnual, bold: true },
-        ...(gastosDeducAnual > 0 ? [{ l: "(-) Gastos operativos registrados", v: -gastosDeducAnual, color: T.green }] : []),
+        ...(totalGastos > 0 ? [{ l: "(-) Gastos operativos registrados", v: -totalGastos, color: T.green, sub: gastos.length + " gastos asignados a esta empresa" }] : []),
         ...(interesesJ > 0 ? [{ l: "(-) Intereses de deudas", v: -interesesJ, color: T.green }] : []),
-        ...(deprecJ > 0 ? [{ l: "(-) Depreciación activos", v: -deprecJ, color: T.green }] : []),
-        { l: "(-) Salario gerente (est.)", v: -salarioGerente, color: T.green, sub: "~25% ingresos — deducible para la empresa" },
-        { l: "(-) Seg. social patronal (est.)", v: -segSocial, color: T.green, sub: "~21% del salario gerente" },
-        { l: "(-) Honorarios profesionales (est.)", v: -honorarios, color: T.green, sub: "Contador, abogado, revisor fiscal" },
-        { l: "(-) Gastos admin + bancarios (est.)", v: -(gastosAdm + ica + gmf), color: T.green, sub: "Admin, ICA, GMF 4×1000" },
+        ...(deprecJ > 0 ? [{ l: "(-) Depreciación activos", v: -deprecJ, color: T.green, sub: "Inmuebles 5%/año, vehículos 20%/año" }] : []),
+        { l: "Total deducciones", v: null, sub: fm(totalDeduc) + " (" + pctGastos.toFixed(0) + "% de ingresos)", color: pctGastos < 30 ? T.orange : T.green },
+        ...(pctGastos < 30 ? [{ l: "⚠️ Pocos gastos registrados", v: null, sub: "Solo el " + pctGastos.toFixed(0) + "% de los ingresos son gastos. Una empresa típica tiene 40-70%. Registra en 💳 Gastos: nómina, servicios, seguros, mantenimiento, predial, energía, admin.", color: T.orange }] : []),
         { l: "= Utilidad gravable", v: utilidad, bold: true },
         { l: "Tarifa renta (35%)", v: null, sub: "Régimen general sociedades colombianas" },
         { l: "= IMPUESTO DE RENTA", v: impuesto, color: T.red, bold: true },
-        { l: "* Valores con (est.) son estimaciones", v: null, sub: "Basados en porcentajes típicos. Tu contador puede ajustarlos.", color: T.blue },
       ];
     } else {
       // ── Persona Natural: cálculo completo como contador ──
