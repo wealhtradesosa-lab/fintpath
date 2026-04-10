@@ -393,7 +393,7 @@ export default function SimuladorTributario({ trm, user }) {
                 const ingAnual = oIng.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
                 if (ingAnual <= 0) return null;
                 const isJ = ow.type === "juridica";
-                const oGas = gastosFlat.filter(g => g.owner === ow.id || (ow.id === "own_1" && (!g.owner || g.owner === "")));
+                const oGas = gastosFlat.filter(g => g.owner && g.owner === ow.id);
                 const noDeducJ = ["Alimentación","Entretenimiento","Personal","Vestimenta","Mascotas","Deporte"];
     const reglas = isJ ? DEDUC_JUR : DEDUC_NAT;
                 let gastosD = 0;
@@ -423,9 +423,9 @@ export default function SimuladorTributario({ trm, user }) {
           if (ow.id === "own_1" && (!i.owner || i.owner === "") && i.categoria && i.categoria !== "") return true;
           return false;
         });
-        const oGas = gastosFlat.filter(g => (g.owner === ow.id) || (ow.id === "own_1" && (!g.owner || g.owner === "")));
-        const oInv = inv.filter(i => i.owner === ow.id || (ow.id === "own_1" && (!i.owner || i.owner === "")));
-        const oDeu = deu.filter(d => d.owner === ow.id || (ow.id === "own_1" && (!d.owner || d.owner === "")));
+        const oGas = gastosFlat.filter(g => g.owner && g.owner === ow.id);
+        const oInv = inv.filter(i => i.owner && i.owner === ow.id);
+        const oDeu = deu.filter(d => d.owner && d.owner === ow.id);
         return <OwnerCard key={ow.id} owner={ow} ingresos={oIng} gastos={oGas} inv={oInv} deu={oDeu} trm={trm} isJ={ow.type === "juridica"} mb={mb} />;
       })}
 

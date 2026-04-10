@@ -122,13 +122,12 @@ const estimarImpuesto=(u)=>{
   let totalImp=0;
   const detalle=[];
   const sinClasificar=ing.filter(i=>!i.owner || i.owner==="").length;
+  const sinClasificarGas=Object.values(gas).flat().filter(g=>!g.owner || g.owner==="").length;
   
   owners.forEach(ow=>{
     const oIng=ing.filter(i=>{
-      if(i.owner==="na")return false;
-      if(i.owner===ow.id)return true;
-      if(ow.id==="own_1" && (!i.owner || i.owner==="") && i.categoria)return true;
-      return false;
+      if(!i.owner || i.owner==="" || i.owner==="na")return false;
+      return i.owner===ow.id;
     });
     if(oIng.length===0)return;
     
@@ -138,14 +137,14 @@ const estimarImpuesto=(u)=>{
     const oGas=[];
     Object.entries(gas).forEach(([cat,items])=>{
       (items||[]).forEach(g=>{
-        const esDeEste=(g.owner===ow.id)||(ow.id==="own_1"&&(!g.owner||g.owner===""));
+        const esDeEste=g.owner===ow.id;
         if(!esDeEste||g.owner==="na")return;
         oGas.push({...g,cat});
       });
     });
     
     // Deudas de este owner
-    const oDeu=deu.filter(d=>(d.owner===ow.id)||(ow.id==="own_1"&&(!d.owner||d.owner==="")));
+    const oDeu=deu.filter(d=>d.owner===ow.id);
     
     if(isJ){
       // ═══ PERSONA JURÍDICA: 35% sobre utilidad ═══
