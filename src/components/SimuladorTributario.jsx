@@ -239,9 +239,12 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
           <div style={{ marginTop: 16, fontSize: 11 }}>
             <div style={{ fontWeight: 600, color: T.txt2, marginBottom: 6 }}>Optimizaciones aplicadas:</div>
             {isJ ? <>
-              {calc.pctGastos < 50 && <div style={{ padding: "4px 0", color: T.green }}>✅ Registrar gastos faltantes (~55% ingresos)</div>}
+              {calc.pctGastos < 50 && <div style={{ padding: "4px 0", color: T.green }}>✅ Registrar gastos faltantes</div>}
               <div style={{ padding: "4px 0", color: T.green }}>✅ Intereses de deudas deducidos</div>
               <div style={{ padding: "4px 0", color: T.green }}>✅ Depreciación de activos aplicada</div>
+              {calc.recs.filter(r => r.impact > 0).length > 0 && calc.recs.filter(r => r.impact > 0).map((r, i) => (
+                <div key={i} style={{ padding: "4px 0", color: T.green }}>✅ {r.title}: {fm(r.impact)}</div>
+              ))}
             </> : <>
               <div style={{ padding: "4px 0", color: T.green }}>✅ Renta exenta 25% ({fm(calc.exenta25)})</div>
               {calc.deducDep > 0 && <div style={{ padding: "4px 0", color: T.green }}>✅ Dependientes ({fm(calc.deducDep)})</div>}
