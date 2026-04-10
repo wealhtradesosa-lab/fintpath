@@ -109,7 +109,7 @@ export default function LandingPage({ onGetStarted }) {
                   "Analiza tu patrimonio completo con datos reales",
                   "Simula escenarios: ¿qué pasa si vendo? ¿si invierto más?",
                   "Identifica riesgos que no estás viendo",
-                  "Optimización tributaria Colombia + USA",
+                  "Optimización tributaria Colombia",
                   "Estrategias de retiro y pensión personalizadas",
                   "Planificación de sucesión patrimonial",
                 ].map(item => (
