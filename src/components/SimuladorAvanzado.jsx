@@ -475,148 +475,135 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
         {/* LEFT: Sliders */}
         <div style={{ paddingRight: 8 }}>
-          <h4 style={{ fontSize: 13, color: "#22d3ee", fontWeight: 700, margin: "0 0 8px", textTransform: "uppercase" }}>💰 Ingresos</h4>
-          {(user.ingresos || []).map((ing, ii) => {
-            if (ing.sim === false) return null;
-            const baseRenta = Number(ing.mensual) || 0;
-            const baseCap = Number(ing.capital) || 0;
-            const baseTasa = Number(ing.tasa) || 0;
-            // Use simulated capital if set, otherwise base
-            const simCap = getVal(`cap_${ii}`, baseCap);
-            const baseConverted = baseRenta * (ing.moneda === "USD" ? 4200 : 1);
-            const simTasa = baseTasa || (simCap > 0 && baseConverted > 0 ? Math.round((baseConverted * 12 / simCap) * 1000) / 10 : 0);
-            const hasCap = simCap > 0 && simTasa > 0;
-            const simRenta = hasCap ? Math.round((simCap * simTasa / 100) / 12) : getVal(`ing_${ii}`, baseConverted);
-            const rentDiff = simRenta - baseConverted;
-            const capDiff = simCap - baseCap;
-            // Detect if this looks like an investment income
-            const isInvType = ["Inversión","Rendimiento","Dividendos","Arriendo","Fondo","CDT"].some(t => (ing.categoria||"").includes(t) || (ing.nombre||"").toLowerCase().includes(t.toLowerCase()));
-
-            return (
-              <div key={`ing_${ii}`} style={{ marginBottom: 8, background: "#22d3ee06", borderRadius: 12, border: "1px solid #22d3ee12", overflow: "hidden" }}>
-                <div style={{ padding: "12px 16px" }}>
-                  {/* Header */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{ing.nombre || "Ingreso"}</div>
-                      <div style={{ fontSize: 11, color: T.txt3 }}>{ing.categoria || ""}{simTasa > 0 ? " • " + simTasa + "% anual" : ""}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#22d3ee" }}>{fm(simRenta)}<span style={{ fontSize: 10, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
-                      {rentDiff !== 0 && <div style={{ fontSize: 10, color: rentDiff > 0 ? T.gn : T.rd, fontWeight: 600 }}>{rentDiff > 0 ? "+" : ""}{fm(rentDiff)}</div>}
-                    </div>
-                  </div>
-
-                  {hasCap ? (
-                    <>
-                      {/* FUND: capital + renta side by side */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 8 }}>
-                        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
-                          <div style={{ fontSize: 10, color: T.txt3 }}>Capital invertido</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: T.txt }}>{fm(simCap)}</div>
-                          {capDiff !== 0 && <div style={{ fontSize: 10, color: capDiff > 0 ? T.gn : T.rd }}>{capDiff > 0 ? "+" : ""}{fm(capDiff)}</div>}
-                        </div>
-                        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
-                          <div style={{ fontSize: 10, color: T.txt3 }}>Renta mensual ({simTasa}%)</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: "#22d3ee" }}>{fm(simRenta)}</div>
-                          {rentDiff !== 0 && <div style={{ fontSize: 10, color: rentDiff > 0 ? T.gn : T.rd }}>{rentDiff > 0 ? "+" : ""}{fm(rentDiff)}</div>}
-                        </div>
-                      </div>
-                      <div data-no-print="true" style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>↔ Capital invertido:</div>
-                      <input type="range" min={0} max={Math.round(baseCap * 2)} step={Math.max(Math.round(baseCap * 0.002), 1000)} value={simCap}
-                        onChange={(e) => { const c = Number(e.target.value); setVal(`cap_${ii}`, c); setVal(`ing_${ii}`, Math.round((c * simTasa / 100) / 12)); }}
-                        style={{ width: "100%", accentColor: "#22d3ee", height: 6, cursor: "pointer" }} />
-                    </>
-                  ) : isInvType && !hasCap ? (
-                    <>
-                      {/* Investment-type but no capital yet: show prompt + slider */}
-                      <div data-no-print="true" style={{ background: "rgba(34,211,238,0.06)", borderRadius: 8, padding: "8px 12px", marginBottom: 8, fontSize: 11, color: "#22d3ee" }}>
-                        💡 Edita este ingreso y agrega <strong>Capital invertido</strong> y <strong>% Tasa</strong> para simular cuánto invertir
-                      </div>
-                      <input type="range" min={0} max={Math.max(baseRenta * 3, 1000)} step={Math.max(Math.round(baseRenta * 0.01), 5)} value={simRenta}
-                        onChange={(e) => setVal(`ing_${ii}`, Number(e.target.value))}
-                        style={{ width: "100%", accentColor: "#22d3ee", height: 4, cursor: "pointer" }} />
-                    </>
-                  ) : (
-                    <>
-                      {/* Simple income: just slider */}
-                      <input type="range" min={0} max={Math.max(baseRenta * 3, 1000)} step={Math.max(Math.round(baseRenta * 0.01), 5)} value={simRenta}
-                        onChange={(e) => setVal(`ing_${ii}`, Number(e.target.value))}
-                        style={{ width: "100%", accentColor: "#22d3ee", height: 4, cursor: "pointer" }} />
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Family expense sliders */}
-          <h4 style={{ fontSize: 13, color: T.rd, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>💳 Gastos Familiares</h4>
-          {Object.entries(user.gastos || {}).map(([cat, items]) => (
-            <div key={cat}>
-              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 700, margin: "8px 0 4px", paddingTop: 4, borderTop: "1px solid " + T.border }}>{cat}</div>
-              {items.map((g, gi) => {
-                if (g.sim === false) return null;
-                return <Slider key={`gf_${cat}_${gi}`} label={g.c} value={getVal(`gf_${cat}_${gi}`, g.m)} base={g.m}
-                  max={Math.max(g.m * 3, 500)} color={T.rd}
-                  onChange={(v) => setVal(`gf_${cat}_${gi}`, v)} sub={g.t === "fijo" || g.t === "f" ? "fijo" : "var"} />;
-              })}
-            </div>
-          ))}
-
-          {/* Debt payment sliders */}
-          <h4 style={{ fontSize: 13, color: T.pr, fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>📋 Deudas</h4>
-          {(user.deudas || []).filter(d => (d.mt||0) > 0).map((d, di) => {
-            if (d.sim === false) return null;
-            const lk = (user.inv || []).find((i) => i.id === ((d.link||d.la)));
-            const saldo = d.mt||0;
-            const cuota = d.pago||d.pg||0;
-            const tasa = d.tasa||d.ts||0;
-            return (
-              <div key={`debt_${di}`} style={{marginBottom:10}}>
-                <Slider label={(d.nombre||d.n||"")} value={getVal(`debt_${di}`, cuota)} base={cuota}
-                  max={Math.max(cuota * 3, 500)} color={T.pr}
-                  onChange={(v) => setVal(`debt_${di}`, v)}
-                  sub={""} />
-                {(()=>{
-                  const simCuota=getVal(`debt_${di}`, cuota);
-                  const simSaldo=cuota>0?Math.round(saldo*(simCuota/cuota)):saldo;
-                  return<div style={{display:"flex",gap:10,paddingLeft:4,marginTop:2,flexWrap:"wrap"}}>
-                    <span style={{fontSize:10,color:T.txt3}}>Saldo: <strong style={{color:simSaldo!==saldo?(simSaldo>saldo?"#ef4444":"#22c55e"):T.rd}}>{fm(simSaldo)}</strong></span>
-                    <span style={{fontSize:10,color:T.txt3}}>Cuota: <strong style={{color:T.pr}}>{fm(simCuota)}/mes</strong></span>
-                    {tasa>0&&<span style={{fontSize:10,color:T.txt3}}>Tasa: <strong>{tasa}%</strong></span>}
-                    {lk&&<span style={{fontSize:10,color:T.txt3}}>→ {lk.nombre||lk.n||""}</span>}
-                  </div>
-                })()}
-              </div>
-            );
-          })}
-
-
-          {/* Tax sliders */}
-          {((impuestoData && impuestoData.detalle) || []).filter(td => td.impuesto > 0).length > 0 && <>
-            <h4 style={{ fontSize: 13, color: "#a78bfa", fontWeight: 700, margin: "16px 0 8px", textTransform: "uppercase" }}>🧾 Impuestos Estimados</h4>
-            {((impuestoData && impuestoData.detalle) || []).map((td, ti) => {
-              if (td.impuesto <= 0) return null;
-              const impMes = Math.round(td.impuesto / 12);
-              const simImp = getVal(`tax_${ti}`, impMes);
+          {/* ═══ SLIDERS POR PROPIETARIO ═══ */}
+          {(()=>{
+            const owners = (user.owners || [{id:"own_1",name:"Personal",type:"natural"}]);
+            const allIng = user.ingresos || [];
+            const allGas = user.gastos || {};
+            const allDeu = user.deudas || [];
+            const gasFlat = [];
+            Object.entries(allGas).forEach(([cat, items]) => (items||[]).forEach(g => gasFlat.push({...g, cat})));
+            
+            // Group by owner + "sin asignar"
+            const groups = [];
+            owners.forEach(ow => {
+              const oIng = allIng.filter(i => i.owner === ow.id);
+              const oGas = gasFlat.filter(g => g.owner === ow.id);
+              const oDeu = allDeu.filter(d => d.owner === ow.id);
+              const taxDetail = ((impuestoData && impuestoData.detalle) || []).find(td => td.name === ow.name);
+              if (oIng.length > 0 || oGas.length > 0 || oDeu.length > 0) {
+                groups.push({ owner: ow, ing: oIng, gas: oGas, deu: oDeu, tax: taxDetail });
+              }
+            });
+            // Sin asignar
+            const saIng = allIng.filter(i => !i.owner || i.owner === "" || i.owner === "na");
+            const saGas = gasFlat.filter(g => !g.owner || g.owner === "" || g.owner === "na");
+            const saDeu = allDeu.filter(d => !d.owner || d.owner === "" || d.owner === "na");
+            if (saIng.length > 0 || saGas.length > 0 || saDeu.length > 0) {
+              groups.push({ owner: { id: "na", name: "Sin asignar / Exterior", type: "na" }, ing: saIng, gas: saGas, deu: saDeu, tax: null });
+            }
+            
+            return groups.map((grp, gi) => {
+              const ow = grp.owner;
+              const isJ = ow.type === "juridica";
+              const icon = ow.type === "juridica" ? "🏢" : ow.type === "na" ? "🌐" : "👤";
+              const color = ow.type === "juridica" ? "#3b82f6" : ow.type === "na" ? "#71717a" : "#22c55e";
+              
               return (
-                <div key={`tax_${ti}`} style={{marginBottom:10}}>
-                  <Slider label={(td.type === "juridica" ? "🏢 " : "👤 ") + td.name} value={simImp} base={impMes}
-                    max={Math.max(impMes * 2, 1000000)} color={"#a78bfa"}
-                    onChange={(v) => setVal(`tax_${ti}`, v)}
-                    sub="" />
-                  <div style={{display:"flex",gap:10,paddingLeft:4,marginTop:2,flexWrap:"wrap"}}>
-                    <span style={{fontSize:10,color:T.txt3}}>Impuesto: <strong style={{color:"#a78bfa"}}>{fm(simImp)}/mes</strong> ({fm(simImp*12)}/año)</span>
-                    <span style={{fontSize:10,color:T.txt3}}>Tasa: <strong>{td.tasa.toFixed(1)}%</strong></span>
-                    <span style={{fontSize:10,color:T.txt3}}>{td.type === "juridica" ? "Tarifa 35%" : "Art. 241 ET"}</span>
-                    {simImp !== impMes && <span style={{fontSize:10,color:simImp < impMes ? "#22c55e" : "#ef4444",fontWeight:600}}>{simImp < impMes ? "▼ " + fm(impMes - simImp) + " menos" : "▲ " + fm(simImp - impMes) + " más"}</span>}
+                <div key={ow.id} style={{ marginBottom: 20, background: color + "06", borderRadius: 14, border: "1px solid " + color + "15", overflow: "hidden" }}>
+                  <div style={{ padding: "12px 16px", borderBottom: "1px solid " + color + "15", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{icon} {ow.name}</div>
+                    <div style={{ fontSize: 11, color: T.txt3 }}>{isJ ? "Persona Jurídica" : ow.type === "na" ? "No calcula impuesto" : "Persona Natural"}</div>
+                  </div>
+                  <div style={{ padding: "12px 16px" }}>
+                    {/* Ingresos */}
+                    {grp.ing.length > 0 && <>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#22d3ee", margin: "4px 0 6px", textTransform: "uppercase" }}>💰 Ingresos ({grp.ing.length})</div>
+                      {grp.ing.map((ing, ii) => {
+                        if (ing.sim === false) return null;
+                        const idx = allIng.indexOf(ing);
+                        const baseRenta = (Number(ing.mensual)||0) * (ing.moneda==="USD"?4200:1);
+                        const baseCap = Number(ing.capital) || 0;
+                        const simCap = getVal("cap_"+idx, baseCap);
+                        const baseTasa = Number(ing.tasa) || 0;
+                        const simTasa = baseTasa || (simCap>0&&baseRenta>0?Math.round((baseRenta*12/simCap)*1000)/10:0);
+                        const hasCap = simCap > 0 && simTasa > 0;
+                        const simRenta = hasCap ? Math.round((simCap*simTasa/100)/12) : getVal("ing_"+idx, baseRenta);
+                        return (
+                          <div key={"ing_"+idx} style={{marginBottom:6}}>
+                            <Slider label={ing.nombre||"Ingreso"} value={simRenta} base={baseRenta}
+                              max={Math.max(baseRenta*3,1000)} color={"#22d3ee"}
+                              onChange={(v)=>setVal("ing_"+idx,v)}
+                              sub={ing.categoria||""} />
+                            {hasCap && <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:10,color:T.txt3}}>
+                              <span>Capital: {fm(simCap)}</span>
+                              <span>Tasa: {simTasa}%</span>
+                            </div>}
+                          </div>
+                        );
+                      })}
+                    </>}
+                    
+                    {/* Gastos */}
+                    {grp.gas.length > 0 && <>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.rd, margin: "10px 0 6px", textTransform: "uppercase" }}>💳 Gastos ({grp.gas.length})</div>
+                      {grp.gas.map((g, gi) => {
+                        if (g.sim === false) return null;
+                        const catKey = g.cat+"_"+gi;
+                        const gasIdx = gasFlat.indexOf(g);
+                        return <Slider key={"g_"+gasIdx} label={g.c||g.cat} value={getVal("gf_"+g.cat+"_"+gi, g.m)} base={g.m}
+                          max={Math.max(g.m*3,500)} color={T.rd}
+                          onChange={(v)=>setVal("gf_"+g.cat+"_"+gi,v)}
+                          sub={g.cat} />;
+                      })}
+                    </>}
+                    
+                    {/* Deudas */}
+                    {grp.deu.length > 0 && <>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.pr, margin: "10px 0 6px", textTransform: "uppercase" }}>📋 Deudas ({grp.deu.length})</div>
+                      {grp.deu.map((d, di) => {
+                        if (d.sim === false) return null;
+                        const idx = allDeu.indexOf(d);
+                        const cuota = d.pago||d.pg||0;
+                        const saldo = d.mt||0;
+                        const simCuota = getVal("debt_"+idx, cuota);
+                        return (
+                          <div key={"d_"+idx} style={{marginBottom:6}}>
+                            <Slider label={d.nombre||d.n||""} value={simCuota} base={cuota}
+                              max={Math.max(cuota*3,500)} color={T.pr}
+                              onChange={(v)=>setVal("debt_"+idx,v)} sub="" />
+                            <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:10,color:T.txt3}}>
+                              <span>Saldo: {fm(saldo)}</span>
+                              <span>Cuota: {fm(simCuota)}/mes</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>}
+                    
+                    {/* Impuestos */}
+                    {grp.tax && grp.tax.impuesto > 0 && <>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", margin: "10px 0 6px", textTransform: "uppercase" }}>🧾 Impuesto ({fm(grp.tax.impuesto)}/año)</div>
+                      {(()=>{
+                        const ti = ((impuestoData&&impuestoData.detalle)||[]).indexOf(grp.tax);
+                        const impMes = Math.round(grp.tax.impuesto/12);
+                        const simImp = getVal("tax_"+ti, impMes);
+                        return <div>
+                          <Slider label="Impuesto de renta" value={simImp} base={impMes}
+                            max={Math.max(impMes*2,100000)} color={"#a78bfa"}
+                            onChange={(v)=>setVal("tax_"+ti,v)} sub="" />
+                          <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:10,color:T.txt3}}>
+                            <span>{fm(simImp)}/mes ({fm(simImp*12)}/año)</span>
+                            <span>Tasa: {grp.tax.tasa.toFixed(1)}%</span>
+                          </div>
+                        </div>;
+                      })()}
+                    </>}
                   </div>
                 </div>
               );
-            })}
-            <div style={{fontSize:10,color:T.txt3,marginTop:4,padding:"0 4px"}}>Mueve los sliders para simular optimizaciones tributarias. El impuesto afecta tu cash flow real.</div>
-          </>}
+            });
+          })()}
 
           <button onClick={() => { setSimVals({}); setScenario("actual"); }}
             style={{ padding: "10px 20px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 12, width: "100%" }}>
