@@ -347,7 +347,7 @@ export default function FinPath(){
     setAuthLoading(false);
   };
   const demo=()=>{showToast("📊 Datos demo cargados — Pedro Pérez");setU(p=>{
-    const nd=p?{...p}:mkU("Pedro Pérez","demo@finpathia.com");
+    const nd=mkU("Pedro Pérez","demo@finpathia.com");
     nd.p={...nd.p,name:"Pedro Pérez",email:"demo@finpathia.com"};
     nd.owners=[
       {id:"own_1",name:"Pedro Pérez",type:"natural"},
