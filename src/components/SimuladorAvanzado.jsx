@@ -364,7 +364,7 @@ td{padding:4px 6px;border-bottom:1px solid #f0f0f0}
   <div class="kpi"><div class="label">Ingreso neto</div><div class="val gn">$${Math.round(simT.ni).toLocaleString()}</div></div>
   <div class="kpi"><div class="label">Egresos totales</div><div class="val rd">$${Math.round(simT.te).toLocaleString()}</div></div>
   <div class="kpi"><div class="label">Cash flow</div><div class="val ${simT.cf>=0?"gn":"rd"}">$${Math.round(simT.cf).toLocaleString()}</div></div>
-  <div class="kpi"><div class="label">Independencia</div><div class="val ${simT.ind>=100?"gn":"or"}">${simT.ind.toFixed(0)}%</div></div>
+  <div class="kpi"><div class="label">Independencia</div><div class="val ${simT.ind>=100?"gn":"or"}">${simT.(ind||0).toFixed(0)}%</div></div>
 </div>
 
 <div class="grid3">
@@ -395,7 +395,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
 <div class="grid2">
   <div>
     <div class="bar-container"><div class="bar-fill" style="width:${Math.min(simT.ind,100)}%;background:${simT.ind>=100?"#16a34a":"#eab308"}"></div></div>
-    <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${simT.ind.toFixed(0)}%</span><span>100%</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${simT.(ind||0).toFixed(0)}%</span><span>100%</span></div>
   </div>
   <div class="diag">
     ${simT.ind>=100?"✅ Independencia financiera alcanzada":"⚠ Falta $"+Math.round(simT.te-simT.ni).toLocaleString()+"/mes"}<br>
@@ -480,7 +480,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             const owners = (user.owners || [{id:"own_1",name:"Personal",type:"natural"}]);
             const allIng = user.ingresos || [];
             const allGas = user.gastos || {};
-            const allDeu = user.deudas || [];
+            const allDeu = (user&&user.deudas) || [];
             const gasFlat = [];
             Object.entries(allGas).forEach(([cat, items]) => (items||[]).forEach(g => gasFlat.push({...g, cat})));
             
@@ -550,8 +550,10 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       {grp.gas.map((g, gi) => {
                         if (g.sim === false) return null;
                         // Use original category index for key consistency
-                        const catItems = (allGas[g.cat]||[]);
-                        const origIdx = catItems.findIndex(x=>x.c===g.c&&(x.m||0)===(g.m||0));
+                        // Find original index within this category (matches calculation key)
+                        const catItems = ((allGas&&allGas[g.cat])||[]);
+                        let origIdx = -1;
+                        for(let k=0;k<catItems.length;k++){if(catItems[k].c===g.c&&(catItems[k].m||0)===(g.m||0)){origIdx=k;break;}}
                         const key = "gf_"+g.cat+"_"+(origIdx>=0?origIdx:gi);
                         return <Slider key={key} label={g.c||g.cat} value={getVal(key, g.m)} base={g.m}
                           max={Math.max(g.m*3,500)} color={T.rd}
