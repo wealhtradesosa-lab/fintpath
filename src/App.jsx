@@ -149,12 +149,14 @@ const estimarImpuesto=(u)=>{
     if(isJ){
       // ═══ PERSONA JURÍDICA: 35% sobre utilidad ═══
       const ingAnual=oIng.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u.trm||4200):1)),0)*12;
-      // Todos los gastos operativos son deducibles excepto personales
-      const noDeducJ=["Alimentación","Entretenimiento","Personal","Vestimenta","Mascotas","Deporte","Seguridad Social"];
-      const gastosDeducJ=oGas.filter(g=>!noDeducJ.includes(g.cat)).reduce((s,g)=>s+(g.m||0),0)*12;
+      // TODOS los gastos asignados a la empresa son deducibles
+      const gastosDeducJ=oGas.reduce((s,g)=>s+(g.m||0),0)*12;
       // Intereses de deudas
       const interesesJ=oDeu.reduce((s,d)=>{const saldo=d.mt||0;const tasa=(d.ts||d.tasa||0)/100;return s+saldo*tasa},0);
-      const totalDeduc=gastosDeducJ+interesesJ;
+      // Depreciación de activos
+      const oInv=(u.inv||[]).filter(i=>i.owner===ow.id);
+      const deprec=oInv.reduce((s,i)=>{const tp=(i.tp||i.tipo||"").toLowerCase();if(/real estate|bodega|local|oficina/i.test(tp))return s+(i.va||0)*0.05;if(/vehículo|vehiculo/i.test(tp))return s+(i.va||0)*0.20;return s},0);
+      const totalDeduc=gastosDeducJ+interesesJ+deprec;
       const utilidad=Math.max(0,ingAnual-totalDeduc);
       const imp=utilidad*0.35;
       totalImp+=imp;
