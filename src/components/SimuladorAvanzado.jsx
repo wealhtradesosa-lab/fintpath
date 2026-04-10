@@ -364,7 +364,7 @@ td{padding:4px 6px;border-bottom:1px solid #f0f0f0}
   <div class="kpi"><div class="label">Ingreso neto</div><div class="val gn">$${Math.round(simT.ni).toLocaleString()}</div></div>
   <div class="kpi"><div class="label">Egresos totales</div><div class="val rd">$${Math.round(simT.te).toLocaleString()}</div></div>
   <div class="kpi"><div class="label">Cash flow</div><div class="val ${simT.cf>=0?"gn":"rd"}">$${Math.round(simT.cf).toLocaleString()}</div></div>
-  <div class="kpi"><div class="label">Independencia</div><div class="val ${simT.ind>=100?"gn":"or"}">${simT.(ind||0).toFixed(0)}%</div></div>
+  <div class="kpi"><div class="label">Independencia</div><div class="val ${simT.ind>=100?"gn":"or"}">${(simT.ind||0).toFixed(0)}%</div></div>
 </div>
 
 <div class="grid3">
@@ -395,7 +395,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
 <div class="grid2">
   <div>
     <div class="bar-container"><div class="bar-fill" style="width:${Math.min(simT.ind,100)}%;background:${simT.ind>=100?"#16a34a":"#eab308"}"></div></div>
-    <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${simT.(ind||0).toFixed(0)}%</span><span>100%</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${(simT.ind||0).toFixed(0)}%</span><span>100%</span></div>
   </div>
   <div class="diag">
     ${simT.ind>=100?"✅ Independencia financiera alcanzada":"⚠ Falta $"+Math.round(simT.te-simT.ni).toLocaleString()+"/mes"}<br>
