@@ -169,7 +169,13 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       if (!gastosByCat["Salud"] && ingAnual > 2000 * UVT) recs.push({ icon: "🏥", title: "Medicina prepagada", desc: "Deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → Salud.", impact: 0, color: T.purple });
       if (deducDep > 0) recs.push({ icon: "👨‍👩‍👧", title: "Dependientes: " + fm(deducDep) + "/año", desc: "Ya se está deduciendo 10% del ingreso por dependientes (gastos educación detectados).", impact: 0, color: T.green });
       if (deducViv > 0) recs.push({ icon: "🏠", title: "Intereses vivienda: " + fm(deducViv) + "/año", desc: "Los intereses de tu hipoteca ya se deducen automáticamente.", impact: 0, color: T.green });
-      if (ingAnual > 400e6 && !recs.find(r => r.title.includes("SAS"))) recs.push({ icon: "🏢", title: "Evalúa una estructura societaria", desc: "Con ingresos altos, una SAS puede optimizar tu carga fiscal canalizando ingresos por la empresa (35% sobre utilidad vs hasta 39% persona natural).", impact: 0, color: T.purple });
+      if (ingAnual > 400e6) recs.push({ icon: "🏢", title: "Evalúa una estructura societaria", desc: "Con ingresos altos, una SAS puede optimizar tu carga fiscal canalizando ingresos por la empresa (35% sobre utilidad vs hasta 39% persona natural).", impact: 0, color: T.purple });
+      
+      // Si el tope 40% ya está lleno y no hay ahorro
+      if (ahorro < 100000 && pctUsado >= 95) {
+        recs.push({ icon: "✅", title: "Tope 40% optimizado al máximo", desc: "Ya estás usando el " + pctUsado.toFixed(0) + "% del tope de deducciones. No hay más espacio para pensión voluntaria o AFC. Tu contador está haciendo un buen trabajo.", impact: 0, color: T.green });
+        if (ingAnual > 200e6) recs.push({ icon: "💡", title: "Para reducir más: redistribuir ingresos", desc: "La única forma de bajar más es mover ingresos a una persona jurídica (SAS). La empresa paga 35% sobre UTILIDAD (después de gastos), no sobre ingreso bruto. Consulta con tu contador.", impact: 0, color: T.purple });
+      }
 
       return {
         type: "natural", ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, gastosDeducNat, patTotal, deuTotal,
@@ -278,7 +284,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       </div>
 
       {/* Savings bar */}
-      {ahorro > 100000 && (
+      {(
         <div style={{ padding: "12px 20px", background: T.bg3, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 200 }}>
             <ResponsiveContainer width="100%" height={50}>
@@ -292,11 +298,11 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
             </ResponsiveContainer>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 10, color: T.txt3 }}>Reducción</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: T.green }}>{ahorro > 0 ? "-" + (ahorro / impActual * 100).toFixed(0) + "%" : "0%"}</div>
+            <div style={{ fontSize: 10, color: T.txt3 }}>{ahorro > 100000 ? "Reducción" : "Estado"}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: ahorro > 100000 ? T.green : T.txt3 }}>{ahorro > 100000 ? "-" + (impActual > 0 ? (ahorro / impActual * 100).toFixed(0) : 0) + "%" : "✅ Optimizado"}</div>
           </div>
         </div>
-      )}
+      )
 
       {/* Recommendations */}
       {calc.recs.length > 0 && (
