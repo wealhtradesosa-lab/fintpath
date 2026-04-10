@@ -521,24 +521,57 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "#22d3ee", margin: "4px 0 6px", textTransform: "uppercase" }}>💰 Ingresos ({grp.ing.length})</div>
                       {grp.ing.map((ing, ii) => {
                         if (ing.sim === false) return null;
-                        const idx = allIng.findIndex(x=>(x.id&&x.id===ing.id)||(x.nombre===ing.nombre&&(x.mensual||0)===(ing.mensual||0)));
+                        const safeIdx = ing._idx != null ? ing._idx : ii;
                         const baseRenta = (Number(ing.mensual)||0) * (ing.moneda==="USD"?4200:1);
                         const baseCap = Number(ing.capital) || 0;
-                        const simCap = getVal("cap_"+idx, baseCap);
+                        const simCap = getVal("cap_"+safeIdx, baseCap);
                         const baseTasa = Number(ing.tasa) || 0;
                         const simTasa = baseTasa || (simCap>0&&baseRenta>0?Math.round((baseRenta*12/simCap)*1000)/10:0);
                         const hasCap = simCap > 0 && simTasa > 0;
-                        const simRenta = hasCap ? Math.round((simCap*simTasa/100)/12) : getVal("ing_"+idx, baseRenta);
+                        const isInvType = ["Rendimiento","Dividendos","Arriendo","Inversión"].some(t => (ing.categoria||"").includes(t));
+                        const simRenta = hasCap ? Math.round((simCap*simTasa/100)/12) : getVal("ing_"+safeIdx, baseRenta);
+                        const rentDiff = simRenta - baseRenta;
+                        
                         return (
-                          <div key={"ing_"+idx} style={{marginBottom:6}}>
-                            <Slider label={ing.nombre||"Ingreso"} value={simRenta} base={baseRenta}
-                              max={Math.max(baseRenta*3,1000)} color={"#22d3ee"}
-                              onChange={(v)=>setVal("ing_"+idx,v)}
-                              sub={ing.categoria||""} />
-                            {hasCap && <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:10,color:T.txt3}}>
-                              <span>Capital: {fm(simCap)}</span>
-                              <span>Tasa: {simTasa}%</span>
-                            </div>}
+                          <div key={"ing_"+safeIdx} style={{marginBottom:10, background:"rgba(34,211,238,0.04)", borderRadius:10, padding:"10px 14px"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                              <div>
+                                <div style={{fontSize:13,fontWeight:700}}>{ing.nombre||"Ingreso"}</div>
+                                <div style={{fontSize:10,color:T.txt3}}>{ing.categoria||""}{simTasa>0?" • "+simTasa+"% anual":""}</div>
+                              </div>
+                              <div style={{textAlign:"right"}}>
+                                <div style={{fontSize:16,fontWeight:800,color:"#22d3ee"}}>{fm(simRenta)}<span style={{fontSize:10,fontWeight:400,color:T.txt3}}>/mes</span></div>
+                                {rentDiff!==0&&<div style={{fontSize:10,color:rentDiff>0?T.gn:T.rd,fontWeight:600}}>{rentDiff>0?"+":""}{fm(rentDiff)}</div>}
+                              </div>
+                            </div>
+                            
+                            {hasCap ? (<>
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
+                                <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:"6px 10px"}}>
+                                  <div style={{fontSize:9,color:T.txt3}}>Capital invertido</div>
+                                  <div style={{fontSize:14,fontWeight:700}}>{fm(simCap)}</div>
+                                </div>
+                                <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:"6px 10px"}}>
+                                  <div style={{fontSize:9,color:T.txt3}}>Renta mensual ({simTasa}%)</div>
+                                  <div style={{fontSize:14,fontWeight:700,color:"#22d3ee"}}>{fm(simRenta)}</div>
+                                </div>
+                              </div>
+                              <div style={{fontSize:9,color:T.txt3,marginBottom:3}}>↔ Capital invertido:</div>
+                              <input type="range" min={0} max={Math.round(baseCap*2)||1000000} step={Math.max(Math.round(baseCap*0.002),1000)}
+                                value={simCap} onChange={(e)=>{const c=Number(e.target.value);setVal("cap_"+safeIdx,c);setVal("ing_"+safeIdx,Math.round((c*simTasa/100)/12))}}
+                                style={{width:"100%",accentColor:"#22d3ee",height:6,cursor:"pointer"}} />
+                            </>) : isInvType && !hasCap ? (<>
+                              <div style={{background:"rgba(34,211,238,0.06)",borderRadius:8,padding:"6px 10px",marginBottom:6,fontSize:10,color:"#22d3ee"}}>
+                                💡 Edita este ingreso y agrega <strong>Capital</strong> y <strong>% Tasa</strong> para simular
+                              </div>
+                              <input type="range" min={0} max={Math.max(baseRenta*3,1000)} step={Math.max(Math.round(baseRenta*0.01),5)}
+                                value={simRenta} onChange={(e)=>setVal("ing_"+safeIdx,Number(e.target.value))}
+                                style={{width:"100%",accentColor:"#22d3ee",height:4,cursor:"pointer"}} />
+                            </>) : (
+                              <input type="range" min={0} max={Math.max(baseRenta*3,1000)} step={Math.max(Math.round(baseRenta*0.01),5)}
+                                value={simRenta} onChange={(e)=>setVal("ing_"+safeIdx,Number(e.target.value))}
+                                style={{width:"100%",accentColor:"#22d3ee",height:4,cursor:"pointer"}} />
+                            )}
                           </div>
                         );
                       })}
@@ -570,12 +603,13 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         const idx = allDeu.findIndex(x=>x.id===d.id||(x.n===d.n&&x.mt===d.mt));
                         const cuota = d.pago||d.pg||0;
                         const saldo = d.mt||0;
-                        const simCuota = getVal("debt_"+(idx>=0?idx:di), cuota);
+                        const safeDebtIdx = idx >= 0 ? idx : "d"+gi+"_"+di;
+                        const simCuota = getVal("debt_"+safeDebtIdx, cuota);
                         return (
                           <div key={"d_"+idx} style={{marginBottom:6}}>
                             <Slider label={d.nombre||d.n||""} value={simCuota} base={cuota}
                               max={Math.max(cuota*3,500)} color={T.pr}
-                              onChange={(v)=>setVal("debt_"+(idx>=0?idx:di),v)} sub="" />
+                              onChange={(v)=>setVal("debt_"+safeDebtIdx,v)} sub="" />
                             <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:10,color:T.txt3}}>
                               <span>Saldo: {fm(saldo)}</span>
                               <span>Cuota: {fm(simCuota)}/mes</span>
