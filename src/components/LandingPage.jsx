@@ -44,7 +44,7 @@ export default function LandingPage({ onGetStarted }) {
             <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>inteligencia artificial</span>
           </h1>
           <p style={{ fontSize: 18, color: T.txt2, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 36px" }}>
-            Centraliza tu vida financiera en un sistema profesional: análisis, simulaciones, proyecciones y decisiones guiadas por expertos en patrimonio, pensiones y estrategia financiera.
+            Centraliza tu vida financiera en un sistema profesional: análisis, simulaciones, proyecciones y decisiones guiadas por expertos en patrimonio, pensiones, estrategia financiera y tributaria.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
