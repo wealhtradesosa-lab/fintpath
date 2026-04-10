@@ -239,16 +239,76 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
             <div style={{ fontWeight: 600, color: T.txt2, marginBottom: 6 }}>Desglose:</div>
             <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.txt2 }}><span>Ingresos brutos</span><span style={{ fontFamily: "monospace" }}>{fm(calc.ingAnual)}/año</span></div>
             {isJ ? <>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.green }}><span>(-) Gastos deducibles</span><span style={{ fontFamily: "monospace" }}>{fm(calc.totalDeduc)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.txt2 }}><span style={{ paddingLeft: 12, fontSize: 10, color: T.txt3 }}>Gastos: {fm(calc.gastosDeducTotal * 12)} • Intereses: {fm(calc.intereses)} • Deprec: {fm(calc.deprec)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 4 }}><span>Utilidad gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.utilidad)}</span></div>
-              <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>Gastos = {(calc.pctGastos || 0).toFixed(0)}% de ingresos</div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.green, fontWeight: 600 }}><span>(-) Deducciones aplicadas</span><span style={{ fontFamily: "monospace" }}>{fm(calc.totalDeduc)}</span></div>
+              
+              {/* Desglose detallado de gastos */}
+              {Object.entries(calc.gastosByCat).filter(([,v]) => v.deduc > 0).map(([cat, v]) => (
+                <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                  <span style={{ color: T.green }}>✅ {cat} ({Math.round(v.pct * 100)}%)</span>
+                  <span style={{ fontFamily: "monospace", color: T.green }}>{fm(v.deduc)}/mes</span>
+                </div>
+              ))}
+              {calc.intereses > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                <span style={{ color: T.green }}>✅ Intereses de deudas</span>
+                <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.intereses)}/año</span>
+              </div>}
+              {calc.deprec > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                <span style={{ color: T.green }}>✅ Depreciación de activos</span>
+                <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.deprec)}/año</span>
+              </div>}
+              
+              {/* Gastos NO deducibles */}
+              {Object.entries(calc.gastosByCat).filter(([,v]) => v.total > v.deduc).length > 0 && <>
+                <div style={{ fontSize: 10, fontWeight: 600, color: T.txt3, marginTop: 6, marginBottom: 2 }}>No deducibles:</div>
+                {Object.entries(calc.gastosByCat).filter(([,v]) => v.total > v.deduc).map(([cat, v]) => (
+                  <div key={"nd_"+cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                    <span style={{ color: T.txt3 }}>❌ {cat}</span>
+                    <span style={{ fontFamily: "monospace", color: T.txt3 }}>{fm(v.total - v.deduc)}/mes</span>
+                  </div>
+                ))}
+              </>}
+              
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Utilidad gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.utilidad)}</span></div>
+              <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Gastos registrados = {(calc.pctGastos || 0).toFixed(0)}% de ingresos</div>
             </> : <>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.blue }}><span>(-) Aportes obligatorios</span><span style={{ fontFamily: "monospace" }}>{fm(calc.noConst)}</span></div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.green }}><span>(-) Renta exenta 25%</span><span style={{ fontFamily: "monospace" }}>{fm(calc.exenta25)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.green }}><span>(-) Deducciones</span><span style={{ fontFamily: "monospace" }}>{fm(calc.gastosDeducNat + calc.deducDep + calc.deducViv)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 4 }}><span>Renta gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.rentaSin)}</span></div>
-              <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>Tope 40% usado: {(calc.pctUsado || 0).toFixed(0)}%</div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.green, fontWeight: 600 }}><span>(-) Deducciones aplicadas</span><span style={{ fontFamily: "monospace" }}>{fm(calc.gastosDeducNat + calc.deducDep + calc.deducViv)}</span></div>
+              
+              {/* Desglose detallado */}
+              {calc.gastosDeducNat > 0 && Object.entries(calc.gastosByCat).filter(([,v]) => v.deduc > 0).map(([cat, v]) => (
+                <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                  <span style={{ color: T.green }}>✅ {cat} ({Math.round(v.pct * 100)}%){v.pct > 0 && v.deduc < v.total ? " — máx aplicado" : ""}</span>
+                  <span style={{ fontFamily: "monospace", color: T.green }}>{fm(v.deduc * 12)}/año</span>
+                </div>
+              ))}
+              {calc.deducDep > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                <span style={{ color: T.green }}>✅ Dependientes (10% ingreso)</span>
+                <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.deducDep)}/año</span>
+              </div>}
+              {calc.deducViv > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                <span style={{ color: T.green }}>✅ Intereses vivienda</span>
+                <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.deducViv)}/año</span>
+              </div>}
+              
+              {/* Gastos NO deducibles para natural */}
+              {Object.entries(calc.gastosByCat).filter(([cat]) => !(DEDUC_NAT[cat])).length > 0 && <>
+                <div style={{ fontSize: 10, fontWeight: 600, color: T.txt3, marginTop: 6, marginBottom: 2 }}>No deducibles (persona natural):</div>
+                {Object.entries(calc.gastosByCat).filter(([cat]) => !(DEDUC_NAT[cat]) && calc.gastosByCat[cat].total > 0).slice(0, 5).map(([cat, v]) => (
+                  <div key={"nd_"+cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                    <span style={{ color: T.txt3 }}>❌ {cat}</span>
+                    <span style={{ fontFamily: "monospace", color: T.txt3 }}>{fm(v.total)}/mes</span>
+                  </div>
+                ))}
+              </>}
+              
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Renta gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.rentaSin)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                <div style={{ flex: 1, height: 6, background: T.bg3, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: Math.min(calc.pctUsado || 0, 100) + "%", background: (calc.pctUsado || 0) >= 90 ? T.green : T.orange, borderRadius: 3 }} />
+                </div>
+                <span style={{ fontSize: 10, color: T.txt3, whiteSpace: "nowrap" }}>Tope 40%: {(calc.pctUsado || 0).toFixed(0)}%</span>
+              </div>
             </>}
           </div>
         </div>
