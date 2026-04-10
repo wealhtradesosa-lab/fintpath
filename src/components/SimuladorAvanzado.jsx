@@ -521,7 +521,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "#22d3ee", margin: "4px 0 6px", textTransform: "uppercase" }}>💰 Ingresos ({grp.ing.length})</div>
                       {grp.ing.map((ing, ii) => {
                         if (ing.sim === false) return null;
-                        const idx = allIng.indexOf(ing);
+                        const idx = allIng.findIndex(x=>x.id===ing.id||(x.nombre===ing.nombre&&x.mensual===ing.mensual));
                         const baseRenta = (Number(ing.mensual)||0) * (ing.moneda==="USD"?4200:1);
                         const baseCap = Number(ing.capital) || 0;
                         const simCap = getVal("cap_"+idx, baseCap);
@@ -549,11 +549,13 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       <div style={{ fontSize: 11, fontWeight: 700, color: T.rd, margin: "10px 0 6px", textTransform: "uppercase" }}>💳 Gastos ({grp.gas.length})</div>
                       {grp.gas.map((g, gi) => {
                         if (g.sim === false) return null;
-                        const catKey = g.cat+"_"+gi;
-                        const gasIdx = gasFlat.indexOf(g);
-                        return <Slider key={"g_"+gasIdx} label={g.c||g.cat} value={getVal("gf_"+g.cat+"_"+gi, g.m)} base={g.m}
+                        // Use original category index for key consistency
+                        const catItems = (allGas[g.cat]||[]);
+                        const origIdx = catItems.indexOf(catItems.find(x=>x.c===g.c&&x.m===g.m));
+                        const key = "gf_"+g.cat+"_"+(origIdx>=0?origIdx:gi);
+                        return <Slider key={key} label={g.c||g.cat} value={getVal(key, g.m)} base={g.m}
                           max={Math.max(g.m*3,500)} color={T.rd}
-                          onChange={(v)=>setVal("gf_"+g.cat+"_"+gi,v)}
+                          onChange={(v)=>setVal(key,v)}
                           sub={g.cat} />;
                       })}
                     </>}
@@ -563,15 +565,15 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       <div style={{ fontSize: 11, fontWeight: 700, color: T.pr, margin: "10px 0 6px", textTransform: "uppercase" }}>📋 Deudas ({grp.deu.length})</div>
                       {grp.deu.map((d, di) => {
                         if (d.sim === false) return null;
-                        const idx = allDeu.indexOf(d);
+                        const idx = allDeu.findIndex(x=>x.id===d.id||(x.n===d.n&&x.mt===d.mt));
                         const cuota = d.pago||d.pg||0;
                         const saldo = d.mt||0;
-                        const simCuota = getVal("debt_"+idx, cuota);
+                        const simCuota = getVal("debt_"+(idx>=0?idx:di), cuota);
                         return (
                           <div key={"d_"+idx} style={{marginBottom:6}}>
                             <Slider label={d.nombre||d.n||""} value={simCuota} base={cuota}
                               max={Math.max(cuota*3,500)} color={T.pr}
-                              onChange={(v)=>setVal("debt_"+idx,v)} sub="" />
+                              onChange={(v)=>setVal("debt_"+(idx>=0?idx:di),v)} sub="" />
                             <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:10,color:T.txt3}}>
                               <span>Saldo: {fm(saldo)}</span>
                               <span>Cuota: {fm(simCuota)}/mes</span>
@@ -594,7 +596,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                             onChange={(v)=>setVal("tax_"+ti,v)} sub="" />
                           <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:10,color:T.txt3}}>
                             <span>{fm(simImp)}/mes ({fm(simImp*12)}/año)</span>
-                            <span>Tasa: {grp.tax.tasa.toFixed(1)}%</span>
+                            <span>Tasa: {(grp.tax.tasa||0).toFixed(1)}%</span>
                           </div>
                         </div>;
                       })()}
