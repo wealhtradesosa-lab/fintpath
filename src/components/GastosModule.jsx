@@ -26,6 +26,52 @@ const DIAN_REGLAS = {
 };
 
 export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners}) {
+  const [scanning, setScanning] = useState(false);
+
+  const scanImage = async () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.capture = "environment";
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      setScanning(true);
+      try {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const base64 = ev.target.result.split(",")[1];
+          const mediaType = file.type || "image/jpeg";
+          const res = await fetch("/.netlify/functions/analyze-image", {
+            method: "POST",
+            body: JSON.stringify({ image: base64, type: "gasto", mediaType })
+          });
+          const data = await res.json();
+          if (data.success && data.data) {
+            const d = data.data;
+            setForm(p => ({
+              ...p,
+              c: d.concepto || p.c,
+              m: d.monto || p.m,
+              cat: d.categoria || p.cat,
+              t: d.tipo === "variable" ? "v" : "f",
+              freq: d.frecuencia === "año" ? "año" : "mes",
+            }));
+            setShowForm(true);
+            alert("✅ Factura leída" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.concepto || "") + ": $" + (d.monto || 0).toLocaleString() + " — " + (d.categoria || ""));
+          } else {
+            alert("⚠️ No se pudo leer la imagen. Intenta con una foto más clara.");
+          }
+          setScanning(false);
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        alert("Error: " + err.message);
+        setScanning(false);
+      }
+    };
+    input.click();
+  };
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"

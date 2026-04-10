@@ -24,6 +24,53 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
 export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport}) {
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
+  const [scanning, setScanning] = useState(false);
+
+  const scanImage = async () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.capture = "environment";
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      setScanning(true);
+      try {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const base64 = ev.target.result.split(",")[1];
+          const mediaType = file.type || "image/jpeg";
+          const res = await fetch("/.netlify/functions/analyze-image", {
+            method: "POST",
+            body: JSON.stringify({ image: base64, type: "ingreso", mediaType })
+          });
+          const data = await res.json();
+          if (data.success && data.data) {
+            const d = data.data;
+            setForm(p => ({
+              ...p,
+              nombre: d.nombre || p.nombre,
+              mensual: d.mensual || p.mensual,
+              categoria: d.categoria || p.categoria,
+              fuente: d.fuente || p.fuente,
+              capital: d.capital ? String(d.capital) : p.capital,
+              tasa: d.tasa ? String(d.tasa) : p.tasa,
+            }));
+            setShowForm(true);
+            alert("✅ Documento leído" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.nombre || "") + ": $" + (d.mensual || 0).toLocaleString() + " — " + (d.categoria || ""));
+          } else {
+            alert("⚠️ No se pudo leer la imagen. Intenta con una foto más clara.");
+          }
+          setScanning(false);
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        alert("Error: " + err.message);
+        setScanning(false);
+      }
+    };
+    input.click();
+  };
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" });
   const [selected, setSelected] = useState(new Set());
@@ -72,6 +119,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               🗑️ Eliminar ({selected.size})
             </button>
           )}
+          <button onClick={scanImage} disabled={scanning} style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, cursor: "pointer", fontWeight: 600, fontSize: 13, display: "flex", alignItems: "center", gap: 6, opacity: scanning ? 0.6 : 1 }}>{scanning ? "🔄 Leyendo..." : "📸 Subir documento"}</button>
           <button onClick={() => { setEditId(null); setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" }); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             + Agregar
