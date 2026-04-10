@@ -521,7 +521,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "#22d3ee", margin: "4px 0 6px", textTransform: "uppercase" }}>💰 Ingresos ({grp.ing.length})</div>
                       {grp.ing.map((ing, ii) => {
                         if (ing.sim === false) return null;
-                        const idx = allIng.findIndex(x=>x.id===ing.id||(x.nombre===ing.nombre&&x.mensual===ing.mensual));
+                        const idx = allIng.findIndex(x=>(x.id&&x.id===ing.id)||(x.nombre===ing.nombre&&(x.mensual||0)===(ing.mensual||0)));
                         const baseRenta = (Number(ing.mensual)||0) * (ing.moneda==="USD"?4200:1);
                         const baseCap = Number(ing.capital) || 0;
                         const simCap = getVal("cap_"+idx, baseCap);
@@ -551,7 +551,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         if (g.sim === false) return null;
                         // Use original category index for key consistency
                         const catItems = (allGas[g.cat]||[]);
-                        const origIdx = catItems.indexOf(catItems.find(x=>x.c===g.c&&x.m===g.m));
+                        const origIdx = catItems.findIndex(x=>x.c===g.c&&(x.m||0)===(g.m||0));
                         const key = "gf_"+g.cat+"_"+(origIdx>=0?origIdx:gi);
                         return <Slider key={key} label={g.c||g.cat} value={getVal(key, g.m)} base={g.m}
                           max={Math.max(g.m*3,500)} color={T.rd}
@@ -584,7 +584,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                     </>}
                     
                     {/* Impuestos */}
-                    {grp.tax && grp.tax.impuesto > 0 && <>
+                    {grp.tax && (grp.tax.impuesto||0) > 0 && <>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", margin: "10px 0 6px", textTransform: "uppercase" }}>🧾 Impuesto ({fm(grp.tax.impuesto)}/año)</div>
                       {(()=>{
                         const ti = ((impuestoData&&impuestoData.detalle)||[]).indexOf(grp.tax);
