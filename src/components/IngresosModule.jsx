@@ -119,7 +119,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               🗑️ Eliminar ({selected.size})
             </button>
           )}
-          <button onClick={scanImage} disabled={scanning} style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, cursor: "pointer", fontWeight: 600, fontSize: 13, display: "flex", alignItems: "center", gap: 6, opacity: scanning ? 0.6 : 1 }}>{scanning ? "🔄 Leyendo..." : "📸 Foto / PDF"}</button>
           <button onClick={() => { setEditId(null); setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" }); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             + Agregar
@@ -218,6 +217,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {/* Photo scan option */}
+              <div style={{gridColumn:"1/-1",background:"rgba(139,92,246,0.06)",border:"1px dashed rgba(139,92,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:4,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
+                {scanning ? <div style={{fontSize:12,color:"#a78bfa"}}>🔄 Leyendo documento...</div> : <>
+                  <div style={{fontSize:12,fontWeight:600,color:"#a78bfa"}}>📸 ¿Tienes un extracto, certificado o recibo?</div>
+                  <div style={{fontSize:10,color:"#71717a",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
+                </>}
+              </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
               <In l="💵 Monto mensual" value={form.mensual} onChange={(v) => {
                 const nf = { mensual: v };

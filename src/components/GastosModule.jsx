@@ -159,7 +159,6 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
               🗑️ Eliminar ({selected.size})
             </button>
           )}
-          <button onClick={scanImage} disabled={scanning} style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 600, fontSize: 13, opacity: scanning ? 0.6 : 1 }}>{scanning ? "🔄 Leyendo..." : "📸 Foto / PDF"}</button>
           <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </div>
       </div>
@@ -271,6 +270,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners})
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {/* Photo scan option */}
+              <div style={{background:"rgba(139,92,246,0.06)",border:"1px dashed rgba(139,92,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
+                {scanning ? <div style={{fontSize:12,color:"#a78bfa"}}>🔄 Leyendo factura...</div> : <>
+                  <div style={{fontSize:12,fontWeight:600,color:"#a78bfa"}}>📸 ¿Tienes la factura o recibo?</div>
+                  <div style={{fontSize:10,color:"#71717a",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
+                </>}
+              </div>
               <In l="Categoría" value={form.cat} onChange={(v) => setForm((p) => ({ ...p, cat: v }))} options={[{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Predial",l:"🏛️ Predial e impuestos locales (ICA)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
               <div style={{display:"flex",gap:8}}><div style={{flex:1}}><In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" /></div><div style={{flex:1}}>

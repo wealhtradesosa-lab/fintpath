@@ -119,7 +119,6 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           {selected.size > 0 && (
             <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
           )}
-          <button onClick={scanImage} disabled={scanning} style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, cursor: "pointer", fontWeight: 600, fontSize: 13, display: "flex", alignItems: "center", gap: 6, opacity: scanning ? 0.6 : 1 }}>{scanning ? "🔄 Leyendo..." : "📸 Foto / PDF"}</button>
           <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "", owner: "" }); setShowForm(true); }}
             style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </div>
@@ -225,6 +224,13 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {/* Photo scan option */}
+              <div style={{background:"rgba(139,92,246,0.06)",border:"1px dashed rgba(139,92,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
+                {scanning ? <div style={{fontSize:12,color:"#a78bfa"}}>🔄 Leyendo extracto...</div> : <>
+                  <div style={{fontSize:12,fontWeight:600,color:"#a78bfa"}}>📸 ¿Tienes el extracto o estado de cuenta?</div>
+                  <div style={{fontSize:10,color:"#71717a",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
+                </>}
+              </div>
               <In l="Nombre" value={form.n} onChange={(v) => setForm((p) => ({ ...p, n: v }))} placeholder="Hipoteca casa" />
               <In l="Tipo" value={form.tp} onChange={(v) => setForm((p) => ({ ...p, tp: v }))} options={[{ v: "mortgage", l: "Hipoteca" }, { v: "loan", l: "Préstamo" }, { v: "personal", l: "Personal" }, { v: "credit_card", l: "Tarjeta" }]} />
               <In l="Saldo" value={form.mt} onChange={(v) => setForm((p) => ({ ...p, mt: v }))} type="number" placeholder="0" />
