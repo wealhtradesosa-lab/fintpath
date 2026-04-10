@@ -344,12 +344,49 @@ export default function SimuladorTributario({ trm, user }) {
     return { owner: ow, ing: oIng, gas: oGas, inv: oInv, deu: oDeu };
   });
 
+  // Calculate consolidated totals
+  const consolidado = useMemo(() => {
+    let totalIngreso = 0, totalImpActual = 0, totalImpOptimo = 0;
+    const items = [];
+    ownerData.forEach(od => {
+      const isJ = od.owner.type === "juridica";
+      const ingAnual = od.ing.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
+      if (ingAnual <= 0) return;
+      totalIngreso += ingAnual;
+      // Quick calc for summary
+      const gastosD = od.gas.reduce((s, g) => { const p = isJ ? (NO_DEDUC.includes(g.cat) ? 0 : 1) : (DEDUC_NAT[g.cat] || 0); return s + (g.m || 0) * p; }, 0) * 12;
+      const intereses = od.deu.reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
+      const deprec = od.inv.reduce((s, i) => { const tp = (i.tp||i.tipo||"").toLowerCase(); return s + (/real estate|bodega|local/i.test(tp) ? (i.va||0)*0.05 : /vehículo/i.test(tp) ? (i.va||0)*0.20 : 0); }, 0);
+      if (isJ) {
+        const util = Math.max(0, ingAnual - gastosD - intereses - deprec);
+        const imp = util * 0.35;
+        const impOpt = Math.max(util * 0.50, 0) * 0.35;
+        totalImpActual += imp;
+        totalImpOptimo += impOpt;
+        items.push({ name: od.owner.name, icon: "🏢", imp, impOpt, ing: ingAnual });
+      } else {
+        const noConst = ingAnual * 0.08;
+        const neto = ingAnual - noConst;
+        const ex25 = Math.min(neto * 0.25, 790 * UVT);
+        const lim40 = neto * 0.40;
+        const benSin = Math.min(ex25 + gastosD, lim40);
+        const rentaSin = Math.max(0, neto - benSin);
+        const imp = calcImp(rentaSin / UVT);
+        const rentaCon = Math.max(0, neto - lim40);
+        const impOpt = calcImp(rentaCon / UVT);
+        totalImpActual += imp;
+        totalImpOptimo += impOpt;
+        items.push({ name: od.owner.name, icon: "👤", imp, impOpt, ing: ingAnual });
+      }
+    });
+    return { totalIngreso, totalImpActual, totalImpOptimo, ahorro: totalImpActual - totalImpOptimo, items };
+  }, [ownerData, trm]);
+
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: mb ? 20 : 26, fontWeight: 800, margin: "0 0 4px", color: T.orange }}>🧾 Planeación Tributaria</h1>
         <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>Colombia 2026 • Estatuto Tributario • UVT: {fm(UVT)} • Ley 2277/2022</p>
-        <p style={{ fontSize: 12, color: T.txt2, margin: "8px 0 0", lineHeight: 1.5 }}>Radiografía fiscal de cada propietario: situación actual vs optimización con estrategia tributaria.</p>
       </div>
 
       {sinAsignar > 0 && (
@@ -357,6 +394,60 @@ export default function SimuladorTributario({ trm, user }) {
           ⚠️ <strong>{sinAsignar} ingreso(s)</strong> sin propietario asignado — no se incluyen en el cálculo. Asigna propietario en <strong>💰 Ingresos</strong>.
         </div>
       )}
+
+      {/* ═══ RESUMEN CONSOLIDADO ═══ */}
+      {consolidado.items.length > 0 && (
+        <Cd style={{ marginBottom: 20, background: "linear-gradient(135deg, rgba(249,115,22,0.04), rgba(34,197,94,0.02))" }}>
+          <div style={{ padding: "20px 24px", borderBottom: "1px solid " + T.border }}>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>📊 Panorama Fiscal Consolidado</div>
+            <div style={{ fontSize: 11, color: T.txt3 }}>Todos los propietarios combinados</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 0 }}>
+            <Kpi label="Ingresos totales" value={fm(consolidado.totalIngreso)} sub="/año" color={T.txt} />
+            <Kpi label="Impuesto actual" value={fm(consolidado.totalImpActual)} sub={fm(consolidado.totalImpActual / 12) + "/mes"} color={T.red} />
+            <Kpi label="Con estrategia" value={fm(consolidado.totalImpOptimo)} sub={fm(consolidado.totalImpOptimo / 12) + "/mes"} color={T.green} />
+            <Kpi label="Ahorro potencial" value={fm(consolidado.ahorro)} sub={consolidado.totalImpActual > 0 ? "-" + (consolidado.ahorro / consolidado.totalImpActual * 100).toFixed(0) + "% reducción" : ""} color={T.green} />
+          </div>
+          <div style={{ padding: "12px 24px", borderTop: "1px solid " + T.border }}>
+            <div style={{ display: "flex", gap: mb ? 12 : 20, flexWrap: "wrap" }}>
+              {consolidado.items.map((it, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+                  <span>{it.icon}</span>
+                  <span style={{ color: T.txt2 }}>{it.name}:</span>
+                  <span style={{ color: T.red, fontFamily: "monospace", fontWeight: 600 }}>{fm(it.imp)}</span>
+                  <span style={{ color: T.txt3 }}>→</span>
+                  <span style={{ color: T.green, fontFamily: "monospace", fontWeight: 600 }}>{fm(it.impOpt)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding: "10px 24px", borderTop: "1px solid " + T.border, fontSize: 11, color: T.txt3 }}>
+            Tasa efectiva actual: <strong style={{ color: T.red }}>{consolidado.totalIngreso > 0 ? (consolidado.totalImpActual / consolidado.totalIngreso * 100).toFixed(1) : 0}%</strong> → Con estrategia: <strong style={{ color: T.green }}>{consolidado.totalIngreso > 0 ? (consolidado.totalImpOptimo / consolidado.totalIngreso * 100).toFixed(1) : 0}%</strong>
+          </div>
+        </Cd>
+      )}
+
+      {/* ═══ CALENDARIO TRIBUTARIO ═══ */}
+      <Cd style={{ marginBottom: 20, padding: "16px 20px" }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.cyan, marginBottom: 10 }}>📅 Fechas clave para optimizar</div>
+        <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr 1fr 1fr", gap: 10, fontSize: 11 }}>
+          <div style={{ background: T.bg3, borderRadius: 10, padding: "10px 14px" }}>
+            <div style={{ fontWeight: 700, color: T.orange }}>Antes de diciembre 31</div>
+            <div style={{ color: T.txt2, marginTop: 4, lineHeight: 1.5 }}>Aportes a pensión voluntaria y AFC. Donaciones deducibles. Compras de activos depreciables.</div>
+          </div>
+          <div style={{ background: T.bg3, borderRadius: 10, padding: "10px 14px" }}>
+            <div style={{ fontWeight: 700, color: T.blue }}>Marzo - Abril 2027</div>
+            <div style={{ color: T.txt2, marginTop: 4, lineHeight: 1.5 }}>Declaración de renta personas jurídicas. Tener certificados de retención y estados financieros listos.</div>
+          </div>
+          <div style={{ background: T.bg3, borderRadius: 10, padding: "10px 14px" }}>
+            <div style={{ fontWeight: 700, color: T.green }}>Agosto - Octubre 2027</div>
+            <div style={{ color: T.txt2, marginTop: 4, lineHeight: 1.5 }}>Declaración de renta personas naturales. Último plazo según dos últimos dígitos del NIT.</div>
+          </div>
+        </div>
+      </Cd>
+
+      {/* ═══ DETALLE POR PROPIETARIO ═══ */}
+      <div style={{ fontSize: 14, fontWeight: 700, color: T.txt2, marginBottom: 12 }}>Detalle por propietario</div>
 
       {/* Owner cards */}
       {ownerData.map(od => (
