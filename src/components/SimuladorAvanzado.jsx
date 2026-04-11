@@ -482,7 +482,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             const allGas = user.gastos || {};
             const allDeu = (user&&user.deudas) || [];
             const gasFlat = [];
-            Object.entries(allGas).forEach(([cat, items]) => (items||[]).forEach(g => gasFlat.push({...g, cat})));
+            Object.entries(allGas).forEach(([cat, items]) => (items||[]).forEach((g, gi) => gasFlat.push({...g, cat, _gkey: "gf_"+cat+"_"+gi})));
             
             // Group by owner + "sin asignar"
             const groups = [];
