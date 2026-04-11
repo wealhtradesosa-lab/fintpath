@@ -156,11 +156,24 @@ const estimarImpuesto=(u)=>{
       // Depreciación de activos
       const oInv=(u.inv||[]).filter(i=>i.owner===ow.id);
       const deprec=oInv.reduce((s,i)=>{const tp=(i.tp||i.tipo||"").toLowerCase();if(/real estate|bodega|local|oficina/i.test(tp))return s+(i.va||0)*0.05;if(/vehículo|vehiculo/i.test(tp))return s+(i.va||0)*0.20;return s},0);
-      const totalDeduc=gastosDeducJ+interesesJ+deprec;
+      const gmf50=ingAnual*0.004*0.50;
+      const totalDeduc=gastosDeducJ+interesesJ+deprec+gmf50;
       const utilidad=Math.max(0,ingAnual-totalDeduc);
-      const imp=utilidad*0.35;
+      // Retención automática según tipo de ingreso
+      let reteJ=0;
+      oIng.forEach(i=>{const m=(i.mensual||0)*(i.moneda==="USD"?(u.trm||4200):1)*12;const cat=i.categoria||"";
+        if(/Arriendo/i.test(cat))reteJ+=m*0.035;
+        else if(/Rendimiento|Dividendos/i.test(cat))reteJ+=m*0.07;
+        else if(/Honorarios|Freelance/i.test(cat))reteJ+=m*0.11;
+        else reteJ+=m*0.025;
+      });
+      // Descuento 50% ICA
+      const icaGas=oGas.filter(g=>g.cat==="Predial").reduce((s,g)=>s+(g.m||0),0)*12*0.30;
+      const descICA=icaGas*0.50;
+      const impBruto=utilidad*0.35;
+      const imp=Math.max(0,impBruto-descICA-reteJ);
       totalImp+=imp;
-      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4});
+      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(impFinal/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4});
     }else{
       // ═══ PERSONA NATURAL: tabla progresiva con TODAS las deducciones ═══
       // Separar ingresos por tipo para calcular aportes correctamente
@@ -234,16 +247,27 @@ const estimarImpuesto=(u)=>{
       const impSinOpt=calcImpRenta(rentaSinOpt/UVT);
       const ahorroOpt=impSinOpt-imp;
       
-      totalImp+=imp;
+      // Retención automática
+      let reteN=0;
+      oIng.forEach(i=>{const m=(i.mensual||0)*(i.moneda==="USD"?(u.trm||4200):1)*12;const cat=i.categoria||"";
+        if(/Salario/i.test(cat)){const mUVT=m/12/UVT;reteN+=m*(mUVT>360?0.19:mUVT>150?0.10:mUVT>95?0.04:0)}
+        else if(/Honorarios|Freelance/i.test(cat))reteN+=m*0.11;
+        else if(/Arriendo/i.test(cat))reteN+=m*0.035;
+        else if(/Rendimiento|Dividendos/i.test(cat))reteN+=m*0.07;
+      });
+      const impFinal=Math.max(0,imp-reteN);
+      const impSinOptFinal=Math.max(0,impSinOpt-reteN);
+      const ahorroOptFinal=impSinOptFinal-impFinal;
+      totalImp+=impFinal;
       detalle.push({
         name:ow.name,type:"natural",ingreso:ingAnual,
         noConst:totalNoConst,neto,
         exenta25,deducDep,deducMedicina,deducVivienda,deducSeguros,
         pensionVol,afc,totalDeducciones,
         lim40,benAplic,
-        baseGravable:rentaLiq,impuesto:imp,
-        tasa:ingAnual>0?(imp/ingAnual*100):0,
-        impSinOpt,ahorroOptimo:ahorroOpt,
+        baseGravable:rentaLiq,impuesto:impFinal,
+        tasa:ingAnual>0?(impFinal/ingAnual*100):0,
+        impSinOpt:impSinOptFinal,ahorroOptimo:ahorroOptFinal,
         espacioParaPVyAFC
       });
     }
