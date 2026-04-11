@@ -298,7 +298,14 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
               </>}
               
               <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Utilidad gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.utilidad)}</span></div>
-              <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Gastos registrados = {(calc.pctGastos || 0).toFixed(0)}% de ingresos</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                <div style={{ flex: 1, height: 6, background: T.bg3, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: Math.min(calc.pctGastos || 0, 100) + "%", background: (calc.pctGastos || 0) >= 50 ? T.green : T.orange, borderRadius: 3 }} />
+                </div>
+                <span style={{ fontSize: 10, color: T.txt3, whiteSpace: "nowrap" }}>Gastos: {(calc.pctGastos || 0).toFixed(0)}%</span>
+              </div>
+              {calc.descuentoICA > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue, marginTop: 4 }}><span>(-) Descuento 50% ICA</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.descuentoICA)}</span></div>}
+              {retefuente > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}><span>(-) Retención en la fuente</span><span style={{ fontFamily: "monospace" }}>-{fm(retefuente)}</span></div>}
               {calc.descuentoICA > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}><span>(-) Descuento 50% ICA</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.descuentoICA)}</span></div>}
               {retefuente > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}><span>(-) Retención en la fuente</span><span style={{ fontFamily: "monospace" }}>-{fm(retefuente)}</span></div>}
             </> : <>
@@ -398,11 +405,14 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       )}
 
       {/* Retención en la fuente input */}
-      {<div style={{ padding: "12px 20px", borderTop: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 12, color: T.txt2 }}>📋 Retención en la fuente (anual):</span>
-        <input type="text" inputMode="numeric" value={retefuenteInput ? String(retefuenteInput).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""} onChange={e => setRetefuenteInput(e.target.value.replace(/,/g, ""))} placeholder="Ej: 48,000,000" style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "8px 12px", color: T.txt, fontSize: 13, width: 160, outline: "none", fontFamily: "monospace" }} />
-        <span style={{ fontSize: 10, color: T.txt3 }}>Se descuenta directo del impuesto. Consulta certificados de retención.</span>
-      </div>}
+      <div style={{ padding: "14px 20px", borderTop: "1px solid " + T.border, background: "rgba(59,130,246,0.04)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: T.blue }}>📋 Retención en la fuente (anual):</span>
+          <input type="text" inputMode="numeric" value={retefuenteInput ? String(retefuenteInput).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""} onChange={e => setRetefuenteInput(e.target.value.replace(/,/g, ""))} placeholder="$ 0" style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "8px 14px", color: T.txt, fontSize: 14, width: 180, outline: "none", fontFamily: "monospace", fontWeight: 700 }} />
+        </div>
+        <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>Total retenciones practicadas durante el año. Se descuenta directo del impuesto a pagar. Consulta tus certificados de retención.</div>
+        {retefuente > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginTop: 6 }}>Impuesto después de retención: {fm(Math.max(0, impActual))} → {impActual < 0 ? "Saldo a favor: " + fm(Math.abs(impActual)) : "a pagar"}</div>}
+      </div>
 
       {/* Recommendations */}
       {calc.recs.length > 0 && (
