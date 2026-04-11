@@ -38,6 +38,8 @@ const Kpi = ({ label, value, sub, color, big }) => (
 );
 
 function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
+  const [retefuenteInput, setRetefuenteInput] = useState("");
+  const retefuente = Number(String(retefuenteInput).replace(/,/g, "")) || 0;
   const calc = useMemo(() => {
     const ingAnual = ingresos.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
     if (ingAnual <= 0) return null;
@@ -90,9 +92,8 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       // Descuento del 50% del ICA pagado (se resta del impuesto, no de la base)
       const icaPagado = (gastosByCat["Predial"] ? gastosByCat["Predial"].total : 0) * 12 * 0.30; // ~30% del predial es ICA aprox
       const descuentoICA = icaPagado * 0.50;
-      const retefuente = 0; // No se puede estimar — depende de certificados reales
       const impBruto = utilidadActual * 0.35;
-      const impActual = Math.max(0, impBruto - descuentoICA);
+      const impActual = Math.max(0, impBruto - descuentoICA - retefuente);
       const tasaActual = ingAnual > 0 ? (impActual / ingAnual * 100) : 0;
 
       // CON ESTRATEGIA: optimizaciones activas para reducir utilidad
@@ -115,7 +116,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       const reduccionAplicada = Math.min(estrategiasTotal + gastosExtra, maxReduccion);
       const utilidadOptima = Math.max(utilidadActual * 0.40, utilidadActual - reduccionAplicada);
       const impOptimoBase = utilidadOptima * 0.35;
-      const impOptimo = Math.max(0, impOptimoBase - descuentoICA);
+      const impOptimo = Math.max(0, impOptimoBase - descuentoICA - retefuente);
       const ahorro = impActual - impOptimo;
 
       // Recomendaciones
@@ -134,7 +135,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
         if (deudaEstrategica > 1e6) recs.push({ icon: "🏦", title: "Deuda productiva (apalancamiento)", desc: "Tomar deuda para inversión productiva. Los intereses son 100% deducibles y reduces utilidad gravable. Ej: crédito para comprar bodega que genere arriendo. Estimado: " + fm(deudaEstrategica) + "/año en intereses deducibles.", impact: deudaEstrategica * 0.35, color: T.green });
       }
       // Siempre mostrar retención y descuentos
-      recs.push({ icon: "📋", title: "Retención en la fuente", desc: "Las retenciones que te practicaron durante el año se descuentan del impuesto a pagar. Pide a tu contador los certificados de retención — ese valor se resta directamente del impuesto calculado aquí.", impact: 0, color: T.blue });
+      if (retefuente <= 0) recs.push({ icon: "📋", title: "¿Tienes retenciones a favor?", desc: "Ingresa el total de retenciones que te practicaron en el campo de arriba. Ese valor se descuenta directamente del impuesto. Consulta tus certificados de retención.", impact: 0, color: T.blue });
       if (descuentoICA > 0) recs.push({ icon: "🏛️", title: "Descuento 50% del ICA: " + fm(descuentoICA), desc: "El 50% del ICA pagado se descuenta directamente del impuesto de renta (Art. 115 ET). No es deducción, es descuento — se resta del impuesto calculado.", impact: 0, color: T.green });
       if (gmf50 > 0) recs.push({ icon: "💳", title: "GMF 4×1000 deducible: " + fm(gmf50), desc: "El 50% del GMF (4×1000) pagado es deducible de la renta. Se calcula automáticamente.", impact: 0, color: T.green });
 
@@ -194,11 +195,18 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
         if (ingAnual > 200e6) recs.push({ icon: "💡", title: "Para reducir más: redistribuir ingresos", desc: "La única forma de bajar más es mover ingresos a una persona jurídica (SAS). La empresa paga 35% sobre UTILIDAD (después de gastos), no sobre ingreso bruto. Consulta con tu contador.", impact: 0, color: T.purple });
       }
 
+      // Natural: retefuente también aplica
+      const impSinFinal = Math.max(0, impSin - retefuente);
+      const impConFinal = Math.max(0, impCon - retefuente);
+      const ahorroFinal = impSinFinal - impConFinal;
+
+      if (retefuente <= 0) recs.push({ icon: "📋", title: "¿Tienes retenciones a favor?", desc: "Ingresa el total de retenciones en el campo de abajo. Se descuenta directamente del impuesto.", impact: 0, color: T.blue });
+
       return {
         type: "natural", ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, gastosDeducNat, patTotal, deuTotal,
         noConst, neto, exenta25, deducDep, deducViv, lim40,
-        benefSin, benAplicSin, rentaSin, impSin: impSin, tasaSin,
-        pvMax, afcMax, benefCon, benAplicCon, rentaCon, impCon, tasaCon, ahorro, pctUsado,
+        benefSin, benAplicSin, rentaSin, impSin: impSinFinal, tasaSin: ingAnual > 0 ? (impSinFinal / ingAnual * 100) : 0,
+        pvMax, afcMax, benefCon, benAplicCon, rentaCon, impCon: impConFinal, tasaCon: ingAnual > 0 ? (impConFinal / ingAnual * 100) : 0, ahorro: ahorroFinal, pctUsado, retefuente,
         recs
       };
     }
@@ -292,6 +300,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
               <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Utilidad gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.utilidad)}</span></div>
               <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Gastos registrados = {(calc.pctGastos || 0).toFixed(0)}% de ingresos</div>
               {calc.descuentoICA > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}><span>(-) Descuento 50% ICA</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.descuentoICA)}</span></div>}
+              {retefuente > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}><span>(-) Retención en la fuente</span><span style={{ fontFamily: "monospace" }}>-{fm(retefuente)}</span></div>}
             </> : <>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.blue }}><span>(-) Aportes obligatorios</span><span style={{ fontFamily: "monospace" }}>{fm(calc.noConst)}</span></div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.green }}><span>(-) Renta exenta 25%</span><span style={{ fontFamily: "monospace" }}>{fm(calc.exenta25)}</span></div>
@@ -387,6 +396,13 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
           </div>
         </div>
       )}
+
+      {/* Retención en la fuente input */}
+      {<div style={{ padding: "12px 20px", borderTop: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 12, color: T.txt2 }}>📋 Retención en la fuente (anual):</span>
+        <input type="text" inputMode="numeric" value={retefuenteInput ? String(retefuenteInput).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""} onChange={e => setRetefuenteInput(e.target.value.replace(/,/g, ""))} placeholder="Ej: 48,000,000" style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "8px 12px", color: T.txt, fontSize: 13, width: 160, outline: "none", fontFamily: "monospace" }} />
+        <span style={{ fontSize: 10, color: T.txt3 }}>Se descuenta directo del impuesto. Consulta certificados de retención.</span>
+      </div>}
 
       {/* Recommendations */}
       {calc.recs.length > 0 && (
