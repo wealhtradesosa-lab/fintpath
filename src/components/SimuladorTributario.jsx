@@ -127,12 +127,12 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       if (!gastosByCat["Predial"]) recs.push({ icon: "🏛️", title: "Predial e impuestos locales", desc: "Predial, ICA, contribuciones — impuestos pagados son deducibles.", impact: 0, color: T.blue });
       if (pctGastos < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + pctGastos.toFixed(0) + "% de ingresos", desc: "Una empresa operativa típica tiene 40-70%. Revisa si faltan gastos por registrar.", impact: gastosExtra > 0 ? gastosExtra * 0.35 : 0, color: T.orange });
       if (utilidadActual > 50e6) {
-        if (bonificaciones > 500000) recs.push({ icon: "🎁", title: "Bonificaciones a empleados", desc: "Primas extralegales y bonificaciones son 100% deducibles. Motiva al equipo y reduce utilidad gravable. Estimado: " + fm(bonificaciones) + "/año.", impact: bonificaciones * 0.35, color: T.green });
+        if (bonificaciones > 500000) recs.push({ icon: "🎁", title: "Bonificaciones a empleados", desc: "Primas extralegales y bonificaciones son 100% deducibles. Motiva al equipo y reduce renta gravable. Estimado: " + fm(bonificaciones) + "/año.", impact: bonificaciones * 0.35, color: T.green });
         if (donacionSugerida > 1e6) recs.push({ icon: "🤝", title: "Donaciones deducibles", desc: "Dona a fundaciones certificadas (sin ánimo de lucro). Deducibles hasta 25% de renta líquida. Sugerido: " + fm(donacionSugerida) + "/año.", impact: donacionSugerida * 0.35, color: T.green });
         if (provisionCartera > 1e6) recs.push({ icon: "📋", title: "Provisión de cartera", desc: "Si tienes cuentas por cobrar, la provisión es deducible. Estimado: " + fm(provisionCartera) + "/año.", impact: provisionCartera * 0.35, color: T.green });
         if (deprecExtra > 1e6) recs.push({ icon: "🏗️", title: "Revisar depreciación", desc: "Evalúa con tu contador depreciación acelerada o revaluación de activos. Potencial: " + fm(deprecExtra) + "/año.", impact: deprecExtra * 0.35, color: T.green });
-        recs.push({ icon: "📈", title: "Reinvertir utilidades", desc: "Compra equipos, vehículos, mejoras a propiedades. Genera depreciación deducible en años siguientes y reduce utilidad gravable futura.", impact: 0, color: T.purple });
-        if (deudaEstrategica > 1e6) recs.push({ icon: "🏦", title: "Deuda productiva (apalancamiento)", desc: "Tomar deuda para inversión productiva. Los intereses son 100% deducibles y reduces utilidad gravable. Ej: crédito para comprar bodega que genere arriendo. Estimado: " + fm(deudaEstrategica) + "/año en intereses deducibles.", impact: deudaEstrategica * 0.35, color: T.green });
+        recs.push({ icon: "📈", title: "Reinvertir en la empresa", desc: "Compra equipos, vehículos, mejoras a propiedades. Genera depreciación deducible en años siguientes y reduce renta gravable futura.", impact: 0, color: T.purple });
+        if (deudaEstrategica > 1e6) recs.push({ icon: "🏦", title: "Deuda productiva (apalancamiento)", desc: "Tomar deuda para inversión productiva. Los intereses son 100% deducibles y reduces renta gravable. Ej: crédito para comprar bodega que genere arriendo. Estimado: " + fm(deudaEstrategica) + "/año en intereses deducibles.", impact: deudaEstrategica * 0.35, color: T.green });
       }
       // Siempre mostrar retención y descuentos
       if (retefuente <= 0) recs.push({ icon: "📋", title: "¿Tienes retenciones a favor?", desc: "Ingresa el total de retenciones que te practicaron en el campo de arriba. Ese valor se descuenta directamente del impuesto. Consulta tus certificados de retención.", impact: 0, color: T.blue });
@@ -297,7 +297,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
                 ))}
               </>}
               
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Utilidad gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.utilidad)}</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Renta gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.utilidad)}</span></div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                 <div style={{ flex: 1, height: 6, background: T.bg3, borderRadius: 3, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: Math.min(calc.pctGastos || 0, 100) + "%", background: (calc.pctGastos || 0) >= 50 ? T.green : T.orange, borderRadius: 3 }} />
