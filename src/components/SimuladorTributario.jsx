@@ -497,14 +497,34 @@ export default function SimuladorTributario({ trm, user }) {
       const ingAnual = od.ing.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
       if (ingAnual <= 0) return;
       totalIngreso += ingAnual;
-      // Quick calc for summary
       const gastosD = od.gas.reduce((s, g) => { const p = isJ ? (NO_DEDUC.includes(g.cat) ? 0 : 1) : (DEDUC_NAT[g.cat] || 0); return s + (g.m || 0) * p; }, 0) * 12;
       const intereses = od.deu.reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
       const deprec = od.inv.reduce((s, i) => { const tp = (i.tp||i.tipo||"").toLowerCase(); return s + (/real estate|bodega|local/i.test(tp) ? (i.va||0)*0.05 : /vehículo/i.test(tp) ? (i.va||0)*0.20 : 0); }, 0);
+      
+      // Retención automática (misma lógica que OwnerPlan)
+      let rete = 0;
+      od.ing.forEach(i => {
+        const m = (i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1) * 12;
+        const cat = i.categoria || "";
+        if (/Salario/i.test(cat)) { const mUVT = m / 12 / UVT; rete += m * (mUVT > 360 ? 0.19 : mUVT > 150 ? 0.10 : mUVT > 95 ? 0.04 : 0); }
+        else if (/Honorarios|Freelance/i.test(cat)) rete += m * 0.11;
+        else if (/Arriendo/i.test(cat)) rete += m * 0.035;
+        else if (/Rendimiento|Dividendos/i.test(cat)) rete += m * 0.07;
+        else if (isJ) rete += m * 0.025;
+      });
+      
       if (isJ) {
-        const util = Math.max(0, ingAnual - gastosD - intereses - deprec);
-        const imp = util * 0.35;
-        const impOpt = Math.max(util * 0.50, 0) * 0.35;
+        const gmf50 = ingAnual * 0.004 * 0.50;
+        const totalDeduc = gastosD + intereses + deprec + gmf50;
+        const util = Math.max(0, ingAnual - totalDeduc);
+        const gasByCat = {};
+        od.gas.forEach(g => { gasByCat[g.cat] = (gasByCat[g.cat] || 0) + (g.m || 0); });
+        const icaPagado = (gasByCat["Predial"] || 0) * 12 * 0.30;
+        const descICA = icaPagado * 0.50;
+        const imp = Math.max(0, util * 0.35 - descICA - rete);
+        // Estrategia
+        const maxRed = util * 0.35;
+        const impOpt = Math.max(0, Math.max(util * 0.40, 0) * 0.35 - descICA - rete);
         totalImpActual += imp;
         totalImpOptimo += impOpt;
         items.push({ name: od.owner.name, icon: "🏢", imp, impOpt, ing: ingAnual });
@@ -515,9 +535,9 @@ export default function SimuladorTributario({ trm, user }) {
         const lim40 = neto * 0.40;
         const benSin = Math.min(ex25 + gastosD, lim40);
         const rentaSin = Math.max(0, neto - benSin);
-        const imp = calcImp(rentaSin / UVT);
+        const imp = Math.max(0, calcImp(rentaSin / UVT) - rete);
         const rentaCon = Math.max(0, neto - lim40);
-        const impOpt = calcImp(rentaCon / UVT);
+        const impOpt = Math.max(0, calcImp(rentaCon / UVT) - rete);
         totalImpActual += imp;
         totalImpOptimo += impOpt;
         items.push({ name: od.owner.name, icon: "👤", imp, impOpt, ing: ingAnual });
