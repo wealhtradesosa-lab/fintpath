@@ -582,12 +582,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       <div style={{ fontSize: 11, fontWeight: 700, color: T.rd, margin: "10px 0 6px", textTransform: "uppercase" }}>💳 Gastos ({grp.gas.length})</div>
                       {grp.gas.map((g, gi) => {
                         if (g.sim === false) return null;
-                        // Use original category index for key consistency
-                        // Find original index within this category (matches calculation key)
-                        const catItems = ((allGas&&allGas[g.cat])||[]);
-                        let origIdx = -1;
-                        for(let k=0;k<catItems.length;k++){if(catItems[k].c===g.c&&(catItems[k].m||0)===(g.m||0)){origIdx=k;break;}}
-                        const key = "gf_"+g.cat+"_"+(origIdx>=0?origIdx:gi);
+                        const key = g._gkey || ("gf_"+g.cat+"_"+gi);
                         return <Slider key={key} label={g.c||g.cat} value={getVal(key, g.m)} base={g.m}
                           max={Math.max(g.m*3,500)} color={T.rd}
                           onChange={(v)=>setVal(key,v)}
