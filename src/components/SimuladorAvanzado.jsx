@@ -222,6 +222,7 @@ function FreedomBarLive({ ni, te, cf }) {
 export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
 
   const [simVals, setSimVals] = useState({});
+  const [taxOptimizado, setTaxOptimizado] = useState(false);
   // Reset sliders when underlying data changes
   const dataHash = JSON.stringify([
     (user.ingresos||[]).map(i=>i.mensual),
@@ -615,19 +616,28 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                     </>}
                     
                     {/* Impuestos */}
-                    {grp.tax && (grp.tax.impuesto||0) > 0 && <>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", margin: "10px 0 6px", textTransform: "uppercase" }}>🧾 Impuesto ({fm(grp.tax.impuesto)}/año)</div>
+                    {grp.tax && <>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0 6px" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>🧾 Impuesto</div>
+                      </div>
                       {(()=>{
                         const ti = ((impuestoData&&impuestoData.detalle)||[]).indexOf(grp.tax);
-                        const impMes = Math.round(grp.tax.impuesto/12);
+                        const impActualMes = Math.round((grp.tax.impuesto||0)/12);
+                        const impOptMes = Math.round((grp.tax.impSinOpt != null ? Math.max(0, (grp.tax.impuesto||0) - (grp.tax.ahorroOptimo||0)) : (grp.tax.impuesto||0))/12);
+                        const impMes = taxOptimizado ? impOptMes : impActualMes;
                         const simImp = getVal("tax_"+ti, impMes);
                         return <div>
-                          <Slider label="Impuesto de renta" value={simImp} base={impMes}
-                            max={Math.max(impMes*2,100000)} color={"#a78bfa"}
+                          <div style={{display:"flex",gap:6,marginBottom:6}}>
+                            <button onClick={()=>setTaxOptimizado(false)} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid "+(taxOptimizado?"rgba(255,255,255,0.06)":"#a78bfa"),background:taxOptimizado?"transparent":"rgba(167,139,250,0.1)",color:taxOptimizado?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600}}>Actual: {fm(impActualMes*12)}/año</button>
+                            <button onClick={()=>setTaxOptimizado(true)} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid "+(taxOptimizado?"#22c55e":"rgba(255,255,255,0.06)"),background:taxOptimizado?"rgba(34,197,94,0.1)":"transparent",color:taxOptimizado?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600}}>Optimizado: {fm(impOptMes*12)}/año</button>
+                          </div>
+                          <Slider label={"Impuesto " + (taxOptimizado ? "optimizado" : "actual")} value={simImp} base={impMes}
+                            max={Math.max(Math.max(impActualMes,impOptMes)*3,100000)} color={taxOptimizado?"#22c55e":"#a78bfa"}
                             onChange={(v)=>setVal("tax_"+ti,v)} sub="" />
                           <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:10,color:T.txt3}}>
                             <span>{fm(simImp)}/mes ({fm(simImp*12)}/año)</span>
                             <span>Tasa: {(grp.tax.tasa||0).toFixed(1)}%</span>
+                            {(grp.tax.impuesto||0) === 0 && <span style={{color:T.gn}}>✅ Retención cubre el impuesto</span>}
                           </div>
                         </div>;
                       })()}
