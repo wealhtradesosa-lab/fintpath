@@ -173,7 +173,15 @@ const estimarImpuesto=(u)=>{
       const impBruto=utilidad*0.35;
       const imp=Math.max(0,impBruto-descICA-reteJ);
       totalImp+=imp;
-      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4});
+      // Estrategias para jurídica
+      const bonif=oGas.filter(g=>g.cat==="Nómina").reduce((s,g)=>s+(g.m||0),0)*12*0.15;
+      const donacion=Math.min(utilidad*0.10,500e6);
+      const provision=ingAnual*0.02;
+      const estratTotal=bonif+donacion+provision;
+      const maxRed=utilidad*0.35;
+      const utilOptima=Math.max(utilidad*0.40,utilidad-Math.min(estratTotal,maxRed));
+      const impOptimoJ=Math.max(0,utilOptima*0.35-descICA-reteJ);
+      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,impSinOpt:imp,impOptimizado:impOptimoJ,ahorroOptimo:imp-impOptimoJ,tasa:ingAnual>0?(imp/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4});
     }else{
       // ═══ PERSONA NATURAL: tabla progresiva con TODAS las deducciones ═══
       // Separar ingresos por tipo para calcular aportes correctamente
@@ -258,16 +266,17 @@ const estimarImpuesto=(u)=>{
       const impFinal=Math.max(0,imp-reteN);
       const impSinOptFinal=Math.max(0,impSinOpt-reteN);
       const ahorroOptFinal=impSinOptFinal-impFinal;
-      totalImp+=impFinal;
+      totalImp+=impSinOptFinal;
       detalle.push({
         name:ow.name,type:"natural",ingreso:ingAnual,
         noConst:totalNoConst,neto,
         exenta25,deducDep,deducMedicina,deducVivienda,deducSeguros,
         pensionVol,afc,totalDeducciones,
         lim40,benAplic,
-        baseGravable:rentaLiq,impuesto:impFinal,
-        tasa:ingAnual>0?(impFinal/ingAnual*100):0,
-        impSinOpt:impSinOptFinal,ahorroOptimo:ahorroOptFinal,
+        baseGravable:rentaLiq,impuesto:impSinOptFinal,
+        impSinOpt:impSinOptFinal,impOptimizado:impFinal,
+        ahorroOptimo:ahorroOptFinal,
+        tasa:ingAnual>0?(impSinOptFinal/ingAnual*100):0,
         espacioParaPVyAFC
       });
     }

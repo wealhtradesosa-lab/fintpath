@@ -623,7 +623,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       {(()=>{
                         const ti = ((impuestoData&&impuestoData.detalle)||[]).indexOf(grp.tax);
                         const impActualMes = Math.round((grp.tax.impuesto||0)/12);
-                        const impOptMes = Math.round((grp.tax.impSinOpt != null ? Math.max(0, (grp.tax.impuesto||0) - (grp.tax.ahorroOptimo||0)) : (grp.tax.impuesto||0))/12);
+                        const impOptMes = Math.round((grp.tax.impOptimizado != null ? grp.tax.impOptimizado : (grp.tax.impuesto||0))/12);
                         const impMes = taxOptimizado ? impOptMes : impActualMes;
                         const simImp = getVal("tax_"+ti, impMes);
                         return <div>
