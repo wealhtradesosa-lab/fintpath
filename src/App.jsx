@@ -327,7 +327,7 @@ export default function FinPath(){
     if(isSupabaseConfigured){
       if(aM==="login"){
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
-        if(error){setAuthError(error.message);setAuthLoading(false);return}
+        if(error){const msg=error.message==="Invalid login credentials"?"Email o contraseña incorrectos":error.message==="Email not confirmed"?"Revisa tu email y confirma tu cuenta":error.message;setAuthError(msg);setAuthLoading(false);return}
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);
         const d=await sL(data.user.id);
         if(d)setU(sanitize(d));else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id)}
@@ -433,7 +433,7 @@ export default function FinPath(){
   const fm=n=>{if(masked)return"$•••••";if(n==null||isNaN(n))return"$0";const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
   const upd=(k,v)=>{showToast("✅ Guardado");setU(p=>p?{...p,[k]:v}:p);};
   const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";
-  const INVITADOS=["andres.isaza@grupogiesas.com"];
+  const INVITADOS=["andres.isaza@grupogiesas.com","renatomaestri76@hotmail.com"];
   const getTrialDays=(email)=>INVITADOS.includes(email)?30:14;
   const trialEnd=u?.p?.trialEnd;
   const trialActive=trialEnd&&new Date(trialEnd)>=new Date();
