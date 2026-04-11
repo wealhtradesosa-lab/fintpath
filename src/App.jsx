@@ -173,7 +173,7 @@ const estimarImpuesto=(u)=>{
       const impBruto=utilidad*0.35;
       const imp=Math.max(0,impBruto-descICA-reteJ);
       totalImp+=imp;
-      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(impFinal/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4});
+      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,tasa:ingAnual>0?(imp/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4});
     }else{
       // ═══ PERSONA NATURAL: tabla progresiva con TODAS las deducciones ═══
       // Separar ingresos por tipo para calcular aportes correctamente
