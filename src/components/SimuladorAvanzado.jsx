@@ -223,14 +223,14 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
 
   const [simVals, setSimVals] = useState({});
   const [taxOptimizado, setTaxOptimizado] = useState(false);
-  const prevTaxOpt = useRef(false);
-  if (prevTaxOpt.current !== taxOptimizado) {
-    prevTaxOpt.current = taxOptimizado;
-    // Clear tax simvals so they pick up new base
-    const newVals = {...simVals};
-    Object.keys(newVals).forEach(k => { if (k.startsWith("tax_")) delete newVals[k]; });
-    if (Object.keys(newVals).length !== Object.keys(simVals).length) setSimVals(newVals);
-  }
+  useEffect(() => {
+    setSimVals(prev => {
+      const newVals = {...prev};
+      let changed = false;
+      Object.keys(newVals).forEach(k => { if (k.startsWith("tax_")) { delete newVals[k]; changed = true; } });
+      return changed ? newVals : prev;
+    });
+  }, [taxOptimizado]);
   // Reset sliders when underlying data changes
   const dataHash = JSON.stringify([
     (user.ingresos||[]).map(i=>i.mensual),
