@@ -223,7 +223,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
 
   const [simVals, setSimVals] = useState({});
   const [taxOptimizado, setTaxOptimizado] = useState(false);
-  const prevTaxOpt = React.useRef(false);
+  const prevTaxOpt = useRef(false);
   if (prevTaxOpt.current !== taxOptimizado) {
     prevTaxOpt.current = taxOptimizado;
     // Clear tax simvals so they pick up new base
