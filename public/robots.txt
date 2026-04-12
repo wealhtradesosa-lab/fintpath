@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://finpathia.netlify.app/sitemap.xml
+
+Sitemap: https://finpathia.com/sitemap.xml
