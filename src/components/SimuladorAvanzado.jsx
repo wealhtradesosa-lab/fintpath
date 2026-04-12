@@ -480,9 +480,9 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
           {/* ═══ SLIDERS POR PROPIETARIO ═══ */}
           {(()=>{
             const owners = (user.owners || [{id:"own_1",name:"Personal",type:"natural"}]);
-            const allIng = user.ingresos || [];
+            const allIng = (user.ingresos || []).map((ing, i) => ({...ing, _idx: i}));
             const allGas = user.gastos || {};
-            const allDeu = (user&&user.deudas) || [];
+            const allDeu = ((user&&user.deudas) || []).map((d, i) => ({...d, _idx: i}));
             const gasFlat = [];
             Object.entries(allGas).forEach(([cat, items]) => (items||[]).forEach((g, gi) => gasFlat.push({...g, cat, _gkey: "gf_"+cat+"_"+gi})));
             
@@ -699,4 +699,3 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
     </div>
   );
 }
-// force rebuild 1776015682
