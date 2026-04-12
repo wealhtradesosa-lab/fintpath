@@ -223,6 +223,14 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
 
   const [simVals, setSimVals] = useState({});
   const [taxOptimizado, setTaxOptimizado] = useState(false);
+  const prevTaxOpt = React.useRef(false);
+  if (prevTaxOpt.current !== taxOptimizado) {
+    prevTaxOpt.current = taxOptimizado;
+    // Clear tax simvals so they pick up new base
+    const newVals = {...simVals};
+    Object.keys(newVals).forEach(k => { if (k.startsWith("tax_")) delete newVals[k]; });
+    if (Object.keys(newVals).length !== Object.keys(simVals).length) setSimVals(newVals);
+  }
   // Reset sliders when underlying data changes
   const dataHash = JSON.stringify([
     (user.ingresos||[]).map(i=>i.mensual),
@@ -253,7 +261,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
       const base = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? 4200 : 1);
       nv[`ing_${ii}`] = Math.round(base * f.i);
     });
-    (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { nv[`debt_${di}`] = (d.pago||d.pg||0); });
+    (user.deudas || []).forEach((d, di) => { if ((d.mt||0) > 0) nv[`debt_${di}`] = (d.pago||d.pg||0); });
     // Tax per owner - NOT initialized here, uses getVal fallback to stay fresh
     // Standalone ingresos
     // Dedup ingresos in scenario too
@@ -279,7 +287,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
       items.forEach((g, gi) => { if (g.sim!==false) tGF += getVal(`gf_${cat}_${gi}`, g.m); });
     });
     let tD = 0;
-    (user.deudas || []).filter(d => (d.mt||0) > 0).forEach((d, di) => { if (d.sim!==false) tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
+    (user.deudas || []).forEach((d, di) => { if ((d.mt||0) > 0 && d.sim!==false) tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
     // Add taxes
     let tTax = 0;
     ((impuestoData && impuestoData.detalle) || []).forEach((td, ti) => { if(td.impuesto > 0) tTax += getVal(`tax_${ti}`, Math.round(td.impuesto / 12)); });
