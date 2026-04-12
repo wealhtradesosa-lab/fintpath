@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 const T = {
@@ -629,8 +629,8 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         const simImp = baseMes;
                         return <div>
                           <div style={{display:"flex",gap:6,marginBottom:6}}>
-                            <button onClick={()=>setTaxOptimizado(false)} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid "+(taxOptimizado?"rgba(255,255,255,0.06)":"#a78bfa"),background:taxOptimizado?"transparent":"rgba(167,139,250,0.1)",color:taxOptimizado?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600}}>Actual: {fm(impActualMes*12)}/año</button>
-                            <button onClick={()=>setTaxOptimizado(true)} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid "+(taxOptimizado?"#22c55e":"rgba(255,255,255,0.06)"),background:taxOptimizado?"rgba(34,197,94,0.1)":"transparent",color:taxOptimizado?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600}}>Optimizado: {fm(impOptMes*12)}/año</button>
+                            <button onClick={()=>{setTaxOptimizado(false);setSimVals(p=>{const n={...p};Object.keys(n).forEach(k=>{if(k.startsWith("tax_"))delete n[k]});return n})}} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid "+(taxOptimizado?"rgba(255,255,255,0.06)":"#a78bfa"),background:taxOptimizado?"transparent":"rgba(167,139,250,0.1)",color:taxOptimizado?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600}}>Actual: {fm(impActualMes*12)}/año</button>
+                            <button onClick={()=>{setTaxOptimizado(true);setSimVals(p=>{const n={...p};Object.keys(n).forEach(k=>{if(k.startsWith("tax_"))delete n[k]});return n})}} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid "+(taxOptimizado?"#22c55e":"rgba(255,255,255,0.06)"),background:taxOptimizado?"rgba(34,197,94,0.1)":"transparent",color:taxOptimizado?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600}}>Optimizado: {fm(impOptMes*12)}/año</button>
                           </div>
                           <Slider label={"Impuesto " + (taxOptimizado ? "optimizado" : "actual")} value={simImp} base={impMes}
                             max={Math.max(Math.max(impActualMes,impOptMes)*3,100000)} color={taxOptimizado?"#22c55e":"#a78bfa"}
