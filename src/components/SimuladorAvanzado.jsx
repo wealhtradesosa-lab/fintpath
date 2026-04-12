@@ -558,21 +558,15 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                                   <div style={{fontSize:14,fontWeight:700,color:"#22d3ee"}}>{fm(simRenta)}</div>
                                 </div>
                               </div>
-                              <div style={{fontSize:9,color:T.txt3,marginBottom:3}}>↔ Capital invertido:</div>
-                              <input type="range" min={0} max={Math.round(baseCap*2)||1000000} step={Math.max(Math.round(baseCap*0.002),1000)}
-                                value={simCap} onChange={(e)=>{const c=Number(e.target.value);setVal("cap_"+safeIdx,c);setVal("ing_"+safeIdx,Math.round((c*simTasa/100)/12))}}
-                                style={{width:"100%",accentColor:"#22d3ee",height:6,cursor:"pointer"}} />
-                            </>) : isInvType && !hasCap ? (<>
-                              <div style={{background:"rgba(34,211,238,0.06)",borderRadius:8,padding:"6px 10px",marginBottom:6,fontSize:10,color:"#22d3ee"}}>
-                                💡 Edita este ingreso y agrega <strong>Capital</strong> y <strong>% Tasa</strong> para simular
-                              </div>
-                              <input type="range" min={0} max={Math.max(baseRenta*3,1000)} step={Math.max(Math.round(baseRenta*0.01),5)}
-                                value={simRenta} onChange={(e)=>setVal("ing_"+safeIdx,Number(e.target.value))}
-                                style={{width:"100%",accentColor:"#22d3ee",height:4,cursor:"pointer"}} />
+                              <Slider label="Capital invertido" value={simCap} base={baseCap}
+                                max={Math.round(baseCap*2)||1000000} color={"#22d3ee"}
+                                onChange={(v)=>{setVal("cap_"+safeIdx,v);setVal("ing_"+safeIdx,Math.round((v*simTasa/100)/12))}}
+                                sub="" />
                             </>) : (
-                              <input type="range" min={0} max={Math.max(baseRenta*3,1000)} step={Math.max(Math.round(baseRenta*0.01),5)}
-                                value={simRenta} onChange={(e)=>setVal("ing_"+safeIdx,Number(e.target.value))}
-                                style={{width:"100%",accentColor:"#22d3ee",height:4,cursor:"pointer"}} />
+                              <Slider label={ing.nombre||"Ingreso"} value={simRenta} base={baseRenta}
+                                max={Math.max(baseRenta*3,1000)} color={"#22d3ee"}
+                                onChange={(v)=>setVal("ing_"+safeIdx,v)}
+                                sub={isInvType?"💡 Agrega Capital y Tasa para simular inversión":""} />
                             )}
                           </div>
                         );
