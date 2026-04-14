@@ -51,7 +51,7 @@ const In = ({ label, value, onChange, unit, min, max, step }) => (
    ═══════════════════════════════════════════════════ */
 
 // Régimen de Prima Media — Colpensiones
-function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ipc, edadJub }) {
+function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, iblProm, ipc, edadJub }) {
   const IBC = ibcSM * SM_2026;
   const aniosFaltantes = Math.max(0, edadJub - edad);
 
@@ -60,9 +60,9 @@ function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ipc, edadJub }) 
   const cumpleSemanas = semanasTotales >= 1300;
   const cumpleRequisitos = cumpleSemanas;
 
-  // IBL = IBC (asume que el usuario ha cotizado al mismo nivel 10+ años)
-  // Si cotiza menos tiempo, el IBL real sería menor (promedio 10 años)
-  const IBL = IBC;
+  // IBL = Promedio IBC últimos 10 años (Art. 21 Ley 100)
+  // Si el usuario ingresa su promedio real, se usa. Si no, se usa el IBC actual.
+  const IBL = iblProm > 0 ? iblProm : IBC;
 
   // ═══ TASA DE REEMPLAZO — Ley 797/2003 Art. 10 ═══
   // Base: 65.50% - 0.50% por cada SMMLV adicional del IBC sobre el primero
@@ -110,7 +110,7 @@ function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ipc, edadJub }) 
 }
 
 // RAIS — Régimen de Ahorro Individual con Solidaridad (Fondos Privados)
-function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar }) {
+function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar, aportesVolMes, bonoPensional, sexo }) {
   const IBC = ibcSM * SM_2026;
 
   // ═══ APORTE REAL AL AHORRO INDIVIDUAL ═══
@@ -126,11 +126,11 @@ function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar }) {
 
   const rendMes = Math.pow(1 + rendAnual / 100, 1 / 12) - 1;
 
-  let saldo = saldoActual;
+  let saldo = saldoActual + (bonoPensional || 0);
   const proyeccion = [];
   for (let y = 1; y <= aniosCotizar; y++) {
     for (let m = 0; m < 12; m++) {
-      saldo = saldo * (1 + rendMes) + aporteMes;
+      saldo = saldo * (1 + rendMes) + aporteMes + (aportesVolMes || 0);
     }
     proyeccion.push({ anio: y, saldo: Math.round(saldo) });
   }
@@ -143,7 +143,7 @@ function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar }) {
   // Rendimiento real durante retiro: ~4% anual
   // Tabla RV08 Superfinanciera — esperanza de vida según sexo
   // Hombre 62 años: 20.7 años | Mujer 57 años: 27.3 años
-  const esperanzaVida = 20.7; // TODO: ajustar por sexo cuando se pase
+  const esperanzaVida = sexo === "F" ? 27.3 : 20.7; // Tabla RV08 por sexo
   const mesesVida = Math.round(esperanzaVida * 12);
   const rRetiro = Math.pow(1.04, 1/12) - 1;
   const factorRP = rRetiro > 0 ? (1 - Math.pow(1 + rRetiro, -mesesVida)) / rRetiro : mesesVida;
@@ -190,25 +190,28 @@ export default function PensionesColpensiones({ trm }) {
   const [edad, setEdad] = useState(40);
   const [semanas, setSemanas] = useState(800);
   const [ibcSM, setIbcSM] = useState(10);
+  const [iblPromSM, setIblPromSM] = useState(0); // Promedio últimos 10 años (0 = usar IBC actual)
   const [ipc, setIpc] = useState(5.5);
   const [privSaldo, setPrivSaldo] = useState(200_000_000);
   const [privRend, setPrivRend] = useState(8);
+  const [aportesVol, setAportesVol] = useState(0); // Aportes voluntarios mensuales
+  const [bonoPensional, setBonoPensional] = useState(0); // Bono si se trasladó
   const [tab, setTab] = useState("colp"); // colp | rais | comparar
 
   const edadJub = sexo === "F" ? 57 : 62;
   const aniosFaltantes = Math.max(0, edadJub - edad);
 
   const colp = useMemo(() => calcColpensiones({
-    sexo, edad, semanasActuales: semanas, ibcSM, ipc, edadJub,
-  }), [sexo, edad, semanas, ibcSM, ipc, edadJub]);
+    sexo, edad, semanasActuales: semanas, ibcSM, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, ipc, edadJub,
+  }), [sexo, edad, semanas, ibcSM, iblPromSM, ipc, edadJub]);
 
   const colpJub = useMemo(() => calcColpensiones({
-    sexo, edad, semanasActuales: semanas + aniosFaltantes * 52, ibcSM, ipc, edadJub,
-  }), [sexo, edad, semanas, ibcSM, ipc, edadJub, aniosFaltantes]);
+    sexo, edad, semanasActuales: semanas + aniosFaltantes * 52, ibcSM, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, ipc, edadJub,
+  }), [sexo, edad, semanas, ibcSM, iblPromSM, ipc, edadJub, aniosFaltantes]);
 
   const rais = useMemo(() => calcRAIS({
-    saldoActual: privSaldo, ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes,
-  }), [privSaldo, ibcSM, privRend, aniosFaltantes]);
+    saldoActual: privSaldo, ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes, aportesVolMes: aportesVol, bonoPensional, sexo,
+  }), [privSaldo, ibcSM, privRend, aniosFaltantes, aportesVol, bonoPensional, sexo]);
 
   const tabs = [
     { id: "colp", icon: "🏛️", label: "Colpensiones" },
@@ -250,6 +253,14 @@ export default function PensionesColpensiones({ trm }) {
           <In label="IBC (Salarios mínimos)" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} />
           <In label="Saldo fondo privado" value={privSaldo} onChange={setPrivSaldo} unit="COP" min={0} />
           <In label="Rendimiento fondo %" value={privRend} onChange={setPrivRend} unit="%" min={0} max={20} step={0.5} />
+          <In label="Aportes voluntarios" value={aportesVol} onChange={setAportesVol} unit="COP/mes" min={0} />
+          <In label="IBL promedio 10 años (SMMLV)" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
+          <In label="Bono pensional (traslado)" value={bonoPensional} onChange={setBonoPensional} unit="COP" min={0} />
+        </div>
+        <div style={{ marginTop: 8, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
+          💡 <strong>IBL promedio:</strong> Si dejaste en 0, se usa tu IBC actual. Para mayor precisión, ingresa el promedio de tus últimos 10 años de cotización en SMMLV.
+          {aportesVol > 0 && <><br/>💰 <strong>Aportes voluntarios:</strong> {fCOP(aportesVol)}/mes se suman al ahorro RAIS (no afectan Colpensiones).</>}
+          {bonoPensional > 0 && <><br/>📋 <strong>Bono pensional:</strong> {fCOP(bonoPensional)} se suma al saldo inicial del fondo privado.</>}
         </div>
         <div style={{ marginTop: 12, padding: 14, background: T.bg3, borderRadius: 10, display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13, color: T.txt2 }}>
           <span>📅 <strong>Edad jubilación:</strong> {edadJub} años</span>
