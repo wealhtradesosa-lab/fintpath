@@ -83,8 +83,8 @@ export default function AportesCalculadora({ fmt }) {
             <strong style={{ color: T.blue }}>📌 Para tu declaración de renta:</strong><br />
             Tu aporte de pensión ({f(empPen)}/mes = {f(empPen * 12)}/año) es ingreso no constitutivo de renta (Art. 55 ET). Se resta automáticamente en tu planeación tributaria.
           </div>
-          <div style={{ marginTop: 12, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: T.green, lineHeight: 1.6 }}>
-            <strong>👉 Registre {f(empTotal)}/mes como egreso en Pensión y Salud</strong> para que el Simulador y el Plan Tributario lo consideren en el análisis y la respectiva deducción.
+          <div style={{ marginTop: 12, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: T.blue, lineHeight: 1.6 }}>
+            <strong>📌 En Ingresos registre su salario BRUTO ({f(sal)})</strong>, no el neto que le consignan ({f(sal - empTotal)}). El 8% que le descuentan ya está considerado en el cálculo tributario como ingreso no constitutivo de renta (Art. 55 ET). No necesita registrar egreso adicional.
           </div>
         </Cd>
       )}
