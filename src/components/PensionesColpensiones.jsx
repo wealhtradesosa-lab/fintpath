@@ -51,7 +51,7 @@ const In = ({ label, value, onChange, unit, min, max, step }) => (
    ═══════════════════════════════════════════════════ */
 
 // Régimen de Prima Media — Colpensiones
-function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, iblProm, ipc, edadJub }) {
+function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ibcFuturo, iblProm, ipc, edadJub }) {
   const IBC = ibcSM * SM_2026;
   const aniosFaltantes = Math.max(0, edadJub - edad);
 
@@ -61,8 +61,16 @@ function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, iblProm, ipc, ed
   const cumpleRequisitos = cumpleSemanas;
 
   // IBL = Promedio IBC últimos 10 años (Art. 21 Ley 100)
-  // Si el usuario ingresa su promedio real, se usa. Si no, se usa el IBC actual.
-  const IBL = iblProm > 0 ? iblProm : IBC;
+  // Prioridad: 1) promedio histórico real, 2) proyección con IBC futuro, 3) IBC actual
+  let IBL = IBC;
+  if (iblProm > 0) {
+    IBL = iblProm; // Usuario ingresó su promedio real
+  } else if (ibcFuturo > 0 && ibcFuturo !== IBC) {
+    // Proyectar: combinar años pasados con IBC actual + años futuros con IBC futuro
+    const aniosEnUlt10 = Math.min(10, aniosFaltantes);
+    const aniosPasadosEn10 = 10 - aniosEnUlt10;
+    IBL = (aniosPasadosEn10 * IBC + aniosEnUlt10 * ibcFuturo) / 10;
+  }
 
   // ═══ TASA DE REEMPLAZO — Ley 797/2003 Art. 10 ═══
   // Base: 65.50% - 0.50% por cada SMMLV adicional del IBC sobre el primero
@@ -191,6 +199,7 @@ export default function PensionesColpensiones({ trm }) {
   const [semanas, setSemanas] = useState(800);
   const [ibcSM, setIbcSM] = useState(10);
   const [iblPromSM, setIblPromSM] = useState(0); // Promedio últimos 10 años (0 = usar IBC actual)
+  const [ibcFuturoSM, setIbcFuturoSM] = useState(0); // 0 = igual al actual
   const [ipc, setIpc] = useState(5.5);
   const [privSaldo, setPrivSaldo] = useState(200_000_000);
   const [privRend, setPrivRend] = useState(8);
@@ -202,16 +211,16 @@ export default function PensionesColpensiones({ trm }) {
   const aniosFaltantes = Math.max(0, edadJub - edad);
 
   const colp = useMemo(() => calcColpensiones({
-    sexo, edad, semanasActuales: semanas, ibcSM, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, ipc, edadJub,
-  }), [sexo, edad, semanas, ibcSM, iblPromSM, ipc, edadJub]);
+    sexo, edad, semanasActuales: semanas, ibcSM, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, ipc, edadJub,
+  }), [sexo, edad, semanas, ibcSM, ibcFuturoSM, iblPromSM, ipc, edadJub]);
 
   const colpJub = useMemo(() => calcColpensiones({
-    sexo, edad, semanasActuales: semanas + aniosFaltantes * 52, ibcSM, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, ipc, edadJub,
-  }), [sexo, edad, semanas, ibcSM, iblPromSM, ipc, edadJub, aniosFaltantes]);
+    sexo, edad, semanasActuales: semanas + aniosFaltantes * 52, ibcSM, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, ipc, edadJub,
+  }), [sexo, edad, semanas, ibcSM, ibcFuturoSM, iblPromSM, ipc, edadJub, aniosFaltantes]);
 
   const rais = useMemo(() => calcRAIS({
-    saldoActual: privSaldo, ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes, aportesVolMes: aportesVol, bonoPensional, sexo,
-  }), [privSaldo, ibcSM, privRend, aniosFaltantes, aportesVol, bonoPensional, sexo]);
+    saldoActual: privSaldo, ibcSM: ibcFuturoSM > 0 ? ibcFuturoSM : ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes, aportesVolMes: aportesVol, bonoPensional, sexo,
+  }), [privSaldo, ibcSM, ibcFuturoSM, privRend, aniosFaltantes, aportesVol, bonoPensional, sexo]);
 
   const tabs = [
     { id: "colp", icon: "🏛️", label: "Colpensiones" },
@@ -251,6 +260,7 @@ export default function PensionesColpensiones({ trm }) {
           <In label="Edad actual" value={edad} onChange={setEdad} unit="años" min={18} max={70} />
           <In label="Semanas cotizadas" value={semanas} onChange={setSemanas} unit="semanas" min={0} max={3000} />
           <In label="IBC (Salarios mínimos)" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} />
+          <In label="IBC futuro proyectado (SMMLV)" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
           <In label="Saldo fondo privado" value={privSaldo} onChange={setPrivSaldo} unit="COP" min={0} />
           <In label="Rendimiento fondo %" value={privRend} onChange={setPrivRend} unit="%" min={0} max={20} step={0.5} />
           <In label="Aportes voluntarios" value={aportesVol} onChange={setAportesVol} unit="COP/mes" min={0} />
@@ -258,7 +268,9 @@ export default function PensionesColpensiones({ trm }) {
           <In label="Bono pensional (traslado)" value={bonoPensional} onChange={setBonoPensional} unit="COP" min={0} />
         </div>
         <div style={{ marginTop: 8, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
-          💡 <strong>IBL promedio:</strong> Si dejaste en 0, se usa tu IBC actual. Para mayor precisión, ingresa el promedio de tus últimos 10 años de cotización en SMMLV.
+          💡 <strong>IBC futuro:</strong> {ibcFuturoSM > 0 && ibcFuturoSM !== ibcSM ? "Planeas cotizar sobre " + ibcFuturoSM + " SMMLV (" + fCOP(ibcFuturoSM * SM_2026) + "/mes). Tu IBL promedio sería " + fCOP(((10 - Math.min(10, aniosFaltantes)) * ibcSM * SM_2026 + Math.min(10, aniosFaltantes) * ibcFuturoSM * SM_2026) / 10) + "/mes." : "Si dejaste en 0, se asume que seguirás cotizando sobre tu IBC actual (" + ibcSM + " SMMLV)."}
+          {ibcFuturoSM > 0 && ibcFuturoSM > ibcSM * 2 && <><br/><span style={{color: T.orange}}>⚠️ La UGPP vigila saltos bruscos de cotización. Un aumento gradual es más seguro que duplicar de un año a otro.</span></>}
+          <br/>💡 <strong>IBL promedio:</strong> Si dejaste en 0, se usa tu IBC actual. Para mayor precisión, ingresa el promedio de tus últimos 10 años de cotización en SMMLV.
           {aportesVol > 0 && <><br/>💰 <strong>Aportes voluntarios:</strong> {fCOP(aportesVol)}/mes se suman al ahorro RAIS (no afectan Colpensiones).</>}
           {bonoPensional > 0 && <><br/>📋 <strong>Bono pensional:</strong> {fCOP(bonoPensional)} se suma al saldo inicial del fondo privado.</>}
         </div>
