@@ -206,7 +206,6 @@ export default function PensionesColpensiones({ trm }) {
   const [privRend, setPrivRend] = useState(8);
   const [aportesVol, setAportesVol] = useState(0); // Aportes voluntarios mensuales
   const [bonoPensional, setBonoPensional] = useState(0); // Bono si se trasladó
-  const [ibcFuturoSM, setIbcFuturoSM] = useState(0); // IBC proyectado para años restantes (0 = usar actual)
   const [tab, setTab] = useState("colp"); // colp | rais | comparar
 
   const edadJub = sexo === "F" ? 57 : 62;
