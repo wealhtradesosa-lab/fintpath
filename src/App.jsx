@@ -10,6 +10,7 @@ import MetasModule from "./components/MetasModule";
 import PensionColombia from "./components/PensionColombia";
 import SimuladorAvanzado from "./components/SimuladorAvanzado";
 import AsesorIA from "./components/AsesorIA";
+import AportesCalculadora from "./components/AportesCalculadora";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
@@ -319,7 +320,7 @@ const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div sty
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 export default function FinPath(){
-  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState("COP");const[showAuth,setShowAuth]=useState(false);const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[tipoAp,setTipoAp]=useState("empleado");const[ingAp,setIngAp]=useState(5000000);
+  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState("COP");const[showAuth,setShowAuth]=useState(false);const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
   useEffect(()=>{if(mb)sSb(false)},[mb]);
   useEffect(()=>{(async()=>{
@@ -1616,79 +1617,7 @@ case"inv":return<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv
     case"pat":{const bc={};((u&&u.inv)||[]).forEach(i=>{const tp=inferType(i);bc[tp]=(bc[tp]||0)+(+i.va||0)});if(ib.tv>0)bc.Trading=ib.tv;const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);const gr=t.ab+ib.tv;return<div><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 20px"}}>Patrimonio</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:16}}><Cd><St l="Activos" v={fm(gr)} cl={T.gn}/></Cd><Cd><St l="Pasivos" v={fm(t.td)} cl={T.rd}/></Cd><Cd><St l="Neto" v={fm(t.nw)} cl={T.bl}/></Cd></div><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14}}><Cd s={{padding:20}}><div style={{fontSize:12,fontWeight:600,color:T.tx2,marginBottom:14}}>Distribución</div>{pie.length>0?<ResponsiveContainer width="100%" height={220}><PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={2}>{pie.map((_,i)=><Cell key={i} fill={T.ch[i%T.ch.length]}/>)}</Pie><Tooltip contentStyle={{background:"#1e1e24",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,color:"#fafafa",fontSize:12}} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={v=>fm(v)}/><Legend/></PieChart></ResponsiveContainer>:<div style={{height:220,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3}}>Agrega datos</div>}</Cd><Cd s={{padding:20}}><div style={{fontSize:12,fontWeight:600,color:T.tx2,marginBottom:14}}>Desglose</div>{pie.map((a,i)=><div key={a.name} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{a.name}</span></div><span style={{fontWeight:600,fontFamily:"monospace"}}>{fm(a.value)} <span style={{fontSize:11,color:T.tx3}}>{pc((a.value/gr)*100)}</span></span></div>)}</Cd></div></div>}
     case"pen":return gated("pen","Básico",<PensionesColpensiones trm={(u&&u.trm)||4200}/>);
     case"tax":return gated("tax","Básico",<SimuladorTributario trm={(u&&u.trm)||4200} user={u}/>);
-    case"aportes":{
-      const sal = Number(ingAp) || 0;
-      // Empleado
-      const empPen = sal * 0.04, empSal = sal * 0.04, empTotal = empPen + empSal;
-      const dorPen = sal * 0.12, dorSal = sal * 0.085, dorArl = sal * 0.00522, dorCaja = sal * 0.04;
-      const dorTotal = dorPen + dorSal + dorArl + dorCaja;
-      // Independiente
-      const ibc40 = sal * 0.40;
-      const indPen = ibc40 * 0.16, indSal = ibc40 * 0.125, indArl = ibc40 * 0.00522;
-      const indTotal = indPen + indSal + indArl;
-      return <div style={{maxWidth:700,margin:"0 auto"}}>
-        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 6px"}}>💰 Calcula tus aportes de seguridad social</h2>
-        <p style={{color:T.tx3,fontSize:13,margin:"0 0 20px"}}>Conoce cuánto pagas de pensión, salud y ARL según tu tipo de vinculación</p>
-        
-        <Cd s={{padding:24,marginBottom:16}}>
-          <div style={{display:"flex",gap:8,marginBottom:16}}>
-            {[{v:"empleado",l:"👔 Empleado",c:T.bl},{v:"independiente",l:"🧑‍💻 Independiente",c:T.orange}].map(t2=>(
-              <button key={t2.v} onClick={()=>setTipoAp(t2.v)} style={{flex:1,padding:"14px",borderRadius:10,border:"2px solid "+(tipoAp===t2.v?t2.c:T.border),background:tipoAp===t2.v?t2.c+"15":"transparent",color:tipoAp===t2.v?t2.c:T.tx2,cursor:"pointer",fontWeight:600,fontSize:14}}>{t2.l}</button>
-            ))}
-          </div>
-          <In l={tipoAp==="empleado"?"¿Cuál es tu salario mensual?":"¿Cuánto facturas al mes?"} value={ingAp} onChange={v=>setIngAp(v)} type="number" placeholder="Ej: 5,000,000" />
-          <div style={{fontSize:11,color:T.tx3,marginTop:-4}}>
-            {sal > 0 ? "Equivale a " + (sal/1750905).toFixed(1) + " salarios mínimos" : ""}
-          </div>
-        </Cd>
-        
-        {sal > 0 && tipoAp === "empleado" && <Cd s={{padding:24,marginBottom:16}}>
-          <div style={{fontSize:15,fontWeight:700,color:T.bl,marginBottom:16}}>👔 Aportes como empleado</div>
-          
-          <div style={{fontSize:13,fontWeight:600,color:T.tx2,marginBottom:8}}>Te descuentan de tu nómina:</div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+T.border}}><span style={{color:T.tx2}}>Pensión (4%)</span><span style={{fontWeight:600,fontFamily:"monospace"}}>{fm(empPen)}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+T.border}}><span style={{color:T.tx2}}>Salud (4%)</span><span style={{fontWeight:600,fontFamily:"monospace"}}>{fm(empSal)}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid "+T.border}}><span style={{fontWeight:700,color:T.bl}}>Total que te descuentan</span><span style={{fontWeight:700,color:T.bl,fontFamily:"monospace"}}>{fm(empTotal)} (8%)</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",marginBottom:16}}><span style={{fontWeight:700,color:T.gn}}>Tu neto estimado</span><span style={{fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{fm(sal - empTotal)}/mes</span></div>
-          
-          <div style={{fontSize:13,fontWeight:600,color:T.tx2,marginBottom:8}}>Tu empleador paga adicionalmente:</div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+T.border}}><span style={{color:T.tx3}}>Pensión (12%)</span><span style={{fontFamily:"monospace",color:T.tx2}}>{fm(dorPen)}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+T.border}}><span style={{color:T.tx3}}>Salud (8.5%)</span><span style={{fontFamily:"monospace",color:T.tx2}}>{fm(dorSal)}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+T.border}}><span style={{color:T.tx3}}>ARL (0.52%)</span><span style={{fontFamily:"monospace",color:T.tx2}}>{fm(dorArl)}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+T.border}}><span style={{color:T.tx3}}>Caja compensación (4%)</span><span style={{fontFamily:"monospace",color:T.tx2}}>{fm(dorCaja)}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0"}}><span style={{fontWeight:600,color:T.tx2}}>Total empleador</span><span style={{fontWeight:600,fontFamily:"monospace",color:T.tx2}}>{fm(dorTotal)}</span></div>
-          
-          <div style={{marginTop:12,background:T.bg3,padding:"12px 14px",borderRadius:10,fontSize:12,color:T.tx3,lineHeight:1.6}}>
-            <strong style={{color:T.bl}}>📌 Para tu declaración de renta:</strong><br/>
-            Tu aporte de pensión ({fm(empPen)}/mes = {fm(empPen*12)}/año) es ingreso no constitutivo de renta (Art. 55 ET). Se resta automáticamente en tu planeación tributaria.
-          </div>
-        </Cd>}
-        
-        {sal > 0 && tipoAp === "independiente" && <Cd s={{padding:24,marginBottom:16}}>
-          <div style={{fontSize:15,fontWeight:700,color:T.orange,marginBottom:16}}>🧑‍💻 Aportes como independiente</div>
-          
-          <div style={{background:T.bg3,padding:"10px 14px",borderRadius:8,marginBottom:12,fontSize:12,color:T.tx2}}>
-            Tu IBC (Ingreso Base de Cotización) = 40% de tu ingreso = <strong>{fm(ibc40)}/mes</strong>
-          </div>
-          
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+T.border}}><span style={{color:T.tx2}}>Pensión (16% del IBC)</span><span style={{fontWeight:600,fontFamily:"monospace"}}>{fm(indPen)}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+T.border}}><span style={{color:T.tx2}}>Salud (12.5% del IBC)</span><span style={{fontWeight:600,fontFamily:"monospace"}}>{fm(indSal)}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+T.border}}><span style={{color:T.tx2}}>ARL (0.52% del IBC)</span><span style={{fontWeight:600,fontFamily:"monospace"}}>{fm(indArl)}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid "+T.border}}><span style={{fontWeight:700,color:T.orange}}>Total seguridad social</span><span style={{fontWeight:700,color:T.orange,fontFamily:"monospace"}}>{fm(indTotal)}/mes</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",marginBottom:16}}><span style={{fontWeight:700,color:T.gn}}>Tu neto estimado</span><span style={{fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{fm(sal - indTotal)}/mes</span></div>
-          
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 14px",background:T.bg3,borderRadius:8,marginBottom:8}}>
-            <span style={{fontSize:12,color:T.tx3}}>Total anual seguridad social</span>
-            <span style={{fontSize:14,fontWeight:700,color:T.orange}}>{fm(indTotal * 12)}/año</span>
-          </div>
-          
-          <div style={{marginTop:12,background:T.bg3,padding:"12px 14px",borderRadius:10,fontSize:12,color:T.tx3,lineHeight:1.6}}>
-            <strong style={{color:T.orange}}>📌 Para tu declaración de renta:</strong><br/>
-            Tu aporte de pensión obligatoria ({fm(ibc40 * 0.04)}/mes, parte trabajador) es ingreso no constitutivo de renta (Art. 55 ET).<br/>
-            Retención en la fuente por honorarios: 11% = {fm(sal * 0.11)}/mes si eres declarante.
-          </div>
-        </Cd>}
-      </div>}
+    case"aportes":return <AportesCalculadora fmt={fm}/>;
         case"btc":return gated("btc","Básico",<PensionColombia trm={(u&&u.trm)||4200}/>);
     case"asesor":{const _aInv=((u&&u.inv)||[]).filter(i=>i.sim!==false),_aDeu=((u&&u.deu)||[]).filter(d=>d.sim!==false),_aIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false),_aGas={};Object.entries((u&&u.gas)||{}).forEach(([cat,items])=>{const fi=(items||[]).filter(g=>g.sim!==false);if(fi.length>0)_aGas[cat]=fi});return gated("asesor","Pro",<AsesorIA user={{inv:_aInv,gas:_aGas,deu:_aDeu,ingresos:_aIng}} totals={t} userId={authUser?.id}/>);}
     case"coach":{const msgs=adv?getCoach(adv.id):[];return gated("coach","Pro",<div><div style={{textAlign:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 6px"}}>Coaches Financieros IA</h2><p style={{color:T.tx3,fontSize:13}}>5 asesores analizan tus datos</p><p style={{color:T.tx3,fontSize:10,margin:"4px 0 0"}}>📋 Solo se analizan ítems encendidos. Los apagados no se incluyen en el análisis.</p></div><div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center",marginBottom:20}}>{ADV.map(a=>{const ac=adv?.id===a.id;return<button key={a.id} onClick={()=>sAdv(a)} style={{background:ac?`linear-gradient(135deg,${a.cl}20,${a.cl}10)`:T.card,border:`1px solid ${ac?a.cl:T.border}`,color:T.tx,padding:"14px 20px",borderRadius:14,cursor:"pointer",textAlign:"center",minWidth:90}}><div style={{fontSize:22,marginBottom:4}}>{a.av}</div><div style={{fontWeight:700,fontSize:11,color:ac?a.cl:T.tx}}>{a.nm}</div><div style={{fontSize:9,color:ac?`${a.cl}aa`:T.tx3}}>{a.ti}</div></button>})}</div><Cd>{adv?<div style={{padding:20}}><div style={{display:"flex",alignItems:"center",gap:10,paddingBottom:14,borderBottom:`2px solid ${adv.cl}`,marginBottom:20}}><span style={{fontSize:28}}>{adv.av}</span><div><div style={{fontWeight:700,fontSize:15}}>{adv.nm}</div><div style={{fontSize:12,color:T.tx3}}>{adv.ti}</div></div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:6,marginBottom:20}}>{[{l:"Patrimonio",v:fm(t.nw),c:T.tx},{l:"Cash Flow",v:fm(t.cf),c:t.cf>=0?T.gn:T.rd},{l:"Independencia",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2},{l:"Deuda/Act",v:pc(t.dta),c:t.dta<30?T.gn:T.rd}].map(m=><div key={m.l} style={{background:T.bg3,padding:8,borderRadius:8,borderLeft:`3px solid ${m.c}`}}><div style={{fontSize:9,color:T.tx3,textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:15,fontWeight:700,color:m.c}}>{m.v}</div></div>)}</div>{msgs.map((msg,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:14}}><div style={{width:32,height:32,borderRadius:"50%",background:adv.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{adv.av}</div><div style={{flex:1,background:adv.bg,padding:"14px 18px",borderRadius:"0 14px 14px 14px",border:`1px solid ${adv.cl}10`}}><div style={{fontWeight:700,fontSize:13,color:adv.cl,marginBottom:6}}>{msg.t}</div><div style={{fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",color:T.tx}}>{msg.c}</div></div></div>)}</div>:<div style={{padding:56,textAlign:"center",color:T.tx3}}><div style={{fontSize:40,marginBottom:12}}>👆</div><p>Selecciona un coach</p></div>}</Cd></div>)}
