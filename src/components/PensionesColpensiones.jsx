@@ -113,12 +113,12 @@ function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ibcFuturo, iblPr
     pensionBruta, pensionTope, pensionAplicada, descuentoSalud, pensionNeta, pensionFinal,
     semanasTotales, semanasExtra, semanasQueFaltan, bloques50, pctDescuento,
     cumpleSemanas, cumpleRequisitos,
-    aniosFaltantes, mesesFaltantes, total20Anios, edadJub, pensionMinima,
+    aniosFaltantes, mesesFaltantes, total20Anios, IBL, saltoIBC: typeof saltoIBC !== "undefined" ? saltoIBC : 1, edadJub, pensionMinima,
   };
 }
 
 // RAIS — Régimen de Ahorro Individual con Solidaridad (Fondos Privados)
-function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar, aportesVolMes, bonoPensional, sexo }) {
+function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar, aportesVolMes, bonoPensional, sexo, ibcFuturo }) {
   const IBC = ibcSM * SM_2026;
 
   // ═══ APORTE REAL AL AHORRO INDIVIDUAL ═══
@@ -128,7 +128,8 @@ function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar, aportesVolMes, 
   //   - 1.5%  → Fondo Garantía Pensión Mínima
   //   - 3.0%  → Administración + seguros
   const aporteTotal = IBC * 0.16;
-  const aporteMes = IBC * 0.115; // Solo lo que va a la cuenta
+  const ibcEfectivo = ibcFuturo > 0 ? ibcFuturo : IBC;
+  const aporteMes = ibcEfectivo * 0.115; // Solo lo que va a la cuenta
   const comisionMes = IBC * 0.03; // Lo que cobra la AFP
   const fondoGarantia = IBC * 0.015;
 
@@ -205,6 +206,7 @@ export default function PensionesColpensiones({ trm }) {
   const [privRend, setPrivRend] = useState(8);
   const [aportesVol, setAportesVol] = useState(0); // Aportes voluntarios mensuales
   const [bonoPensional, setBonoPensional] = useState(0); // Bono si se trasladó
+  const [ibcFuturoSM, setIbcFuturoSM] = useState(0); // IBC proyectado para años restantes (0 = usar actual)
   const [tab, setTab] = useState("colp"); // colp | rais | comparar
 
   const edadJub = sexo === "F" ? 57 : 62;
@@ -219,7 +221,7 @@ export default function PensionesColpensiones({ trm }) {
   }), [sexo, edad, semanas, ibcSM, ibcFuturoSM, iblPromSM, ipc, edadJub, aniosFaltantes]);
 
   const rais = useMemo(() => calcRAIS({
-    saldoActual: privSaldo, ibcSM: ibcFuturoSM > 0 ? ibcFuturoSM : ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes, aportesVolMes: aportesVol, bonoPensional, sexo,
+    saldoActual: privSaldo, ibcSM: ibcFuturoSM > 0 ? ibcFuturoSM : ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes, aportesVolMes: aportesVol, bonoPensional, sexo, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0,
   }), [privSaldo, ibcSM, ibcFuturoSM, privRend, aniosFaltantes, aportesVol, bonoPensional, sexo]);
 
   const tabs = [
@@ -265,6 +267,7 @@ export default function PensionesColpensiones({ trm }) {
           <In label="Rendimiento fondo %" value={privRend} onChange={setPrivRend} unit="%" min={0} max={20} step={0.5} />
           <In label="Aportes voluntarios" value={aportesVol} onChange={setAportesVol} unit="COP/mes" min={0} />
           <In label="IBL promedio 10 años (SMMLV)" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
+          <In label="IBC futuro proyectado (SMMLV)" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
           <In label="Bono pensional (traslado)" value={bonoPensional} onChange={setBonoPensional} unit="COP" min={0} />
         </div>
         <div style={{ marginTop: 8, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
