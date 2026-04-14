@@ -140,11 +140,12 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       if (pctGastos < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + pctGastos.toFixed(0) + "% de ingresos", desc: "Una empresa operativa típica tiene 40-70%. Revisa si faltan gastos por registrar.", impact: gastosExtra > 0 ? gastosExtra * 0.35 : 0, color: T.orange });
       if (utilidadActual > 50e6) {
         if (bonificaciones > 500000) recs.push({ icon: "🎁", title: "Bonificaciones a empleados", desc: "Primas extralegales y bonificaciones son 100% deducibles. Motiva al equipo y reduce renta gravable. Estimado: " + fm(bonificaciones) + "/año.", impact: bonificaciones * 0.35, color: T.green });
-        if (donacionSugerida > 1e6) recs.push({ icon: "🤝", title: "Donaciones deducibles", desc: "Dona a fundaciones certificadas (sin ánimo de lucro). Deducibles hasta 25% de renta líquida. Sugerido: " + fm(donacionSugerida) + "/año.", impact: donacionSugerida * 0.35, color: T.green });
-        if (provisionCartera > 1e6) recs.push({ icon: "📋", title: "Provisión de cartera", desc: "Si tienes cuentas por cobrar, la provisión es deducible. Estimado: " + fm(provisionCartera) + "/año.", impact: provisionCartera * 0.35, color: T.green });
-        if (deprecExtra > 1e6) recs.push({ icon: "🏗️", title: "Revisar depreciación", desc: "Evalúa con tu contador depreciación acelerada o revaluación de activos. Potencial: " + fm(deprecExtra) + "/año.", impact: deprecExtra * 0.35, color: T.green });
-        recs.push({ icon: "📈", title: "Reinvertir en la empresa", desc: "Compra equipos, vehículos, mejoras a propiedades. Genera depreciación deducible en años siguientes y reduce renta gravable futura.", impact: 0, color: T.purple });
-        if (deudaEstrategica > 1e6) recs.push({ icon: "🏦", title: "Deuda productiva (apalancamiento)", desc: "Tomar deuda para inversión productiva. Los intereses son 100% deducibles y reduces renta gravable. Ej: crédito para comprar bodega que genere arriendo. Estimado: " + fm(deudaEstrategica) + "/año en intereses deducibles.", impact: deudaEstrategica * 0.35, color: T.green });
+        if (donacionSugerida > 1e6) recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Las donaciones dan un DESCUENTO del 25% del valor donado directo del impuesto (no de la base). Además son deducibles. Doble beneficio. Sugerido: " + fm(donacionSugerida) + ".", impact: donacionSugerida * 0.25 + donacionSugerida * 0.35, color: T.green });
+        if (provisionCartera > 1e6) recs.push({ icon: "📋", title: "Provisión de cartera (Art. 145 ET)", desc: "Provisión individual por deterioro de cartera. Si tienes cuentas por cobrar con más de 90 días, puedes provisionar y deducir.", impact: provisionCartera * 0.35, color: T.green });
+        if (deprecExtra > 1e6) recs.push({ icon: "🏗️", title: "Depreciación acelerada", desc: "Evalúa con tu contador aplicar depreciación acelerada en activos productivos. Reduce utilidad gravable hoy, difiere impuesto. Potencial: " + fm(deprecExtra) + "/año.", impact: deprecExtra * 0.35, color: T.green });
+        if (deudaEstrategica > 1e6) recs.push({ icon: "🏦", title: "Apalancamiento financiero", desc: "Crédito para inversión productiva: los intereses son 100% deducibles. Ej: crédito para comprar bodega → genera arriendo + intereses deducibles. Estimado: " + fm(deudaEstrategica) + "/año.", impact: deudaEstrategica * 0.35, color: T.green });
+        recs.push({ icon: "📈", title: "Reinvertir utilidades", desc: "Comprar activos productivos genera depreciación deducible futura. Cada $100M en equipos/vehículos genera $20-33M/año en depreciación.", impact: 0, color: T.purple });
+        recs.push({ icon: "💰", title: "Distribuir dividendos estratégicamente", desc: "En vez de dejar utilidad en la empresa (35%), distribuir dividendos al socio tributa al 15% (>300 UVT). Si la persona natural tiene tasa efectiva menor al 35%, conviene distribuir.", impact: 0, color: T.purple });
       }
       // Siempre mostrar retención y descuentos
 
@@ -219,7 +220,24 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       if (!gastosByCat["Salud"] && ingAnual > 2000 * UVT) recs.push({ icon: "🏥", title: "Medicina prepagada", desc: "Deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → Salud.", impact: 0, color: T.purple });
       if (deducDep > 0) recs.push({ icon: "👨‍👩‍👧", title: "Dependientes: " + fm(deducDep) + "/año", desc: "Ya se está deduciendo 10% del ingreso por dependientes (gastos educación detectados).", impact: 0, color: T.green });
       if (deducViv > 0) recs.push({ icon: "🏠", title: "Intereses vivienda: " + fm(deducViv) + "/año", desc: "Los intereses de tu hipoteca ya se deducen automáticamente.", impact: 0, color: T.green });
-      if (interesesHip === 0 && deu.length === 0 && ingAnual > 200e6) recs.push({ icon: "🏦", title: "Deuda para vivienda = deducción", desc: "Si no tienes hipoteca, comprar vivienda con crédito te genera intereses deducibles hasta 1200 UVT/año (" + fm(1200 * UVT) + "). Es una de las deducciones más grandes disponibles.", impact: Math.min(1200 * UVT, ingAnual * 0.05) * 0.3, color: T.green });
+      // Costos de arriendos: depreciación + gastos del inmueble
+      const tieneArriendos = ingresos.some(i => /Arriendo/i.test(i.categoria || ""));
+      const invInmuebles = inv.filter(i => /Real Estate|bodega|local|oficina/i.test((i.tp||i.tipo||"").toLowerCase()));
+      if (tieneArriendos && invInmuebles.length > 0) {
+        const deprecInmuebles = invInmuebles.reduce((s,i) => s + (i.va||0) * 0.0222, 0);
+        recs.push({ icon: "🏠", title: "Depreciación de inmuebles arrendados", desc: "Tus inmuebles en arriendo se deprecian 2.22%/año. Esto reduce la renta no laboral directamente. Depreciación estimada: " + fm(deprecInmuebles) + "/año.", impact: deprecInmuebles * 0.28, color: T.green });
+      }
+      
+      // Donaciones con descuento tributario (Art. 257 ET)
+      if (ingAnual > 200e6) recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Las donaciones a entidades sin ánimo de lucro dan un DESCUENTO del 25% del valor donado, directo del impuesto (no de la base). Ej: dona " + fm(ingAnual * 0.03) + " → descuento " + fm(ingAnual * 0.03 * 0.25) + " del impuesto a pagar.", impact: ingAnual * 0.03 * 0.25, color: T.green });
+      
+      // Deuda para vivienda
+      if (interesesHip === 0 && deu.length === 0 && ingAnual > 200e6) recs.push({ icon: "🏦", title: "Deuda para vivienda = deducción", desc: "Si no tienes hipoteca, comprar vivienda con crédito genera intereses deducibles hasta 1200 UVT/año (" + fm(1200 * UVT) + "). Es una de las deducciones más grandes.", impact: Math.min(1200 * UVT, ingAnual * 0.05) * 0.3, color: T.green });
+      
+      // GMF
+      if (ingAnual > 100e6) recs.push({ icon: "💳", title: "GMF 4×1000 deducible (Art. 115 ET)", desc: "El 50% del GMF pagado es deducible. Se calcula automáticamente: " + fm(ingAnual * 0.004 * 0.50) + "/año.", impact: 0, color: T.green });
+      
+      // Estructura societaria
       if (ingAnual > 400e6) recs.push({ icon: "🏢", title: "Evalúa una estructura societaria", desc: "Con ingresos altos, una SAS puede optimizar tu carga fiscal canalizando ingresos por la empresa (35% sobre utilidad vs hasta 39% persona natural).", impact: 0, color: T.purple });
       
       // Si el tope 40% ya está lleno y no hay ahorro
