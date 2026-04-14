@@ -235,6 +235,15 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 setForm(p => ({ ...p, ...nf }));
               }} type="number" placeholder="¿Cuánto recibes al mes?" />
               <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa, propiedad, fondo..." />
+
+              <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
+              <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
+              <div style={{ gridColumn: "1/-1", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12, marginTop: 4 }}>
+                <div style={{fontSize:11,fontWeight:600,color:"#a1a1aa",marginBottom:8}}>🧾 Clasificación tributaria (opcional)</div>
+              </div>
+              <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} /></div>
+              <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} /></div>
+              <div style={{fontSize:10,color:"#71717a",marginTop:-8,marginBottom:4,padding:"0 4px",gridColumn:"1/-1"}}>Si asignas propietario, este ingreso se incluirá en el cálculo de impuestos de esa persona o empresa.</div>
               {form.categoria === "Salario" && Number(form.mensual) > 0 && (()=>{
                 const sal = Number(form.mensual);
                 const penEmpleado = sal * 0.04;
@@ -290,14 +299,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   <div style={{marginTop:8,fontSize:10,color:"#71717a"}}>📌 Para planeación tributaria: tu aporte de pensión obligatoria ({fm(ibc * 0.04)}/mes, parte trabajador) es ingreso no constitutivo de renta (Art. 55 ET)</div>
                 </div>;
               })()}
-              <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
-              <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
-              <div style={{ gridColumn: "1/-1", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12, marginTop: 4 }}>
-                <div style={{fontSize:11,fontWeight:600,color:"#a1a1aa",marginBottom:8}}>🧾 Clasificación tributaria (opcional)</div>
-              </div>
-              <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} /></div>
-              <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} /></div>
-              <div style={{fontSize:10,color:"#71717a",marginTop:-8,marginBottom:4,padding:"0 4px",gridColumn:"1/-1"}}>Si asignas propietario, este ingreso se incluirá en el cálculo de impuestos de esa persona o empresa.</div>
               {["Rendimiento","Dividendos","Arriendo","Inversión"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
                   <div style={{fontSize:11,color:T.txt3,marginBottom:10}}>📊 Con 2 de 3 valores se calcula el tercero automáticamente</div>
