@@ -273,7 +273,7 @@ export default function PensionesColpensiones({ trm }) {
           </div>
 
           <div>
-            <In label="¿Sobre cuántos salarios mínimos cotizas? (IBC)" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} step={0.5} />
+            <In label="¿Sobre cuántos salarios mínimos cotizas? (IBC) (IBC)" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} step={0.5} />
             <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Equivale a {fCOP(ibcSM * SM_2026)}/mes. Aporte pensión: {fCOP(ibcSM * SM_2026 * 0.16)}/mes</div>
             <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Revisa tu desprendible de nómina o planilla PILA</div>
           </div>
@@ -324,7 +324,7 @@ export default function PensionesColpensiones({ trm }) {
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Ajustes opcionales para mayor precisión. Si no estás seguro, déjalos como están.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
               <div>
-                <In label="¿Piensas subir tu cotización antes de pensionarte? (IBC futuro)" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
+                <In label="¿Piensas subir tu cotización antes de pensionarte? (IBC futuro) (IBC futuro)" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
                 <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>
                   {ibcFuturoSM > 0 && ibcFuturoSM !== ibcSM
                     ? <>Proyección: cotizarás sobre {ibcFuturoSM} SMMLV ({fCOP(ibcFuturoSM * SM_2026)}/mes) los próximos {aniosFaltantes} años</>
@@ -333,7 +333,7 @@ export default function PensionesColpensiones({ trm }) {
                 {ibcFuturoSM > 0 && ibcFuturoSM > ibcSM * 2 && <div style={{ fontSize: 11, color: T.orange, marginTop: 4 }}>⚠️ Un salto de más del doble puede ser revisado por la UGPP. Mejor aumentar gradualmente.</div>}
               </div>
               <div>
-                <In label="¿Sobre cuántos SMMLV cotizabas en promedio los últimos 10 años? (IBL)" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
+                <In label="¿Sobre cuántos SMMLV cotizabas en promedio los últimos 10 años? (IBL) (IBL)" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
                 <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>{iblPromSM > 0 ? "Promedio: " + fCOP(iblPromSM * SM_2026) + "/mes" : "Déjalo en 0 si siempre has cotizado parecido"}</div>
               </div>
               <div>
