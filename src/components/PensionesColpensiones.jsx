@@ -206,7 +206,8 @@ export default function PensionesColpensiones({ trm }) {
   const [privRend, setPrivRend] = useState(8);
   const [aportesVol, setAportesVol] = useState(0); // Aportes voluntarios mensuales
   const [bonoPensional, setBonoPensional] = useState(0); // Bono si se trasladó
-  const [tab, setTab] = useState("colp"); // colp | rais | comparar
+  const [tab, setTab] = useState("colp");
+  const [showAvanzado, setShowAvanzado] = useState(false); // colp | rais | comparar
 
   const edadJub = sexo === "F" ? 57 : 62;
   const aniosFaltantes = Math.max(0, edadJub - edad);
@@ -240,50 +241,121 @@ export default function PensionesColpensiones({ trm }) {
         <button onClick={() => { document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO")); window.print(); }} style={{ background: T.blue, color: "#fff", border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}>📄 Exportar PDF</button>
       </div>
 
-      {/* Input Form */}
+      {/* ═══ PERFIL ═══ */}
       <Cd style={{ padding: 24, marginBottom: 20 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 16px" }}>👤 Tu Perfil de Cotización</h3>
+        <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 4px" }}>Tu información</h3>
+        <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Datos básicos para calcular tu pensión estimada</p>
+        
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-          {/* Sexo */}
           <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>Sexo</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 6 }}>Sexo</label>
             <div style={{ display: "flex", gap: 8 }}>
-              {[{ v: "M", l: "👨 Hombre (62)", c: T.blue }, { v: "F", l: "👩 Mujer (57)", c: "#ec4899" }].map((g) => (
+              {[{ v: "M", l: "👨 Hombre", c: T.blue }, { v: "F", l: "👩 Mujer", c: "#ec4899" }].map((g) => (
                 <button key={g.v} onClick={() => setSexo(g.v)} style={{
-                  flex: 1, padding: "10px", borderRadius: 8,
-                  border: `1px solid ${sexo === g.v ? g.c : T.border}`,
+                  flex: 1, padding: "12px", borderRadius: 10,
+                  border: `2px solid ${sexo === g.v ? g.c : T.border}`,
                   background: sexo === g.v ? g.c + "15" : T.bg3,
-                  color: sexo === g.v ? g.c : T.txt2, cursor: "pointer", fontWeight: 600, fontSize: 13,
+                  color: sexo === g.v ? g.c : T.txt2, cursor: "pointer", fontWeight: 600, fontSize: 14,
                 }}>{g.l}</button>
               ))}
             </div>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Te pensionas a los {edadJub} años</div>
           </div>
-          <In label="Edad actual" value={edad} onChange={setEdad} unit="años" min={18} max={70} />
-          <In label="Semanas cotizadas" value={semanas} onChange={setSemanas} unit="semanas" min={0} max={3000} />
-          <In label="IBC (Salarios mínimos)" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} />
-          <In label="IBC futuro proyectado (SMMLV)" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
-          <In label="Saldo fondo privado" value={privSaldo} onChange={setPrivSaldo} unit="COP" min={0} />
-          <In label="Rendimiento fondo %" value={privRend} onChange={setPrivRend} unit="%" min={0} max={20} step={0.5} />
-          <In label="Aportes voluntarios" value={aportesVol} onChange={setAportesVol} unit="COP/mes" min={0} />
-          <In label="IBL promedio 10 años (SMMLV)" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
-          <In label="IBC futuro proyectado (SMMLV)" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
-          <In label="Bono pensional (traslado)" value={bonoPensional} onChange={setBonoPensional} unit="COP" min={0} />
-        </div>
-        <div style={{ marginTop: 8, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
-          💡 <strong>IBC futuro:</strong> {ibcFuturoSM > 0 && ibcFuturoSM !== ibcSM ? "Planeas cotizar sobre " + ibcFuturoSM + " SMMLV (" + fCOP(ibcFuturoSM * SM_2026) + "/mes). Tu IBL promedio sería " + fCOP(((10 - Math.min(10, aniosFaltantes)) * ibcSM * SM_2026 + Math.min(10, aniosFaltantes) * ibcFuturoSM * SM_2026) / 10) + "/mes." : "Si dejaste en 0, se asume que seguirás cotizando sobre tu IBC actual (" + ibcSM + " SMMLV)."}
-          {ibcFuturoSM > 0 && ibcFuturoSM > ibcSM * 2 && <><br/><span style={{color: T.orange}}>⚠️ La UGPP vigila saltos bruscos de cotización. Un aumento gradual es más seguro que duplicar de un año a otro.</span></>}
-          <br/>💡 <strong>IBL promedio:</strong> Si dejaste en 0, se usa tu IBC actual. Para mayor precisión, ingresa el promedio de tus últimos 10 años de cotización en SMMLV.
-          {aportesVol > 0 && <><br/>💰 <strong>Aportes voluntarios:</strong> {fCOP(aportesVol)}/mes se suman al ahorro RAIS (no afectan Colpensiones).</>}
-          {bonoPensional > 0 && <><br/>📋 <strong>Bono pensional:</strong> {fCOP(bonoPensional)} se suma al saldo inicial del fondo privado.</>}
-        </div>
-        <div style={{ marginTop: 12, padding: 14, background: T.bg3, borderRadius: 10, display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13, color: T.txt2 }}>
-          <span>📅 <strong>Edad jubilación:</strong> {edadJub} años</span>
-          <span>⏳ <strong>Faltan:</strong> {aniosFaltantes} años</span>
-          <span>📊 <strong>IBC:</strong> {fCOP(ibcSM * SM_2026)}/mes</span>
-          <span>💰 <strong>Aporte pensión:</strong> {fCOP(ibcSM * SM_2026 * 0.16)}/mes (16%)</span>
-          <span>📋 <strong>Semanas al jubilarse:</strong> {colp.semanasTotales}</span>
+
+          <div>
+            <In label="¿Qué edad tienes?" value={edad} onChange={setEdad} unit="años" min={18} max={70} />
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Te faltan <strong style={{color: T.blue}}>{aniosFaltantes} años</strong> para pensionarte</div>
+          </div>
+
+          <div>
+            <In label="¿Cuántos años llevas trabajando?" value={Math.round(semanas/52)} onChange={v => setSemanas(v * 52)} unit="años" min={0} max={45} />
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>{semanas} semanas cotizadas {semanas >= 1300 ? <span style={{color:T.green}}>✅ Cumples el mínimo</span> : <span style={{color:T.orange}}>⚠️ Necesitas {1300-semanas} más</span>}</div>
+          </div>
+
+          <div>
+            <In label="¿Cuánto ganas hoy? (mensual)" value={ibcSM * SM_2026} onChange={v => setIbcSM(Math.round(v / SM_2026 * 10) / 10)} unit="$/mes" min={SM_2026} max={25*SM_2026} step={100000} />
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Cotizas sobre {ibcSM} salarios mínimos. Aporte pensión: {fCOP(ibcSM * SM_2026 * 0.16)}/mes</div>
+          </div>
         </div>
       </Cd>
+
+      {/* ═══ FONDO PRIVADO ═══ */}
+      <Cd style={{ padding: 24, marginBottom: 20 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 4px" }}>Tu fondo privado</h3>
+        <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Si estás en un fondo como Porvenir, Protección, Colfondos o Skandia</p>
+        
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+          <div>
+            <In label="¿Cuánto tienes ahorrado?" value={privSaldo} onChange={setPrivSaldo} unit="COP" min={0} step={1000000} />
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Consulta tu extracto del fondo</div>
+          </div>
+          <div>
+            <In label="Rendimiento esperado anual" value={privRend} onChange={setPrivRend} unit="%" min={0} max={20} step={0.5} />
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Promedio histórico fondos Colombia: 7-10%</div>
+          </div>
+        </div>
+      </Cd>
+
+      {/* ═══ RESUMEN RÁPIDO ═══ */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+        <Cd glow={colpJub.pensionFinal >= rais.retiroProgramado ? T.green : null} style={{ padding: 20, textAlign: "center" }}>
+          <div style={{ fontSize: 12, color: T.txt3 }}>🏛️ Colpensiones</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: T.green, margin: "8px 0" }}>{fCOP(colpJub.pensionFinal)}<span style={{fontSize:12,fontWeight:400,color:T.txt3}}>/mes</span></div>
+          <div style={{ fontSize: 11, color: T.txt3 }}>Pensión de por vida</div>
+          {colpJub.pensionFinal >= rais.retiroProgramado && <div style={{ fontSize: 11, color: T.green, fontWeight: 600, marginTop: 4 }}>✅ Te conviene más</div>}
+        </Cd>
+        <Cd glow={rais.retiroProgramado > colpJub.pensionFinal ? T.green : null} style={{ padding: 20, textAlign: "center" }}>
+          <div style={{ fontSize: 12, color: T.txt3 }}>🏦 Fondo privado</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: T.blue, margin: "8px 0" }}>{fCOP(rais.retiroProgramado)}<span style={{fontSize:12,fontWeight:400,color:T.txt3}}>/mes</span></div>
+          <div style={{ fontSize: 11, color: T.txt3 }}>Retiro programado • Saldo: {fCOP(rais.saldoFinal)}</div>
+          {rais.retiroProgramado > colpJub.pensionFinal && <div style={{ fontSize: 11, color: T.green, fontWeight: 600, marginTop: 4 }}>✅ Te conviene más</div>}
+        </Cd>
+      </div>
+
+      {/* ═══ AFINAR PROYECCIÓN (colapsable) ═══ */}
+      <Cd style={{ marginBottom: 20 }}>
+        <button onClick={() => setShowAvanzado(!showAvanzado)} style={{ width: "100%", padding: "14px 24px", background: "transparent", border: "none", color: T.txt2, cursor: "pointer", fontSize: 14, fontWeight: 600, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>⚙️ Afinar proyección</span>
+          <span style={{ fontSize: 18 }}>{showAvanzado ? "▲" : "▼"}</span>
+        </button>
+        {showAvanzado && (
+          <div style={{ padding: "0 24px 24px" }}>
+            <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Ajustes opcionales para mayor precisión. Si no estás seguro, déjalos como están.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+              <div>
+                <In label="¿Piensas subir tu salario antes de pensionarte?" value={ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0} onChange={v => setIbcFuturoSM(v > 0 ? Math.round(v / SM_2026 * 10) / 10 : 0)} unit="$/mes" min={0} max={25*SM_2026} step={100000} />
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>
+                  {ibcFuturoSM > 0 && ibcFuturoSM !== ibcSM
+                    ? <>Proyección: cotizarás sobre {fCOP(ibcFuturoSM * SM_2026)}/mes los próximos {aniosFaltantes} años</>
+                    : <>Déjalo en $0 si planeas seguir ganando lo mismo</>}
+                </div>
+                {ibcFuturoSM > 0 && ibcFuturoSM > ibcSM * 2 && <div style={{ fontSize: 11, color: T.orange, marginTop: 4 }}>⚠️ Un salto de más del doble puede ser revisado por la UGPP. Mejor aumentar gradualmente.</div>}
+              </div>
+              <div>
+                <In label="¿Cuánto ganabas en promedio los últimos 10 años?" value={iblPromSM > 0 ? iblPromSM * SM_2026 : 0} onChange={v => setIblPromSM(v > 0 ? Math.round(v / SM_2026 * 10) / 10 : 0)} unit="$/mes" min={0} max={25*SM_2026} step={100000} />
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Si siempre has ganado parecido, déjalo en $0. Si antes ganabas menos, pon tu promedio real.</div>
+              </div>
+              <div>
+                <In label="¿Aportas voluntario a pensión?" value={aportesVol} onChange={setAportesVol} unit="$/mes" min={0} step={100000} />
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Solo aplica para fondo privado. Aumenta tu ahorro y tu pensión.</div>
+              </div>
+              <div>
+                <In label="¿Te cambiaste de fondo alguna vez? (bono pensional)" value={bonoPensional} onChange={setBonoPensional} unit="COP" min={0} step={1000000} />
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Si te trasladaste de Colpensiones a fondo privado, tienes un bono. Si nunca te cambiaste, déjalo en $0.</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Cd>
+
+      {/* ═══ RESUMEN CALCULADO ═══ */}
+      <div style={{ padding: 14, background: T.bg3, borderRadius: 10, display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13, color: T.txt2, marginBottom: 20 }}>
+        <span>📅 <strong>Jubilación:</strong> {edadJub} años</span>
+        <span>⏳ <strong>Faltan:</strong> {aniosFaltantes} años</span>
+        <span>📊 <strong>Salario:</strong> {fCOP(ibcSM * SM_2026)}/mes</span>
+        <span>💰 <strong>Aporte:</strong> {fCOP(ibcSM * SM_2026 * 0.16)}/mes</span>
+        <span>📋 <strong>Semanas al jubilarse:</strong> {semanas + aniosFaltantes * 52}</span>
+      </div>
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
