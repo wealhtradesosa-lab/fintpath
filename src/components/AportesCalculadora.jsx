@@ -83,6 +83,9 @@ export default function AportesCalculadora({ fmt }) {
             <strong style={{ color: T.blue }}>📌 Para tu declaración de renta:</strong><br />
             Tu aporte de pensión ({f(empPen)}/mes = {f(empPen * 12)}/año) es ingreso no constitutivo de renta (Art. 55 ET). Se resta automáticamente en tu planeación tributaria.
           </div>
+          <div style={{ marginTop: 12, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: T.green, lineHeight: 1.6 }}>
+            <strong>👉 Registre {f(empTotal)}/mes como egreso en Pensión y Salud</strong> para que el Simulador y el Plan Tributario lo consideren en el análisis y la respectiva deducción.
+          </div>
         </Cd>
       )}
 
@@ -130,6 +133,9 @@ export default function AportesCalculadora({ fmt }) {
             <strong style={{ color: T.orange }}>📌 Para tu declaración de renta:</strong><br />
             Pensión obligatoria (parte trabajador): {f(ibcCOP * 0.04)}/mes = INCRNGO (Art. 55 ET)<br />
             Retención en la fuente honorarios: 11% = {f(sal * 0.11)}/mes si eres declarante
+          </div>
+          <div style={{ marginTop: 12, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: T.green, lineHeight: 1.6 }}>
+            <strong>👉 Registre {f(indTotal)}/mes como egreso en Pensión y Salud</strong> para que el Simulador y el Plan Tributario lo consideren en el análisis y la respectiva deducción.
           </div>
         </Cd>
       )}
