@@ -145,8 +145,8 @@ export default function AsesorIA({ user, totals, userId }) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px" }}>🤖 Asesor Financiero IA</h2><p style={{color:"#71717a",fontSize:10,margin:"4px 0 0"}}>📋 Solo se analizan ítems encendidos. Los apagados no se incluyen.</p>
-          <p style={{ color: T.txt3, fontSize: 13, margin: 0 }}>Analiza tus datos reales y te da recomendaciones personalizadas</p>
+          <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px" }}>🤖 Asesor Financiero IA</h2>
+          <p style={{ color: T.txt3, fontSize: 13, margin: 0 }}>Analiza tus datos financieros encendidos y te da recomendaciones personalizadas</p>
         </div>
         <span style={{fontSize:11,color:remaining<=5?"#ef4444":"#71717a",background:"#1e1e24",padding:"4px 10px",borderRadius:6}}>{remaining} consultas restantes hoy</span>
         {msgs.length > 0 && (
