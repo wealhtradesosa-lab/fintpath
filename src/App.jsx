@@ -183,101 +183,124 @@ const estimarImpuesto=(u)=>{
       const impOptimoJ=Math.max(0,utilOptima*0.35-descICA-reteJ);
       detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,impSinOpt:imp,impOptimizado:impOptimoJ,ahorroOptimo:imp-impOptimoJ,tasa:ingAnual>0?(imp/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4});
     }else{
-      // ═══ PERSONA NATURAL: tabla progresiva con TODAS las deducciones ═══
-      // Separar ingresos por tipo para calcular aportes correctamente
-      const salarioAnual=oIng.filter(i=>i.categoria==="Salario").reduce((s,i)=>s+(i.mensual||0),0)*12;
-      const honorariosAnual=oIng.filter(i=>i.categoria==="Honorarios").reduce((s,i)=>s+(i.mensual||0),0)*12;
-      const otrosAnual=oIng.filter(i=>!["Salario","Honorarios"].includes(i.categoria)).reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u.trm||4200):1)),0)*12;
-      const ingAnual=salarioAnual+honorariosAnual+otrosAnual;
+      // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022, ET Arts. 55,206,336,383,387) ═══
+      const trm=u.trm||4200;
+      // Clasificar ingresos por subcédula
+      const salAnual=oIng.filter(i=>i.categoria==="Salario").reduce((s,i)=>s+(i.mensual||0),0)*12;
+      const honAnual=oIng.filter(i=>/Honorarios|Freelance/i.test(i.categoria||"")).reduce((s,i)=>s+(i.mensual||0),0)*12;
+      const rentasAnual=oIng.filter(i=>/Arriendo/i.test(i.categoria||"")).reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?trm:1)),0)*12;
+      const rendAnual=oIng.filter(i=>/Rendimiento|Inversión|CDT/i.test(i.categoria||"")).reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?trm:1)),0)*12;
+      const divAnual=oIng.filter(i=>/Dividendos/i.test(i.categoria||"")).reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?trm:1)),0)*12;
+      const pensAnual=oIng.filter(i=>/Pensión/i.test(i.categoria||"")).reduce((s,i)=>s+(i.mensual||0),0)*12;
+      const otrosAnual=oIng.filter(i=>!["Salario","Honorarios","Freelance","Arriendo","Rendimiento","Inversión","CDT","Dividendos","Pensión"].some(c=>(i.categoria||"").includes(c))).reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?trm:1)),0)*12;
+      
+      const ingLaboral=salAnual+honAnual; // Rentas de trabajo
+      const ingCapital=rendAnual; // Rentas de capital
+      const ingNoLaboral=rentasAnual+otrosAnual; // Rentas no laborales
+      const ingAnual=ingLaboral+ingCapital+ingNoLaboral+divAnual+pensAnual;
       if(ingAnual<=0)return;
       
-      // ── 1. INGRESOS NO CONSTITUTIVOS DE RENTA ──
-      // Salario: 8% (4% salud + 4% pensión del empleado)
-      const noConstSalario=salarioAnual*0.08;
-      // Independientes: aportan sobre 40% del ingreso (IBC)
-      const ibcIndep=honorariosAnual*0.40;
-      const noConstIndep=ibcIndep*0.08;
-      // Otros ingresos: no tienen aportes obligatorios
-      const totalNoConst=noConstSalario+noConstIndep;
-      const neto=ingAnual-totalNoConst;
+      // ── 1. INGRESOS NO CONSTITUTIVOS DE RENTA (Art. 55-56 ET) ──
+      // Empleado: aporte obligatorio pensión del empleado = 4% salario
+      const noConstSal=salAnual*0.04;
+      // Independiente: aporte pensión obligatoria sobre 40% del ingreso
+      const ibcIndep=honAnual*0.40;
+      const noConstHon=ibcIndep*0.04;
+      // Pensiones exentas hasta 1000 UVT mensuales (Art. 206 num 5)
+      const pensExenta=Math.min(pensAnual,1000*UVT*12);
+      const totalNoConst=noConstSal+noConstHon;
       
-      // ── 2. RENTA EXENTA 25% (Art. 206 ET) ──
-      const exenta25=Math.min(neto*0.25,790*UVT);
+      // ── 2. RENTAS DE TRABAJO (salario + honorarios) ──
+      const netoLaboral=ingLaboral-totalNoConst;
       
-      // ── 3. DEDUCCIONES ──
-      // Dependientes: 10% ingreso bruto, máx 384 UVT/año
-      // Detectar si tiene hijos/dependientes (gastos de educación)
+      // Deducciones solo para rentas de trabajo (Art. 387 ET):
       const gastoEduc=oGas.filter(g=>g.cat==="Educación").reduce((s,g)=>s+(g.m||0),0);
-      const tieneDep=gastoEduc>500000; // Si gasta >500K/mes en educación → tiene dependientes
-      const deducDep=tieneDep?Math.min(ingAnual*0.10,384*UVT):0;
+      const tieneDep=gastoEduc>500000;
+      const deducDep=tieneDep?Math.min(ingLaboral*0.10,384*UVT):0; // 10% del ingreso LABORAL
       
-      // Medicina prepagada: máx 16 UVT/mes = 192 UVT/año
       const gastoSalud=oGas.filter(g=>g.cat==="Salud").reduce((s,g)=>s+(g.m||0),0)*12;
-      const deducMedicina=Math.min(gastoSalud,16*UVT*12);
+      const deducMedicina=Math.min(gastoSalud,16*UVT*12); // Máx 16 UVT/mes
       
-      // Intereses vivienda: máx 100 UVT/mes = 1200 UVT/año (de hipotecas)
       const interesesHip=oDeu.reduce((s,d)=>{
         const saldo=d.mt||0;const tasa=(d.ts||d.tasa||0)/100;
-        const tp=(d.tp||"").toLowerCase();
-        // Solo hipotecas/mortgage son deducibles para natural
-        if(/mortgage|hipoteca|vivienda/i.test(tp)||/hipoteca|vivienda|casa|apto/i.test(d.n||""))
-          return s+saldo*tasa;
+        if(/mortgage|hipoteca|vivienda|casa|apto/i.test((d.tp||"")+(d.n||"")))return s+saldo*tasa;
         return s;
       },0);
-      const deducVivienda=Math.min(interesesHip,1200*UVT);
+      const deducVivienda=Math.min(interesesHip,1200*UVT); // Máx 1200 UVT/año
       
-      // Seguros: 50% deducible, máx 16 UVT/mes
-      const gastoSeguros=oGas.filter(g=>g.cat==="Seguros").reduce((s,g)=>s+(g.m||0),0)*12;
-      const deducSeguros=Math.min(gastoSeguros*0.5,16*UVT*12);
+      // GMF 4x1000 - 50% deducible (Art. 115 ET)
+      const gmfDeducible=ingAnual*0.004*0.50;
       
-      // ── 4. TOTAL BENEFICIOS CON TOPE 40% ──
-      const totalDeducciones=deducDep+deducMedicina+deducVivienda+deducSeguros;
-      const totalBenef=exenta25+totalDeducciones;
-      const lim40=neto*0.40;
+      const totalDeducciones=deducDep+deducMedicina+deducVivienda+gmfDeducible;
       
-      // Un buen contador llena el tope 40% con pensión voluntaria y AFC
-      // Simular que el contador optimiza hasta el tope
-      const espacioParaPVyAFC=Math.max(0,lim40-totalBenef);
-      const pensionVol=Math.min(espacioParaPVyAFC,neto*0.25,2500*UVT);
-      const espacioRestante=Math.max(0,lim40-totalBenef-pensionVol);
-      const afc=Math.min(espacioRestante,neto*0.30,3800*UVT);
+      // Renta exenta 25% solo sobre rentas de TRABAJO (Art. 206 num 10)
+      const baseExenta=Math.max(0,netoLaboral-totalDeducciones);
+      const exenta25=Math.min(baseExenta*0.25,790*UVT);
       
-      const totalConOptimizacion=totalBenef+pensionVol+afc;
-      const benAplic=Math.min(totalConOptimizacion,lim40);
+      // Tope 40% solo sobre rentas de TRABAJO (Ley 2277)
+      const lim40=netoLaboral*0.40;
+      const benefLaboral=Math.min(exenta25+totalDeducciones,lim40);
       
-      // ── 5. RENTA LÍQUIDA GRAVABLE ──
-      const rentaLiq=Math.max(0,neto-benAplic);
-      const imp=calcImpRenta(rentaLiq/UVT);
+      // Renta líquida de trabajo
+      const rentaLiqTrabajo=Math.max(0,netoLaboral-benefLaboral);
       
-      // Impuesto SIN optimización (para mostrar ahorro)
-      const benSinOpt=Math.min(exenta25+totalDeducciones,lim40);
-      const rentaSinOpt=Math.max(0,neto-benSinOpt);
-      const impSinOpt=calcImpRenta(rentaSinOpt/UVT);
-      const ahorroOpt=impSinOpt-imp;
+      // ── 3. RENTAS DE CAPITAL ──
+      // Rendimientos: se pueden deducir gastos directos (comisiones, GMF)
+      const costosCapital=rendAnual*0.01; // ~1% comisiones bancarias
+      const rentaLiqCapital=Math.max(0,ingCapital-costosCapital);
       
-      // Retención automática
+      // ── 4. RENTAS NO LABORALES ──
+      // Arriendos: se deducen costos directos (predial, admin, reparaciones)
+      const gastosInmueble=oGas.filter(g=>["Predial","Mantenimiento","Vivienda","Seguros","Servicios"].includes(g.cat)).reduce((s,g)=>s+(g.m||0),0)*12;
+      const rentaLiqNoLaboral=Math.max(0,ingNoLaboral-gastosInmueble*0.5); // 50% gastos asignados
+      
+      // ── 5. DIVIDENDOS (tarifa especial Art. 242 ET) ──
+      // Primeros 300 UVT exentos, luego 15%
+      const divExentos=Math.min(divAnual,300*UVT);
+      const divGravados=Math.max(0,divAnual-divExentos);
+      const impDiv=divGravados*0.15;
+      
+      // ── 6. RENTA LÍQUIDA CÉDULA GENERAL ──
+      const rentaLiqGeneral=rentaLiqTrabajo+rentaLiqCapital+rentaLiqNoLaboral;
+      const imp=calcImpRenta(rentaLiqGeneral/UVT)+impDiv;
+      
+      // ── SIN OPTIMIZACIÓN (sin PV/AFC) ──
+      const impSinOpt=imp;
+      
+      // ── CON OPTIMIZACIÓN: PV + AFC llenan tope 40% ──
+      const espacioPV=Math.max(0,lim40-benefLaboral);
+      const pensionVol=Math.min(espacioPV,netoLaboral*0.25,2500*UVT);
+      const espacioAFC=Math.max(0,lim40-benefLaboral-pensionVol);
+      const afc=Math.min(espacioAFC,netoLaboral*0.30,3800*UVT);
+      const rentaOptTrabajo=Math.max(0,netoLaboral-Math.min(exenta25+totalDeducciones+pensionVol+afc,lim40));
+      const rentaOptGeneral=rentaOptTrabajo+rentaLiqCapital+rentaLiqNoLaboral;
+      const impOpt=calcImpRenta(rentaOptGeneral/UVT)+impDiv;
+      
+      // ── RETENCIÓN EN LA FUENTE ──
       let reteN=0;
-      oIng.forEach(i=>{const m=(i.mensual||0)*(i.moneda==="USD"?(u.trm||4200):1)*12;const cat=i.categoria||"";
+      oIng.forEach(i=>{const m=(i.mensual||0)*(i.moneda==="USD"?trm:1)*12;const cat=i.categoria||"";
         if(/Salario/i.test(cat)){const mUVT=m/12/UVT;reteN+=m*(mUVT>360?0.19:mUVT>150?0.10:mUVT>95?0.04:0)}
         else if(/Honorarios|Freelance/i.test(cat))reteN+=m*0.11;
         else if(/Arriendo/i.test(cat))reteN+=m*0.035;
-        else if(/Rendimiento|Dividendos/i.test(cat))reteN+=m*0.07;
+        else if(/Rendimiento|CDT|Inversión/i.test(cat))reteN+=m*0.07;
+        else if(/Dividendos/i.test(cat))reteN+=m*0.10;
       });
-      const impFinal=Math.max(0,imp-reteN);
-      const impSinOptFinal=Math.max(0,impSinOpt-reteN);
-      const ahorroOptFinal=impSinOptFinal-impFinal;
-      totalImp+=impSinOptFinal;
+      const impFinal=Math.max(0,impSinOpt-reteN);
+      const impOptFinal=Math.max(0,impOpt-reteN);
+      const ahorroOptFinal=impFinal-impOptFinal;
+      totalImp+=impFinal;
       detalle.push({
         name:ow.name,type:"natural",ingreso:ingAnual,
-        noConst:totalNoConst,neto,
-        exenta25,deducDep,deducMedicina,deducVivienda,deducSeguros,
+        ingLaboral,ingCapital,ingNoLaboral,divAnual,pensAnual,
+        noConst:totalNoConst,neto:netoLaboral,
+        exenta25,deducDep,deducMedicina,deducVivienda,gmfDeducible,
         pensionVol,afc,totalDeducciones,
-        lim40,benAplic,
-        baseGravable:rentaLiq,impuesto:impSinOptFinal,
-        impSinOpt:impSinOptFinal,impOptimizado:impFinal,
+        lim40,benAplic:benefLaboral,
+        baseGravable:rentaLiqGeneral,impuesto:impFinal,
+        impSinOpt:impFinal,impOptimizado:impOptFinal,
         ahorroOptimo:ahorroOptFinal,
-        tasa:ingAnual>0?(impSinOptFinal/ingAnual*100):0,
-        espacioParaPVyAFC
+        tasa:ingAnual>0?(impFinal/ingAnual*100):0,
+        espacioParaPVyAFC:espacioPV,reteN,impDiv
       });
     }
   });
