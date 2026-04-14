@@ -141,7 +141,10 @@ function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar }) {
   // Saldo queda en la AFP, se recalcula cada año
   // Esperanza de vida hombre 62 años: ~20.7 años (tabla RV08)
   // Rendimiento real durante retiro: ~4% anual
-  const mesesVida = Math.round(20.7 * 12); // 248 meses
+  // Tabla RV08 Superfinanciera — esperanza de vida según sexo
+  // Hombre 62 años: 20.7 años | Mujer 57 años: 27.3 años
+  const esperanzaVida = 20.7; // TODO: ajustar por sexo cuando se pase
+  const mesesVida = Math.round(esperanzaVida * 12);
   const rRetiro = Math.pow(1.04, 1/12) - 1;
   const factorRP = rRetiro > 0 ? (1 - Math.pow(1 + rRetiro, -mesesVida)) / rRetiro : mesesVida;
   const retiroProgramado = saldo / factorRP;
@@ -150,7 +153,9 @@ function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar }) {
   // Se transfiere saldo a aseguradora, pago fijo de por vida
   // Aseguradora usa tasa más conservadora (~3%) y esperanza 22 años
   // Resultado: ~15-20% menos que retiro programado
-  const mesesVitalicia = Math.round(22 * 12); // 264 meses
+  // Renta vitalicia: aseguradora usa esperanza más conservadora
+  const esperanzaVitalicia = esperanzaVida + 2; // +2 años margen aseguradora
+  const mesesVitalicia = Math.round(esperanzaVitalicia * 12);
   const rVitalicia = Math.pow(1.03, 1/12) - 1;
   const factorRV = rVitalicia > 0 ? (1 - Math.pow(1 + rVitalicia, -mesesVitalicia)) / rVitalicia : mesesVitalicia;
   const rentaVitalicia = saldo / factorRV;
