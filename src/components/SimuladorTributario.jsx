@@ -154,64 +154,82 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
 
       return { type: "juridica", ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, totalDeduc, intereses, deprec, patTotal, deuTotal, utilidad: utilidadActual, impBruto, descuentoICA, retefuenteCalc, gmf50, impActual, tasaActual, pctGastos, impOptimo, ahorro, recs };
     } else {
-      // ═══ PERSONA NATURAL ═══
+      // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022) ═══
       const salAnual = ingresos.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       const honAnual = ingresos.filter(i => /Honorarios|Freelance/i.test(i.categoria || "")).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       const rentasAnual = ingresos.filter(i => /Arriendo/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
       const rendAnual = ingresos.filter(i => /Rendimiento|Inversión|CDT/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
       const divAnual = ingresos.filter(i => /Dividendos/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
       const ingLaboral = salAnual + honAnual;
-      // INCRNGO: solo pensión obligatoria del empleado (4%) Art. 55 ET
+      const ingCapital = rendAnual;
+      const ingNoLaboral = rentasAnual + ingresos.filter(i => !["Salario","Honorarios","Freelance","Arriendo","Rendimiento","Inversión","CDT","Dividendos","Pensión"].some(c2 => (i.categoria||"").includes(c2))).reduce((s,i) => s + ((i.mensual||0) * (i.moneda==="USD"?(trm||4200):1)),0) * 12;
+      
+      // INCRNGO: pensión obligatoria (Art. 55 ET)
       const noConst = salAnual * 0.04 + honAnual * 0.40 * 0.04;
-      const neto = ingAnual - noConst;
-      const exenta25 = Math.min(neto * 0.25, 790 * UVT);
-
-      // Deducciones actuales
+      const netoLaboral = ingLaboral - noConst;
+      
+      // Deducciones solo para rentas de TRABAJO
       const gastoEduc = gastos.filter(g => g.cat === "Educación").reduce((s, g) => s + (g.m || 0), 0);
-      const deducDep = gastoEduc > 500000 ? Math.min(ingAnual * 0.10, 384 * UVT) : 0;
+      const deducDep = gastoEduc > 500000 ? Math.min(ingLaboral * 0.10, 384 * UVT) : 0;
       const interesesHip = deu.filter(d => /hipoteca|vivienda|casa|apto|mortgage/i.test((d.tp || "") + (d.n || ""))).reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
       const deducViv = Math.min(interesesHip, 1200 * UVT);
-      const gastosDeducNat = gastos.reduce((s, g) => { const p = DEDUC_NAT[g.cat] || 0; let a = (g.m || 0) * p * 12; if (LIM_NAT[g.cat]) a = Math.min(a, LIM_NAT[g.cat]); return s + a; }, 0);
+      const gastoSalud = gastos.filter(g => g.cat === "Salud").reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const deducMedicina = Math.min(gastoSalud, 16 * UVT * 12);
       const gmfNat = ingAnual * 0.004 * 0.50;
+      const totalDeducciones = deducDep + deducMedicina + deducViv + gmfNat;
       
-      // Retención automática según tipo de ingreso
+      // Renta exenta 25% solo sobre TRABAJO (Art. 206 num 10)
+      const baseExenta = Math.max(0, netoLaboral - totalDeducciones);
+      const exenta25 = Math.min(baseExenta * 0.25, 790 * UVT);
+      
+      // Tope 40% solo sobre TRABAJO (Ley 2277)
+      const lim40 = netoLaboral * 0.40;
+      const benefSin = Math.min(exenta25 + totalDeducciones, lim40);
+      
+      // Rentas líquidas por cédula
+      const rentaLiqTrabajo = Math.max(0, netoLaboral - benefSin);
+      const costosCapital = rendAnual * 0.01;
+      const rentaLiqCapital = Math.max(0, ingCapital - costosCapital);
+      const gastosInmueble = gastos.filter(g => ["Predial","Mantenimiento","Vivienda","Seguros","Servicios"].includes(g.cat)).reduce((s,g) => s + (g.m||0), 0) * 12;
+      const rentaLiqNoLaboral = Math.max(0, ingNoLaboral - gastosInmueble * 0.5);
+      
+      // Dividendos tarifa especial
+      const divExentos = Math.min(divAnual, 300 * UVT);
+      const impDiv = Math.max(0, divAnual - divExentos) * 0.15;
+      
+      // Renta líquida cédula general
+      const rentaSin = rentaLiqTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
+      const impSin = calcImp(rentaSin / UVT) + impDiv;
+      const tasaSin = ingAnual > 0 ? (impSin / ingAnual * 100) : 0;
+      
+      // ── CON ESTRATEGIA: PV + AFC llenan tope 40% ──
+      const espacioOpt = Math.max(0, lim40 - benefSin);
+      const pvMax = Math.min(espacioOpt, netoLaboral * 0.25, 2500 * UVT);
+      const espacioPost = Math.max(0, lim40 - benefSin - pvMax);
+      const afcMax = Math.min(espacioPost, netoLaboral * 0.30, 3800 * UVT);
+      const rentaOptTrabajo = Math.max(0, netoLaboral - Math.min(exenta25 + totalDeducciones + pvMax + afcMax, lim40));
+      const rentaCon = rentaOptTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
+      const impCon = calcImp(rentaCon / UVT) + impDiv;
+      const ahorro = impSin - impCon;
+      const tasaCon = ingAnual > 0 ? (impCon / ingAnual * 100) : 0;
+      const pctUsado = lim40 > 0 ? (benefSin / lim40 * 100) : 0;
+      const benAplicSin = benefSin;
+      const benAplicCon = Math.min(exenta25 + totalDeducciones + pvMax + afcMax, lim40);
+      const benefCon = exenta25 + totalDeducciones + pvMax + afcMax;
+      const neto = netoLaboral; // For display compatibility
+      const gastosDeducNat = totalDeducciones;
+      
+      // Retención automática
       let retefuenteNat = 0;
       ingresos.forEach(i => {
         const m = (i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1) * 12;
         const cat = i.categoria || "";
-        if (/Salario/i.test(cat)) {
-          // Tabla Art. 383 ET simplificada
-          const mUVT = m / 12 / UVT;
-          if (mUVT > 360) retefuenteNat += m * 0.19;
-          else if (mUVT > 150) retefuenteNat += m * 0.10;
-          else if (mUVT > 95) retefuenteNat += m * 0.04;
-        }
+        if (/Salario/i.test(cat)) { const mUVT = m / 12 / UVT; retefuenteNat += m * (mUVT > 360 ? 0.19 : mUVT > 150 ? 0.10 : mUVT > 95 ? 0.04 : 0); }
         else if (/Honorarios|Freelance/i.test(cat)) retefuenteNat += m * 0.11;
         else if (/Arriendo/i.test(cat)) retefuenteNat += m * 0.035;
-        else if (/Rendimiento|Dividendos/i.test(cat)) retefuenteNat += m * 0.07;
+        else if (/Rendimiento|CDT|Inversión/i.test(cat)) retefuenteNat += m * 0.07;
+        else if (/Dividendos/i.test(cat)) retefuenteNat += m * 0.10;
       });
-
-      const lim40 = neto * 0.40;
-
-      // ── SIN ESTRATEGIA: solo deducciones actuales ──
-      const benefSin = exenta25 + gastosDeducNat + deducDep + deducViv;
-      const benAplicSin = Math.min(benefSin, lim40);
-      const rentaSin = Math.max(0, neto - benAplicSin);
-      const impSin = calcImp(rentaSin / UVT);
-      const tasaSin = ingAnual > 0 ? (impSin / ingAnual * 100) : 0;
-
-      // ── CON ESTRATEGIA: llenar el tope 40% ──
-      const espacioOpt = Math.max(0, lim40 - benefSin);
-      const pvMax = Math.min(espacioOpt, neto * 0.25, 2500 * UVT);
-      const espacioPost = Math.max(0, lim40 - benefSin - pvMax);
-      const afcMax = Math.min(espacioPost, neto * 0.30, 3800 * UVT);
-      const benefCon = benefSin + pvMax + afcMax;
-      const benAplicCon = Math.min(benefCon, lim40);
-      const rentaCon = Math.max(0, neto - benAplicCon);
-      const impCon = calcImp(rentaCon / UVT);
-      const ahorro = impSin - impCon;
-      const tasaCon = ingAnual > 0 ? (impCon / ingAnual * 100) : 0;
-      const pctUsado = lim40 > 0 ? (benAplicSin / lim40 * 100) : 0;
 
       // Recomendaciones
       const recs = [];
@@ -249,6 +267,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       const impSinFinal = Math.max(0, impSin - retefuenteNat);
       const impConFinal = Math.max(0, impCon - retefuenteNat);
       const ahorroFinal = impSinFinal - impConFinal;
+      const gastosByCatDisplay = gastosByCat;
 
 
 
