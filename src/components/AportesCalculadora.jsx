@@ -13,14 +13,19 @@ export default function AportesCalculadora({ fmt }) {
   const f = fmt || fm;
   const [tipo, setTipo] = useState("empleado");
   const [ingreso, setIngreso] = useState(5000000);
+  const [ibcSM, setIbcSM] = useState(5);
 
   const sal = Number(String(ingreso).replace(/,/g, "")) || 0;
+  // Empleado: aporta sobre su salario
   const empPen = sal * 0.04, empSal2 = sal * 0.04, empTotal = empPen + empSal2;
   const dorPen = sal * 0.12, dorSal = sal * 0.085, dorArl = sal * 0.00522, dorCaja = sal * 0.04;
   const dorTotal = dorPen + dorSal + dorArl + dorCaja;
-  const ibc40 = sal * 0.40;
-  const indPen = ibc40 * 0.16, indSal = ibc40 * 0.125, indArl = ibc40 * 0.00522;
+  // Independiente: aporta sobre el IBC que escoja (en SMMLV)
+  const SM = 1750905;
+  const ibcCOP = ibcSM * SM;
+  const indPen = ibcCOP * 0.16, indSal = ibcCOP * 0.125, indArl = ibcCOP * 0.00522;
   const indTotal = indPen + indSal + indArl;
+  const ibcMinimo = sal > 0 ? Math.max(1, Math.ceil(sal * 0.40 / SM)) : 1;
 
   const Row = ({ l, v, bold, color }) => (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid " + T.border }}>
@@ -46,10 +51,8 @@ export default function AportesCalculadora({ fmt }) {
             }}>{t.l}</button>
           ))}
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>
-            {tipo === "empleado" ? "¿Cuál es tu salario mensual?" : "¿Cuánto facturas al mes?"}
-          </label>
+        {tipo === "empleado" && <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 4 }}>¿Cuál es tu salario mensual?</label>
           <input type="text" inputMode="numeric"
             value={sal > 0 ? sal.toLocaleString("en-US") : ""}
             onChange={e => setIngreso(e.target.value.replace(/,/g, ""))}
@@ -57,10 +60,10 @@ export default function AportesCalculadora({ fmt }) {
             style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}
           />
           {sal > 0 && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Equivale a {(sal / 1750905).toFixed(1)} salarios mínimos</div>}
-        </div>
+        </div>}
       </Cd>
 
-      {sal > 0 && tipo === "empleado" && (
+      {tipo === "empleado" && sal > 0 && (
         <Cd s={{ padding: 24, marginBottom: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.blue, marginBottom: 16 }}>👔 Aportes como empleado</div>
           <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 8 }}>Te descuentan de tu nómina:</div>
@@ -83,12 +86,35 @@ export default function AportesCalculadora({ fmt }) {
         </Cd>
       )}
 
-      {sal > 0 && tipo === "independiente" && (
+      {tipo === "independiente" && (
         <Cd s={{ padding: 24, marginBottom: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.orange, marginBottom: 16 }}>🧑‍💻 Aportes como independiente</div>
-          <div style={{ background: T.bg3, padding: "10px 14px", borderRadius: 8, marginBottom: 12, fontSize: 12, color: T.txt2 }}>
-            Tu IBC (Ingreso Base de Cotización) = 40% de tu ingreso = <strong>{f(ibc40)}/mes</strong>
+          
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 4 }}>¿Cuánto facturas al mes?</label>
+            <input type="text" inputMode="numeric"
+              value={sal > 0 ? sal.toLocaleString("en-US") : ""}
+              onChange={e => { const v = Number(e.target.value.replace(/,/g, "")) || 0; setIngreso(v); setIbcSM(Math.max(1, Math.ceil(v * 0.40 / SM))); }}
+              placeholder="Ej: 25,000,000"
+              style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}
+            />
+            {sal > 0 && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>IBC mínimo por ley: {ibcMinimo} SMMLV (40% de tu ingreso)</div>}
           </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 4 }}>¿Sobre cuántos salarios mínimos cotizas? (IBC)</label>
+            <input type="number" value={ibcSM} onChange={e => setIbcSM(Math.max(1, Math.min(25, Number(e.target.value) || 1)))}
+              min={1} max={25} step={1}
+              style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}
+            />
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Equivale a {f(ibcCOP)}/mes. Tope máximo: 25 SMMLV</div>
+            {ibcSM < ibcMinimo && sal > 0 && <div style={{ fontSize: 11, color: T.orange, marginTop: 4 }}>⚠️ El mínimo legal para tu ingreso es {ibcMinimo} SMMLV</div>}
+          </div>
+
+          <div style={{ background: T.bg3, padding: "10px 14px", borderRadius: 8, marginBottom: 12, fontSize: 13, color: T.txt2 }}>
+            Tu IBC = <strong>{ibcSM} SMMLV = {f(ibcCOP)}/mes</strong>
+          </div>
+          
           <Row l="Pensión (16% del IBC)" v={f(indPen)} />
           <Row l="Salud (12.5% del IBC)" v={f(indSal)} />
           <Row l="ARL (0.52% del IBC)" v={f(indArl)} />
@@ -102,8 +128,8 @@ export default function AportesCalculadora({ fmt }) {
 
           <div style={{ marginTop: 12, background: T.bg3, padding: "12px 14px", borderRadius: 10, fontSize: 12, color: T.txt3, lineHeight: 1.6 }}>
             <strong style={{ color: T.orange }}>📌 Para tu declaración de renta:</strong><br />
-            Tu aporte de pensión obligatoria ({f(ibc40 * 0.04)}/mes, parte trabajador) es ingreso no constitutivo de renta (Art. 55 ET).<br />
-            Retención en la fuente por honorarios: 11% = {f(sal * 0.11)}/mes si eres declarante.
+            Pensión obligatoria (parte trabajador): {f(ibcCOP * 0.04)}/mes = INCRNGO (Art. 55 ET)<br />
+            Retención en la fuente honorarios: 11% = {f(sal * 0.11)}/mes si eres declarante
           </div>
         </Cd>
       )}
