@@ -207,7 +207,8 @@ export default function PensionesColpensiones({ trm }) {
   const [aportesVol, setAportesVol] = useState(0); // Aportes voluntarios mensuales
   const [bonoPensional, setBonoPensional] = useState(0); // Bono si se trasladó
   const [tab, setTab] = useState("colp");
-  const [showAvanzado, setShowAvanzado] = useState(false); // colp | rais | comparar
+  const [showAvanzado, setShowAvanzado] = useState(false);
+  const [showAportes, setShowAportes] = useState(false); // colp | rais | comparar
 
   const edadJub = sexo === "F" ? 57 : 62;
   const aniosFaltantes = Math.max(0, edadJub - edad);
@@ -347,6 +348,73 @@ export default function PensionesColpensiones({ trm }) {
             </div>
           </div>
         )}
+      </Cd>
+
+      {/* ═══ CALCULADORA DE APORTES ═══ */}
+      <Cd style={{ marginBottom: 20 }}>
+        <button onClick={() => setShowAportes(!showAportes)} style={{ width: "100%", padding: "14px 24px", background: "transparent", border: "none", color: T.txt2, cursor: "pointer", fontSize: 14, fontWeight: 600, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>💰 ¿Cuánto pagas de seguridad social?</span>
+          <span style={{ fontSize: 18 }}>{showAportes ? "▲" : "▼"}</span>
+        </button>
+        {showAportes && (()=>{
+          const ingAporte = ibcSM * SM_2026;
+          // Empleado
+          const empPen = ingAporte * 0.04;
+          const empSal = ingAporte * 0.04;
+          const empTotal = empPen + empSal;
+          const empNeto = ingAporte - empTotal;
+          // Lo que paga el empleador
+          const dorPen = ingAporte * 0.12;
+          const dorSal = ingAporte * 0.085;
+          const dorArl = ingAporte * 0.00522;
+          const dorCaja = ingAporte * 0.04;
+          const dorTotal = dorPen + dorSal + dorArl + dorCaja;
+          // Independiente
+          const ibc40 = ingAporte * 0.40;
+          const indPen = ibc40 * 0.16;
+          const indSal = ibc40 * 0.125;
+          const indArl = ibc40 * 0.00522;
+          const indTotal = indPen + indSal + indArl;
+          const indNeto = ingAporte - indTotal;
+          return <div style={{ padding: "0 24px 24px" }}>
+            <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Basado en tu ingreso de {fCOP(ingAporte)}/mes ({ibcSM} SMMLV)</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              {/* Empleado */}
+              <Cd style={{ padding: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 12 }}>👔 Si eres empleado</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginBottom: 8 }}>Te descuentan de la nómina:</div>
+                <Row l="Pensión (4%)" v={fCOP(empPen)} />
+                <Row l="Salud (4%)" v={fCOP(empSal)} />
+                <Row l="Total descuento" v={fCOP(empTotal) + " (8%)"} bold color={T.blue} />
+                <Row l="Neto estimado" v={fCOP(empNeto) + "/mes"} bold color={T.green} />
+                <div style={{ marginTop: 12, borderTop: "1px solid " + T.border, paddingTop: 8 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, marginBottom: 6 }}>Tu empleador paga adicionalmente:</div>
+                  <Row l="Pensión (12%)" v={fCOP(dorPen)} />
+                  <Row l="Salud (8.5%)" v={fCOP(dorSal)} />
+                  <Row l="ARL (0.52%)" v={fCOP(dorArl)} />
+                  <Row l="Caja (4%)" v={fCOP(dorCaja)} />
+                  <Row l="Total empleador" v={fCOP(dorTotal)} bold color={T.txt2} />
+                </div>
+                <div style={{ marginTop: 8, fontSize: 10, color: T.txt3, lineHeight: 1.5, background: T.bg3, padding: "8px 10px", borderRadius: 8 }}>
+                  📌 Tu aporte de pensión ({fCOP(empPen)}/mes) es ingreso no constitutivo de renta (Art. 55 ET). Úsalo en tu planeación tributaria.
+                </div>
+              </Cd>
+              {/* Independiente */}
+              <Cd style={{ padding: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 12 }}>🧑‍💻 Si eres independiente</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginBottom: 8 }}>IBC = 40% de tu ingreso = {fCOP(ibc40)}</div>
+                <Row l="Pensión (16% del IBC)" v={fCOP(indPen)} />
+                <Row l="Salud (12.5% del IBC)" v={fCOP(indSal)} />
+                <Row l="ARL (0.52% del IBC)" v={fCOP(indArl)} />
+                <Row l="Total seguridad social" v={fCOP(indTotal) + "/mes"} bold color={T.orange} />
+                <Row l="Neto estimado" v={fCOP(indNeto) + "/mes"} bold color={T.green} />
+                <div style={{ marginTop: 8, fontSize: 10, color: T.txt3, lineHeight: 1.5, background: T.bg3, padding: "8px 10px", borderRadius: 8 }}>
+                  📌 Tu aporte de pensión obligatoria ({fCOP(ibc40 * 0.04)}/mes, parte trabajador) es ingreso no constitutivo de renta (Art. 55 ET).
+                </div>
+              </Cd>
+            </div>
+          </div>;
+        })()}
       </Cd>
 
       {/* ═══ RESUMEN CALCULADO ═══ */}

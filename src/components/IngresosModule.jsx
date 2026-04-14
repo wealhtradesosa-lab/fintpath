@@ -244,61 +244,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} /></div>
               <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} /></div>
               <div style={{fontSize:10,color:"#71717a",marginTop:-8,marginBottom:4,padding:"0 4px",gridColumn:"1/-1"}}>Si asignas propietario, este ingreso se incluirá en el cálculo de impuestos de esa persona o empresa.</div>
-              {form.categoria === "Salario" && Number(form.mensual) > 0 && (()=>{
-                const sal = Number(form.mensual);
-                const penEmpleado = sal * 0.04;
-                const saludEmpleado = sal * 0.04;
-                const totalEmpleado = penEmpleado + saludEmpleado;
-                const penEmpleador = sal * 0.12;
-                const saludEmpleador = sal * 0.085;
-                const arlEmpleador = sal * 0.00522;
-                const cajaEmpleador = sal * 0.04;
-                const totalEmpleador = penEmpleador + saludEmpleador + arlEmpleador + cajaEmpleador;
-                const netoEstimado = sal - totalEmpleado;
-                const fm = v => "$" + Math.round(v).toLocaleString("en-US");
-                return <div style={{gridColumn:"1/-1",background:"rgba(59,130,246,0.06)",borderRadius:12,padding:"14px 16px",border:"1px solid rgba(59,130,246,0.1)"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:"#3b82f6",marginBottom:8}}>📋 Aportes de seguridad social</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,fontSize:12}}>
-                    <div style={{color:"#a1a1aa"}}>Te descuentan (empleado):</div><div></div>
-                    <div style={{paddingLeft:12,color:"#a1a1aa"}}>Pensión (4%)</div><div style={{textAlign:"right",color:"#fafafa"}}>{fm(penEmpleado)}</div>
-                    <div style={{paddingLeft:12,color:"#a1a1aa"}}>Salud (4%)</div><div style={{textAlign:"right",color:"#fafafa"}}>{fm(saludEmpleado)}</div>
-                    <div style={{fontWeight:600,color:"#3b82f6",borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:4,marginTop:4}}>Total descuento</div><div style={{textAlign:"right",fontWeight:600,color:"#3b82f6",borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:4,marginTop:4}}>{fm(totalEmpleado)} (8%)</div>
-                    <div style={{fontWeight:600,color:"#22c55e",marginTop:4}}>Neto estimado</div><div style={{textAlign:"right",fontWeight:600,color:"#22c55e",marginTop:4}}>{fm(netoEstimado)}/mes</div>
-                  </div>
-                  <div style={{marginTop:8,borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:8}}>
-                    <div style={{fontSize:11,color:"#71717a",marginBottom:4}}>Tu empleador paga adicionalmente:</div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:2,fontSize:11}}>
-                      <div style={{color:"#71717a",paddingLeft:12}}>Pensión (12%)</div><div style={{textAlign:"right",color:"#a1a1aa"}}>{fm(penEmpleador)}</div>
-                      <div style={{color:"#71717a",paddingLeft:12}}>Salud (8.5%)</div><div style={{textAlign:"right",color:"#a1a1aa"}}>{fm(saludEmpleador)}</div>
-                      <div style={{color:"#71717a",paddingLeft:12}}>ARL (0.52%)</div><div style={{textAlign:"right",color:"#a1a1aa"}}>{fm(arlEmpleador)}</div>
-                      <div style={{color:"#71717a",paddingLeft:12}}>Caja (4%)</div><div style={{textAlign:"right",color:"#a1a1aa"}}>{fm(cajaEmpleador)}</div>
-                    </div>
-                  </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#71717a"}}>📌 Para planeación tributaria: tu aporte de pensión ({fm(penEmpleado)}/mes) es ingreso no constitutivo de renta (Art. 55 ET)</div>
-                </div>;
-              })()}
-              {form.categoria === "Honorarios" && Number(form.mensual) > 0 && (()=>{
-                const ing = Number(form.mensual);
-                const ibc = ing * 0.40;
-                const penInd = ibc * 0.16;
-                const saludInd = ibc * 0.125;
-                const arlInd = ibc * 0.00522;
-                const totalSS = penInd + saludInd + arlInd;
-                const netoEstimado = ing - totalSS;
-                const fm = v => "$" + Math.round(v).toLocaleString("en-US");
-                return <div style={{gridColumn:"1/-1",background:"rgba(249,115,22,0.06)",borderRadius:12,padding:"14px 16px",border:"1px solid rgba(249,115,22,0.1)"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:"#f97316",marginBottom:8}}>📋 Aportes como independiente</div>
-                  <div style={{fontSize:11,color:"#a1a1aa",marginBottom:6}}>IBC = 40% del ingreso = {fm(ibc)}</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,fontSize:12}}>
-                    <div style={{paddingLeft:12,color:"#a1a1aa"}}>Pensión (16% del IBC)</div><div style={{textAlign:"right",color:"#fafafa"}}>{fm(penInd)}</div>
-                    <div style={{paddingLeft:12,color:"#a1a1aa"}}>Salud (12.5% del IBC)</div><div style={{textAlign:"right",color:"#fafafa"}}>{fm(saludInd)}</div>
-                    <div style={{paddingLeft:12,color:"#a1a1aa"}}>ARL (0.52% del IBC)</div><div style={{textAlign:"right",color:"#fafafa"}}>{fm(arlInd)}</div>
-                    <div style={{fontWeight:600,color:"#f97316",borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:4,marginTop:4}}>Total seguridad social</div><div style={{textAlign:"right",fontWeight:600,color:"#f97316",borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:4,marginTop:4}}>{fm(totalSS)}/mes</div>
-                    <div style={{fontWeight:600,color:"#22c55e",marginTop:4}}>Neto estimado</div><div style={{textAlign:"right",fontWeight:600,color:"#22c55e",marginTop:4}}>{fm(netoEstimado)}/mes</div>
-                  </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#71717a"}}>📌 Para planeación tributaria: tu aporte de pensión obligatoria ({fm(ibc * 0.04)}/mes, parte trabajador) es ingreso no constitutivo de renta (Art. 55 ET)</div>
-                </div>;
-              })()}
+
+
               {["Rendimiento","Dividendos","Arriendo","Inversión"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
                   <div style={{fontSize:11,color:T.txt3,marginBottom:10}}>📊 Con 2 de 3 valores se calcula el tercero automáticamente</div>
