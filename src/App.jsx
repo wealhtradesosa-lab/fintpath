@@ -380,6 +380,7 @@ export default function FinPath(){
   const logout=async()=>{try{await supabase.auth.signOut()}catch{}localStorage.removeItem(SK);localStorage.removeItem("fp3_enc_key");_setU(null);setShowAuth(false)};
   const auth=async()=>{
     if(!aF.e||!aF.p){setAuthError("Ingresa email y contraseña");return}
+    if(aF.p.length<6){setAuthError("La contraseña debe tener mínimo 6 caracteres");return}
     setAuthLoading(true);setAuthError("");
     try{
     if(isSupabaseConfigured){
@@ -395,7 +396,7 @@ export default function FinPath(){
           body:JSON.stringify({email:aF.e,password:aF.p,name:aF.n||""})
         });
         const srd=await sr.json();
-        if(!sr.ok){setAuthError(srd.error||"Error creando cuenta");setAuthLoading(false);return}
+        if(!sr.ok){const errMsg=srd.error||"Error creando cuenta";setAuthError(errMsg.includes("already been registered")?"Este email ya tiene cuenta. Intenta iniciar sesión.":errMsg);setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id);window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});
@@ -525,7 +526,7 @@ export default function FinPath(){
       <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":"Crear cuenta — 14 días Pro gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:12,textAlign:"center",marginTop:8,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{authError}</div>}
       <p style={{textAlign:"center",marginTop:20,color:T.tx3,fontSize:14}}>{"¿No tienes cuenta? "}<span onClick={()=>sAM(aM==="login"?"signup":"login")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{aM==="login"?"Regístrate":"Ingresa"}</span></p>
-      <div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:11,color:T.tx3,cursor:"pointer",textDecoration:"underline"}}>Explorar sin cuenta (datos solo en este navegador)</span></div>
+      <div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
       <div style={{marginTop:16,padding:"16px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.12)",borderRadius:12,textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.orange,marginBottom:6}}>📊 ¿Quieres ver cómo funciona?</div><div style={{fontSize:11,color:T.tx3,marginBottom:10}}>Explora la plataforma con datos de ejemplo: patrimonio, ingresos, gastos, deudas, impuestos y simulador.</div><button onClick={()=>{const nd=mkU("Pedro Pérez","demo@finpathia.com");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.demo=true;setU(nd);setTimeout(()=>demo(),500)}} style={{background:"linear-gradient(135deg,#f97316,#eab308)",color:"#000",border:"none",padding:"10px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>Explorar ejemplo interactivo</button></div>
       {aM==="login"&&<p style={{textAlign:"center",marginTop:8}}><span onClick={async()=>{if(!aF.e){setAuthError("Escribe tu email primero");return}try{await supabase.auth.resetPasswordForEmail(aF.e);setAuthError("✅ Email enviado")}catch(e){setAuthError(e.message)}}} style={{color:T.tx3,cursor:"pointer",fontSize:12}}>¿Olvidaste tu contraseña?</span></p>}
     </div>
