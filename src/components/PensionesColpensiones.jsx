@@ -273,8 +273,9 @@ export default function PensionesColpensiones({ trm }) {
           </div>
 
           <div>
-            <In label="¿Cuánto ganas hoy? (mensual)" value={ibcSM * SM_2026} onChange={v => setIbcSM(Math.round(v / SM_2026 * 10) / 10)} unit="$/mes" min={SM_2026} max={25*SM_2026} step={100000} />
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Cotizas sobre {ibcSM} salarios mínimos. Aporte pensión: {fCOP(ibcSM * SM_2026 * 0.16)}/mes</div>
+            <In label="¿Sobre cuántos salarios mínimos cotizas?" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} step={0.5} />
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Equivale a {fCOP(ibcSM * SM_2026)}/mes. Aporte pensión: {fCOP(ibcSM * SM_2026 * 0.16)}/mes</div>
+            <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Revisa tu desprendible de nómina o planilla PILA</div>
           </div>
         </div>
       </Cd>
@@ -323,17 +324,17 @@ export default function PensionesColpensiones({ trm }) {
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Ajustes opcionales para mayor precisión. Si no estás seguro, déjalos como están.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
               <div>
-                <In label="¿Piensas subir tu salario antes de pensionarte?" value={ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0} onChange={v => setIbcFuturoSM(v > 0 ? Math.round(v / SM_2026 * 10) / 10 : 0)} unit="$/mes" min={0} max={25*SM_2026} step={100000} />
+                <In label="¿Piensas subir tu cotización antes de pensionarte?" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
                 <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>
                   {ibcFuturoSM > 0 && ibcFuturoSM !== ibcSM
-                    ? <>Proyección: cotizarás sobre {fCOP(ibcFuturoSM * SM_2026)}/mes los próximos {aniosFaltantes} años</>
-                    : <>Déjalo en $0 si planeas seguir ganando lo mismo</>}
+                    ? <>Proyección: cotizarás sobre {ibcFuturoSM} SMMLV ({fCOP(ibcFuturoSM * SM_2026)}/mes) los próximos {aniosFaltantes} años</>
+                    : <>Déjalo en 0 si planeas seguir cotizando igual</>}
                 </div>
                 {ibcFuturoSM > 0 && ibcFuturoSM > ibcSM * 2 && <div style={{ fontSize: 11, color: T.orange, marginTop: 4 }}>⚠️ Un salto de más del doble puede ser revisado por la UGPP. Mejor aumentar gradualmente.</div>}
               </div>
               <div>
-                <In label="¿Cuánto ganabas en promedio los últimos 10 años?" value={iblPromSM > 0 ? iblPromSM * SM_2026 : 0} onChange={v => setIblPromSM(v > 0 ? Math.round(v / SM_2026 * 10) / 10 : 0)} unit="$/mes" min={0} max={25*SM_2026} step={100000} />
-                <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Si siempre has ganado parecido, déjalo en $0. Si antes ganabas menos, pon tu promedio real.</div>
+                <In label="¿Sobre cuántos SMMLV cotizabas en promedio los últimos 10 años?" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>{iblPromSM > 0 ? "Promedio: " + fCOP(iblPromSM * SM_2026) + "/mes" : "Déjalo en 0 si siempre has cotizado parecido"}</div>
               </div>
               <div>
                 <In label="¿Aportas voluntario a pensión?" value={aportesVol} onChange={setAportesVol} unit="$/mes" min={0} step={100000} />
