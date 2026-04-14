@@ -117,9 +117,9 @@ const calcImpRenta=(uvtBase)=>{for(let i=TABLA_IMP.length-1;i>=0;i--){if(uvtBase
 const estimarImpuesto=(u)=>{
   if(!u)return{total:0,mes:0,detalle:[],sinClasificar:0};
   const owners=(u.owners||[{id:"own_1",name:"Personal",type:"natural"}]);
-  const ing=(u.ingresos||[]).filter(i=>i.sim!==false);
-  const gas={};Object.entries(u.gas||{}).forEach(([cat,items])=>{const fi=(items||[]).filter(g=>g.sim!==false);if(fi.length>0)gas[cat]=fi});
-  const deu=(u.deu||[]).filter(d=>d.sim!==false);
+  const ing=(u.ingresos||[]);
+  const gas=u.gas||{};
+  const deu=(u.deu||[]);
   let totalImp=0;
   const detalle=[];
   const sinClasificar=ing.filter(i=>!i.owner || i.owner==="").length;
