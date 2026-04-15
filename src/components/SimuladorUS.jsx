@@ -7,6 +7,41 @@
 import { useState, useMemo } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
+// ── Federal tax calculator (same logic as TaxPlanningUS) ──────────────────
+const BRACKETS_SIM = [
+  {max:11925,rate:0.10},{max:48475,rate:0.12},{max:103350,rate:0.22},
+  {max:197300,rate:0.24},{max:250525,rate:0.32},{max:626350,rate:0.35},
+  {max:Infinity,rate:0.37},
+];
+const STD_DED = 15000, SS_BASE = 176100, K401_LIM = 23500, HSA_LIM = 4150;
+function calcFedTax(income) {
+  let tax=0,prev=0;
+  for(const b of BRACKETS_SIM){if(income<=prev)break;tax+=(Math.min(income,b.max)-prev)*b.rate;prev=b.max;}
+  return Math.max(0,Math.round(tax));
+}
+function estimateAnnualTax(incomeMap) {
+  let w2=0,se=0;
+  Object.values(incomeMap).forEach(({val,cat})=>{
+    const annual = val*12;
+    if(/Salario/i.test(cat))         w2+=annual;
+    else if(/Honorarios|Freelance/i.test(cat)) se+=annual;
+  });
+  const gross  = Object.values(incomeMap).reduce((s,{val})=>s+val*12,0);
+  // SE tax
+  const seTax  = Math.round(se*0.9235*0.153);
+  const halfSE = Math.round(seTax/2);
+  // FICA on W-2
+  const ficaSS = Math.round(Math.min(w2,SS_BASE)*0.062);
+  const ficaMed= Math.round(w2*0.0145);
+  const fica   = ficaSS+ficaMed;
+  // Federal
+  const agi    = Math.max(0,gross-halfSE);
+  const taxInc = Math.max(0,agi-STD_DED);
+  const fed    = calcFedTax(taxInc);
+  const annual = fed+fica+seTax;
+  return { annual, monthly: Math.round(annual/12), fed, fica, seTax };
+}
+
 const T = {
   bg2:"#18181b", bg3:"#27272a", card:"#111113",
   border:"rgba(255,255,255,0.06)",
@@ -222,15 +257,22 @@ export default function SimuladorUS({ user, totals }) {
   const getExp = (k) => expenseVals[k] ?? baseExpenses[k]?.base ?? 0;
   const getDbt = (k) => debtVals[k]    ?? baseDebt[k]?.base    ?? 0;
 
-  // Simulated totals
+  // Simulated totals — includes estimated federal taxes
   const simT = useMemo(() => {
-    const ni  = Object.keys(baseIncome).reduce((s,k)  => s + getInc(k), 0);
-    const gfm = Object.keys(baseExpenses).reduce((s,k) => s + getExp(k), 0);
-    const tc  = Object.keys(baseDebt).reduce((s,k)    => s + getDbt(k), 0);
-    const te  = gfm + tc;
-    const cf  = ni - te;
-    const ind = te > 0 ? (ni / te) * 100 : 0;
-    return { ni, gfm, tc, te, cf, ind };
+    const ni   = Object.keys(baseIncome).reduce((s,k) => s + getInc(k), 0);
+    const gfm  = Object.keys(baseExpenses).reduce((s,k) => s + getExp(k), 0);
+    const tc   = Object.keys(baseDebt).reduce((s,k) => s + getDbt(k), 0);
+    // Build income map for tax calculation
+    const incMap = {};
+    Object.entries(baseIncome).forEach(([k,info]) => {
+      incMap[k] = { val: getInc(k), cat: info.cat||"" };
+    });
+    const tax  = estimateAnnualTax(incMap);
+    const taxes = tax.monthly; // monthly tax estimate
+    const te   = gfm + tc + taxes;   // expenses + debt + taxes
+    const cf   = ni - te;
+    const ind  = te > 0 ? (ni / te) * 100 : 0;
+    return { ni, gfm, tc, taxes, taxBreakdown:tax, te, cf, ind };
   }, [incomeVals, expenseVals, debtVals, baseIncome, baseExpenses, baseDebt]);
 
   const base = totals || {};
@@ -311,8 +353,9 @@ export default function SimuladorUS({ user, totals }) {
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:20}}>
         {[
           {l:"Monthly Income",   v:fm(simT.ni),  c:T.gn,  d:fm(simT.ni-(base.ti||0))},
-          {l:"Monthly Expenses", v:fm(simT.te),  c:T.rd,  d:fm(simT.te-(base.te||0))},
-          {l:"Cash Flow",        v:fm(simT.cf),  c:simT.cf>=0?T.gn:T.rd, d:fm(simT.cf-(base.cf||0))},
+          {l:"Monthly Expenses", v:fm(simT.gfm+simT.tc), c:T.rd,  d:""},
+          {l:"Est. Taxes/Month",  v:fm(simT.taxes), c:T.pr, d:""},
+          {l:"Cash Flow",         v:fm(simT.cf),  c:simT.cf>=0?T.gn:T.rd, d:fm(simT.cf-(base.cf||0))},
           {l:"Independence",     v:(simT.ind).toFixed(0)+"%", c:simT.ind>=100?T.gn:T.or},
           {l:"FIRE Progress",    v:fireProgress.toFixed(0)+"%", c:fireProgress>=100?T.gn:T.or,
            sub:`of ${fm(fireNumber)}`},
@@ -410,6 +453,31 @@ export default function SimuladorUS({ user, totals }) {
             </div>
           )}
 
+          {/* Estimated taxes row — read only, not a slider */}
+          {simT.taxes > 0 && (
+            <div style={{marginTop:8}}>
+              <div style={{fontSize:10,color:T.tx3,fontWeight:600,letterSpacing:1,marginBottom:4,textTransform:"uppercase"}}>
+                Estimated Federal Taxes
+              </div>
+              <div style={{background:T.pr+"10",padding:"10px 12px",borderRadius:8,borderLeft:"3px solid "+T.pr}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontSize:12,color:T.tx2,fontWeight:500}}>
+                      Fed {fm(simT.taxBreakdown?.fed||0)} + FICA {fm(simT.taxBreakdown?.fica||0)}
+                      {simT.taxBreakdown?.seTax>0&&` + SE ${fm(simT.taxBreakdown.seTax)}`}
+                    </div>
+                    <div style={{fontSize:10,color:T.tx3,marginTop:2}}>
+                      Estimated · go to Tax Planning for full analysis
+                    </div>
+                  </div>
+                  <span style={{fontSize:12,fontWeight:700,color:T.pr,fontFamily:"monospace"}}>
+                    {fm(simT.taxes)}/mo
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {Object.keys(baseExpenses).length === 0 && Object.keys(baseDebt).length === 0 && (
             <div style={{fontSize:12,color:T.tx3,textAlign:"center",padding:"16px 0"}}>
               No expenses added yet
@@ -424,7 +492,7 @@ export default function SimuladorUS({ user, totals }) {
           📈 5-Year Net Worth Projection
         </div>
         <div style={{fontSize:11,color:T.tx3,marginBottom:14}}>
-          Based on {fm(simT.cf)}/month cash flow + 7% annual return on existing portfolio
+          Cash flow {fm(simT.cf)}/month (income – expenses – debt – est. taxes) + 7% annual return
         </div>
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={projection}>
