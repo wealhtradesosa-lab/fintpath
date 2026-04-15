@@ -13,6 +13,7 @@ import AsesorIA from "./components/AsesorIA";
 import AportesCalculadora from "./components/AportesCalculadora";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
+import { useJurisdiction } from "./hooks/useJurisdiction";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
 const T={bg:"#09090b",bg2:"#18181b",bg3:"#27272a",card:"#111113",border:"rgba(255,255,255,0.06)",borderL:"rgba(255,255,255,0.1)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f59e0b",gd:"#eab308",ch:["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"]};
@@ -22,7 +23,7 @@ const SK="fp3";
 const sL=async(uid)=>{
   try{
     if(isSupabaseConfigured&&uid){
-      const{data,error}=await supabase.from("user_data").select("data").eq("id",uid).single();
+      const{data,error}=await supabase.from("user_data").select("data,jurisdiction").eq("id",uid).single();
       if(!error&&data?.data){
         let sd=data.data;
         if(sd._encrypted&&sd.payload){
@@ -30,13 +31,15 @@ const sL=async(uid)=>{
           if(encKey){try{sd=await E2E.decrypt(sd.payload,encKey,uid)}catch{return null}}
           else{return null}
         }
-        sd=sanitize(sd);localStorage.setItem(SK,JSON.stringify(sd));return sd}
+        sd=sanitize(sd);
+        if(data.jurisdiction)sd.jurisdiction=data.jurisdiction;
+        localStorage.setItem(SK,JSON.stringify(sd));return sd}
     }
     const r=localStorage.getItem(SK);return r?sanitize(JSON.parse(r)):null;
   }catch{return null}
 };
 
-const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.owners)d.owners=[{id:"own_1",name:"Personal",type:"natural"}];if(!d.inv)d.inv=[];d.inv=d.inv.map(i=>{if(i.tp&&!isNaN(Number(i.tp))){i.tp=inferType(i);i.tipo=i.tp}return i});if(!d.deu)d.deu=[];if(!d.gas)d.gas={};if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};return d};
+const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.owners)d.owners=[{id:"own_1",name:"Personal",type:"natural"}];if(!d.inv)d.inv=[];d.inv=d.inv.map(i=>{if(i.tp&&!isNaN(Number(i.tp))){i.tp=inferType(i);i.tipo=i.tp}return i});if(!d.deu)d.deu=[];if(!d.gas)d.gas={};if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";return d};
 
 // ═══ END-TO-END ENCRYPTION ═══
 const E2E={
@@ -86,7 +89,7 @@ const sS=async(d,uid)=>{
     if(isSupabaseConfigured&&uid){
       clearTimeout(_svT);
       _svT=setTimeout(async()=>{
-        try{await supabase.from("user_data").upsert({id:uid,data:d,updated_at:new Date().toISOString()},{onConflict:"id"})}catch{}
+        try{await supabase.from("user_data").upsert({id:uid,data:d,jurisdiction:d.jurisdiction||"CO",updated_at:new Date().toISOString()},{onConflict:"id"})}catch{}
       },2000);
     }
   }catch{}
@@ -378,6 +381,7 @@ export default function FinPath(){
   },[u]);
 
   const trm=u?.trm||4200;
+  const { regPack, jurisdiction } = useJurisdiction(u);
   const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),3000)};
   const logout=async()=>{try{await supabase.auth.signOut()}catch{}localStorage.removeItem(SK);localStorage.removeItem("fp3_enc_key");_setU(null);setShowAuth(false)};
   const auth=async()=>{
