@@ -12,6 +12,7 @@ import SimuladorAvanzado from "./components/SimuladorAvanzado";
 import AsesorIA from "./components/AsesorIA";
 import AportesCalculadora from "./components/AportesCalculadora";
 import TaxPlanningUS from "./components/TaxPlanningUS";
+import IncomeModuleUS from "./components/IncomeModuleUS";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { useJurisdiction } from "./hooks/useJurisdiction";
@@ -1610,7 +1611,7 @@ export default function FinPath(){
     </div>}
         
 case"inv":return<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdate={v=>upd("inv",v)} fmt={fm} onImport={()=>setShowImport(true)}/>;
-    case"ing":return<IngresosModule owners={u?.owners||[]} ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm} cur={cur} fmt={fm} onImport={()=>setShowImport(true)}/>;
+    case"ing":return isUS?<IncomeModuleUS ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm}/>:<IngresosModule owners={u?.owners||[]} ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm} cur={cur} fmt={fm} onImport={()=>setShowImport(true)}/>;
     case"trd":return gated("trd","Básico",<div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:0}}>Trading</h2><Bt sz="s" onClick={async()=>{
               const tickers=((u&&u.ibk)||[]).map(p=>p.tk).filter(Boolean).join(",");
               if(!tickers)return alert("No hay posiciones con ticker");
