@@ -287,10 +287,11 @@ const estimarImpuesto=(u)=>{
         else if(/Rendimiento|CDT|Inversión/i.test(cat))reteN+=m*0.07;
         else if(/Dividendos/i.test(cat))reteN+=m*0.10;
       });
-      // imp = sin PV/AFC (actual), impOpt = con PV/AFC (optimizado)
-      // Mismo cálculo que SimuladorTributario
-      const ahorro=imp-impOpt;
-      totalImp+=imp;
+      // Restar retención — igual que SimuladorTributario
+      const impActualNat=Math.max(0,imp-reteN);
+      const impOptNat=Math.max(0,impOpt-reteN);
+      const ahorroNat=impActualNat-impOptNat;
+      totalImp+=impActualNat;
       detalle.push({
         name:ow.name,type:"natural",ingreso:ingAnual,
         ingLaboral,ingCapital,ingNoLaboral,divAnual,pensAnual,
@@ -298,10 +299,10 @@ const estimarImpuesto=(u)=>{
         exenta25,deducDep,deducMedicina,deducVivienda,gmfDeducible,
         pensionVol,afc,totalDeducciones,
         lim40,benAplic:benefLaboral,
-        baseGravable:rentaLiqGeneral,impuesto:imp,
-        impSinOpt:imp,impOptimizado:impOpt,
-        ahorroOptimo:ahorro,
-        tasa:ingAnual>0?(imp/ingAnual*100):0,
+        baseGravable:rentaLiqGeneral,impuesto:impActualNat,
+        impSinOpt:impActualNat,impOptimizado:impOptNat,
+        ahorroOptimo:ahorroNat,
+        tasa:ingAnual>0?(impActualNat/ingAnual*100):0,
         espacioParaPVyAFC:espacioPV,reteN,impDiv
       });
     }
