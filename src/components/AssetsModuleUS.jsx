@@ -332,8 +332,8 @@ const EMPTY_LIAB = {
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdateAssets, onUpdateLiabs }) {
-  const [tab,       setTab]       = useState("assets");
+export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdateAssets, onUpdateLiabs, initialTab = "assets" }) {
+  const [tab,       setTab]       = useState(initialTab);
   const [showForm,  setShowForm]  = useState(null); // "asset" | "liab" | null
   const [form,      setForm]      = useState(EMPTY_ASSET);
   const [formL,     setFormL]     = useState(EMPTY_LIAB);
