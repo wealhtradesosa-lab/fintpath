@@ -284,8 +284,7 @@ const estimarImpuesto=(u)=>{
         if(/Salario/i.test(cat)){const mUVT=m/12/UVT;reteN+=m*(mUVT>360?0.19:mUVT>150?0.10:mUVT>95?0.04:0)}
         else if(/Honorarios|Freelance/i.test(cat))reteN+=m*0.11;
         else if(/Arriendo/i.test(cat))reteN+=m*0.035;
-        else if(/Rendimiento|CDT|Inversión/i.test(cat))reteN+=m*0.07;
-        else if(/Dividendos/i.test(cat))reteN+=m*0.10;
+        else if(/Rendimiento|Dividendos|CDT|Inversión/i.test(cat))reteN+=m*0.07;
       });
       // Restar retención — igual que SimuladorTributario
       const impActualNat=Math.max(0,imp-reteN);
