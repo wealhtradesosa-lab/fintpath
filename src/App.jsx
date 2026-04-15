@@ -172,17 +172,19 @@ const estimarImpuesto=(u)=>{
       const icaGas=oGas.filter(g=>g.cat==="Predial").reduce((s,g)=>s+(g.m||0),0)*12*0.30;
       const descICA=icaGas*0.50;
       const impBruto=utilidad*0.35;
-      const imp=Math.max(0,impBruto-descICA-reteJ);
-      totalImp+=imp;
+      const impActual=Math.max(0,impBruto-descICA);
+      const impDespuesRete=Math.max(0,impActual-reteJ);
+      totalImp+=impActual;
       // Estrategias para jurídica
       const bonif=oGas.filter(g=>g.cat==="Nómina").reduce((s,g)=>s+(g.m||0),0)*12*0.15;
       const donacion=Math.min(utilidad*0.10,500e6);
       const provision=ingAnual*0.02;
-      const estratTotal=bonif+donacion+provision;
+      const deudaEstr=oInv.reduce((s,i)=>s+(i.va||0),0)*0.03;
+      const estratTotal=bonif+donacion+provision+deudaEstr;
       const maxRed=utilidad*0.35;
       const utilOptima=Math.max(utilidad*0.40,utilidad-Math.min(estratTotal,maxRed));
-      const impOptimoJ=Math.max(0,utilOptima*0.35-descICA-reteJ);
-      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:imp,impSinOpt:imp,impOptimizado:impOptimoJ,ahorroOptimo:imp-impOptimoJ,tasa:ingAnual>0?(imp/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4});
+      const impOptimoJ=Math.max(0,utilOptima*0.35-descICA);
+      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:impActual,impSinOpt:impActual,impOptimizado:impOptimoJ,ahorroOptimo:impActual-impOptimoJ,tasa:ingAnual>0?(impActual/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4,reteJ,descICA,impDespuesRete});
     }else{
       // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022, ET Arts. 55,206,336,383,387) ═══
       const trm=u.trm||4200;
