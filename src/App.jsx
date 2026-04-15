@@ -395,7 +395,7 @@ export default function FinPath(){
         if(error){const msg=error.message==="Invalid login credentials"?"Email o contraseña incorrectos":error.message==="Email not confirmed"?"Revisa tu email y confirma tu cuenta":error.message;setAuthError(msg);setAuthLoading(false);return}
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);
         const d=await sL(data.user.id);
-        if(d)setU(sanitize(d));else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id)}
+        if(d)setU(sanitize(d));else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id)}
       }else{
         const sr=await fetch("/.netlify/functions/auth-signup",{
           method:"POST",headers:{"Content-Type":"application/json"},
@@ -405,7 +405,7 @@ export default function FinPath(){
         if(!sr.ok){const errMsg=srd.error||"Error creando cuenta";setAuthError(errMsg.includes("already been registered")?"Este email ya tiene cuenta. Intenta iniciar sesión.":errMsg);setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];setU(nd);await sS(nd,data.user.id);window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});
+        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});
       }
     }else{setU(mkU(aF.n||"Usuario",aF.e))}
     }catch(e){setAuthError("Error: "+e.message)}
@@ -528,6 +528,17 @@ export default function FinPath(){
         {aM==="signup"&&<In l="Nombre" value={aF.n} onChange={v=>sAF(p=>({...p,n:v}))} placeholder="Tu nombre"/>}
         <In l="Email" value={aF.e} onChange={v=>sAF(p=>({...p,e:v}))} type="email" placeholder="tu@email.com"/>
         <In l="Contraseña" value={aF.p} onChange={v=>sAF(p=>({...p,p:v}))} type="password" placeholder="••••••••"/>
+        {aM==="signup"&&<div style={{display:"flex",flexDirection:"column",gap:5}}>
+          <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>País / Country</label>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {[{code:"CO",flag:"🇨🇴",name:"Colombia"},{code:"US",flag:"🇺🇸",name:"United States"}].map(c=>{
+              const sel=(aF.country||"CO")===c.code;
+              return<button key={c.code} type="button" onClick={()=>sAF(p=>({...p,country:c.code}))} style={{padding:"12px",borderRadius:10,border:"2px solid "+(sel?T.gn:T.border),background:sel?T.gnB:T.bg2,cursor:"pointer",display:"flex",alignItems:"center",gap:8,color:sel?T.gn:T.tx2,fontWeight:sel?700:400,fontSize:13,transition:"all .15s"}}>
+                <span style={{fontSize:20}}>{c.flag}</span>{c.name}
+              </button>})}
+          </div>
+          <div style={{fontSize:10,color:T.tx3,marginTop:2}}>🇲🇽 México · 🇪🇸 España — Próximamente</div>
+        </div>}
       </div>
       <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":"Crear cuenta — 14 días Pro gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:12,textAlign:"center",marginTop:8,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{authError}</div>}
