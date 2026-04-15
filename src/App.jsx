@@ -172,8 +172,7 @@ const estimarImpuesto=(u)=>{
       const icaGas=oGas.filter(g=>g.cat==="Predial").reduce((s,g)=>s+(g.m||0),0)*12*0.30;
       const descICA=icaGas*0.50;
       const impBruto=utilidad*0.35;
-      const impActual=Math.max(0,impBruto-descICA);
-      const impDespuesRete=Math.max(0,impActual-reteJ);
+      const impActual=Math.max(0,impBruto-descICA-reteJ);
       totalImp+=impActual;
       // Estrategias para jurídica
       const bonif=oGas.filter(g=>g.cat==="Nómina").reduce((s,g)=>s+(g.m||0),0)*12*0.15;
@@ -183,8 +182,8 @@ const estimarImpuesto=(u)=>{
       const estratTotal=bonif+donacion+provision+deudaEstr;
       const maxRed=utilidad*0.35;
       const utilOptima=Math.max(utilidad*0.40,utilidad-Math.min(estratTotal,maxRed));
-      const impOptimoJ=Math.max(0,utilOptima*0.35-descICA);
-      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:impActual,impSinOpt:impActual,impOptimizado:impOptimoJ,ahorroOptimo:impActual-impOptimoJ,tasa:ingAnual>0?(impActual/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4,reteJ,descICA,impDespuesRete});
+      const impOptimoJ=Math.max(0,utilOptima*0.35-descICA-reteJ);
+      detalle.push({name:ow.name,type:"juridica",ingreso:ingAnual,gastosRegistrados:gastosDeducJ,intereses:interesesJ,deprec,gastosDeduc:totalDeduc,baseGravable:utilidad,impuesto:impActual,impSinOpt:impActual,impOptimizado:impOptimoJ,ahorroOptimo:impActual-impOptimoJ,tasa:ingAnual>0?(impActual/ingAnual*100):0,gastosNoRegistrados:totalDeduc<ingAnual*0.4});
     }else{
       // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022, ET Arts. 55,206,336,383,387) ═══
       const trm=u.trm||4200;
@@ -288,10 +287,10 @@ const estimarImpuesto=(u)=>{
         else if(/Rendimiento|CDT|Inversión/i.test(cat))reteN+=m*0.07;
         else if(/Dividendos/i.test(cat))reteN+=m*0.10;
       });
-      const impFinal=Math.max(0,impSinOpt-reteN);
-      const impOptFinal=Math.max(0,impOpt-reteN);
-      const ahorroOptFinal=impSinOpt-impOpt;
-      totalImp+=impSinOpt;
+      // imp = sin PV/AFC (actual), impOpt = con PV/AFC (optimizado)
+      // Mismo cálculo que SimuladorTributario
+      const ahorro=imp-impOpt;
+      totalImp+=imp;
       detalle.push({
         name:ow.name,type:"natural",ingreso:ingAnual,
         ingLaboral,ingCapital,ingNoLaboral,divAnual,pensAnual,
@@ -299,12 +298,11 @@ const estimarImpuesto=(u)=>{
         exenta25,deducDep,deducMedicina,deducVivienda,gmfDeducible,
         pensionVol,afc,totalDeducciones,
         lim40,benAplic:benefLaboral,
-        baseGravable:rentaLiqGeneral,impuesto:impSinOpt,
-        impSinOpt:impSinOpt,impOptimizado:impOpt,
-        ahorroOptimo:ahorroOptFinal,
-        tasa:ingAnual>0?(impSinOpt/ingAnual*100):0,
-        espacioParaPVyAFC:espacioPV,reteN,impDiv,
-        impDespuesRete:impFinal,impOptDespuesRete:impOptFinal
+        baseGravable:rentaLiqGeneral,impuesto:imp,
+        impSinOpt:imp,impOptimizado:impOpt,
+        ahorroOptimo:ahorro,
+        tasa:ingAnual>0?(imp/ingAnual*100):0,
+        espacioParaPVyAFC:espacioPV,reteN,impDiv
       });
     }
   });
