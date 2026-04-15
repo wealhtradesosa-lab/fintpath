@@ -288,8 +288,8 @@ const estimarImpuesto=(u)=>{
       });
       const impFinal=Math.max(0,impSinOpt-reteN);
       const impOptFinal=Math.max(0,impOpt-reteN);
-      const ahorroOptFinal=impFinal-impOptFinal;
-      totalImp+=impFinal;
+      const ahorroOptFinal=impSinOpt-impOpt;
+      totalImp+=impSinOpt;
       detalle.push({
         name:ow.name,type:"natural",ingreso:ingAnual,
         ingLaboral,ingCapital,ingNoLaboral,divAnual,pensAnual,
@@ -297,11 +297,12 @@ const estimarImpuesto=(u)=>{
         exenta25,deducDep,deducMedicina,deducVivienda,gmfDeducible,
         pensionVol,afc,totalDeducciones,
         lim40,benAplic:benefLaboral,
-        baseGravable:rentaLiqGeneral,impuesto:impFinal,
-        impSinOpt:impFinal,impOptimizado:impOptFinal,
+        baseGravable:rentaLiqGeneral,impuesto:impSinOpt,
+        impSinOpt:impSinOpt,impOptimizado:impOpt,
         ahorroOptimo:ahorroOptFinal,
-        tasa:ingAnual>0?(impFinal/ingAnual*100):0,
-        espacioParaPVyAFC:espacioPV,reteN,impDiv
+        tasa:ingAnual>0?(impSinOpt/ingAnual*100):0,
+        espacioParaPVyAFC:espacioPV,reteN,impDiv,
+        impDespuesRete:impFinal,impOptDespuesRete:impOptFinal
       });
     }
   });
