@@ -465,6 +465,53 @@ export default function FinPath(){
     };
     return nd;
   });setTimeout(()=>showToast("🧾 Impuestos calculados para Pedro Pérez y Pérez SAS"),1500)};
+  const demoUS=()=>{
+    showToast("🇺🇸 Demo USA cargado — Alex Johnson, Austin TX");
+    setU(()=>{
+      const nd=mkU("Alex Johnson","demo-us@finpathia.com");
+      nd.p={name:"Alex Johnson",email:"demo-us@finpathia.com",plan:"pro",
+        trialEnd:new Date(Date.now()+30*86400000).toISOString().split("T")[0],
+        demo:true,anonymous:true};
+      nd.jurisdiction="US";
+      nd.trm=1;
+      nd.ingresos=[
+        {id:"us_ig1",nombre:"W-2 — Austin Startup",categoria:"Salario",mensual:7500,tipo:"fijo",fuente:"Austin Startup Inc.",owner:"own_1",moneda:"USD"},
+        {id:"us_ig2",nombre:"1099-NEC — Freelance Dev",categoria:"Honorarios",mensual:1500,tipo:"variable",fuente:"Freelance clients",owner:"own_1",moneda:"USD"},
+        {id:"us_ig3",nombre:"Dividends — Index Funds",categoria:"Dividendos",mensual:55,tipo:"variable",fuente:"Vanguard",owner:"own_1",moneda:"USD"},
+        {id:"us_ig4",nombre:"Interest — HYSA",categoria:"Rendimiento",mensual:56,tipo:"fijo",fuente:"Marcus HYSA",owner:"own_1",moneda:"USD"},
+      ];
+      nd.inv=[
+        {id:"us_a1",n:"Traditional 401(k) — Fidelity",tp:"401k_trad",vc:28000,va:42000,owner:"own_1"},
+        {id:"us_a2",n:"Roth IRA — Vanguard",tp:"roth_ira",vc:12000,va:15800,owner:"own_1"},
+        {id:"us_a3",n:"Taxable Brokerage — VTI",tp:"stocks_etf",vc:7000,va:8400,owner:"own_1",magi:110000},
+        {id:"us_a4",n:"HSA — Fidelity (Invested)",tp:"hsa",vc:4800,va:5200,owner:"own_1"},
+        {id:"us_a5",n:"Emergency Fund — HYSA",tp:"cash_equiv",vc:14000,va:14000,owner:"own_1"},
+        {id:"us_a6",n:"Bitcoin",tp:"crypto",vc:3200,va:4800,owner:"own_1"},
+      ];
+      nd.deu=[
+        {id:"us_d1",n:"Student Loans — Navient",tp:"student_loan",mt:31000,pg:340,ts:6.5,owner:"own_1"},
+        {id:"us_d2",n:"Honda Accord — Auto Loan",tp:"auto",mt:16500,pg:390,ts:8.2,owner:"own_1"},
+        {id:"us_d3",n:"Chase Sapphire Credit Card",tp:"credit_card",mt:4800,pg:200,ts:24.99,owner:"own_1"},
+      ];
+      nd.gas={
+        "Housing":[{c:"Rent — 1BR apartment",m:1850,t:"f",owner:"own_1"},{c:"Utilities & internet",m:180,t:"f",owner:"own_1"}],
+        "Food":[{c:"Groceries",m:480,t:"v",owner:"own_1"},{c:"Dining & coffee",m:380,t:"v",owner:"own_1"}],
+        "Transportation":[{c:"Car payment",m:390,t:"f",owner:"own_1"},{c:"Gas & insurance",m:210,t:"f",owner:"own_1"}],
+        "Healthcare":[{c:"Health insurance",m:185,t:"f",owner:"own_1"},{c:"Gym",m:45,t:"f",owner:"own_1"}],
+        "Subscriptions":[{c:"Streaming & apps",m:55,t:"f",owner:"own_1"},{c:"Tools",m:75,t:"f",owner:"own_1"}],
+        "Personal":[{c:"Clothing & personal",m:150,t:"v",owner:"own_1"},{c:"Entertainment",m:250,t:"v",owner:"own_1"}],
+      };
+      nd.metas=[
+        {name:"Emergency Fund (6 months)",type:"emergency",target:25500,saved:14000,monthly:500},
+        {name:"Pay Off Credit Card (24.99% APR)",type:"debt_payoff",target:4800,saved:0,monthly:300,debtBalance:4800,debtRate:24.99},
+        {name:"First Home Down Payment",type:"home",target:60000,saved:8400,monthly:800},
+        {name:"Max Roth IRA this year",type:"custom",target:7000,saved:3500,monthly:583},
+      ];
+      nd.pen={age:32,rAge:65,sv:1000,cur:42000,ret:7,inf:3,des:5000};
+      nd.owners=[{id:"own_1",name:"Alex Johnson",type:"natural"}];
+      return nd;
+    });
+  };
   const generatePDF=()=>{
     const fecha=new Date().toLocaleDateString("es-CO",{year:"numeric",month:"long",day:"numeric"});
     const inv=(u&&u.inv)||[];const deu=(u&&u.deu)||[];const gas=(u&&u.gas)||{};const ing=(u&&u.ingresos)||[];
@@ -550,7 +597,7 @@ export default function FinPath(){
       {authError&&<div style={{color:T.rd,fontSize:12,textAlign:"center",marginTop:8,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{authError}</div>}
       <p style={{textAlign:"center",marginTop:20,color:T.tx3,fontSize:14}}>{"¿No tienes cuenta? "}<span onClick={()=>sAM(aM==="login"?"signup":"login")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{aM==="login"?"Regístrate":"Ingresa"}</span></p>
       <div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
-      <div style={{marginTop:16,padding:"16px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.12)",borderRadius:12,textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.orange,marginBottom:6}}>📊 ¿Quieres ver cómo funciona?</div><div style={{fontSize:11,color:T.tx3,marginBottom:10}}>Explora la plataforma con datos de ejemplo: patrimonio, ingresos, gastos, deudas, impuestos y simulador.</div><button onClick={()=>{const nd=mkU("Pedro Pérez","demo@finpathia.com");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.demo=true;setU(nd);setTimeout(()=>demo(),500)}} style={{background:"linear-gradient(135deg,#f97316,#eab308)",color:"#000",border:"none",padding:"10px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>Explorar ejemplo interactivo</button></div>
+      <div style={{marginTop:16,padding:"16px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.12)",borderRadius:12,textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.orange,marginBottom:6}}>📊 ¿Quieres ver cómo funciona?</div><div style={{fontSize:11,color:T.tx3,marginBottom:10}}>Explora la plataforma con datos de ejemplo: patrimonio, ingresos, gastos, deudas, impuestos y simulador.</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}><button onClick={()=>{const nd=mkU("Pedro Pérez","demo@finpathia.com");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.demo=true;setU(nd);setTimeout(()=>demo(),500)}} style={{background:"linear-gradient(135deg,#f97316,#eab308)",color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇨🇴 Demo Colombia</button><button onClick={()=>demoUS()} style={{background:"linear-gradient(135deg,#3b82f6,#1d4ed8)",color:"#fff",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇺🇸 Demo USA</button></div></div>
       {aM==="login"&&<p style={{textAlign:"center",marginTop:8}}><span onClick={async()=>{if(!aF.e){setAuthError("Escribe tu email primero");return}try{await supabase.auth.resetPasswordForEmail(aF.e);setAuthError("✅ Email enviado")}catch(e){setAuthError(e.message)}}} style={{color:T.tx3,cursor:"pointer",fontSize:12}}>¿Olvidaste tu contraseña?</span></p>}
     </div>
   </div>;
