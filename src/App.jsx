@@ -9,6 +9,7 @@ import CsvImport from "./components/CsvImport";
 import MetasModule from "./components/MetasModule";
 import PensionColombia from "./components/PensionColombia";
 import SimuladorAvanzado from "./components/SimuladorAvanzado";
+import DashboardUS from "./components/DashboardUS";
 import SimuladorUS from "./components/SimuladorUS";
 import AsesorIA from "./components/AsesorIA";
 import AportesCalculadora from "./components/AportesCalculadora";
@@ -751,6 +752,7 @@ export default function FinPath(){
   if(typeof document!=="undefined")document.title="FINPATHIA"+(secNames[pg]?" — "+secNames[pg]:"");
   const rp=()=>{if(!u)return null;switch(pg){
     case"dash":{
+    if(isUS) return <DashboardUS u={u} t={t} ib={ib} pen={pen} setPg={setPg} generatePDF={generatePDF} mb={mb}/>;
     // Data prep
     const fd=[{name:"Ingresos",a:t.ti},{name:"Gastos",a:-(t.gfm+t.tg)},{name:"Deudas",a:-t.tc},{name:"Neto",a:t.cf}];
     const pj=[0,1,3,5,10].map(y=>({yr:y===0?"Hoy":`+${y}a`,v:t.nw*Math.pow(1.08,y)+t.cf*12*y}));
