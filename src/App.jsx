@@ -1708,27 +1708,37 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"asesor":{const _aInv=((u&&u.inv)||[]).filter(i=>i.sim!==false),_aDeu=((u&&u.deu)||[]).filter(d=>d.sim!==false),_aIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false),_aGas={};Object.entries((u&&u.gas)||{}).forEach(([cat,items])=>{const fi=(items||[]).filter(g=>g.sim!==false);if(fi.length>0)_aGas[cat]=fi});return gated("asesor","Pro",<AsesorIA user={{inv:_aInv,gas:_aGas,deu:_aDeu,ingresos:_aIng}} totals={t} userId={authUser?.id}/>);}
     case"coach":{const msgs=adv?getCoach(adv.id):[];return gated("coach","Pro",<div><div style={{textAlign:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 6px"}}>Coaches Financieros IA</h2><p style={{color:T.tx3,fontSize:13}}>5 asesores analizan tus datos</p><p style={{color:T.tx3,fontSize:10,margin:"4px 0 0"}}>📋 Solo se analizan ítems encendidos. Los apagados no se incluyen en el análisis.</p></div><div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center",marginBottom:20}}>{ADV.map(a=>{const ac=adv?.id===a.id;return<button key={a.id} onClick={()=>sAdv(a)} style={{background:ac?`linear-gradient(135deg,${a.cl}20,${a.cl}10)`:T.card,border:`1px solid ${ac?a.cl:T.border}`,color:T.tx,padding:"14px 20px",borderRadius:14,cursor:"pointer",textAlign:"center",minWidth:90}}><div style={{fontSize:22,marginBottom:4}}>{a.av}</div><div style={{fontWeight:700,fontSize:11,color:ac?a.cl:T.tx}}>{a.nm}</div><div style={{fontSize:9,color:ac?`${a.cl}aa`:T.tx3}}>{a.ti}</div></button>})}</div><Cd>{adv?<div style={{padding:20}}><div style={{display:"flex",alignItems:"center",gap:10,paddingBottom:14,borderBottom:`2px solid ${adv.cl}`,marginBottom:20}}><span style={{fontSize:28}}>{adv.av}</span><div><div style={{fontWeight:700,fontSize:15}}>{adv.nm}</div><div style={{fontSize:12,color:T.tx3}}>{adv.ti}</div></div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:6,marginBottom:20}}>{[{l:"Patrimonio",v:fm(t.nw),c:T.tx},{l:"Cash Flow",v:fm(t.cf),c:t.cf>=0?T.gn:T.rd},{l:"Independencia",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2},{l:"Deuda/Act",v:pc(t.dta),c:t.dta<30?T.gn:T.rd}].map(m=><div key={m.l} style={{background:T.bg3,padding:8,borderRadius:8,borderLeft:`3px solid ${m.c}`}}><div style={{fontSize:9,color:T.tx3,textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:15,fontWeight:700,color:m.c}}>{m.v}</div></div>)}</div>{msgs.map((msg,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:14}}><div style={{width:32,height:32,borderRadius:"50%",background:adv.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{adv.av}</div><div style={{flex:1,background:adv.bg,padding:"14px 18px",borderRadius:"0 14px 14px 14px",border:`1px solid ${adv.cl}10`}}><div style={{fontWeight:700,fontSize:13,color:adv.cl,marginBottom:6}}>{msg.t}</div><div style={{fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",color:T.tx}}>{msg.c}</div></div></div>)}</div>:<div style={{padding:56,textAlign:"center",color:T.tx3}}><div style={{fontSize:40,marginBottom:12}}>👆</div><p>Selecciona un coach</p></div>}</Cd></div>)}
     case"price":{
+      const isCO=!isUS;
       const plans=[
-        {n:"Free",p:{mensual:"$0",anual:"$0"},pr:{mensual:"gratis",anual:"gratis"},save:null,
+        {n:"Free",
+         p:{mensual:isCO?"$0":"$0",anual:isCO?"$0":"$0"},
+         pr:{mensual:"gratis",anual:"gratis"},
+         save:null,
          f:["Dashboard básico","3 inversiones","Gastos y deudas","Simulador limitado","1 meta financiera"],
          no:["🤖 Asesor IA","Coaches IA","Pensiones","Trading","Plan tributario","📸 Facturas IA"],
          cur:plan==="free"},
-        {n:"Básico",p:{mensual:"$8",anual:"$6"},pr:{mensual:"USD /mes",anual:"USD /mes"},save:"Ahorra 25%",
+        {n:"Básico",
+         p:{mensual:isCO?"$29.900":"$12",anual:isCO?"$22.900":"$89"},
+         pr:{mensual:isCO?"COP /mes":"USD /mo",anual:isCO?"COP /mes":"USD /mo"},
+         save:isCO?"Ahorra 23%":"Save 23%",
          f:["Todo en Free","10 inversiones","10 metas","Simulador avanzado","Pensiones Colpensiones + RAIS","Ahorro BTC","Trading portfolio","Importar Excel con IA"],
          no:["🤖 Asesor IA","Coaches IA","Planeación tributaria","📸 Lectura facturas"],
          cur:plan==="basico",ac:false},
-        {n:"Pro",p:{mensual:"$16",anual:"$12"},pr:{mensual:"USD /mes",anual:"USD /mes"},save:"Ahorra 25%",
+        {n:"Pro",
+         p:{mensual:isCO?"$59.900":"$22",anual:isCO?"$44.900":"$166"},
+         pr:{mensual:isCO?"COP /mes":"USD /mo",anual:isCO?"COP /mes":"USD /mo"},
+         save:isCO?"Ahorra 25%":"Save 25%",
          f:["Todo en Básico","Inversiones ilimitadas","Metas ilimitadas","🤖 Asesor Financiero IA","3 Coaches IA especializados","Planeación tributaria Colombia","Simulador avanzado de escenarios","Resumen ejecutivo patrimonio","📸 Lectura de facturas con IA","Encriptación E2E (AES-256)","Modo Privado (sin cuenta)","Soporte prioritario"],
          no:[],
          cur:plan==="pro",ac:true}
       ];
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
-          <h2 style={{fontSize:26,fontWeight:800,margin:"0 0 8px"}}>Elige tu plan</h2>
-          <p style={{color:T.tx3,fontSize:15}}>Herramientas de family office al alcance de todos</p>
+          <h2 style={{fontSize:26,fontWeight:800,margin:"0 0 8px"}}>{isUS?"Choose your plan":"Elige tu plan"}</h2>
+          <p style={{color:T.tx3,fontSize:15}}>{isUS?"Family office tools for everyone":"Herramientas de family office al alcance de todos"}</p>
           <div style={{display:"inline-flex",background:T.bg3,borderRadius:10,padding:3,marginTop:16}}>
             {["mensual","anual"].map(c=>(
-              <button key={c} onClick={()=>setBillingCycle(c)} style={{padding:"8px 24px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:billingCycle===c?T.gn:"transparent",color:billingCycle===c?"#000":T.tx3}}>{c==="mensual"?"Mensual":"Anual (ahorra 25%)"}</button>
+              <button key={c} onClick={()=>setBillingCycle(c)} style={{padding:"8px 24px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:billingCycle===c?T.gn:"transparent",color:billingCycle===c?"#000":T.tx3}}>{isUS?(c==="mensual"?"Monthly":"Annual (save 25%)"):(c==="mensual"?"Mensual":"Anual (ahorra 25%)")}</button>
             ))}
           </div>
         </div>
@@ -1741,10 +1751,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:4}}>
                   <span style={{fontSize:40,fontWeight:800,color:pl.ac?T.gn:T.tx}}>{pl.p[billingCycle]}</span>
                   <span style={{color:T.tx3,fontSize:14,fontWeight:600}}>{pl.pr[billingCycle]}</span>
-                  {pl.p[billingCycle]!=="$0"&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>Precio en dólares americanos (USD)</div>}
+                  {pl.p[billingCycle]!=="$0"&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>{isUS?"Price in USD":"Precio en pesos colombianos (COP)"}</div>}
                 </div>
-                {billingCycle==="anual"&&pl.save&&<div style={{fontSize:12,color:T.gn,fontWeight:600,marginBottom:12}}>{pl.save} — {pl.n==="Básico"?"$72 USD/año (vs $96 mensual)":"$144 USD/año (vs $192 mensual)"}</div>}
-                {billingCycle==="mensual"&&pl.save&&<div style={{fontSize:12,color:T.tx3,marginBottom:12}}>o paga anual y ahorra 25%</div>}
+                {billingCycle==="anual"&&pl.save&&<div style={{fontSize:12,color:T.gn,fontWeight:600,marginBottom:12}}>{pl.save} — {isUS?(pl.n==="Básico"?"$89 USD/yr":"$166 USD/yr"):(pl.n==="Básico"?"$274.800 COP/año":"$538.800 COP/año")}</div>}
+                {billingCycle==="mensual"&&pl.save&&<div style={{fontSize:12,color:T.tx3,marginBottom:12}}>{isUS?"or pay annually & save 25%":"o paga anual y ahorra 25%"}</div>}
                 {!pl.save&&<div style={{marginBottom:12}}/>}
                 <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
                   {pl.f.map(f=><div key={f} style={{fontSize:13,color:T.tx2}}><span style={{color:T.gn,marginRight:8}}>✓</span>{f}</div>)}
