@@ -120,7 +120,7 @@ export default function LandingPage({ onGetStarted }) {
               </div>
               <div style={{ marginTop: 24, display: "flex", alignItems: "center", gap: 12 }}>
                 <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "14px 32px", borderRadius: 12, cursor: "pointer", fontSize: 15, fontWeight: 700 }}>Probar 14 días gratis →</button>
-                <span style={{ fontSize: 12, color: T.txt3 }}>14 días gratis • Luego $59.900 COP/mes</span>
+                <span style={{ fontSize: 12, color: T.txt3 }}>14 días gratis • Luego $16 USD/mes</span>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -196,8 +196,8 @@ export default function LandingPage({ onGetStarted }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, maxWidth: 950, margin: "0 auto" }}>
             {[
               { name: "Free", price: "$0", per: "gratis", features: ["Dashboard básico", "3 inversiones", "Gastos y deudas", "Simulador limitado", "1 meta financiera"], no: ["Coaches IA", "Pensiones", "Trading", "Alertas", "PDF"], cta: "Comenzar gratis" },
-              { name: "Básico", price: "$29.900", per: "COP/mes", sub: "$22.900 COP/mes anual — Ahorra 23%", features: ["Todo en Free", "10 inversiones y 10 metas", "Simulador avanzado", "Pensiones Colpensiones + BTC", "Trading portfolio", "CSV import + PDF export"], no: ["Coaches IA", "Family Office KPIs", "Alertas inteligentes"], cta: "Probar 14 días" },
-              { name: "Pro", price: "$59.900", per: "COP/mes", sub: "$44.900 COP/mes anual — Ahorra 25%", features: ["Todo en Básico", "Inversiones ilimitadas", "5 Coaches IA", "Family Office KPIs", "Alertas inteligentes", "Percentil de riqueza", "Benchmark vs mercado", "Resumen ejecutivo", "Soporte prioritario"], no: [], accent: true, cta: "Probar 14 días Pro" },
+              { name: "Básico", price: "$8", per: "USD/mes", sub: "$6 USD/mes anual — Ahorra 25%", features: ["Todo en Free", "10 inversiones y 10 metas", "Simulador avanzado", "Pensiones Colpensiones + BTC", "Trading portfolio", "CSV import + PDF export"], no: ["Coaches IA", "Family Office KPIs", "Alertas inteligentes"], cta: "Probar 14 días" },
+              { name: "Pro", price: "$16", per: "USD/mes", sub: "$12 USD/mes anual — Ahorra 25%", features: ["Todo en Básico", "Inversiones ilimitadas", "5 Coaches IA", "Family Office KPIs", "Alertas inteligentes", "Percentil de riqueza", "Benchmark vs mercado", "Resumen ejecutivo", "Soporte prioritario"], no: [], accent: true, cta: "Probar 14 días Pro" },
             ].map((p) => (
               <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative" }}>
                 {p.accent && <div style={{ background: T.grad, color: "#000", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>MÁS POPULAR</div>}

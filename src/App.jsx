@@ -1718,16 +1718,16 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
          no:["🤖 Asesor IA","Coaches IA","Pensiones","Trading","Plan tributario","📸 Facturas IA"],
          cur:plan==="free"},
         {n:"Básico",
-         p:{mensual:isCO?"$29.900":"$12",anual:isCO?"$22.900":"$89"},
-         pr:{mensual:isCO?"COP /mes":"USD /mo",anual:isCO?"COP /mes":"USD /mo"},
-         save:isCO?"Ahorra 23%":"Save 23%",
+         p:{mensual:"$8",anual:"$6"},
+         pr:{mensual:"USD /mes",anual:"USD /mes"},
+         save:"Ahorra 25%",
          f:["Todo en Free","10 inversiones","10 metas","Simulador avanzado","Pensiones Colpensiones + RAIS","Ahorro BTC","Trading portfolio","Importar Excel con IA"],
          no:["🤖 Asesor IA","Coaches IA","Planeación tributaria","📸 Lectura facturas"],
          cur:plan==="basico",ac:false},
         {n:"Pro",
-         p:{mensual:isCO?"$59.900":"$22",anual:isCO?"$44.900":"$166"},
-         pr:{mensual:isCO?"COP /mes":"USD /mo",anual:isCO?"COP /mes":"USD /mo"},
-         save:isCO?"Ahorra 25%":"Save 25%",
+         p:{mensual:"$16",anual:"$12"},
+         pr:{mensual:"USD /mes",anual:"USD /mes"},
+         save:"Ahorra 25%",
          f:["Todo en Básico","Inversiones ilimitadas","Metas ilimitadas","🤖 Asesor Financiero IA","3 Coaches IA especializados","Planeación tributaria Colombia","Simulador avanzado de escenarios","Resumen ejecutivo patrimonio","📸 Lectura de facturas con IA","Encriptación E2E (AES-256)","Modo Privado (sin cuenta)","Soporte prioritario"],
          no:[],
          cur:plan==="pro",ac:true}
@@ -1751,9 +1751,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:4}}>
                   <span style={{fontSize:40,fontWeight:800,color:pl.ac?T.gn:T.tx}}>{pl.p[billingCycle]}</span>
                   <span style={{color:T.tx3,fontSize:14,fontWeight:600}}>{pl.pr[billingCycle]}</span>
-                  {pl.p[billingCycle]!=="$0"&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>{isUS?"Price in USD":"Precio en pesos colombianos (COP)"}</div>}
+                  {pl.p[billingCycle]!=="$0"&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>"Precio en dólares americanos (USD)"</div>}
                 </div>
-                {billingCycle==="anual"&&pl.save&&<div style={{fontSize:12,color:T.gn,fontWeight:600,marginBottom:12}}>{pl.save} — {isUS?(pl.n==="Básico"?"$89 USD/yr":"$166 USD/yr"):(pl.n==="Básico"?"$274.800 COP/año":"$538.800 COP/año")}</div>}
+                {billingCycle==="anual"&&pl.save&&<div style={{fontSize:12,color:T.gn,fontWeight:600,marginBottom:12}}>{pl.save} — {pl.n==="Básico"?"$72 USD/año (vs $96 mensual)":"$144 USD/año (vs $192 mensual)"}</div>}
                 {billingCycle==="mensual"&&pl.save&&<div style={{fontSize:12,color:T.tx3,marginBottom:12}}>{isUS?"or pay annually & save 25%":"o paga anual y ahorra 25%"}</div>}
                 {!pl.save&&<div style={{marginBottom:12}}/>}
                 <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
