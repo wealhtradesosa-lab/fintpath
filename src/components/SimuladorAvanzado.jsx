@@ -281,14 +281,18 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
     });
     let tD = 0;
     (user.deudas || []).forEach((d, di) => { if ((d.mt||0) > 0 && d.sim!==false) tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
-    // Add taxes
+    // Add taxes — respeta toggle Actual/Optimizado y slider
     let tTax = 0;
-    ((impuestoData && impuestoData.detalle) || []).forEach((td, ti) => { if(td.impuesto > 0) tTax += getVal(`tax_${ti}`, Math.round(td.impuesto / 12)); });
+    ((impuestoData && impuestoData.detalle) || []).forEach((td, ti) => {
+      const baseAnual = (taxOptimizado && td.impOptimizado != null) ? td.impOptimizado : (td.impuesto || 0);
+      const baseMes = Math.round(baseAnual / 12);
+      tTax += getVal(`tax_${ti}`, baseMes);
+    });
     tD += tTax;
     const taxTotal = tTax;
     const ni = tI - tG, te = tGF + tD, cf = ni - te;
     return { tI, tG, ni, tGF, gfm:tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0, tTax };
-  }, [user, simVals, getVal, impuestoData]);
+  }, [user, simVals, getVal, impuestoData, taxOptimizado]);
 
   const proj = useMemo(() => {
     return Array.from({ length: 13 }, (_, i) => ({
