@@ -222,7 +222,9 @@ function FreedomBarLive({ ni, te, cf }) {
 export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
 
   const [simVals, setSimVals] = useState({});
-  const [taxOptimizado, setTaxOptimizado] = useState(false);
+  // Per-owner toggle: { "<ti>": true/false } keyed by tax detail index.
+  // A missing key means "Actual" (default) for that owner.
+  const [taxOptimizado, setTaxOptimizado] = useState({});
 
   // Reset sliders when underlying data changes
   const dataHash = JSON.stringify([
@@ -281,10 +283,11 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
     });
     let tD = 0;
     (user.deudas || []).forEach((d, di) => { if ((d.mt||0) > 0 && d.sim!==false) tD += getVal(`debt_${di}`, (d.pago||d.pg||0)); });
-    // Add taxes — respeta toggle Actual/Optimizado y slider
+    // Add taxes — toggle Actual/Optimizado es POR OWNER (taxOptimizado[ti])
     let tTax = 0;
     ((impuestoData && impuestoData.detalle) || []).forEach((td, ti) => {
-      const baseAnual = (taxOptimizado && td.impOptimizado != null) ? td.impOptimizado : (td.impuesto || 0);
+      const isOpt = !!taxOptimizado[ti];
+      const baseAnual = (isOpt && td.impOptimizado != null) ? td.impOptimizado : (td.impuesto || 0);
       const baseMes = Math.round(baseAnual / 12);
       tTax += getVal(`tax_${ti}`, baseMes);
     });
@@ -621,17 +624,18 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       </div>
                       {(()=>{
                         const ti = ((impuestoData&&impuestoData.detalle)||[]).indexOf(grp.tax);
+                        const isOpt = !!taxOptimizado[ti];
                         const impActualMes = Math.round((grp.tax.impuesto||0)/12);
                         const impOptMes = Math.round((grp.tax.impOptimizado != null ? grp.tax.impOptimizado : (grp.tax.impuesto||0))/12);
-                        const baseMes = taxOptimizado ? impOptMes : impActualMes;
+                        const baseMes = isOpt ? impOptMes : impActualMes;
                         const simImp = getVal("tax_"+ti, baseMes);
                         return <div>
                           <div style={{display:"flex",gap:6,marginBottom:6}}>
-                            <button onClick={()=>{setTaxOptimizado(false);setSimVals(p=>{const n={...p};Object.keys(n).forEach(k=>{if(k.startsWith("tax_"))delete n[k]});return n})}} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid "+(taxOptimizado?"rgba(255,255,255,0.06)":"#a78bfa"),background:taxOptimizado?"transparent":"rgba(167,139,250,0.1)",color:taxOptimizado?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600}}>Actual: {fm(impActualMes*12)}/año</button>
-                            <button onClick={()=>{setTaxOptimizado(true);setSimVals(p=>{const n={...p};Object.keys(n).forEach(k=>{if(k.startsWith("tax_"))delete n[k]});return n})}} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid "+(taxOptimizado?"#22c55e":"rgba(255,255,255,0.06)"),background:taxOptimizado?"rgba(34,197,94,0.1)":"transparent",color:taxOptimizado?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600}}>Optimizado: {fm(impOptMes*12)}/año</button>
+                            <button onClick={()=>{setTaxOptimizado(p=>({...p,[ti]:false}));setSimVals(p=>{const n={...p};delete n["tax_"+ti];return n})}} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(255,255,255,0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600}}>Actual: {fm(impActualMes*12)}/año</button>
+                            <button onClick={()=>{setTaxOptimizado(p=>({...p,[ti]:true}));setSimVals(p=>{const n={...p};delete n["tax_"+ti];return n})}} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(255,255,255,0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600}}>Optimizado: {fm(impOptMes*12)}/año</button>
                           </div>
-                          <Slider label={"Impuesto " + (taxOptimizado ? "optimizado" : "actual")} value={simImp} base={baseMes}
-                            max={Math.max(Math.max(impActualMes,impOptMes)*3,100000)} color={taxOptimizado?"#22c55e":"#a78bfa"}
+                          <Slider label={"Impuesto " + (isOpt ? "optimizado" : "actual")} value={simImp} base={baseMes}
+                            max={Math.max(Math.max(impActualMes,impOptMes)*3,100000)} color={isOpt?"#22c55e":"#a78bfa"}
                             onChange={(v)=>setVal("tax_"+ti,v)} sub="" />
 
                           <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:10,color:T.txt3}}>
