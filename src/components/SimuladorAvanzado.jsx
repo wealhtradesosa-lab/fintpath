@@ -297,13 +297,40 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
     return { tI, tG, ni, tGF, gfm:tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0, tTax };
   }, [user, simVals, getVal, impuestoData, taxOptimizado]);
 
+  // ── Baseline (sin overrides de simVals, sin toggle Optimizado) ──
+  // Reproduce la misma fórmula de simT pero usando los valores de la data
+  // tal cual. Esto permite comparar simulado vs. base apples-to-apples,
+  // porque ambos incluyen impuestos.
+  const baseT = useMemo(() => {
+    let tIng = 0;
+    (user.ingresos || []).forEach((ing) => {
+      if (ing.sim===false) return;
+      tIng += (ing.mensual || 0) * (ing.moneda === "USD" ? 4200 : 1);
+    });
+    let tGF = 0;
+    Object.entries(user.gastos || {}).forEach(([, items]) => {
+      items.forEach((g) => { if (g.sim!==false) tGF += (g.m || 0); });
+    });
+    let tD = 0;
+    (user.deudas || []).forEach((d) => {
+      if ((d.mt||0) > 0 && d.sim!==false) tD += (d.pago||d.pg||0);
+    });
+    let tTax = 0;
+    ((impuestoData && impuestoData.detalle) || []).forEach((td) => {
+      tTax += Math.round((td.impuesto || 0) / 12);
+    });
+    tD += tTax;
+    const ni = tIng, te = tGF + tD, cf = ni - te;
+    return { ni, te, cf, tTax, tGF };
+  }, [user, impuestoData]);
+
   const proj = useMemo(() => {
     return Array.from({ length: 13 }, (_, i) => ({
       m: "M" + i,
-      actual: (totals.cf || 0) * i,
+      actual: baseT.cf * i,
       simulado: simT.cf * i,
     }));
-  }, [totals, simT]);
+  }, [baseT, simT]);
 
   const scs = [
     { id: "actual", i: "📋", l: "Actual", d: "Valores reales", c: T.bl },
@@ -446,11 +473,11 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
       {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
-          { l: "Ingreso Neto", v: fm(simT.ni), c: T.gn, d: fm(simT.ni - (totals.ni || 0)) },
-          { l: "Egresos Totales", v: fm(simT.te), c: T.rd, d: fm(simT.te - (totals.te || 0)), tip: "Gastos + deudas + impuestos" },
-          { l: "Impuestos (est.)", v: fm(simT.tTax||0), c: "#a78bfa", tip: "Suma de impuestos de todos los propietarios" },
+          { l: "Ingreso Neto", v: fm(simT.ni), c: T.gn, d: fm(simT.ni - baseT.ni) },
+          { l: "Egresos Totales", v: fm(simT.te), c: T.rd, d: fm(simT.te - baseT.te), tip: "Gastos + deudas + impuestos" },
+          { l: "Impuestos (est.)", v: fm(simT.tTax||0), c: "#a78bfa", d: fm((simT.tTax||0) - (baseT.tTax||0)), tip: "Suma de impuestos de todos los propietarios" },
 
-          { l: "Cash Flow", v: fm(simT.cf), c: simT.cf >= 0 ? T.gn : T.rd, d: fm(simT.cf - (totals.cf || 0)), tip: "Dinero que te sobra (o falta) cada mes después de pagar todo" },
+          { l: "Cash Flow", v: fm(simT.cf), c: simT.cf >= 0 ? T.gn : T.rd, d: fm(simT.cf - baseT.cf), tip: "Dinero que te sobra (o falta) cada mes después de pagar todo" },
           { l: "Independencia", v: pc(simT.ind), c: simT.ind >= 100 ? T.gn : T.txt2, tip: "% de tus gastos que cubren tus ingresos. 100% = no necesitas empleo" },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 14, padding: 16 }}>
@@ -652,7 +679,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             });
           })()}
 
-          <button onClick={() => { setSimVals({}); setScenario("actual"); }}
+          <button onClick={() => { setSimVals({}); setScenario("actual"); setTaxOptimizado({}); }}
             style={{ padding: "10px 20px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 12, width: "100%" }}>
             🔄 Reset Todo
           </button>
@@ -682,7 +709,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <div style={{ background: T.bg2, padding: 12, borderRadius: 10, textAlign: "center" }}>
                 <div style={{ fontSize: 10, color: T.txt3 }}>CF Actual</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: (totals.cf || 0) >= 0 ? T.gn : T.rd }}>{fm(totals.cf || 0)}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: baseT.cf >= 0 ? T.gn : T.rd }}>{fm(baseT.cf)}</div>
               </div>
               <div style={{ background: simT.cf >= 0 ? T.gnD : T.rdD, padding: 12, borderRadius: 10, textAlign: "center" }}>
                 <div style={{ fontSize: 10, color: T.txt3 }}>CF Simulado</div>
@@ -690,8 +717,8 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               </div>
               <div style={{ background: T.bg2, padding: 12, borderRadius: 10, textAlign: "center", gridColumn: "1/-1" }}>
                 <div style={{ fontSize: 10, color: T.txt3 }}>Impacto Anual</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: (simT.cf - (totals.cf || 0)) >= 0 ? T.gn : T.rd }}>
-                  {(simT.cf - (totals.cf || 0)) >= 0 ? "+" : ""}{fm((simT.cf - (totals.cf || 0)) * 12)}/año
+                <div style={{ fontSize: 22, fontWeight: 800, color: (simT.cf - baseT.cf) >= 0 ? T.gn : T.rd }}>
+                  {(simT.cf - baseT.cf) >= 0 ? "+" : ""}{fm((simT.cf - baseT.cf) * 12)}/año
                 </div>
               </div>
             </div>
