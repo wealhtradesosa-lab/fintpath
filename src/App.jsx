@@ -1,5 +1,6 @@
 import LandingPage from "./components/LandingPage";
 import LandingAsesores from "./components/LandingAsesores";
+import AdvisorWorkspace from "./components/AdvisorWorkspace";
 import IngresosModule from "./components/IngresosModule";
 import GastosModule from "./components/GastosModule";
 import InversionesModule from "./components/InversionesModule";
@@ -138,6 +139,17 @@ const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div 
 
 export default function FinPath(){
   const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);
+  // ═══ ADVISOR MODE STATE ═══
+  // isAdvisor: true si el usuario loggeado existe en la tabla `advisors`
+  // advisorProfile: datos del asesor (plan, max_clients, firm_name, etc.)
+  // viewMode: "workspace" (asesor viendo su lista) | "client" (asesor viendo dashboard de cliente) | "personal" (asesor usando Finpathia como retail propio)
+  // currentClientId: cuando viewMode === "client", id del cliente cuyo user_data está cargado
+  // advisorClients: lista de clientes del asesor
+  const[isAdvisor,setIsAdvisor]=useState(false);
+  const[advisorProfile,setAdvisorProfile]=useState(null);
+  const[viewMode,setViewMode]=useState("workspace"); // default "workspace" para asesores
+  const[currentClientId,setCurrentClientId]=useState(null);
+  const[advisorClients,setAdvisorClients]=useState([]);
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
   useEffect(()=>{if(mb)sSb(false)},[mb]);
   useEffect(()=>{(async()=>{
@@ -147,6 +159,24 @@ export default function FinPath(){
         setAuthUser(session.user);
         const d=await sL(session.user.id);
         if(d)setU(sanitize(d));
+        // ═══ Check if user is an advisor ═══
+        try{
+          const{data:advData,error:advErr}=await supabase
+            .from("advisors")
+            .select("id,email,firm_name,advisor_plan,max_clients,subscription_status")
+            .eq("id",session.user.id)
+            .maybeSingle();
+          if(!advErr&&advData){
+            setIsAdvisor(true);
+            setAdvisorProfile(advData);
+            // Load advisor's clients
+            const{data:clientsData}=await supabase
+              .from("advisor_client_data")
+              .select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at")
+              .eq("advisor_id",session.user.id);
+            if(clientsData)setAdvisorClients(clientsData);
+          }
+        }catch(e){/* silent - not an advisor */}
       }
     }else{
       const d=await sL();
@@ -196,7 +226,7 @@ export default function FinPath(){
   const trm=u?.trm||4200;
   const { regPack, jurisdiction } = useJurisdiction(u);
   const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),3000)};
-  const logout=async()=>{try{await supabase.auth.signOut()}catch{}localStorage.removeItem(SK);localStorage.removeItem("fp3_enc_key");_setU(null);setShowAuth(false)};
+  const logout=async()=>{try{await supabase.auth.signOut()}catch{}localStorage.removeItem(SK);localStorage.removeItem("fp3_enc_key");_setU(null);setShowAuth(false);setIsAdvisor(false);setAdvisorProfile(null);setAdvisorClients([]);setViewMode("workspace");setCurrentClientId(null)};
   const auth=async()=>{
     if(!aF.e||!aF.p){setAuthError("Ingresa email y contraseña");return}
     if(aF.p.length<6){setAuthError("La contraseña debe tener mínimo 6 caracteres");return}
@@ -432,6 +462,30 @@ export default function FinPath(){
         </div>
       </div>
     </div>;
+  }
+
+  // ═══ ADVISOR WORKSPACE ═══
+  // Si el usuario es advisor y está en modo workspace (no ha seleccionado un cliente
+  // ni ha elegido ver su dashboard personal), renderizamos la lista de clientes.
+  if(u&&isAdvisor&&viewMode==="workspace"){
+    const refreshClients=async()=>{
+      if(!authUser?.id)return;
+      try{
+        const{data}=await supabase
+          .from("advisor_client_data")
+          .select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at")
+          .eq("advisor_id",authUser.id);
+        if(data)setAdvisorClients(data);
+      }catch(e){/* silent */}
+    };
+    return<AdvisorWorkspace
+      advisorProfile={{...advisorProfile,id:authUser?.id}}
+      clients={advisorClients}
+      onOpenClient={(clientId)=>{setCurrentClientId(clientId);setViewMode("client")}}
+      onViewPersonal={()=>setViewMode("personal")}
+      onLogout={logout}
+      onRefreshClients={refreshClients}
+    />;
   }
 
   // Feature gating — inline, no separate component
@@ -1777,7 +1831,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     {sb&&<aside style={{width:220,minWidth:220,height:"100vh",position:mb?"fixed":"sticky",top:0,background:T.bg2,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",zIndex:100,overflowY:"auto"}}><div style={{padding:"20px 18px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div style={{fontSize:16,fontWeight:800,color:T.gn}}>FINPATHIA</div>{mb&&<button onClick={()=>sSb(false)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:16}}>✕</button>}</div><nav style={{flex:1,padding:"0 8px"}}>{nvs.map(n=>{if(n.hidden)return null;
             if(n.sep)return<div key={n.id} style={{padding:n.l?"10px 12px 4px":"6px 0",fontSize:9,fontWeight:700,color:T.tx3,letterSpacing:"0.1em",borderTop:n.l?`1px solid ${T.border}`:"none",marginTop:n.l?4:0}}>{n.l||""}</div>;const a=pg===n.id;return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span>{n.l}{n.id==="price"&&plan==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:8}}><div style={{width:28,height:28,borderRadius:99,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{(u?.p?.name||"U").charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u?.p?.name||"Usuario"}</div><div style={{fontSize:10,color:T.tx3}}>{plan==="free"?(trialEnd?"Free":"Free"):plan==="basico"?"Básico ⚡":trialActive?"Pro ⭐ Trial":"Pro ⭐"}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",marginBottom:6,fontSize:10,color:T.tx3}}><span>🔒</span> Datos encriptados y privados</div><button onClick={()=>window.open("https://wa.me/?text=🏦 Encontré esta plataforma para gestionar tu patrimonio con inteligencia artificial.%0A%0APones tus inversiones, ingresos, gastos y deudas → te dice en qué nivel de libertad financiera estás, simula escenarios y un asesor IA analiza tus números reales.%0A%0A14 días gratis del plan completo, sin tarjeta.%0A%0A👉 https://finpathia.com","_blank")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.2)",color:"#25d366",cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12,marginBottom:6}}>💬 Compartir por WhatsApp</button><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:T.bg3,border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12}}>🚪 Cerrar sesión</button></div></aside>}
     {mb&&sb&&<div onClick={()=>sSb(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99}}/>}
-    <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(249,115,22,0.1),rgba(234,179,8,0.08))",borderBottom:"1px solid rgba(249,115,22,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12}}><span style={{color:T.orange}}>📊 Estás explorando con datos de ejemplo.</span><button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Crear cuenta para guardar →</button></div>}<header style={{height:52,padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:10}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} style={{background:"none",border:"none",color:T.tx2,cursor:"pointer",fontSize:18}}>☰</button>}{!sb&&<span style={{fontSize:14,fontWeight:800,color:T.gn}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:10}}><button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4,marginRight:6}}>📥 Importar Excel</button><Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#22c55e",border:"none",color:"#fff",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11,marginLeft:4}}>{cur==="USD"?"🇺🇸 USD":"🇨🇴 COP"}</button><button onClick={()=>setU(p=>p?{...p,lang:isEN?"es":"en"}:p)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:"#fafafa",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11,marginLeft:4}} title="Toggle language">{isEN?"🇺🇸 EN":"🇨🇴 ES"}</button>{u.trm&&<span style={{fontSize:10,color:T.tx3,marginLeft:4}}>TRM: ${Math.round(u.trm).toLocaleString()}</span>}<button onClick={()=>setMasked(m=>!m)} title={masked?"Mostrar valores":"Ocultar valores"} style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:11}}>{masked?"👁️":"🙈"}</button>{plan==="free"&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}</div></header><div style={{flex:1,padding:mb?14:28,maxWidth:1200,width:"100%"}}>{rp()}</div>{showImport&&<CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/>}{toast&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#22c55e",color:"#000",padding:"12px 24px",borderRadius:12,fontWeight:700,fontSize:13,zIndex:9999,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",animation:"slideUp 0.3s ease"}}>{toast}</div>}</main>
+    <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{isAdvisor&&viewMode==="personal"&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(167,139,250,0.10))",borderBottom:"1px solid rgba(59,130,246,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#93c5fd",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>👁</span><span>Estás en tu dashboard personal. Puedes volver a tu workspace de asesor en cualquier momento.</span></span><button onClick={()=>{setViewMode("workspace");setCurrentClientId(null)}} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>← Volver a mis clientes</button></div>}{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(249,115,22,0.1),rgba(234,179,8,0.08))",borderBottom:"1px solid rgba(249,115,22,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12}}><span style={{color:T.orange}}>📊 Estás explorando con datos de ejemplo.</span><button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Crear cuenta para guardar →</button></div>}<header style={{height:52,padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:10}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} style={{background:"none",border:"none",color:T.tx2,cursor:"pointer",fontSize:18}}>☰</button>}{!sb&&<span style={{fontSize:14,fontWeight:800,color:T.gn}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:10}}><button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4,marginRight:6}}>📥 Importar Excel</button><Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#22c55e",border:"none",color:"#fff",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11,marginLeft:4}}>{cur==="USD"?"🇺🇸 USD":"🇨🇴 COP"}</button><button onClick={()=>setU(p=>p?{...p,lang:isEN?"es":"en"}:p)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:"#fafafa",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11,marginLeft:4}} title="Toggle language">{isEN?"🇺🇸 EN":"🇨🇴 ES"}</button>{u.trm&&<span style={{fontSize:10,color:T.tx3,marginLeft:4}}>TRM: ${Math.round(u.trm).toLocaleString()}</span>}<button onClick={()=>setMasked(m=>!m)} title={masked?"Mostrar valores":"Ocultar valores"} style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:11}}>{masked?"👁️":"🙈"}</button>{plan==="free"&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}</div></header><div style={{flex:1,padding:mb?14:28,maxWidth:1200,width:"100%"}}>{rp()}</div>{showImport&&<CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/>}{toast&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#22c55e",color:"#000",padding:"12px 24px",borderRadius:12,fontWeight:700,fontSize:13,zIndex:9999,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",animation:"slideUp 0.3s ease"}}>{toast}</div>}</main>
   </div>;
 }
 // v1775826625
