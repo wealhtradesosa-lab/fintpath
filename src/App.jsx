@@ -3,8 +3,12 @@ import LandingAsesores from "./components/LandingAsesores";
 import AdvisorWorkspace from "./components/AdvisorWorkspace";
 import IngresosModule from "./components/IngresosModule";
 
-// Build tag: sprint-2a-force-deploy-2026-04-21-19-30
-// (commit vacío anterior no disparó rebuild en Netlify)
+// Build tag: sprint-2a-v3-cache-bust-2026-04-21-23-00
+const __FINPATHIA_BUILD_ID__ = "fp-build-sprint-2a-advisor-workspace-20260421-v3";
+if (typeof window !== "undefined") {
+  window.__FINPATHIA_BUILD__ = __FINPATHIA_BUILD_ID__;
+  console.log("[FINPATHIA] Build:", __FINPATHIA_BUILD_ID__);
+}
 import GastosModule from "./components/GastosModule";
 import InversionesModule from "./components/InversionesModule";
 import DeudasModule from "./components/DeudasModule";
