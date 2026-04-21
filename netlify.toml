@@ -49,6 +49,11 @@
   to = "/.netlify/functions/advisor-lead"
   status = 200
 
+[[redirects]]
+  from = "/api/advisor-invite"
+  to = "/.netlify/functions/advisor-invite"
+  status = 200
+
 # SPA fallback (LAST - catches everything else)
 [[redirects]]
   from = "/*"
