@@ -1,10 +1,11 @@
 import LandingPage from "./components/LandingPage";
 import LandingAsesores from "./components/LandingAsesores";
 import AdvisorWorkspace from "./components/AdvisorWorkspace";
+import AcceptInvite from "./components/AcceptInvite";
 import IngresosModule from "./components/IngresosModule";
 
-// Build tag: sprint-2a-v3-cache-bust-2026-04-21-23-00
-const __FINPATHIA_BUILD_ID__ = "fp-build-sprint-2a-advisor-workspace-20260421-v3";
+// Build tag: sprint-2b-accept-invite-2026-04-22
+const __FINPATHIA_BUILD_ID__ = "fp-build-sprint-2b-accept-invite-20260422";
 if (typeof window !== "undefined") {
   window.__FINPATHIA_BUILD__ = __FINPATHIA_BUILD_ID__;
   console.log("[FINPATHIA] Build:", __FINPATHIA_BUILD_ID__);
@@ -406,6 +407,18 @@ export default function FinPath(){
   const pen=useMemo(()=>{if(!u)return{};const p=u.pen||{},yrs=Math.max(0,(p.rAge||60)-(p.age||35)),mr=(p.ret||7)/100/12;let fv=+(p.cur||0);for(let m=0;m<yrs*12;m++)fv=fv*(1+mr)+(+(p.sv||0));const rfv=fv/Math.pow(1+(p.inf||3)/100,yrs),mo=rfv>0?rfv/360:0;const proj=[];let rv=+(p.cur||0);for(let y=0;y<=yrs;y++){proj.push({age:(p.age||35)+y,val:Math.round(rv)});for(let m=0;m<12&&y<yrs;m++)rv=rv*(1+mr)+(+(p.sv||0))}let ba=0;const bc=(p.btcC||56)/100,bp=p.btcP||50000;for(let y=1;y<=yrs;y++)for(let m=1;m<=12;m++)ba+=(+(p.sv||0))/(bp*Math.pow(1+bc,((y-1)*12+m)/12));const bfv=ba*bp*Math.pow(1+bc,yrs),bmo=(bfv*.04)/12;return{yrs,fv:Math.round(rfv),mo:Math.round(mo),ok:mo>=(p.des||6000),gap:Math.max(0,(p.des||6000)-mo),proj,ba,bfv,bmo:Math.round(bmo)}},[u?.pen]);
   const simT=useMemo(()=>{const im={actual:1,conservador:.8,optimista:1.3,crisis:.6},gm={actual:1,conservador:1.1,optimista:.85,crisis:1.05};const sni=t.ni*(im[simS]||1),sgf=t.gfm*(gm[simS]||1),ste=sgf+t.tc,scf=sni-ste;return{...t,ni:sni,gfm:sgf,te:ste,cf:scf,ind:ste>0?(sni/ste)*100:0}},[t,simS]);
   if(ld)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui"}}><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:900,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>FINPATHIA</div><div style={{width:40,height:3,background:"linear-gradient(90deg,#22c55e,#3b82f6)",borderRadius:2,margin:"16px auto",animation:"pulse 1.5s infinite"}}></div><div style={{color:T.tx3,fontSize:12}}>Cargando tu patrimonio...</div></div></div>;
+
+  // ═══ INVITE ROUTE ═══
+  // URL /invite/:token → renderizar AcceptInvite independiente de sesión
+  // El componente maneja validación, signup/login, y vinculación al asesor.
+  {
+    const pathname=typeof window!=="undefined"?window.location.pathname:"";
+    const inviteMatch=pathname.match(/^\/invite\/([A-Za-z0-9_-]+)\/?$/);
+    if(inviteMatch){
+      const token=inviteMatch[1];
+      return<AcceptInvite token={token} onComplete={()=>{window.location.href="/"}}/>;
+    }
+  }
 
   if(!u&&!showAuth){
     // Route: /asesores → Landing dedicada para contadores/asesores (Plan PRO Corporativo)
