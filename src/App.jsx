@@ -1,4 +1,5 @@
 import LandingPage from "./components/LandingPage";
+import LandingAsesores from "./components/LandingAsesores";
 import IngresosModule from "./components/IngresosModule";
 import GastosModule from "./components/GastosModule";
 import InversionesModule from "./components/InversionesModule";
@@ -369,7 +370,14 @@ export default function FinPath(){
   const simT=useMemo(()=>{const im={actual:1,conservador:.8,optimista:1.3,crisis:.6},gm={actual:1,conservador:1.1,optimista:.85,crisis:1.05};const sni=t.ni*(im[simS]||1),sgf=t.gfm*(gm[simS]||1),ste=sgf+t.tc,scf=sni-ste;return{...t,ni:sni,gfm:sgf,te:ste,cf:scf,ind:ste>0?(sni/ste)*100:0}},[t,simS]);
   if(ld)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui"}}><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:900,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>FINPATHIA</div><div style={{width:40,height:3,background:"linear-gradient(90deg,#22c55e,#3b82f6)",borderRadius:2,margin:"16px auto",animation:"pulse 1.5s infinite"}}></div><div style={{color:T.tx3,fontSize:12}}>Cargando tu patrimonio...</div></div></div>;
 
-  if(!u&&!showAuth)return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
+  if(!u&&!showAuth){
+    // Route: /asesores → Landing dedicada para contadores/asesores (Plan PRO Corporativo)
+    const pathname=typeof window!=="undefined"?window.location.pathname:"";
+    if(pathname==="/asesores"||pathname==="/asesores/"){
+      return<LandingAsesores onGetStarted={(planKey)=>{setShowAuth(true);if(planKey)sessionStorage.setItem("fp3_advisor_plan_intent",planKey)}}/>;
+    }
+    return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
+  }
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
     <div style={{width:"100%",maxWidth:420,padding:"40px 32px"}}>
