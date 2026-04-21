@@ -229,6 +229,50 @@ export default function LandingPage({ onGetStarted }) {
             ))}
           </div>
           <p style={{ textAlign: "center", marginTop: 20, color: T.txt3, fontSize: 13 }}>🔒 Pagos seguros con Stripe • Cancela cuando quieras • Sin compromisos</p>
+
+          {/* ─── CTA CORPORATIVO — Asesores/Contadores/Tributarios ─── */}
+          <div style={{ marginTop: 48, maxWidth: 950, marginLeft: "auto", marginRight: "auto" }}>
+            <a
+              href="/asesores"
+              style={{
+                display: "block",
+                textDecoration: "none",
+                background: "linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(59,130,246,0.08) 100%)",
+                border: "1px solid rgba(34,197,94,0.25)",
+                borderRadius: 16,
+                padding: "28px 32px",
+                transition: "all 0.2s ease",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "rgba(34,197,94,0.5)";
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "rgba(34,197,94,0.25)";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", justifyContent: "space-between" }}>
+                <div style={{ flex: "1 1 auto", minWidth: 240 }}>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 99, padding: "4px 12px", marginBottom: 12, fontSize: 11, fontWeight: 700, color: T.green, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                    💼 Plan Corporativo
+                  </div>
+                  <h3 style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 6, color: T.txt }}>
+                    ¿Eres contador, asesor tributario o planificador financiero?
+                  </h3>
+                  <p style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6, margin: 0 }}>
+                    Gestiona múltiples clientes desde un solo panel con nuestro <strong style={{ color: T.txt }}>Plan PRO Corporativo</strong>. Diseñado para firmas de asesoría patrimonial que quieren ofrecer un family office digital a sus clientes.
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: T.green }}>Ver planes corporativos</span>
+                  <span style={{ fontSize: 18, color: T.green }}>→</span>
+                </div>
+              </div>
+            </a>
+          </div>
+
         </Section>
       </div>
 
