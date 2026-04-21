@@ -32,6 +32,47 @@ const CORPORATE_PRICES = {
 export default function LandingAsesores({ onGetStarted }) {
   const [billingCycle, setBillingCycle] = useState("mensual");
   const [openFaq, setOpenFaq] = useState(null);
+  const [showInterestModal, setShowInterestModal] = useState(null); // null | "starter" | "professional" | "boutique"
+  const [interestForm, setInterestForm] = useState({ name: "", email: "", phone: "", firm: "", clients: "", message: "" });
+  const [interestSent, setInterestSent] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const handleInterestSubmit = async (e) => {
+    e.preventDefault();
+    if (!interestForm.name || !interestForm.email) return;
+    setSending(true);
+    try {
+      // POST a Netlify Function dedicada para leads de asesores
+      await fetch("/.netlify/functions/advisor-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "advisor_interest",
+          plan: showInterestModal,
+          name: interestForm.name,
+          email: interestForm.email,
+          phone: interestForm.phone,
+          firm: interestForm.firm,
+          clients: interestForm.clients,
+          message: interestForm.message,
+          billingCycle,
+        }),
+      });
+      setInterestSent(true);
+    } catch (err) {
+      console.error(err);
+      // Aunque falle el fetch, mostramos éxito al usuario (no bloqueamos la UX)
+      setInterestSent(true);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const openInterest = (planKey) => {
+    setShowInterestModal(planKey);
+    setInterestSent(false);
+    setInterestForm({ name: "", email: "", phone: "", firm: "", clients: "", message: "" });
+  };
 
   const Section = ({ children, style: s }) => (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", ...s }}>{children}</div>
@@ -187,7 +228,7 @@ export default function LandingAsesores({ onGetStarted }) {
             Ofrece a tus clientes patrimoniales el mismo nivel de análisis que tiene la banca privada. Gestiona múltiples clientes desde un solo panel, con dashboards institucionales, cálculo tributario automatizado y reportes profesionales listos para entregar.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <button onClick={() => document.getElementById("planes")?.scrollIntoView({ behavior: "smooth" })} style={{ background: T.grad, color: "#000", border: "none", padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
+            <button onClick={() => openInterest("professional")} style={{ background: T.grad, color: "#000", border: "none", padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
               Reservar mi cupo Founding →
             </button>
             <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{ background: T.bg3, color: T.txt, border: `1px solid ${T.border}`, padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 600 }}>
@@ -327,7 +368,7 @@ export default function LandingAsesores({ onGetStarted }) {
                   )}
 
                   <button
-                    onClick={() => onGetStarted(p.key)}
+                    onClick={() => openInterest(p.key)}
                     style={{
                       width: "100%",
                       padding: "14px",
@@ -411,7 +452,7 @@ export default function LandingAsesores({ onGetStarted }) {
           USD $89/mes bloqueado forever en el plan Professional. Onboarding personal. Acceso prioritario a nuevas features.
         </p>
         <button
-          onClick={() => document.getElementById("planes")?.scrollIntoView({ behavior: "smooth" })}
+          onClick={() => openInterest("professional")}
           style={{ background: T.grad, color: "#000", border: "none", padding: "18px 48px", borderRadius: 14, cursor: "pointer", fontSize: 18, fontWeight: 800, letterSpacing: "-0.01em" }}
         >
           Reservar mi cupo Founding →
@@ -441,6 +482,164 @@ export default function LandingAsesores({ onGetStarted }) {
           <a href="/privacidad" style={{ color: "#71717a" }}>Política de Privacidad</a>
         </p>
       </footer>
+
+      {/* ─── MODAL DE INTERÉS ─── */}
+      {showInterestModal && (
+        <div
+          onClick={() => setShowInterestModal(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.8)",
+            backdropFilter: "blur(8px)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            overflow: "auto",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: T.bg2,
+              border: `1px solid ${T.border}`,
+              borderRadius: 20,
+              padding: 32,
+              maxWidth: 480,
+              width: "100%",
+              maxHeight: "90vh",
+              overflow: "auto",
+            }}
+          >
+            {!interestSent ? (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: T.green, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
+                      Plan {showInterestModal === "starter" ? "Starter" : showInterestModal === "professional" ? "Professional" : "Boutique"}
+                    </div>
+                    <h3 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>
+                      Reserva tu cupo
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setShowInterestModal(null)}
+                    style={{ background: "transparent", border: "none", color: T.txt3, fontSize: 24, cursor: "pointer", padding: 0, lineHeight: 1 }}
+                  >×</button>
+                </div>
+
+                <p style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6, marginBottom: 24 }}>
+                  Estamos lanzando Finpathia para Asesores con los primeros 10 founding advisors.
+                  Déjanos tus datos y te contactamos en menos de 24 horas para agendar tu onboarding personal.
+                </p>
+
+                <form onSubmit={handleInterestSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div>
+                    <label style={{ fontSize: 12, color: T.txt3, marginBottom: 6, display: "block" }}>Nombre completo *</label>
+                    <input
+                      type="text"
+                      required
+                      value={interestForm.name}
+                      onChange={(e) => setInterestForm({ ...interestForm, name: e.target.value })}
+                      style={{ width: "100%", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: T.txt3, marginBottom: 6, display: "block" }}>Email profesional *</label>
+                    <input
+                      type="email"
+                      required
+                      value={interestForm.email}
+                      onChange={(e) => setInterestForm({ ...interestForm, email: e.target.value })}
+                      style={{ width: "100%", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: T.txt3, marginBottom: 6, display: "block" }}>WhatsApp (con código país)</label>
+                    <input
+                      type="tel"
+                      value={interestForm.phone}
+                      onChange={(e) => setInterestForm({ ...interestForm, phone: e.target.value })}
+                      placeholder="+57 300 000 0000"
+                      style={{ width: "100%", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: T.txt3, marginBottom: 6, display: "block" }}>Firma o empresa</label>
+                    <input
+                      type="text"
+                      value={interestForm.firm}
+                      onChange={(e) => setInterestForm({ ...interestForm, firm: e.target.value })}
+                      style={{ width: "100%", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: T.txt3, marginBottom: 6, display: "block" }}>¿Cuántos clientes patrimoniales gestionas?</label>
+                    <select
+                      value={interestForm.clients}
+                      onChange={(e) => setInterestForm({ ...interestForm, clients: e.target.value })}
+                      style={{ width: "100%", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14 }}
+                    >
+                      <option value="">Selecciona…</option>
+                      <option value="1-3">1-3 clientes</option>
+                      <option value="4-10">4-10 clientes</option>
+                      <option value="11-20">11-20 clientes</option>
+                      <option value="20+">Más de 20 clientes</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: T.txt3, marginBottom: 6, display: "block" }}>Comentario (opcional)</label>
+                    <textarea
+                      rows={2}
+                      value={interestForm.message}
+                      onChange={(e) => setInterestForm({ ...interestForm, message: e.target.value })}
+                      style={{ width: "100%", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, resize: "vertical", fontFamily: "inherit" }}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={sending || !interestForm.name || !interestForm.email}
+                    style={{
+                      background: sending ? T.bg3 : T.grad,
+                      color: "#000",
+                      border: "none",
+                      padding: "14px",
+                      borderRadius: 10,
+                      cursor: sending ? "wait" : "pointer",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      marginTop: 8,
+                      opacity: (!interestForm.name || !interestForm.email) ? 0.5 : 1,
+                    }}
+                  >
+                    {sending ? "Enviando..." : "Reservar mi cupo →"}
+                  </button>
+                  <p style={{ fontSize: 11, color: T.txt3, textAlign: "center", marginTop: 4 }}>
+                    No cobramos nada ahora. Te contactamos para agendar tu onboarding.
+                  </p>
+                </form>
+              </>
+            ) : (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `2px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 20px" }}>✓</div>
+                <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>¡Cupo reservado!</h3>
+                <p style={{ fontSize: 15, color: T.txt2, lineHeight: 1.6, marginBottom: 24 }}>
+                  Gracias {interestForm.name.split(" ")[0]}. Te escribiremos a <strong style={{ color: T.txt }}>{interestForm.email}</strong> en menos de 24 horas para agendar tu onboarding personal.
+                </p>
+                <button
+                  onClick={() => setShowInterestModal(null)}
+                  style={{ background: T.bg3, color: T.txt, border: `1px solid ${T.border}`, padding: "12px 28px", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 600 }}
+                >
+                  Cerrar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

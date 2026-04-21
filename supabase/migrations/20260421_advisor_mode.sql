@@ -77,12 +77,45 @@ CREATE TABLE IF NOT EXISTS public.advisor_invitations (
 CREATE INDEX IF NOT EXISTS idx_advisor_invitations_token ON public.advisor_invitations(token);
 CREATE INDEX IF NOT EXISTS idx_advisor_invitations_advisor ON public.advisor_invitations(advisor_id);
 
+-- ─── 3b. ADVISOR_LEADS table ─────────────────────────────────────────
+-- Captures interest from the /asesores landing page before a full
+-- advisor subscribes. Used for manual follow-up and validation phase.
+
+CREATE TABLE IF NOT EXISTS public.advisor_leads (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  plan TEXT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  firm TEXT,
+  clients_count TEXT,
+  message TEXT,
+  billing_cycle TEXT,
+  source TEXT DEFAULT 'landing_asesores',
+  status TEXT DEFAULT 'new'
+    CHECK (status IN ('new', 'contacted', 'qualified', 'converted', 'rejected')),
+  notes TEXT,
+  contacted_at TIMESTAMPTZ,
+  converted_advisor_id UUID REFERENCES public.advisors(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_advisor_leads_status ON public.advisor_leads(status);
+CREATE INDEX IF NOT EXISTS idx_advisor_leads_email ON public.advisor_leads(email);
+
+COMMENT ON TABLE public.advisor_leads IS 'Leads capturados del form Reservar mi cupo en /asesores';
+
 -- ─── 4. RLS POLICIES ─────────────────────────────────────────────────
 
 -- Enable RLS on all new tables
 ALTER TABLE public.advisors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.advisor_clients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.advisor_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.advisor_leads ENABLE ROW LEVEL SECURITY;
+
+-- LEADS: service_role only (filled via Netlify function with service key,
+-- never directly from client-side). No public access to prevent spam/scraping.
+-- Admin users can be added later if needed.
 
 -- ADVISORS: Advisor can read/update only their own record
 CREATE POLICY "Advisors can view own record"
