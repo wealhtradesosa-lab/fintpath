@@ -193,26 +193,29 @@ export default function LandingPage({ onGetStarted }) {
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Proyecta tu futuro financiero hoy</h2>
             <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Regístrate gratis y toma control de tu patrimonio</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, maxWidth: 950, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, maxWidth: 1200, margin: "0 auto" }}>
             {[
               { name: "Free", price: "$0", per: "gratis", features: ["Dashboard básico", "3 inversiones", "Gastos y deudas", "Simulador limitado", "1 meta financiera"], no: ["Coaches IA", "Pensiones", "Trading", "Alertas", "PDF"], cta: "Comenzar gratis" },
               { name: "Básico", price: "$8", per: "USD/mes", sub: "$6 USD/mes anual — Ahorra 25%", features: ["Todo en Free", "10 inversiones y 10 metas", "Simulador avanzado", "Pensiones Colpensiones + BTC", "Trading portfolio", "CSV import + PDF export"], no: ["Coaches IA", "Family Office KPIs", "Alertas inteligentes"], cta: "Probar 14 días" },
               { name: "Pro", price: "$16", per: "USD/mes", sub: "$12 USD/mes anual — Ahorra 25%", features: ["Todo en Básico", "Inversiones ilimitadas", "5 Coaches IA", "Family Office KPIs", "Alertas inteligentes", "Percentil de riqueza", "Benchmark vs mercado", "Resumen ejecutivo", "Soporte prioritario"], no: [], accent: true, cta: "Probar 14 días Pro" },
+              { name: "Para Asesores", price: "$79", per: "USD/mes", sub: "Desde — hasta $399 según tamaño de cartera", features: ["Hasta 40 clientes gestionados", "Dashboard Pro completo por cliente", "Panel unificado del asesor", "Plan tributario automático", "Reportes PDF profesionales", "Onboarding 1-a-1"], no: [], advisor: true, cta: "Ver planes →" },
             ].map((p) => (
-              <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative" }}>
+              <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : p.advisor ? "1px solid rgba(59,130,246,0.35)" : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative" }}>
                 {p.accent && <div style={{ background: T.grad, color: "#000", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>MÁS POPULAR</div>}
+                {p.advisor && <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>PARA PROFESIONALES</div>}
                 <div style={{ padding: 32 }}>
                   <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{p.name}</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
+                    {p.advisor && <span style={{ fontSize: 14, color: T.txt3, fontWeight: 500, marginRight: 2 }}>Desde</span>}
                     <span style={{ fontSize: 44, fontWeight: 900, letterSpacing: "-0.04em" }}>{p.price}</span>
                     <span style={{ color: T.txt3, fontSize: 15 }}>{p.per}</span>
                   </div>
-                  {p.sub && <div style={{ fontSize: 12, color: T.green, fontWeight: 600, marginBottom: 16 }}>{p.sub}</div>}
+                  {p.sub && <div style={{ fontSize: 12, color: p.advisor ? T.blue : T.green, fontWeight: 600, marginBottom: 16 }}>{p.sub}</div>}
                   {!p.sub && <div style={{ marginBottom: 16 }} />}
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
                     {p.features.map((f) => (
                       <div key={f} style={{ fontSize: 14, color: T.txt2, display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ color: T.green, fontSize: 14 }}>✓</span> {f}
+                        <span style={{ color: p.advisor ? T.blue : T.green, fontSize: 14 }}>✓</span> {f}
                       </div>
                     ))}
                     {(p.no || []).map((f) => (
@@ -221,57 +224,20 @@ export default function LandingPage({ onGetStarted }) {
                       </div>
                     ))}
                   </div>
-                  <button onClick={onGetStarted} style={{ width: "100%", padding: "14px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 700, background: p.accent ? T.grad : T.bg3, color: p.accent ? "#000" : T.txt }}>
-                    {p.cta}
-                  </button>
+                  {p.advisor ? (
+                    <a href="/asesores" style={{ display: "block", textAlign: "center", width: "100%", padding: "14px", borderRadius: 10, textDecoration: "none", fontSize: 15, fontWeight: 700, background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", boxSizing: "border-box" }}>
+                      {p.cta}
+                    </a>
+                  ) : (
+                    <button onClick={onGetStarted} style={{ width: "100%", padding: "14px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 700, background: p.accent ? T.grad : T.bg3, color: p.accent ? "#000" : T.txt }}>
+                      {p.cta}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
           <p style={{ textAlign: "center", marginTop: 20, color: T.txt3, fontSize: 13 }}>🔒 Pagos seguros con Stripe • Cancela cuando quieras • Sin compromisos</p>
-
-          {/* ─── CTA CORPORATIVO — Asesores/Contadores/Tributarios ─── */}
-          <div style={{ marginTop: 48, maxWidth: 950, marginLeft: "auto", marginRight: "auto" }}>
-            <a
-              href="/asesores"
-              style={{
-                display: "block",
-                textDecoration: "none",
-                background: "linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(59,130,246,0.08) 100%)",
-                border: "1px solid rgba(34,197,94,0.25)",
-                borderRadius: 16,
-                padding: "28px 32px",
-                transition: "all 0.2s ease",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(34,197,94,0.5)";
-                e.currentTarget.style.transform = "translateY(-2px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(34,197,94,0.25)";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", justifyContent: "space-between" }}>
-                <div style={{ flex: "1 1 auto", minWidth: 240 }}>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 99, padding: "4px 12px", marginBottom: 12, fontSize: 11, fontWeight: 700, color: T.green, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    💼 Plan Corporativo
-                  </div>
-                  <h3 style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 6, color: T.txt }}>
-                    ¿Eres contador, asesor tributario o planificador financiero?
-                  </h3>
-                  <p style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6, margin: 0 }}>
-                    Gestiona múltiples clientes desde un solo panel con nuestro <strong style={{ color: T.txt }}>Plan PRO Corporativo</strong>. Diseñado para firmas de asesoría patrimonial que quieren ofrecer un family office digital a sus clientes.
-                  </p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: T.green }}>Ver planes corporativos</span>
-                  <span style={{ fontSize: 18, color: T.green }}>→</span>
-                </div>
-              </div>
-            </a>
-          </div>
 
         </Section>
       </div>
