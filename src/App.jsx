@@ -2,6 +2,9 @@ import LandingPage from "./components/LandingPage";
 import LandingAsesores from "./components/LandingAsesores";
 import AdvisorWorkspace from "./components/AdvisorWorkspace";
 import IngresosModule from "./components/IngresosModule";
+
+// Build tag: sprint-2a-force-deploy-2026-04-21-19-30
+// (commit vacío anterior no disparó rebuild en Netlify)
 import GastosModule from "./components/GastosModule";
 import InversionesModule from "./components/InversionesModule";
 import DeudasModule from "./components/DeudasModule";
