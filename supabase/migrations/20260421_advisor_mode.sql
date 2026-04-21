@@ -46,7 +46,12 @@ CREATE TABLE IF NOT EXISTS public.advisor_clients (
   advisor_id UUID NOT NULL REFERENCES public.advisors(id) ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   status TEXT NOT NULL DEFAULT 'active'
-    CHECK (status IN ('active', 'paused', 'removed')),
+    CHECK (status IN ('active', 'paused', 'removed', 'orphan')),
+  -- Controla si el cliente puede loguearse directamente como usuario retail.
+  -- Default FALSE: el cliente solo existe "dentro" del workspace del asesor.
+  -- El asesor puede activar este toggle desde su UI.
+  independent_login_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  independent_login_activated_at TIMESTAMPTZ,
   invited_at TIMESTAMPTZ DEFAULT NOW(),
   accepted_at TIMESTAMPTZ,
   removed_at TIMESTAMPTZ,
@@ -107,6 +112,12 @@ CREATE POLICY "Advisors can update client relationships"
   ON public.advisor_clients FOR UPDATE
   USING (auth.uid() = advisor_id);
 
+-- NOTE: Cliente con independent_login_enabled = TRUE puede entrar por
+-- su propia cuenta y actúa como retail_user normal. La tabla user_data
+-- mantiene sus políticas RLS existentes (cliente ve/edita su propia data).
+-- La tabla advisor_clients solo controla la RELACIÓN con el asesor, no
+-- los permisos de acceso a la app en sí.
+
 -- INVITATIONS: Advisor sees only their own invitations
 CREATE POLICY "Advisors can manage own invitations"
   ON public.advisor_invitations FOR ALL
@@ -126,6 +137,7 @@ SELECT
   ud.updated_at,
   ac.advisor_id,
   ac.status AS client_status,
+  ac.independent_login_enabled,
   ac.invited_at,
   ac.accepted_at
 FROM public.user_data ud
