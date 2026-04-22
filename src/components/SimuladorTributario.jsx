@@ -248,10 +248,10 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       }
       
       // Donaciones con descuento tributario (Art. 257 ET)
-      if (ingAnual > 200e6) recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Las donaciones a entidades sin ánimo de lucro dan un DESCUENTO del 25% del valor donado, directo del impuesto (no de la base). Ej: dona " + fm(ingAnual * 0.03) + " → descuento " + fm(ingAnual * 0.03 * 0.25) + " del impuesto a pagar.", impact: ingAnual * 0.03 * 0.25, color: T.green });
+      if (ingAnual > 200e6) recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Las donaciones a entidades sin ánimo de lucro calificadas dan un DESCUENTO del 25% del valor donado, directo del impuesto a pagar (no de la base). El tope legal del descuento es el 25% del impuesto de renta del año. El monto que te conviene donar depende de tu estrategia fiscal y filantrópica — consúltalo con tu contador.", impact: 0, color: T.purple });
       
       // Deuda para vivienda
-      if (interesesHip === 0 && deu.length === 0 && ingAnual > 200e6) recs.push({ icon: "🏦", title: "Deuda para vivienda = deducción", desc: "Si no tienes hipoteca, comprar vivienda con crédito genera intereses deducibles hasta 1200 UVT/año (" + fm(1200 * UVT) + "). Es una de las deducciones más grandes.", impact: Math.min(1200 * UVT, ingAnual * 0.05) * 0.3, color: T.green });
+      if (interesesHip === 0 && deu.length === 0 && ingAnual > 200e6) recs.push({ icon: "🏦", title: "Crédito de vivienda: intereses deducibles (Art. 119 ET)", desc: "Los intereses de un crédito hipotecario para vivienda del contribuyente son deducibles hasta 1.200 UVT/año (" + fm(1200 * UVT) + "). Es una de las deducciones más grandes disponibles — pero solo aplica si efectivamente tomas el crédito y usas la vivienda. No te endeudes solo por el beneficio fiscal; evalúalo con tu contador.", impact: 0, color: T.purple });
       
       // GMF
       if (ingAnual > 100e6) recs.push({ icon: "💳", title: "GMF 4×1000 deducible (Art. 115 ET)", desc: "El 50% del GMF pagado es deducible. Se calcula automáticamente: " + fm(ingAnual * 0.004 * 0.50) + "/año.", impact: 0, color: T.green });
