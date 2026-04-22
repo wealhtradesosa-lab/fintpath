@@ -330,17 +330,22 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
     let tTax = 0;
     (dynTax.detalle || []).forEach(td => {
       const isOpt = !!taxOptimizado[td.name];
-      // Usamos impBruto (total por tabla) en lugar de impuesto (saldo post-retención).
-      // El salario bruto reportado incluye implícitamente la retención; si usamos el saldo,
-      // el cash flow subestima el impuesto real porque la retención nunca aparece como descuento.
-      // Bruto = lo correcto cuando el ingreso reportado es bruto.
+      // Bruto = impuesto total según tabla (lo que "deberías pagar" si fuera un cierre anual perfecto).
+      // El slider ajusta este valor si lográs estrategias adicionales.
       const anualBase = isOpt
         ? (td.impOptBruto != null ? td.impOptBruto : (td.impBruto || 0))
         : (td.impBruto != null ? td.impBruto : (td.impuesto || 0));
       const mesBase = Math.round(anualBase / 12);
-      // Slider override: default = mesBase (bruto dinámico). Si el usuario lo mueve,
-      // aplica una estrategia fiscal adicional que el sistema no modela.
-      tTax += getVal(`tax_${td.name}`, mesBase);
+      const simImpBrutoMes = getVal(`tax_${td.name}`, mesBase);
+      // ── FIX cash flow (Abr 2026): usar max(bruto, retención) ──
+      // Lo que realmente sale del flujo del año es la retención. Si el bruto (lo que debés
+      // según tabla) es menor que la retención, el flujo del año ya asumió la retención
+      // completa — la devolución llega después. Si el bruto es mayor, pagás retención +
+      // saldo en declaración ≈ bruto total. Entonces:
+      //   impacto_cash_flow = max(bruto, retención)
+      // Esto evita el bug de "slider abajo sube CF" cuando la retención ya supera al bruto.
+      const reteNMes = Math.round((td.reteN || 0) / 12);
+      tTax += Math.max(simImpBrutoMes, reteNMes);
     });
     tD += tTax;
 
@@ -370,10 +375,12 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
     });
     let tTax = 0;
     ((impuestoData && impuestoData.detalle) || []).forEach((td) => {
-      // Consistente con simT: usar impBruto (total) no impuesto (saldo).
-      // Fallback a impuesto si no existe impBruto (data legacy).
+      // Consistente con simT: usar max(bruto, retención) porque la retención es lo que
+      // realmente salió del flujo del año. Fallback a impuesto si no hay impBruto (data legacy).
       const anual = td.impBruto != null ? td.impBruto : (td.impuesto || 0);
-      tTax += Math.round(anual / 12);
+      const brutoMes = Math.round(anual / 12);
+      const reteNMes = Math.round((td.reteN || 0) / 12);
+      tTax += Math.max(brutoMes, reteNMes);
     });
     tD += tTax;
     const ni = tIng, te = tGF + tD, cf = ni - te;
@@ -785,9 +792,11 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                               : `⚠️ Escenario más conservador: +${fm(Math.abs(ajusteExtra)*12)}/año de impuesto`}
                           </div>}
                           <div style={{marginTop:6,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4,lineHeight:1.5}}>
-                            {isJuridica
-                              ? "Impuesto sobre renta corporativa (35% sobre utilidad). El cash flow descuenta el impuesto TOTAL; los descuentos (ICA pagado + retenciones recibidas) reducen solo el saldo en declaración."
-                              : "El cash flow descuenta el impuesto TOTAL, no solo el saldo. Esto supone que el salario reportado es bruto (antes de retención)."}
+                            {reteNMes > simImp
+                              ? "⚠ Tu retención anual ya supera el impuesto total que debés según tabla. Bajar el slider NO afecta el cash flow del año (la retención ya salió de tu cuenta) — pero sí aumenta la devolución que te llega en la declaración."
+                              : isJuridica
+                                ? "Cash flow descuenta el máximo entre impuesto bruto (35% utilidad) y las retenciones recibidas — lo que realmente salió del flujo del año."
+                                : "Cash flow descuenta el máximo entre impuesto bruto (tabla progresiva) y la retención — lo que realmente salió del flujo del año."}
                           </div>
                         </div>;
                       })()}
