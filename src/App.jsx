@@ -1661,7 +1661,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 }else{alert("No se encontraron precios")}
               }catch(e){alert("Error: "+e.message)}
             }} st={{background:"#3b82f6",color:"#fff"}}>📊 Actualizar Precios</Bt><Bt sz="s" onClick={()=>{sF({});setMd("ib")}}>+ Posición</Bt>{((u&&u.ibk)||[]).length>1&&<Bt v="d" sz="s" onClick={()=>{if(confirm("⚠️ ¿Eliminar TODAS las posiciones de trading?"))upd("ibk",[])}}>🗑️ Limpiar</Bt>}</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:16}}><Cd><St l="Valor" v={fm(ib.tv)} cl={T.gn}/></Cd><Cd><St l="P/L" v={fm(ib.pnl)} cl={ib.pnl>=0?T.gn:T.rd} sub={pc(ib.pp)}/></Cd><Cd><St l="Posiciones" v={ib.pos.length}/></Cd></div><Cd s={{padding:0}}><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><thead><tr>{["Ticker","Nombre","Qty","Costo","Precio","Valor","P/L","%","Upside"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Ticker","Nombre"].includes(h)?"left":"right",color:T.tx3,fontWeight:600,fontSize:10,textTransform:"uppercase",borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead><tbody>{ib.pos.map((p,i)=><tr key={i} style={{borderBottom:`1px solid ${T.border}`}}><td style={{padding:"9px 12px",fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{p.tk}</td><td style={{padding:"9px 12px"}}>{p.n}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>{p.sh}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>${p.cb.toFixed(2)}</td><td style={{padding:"9px 12px",textAlign:"right",fontFamily:"monospace"}}>${p.pr.toFixed(2)}</td><td style={{padding:"9px 12px",textAlign:"right",fontWeight:600}}>{fm(p.va)}</td><td style={{padding:"9px 12px",textAlign:"right",fontWeight:600,color:p.pnl>=0?T.gn:T.rd}}>{fm(p.pnl)}</td><td style={{padding:"9px 12px",textAlign:"right",color:p.pp>=0?T.gn:T.rd}}>{pc(p.pp)}</td><td style={{padding:"9px 12px",textAlign:"right",color:T.bl}}>{pc(p.up)}</td></tr>)}</tbody></table></div></Cd><Md open={md==="ib"} onClose={()=>setMd(null)} title="Agregar Posición"><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>{[["tk","Ticker"],["n","Nombre"],["sh","Cantidad","number"],["cb","Costo","number"],["pr","Precio","number"],["tg","Objetivo","number"]].map(([k,l,tp])=><In key={k} l={l} value={f[k]} onChange={v=>sF(p=>({...p,[k]:v}))} type={tp}/>)}</div><div style={{display:"flex",gap:12,justifyContent:"flex-end"}}><Bt v="s" onClick={()=>setMd(null)}>Cancelar</Bt><Bt onClick={()=>{add("ibk",{tk:f.tk||"",n:f.n||"",sh:+f.sh||0,cb:+f.cb||0,pr:+f.pr||0,tg:+f.tg||0});setMd(null);sF({})}}>Agregar</Bt></div></Md></div>);
-        case"gas":return isUS?<ExpensesModuleUS gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} agi={t.ti*12}/>:<GastosModule owners={u?.owners||[]} gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} fmt={fm} onImport={()=>setShowImport(true)}/>;
+        case"gas":return isUS?<ExpensesModuleUS gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} agi={t.ti*12}/>:<GastosModule owners={u?.owners||[]} gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} fmt={fm} onImport={()=>setShowImport(true)} plan={plan} onUpgrade={()=>setPg("price")}/>;
         case"deu":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="liabilities"/>:<DeudasModule owners={u?.owners||[]} deudas={(u&&u.deu)||[]} inversiones={(u&&u.inv)||[]} onUpdate={v=>upd("deu",v)} fmt={fm} onImport={()=>setShowImport(true)}/>;
     case"met":return isUS
       ?<GoalsModuleUS
@@ -1678,7 +1678,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} user={{inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],ingresos:(u&&u.ingresos)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm}/>;
     case"pat":{const bc={};((u&&u.inv)||[]).forEach(i=>{const tp=inferType(i);bc[tp]=(bc[tp]||0)+(+i.va||0)});if(ib.tv>0)bc.Trading=ib.tv;const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);const gr=t.ab+ib.tv;return<div><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 20px"}}>Patrimonio</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:16}}><Cd><St l="Activos" v={fm(gr)} cl={T.gn}/></Cd><Cd><St l="Pasivos" v={fm(t.td)} cl={T.rd}/></Cd><Cd><St l="Neto" v={fm(t.nw)} cl={T.bl}/></Cd></div><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14}}><Cd s={{padding:20}}><div style={{fontSize:12,fontWeight:600,color:T.tx2,marginBottom:14}}>Distribución</div>{pie.length>0?<ResponsiveContainer width="100%" height={220}><PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={2}>{pie.map((_,i)=><Cell key={i} fill={T.ch[i%T.ch.length]}/>)}</Pie><Tooltip contentStyle={{background:"#1e1e24",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,color:"#fafafa",fontSize:12}} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={v=>fm(v)}/><Legend/></PieChart></ResponsiveContainer>:<div style={{height:220,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3}}>Agrega datos</div>}</Cd><Cd s={{padding:20}}><div style={{fontSize:12,fontWeight:600,color:T.tx2,marginBottom:14}}>Desglose</div>{pie.map((a,i)=><div key={a.name} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{a.name}</span></div><span style={{fontWeight:600,fontFamily:"monospace"}}>{fm(a.value)} <span style={{fontSize:11,color:T.tx3}}>{pc((a.value/gr)*100)}</span></span></div>)}</Cd></div></div>}
     case"pen":return isUS?<RetirementModuleUS user={u}/>:gated("pen","Básico",<PensionesColpensiones trm={(u&&u.trm)||4200}/>);
-    case"tax":return isUS?<TaxPlanningUS user={u} fmt={fm}/>:gated("tax","Básico",<SimuladorTributario trm={(u&&u.trm)||4200} user={u}/>);
+    case"tax":return isUS?<TaxPlanningUS user={u} fmt={fm}/>:gated("tax","Pro",<SimuladorTributario trm={(u&&u.trm)||4200} user={u}/>);
     case"aportes":return <AportesCalculadora fmt={fm}/>;
         case"btc":return gated("btc","Básico",<PensionColombia trm={(u&&u.trm)||4200}/>);
     case"asesor":{const _aInv=((u&&u.inv)||[]).filter(i=>i.sim!==false),_aDeu=((u&&u.deu)||[]).filter(d=>d.sim!==false),_aIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false),_aGas={};Object.entries((u&&u.gas)||{}).forEach(([cat,items])=>{const fi=(items||[]).filter(g=>g.sim!==false);if(fi.length>0)_aGas[cat]=fi});return gated("asesor","Pro",<AsesorIA user={{inv:_aInv,gas:_aGas,deu:_aDeu,ingresos:_aIng}} totals={t} userId={authUser?.id}/>);}
@@ -1687,24 +1687,26 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       const isCO=!isUS;
       const plans=[
         {n:"Free",
-         p:{mensual:isCO?"$0":"$0",anual:isCO?"$0":"$0"},
+         p:{mensual:"$0",anual:"$0"},
          pr:{mensual:"gratis",anual:"gratis"},
          save:null,
-         f:["Dashboard básico","3 inversiones","Gastos y deudas","Simulador limitado","1 meta financiera"],
-         no:["🤖 Asesor IA","Coaches IA","Pensiones","Trading","Plan tributario","📸 Facturas IA"],
+         f:["Dashboard básico","3 inversiones","1 meta financiera","Gastos y deudas","Encriptación E2E (base)"],
+         no:["Simulador","Pensiones","Trading","Ahorro BTC","📸 Lectura de facturas IA","🤖 Asesor IA","Coaches IA","Planeación tributaria"],
          cur:plan==="free"},
         {n:"Básico",
-         p:{mensual:"$8",anual:"$6"},
-         pr:{mensual:"USD /mes",anual:"USD /mes"},
+         p:{mensual:isUS?"$8":"$34,000",anual:isUS?"$6":"$25,200"},
+         pr:{mensual:isUS?"USD /mes":"COP /mes",anual:isUS?"USD /mes":"COP /mes"},
+         pRef:{mensual:isUS?null:"≈ $8 USD",anual:isUS?null:"≈ $6 USD"},
          save:"Ahorra 25%",
-         f:["Todo en Free","10 inversiones","10 metas","Simulador avanzado","Pensiones Colpensiones + RAIS","Ahorro BTC","Trading portfolio","Importar Excel con IA"],
-         no:["🤖 Asesor IA","Coaches IA","Planeación tributaria","📸 Lectura facturas"],
+         f:["Todo en Free","10 inversiones","10 metas","Simulador avanzado","Pensiones Colpensiones + RAIS","Ahorro BTC","Trading portfolio","Importar Excel con IA","📸 Lectura de facturas IA"],
+         no:["🤖 Asesor IA","5 Coaches IA","Planeación tributaria"],
          cur:plan==="basico",ac:false},
         {n:"Pro",
-         p:{mensual:"$16",anual:"$12"},
-         pr:{mensual:"USD /mes",anual:"USD /mes"},
+         p:{mensual:isUS?"$16":"$67,200",anual:isUS?"$12":"$50,400"},
+         pr:{mensual:isUS?"USD /mes":"COP /mes",anual:isUS?"USD /mes":"COP /mes"},
+         pRef:{mensual:isUS?null:"≈ $16 USD",anual:isUS?null:"≈ $12 USD"},
          save:"Ahorra 25%",
-         f:["Todo en Básico","Inversiones ilimitadas","Metas ilimitadas","🤖 Asesor Financiero IA","3 Coaches IA especializados","Planeación tributaria Colombia","Simulador avanzado de escenarios","Resumen ejecutivo patrimonio","📸 Lectura de facturas con IA","Encriptación E2E (AES-256)","Modo Privado (sin cuenta)","Soporte prioritario"],
+         f:["Todo en Básico","Inversiones ilimitadas","Metas ilimitadas","🤖 Asesor Financiero IA","5 Coaches IA especializados (Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian)","🧾 Planeación tributaria (Colombia / US)","Resumen ejecutivo de patrimonio","Soporte prioritario"],
          no:[],
          cur:plan==="pro",ac:true}
       ];
@@ -1724,12 +1726,14 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               {pl.ac&&<div style={{background:"linear-gradient(135deg,"+T.gn+",#16a34a)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>MÁS POPULAR</div>}
               <div style={{padding:28}}>
                 <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>{pl.n}</div>
-                <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:4}}>
-                  <span style={{fontSize:40,fontWeight:800,color:pl.ac?T.gn:T.tx}}>{pl.p[billingCycle]}</span>
-                  <span style={{color:T.tx3,fontSize:14,fontWeight:600}}>{pl.pr[billingCycle]}</span>
-                  {pl.p[billingCycle]!=="$0"&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>"Precio en dólares americanos (USD)"</div>}
+                <div style={{marginBottom:4}}>
+                  <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+                    <span style={{fontSize:40,fontWeight:800,color:pl.ac?T.gn:T.tx}}>{pl.p[billingCycle]}</span>
+                    <span style={{color:T.tx3,fontSize:14,fontWeight:600}}>{pl.pr[billingCycle]}</span>
+                  </div>
+                  {pl.pRef&&pl.pRef[billingCycle]&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>{pl.pRef[billingCycle]} · el cobro se procesa en dólares</div>}
                 </div>
-                {billingCycle==="anual"&&pl.save&&<div style={{fontSize:12,color:T.gn,fontWeight:600,marginBottom:12}}>{pl.save} — {pl.n==="Básico"?"$72 USD/año (vs $96 mensual)":"$144 USD/año (vs $192 mensual)"}</div>}
+                {billingCycle==="anual"&&pl.save&&<div style={{fontSize:12,color:T.gn,fontWeight:600,marginBottom:12}}>{pl.save} vs plan mensual</div>}
                 {billingCycle==="mensual"&&pl.save&&<div style={{fontSize:12,color:T.tx3,marginBottom:12}}>{isUS?"or pay annually & save 25%":"o paga anual y ahorra 25%"}</div>}
                 {!pl.save&&<div style={{marginBottom:12}}/>}
                 <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
@@ -1761,6 +1765,11 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         <div style={{textAlign:"center",marginTop:24,color:T.tx3,fontSize:13,lineHeight:1.8}}>
           🔒 Pagos seguros con Stripe • Cancela cuando quieras • Sin compromisos<br/>
           💬 ¿Preguntas? Escríbenos a soporte@finpathia.com
+        </div>
+        <div style={{marginTop:32,padding:"20px 24px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:14,textAlign:"center"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#3b82f6",marginBottom:4}}>💼 ¿Sos asesor financiero o contador?</div>
+          <div style={{fontSize:12,color:T.tx3,marginBottom:10}}>Tenemos planes para gestionar hasta 40+ clientes con workspace dedicado, white-label y soporte prioritario.</div>
+          <a href="/asesores" style={{display:"inline-block",background:"transparent",border:"1px solid #3b82f6",color:"#3b82f6",padding:"8px 18px",borderRadius:8,fontSize:12,fontWeight:600,textDecoration:"none"}}>Ver planes para asesores →</a>
         </div>
       </div>}
     case"resumen":{
