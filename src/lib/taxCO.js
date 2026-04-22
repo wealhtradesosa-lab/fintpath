@@ -110,8 +110,11 @@ export const estimarImpuesto = (u) => {
         name: ow.name, type: "juridica", ingreso: ingAnual,
         gastosRegistrados: gastosDeducJ, intereses: interesesJ, deprec, gastosDeduc: totalDeduc,
         baseGravable: utilidad, impuesto: impActual, impSinOpt: impActual, impOptimizado: impOptimoJ,
+        // Para jurídica, bruto==saldo (no hay retención tipo salario). Uniformamos API.
+        impBruto: impActual, impOptBruto: impOptimoJ, reteN: 0,
         ahorroOptimo: impActual - impOptimoJ,
         tasa: ingAnual > 0 ? (impActual / ingAnual * 100) : 0,
+        tasaBruta: ingAnual > 0 ? (impActual / ingAnual * 100) : 0,
         gastosNoRegistrados: totalDeduc < ingAnual * 0.4,
       });
     } else {
@@ -216,10 +219,17 @@ export const estimarImpuesto = (u) => {
         exenta25, deducDep, deducMedicina, deducVivienda, gmfDeducible,
         pensionVol, afc, totalDeducciones,
         lim40, benAplic: benefLaboral,
-        baseGravable: rentaLiqGeneral, impuesto: impActualNat,
+        baseGravable: rentaLiqGeneral,
+        // impuesto/impOptimizado = SALDO (después de restar retención). Legacy, usado por el cash flow.
+        impuesto: impActualNat,
         impSinOpt: impActualNat, impOptimizado: impOptNat,
+        // impBruto/impOptBruto = TOTAL por tabla progresiva (antes de retención). Usado por el display transparente
+        // y por el cash flow correcto (porque la retención ya salió del salario bruto reportado por el usuario).
+        impBruto: imp,
+        impOptBruto: impOpt,
         ahorroOptimo: ahorroNat,
         tasa: ingAnual > 0 ? (impActualNat / ingAnual * 100) : 0,
+        tasaBruta: ingAnual > 0 ? (imp / ingAnual * 100) : 0,
         espacioParaPVyAFC: espacioPV, reteN, impDiv,
       });
     }

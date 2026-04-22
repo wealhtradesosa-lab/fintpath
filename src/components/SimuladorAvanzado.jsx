@@ -330,9 +330,15 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
     let tTax = 0;
     (dynTax.detalle || []).forEach(td => {
       const isOpt = !!taxOptimizado[td.name];
-      const anualBase = (isOpt && td.impOptimizado != null) ? td.impOptimizado : (td.impuesto || 0);
+      // Usamos impBruto (total por tabla) en lugar de impuesto (saldo post-retención).
+      // El salario bruto reportado incluye implícitamente la retención; si usamos el saldo,
+      // el cash flow subestima el impuesto real porque la retención nunca aparece como descuento.
+      // Bruto = lo correcto cuando el ingreso reportado es bruto.
+      const anualBase = isOpt
+        ? (td.impOptBruto != null ? td.impOptBruto : (td.impBruto || 0))
+        : (td.impBruto != null ? td.impBruto : (td.impuesto || 0));
       const mesBase = Math.round(anualBase / 12);
-      // Slider override: default = mesBase (dinámico). Si el usuario lo mueve,
+      // Slider override: default = mesBase (bruto dinámico). Si el usuario lo mueve,
       // aplica una estrategia fiscal adicional que el sistema no modela.
       tTax += getVal(`tax_${td.name}`, mesBase);
     });
@@ -364,7 +370,10 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
     });
     let tTax = 0;
     ((impuestoData && impuestoData.detalle) || []).forEach((td) => {
-      tTax += Math.round((td.impuesto || 0) / 12);
+      // Consistente con simT: usar impBruto (total) no impuesto (saldo).
+      // Fallback a impuesto si no existe impBruto (data legacy).
+      const anual = td.impBruto != null ? td.impBruto : (td.impuesto || 0);
+      tTax += Math.round(anual / 12);
     });
     tD += tTax;
     const ni = tIng, te = tGF + tD, cf = ni - te;
@@ -694,50 +703,61 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                     {/* Impuestos */}
                     {grp.tax && <>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0 6px" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>🧾 Impuesto (cálculo dinámico)</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>🧾 Impuesto de renta (cálculo dinámico)</div>
                       </div>
                       {(()=>{
                         const nameKey = grp.tax.name;
                         const isOpt = !!taxOptimizado[nameKey];
-                        const impActualMes = Math.round((grp.tax.impuesto||0)/12);
-                        const impOptMes = Math.round((grp.tax.impOptimizado != null ? grp.tax.impOptimizado : (grp.tax.impuesto||0))/12);
-                        const baseMes = isOpt ? impOptMes : impActualMes;
-                        // Slider override: default = base (dinámico según toggle)
+                        // Valores brutos (total por tabla, antes de retención)
+                        const impBrutoActualMes = Math.round((grp.tax.impBruto != null ? grp.tax.impBruto : (grp.tax.impuesto||0))/12);
+                        const impBrutoOptMes = Math.round((grp.tax.impOptBruto != null ? grp.tax.impOptBruto : (grp.tax.impOptimizado||grp.tax.impuesto||0))/12);
+                        const reteNMes = Math.round((grp.tax.reteN || 0) / 12);
+                        const baseMes = isOpt ? impBrutoOptMes : impBrutoActualMes;
+                        // Slider override opera sobre el BRUTO (total)
                         const simImp = getVal(`tax_${nameKey}`, baseMes);
                         const simImpAnual = simImp * 12;
+                        // Saldo en declaración = simulado bruto - retención pagada
+                        const saldoMes = Math.max(0, simImp - reteNMes);
+                        const saldoAnual = saldoMes * 12;
                         const ingresoAnual = grp.tax.ingreso || 0;
                         const tasaEfectiva = ingresoAnual > 0 ? (simImpAnual / ingresoAnual * 100) : 0;
-                        const ahorroOpt = (impActualMes - impOptMes) * 12;
-                        const ajusteExtra = baseMes - simImp; // +: estrategia adicional ahorra, -: conservador
-                        const sliderMax = Math.max(Math.max(impActualMes, impOptMes) * 2, 100000);
-                        // Al cambiar toggle: borrar override para que slider vuelva al nuevo base
+                        const ahorroOpt = (impBrutoActualMes - impBrutoOptMes) * 12;
+                        const ajusteExtra = baseMes - simImp;
+                        const sliderMax = Math.max(Math.max(impBrutoActualMes, impBrutoOptMes) * 2, 100000);
                         const toggleActual = () => { setTaxOptimizado(p => ({ ...p, [nameKey]: false })); setSimVals(p => { const n = { ...p }; delete n[`tax_${nameKey}`]; return n; }); };
                         const toggleOpt = () => { setTaxOptimizado(p => ({ ...p, [nameKey]: true })); setSimVals(p => { const n = { ...p }; delete n[`tax_${nameKey}`]; return n; }); };
+                        const isJuridica = grp.tax.type === "juridica";
                         return <div>
                           <div style={{display:"flex",gap:6,marginBottom:8}}>
-                            <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(255,255,255,0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600}}>Actual: {fm(impActualMes*12)}/año</button>
-                            <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(255,255,255,0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600}}>Optimizado: {fm(impOptMes*12)}/año</button>
+                            <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(255,255,255,0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600}}>Actual: {fm(impBrutoActualMes*12)}/año</button>
+                            <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(255,255,255,0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600}}>Optimizado: {fm(impBrutoOptMes*12)}/año</button>
                           </div>
-                          <div style={{background:isOpt?"rgba(34,197,94,0.06)":"rgba(167,139,250,0.06)",borderRadius:10,padding:"10px 14px",border:"1px solid "+(isOpt?"rgba(34,197,94,0.15)":"rgba(167,139,250,0.15)"),marginBottom:8}}>
-                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,alignItems:"center"}}>
-                              <div>
-                                <div style={{fontSize:9,color:T.txt3,textTransform:"uppercase",letterSpacing:0.5}}>Mensual</div>
-                                <div style={{fontSize:16,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImp)}</div>
+                          <div style={{background:isOpt?"rgba(34,197,94,0.06)":"rgba(167,139,250,0.06)",borderRadius:10,padding:"12px 14px",border:"1px solid "+(isOpt?"rgba(34,197,94,0.15)":"rgba(167,139,250,0.15)"),marginBottom:8}}>
+                            {/* 3 líneas transparentes: Total / Retención / Saldo */}
+                            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+                                <div>
+                                  <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>🧾 Impuesto total (tabla progresiva DIAN)</div>
+                                  <div style={{fontSize:9,color:T.txt3,marginTop:1}}>Tasa efectiva sobre ingreso bruto: {tasaEfectiva.toFixed(1)}%</div>
+                                </div>
+                                <div style={{fontSize:17,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImpAnual)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                               </div>
-                              <div>
-                                <div style={{fontSize:9,color:T.txt3,textTransform:"uppercase",letterSpacing:0.5}}>Anual</div>
-                                <div style={{fontSize:16,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImpAnual)}</div>
-                              </div>
-                              <div>
-                                <div style={{fontSize:9,color:T.txt3,textTransform:"uppercase",letterSpacing:0.5}}>Tasa efectiva</div>
-                                <div style={{fontSize:16,fontWeight:800,color:T.txt}}>{tasaEfectiva.toFixed(1)}%</div>
-                              </div>
+                              {!isJuridica && reteNMes > 0 && <>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px dashed rgba(255,255,255,0.06)"}}>
+                                  <div style={{fontSize:10,color:T.txt2}}>🏛️ Retención en la fuente (ya pagada)</div>
+                                  <div style={{fontSize:14,fontWeight:600,color:T.txt2}}>−{fm(reteNMes*12)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
+                                </div>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+                                  <div style={{fontSize:11,color:T.txt,fontWeight:700}}>📋 Saldo a pagar en declaración</div>
+                                  <div style={{fontSize:16,fontWeight:800,color:saldoAnual===0?T.gn:T.txt}}>{fm(saldoAnual)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
+                                </div>
+                                {saldoAnual === 0 && simImpAnual > 0 && <div style={{fontSize:10,color:T.gn,fontWeight:600,marginTop:2}}>✅ La retención ya cubre tu impuesto. Incluso podrías recibir devolución.</div>}
+                              </>}
                             </div>
-                            {ahorroOpt > 0 && !isOpt && <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Optimizar ahorra {fm(ahorroOpt)}/año → activa el toggle para ver el impacto en tu cash flow</div>}
-                            {(grp.tax.impuesto||0) === 0 && <div style={{marginTop:6,fontSize:10,color:T.gn,fontWeight:600}}>✅ Retención cubre el impuesto de este propietario</div>}
+                            {ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Optimizar ahorra {fm(ahorroOpt)}/año → activa el toggle para ver el impacto en cash flow</div>}
                           </div>
-                          {/* Slider de ajuste adicional sobre la base dinámica */}
-                          <Slider label={`Ajuste manual — ${isOpt ? "sobre Optimizado" : "sobre Actual"}`} value={simImp} base={baseMes}
+                          {/* Slider manual — opera sobre el bruto total */}
+                          <Slider label={`Ajuste manual — sobre ${isOpt ? "Optimizado" : "Actual"} (impuesto total)`} value={simImp} base={baseMes}
                             max={sliderMax} color={isOpt ? T.gn : "#a78bfa"}
                             onChange={(v) => setVal(`tax_${nameKey}`, v)}
                             sub="baja si logras estrategias adicionales (donaciones, depreciación agresiva, etc.)" />
@@ -746,7 +766,11 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                               ? `🎯 Ahorro adicional sobre ${isOpt?"Optimizado":"Actual"}: ${fm(ajusteExtra*12)}/año`
                               : `⚠️ Escenario más conservador: +${fm(Math.abs(ajusteExtra)*12)}/año de impuesto`}
                           </div>}
-                          <div style={{marginTop:4,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4}}>Base dinámica recalculada con los sliders de ingresos/gastos/deudas. Slider manual permite ajustar por estrategias adicionales que el sistema no modela.</div>
+                          <div style={{marginTop:6,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4,lineHeight:1.5}}>
+                            {isJuridica
+                              ? "Impuesto sobre renta corporativa (35%). El cash flow ya descuenta este valor completo."
+                              : "El cash flow descuenta el impuesto TOTAL, no solo el saldo. Esto supone que el salario reportado es bruto (antes de retención)."}
+                          </div>
                         </div>;
                       })()}
                     </>}
