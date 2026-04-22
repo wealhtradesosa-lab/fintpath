@@ -756,12 +756,28 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                             </div>
                             {ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Optimizar ahorra {fm(ahorroOpt)}/año → activa el toggle para ver el impacto en cash flow</div>}
                           </div>
-                          {/* Slider manual — opera sobre el bruto total */}
-                          <Slider label={`Ajuste manual — sobre ${isOpt ? "Optimizado" : "Actual"} (impuesto total)`} value={simImp} base={baseMes}
-                            max={sliderMax} color={isOpt ? T.gn : "#a78bfa"}
-                            onChange={(v) => setVal(`tax_${nameKey}`, v)}
-                            sub="baja si logras estrategias adicionales (donaciones, depreciación agresiva, etc.)" />
-                          {ajusteExtra !== 0 && <div style={{marginTop:4,fontSize:10,color:ajusteExtra>0?T.gn:T.or,fontWeight:600,paddingLeft:4}}>
+                          {/* Hint cuando Actual===Optimizado (deducciones ya maximizadas) */}
+                          {!isJuridica && impBrutoActualMes === impBrutoOptMes && impBrutoActualMes > 0 && (
+                            <div style={{marginBottom:6,padding:"8px 12px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:8,fontSize:10,color:"#93c5fd",lineHeight:1.5}}>
+                              ℹ️ La optimización estándar (pensión voluntaria + AFC) no aporta ahorro adicional en tu caso — probablemente ya llegaste al tope del 40% o no tenés suficiente ingreso laboral. Usá el slider manual si podés aplicar estrategias fuera del modelo.
+                            </div>
+                          )}
+                          {/* Slider manual — opera sobre el BRUTO (impuesto total anual, no saldo) */}
+                          <div style={{background:(isOpt?T.gn:"#a78bfa")+"08",border:"1px solid "+(isOpt?T.gn:"#a78bfa")+"20",borderRadius:10,padding:"10px 12px"}}>
+                            <div style={{fontSize:10,fontWeight:700,color:isOpt?T.gn:"#a78bfa",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — impuesto total anual</div>
+                            <div style={{fontSize:10,color:T.txt3,marginBottom:8,lineHeight:1.5}}>
+                              Movelo hacia abajo si lográs <strong>estrategias adicionales</strong> que el sistema no modela (donaciones, depreciación agresiva, créditos fiscales especiales). {saldoAnual === 0 && simImpAnual > 0 && <span style={{color:"#93c5fd"}}>⚠ Aunque tu saldo en declaración es $0, bajar el total mejora tu cash flow porque pagás menos retención durante el año.</span>}
+                            </div>
+                            <Slider label="" value={simImp} base={baseMes}
+                              max={sliderMax} color={isOpt ? T.gn : "#a78bfa"}
+                              onChange={(v) => setVal(`tax_${nameKey}`, v)}
+                              sub="" />
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginTop:4,fontSize:11}}>
+                              <span style={{color:T.txt3}}>Total anual ajustado:</span>
+                              <span style={{fontWeight:700,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImpAnual)}<span style={{fontSize:9,color:T.txt3,fontWeight:400}}> · {fm(simImp)}/mes</span></span>
+                            </div>
+                          </div>
+                          {ajusteExtra !== 0 && <div style={{marginTop:6,fontSize:10,color:ajusteExtra>0?T.gn:T.or,fontWeight:600,paddingLeft:4}}>
                             {ajusteExtra > 0
                               ? `🎯 Ahorro adicional sobre ${isOpt?"Optimizado":"Actual"}: ${fm(ajusteExtra*12)}/año`
                               : `⚠️ Escenario más conservador: +${fm(Math.abs(ajusteExtra)*12)}/año de impuesto`}
