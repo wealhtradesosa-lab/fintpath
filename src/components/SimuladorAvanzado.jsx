@@ -742,24 +742,26 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                                 </div>
                                 <div style={{fontSize:17,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImpAnual)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                               </div>
-                              {!isJuridica && reteNMes > 0 && <>
+                              {reteNMes > 0 && <>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px dashed rgba(255,255,255,0.06)"}}>
-                                  <div style={{fontSize:10,color:T.txt2}}>🏛️ Retención en la fuente (ya pagada)</div>
+                                  <div style={{fontSize:10,color:T.txt2}}>{isJuridica ? "🏛️ ICA + retenciones descontables" : "🏛️ Retención en la fuente (ya pagada)"}</div>
                                   <div style={{fontSize:14,fontWeight:600,color:T.txt2}}>−{fm(reteNMes*12)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                                 </div>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
                                   <div style={{fontSize:11,color:T.txt,fontWeight:700}}>📋 Saldo a pagar en declaración</div>
                                   <div style={{fontSize:16,fontWeight:800,color:saldoAnual===0?T.gn:T.txt}}>{fm(saldoAnual)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                                 </div>
-                                {saldoAnual === 0 && simImpAnual > 0 && <div style={{fontSize:10,color:T.gn,fontWeight:600,marginTop:2}}>✅ La retención ya cubre tu impuesto. Incluso podrías recibir devolución.</div>}
+                                {saldoAnual === 0 && simImpAnual > 0 && <div style={{fontSize:10,color:T.gn,fontWeight:600,marginTop:2}}>✅ Los descuentos ya cubren tu impuesto. Incluso podrías recibir devolución.</div>}
                               </>}
                             </div>
                             {ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Optimizar ahorra {fm(ahorroOpt)}/año → activa el toggle para ver el impacto en cash flow</div>}
                           </div>
-                          {/* Hint cuando Actual===Optimizado (deducciones ya maximizadas) */}
-                          {!isJuridica && impBrutoActualMes === impBrutoOptMes && impBrutoActualMes > 0 && (
+                          {/* Hint cuando Actual===Optimizado (sin ahorro adicional vía estrategias estándar) */}
+                          {impBrutoActualMes === impBrutoOptMes && impBrutoActualMes > 0 && (
                             <div style={{marginBottom:6,padding:"8px 12px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:8,fontSize:10,color:"#93c5fd",lineHeight:1.5}}>
-                              ℹ️ La optimización estándar (pensión voluntaria + AFC) no aporta ahorro adicional en tu caso — probablemente ya llegaste al tope del 40% o no tenés suficiente ingreso laboral. Usá el slider manual si podés aplicar estrategias fuera del modelo.
+                              ℹ️ {isJuridica
+                                ? "Las estrategias corporativas estándar (bonificaciones, donaciones, provisiones, deuda) no reducen tu impuesto adicional en este escenario — ya están al tope del modelo. Usá el slider manual para estrategias adicionales (créditos tributarios especiales, renta exenta, zona franca, etc.)."
+                                : "La optimización estándar (pensión voluntaria + AFC) no aporta ahorro adicional en tu caso — probablemente ya llegaste al tope del 40% o no tenés suficiente ingreso laboral. Usá el slider manual si podés aplicar estrategias fuera del modelo."}
                             </div>
                           )}
                           {/* Slider manual — opera sobre el BRUTO (impuesto total anual, no saldo) */}
@@ -784,7 +786,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                           </div>}
                           <div style={{marginTop:6,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4,lineHeight:1.5}}>
                             {isJuridica
-                              ? "Impuesto sobre renta corporativa (35%). El cash flow ya descuenta este valor completo."
+                              ? "Impuesto sobre renta corporativa (35% sobre utilidad). El cash flow descuenta el impuesto TOTAL; los descuentos (ICA pagado + retenciones recibidas) reducen solo el saldo en declaración."
                               : "El cash flow descuenta el impuesto TOTAL, no solo el saldo. Esto supone que el salario reportado es bruto (antes de retención)."}
                           </div>
                         </div>;

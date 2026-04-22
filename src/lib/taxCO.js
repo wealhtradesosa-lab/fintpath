@@ -105,16 +105,19 @@ export const estimarImpuesto = (u) => {
       const estratTotal = bonif + donacion + provision + deudaEstr;
       const maxRed = utilidad * 0.35;
       const utilOptima = Math.max(utilidad * 0.40, utilidad - Math.min(estratTotal, maxRed));
-      const impOptimoJ = Math.max(0, utilOptima * 0.35 - descICA - reteJ);
+      const impBrutoOpt = utilOptima * 0.35;
+      const impOptimoJ = Math.max(0, impBrutoOpt - descICA - reteJ);
       detalle.push({
         name: ow.name, type: "juridica", ingreso: ingAnual,
         gastosRegistrados: gastosDeducJ, intereses: interesesJ, deprec, gastosDeduc: totalDeduc,
+        // impuesto/impOptimizado = SALDO en declaración (después de descuentos). Legacy.
         baseGravable: utilidad, impuesto: impActual, impSinOpt: impActual, impOptimizado: impOptimoJ,
-        // Para jurídica, bruto==saldo (no hay retención tipo salario). Uniformamos API.
-        impBruto: impActual, impOptBruto: impOptimoJ, reteN: 0,
+        // impBruto/impOptBruto = TOTAL (35% utilidad, antes de descuentos ICA/reteJ).
+        // reteN = ICA + retenciones recibidas (equivalente a retención en la fuente de natural).
+        impBruto: impBruto, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
         ahorroOptimo: impActual - impOptimoJ,
         tasa: ingAnual > 0 ? (impActual / ingAnual * 100) : 0,
-        tasaBruta: ingAnual > 0 ? (impActual / ingAnual * 100) : 0,
+        tasaBruta: ingAnual > 0 ? (impBruto / ingAnual * 100) : 0,
         gastosNoRegistrados: totalDeduc < ingAnual * 0.4,
       });
     } else {
