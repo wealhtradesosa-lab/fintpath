@@ -108,27 +108,25 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       const impActual = Math.max(0, impBruto - descuentoICA - retefuenteCalc);
       const tasaActual = ingAnual > 0 ? (impActual / ingAnual * 100) : 0;
 
-      // CON ESTRATEGIA: solo optimizaciones con base legal verificable
+      // CON ESTRATEGIA: sin optimización automática para jurídica
       const pctGastos = ingAnual > 0 ? (totalDeduc / ingAnual * 100) : 0;
 
-      // ── OPTIMIZACIÓN PERSONA JURÍDICA (FASE 1 — HONESTA) ──
+      // ── OPTIMIZACIÓN PERSONA JURÍDICA (FASE 1+ — HONESTA) ──
       // Las estrategias corporativas (bonificaciones extralegales, donaciones Art.257 ET,
       // provisión de cartera Art.145 ET, apalancamiento productivo, depreciación acelerada,
       // zona franca, etc.) existen en el Estatuto Tributario, pero su viabilidad y monto
       // dependen de la estructura contable específica de cada empresa. El simulador NO
-      // aplica porcentajes genéricos inventados (15% de nómina, 10% de utilidad, 2% de
-      // ingresos, 3% del patrimonio) — eso sería sugerir ahorros sin soporte.
+      // aplica porcentajes genéricos — todo número inventado genera expectativas falsas.
       //
-      // Único ajuste automático: si los gastos registrados están por debajo del 50% de
-      // ingresos, el simulador asume que hay gastos operativos reales sin registrar y
-      // los sube al 55% (piso razonable para una empresa operativa).
-      const gastosExtra = pctGastos < 50 ? Math.max(0, ingAnual * 0.55 - totalDeduc) : 0;
-      const maxReduccion = utilidadActual * 0.35;
-      const reduccionAplicada = Math.min(gastosExtra, maxReduccion);
-      const utilidadOptima = Math.max(0, utilidadActual - reduccionAplicada);
-      const impOptimoBase = utilidadOptima * 0.35;
-      const impOptimo = Math.max(0, impOptimoBase - descuentoICA - retefuenteCalc);
-      const ahorro = impActual - impOptimo;
+      // Tampoco aplicamos un "piso de gastos al 55%" automático: la regla "si gastos<50%
+      // los inflamos al 55%" era una heurística arbitraria que generaba ahorros ficticios
+      // para empresas con márgenes altos legítimos (SaaS, consultoría, rentistas).
+      // Si el usuario tiene gastos sin registrar, debe registrarlos — no los inventamos.
+      //
+      // → impOptimo = impActual para jurídica. Consistente con taxCO.js (fuente de verdad
+      //   del cálculo tributario usado por el Simulador Avanzado).
+      const impOptimo = impActual;
+      const ahorro = 0;
 
       // Recomendaciones educativas (sin impacto calculado con porcentajes inventados)
       const recs = [];
@@ -136,7 +134,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       if (!gastosByCat["Honorarios"]) recs.push({ icon: "📋", title: "Honorarios profesionales", desc: "Contador, abogado, revisor fiscal. Registra estos gastos como deducibles.", impact: 0, color: T.blue });
       if (!gastosByCat["Mantenimiento"]) recs.push({ icon: "🔧", title: "Mantenimiento de propiedades", desc: "Reparaciones, pintura, plomería — todo deducible para inmuebles de la empresa.", impact: 0, color: T.blue });
       if (!gastosByCat["Predial"]) recs.push({ icon: "🏛️", title: "Predial e impuestos locales", desc: "Predial, ICA, contribuciones — impuestos pagados son deducibles.", impact: 0, color: T.blue });
-      if (pctGastos < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + pctGastos.toFixed(0) + "% de ingresos", desc: "Una empresa operativa típica tiene 40-70%. Revisa si faltan gastos por registrar.", impact: gastosExtra > 0 ? gastosExtra * 0.35 : 0, color: T.orange });
+      if (pctGastos < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + pctGastos.toFixed(0) + "% de ingresos", desc: "Una empresa operativa típica registra 40–70% de sus ingresos como gastos. Revisa si te faltan gastos operativos por registrar (nómina, honorarios, mantenimiento, servicios). Cada peso deducible real baja el impuesto en $0,35.", impact: 0, color: T.orange });
 
       // Estrategias corporativas: educativas — sin estimación de impacto automático
       if (utilidadActual > 50e6) {
@@ -434,16 +432,16 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
           <div style={{ fontSize: 13, color: T.txt3 }}>{fm(impOptimo / 12)}/mes • Tasa: {(tasaOptima || 0).toFixed(1)}%</div>
 
           <div style={{ marginTop: 16, fontSize: 11 }}>
-            <div style={{ fontWeight: 600, color: T.txt2, marginBottom: 6 }}>Optimizaciones automáticas aplicadas:</div>
+            <div style={{ fontWeight: 600, color: T.txt2, marginBottom: 6 }}>Deducciones automáticas aplicadas:</div>
             {isJ ? <>
-              {calc.pctGastos < 50 && <div style={{ padding: "4px 0", color: T.green }}>✅ Gastos operativos al 55% (piso razonable)</div>}
-              {calc.pctGastos >= 50 && <div style={{ padding: "4px 0", color: T.txt3 }}>✅ Gastos ya están sobre el 50% — sin ajuste automático</div>}
+              <div style={{ padding: "4px 0", color: T.green }}>✅ Gastos operativos registrados</div>
               <div style={{ padding: "4px 0", color: T.green }}>✅ Intereses de deudas deducidos</div>
               <div style={{ padding: "4px 0", color: T.green }}>✅ Depreciación de activos aplicada</div>
-              <div style={{ padding: "4px 0", color: T.green }}>✅ GMF 4×1000 (50%)</div>
+              <div style={{ padding: "4px 0", color: T.green }}>✅ GMF 4×1000 (50% deducible)</div>
               {calc.descuentoICA > 0 && <div style={{ padding: "4px 0", color: T.blue }}>✅ Descuento 50% ICA aplicado</div>}
+              <div style={{ padding: "4px 0", color: T.blue }}>✅ Retención en la fuente descontada</div>
               <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
-                ℹ️ <strong>El simulador no aplica automáticamente</strong> estrategias como bonificaciones, donaciones, provisión de cartera, depreciación acelerada o apalancamiento — su valor depende de tu estructura contable. Mirá las recomendaciones abajo y consultá con tu contador.
+                ℹ️ <strong>No hay ahorro automático para persona jurídica.</strong> Las estrategias corporativas (bonificaciones, donaciones Art. 257 ET, provisión de cartera, depreciación acelerada, apalancamiento) existen pero su monto viable depende de tu estructura contable. El simulador no inventa porcentajes genéricos — consultá con tu contador para estimar ahorros concretos. Mirá las recomendaciones abajo.
               </div>
             </> : <>
               <div style={{ padding: "4px 0", color: T.green }}>✅ Renta exenta 25% ({fm(calc.exenta25)})</div>
