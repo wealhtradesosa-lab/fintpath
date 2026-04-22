@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { estimarImpuesto } from "../lib/taxCO";
 
 const T = {
   bg2: "#18181b", bg3: "#27272a", bg4: "#2a2a32",
@@ -264,57 +265,81 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
   };
 
   // ── Simulated totals (reactive) ──
-  // Tax: viene de impuestoData (prop) que es el mismo estimarImpuesto(u)
-  // que se muestra en Plan Tributario. Los valores del simulador COINCIDEN
-  // con Plan Tributario por diseño.
-  // Toggle Actual/Optimizado por owner (keyed by td.name) sí impacta el
-  // cash flow: al activar Optimizado para un owner, el tTax baja y el CF sube.
+  // Tax se recalcula DINÁMICAMENTE usando estimarImpuesto(userSim) donde
+  // userSim refleja los overrides de sliders (ingresos/gastos/deudas) +
+  // el flag sim=false respetado. Si el usuario sube ingresos con el slider,
+  // el impuesto estimado también sube.
+  // Toggle Actual/Optimizado por owner (keyed by td.name) elige entre
+  // td.impuesto y td.impOptimizado del detalle dinámico.
   const simT = useMemo(() => {
     const trm = 4200;
 
-    // Ingresos (con overrides de sliders, respeta sim:false)
-    let tI = 0;
-    (user.ingresos || []).forEach((ing, ii) => {
-      if (ing.sim === false) return;
+    // Ingresos con overrides de sliders, preservando moneda original
+    const ingSim = (user.ingresos || []).map((ing, ii) => {
+      if (ing.sim === false) return ing;
       const baseCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
-      tI += getVal(`ing_${ii}`, baseCop);
+      const overrideCop = getVal(`ing_${ii}`, baseCop);
+      const newMensual = ing.moneda === "USD" ? (overrideCop / trm) : overrideCop;
+      return { ...ing, mensual: newMensual };
+    });
+    let tI = 0;
+    ingSim.forEach(ing => {
+      if (ing.sim === false) return;
+      tI += (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
     });
 
-    // Gastos (con overrides de sliders, respeta sim:false)
+    // Gastos con overrides de sliders
+    const gasSim = {};
     let tGF = 0;
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
-      (items || []).forEach((g, gi) => {
-        if (g.sim === false) return;
-        tGF += getVal(`gf_${cat}_${gi}`, g.m || 0);
+      gasSim[cat] = (items || []).map((g, gi) => {
+        if (g.sim === false) return g;
+        const newM = getVal(`gf_${cat}_${gi}`, g.m || 0);
+        return { ...g, m: newM };
       });
+      gasSim[cat].forEach(g => { if (g.sim !== false) tGF += (g.m || 0); });
     });
 
-    // Deudas (con overrides de sliders, respeta sim:false)
-    let tD = 0;
-    (user.deudas || []).forEach((d, di) => {
-      if (d.sim === false) return;
+    // Deudas con overrides de sliders
+    const deuSim = (user.deudas || []).map((d, di) => {
+      if (d.sim === false) return d;
       if ((d.mt || 0) > 0) {
-        tD += getVal(`debt_${di}`, (d.pago || d.pg || 0));
+        const newPago = getVal(`debt_${di}`, (d.pago || d.pg || 0));
+        return { ...d, pago: newPago, pg: newPago };
       }
+      return d;
+    });
+    let tD = 0;
+    deuSim.forEach(d => {
+      if (d.sim === false) return;
+      if ((d.mt || 0) > 0) tD += (d.pago || d.pg || 0);
     });
 
-    // Tax: base = Plan Tributario, toggle Actual/Optimizado elige entre
-    // td.impuesto y td.impOptimizado, y el slider `tax_{name}` deja ajustar
-    // ese valor hacia abajo (jugadas adicionales) o hacia arriba (conservador).
+    // Tax dinámico: pasar userSim a estimarImpuesto. Nota: remapear nombres de
+    // keys (gastos→gas, deudas→deu) porque estimarImpuesto lee u.gas/u.deu.
+    const userSim = {
+      owners: user.owners || [],
+      ingresos: ingSim,
+      gas: gasSim,
+      deu: deuSim,
+      inv: user.inv || [],
+      trm,
+    };
+    const dynTax = estimarImpuesto(userSim);
+
     let tTax = 0;
-    ((impuestoData && impuestoData.detalle) || []).forEach(td => {
+    (dynTax.detalle || []).forEach(td => {
       const isOpt = !!taxOptimizado[td.name];
       const anualBase = (isOpt && td.impOptimizado != null) ? td.impOptimizado : (td.impuesto || 0);
-      const mesBase = Math.round(anualBase / 12);
-      tTax += getVal(`tax_${td.name}`, mesBase);
+      tTax += Math.round(anualBase / 12);
     });
     tD += tTax;
 
     const ni = tI;
     const te = tGF + tD;
     const cf = ni - te;
-    return { tI, ni, tGF, gfm: tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0, tTax };
-  }, [user, simVals, getVal, impuestoData, taxOptimizado]);
+    return { tI, ni, tGF, gfm: tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0, tTax, dynTax };
+  }, [user, simVals, getVal, taxOptimizado]);
 
   // ── Baseline (sin overrides de simVals, sin toggle Optimizado) ──
   // Reproduce la misma fórmula de simT pero usando los valores de la data
@@ -545,7 +570,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               const oIng = allIng.filter(i => i.owner === ow.id);
               const oGas = gasFlat.filter(g => g.owner === ow.id);
               const oDeu = allDeu.filter(d => d.owner === ow.id);
-              const taxDetail = ((impuestoData && impuestoData.detalle) || []).find(td => td.name === ow.name);
+              const taxDetail = ((simT.dynTax && simT.dynTax.detalle) || []).find(td => td.name === ow.name);
               if (oIng.length > 0 || oGas.length > 0 || oDeu.length > 0) {
                 groups.push({ owner: ow, ing: oIng, gas: oGas, deu: oDeu, tax: taxDetail });
               }
@@ -666,26 +691,20 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                     {/* Impuestos */}
                     {grp.tax && <>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0 6px" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>🧾 Impuesto (Plan Tributario)</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>🧾 Impuesto (cálculo dinámico)</div>
                       </div>
                       {(()=>{
                         const nameKey = grp.tax.name;
                         const isOpt = !!taxOptimizado[nameKey];
                         const impActualMes = Math.round((grp.tax.impuesto||0)/12);
                         const impOptMes = Math.round((grp.tax.impOptimizado != null ? grp.tax.impOptimizado : (grp.tax.impuesto||0))/12);
-                        const baseMes = isOpt ? impOptMes : impActualMes;
-                        // Slider override — por defecto = base (toggle actual/optimizado)
-                        const simImp = getVal(`tax_${nameKey}`, baseMes);
-                        const simImpAnual = simImp * 12;
+                        const impMes = isOpt ? impOptMes : impActualMes;
+                        const impAnual = impMes * 12;
                         const ingresoAnual = grp.tax.ingreso || 0;
-                        const tasaEfectiva = ingresoAnual > 0 ? (simImpAnual / ingresoAnual * 100) : 0;
+                        const tasaEfectiva = ingresoAnual > 0 ? (impAnual / ingresoAnual * 100) : 0;
                         const ahorroOpt = (impActualMes - impOptMes) * 12;
-                        const ajusteExtra = baseMes - simImp; // +: jugada adicional, -: conservador
-                        // Max del slider: el mayor entre actual y optimizado × 2, para dejar rango arriba y abajo
-                        const sliderMax = Math.max(Math.max(impActualMes, impOptMes) * 2, 100000);
-                        // Al cambiar toggle: borrar override del slider para que vuelva al nuevo base
-                        const toggleActual = () => { setTaxOptimizado(p => ({ ...p, [nameKey]: false })); setSimVals(p => { const n = { ...p }; delete n[`tax_${nameKey}`]; return n; }); };
-                        const toggleOpt = () => { setTaxOptimizado(p => ({ ...p, [nameKey]: true })); setSimVals(p => { const n = { ...p }; delete n[`tax_${nameKey}`]; return n; }); };
+                        const toggleActual = () => setTaxOptimizado(p => ({ ...p, [nameKey]: false }));
+                        const toggleOpt = () => setTaxOptimizado(p => ({ ...p, [nameKey]: true }));
                         return <div>
                           <div style={{display:"flex",gap:6,marginBottom:8}}>
                             <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(255,255,255,0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600}}>Actual: {fm(impActualMes*12)}/año</button>
@@ -695,11 +714,11 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,alignItems:"center"}}>
                               <div>
                                 <div style={{fontSize:9,color:T.txt3,textTransform:"uppercase",letterSpacing:0.5}}>Mensual</div>
-                                <div style={{fontSize:16,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImp)}</div>
+                                <div style={{fontSize:16,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(impMes)}</div>
                               </div>
                               <div>
                                 <div style={{fontSize:9,color:T.txt3,textTransform:"uppercase",letterSpacing:0.5}}>Anual</div>
-                                <div style={{fontSize:16,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImpAnual)}</div>
+                                <div style={{fontSize:16,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(impAnual)}</div>
                               </div>
                               <div>
                                 <div style={{fontSize:9,color:T.txt3,textTransform:"uppercase",letterSpacing:0.5}}>Tasa efectiva</div>
@@ -709,17 +728,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                             {ahorroOpt > 0 && !isOpt && <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Optimizar ahorra {fm(ahorroOpt)}/año → activa el toggle para ver el impacto en tu cash flow</div>}
                             {(grp.tax.impuesto||0) === 0 && <div style={{marginTop:6,fontSize:10,color:T.gn,fontWeight:600}}>✅ Retención cubre el impuesto de este propietario</div>}
                           </div>
-                          {/* Slider de ajuste adicional */}
-                          <Slider label={`Ajuste manual — ${isOpt ? "sobre Optimizado" : "sobre Actual"}`} value={simImp} base={baseMes}
-                            max={sliderMax} color={isOpt ? T.gn : "#a78bfa"}
-                            onChange={(v) => setVal(`tax_${nameKey}`, v)}
-                            sub="baja si logras jugadas adicionales" />
-                          {ajusteExtra !== 0 && <div style={{marginTop:4,fontSize:10,color:ajusteExtra>0?T.gn:T.or,fontWeight:600,paddingLeft:4}}>
-                            {ajusteExtra > 0
-                              ? `🎯 Ahorro adicional sobre ${isOpt?"Optimizado":"Actual"}: ${fm(ajusteExtra*12)}/año`
-                              : `⚠️ Escenario más conservador: +${fm(Math.abs(ajusteExtra)*12)}/año de impuesto`}
-                          </div>}
-                          <div style={{marginTop:4,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4}}>Base = valores de Plan Tributario. El slider deja ajustar hacia abajo si haces jugadas adicionales.</div>
+                          <div style={{marginTop:4,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4}}>Impuesto recalculado dinámicamente según los ingresos/gastos/deudas ajustados con los sliders.</div>
                         </div>;
                       })()}
                     </>}
