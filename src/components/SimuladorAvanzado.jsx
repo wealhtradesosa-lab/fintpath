@@ -737,8 +737,8 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                             <div style={{display:"flex",flexDirection:"column",gap:6}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
                                 <div>
-                                  <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>🧾 Impuesto total (tabla progresiva DIAN)</div>
-                                  <div style={{fontSize:9,color:T.txt3,marginTop:1}}>Tasa efectiva sobre ingreso bruto: {tasaEfectiva.toFixed(1)}%</div>
+                                  <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>{isJuridica ? "🧾 Impuesto corporativo bruto (35% × utilidad)" : "🧾 Impuesto total (tabla progresiva DIAN)"}</div>
+                                  <div style={{fontSize:9,color:T.txt3,marginTop:1}}>{isJuridica ? "Tasa efectiva sobre ingresos: " : "Tasa efectiva sobre ingreso bruto: "}{tasaEfectiva.toFixed(1)}%{isJuridica && grp.tax.baseGravable > 0 && grp.tax.ingreso > 0 && <span> · Utilidad/ingreso: {((grp.tax.baseGravable / grp.tax.ingreso) * 100).toFixed(0)}%</span>}</div>
                                 </div>
                                 <div style={{fontSize:17,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImpAnual)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                               </div>
