@@ -147,20 +147,24 @@ export const estimarImpuesto = (u) => {
       const impDeclarado = ow.impuestoDeclaradoAnual;
       const usaOverride = impDeclarado != null && impDeclarado >= 0;
       const impActual = usaOverride ? impDeclarado : impActualCalc;
+      // Cuando hay override, el "bruto" mostrado y las retenciones se alinean al valor declarado.
+      // El usuario dice "pago X" — ese es el número en todos los contextos (Simulador + Plan Tributario).
+      const impBrutoFinal = usaOverride ? impDeclarado : impBruto;
+      const reteNFinal = usaOverride ? 0 : (descICA + reteJ);
       totalImp += impActual;
 
       // impOptimizado = impActual para jurídica (sin ahorro fabricado — estrategias requieren contador)
-      const impBrutoOpt = impBruto;
+      const impBrutoOpt = impBrutoFinal;
       const impOptimoJ = impActual;
       detalle.push({
         name: ow.name, type: "juridica", ingreso: ingAnual,
         regimen, regimenNota, tarifa, usaOverride, impDeclarado,
         gastosRegistrados: gastosDeducJ, intereses: interesesJ, deprec, gastosDeduc: totalDeduc,
         baseGravable, impuesto: impActual, impSinOpt: impActual, impOptimizado: impOptimoJ,
-        impBruto: impBruto, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
+        impBruto: impBrutoFinal, impOptBruto: impBrutoOpt, reteN: reteNFinal,
         ahorroOptimo: impActual - impOptimoJ,
         tasa: ingAnual > 0 ? (impActual / ingAnual * 100) : 0,
-        tasaBruta: ingAnual > 0 ? (impBruto / ingAnual * 100) : 0,
+        tasaBruta: ingAnual > 0 ? (impBrutoFinal / ingAnual * 100) : 0,
         gastosNoRegistrados: totalDeduc < ingAnual * 0.4,
       });
     } else {
@@ -285,6 +289,7 @@ export const estimarImpuesto = (u) => {
       if (usaOverrideN) {
         impActualNat = impDeclaradoN;
         impOptNat = impDeclaradoN;
+        impBrutoNat = impDeclaradoN;
       }
 
       const ahorroNat = impActualNat - impOptNat;
@@ -303,11 +308,11 @@ export const estimarImpuesto = (u) => {
         impSinOpt: impActualNat, impOptimizado: impOptNat,
         // impBruto/impOptBruto = TOTAL por tabla progresiva o régimen (antes de retención).
         impBruto: impBrutoNat,
-        impOptBruto: regimenN === "simple" ? impBrutoNat : impOpt,
+        impOptBruto: (regimenN === "simple" || usaOverrideN) ? impBrutoNat : impOpt,
         ahorroOptimo: ahorroNat,
         tasa: ingAnual > 0 ? (impActualNat / ingAnual * 100) : 0,
         tasaBruta: ingAnual > 0 ? (impBrutoNat / ingAnual * 100) : 0,
-        espacioParaPVyAFC: espacioPV, reteN, impDiv,
+        espacioParaPVyAFC: espacioPV, reteN: usaOverrideN ? 0 : reteN, impDiv,
       });
     }
   });
