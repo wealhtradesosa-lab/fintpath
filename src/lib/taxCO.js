@@ -67,7 +67,8 @@ export const estimarImpuesto = (u) => {
     const oDeu = deu.filter(d => d.owner === ow.id);
 
     if (isJ) {
-      // ═══ PERSONA JURÍDICA: 35% sobre utilidad ═══
+      // ═══ PERSONA JURÍDICA — Régimen dependiente ═══
+      const regimen = ow.regimen || "ordinario";
       const ingAnual = oIng.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (u.trm || 4200) : 1)), 0) * 12;
       const gastosDeducJ = oGas.reduce((s, g) => s + (g.m || 0), 0) * 12;
       const interesesJ = oDeu.reduce((s, d) => { const saldo = d.mt || 0; const tasa = (d.ts || d.tasa || 0) / 100; return s + saldo * tasa; }, 0);
@@ -81,39 +82,81 @@ export const estimarImpuesto = (u) => {
       const gmf50 = ingAnual * 0.004 * 0.50;
       const totalDeduc = gastosDeducJ + interesesJ + deprec + gmf50;
       const utilidad = Math.max(0, ingAnual - totalDeduc);
-      // Retención automática según tipo de ingreso
+
+      // Sub-tipos de ingresos con tratamiento especial por Art. 48 ET
+      const dividIntersocietarios = oIng.filter(i => /Dividendos/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (u.trm || 4200) : 1)), 0) * 12;
+
+      // Retención automática según tipo de ingreso (solo aplica a régimen ordinario/ZF/CHC; SIMPLE sustituye retención)
       let reteJ = 0;
-      oIng.forEach(i => {
-        const m = (i.mensual || 0) * (i.moneda === "USD" ? (u.trm || 4200) : 1) * 12;
-        const cat = i.categoria || "";
-        if (/Arriendo/i.test(cat)) reteJ += m * 0.035;
-        else if (/Rendimiento|Dividendos/i.test(cat)) reteJ += m * 0.07;
-        else if (/Honorarios|Freelance/i.test(cat)) reteJ += m * 0.11;
-        else reteJ += m * 0.025;
-      });
-      // Descuento 50% ICA
+      if (regimen !== "simple" && regimen !== "exenta") {
+        oIng.forEach(i => {
+          const m = (i.mensual || 0) * (i.moneda === "USD" ? (u.trm || 4200) : 1) * 12;
+          const cat = i.categoria || "";
+          if (/Arriendo/i.test(cat)) reteJ += m * 0.035;
+          else if (/Intereses bancarios|CDT/i.test(cat)) reteJ += m * 0.07;
+          else if (/Utilidad FIC|FIC/i.test(cat)) reteJ += 0; // FIC: retención a nivel del fondo, no del partícipe
+          else if (/Dividendos/i.test(cat)) reteJ += 0; // Inter-societarios: no retención (Art. 48 ET)
+          else if (/Rendimiento/i.test(cat)) reteJ += m * 0.07;
+          else if (/Honorarios|Freelance/i.test(cat)) reteJ += m * 0.11;
+          else reteJ += m * 0.025;
+        });
+      }
+      // Descuento 50% ICA (solo ordinario y zona franca)
       const icaGas = oGas.filter(g => g.cat === "Predial").reduce((s, g) => s + (g.m || 0), 0) * 12 * 0.30;
-      const descICA = icaGas * 0.50;
-      const impBruto = utilidad * 0.35;
-      const impActual = Math.max(0, impBruto - descICA - reteJ);
+      const descICA = (regimen === "ordinario" || regimen === "zona_franca") ? icaGas * 0.50 : 0;
+
+      // ── CÁLCULO POR RÉGIMEN ──
+      let impBruto = 0, baseGravable = utilidad, tarifa = 0, regimenNota = "";
+      if (regimen === "ordinario") {
+        tarifa = 0.35;
+        // Art. 48 ET: dividendos inter-societarios no constitutivos de renta (no se gravan)
+        const baseOrd = Math.max(0, utilidad - dividIntersocietarios);
+        baseGravable = baseOrd;
+        impBruto = baseOrd * 0.35;
+        regimenNota = "Régimen Ordinario 35% sobre utilidad. Dividendos inter-societarios no gravados (Art. 48 ET).";
+      } else if (regimen === "simple") {
+        // SIMPLE: tarifa sobre ingresos brutos. Usamos 5% conservador (promedio grupos 1-4).
+        // Grupos reales: 1.4% (comercio), 3.4% (servicios), 5.0% (consultoría), 11.5% (hidrocarburos).
+        tarifa = 0.05;
+        baseGravable = ingAnual;
+        impBruto = ingAnual * 0.05;
+        regimenNota = "Régimen Simple (RST) — estimación 5% sobre ingresos brutos (aproximación; tarifa real depende de grupo de actividad: 1,4%–11,5%).";
+      } else if (regimen === "zona_franca") {
+        tarifa = 0.20;
+        const baseZF = Math.max(0, utilidad - dividIntersocietarios);
+        baseGravable = baseZF;
+        impBruto = baseZF * 0.20;
+        regimenNota = "Zona Franca — 20% sobre utilidad calificada (Art. 240-1 ET).";
+      } else if (regimen === "chc") {
+        // CHC: dividendos y rentas pasivas de subsidiarias extranjeras pueden ser exentas.
+        // Aproximación conservadora: aplicamos ordinario 35% sobre utilidad después de excluir dividendos.
+        tarifa = 0.35;
+        const baseCHC = Math.max(0, utilidad - dividIntersocietarios);
+        baseGravable = baseCHC;
+        impBruto = baseCHC * 0.35;
+        regimenNota = "CHC (Compañía Holding Colombiana) — 35% sobre utilidad. Exenciones específicas sobre dividendos/ganancias de subsidiarias extranjeras no modeladas automáticamente (Art. 894 ET).";
+      } else if (regimen === "exenta") {
+        tarifa = 0;
+        baseGravable = 0;
+        impBruto = 0;
+        regimenNota = "Régimen de Economía Naranja / Exenta — 0% mientras dure el beneficio (Art. 235-2 ET, numerales 1 y 2).";
+      }
+
+      const impActualCalc = Math.max(0, impBruto - descICA - reteJ);
+      // Override: impuesto declarado por el usuario
+      const impDeclarado = ow.impuestoDeclaradoAnual;
+      const usaOverride = impDeclarado != null && impDeclarado >= 0;
+      const impActual = usaOverride ? impDeclarado : impActualCalc;
       totalImp += impActual;
-      // ── OPTIMIZACIÓN PERSONA JURÍDICA ──
-      // Las estrategias corporativas (bonificaciones extralegales, donaciones Art.257 ET,
-      // provisión cartera Art.145 ET, apalancamiento productivo, depreciación acelerada,
-      // zona franca, etc.) requieren asesoría contable específica — el valor y viabilidad
-      // de cada una depende del caso particular. El simulador NO estima automáticamente
-      // su impacto con porcentajes genéricos porque sería inventar ahorros sin soporte.
-      // → impOptimizado = impActual para jurídica. El usuario puede ajustar manualmente
-      //   con el slider del simulador si aplica estrategias reales con su contador.
+
+      // impOptimizado = impActual para jurídica (sin ahorro fabricado — estrategias requieren contador)
       const impBrutoOpt = impBruto;
       const impOptimoJ = impActual;
       detalle.push({
         name: ow.name, type: "juridica", ingreso: ingAnual,
+        regimen, regimenNota, tarifa, usaOverride, impDeclarado,
         gastosRegistrados: gastosDeducJ, intereses: interesesJ, deprec, gastosDeduc: totalDeduc,
-        // impuesto/impOptimizado = SALDO en declaración (después de descuentos). Legacy.
-        baseGravable: utilidad, impuesto: impActual, impSinOpt: impActual, impOptimizado: impOptimoJ,
-        // impBruto/impOptBruto = TOTAL (35% utilidad, antes de descuentos ICA/reteJ).
-        // reteN = ICA + retenciones recibidas (equivalente a retención en la fuente de natural).
+        baseGravable, impuesto: impActual, impSinOpt: impActual, impOptimizado: impOptimoJ,
         impBruto: impBruto, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
         ahorroOptimo: impActual - impOptimoJ,
         tasa: ingAnual > 0 ? (impActual / ingAnual * 100) : 0,
@@ -215,15 +258,40 @@ export const estimarImpuesto = (u) => {
         if (/Salario/i.test(cat)) { const mUVT = m / 12 / UVT; reteN += m * (mUVT > 360 ? 0.19 : mUVT > 150 ? 0.10 : mUVT > 95 ? 0.04 : 0); }
         else if (/Honorarios|Freelance/i.test(cat)) reteN += m * 0.11;
         else if (/Arriendo/i.test(cat)) reteN += m * 0.035;
-        else if (/Rendimiento|Dividendos|CDT|Inversión/i.test(cat)) reteN += m * 0.07;
+        else if (/Rendimiento|Dividendos|CDT|Inversión|Intereses bancarios/i.test(cat)) reteN += m * 0.07;
       });
-      // Restar retención
-      const impActualNat = Math.max(0, imp - reteN);
-      const impOptNat = Math.max(0, impOpt - reteN);
+
+      // ── RÉGIMEN PARA PERSONA NATURAL ──
+      const regimenN = ow.regimen || "ordinario";
+      let impActualNat, impOptNat, impBrutoNat, regimenNotaN = "";
+      if (regimenN === "simple") {
+        // SIMPLE para natural empresario: ~3% sobre ingresos brutos (promedio grupos 1-3)
+        // Tarifa real depende de actividad: 1.4% comercio, 3.4% servicios, 8.3% hidrocarburos.
+        impBrutoNat = ingAnual * 0.03;
+        impActualNat = impBrutoNat; // SIMPLE sustituye retención
+        impOptNat = impBrutoNat;    // SIMPLE no admite las deducciones de cédula general
+        regimenNotaN = "Régimen Simple (RST) — estimación 3% sobre ingresos brutos (aproximación; tarifa real depende de grupo de actividad: 1,4%–8,3%).";
+      } else {
+        // Ordinario (Cédula General)
+        impBrutoNat = imp;
+        impActualNat = Math.max(0, imp - reteN);
+        impOptNat = Math.max(0, impOpt - reteN);
+        regimenNotaN = "Régimen Ordinario — Cédula General (tabla Art. 241 ET con deducciones).";
+      }
+
+      // Override: impuesto declarado por el usuario
+      const impDeclaradoN = ow.impuestoDeclaradoAnual;
+      const usaOverrideN = impDeclaradoN != null && impDeclaradoN >= 0;
+      if (usaOverrideN) {
+        impActualNat = impDeclaradoN;
+        impOptNat = impDeclaradoN;
+      }
+
       const ahorroNat = impActualNat - impOptNat;
       totalImp += impActualNat;
       detalle.push({
         name: ow.name, type: "natural", ingreso: ingAnual,
+        regimen: regimenN, regimenNota: regimenNotaN, usaOverride: usaOverrideN, impDeclarado: impDeclaradoN,
         ingLaboral, ingCapital, ingNoLaboral, divAnual, pensAnual,
         noConst: totalNoConst, neto: netoLaboral,
         exenta25, deducDep, deducMedicina, deducVivienda, gmfDeducible,
@@ -233,13 +301,12 @@ export const estimarImpuesto = (u) => {
         // impuesto/impOptimizado = SALDO (después de restar retención). Legacy, usado por el cash flow.
         impuesto: impActualNat,
         impSinOpt: impActualNat, impOptimizado: impOptNat,
-        // impBruto/impOptBruto = TOTAL por tabla progresiva (antes de retención). Usado por el display transparente
-        // y por el cash flow correcto (porque la retención ya salió del salario bruto reportado por el usuario).
-        impBruto: imp,
-        impOptBruto: impOpt,
+        // impBruto/impOptBruto = TOTAL por tabla progresiva o régimen (antes de retención).
+        impBruto: impBrutoNat,
+        impOptBruto: regimenN === "simple" ? impBrutoNat : impOpt,
         ahorroOptimo: ahorroNat,
         tasa: ingAnual > 0 ? (impActualNat / ingAnual * 100) : 0,
-        tasaBruta: ingAnual > 0 ? (imp / ingAnual * 100) : 0,
+        tasaBruta: ingAnual > 0 ? (impBrutoNat / ingAnual * 100) : 0,
         espacioParaPVyAFC: espacioPV, reteN, impDiv,
       });
     }

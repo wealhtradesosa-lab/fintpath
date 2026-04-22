@@ -82,49 +82,77 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
     const deuTotal = deu.reduce((s, d) => s + (d.mt || 0), 0);
 
     if (isJ) {
-      // ═══ JURÍDICA ═══
+      // ═══ JURÍDICA — Régimen dependiente ═══
+      const regimen = owner.regimen || "ordinario";
       const gastosDeducAnual = gastosDeducTotal * 12;
-      // GMF 4x1000 (50% deducible)
       const gmf50 = ingAnual * 0.004 * 0.50;
       const totalDeduc = gastosDeducAnual + intereses + deprec + gmf50;
       const utilidadActual = Math.max(0, ingAnual - totalDeduc);
-      // Descuento del 50% del ICA pagado (se resta del impuesto, no de la base)
-      const icaPagado = (gastosByCat["Predial"] ? gastosByCat["Predial"].total : 0) * 12 * 0.30; // ~30% del predial es ICA aprox
-      const descuentoICA = icaPagado * 0.50;
-      const impBruto = utilidadActual * 0.35;
-      
-      // Retención en la fuente automática según tipo de ingreso
+
+      const icaPagado = (gastosByCat["Predial"] ? gastosByCat["Predial"].total : 0) * 12 * 0.30;
+      const descuentoICA = (regimen === "ordinario" || regimen === "zona_franca") ? icaPagado * 0.50 : 0;
+
+      // Sub-tipos de ingresos
+      const dividIntersocietarios = ingresos.filter(i => /Dividendos/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
+
+      // Retención en la fuente (no aplica a SIMPLE ni a régimen exento)
       let retefuenteCalc = 0;
-      ingresos.forEach(i => {
-        const m = (i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1) * 12;
-        const cat = i.categoria || "";
-        if (/Arriendo/i.test(cat)) retefuenteCalc += m * 0.035;
-        else if (/Rendimiento|Dividendos/i.test(cat)) retefuenteCalc += m * 0.07;
-        else if (/Honorarios|Freelance/i.test(cat)) retefuenteCalc += m * 0.11;
-        else if (/Salario/i.test(cat)) retefuenteCalc += m * 0.04;
-        else retefuenteCalc += m * 0.025;
-      });
-      
-      const impActual = Math.max(0, impBruto - descuentoICA - retefuenteCalc);
+      if (regimen !== "simple" && regimen !== "exenta") {
+        ingresos.forEach(i => {
+          const m = (i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1) * 12;
+          const cat = i.categoria || "";
+          if (/Arriendo/i.test(cat)) retefuenteCalc += m * 0.035;
+          else if (/Intereses bancarios|CDT/i.test(cat)) retefuenteCalc += m * 0.07;
+          else if (/Utilidad FIC|FIC/i.test(cat)) retefuenteCalc += 0;
+          else if (/Dividendos/i.test(cat)) retefuenteCalc += 0;
+          else if (/Rendimiento/i.test(cat)) retefuenteCalc += m * 0.07;
+          else if (/Honorarios|Freelance/i.test(cat)) retefuenteCalc += m * 0.11;
+          else if (/Salario/i.test(cat)) retefuenteCalc += m * 0.04;
+          else retefuenteCalc += m * 0.025;
+        });
+      }
+
+      // Cálculo por régimen
+      let impBruto = 0, tarifa = 0, regimenNota = "", baseGravable = utilidadActual;
+      if (regimen === "ordinario") {
+        tarifa = 0.35;
+        const baseOrd = Math.max(0, utilidadActual - dividIntersocietarios);
+        baseGravable = baseOrd;
+        impBruto = baseOrd * 0.35;
+        regimenNota = "Régimen Ordinario 35% sobre utilidad. Dividendos inter-societarios no gravados (Art. 48 ET).";
+      } else if (regimen === "simple") {
+        tarifa = 0.05;
+        baseGravable = ingAnual;
+        impBruto = ingAnual * 0.05;
+        regimenNota = "Régimen Simple (RST) — estimación 5% sobre ingresos brutos (aproximación; tarifa real depende de grupo de actividad: 1,4%–11,5%).";
+      } else if (regimen === "zona_franca") {
+        tarifa = 0.20;
+        const baseZF = Math.max(0, utilidadActual - dividIntersocietarios);
+        baseGravable = baseZF;
+        impBruto = baseZF * 0.20;
+        regimenNota = "Zona Franca — 20% sobre utilidad calificada (Art. 240-1 ET).";
+      } else if (regimen === "chc") {
+        tarifa = 0.35;
+        const baseCHC = Math.max(0, utilidadActual - dividIntersocietarios);
+        baseGravable = baseCHC;
+        impBruto = baseCHC * 0.35;
+        regimenNota = "CHC — 35% sobre utilidad. Exenciones específicas de subsidiarias extranjeras no modeladas automáticamente (Art. 894 ET).";
+      } else if (regimen === "exenta") {
+        tarifa = 0;
+        baseGravable = 0;
+        impBruto = 0;
+        regimenNota = "Economía Naranja / Exenta — 0% mientras dure el beneficio (Art. 235-2 ET).";
+      }
+
+      const impActualCalc = Math.max(0, impBruto - descuentoICA - retefuenteCalc);
+      // Override
+      const impDeclarado = owner.impuestoDeclaradoAnual;
+      const usaOverride = impDeclarado != null && impDeclarado >= 0;
+      const impActual = usaOverride ? impDeclarado : impActualCalc;
       const tasaActual = ingAnual > 0 ? (impActual / ingAnual * 100) : 0;
 
       // CON ESTRATEGIA: sin optimización automática para jurídica
       const pctGastos = ingAnual > 0 ? (totalDeduc / ingAnual * 100) : 0;
-
-      // ── OPTIMIZACIÓN PERSONA JURÍDICA (FASE 1+ — HONESTA) ──
-      // Las estrategias corporativas (bonificaciones extralegales, donaciones Art.257 ET,
-      // provisión de cartera Art.145 ET, apalancamiento productivo, depreciación acelerada,
-      // zona franca, etc.) existen en el Estatuto Tributario, pero su viabilidad y monto
-      // dependen de la estructura contable específica de cada empresa. El simulador NO
-      // aplica porcentajes genéricos — todo número inventado genera expectativas falsas.
-      //
-      // Tampoco aplicamos un "piso de gastos al 55%" automático: la regla "si gastos<50%
-      // los inflamos al 55%" era una heurística arbitraria que generaba ahorros ficticios
-      // para empresas con márgenes altos legítimos (SaaS, consultoría, rentistas).
-      // Si el usuario tiene gastos sin registrar, debe registrarlos — no los inventamos.
-      //
-      // → impOptimo = impActual para jurídica. Consistente con taxCO.js (fuente de verdad
-      //   del cálculo tributario usado por el Simulador Avanzado).
       const impOptimo = impActual;
       const ahorro = 0;
 
@@ -151,7 +179,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       if (descuentoICA > 0) recs.push({ icon: "🏛️", title: "Descuento 50% del ICA: " + fm(descuentoICA), desc: "El 50% del ICA pagado se descuenta directamente del impuesto de renta (Art. 115 ET). No es deducción, es descuento — se resta del impuesto calculado.", impact: 0, color: T.green });
       if (gmf50 > 0) recs.push({ icon: "💳", title: "GMF 4×1000 deducible: " + fm(gmf50), desc: "El 50% del GMF (4×1000) pagado es deducible de la renta. Se calcula automáticamente.", impact: 0, color: T.green });
 
-      return { type: "juridica", ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, totalDeduc, intereses, deprec, patTotal, deuTotal, utilidad: utilidadActual, impBruto, descuentoICA, retefuenteCalc, gmf50, impActual, tasaActual, pctGastos, impOptimo, ahorro, recs };
+      return { type: "juridica", regimen, regimenNota, tarifa, usaOverride, impDeclarado, ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, totalDeduc, intereses, deprec, patTotal, deuTotal, utilidad: utilidadActual, baseGravable, impBruto, descuentoICA, retefuenteCalc, gmf50, impActual, tasaActual, pctGastos, impOptimo, ahorro, recs };
     } else {
       // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022) ═══
       const salAnual = ingresos.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
@@ -267,22 +295,41 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
         if (ingAnual > 200e6) recs.push({ icon: "💡", title: "Para reducir más: redistribuir ingresos", desc: "La única forma de bajar más es mover ingresos a una persona jurídica (SAS). La empresa paga 35% sobre UTILIDAD (después de gastos), no sobre ingreso bruto. Consulta con tu contador.", impact: 0, color: T.purple });
       }
 
-      const impSinFinal = Math.max(0, impSin - retefuenteNat);
-      const impConFinal = Math.max(0, impCon - retefuenteNat);
+      // ── RÉGIMEN PARA PERSONA NATURAL ──
+      const regimenN = owner.regimen || "ordinario";
+      let impSinFinal, impConFinal, regimenNotaN = "";
+      if (regimenN === "simple") {
+        impSinFinal = ingAnual * 0.03;
+        impConFinal = impSinFinal;
+        regimenNotaN = "Régimen Simple (RST) — estimación 3% sobre ingresos brutos (aproximación; tarifa real depende de grupo de actividad: 1,4%–8,3%).";
+      } else {
+        impSinFinal = Math.max(0, impSin - retefuenteNat);
+        impConFinal = Math.max(0, impCon - retefuenteNat);
+        regimenNotaN = "Régimen Ordinario — Cédula General (tabla Art. 241 ET con deducciones).";
+      }
+
+      // Override: impuesto declarado por el usuario
+      const impDeclaradoN = owner.impuestoDeclaradoAnual;
+      const usaOverrideN = impDeclaradoN != null && impDeclaradoN >= 0;
+      if (usaOverrideN) {
+        impSinFinal = impDeclaradoN;
+        impConFinal = impDeclaradoN;
+      }
       const ahorroFinal = impSinFinal - impConFinal;
       const gastosByCatDisplay = gastosByCat;
 
 
 
       return {
-        type: "natural", ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, gastosDeducNat, patTotal, deuTotal,
+        type: "natural", regimen: regimenN, regimenNota: regimenNotaN, usaOverride: usaOverrideN, impDeclarado: impDeclaradoN,
+        ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, gastosDeducNat, patTotal, deuTotal,
         noConst, neto, exenta25, deducDep, deducViv, lim40,
         benefSin, benAplicSin, rentaSin, impSin: impSinFinal, tasaSin: ingAnual > 0 ? (impSinFinal / ingAnual * 100) : 0,
         pvMax, afcMax, benefCon, benAplicCon, rentaCon, impCon: impConFinal, tasaCon: ingAnual > 0 ? (impConFinal / ingAnual * 100) : 0, ahorro: ahorroFinal, pctUsado, retefuenteNat,
         recs
       };
     }
-  }, [ingresos, gastos, inv, deu, trm, isJ]);
+  }, [ingresos, gastos, inv, deu, trm, isJ, owner.regimen, owner.impuestoDeclaradoAnual]);
 
   if (!calc) return (
     <Cd style={{ padding: 24, marginBottom: 16 }}>
@@ -313,7 +360,17 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
           <span style={{ fontSize: 24 }}>{isJ ? "🏢" : "👤"}</span>
           <div>
             <div style={{ fontSize: 18, fontWeight: 700 }}>{owner.name}</div>
-            <div style={{ fontSize: 11, color: T.txt3 }}>{isJ ? "Persona Jurídica — Tarifa 35%" : "Persona Natural — Tabla Art. 241 ET"}</div>
+            <div style={{ fontSize: 11, color: T.txt3, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+              <span>{isJ ? "Persona Jurídica" : "Persona Natural"}</span>
+              <span style={{ background: "rgba(59,130,246,0.12)", color: T.blue, padding: "2px 8px", borderRadius: 99, fontSize: 10, fontWeight: 600 }}>
+                {calc.regimen === "ordinario" ? (isJ ? "Ordinario 35%" : "Cédula General") :
+                 calc.regimen === "simple" ? "Simple (RST)" :
+                 calc.regimen === "zona_franca" ? "Zona Franca 20%" :
+                 calc.regimen === "chc" ? "CHC" :
+                 calc.regimen === "exenta" ? "Exenta" : calc.regimen}
+              </span>
+              {calc.usaOverride && <span style={{ background: "rgba(34,197,94,0.12)", color: T.green, padding: "2px 8px", borderRadius: 99, fontSize: 10, fontWeight: 600 }}>🧾 Impuesto declarado</span>}
+            </div>
           </div>
         </div>
         {ahorro > 100000 && (
@@ -323,6 +380,14 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
           </div>
         )}
       </div>
+
+      {/* Banner de régimen y override */}
+      {(calc.regimenNota || calc.usaOverride) && (
+        <div style={{ padding: "10px 20px", borderBottom: "1px solid " + T.border, background: calc.usaOverride ? "rgba(34,197,94,0.05)" : "rgba(59,130,246,0.04)", fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+          {calc.usaOverride && <div style={{ marginBottom: calc.regimenNota ? 6 : 0 }}><strong style={{ color: T.green }}>🧾 Impuesto declarado:</strong> Este número viene del valor que ingresaste en el perfil de {owner.name} (${fm(calc.impDeclarado)}/año), no del cálculo modelado. El simulador respeta tu dato real.</div>}
+          {calc.regimenNota && <div><span style={{ color: T.blue, fontWeight: 600 }}>ℹ️ {calc.regimenNota}</span></div>}
+        </div>
+      )}
 
       {/* KPIs: Actual vs Estrategia */}
       <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr auto 1fr", gap: 0 }}>
