@@ -60,7 +60,7 @@ function timeAgo(dateStr) {
   return `Hace ${months}m`;
 }
 
-export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient, onViewPersonal, onLogout, onRefreshClients }) {
+export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient, onViewPersonal, onBackToSelector, onLogout, onRefreshClients }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
@@ -135,6 +135,11 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
             <button onClick={onViewPersonal} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
               Mi dashboard personal →
             </button>
+            {onBackToSelector && (
+              <button onClick={onBackToSelector} title="Volver al selector de modo" style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt3, padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>
+                ↻
+              </button>
+            )}
             <button onClick={onLogout} style={{ background: "transparent", border: "none", color: T.txt3, cursor: "pointer", fontSize: 13, padding: "8px 12px" }}>
               Salir
             </button>
