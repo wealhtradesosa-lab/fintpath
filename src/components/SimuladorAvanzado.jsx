@@ -331,7 +331,10 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
     (dynTax.detalle || []).forEach(td => {
       const isOpt = !!taxOptimizado[td.name];
       const anualBase = (isOpt && td.impOptimizado != null) ? td.impOptimizado : (td.impuesto || 0);
-      tTax += Math.round(anualBase / 12);
+      const mesBase = Math.round(anualBase / 12);
+      // Slider override: default = mesBase (dinámico). Si el usuario lo mueve,
+      // aplica una estrategia fiscal adicional que el sistema no modela.
+      tTax += getVal(`tax_${td.name}`, mesBase);
     });
     tD += tTax;
 
@@ -698,13 +701,18 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         const isOpt = !!taxOptimizado[nameKey];
                         const impActualMes = Math.round((grp.tax.impuesto||0)/12);
                         const impOptMes = Math.round((grp.tax.impOptimizado != null ? grp.tax.impOptimizado : (grp.tax.impuesto||0))/12);
-                        const impMes = isOpt ? impOptMes : impActualMes;
-                        const impAnual = impMes * 12;
+                        const baseMes = isOpt ? impOptMes : impActualMes;
+                        // Slider override: default = base (dinámico según toggle)
+                        const simImp = getVal(`tax_${nameKey}`, baseMes);
+                        const simImpAnual = simImp * 12;
                         const ingresoAnual = grp.tax.ingreso || 0;
-                        const tasaEfectiva = ingresoAnual > 0 ? (impAnual / ingresoAnual * 100) : 0;
+                        const tasaEfectiva = ingresoAnual > 0 ? (simImpAnual / ingresoAnual * 100) : 0;
                         const ahorroOpt = (impActualMes - impOptMes) * 12;
-                        const toggleActual = () => setTaxOptimizado(p => ({ ...p, [nameKey]: false }));
-                        const toggleOpt = () => setTaxOptimizado(p => ({ ...p, [nameKey]: true }));
+                        const ajusteExtra = baseMes - simImp; // +: estrategia adicional ahorra, -: conservador
+                        const sliderMax = Math.max(Math.max(impActualMes, impOptMes) * 2, 100000);
+                        // Al cambiar toggle: borrar override para que slider vuelva al nuevo base
+                        const toggleActual = () => { setTaxOptimizado(p => ({ ...p, [nameKey]: false })); setSimVals(p => { const n = { ...p }; delete n[`tax_${nameKey}`]; return n; }); };
+                        const toggleOpt = () => { setTaxOptimizado(p => ({ ...p, [nameKey]: true })); setSimVals(p => { const n = { ...p }; delete n[`tax_${nameKey}`]; return n; }); };
                         return <div>
                           <div style={{display:"flex",gap:6,marginBottom:8}}>
                             <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(255,255,255,0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600}}>Actual: {fm(impActualMes*12)}/año</button>
@@ -714,11 +722,11 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,alignItems:"center"}}>
                               <div>
                                 <div style={{fontSize:9,color:T.txt3,textTransform:"uppercase",letterSpacing:0.5}}>Mensual</div>
-                                <div style={{fontSize:16,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(impMes)}</div>
+                                <div style={{fontSize:16,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImp)}</div>
                               </div>
                               <div>
                                 <div style={{fontSize:9,color:T.txt3,textTransform:"uppercase",letterSpacing:0.5}}>Anual</div>
-                                <div style={{fontSize:16,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(impAnual)}</div>
+                                <div style={{fontSize:16,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImpAnual)}</div>
                               </div>
                               <div>
                                 <div style={{fontSize:9,color:T.txt3,textTransform:"uppercase",letterSpacing:0.5}}>Tasa efectiva</div>
@@ -728,7 +736,17 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                             {ahorroOpt > 0 && !isOpt && <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Optimizar ahorra {fm(ahorroOpt)}/año → activa el toggle para ver el impacto en tu cash flow</div>}
                             {(grp.tax.impuesto||0) === 0 && <div style={{marginTop:6,fontSize:10,color:T.gn,fontWeight:600}}>✅ Retención cubre el impuesto de este propietario</div>}
                           </div>
-                          <div style={{marginTop:4,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4}}>Impuesto recalculado dinámicamente según los ingresos/gastos/deudas ajustados con los sliders.</div>
+                          {/* Slider de ajuste adicional sobre la base dinámica */}
+                          <Slider label={`Ajuste manual — ${isOpt ? "sobre Optimizado" : "sobre Actual"}`} value={simImp} base={baseMes}
+                            max={sliderMax} color={isOpt ? T.gn : "#a78bfa"}
+                            onChange={(v) => setVal(`tax_${nameKey}`, v)}
+                            sub="baja si logras estrategias adicionales (donaciones, depreciación agresiva, etc.)" />
+                          {ajusteExtra !== 0 && <div style={{marginTop:4,fontSize:10,color:ajusteExtra>0?T.gn:T.or,fontWeight:600,paddingLeft:4}}>
+                            {ajusteExtra > 0
+                              ? `🎯 Ahorro adicional sobre ${isOpt?"Optimizado":"Actual"}: ${fm(ajusteExtra*12)}/año`
+                              : `⚠️ Escenario más conservador: +${fm(Math.abs(ajusteExtra)*12)}/año de impuesto`}
+                          </div>}
+                          <div style={{marginTop:4,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4}}>Base dinámica recalculada con los sliders de ingresos/gastos/deudas. Slider manual permite ajustar por estrategias adicionales que el sistema no modela.</div>
                         </div>;
                       })()}
                     </>}
