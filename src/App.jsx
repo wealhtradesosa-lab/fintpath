@@ -277,6 +277,16 @@ export default function FinPath(){
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);
         const d=await sL(data.user.id);
         if(d)setU(sanitize(d));else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id)}
+        // Advisor check: mismo que en mount useEffect. Sin esto, login via form no detecta advisors.
+        try{
+          const{data:advData,error:advErr}=await supabase.from("advisors").select("id,email,firm_name,advisor_plan,max_clients,subscription_status").eq("id",data.user.id).maybeSingle();
+          if(!advErr&&advData){
+            setIsAdvisor(true);
+            setAdvisorProfile(advData);
+            const{data:clientsData}=await supabase.from("advisor_client_data").select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at").eq("advisor_id",data.user.id);
+            if(clientsData)setAdvisorClients(clientsData);
+          }
+        }catch(e){/* silent - not an advisor */}
       }else{
         const sr=await fetch("/.netlify/functions/auth-signup",{
           method:"POST",headers:{"Content-Type":"application/json"},
