@@ -146,7 +146,7 @@ const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div sty
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 export default function FinPath(){
-  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);
+  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);
   // ═══ ADVISOR MODE STATE ═══
   // isAdvisor: true si el usuario loggeado existe en la tabla `advisors`
   // advisorProfile: datos del asesor (plan, max_clients, firm_name, etc.)
@@ -166,9 +166,6 @@ export default function FinPath(){
   const[advisorOwnUser,setAdvisorOwnUser]=useState(null);
   const[currentClient,setCurrentClient]=useState(null);
   const[switchingClient,setSwitchingClient]=useState(false);
-  // Dual-URL intent: consumir flag de sessionStorage puesto por LandingPage/LandingAsesores
-  // al click de "Iniciar Sesión". Una vez leído, se limpia para que no persista.
-  useEffect(()=>{if(!u)return;const intent=typeof window!=="undefined"?sessionStorage.getItem("fp_intent"):null;if(!intent)return;if(intent==="retail")setViewMode("personal");else if(intent==="advisor")setViewMode("workspace");sessionStorage.removeItem("fp_intent")},[u]);
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
   useEffect(()=>{if(mb)sSb(false)},[mb]);
   useEffect(()=>{(async()=>{
@@ -274,19 +271,31 @@ export default function FinPath(){
       if(aM==="login"){
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){const msg=error.message==="Invalid login credentials"?"Email o contraseña incorrectos":error.message==="Email not confirmed"?"Revisa tu email y confirma tu cuenta":error.message;setAuthError(msg);setAuthLoading(false);return}
+        // Advisor lookup: corre SIEMPRE para saber si la cuenta tiene plan Asesor
+        let advData=null;
+        try{
+          const{data:ad,error:advErr}=await supabase.from("advisors").select("id,email,firm_name,advisor_plan,max_clients,subscription_status").eq("id",data.user.id).maybeSingle();
+          if(!advErr) advData=ad;
+        }catch(e){/* silent */}
+        // Validación: si eligió "Asesor" pero la cuenta NO tiene plan Asesor → error y signout
+        if(loginRole==="advisor" && !advData){
+          try{await supabase.auth.signOut()}catch{}
+          setAuthError("Esta cuenta no tiene plan de Asesor activo. Ingresa como Cliente o adquiere el plan en Planes.");
+          setAuthLoading(false);
+          return;
+        }
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);
         const d=await sL(data.user.id);
         if(d)setU(sanitize(d));else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id)}
-        // Advisor check: mismo que en mount useEffect. Sin esto, login via form no detecta advisors.
-        try{
-          const{data:advData,error:advErr}=await supabase.from("advisors").select("id,email,firm_name,advisor_plan,max_clients,subscription_status").eq("id",data.user.id).maybeSingle();
-          if(!advErr&&advData){
-            setIsAdvisor(true);
-            setAdvisorProfile(advData);
-            const{data:clientsData}=await supabase.from("advisor_client_data").select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at").eq("advisor_id",data.user.id);
-            if(clientsData)setAdvisorClients(clientsData);
-          }
-        }catch(e){/* silent - not an advisor */}
+        // Si la cuenta tiene plan Asesor, marca isAdvisor y carga clientes (para poder cambiar de modo si está en personal)
+        if(advData){
+          setIsAdvisor(true);
+          setAdvisorProfile(advData);
+          const{data:clientsData}=await supabase.from("advisor_client_data").select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at").eq("advisor_id",data.user.id);
+          if(clientsData)setAdvisorClients(clientsData);
+        }
+        // viewMode según elección del toggle (respeta la decisión del usuario)
+        setViewMode(loginRole==="advisor"?"workspace":"personal");
       }else{
         const sr=await fetch("/.netlify/functions/auth-signup",{
           method:"POST",headers:{"Content-Type":"application/json"},
@@ -464,9 +473,9 @@ export default function FinPath(){
     // Route: /asesores → Landing dedicada para contadores/asesores (Plan PRO Corporativo)
     const pathname=typeof window!=="undefined"?window.location.pathname:"";
     if(pathname==="/asesores"||pathname==="/asesores/"){
-      return<LandingAsesores onGetStarted={(planKey)=>{sessionStorage.setItem("fp_intent","advisor");setShowAuth(true);if(planKey)sessionStorage.setItem("fp3_advisor_plan_intent",planKey)}}/>;
+      return<LandingAsesores onGetStarted={(planKey)=>{setShowAuth(true);if(planKey)sessionStorage.setItem("fp3_advisor_plan_intent",planKey)}}/>;
     }
-    return<LandingPage onGetStarted={()=>{sessionStorage.setItem("fp_intent","retail");setShowAuth(true)}}/>;
+    return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
   }
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
@@ -482,6 +491,17 @@ export default function FinPath(){
       <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Inicia sesión":"Crea tu cuenta gratis"}</h2>
       <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Accede a tu patrimonio":"14 días de acceso Pro incluidos"}</p>
       <div style={{display:"flex",flexDirection:"column",gap:16,marginBottom:24}}>
+        {aM==="login"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>Ingresar como</label>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {[{v:"client",icon:"👤",label:"Cliente"},{v:"advisor",icon:"💼",label:"Asesor"}].map(o=>{
+              const sel=loginRole===o.v;
+              return<button key={o.v} type="button" onClick={()=>{setLoginRole(o.v);setAuthError("")}} style={{padding:"12px",borderRadius:10,border:"2px solid "+(sel?T.gn:T.border),background:sel?T.gnB:T.bg2,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:sel?T.gn:T.tx2,fontWeight:sel?700:400,fontSize:13,transition:"all .15s"}}>
+                <span style={{fontSize:18}}>{o.icon}</span>{o.label}
+              </button>})}
+          </div>
+          <div style={{fontSize:10,color:T.tx3,marginTop:2}}>{loginRole==="advisor"?"Acceso al workspace de asesor (requiere plan Asesor)":"Acceso a tu dashboard personal"}</div>
+        </div>}
         {aM==="signup"&&<In l="Nombre" value={aF.n} onChange={v=>sAF(p=>({...p,n:v}))} placeholder="Tu nombre"/>}
         <In l="Email" value={aF.e} onChange={v=>sAF(p=>({...p,e:v}))} type="email" placeholder="tu@email.com"/>
         <In l="Contraseña" value={aF.p} onChange={v=>sAF(p=>({...p,p:v}))} type="password" placeholder="••••••••"/>
