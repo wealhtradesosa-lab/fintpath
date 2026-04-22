@@ -97,16 +97,16 @@ export const estimarImpuesto = (u) => {
       const impBruto = utilidad * 0.35;
       const impActual = Math.max(0, impBruto - descICA - reteJ);
       totalImp += impActual;
-      // Estrategias para jurídica
-      const bonif = oGas.filter(g => g.cat === "Nómina").reduce((s, g) => s + (g.m || 0), 0) * 12 * 0.15;
-      const donacion = Math.min(utilidad * 0.10, 500e6);
-      const provision = ingAnual * 0.02;
-      const deudaEstr = oInv.reduce((s, i) => s + (i.va || 0), 0) * 0.03;
-      const estratTotal = bonif + donacion + provision + deudaEstr;
-      const maxRed = utilidad * 0.35;
-      const utilOptima = Math.max(utilidad * 0.40, utilidad - Math.min(estratTotal, maxRed));
-      const impBrutoOpt = utilOptima * 0.35;
-      const impOptimoJ = Math.max(0, impBrutoOpt - descICA - reteJ);
+      // ── OPTIMIZACIÓN PERSONA JURÍDICA ──
+      // Las estrategias corporativas (bonificaciones extralegales, donaciones Art.257 ET,
+      // provisión cartera Art.145 ET, apalancamiento productivo, depreciación acelerada,
+      // zona franca, etc.) requieren asesoría contable específica — el valor y viabilidad
+      // de cada una depende del caso particular. El simulador NO estima automáticamente
+      // su impacto con porcentajes genéricos porque sería inventar ahorros sin soporte.
+      // → impOptimizado = impActual para jurídica. El usuario puede ajustar manualmente
+      //   con el slider del simulador si aplica estrategias reales con su contador.
+      const impBrutoOpt = impBruto;
+      const impOptimoJ = impActual;
       detalle.push({
         name: ow.name, type: "juridica", ingreso: ingAnual,
         gastosRegistrados: gastosDeducJ, intereses: interesesJ, deprec, gastosDeduc: totalDeduc,

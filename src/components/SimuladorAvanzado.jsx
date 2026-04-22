@@ -767,7 +767,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                           {impBrutoActualMes === impBrutoOptMes && impBrutoActualMes > 0 && (
                             <div style={{marginBottom:6,padding:"8px 12px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:8,fontSize:10,color:"#93c5fd",lineHeight:1.5}}>
                               ℹ️ {isJuridica
-                                ? "Las estrategias corporativas estándar (bonificaciones, donaciones, provisiones, deuda) no reducen tu impuesto adicional en este escenario — ya están al tope del modelo. Usá el slider manual para estrategias adicionales (créditos tributarios especiales, renta exenta, zona franca, etc.)."
+                                ? "El simulador no aplica automáticamente estrategias corporativas (bonificaciones, donaciones, provisión de cartera, apalancamiento, depreciación acelerada) porque su valor depende de la estructura contable de cada empresa. Por eso 'Actual' y 'Optimizado' muestran lo mismo para jurídica. Usá el slider manual si tu contador identifica estrategias aplicables a tu caso."
                                 : "La optimización estándar (pensión voluntaria + AFC) no aporta ahorro adicional en tu caso — probablemente ya llegaste al tope del 40% o no tenés suficiente ingreso laboral. Usá el slider manual si podés aplicar estrategias fuera del modelo."}
                             </div>
                           )}

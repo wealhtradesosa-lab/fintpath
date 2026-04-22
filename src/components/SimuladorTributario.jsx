@@ -108,43 +108,44 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       const impActual = Math.max(0, impBruto - descuentoICA - retefuenteCalc);
       const tasaActual = ingAnual > 0 ? (impActual / ingAnual * 100) : 0;
 
-      // CON ESTRATEGIA: optimizaciones activas para reducir utilidad
+      // CON ESTRATEGIA: solo optimizaciones con base legal verificable
       const pctGastos = ingAnual > 0 ? (totalDeduc / ingAnual * 100) : 0;
-      
-      // Estrategias activas
-      const bonificaciones = gastosByCat["Nómina"] ? (gastosByCat["Nómina"].total || 0) * 12 * 0.15 : 0;
-      const donacionSugerida = Math.min(utilidadActual * 0.10, 500e6);
-      const provisionCartera = ingAnual * 0.02;
-      const deprecExtra = Math.min(inv.reduce((s, i) => {
-        const tp = (i.tp || i.tipo || "").toLowerCase();
-        if (/real estate|bodega|local|oficina/i.test(tp)) return s + (i.va || 0) * 0.03;
-        return s;
-      }, 0), utilidadActual * 0.05);
-      // Deuda estratégica: intereses de nueva deuda para inversión productiva
-      const deudaEstrategica = inv.reduce((s, i) => s + (i.va || 0), 0) * 0.03; // 3% del patrimonio en deuda productiva
-      const estrategiasTotal = bonificaciones + donacionSugerida + provisionCartera + deprecExtra + deudaEstrategica;
+
+      // ── OPTIMIZACIÓN PERSONA JURÍDICA (FASE 1 — HONESTA) ──
+      // Las estrategias corporativas (bonificaciones extralegales, donaciones Art.257 ET,
+      // provisión de cartera Art.145 ET, apalancamiento productivo, depreciación acelerada,
+      // zona franca, etc.) existen en el Estatuto Tributario, pero su viabilidad y monto
+      // dependen de la estructura contable específica de cada empresa. El simulador NO
+      // aplica porcentajes genéricos inventados (15% de nómina, 10% de utilidad, 2% de
+      // ingresos, 3% del patrimonio) — eso sería sugerir ahorros sin soporte.
+      //
+      // Único ajuste automático: si los gastos registrados están por debajo del 50% de
+      // ingresos, el simulador asume que hay gastos operativos reales sin registrar y
+      // los sube al 55% (piso razonable para una empresa operativa).
       const gastosExtra = pctGastos < 50 ? Math.max(0, ingAnual * 0.55 - totalDeduc) : 0;
       const maxReduccion = utilidadActual * 0.35;
-      const reduccionAplicada = Math.min(estrategiasTotal + gastosExtra, maxReduccion);
-      const utilidadOptima = Math.max(utilidadActual * 0.40, utilidadActual - reduccionAplicada);
+      const reduccionAplicada = Math.min(gastosExtra, maxReduccion);
+      const utilidadOptima = Math.max(0, utilidadActual - reduccionAplicada);
       const impOptimoBase = utilidadOptima * 0.35;
       const impOptimo = Math.max(0, impOptimoBase - descuentoICA - retefuenteCalc);
       const ahorro = impActual - impOptimo;
 
-      // Recomendaciones
+      // Recomendaciones educativas (sin impacto calculado con porcentajes inventados)
       const recs = [];
       if (!gastosByCat["Nómina"]) recs.push({ icon: "👥", title: "Nómina y empleados", desc: "Salarios y prestaciones son 100% deducibles. Cada $1M en nómina ahorra $350K en impuestos.", impact: 0, color: T.blue });
       if (!gastosByCat["Honorarios"]) recs.push({ icon: "📋", title: "Honorarios profesionales", desc: "Contador, abogado, revisor fiscal. Registra estos gastos como deducibles.", impact: 0, color: T.blue });
       if (!gastosByCat["Mantenimiento"]) recs.push({ icon: "🔧", title: "Mantenimiento de propiedades", desc: "Reparaciones, pintura, plomería — todo deducible para inmuebles de la empresa.", impact: 0, color: T.blue });
       if (!gastosByCat["Predial"]) recs.push({ icon: "🏛️", title: "Predial e impuestos locales", desc: "Predial, ICA, contribuciones — impuestos pagados son deducibles.", impact: 0, color: T.blue });
       if (pctGastos < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + pctGastos.toFixed(0) + "% de ingresos", desc: "Una empresa operativa típica tiene 40-70%. Revisa si faltan gastos por registrar.", impact: gastosExtra > 0 ? gastosExtra * 0.35 : 0, color: T.orange });
+
+      // Estrategias corporativas: educativas — sin estimación de impacto automático
       if (utilidadActual > 50e6) {
-        if (bonificaciones > 500000) recs.push({ icon: "🎁", title: "Bonificaciones a empleados", desc: "Primas extralegales y bonificaciones son 100% deducibles. Motiva al equipo y reduce renta gravable. Estimado: " + fm(bonificaciones) + "/año.", impact: bonificaciones * 0.35, color: T.green });
-        if (donacionSugerida > 1e6) recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Las donaciones dan un DESCUENTO del 25% del valor donado directo del impuesto (no de la base). Además son deducibles. Doble beneficio. Sugerido: " + fm(donacionSugerida) + ".", impact: donacionSugerida * 0.25 + donacionSugerida * 0.35, color: T.green });
-        if (provisionCartera > 1e6) recs.push({ icon: "📋", title: "Provisión de cartera (Art. 145 ET)", desc: "Provisión individual por deterioro de cartera. Si tienes cuentas por cobrar con más de 90 días, puedes provisionar y deducir.", impact: provisionCartera * 0.35, color: T.green });
-        if (deprecExtra > 1e6) recs.push({ icon: "🏗️", title: "Depreciación acelerada", desc: "Evalúa con tu contador aplicar depreciación acelerada en activos productivos. Reduce utilidad gravable hoy, difiere impuesto. Potencial: " + fm(deprecExtra) + "/año.", impact: deprecExtra * 0.35, color: T.green });
-        if (deudaEstrategica > 1e6) recs.push({ icon: "🏦", title: "Apalancamiento financiero", desc: "Crédito para inversión productiva: los intereses son 100% deducibles. Ej: crédito para comprar bodega → genera arriendo + intereses deducibles. Estimado: " + fm(deudaEstrategica) + "/año.", impact: deudaEstrategica * 0.35, color: T.green });
-        recs.push({ icon: "📈", title: "Reinvertir utilidades", desc: "Comprar activos productivos genera depreciación deducible futura. Cada $100M en equipos/vehículos genera $20-33M/año en depreciación.", impact: 0, color: T.purple });
+        recs.push({ icon: "🎁", title: "Bonificaciones a empleados (Art. 107 ET)", desc: "Primas extralegales y bonificaciones son deducibles si cumplen relación de causalidad, necesidad y proporcionalidad. Consulta con tu contador el monto viable según tu estructura de nómina.", impact: 0, color: T.purple });
+        recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Donaciones a entidades sin ánimo de lucro calificadas dan un DESCUENTO del 25% del valor donado, directo del impuesto. El monto recomendable depende de tu estrategia fiscal — tu contador puede calcular el óptimo.", impact: 0, color: T.purple });
+        recs.push({ icon: "📋", title: "Provisión de cartera (Art. 145 ET)", desc: "Provisión individual por deterioro de cartera: aplica si tienes cuentas por cobrar con más de 90 días. El monto deducible depende de tu cartera real — no hay porcentaje automático.", impact: 0, color: T.purple });
+        recs.push({ icon: "🏗️", title: "Depreciación acelerada (Art. 137 ET)", desc: "Evalúa con tu contador aplicar depreciación acelerada en activos productivos. Reduce utilidad gravable hoy, difiere impuesto. Aplica solo a ciertos activos y tasas definidas por reglamento.", impact: 0, color: T.purple });
+        recs.push({ icon: "🏦", title: "Apalancamiento financiero (Art. 117 ET)", desc: "Crédito para inversión productiva: los intereses son deducibles sujetos a subcapitalización. Consulta con tu contador antes de endeudarte solo por el beneficio fiscal.", impact: 0, color: T.purple });
+        recs.push({ icon: "📈", title: "Reinvertir utilidades en activos productivos", desc: "Comprar equipos/vehículos genera depreciación deducible futura. Cada $100M en activos puede generar $20-33M/año en depreciación según vida útil.", impact: 0, color: T.purple });
         recs.push({ icon: "💰", title: "Distribuir dividendos estratégicamente", desc: "En vez de dejar utilidad en la empresa (35%), distribuir dividendos al socio tributa al 15% (>300 UVT). Si la persona natural tiene tasa efectiva menor al 35%, conviene distribuir.", impact: 0, color: T.purple });
       }
       // Siempre mostrar retención y descuentos
@@ -429,16 +430,17 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
           <div style={{ fontSize: 13, color: T.txt3 }}>{fm(impOptimo / 12)}/mes • Tasa: {(tasaOptima || 0).toFixed(1)}%</div>
 
           <div style={{ marginTop: 16, fontSize: 11 }}>
-            <div style={{ fontWeight: 600, color: T.txt2, marginBottom: 6 }}>Optimizaciones aplicadas:</div>
+            <div style={{ fontWeight: 600, color: T.txt2, marginBottom: 6 }}>Optimizaciones automáticas aplicadas:</div>
             {isJ ? <>
-              {calc.pctGastos < 50 && <div style={{ padding: "4px 0", color: T.green }}>✅ Registrar gastos faltantes</div>}
-              <div style={{ padding: "4px 0", color: T.green }}>✅ Intereses deducidos</div>
-              <div style={{ padding: "4px 0", color: T.green }}>✅ Depreciación aplicada</div>
+              {calc.pctGastos < 50 && <div style={{ padding: "4px 0", color: T.green }}>✅ Gastos operativos al 55% (piso razonable)</div>}
+              {calc.pctGastos >= 50 && <div style={{ padding: "4px 0", color: T.txt3 }}>✅ Gastos ya están sobre el 50% — sin ajuste automático</div>}
+              <div style={{ padding: "4px 0", color: T.green }}>✅ Intereses de deudas deducidos</div>
+              <div style={{ padding: "4px 0", color: T.green }}>✅ Depreciación de activos aplicada</div>
               <div style={{ padding: "4px 0", color: T.green }}>✅ GMF 4×1000 (50%)</div>
               {calc.descuentoICA > 0 && <div style={{ padding: "4px 0", color: T.blue }}>✅ Descuento 50% ICA aplicado</div>}
-              {calc.recs.filter(r => r.impact > 0).map((r, i) => (
-                <div key={i} style={{ padding: "4px 0", color: T.green }}>✅ {r.title.split(":")[0]}</div>
-              ))}
+              <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
+                ℹ️ <strong>El simulador no aplica automáticamente</strong> estrategias como bonificaciones, donaciones, provisión de cartera, depreciación acelerada o apalancamiento — su valor depende de tu estructura contable. Mirá las recomendaciones abajo y consultá con tu contador.
+              </div>
             </> : <>
               <div style={{ padding: "4px 0", color: T.green }}>✅ Renta exenta 25% ({fm(calc.exenta25)})</div>
               {calc.deducDep > 0 && <div style={{ padding: "4px 0", color: T.green }}>✅ Dependientes ({fm(calc.deducDep)})</div>}
@@ -481,6 +483,25 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
           </div>
           <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>Calculada automáticamente según tus ingresos: arriendos (3.5%), rendimientos (7%), honorarios (11%), salario (tabla Art. 383). Este valor se descuenta del impuesto. Verifica con tus certificados reales.</div>
           {impActual <= 0 && <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginTop: 6 }}>💰 Saldo a favor estimado: {fm(Math.abs(impActual))}</div>}
+        </div>
+      )}
+
+      {/* DISCLAIMER HONESTO — Solo jurídica */}
+      {isJ && (
+        <div style={{ padding: "14px 20px", borderTop: "1px solid " + T.border, background: "rgba(251,191,36,0.05)" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>⚖️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#fbbf24", marginBottom: 4 }}>Qué modela el simulador — y qué no</div>
+              <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.6 }}>
+                <strong style={{ color: T.green }}>Sí se aplica automáticamente:</strong> tarifa del 35% sobre utilidad (Art. 240 ET), deducción de intereses y gastos operativos registrados, depreciación según tipo de activo, GMF 4×1000 al 50% (Art. 115 ET), descuento del 50% del ICA (Art. 115 ET) y retención en la fuente por tipo de ingreso.
+                <br /><br />
+                <strong style={{ color: "#fbbf24" }}>No se estiman automáticamente:</strong> bonificaciones extralegales, donaciones con descuento (Art. 257 ET), provisión de cartera (Art. 145 ET), depreciación acelerada (Art. 137 ET), apalancamiento productivo (Art. 117 ET), zona franca, créditos tributarios especiales. Existen en el Estatuto Tributario pero su monto viable depende de la estructura contable de cada empresa — el simulador no inventa porcentajes genéricos que no tienen soporte legal universal.
+                <br /><br />
+                <strong>Este simulador no sustituye la asesoría de un contador.</strong> Es una herramienta de referencia basada en los datos que tú registras. Para tu declaración oficial y para estructurar estrategias de optimización específicas, consulta con un contador público.
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
