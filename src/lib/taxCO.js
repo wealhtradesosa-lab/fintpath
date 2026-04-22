@@ -175,12 +175,19 @@ export const estimarImpuesto = (u) => {
       const rentaLiqTrabajo = Math.max(0, netoLaboral - benefLaboral);
 
       // ── 3. RENTAS DE CAPITAL ──
-      const costosCapital = rendAnual * 0.01;
-      const rentaLiqCapital = Math.max(0, ingCapital - costosCapital);
+      // Sin porcentaje automático de costos. El Art. 335-1 ET permite deducir
+      // costos y gastos procedentes, pero el simulador no aplica un 1% genérico
+      // sin soporte. Si el usuario tiene costos reales (custodia, asesorías,
+      // plataformas), debe registrarlos como gastos.
+      const rentaLiqCapital = Math.max(0, ingCapital);
 
       // ── 4. RENTAS NO LABORALES ──
+      // Gastos del inmueble arrendado: deducibles al 100% cuando cumplen
+      // causalidad, necesidad y proporcionalidad con el ingreso (Art. 107 ET).
+      // Predial, administración, mantenimiento, seguros y servicios son gastos
+      // típicos que sí cumplen.
       const gastosInmueble = oGas.filter(g => ["Predial", "Mantenimiento", "Vivienda", "Seguros", "Servicios"].includes(g.cat)).reduce((s, g) => s + (g.m || 0), 0) * 12;
-      const rentaLiqNoLaboral = Math.max(0, ingNoLaboral - gastosInmueble * 0.5);
+      const rentaLiqNoLaboral = Math.max(0, ingNoLaboral - gastosInmueble);
 
       // ── 5. DIVIDENDOS (tarifa especial Art. 242 ET) ──
       const divExentos = Math.min(divAnual, 300 * UVT);

@@ -189,10 +189,14 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       
       // Rentas líquidas por cédula
       const rentaLiqTrabajo = Math.max(0, netoLaboral - benefSin);
-      const costosCapital = rendAnual * 0.01;
-      const rentaLiqCapital = Math.max(0, ingCapital - costosCapital);
+      // Renta de capital: sin porcentaje automático de costos. El Art. 335-1 ET
+      // permite deducir costos y gastos procedentes, pero el simulador no aplica
+      // un 1% genérico — si hay costos reales, el usuario los registra como gastos.
+      const rentaLiqCapital = Math.max(0, ingCapital);
+      // Renta no laboral: gastos del inmueble arrendado son 100% deducibles si
+      // cumplen causalidad, necesidad y proporcionalidad (Art. 107 ET).
       const gastosInmueble = gastos.filter(g => ["Predial","Mantenimiento","Vivienda","Seguros","Servicios"].includes(g.cat)).reduce((s,g) => s + (g.m||0), 0) * 12;
-      const rentaLiqNoLaboral = Math.max(0, ingNoLaboral - gastosInmueble * 0.5);
+      const rentaLiqNoLaboral = Math.max(0, ingNoLaboral - gastosInmueble);
       
       // Dividendos tarifa especial
       const divExentos = Math.min(divAnual, 300 * UVT);
@@ -244,7 +248,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       const invInmuebles = inv.filter(i => /Real Estate|bodega|local|oficina/i.test((i.tp||i.tipo||"").toLowerCase()));
       if (tieneArriendos && invInmuebles.length > 0) {
         const deprecInmuebles = invInmuebles.reduce((s,i) => s + (i.va||0) * 0.0222, 0);
-        recs.push({ icon: "🏠", title: "Depreciación de inmuebles arrendados", desc: "Tus inmuebles en arriendo se deprecian 2.22%/año. Esto reduce la renta no laboral directamente. Depreciación estimada: " + fm(deprecInmuebles) + "/año.", impact: deprecInmuebles * 0.28, color: T.green });
+        recs.push({ icon: "🏠", title: "Depreciación de inmuebles arrendados (Art. 137 ET)", desc: "Tus inmuebles en arriendo se deprecian 2,22%/año (vida útil 45 años). Esto reduce la renta no laboral directamente. Depreciación anual estimada: " + fm(deprecInmuebles) + ". El ahorro efectivo depende de tu tasa marginal (entre 19% y 39% según tu ingreso) — tu contador puede calcular el valor exacto.", impact: 0, color: T.purple });
       }
       
       // Donaciones con descuento tributario (Art. 257 ET)
