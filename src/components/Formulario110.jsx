@@ -836,6 +836,20 @@ function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGra
               { label: "Retenciones en la fuente", actual: retenciones, anterior: anterior.retenciones, sugerencia: "Las retenciones deberían ser proporcionales a los ingresos. Delta muy grande puede ser falta de certificados de retención." },
               { label: "Impuesto neto de renta", actual: totalImpuesto, anterior: anterior.impuestoRenta, sugerencia: totalImpuesto > anterior.impuestoRenta * 1.5 ? "Revisá si hay gastos o deducciones (depreciación, nómina, ICA) que no cargaste." : null },
             ].filter(c => c.anterior > 0)}
+            patronesContext={{
+              actual: {
+                ingresos: (+data.ingresos?.operacionales || 0) + (+data.ingresos?.noOperacionales || 0) + (+data.ingresos?.dividendos || 0),
+                retenciones: retenciones,
+                impuesto: totalImpuesto,
+                dividendos: +data.ingresos?.dividendos || 0,
+              },
+              anterior: {
+                ingresos: (anterior.ingresosOperacionales || 0) + (anterior.ingresosNoOperacionales || 0) + (anterior.dividendos || 0),
+                retenciones: anterior.retenciones || 0,
+                impuesto: anterior.impuestoRenta || 0,
+                dividendos: anterior.dividendos || 0,
+              },
+            }}
           />
         )}
       </Section>

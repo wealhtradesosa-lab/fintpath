@@ -77,12 +77,92 @@ export function calcAlertasAnoAnterior(comparaciones) {
   return alertas;
 }
 
-export default function AlertasAnoAnterior({ comparaciones, anoAnterior }) {
-  const alertas = calcAlertasAnoAnterior(comparaciones);
-  if (alertas.length === 0) return null;
+// Detecta PATRONES ANÓMALOS cruzados entre varias variables de la
+// declaración. Estos patrones no se ven mirando un campo aislado — solo
+// emergen cuando se comparan relaciones entre campos.
+//
+// ctx:
+//   actual:   { ingresos, retenciones, impuesto, salarios, aportesPension,
+//               interesesVivienda, dependientes, dividendos }
+//   anterior: { ...mismos campos... }
+//
+// Retorna array de { severity, label, sugerencia } — mismo shape que
+// calcAlertasAnoAnterior pero sin deltaPct (no aplica).
+export function calcPatronesAnomalos(ctx) {
+  const patrones = [];
+  const a = ctx?.actual || {};
+  const p = ctx?.anterior || {};
+  const MIN = 1_000_000;
 
-  const critical = alertas.filter(a => a.severity === "critical");
-  const warning = alertas.filter(a => a.severity === "warning");
+  // Patrón 1: ingresos↑ pero retenciones↓ (inconsistencia temporal)
+  if (p.ingresos > MIN && p.retenciones > MIN && a.ingresos > MIN) {
+    const deltaIng = ((a.ingresos - p.ingresos) / p.ingresos) * 100;
+    const deltaRet = a.retenciones > 0 ? ((a.retenciones - p.retenciones) / p.retenciones) * 100 : -100;
+    if (deltaIng > 15 && deltaRet < -15) {
+      patrones.push({
+        severity: "critical",
+        label: "Retenciones inconsistentes con ingresos",
+        sugerencia: `Los ingresos subieron ${deltaIng.toFixed(0)}% pero las retenciones bajaron ${Math.abs(deltaRet).toFixed(0)}%. Normalmente más ingresos = más retenciones. Verificá que tengas TODOS los certificados de retención del año — es muy común olvidar alguno, especialmente si cambiaste de pagador.`,
+      });
+    }
+  }
+
+  // Patrón 2: impuesto↑ mucho sin ingresos↑ (faltan deducciones)
+  if (p.impuesto > MIN && a.impuesto > MIN && p.ingresos > MIN && a.ingresos > MIN) {
+    const deltaImp = ((a.impuesto - p.impuesto) / p.impuesto) * 100;
+    const deltaIng = ((a.ingresos - p.ingresos) / p.ingresos) * 100;
+    if (deltaImp > 30 && deltaIng < 15) {
+      patrones.push({
+        severity: "warning",
+        label: "Impuesto sube más de lo esperado",
+        sugerencia: `El impuesto subió ${deltaImp.toFixed(0)}% pero los ingresos solo ${deltaIng > 0 ? "+" : ""}${deltaIng.toFixed(0)}%. Revisá si te faltaron deducciones del año pasado: intereses de vivienda, dependientes, medicina prepagada, aportes a pensión voluntaria o AFC. Cada uno vale hasta varios millones en impuesto.`,
+      });
+    }
+  }
+
+  // Patrón 3: deducciones clave desaparecieron
+  if (p.interesesVivienda > MIN && (!a.interesesVivienda || a.interesesVivienda < MIN)) {
+    patrones.push({
+      severity: "warning",
+      label: "Intereses de vivienda: desaparecieron",
+      sugerencia: `El año anterior dedujiste $${Math.round(p.interesesVivienda).toLocaleString("es-CO")} en intereses de crédito de vivienda y este año está en cero. ¿Pagaste totalmente el crédito, lo transferiste, o se te olvidó cargar? Si el crédito sigue activo, solicitá el certificado al banco.`,
+    });
+  }
+  if (p.dependientes > MIN && (!a.dependientes || a.dependientes < MIN)) {
+    patrones.push({
+      severity: "warning",
+      label: "Deducción por dependientes: desapareció",
+      sugerencia: `El año anterior dedujiste $${Math.round(p.dependientes).toLocaleString("es-CO")} por dependientes y este año está en cero. ¿Tus hijos/padres ya no son dependientes (cumplieron edad, tienen ingresos propios) o se te olvidó? Es una de las deducciones más fáciles de documentar.`,
+    });
+  }
+
+  // Patrón 4: ingresos altos pero retenciones = 0
+  if (a.ingresos > 100e6 && (!a.retenciones || a.retenciones < 100000) && p.retenciones > MIN) {
+    patrones.push({
+      severity: "critical",
+      label: "Sin retenciones con ingresos altos",
+      sugerencia: `Ingresos declarados de $${Math.round(a.ingresos / 1e6)}M pero retenciones en cero. El año pasado declaraste $${Math.round(p.retenciones).toLocaleString("es-CO")} en retenciones. Si sos empleado o prestás servicios profesionales, casi seguro te están practicando retención — revisá que no se te olvidó ningún certificado.`,
+    });
+  }
+
+  // Patrón 5: dividendos declarados año pasado, este no
+  if (p.dividendos > MIN && (!a.dividendos || a.dividendos < MIN)) {
+    patrones.push({
+      severity: "warning",
+      label: "Dividendos: ausentes este año",
+      sugerencia: `El año pasado declaraste $${Math.round(p.dividendos).toLocaleString("es-CO")} en dividendos y este año no hay. Si seguís siendo socio de esa empresa, pediles el certificado de distribuciones del año. Los dividendos son uno de los valores más fáciles de omitir porque no los pagás de tu bolsillo.`,
+    });
+  }
+
+  return patrones;
+}
+
+export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patronesContext }) {
+  const alertas = calcAlertasAnoAnterior(comparaciones);
+  const patrones = patronesContext ? calcPatronesAnomalos(patronesContext) : [];
+  if (alertas.length === 0 && patrones.length === 0) return null;
+
+  const critical = [...alertas, ...patrones].filter(a => a.severity === "critical");
 
   return (
     <div style={{
@@ -99,7 +179,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior }) {
         {critical.length > 0 ? "🚨" : "⚠️"}
         Alertas de consistencia vs año {anoAnterior || "anterior"}
         <span style={{ color: T.txt3, fontWeight: 400, fontSize: 10, marginLeft: 4 }}>
-          ({alertas.length} diferencia{alertas.length !== 1 ? "s" : ""} significativa{alertas.length !== 1 ? "s" : ""})
+          ({alertas.length + patrones.length} señal{(alertas.length + patrones.length) !== 1 ? "es" : ""})
         </span>
       </div>
 
@@ -108,7 +188,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior }) {
           const color = a.severity === "critical" ? T.red : T.orange;
           const icon = a.deltaPct > 0 ? "▲" : "▼";
           return (
-            <div key={i} style={{
+            <div key={"d" + i} style={{
               padding: "8px 10px",
               background: "rgba(255,255,255,0.02)",
               borderRadius: 8,
@@ -127,6 +207,30 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior }) {
               {a.sugerencia && (
                 <div style={{ color: T.txt2, marginTop: 4, fontSize: 10, lineHeight: 1.4 }}>
                   → {a.sugerencia}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {patrones.map((p, i) => {
+          const color = p.severity === "critical" ? T.red : T.orange;
+          return (
+            <div key={"p" + i} style={{
+              padding: "8px 10px",
+              background: "rgba(255,255,255,0.02)",
+              borderRadius: 8,
+              borderLeft: "2px solid " + color,
+              fontSize: 11,
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
+                <span style={{ color: T.txt, fontWeight: 600 }}>🔀 {p.label}</span>
+                <span style={{ color: color, fontWeight: 700, fontSize: 9, textTransform: "uppercase" }}>
+                  Patrón cruzado
+                </span>
+              </div>
+              {p.sugerencia && (
+                <div style={{ color: T.txt2, marginTop: 4, fontSize: 10, lineHeight: 1.4 }}>
+                  → {p.sugerencia}
                 </div>
               )}
             </div>

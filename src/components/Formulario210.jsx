@@ -425,15 +425,42 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
         ...(saldoFavor > 0 ? [{ label: "✅ SALDO A FAVOR", value: fm(saldoFavor), highlight: true, color: T.green }] : []),
       ]} />
 
-      {anterior && (
+      {anterior && (() => {
+        const ingP = data.ingresos || {};
+        const depP = data.depuracion || {};
+        const ocP = data.otrasCedulas || {};
+        return (
         <AlertasAnoAnterior
           anoAnterior={anterior.anoGravable}
           comparaciones={[
             { label: "Retenciones en la fuente", actual: retencionesAño, anterior: anterior.retenciones, sugerencia: "Si bajó significativamente, revisá que tengas todos los certificados de retención del año." },
             { label: "Impuesto total", actual: impuestoNeto, anterior: anterior.impuestoRenta, sugerencia: anterior.impuestoRenta > 0 && impuestoNeto > anterior.impuestoRenta * 1.5 ? "El impuesto subió mucho. Puede ser correcto si subieron ingresos, pero también revisá si te faltaron deducciones (intereses vivienda, dependientes, medicina prepagada, AFC, pensión voluntaria)." : null },
           ].filter(c => c.anterior > 0)}
+          patronesContext={{
+            actual: {
+              ingresos: (+ingP.salarios || 0) + (+ingP.honorarios || 0) + (+ingP.intereses || 0) + (+ingP.arrendamientos || 0),
+              retenciones: retencionesAño,
+              impuesto: impuestoNeto,
+              salarios: +ingP.salarios || 0,
+              aportesPension: +depP.aportesPensionObligatoria || 0,
+              interesesVivienda: +depP.interesesVivienda || 0,
+              dependientes: +depP.dependientes || 0,
+              dividendos: (+ocP.divArt49Gravada || 0) + (+ocP.divArt49NoGravados || 0) + (+ocP.divExteriorYOtros || 0),
+            },
+            anterior: {
+              ingresos: (anterior.salarios || 0) + (anterior.honorarios || 0) + (anterior.intereses || 0) + (anterior.arrendamientos || 0),
+              retenciones: anterior.retenciones || 0,
+              impuesto: anterior.impuestoRenta || 0,
+              salarios: anterior.salarios || 0,
+              aportesPension: anterior.aportesObligatorios || 0,
+              interesesVivienda: anterior.interesesVivienda || 0,
+              dependientes: anterior.dependientes || 0,
+              dividendos: anterior.dividendos || 0,
+            },
+          }}
         />
-      )}
+        );
+      })()}
     </>
   );
 }
