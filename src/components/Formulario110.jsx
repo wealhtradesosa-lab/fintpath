@@ -21,6 +21,7 @@
 
 import { useState, useMemo } from "react";
 import AlertasAnoAnterior from "./AlertasAnoAnterior.jsx";
+import MiniGraficaAnosAnteriores from "./MiniGraficaAnosAnteriores.jsx";
 
 const UVT = 52374; // UVT 2026
 
@@ -827,6 +828,17 @@ function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGra
             <div style={{ fontSize: 28, fontWeight: 800, color: T.green, fontFamily: "monospace", marginTop: 4 }}>{fm(saldoAFavor)}</div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Devolución o compensación disponible.</div>
           </div>
+        )}
+        {serie && serie.length >= 1 && (
+          <MiniGraficaAnosAnteriores
+            serie={serie}
+            anoActual={data.identificacion?.anoGravable || String(new Date().getFullYear() - 1)}
+            valoresActuales={{
+              ingresos: (+data.ingresos?.operacionales || 0) + (+data.ingresos?.noOperacionales || 0) + (+data.ingresos?.dividendos || 0),
+              retenciones: retenciones,
+              impuesto: totalImpuesto,
+            }}
+          />
         )}
         {anterior?.impuestoRenta > 0 && (
           <AlertasAnoAnterior

@@ -30,6 +30,7 @@ import { useState, useMemo } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
 import { calcImpRenta as calcImpRentaCore } from "../lib/tablaArt241.js";
 import AlertasAnoAnterior from "./AlertasAnoAnterior.jsx";
+import MiniGraficaAnosAnteriores from "./MiniGraficaAnosAnteriores.jsx";
 
 const UVT = 52374; // UVT 2026
 
@@ -424,6 +425,22 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
         ...(saldoPagar > 0 ? [{ label: "💰 SALDO A PAGAR", value: fm(saldoPagar), highlight: true, color: T.red }] : []),
         ...(saldoFavor > 0 ? [{ label: "✅ SALDO A FAVOR", value: fm(saldoFavor), highlight: true, color: T.green }] : []),
       ]} />
+
+      {serie && serie.length >= 1 && (() => {
+        const ingP = data.ingresos || {};
+        const ocP = data.otrasCedulas || {};
+        return (
+          <MiniGraficaAnosAnteriores
+            serie={serie}
+            anoActual={data.identificacion?.anoGravable || String(new Date().getFullYear() - 1)}
+            valoresActuales={{
+              ingresos: (+ingP.salarios || 0) + (+ingP.honorarios || 0) + (+ingP.intereses || 0) + (+ingP.arrendamientos || 0) + (+ocP.pensionesBruto || 0) + (+ocP.divArt49Gravada || 0) + (+ocP.divArt49NoGravados || 0) + (+ocP.divExteriorYOtros || 0),
+              retenciones: retencionesAño,
+              impuesto: impuestoNeto,
+            }}
+          />
+        );
+      })()}
 
       {anterior && (() => {
         const ingP = data.ingresos || {};
