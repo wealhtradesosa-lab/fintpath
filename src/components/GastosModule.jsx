@@ -25,6 +25,70 @@ const DIAN_REGLAS = {
   juridica: { "Nómina": "✅ Deducible", "Honorarios": "✅ Deducible", "Vivienda": "✅ Deducible", "Servicios": "✅ Deducible", "Mantenimiento": "✅ Deducible", "Seguros": "✅ Deducible", "Transporte": "✅ Deducible", "Arrendamiento": "✅ Deducible", "Predial": "✅ Deducible", "Representación": "✅ Deducible", "Tecnología": "✅ Deducible", "Educación": "✅ Deducible", "Seguridad Social": "✅ Deducible", "Depreciación": "✅ Deducible", "Salud": "❌", "Alimentación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Mascotas": "❌", "Deporte": "❌", "Ahorro": "❌", "Otro": "📊 50%" }
 };
 
+// Sub-opciones de fiscalCode según (owner type, categoría). Si la combinación
+// no aparece aquí, no hay ambigüedad y el fiscalCode se infiere automático.
+// Devuelve null si no hay sub-selector.
+function fiscalSubOptions(ownerType, cat) {
+  if (ownerType === "natural") {
+    // Gastos que pueden ser del inmueble arrendado o personales
+    if (["Predial", "Vivienda", "Mantenimiento", "Servicios", "Seguros", "Arrendamiento"].includes(cat)) {
+      return {
+        question: "🏠 ¿Es del inmueble arrendado o de tu vivienda personal?",
+        help: "Si es del inmueble que arrendás a terceros, se deduce 100% de la renta no laboral (Art. 107 ET). Si es personal, no deduce.",
+        options: [
+          { v: "GAS_NAT_PERSONAL", l: "Personal — mi vivienda (no deducible)" },
+          { v: cat === "Predial" ? "GAS_INMUEBLE_PREDIAL"
+              : cat === "Mantenimiento" ? "GAS_INMUEBLE_MANTENIMIENTO"
+              : cat === "Servicios" ? "GAS_INMUEBLE_SERVICIOS"
+              : cat === "Seguros" ? "GAS_INMUEBLE_SEGUROS"
+              : "GAS_INMUEBLE_ADMINISTRACION", l: "Del inmueble arrendado (deducible 100%)" },
+        ],
+      };
+    }
+    return null;
+  }
+  if (ownerType === "juridica") {
+    // Gastos donde la causalidad con la actividad productora de renta (Art. 107) es clave
+    if (["Educación", "Vivienda", "Alimentación", "Entretenimiento", "Transporte", "Representación"].includes(cat)) {
+      const opDeducible = cat === "Educación" ? "GAS_JUR_CAPACITACION" : "GAS_JUR_OPERATIVO";
+      return {
+        question: "🧾 ¿Está relacionado con la actividad productora de renta? (Art. 107 ET)",
+        help: "Art. 107 ET exige causalidad, necesidad y proporcionalidad con la actividad. Ej. Educación de empleados sí deduce; colegio de hijos del socio no.",
+        options: [
+          { v: opDeducible, l: "Sí — relacionado con la actividad (deducible)" },
+          { v: "GAS_JUR_NO_DEDUCIBLE", l: "No — gasto personal o sin nexo (NO deducible)" },
+        ],
+      };
+    }
+    return null;
+  }
+  return null;
+}
+
+// Default fiscalCode conservador según (owner type, categoría) — replica el
+// normalizer cuando el usuario no ha elegido explícitamente.
+function defaultFiscalCode(ownerType, cat) {
+  if (ownerType === "juridica") {
+    if (cat === "Nómina") return "GAS_JUR_NOMINA";
+    if (cat === "Honorarios") return "GAS_JUR_HONORARIOS_PROF";
+    if (cat === "Predial") return "GAS_JUR_PREDIAL";
+    if (cat === "Depreciación") return "GAS_JUR_DEPRECIACION";
+    if (["Educación"].includes(cat)) return "GAS_JUR_CAPACITACION";
+    if (["Alimentación", "Entretenimiento", "Personal", "Vestimenta", "Mascotas", "Deporte", "Ahorro"].includes(cat)) return "GAS_JUR_NO_DEDUCIBLE";
+    return "GAS_JUR_OPERATIVO";
+  }
+  // natural
+  if (cat === "Salud") return "GAS_NAT_SALUD_MEDICINA";
+  if (cat === "Predial") return "GAS_INMUEBLE_PREDIAL";
+  if (cat === "Mantenimiento") return "GAS_INMUEBLE_MANTENIMIENTO";
+  if (cat === "Vivienda" || cat === "Arrendamiento") return "GAS_INMUEBLE_ADMINISTRACION";
+  if (cat === "Servicios") return "GAS_INMUEBLE_SERVICIOS";
+  if (cat === "Seguros") return "GAS_INMUEBLE_SEGUROS";
+  if (cat === "Depreciación") return "GAS_INMUEBLE_DEPRECIACION";
+  if (cat === "Ahorro") return "GAS_NAT_AHORRO";
+  return "GAS_NAT_PERSONAL";
+}
+
 export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, plan, onUpgrade}) {
   const [scanning, setScanning] = useState(false);
 
@@ -75,7 +139,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
-  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "" });
+  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "" });
   const [selected, setSelected] = useState(new Set()); // "cat|idx"
 
   const gas = gastos || {};
@@ -108,29 +172,29 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         newGas[eCat] = newGas[eCat].filter((_, i) => i !== idx);
         if (newGas[eCat].length === 0) delete newGas[eCat];
         if (!newGas[form.cat]) newGas[form.cat] = [];
-        newGas[form.cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"" });
+        newGas[form.cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined });
       } else {
-        newGas[eCat][idx] = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"" };
+        newGas[eCat][idx] = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined };
       }
     } else {
       const cat = form.cat || "Otro";
       if (!newGas[cat]) newGas[cat] = [];
-      newGas[cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"" });
+      newGas[cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined });
     }
     onUpdate(newGas);
     setShowForm(false);
     setEditKey(null);
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "" });
   };
 
   const openEdit = (item) => {
-    setForm({ cat: item.cat, c: item.c, m: item.freq==="año"?(item.m*12):item.m, t: item.t, freq: item.freq||"mes", owner: item.owner||"" });
+    setForm({ cat: item.cat, c: item.c, m: item.freq==="año"?(item.m*12):item.m, t: item.t, freq: item.freq||"mes", owner: item.owner||"", fiscalCode: item.fiscalCode || "" });
     setEditKey(item.key);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "" });
     setEditKey(null);
     setShowForm(true);
   };
@@ -284,12 +348,40 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   </>}
                 </div>
               )}
-              <In l="Categoría" value={form.cat} onChange={(v) => setForm((p) => ({ ...p, cat: v }))} options={[{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Predial",l:"🏛️ Predial e impuestos locales (ICA)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
+              <In l="Categoría" value={form.cat} onChange={(v) => {
+                const ow = (owners || []).find(o => o.id === form.owner);
+                const ownerType = ow ? ow.type : "natural";
+                setForm((p) => ({ ...p, cat: v, fiscalCode: defaultFiscalCode(ownerType, v) }));
+              }} options={[{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Predial",l:"🏛️ Predial e impuestos locales (ICA)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
               <div style={{display:"flex",gap:8}}><div style={{flex:1}}><In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" /></div><div style={{flex:1}}>
               <In l="Frecuencia" value={form.freq} onChange={(v) => setForm((p) => ({ ...p, freq: v }))} options={[{ v: "mes", l: "Mensual" }, { v: "año", l: "Anual" }]} /></div></div>
-              <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
+              <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => {
+                const ow = (owners || []).find(o => o.id === v);
+                const ownerType = ow ? ow.type : "natural";
+                setForm((p) => ({ ...p, owner: v, fiscalCode: defaultFiscalCode(ownerType, p.cat) }));
+              }} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
               <div style={{fontSize:10,color:"#71717a",marginTop:-8,marginBottom:8,padding:"0 4px"}}>Si asignas propietario, se incluirá en el cálculo de impuestos. Si no, se omite.</div>
+              {(() => {
+                const ow = (owners || []).find(o => o.id === form.owner);
+                if (!ow || ow.type !== "juridica") return null;
+                // Sub-selector solo para categorías ambiguas en jurídica donde
+                // la causalidad Art. 107 ET no es obvia por la categoría sola.
+                const ambiguous = ["Educación", "Vivienda", "Alimentación", "Entretenimiento", "Vestimenta", "Personal", "Salud", "Transporte"];
+                if (!ambiguous.includes(form.cat)) return null;
+                return (
+                  <div style={{background:"rgba(249,115,22,0.04)",border:"1px solid rgba(249,115,22,0.2)",borderRadius:10,padding:"12px 14px",marginTop:4}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#f97316",marginBottom:8}}>🧾 ¿Este gasto cumple causalidad con la actividad de la empresa? (Art. 107 ET)</div>
+                    <select value={form.fiscalCode || "GAS_JUR_NO_DEDUCIBLE"} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
+                      style={{width:"100%",background:"#1e1e24",border:"1px solid rgba(255,255,255,0.06)",color:"#fafafa",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}>
+                      <option value="GAS_JUR_CAPACITACION">Capacitación empleados / relacionado con actividad productora — deducible</option>
+                      <option value="GAS_JUR_OPERATIVO">Gasto operativo del negocio — deducible</option>
+                      <option value="GAS_JUR_NO_DEDUCIBLE">Gasto personal del socio o sin relación con actividad — NO deducible</option>
+                    </select>
+                    <div style={{fontSize:10,color:"#a1a1aa",marginTop:6,lineHeight:1.5}}>Art. 107 ET exige causalidad, necesidad y proporcionalidad. Ej.: colegio de hijos del socio = NO deducible aunque lo pague la SAS. Cursos de contabilidad para empleados = SÍ deducible.</div>
+                  </div>
+                );
+              })()}
               <In l="Tipo" value={form.t} onChange={(v) => setForm((p) => ({ ...p, t: v }))} options={[{ v: "f", l: "Fijo" }, { v: "v", l: "Variable" }]} />
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>

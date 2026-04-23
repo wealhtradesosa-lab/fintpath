@@ -92,6 +92,32 @@ const scenarios = [
       trm: 4200,
     },
   },
+  {
+    label: "8. SAS con $100M ingreso + $5M gastos Alimentación (sin fiscalCode → inferencia = NO DEDUCIBLE Art. 107 ET) — esperado: NO se deduce, utilidad casi intacta",
+    u: {
+      owners: [{ id: "sas", name: "SAS Test", type: "juridica", regimen: "ordinario" }],
+      ingresos: [{ id: "i1", categoria: "Otro", mensual: 100_000_000 / 12, owner: "sas", moneda: "COP" }],
+      gas: {
+        "Alimentación": [{ c: "Almuerzos socio", m: 5_000_000 / 12, owner: "sas", t: "v" }],
+      },
+      deu: [],
+      inv: [],
+      trm: 4200,
+    },
+  },
+  {
+    label: "9. MISMA SAS, ahora gastos marcados EXPLICITAMENTE como capacitación empleados (deducible) — esperado: impuesto MENOR al escenario 8",
+    u: {
+      owners: [{ id: "sas", name: "SAS Test", type: "juridica", regimen: "ordinario" }],
+      ingresos: [{ id: "i1", categoria: "Otro", mensual: 100_000_000 / 12, owner: "sas", moneda: "COP" }],
+      gas: {
+        "Educación": [{ c: "Curso empleados", m: 5_000_000 / 12, owner: "sas", t: "f", fiscalCode: "GAS_JUR_CAPACITACION" }],
+      },
+      deu: [],
+      inv: [],
+      trm: 4200,
+    },
+  },
 ];
 
 console.log(`\n═══ VERIFICADOR MOTOR TRIBUTARIO · UVT ${UVT} ═══\n`);
