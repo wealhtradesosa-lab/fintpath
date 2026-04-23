@@ -1,0 +1,164 @@
+{
+  "s1_lagoon_vacio": {
+    "totalImpuesto": 0,
+    "sinClasificar": 0,
+    "owner": {
+      "type": null,
+      "ingreso": 0,
+      "baseGravable": 0,
+      "impBruto": 0,
+      "reteN": 0,
+      "impuesto": 0,
+      "tasa": 0,
+      "gastosDeduc": 0,
+      "intereses": 0,
+      "deprec": 0,
+      "neto": 0,
+      "noConst": 0
+    }
+  },
+  "s2_lagoon_arriendos": {
+    "totalImpuesto": 107307900,
+    "sinClasificar": 0,
+    "owner": {
+      "type": "juridica",
+      "ingreso": 453000000,
+      "baseGravable": 351894000,
+      "impBruto": 123162900,
+      "reteN": 15855000,
+      "impuesto": 107307900,
+      "tasa": 23.7,
+      "gastosDeduc": 101106000,
+      "intereses": 100200000,
+      "deprec": 0,
+      "neto": 0,
+      "noConst": 0
+    }
+  },
+  "s3_lagoon_depreciacion": {
+    "totalImpuesto": 96807900,
+    "sinClasificar": 0,
+    "owner": {
+      "type": "juridica",
+      "ingreso": 453000000,
+      "baseGravable": 321894000,
+      "impBruto": 112662900,
+      "reteN": 15855000,
+      "impuesto": 96807900,
+      "tasa": 21.4,
+      "gastosDeduc": 131106000,
+      "intereses": 100200000,
+      "deprec": 30000000,
+      "neto": 0,
+      "noConst": 0
+    }
+  },
+  "s4_sas_dividendos_intersocietarios": {
+    "totalImpuesto": 0,
+    "sinClasificar": 0,
+    "owner": {
+      "type": "juridica",
+      "ingreso": 100000000,
+      "baseGravable": 0,
+      "impBruto": 0,
+      "reteN": 0,
+      "impuesto": 0,
+      "tasa": 0,
+      "gastosDeduc": 200000,
+      "intereses": 0,
+      "deprec": 0,
+      "neto": 0,
+      "noConst": 0
+    }
+  },
+  "s5_natural_salario": {
+    "totalImpuesto": 5892739,
+    "sinClasificar": 0,
+    "owner": {
+      "type": "natural",
+      "ingreso": 216000000,
+      "baseGravable": 165552540,
+      "impBruto": 27492739,
+      "reteN": 21600000,
+      "impuesto": 5892739,
+      "tasa": 2.7,
+      "gastosDeduc": 0,
+      "intereses": 0,
+      "deprec": 0,
+      "neto": 207360000,
+      "noConst": 8640000
+    }
+  },
+  "s6_natural_salario_aportes": {
+    "totalImpuesto": 3473539,
+    "sinClasificar": 0,
+    "owner": {
+      "type": "natural",
+      "ingreso": 216000000,
+      "baseGravable": 156912540,
+      "impBruto": 25073539,
+      "reteN": 21600000,
+      "impuesto": 3473539,
+      "tasa": 1.6,
+      "gastosDeduc": 0,
+      "intereses": 0,
+      "deprec": 0,
+      "neto": 198720000,
+      "noConst": 17280000
+    }
+  },
+  "s7_natural_mix": {
+    "totalImpuesto": 69924112,
+    "sinClasificar": 0,
+    "owner": {
+      "type": "natural",
+      "ingreso": 516000000,
+      "baseGravable": 401947740,
+      "impBruto": 103044112,
+      "reteN": 33120000,
+      "impuesto": 69924112,
+      "tasa": 13.6,
+      "gastosDeduc": 0,
+      "intereses": 0,
+      "deprec": 0,
+      "neto": 172800000,
+      "noConst": 7200000
+    }
+  },
+  "s8_sas_gastos_no_deducibles": {
+    "totalImpuesto": 32430000,
+    "sinClasificar": 0,
+    "owner": {
+      "type": "juridica",
+      "ingreso": 100000000,
+      "baseGravable": 99800000,
+      "impBruto": 34930000,
+      "reteN": 2500000,
+      "impuesto": 32430000,
+      "tasa": 32.4,
+      "gastosDeduc": 200000,
+      "intereses": 0,
+      "deprec": 0,
+      "neto": 0,
+      "noConst": 0
+    }
+  },
+  "s9_sas_gastos_capacitacion_deducible": {
+    "totalImpuesto": 30680000,
+    "sinClasificar": 0,
+    "owner": {
+      "type": "juridica",
+      "ingreso": 100000000,
+      "baseGravable": 94800000,
+      "impBruto": 33180000,
+      "reteN": 2500000,
+      "impuesto": 30680000,
+      "tasa": 30.7,
+      "gastosDeduc": 5200000,
+      "intereses": 0,
+      "deprec": 0,
+      "neto": 0,
+      "noConst": 0
+    }
+  }
+}
