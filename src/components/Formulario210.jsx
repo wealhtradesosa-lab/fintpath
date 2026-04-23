@@ -99,7 +99,7 @@ const Field = ({ label, casilla, articulo, value, onChange, placeholder, hint, r
           </button>
         )}
         {prevYear != null && prevYear > 0 && !readonly && (
-          <button onClick={() => onChange(Math.round(prevYear))} title="Click para copiar este valor al campo" style={{
+          <button onClick={() => { track("prev_year_copiado", { wizard: "F210", label: prevYearLabel || "sin_label" }); onChange(Math.round(prevYear)); }} title="Click para copiar este valor al campo" style={{
             padding: "4px 8px", background: "rgba(6,182,212,0.12)", border: "1px solid " + T.cyan,
             color: T.cyan, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer",
           }}>
