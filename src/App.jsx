@@ -2025,6 +2025,27 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     </>}
                     {ow.type==="natural"&&<>
                       <div style={{marginTop:6,paddingTop:10,borderTop:"1px dashed "+T.border}}>
+                        <div style={{fontSize:10,fontWeight:700,color:T.bl,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>📋 Régimen tributario personal (opcional)</div>
+                        <div style={{fontSize:10,color:T.tx3,marginBottom:10,lineHeight:1.4}}>Estos datos afectan la clasificación por cédula de tus honorarios y tu elegibilidad para depreciar activos (Art. 206 #10 y 128 ET).</div>
+                      </div>
+                      <div>
+                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Tenés 2+ empleados contratados ≥83% del año? (Art. 206 #10)</label>
+                        <select defaultValue={ow.regimenHonorarios||"no_aplica"} id={"own_regh_"+ow.id} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:12,outline:"none",cursor:"pointer"}}>
+                          <option value="no_aplica">No aplica — no tengo honorarios</option>
+                          <option value="sin_empleados">Sin 2+ empleados — honorarios tributan sin exenta 25%</option>
+                          <option value="con_empleados">Con 2+ empleados ≥83% del año — aplica exenta 25%</option>
+                        </select>
+                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si tus honorarios califican (Art. 206 #10), podés descontar la renta exenta del 25%. Afecta el impuesto en tus ingresos por honorarios.</div>
+                      </div>
+                      <div>
+                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Obligado o voluntariamente llevás contabilidad? (Art. 38-39, 128 ET)</label>
+                        <select defaultValue={ow.llevaContabilidad?"si":"no"} id={"own_contab_"+ow.id} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:12,outline:"none",cursor:"pointer"}}>
+                          <option value="no">No (default para persona natural común)</option>
+                          <option value="si">Sí (empresario, RUT con contabilidad)</option>
+                        </select>
+                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si llevás contabilidad, podés depreciar activos (Art. 128 ET), pero pierdes el componente inflacionario de rendimientos (Art. 38-39 ET). La mayoría de las personas naturales NO llevan contabilidad.</div>
+                      </div>
+                      <div style={{marginTop:6,paddingTop:10,borderTop:"1px dashed "+T.border}}>
                         <div style={{fontSize:10,fontWeight:700,color:T.or||T.bl,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🏦 Aportes a seguridad social (opcional)</div>
                         <div style={{fontSize:10,color:T.tx3,marginBottom:10,lineHeight:1.4}}>Por default, FINPATHIA asume 4% de tu salario como pensión obligatoria (INCRNGO Art. 55 ET) y 4% del IBC para independientes. Si conoces tus valores reales mensuales, anótalos aquí para un cálculo más preciso. Dejá en blanco los que no apliquen.</div>
                       </div>
@@ -2073,6 +2094,12 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                           upd.descuentosTributarios=tieneDescuentos?{cti:dCti,empleo:dEmp,exterior:dExt,donaciones:dDon,otros:dOtr}:null;
                         }
                         if(ow.type==="natural"){
+                          // Régimen personal — afecta clasificación fiscal por cédula
+                          const regh=document.getElementById("own_regh_"+ow.id)?.value;
+                          const contab=document.getElementById("own_contab_"+ow.id)?.value==="si";
+                          upd.regimenHonorarios=(regh==="con_empleados"||regh==="sin_empleados")?regh:null;
+                          upd.llevaContabilidad=contab;
+                          // Aportes
                           const pobl=+document.getElementById("own_apt_pobl_"+ow.id)?.value||0;
                           const pvol=+document.getElementById("own_apt_pvol_"+ow.id)?.value||0;
                           const sal=+document.getElementById("own_apt_sal_"+ow.id)?.value||0;
