@@ -37,7 +37,7 @@ const Kpi = ({ label, value, sub, color, big }) => (
   </div>
 );
 
-function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
+function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componenteInflacionarioPct }) {
 
   const calc = useMemo(() => {
     const ingAnual = ingresos.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
@@ -201,7 +201,12 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       const salAnual = ingresos.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       const honAnual = ingresos.filter(i => /Honorarios|Freelance/i.test(i.categoria || "")).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       const rentasAnual = ingresos.filter(i => /Arriendo/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
-      const rendAnual = ingresos.filter(i => /Rendimiento|Inversión|CDT/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
+      // Sub-tipos de rendimientos con tratamiento diferenciado (Art. 38-39 ET)
+      const interesesBancAnual = ingresos.filter(i => /Intereses bancarios|CDT/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
+      const utilidadFICAnual = ingresos.filter(i => /Utilidad FIC|FIC/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
+      const rendimientoGenAnual = ingresos.filter(i => /Rendimiento/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
+      const inversionAnual = ingresos.filter(i => /Inversión/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
+      const rendAnual = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual + inversionAnual;
       const divAnual = ingresos.filter(i => /Dividendos/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
       const ingLaboral = salAnual + honAnual;
       const ingCapital = rendAnual;
@@ -231,10 +236,14 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       
       // Rentas líquidas por cédula
       const rentaLiqTrabajo = Math.max(0, netoLaboral - benefSin);
-      // Renta de capital: sin porcentaje automático de costos. El Art. 335-1 ET
-      // permite deducir costos y gastos procedentes, pero el simulador no aplica
-      // un 1% genérico — si hay costos reales, el usuario los registra como gastos.
-      const rentaLiqCapital = Math.max(0, ingCapital);
+      // COMPONENTE INFLACIONARIO (Art. 38-39 ET, Decreto 0771/2025):
+      // Default 50.88% para año gravable 2024. Aplica solo a intereses bancarios/CDT,
+      // utilidad FIC y rendimientos genéricos (no a venta de inversión ni dividendos).
+      const pctComponenteInflac = (componenteInflacionarioPct != null ? componenteInflacionarioPct : 50.88) / 100;
+      const rendCompInflacAplicable = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual;
+      const componenteInflacExcluido = rendCompInflacAplicable * pctComponenteInflac;
+      const rendGravable = rendCompInflacAplicable - componenteInflacExcluido + inversionAnual;
+      const rentaLiqCapital = Math.max(0, rendGravable);
       // Renta no laboral: gastos del inmueble arrendado son 100% deducibles si
       // cumplen causalidad, necesidad y proporcionalidad (Art. 107 ET).
       const gastosInmueble = gastos.filter(g => ["Predial","Mantenimiento","Vivienda","Seguros","Servicios"].includes(g.cat)).reduce((s,g) => s + (g.m||0), 0) * 12;
@@ -333,12 +342,14 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
         type: "natural", regimen: regimenN, regimenNota: regimenNotaN,
         ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, gastosDeducNat, patTotal, deuTotal,
         noConst, neto, exenta25, deducDep, deducViv, lim40,
+        interesesBancAnual, utilidadFICAnual, rendimientoGenAnual, inversionAnual,
+        componenteInflacExcluido, pctComponenteInflac: pctComponenteInflac * 100, rentaLiqCapital,
         benefSin, benAplicSin, rentaSin, impSin: impSinFinal, tasaSin: ingAnual > 0 ? (impSinFinal / ingAnual * 100) : 0,
         pvMax, afcMax, benefCon, benAplicCon, rentaCon, impCon: impConFinal, tasaCon: ingAnual > 0 ? (impConFinal / ingAnual * 100) : 0, ahorro: ahorroFinal, pctUsado, retefuenteNat,
         recs
       };
     }
-  }, [ingresos, gastos, inv, deu, trm, isJ, owner.regimen, owner.perdidasFiscalesAcumuladas, owner.descuentosTributarios]);
+  }, [ingresos, gastos, inv, deu, trm, isJ, owner.regimen, owner.perdidasFiscalesAcumuladas, owner.descuentosTributarios, componenteInflacionarioPct]);
 
   if (!calc) return (
     <Cd style={{ padding: 24, marginBottom: 16 }}>
@@ -512,6 +523,17 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
               </>}
               
               <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Renta gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.rentaSin)}</span></div>
+              {calc.componenteInflacExcluido > 0 && (
+                <div style={{ marginTop: 4, padding: "8px 10px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 6, fontSize: 10, lineHeight: 1.5 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                    <span style={{ color: T.blue, fontWeight: 600 }}>📉 Componente inflacionario {calc.pctComponenteInflac.toFixed(2)}% (Art. 38-39 ET)</span>
+                    <span style={{ fontFamily: "monospace", color: T.blue, fontWeight: 600 }}>−{fm(calc.componenteInflacExcluido)}</span>
+                  </div>
+                  <div style={{ color: T.txt3, fontSize: 9, lineHeight: 1.5 }}>
+                    Parte de tus rendimientos financieros (intereses bancarios + FIC) no constituye renta ni ganancia ocasional. Decreto 0771/2025 — año gravable 2024. Aplica a persona natural no obligada a llevar contabilidad. Ajustable en Configuración.
+                  </div>
+                </div>
+              )}
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                 <div style={{ flex: 1, height: 6, background: T.bg3, borderRadius: 3, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: Math.min(calc.pctUsado || 0, 100) + "%", background: (calc.pctUsado || 0) >= 90 ? T.green : T.orange, borderRadius: 3 }} />
@@ -781,7 +803,7 @@ export default function SimuladorTributario({ trm, user }) {
 
       {/* Owner cards */}
       {ownerData.map(od => (
-        <OwnerPlan key={od.owner.id} owner={od.owner} ingresos={od.ing} gastos={od.gas} inv={od.inv} deu={od.deu} trm={trm} isJ={od.owner.type === "juridica"} mb={mb} />
+        <OwnerPlan key={od.owner.id} owner={od.owner} ingresos={od.ing} gastos={od.gas} inv={od.inv} deu={od.deu} trm={trm} isJ={od.owner.type === "juridica"} mb={mb} componenteInflacionarioPct={user?.componenteInflacionarioPct != null ? user.componenteInflacionarioPct : 50.88} />
       ))}
 
       <div style={{ fontSize: 10, color: T.txt3, textAlign: "center", marginTop: 16, lineHeight: 1.6 }}>

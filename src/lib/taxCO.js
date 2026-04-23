@@ -197,7 +197,16 @@ export const estimarImpuesto = (u) => {
       const salAnual = oIng.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       const honAnual = oIng.filter(i => /Honorarios|Freelance/i.test(i.categoria || "")).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       const rentasAnual = oIng.filter(i => /Arriendo/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
-      const rendAnual = oIng.filter(i => /Rendimiento|Inversión|CDT/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      // Sub-tipos de rendimientos con tratamiento diferenciado:
+      // - Intereses bancarios/CDT: aplica componente inflacionario Art. 38 ET
+      // - Utilidad FIC: aplica componente inflacionario Art. 39 ET
+      // - Rendimiento genérico (legacy): aplica componente inflacionario Art. 38 ET
+      // - Inversión: NO aplica componente inflacionario (típicamente venta de activos)
+      const interesesBancAnual = oIng.filter(i => /Intereses bancarios|CDT/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const utilidadFICAnual = oIng.filter(i => /Utilidad FIC|FIC/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const rendimientoGenAnual = oIng.filter(i => /Rendimiento/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const inversionAnual = oIng.filter(i => /Inversión/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const rendAnual = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual + inversionAnual;
       const divAnual = oIng.filter(i => /Dividendos/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
       const pensAnual = oIng.filter(i => /Pensión/i.test(i.categoria || "")).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       const otrosAnual = oIng.filter(i => !["Salario", "Honorarios", "Freelance", "Arriendo", "Rendimiento", "Inversión", "CDT", "Dividendos", "Pensión"].some(c => (i.categoria || "").includes(c))).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
@@ -245,11 +254,23 @@ export const estimarImpuesto = (u) => {
       const rentaLiqTrabajo = Math.max(0, netoLaboral - benefLaboral);
 
       // ── 3. RENTAS DE CAPITAL ──
-      // Sin porcentaje automático de costos. El Art. 335-1 ET permite deducir
-      // costos y gastos procedentes, pero el simulador no aplica un 1% genérico
-      // sin soporte. Si el usuario tiene costos reales (custodia, asesorías,
-      // plataformas), debe registrarlos como gastos.
-      const rentaLiqCapital = Math.max(0, ingCapital);
+      // COMPONENTE INFLACIONARIO (Art. 38 y 39 ET, Decreto 0771/2025):
+      // Una parte de los rendimientos financieros (intereses bancarios/CDT) y
+      // distribuciones de FIC NO constituye renta ni ganancia ocasional para
+      // personas naturales no obligadas a llevar contabilidad. El porcentaje
+      // se actualiza cada año por decreto. Default 50.88% (año gravable 2024).
+      //
+      // Aplica a: intereses bancarios, CDT, FIC, rendimientos genéricos.
+      // NO aplica a: venta de activos (Inversión), dividendos (ya tienen
+      // tratamiento especial Art. 242), ni a personas jurídicas.
+      //
+      // Sin porcentaje automático de costos Art. 335-1 — el usuario registra
+      // sus costos reales (custodia, asesorías) como gastos.
+      const pctComponenteInflac = ((u.componenteInflacionarioPct != null ? u.componenteInflacionarioPct : 50.88) / 100);
+      const rendCompInflacAplicable = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual;
+      const componenteInflacExcluido = rendCompInflacAplicable * pctComponenteInflac;
+      const rendGravable = rendCompInflacAplicable - componenteInflacExcluido + inversionAnual;
+      const rentaLiqCapital = Math.max(0, rendGravable);
 
       // ── 4. RENTAS NO LABORALES ──
       // Gastos del inmueble arrendado: deducibles al 100% cuando cumplen
@@ -317,6 +338,10 @@ export const estimarImpuesto = (u) => {
         pensionVol, afc, totalDeducciones,
         lim40, benAplic: benefLaboral,
         baseGravable: rentaLiqGeneral,
+        // Desglose de rendimientos + componente inflacionario (Art. 38-39 ET)
+        interesesBancAnual, utilidadFICAnual, rendimientoGenAnual, inversionAnual,
+        componenteInflacExcluido, pctComponenteInflac: pctComponenteInflac * 100,
+        rentaLiqCapital,
         // impuesto/impOptimizado = SALDO (después de restar retención). Legacy, usado por el cash flow.
         impuesto: impActualNat,
         impSinOpt: impActualNat, impOptimizado: impOptNat,
