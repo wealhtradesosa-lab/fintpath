@@ -17,19 +17,14 @@
 // Ejecutar: node scripts/verify_wizard_parity.mjs
 
 import { estimarImpuesto } from "../src/lib/taxCO.js";
+import { calcImpRenta as calcImpRentaCore } from "../src/lib/tablaArt241.js";
 
 const UVT = 52374; // UVT 2026
 
-// Replica la tabla Art. 241 ET tal como está en el componente Formulario210.
-// Si este código diverge del componente, ACTUALIZÁ AMBOS a la vez.
+// Delega al módulo central — el test detecta si algún consumidor bypassa
+// el central o si la tabla cambia silenciosamente.
 function calcImpTabla241(uvts) {
-  if (uvts <= 1090) return 0;
-  if (uvts <= 1700) return (uvts - 1090) * 0.19 * UVT;
-  if (uvts <= 4100) return ((uvts - 1700) * 0.28 + 116) * UVT;
-  if (uvts <= 8670) return ((uvts - 4100) * 0.33 + 788) * UVT;
-  if (uvts <= 18970) return ((uvts - 8670) * 0.35 + 2296) * UVT;
-  if (uvts <= 31000) return ((uvts - 18970) * 0.37 + 5901) * UVT;
-  return ((uvts - 31000) * 0.39 + 10352) * UVT;
+  return calcImpRentaCore(uvts, UVT);
 }
 
 const fm = (v) => "$" + Math.round(v).toLocaleString("es-CO");

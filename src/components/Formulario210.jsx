@@ -28,6 +28,7 @@
 
 import { useState, useMemo } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
+import { calcImpRenta as calcImpRentaCore } from "../lib/tablaArt241.js";
 import AlertasAnoAnterior from "./AlertasAnoAnterior.jsx";
 
 const UVT = 52374; // UVT 2026
@@ -52,15 +53,11 @@ const fm = (n) => {
   return "$" + n.toLocaleString("es-CO", { maximumFractionDigits: 0 });
 };
 
-// Tabla Art. 241 ET — impuesto progresivo por UVT
+// Tabla Art. 241 ET — impuesto progresivo por UVT. Fuente única: src/lib/tablaArt241.js.
+// Esta función mantiene la firma anterior (uvts → impuesto) para no tener
+// que actualizar 15+ call sites en el wizard. Internamente delega al módulo central.
 function calcImpTabla241(uvts) {
-  if (uvts <= 1090) return 0;
-  if (uvts <= 1700) return (uvts - 1090) * 0.19 * UVT;
-  if (uvts <= 4100) return ((uvts - 1700) * 0.28 + 116) * UVT;
-  if (uvts <= 8670) return ((uvts - 4100) * 0.33 + 788) * UVT;
-  if (uvts <= 18970) return ((uvts - 8670) * 0.35 + 2296) * UVT;
-  if (uvts <= 31000) return ((uvts - 18970) * 0.37 + 5901) * UVT;
-  return ((uvts - 31000) * 0.39 + 10352) * UVT;
+  return calcImpRentaCore(uvts, UVT);
 }
 
 // ─────────────────────────────────────────────────────────────────────────

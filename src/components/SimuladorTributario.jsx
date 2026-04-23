@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { estimarImpuesto } from "../lib/taxCO.js";
 import { adapterOwnerPlan } from "../lib/ownerPlanAdapter.js";
 import { getFiscalWarnings } from "../lib/normalize.js";
+import { calcImpRenta as calcImpRentaCore } from "../lib/tablaArt241.js";
 
 const UVT = 52374;
 const T = {
@@ -16,13 +17,10 @@ const fm = (v) => {
   if (Math.abs(v) >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
   return "$" + Math.round(v).toLocaleString("es-CO");
 };
-const TABLA = [
-  { d: 0, h: 1090, t: 0, b: 0 }, { d: 1090, h: 1700, t: 19, b: 0 },
-  { d: 1700, h: 4100, t: 28, b: 115.86 }, { d: 4100, h: 8670, t: 33, b: 787.86 },
-  { d: 8670, h: 18970, t: 35, b: 2295.96 }, { d: 18970, h: 31000, t: 37, b: 5900.96 },
-  { d: 31000, h: Infinity, t: 39, b: 10352.96 },
-];
-const calcImp = (uvtBase) => { for (let i = TABLA.length - 1; i >= 0; i--) { if (uvtBase > TABLA[i].d) return (TABLA[i].b + (uvtBase - TABLA[i].d) * TABLA[i].t / 100) * UVT; } return 0; };
+// Tabla Art. 241 y cálculo centralizado en src/lib/tablaArt241.js.
+// calcImp se usa solo para estimar el impact textual en 2 recomendaciones
+// (Pensión Voluntaria y AFC). No afecta los números del motor.
+const calcImp = (uvtBase) => calcImpRentaCore(uvtBase, UVT);
 
 const DEDUC_JUR = { "Nómina": 1, "Honorarios": 1, "Vivienda": 1, "Servicios": 1, "Mantenimiento": 1, "Seguros": 1, "Transporte": 1, "Arrendamiento": 1, "Predial": 1, "Representación": 1, "Tecnología": 1, "Educación": 1, "Seguridad Social": 1, "Depreciación": 1 };
 const NO_DEDUC = ["Alimentación","Entretenimiento","Personal","Vestimenta","Mascotas","Deporte","Ahorro"];

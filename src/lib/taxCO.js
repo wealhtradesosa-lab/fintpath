@@ -28,27 +28,14 @@ import {
   DEU_NAT_VIVIENDA_HABITACIONAL,
   GAS_JUR_NO_DEDUCIBLE,
 } from "./fiscalCodes.js";
+import { TABLA_ART_241, calcImpRenta as calcImpRentaCore } from "./tablaArt241.js";
 
 export const UVT = 52374;
 
-export const TABLA_IMP = [
-  { d: 0,     h: 1090,     t: 0,  b: 0 },
-  { d: 1090,  h: 1700,     t: 19, b: 0 },
-  { d: 1700,  h: 4100,     t: 28, b: 115.86 },
-  { d: 4100,  h: 8670,     t: 33, b: 787.86 },
-  { d: 8670,  h: 18970,    t: 35, b: 2295.96 },
-  { d: 18970, h: 31000,    t: 37, b: 5900.96 },
-  { d: 31000, h: Infinity, t: 39, b: 10352.96 },
-];
-
-export const calcImpRenta = (uvtBase) => {
-  for (let i = TABLA_IMP.length - 1; i >= 0; i--) {
-    if (uvtBase > TABLA_IMP[i].d) {
-      return (TABLA_IMP[i].b + (uvtBase - TABLA_IMP[i].d) * TABLA_IMP[i].t / 100) * UVT;
-    }
-  }
-  return 0;
-};
+// Re-exports para compatibilidad con consumidores existentes.
+// La fuente única de verdad está ahora en src/lib/tablaArt241.js.
+export const TABLA_IMP = TABLA_ART_241;
+export const calcImpRenta = (uvtBase) => calcImpRentaCore(uvtBase, UVT);
 
 export const estimarImpuesto = (u) => {
   if (!u) return { total: 0, mes: 0, detalle: [], sinClasificar: 0 };
