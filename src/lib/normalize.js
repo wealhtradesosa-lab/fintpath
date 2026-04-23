@@ -186,11 +186,23 @@ export function normalizeFiscalData(user) {
   const normIngresos = allIngresos.map(ing => {
     const owner = ownerById[ing.owner];
     const fiscalCode = inferIngresoFiscalCode(ing, owner);
+    // Campos comunes para enriquecer cualquier warning de este item:
+    const ctx = {
+      itemType: "ingreso",
+      itemId: ing.id,
+      ownerId: ing.owner,
+      itemConcepto: ing.concepto || ing.categoria || "Ingreso",
+      itemCategoria: ing.categoria || "",
+      itemMonto: ing.mensual || 0,
+      itemMoneda: ing.moneda || "COP",
+      itemOwnerName: owner ? owner.name : null,
+      fiscalCodeSugerido: fiscalCode,
+    };
     if (!ing.fiscalCode) {
       // Warnings contextuales
       if (/Honorarios|Freelance/i.test(ing.categoria || "") && owner && !owner.regimenHonorarios) {
         warnings.push(mkWarning({
-          itemType: "ingreso", itemId: ing.id, ownerId: ing.owner,
+          ...ctx,
           code: "HONORARIOS_SIN_REGIMEN_DECLARADO",
           message: `Honorarios de "${owner.name}" no indican si tiene 2+ empleados — afecta exenta 25% (Art. 206 #10)`,
           accionSugerida: "Editá el owner y seleccioná 'con empleados' o 'sin empleados'",
@@ -199,7 +211,7 @@ export function normalizeFiscalData(user) {
       }
       if (/Arriendo/i.test(ing.categoria || "")) {
         warnings.push(mkInfo({
-          itemType: "ingreso", itemId: ing.id, ownerId: ing.owner,
+          ...ctx,
           code: "ARRIENDO_INFERIDO_INMUEBLE",
           message: "Asumí que es arriendo de inmueble. Si es arriendo de equipos/muebles, cambiá el código fiscal",
           articuloET: "—",
@@ -207,7 +219,7 @@ export function normalizeFiscalData(user) {
       }
       if (/Dividendos/i.test(ing.categoria || "")) {
         warnings.push(mkInfo({
-          itemType: "ingreso", itemId: ing.id, ownerId: ing.owner,
+          ...ctx,
           code: "DIVIDENDOS_INFERIDOS_GRAVADOS",
           message: owner && owner.type === "juridica"
             ? "Asumí dividendos inter-societarios (Art. 48, no gravados)"
@@ -223,16 +235,26 @@ export function normalizeFiscalData(user) {
   const gasRaw = user.gas || {};
   const normGas = {};
   Object.entries(gasRaw).forEach(([cat, items]) => {
-    normGas[cat] = (items || []).map(g => {
+    normGas[cat] = (items || []).map((g, idx) => {
       const owner = ownerById[g.owner];
       const gWithCat = { ...g, cat: g.cat || cat };
       const fiscalCode = inferGastoFiscalCode(gWithCat, owner);
       if (!g.fiscalCode && owner && owner.type === "juridica") {
         if (["Educación", "Educacion", "Vivienda", "Alimentación"].includes(cat)) {
           warnings.push(mkWarning({
-            itemType: "gasto", itemId: g.id, ownerId: g.owner,
+            itemType: "gasto",
+            itemId: g.id,
+            itemGastoCat: cat,   // para identificar sin id
+            itemGastoIdx: idx,   // posición dentro de la categoría
+            ownerId: g.owner,
+            itemConcepto: g.c || cat,
+            itemCategoria: cat,
+            itemMonto: g.m || 0,
+            itemOwnerName: owner ? owner.name : null,
+            fiscalCodeSugerido: fiscalCode,
             code: "GASTO_JURIDICA_CAUSALIDAD_AMBIGUA",
             message: `Gasto "${cat}" en persona jurídica se asumió deducible. Art. 107 ET exige causalidad con actividad productora de renta — revisá con contador`,
+            accionSugerida: "Aprobá si es operativo/capacitación, o editá y marcá como no deducible si es personal",
             articuloET: "Art. 107",
           }));
         }

@@ -681,7 +681,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
   );
 }
 
-export default function SimuladorTributario({ trm, user, onNavigate }) {
+export default function SimuladorTributario({ trm, user, onNavigate, onUpdate }) {
   const mb = typeof window !== "undefined" && window.innerWidth < 768;
   const owners = (user && user.owners) || [{ id: "own_1", name: "Personal", type: "natural" }];
   // Respeta el flag sim en todos los items — si el usuario lo desactivó en Ingresos/Gastos/etc,
@@ -748,52 +748,122 @@ export default function SimuladorTributario({ trm, user, onNavigate }) {
         </div>
       )}
 
-      {/* ═══ PANEL DE WARNINGS FISCALES (Sprint 3) ═══ */}
+      {/* ═══ PANEL DE REVISIÓN FISCAL (Sprint 5 — rediseño) ═══ */}
       {(() => {
         const warns = getFiscalWarnings(user).filter(w => w.code !== "INGRESO_SIN_PROPIETARIO"); // ya mostrado arriba
         if (warns.length === 0) return null;
-        const byCode = {};
-        warns.forEach(w => {
-          if (!byCode[w.code]) byCode[w.code] = { ...w, count: 0 };
-          byCode[w.code].count++;
-        });
-        const groups = Object.values(byCode);
-        const errs = groups.filter(g => g.severity === "error");
-        const warnings = groups.filter(g => g.severity === "warning");
-        const infos = groups.filter(g => g.severity === "info");
+        const errs = warns.filter(w => w.severity === "error");
+        const warnings = warns.filter(w => w.severity === "warning");
+        const infos = warns.filter(w => w.severity === "info");
+
+        // Helper: formateo de moneda compacto para el panel.
+        const fmM = (v) => {
+          const n = Math.round(Number(v) || 0);
+          if (n >= 1000000) return "$" + (n / 1000000).toFixed(1) + "M";
+          if (n >= 1000) return "$" + (n / 1000).toFixed(0) + "K";
+          return "$" + n.toLocaleString("es-CO");
+        };
+
+        // Aprobar: persiste el fiscalCodeSugerido en el item, haciendo desaparecer el warning.
+        const aprobar = (w) => {
+          if (!onUpdate || !w.fiscalCodeSugerido) return;
+          onUpdate(prev => {
+            if (!prev) return prev;
+            if (w.itemType === "ingreso") {
+              const nw = (prev.ingresos || []).map(i => i.id === w.itemId ? { ...i, fiscalCode: w.fiscalCodeSugerido } : i);
+              return { ...prev, ingresos: nw };
+            }
+            if (w.itemType === "gasto") {
+              const cat = w.itemGastoCat, idx = w.itemGastoIdx;
+              const arr = (prev.gas && prev.gas[cat]) || [];
+              if (idx == null || !arr[idx]) return prev;
+              const nArr = arr.map((g, i) => i === idx ? { ...g, fiscalCode: w.fiscalCodeSugerido } : g);
+              return { ...prev, gas: { ...prev.gas, [cat]: nArr } };
+            }
+            if (w.itemType === "deuda") {
+              const nw = (prev.deu || []).map(d => d.id === w.itemId ? { ...d, fiscalCode: w.fiscalCodeSugerido } : d);
+              return { ...prev, deu: nw };
+            }
+            if (w.itemType === "inversion") {
+              const nw = (prev.inv || []).map(i => i.id === w.itemId ? { ...i, fiscalCode: w.fiscalCodeSugerido } : i);
+              return { ...prev, inv: nw };
+            }
+            if (w.itemType === "owner") {
+              const nw = (prev.owners || []).map(o => o.id === w.itemId ? { ...o, fiscalCode: w.fiscalCodeSugerido } : o);
+              return { ...prev, owners: nw };
+            }
+            return prev;
+          });
+        };
+
+        // Aprobar TODOS los de un tipo/código en bloque — delega a aprobar() en loop.
+        const aprobarGrupo = (list) => {
+          list.forEach(w => aprobar(w));
+        };
+
+        const pgMap = { ingreso: "ing", gasto: "gas", deuda: "deu", inversion: "inv", owner: "set" };
+        const pgLabel = { ingreso: "💰 Ingresos", gasto: "💳 Egresos", deuda: "📋 Deudas", inversion: "🏦 Patrimonio", owner: "⚙️ Config" };
+
+        const renderRow = (w, i) => {
+          const color = w.severity === "error" ? T.red : w.severity === "warning" ? T.orange : T.blue;
+          const icon = w.severity === "error" ? "⛔" : w.severity === "warning" ? "⚠️" : "ℹ️";
+          const target = pgMap[w.itemType];
+          const label = pgLabel[w.itemType];
+          // Label del item: prioriza concepto, cae en categoría.
+          const itemLbl = w.itemConcepto || w.itemCategoria || "Item";
+          const monto = w.itemMonto ? fmM(w.itemMonto * 12) + "/año" : null;
+          const canApprove = onUpdate && w.fiscalCodeSugerido && (w.itemId || (w.itemType === "gasto" && w.itemGastoCat != null));
+
+          return (
+            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 8, fontSize: 11, borderLeft: "2px solid " + color }}>
+              <span style={{ fontSize: 14, marginTop: 1 }}>{icon}</span>
+              <div style={{ flex: 1, lineHeight: 1.5, minWidth: 0 }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap", marginBottom: 2 }}>
+                  <span style={{ color: T.txt, fontWeight: 700, fontSize: 12 }}>{itemLbl}</span>
+                  {monto && <span style={{ color: T.txt3, fontSize: 10 }}>· {monto}</span>}
+                  {w.itemOwnerName && <span style={{ color: T.txt3, fontSize: 10 }}>· {w.itemOwnerName}</span>}
+                </div>
+                <div style={{ color: color, fontSize: 11 }}>{w.message}</div>
+                {w.accionSugerida && <div style={{ color: T.txt3, marginTop: 3, fontSize: 10 }}>→ {w.accionSugerida}</div>}
+                {w.articuloET && w.articuloET !== "—" && <div style={{ color: T.txt3, fontSize: 10, marginTop: 2, fontStyle: "italic" }}>{w.articuloET}</div>}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                {canApprove && (
+                  <button onClick={() => aprobar(w)} style={{ background: T.green + "22", border: "1px solid " + T.green, color: T.green, padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }} title={`Aprobar clasificación sugerida: ${w.fiscalCodeSugerido}`}>
+                    ✓ Aprobar
+                  </button>
+                )}
+                {onNavigate && target && (
+                  <button onClick={() => onNavigate(target)} style={{ background: "transparent", border: "1px solid " + T.border, color: T.txt2, padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    ✏️ {label}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        };
+
         return (
           <div style={{ background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 12, padding: "14px 18px", marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 4 }}>🔍 Revisión de precisión fiscal</div>
-            <div style={{ fontSize: 11, color: T.txt3, marginBottom: 10, lineHeight: 1.6 }}>
-              {warns.length} observación(es) sobre la clasificación de tus datos. Resolvelas para afinar el cálculo del impuesto.
-              {errs.length > 0 && <> • <strong style={{ color: T.red }}>{errs.reduce((s,g)=>s+g.count,0)} error(es)</strong></>}
-              {warnings.length > 0 && <> • {warnings.reduce((s,g)=>s+g.count,0)} advertencia(s)</>}
-              {infos.length > 0 && <> • {infos.reduce((s,g)=>s+g.count,0)} info</>}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.orange }}>🔍 Revisión de precisión fiscal</div>
+              {onUpdate && warns.some(w => w.fiscalCodeSugerido) && (
+                <button onClick={() => {
+                  if (!confirm(`Aprobar la clasificación sugerida para ${warns.filter(w => w.fiscalCodeSugerido).length} ítem(s)?\n\nSe persiste el fiscalCode inferido en cada item. Podés revertir editando el item manualmente.`)) return;
+                  aprobarGrupo(warns.filter(w => w.fiscalCodeSugerido));
+                }} style={{ background: T.green + "22", border: "1px solid " + T.green, color: T.green, padding: "5px 12px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                  ✓ Aprobar todos ({warns.filter(w => w.fiscalCodeSugerido).length})
+                </button>
+              )}
+            </div>
+            <div style={{ fontSize: 11, color: T.txt3, marginBottom: 12, lineHeight: 1.6 }}>
+              {warns.length} ítem(s) con clasificación sugerida pero no confirmada. Revisá cada uno y aprobá o editá.
+              {errs.length > 0 && <> • <strong style={{ color: T.red }}>{errs.length} error(es)</strong></>}
+              {warnings.length > 0 && <> • <span style={{ color: T.orange }}>{warnings.length} advertencia(s)</span></>}
+              {infos.length > 0 && <> • <span style={{ color: T.blue }}>{infos.length} info</span></>}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {[...errs, ...warnings, ...infos].map((g, i) => {
-                const color = g.severity === "error" ? T.red : g.severity === "warning" ? T.orange : T.blue;
-                const icon = g.severity === "error" ? "⛔" : g.severity === "warning" ? "⚠️" : "ℹ️";
-                // Mapeo itemType → id de página para navegación
-                const pgMap = { ingreso: "ing", gasto: "gas", deuda: "deu", inversion: "inv", owner: "set" };
-                const target = pgMap[g.itemType];
-                const targetLabel = { ingreso: "💰 Ingresos", gasto: "💳 Egresos", deuda: "📋 Deudas", inversion: "🏦 Patrimonio", owner: "⚙️ Config" }[g.itemType];
-                return (
-                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 8, fontSize: 11 }}>
-                    <span style={{ fontSize: 13 }}>{icon}</span>
-                    <div style={{ flex: 1, lineHeight: 1.5 }}>
-                      <div style={{ color: color, fontWeight: 600 }}>{g.message} {g.count > 1 && <span style={{ color: T.txt3, fontWeight: 400 }}>({g.count} items)</span>}</div>
-                      {g.accionSugerida && <div style={{ color: T.txt3, marginTop: 2 }}>→ {g.accionSugerida}</div>}
-                      {g.articuloET && g.articuloET !== "—" && <div style={{ color: T.txt3, fontSize: 10, marginTop: 2, fontStyle: "italic" }}>{g.articuloET}</div>}
-                    </div>
-                    {onNavigate && target && (
-                      <button onClick={() => onNavigate(target)} style={{ background: "transparent", border: "1px solid " + color, color: color, padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", alignSelf: "center" }}>
-                        Ir a {targetLabel} →
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+              {[...errs, ...warnings, ...infos].map(renderRow)}
             </div>
           </div>
         );
