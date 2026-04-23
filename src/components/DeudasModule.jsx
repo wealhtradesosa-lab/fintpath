@@ -71,7 +71,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     input.click();
   };
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "", owner: "" });
+  const [form, setForm] = useState({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = deudas || [];
@@ -97,11 +97,11 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "", owner: "" });
+    setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "" });
   };
 
   const openEdit = (d) => {
-    setForm({ n: d.n, tp: d.tp, mt: d.mt, pg: d.pg, ts: d.ts, la: d.la || "", owner: d.owner || "" });
+    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, la: d.la || "", owner: d.owner || "" });
     setEditId(d.id);
     setShowForm(true);
   };
@@ -119,7 +119,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           {selected.size > 0 && (
             <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
           )}
-          <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", mt: "", pg: "", ts: "", la: "", owner: "" }); setShowForm(true); }}
+          <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "" }); setShowForm(true); }}
             style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </div>
       </div>
@@ -245,7 +245,42 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 setForm((p) => ({ ...p, ts: v, pg: String(newPg) }));
               }} type="number" placeholder="Ej: 12" />
               {form.mt&&form.pg&&form.ts&&<div style={{gridColumn:"1/-1",fontSize:11,color:"#a1a1aa",background:"#1e1e24",borderRadius:8,padding:"8px 12px"}}>Saldo {fmt(+form.mt||0)} al {form.ts}% anual = cuota estimada {fmt(+form.pg||0)}/mes. Ingresa uno y el otro se calcula.</div>}
-              <In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
+              <In l="Propietario fiscal" value={form.owner} onChange={(v) => {
+                // Al cambiar owner, re-sugerir fiscalCode si tipo no es compatible con owner nuevo
+                const newOwner = (owners || []).find(o => o.id === v);
+                let newFC = form.fiscalCode;
+                if (newOwner) {
+                  const isJ = newOwner.type === "juridica";
+                  if (isJ && form.fiscalCode.startsWith("DEU_NAT_")) newFC = "DEU_JUR_PRODUCTIVA";
+                  if (!isJ && form.fiscalCode.startsWith("DEU_JUR_")) {
+                    newFC = form.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO";
+                  }
+                }
+                setForm((p) => ({ ...p, owner: v, fiscalCode: newFC }));
+              }} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
+              {form.owner && form.owner !== "na" && (() => {
+                const ow = (owners || []).find(o => o.id === form.owner) || { type: "natural" };
+                const isJ = ow.type === "juridica";
+                const options = isJ
+                  ? [
+                      { v: "DEU_JUR_PRODUCTIVA", l: "Productiva — para actividad generadora de renta (intereses deducibles, Art. 117)" },
+                      { v: "DEU_JUR_NO_PRODUCTIVA", l: "No productiva — sin relación con la actividad (intereses NO deducibles)" },
+                    ]
+                  : [
+                      { v: "DEU_NAT_VIVIENDA_HABITACIONAL", l: "Vivienda habitacional — donde vivo (Art. 119, intereses hasta 1.200 UVT)" },
+                      { v: "DEU_NAT_INVERSION", l: "Inversión — inmueble arrendado, negocio (intereses deducibles renta no laboral)" },
+                      { v: "DEU_NAT_CONSUMO", l: "Consumo personal — tarjeta, libre inversión (intereses NO deducibles)" },
+                    ];
+                return (
+                  <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>🧾 ¿Para qué usaste esta deuda? (define deducibilidad de los intereses)</div>
+                    <select value={form.fiscalCode} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
+                      style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer" }}>
+                      {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                    </select>
+                  </div>
+                );
+              })()}
               <In l="Activo Vinculado" value={form.la} onChange={(v) => setForm((p) => ({ ...p, la: v }))} options={[{ v: "", l: "Ninguno" }, ...(inversiones || []).filter(i => i).map((i) => ({ v: i.id || "", l: i.n || i.nombre || i.name || "Sin nombre" }))]} />
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
