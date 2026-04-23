@@ -96,6 +96,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       nombre: String(getName(inv) || ""),
       ubicacion: String(getLoc(inv) || ""),
       tipo: String(getType(inv) || "Real Estate"),
+      fiscalCode: inv.fiscalCode || "INV_INMUEBLE_HABITACIONAL",
+      pctTerreno: inv.pctTerreno != null ? String(inv.pctTerreno) : "",
       va: String(getVA(inv) || ""),
       vc: String(getVC(inv) || ""),
       tasa: String(inv.tasa || ""),
@@ -106,7 +108,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   };
 
   const openAdd = () => {
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", owner: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "" });
     setEditId(null);
     setShowForm(true);
   };
@@ -127,6 +129,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       va,
       vc: Math.abs(parseFloat(form.vc)) || 0,
       tasa,
+      fiscalCode: form.fiscalCode || undefined,
+      pctTerreno: form.pctTerreno !== "" && form.pctTerreno != null ? Math.max(0, Math.min(100, parseFloat(form.pctTerreno))) : undefined,
     };
     // Store income directly on investment so coaches can read it
     if (editId) {
@@ -142,7 +146,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", owner: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "" });
   };
 
   
@@ -277,6 +281,22 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               <In l="Ubicación" value={form.ubicacion} onChange={(v) => setForm((p) => ({ ...p, ubicacion: v }))} placeholder="Miami, FL" />
               <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["Real Estate", "Fondo de Inversión", "CDT", "Acciones", "Crypto", "Bodega", "Lote", "Vehículo", "Local Comercial", "Renta Fija", "Negocio", "Cash", "Otro"]} />
+              {["Real Estate", "Bodega", "Lote", "Local Comercial"].includes(form.tipo) && (
+                <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>🏠 ¿Cómo usás este inmueble? (define si depreciación aplica)</div>
+                  <select value={form.fiscalCode || "INV_INMUEBLE_HABITACIONAL"} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
+                    style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer", marginBottom: 10 }}>
+                    <option value="INV_INMUEBLE_HABITACIONAL">Habitacional — donde vivo (no se deprecia)</option>
+                    <option value="INV_INMUEBLE_ARRENDADO">Arrendado — genera renta (deprecia construcción 2.22%/año Art. 137)</option>
+                    <option value="INV_INMUEBLE_COMERCIAL_PROPIO">Uso propio comercial (deprecia construcción)</option>
+                    <option value="INV_INMUEBLE_VACANTE">Vacante — sin uso productivo (no deprecia)</option>
+                  </select>
+                  <label style={{ fontSize: 10, fontWeight: 600, color: "#a1a1aa", display: "block", marginBottom: 4 }}>% del valor que es terreno (no depreciable)</label>
+                  <input type="number" min="0" max="100" value={form.pctTerreno ?? ""} onChange={(e) => setForm((p) => ({ ...p, pctTerreno: e.target.value }))} placeholder="Default: 30 (urbanos)"
+                    style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "8px 10px", borderRadius: 6, fontSize: 12, outline: "none" }} />
+                  <div style={{ fontSize: 10, color: "#71717a", marginTop: 4, lineHeight: 1.5 }}>Solo la construcción se deprecia fiscalmente (Art. 131 ET). El terreno no. Típico urbano: 30%. Si es una finca o lote con poca construcción, puede ser 80%+.</div>
+                </div>
+              )}
               <In l="Valor Actual" value={form.va} onChange={(v) => setForm((p) => ({ ...p, va: v }))} type="number" placeholder="0" />
               <In l="Valor Compra" value={form.vc} onChange={(v) => setForm((p) => ({ ...p, vc: v }))} type="number" placeholder="0" />
               <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
