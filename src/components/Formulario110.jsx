@@ -47,7 +47,7 @@ const fm = (n) => {
 // COMPONENTES DE UI REUTILIZABLES
 // ─────────────────────────────────────────────────────────────────────────
 
-const Field = ({ label, casilla, articulo, value, onChange, placeholder, hint, readonly, optional }) => (
+const Field = ({ label, casilla, articulo, value, onChange, placeholder, hint, readonly, optional, prevYear, prevYearLabel }) => (
   <div style={{ marginBottom: 14 }}>
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4, gap: 8, flexWrap: "wrap" }}>
       <label style={{ fontSize: 11, fontWeight: 600, color: T.txt2, flex: 1 }}>
@@ -71,6 +71,14 @@ const Field = ({ label, casilla, articulo, value, onChange, placeholder, hint, r
         cursor: readonly ? "default" : "text",
       }}
     />
+    {prevYear != null && prevYear > 0 && !readonly && (
+      <button onClick={() => onChange(Math.round(prevYear))} title="Click para copiar este valor al campo" style={{
+        marginTop: 4, padding: "4px 8px", background: "rgba(6,182,212,0.12)", border: "1px solid " + T.cyan,
+        color: T.cyan, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer",
+      }}>
+        📥 {prevYearLabel || "Año anterior"}: ${Math.round(prevYear).toLocaleString("es-CO")}
+      </button>
+    )}
     {hint && <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.5 }}>{hint}</div>}
   </div>
 );
@@ -202,9 +210,10 @@ function Paso1Identificacion({ data, update }) {
   );
 }
 
-function Paso2Ingresos({ data, update }) {
+function Paso2Ingresos({ data, update, anterior }) {
   const ing = data.ingresos || {};
   const updateField = (key, v) => update({ ...ing, [key]: v });
+  const pyLabel = anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null;
 
   const total = (+ing.operacionales || 0) + (+ing.noOperacionales || 0) + (+ing.interesesFinancieros || 0)
     + (+ing.dividendos || 0) + (+ing.utilidadFIC || 0) + (+ing.arrendamientos || 0)
@@ -230,6 +239,8 @@ function Paso2Ingresos({ data, update }) {
           articulo="Art. 26 ET"
           value={ing.operacionales}
           onChange={(v) => updateField("operacionales", v)}
+          prevYear={anterior?.ingresosOperacionales}
+          prevYearLabel={pyLabel}
           hint="Ingresos totales anuales de la actividad económica principal (ventas, servicios, arriendos si es inmobiliaria)."
         />
         <Field
@@ -238,6 +249,8 @@ function Paso2Ingresos({ data, update }) {
           articulo="Art. 26 ET"
           value={ing.noOperacionales}
           onChange={(v) => updateField("noOperacionales", v)}
+          prevYear={anterior?.ingresosNoOperacionales}
+          prevYearLabel={pyLabel}
           hint="Ingresos por actividades secundarias o eventuales."
           optional
         />
@@ -265,6 +278,8 @@ function Paso2Ingresos({ data, update }) {
           articulo="Art. 48 ET"
           value={ing.dividendosIntersocietarios}
           onChange={(v) => updateField("dividendosIntersocietarios", v)}
+          prevYear={anterior?.dividendos}
+          prevYearLabel={pyLabel}
           hint="Dividendos recibidos de otras sociedades colombianas. NO gravados (no constitutivos de renta)."
           optional
         />
@@ -328,9 +343,10 @@ function Paso2Ingresos({ data, update }) {
   );
 }
 
-function Paso3Depuracion({ data, update }) {
+function Paso3Depuracion({ data, update, anterior }) {
   const dep = data.depuracion || {};
   const updateField = (key, v) => update({ ...dep, [key]: v });
+  const pyLabel = anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null;
 
   // Totales calculados
   const costosVenta = +dep.costosVenta || 0;
@@ -363,6 +379,8 @@ function Paso3Depuracion({ data, update }) {
           articulo="Art. 58–71 ET"
           value={dep.costosVenta}
           onChange={(v) => updateField("costosVenta", v)}
+          prevYear={anterior?.costos}
+          prevYearLabel={pyLabel}
           hint="Aplicable si vendés productos o servicios. Para rentistas/tenedores, usar $0."
           optional
         />
@@ -433,6 +451,8 @@ function Paso3Depuracion({ data, update }) {
           articulo="Art. 117, 118-1 ET"
           value={dep.gastosFinancieros}
           onChange={(v) => updateField("gastosFinancieros", v)}
+          prevYear={anterior?.interesesFinancieros}
+          prevYearLabel={pyLabel}
           hint="Intereses de créditos. Sujetos a regla de subcapitalización (ratio deuda/patrimonio)."
           optional
         />
@@ -444,6 +464,8 @@ function Paso3Depuracion({ data, update }) {
           articulo="Art. 128–140 ET"
           value={dep.depreciacion}
           onChange={(v) => updateField("depreciacion", v)}
+          prevYear={anterior?.depreciaciones}
+          prevYearLabel={pyLabel}
           hint="Depreciación según vida útil: inmuebles 45 años (2.22%/año), vehículos 5 años (20%/año), muebles 10 años, equipos de cómputo 3 años."
           optional
         />
@@ -482,9 +504,10 @@ function Paso3Depuracion({ data, update }) {
   );
 }
 
-function Paso4Compensaciones({ data, update, rentaLiquidaOrdinaria }) {
+function Paso4Compensaciones({ data, update, rentaLiquidaOrdinaria, anterior }) {
   const comp = data.compensaciones || {};
   const updateField = (key, v) => update({ ...comp, [key]: v });
+  const pyLabel = anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null;
 
   const perdidasAnteriores = +comp.perdidasAnteriores || 0;
   const rentaExentaCHC = +comp.rentaExentaCHC || 0;
@@ -512,6 +535,8 @@ function Paso4Compensaciones({ data, update, rentaLiquidaOrdinaria }) {
           articulo="Art. 147 ET"
           value={comp.perdidasAnteriores}
           onChange={(v) => updateField("perdidasAnteriores", v)}
+          prevYear={anterior?.perdidasRemanentes}
+          prevYearLabel={pyLabel ? pyLabel + " (saldo remanente)" : null}
           hint="Saldo de pérdidas fiscales no compensadas de años anteriores. Sin límite temporal. Se compensan hasta el monto de la renta líquida del año."
           optional
         />
@@ -566,7 +591,7 @@ function Paso4Compensaciones({ data, update, rentaLiquidaOrdinaria }) {
   );
 }
 
-function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGravables }) {
+function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGravables, anterior }) {
   const liq = data.liquidacion || {};
   const updateField = (key, v) => update({ ...liq, [key]: v });
 
@@ -736,6 +761,8 @@ function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGra
           articulo="Art. 373 ET"
           value={liq.retencionesAnio}
           onChange={(v) => updateField("retencionesAnio", v)}
+          prevYear={anterior?.retenciones}
+          prevYearLabel={anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null}
           hint="Suma total de retenciones en la fuente que te practicaron durante el año (según certificados recibidos)."
           optional
         />
@@ -752,6 +779,8 @@ function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGra
           articulo="Art. 807 ET"
           value={liq.anticipoAnterior}
           onChange={(v) => updateField("anticipoAnterior", v)}
+          prevYear={anterior?.anticipoGenerado}
+          prevYearLabel={anterior?.anoGravable ? `Generado año ${anterior.anoGravable}` : null}
           hint="Anticipo de renta del año siguiente pagado en la declaración del año pasado."
           optional
         />
@@ -796,6 +825,26 @@ function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGra
             <div style={{ fontSize: 11, color: T.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Saldo a favor</div>
             <div style={{ fontSize: 28, fontWeight: 800, color: T.green, fontFamily: "monospace", marginTop: 4 }}>{fm(saldoAFavor)}</div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Devolución o compensación disponible.</div>
+          </div>
+        )}
+        {anterior?.impuestoRenta > 0 && (
+          <div style={{ marginTop: 12, padding: "12px 14px", background: "rgba(6,182,212,0.06)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: T.cyan, marginBottom: 6 }}>📥 Comparación con año {anterior.anoGravable}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 11 }}>
+              <div>
+                <div style={{ color: T.txt3 }}>Impuesto {anterior.anoGravable}</div>
+                <div style={{ color: T.txt, fontWeight: 600, fontFamily: "monospace" }}>{fm(anterior.impuestoRenta)}</div>
+              </div>
+              <div>
+                <div style={{ color: T.txt3 }}>Impuesto actual</div>
+                <div style={{ color: T.txt, fontWeight: 600, fontFamily: "monospace" }}>{fm(totalImpuesto)}</div>
+              </div>
+            </div>
+            {anterior.impuestoRenta > 0 && (
+              <div style={{ marginTop: 8, fontSize: 11, color: totalImpuesto > anterior.impuestoRenta ? T.orange : T.green, fontWeight: 600 }}>
+                {totalImpuesto > anterior.impuestoRenta ? "▲" : "▼"} {Math.abs(((totalImpuesto - anterior.impuestoRenta) / anterior.impuestoRenta) * 100).toFixed(1)}% vs año anterior ({fm(Math.abs(totalImpuesto - anterior.impuestoRenta))})
+              </div>
+            )}
           </div>
         )}
       </Section>
@@ -843,6 +892,31 @@ export default function Formulario110({ owner, onSave, onCancel }) {
   }, [data.ingresos, data.depuracion]);
 
   const regimen = data.identificacion?.regimen || "ordinario";
+
+  // Mapeo año anterior → renglones del F-110 del año actual. Si el owner
+  // tiene declaracionAnterior (F-110), cada campo equivalente recibe el
+  // valor del año pasado como referencia comparativa.
+  const anterior = useMemo(() => {
+    const da = owner?.declaracionAnterior;
+    if (!da || da.tipo !== "F110") return null;
+    const r = da.renglones || {};
+    return {
+      anoGravable: da.anoGravable,
+      ingresosOperacionales: +r.ingresosOperacionales || 0,
+      ingresosNoOperacionales: +r.ingresosNoOperacionales || 0,
+      dividendos: +r.dividendos || 0,
+      costos: +r.costos || 0,
+      gastosDeducibles: +r.gastosDeducibles || 0,
+      depreciaciones: +r.depreciaciones || 0,
+      interesesFinancieros: +r.interesesFinancieros || 0,
+      perdidasAplicadas: +r.perdidasAplicadas || 0,
+      perdidasRemanentes: +r.perdidasRemanentes || 0,
+      rentaLiquidaGravable: +r.rentaLiquidaGravable || 0,
+      impuestoRenta: +r.impuestoRenta || 0,
+      retenciones: +r.retenciones || 0,
+      anticipoGenerado: +r.anticipoGenerado || 0,
+    };
+  }, [owner?.declaracionAnterior]);
 
   const handleSave = () => {
     if (onSave) onSave(data);
@@ -902,13 +976,14 @@ export default function Formulario110({ owner, onSave, onCancel }) {
       {/* Step content */}
       <div>
         {step === 1 && <Paso1Identificacion data={data} update={(v) => setData({ ...data, identificacion: v })} />}
-        {step === 2 && <Paso2Ingresos data={data} update={(v) => setData({ ...data, ingresos: v })} />}
-        {step === 3 && <Paso3Depuracion data={data} update={(v) => setData({ ...data, depuracion: v })} />}
-        {step === 4 && <Paso4Compensaciones data={data} update={(v) => setData({ ...data, compensaciones: v })} rentaLiquidaOrdinaria={derivados.rentaLiquidaOrdinaria} />}
+        {step === 2 && <Paso2Ingresos data={data} update={(v) => setData({ ...data, ingresos: v })} anterior={anterior} />}
+        {step === 3 && <Paso3Depuracion data={data} update={(v) => setData({ ...data, depuracion: v })} anterior={anterior} />}
+        {step === 4 && <Paso4Compensaciones data={data} update={(v) => setData({ ...data, compensaciones: v })} rentaLiquidaOrdinaria={derivados.rentaLiquidaOrdinaria} anterior={anterior} />}
         {step === 5 && <Paso5Liquidacion data={data} update={(v) => setData({ ...data, liquidacion: v })}
           rentaLiqGravable={Math.max(0, derivados.rentaLiquidaOrdinaria - Math.min(+data.compensaciones?.perdidasAnteriores || 0, derivados.rentaLiquidaOrdinaria) - ((+data.compensaciones?.rentaExentaCHC || 0) + (+data.compensaciones?.rentaExentaZonaFranca || 0) + (+data.compensaciones?.rentaExentaNaranja || 0) + (+data.compensaciones?.otrasRentasExentas || 0)))}
           regimen={regimen}
-          ingresosGravables={derivados.ingresosGravables} />}
+          ingresosGravables={derivados.ingresosGravables}
+          anterior={anterior} />}
       </div>
 
       {/* Navigation */}
