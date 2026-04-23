@@ -78,15 +78,14 @@ export const estimarImpuesto = (u) => {
       const ingAnual = oIng.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (u.trm || 4200) : 1)), 0) * 12;
       const gastosDeducJ = oGas.reduce((s, g) => s + (g.m || 0), 0) * 12;
       const interesesJ = oDeu.reduce((s, d) => { const saldo = d.mt || 0; const tasa = (d.ts || d.tasa || 0) / 100; return s + saldo * tasa; }, 0);
-      const oInv = (u.inv || []).filter(i => i.owner === ow.id);
-      const deprec = oInv.reduce((s, i) => {
-        const tp = (i.tp || i.tipo || "").toLowerCase();
-        if (/real estate|bodega|local|oficina/i.test(tp)) return s + (i.va || 0) * 0.05;
-        if (/vehículo|vehiculo/i.test(tp)) return s + (i.va || 0) * 0.20;
-        return s;
-      }, 0);
+      // DEPRECIACIÓN (Art. 128-141 ET): decisión deliberada del contribuyente, no automática.
+      // Solo aplica a bienes usados en la actividad productora de renta, con vida útil fiscal
+      // definida (2-3% construcción, 20% vehículos, etc.) y solo sobre el valor depreciable
+      // (no terreno). El usuario la registra como gasto con categoría "Depreciación" en Egresos;
+      // ya queda incluida en gastosDeducJ. Esta variable `deprec` es solo para display/desglose.
+      const deprec = oGas.filter(g => /Depreciación|Depreciacion|Depreciation/i.test(g.cat || "")).reduce((s, g) => s + (g.m || 0), 0) * 12;
       const gmf50 = ingAnual * 0.004 * 0.50;
-      const totalDeduc = gastosDeducJ + interesesJ + deprec + gmf50;
+      const totalDeduc = gastosDeducJ + interesesJ + gmf50;
       const utilidad = Math.max(0, ingAnual - totalDeduc);
 
       // Sub-tipos de ingresos con tratamiento especial por Art. 48 ET

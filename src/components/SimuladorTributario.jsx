@@ -21,7 +21,7 @@ const TABLA = [
 ];
 const calcImp = (uvtBase) => { for (let i = TABLA.length - 1; i >= 0; i--) { if (uvtBase > TABLA[i].d) return (TABLA[i].b + (uvtBase - TABLA[i].d) * TABLA[i].t / 100) * UVT; } return 0; };
 
-const DEDUC_JUR = { "Nómina": 1, "Honorarios": 1, "Vivienda": 1, "Servicios": 1, "Mantenimiento": 1, "Seguros": 1, "Transporte": 1, "Arrendamiento": 1, "Predial": 1, "Representación": 1, "Tecnología": 1, "Educación": 1, "Seguridad Social": 1 };
+const DEDUC_JUR = { "Nómina": 1, "Honorarios": 1, "Vivienda": 1, "Servicios": 1, "Mantenimiento": 1, "Seguros": 1, "Transporte": 1, "Arrendamiento": 1, "Predial": 1, "Representación": 1, "Tecnología": 1, "Educación": 1, "Seguridad Social": 1, "Depreciación": 1 };
 const NO_DEDUC = ["Alimentación","Entretenimiento","Personal","Vestimenta","Mascotas","Deporte","Ahorro"];
 const DEDUC_NAT = { "Salud": 1, "Vivienda": 1, "Seguros": 0.5 };
 const LIM_NAT = { "Salud": 16 * UVT * 12, "Vivienda": 100 * UVT * 12, "Seguros": 16 * UVT * 12 };
@@ -69,13 +69,10 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
 
     // Intereses deudas
     const intereses = deu.reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
-    // Depreciación
-    const deprec = inv.reduce((s, i) => {
-      const tp = (i.tp || i.tipo || "").toLowerCase();
-      if (/real estate|bodega|local|oficina/i.test(tp)) return s + (i.va || 0) * 0.05;
-      if (/vehículo|vehiculo/i.test(tp)) return s + (i.va || 0) * 0.20;
-      return s;
-    }, 0);
+    // Depreciación (Art. 128-141 ET): decisión explícita del contribuyente, no automática.
+    // Solo cuenta como gasto deducible lo que el usuario registra en categoría "Depreciación"
+    // en Egresos. Ya está incluido en gastosDeducTotal; esta variable es para display/desglose.
+    const deprec = gastos.filter(g => /Depreciación|Depreciacion|Depreciation/i.test(g.cat || "")).reduce((s, g) => s + (g.m || 0), 0) * 12;
 
     // Patrimonio
     const patTotal = inv.reduce((s, i) => s + (+i.va || 0), 0);
@@ -86,7 +83,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       const regimen = owner.regimen || "ordinario";
       const gastosDeducAnual = gastosDeducTotal * 12;
       const gmf50 = ingAnual * 0.004 * 0.50;
-      const totalDeduc = gastosDeducAnual + intereses + deprec + gmf50;
+      const totalDeduc = gastosDeducAnual + intereses + gmf50;
       const utilidadActual = Math.max(0, ingAnual - totalDeduc);
 
       const icaPagado = (gastosByCat["Predial"] ? gastosByCat["Predial"].total : 0) * 12 * 0.30;
