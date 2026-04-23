@@ -719,7 +719,9 @@ export default function SimuladorTributario({ trm, user }) {
       totalIngreso += ingAnual;
       const gastosD = od.gas.reduce((s, g) => { const p = isJ ? (NO_DEDUC.includes(g.cat) ? 0 : 1) : (DEDUC_NAT[g.cat] || 0); return s + (g.m || 0) * p; }, 0) * 12;
       const intereses = od.deu.reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
-      const deprec = od.inv.reduce((s, i) => { const tp = (i.tp||i.tipo||"").toLowerCase(); return s + (/real estate|bodega|local/i.test(tp) ? (i.va||0)*0.05 : /vehículo/i.test(tp) ? (i.va||0)*0.20 : 0); }, 0);
+      // Depreciación (Art. 128-141 ET): decisión explícita del contribuyente, solo lo
+      // registrado en gastos categoría "Depreciación" se deduce. Ya está incluido en gastosD.
+      const deprec = od.gas.filter(g => /Depreciación|Depreciacion|Depreciation/i.test(g.cat || "")).reduce((s, g) => s + (g.m || 0), 0) * 12;
       
       // Retención automática (misma lógica que OwnerPlan)
       let rete = 0;
@@ -735,7 +737,7 @@ export default function SimuladorTributario({ trm, user }) {
       
       if (isJ) {
         const gmf50 = ingAnual * 0.004 * 0.50;
-        const totalDeduc = gastosD + intereses + deprec + gmf50;
+        const totalDeduc = gastosD + intereses + gmf50;
         const util = Math.max(0, ingAnual - totalDeduc);
         const gasByCat = {};
         od.gas.forEach(g => { gasByCat[g.cat] = (gasByCat[g.cat] || 0) + (g.m || 0); });
