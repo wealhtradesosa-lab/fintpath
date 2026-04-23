@@ -213,6 +213,9 @@ export const estimarImpuesto = (u) => {
         perdidasAcumuladas, perdidasAplicadas,
         descuentosSolicitados, descuentosAplicados, descuentosDesglose: { cti: descCTI, empleo: descEmpleo, exterior: descExterior, donaciones: descDonaciones, otros: descOtros },
         gastosRegistrados: gastosDeducJ, intereses: interesesJ, deprec, gastosDeduc: totalDeduc,
+        // Campos intermedios del cálculo (Sprint 4B1 — para consumo por OwnerPlan):
+        utilidad, descuentoICA: descICA, retefuenteCalc: reteJ,
+        pctGastos: ingAnual > 0 ? (totalDeduc / ingAnual * 100) : 0,
         baseGravable, impuesto: impActual, impSinOpt: impActual, impOptimizado: impOptimoJ,
         impBruto: impBruto, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
         ahorroOptimo: impActual - impOptimoJ,
@@ -408,6 +411,12 @@ export const estimarImpuesto = (u) => {
         },
         exenta25, deducDep, deducMedicina, deducVivienda, gmfDeducible,
         pensionVol, afc, totalDeducciones,
+        // Topes legales y espacio disponible (Sprint 4B1 — para consumo por OwnerPlan):
+        afcMax: Math.min(netoLaboral * 0.30, 3800 * UVT),
+        pvMax: Math.min(netoLaboral * 0.25, 2500 * UVT),
+        pctUsado: lim40 > 0 ? (benefLaboral / lim40 * 100) : 0,
+        rentaSin: rentaLiqGeneral, rentaCon: rentaOptGeneral,
+        retefuenteNat: reteN,
         lim40, benAplic: benefLaboral,
         baseGravable: rentaLiqGeneral,
         // Desglose de rendimientos + componente inflacionario (Art. 38-39 ET)

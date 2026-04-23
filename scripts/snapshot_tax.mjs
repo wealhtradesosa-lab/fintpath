@@ -137,14 +137,26 @@ function extractSnapshot(u) {
       impBruto: r$(d.impBruto),
       reteN: r$(d.reteN),
       impuesto: r$(d.impuesto),
+      impOptimizado: r$(d.impOptimizado),
+      ahorroOptimo: r$(d.ahorroOptimo),
       tasa: Math.round((d.tasa || 0) * 10) / 10, // una decimal de tolerancia
       // juridica-specific
       gastosDeduc: r$(d.gastosDeduc),
       intereses: r$(d.intereses),
       deprec: r$(d.deprec),
+      utilidad: r$(d.utilidad),
+      descuentoICA: r$(d.descuentoICA),
+      retefuenteCalc: r$(d.retefuenteCalc),
+      pctGastos: Math.round((d.pctGastos || 0) * 10) / 10,
       // natural-specific
       neto: r$(d.neto),
       noConst: r$(d.noConst),
+      rentaSin: r$(d.rentaSin),
+      rentaCon: r$(d.rentaCon),
+      afcMax: r$(d.afcMax),
+      pvMax: r$(d.pvMax),
+      pctUsado: Math.round((d.pctUsado || 0) * 10) / 10,
+      retefuenteNat: r$(d.retefuenteNat),
     },
   };
 }

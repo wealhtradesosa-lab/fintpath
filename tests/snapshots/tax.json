@@ -9,12 +9,24 @@
       "impBruto": 0,
       "reteN": 0,
       "impuesto": 0,
+      "impOptimizado": 0,
+      "ahorroOptimo": 0,
       "tasa": 0,
       "gastosDeduc": 0,
       "intereses": 0,
       "deprec": 0,
+      "utilidad": 0,
+      "descuentoICA": 0,
+      "retefuenteCalc": 0,
+      "pctGastos": 0,
       "neto": 0,
-      "noConst": 0
+      "noConst": 0,
+      "rentaSin": 0,
+      "rentaCon": 0,
+      "afcMax": 0,
+      "pvMax": 0,
+      "pctUsado": 0,
+      "retefuenteNat": 0
     }
   },
   "s2_lagoon_arriendos": {
@@ -27,12 +39,24 @@
       "impBruto": 123162900,
       "reteN": 15855000,
       "impuesto": 107307900,
+      "impOptimizado": 107307900,
+      "ahorroOptimo": 0,
       "tasa": 23.7,
       "gastosDeduc": 101106000,
       "intereses": 100200000,
       "deprec": 0,
+      "utilidad": 351894000,
+      "descuentoICA": 0,
+      "retefuenteCalc": 15855000,
+      "pctGastos": 22.3,
       "neto": 0,
-      "noConst": 0
+      "noConst": 0,
+      "rentaSin": 0,
+      "rentaCon": 0,
+      "afcMax": 0,
+      "pvMax": 0,
+      "pctUsado": 0,
+      "retefuenteNat": 0
     }
   },
   "s3_lagoon_depreciacion": {
@@ -45,12 +69,24 @@
       "impBruto": 112662900,
       "reteN": 15855000,
       "impuesto": 96807900,
+      "impOptimizado": 96807900,
+      "ahorroOptimo": 0,
       "tasa": 21.4,
       "gastosDeduc": 131106000,
       "intereses": 100200000,
       "deprec": 30000000,
+      "utilidad": 321894000,
+      "descuentoICA": 0,
+      "retefuenteCalc": 15855000,
+      "pctGastos": 28.9,
       "neto": 0,
-      "noConst": 0
+      "noConst": 0,
+      "rentaSin": 0,
+      "rentaCon": 0,
+      "afcMax": 0,
+      "pvMax": 0,
+      "pctUsado": 0,
+      "retefuenteNat": 0
     }
   },
   "s4_sas_dividendos_intersocietarios": {
@@ -63,12 +99,24 @@
       "impBruto": 0,
       "reteN": 0,
       "impuesto": 0,
+      "impOptimizado": 0,
+      "ahorroOptimo": 0,
       "tasa": 0,
       "gastosDeduc": 200000,
       "intereses": 0,
       "deprec": 0,
+      "utilidad": 99800000,
+      "descuentoICA": 0,
+      "retefuenteCalc": 0,
+      "pctGastos": 0.2,
       "neto": 0,
-      "noConst": 0
+      "noConst": 0,
+      "rentaSin": 0,
+      "rentaCon": 0,
+      "afcMax": 0,
+      "pvMax": 0,
+      "pctUsado": 0,
+      "retefuenteNat": 0
     }
   },
   "s5_natural_salario": {
@@ -81,12 +129,24 @@
       "impBruto": 27492739,
       "reteN": 21600000,
       "impuesto": 5892739,
+      "impOptimizado": 0,
+      "ahorroOptimo": 5892739,
       "tasa": 2.7,
       "gastosDeduc": 0,
       "intereses": 0,
       "deprec": 0,
+      "utilidad": 0,
+      "descuentoICA": 0,
+      "retefuenteCalc": 0,
+      "pctGastos": 0,
       "neto": 207360000,
-      "noConst": 8640000
+      "noConst": 8640000,
+      "rentaSin": 165552540,
+      "rentaCon": 124416000,
+      "afcMax": 62208000,
+      "pvMax": 51840000,
+      "pctUsado": 50.4,
+      "retefuenteNat": 21600000
     }
   },
   "s6_natural_salario_aportes": {
@@ -99,12 +159,24 @@
       "impBruto": 25073539,
       "reteN": 21600000,
       "impuesto": 3473539,
+      "impOptimizado": 0,
+      "ahorroOptimo": 3473539,
       "tasa": 1.6,
       "gastosDeduc": 0,
       "intereses": 0,
       "deprec": 0,
+      "utilidad": 0,
+      "descuentoICA": 0,
+      "retefuenteCalc": 0,
+      "pctGastos": 0,
       "neto": 198720000,
-      "noConst": 17280000
+      "noConst": 17280000,
+      "rentaSin": 156912540,
+      "rentaCon": 119232000,
+      "afcMax": 59616000,
+      "pvMax": 49680000,
+      "pctUsado": 52.6,
+      "retefuenteNat": 21600000
     }
   },
   "s7_natural_mix": {
@@ -117,12 +189,24 @@
       "impBruto": 103044112,
       "reteN": 33120000,
       "impuesto": 69924112,
+      "impOptimizado": 61108974,
+      "ahorroOptimo": 8815138,
       "tasa": 13.6,
       "gastosDeduc": 0,
       "intereses": 0,
       "deprec": 0,
+      "utilidad": 0,
+      "descuentoICA": 0,
+      "retefuenteCalc": 0,
+      "pctGastos": 0,
       "neto": 172800000,
-      "noConst": 7200000
+      "noConst": 7200000,
+      "rentaSin": 401947740,
+      "rentaCon": 375235200,
+      "afcMax": 51840000,
+      "pvMax": 43200000,
+      "pctUsado": 61.4,
+      "retefuenteNat": 33120000
     }
   },
   "s8_sas_gastos_no_deducibles": {
@@ -135,12 +219,24 @@
       "impBruto": 34930000,
       "reteN": 2500000,
       "impuesto": 32430000,
+      "impOptimizado": 32430000,
+      "ahorroOptimo": 0,
       "tasa": 32.4,
       "gastosDeduc": 200000,
       "intereses": 0,
       "deprec": 0,
+      "utilidad": 99800000,
+      "descuentoICA": 0,
+      "retefuenteCalc": 2500000,
+      "pctGastos": 0.2,
       "neto": 0,
-      "noConst": 0
+      "noConst": 0,
+      "rentaSin": 0,
+      "rentaCon": 0,
+      "afcMax": 0,
+      "pvMax": 0,
+      "pctUsado": 0,
+      "retefuenteNat": 0
     }
   },
   "s9_sas_gastos_capacitacion_deducible": {
@@ -153,12 +249,24 @@
       "impBruto": 33180000,
       "reteN": 2500000,
       "impuesto": 30680000,
+      "impOptimizado": 30680000,
+      "ahorroOptimo": 0,
       "tasa": 30.7,
       "gastosDeduc": 5200000,
       "intereses": 0,
       "deprec": 0,
+      "utilidad": 94800000,
+      "descuentoICA": 0,
+      "retefuenteCalc": 2500000,
+      "pctGastos": 5.2,
       "neto": 0,
-      "noConst": 0
+      "noConst": 0,
+      "rentaSin": 0,
+      "rentaCon": 0,
+      "afcMax": 0,
+      "pvMax": 0,
+      "pctUsado": 0,
+      "retefuenteNat": 0
     }
   }
 }
