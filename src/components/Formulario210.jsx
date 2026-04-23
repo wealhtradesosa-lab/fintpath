@@ -366,7 +366,7 @@ function Paso4OtrasCedulas({ data, update, sugeridos, anterior }) {
 // PASO 5 · LIQUIDACIÓN
 // ─────────────────────────────────────────────────────────────────────────
 
-function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos, anterior }) {
+function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos, anterior, serie }) {
   const liq = data.liquidacion || {};
   const upd = (k, v) => update({ ...liq, [k]: v });
   const pyLabel = anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null;
@@ -466,6 +466,14 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
               gmf: anterior.gmf50 || 0,
             },
           }}
+          tendenciaContext={serie && serie.length >= 2 ? {
+            serie: serie,
+            actual: {
+              ingresos: (+ingP.salarios || 0) + (+ingP.honorarios || 0) + (+ingP.intereses || 0) + (+ingP.arrendamientos || 0) + (+ocP.pensionesBruto || 0) + (+ocP.divArt49Gravada || 0) + (+ocP.divArt49NoGravados || 0) + (+ocP.divExteriorYOtros || 0),
+              retenciones: retencionesAño,
+              impuesto: impuestoNeto,
+            },
+          } : null}
         />
         );
       })()}
@@ -588,6 +596,24 @@ export default function Formulario210({ owner, user, onSave, onCancel }) {
     };
   }, [owner?.declaracionAnterior]);
 
+  // Serie histórica completa (para detección de tendencias multi-año).
+  // Ordenada ASCENDENTE por año (más antiguo primero). Solo toma F-210s.
+  const serie = useMemo(() => {
+    const arr = owner?.declaracionesAnteriores || (owner?.declaracionAnterior ? [owner.declaracionAnterior] : []);
+    return arr
+      .filter(d => d.tipo === "F210")
+      .map(d => {
+        const r = d.renglones || {};
+        return {
+          anoGravable: d.anoGravable,
+          ingresos: (+r.salarios || 0) + (+r.honorarios || 0) + (+r.intereses || 0) + (+r.arrendamientos || 0) + (+r.pensiones || 0) + (+r.dividendos || 0),
+          retenciones: +r.retenciones || 0,
+          impuesto: +r.impuestoRenta || 0,
+        };
+      })
+      .sort((a, b) => parseInt(a.anoGravable || 0) - parseInt(b.anoGravable || 0));
+  }, [owner?.declaracionesAnteriores, owner?.declaracionAnterior]);
+
   const handleSave = () => {
     if (onSave) onSave(data);
   };
@@ -644,7 +670,7 @@ export default function Formulario210({ owner, user, onSave, onCancel }) {
         {step === 2 && <Paso2IngresosCedulaGeneral data={data} update={(v) => setData({ ...data, ingresos: v })} sugeridos={sugeridos} anterior={anterior} />}
         {step === 3 && <Paso3DepuracionCedulaGeneral data={data} update={(v) => setData({ ...data, depuracion: v })} totales={totales} sugeridos={sugeridos} anterior={anterior} />}
         {step === 4 && <Paso4OtrasCedulas data={data} update={(v) => setData({ ...data, otrasCedulas: v })} sugeridos={sugeridos} anterior={anterior} />}
-        {step === 5 && <Paso5Liquidacion data={data} update={(v) => setData({ ...data, liquidacion: v })} rentaLiqGeneralFinal={rentaLiqGeneralFinal} impGO={impGO} sugeridos={sugeridos} anterior={anterior} />}
+        {step === 5 && <Paso5Liquidacion data={data} update={(v) => setData({ ...data, liquidacion: v })} rentaLiqGeneralFinal={rentaLiqGeneralFinal} impGO={impGO} sugeridos={sugeridos} anterior={anterior} serie={serie} />}
       </div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 24 }}>

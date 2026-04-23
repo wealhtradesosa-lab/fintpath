@@ -193,12 +193,105 @@ export function calcPatronesAnomalos(ctx) {
   return patrones;
 }
 
-export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patronesContext }) {
+// ═══════════════════════════════════════════════════════════════════════════
+// PATRONES DE TENDENCIA (multi-año)
+// ─────────────────────────────────────────────────────────────────────────
+// Detecta cambios vs TENDENCIA histórica — no solo vs el último año.
+// Requiere ≥ 3 años de historial para ser útil. Si hay menos, devuelve [].
+//
+// Ejemplos de lo que detecta:
+//   · El impuesto venía creciendo ~10%/año en los últimos 3 años
+//     y este año bajó 40% → anomalía
+//   · Las retenciones se mantenían estables y este año cayeron → alerta
+//   · Los ingresos vienen bajando en cada uno de los últimos 3 años → tendencia
+//
+// Input:
+//   serie: array de { anoGravable, ingresos, retenciones, impuesto, ... }
+//   ordenado ascendente por año (más antiguo primero, más reciente último).
+//
+//   actual: { ingresos, retenciones, impuesto } — valores del año en curso
+//           (que aún no están en serie)
+//
+// Output: array de { severity, label, sugerencia } — mismo shape que patrones.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Calcula la pendiente porcentual promedio año-a-año en una serie de valores
+// (cada elemento debe ser > 0 y numérico). Retorna null si la serie no permite
+// calcular pendiente (menos de 2 puntos válidos o ruido cero).
+function pendienteAnual(valores) {
+  const v = valores.filter(x => x > 0);
+  if (v.length < 2) return null;
+  let sumaPct = 0, pasos = 0;
+  for (let i = 1; i < v.length; i++) {
+    const deltaPct = ((v[i] - v[i - 1]) / v[i - 1]) * 100;
+    sumaPct += deltaPct;
+    pasos++;
+  }
+  return pasos > 0 ? sumaPct / pasos : null;
+}
+
+export function calcPatronesTendencia({ serie, actual }) {
+  const patrones = [];
+  if (!Array.isArray(serie) || serie.length < 2) return patrones;
+  const MIN = 1_000_000;
+  const UMBRAL_ANOMALIA_PCT = 20; // delta vs pendiente en puntos porcentuales
+
+  // Helpers
+  const fmM = (n) => "$" + Math.round(n / 1e6).toLocaleString("es-CO") + "M";
+  const checkVariable = (key, label, articulo) => {
+    const vals = serie.map(s => Number(s[key]) || 0);
+    const valActual = Number(actual?.[key]) || 0;
+    const ultimoAnterior = vals[vals.length - 1] || 0;
+    if (ultimoAnterior < MIN || valActual < MIN) return;
+
+    const pendiente = pendienteAnual(vals);
+    if (pendiente === null) return;
+
+    // Delta observado entre el último año de la serie y el año actual
+    const deltaObservado = ((valActual - ultimoAnterior) / ultimoAnterior) * 100;
+    // ¿Cuánto se desvía del promedio histórico?
+    const desvio = deltaObservado - pendiente;
+
+    if (Math.abs(desvio) >= UMBRAL_ANOMALIA_PCT) {
+      const direccionHist = pendiente > 5 ? "creciendo" : pendiente < -5 ? "bajando" : "estable";
+      const direccionActual = deltaObservado > 0 ? "subió" : "bajó";
+      const severity = Math.abs(desvio) >= 40 ? "critical" : "warning";
+      patrones.push({
+        severity,
+        label: `${label}: rompe la tendencia histórica`,
+        sugerencia: `Los últimos ${serie.length} años (${serie[0].anoGravable}–${serie[serie.length-1].anoGravable}) tu ${label.toLowerCase()} venía ${direccionHist === "estable" ? "estable" : direccionHist + " ~" + Math.abs(pendiente).toFixed(0) + "%/año"} y este año ${direccionActual} ${Math.abs(deltaObservado).toFixed(0)}%. Es un cambio de ${Math.abs(desvio).toFixed(0)} puntos vs lo esperado${articulo ? ` (${articulo})` : ""}. Si es correcto, OK. Si no, revisá la captura.`,
+      });
+    }
+  };
+
+  checkVariable("impuesto", "Impuesto total");
+  checkVariable("retenciones", "Retenciones");
+  checkVariable("ingresos", "Ingresos totales");
+
+  return patrones;
+}
+
+// Calcula proyección lineal del año siguiente a partir de una serie histórica.
+// Devuelve { valor, pendientePct } o null si no hay suficientes puntos.
+export function proyectarSiguienteAno(serie, key) {
+  if (!Array.isArray(serie) || serie.length < 2) return null;
+  const vals = serie.map(s => Number(s[key]) || 0).filter(v => v > 0);
+  if (vals.length < 2) return null;
+  const pendiente = pendienteAnual(vals);
+  if (pendiente === null) return null;
+  const ultimo = vals[vals.length - 1];
+  const proyeccion = ultimo * (1 + pendiente / 100);
+  return { valor: proyeccion, pendientePct: pendiente };
+}
+
+export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patronesContext, tendenciaContext }) {
   const alertas = calcAlertasAnoAnterior(comparaciones);
   const patrones = patronesContext ? calcPatronesAnomalos(patronesContext) : [];
-  if (alertas.length === 0 && patrones.length === 0) return null;
+  const tendencias = tendenciaContext ? calcPatronesTendencia(tendenciaContext) : [];
+  if (alertas.length === 0 && patrones.length === 0 && tendencias.length === 0) return null;
 
-  const critical = [...alertas, ...patrones].filter(a => a.severity === "critical");
+  const critical = [...alertas, ...patrones, ...tendencias].filter(a => a.severity === "critical");
+  const totalSenales = alertas.length + patrones.length + tendencias.length;
 
   return (
     <div style={{
@@ -215,7 +308,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
         {critical.length > 0 ? "🚨" : "⚠️"}
         Alertas de consistencia vs año {anoAnterior || "anterior"}
         <span style={{ color: T.txt3, fontWeight: 400, fontSize: 10, marginLeft: 4 }}>
-          ({alertas.length + patrones.length} señal{(alertas.length + patrones.length) !== 1 ? "es" : ""})
+          ({totalSenales} señal{totalSenales !== 1 ? "es" : ""})
         </span>
       </div>
 
@@ -267,6 +360,30 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
               {p.sugerencia && (
                 <div style={{ color: T.txt2, marginTop: 4, fontSize: 10, lineHeight: 1.4 }}>
                   → {p.sugerencia}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {tendencias.map((t, i) => {
+          const color = t.severity === "critical" ? T.red : T.orange;
+          return (
+            <div key={"t" + i} style={{
+              padding: "8px 10px",
+              background: "rgba(255,255,255,0.02)",
+              borderRadius: 8,
+              borderLeft: "2px solid " + color,
+              fontSize: 11,
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
+                <span style={{ color: T.txt, fontWeight: 600 }}>📈 {t.label}</span>
+                <span style={{ color: color, fontWeight: 700, fontSize: 9, textTransform: "uppercase" }}>
+                  Tendencia histórica
+                </span>
+              </div>
+              {t.sugerencia && (
+                <div style={{ color: T.txt2, marginTop: 4, fontSize: 10, lineHeight: 1.4 }}>
+                  → {t.sugerencia}
                 </div>
               )}
             </div>

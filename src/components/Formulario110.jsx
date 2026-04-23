@@ -592,7 +592,7 @@ function Paso4Compensaciones({ data, update, rentaLiquidaOrdinaria, anterior }) 
   );
 }
 
-function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGravables, anterior }) {
+function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGravables, anterior, serie }) {
   const liq = data.liquidacion || {};
   const updateField = (key, v) => update({ ...liq, [key]: v });
 
@@ -850,6 +850,14 @@ function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGra
                 dividendos: anterior.dividendos || 0,
               },
             }}
+            tendenciaContext={serie && serie.length >= 2 ? {
+              serie: serie,
+              actual: {
+                ingresos: (+data.ingresos?.operacionales || 0) + (+data.ingresos?.noOperacionales || 0) + (+data.ingresos?.dividendos || 0),
+                retenciones: retenciones,
+                impuesto: totalImpuesto,
+              },
+            } : null}
           />
         )}
       </Section>
@@ -923,6 +931,23 @@ export default function Formulario110({ owner, onSave, onCancel }) {
     };
   }, [owner?.declaracionAnterior]);
 
+  // Serie histórica para detección de tendencias multi-año en jurídicas.
+  const serie = useMemo(() => {
+    const arr = owner?.declaracionesAnteriores || (owner?.declaracionAnterior ? [owner.declaracionAnterior] : []);
+    return arr
+      .filter(d => d.tipo === "F110")
+      .map(d => {
+        const r = d.renglones || {};
+        return {
+          anoGravable: d.anoGravable,
+          ingresos: (+r.ingresosOperacionales || 0) + (+r.ingresosNoOperacionales || 0) + (+r.dividendos || 0),
+          retenciones: +r.retenciones || 0,
+          impuesto: +r.impuestoRenta || 0,
+        };
+      })
+      .sort((a, b) => parseInt(a.anoGravable || 0) - parseInt(b.anoGravable || 0));
+  }, [owner?.declaracionesAnteriores, owner?.declaracionAnterior]);
+
   const handleSave = () => {
     if (onSave) onSave(data);
   };
@@ -988,7 +1013,8 @@ export default function Formulario110({ owner, onSave, onCancel }) {
           rentaLiqGravable={Math.max(0, derivados.rentaLiquidaOrdinaria - Math.min(+data.compensaciones?.perdidasAnteriores || 0, derivados.rentaLiquidaOrdinaria) - ((+data.compensaciones?.rentaExentaCHC || 0) + (+data.compensaciones?.rentaExentaZonaFranca || 0) + (+data.compensaciones?.rentaExentaNaranja || 0) + (+data.compensaciones?.otrasRentasExentas || 0)))}
           regimen={regimen}
           ingresosGravables={derivados.ingresosGravables}
-          anterior={anterior} />}
+          anterior={anterior}
+          serie={serie} />}
       </div>
 
       {/* Navigation */}
