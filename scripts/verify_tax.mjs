@@ -74,6 +74,24 @@ const scenarios = [
       trm: 4200,
     },
   },
+  {
+    label: "7. Persona natural MIX realista: salario $15M + arriendos $20M/mes + rendimientos CDT $8M/mes + inmuebles en inversión — esperado: tributar aplicando clasificación por cédula + componente inflacionario (no sobre-estimación)",
+    u: {
+      owners: [{ id: "sosa", name: "Sosa", type: "natural", regimen: "ordinario" }],
+      ingresos: [
+        { id: "i1", categoria: "Salario", mensual: 15_000_000, owner: "sosa", moneda: "COP" },
+        { id: "i2", categoria: "Arriendo", mensual: 20_000_000, owner: "sosa", moneda: "COP" },
+        { id: "i3", categoria: "Intereses bancarios", mensual: 8_000_000, owner: "sosa", moneda: "COP" },
+      ],
+      gas: {
+        "Predial": [{ c: "Predial inmueble", m: 500_000, owner: "sosa", t: "f" }],
+        "Mantenimiento": [{ c: "Mantenimiento", m: 800_000, owner: "sosa", t: "v" }],
+      },
+      deu: [],
+      inv: [{ id: "i1", n: "Apto arrendado", tp: "Real Estate", va: 800_000_000, owner: "sosa" }],
+      trm: 4200,
+    },
+  },
 ];
 
 console.log(`\n═══ VERIFICADOR MOTOR TRIBUTARIO · UVT ${UVT} ═══\n`);

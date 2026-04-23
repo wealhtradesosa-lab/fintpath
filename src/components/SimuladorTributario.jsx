@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { estimarImpuesto } from "../lib/taxCO.js";
 
 const UVT = 52374;
 const T = {
@@ -708,65 +709,30 @@ export default function SimuladorTributario({ trm, user }) {
     return { owner: ow, ing: oIng, gas: oGas, inv: oInv, deu: oDeu };
   });
 
-  // Calculate consolidated totals
+  // Calculate consolidated totals — USANDO estimarImpuesto() como single source of truth.
+  // Esto reemplaza la implementación duplicada que tenía 6 bugs documentados para persona
+  // natural (INCRNGO sobre todo el ingreso, renta exenta 25% sobre total, tope 40% sobre
+  // total, no aplicaba componente inflacionario Art. 38-39 ET, no clasificaba por cédula,
+  // no deducía gastos del inmueble para arriendos). El motor estimarImpuesto() ya tiene
+  // toda la lógica correcta del Estatuto Tributario y es la única fuente de verdad.
   const consolidado = useMemo(() => {
+    const est = estimarImpuesto(user);
     let totalIngreso = 0, totalImpActual = 0, totalImpOptimo = 0;
     const items = [];
-    ownerData.forEach(od => {
-      const isJ = od.owner.type === "juridica";
-      const ingAnual = od.ing.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
-      if (ingAnual <= 0) return;
-      totalIngreso += ingAnual;
-      const gastosD = od.gas.reduce((s, g) => { const p = isJ ? (NO_DEDUC.includes(g.cat) ? 0 : 1) : (DEDUC_NAT[g.cat] || 0); return s + (g.m || 0) * p; }, 0) * 12;
-      const intereses = od.deu.reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
-      // Depreciación (Art. 128-141 ET): decisión explícita del contribuyente, solo lo
-      // registrado en gastos categoría "Depreciación" se deduce. Ya está incluido en gastosD.
-      const deprec = od.gas.filter(g => /Depreciación|Depreciacion|Depreciation/i.test(g.cat || "")).reduce((s, g) => s + (g.m || 0), 0) * 12;
-      
-      // Retención automática (misma lógica que OwnerPlan)
-      let rete = 0;
-      od.ing.forEach(i => {
-        const m = (i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1) * 12;
-        const cat = i.categoria || "";
-        if (/Salario/i.test(cat)) { const mUVT = m / 12 / UVT; rete += m * (mUVT > 360 ? 0.19 : mUVT > 150 ? 0.10 : mUVT > 95 ? 0.04 : 0); }
-        else if (/Honorarios|Freelance/i.test(cat)) rete += m * 0.11;
-        else if (/Arriendo/i.test(cat)) rete += m * 0.035;
-        else if (/Rendimiento|Dividendos/i.test(cat)) rete += m * 0.07;
-        else if (isJ) rete += m * 0.025;
+    (est.detalle || []).forEach(d => {
+      totalIngreso += d.ingreso || 0;
+      totalImpActual += d.impuesto || 0;
+      totalImpOptimo += d.impOptimizado != null ? d.impOptimizado : (d.impuesto || 0);
+      items.push({
+        name: d.name,
+        icon: d.type === "juridica" ? "🏢" : "👤",
+        imp: d.impuesto || 0,
+        impOpt: d.impOptimizado != null ? d.impOptimizado : (d.impuesto || 0),
+        ing: d.ingreso || 0,
       });
-      
-      if (isJ) {
-        const gmf50 = ingAnual * 0.004 * 0.50;
-        const totalDeduc = gastosD + intereses + gmf50;
-        const util = Math.max(0, ingAnual - totalDeduc);
-        const gasByCat = {};
-        od.gas.forEach(g => { gasByCat[g.cat] = (gasByCat[g.cat] || 0) + (g.m || 0); });
-        const icaPagado = (gasByCat["Predial"] || 0) * 12 * 0.30;
-        const descICA = icaPagado * 0.50;
-        const imp = Math.max(0, util * 0.35 - descICA - rete);
-        // Estrategia
-        const maxRed = util * 0.35;
-        const impOpt = Math.max(0, Math.max(util * 0.40, 0) * 0.35 - descICA - rete);
-        totalImpActual += imp;
-        totalImpOptimo += impOpt;
-        items.push({ name: od.owner.name, icon: "🏢", imp, impOpt, ing: ingAnual });
-      } else {
-        const noConst = ingAnual * 0.08;
-        const neto = ingAnual - noConst;
-        const ex25 = Math.min(neto * 0.25, 790 * UVT);
-        const lim40 = neto * 0.40;
-        const benSin = Math.min(ex25 + gastosD, lim40);
-        const rentaSin = Math.max(0, neto - benSin);
-        const imp = Math.max(0, calcImp(rentaSin / UVT) - rete);
-        const rentaCon = Math.max(0, neto - lim40);
-        const impOpt = Math.max(0, calcImp(rentaCon / UVT) - rete);
-        totalImpActual += imp;
-        totalImpOptimo += impOpt;
-        items.push({ name: od.owner.name, icon: "👤", imp, impOpt, ing: ingAnual });
-      }
     });
     return { totalIngreso, totalImpActual, totalImpOptimo, ahorro: totalImpActual - totalImpOptimo, items };
-  }, [ownerData, trm]);
+  }, [user]);
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>

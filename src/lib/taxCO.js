@@ -226,7 +226,7 @@ export const estimarImpuesto = (u) => {
       const rendAnual = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual + inversionAnual;
       const divAnual = oIng.filter(i => /Dividendos/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
       const pensAnual = oIng.filter(i => /Pensión/i.test(i.categoria || "")).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
-      const otrosAnual = oIng.filter(i => !["Salario", "Honorarios", "Freelance", "Arriendo", "Rendimiento", "Inversión", "CDT", "Dividendos", "Pensión"].some(c => (i.categoria || "").includes(c))).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const otrosAnual = oIng.filter(i => !["Salario", "Honorarios", "Freelance", "Arriendo", "Rendimiento", "Inversión", "CDT", "Dividendos", "Pensión", "Intereses bancarios", "Intereses", "Utilidad FIC", "FIC"].some(c => (i.categoria || "").includes(c))).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
 
       const ingLaboral = salAnual + honAnual;
       const ingCapital = rendAnual;
