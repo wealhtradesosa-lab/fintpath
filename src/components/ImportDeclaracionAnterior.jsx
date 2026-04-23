@@ -17,7 +17,7 @@
 //   3. Proyectar el impuesto esperado del año en curso
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 const UVT_2024 = 47065;
 const UVT_2025 = 49799;
@@ -74,7 +74,16 @@ const Section = ({ title, icon, color, children }) => (
 
 export default function ImportDeclaracionAnterior({ owner, onSave, onCancel }) {
   const tipo = owner?.type === "juridica" ? "F110" : "F210";
-  const prev = owner?.declaracionAnterior || {};
+  // Array-based: todas las declaraciones guardadas de este owner.
+  // Si solo existe el legacy owner.declaracionAnterior (sin array), se convierte.
+  const historial = useMemo(() => {
+    if (owner?.declaracionesAnteriores?.length) return owner.declaracionesAnteriores;
+    if (owner?.declaracionAnterior) return [owner.declaracionAnterior];
+    return [];
+  }, [owner?.declaracionesAnteriores, owner?.declaracionAnterior]);
+
+  // La más reciente se pre-carga por defecto
+  const prev = historial[0] || {};
   const [anoGravable, setAnoGravable] = useState(prev.anoGravable || String(new Date().getFullYear() - 2));
   const [rg, setRg] = useState(prev.renglones || {});
 
@@ -82,6 +91,14 @@ export default function ImportDeclaracionAnterior({ owner, onSave, onCancel }) {
 
   const anoNum = parseInt(anoGravable) || 0;
   const uvtDelAno = anoNum === 2024 ? UVT_2024 : anoNum === 2025 ? UVT_2025 : UVT_2025;
+
+  // Cambiar de año: si hay una declaración guardada de ese año, cargarla
+  const cambiarAno = (nuevoAno) => {
+    setAnoGravable(nuevoAno);
+    const existente = historial.find(d => d.anoGravable === nuevoAno);
+    if (existente) setRg(existente.renglones || {});
+    else setRg({});
+  };
 
   const handleSave = () => {
     const declaracion = {
@@ -117,10 +134,47 @@ export default function ImportDeclaracionAnterior({ owner, onSave, onCancel }) {
       </div>
 
       <Section title="Año gravable" icon="📅" color={T.cyan}>
+        {historial.length > 0 && (
+          <div style={{ marginBottom: 12, padding: "10px 12px", background: "rgba(6,182,212,0.06)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 8, fontSize: 11 }}>
+            <div style={{ color: T.cyan, fontWeight: 700, marginBottom: 6 }}>
+              📚 Histórico guardado ({historial.length} año{historial.length !== 1 ? "s" : ""})
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {historial.map(d => (
+                <button
+                  key={d.anoGravable}
+                  onClick={() => cambiarAno(d.anoGravable)}
+                  style={{
+                    padding: "4px 10px",
+                    background: d.anoGravable === anoGravable ? T.cyan : "rgba(255,255,255,0.04)",
+                    color: d.anoGravable === anoGravable ? "#000" : T.txt2,
+                    border: "1px solid " + (d.anoGravable === anoGravable ? T.cyan : T.border),
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: "monospace",
+                  }}
+                  title={`Editar declaración de ${d.anoGravable}`}
+                >
+                  {d.anoGravable}
+                </button>
+              ))}
+              {!historial.find(d => d.anoGravable === anoGravable) && (
+                <span style={{ padding: "4px 10px", background: T.green, color: "#000", border: "1px solid " + T.green, borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: "monospace" }}>
+                  + {anoGravable} (nuevo)
+                </span>
+              )}
+            </div>
+            <div style={{ color: T.txt3, marginTop: 6, fontSize: 10, lineHeight: 1.4 }}>
+              Click en un año para editarlo. Para agregar otro año nuevo, cambiá el campo abajo y los campos se limpian.
+            </div>
+          </div>
+        )}
         <Field
           label="Año que estás importando"
           value={anoGravable}
-          onChange={setAnoGravable}
+          onChange={cambiarAno}
           hint={"Ej: 2024 si ya presentaste esa declaración y querés compararla con la de 2025 que estás preparando. UVT usado: $" + uvtDelAno.toLocaleString("es-CO")}
         />
       </Section>

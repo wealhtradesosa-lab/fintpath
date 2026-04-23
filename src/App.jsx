@@ -1725,7 +1725,16 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             owner={impOwner}
             onCancel={()=>setImportForOwnerId(null)}
             onSave={(declaracion)=>{
-              const nw=(u.owners||[]).map(o=>o.id===importForOwnerId?{...o,declaracionAnterior:declaracion}:o);
+              const nw=(u.owners||[]).map(o=>{
+                if(o.id!==importForOwnerId)return o;
+                // Migración silenciosa: si existe declaracionAnterior legacy pero no el array,
+                // inicializar el array con esa declaración para no perder el histórico previo.
+                const existing=o.declaracionesAnteriores||(o.declaracionAnterior?[o.declaracionAnterior]:[]);
+                // Reemplazar por año (si ya existe uno con ese anoGravable) o agregar.
+                const filtered=existing.filter(d=>d.anoGravable!==declaracion.anoGravable);
+                const nueva=[...filtered,declaracion].sort((a,b)=>parseInt(b.anoGravable||0)-parseInt(a.anoGravable||0));
+                return {...o,declaracionesAnteriores:nueva,declaracionAnterior:nueva[0]};
+              });
               setU({...u,owners:nw});
               setImportForOwnerId(null);
               showToast(`✅ Declaración ${declaracion.anoGravable} importada para ${impOwner.name}`);
@@ -1776,7 +1785,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                           <div style={{fontSize:11,color:T.tx3,marginTop:2}}>
                             {ow.regimen==="simple"?"Régimen Simple (RST)":"Régimen Ordinario · Cédula General"}
                             {hasF210&&<span style={{color:T.gn,marginLeft:8}}>· ✅ Declaración guardada{anoG?` (${anoG})`:""}</span>}
-                            {ow.declaracionAnterior?.anoGravable&&<span style={{color:T.cyan||T.bl,marginLeft:8}}>· 📥 Año anterior ({ow.declaracionAnterior.anoGravable}) importado</span>}
+                            {ow.declaracionAnterior?.anoGravable&&<span style={{color:T.cyan||T.bl,marginLeft:8}}>· 📥 {(ow.declaracionesAnteriores?.length||0)>1?`${ow.declaracionesAnteriores.length} años de histórico (último: ${ow.declaracionAnterior.anoGravable})`:`Año anterior (${ow.declaracionAnterior.anoGravable}) importado`}</span>}
                           </div>
                         </div>
                         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
@@ -1809,7 +1818,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                              ow.regimen==="zona_franca"?"Zona Franca (20%)":
                              ow.regimen==="chc"?"CHC":ow.regimen||"Ordinario"}
                             {hasF110&&<span style={{color:T.gn,marginLeft:8}}>· ✅ Declaración guardada{anoG?` (${anoG})`:""}</span>}
-                            {ow.declaracionAnterior?.anoGravable&&<span style={{color:T.cyan||T.bl,marginLeft:8}}>· 📥 Año anterior ({ow.declaracionAnterior.anoGravable}) importado</span>}
+                            {ow.declaracionAnterior?.anoGravable&&<span style={{color:T.cyan||T.bl,marginLeft:8}}>· 📥 {(ow.declaracionesAnteriores?.length||0)>1?`${ow.declaracionesAnteriores.length} años de histórico (último: ${ow.declaracionAnterior.anoGravable})`:`Año anterior (${ow.declaracionAnterior.anoGravable}) importado`}</span>}
                           </div>
                         </div>
                         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
