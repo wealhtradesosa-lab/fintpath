@@ -12,6 +12,61 @@ const T = {
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
 const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
 
+// Sub-opciones de fiscalCode por categoría ambigua. Si la categoría no está
+// aquí, el fiscalCode se deriva automáticamente vía normalize.js (no pregunta).
+const FISCAL_SUBOPTIONS = {
+  "Honorarios": {
+    question: "🧾 ¿Tenés 2+ empleados contratados ≥ 83% del año? (Art. 206 #10 ET)",
+    help: "Define si aplica renta exenta 25%. Consultá con tu contador si tenés duda.",
+    options: [
+      { v: "LAB_HONORARIOS_SIN_EMPLEADOS", l: "No — tributo como cédula de trabajo SIN exenta 25%" },
+      { v: "LAB_HONORARIOS_CON_EMPLEADOS", l: "Sí — aplico renta exenta 25% (Art. 206 #10)" },
+    ],
+  },
+  "Arriendo": {
+    question: "🏠 ¿Qué arrendás?",
+    help: "Inmueble (casa, bodega, local) va a cédula NO laboral con gastos deducibles. Mueble (equipos, maquinaria) va a cédula de capital.",
+    options: [
+      { v: "NOL_ARRIENDO_INMUEBLE", l: "Inmueble (casa, bodega, local, oficina)" },
+      { v: "CAP_ARRIENDO_MUEBLE", l: "Mueble o equipo (maquinaria, vehículo, etc.)" },
+    ],
+  },
+  "Dividendos": {
+    question: "📊 ¿Qué tipo de dividendos?",
+    help: "Cada tipo tributa diferente según Art. 48/49/242/254 ET.",
+    options: [
+      { v: "DIV_ART49_GRAVADOS", l: "Sociedad nacional — parte gravada (Art. 49)" },
+      { v: "DIV_ART49_NO_GRAVADOS", l: "Sociedad nacional — parte no gravada (Art. 49)" },
+      { v: "DIV_EXTERIOR", l: "Sociedad extranjera (Art. 254)" },
+      { v: "DIV_INTERSOCIETARIOS", l: "Inter-societario (Art. 48, solo persona jurídica)" },
+    ],
+  },
+  "Inversión": {
+    question: "🏦 ¿La venta del activo cumple >2 años de tenencia?",
+    help: "Activos >2 años van a ganancia ocasional (tarifa 15%). <2 años son renta ordinaria.",
+    options: [
+      { v: "CAP_VENTA_ACTIVOS", l: "No, <2 años — renta ordinaria" },
+      { v: "GO_VENTA_ACTIVO_MAS_2A", l: "Sí, >2 años — ganancia ocasional 15%" },
+    ],
+  },
+};
+
+// Default fiscalCode por categoría para items nuevos (antes de que el usuario
+// aclare en el sub-select). Replica el comportamiento conservador del normalizer.
+const DEFAULT_FISCAL_CODE = {
+  "Salario": "LAB_SALARIO",
+  "Honorarios": "LAB_HONORARIOS_SIN_EMPLEADOS",
+  "Arriendo": "NOL_ARRIENDO_INMUEBLE",
+  "Intereses bancarios": "CAP_INTERESES_BANCARIOS",
+  "Utilidad FIC": "CAP_FIC",
+  "Rendimiento": "CAP_RENDIMIENTO_GENERICO",
+  "Dividendos": "DIV_ART49_GRAVADOS",
+  "Inversión": "CAP_VENTA_ACTIVOS",
+  "Pensión": "PEN_JUBILACION",
+  "Negocio": "NOL_NEGOCIO",
+  "Otro": "NOL_OTROS",
+};
+
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
       <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
@@ -72,7 +127,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     input.click();
   };
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" });
+  const [form, setForm] = useState({ nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" });
   const [selected, setSelected] = useState(new Set());
 
   const items = ingresos || [];
@@ -97,10 +152,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     else { item.id = "ing_" + Date.now(); updated = [...items, item]; }
     onUpdate(updated);
     setShowForm(false); setEditId(null);
-    setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" });
+    setForm({ nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" });
   };
   const handleEdit = (item) => {
-    setForm({ nombre: item.nombre, categoria: item.categoria, mensual: item.mensual, tipo: item.tipo, fuente: item.fuente || "", capital: item.capital || "", tasa: item.tasa || "", moneda: item.moneda || "COP", owner: item.owner || "" });
+    setForm({ nombre: item.nombre, categoria: item.categoria, fiscalCode: item.fiscalCode || DEFAULT_FISCAL_CODE[item.categoria] || "NOL_OTROS", mensual: item.mensual, tipo: item.tipo, fuente: item.fuente || "", capital: item.capital || "", tasa: item.tasa || "", moneda: item.moneda || "COP", owner: item.owner || "" });
     setEditId(item.id); setShowForm(true);
   };
 
@@ -119,7 +174,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               🗑️ Eliminar ({selected.size})
             </button>
           )}
-          <button onClick={() => { setEditId(null); setForm({ nombre: "", categoria: "Salario", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" }); setShowForm(true); }}
+          <button onClick={() => { setEditId(null); setForm({ nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" }); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             + Agregar
           </button>
@@ -246,8 +301,22 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 <div style={{fontSize:11,fontWeight:600,color:"#a1a1aa",marginBottom:8}}>🧾 Clasificación tributaria (opcional)</div>
               </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} /></div>
-              <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v }))} options={CATS} /></div>
+              <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v, fiscalCode: DEFAULT_FISCAL_CODE[v] || "NOL_OTROS" }))} options={CATS} /></div>
               <div style={{fontSize:10,color:"#71717a",marginTop:-8,marginBottom:4,padding:"0 4px",gridColumn:"1/-1"}}>Si asignas propietario, este ingreso se incluirá en el cálculo de impuestos de esa persona o empresa.</div>
+
+              {FISCAL_SUBOPTIONS[form.categoria] && (
+                <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>{FISCAL_SUBOPTIONS[form.categoria].question}</div>
+                  <select
+                    value={form.fiscalCode}
+                    onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
+                    style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer" }}
+                  >
+                    {FISCAL_SUBOPTIONS[form.categoria].options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                  </select>
+                  <div style={{ fontSize: 10, color: "#a1a1aa", marginTop: 6, lineHeight: 1.5 }}>{FISCAL_SUBOPTIONS[form.categoria].help}</div>
+                </div>
+              )}
 
 
               {["Rendimiento","Dividendos","Arriendo","Inversión"].includes(form.categoria) && (
