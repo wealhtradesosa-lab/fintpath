@@ -4,6 +4,7 @@ import { estimarImpuesto } from "../lib/taxCO.js";
 import { adapterOwnerPlan } from "../lib/ownerPlanAdapter.js";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { calcImpRenta as calcImpRentaCore } from "../lib/tablaArt241.js";
+import { track } from "../lib/analytics.js";
 
 const UVT = 52374;
 const T = {
@@ -493,6 +494,11 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
         // Aprobar: persiste el fiscalCodeSugerido en el item, haciendo desaparecer el warning.
         const aprobar = (w) => {
           if (!onUpdate || !w.fiscalCodeSugerido) return;
+          track("revision_fiscal_aprobar", {
+            item_type: w.itemType || "unknown",
+            fiscal_code: w.fiscalCodeSugerido,
+            severity: w.severity || "info",
+          });
           onUpdate(prev => {
             if (!prev) return prev;
             if (w.itemType === "ingreso") {
@@ -524,6 +530,10 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
 
         // Aprobar TODOS los de un tipo/código en bloque — delega a aprobar() en loop.
         const aprobarGrupo = (list) => {
+          track("revision_fiscal_aprobar_grupo", {
+            cantidad: list.length,
+            item_type: list[0]?.itemType || "unknown",
+          });
           list.forEach(w => aprobar(w));
         };
 
