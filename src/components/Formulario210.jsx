@@ -26,11 +26,12 @@
 //                                   otrasCedulas, liquidacion }
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
 import { calcImpRenta as calcImpRentaCore } from "../lib/tablaArt241.js";
 import AlertasAnoAnterior from "./AlertasAnoAnterior.jsx";
 import MiniGraficaAnosAnteriores from "./MiniGraficaAnosAnteriores.jsx";
+import { track } from "../lib/analytics.js";
 
 const UVT = 52374; // UVT 2026
 
@@ -513,6 +514,20 @@ export default function Formulario210({ owner, user, onSave, onCancel }) {
   });
   const [step, setStep] = useState(1);
 
+  // Analytics: emitir evento al abrir el wizard
+  useEffect(() => {
+    track("wizard_f210_abierto", {
+      es_nueva: !initial.identificacion,
+      tiene_historial: !!(owner?.declaracionesAnteriores?.length || owner?.declaracionAnterior),
+      anos_historial: owner?.declaracionesAnteriores?.length || (owner?.declaracionAnterior ? 1 : 0),
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Analytics: emitir evento al cambiar de paso (mide dónde el usuario abandona el funnel)
+  useEffect(() => {
+    track("wizard_f210_paso", { paso: step });
+  }, [step]);
+
   // Pre-llenar con lo que el motor estimarImpuesto() calcula para este owner.
   // Si el usuario ya tiene ingresos/gastos registrados, acá ya está todo.
   const sugeridos = useMemo(() => {
@@ -632,6 +647,11 @@ export default function Formulario210({ owner, user, onSave, onCancel }) {
   }, [owner?.declaracionesAnteriores, owner?.declaracionAnterior]);
 
   const handleSave = () => {
+    track("wizard_f210_guardado", {
+      ano_gravable: data.identificacion?.anoGravable || "sin_dato",
+      paso_final: step,
+      tiene_historial: !!(owner?.declaracionesAnteriores?.length || owner?.declaracionAnterior),
+    });
     if (onSave) onSave(data);
   };
 

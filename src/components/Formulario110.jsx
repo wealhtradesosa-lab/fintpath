@@ -19,9 +19,10 @@
 //                                   compensaciones, liquidacion, resultado }
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import AlertasAnoAnterior from "./AlertasAnoAnterior.jsx";
 import MiniGraficaAnosAnteriores from "./MiniGraficaAnosAnteriores.jsx";
+import { track } from "../lib/analytics.js";
 
 const UVT = 52374; // UVT 2026
 
@@ -891,6 +892,21 @@ export default function Formulario110({ owner, onSave, onCancel }) {
     liquidacion: {},
   });
 
+  // Analytics: emitir evento al abrir el wizard
+  useEffect(() => {
+    track("wizard_f110_abierto", {
+      es_nueva: !owner?.formulario110,
+      regimen: owner?.regimen || "ordinario",
+      tiene_historial: !!(owner?.declaracionesAnteriores?.length || owner?.declaracionAnterior),
+      anos_historial: owner?.declaracionesAnteriores?.length || (owner?.declaracionAnterior ? 1 : 0),
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Analytics: emitir evento al cambiar de paso (mide abandono por paso)
+  useEffect(() => {
+    track("wizard_f110_paso", { paso: step });
+  }, [step]);
+
   // Cálculos derivados que los pasos comparten
   const derivados = useMemo(() => {
     const ing = data.ingresos || {};
@@ -961,6 +977,11 @@ export default function Formulario110({ owner, onSave, onCancel }) {
   }, [owner?.declaracionesAnteriores, owner?.declaracionAnterior]);
 
   const handleSave = () => {
+    track("wizard_f110_guardado", {
+      regimen: data.identificacion?.regimen || "ordinario",
+      paso_final: step,
+      tiene_historial: !!(owner?.declaracionesAnteriores?.length || owner?.declaracionAnterior),
+    });
     if (onSave) onSave(data);
   };
 
