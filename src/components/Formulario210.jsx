@@ -252,7 +252,7 @@ function Paso3DepuracionCedulaGeneral({ data, update, totales, sugeridos, anteri
         <div style={{ padding: 10, background: T.bg3, borderRadius: 8, marginBottom: 10, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
           Los aportes <strong>obligatorios</strong> a seguridad social NO constituyen renta — se restan del ingreso bruto <strong>antes</strong> del tope del 40%.
         </div>
-        <Field label="Aportes obligatorios a pensión" casilla="41" articulo="Art. 55 ET" value={dep.aportesPensionObligatoria} onChange={(v) => upd("aportesPensionObligatoria", v)} suggested={sugeridos?.aportesPension} hint="4% del salario (empleado) o IBC × 16% (independiente)." />
+        <Field label="Aportes obligatorios a pensión" casilla="41" articulo="Art. 55 ET" value={dep.aportesPensionObligatoria} onChange={(v) => upd("aportesPensionObligatoria", v)} suggested={sugeridos?.aportesPension} hint={anterior?.aportesObligatorios > 0 ? `4% del salario (empleado) o IBC × 16% (independiente). · 📥 Año ${anterior.anoGravable} declaraste $${anterior.aportesObligatorios.toLocaleString("es-CO")} en aportes obligatorios totales (pensión + salud + solidaridad).` : "4% del salario (empleado) o IBC × 16% (independiente)."} />
         <Field label="Aportes obligatorios a salud" casilla="42" articulo="Art. 56 ET" value={dep.aportesSaludObligatoria} onChange={(v) => upd("aportesSaludObligatoria", v)} suggested={sugeridos?.aportesSalud} hint="4% del salario o IBC × 12.5% (independiente)." />
         <Field label="Aportes al Fondo de Solidaridad" casilla="43" articulo="Ley 100" value={dep.aportesSolidaridad} onChange={(v) => upd("aportesSolidaridad", v)} hint="Solo si tu ingreso > 4 SMMLV. Típicamente 1% del salario." />
         {anterior?.aportesObligatorios > 0 && (
@@ -264,8 +264,8 @@ function Paso3DepuracionCedulaGeneral({ data, update, totales, sugeridos, anteri
 
       <Section title="Rentas exentas" icon="🛡️" color={T.purple}>
         <Field label="Exenta laboral 25% (Art. 206 #10)" casilla="72" articulo="Art. 206 #10 ET" value={dep.exenta25Art206} onChange={(v) => upd("exenta25Art206", v)} suggested={sugeridos?.exenta25} prevYear={anterior?.exenta25} prevYearLabel={pyLabel} hint="25% del neto laboral, tope 790 UVT/año. Aplica a salarios y a honorarios si el declarante tiene 2+ empleados ≥83% del año." />
-        <Field label="Pensión voluntaria" casilla="73" articulo="Art. 126-1 ET" value={dep.pensionVoluntaria} onChange={(v) => upd("pensionVoluntaria", v)} hint="Hasta 25% del ingreso y 2500 UVT/año. Debe permanecer 10 años." />
-        <Field label="Cuenta AFC" casilla="74" articulo="Art. 126-4 ET" value={dep.afc} onChange={(v) => upd("afc", v)} hint="Hasta 30% del ingreso y 3800 UVT/año. Debe usarse para vivienda o permanecer 10 años." />
+        <Field label="Pensión voluntaria" casilla="73" articulo="Art. 126-1 ET" value={dep.pensionVoluntaria} onChange={(v) => upd("pensionVoluntaria", v)} hint={anterior?.pvAFC > 0 ? `Hasta 25% del ingreso y 2500 UVT/año. Debe permanecer 10 años. · 📥 Año ${anterior.anoGravable} declaraste $${anterior.pvAFC.toLocaleString("es-CO")} combinado entre PV y AFC (sin separación disponible en el importador).` : "Hasta 25% del ingreso y 2500 UVT/año. Debe permanecer 10 años."} />
+        <Field label="Cuenta AFC" casilla="74" articulo="Art. 126-4 ET" value={dep.afc} onChange={(v) => upd("afc", v)} hint={anterior?.pvAFC > 0 ? `Hasta 30% del ingreso y 3800 UVT/año. Debe usarse para vivienda o permanecer 10 años. · 📥 Año ${anterior.anoGravable} declaraste $${anterior.pvAFC.toLocaleString("es-CO")} combinado PV+AFC.` : "Hasta 30% del ingreso y 3800 UVT/año. Debe usarse para vivienda o permanecer 10 años."} />
       </Section>
 
       <Section title="Deducciones" icon="📉" color={T.orange}>
@@ -337,8 +337,8 @@ function Paso4OtrasCedulas({ data, update, sugeridos, anterior }) {
         <div style={{ padding: 10, background: T.bg3, borderRadius: 8, marginBottom: 10, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
           Los dividendos tienen tratamiento especial (Art. 242 ET). Los <strong>no gravados Art. 49</strong> suman a la tabla 241. Los <strong>parte gravada Art. 49</strong> y los <strong>de sociedades extranjeras</strong> se gravan al 35% + tarifa general.
         </div>
-        <Field label="Dividendos Art. 49 parte gravada" casilla="101" articulo="Art. 242 ET" value={oc.divArt49Gravada} onChange={(v) => upd("divArt49Gravada", v)} hint="Se gravan al 35% en la sociedad; vos agregás la tarifa general." />
-        <Field label="Dividendos Art. 49 no gravados" casilla="102" articulo="Art. 242 ET" value={oc.divArt49NoGravados} onChange={(v) => upd("divArt49NoGravados", v)} hint={`Exentos hasta 300 UVT (\${fm(300 * UVT)}). Exceso se grava según Art. 242.`} />
+        <Field label="Dividendos Art. 49 parte gravada" casilla="101" articulo="Art. 242 ET" value={oc.divArt49Gravada} onChange={(v) => upd("divArt49Gravada", v)} prevYear={anterior?.dividendos} prevYearLabel={anterior?.anoGravable ? `Dividendos totales año ${anterior.anoGravable}` : null} hint="Se gravan al 35% en la sociedad; vos agregás la tarifa general." />
+        <Field label="Dividendos Art. 49 no gravados" casilla="102" articulo="Art. 242 ET" value={oc.divArt49NoGravados} onChange={(v) => upd("divArt49NoGravados", v)} hint={anterior?.dividendos > 0 ? `Exentos hasta 300 UVT (${fm(300 * UVT)}). Exceso se grava según Art. 242. · 📥 Año ${anterior.anoGravable} declaraste $${anterior.dividendos.toLocaleString("es-CO")} en dividendos totales (suma de todas las categorías).` : `Exentos hasta 300 UVT (${fm(300 * UVT)}). Exceso se grava según Art. 242.`} />
         <Field label="Dividendos de sociedad extranjera" casilla="103" articulo="Art. 245 ET" value={oc.divExteriorYOtros} onChange={(v) => upd("divExteriorYOtros", v)} hint="Se gravan al 35% + tarifa general (Art. 245 ET)." />
       </Section>
 
