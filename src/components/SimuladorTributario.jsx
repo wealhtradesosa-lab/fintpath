@@ -144,11 +144,27 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
         regimenNota = "Economía Naranja / Exenta — 0% mientras dure el beneficio (Art. 235-2 ET).";
       }
 
-      const impActualCalc = Math.max(0, impBruto - descuentoICA - retefuenteCalc);
-      // Override
-      const impDeclarado = owner.impuestoDeclaradoAnual;
-      const usaOverride = impDeclarado != null && impDeclarado >= 0;
-      const impActual = usaOverride ? impDeclarado : impActualCalc;
+      // ── PÉRDIDAS FISCALES ACUMULADAS (Art. 147 ET) ──
+      // Compensables contra utilidad del ejercicio sin límite temporal.
+      const perdidasAcumuladas = Math.max(0, Number(owner.perdidasFiscalesAcumuladas) || 0);
+      const perdidasAplicadas = Math.min(perdidasAcumuladas, baseGravable);
+      baseGravable = Math.max(0, baseGravable - perdidasAplicadas);
+      if (regimen === "ordinario") impBruto = baseGravable * 0.35;
+      else if (regimen === "zona_franca") impBruto = baseGravable * 0.20;
+      else if (regimen === "chc") impBruto = baseGravable * 0.35;
+
+      // ── DESCUENTOS TRIBUTARIOS (Art. 256-259 ET, tope 25% Art. 259) ──
+      const descuentosCfg = owner.descuentosTributarios || {};
+      const descCTI = Math.max(0, Number(descuentosCfg.cti) || 0);
+      const descEmpleo = Math.max(0, Number(descuentosCfg.empleo) || 0);
+      const descExterior = Math.max(0, Number(descuentosCfg.exterior) || 0);
+      const descDonaciones = Math.max(0, Number(descuentosCfg.donaciones) || 0);
+      const descOtros = Math.max(0, Number(descuentosCfg.otros) || 0);
+      const descuentosSolicitados = descCTI + descEmpleo + descExterior + descDonaciones + descOtros;
+      const topeDescuentos = (regimen === "ordinario" || regimen === "zona_franca" || regimen === "chc") ? impBruto * 0.25 : Infinity;
+      const descuentosAplicados = Math.min(descuentosSolicitados, topeDescuentos);
+
+      const impActual = Math.max(0, impBruto - descuentoICA - descuentosAplicados - retefuenteCalc);
       const tasaActual = ingAnual > 0 ? (impActual / ingAnual * 100) : 0;
 
       // CON ESTRATEGIA: sin optimización automática para jurídica
@@ -179,7 +195,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
       if (descuentoICA > 0) recs.push({ icon: "🏛️", title: "Descuento 50% del ICA: " + fm(descuentoICA), desc: "El 50% del ICA pagado se descuenta directamente del impuesto de renta (Art. 115 ET). No es deducción, es descuento — se resta del impuesto calculado.", impact: 0, color: T.green });
       if (gmf50 > 0) recs.push({ icon: "💳", title: "GMF 4×1000 deducible: " + fm(gmf50), desc: "El 50% del GMF (4×1000) pagado es deducible de la renta. Se calcula automáticamente.", impact: 0, color: T.green });
 
-      return { type: "juridica", regimen, regimenNota, tarifa, usaOverride, impDeclarado, ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, totalDeduc, intereses, deprec, patTotal, deuTotal, utilidad: utilidadActual, baseGravable, impBruto, descuentoICA, retefuenteCalc, gmf50, impActual, tasaActual, pctGastos, impOptimo, ahorro, recs };
+      return { type: "juridica", regimen, regimenNota, tarifa, perdidasAcumuladas, perdidasAplicadas, descuentosSolicitados, descuentosAplicados, descuentosDesglose: { cti: descCTI, empleo: descEmpleo, exterior: descExterior, donaciones: descDonaciones, otros: descOtros }, ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, totalDeduc, intereses, deprec, patTotal, deuTotal, utilidad: utilidadActual, baseGravable, impBruto, descuentoICA, retefuenteCalc, gmf50, impActual, tasaActual, pctGastos, impOptimo, ahorro, recs };
     } else {
       // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022) ═══
       const salAnual = ingresos.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
@@ -308,20 +324,13 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
         regimenNotaN = "Régimen Ordinario — Cédula General (tabla Art. 241 ET con deducciones).";
       }
 
-      // Override: impuesto declarado por el usuario
-      const impDeclaradoN = owner.impuestoDeclaradoAnual;
-      const usaOverrideN = impDeclaradoN != null && impDeclaradoN >= 0;
-      if (usaOverrideN) {
-        impSinFinal = impDeclaradoN;
-        impConFinal = impDeclaradoN;
-      }
       const ahorroFinal = impSinFinal - impConFinal;
       const gastosByCatDisplay = gastosByCat;
 
 
 
       return {
-        type: "natural", regimen: regimenN, regimenNota: regimenNotaN, usaOverride: usaOverrideN, impDeclarado: impDeclaradoN,
+        type: "natural", regimen: regimenN, regimenNota: regimenNotaN,
         ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, gastosDeducNat, patTotal, deuTotal,
         noConst, neto, exenta25, deducDep, deducViv, lim40,
         benefSin, benAplicSin, rentaSin, impSin: impSinFinal, tasaSin: ingAnual > 0 ? (impSinFinal / ingAnual * 100) : 0,
@@ -329,7 +338,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
         recs
       };
     }
-  }, [ingresos, gastos, inv, deu, trm, isJ, owner.regimen, owner.impuestoDeclaradoAnual]);
+  }, [ingresos, gastos, inv, deu, trm, isJ, owner.regimen, owner.perdidasFiscalesAcumuladas, owner.descuentosTributarios]);
 
   if (!calc) return (
     <Cd style={{ padding: 24, marginBottom: 16 }}>
@@ -369,7 +378,6 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
                  calc.regimen === "chc" ? "CHC" :
                  calc.regimen === "exenta" ? "Exenta" : calc.regimen}
               </span>
-              {calc.usaOverride && <span style={{ background: "rgba(34,197,94,0.12)", color: T.green, padding: "2px 8px", borderRadius: 99, fontSize: 10, fontWeight: 600 }}>🧾 Impuesto declarado</span>}
             </div>
           </div>
         </div>
@@ -381,11 +389,10 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
         )}
       </div>
 
-      {/* Banner de régimen y override */}
-      {(calc.regimenNota || calc.usaOverride) && (
-        <div style={{ padding: "10px 20px", borderBottom: "1px solid " + T.border, background: calc.usaOverride ? "rgba(34,197,94,0.05)" : "rgba(59,130,246,0.04)", fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
-          {calc.usaOverride && <div style={{ marginBottom: calc.regimenNota ? 6 : 0 }}><strong style={{ color: T.green }}>🧾 Impuesto declarado:</strong> Este número viene del valor que ingresaste en el perfil de {owner.name} (${fm(calc.impDeclarado)}/año), no del cálculo modelado. El simulador respeta tu dato real.</div>}
-          {calc.regimenNota && <div><span style={{ color: T.blue, fontWeight: 600 }}>ℹ️ {calc.regimenNota}</span></div>}
+      {/* Banner de régimen */}
+      {calc.regimenNota && (
+        <div style={{ padding: "10px 20px", borderBottom: "1px solid " + T.border, background: "rgba(59,130,246,0.04)", fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+          <span style={{ color: T.blue, fontWeight: 600 }}>ℹ️ {calc.regimenNota}</span>
         </div>
       )}
 
@@ -434,14 +441,43 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb }) {
                 ))}
               </>}
               
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Renta gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.utilidad)}</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Renta antes de compensación</span><span style={{ fontFamily: "monospace" }}>{fm(calc.utilidad)}</span></div>
+              {calc.perdidasAplicadas > 0 && <>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.green }}>
+                  <span>(-) Pérdidas fiscales compensadas (Art. 147 ET)</span>
+                  <span style={{ fontFamily: "monospace" }}>-{fm(calc.perdidasAplicadas)}</span>
+                </div>
+                {calc.perdidasAcumuladas > calc.perdidasAplicadas && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16, marginBottom: 2 }}>Saldo pérdidas para próximo año: {fm(calc.perdidasAcumuladas - calc.perdidasAplicadas)}</div>}
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, fontWeight: 700 }}>
+                  <span>Renta gravable compensada</span>
+                  <span style={{ fontFamily: "monospace" }}>{fm(calc.baseGravable)}</span>
+                </div>
+              </>}
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                 <div style={{ flex: 1, height: 6, background: T.bg3, borderRadius: 3, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: Math.min(calc.pctGastos || 0, 100) + "%", background: (calc.pctGastos || 0) >= 50 ? T.green : T.orange, borderRadius: 3 }} />
                 </div>
                 <span style={{ fontSize: 10, color: T.txt3, whiteSpace: "nowrap" }}>Gastos: {(calc.pctGastos || 0).toFixed(0)}%</span>
               </div>
-              {calc.descuentoICA > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue, marginTop: 4 }}><span>(-) Descuento 50% ICA</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.descuentoICA)}</span></div>}
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, fontWeight: 600, borderTop: "1px solid " + T.border, marginTop: 4 }}>
+                <span>Impuesto bruto ({(calc.tarifa * 100).toFixed(0)}%)</span>
+                <span style={{ fontFamily: "monospace" }}>{fm(calc.impBruto)}</span>
+              </div>
+              {calc.descuentoICA > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}><span>(-) Descuento 50% ICA (Art. 115 ET)</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.descuentoICA)}</span></div>}
+              {calc.descuentosAplicados > 0 && <>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}>
+                  <span>(-) Descuentos tributarios (Art. 256-259 ET)</span>
+                  <span style={{ fontFamily: "monospace" }}>-{fm(calc.descuentosAplicados)}</span>
+                </div>
+                {calc.descuentosDesglose && <>
+                  {calc.descuentosDesglose.cti > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• CT&I (Art. 158-1): {fm(calc.descuentosDesglose.cti)}</div>}
+                  {calc.descuentosDesglose.empleo > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Empleo 1ra vez (Art. 108-5): {fm(calc.descuentosDesglose.empleo)}</div>}
+                  {calc.descuentosDesglose.exterior > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Impuestos exterior (Art. 254): {fm(calc.descuentosDesglose.exterior)}</div>}
+                  {calc.descuentosDesglose.donaciones > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Donaciones 25% (Art. 257): {fm(calc.descuentosDesglose.donaciones)}</div>}
+                  {calc.descuentosDesglose.otros > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Otros descuentos: {fm(calc.descuentosDesglose.otros)}</div>}
+                </>}
+                {calc.descuentosSolicitados > calc.descuentosAplicados && <div style={{ fontSize: 9, color: T.orange, paddingLeft: 16 }}>⚠ Tope 25% aplicado (Art. 259 ET): {fm(calc.descuentosSolicitados - calc.descuentosAplicados)} exceden el límite y no se aplicaron este año.</div>}
+              </>}
               {calc.retefuenteCalc > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}><span>(-) Retención en la fuente</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.retefuenteCalc)}</span></div>}
             </> : <>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.blue }}><span>(-) Pensión obligatoria (Art. 55 ET)</span><span style={{ fontFamily: "monospace" }}>{fm(calc.noConst)}</span></div>

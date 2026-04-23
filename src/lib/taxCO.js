@@ -142,29 +142,52 @@ export const estimarImpuesto = (u) => {
         regimenNota = "Régimen de Economía Naranja / Exenta — 0% mientras dure el beneficio (Art. 235-2 ET, numerales 1 y 2).";
       }
 
-      const impActualCalc = Math.max(0, impBruto - descICA - reteJ);
-      // Override: impuesto declarado por el usuario
-      const impDeclarado = ow.impuestoDeclaradoAnual;
-      const usaOverride = impDeclarado != null && impDeclarado >= 0;
-      const impActual = usaOverride ? impDeclarado : impActualCalc;
-      // Cuando hay override, el "bruto" mostrado y las retenciones se alinean al valor declarado.
-      // El usuario dice "pago X" — ese es el número en todos los contextos (Simulador + Plan Tributario).
-      const impBrutoFinal = usaOverride ? impDeclarado : impBruto;
-      const reteNFinal = usaOverride ? 0 : (descICA + reteJ);
+      // ── PÉRDIDAS FISCALES ACUMULADAS (Art. 147 ET) ──
+      // Compensables contra la utilidad del ejercicio. Sin límite temporal ni de monto
+      // (Ley 1819/2016 + Ley 2010/2019 eliminaron el límite de 12 años).
+      const perdidasAcumuladas = Math.max(0, Number(ow.perdidasFiscalesAcumuladas) || 0);
+      const perdidasAplicadas = Math.min(perdidasAcumuladas, baseGravable);
+      baseGravable = Math.max(0, baseGravable - perdidasAplicadas);
+      // Recalcular impBruto con base compensada (solo regímenes que usan utilidad)
+      if (regimen === "ordinario") impBruto = baseGravable * 0.35;
+      else if (regimen === "zona_franca") impBruto = baseGravable * 0.20;
+      else if (regimen === "chc") impBruto = baseGravable * 0.35;
+      // SIMPLE y exenta no se tocan (SIMPLE es sobre ingresos brutos, exenta es 0)
+
+      // ── DESCUENTOS TRIBUTARIOS (Art. 256-259 ET) ──
+      // Inversión CT&I (Art. 158-1), empleo primera vez (Art. 108-5), impuestos exterior
+      // (Art. 254), donaciones (Art. 257), otros. Los descuentos NO pueden reducir el
+      // impuesto a menos del 75% de su valor bruto (tope del 25%, Art. 259 ET).
+      const descuentos = ow.descuentosTributarios || {};
+      const descCTI = Math.max(0, Number(descuentos.cti) || 0);
+      const descEmpleo = Math.max(0, Number(descuentos.empleo) || 0);
+      const descExterior = Math.max(0, Number(descuentos.exterior) || 0);
+      const descDonaciones = Math.max(0, Number(descuentos.donaciones) || 0);
+      const descOtros = Math.max(0, Number(descuentos.otros) || 0);
+      const descuentosSolicitados = descCTI + descEmpleo + descExterior + descDonaciones + descOtros;
+      // Tope 25% Art. 259 ET: impuesto tras descuentos ≥ 75% del impuesto bruto (solo ordinario y ZF)
+      const topeDescuentos = (regimen === "ordinario" || regimen === "zona_franca" || regimen === "chc")
+        ? impBruto * 0.25
+        : Infinity;
+      const descuentosAplicados = Math.min(descuentosSolicitados, topeDescuentos);
+
+      const impActual = Math.max(0, impBruto - descICA - descuentosAplicados - reteJ);
       totalImp += impActual;
 
       // impOptimizado = impActual para jurídica (sin ahorro fabricado — estrategias requieren contador)
-      const impBrutoOpt = impBrutoFinal;
+      const impBrutoOpt = impBruto;
       const impOptimoJ = impActual;
       detalle.push({
         name: ow.name, type: "juridica", ingreso: ingAnual,
-        regimen, regimenNota, tarifa, usaOverride, impDeclarado,
+        regimen, regimenNota, tarifa,
+        perdidasAcumuladas, perdidasAplicadas,
+        descuentosSolicitados, descuentosAplicados, descuentosDesglose: { cti: descCTI, empleo: descEmpleo, exterior: descExterior, donaciones: descDonaciones, otros: descOtros },
         gastosRegistrados: gastosDeducJ, intereses: interesesJ, deprec, gastosDeduc: totalDeduc,
         baseGravable, impuesto: impActual, impSinOpt: impActual, impOptimizado: impOptimoJ,
-        impBruto: impBrutoFinal, impOptBruto: impBrutoOpt, reteN: reteNFinal,
+        impBruto: impBruto, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
         ahorroOptimo: impActual - impOptimoJ,
         tasa: ingAnual > 0 ? (impActual / ingAnual * 100) : 0,
-        tasaBruta: ingAnual > 0 ? (impBrutoFinal / ingAnual * 100) : 0,
+        tasaBruta: ingAnual > 0 ? (impBruto / ingAnual * 100) : 0,
         gastosNoRegistrados: totalDeduc < ingAnual * 0.4,
       });
     } else {
@@ -283,20 +306,11 @@ export const estimarImpuesto = (u) => {
         regimenNotaN = "Régimen Ordinario — Cédula General (tabla Art. 241 ET con deducciones).";
       }
 
-      // Override: impuesto declarado por el usuario
-      const impDeclaradoN = ow.impuestoDeclaradoAnual;
-      const usaOverrideN = impDeclaradoN != null && impDeclaradoN >= 0;
-      if (usaOverrideN) {
-        impActualNat = impDeclaradoN;
-        impOptNat = impDeclaradoN;
-        impBrutoNat = impDeclaradoN;
-      }
-
       const ahorroNat = impActualNat - impOptNat;
       totalImp += impActualNat;
       detalle.push({
         name: ow.name, type: "natural", ingreso: ingAnual,
-        regimen: regimenN, regimenNota: regimenNotaN, usaOverride: usaOverrideN, impDeclarado: impDeclaradoN,
+        regimen: regimenN, regimenNota: regimenNotaN,
         ingLaboral, ingCapital, ingNoLaboral, divAnual, pensAnual,
         noConst: totalNoConst, neto: netoLaboral,
         exenta25, deducDep, deducMedicina, deducVivienda, gmfDeducible,
@@ -308,11 +322,11 @@ export const estimarImpuesto = (u) => {
         impSinOpt: impActualNat, impOptimizado: impOptNat,
         // impBruto/impOptBruto = TOTAL por tabla progresiva o régimen (antes de retención).
         impBruto: impBrutoNat,
-        impOptBruto: (regimenN === "simple" || usaOverrideN) ? impBrutoNat : impOpt,
+        impOptBruto: regimenN === "simple" ? impBrutoNat : impOpt,
         ahorroOptimo: ahorroNat,
         tasa: ingAnual > 0 ? (impActualNat / ingAnual * 100) : 0,
         tasaBruta: ingAnual > 0 ? (impBrutoNat / ingAnual * 100) : 0,
-        espacioParaPVyAFC: espacioPV, reteN: usaOverrideN ? 0 : reteN, impDiv,
+        espacioParaPVyAFC: espacioPV, reteN, impDiv,
       });
     }
   });

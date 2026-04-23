@@ -1911,7 +1911,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     <span style={{fontSize:16}}>{ow.type==="juridica"?"🏢":"👤"}</span>
                     <div style={{flex:1}}>
                       <div style={{fontSize:13,fontWeight:600}}>{ow.name}</div>
-                      <div style={{fontSize:10,color:T.tx3}}>{ow.type==="juridica"?"Persona Jurídica":"Persona Natural"} · <span style={{color:T.bl}}>{regLabel}</span>{ow.impuestoDeclaradoAnual>0&&<span style={{color:T.gn,marginLeft:6}}>· 🧾 {fm(ow.impuestoDeclaradoAnual)}/año declarado</span>}</div>
+                      <div style={{fontSize:10,color:T.tx3}}>{ow.type==="juridica"?"Persona Jurídica":"Persona Natural"} · <span style={{color:T.bl}}>{regLabel}</span>{ow.type==="juridica"&&ow.perdidasFiscalesAcumuladas>0&&<span style={{color:T.gn,marginLeft:6}}>· 📉 {fm(ow.perdidasFiscalesAcumuladas)} pérdidas</span>}{ow.type==="juridica"&&ow.descuentosTributarios&&Object.values(ow.descuentosTributarios).some(v=>+v>0)&&<span style={{color:T.bl,marginLeft:6}}>· 💠 descuentos</span>}</div>
                     </div>
                     <div style={{display:"flex",gap:4}}>
                       <button onClick={()=>{setU({...u,p:{...u.p,_editOwnerId:isEditing?null:ow.id}})}} style={{background:T.bg3,border:"1px solid "+T.border,color:T.tx2,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:10}}>{isEditing?"✖️ Cerrar":"✏️ Editar"}</button>
@@ -1930,18 +1930,48 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                       </select>
                       <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>El régimen determina la tarifa aplicable. Si no estás seguro, consultá con tu contador.</div>
                     </div>
-                    <div>
-                      <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>Impuesto declarado real (opcional) — override</label>
-                      <input type="number" defaultValue={ow.impuestoDeclaradoAnual||""} id={"own_imp_"+ow.id} placeholder="Ej: 50000000 (si tu contador ya te dijo cuánto pagás)" style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:12,outline:"none"}}/>
-                      <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si sabés exactamente cuánto pagás al año según tu declaración real, ingresálo acá. El simulador lo usará como referencia en vez del cálculo modelado.</div>
-                    </div>
+                    {ow.type==="juridica"&&<>
+                      <div style={{marginTop:6,paddingTop:10,borderTop:"1px dashed "+T.border}}>
+                        <div style={{fontSize:10,fontWeight:700,color:T.bl,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🧾 Datos declaración anterior (opcional)</div>
+                        <div style={{fontSize:10,color:T.tx3,marginBottom:10,lineHeight:1.4}}>Si tu contador te pasa estos datos de la declaración del año anterior, el simulador los aplica según el Estatuto Tributario.</div>
+                      </div>
+                      <div>
+                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>Pérdidas fiscales acumuladas — Art. 147 ET</label>
+                        <input type="number" defaultValue={ow.perdidasFiscalesAcumuladas||""} id={"own_perd_"+ow.id} placeholder="Ej: 250000000" style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:12,outline:"none"}}/>
+                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Pérdidas fiscales de años anteriores que no se han compensado. Se compensan contra la utilidad de este año sin límite temporal.</div>
+                      </div>
+                      <div>
+                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>Descuentos tributarios — Art. 256-259 ET</label>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                          <input type="number" defaultValue={ow.descuentosTributarios?.cti||""} id={"own_desc_cti_"+ow.id} placeholder="CT&I (Art. 158-1)" style={{background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:11,outline:"none"}}/>
+                          <input type="number" defaultValue={ow.descuentosTributarios?.empleo||""} id={"own_desc_emp_"+ow.id} placeholder="Empleo 1ra vez (Art. 108-5)" style={{background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:11,outline:"none"}}/>
+                          <input type="number" defaultValue={ow.descuentosTributarios?.exterior||""} id={"own_desc_ext_"+ow.id} placeholder="Impuestos exterior (Art. 254)" style={{background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:11,outline:"none"}}/>
+                          <input type="number" defaultValue={ow.descuentosTributarios?.donaciones||""} id={"own_desc_don_"+ow.id} placeholder="Donaciones 25% (Art. 257)" style={{background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:11,outline:"none"}}/>
+                          <input type="number" defaultValue={ow.descuentosTributarios?.otros||""} id={"own_desc_otr_"+ow.id} placeholder="Otros descuentos" style={{gridColumn:"1/-1",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:11,outline:"none"}}/>
+                        </div>
+                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Valores en $ que tu contador declaró como descuentos directos del impuesto. Sujetos al tope del 25% del impuesto bruto (Art. 259 ET).</div>
+                      </div>
+                    </>}
                     <div style={{display:"flex",gap:8}}>
                       <button onClick={()=>{
                         const nm=document.getElementById("own_name_"+ow.id)?.value?.trim()||ow.name;
                         const rg=document.getElementById("own_reg_"+ow.id)?.value||"ordinario";
-                        const impRaw=document.getElementById("own_imp_"+ow.id)?.value;
-                        const imp=impRaw&&!isNaN(+impRaw)&&+impRaw>0?+impRaw:null;
-                        const nw=(u.owners||[]).map(o=>o.id===ow.id?{...o,name:nm,regimen:rg,impuestoDeclaradoAnual:imp}:o);
+                        const upd={...ow,name:nm,regimen:rg};
+                        if(ow.type==="juridica"){
+                          const perdRaw=document.getElementById("own_perd_"+ow.id)?.value;
+                          const perd=perdRaw&&!isNaN(+perdRaw)&&+perdRaw>0?+perdRaw:null;
+                          const dCti=+document.getElementById("own_desc_cti_"+ow.id)?.value||0;
+                          const dEmp=+document.getElementById("own_desc_emp_"+ow.id)?.value||0;
+                          const dExt=+document.getElementById("own_desc_ext_"+ow.id)?.value||0;
+                          const dDon=+document.getElementById("own_desc_don_"+ow.id)?.value||0;
+                          const dOtr=+document.getElementById("own_desc_otr_"+ow.id)?.value||0;
+                          upd.perdidasFiscalesAcumuladas=perd;
+                          const tieneDescuentos=dCti+dEmp+dExt+dDon+dOtr>0;
+                          upd.descuentosTributarios=tieneDescuentos?{cti:dCti,empleo:dEmp,exterior:dExt,donaciones:dDon,otros:dOtr}:null;
+                        }
+                        // Limpiar override legado si existía
+                        delete upd.impuestoDeclaradoAnual;
+                        const nw=(u.owners||[]).map(o=>o.id===ow.id?upd:o);
                         setU({...u,owners:nw,p:{...u.p,_editOwnerId:null}});
                         showToast("✅ "+nm+" actualizado");
                       }} style={{flex:1,padding:"8px",background:T.gn,border:"none",borderRadius:6,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Guardar cambios</button>
