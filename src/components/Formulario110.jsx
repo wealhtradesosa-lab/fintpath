@@ -20,6 +20,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
+import AlertasAnoAnterior from "./AlertasAnoAnterior.jsx";
 
 const UVT = 52374; // UVT 2026
 
@@ -828,24 +829,14 @@ function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGra
           </div>
         )}
         {anterior?.impuestoRenta > 0 && (
-          <div style={{ marginTop: 12, padding: "12px 14px", background: "rgba(6,182,212,0.06)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: T.cyan, marginBottom: 6 }}>📥 Comparación con año {anterior.anoGravable}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 11 }}>
-              <div>
-                <div style={{ color: T.txt3 }}>Impuesto {anterior.anoGravable}</div>
-                <div style={{ color: T.txt, fontWeight: 600, fontFamily: "monospace" }}>{fm(anterior.impuestoRenta)}</div>
-              </div>
-              <div>
-                <div style={{ color: T.txt3 }}>Impuesto actual</div>
-                <div style={{ color: T.txt, fontWeight: 600, fontFamily: "monospace" }}>{fm(totalImpuesto)}</div>
-              </div>
-            </div>
-            {anterior.impuestoRenta > 0 && (
-              <div style={{ marginTop: 8, fontSize: 11, color: totalImpuesto > anterior.impuestoRenta ? T.orange : T.green, fontWeight: 600 }}>
-                {totalImpuesto > anterior.impuestoRenta ? "▲" : "▼"} {Math.abs(((totalImpuesto - anterior.impuestoRenta) / anterior.impuestoRenta) * 100).toFixed(1)}% vs año anterior ({fm(Math.abs(totalImpuesto - anterior.impuestoRenta))})
-              </div>
-            )}
-          </div>
+          <AlertasAnoAnterior
+            anoAnterior={anterior.anoGravable}
+            comparaciones={[
+              { label: "Ingresos operacionales", actual: +data.ingresos?.operacionales || 0, anterior: anterior.ingresosOperacionales, sugerencia: "Si subió mucho, confirmá que es crecimiento real del negocio. Si bajó, revisá que sumaste todas las facturas del año." },
+              { label: "Retenciones en la fuente", actual: retenciones, anterior: anterior.retenciones, sugerencia: "Las retenciones deberían ser proporcionales a los ingresos. Delta muy grande puede ser falta de certificados de retención." },
+              { label: "Impuesto neto de renta", actual: totalImpuesto, anterior: anterior.impuestoRenta, sugerencia: totalImpuesto > anterior.impuestoRenta * 1.5 ? "Revisá si hay gastos o deducciones (depreciación, nómina, ICA) que no cargaste." : null },
+            ].filter(c => c.anterior > 0)}
+          />
         )}
       </Section>
     </>

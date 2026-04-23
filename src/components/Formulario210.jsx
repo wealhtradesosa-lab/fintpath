@@ -28,6 +28,7 @@
 
 import { useState, useMemo } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
+import AlertasAnoAnterior from "./AlertasAnoAnterior.jsx";
 
 const UVT = 52374; // UVT 2026
 
@@ -426,6 +427,16 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
         ...(saldoPagar > 0 ? [{ label: "💰 SALDO A PAGAR", value: fm(saldoPagar), highlight: true, color: T.red }] : []),
         ...(saldoFavor > 0 ? [{ label: "✅ SALDO A FAVOR", value: fm(saldoFavor), highlight: true, color: T.green }] : []),
       ]} />
+
+      {anterior && (
+        <AlertasAnoAnterior
+          anoAnterior={anterior.anoGravable}
+          comparaciones={[
+            { label: "Retenciones en la fuente", actual: retencionesAño, anterior: anterior.retenciones, sugerencia: "Si bajó significativamente, revisá que tengas todos los certificados de retención del año." },
+            { label: "Impuesto total", actual: impuestoNeto, anterior: anterior.impuestoRenta, sugerencia: anterior.impuestoRenta > 0 && impuestoNeto > anterior.impuestoRenta * 1.5 ? "El impuesto subió mucho. Puede ser correcto si subieron ingresos, pero también revisá si te faltaron deducciones (intereses vivienda, dependientes, medicina prepagada, AFC, pensión voluntaria)." : null },
+          ].filter(c => c.anterior > 0)}
+        />
+      )}
     </>
   );
 }
