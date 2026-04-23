@@ -15,6 +15,7 @@ import InversionesModule from "./components/InversionesModule";
 import DeudasModule from "./components/DeudasModule";
 import PensionesColpensiones from "./components/PensionesColpensiones";
 import SimuladorTributario from "./components/SimuladorTributario";
+import Formulario110 from "./components/Formulario110";
 import CsvImport from "./components/CsvImport";
 import MetasModule from "./components/MetasModule";
 import PensionColombia from "./components/PensionColombia";
@@ -146,7 +147,7 @@ const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div sty
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 export default function FinPath(){
-  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);
+  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("rapido");const[f110OwnerId,setF110OwnerId]=useState(null);
   // ═══ ADVISOR MODE STATE ═══
   // isAdvisor: true si el usuario loggeado existe en la tabla `advisors`
   // advisorProfile: datos del asesor (plan, max_clients, firm_name, etc.)
@@ -1678,7 +1679,77 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} user={{inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],ingresos:(u&&u.ingresos)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm}/>;
     case"pat":{const bc={};((u&&u.inv)||[]).forEach(i=>{const tp=inferType(i);bc[tp]=(bc[tp]||0)+(+i.va||0)});if(ib.tv>0)bc.Trading=ib.tv;const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);const gr=t.ab+ib.tv;return<div><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 20px"}}>Patrimonio</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:16}}><Cd><St l="Activos" v={fm(gr)} cl={T.gn}/></Cd><Cd><St l="Pasivos" v={fm(t.td)} cl={T.rd}/></Cd><Cd><St l="Neto" v={fm(t.nw)} cl={T.bl}/></Cd></div><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14}}><Cd s={{padding:20}}><div style={{fontSize:12,fontWeight:600,color:T.tx2,marginBottom:14}}>Distribución</div>{pie.length>0?<ResponsiveContainer width="100%" height={220}><PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={2}>{pie.map((_,i)=><Cell key={i} fill={T.ch[i%T.ch.length]}/>)}</Pie><Tooltip contentStyle={{background:"#1e1e24",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,color:"#fafafa",fontSize:12}} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={v=>fm(v)}/><Legend/></PieChart></ResponsiveContainer>:<div style={{height:220,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3}}>Agrega datos</div>}</Cd><Cd s={{padding:20}}><div style={{fontSize:12,fontWeight:600,color:T.tx2,marginBottom:14}}>Desglose</div>{pie.map((a,i)=><div key={a.name} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{a.name}</span></div><span style={{fontWeight:600,fontFamily:"monospace"}}>{fm(a.value)} <span style={{fontSize:11,color:T.tx3}}>{pc((a.value/gr)*100)}</span></span></div>)}</Cd></div></div>}
     case"pen":return isUS?<RetirementModuleUS user={u}/>:gated("pen","Básico",<PensionesColpensiones trm={(u&&u.trm)||4200}/>);
-    case"tax":return isUS?<TaxPlanningUS user={u} fmt={fm}/>:gated("tax","Pro",<SimuladorTributario trm={(u&&u.trm)||4200} user={u}/>);
+    case"tax":{
+      if(isUS)return<TaxPlanningUS user={u} fmt={fm}/>;
+      // Si está editando Formulario 110 de un owner específico, mostrar wizard
+      if(f110OwnerId){
+        const f110Owner=(u?.owners||[]).find(o=>o.id===f110OwnerId);
+        if(f110Owner){
+          return gated("tax","Pro",<Formulario110
+            owner={f110Owner}
+            onCancel={()=>setF110OwnerId(null)}
+            onSave={(formData)=>{
+              const nw=(u.owners||[]).map(o=>o.id===f110OwnerId?{...o,formulario110:formData}:o);
+              setU({...u,owners:nw});
+              setF110OwnerId(null);
+              showToast("✅ Declaración guardada para "+f110Owner.name);
+            }}
+          />);
+        }
+      }
+      // Vista normal con tabs
+      const jurs=(u?.owners||[]).filter(o=>o.type==="juridica");
+      return gated("tax","Pro",<div>
+        <div style={{display:"flex",gap:8,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12}}>
+          <button onClick={()=>setTaxTab("rapido")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?T.bl:T.border),background:taxTab==="rapido"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="rapido"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>⚡ Simulador rápido</button>
+          <button onClick={()=>setTaxTab("completa")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="completa"?T.bl:T.border),background:taxTab==="completa"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="completa"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>📋 Declaración completa (F-110)</button>
+        </div>
+        {taxTab==="rapido"&&<SimuladorTributario trm={(u&&u.trm)||4200} user={u}/>}
+        {taxTab==="completa"&&<div style={{maxWidth:900,margin:"0 auto",padding:"16px"}}>
+          <div style={{marginBottom:20,padding:"18px 22px",background:"linear-gradient(135deg, rgba(59,130,246,0.08), rgba(167,139,250,0.08))",borderRadius:14,border:"1px solid "+T.border}}>
+            <div style={{fontSize:18,fontWeight:800,marginBottom:8}}>📋 Declaración completa · Formulario 110 DIAN</div>
+            <div style={{fontSize:12,color:T.tx3,lineHeight:1.6}}>
+              El Formulario 110 es la declaración anual de renta para personas jurídicas. Este wizard replica su estructura real — renglón por renglón — para que puedas calcular tu impuesto con la misma precisión que tu contador.
+              <br/><br/>
+              Los datos de este wizard se guardan <strong>por empresa</strong> y son independientes del simulador rápido. Al terminar, el resultado es el mismo que verías en tu declaración oficial.
+            </div>
+          </div>
+          {jurs.length===0?
+            <Cd s={{padding:40,textAlign:"center"}}>
+              <div style={{fontSize:40,marginBottom:12}}>🏢</div>
+              <div style={{fontSize:14,fontWeight:600,marginBottom:8}}>No tenés personas jurídicas registradas</div>
+              <div style={{fontSize:12,color:T.tx3,marginBottom:16,lineHeight:1.5}}>El Formulario 110 aplica a sociedades (SAS, Ltda, SA, etc.). Para agregarlas, andá a <strong>Configuración → Planeación Tributaria</strong>.</div>
+              <button onClick={()=>setPg("set")} style={{padding:"10px 16px",background:T.bl,border:"none",borderRadius:8,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Ir a Configuración</button>
+            </Cd>
+            :
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {jurs.map(ow=>{
+                const hasF110=!!ow.formulario110&&Object.keys(ow.formulario110).length>0;
+                const anoG=ow.formulario110?.identificacion?.anoGravable;
+                return<Cd key={ow.id} s={{padding:16}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+                    <span style={{fontSize:24}}>🏢</span>
+                    <div style={{flex:1,minWidth:180}}>
+                      <div style={{fontSize:15,fontWeight:700}}>{ow.name}</div>
+                      <div style={{fontSize:11,color:T.tx3,marginTop:2}}>
+                        {ow.regimen==="ordinario"?"Régimen Ordinario (35%)":
+                         ow.regimen==="simple"?"Régimen Simple (RST)":
+                         ow.regimen==="zona_franca"?"Zona Franca (20%)":
+                         ow.regimen==="chc"?"CHC":ow.regimen||"Ordinario"}
+                        {hasF110&&<span style={{color:T.gn,marginLeft:8}}>· ✅ Declaración guardada{anoG?` (${anoG})`:""}</span>}
+                      </div>
+                    </div>
+                    <button onClick={()=>setF110OwnerId(ow.id)} style={{padding:"10px 16px",background:hasF110?T.bg3:T.bl,border:"1px solid "+(hasF110?T.border:T.bl),borderRadius:8,color:hasF110?T.bl:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+                      {hasF110?"✏️ Editar declaración":"📋 Completar F-110"}
+                    </button>
+                  </div>
+                </Cd>;
+              })}
+            </div>
+          }
+        </div>}
+      </div>);
+    }
     case"aportes":return <AportesCalculadora fmt={fm}/>;
         case"btc":return gated("btc","Básico",<PensionColombia trm={(u&&u.trm)||4200}/>);
     case"asesor":{const _aInv=((u&&u.inv)||[]).filter(i=>i.sim!==false),_aDeu=((u&&u.deu)||[]).filter(d=>d.sim!==false),_aIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false),_aGas={};Object.entries((u&&u.gas)||{}).forEach(([cat,items])=>{const fi=(items||[]).filter(g=>g.sim!==false);if(fi.length>0)_aGas[cat]=fi});return gated("asesor","Pro",<AsesorIA user={{inv:_aInv,gas:_aGas,deu:_aDeu,ingresos:_aIng}} totals={t} userId={authUser?.id}/>);}
