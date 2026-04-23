@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO.js";
+import { getFiscalWarnings } from "../lib/normalize.js";
 
 const UVT = 52374;
 const T = {
@@ -746,6 +747,48 @@ export default function SimuladorTributario({ trm, user }) {
           ⚠️ <strong>{sinAsignar} ingreso(s)</strong> sin propietario asignado — no se incluyen en el cálculo. Asigna propietario en <strong>💰 Ingresos</strong>.
         </div>
       )}
+
+      {/* ═══ PANEL DE WARNINGS FISCALES (Sprint 3) ═══ */}
+      {(() => {
+        const warns = getFiscalWarnings(user).filter(w => w.code !== "INGRESO_SIN_PROPIETARIO"); // ya mostrado arriba
+        if (warns.length === 0) return null;
+        const byCode = {};
+        warns.forEach(w => {
+          if (!byCode[w.code]) byCode[w.code] = { ...w, count: 0 };
+          byCode[w.code].count++;
+        });
+        const groups = Object.values(byCode);
+        const errs = groups.filter(g => g.severity === "error");
+        const warnings = groups.filter(g => g.severity === "warning");
+        const infos = groups.filter(g => g.severity === "info");
+        return (
+          <div style={{ background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 12, padding: "14px 18px", marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 4 }}>🔍 Revisión de precisión fiscal</div>
+            <div style={{ fontSize: 11, color: T.txt3, marginBottom: 10, lineHeight: 1.6 }}>
+              {warns.length} observación(es) sobre la clasificación de tus datos. Resolvelas para afinar el cálculo del impuesto.
+              {errs.length > 0 && <> • <strong style={{ color: T.red }}>{errs.reduce((s,g)=>s+g.count,0)} error(es)</strong></>}
+              {warnings.length > 0 && <> • {warnings.reduce((s,g)=>s+g.count,0)} advertencia(s)</>}
+              {infos.length > 0 && <> • {infos.reduce((s,g)=>s+g.count,0)} info</>}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {[...errs, ...warnings, ...infos].map((g, i) => {
+                const color = g.severity === "error" ? T.red : g.severity === "warning" ? T.orange : T.blue;
+                const icon = g.severity === "error" ? "⛔" : g.severity === "warning" ? "⚠️" : "ℹ️";
+                return (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 8, fontSize: 11 }}>
+                    <span style={{ fontSize: 13 }}>{icon}</span>
+                    <div style={{ flex: 1, lineHeight: 1.5 }}>
+                      <div style={{ color: color, fontWeight: 600 }}>{g.message} {g.count > 1 && <span style={{ color: T.txt3, fontWeight: 400 }}>({g.count} items)</span>}</div>
+                      {g.accionSugerida && <div style={{ color: T.txt3, marginTop: 2 }}>→ {g.accionSugerida}</div>}
+                      {g.articuloET && g.articuloET !== "—" && <div style={{ color: T.txt3, fontSize: 10, marginTop: 2, fontStyle: "italic" }}>{g.articuloET}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ═══ RESUMEN CONSOLIDADO ═══ */}
       {consolidado.items.length > 0 && (

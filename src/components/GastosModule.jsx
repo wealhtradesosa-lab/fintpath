@@ -367,18 +367,24 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 if (!ow || ow.type !== "juridica") return null;
                 // Sub-selector solo para categorías ambiguas en jurídica donde
                 // la causalidad Art. 107 ET no es obvia por la categoría sola.
-                const ambiguous = ["Educación", "Vivienda", "Alimentación", "Entretenimiento", "Vestimenta", "Personal", "Salud", "Transporte"];
+                const ambiguous = ["Educación", "Vivienda", "Alimentación", "Entretenimiento", "Vestimenta", "Personal", "Salud", "Transporte", "Representación"];
                 if (!ambiguous.includes(form.cat)) return null;
+                // Default basado en la regla conservadora: para categorías de consumo
+                // personal típico (Alimentación, Entretenimiento, Personal) default es
+                // NO deducible. Para educación/vivienda default es operativo/capacitación.
+                const currentFC = form.fiscalCode || defaultFiscalCode("juridica", form.cat);
+                const isDeductible = currentFC !== "GAS_JUR_NO_DEDUCIBLE";
+                const deductibleCode = form.cat === "Educación" ? "GAS_JUR_CAPACITACION" : "GAS_JUR_OPERATIVO";
                 return (
                   <div style={{background:"rgba(249,115,22,0.04)",border:"1px solid rgba(249,115,22,0.2)",borderRadius:10,padding:"12px 14px",marginTop:4}}>
                     <div style={{fontSize:11,fontWeight:700,color:"#f97316",marginBottom:8}}>🧾 ¿Este gasto cumple causalidad con la actividad de la empresa? (Art. 107 ET)</div>
-                    <select value={form.fiscalCode || "GAS_JUR_NO_DEDUCIBLE"} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
+                    <select value={currentFC} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                       style={{width:"100%",background:"#1e1e24",border:"1px solid rgba(255,255,255,0.06)",color:"#fafafa",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}>
-                      <option value="GAS_JUR_CAPACITACION">Capacitación empleados / relacionado con actividad productora — deducible</option>
-                      <option value="GAS_JUR_OPERATIVO">Gasto operativo del negocio — deducible</option>
-                      <option value="GAS_JUR_NO_DEDUCIBLE">Gasto personal del socio o sin relación con actividad — NO deducible</option>
+                      <option value={deductibleCode}>✅ Sí — relacionado con la actividad productora de renta (DEDUCIBLE)</option>
+                      <option value="GAS_JUR_NO_DEDUCIBLE">❌ No — gasto personal o sin nexo con la actividad (NO deducible)</option>
                     </select>
-                    <div style={{fontSize:10,color:"#a1a1aa",marginTop:6,lineHeight:1.5}}>Art. 107 ET exige causalidad, necesidad y proporcionalidad. Ej.: colegio de hijos del socio = NO deducible aunque lo pague la SAS. Cursos de contabilidad para empleados = SÍ deducible.</div>
+                    <div style={{fontSize:10,color:"#a1a1aa",marginTop:6,lineHeight:1.5}}>Art. 107 ET exige causalidad, necesidad y proporcionalidad. <strong>Ejemplos</strong>: colegio de hijos del socio = NO deducible aunque lo pague la SAS. Cursos de contabilidad para empleados = SÍ deducible. Arriendo de oficina operativa = SÍ. Arriendo de vivienda del socio = NO.</div>
+                    <div style={{fontSize:10,fontWeight:600,marginTop:6,color:isDeductible?"#22c55e":"#ef4444"}}>{isDeductible ? "✅ Este gasto bajará el impuesto de renta de la empresa" : "⚠️ Este gasto NO bajará el impuesto de renta (pero sí se registra en tu cash flow)"}</div>
                   </div>
                 );
               })()}
