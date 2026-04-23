@@ -66,7 +66,7 @@ function calcImpTabla241(uvts) {
 // COMPONENTES DE UI REUTILIZABLES (copia de Formulario110 para aislamiento)
 // ─────────────────────────────────────────────────────────────────────────
 
-const Field = ({ label, casilla, articulo, value, onChange, placeholder, hint, readonly, suggested, suggestedLabel }) => {
+const Field = ({ label, casilla, articulo, value, onChange, placeholder, hint, readonly, suggested, suggestedLabel, prevYear, prevYearLabel }) => {
   const hasSuggestion = suggested != null && suggested > 0 && (!value || +value === 0);
   return (
     <div style={{ marginBottom: 14 }}>
@@ -89,14 +89,24 @@ const Field = ({ label, casilla, articulo, value, onChange, placeholder, hint, r
           fontFamily: "monospace", outline: "none",
         }}
       />
-      {hasSuggestion && !readonly && (
-        <button onClick={() => onChange(Math.round(suggested))} style={{
-          marginTop: 4, padding: "4px 8px", background: T.greenDim, border: "1px solid " + T.green,
-          color: T.green, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer",
-        }}>
-          💡 Pre-llenar con {suggestedLabel || fm(suggested)}
-        </button>
-      )}
+      <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+        {hasSuggestion && !readonly && (
+          <button onClick={() => onChange(Math.round(suggested))} style={{
+            padding: "4px 8px", background: T.greenDim, border: "1px solid " + T.green,
+            color: T.green, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer",
+          }}>
+            💡 Pre-llenar con {suggestedLabel || fm(suggested)}
+          </button>
+        )}
+        {prevYear != null && prevYear > 0 && !readonly && (
+          <button onClick={() => onChange(Math.round(prevYear))} title="Click para copiar este valor al campo" style={{
+            padding: "4px 8px", background: "rgba(6,182,212,0.12)", border: "1px solid " + T.cyan,
+            color: T.cyan, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer",
+          }}>
+            📥 {prevYearLabel || "Año anterior"}: {fm(prevYear)}
+          </button>
+        )}
+      </div>
       {hint && <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{hint}</div>}
     </div>
   );
@@ -156,9 +166,10 @@ function Paso1Identificacion({ data, update }) {
 // PASO 2 · CÉDULA GENERAL — INGRESOS
 // ─────────────────────────────────────────────────────────────────────────
 
-function Paso2IngresosCedulaGeneral({ data, update, sugeridos }) {
+function Paso2IngresosCedulaGeneral({ data, update, sugeridos, anterior }) {
   const ing = data.ingresos || {};
   const upd = (k, v) => update({ ...ing, [k]: v });
+  const pyLabel = anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null;
 
   const trabajoBruto = (+ing.salarios || 0) + (+ing.honorarios || 0) + (+ing.servicios || 0) + (+ing.comisiones || 0) + (+ing.viaticos || 0);
   const capitalBruto = (+ing.intereses || 0) + (+ing.rendimientosFIC || 0) + (+ing.arrendamientoMuebles || 0) + (+ing.rendimientosGenericos || 0);
@@ -170,22 +181,22 @@ function Paso2IngresosCedulaGeneral({ data, update, sugeridos }) {
       <StepHeader number={2} title="Cédula General — Ingresos" subtitle="Ingresos brutos de trabajo, capital y no laborales. Los tres se suman para formar la Cédula General (Art. 335 ET)." />
 
       <Section title="Rentas de trabajo" icon="💼" color={T.blue}>
-        <Field label="Salarios" casilla="32" articulo="Art. 103 ET" value={ing.salarios} onChange={(v) => upd("salarios", v)} suggested={sugeridos?.salarios} hint="Salarios, primas, bonificaciones, comisiones laborales recibidas como empleado." />
-        <Field label="Honorarios" casilla="34" articulo="Art. 103 ET" value={ing.honorarios} onChange={(v) => upd("honorarios", v)} suggested={sugeridos?.honorarios} hint="Honorarios recibidos como persona natural por servicios independientes." />
+        <Field label="Salarios" casilla="32" articulo="Art. 103 ET" value={ing.salarios} onChange={(v) => upd("salarios", v)} suggested={sugeridos?.salarios} prevYear={anterior?.salarios} prevYearLabel={pyLabel} hint="Salarios, primas, bonificaciones, comisiones laborales recibidas como empleado." />
+        <Field label="Honorarios" casilla="34" articulo="Art. 103 ET" value={ing.honorarios} onChange={(v) => upd("honorarios", v)} suggested={sugeridos?.honorarios} prevYear={anterior?.honorarios} prevYearLabel={pyLabel} hint="Honorarios recibidos como persona natural por servicios independientes." />
         <Field label="Servicios" casilla="35" articulo="Art. 103 ET" value={ing.servicios} onChange={(v) => upd("servicios", v)} hint="Servicios personales no calificados como honorarios." />
         <Field label="Comisiones" casilla="36" articulo="Art. 103 ET" value={ing.comisiones} onChange={(v) => upd("comisiones", v)} hint="Comisiones por ventas u otros." />
         <Field label="Viáticos no reembolsables" casilla="37" articulo="Art. 10 Dcto 823/84" value={ing.viaticos} onChange={(v) => upd("viaticos", v)} hint="Viáticos fijos no sujetos a rendición." />
       </Section>
 
       <Section title="Rentas de capital" icon="💰" color={T.cyan}>
-        <Field label="Intereses y rendimientos bancarios (CDT)" casilla="44" articulo="Art. 38 ET" value={ing.intereses} onChange={(v) => upd("intereses", v)} suggested={sugeridos?.intereses} hint="Rendimientos financieros de cuentas y CDTs. Aplicará componente inflacionario en el Paso 3." />
+        <Field label="Intereses y rendimientos bancarios (CDT)" casilla="44" articulo="Art. 38 ET" value={ing.intereses} onChange={(v) => upd("intereses", v)} suggested={sugeridos?.intereses} prevYear={anterior?.intereses} prevYearLabel={pyLabel} hint="Rendimientos financieros de cuentas y CDTs. Aplicará componente inflacionario en el Paso 3." />
         <Field label="Rendimientos de FIC" casilla="45" articulo="Art. 23-1 ET" value={ing.rendimientosFIC} onChange={(v) => upd("rendimientosFIC", v)} suggested={sugeridos?.fic} hint="Distribuciones de fondos de inversión colectiva." />
         <Field label="Arrendamiento de muebles" casilla="46" articulo="Art. 103 ET" value={ing.arrendamientoMuebles} onChange={(v) => upd("arrendamientoMuebles", v)} hint="Arriendo de equipos, vehículos u otros bienes muebles." />
         <Field label="Otros rendimientos de capital" casilla="47" value={ing.rendimientosGenericos} onChange={(v) => upd("rendimientosGenericos", v)} hint="Otros conceptos de rentas de capital que no encajan arriba." />
       </Section>
 
       <Section title="Rentas no laborales" icon="🏠" color={T.orange}>
-        <Field label="Arrendamiento de inmuebles" casilla="52" articulo="Art. 103 ET" value={ing.arrendamientos} onChange={(v) => upd("arrendamientos", v)} suggested={sugeridos?.arrendamientos} hint="Arriendo de apartamentos, casas, locales, bodegas." />
+        <Field label="Arrendamiento de inmuebles" casilla="52" articulo="Art. 103 ET" value={ing.arrendamientos} onChange={(v) => upd("arrendamientos", v)} suggested={sugeridos?.arrendamientos} prevYear={anterior?.arrendamientos} prevYearLabel={pyLabel} hint="Arriendo de apartamentos, casas, locales, bodegas." />
         <Field label="Honorarios como independiente sin empleados" casilla="53" articulo="Art. 206 #10 ET" value={ing.honorariosIndependiente} onChange={(v) => upd("honorariosIndependiente", v)} hint="Solo si tu owner está marcado como 'sin 2+ empleados 83% año' en Config. Si tenés empleados, van en Trabajo arriba." />
         <Field label="Venta de activos (menos de 2 años)" casilla="54" articulo="Art. 300 ET" value={ing.ventaActivos} onChange={(v) => upd("ventaActivos", v)} hint="Si tenías el activo más de 2 años, es Ganancia Ocasional (Paso 4)." />
         <Field label="Otros ingresos no laborales" casilla="55" value={ing.otros} onChange={(v) => upd("otros", v)} />
@@ -205,9 +216,10 @@ function Paso2IngresosCedulaGeneral({ data, update, sugeridos }) {
 // PASO 3 · CÉDULA GENERAL — DEPURACIÓN
 // ─────────────────────────────────────────────────────────────────────────
 
-function Paso3DepuracionCedulaGeneral({ data, update, totales, sugeridos }) {
+function Paso3DepuracionCedulaGeneral({ data, update, totales, sugeridos, anterior }) {
   const dep = data.depuracion || {};
   const upd = (k, v) => update({ ...dep, [k]: v });
+  const pyLabel = anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null;
 
   const incrngo = (+dep.aportesPensionObligatoria || 0) + (+dep.aportesSaludObligatoria || 0) + (+dep.aportesSolidaridad || 0);
   const ingresoNeto = Math.max(0, (totales.totalGeneralBruto || 0) - incrngo);
@@ -245,17 +257,22 @@ function Paso3DepuracionCedulaGeneral({ data, update, totales, sugeridos }) {
         <Field label="Aportes obligatorios a pensión" casilla="41" articulo="Art. 55 ET" value={dep.aportesPensionObligatoria} onChange={(v) => upd("aportesPensionObligatoria", v)} suggested={sugeridos?.aportesPension} hint="4% del salario (empleado) o IBC × 16% (independiente)." />
         <Field label="Aportes obligatorios a salud" casilla="42" articulo="Art. 56 ET" value={dep.aportesSaludObligatoria} onChange={(v) => upd("aportesSaludObligatoria", v)} suggested={sugeridos?.aportesSalud} hint="4% del salario o IBC × 12.5% (independiente)." />
         <Field label="Aportes al Fondo de Solidaridad" casilla="43" articulo="Ley 100" value={dep.aportesSolidaridad} onChange={(v) => upd("aportesSolidaridad", v)} hint="Solo si tu ingreso > 4 SMMLV. Típicamente 1% del salario." />
+        {anterior?.aportesObligatorios > 0 && (
+          <div style={{ padding: "8px 10px", background: "rgba(6,182,212,0.06)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 6, fontSize: 10, color: T.cyan, marginTop: 4 }}>
+            📥 Año {anterior.anoGravable}: aportes obligatorios totales {fm(anterior.aportesObligatorios)}
+          </div>
+        )}
       </Section>
 
       <Section title="Rentas exentas" icon="🛡️" color={T.purple}>
-        <Field label="Exenta laboral 25% (Art. 206 #10)" casilla="72" articulo="Art. 206 #10 ET" value={dep.exenta25Art206} onChange={(v) => upd("exenta25Art206", v)} suggested={sugeridos?.exenta25} hint="25% del neto laboral, tope 790 UVT/año. Aplica a salarios y a honorarios si el declarante tiene 2+ empleados ≥83% del año." />
+        <Field label="Exenta laboral 25% (Art. 206 #10)" casilla="72" articulo="Art. 206 #10 ET" value={dep.exenta25Art206} onChange={(v) => upd("exenta25Art206", v)} suggested={sugeridos?.exenta25} prevYear={anterior?.exenta25} prevYearLabel={pyLabel} hint="25% del neto laboral, tope 790 UVT/año. Aplica a salarios y a honorarios si el declarante tiene 2+ empleados ≥83% del año." />
         <Field label="Pensión voluntaria" casilla="73" articulo="Art. 126-1 ET" value={dep.pensionVoluntaria} onChange={(v) => upd("pensionVoluntaria", v)} hint="Hasta 25% del ingreso y 2500 UVT/año. Debe permanecer 10 años." />
         <Field label="Cuenta AFC" casilla="74" articulo="Art. 126-4 ET" value={dep.afc} onChange={(v) => upd("afc", v)} hint="Hasta 30% del ingreso y 3800 UVT/año. Debe usarse para vivienda o permanecer 10 años." />
       </Section>
 
       <Section title="Deducciones" icon="📉" color={T.orange}>
-        <Field label="Intereses de crédito de vivienda" casilla="75" articulo="Art. 119 ET" value={dep.interesesVivienda} onChange={(v) => upd("interesesVivienda", v)} suggested={sugeridos?.interesesVivienda} hint="Hasta 1200 UVT/año. Solo vivienda del contribuyente (no inmuebles de inversión)." />
-        <Field label="Dependientes (10% ingreso, tope 384 UVT)" casilla="76" articulo="Art. 387 ET" value={dep.dependientes} onChange={(v) => upd("dependientes", v)} suggested={sugeridos?.dependientes} hint="Hijos menores de 18, estudiantes hasta 23, cónyuge sin ingresos propios, padres dependientes económicamente." />
+        <Field label="Intereses de crédito de vivienda" casilla="75" articulo="Art. 119 ET" value={dep.interesesVivienda} onChange={(v) => upd("interesesVivienda", v)} suggested={sugeridos?.interesesVivienda} prevYear={anterior?.interesesVivienda} prevYearLabel={pyLabel} hint="Hasta 1200 UVT/año. Solo vivienda del contribuyente (no inmuebles de inversión)." />
+        <Field label="Dependientes (10% ingreso, tope 384 UVT)" casilla="76" articulo="Art. 387 ET" value={dep.dependientes} onChange={(v) => upd("dependientes", v)} suggested={sugeridos?.dependientes} prevYear={anterior?.dependientes} prevYearLabel={pyLabel} hint="Hijos menores de 18, estudiantes hasta 23, cónyuge sin ingresos propios, padres dependientes económicamente." />
         <Field label="Salud prepagada" casilla="77" articulo="Art. 387 ET" value={dep.saludPrepagada} onChange={(v) => upd("saludPrepagada", v)} hint="Medicina prepagada y pólizas de salud. Tope 192 UVT/año ($10.056.000)." />
         <Field label="50% del GMF (4×1000)" casilla="78" articulo="Art. 115 ET" value={dep.gmf50} onChange={(v) => upd("gmf50", v)} suggested={sugeridos?.gmf50} hint="La mitad del gravamen a los movimientos financieros pagado." />
       </Section>
@@ -282,9 +299,10 @@ function Paso3DepuracionCedulaGeneral({ data, update, totales, sugeridos }) {
 // PASO 4 · OTRAS CÉDULAS
 // ─────────────────────────────────────────────────────────────────────────
 
-function Paso4OtrasCedulas({ data, update, sugeridos }) {
+function Paso4OtrasCedulas({ data, update, sugeridos, anterior }) {
   const oc = data.otrasCedulas || {};
   const upd = (k, v) => update({ ...oc, [k]: v });
+  const pyLabel = anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null;
 
   // Cédula pensional
   const pensionesBruto = +oc.pensionesBruto || 0;
@@ -314,7 +332,7 @@ function Paso4OtrasCedulas({ data, update, sugeridos }) {
         <div style={{ padding: 10, background: T.bg3, borderRadius: 8, marginBottom: 10, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
           Pensiones de jubilación, invalidez, vejez o sobrevivientes. Exentas hasta <strong>1.000 UVT/mes</strong> (\${fm(1000 * UVT)}/mes). El exceso se grava a la tabla 241.
         </div>
-        <Field label="Total pensiones brutas anuales" casilla="91" articulo="Art. 206 #5 ET" value={oc.pensionesBruto} onChange={(v) => upd("pensionesBruto", v)} hint={`Parte exenta calculada: ${fm(pensionExenta)}/año · Parte gravable: ${fm(pensionGravable)}/año`} />
+        <Field label="Total pensiones brutas anuales" casilla="91" articulo="Art. 206 #5 ET" value={oc.pensionesBruto} onChange={(v) => upd("pensionesBruto", v)} prevYear={anterior?.pensiones} prevYearLabel={pyLabel} hint={`Parte exenta calculada: ${fm(pensionExenta)}/año · Parte gravable: ${fm(pensionGravable)}/año`} />
       </Section>
 
       <Section title="Cédula de dividendos y participaciones" icon="💵" color={T.purple}>
@@ -350,9 +368,10 @@ function Paso4OtrasCedulas({ data, update, sugeridos }) {
 // PASO 5 · LIQUIDACIÓN
 // ─────────────────────────────────────────────────────────────────────────
 
-function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos }) {
+function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos, anterior }) {
   const liq = data.liquidacion || {};
   const upd = (k, v) => update({ ...liq, [k]: v });
+  const pyLabel = anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null;
 
   const impuestoTabla = calcImpTabla241(rentaLiqGeneralFinal / UVT);
 
@@ -392,8 +411,8 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
       </Section>
 
       <Section title="Retenciones y anticipo" icon="🧾" color={T.cyan}>
-        <Field label="Total retenciones en la fuente del año" casilla="141" articulo="Art. 383-388 ET" value={liq.retenciones} onChange={(v) => upd("retenciones", v)} suggested={sugeridos?.retenciones} hint="Suma de todas las retenciones que te practicaron en el año (certificados de retención)." />
-        <Field label="Anticipo liquidado año anterior" casilla="142" value={liq.anticipoAnioAnterior} onChange={(v) => upd("anticipoAnioAnterior", v)} hint="Si en tu declaración del año pasado quedó anticipo a pagar este año, acá va." />
+        <Field label="Total retenciones en la fuente del año" casilla="141" articulo="Art. 383-388 ET" value={liq.retenciones} onChange={(v) => upd("retenciones", v)} suggested={sugeridos?.retenciones} prevYear={anterior?.retenciones} prevYearLabel={pyLabel} hint="Suma de todas las retenciones que te practicaron en el año (certificados de retención)." />
+        <Field label="Anticipo liquidado año anterior" casilla="142" value={liq.anticipoAnioAnterior} onChange={(v) => upd("anticipoAnioAnterior", v)} prevYear={anterior?.anticipoGenerado} prevYearLabel={pyLabel} hint="Si en tu declaración del año pasado quedó anticipo a pagar este año, acá va." />
       </Section>
 
       <Totals rows={[
@@ -498,6 +517,32 @@ export default function Formulario210({ owner, user, onSave, onCancel }) {
     return (goVenta + goHerencia) * 0.15 + goLoteria * 0.20;
   }, [data.otrasCedulas]);
 
+  // Mapeo año anterior → renglones del F-210 del año actual. Si el owner
+  // tiene declaracionAnterior (F-210), cada campo equivalente recibe el valor
+  // del año pasado como referencia comparativa.
+  const anterior = useMemo(() => {
+    const da = owner?.declaracionAnterior;
+    if (!da || da.tipo !== "F210") return null;
+    const r = da.renglones || {};
+    return {
+      anoGravable: da.anoGravable,
+      salarios: +r.salarios || 0,
+      honorarios: +r.honorarios || 0,
+      intereses: +r.intereses || 0,
+      arrendamientos: +r.arrendamientos || 0,
+      pensiones: +r.pensiones || 0,
+      dividendos: +r.dividendos || 0,
+      aportesObligatorios: +r.aportesObligatorios || 0,
+      exenta25: +r.exenta25 || 0,
+      pvAFC: +r.pvAFC || 0,
+      interesesVivienda: +r.interesesVivienda || 0,
+      dependientes: +r.dependientes || 0,
+      impuestoRenta: +r.impuestoRenta || 0,
+      retenciones: +r.retenciones || 0,
+      anticipoGenerado: +r.anticipoGenerado || 0,
+    };
+  }, [owner?.declaracionAnterior]);
+
   const handleSave = () => {
     if (onSave) onSave(data);
   };
@@ -551,10 +596,10 @@ export default function Formulario210({ owner, user, onSave, onCancel }) {
 
       <div>
         {step === 1 && <Paso1Identificacion data={data} update={(v) => setData({ ...data, identificacion: v })} />}
-        {step === 2 && <Paso2IngresosCedulaGeneral data={data} update={(v) => setData({ ...data, ingresos: v })} sugeridos={sugeridos} />}
-        {step === 3 && <Paso3DepuracionCedulaGeneral data={data} update={(v) => setData({ ...data, depuracion: v })} totales={totales} sugeridos={sugeridos} />}
-        {step === 4 && <Paso4OtrasCedulas data={data} update={(v) => setData({ ...data, otrasCedulas: v })} sugeridos={sugeridos} />}
-        {step === 5 && <Paso5Liquidacion data={data} update={(v) => setData({ ...data, liquidacion: v })} rentaLiqGeneralFinal={rentaLiqGeneralFinal} impGO={impGO} sugeridos={sugeridos} />}
+        {step === 2 && <Paso2IngresosCedulaGeneral data={data} update={(v) => setData({ ...data, ingresos: v })} sugeridos={sugeridos} anterior={anterior} />}
+        {step === 3 && <Paso3DepuracionCedulaGeneral data={data} update={(v) => setData({ ...data, depuracion: v })} totales={totales} sugeridos={sugeridos} anterior={anterior} />}
+        {step === 4 && <Paso4OtrasCedulas data={data} update={(v) => setData({ ...data, otrasCedulas: v })} sugeridos={sugeridos} anterior={anterior} />}
+        {step === 5 && <Paso5Liquidacion data={data} update={(v) => setData({ ...data, liquidacion: v })} rentaLiqGeneralFinal={rentaLiqGeneralFinal} impGO={impGO} sugeridos={sugeridos} anterior={anterior} />}
       </div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
