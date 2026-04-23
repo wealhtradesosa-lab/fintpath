@@ -657,10 +657,17 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
 export default function SimuladorTributario({ trm, user }) {
   const mb = typeof window !== "undefined" && window.innerWidth < 768;
   const owners = (user && user.owners) || [{ id: "own_1", name: "Personal", type: "natural" }];
-  const ing = (user && user.ingresos) || [];
-  const gas = user && user.gas ? user.gas : {};
-  const inv = (user && user.inv) || [];
-  const deu = (user && user.deu) || [];
+  // Respeta el flag sim en todos los items — si el usuario lo desactivó en Ingresos/Gastos/etc,
+  // el simulador lo ignora. Default: sim === undefined o true → se incluye. sim === false → se excluye.
+  const ing = ((user && user.ingresos) || []).filter(i => i.sim !== false);
+  const gasRaw = user && user.gas ? user.gas : {};
+  const gas = {};
+  Object.entries(gasRaw).forEach(([cat, items]) => {
+    const filtered = (items || []).filter(g => g.sim !== false);
+    if (filtered.length > 0) gas[cat] = filtered;
+  });
+  const inv = ((user && user.inv) || []).filter(i => i.sim !== false);
+  const deu = ((user && user.deu) || []).filter(d => d.sim !== false);
   const sinAsignar = ing.filter(i => !i.owner || i.owner === "").length;
 
   const gastosFlat = [];

@@ -37,9 +37,15 @@ export const calcImpRenta = (uvtBase) => {
 export const estimarImpuesto = (u) => {
   if (!u) return { total: 0, mes: 0, detalle: [], sinClasificar: 0 };
   const owners = (u.owners || [{ id: "own_1", name: "Personal", type: "natural" }]);
-  const ing = (u.ingresos || []);
-  const gas = u.gas || {};
-  const deu = (u.deu || []);
+  // Respeta el flag sim: si el usuario desactivó un item, el simulador lo ignora.
+  const ing = (u.ingresos || []).filter(i => i.sim !== false);
+  const gasRaw = u.gas || {};
+  const gas = {};
+  Object.entries(gasRaw).forEach(([cat, items]) => {
+    const filtered = (items || []).filter(g => g.sim !== false);
+    if (filtered.length > 0) gas[cat] = filtered;
+  });
+  const deu = (u.deu || []).filter(d => d.sim !== false);
   let totalImp = 0;
   const detalle = [];
   const sinClasificar = ing.filter(i => !i.owner || i.owner === "").length;
