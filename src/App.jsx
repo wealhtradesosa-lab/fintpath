@@ -1982,7 +1982,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     <span style={{fontSize:16}}>{ow.type==="juridica"?"🏢":"👤"}</span>
                     <div style={{flex:1}}>
                       <div style={{fontSize:13,fontWeight:600}}>{ow.name}</div>
-                      <div style={{fontSize:10,color:T.tx3}}>{ow.type==="juridica"?"Persona Jurídica":"Persona Natural"} · <span style={{color:T.bl}}>{regLabel}</span>{ow.type==="juridica"&&ow.perdidasFiscalesAcumuladas>0&&<span style={{color:T.gn,marginLeft:6}}>· 📉 {fm(ow.perdidasFiscalesAcumuladas)} pérdidas</span>}{ow.type==="juridica"&&ow.descuentosTributarios&&Object.values(ow.descuentosTributarios).some(v=>+v>0)&&<span style={{color:T.bl,marginLeft:6}}>· 💠 descuentos</span>}</div>
+                      <div style={{fontSize:10,color:T.tx3}}>{ow.type==="juridica"?"Persona Jurídica":"Persona Natural"} · <span style={{color:T.bl}}>{regLabel}</span>{ow.type==="juridica"&&ow.perdidasFiscalesAcumuladas>0&&<span style={{color:T.gn,marginLeft:6}}>· 📉 {fm(ow.perdidasFiscalesAcumuladas)} pérdidas</span>}{ow.type==="juridica"&&ow.descuentosTributarios&&Object.values(ow.descuentosTributarios).some(v=>+v>0)&&<span style={{color:T.bl,marginLeft:6}}>· 💠 descuentos</span>}{ow.type==="natural"&&ow.aportes&&(+ow.aportes.pensionObligatoriaMensual>0||+ow.aportes.pensionVoluntariaMensual>0||+ow.aportes.saludObligatoriaMensual>0||+ow.aportes.segSocialIndependienteMensual>0)&&<span style={{color:T.or||T.bl,marginLeft:6}}>· 🏦 aportes manuales</span>}</div>
                     </div>
                     <div style={{display:"flex",gap:4}}>
                       <button onClick={()=>{setU({...u,p:{...u.p,_editOwnerId:isEditing?null:ow.id}})}} style={{background:T.bg3,border:"1px solid "+T.border,color:T.tx2,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:10}}>{isEditing?"✖️ Cerrar":"✏️ Editar"}</button>
@@ -2023,6 +2023,38 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                         <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Valores en $ que tu contador declaró como descuentos directos del impuesto. Sujetos al tope del 25% del impuesto bruto (Art. 259 ET).</div>
                       </div>
                     </>}
+                    {ow.type==="natural"&&<>
+                      <div style={{marginTop:6,paddingTop:10,borderTop:"1px dashed "+T.border}}>
+                        <div style={{fontSize:10,fontWeight:700,color:T.or||T.bl,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🏦 Aportes a seguridad social (opcional)</div>
+                        <div style={{fontSize:10,color:T.tx3,marginBottom:10,lineHeight:1.4}}>Por default, FINPATHIA asume 4% de tu salario como pensión obligatoria (INCRNGO Art. 55 ET) y 4% del IBC para independientes. Si conoces tus valores reales mensuales, anótalos aquí para un cálculo más preciso. Dejá en blanco los que no apliquen.</div>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:8}}>
+                        <div>
+                          <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>Pensión obligatoria /mes</label>
+                          <input type="number" defaultValue={ow.aportes?.pensionObligatoriaMensual||""} id={"own_apt_pobl_"+ow.id} placeholder="Auto: 4% del salario" style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:11,outline:"none"}}/>
+                        </div>
+                        <div>
+                          <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>Pensión voluntaria /mes (Art. 126-1)</label>
+                          <input type="number" defaultValue={ow.aportes?.pensionVoluntariaMensual||""} id={"own_apt_pvol_"+ow.id} placeholder="Auto: 0 (no aportas hoy)" style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:11,outline:"none"}}/>
+                        </div>
+                        <div>
+                          <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>Salud obligatoria /mes</label>
+                          <input type="number" defaultValue={ow.aportes?.saludObligatoriaMensual||""} id={"own_apt_sal_"+ow.id} placeholder="Auto: 0 (ya en INCRNGO)" style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:11,outline:"none"}}/>
+                        </div>
+                        <div>
+                          <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>SS independiente total /mes</label>
+                          <input type="number" defaultValue={ow.aportes?.segSocialIndependienteMensual||""} id={"own_apt_ind_"+ow.id} placeholder="Auto: 4% del IBC (40% honorarios)" style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:11,outline:"none"}}/>
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Tu salario en Ingresos es bruto o neto?</label>
+                        <select defaultValue={ow.aportes?.salarioEsBruto===false?"neto":"bruto"} id={"own_apt_bruto_"+ow.id} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:12,outline:"none",cursor:"pointer"}}>
+                          <option value="bruto">Bruto (antes de aportes — recomendado)</option>
+                          <option value="neto">Neto (después de aportes — se hace gross-up)</option>
+                        </select>
+                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si registras tu salario neto (lo que cae a la cuenta), marca "Neto" y FINPATHIA sumará los aportes para calcular el salario gravable correcto.</div>
+                      </div>
+                    </>}
                     <div style={{display:"flex",gap:8}}>
                       <button onClick={()=>{
                         const nm=document.getElementById("own_name_"+ow.id)?.value?.trim()||ow.name;
@@ -2039,6 +2071,21 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                           upd.perdidasFiscalesAcumuladas=perd;
                           const tieneDescuentos=dCti+dEmp+dExt+dDon+dOtr>0;
                           upd.descuentosTributarios=tieneDescuentos?{cti:dCti,empleo:dEmp,exterior:dExt,donaciones:dDon,otros:dOtr}:null;
+                        }
+                        if(ow.type==="natural"){
+                          const pobl=+document.getElementById("own_apt_pobl_"+ow.id)?.value||0;
+                          const pvol=+document.getElementById("own_apt_pvol_"+ow.id)?.value||0;
+                          const sal=+document.getElementById("own_apt_sal_"+ow.id)?.value||0;
+                          const ind=+document.getElementById("own_apt_ind_"+ow.id)?.value||0;
+                          const bru=document.getElementById("own_apt_bruto_"+ow.id)?.value!=="neto";
+                          const tieneAportes=pobl>0||pvol>0||sal>0||ind>0||!bru;
+                          upd.aportes=tieneAportes?{
+                            pensionObligatoriaMensual:pobl>0?pobl:null,
+                            pensionVoluntariaMensual:pvol>0?pvol:null,
+                            saludObligatoriaMensual:sal>0?sal:null,
+                            segSocialIndependienteMensual:ind>0?ind:null,
+                            salarioEsBruto:bru,
+                          }:null;
                         }
                         // Limpiar override legado si existía
                         delete upd.impuestoDeclaradoAnual;

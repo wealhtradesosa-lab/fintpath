@@ -199,8 +199,20 @@ export const estimarImpuesto = (u) => {
     } else {
       // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022, ET Arts. 55,206,336,383,387) ═══
       const trm = u.trm || 4200;
+
+      // ── APORTES A SEGURIDAD SOCIAL (valores manuales del owner) ──
+      // Cada campo es opcional: si está > 0, sobreescribe el heurístico por default.
+      const apt = ow.aportes || {};
+      const aPensObl = Number(apt.pensionObligatoriaMensual) || 0;     // salario mensual
+      const aPensVol = Number(apt.pensionVoluntariaMensual) || 0;      // Art. 126-1
+      const aSaludObl = Number(apt.saludObligatoriaMensual) || 0;      // salario mensual
+      const aSSIndep = Number(apt.segSocialIndependienteMensual) || 0; // honorarios mensual total
+      const salarioEsBruto = apt.salarioEsBruto !== false;             // default true
+
       // Clasificar ingresos por subcédula
-      const salAnual = oIng.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
+      const salAnualInput = oIng.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
+      // Gross-up: si el salario registrado es neto (después de aportes), sumarlos para obtener el bruto gravable
+      const salAnual = salarioEsBruto ? salAnualInput : salAnualInput + (aPensObl + aSaludObl) * 12;
       const honAnual = oIng.filter(i => /Honorarios|Freelance/i.test(i.categoria || "")).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       const rentasAnual = oIng.filter(i => /Arriendo/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
       // Sub-tipos de rendimientos con tratamiento diferenciado:
@@ -224,9 +236,14 @@ export const estimarImpuesto = (u) => {
       if (ingAnual <= 0) return;
 
       // ── 1. INGRESOS NO CONSTITUTIVOS DE RENTA (Art. 55-56 ET) ──
-      const noConstSal = salAnual * 0.04;
+      // Pensión obligatoria: 4% sobre salario gravable, o manual si el usuario la especificó.
+      const noConstSalPens = aPensObl > 0 ? aPensObl * 12 : salAnual * 0.04;
+      // Salud obligatoria: 0 por default (backwards-compat con lógica previa); si usuario la especifica, se suma como INCRNGO Art. 56 ET.
+      const noConstSalSalud = aSaludObl > 0 ? aSaludObl * 12 : 0;
+      const noConstSal = noConstSalPens + noConstSalSalud;
+      // Honorarios: si usuario especifica total SS independiente, se usa; si no, 4% sobre IBC (40% de honorarios).
       const ibcIndep = honAnual * 0.40;
-      const noConstHon = ibcIndep * 0.04;
+      const noConstHon = aSSIndep > 0 ? aSSIndep * 12 : ibcIndep * 0.04;
       const totalNoConst = noConstSal + noConstHon;
 
       // ── 2. RENTAS DE TRABAJO (salario + honorarios) ──
@@ -255,7 +272,10 @@ export const estimarImpuesto = (u) => {
       const exenta25 = Math.min(baseExenta * 0.25, 790 * UVT);
 
       const lim40 = netoLaboral * 0.40;
-      const benefLaboral = Math.min(exenta25 + totalDeducciones, lim40);
+      // Pensión voluntaria manual (Art. 126-1 ET): si el usuario ya aporta hoy, entra como renta exenta en el escenario ACTUAL.
+      // Cap legal: 25% del neto laboral y 2500 UVT.
+      const pvManualAnual = aPensVol > 0 ? Math.min(aPensVol * 12, netoLaboral * 0.25, 2500 * UVT) : 0;
+      const benefLaboral = Math.min(exenta25 + totalDeducciones + pvManualAnual, lim40);
 
       const rentaLiqTrabajo = Math.max(0, netoLaboral - benefLaboral);
 
@@ -296,9 +316,13 @@ export const estimarImpuesto = (u) => {
       const imp = calcImpRenta(rentaLiqGeneral / UVT) + impDiv;
 
       // ── CON OPTIMIZACIÓN: PV + AFC llenan tope 40% ──
-      const espacioPV = Math.max(0, lim40 - benefLaboral);
-      const pensionVol = Math.min(espacioPV, netoLaboral * 0.25, 2500 * UVT);
-      const espacioAFC = Math.max(0, lim40 - benefLaboral - pensionVol);
+      // El espacio disponible se mide sin contar la PV manual (la sugerencia podría reemplazarla o subirla).
+      const baseBenefSinPV = Math.min(exenta25 + totalDeducciones, lim40);
+      const espacioPV = Math.max(0, lim40 - baseBenefSinPV);
+      const pensionVolSugerido = Math.min(espacioPV, netoLaboral * 0.25, 2500 * UVT);
+      // Tomar el máximo entre lo que el usuario ya aporta y lo que sugiere la optimización (nunca bajar su aporte actual).
+      const pensionVol = Math.min(Math.max(pvManualAnual, pensionVolSugerido), netoLaboral * 0.25, 2500 * UVT);
+      const espacioAFC = Math.max(0, lim40 - baseBenefSinPV - pensionVol);
       const afc = Math.min(espacioAFC, netoLaboral * 0.30, 3800 * UVT);
       const rentaOptTrabajo = Math.max(0, netoLaboral - Math.min(exenta25 + totalDeducciones + pensionVol + afc, lim40));
       const rentaOptGeneral = rentaOptTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
@@ -340,6 +364,17 @@ export const estimarImpuesto = (u) => {
         regimen: regimenN, regimenNota: regimenNotaN,
         ingLaboral, ingCapital, ingNoLaboral, divAnual, pensAnual,
         noConst: totalNoConst, neto: netoLaboral,
+        // Desglose de aportes (para UI y debugging)
+        aportesManuales: (aPensObl + aPensVol + aSaludObl + aSSIndep) > 0,
+        aportesDesglose: {
+          pensionObligatoriaAnual: noConstSalPens,
+          saludObligatoriaAnual: noConstSalSalud,
+          ssIndependienteAnual: noConstHon,
+          pensionVoluntariaManualAnual: pvManualAnual,
+          salarioEsBruto,
+          salarioInputAnual: salAnualInput,
+          salarioGravableAnual: salAnual,
+        },
         exenta25, deducDep, deducMedicina, deducVivienda, gmfDeducible,
         pensionVol, afc, totalDeducciones,
         lim40, benAplic: benefLaboral,

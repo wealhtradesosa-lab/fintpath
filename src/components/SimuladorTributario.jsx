@@ -198,7 +198,16 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       return { type: "juridica", regimen, regimenNota, tarifa, perdidasAcumuladas, perdidasAplicadas, descuentosSolicitados, descuentosAplicados, descuentosDesglose: { cti: descCTI, empleo: descEmpleo, exterior: descExterior, donaciones: descDonaciones, otros: descOtros }, ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, totalDeduc, intereses, deprec, patTotal, deuTotal, utilidad: utilidadActual, baseGravable, impBruto, descuentoICA, retefuenteCalc, gmf50, impActual, tasaActual, pctGastos, impOptimo, ahorro, recs };
     } else {
       // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022) ═══
-      const salAnual = ingresos.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
+      // ── APORTES A SEGURIDAD SOCIAL (valores manuales del owner) ──
+      const apt = owner.aportes || {};
+      const aPensObl = Number(apt.pensionObligatoriaMensual) || 0;
+      const aPensVol = Number(apt.pensionVoluntariaMensual) || 0;
+      const aSaludObl = Number(apt.saludObligatoriaMensual) || 0;
+      const aSSIndep = Number(apt.segSocialIndependienteMensual) || 0;
+      const salarioEsBruto = apt.salarioEsBruto !== false;
+
+      const salAnualInput = ingresos.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
+      const salAnual = salarioEsBruto ? salAnualInput : salAnualInput + (aPensObl + aSaludObl) * 12;
       const honAnual = ingresos.filter(i => /Honorarios|Freelance/i.test(i.categoria || "")).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       const rentasAnual = ingresos.filter(i => /Arriendo/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
       // Sub-tipos de rendimientos con tratamiento diferenciado (Art. 38-39 ET)
@@ -212,8 +221,12 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       const ingCapital = rendAnual;
       const ingNoLaboral = rentasAnual + ingresos.filter(i => !["Salario","Honorarios","Freelance","Arriendo","Rendimiento","Inversión","CDT","Dividendos","Pensión"].some(c2 => (i.categoria||"").includes(c2))).reduce((s,i) => s + ((i.mensual||0) * (i.moneda==="USD"?(trm||4200):1)),0) * 12;
       
-      // INCRNGO: pensión obligatoria (Art. 55 ET)
-      const noConst = salAnual * 0.04 + honAnual * 0.40 * 0.04;
+      // INCRNGO: pensión + salud obligatorias (Art. 55-56 ET), manuales o auto 4%
+      const noConstSalPens = aPensObl > 0 ? aPensObl * 12 : salAnual * 0.04;
+      const noConstSalSalud = aSaludObl > 0 ? aSaludObl * 12 : 0;
+      const ibcIndep = honAnual * 0.40;
+      const noConstHon = aSSIndep > 0 ? aSSIndep * 12 : ibcIndep * 0.04;
+      const noConst = noConstSalPens + noConstSalSalud + noConstHon;
       const netoLaboral = ingLaboral - noConst;
       
       // Deducciones solo para rentas de TRABAJO
@@ -232,7 +245,9 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       
       // Tope 40% solo sobre TRABAJO (Ley 2277)
       const lim40 = netoLaboral * 0.40;
-      const benefSin = Math.min(exenta25 + totalDeducciones, lim40);
+      // Pensión voluntaria manual (Art. 126-1): si el usuario ya aporta, entra al escenario ACTUAL
+      const pvManualAnual = aPensVol > 0 ? Math.min(aPensVol * 12, netoLaboral * 0.25, 2500 * UVT) : 0;
+      const benefSin = Math.min(exenta25 + totalDeducciones + pvManualAnual, lim40);
       
       // Rentas líquidas por cédula
       const rentaLiqTrabajo = Math.max(0, netoLaboral - benefSin);
@@ -259,9 +274,12 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       const tasaSin = ingAnual > 0 ? (impSin / ingAnual * 100) : 0;
       
       // ── CON ESTRATEGIA: PV + AFC llenan tope 40% ──
-      const espacioOpt = Math.max(0, lim40 - benefSin);
-      const pvMax = Math.min(espacioOpt, netoLaboral * 0.25, 2500 * UVT);
-      const espacioPost = Math.max(0, lim40 - benefSin - pvMax);
+      const baseBenefSinPV = Math.min(exenta25 + totalDeducciones, lim40);
+      const espacioOpt = Math.max(0, lim40 - baseBenefSinPV);
+      const pvSugerido = Math.min(espacioOpt, netoLaboral * 0.25, 2500 * UVT);
+      // Nunca bajar del aporte manual actual: tomar el max entre lo que ya aporta y lo sugerido.
+      const pvMax = Math.min(Math.max(pvManualAnual, pvSugerido), netoLaboral * 0.25, 2500 * UVT);
+      const espacioPost = Math.max(0, lim40 - baseBenefSinPV - pvMax);
       const afcMax = Math.min(espacioPost, netoLaboral * 0.30, 3800 * UVT);
       const rentaOptTrabajo = Math.max(0, netoLaboral - Math.min(exenta25 + totalDeducciones + pvMax + afcMax, lim40));
       const rentaCon = rentaOptTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
@@ -342,6 +360,16 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         type: "natural", regimen: regimenN, regimenNota: regimenNotaN,
         ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, gastosDeducNat, patTotal, deuTotal,
         noConst, neto, exenta25, deducDep, deducViv, lim40,
+        aportesManuales: (aPensObl + aPensVol + aSaludObl + aSSIndep) > 0,
+        aportesDesglose: {
+          pensionObligatoriaAnual: noConstSalPens,
+          saludObligatoriaAnual: noConstSalSalud,
+          ssIndependienteAnual: noConstHon,
+          pensionVoluntariaManualAnual: pvManualAnual,
+          salarioEsBruto,
+          salarioInputAnual: salAnualInput,
+          salarioGravableAnual: salAnual,
+        },
         interesesBancAnual, utilidadFICAnual, rendimientoGenAnual, inversionAnual,
         componenteInflacExcluido, pctComponenteInflac: pctComponenteInflac * 100, rentaLiqCapital,
         benefSin, benAplicSin, rentaSin, impSin: impSinFinal, tasaSin: ingAnual > 0 ? (impSinFinal / ingAnual * 100) : 0,
@@ -349,7 +377,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         recs
       };
     }
-  }, [ingresos, gastos, inv, deu, trm, isJ, owner.regimen, owner.perdidasFiscalesAcumuladas, owner.descuentosTributarios, componenteInflacionarioPct]);
+  }, [ingresos, gastos, inv, deu, trm, isJ, owner.regimen, owner.perdidasFiscalesAcumuladas, owner.descuentosTributarios, owner.aportes, componenteInflacionarioPct]);
 
   if (!calc) return (
     <Cd style={{ padding: 24, marginBottom: 16 }}>
