@@ -102,6 +102,7 @@ export const estimarImpuesto = (u) => {
       // contribuyente confirma que el gasto no cumple causalidad Art. 107 ET).
       // Items legacy sin fiscalCode suman al 100% como antes (backwards compat).
       const gastosDeducJ = oGas.filter(g => g.fiscalCode !== GAS_JUR_NO_DEDUCIBLE).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastosTotalJ = oGas.reduce((s, g) => s + (g.m || 0), 0) * 12;
       const interesesJ = oDeu.reduce((s, d) => { const saldo = d.mt || 0; const tasa = (d.ts || d.tasa || 0) / 100; return s + saldo * tasa; }, 0);
       // DEPRECIACIÓN (Art. 128-141 ET): decisión deliberada del contribuyente, no automática.
       // Solo aplica a bienes usados en la actividad productora de renta, con vida útil fiscal
@@ -215,6 +216,7 @@ export const estimarImpuesto = (u) => {
         gastosRegistrados: gastosDeducJ, intereses: interesesJ, deprec, gastosDeduc: totalDeduc,
         // Campos intermedios del cálculo (Sprint 4B1 — para consumo por OwnerPlan):
         utilidad, descuentoICA: descICA, retefuenteCalc: reteJ,
+        gmf50, gastosTotal: gastosTotalJ,
         pctGastos: ingAnual > 0 ? (totalDeduc / ingAnual * 100) : 0,
         baseGravable, impuesto: impActual, impSinOpt: impActual, impOptimizado: impOptimoJ,
         impBruto: impBruto, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
