@@ -27,7 +27,14 @@ export function track(event, payload = {}) {
       window.console.info("[finpathia-analytics]", event, payload);
     }
 
-    // GA4 / Google Tag Manager via dataLayer
+    // GA4 via gtag directo (sin GTM) — la forma nativa de enviar eventos
+    // Santiago tiene configurado gtag con G-51CV6PWRLT en index.html,
+    // por lo que los eventos emitidos acá aparecen en GA4 → Reports → Events.
+    if (typeof window.gtag === "function") {
+      window.gtag("event", event, payload);
+    }
+
+    // GA4 / Google Tag Manager via dataLayer (compat con GTM si se usa)
     if (Array.isArray(window.dataLayer)) {
       window.dataLayer.push({ event, ...payload });
     }

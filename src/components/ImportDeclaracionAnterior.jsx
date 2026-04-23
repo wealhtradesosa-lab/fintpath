@@ -18,6 +18,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
+import { track } from "../lib/analytics.js";
 
 const UVT_2024 = 47065;
 const UVT_2025 = 49799;
@@ -108,6 +109,15 @@ export default function ImportDeclaracionAnterior({ owner, onSave, onCancel }) {
       renglones: rg,
       capturadoEn: new Date().toISOString(),
     };
+    // Analytics: medir qué campos capturó el usuario (sin montos, solo count)
+    const camposCapturados = Object.keys(rg).filter(k => +rg[k] > 0).length;
+    track("declaracion_anterior_guardada", {
+      tipo,
+      ano_gravable: anoGravable,
+      campos_capturados: camposCapturados,
+      es_edicion: historial.some(d => d.anoGravable === anoGravable),
+      total_historial_despues: historial.length + (historial.some(d => d.anoGravable === anoGravable) ? 0 : 1),
+    });
     if (onSave) onSave(declaracion);
   };
 
