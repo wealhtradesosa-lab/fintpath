@@ -19,7 +19,9 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
+import { useEffect } from "react";
 import { proyectarSiguienteAno } from "./AlertasAnoAnterior.jsx";
+import { track } from "../lib/analytics.js";
 
 const T = {
   txt: "#e8eaed", txt2: "#b8bcc4", txt3: "#6b7280",
@@ -37,6 +39,15 @@ const fmM = (v) => {
 };
 
 export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresActuales }) {
+  useEffect(() => {
+    if (!Array.isArray(serie) || serie.length < 1) return;
+    track("minigrafica_historico_renderizada", {
+      anos_historial: serie.length,
+      tiene_proyeccion: serie.length >= 2,
+      ano_actual: anoActual || "sin_dato",
+    });
+  }, [serie?.length, anoActual]);
+
   if (!Array.isArray(serie) || serie.length < 1) return null;
 
   // Construir puntos del chart: años anteriores + año actual

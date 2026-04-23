@@ -25,6 +25,9 @@
 //   />
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { useEffect } from "react";
+import { track } from "../lib/analytics.js";
+
 const T = {
   txt: "#e8eaed", txt2: "#b8bcc4", txt3: "#6b7280",
   border: "rgba(255,255,255,0.08)",
@@ -288,6 +291,23 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
   const alertas = calcAlertasAnoAnterior(comparaciones);
   const patrones = patronesContext ? calcPatronesAnomalos(patronesContext) : [];
   const tendencias = tendenciaContext ? calcPatronesTendencia(tendenciaContext) : [];
+
+  // Analytics: emitir evento cada vez que el panel renderiza señales reales
+  useEffect(() => {
+    const total = alertas.length + patrones.length + tendencias.length;
+    if (total === 0) return;
+    track("alertas_ano_anterior_renderizado", {
+      total_senales: total,
+      alertas_delta: alertas.length,
+      patrones_cruzados: patrones.length,
+      patrones_tendencia: tendencias.length,
+      critical_count: [...alertas, ...patrones, ...tendencias].filter(a => a.severity === "critical").length,
+      anos_historial: tendenciaContext?.serie?.length || 0,
+      // Labels de las señales disparadas (sin montos, solo nombres de patrones)
+      labels: [...alertas.map(a => a.label), ...patrones.map(p => p.label), ...tendencias.map(t => t.label)],
+    });
+  }, [alertas.length, patrones.length, tendencias.length]);
+
   if (alertas.length === 0 && patrones.length === 0 && tendencias.length === 0) return null;
 
   const critical = [...alertas, ...patrones, ...tendencias].filter(a => a.severity === "critical");
