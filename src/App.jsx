@@ -1705,7 +1705,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <button onClick={()=>setTaxTab("rapido")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?T.bl:T.border),background:taxTab==="rapido"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="rapido"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>⚡ Simulador rápido</button>
           <button onClick={()=>setTaxTab("completa")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="completa"?T.bl:T.border),background:taxTab==="completa"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="completa"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>📋 Declaración completa (F-110)</button>
         </div>
-        {taxTab==="rapido"&&<SimuladorTributario trm={(u&&u.trm)||4200} user={u}/>}
+        {taxTab==="rapido"&&<SimuladorTributario trm={(u&&u.trm)||4200} user={u} onNavigate={setPg}/>}
         {taxTab==="completa"&&<div style={{maxWidth:900,margin:"0 auto",padding:"16px"}}>
           <div style={{marginBottom:20,padding:"18px 22px",background:"linear-gradient(135deg, rgba(59,130,246,0.08), rgba(167,139,250,0.08))",borderRadius:14,border:"1px solid "+T.border}}>
             <div style={{fontSize:18,fontWeight:800,marginBottom:8}}>📋 Declaración completa · Formulario 110 DIAN</div>

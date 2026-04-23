@@ -681,7 +681,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
   );
 }
 
-export default function SimuladorTributario({ trm, user }) {
+export default function SimuladorTributario({ trm, user, onNavigate }) {
   const mb = typeof window !== "undefined" && window.innerWidth < 768;
   const owners = (user && user.owners) || [{ id: "own_1", name: "Personal", type: "natural" }];
   // Respeta el flag sim en todos los items — si el usuario lo desactivó en Ingresos/Gastos/etc,
@@ -774,6 +774,10 @@ export default function SimuladorTributario({ trm, user }) {
               {[...errs, ...warnings, ...infos].map((g, i) => {
                 const color = g.severity === "error" ? T.red : g.severity === "warning" ? T.orange : T.blue;
                 const icon = g.severity === "error" ? "⛔" : g.severity === "warning" ? "⚠️" : "ℹ️";
+                // Mapeo itemType → id de página para navegación
+                const pgMap = { ingreso: "ing", gasto: "gas", deuda: "deu", inversion: "inv", owner: "set" };
+                const target = pgMap[g.itemType];
+                const targetLabel = { ingreso: "💰 Ingresos", gasto: "💳 Egresos", deuda: "📋 Deudas", inversion: "🏦 Patrimonio", owner: "⚙️ Config" }[g.itemType];
                 return (
                   <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 8, fontSize: 11 }}>
                     <span style={{ fontSize: 13 }}>{icon}</span>
@@ -782,6 +786,11 @@ export default function SimuladorTributario({ trm, user }) {
                       {g.accionSugerida && <div style={{ color: T.txt3, marginTop: 2 }}>→ {g.accionSugerida}</div>}
                       {g.articuloET && g.articuloET !== "—" && <div style={{ color: T.txt3, fontSize: 10, marginTop: 2, fontStyle: "italic" }}>{g.articuloET}</div>}
                     </div>
+                    {onNavigate && target && (
+                      <button onClick={() => onNavigate(target)} style={{ background: "transparent", border: "1px solid " + color, color: color, padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", alignSelf: "center" }}>
+                        Ir a {targetLabel} →
+                      </button>
+                    )}
                   </div>
                 );
               })}
