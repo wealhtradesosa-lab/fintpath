@@ -75,8 +75,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   const [selected, setSelected] = useState(new Set());
 
   const items = deudas || [];
-  const totalDeuda = items.reduce((s, d) => s + (d.mt || 0), 0);
-  const totalCuotas = items.reduce((s, d) => s + (d.pg || 0), 0);
+  const activos = items.filter((d) => d.sim !== false);
+  const totalDeuda = activos.reduce((s, d) => s + (d.mt || 0), 0);
+  const totalCuotas = activos.reduce((s, d) => s + (d.pg || 0), 0);
 
   const toggleSel = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
@@ -113,7 +114,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Obligaciones Financieras</h2>
-          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{items.length} deudas • Saldo: <span style={{ color: T.red, fontWeight: 700 }}>{fm(totalDeuda)}</span> • Cuotas: {fm(totalCuotas)}/mes</p>
+          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{activos.length}{activos.length !== items.length ? ` de ${items.length}` : ""} deuda{activos.length !== 1 ? "s" : ""}{activos.length !== items.length ? " activa" + (activos.length !== 1 ? "s" : "") : ""} • Saldo: <span style={{ color: T.red, fontWeight: 700 }}>{fm(totalDeuda)}</span> • Cuotas: {fm(totalCuotas)}/mes</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {selected.size > 0 && (

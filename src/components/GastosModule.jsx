@@ -146,7 +146,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const cats = Object.entries(gas);
   const allItems = [];
   cats.forEach(([cat, its]) => its.forEach((g, i) => allItems.push({ ...g, cat, idx: i, key: cat + "|" + i })));
-  const totalMes = allItems.reduce((s, g) => s + (g.m || 0), 0);
+  const activos = allItems.filter((g) => g.sim !== false);
+  const totalMes = activos.reduce((s, g) => s + (g.m || 0), 0);
 
   const toggleSel = (key) => setSelected((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
   const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((g) => g.key)));
@@ -214,7 +215,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Gastos Familiares</h2>
           <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>
-            {allItems.length} gastos en {cats.length} categorías • Total: <span style={{ color: T.red, fontWeight: 700 }}>{fm(totalMes)}/mes</span> • {fm(totalMes * 12)}/año
+            {activos.length}{activos.length !== allItems.length ? ` de ${allItems.length}` : ""} gasto{activos.length !== 1 ? "s" : ""}{activos.length !== allItems.length ? " activo" + (activos.length !== 1 ? "s" : "") : ""} en {cats.length} categorías • Total: <span style={{ color: T.red, fontWeight: 700 }}>{fm(totalMes)}/mes</span> • {fm(totalMes * 12)}/año
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -232,8 +233,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         {[
           { l: "Total Mensual", v: fm(totalMes), c: T.red },
           { l: "Total Anual", v: fm(totalMes * 12), c: T.orange },
-          { l: "Fijos", v: fm(allItems.filter((g) => g.t === "f").reduce((s, g) => s + g.m, 0)), c: T.blue },
-          { l: "Variables", v: fm(allItems.filter((g) => g.t !== "f").reduce((s, g) => s + g.m, 0)), c: T.orange },
+          { l: "Fijos", v: fm(activos.filter((g) => g.t === "f").reduce((s, g) => s + g.m, 0)), c: T.blue },
+          { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + g.m, 0)), c: T.orange },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
             <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>

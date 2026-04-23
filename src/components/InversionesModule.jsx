@@ -80,7 +80,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   const [selected, setSelected] = useState(new Set());
 
   const items = inversiones || [];
-  const totalValor = items.reduce((s, i) => s + getVA(i), 0);
+  const activos = items.filter((i) => i.sim !== false);
+  const totalValor = activos.reduce((s, i) => s + getVA(i), 0);
 
   const toggleSel = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
@@ -157,7 +158,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Portfolio de Inversiones</h2>
           <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>
-            {items.length} activos • Valor total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalValor)}</span>
+            {activos.length}{activos.length !== items.length ? ` de ${items.length}` : ""} activo{activos.length !== 1 ? "s" : ""} • Valor total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalValor)}</span>
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -175,7 +176,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         {[
           { l: "Patrimonio Total", v: fm(totalValor), c: T.green },
           
-          { l: "Activos", v: items.length, c: T.txt },
+          { l: "Activos", v: activos.length, c: T.txt },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
             <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>

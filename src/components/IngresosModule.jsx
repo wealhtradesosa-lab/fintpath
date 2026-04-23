@@ -133,9 +133,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   const items = ingresos || [];
   
   const allItems = items;
+  const activos = allItems.filter((i) => i.sim !== false);
 
-  const totalMes = allItems.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
-  const fijos = allItems.filter((i) => i.tipo === "fijo").reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
+  const totalMes = activos.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
+  const fijos = activos.filter((i) => i.tipo === "fijo").reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
   const variables = totalMes - fijos;
 
   const toggleSelect = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -166,7 +167,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Ingresos</h2>
-          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{allItems.length} fuentes de ingreso • Total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalMes)}/mes</span></p>
+          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{activos.length}{activos.length !== allItems.length ? ` de ${allItems.length}` : ""} fuente{activos.length !== 1 ? "s" : ""} de ingreso{activos.length !== allItems.length ? " activa" + (activos.length !== 1 ? "s" : "") : ""} • Total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalMes)}/mes</span></p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {selected.size > 0 && (
