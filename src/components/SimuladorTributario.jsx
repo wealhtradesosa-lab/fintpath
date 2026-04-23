@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO.js";
+import { adapterOwnerPlan } from "../lib/ownerPlanAdapter.js";
 import { getFiscalWarnings } from "../lib/normalize.js";
 
 const UVT = 52374;
@@ -42,145 +43,23 @@ const Kpi = ({ label, value, sub, color, big }) => (
 function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componenteInflacionarioPct }) {
 
   const calc = useMemo(() => {
-    const ingAnual = ingresos.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
-    if (ingAnual <= 0) return null;
+    // Sprint 4B2 paso 2: swap del useMemo legacy (~335 líneas) por
+    // adapterOwnerPlan que delega TODO el cálculo tributario al motor
+    // estimarImpuesto() via adapter con aliases. Lo único local son los
+    // recs (recomendaciones textuales) que dependen del tema de colores T
+    // y de formato fm específico del componente.
+    const fiscalData = adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, componenteInflacionarioPct });
+    if (!fiscalData) return null;
 
-    // Gastos by category
-    const gastosByCat = {};
-    let gastosDeducTotal = 0, gastosTotal = 0;
-    gastos.forEach(g => {
-      const cat = g.cat || "Otro";
-      const m = g.m || 0;
-      gastosTotal += m;
-      const pct = isJ ? (NO_DEDUC.includes(cat) ? 0 : (DEDUC_JUR[cat] || 0.5)) : (DEDUC_NAT[cat] || 0);
-      let deducMes = m * pct;
-      if (!isJ && LIM_NAT[cat]) deducMes = Math.min(deducMes, LIM_NAT[cat] / 12);
-      gastosDeducTotal += deducMes;
-      if (!gastosByCat[cat]) gastosByCat[cat] = { total: 0, deduc: 0, pct };
-      gastosByCat[cat].total += m;
-      gastosByCat[cat].deduc += deducMes;
-    });
-
-    // Ingresos by cat
-    const ingByCat = {};
-    ingresos.forEach(i => {
-      const cat = i.categoria || "Otro";
-      const m = (i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1);
-      ingByCat[cat] = (ingByCat[cat] || 0) + m;
-    });
-
-    // Intereses deudas
-    const intereses = deu.reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
-    // Depreciación (Art. 128-141 ET): decisión explícita del contribuyente, no automática.
-    // Solo cuenta como gasto deducible lo que el usuario registra en categoría "Depreciación"
-    // en Egresos. Ya está incluido en gastosDeducTotal; esta variable es para display/desglose.
-    const deprec = gastos.filter(g => /Depreciación|Depreciacion|Depreciation/i.test(g.cat || "")).reduce((s, g) => s + (g.m || 0), 0) * 12;
-
-    // Patrimonio
-    const patTotal = inv.reduce((s, i) => s + (+i.va || 0), 0);
-    const deuTotal = deu.reduce((s, d) => s + (d.mt || 0), 0);
-
-    if (isJ) {
-      // ═══ JURÍDICA — Régimen dependiente ═══
-      const regimen = owner.regimen || "ordinario";
-      const gastosDeducAnual = gastosDeducTotal * 12;
-      const gmf50 = ingAnual * 0.004 * 0.50;
-      const totalDeduc = gastosDeducAnual + intereses + gmf50;
-      const utilidadActual = Math.max(0, ingAnual - totalDeduc);
-
-      const icaPagado = (gastosByCat["Predial"] ? gastosByCat["Predial"].total : 0) * 12 * 0.30;
-      const descuentoICA = (regimen === "ordinario" || regimen === "zona_franca") ? icaPagado * 0.50 : 0;
-
-      // Sub-tipos de ingresos
-      const dividIntersocietarios = ingresos.filter(i => /Dividendos/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
-
-      // Retención en la fuente (no aplica a SIMPLE ni a régimen exento)
-      let retefuenteCalc = 0;
-      if (regimen !== "simple" && regimen !== "exenta") {
-        ingresos.forEach(i => {
-          const m = (i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1) * 12;
-          const cat = i.categoria || "";
-          if (/Arriendo/i.test(cat)) retefuenteCalc += m * 0.035;
-          else if (/Intereses bancarios|CDT/i.test(cat)) retefuenteCalc += m * 0.07;
-          else if (/Utilidad FIC|FIC/i.test(cat)) retefuenteCalc += 0;
-          else if (/Dividendos/i.test(cat)) retefuenteCalc += 0;
-          else if (/Rendimiento/i.test(cat)) retefuenteCalc += m * 0.07;
-          else if (/Honorarios|Freelance/i.test(cat)) retefuenteCalc += m * 0.11;
-          else if (/Salario/i.test(cat)) retefuenteCalc += m * 0.04;
-          else retefuenteCalc += m * 0.025;
-        });
-      }
-
-      // Cálculo por régimen
-      let impBruto = 0, tarifa = 0, regimenNota = "", baseGravable = utilidadActual;
-      if (regimen === "ordinario") {
-        tarifa = 0.35;
-        const baseOrd = Math.max(0, utilidadActual - dividIntersocietarios);
-        baseGravable = baseOrd;
-        impBruto = baseOrd * 0.35;
-        regimenNota = "Régimen Ordinario 35% sobre utilidad. Dividendos inter-societarios no gravados (Art. 48 ET).";
-      } else if (regimen === "simple") {
-        tarifa = 0.05;
-        baseGravable = ingAnual;
-        impBruto = ingAnual * 0.05;
-        regimenNota = "Régimen Simple (RST) — estimación 5% sobre ingresos brutos (aproximación; tarifa real depende de grupo de actividad: 1,4%–11,5%).";
-      } else if (regimen === "zona_franca") {
-        tarifa = 0.20;
-        const baseZF = Math.max(0, utilidadActual - dividIntersocietarios);
-        baseGravable = baseZF;
-        impBruto = baseZF * 0.20;
-        regimenNota = "Zona Franca — 20% sobre utilidad calificada (Art. 240-1 ET).";
-      } else if (regimen === "chc") {
-        tarifa = 0.35;
-        const baseCHC = Math.max(0, utilidadActual - dividIntersocietarios);
-        baseGravable = baseCHC;
-        impBruto = baseCHC * 0.35;
-        regimenNota = "CHC — 35% sobre utilidad. Exenciones específicas de subsidiarias extranjeras no modeladas automáticamente (Art. 894 ET).";
-      } else if (regimen === "exenta") {
-        tarifa = 0;
-        baseGravable = 0;
-        impBruto = 0;
-        regimenNota = "Economía Naranja / Exenta — 0% mientras dure el beneficio (Art. 235-2 ET).";
-      }
-
-      // ── PÉRDIDAS FISCALES ACUMULADAS (Art. 147 ET) ──
-      // Compensables contra utilidad del ejercicio sin límite temporal.
-      const perdidasAcumuladas = Math.max(0, Number(owner.perdidasFiscalesAcumuladas) || 0);
-      const perdidasAplicadas = Math.min(perdidasAcumuladas, baseGravable);
-      baseGravable = Math.max(0, baseGravable - perdidasAplicadas);
-      if (regimen === "ordinario") impBruto = baseGravable * 0.35;
-      else if (regimen === "zona_franca") impBruto = baseGravable * 0.20;
-      else if (regimen === "chc") impBruto = baseGravable * 0.35;
-
-      // ── DESCUENTOS TRIBUTARIOS (Art. 256-259 ET, tope 25% Art. 259) ──
-      const descuentosCfg = owner.descuentosTributarios || {};
-      const descCTI = Math.max(0, Number(descuentosCfg.cti) || 0);
-      const descEmpleo = Math.max(0, Number(descuentosCfg.empleo) || 0);
-      const descExterior = Math.max(0, Number(descuentosCfg.exterior) || 0);
-      const descDonaciones = Math.max(0, Number(descuentosCfg.donaciones) || 0);
-      const descOtros = Math.max(0, Number(descuentosCfg.otros) || 0);
-      const descuentosSolicitados = descCTI + descEmpleo + descExterior + descDonaciones + descOtros;
-      const topeDescuentos = (regimen === "ordinario" || regimen === "zona_franca" || regimen === "chc") ? impBruto * 0.25 : Infinity;
-      const descuentosAplicados = Math.min(descuentosSolicitados, topeDescuentos);
-
-      const impActual = Math.max(0, impBruto - descuentoICA - descuentosAplicados - retefuenteCalc);
-      const tasaActual = ingAnual > 0 ? (impActual / ingAnual * 100) : 0;
-
-      // CON ESTRATEGIA: sin optimización automática para jurídica
-      const pctGastos = ingAnual > 0 ? (totalDeduc / ingAnual * 100) : 0;
-      const impOptimo = impActual;
-      const ahorro = 0;
-
-      // Recomendaciones educativas (sin impacto calculado con porcentajes inventados)
-      const recs = [];
-      if (!gastosByCat["Nómina"]) recs.push({ icon: "👥", title: "Nómina y empleados", desc: "Salarios y prestaciones son 100% deducibles. Cada $1M en nómina ahorra $350K en impuestos.", impact: 0, color: T.blue });
-      if (!gastosByCat["Honorarios"]) recs.push({ icon: "📋", title: "Honorarios profesionales", desc: "Contador, abogado, revisor fiscal. Registra estos gastos como deducibles.", impact: 0, color: T.blue });
-      if (!gastosByCat["Mantenimiento"]) recs.push({ icon: "🔧", title: "Mantenimiento de propiedades", desc: "Reparaciones, pintura, plomería — todo deducible para inmuebles de la empresa.", impact: 0, color: T.blue });
-      if (!gastosByCat["Predial"]) recs.push({ icon: "🏛️", title: "Predial e impuestos locales", desc: "Predial, ICA, contribuciones — impuestos pagados son deducibles.", impact: 0, color: T.blue });
-      if (pctGastos < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + pctGastos.toFixed(0) + "% de ingresos", desc: "Una empresa operativa típica registra 40–70% de sus ingresos como gastos. Revisa si te faltan gastos operativos por registrar (nómina, honorarios, mantenimiento, servicios). Cada peso deducible real baja el impuesto en $0,35.", impact: 0, color: T.orange });
-
-      // Estrategias corporativas: educativas — sin estimación de impacto automático
-      if (utilidadActual > 50e6) {
+    const recs = [];
+    if (fiscalData.type === "juridica") {
+      const gbc = fiscalData.gastosByCat || {};
+      if (!gbc["Nómina"]) recs.push({ icon: "👥", title: "Nómina y empleados", desc: "Salarios y prestaciones son 100% deducibles. Cada $1M en nómina ahorra $350K en impuestos.", impact: 0, color: T.blue });
+      if (!gbc["Honorarios"]) recs.push({ icon: "📋", title: "Honorarios profesionales", desc: "Contador, abogado, revisor fiscal. Registra estos gastos como deducibles.", impact: 0, color: T.blue });
+      if (!gbc["Mantenimiento"]) recs.push({ icon: "🔧", title: "Mantenimiento de propiedades", desc: "Reparaciones, pintura, plomería — todo deducible para inmuebles de la empresa.", impact: 0, color: T.blue });
+      if (!gbc["Predial"]) recs.push({ icon: "🏛️", title: "Predial e impuestos locales", desc: "Predial, ICA, contribuciones — impuestos pagados son deducibles.", impact: 0, color: T.blue });
+      if ((fiscalData.pctGastos || 0) < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + (fiscalData.pctGastos || 0).toFixed(0) + "% de ingresos", desc: "Una empresa operativa típica registra 40–70% de sus ingresos como gastos. Revisa si te faltan gastos operativos por registrar (nómina, honorarios, mantenimiento, servicios). Cada peso deducible real baja el impuesto en $0,35.", impact: 0, color: T.orange });
+      if ((fiscalData.utilidad || 0) > 50e6) {
         recs.push({ icon: "🎁", title: "Bonificaciones a empleados (Art. 107 ET)", desc: "Primas extralegales y bonificaciones son deducibles si cumplen relación de causalidad, necesidad y proporcionalidad. Consulta con tu contador el monto viable según tu estructura de nómina.", impact: 0, color: T.purple });
         recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Donaciones a entidades sin ánimo de lucro calificadas dan un DESCUENTO del 25% del valor donado, directo del impuesto. El monto recomendable depende de tu estrategia fiscal — tu contador puede calcular el óptimo.", impact: 0, color: T.purple });
         recs.push({ icon: "📋", title: "Provisión de cartera (Art. 145 ET)", desc: "Provisión individual por deterioro de cartera: aplica si tienes cuentas por cobrar con más de 90 días. El monto deducible depende de tu cartera real — no hay porcentaje automático.", impact: 0, color: T.purple });
@@ -189,193 +68,42 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         recs.push({ icon: "📈", title: "Reinvertir utilidades en activos productivos", desc: "Comprar equipos/vehículos genera depreciación deducible futura. Cada $100M en activos puede generar $20-33M/año en depreciación según vida útil.", impact: 0, color: T.purple });
         recs.push({ icon: "💰", title: "Distribuir dividendos estratégicamente", desc: "En vez de dejar utilidad en la empresa (35%), distribuir dividendos al socio tributa al 15% (>300 UVT). Si la persona natural tiene tasa efectiva menor al 35%, conviene distribuir.", impact: 0, color: T.purple });
       }
-      // Siempre mostrar retención y descuentos
-
-      if (descuentoICA > 0) recs.push({ icon: "🏛️", title: "Descuento 50% del ICA: " + fm(descuentoICA), desc: "El 50% del ICA pagado se descuenta directamente del impuesto de renta (Art. 115 ET). No es deducción, es descuento — se resta del impuesto calculado.", impact: 0, color: T.green });
-      if (gmf50 > 0) recs.push({ icon: "💳", title: "GMF 4×1000 deducible: " + fm(gmf50), desc: "El 50% del GMF (4×1000) pagado es deducible de la renta. Se calcula automáticamente.", impact: 0, color: T.green });
-
-      return { type: "juridica", regimen, regimenNota, tarifa, perdidasAcumuladas, perdidasAplicadas, descuentosSolicitados, descuentosAplicados, descuentosDesglose: { cti: descCTI, empleo: descEmpleo, exterior: descExterior, donaciones: descDonaciones, otros: descOtros }, ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, totalDeduc, intereses, deprec, patTotal, deuTotal, utilidad: utilidadActual, baseGravable, impBruto, descuentoICA, retefuenteCalc, gmf50, impActual, tasaActual, pctGastos, impOptimo, ahorro, recs };
+      if ((fiscalData.descuentoICA || 0) > 0) recs.push({ icon: "🏛️", title: "Descuento 50% del ICA: " + fm(fiscalData.descuentoICA), desc: "El 50% del ICA pagado se descuenta directamente del impuesto de renta (Art. 115 ET). No es deducción, es descuento — se resta del impuesto calculado.", impact: 0, color: T.green });
+      if ((fiscalData.gmf50 || 0) > 0) recs.push({ icon: "💳", title: "GMF 4×1000 deducible: " + fm(fiscalData.gmf50), desc: "El 50% del GMF (4×1000) pagado es deducible de la renta. Se calcula automáticamente.", impact: 0, color: T.green });
     } else {
-      // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022) ═══
-      // ── APORTES A SEGURIDAD SOCIAL (valores manuales del owner) ──
-      const apt = owner.aportes || {};
-      const aPensObl = Number(apt.pensionObligatoriaMensual) || 0;
-      const aPensVol = Number(apt.pensionVoluntariaMensual) || 0;
-      const aSaludObl = Number(apt.saludObligatoriaMensual) || 0;
-      const aSSIndep = Number(apt.segSocialIndependienteMensual) || 0;
-      const salarioEsBruto = apt.salarioEsBruto !== false;
-
-      const salAnualInput = ingresos.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
-      const salAnual = salarioEsBruto ? salAnualInput : salAnualInput + (aPensObl + aSaludObl) * 12;
-      const honAnual = ingresos.filter(i => /Honorarios|Freelance/i.test(i.categoria || "")).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
-      const rentasAnual = ingresos.filter(i => /Arriendo/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
-      // Sub-tipos de rendimientos con tratamiento diferenciado (Art. 38-39 ET)
-      const interesesBancAnual = ingresos.filter(i => /Intereses bancarios|CDT/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
-      const utilidadFICAnual = ingresos.filter(i => /Utilidad FIC|FIC/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
-      const rendimientoGenAnual = ingresos.filter(i => /Rendimiento/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
-      const inversionAnual = ingresos.filter(i => /Inversión/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
-      const rendAnual = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual + inversionAnual;
-      const divAnual = ingresos.filter(i => /Dividendos/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0) * 12;
-      const ingLaboral = salAnual + honAnual;
-      const ingCapital = rendAnual;
-      const ingNoLaboral = rentasAnual + ingresos.filter(i => !["Salario","Honorarios","Freelance","Arriendo","Rendimiento","Inversión","CDT","Dividendos","Pensión"].some(c2 => (i.categoria||"").includes(c2))).reduce((s,i) => s + ((i.mensual||0) * (i.moneda==="USD"?(trm||4200):1)),0) * 12;
-      
-      // INCRNGO: pensión + salud obligatorias (Art. 55-56 ET), manuales o auto 4%
-      const noConstSalPens = aPensObl > 0 ? aPensObl * 12 : salAnual * 0.04;
-      const noConstSalSalud = aSaludObl > 0 ? aSaludObl * 12 : 0;
-      const ibcIndep = honAnual * 0.40;
-      const noConstHon = aSSIndep > 0 ? aSSIndep * 12 : ibcIndep * 0.04;
-      const noConst = noConstSalPens + noConstSalSalud + noConstHon;
-      const netoLaboral = ingLaboral - noConst;
-      
-      // Deducciones solo para rentas de TRABAJO
-      const gastoEduc = gastos.filter(g => g.cat === "Educación").reduce((s, g) => s + (g.m || 0), 0);
-      const deducDep = gastoEduc > 500000 ? Math.min(ingLaboral * 0.10, 384 * UVT) : 0;
-      const interesesHip = deu.filter(d => /hipoteca|vivienda|casa|apto|mortgage/i.test((d.tp || "") + (d.n || ""))).reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
-      const deducViv = Math.min(interesesHip, 1200 * UVT);
-      const gastoSalud = gastos.filter(g => g.cat === "Salud").reduce((s, g) => s + (g.m || 0), 0) * 12;
-      const deducMedicina = Math.min(gastoSalud, 16 * UVT * 12);
-      const gmfNat = ingAnual * 0.004 * 0.50;
-      const totalDeducciones = deducDep + deducMedicina + deducViv + gmfNat;
-      
-      // Renta exenta 25% solo sobre TRABAJO (Art. 206 num 10)
-      const baseExenta = Math.max(0, netoLaboral - totalDeducciones);
-      const exenta25 = Math.min(baseExenta * 0.25, 790 * UVT);
-      
-      // Tope 40% solo sobre TRABAJO (Ley 2277)
-      const lim40 = netoLaboral * 0.40;
-      // Pensión voluntaria manual (Art. 126-1): si el usuario ya aporta, entra al escenario ACTUAL
-      const pvManualAnual = aPensVol > 0 ? Math.min(aPensVol * 12, netoLaboral * 0.25, 2500 * UVT) : 0;
-      const benefSin = Math.min(exenta25 + totalDeducciones + pvManualAnual, lim40);
-      
-      // Rentas líquidas por cédula
-      const rentaLiqTrabajo = Math.max(0, netoLaboral - benefSin);
-      // COMPONENTE INFLACIONARIO (Art. 38-39 ET, Decreto 0771/2025):
-      // Default 50.88% para año gravable 2024. Aplica solo a intereses bancarios/CDT,
-      // utilidad FIC y rendimientos genéricos (no a venta de inversión ni dividendos).
-      const pctComponenteInflac = (componenteInflacionarioPct != null ? componenteInflacionarioPct : 50.88) / 100;
-      const rendCompInflacAplicable = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual;
-      const componenteInflacExcluido = rendCompInflacAplicable * pctComponenteInflac;
-      const rendGravable = rendCompInflacAplicable - componenteInflacExcluido + inversionAnual;
-      const rentaLiqCapital = Math.max(0, rendGravable);
-      // Renta no laboral: gastos del inmueble arrendado son 100% deducibles si
-      // cumplen causalidad, necesidad y proporcionalidad (Art. 107 ET).
-      const gastosInmueble = gastos.filter(g => ["Predial","Mantenimiento","Vivienda","Seguros","Servicios"].includes(g.cat)).reduce((s,g) => s + (g.m||0), 0) * 12;
-      const rentaLiqNoLaboral = Math.max(0, ingNoLaboral - gastosInmueble);
-      
-      // Dividendos tarifa especial
-      const divExentos = Math.min(divAnual, 300 * UVT);
-      const impDiv = Math.max(0, divAnual - divExentos) * 0.15;
-      
-      // Renta líquida cédula general
-      const rentaSin = rentaLiqTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
-      const impSin = calcImp(rentaSin / UVT) + impDiv;
-      const tasaSin = ingAnual > 0 ? (impSin / ingAnual * 100) : 0;
-      
-      // ── CON ESTRATEGIA: PV + AFC llenan tope 40% ──
-      const baseBenefSinPV = Math.min(exenta25 + totalDeducciones, lim40);
-      const espacioOpt = Math.max(0, lim40 - baseBenefSinPV);
-      const pvSugerido = Math.min(espacioOpt, netoLaboral * 0.25, 2500 * UVT);
-      // Nunca bajar del aporte manual actual: tomar el max entre lo que ya aporta y lo sugerido.
-      const pvMax = Math.min(Math.max(pvManualAnual, pvSugerido), netoLaboral * 0.25, 2500 * UVT);
-      const espacioPost = Math.max(0, lim40 - baseBenefSinPV - pvMax);
-      const afcMax = Math.min(espacioPost, netoLaboral * 0.30, 3800 * UVT);
-      const rentaOptTrabajo = Math.max(0, netoLaboral - Math.min(exenta25 + totalDeducciones + pvMax + afcMax, lim40));
-      const rentaCon = rentaOptTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
-      const impCon = calcImp(rentaCon / UVT) + impDiv;
-      const ahorro = impSin - impCon;
-      const tasaCon = ingAnual > 0 ? (impCon / ingAnual * 100) : 0;
-      const pctUsado = lim40 > 0 ? (benefSin / lim40 * 100) : 0;
-      const benAplicSin = benefSin;
-      const benAplicCon = Math.min(exenta25 + totalDeducciones + pvMax + afcMax, lim40);
-      const benefCon = exenta25 + totalDeducciones + pvMax + afcMax;
-      const neto = netoLaboral; // For display compatibility
-      const gastosDeducNat = totalDeducciones;
-      
-      // Retención automática
-      let retefuenteNat = 0;
-      ingresos.forEach(i => {
-        const m = (i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1) * 12;
-        const cat = i.categoria || "";
-        if (/Salario/i.test(cat)) { const mUVT = m / 12 / UVT; retefuenteNat += m * (mUVT > 360 ? 0.19 : mUVT > 150 ? 0.10 : mUVT > 95 ? 0.04 : 0); }
-        else if (/Honorarios|Freelance/i.test(cat)) retefuenteNat += m * 0.11;
-        else if (/Arriendo/i.test(cat)) retefuenteNat += m * 0.035;
-        else if (/Rendimiento|CDT|Inversión/i.test(cat)) retefuenteNat += m * 0.07;
-        else if (/Dividendos/i.test(cat)) retefuenteNat += m * 0.10;
-      });
-
-      // Recomendaciones
-      const recs = [];
+      const gbc = fiscalData.gastosByCat || {};
+      const rentaSin = fiscalData.rentaSin || 0;
+      const pvMax = fiscalData.pvMax || 0;
+      const afcMax = fiscalData.afcMax || 0;
+      const ingAnual = fiscalData.ingAnual || 0;
+      const deducDep = fiscalData.deducDep || 0;
+      const deducViv = fiscalData.deducViv || 0;
+      const pctUsado = fiscalData.pctUsado || 0;
+      const ahorro = fiscalData.ahorro || 0;
+      const impCon = fiscalData.impCon || 0;
       if (pvMax > 500000) recs.push({ icon: "💰", title: "Pensión voluntaria", desc: "Aporta " + fm(pvMax / 12) + "/mes a un fondo de pensión voluntaria. Es exento de renta y ahorras para el futuro. Retirable después de 10 años.", impact: calcImp(rentaSin / UVT) - calcImp(Math.max(0, rentaSin - pvMax) / UVT), color: T.green });
       if (afcMax > 500000) recs.push({ icon: "🏠", title: "Cuenta AFC", desc: "Ahorra " + fm(afcMax / 12) + "/mes en una Cuenta AFC. Exento si se usa para compra de vivienda.", impact: calcImp(Math.max(0, rentaSin - pvMax) / UVT) - impCon, color: T.blue });
-      if (!gastosByCat["Salud"] && ingAnual > 2000 * UVT) recs.push({ icon: "🏥", title: "Medicina prepagada", desc: "Deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → Salud.", impact: 0, color: T.purple });
+      if (!gbc["Salud"] && ingAnual > 2000 * UVT) recs.push({ icon: "🏥", title: "Medicina prepagada", desc: "Deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → Salud.", impact: 0, color: T.purple });
       if (deducDep > 0) recs.push({ icon: "👨‍👩‍👧", title: "Dependientes: " + fm(deducDep) + "/año", desc: "Ya se está deduciendo 10% del ingreso por dependientes (gastos educación detectados).", impact: 0, color: T.green });
       if (deducViv > 0) recs.push({ icon: "🏠", title: "Intereses vivienda: " + fm(deducViv) + "/año", desc: "Los intereses de tu hipoteca ya se deducen automáticamente.", impact: 0, color: T.green });
-      // Costos de arriendos: depreciación + gastos del inmueble
       const tieneArriendos = ingresos.some(i => /Arriendo/i.test(i.categoria || ""));
       const invInmuebles = inv.filter(i => /Real Estate|bodega|local|oficina/i.test((i.tp||i.tipo||"").toLowerCase()));
       if (tieneArriendos && invInmuebles.length > 0) {
         const deprecInmuebles = invInmuebles.reduce((s,i) => s + (i.va||0) * 0.0222, 0);
         recs.push({ icon: "🏠", title: "Depreciación de inmuebles arrendados (Art. 137 ET)", desc: "Tus inmuebles en arriendo se deprecian 2,22%/año (vida útil 45 años). Esto reduce la renta no laboral directamente. Depreciación anual estimada: " + fm(deprecInmuebles) + ". El ahorro efectivo depende de tu tasa marginal (entre 19% y 39% según tu ingreso) — tu contador puede calcular el valor exacto.", impact: 0, color: T.purple });
       }
-      
-      // Donaciones con descuento tributario (Art. 257 ET)
       if (ingAnual > 200e6) recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Las donaciones a entidades sin ánimo de lucro calificadas dan un DESCUENTO del 25% del valor donado, directo del impuesto a pagar (no de la base). El tope legal del descuento es el 25% del impuesto de renta del año. El monto que te conviene donar depende de tu estrategia fiscal y filantrópica — consúltalo con tu contador.", impact: 0, color: T.purple });
-      
-      // Deuda para vivienda
+      const interesesHip = deu.filter(d => /hipoteca|vivienda|casa|apto|mortgage/i.test((d.tp || "") + (d.n || ""))).reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
       if (interesesHip === 0 && deu.length === 0 && ingAnual > 200e6) recs.push({ icon: "🏦", title: "Crédito de vivienda: intereses deducibles (Art. 119 ET)", desc: "Los intereses de un crédito hipotecario para vivienda del contribuyente son deducibles hasta 1.200 UVT/año (" + fm(1200 * UVT) + "). Es una de las deducciones más grandes disponibles — pero solo aplica si efectivamente tomas el crédito y usas la vivienda. No te endeudes solo por el beneficio fiscal; evalúalo con tu contador.", impact: 0, color: T.purple });
-      
-      // GMF
       if (ingAnual > 100e6) recs.push({ icon: "💳", title: "GMF 4×1000 deducible (Art. 115 ET)", desc: "El 50% del GMF pagado es deducible. Se calcula automáticamente: " + fm(ingAnual * 0.004 * 0.50) + "/año.", impact: 0, color: T.green });
-      
-      // Estructura societaria
       if (ingAnual > 400e6) recs.push({ icon: "🏢", title: "Evalúa una estructura societaria", desc: "Con ingresos altos, una SAS puede optimizar tu carga fiscal canalizando ingresos por la empresa (35% sobre utilidad vs hasta 39% persona natural).", impact: 0, color: T.purple });
-      
-      // Si el tope 40% ya está lleno y no hay ahorro
       if (ahorro < 100000 && pctUsado >= 95) {
         recs.push({ icon: "✅", title: "Tope 40% optimizado al máximo", desc: "Ya estás usando el " + pctUsado.toFixed(0) + "% del tope de deducciones. No hay más espacio para pensión voluntaria o AFC. Tu contador está haciendo un buen trabajo.", impact: 0, color: T.green });
         if (ingAnual > 200e6) recs.push({ icon: "💡", title: "Para reducir más: redistribuir ingresos", desc: "La única forma de bajar más es mover ingresos a una persona jurídica (SAS). La empresa paga 35% sobre UTILIDAD (después de gastos), no sobre ingreso bruto. Consulta con tu contador.", impact: 0, color: T.purple });
       }
-
-      // ── RÉGIMEN PARA PERSONA NATURAL ──
-      const regimenN = owner.regimen || "ordinario";
-      let impSinFinal, impConFinal, regimenNotaN = "";
-      if (regimenN === "simple") {
-        impSinFinal = ingAnual * 0.03;
-        impConFinal = impSinFinal;
-        regimenNotaN = "Régimen Simple (RST) — estimación 3% sobre ingresos brutos (aproximación; tarifa real depende de grupo de actividad: 1,4%–8,3%).";
-      } else {
-        impSinFinal = Math.max(0, impSin - retefuenteNat);
-        impConFinal = Math.max(0, impCon - retefuenteNat);
-        regimenNotaN = "Régimen Ordinario — Cédula General (tabla Art. 241 ET con deducciones).";
-      }
-
-      const ahorroFinal = impSinFinal - impConFinal;
-      const gastosByCatDisplay = gastosByCat;
-
-
-
-      return {
-        type: "natural", regimen: regimenN, regimenNota: regimenNotaN,
-        ingAnual, ingByCat, gastosByCat, gastosTotal, gastosDeducTotal, gastosDeducNat, patTotal, deuTotal,
-        noConst, neto, exenta25, deducDep, deducViv, lim40,
-        aportesManuales: (aPensObl + aPensVol + aSaludObl + aSSIndep) > 0,
-        aportesDesglose: {
-          pensionObligatoriaAnual: noConstSalPens,
-          saludObligatoriaAnual: noConstSalSalud,
-          ssIndependienteAnual: noConstHon,
-          pensionVoluntariaManualAnual: pvManualAnual,
-          salarioEsBruto,
-          salarioInputAnual: salAnualInput,
-          salarioGravableAnual: salAnual,
-        },
-        interesesBancAnual, utilidadFICAnual, rendimientoGenAnual, inversionAnual,
-        componenteInflacExcluido, pctComponenteInflac: pctComponenteInflac * 100, rentaLiqCapital,
-        benefSin, benAplicSin, rentaSin, impSin: impSinFinal, tasaSin: ingAnual > 0 ? (impSinFinal / ingAnual * 100) : 0,
-        pvMax, afcMax, benefCon, benAplicCon, rentaCon, impCon: impConFinal, tasaCon: ingAnual > 0 ? (impConFinal / ingAnual * 100) : 0, ahorro: ahorroFinal, pctUsado, retefuenteNat,
-        recs
-      };
     }
+
+    return { ...fiscalData, recs };
   }, [ingresos, gastos, inv, deu, trm, isJ, owner.regimen, owner.perdidasFiscalesAcumuladas, owner.descuentosTributarios, owner.aportes, componenteInflacionarioPct]);
 
   if (!calc) return (
