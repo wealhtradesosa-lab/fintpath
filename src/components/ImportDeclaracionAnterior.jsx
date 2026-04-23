@@ -144,6 +144,8 @@ export default function ImportDeclaracionAnterior({ owner, onSave, onCancel }) {
             <Field label="Pensión voluntaria + AFC aportados" casilla="73-74" value={rg.pvAFC} onChange={(v) => upd("pvAFC", v)} optional />
             <Field label="Intereses vivienda deducidos" casilla="75" value={rg.interesesVivienda} onChange={(v) => upd("interesesVivienda", v)} optional />
             <Field label="Deducción dependientes" casilla="76" value={rg.dependientes} onChange={(v) => upd("dependientes", v)} optional />
+            <Field label="Salud prepagada deducida" casilla="77" value={rg.saludPrepagada} onChange={(v) => upd("saludPrepagada", v)} optional hint="Medicina prepagada y pólizas de salud. Tope 192 UVT/año." />
+            <Field label="GMF 4×1000 deducido (50%)" casilla="78" value={rg.gmf50} onChange={(v) => upd("gmf50", v)} optional hint="Mitad del gravamen a los movimientos financieros pagado." />
           </Section>
 
           <Section title="Resultado de la declaración" icon="🧾" color={T.green}>

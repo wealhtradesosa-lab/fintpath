@@ -172,6 +172,24 @@ export function calcPatronesAnomalos(ctx) {
     });
   }
 
+  // Patrón 8: salud prepagada desapareció
+  if (p.saludPrepagada > MIN && (!a.saludPrepagada || a.saludPrepagada < MIN)) {
+    patrones.push({
+      severity: "warning",
+      label: "Medicina prepagada: desapareció",
+      sugerencia: `El año anterior dedujiste $${Math.round(p.saludPrepagada).toLocaleString("es-CO")} en medicina prepagada (Art. 387 ET). Si seguís con tu plan de salud prepagada o pólizas, el comprobante anual está deducible hasta 192 UVT. Revisá tu recibo anual.`,
+    });
+  }
+
+  // Patrón 9: GMF desapareció
+  if (p.gmf > MIN && (!a.gmf || a.gmf < MIN)) {
+    patrones.push({
+      severity: "warning",
+      label: "GMF 4×1000 deducible: desapareció",
+      sugerencia: `El año anterior dedujiste $${Math.round(p.gmf).toLocaleString("es-CO")} del GMF (Art. 115 ET). El 50% del gravamen a los movimientos financieros es deducible. Si tus cuentas bancarias siguen activas, se calculó automáticamente — verificá la casilla 78.`,
+    });
+  }
+
   return patrones;
 }
 

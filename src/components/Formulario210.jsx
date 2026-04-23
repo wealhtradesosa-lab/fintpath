@@ -271,8 +271,8 @@ function Paso3DepuracionCedulaGeneral({ data, update, totales, sugeridos, anteri
       <Section title="Deducciones" icon="📉" color={T.orange}>
         <Field label="Intereses de crédito de vivienda" casilla="75" articulo="Art. 119 ET" value={dep.interesesVivienda} onChange={(v) => upd("interesesVivienda", v)} suggested={sugeridos?.interesesVivienda} prevYear={anterior?.interesesVivienda} prevYearLabel={pyLabel} hint="Hasta 1200 UVT/año. Solo vivienda del contribuyente (no inmuebles de inversión)." />
         <Field label="Dependientes (10% ingreso, tope 384 UVT)" casilla="76" articulo="Art. 387 ET" value={dep.dependientes} onChange={(v) => upd("dependientes", v)} suggested={sugeridos?.dependientes} prevYear={anterior?.dependientes} prevYearLabel={pyLabel} hint="Hijos menores de 18, estudiantes hasta 23, cónyuge sin ingresos propios, padres dependientes económicamente." />
-        <Field label="Salud prepagada" casilla="77" articulo="Art. 387 ET" value={dep.saludPrepagada} onChange={(v) => upd("saludPrepagada", v)} hint="Medicina prepagada y pólizas de salud. Tope 192 UVT/año ($10.056.000)." />
-        <Field label="50% del GMF (4×1000)" casilla="78" articulo="Art. 115 ET" value={dep.gmf50} onChange={(v) => upd("gmf50", v)} suggested={sugeridos?.gmf50} hint="La mitad del gravamen a los movimientos financieros pagado." />
+        <Field label="Salud prepagada" casilla="77" articulo="Art. 387 ET" value={dep.saludPrepagada} onChange={(v) => upd("saludPrepagada", v)} prevYear={anterior?.saludPrepagada} prevYearLabel={anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null} hint="Medicina prepagada y pólizas de salud. Tope 192 UVT/año ($10.056.000)." />
+        <Field label="50% del GMF (4×1000)" casilla="78" articulo="Art. 115 ET" value={dep.gmf50} onChange={(v) => upd("gmf50", v)} suggested={sugeridos?.gmf50} prevYear={anterior?.gmf50} prevYearLabel={anterior?.anoGravable ? `Año ${anterior.anoGravable}` : null} hint="La mitad del gravamen a los movimientos financieros pagado." />
       </Section>
 
       <Section title="Componente inflacionario de rendimientos" icon="📈" color={T.cyan}>
@@ -448,6 +448,8 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
               dividendos: (+ocP.divArt49Gravada || 0) + (+ocP.divArt49NoGravados || 0) + (+ocP.divExteriorYOtros || 0),
               exenta25: +depP.exenta25Art206 || 0,
               pvAFC: (+depP.pensionVoluntaria || 0) + (+depP.afc || 0),
+              saludPrepagada: +depP.saludPrepagada || 0,
+              gmf: +depP.gmf50 || 0,
             },
             anterior: {
               ingresos: (anterior.salarios || 0) + (anterior.honorarios || 0) + (anterior.intereses || 0) + (anterior.arrendamientos || 0),
@@ -460,6 +462,8 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
               dividendos: anterior.dividendos || 0,
               exenta25: anterior.exenta25 || 0,
               pvAFC: anterior.pvAFC || 0,
+              saludPrepagada: anterior.saludPrepagada || 0,
+              gmf: anterior.gmf50 || 0,
             },
           }}
         />
@@ -576,6 +580,8 @@ export default function Formulario210({ owner, user, onSave, onCancel }) {
       pvAFC: +r.pvAFC || 0,
       interesesVivienda: +r.interesesVivienda || 0,
       dependientes: +r.dependientes || 0,
+      saludPrepagada: +r.saludPrepagada || 0,
+      gmf50: +r.gmf50 || 0,
       impuestoRenta: +r.impuestoRenta || 0,
       retenciones: +r.retenciones || 0,
       anticipoGenerado: +r.anticipoGenerado || 0,
