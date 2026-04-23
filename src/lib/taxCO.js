@@ -11,7 +11,22 @@
 // La función respeta la semántica `sim:false` SI el caller filtra los
 // ingresos/gastos/deudas antes de pasarlos. Dentro de esta función NO se
 // filtra por sim — es responsabilidad del caller decidir qué items incluir.
+//
+// Desde Sprint 1B (commit 25ee25d+), el motor consume `fiscalCode` en vez
+// de regex sobre strings libres. normalizeFiscalData() se llama al inicio
+// para asegurar que todos los items tengan fiscalCode (legacy items se
+// infieren con reglas conservadoras documentadas en normalize.js).
 // ═══════════════════════════════════════════════════════════════════════════
+
+import { normalizeFiscalData } from "./normalize.js";
+import {
+  LAB_SALARIO, LAB_HONORARIOS_CON_EMPLEADOS, LAB_HONORARIOS_SIN_EMPLEADOS,
+  CAP_INTERESES_BANCARIOS, CAP_FIC, CAP_RENDIMIENTO_GENERICO, CAP_VENTA_ACTIVOS,
+  NOL_ARRIENDO_INMUEBLE,
+  DIV_ART49_GRAVADOS, DIV_INTERSOCIETARIOS,
+  PEN_JUBILACION,
+  DEU_NAT_VIVIENDA_HABITACIONAL,
+} from "./fiscalCodes.js";
 
 export const UVT = 52374;
 
@@ -36,6 +51,11 @@ export const calcImpRenta = (uvtBase) => {
 
 export const estimarImpuesto = (u) => {
   if (!u) return { total: 0, mes: 0, detalle: [], sinClasificar: 0 };
+  // Normalizar: asegurar que todos los items tengan fiscalCode (inferir si es
+  // legacy). Los warnings no se consumen aquí; la UI los obtiene con
+  // getFiscalWarnings() por separado.
+  const { data: norm } = normalizeFiscalData(u);
+  u = norm;
   const owners = (u.owners || [{ id: "own_1", name: "Personal", type: "natural" }]);
   // Respeta el flag sim: si el usuario desactivó un item, el simulador lo ignora.
   const ing = (u.ingresos || []).filter(i => i.sim !== false);
@@ -89,20 +109,20 @@ export const estimarImpuesto = (u) => {
       const utilidad = Math.max(0, ingAnual - totalDeduc);
 
       // Sub-tipos de ingresos con tratamiento especial por Art. 48 ET
-      const dividIntersocietarios = oIng.filter(i => /Dividendos/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (u.trm || 4200) : 1)), 0) * 12;
+      const dividIntersocietarios = oIng.filter(i => i.fiscalCode === DIV_INTERSOCIETARIOS).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (u.trm || 4200) : 1)), 0) * 12;
 
       // Retención automática según tipo de ingreso (solo aplica a régimen ordinario/ZF/CHC; SIMPLE sustituye retención)
       let reteJ = 0;
       if (regimen !== "simple" && regimen !== "exenta") {
         oIng.forEach(i => {
           const m = (i.mensual || 0) * (i.moneda === "USD" ? (u.trm || 4200) : 1) * 12;
-          const cat = i.categoria || "";
-          if (/Arriendo/i.test(cat)) reteJ += m * 0.035;
-          else if (/Intereses bancarios|CDT/i.test(cat)) reteJ += m * 0.07;
-          else if (/Utilidad FIC|FIC/i.test(cat)) reteJ += 0; // FIC: retención a nivel del fondo, no del partícipe
-          else if (/Dividendos/i.test(cat)) reteJ += 0; // Inter-societarios: no retención (Art. 48 ET)
-          else if (/Rendimiento/i.test(cat)) reteJ += m * 0.07;
-          else if (/Honorarios|Freelance/i.test(cat)) reteJ += m * 0.11;
+          const fc = i.fiscalCode;
+          if (fc === NOL_ARRIENDO_INMUEBLE) reteJ += m * 0.035;
+          else if (fc === CAP_INTERESES_BANCARIOS) reteJ += m * 0.07;
+          else if (fc === CAP_FIC) reteJ += 0; // FIC: retención a nivel del fondo, no del partícipe
+          else if (fc === DIV_INTERSOCIETARIOS) reteJ += 0; // Inter-societarios: no retención (Art. 48 ET)
+          else if (fc === CAP_RENDIMIENTO_GENERICO) reteJ += m * 0.07;
+          else if (fc === LAB_HONORARIOS_CON_EMPLEADOS || fc === LAB_HONORARIOS_SIN_EMPLEADOS) reteJ += m * 0.11;
           else reteJ += m * 0.025;
         });
       }
@@ -209,24 +229,31 @@ export const estimarImpuesto = (u) => {
       const salarioEsBruto = apt.salarioEsBruto !== false;             // default true
 
       // Clasificar ingresos por subcédula
-      const salAnualInput = oIng.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0) * 12;
+      const salAnualInput = oIng.filter(i => i.fiscalCode === LAB_SALARIO).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       // Gross-up: si el salario registrado es neto (después de aportes), sumarlos para obtener el bruto gravable
       const salAnual = salarioEsBruto ? salAnualInput : salAnualInput + (aPensObl + aSaludObl) * 12;
-      const honAnual = oIng.filter(i => /Honorarios|Freelance/i.test(i.categoria || "")).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
-      const rentasAnual = oIng.filter(i => /Arriendo/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const honAnual = oIng.filter(i => i.fiscalCode === LAB_HONORARIOS_CON_EMPLEADOS || i.fiscalCode === LAB_HONORARIOS_SIN_EMPLEADOS).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
+      const rentasAnual = oIng.filter(i => i.fiscalCode === NOL_ARRIENDO_INMUEBLE).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
       // Sub-tipos de rendimientos con tratamiento diferenciado:
       // - Intereses bancarios/CDT: aplica componente inflacionario Art. 38 ET
       // - Utilidad FIC: aplica componente inflacionario Art. 39 ET
       // - Rendimiento genérico (legacy): aplica componente inflacionario Art. 38 ET
       // - Inversión: NO aplica componente inflacionario (típicamente venta de activos)
-      const interesesBancAnual = oIng.filter(i => /Intereses bancarios|CDT/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
-      const utilidadFICAnual = oIng.filter(i => /Utilidad FIC|FIC/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
-      const rendimientoGenAnual = oIng.filter(i => /Rendimiento/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
-      const inversionAnual = oIng.filter(i => /Inversión/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const interesesBancAnual = oIng.filter(i => i.fiscalCode === CAP_INTERESES_BANCARIOS).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const utilidadFICAnual = oIng.filter(i => i.fiscalCode === CAP_FIC).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const rendimientoGenAnual = oIng.filter(i => i.fiscalCode === CAP_RENDIMIENTO_GENERICO).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const inversionAnual = oIng.filter(i => i.fiscalCode === CAP_VENTA_ACTIVOS).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
       const rendAnual = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual + inversionAnual;
-      const divAnual = oIng.filter(i => /Dividendos/i.test(i.categoria || "")).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
-      const pensAnual = oIng.filter(i => /Pensión/i.test(i.categoria || "")).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
-      const otrosAnual = oIng.filter(i => !["Salario", "Honorarios", "Freelance", "Arriendo", "Rendimiento", "Inversión", "CDT", "Dividendos", "Pensión", "Intereses bancarios", "Intereses", "Utilidad FIC", "FIC"].some(c => (i.categoria || "").includes(c))).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const divAnual = oIng.filter(i => i.fiscalCode === DIV_ART49_GRAVADOS).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const pensAnual = oIng.filter(i => i.fiscalCode === PEN_JUBILACION).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
+      // "Otros" = ingresos que no caen en ninguna cédula específica arriba (NOL_OTROS, NOL_NEGOCIO, NOL_HONORARIOS_INDEP, ganancia ocasional, etc).
+      // Van a ingNoLaboral como fallback conservador.
+      const categorizadas = new Set([
+        LAB_SALARIO, LAB_HONORARIOS_CON_EMPLEADOS, LAB_HONORARIOS_SIN_EMPLEADOS,
+        NOL_ARRIENDO_INMUEBLE, CAP_INTERESES_BANCARIOS, CAP_FIC,
+        CAP_RENDIMIENTO_GENERICO, CAP_VENTA_ACTIVOS, DIV_ART49_GRAVADOS, PEN_JUBILACION,
+      ]);
+      const otrosAnual = oIng.filter(i => !categorizadas.has(i.fiscalCode)).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
 
       const ingLaboral = salAnual + honAnual;
       const ingCapital = rendAnual;
@@ -258,7 +285,7 @@ export const estimarImpuesto = (u) => {
 
       const interesesHip = oDeu.reduce((s, d) => {
         const saldo = d.mt || 0; const tasa = (d.ts || d.tasa || 0) / 100;
-        if (/mortgage|hipoteca|vivienda|casa|apto/i.test((d.tp || "") + (d.n || ""))) return s + saldo * tasa;
+        if (d.fiscalCode === DEU_NAT_VIVIENDA_HABITACIONAL) return s + saldo * tasa;
         return s;
       }, 0);
       const deducVivienda = Math.min(interesesHip, 1200 * UVT);
@@ -331,11 +358,11 @@ export const estimarImpuesto = (u) => {
       let reteN = 0;
       oIng.forEach(i => {
         const m = (i.mensual || 0) * (i.moneda === "USD" ? trm : 1) * 12;
-        const cat = i.categoria || "";
-        if (/Salario/i.test(cat)) { const mUVT = m / 12 / UVT; reteN += m * (mUVT > 360 ? 0.19 : mUVT > 150 ? 0.10 : mUVT > 95 ? 0.04 : 0); }
-        else if (/Honorarios|Freelance/i.test(cat)) reteN += m * 0.11;
-        else if (/Arriendo/i.test(cat)) reteN += m * 0.035;
-        else if (/Rendimiento|Dividendos|CDT|Inversión|Intereses bancarios/i.test(cat)) reteN += m * 0.07;
+        const fc = i.fiscalCode;
+        if (fc === LAB_SALARIO) { const mUVT = m / 12 / UVT; reteN += m * (mUVT > 360 ? 0.19 : mUVT > 150 ? 0.10 : mUVT > 95 ? 0.04 : 0); }
+        else if (fc === LAB_HONORARIOS_CON_EMPLEADOS || fc === LAB_HONORARIOS_SIN_EMPLEADOS) reteN += m * 0.11;
+        else if (fc === NOL_ARRIENDO_INMUEBLE) reteN += m * 0.035;
+        else if (fc === CAP_RENDIMIENTO_GENERICO || fc === DIV_ART49_GRAVADOS || fc === CAP_INTERESES_BANCARIOS || fc === CAP_VENTA_ACTIVOS) reteN += m * 0.07;
       });
 
       // ── RÉGIMEN PARA PERSONA NATURAL ──
