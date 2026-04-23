@@ -446,6 +446,8 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
               interesesVivienda: +depP.interesesVivienda || 0,
               dependientes: +depP.dependientes || 0,
               dividendos: (+ocP.divArt49Gravada || 0) + (+ocP.divArt49NoGravados || 0) + (+ocP.divExteriorYOtros || 0),
+              exenta25: +depP.exenta25Art206 || 0,
+              pvAFC: (+depP.pensionVoluntaria || 0) + (+depP.afc || 0),
             },
             anterior: {
               ingresos: (anterior.salarios || 0) + (anterior.honorarios || 0) + (anterior.intereses || 0) + (anterior.arrendamientos || 0),
@@ -456,6 +458,8 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
               interesesVivienda: anterior.interesesVivienda || 0,
               dependientes: anterior.dependientes || 0,
               dividendos: anterior.dividendos || 0,
+              exenta25: anterior.exenta25 || 0,
+              pvAFC: anterior.pvAFC || 0,
             },
           }}
         />

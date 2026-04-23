@@ -154,6 +154,24 @@ export function calcPatronesAnomalos(ctx) {
     });
   }
 
+  // Patrón 6: exenta 25% laboral desapareció
+  if (p.exenta25 > MIN && (!a.exenta25 || a.exenta25 < MIN) && a.salarios > MIN) {
+    patrones.push({
+      severity: "warning",
+      label: "Exenta 25% laboral: desapareció",
+      sugerencia: `El año anterior te aplicaste $${Math.round(p.exenta25).toLocaleString("es-CO")} por la exenta 25% del Art. 206 #10 ET (25% del neto laboral) y este año está en cero, aunque seguís teniendo salarios. Verificá el Paso 3 del F-210 — esta exenta es automática si tenés ingresos laborales y rara vez debería faltar.`,
+    });
+  }
+
+  // Patrón 7: PV+AFC desaparecieron (beneficio voluntario)
+  if (p.pvAFC > MIN && (!a.pvAFC || a.pvAFC < MIN)) {
+    patrones.push({
+      severity: "warning",
+      label: "Aportes a pensión voluntaria / AFC: desaparecieron",
+      sugerencia: `El año anterior aportaste $${Math.round(p.pvAFC).toLocaleString("es-CO")} entre pensión voluntaria y AFC (ambos son deducibles). Si seguís haciendo esos aportes, cargalos en el Paso 3 — pueden valer varios millones en impuesto. Si dejaste de aportar voluntariamente, ignorá esta alerta.`,
+    });
+  }
+
   return patrones;
 }
 
