@@ -80,19 +80,22 @@ Al final del Paso 5, card con:
 - Delta en % con ícono ▲/▼
 - Monto absoluto de la diferencia
 
-### 4. Patrones cruzados (9 detectores)
+### 4. Patrones cruzados (13 detectores)
 Alertas que solo emergen al cruzar variables — no visibles mirando un
 campo aislado:
-1. Retenciones inconsistentes con ingresos
+1. Retenciones inconsistentes con ingresos (CRITICAL)
 2. Impuesto sube más de lo esperado
 3. Intereses vivienda desaparecieron
 4. Dependientes desaparecieron
-5. Sin retenciones con ingresos altos
+5. Sin retenciones con ingresos altos (CRITICAL)
 6. Dividendos ausentes
 7. Exenta 25% desapareció
 8. PV+AFC desaparecieron
 9. Medicina prepagada desapareció
 10. GMF desapareció
+11. Descuento donaciones desapareció (Art. 257 ET)
+12. Ganancias ocasionales sin impuesto (CRITICAL)
+13. Descuento ICA desapareció (solo jurídicas)
 
 ### 5. Fase 1 — Histórico multi-año
 - Array `declaracionesAnteriores[]` con editor por año (chips cyan)
@@ -143,6 +146,38 @@ Payload: solo metadatos, sin montos ni PII. Ver `src/lib/analytics.js`.
 `https://finpathia.com/?debug=1` → panel que muestra los últimos 50
 eventos de la sesión actual desde localStorage. Útil para QA y debug
 sin depender de GA4.
+
+### 12. UIs dedicadas para overrides del owner
+
+Cuatro inputs críticos del motor que NO se capturan en el wizard F-210/F-110
+ahora tienen componentes dedicados en el tab Declaración Completa:
+
+| Componente | Aplica a | Qué captura |
+|---|---|---|
+| `ImportDeclaracionAnterior` | natural + jurídica | Renglones de la declaración del año pasado (17-25 campos) |
+| `EditarDescuentosTributarios` | solo jurídica | CTI, empleo, exterior, donaciones, otros (Art. 256-259 ET) |
+| `EditarAportesManuales` | solo natural | Pensión obl/salud obl/indep + PV mensual + flag bruto |
+
+Todos los componentes:
+- Muestran `prevYear` cyan clickeable si hay `owner.declaracionAnterior`
+  con valores equivalentes
+- Emiten eventos analytics con counts (sin montos ni PII)
+- Tienen total en tiempo real y banner explicativo
+- Se acceden desde botones con checkmark `✓` si hay valores guardados
+
+### 13. Warnings de no-captura (año a año)
+
+Dos warnings en el Panel Revisión Fiscal que detectan cuando el owner
+declaró algo el año anterior pero no lo capturó en los overrides del
+año actual — caso típico de olvidar renovar un beneficio:
+
+| Warning code | Trigger | Costo típico |
+|---|---|---|
+| `DESCUENTOS_AÑO_ANTERIOR_NO_CAPTURADOS` | jurídica con Σdescuentos > $1M anteriores y < 30% capturado | 100% del descuento (va directo del impuesto) |
+| `APORTES_VOLUNTARIOS_NO_CAPTURADOS` | natural con pvAFC > $1M anterior y `ow.aportes.pensionVoluntariaMensual = 0` | ~tasa marginal × monto anual |
+
+Ambos aparecen como warnings item-level con botones "✓ Aprobar" y
+"Ir al perfil" para capturar los valores correctamente.
 
 ## Infraestructura de tests
 
