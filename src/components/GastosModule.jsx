@@ -21,14 +21,28 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
   );
 
 const DIAN_REGLAS = {
-  natural: { "Salud": "✅ Deducible", "Vivienda": "✅ Deducible", "Seguros": "📊 50%", "Seguridad Social": "✅ Ya incluido", "Nómina": "❌", "Honorarios": "❌", "Mantenimiento": "❌", "Predial": "❌", "Representación": "❌", "Alimentación": "❌", "Transporte": "❌", "Arrendamiento": "❌", "Servicios": "❌", "Educación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Tecnología": "❌", "Ahorro": "❌", "Otro": "❌" },
-  juridica: { "Nómina": "✅ Deducible", "Honorarios": "✅ Deducible", "Vivienda": "✅ Deducible", "Servicios": "✅ Deducible", "Mantenimiento": "✅ Deducible", "Seguros": "✅ Deducible", "Transporte": "✅ Deducible", "Arrendamiento": "✅ Deducible", "Predial": "✅ Deducible", "Representación": "✅ Deducible", "Tecnología": "✅ Deducible", "Educación": "✅ Deducible", "Seguridad Social": "✅ Deducible", "Depreciación": "✅ Deducible", "Salud": "❌", "Alimentación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Mascotas": "❌", "Deporte": "❌", "Ahorro": "❌", "Otro": "📊 50%" }
+  natural: { "Aporte tributario": "✅ Detracción fiscal", "Salud": "✅ Deducible", "Vivienda": "✅ Deducible", "Seguros": "📊 50%", "Seguridad Social": "✅ Ya incluido", "Nómina": "❌", "Honorarios": "❌", "Mantenimiento": "❌", "Predial": "❌", "Representación": "❌", "Alimentación": "❌", "Transporte": "❌", "Arrendamiento": "❌", "Servicios": "❌", "Educación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Tecnología": "❌", "Ahorro": "❌", "Otro": "❌" },
+  juridica: { "Aporte tributario": "⚠️ Sólo natural", "Nómina": "✅ Deducible", "Honorarios": "✅ Deducible", "Vivienda": "✅ Deducible", "Servicios": "✅ Deducible", "Mantenimiento": "✅ Deducible", "Seguros": "✅ Deducible", "Transporte": "✅ Deducible", "Arrendamiento": "✅ Deducible", "Predial": "✅ Deducible", "Representación": "✅ Deducible", "Tecnología": "✅ Deducible", "Educación": "✅ Deducible", "Seguridad Social": "✅ Deducible", "Depreciación": "✅ Deducible", "Salud": "❌", "Alimentación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Mascotas": "❌", "Deporte": "❌", "Ahorro": "❌", "Otro": "📊 50%" }
 };
 
 // Sub-opciones de fiscalCode según (owner type, categoría). Si la combinación
 // no aparece aquí, no hay ambigüedad y el fiscalCode se infiere automático.
 // Devuelve null si no hay sub-selector.
 function fiscalSubOptions(ownerType, cat) {
+  // Commit 1.6: "Aporte tributario" es agnóstico al ownerType a nivel UI.
+  // El motor sólo procesa estos fiscalCodes en el cálculo de persona natural;
+  // si se asigna a jurídica, no genera deducción (tampoco daña).
+  if (cat === "Aporte tributario") {
+    return {
+      question: "🛡️ ¿Qué tipo de aporte tributario?",
+      help: "PV y AFC comparten tope 25% del neto laboral y 2500 UVT anuales (Arts. 126-1 y 126-4 ET). Salud prepagada entra al tope de 16 UVT mensuales junto con gastos médicos (Art. 387 #2 ET). Reducen la base gravable del impuesto de renta de persona natural.",
+      options: [
+        { v: "AP_TRIB_PV", l: "Pensión Voluntaria (Art. 126-1 ET)" },
+        { v: "AP_TRIB_AFC", l: "AFC — Ahorro Fomento Construcción (Art. 126-4 ET)" },
+        { v: "AP_TRIB_SALUD_PREPAGADA", l: "Salud prepagada (Art. 387 #2 ET)" },
+      ],
+    };
+  }
   if (ownerType === "natural") {
     // Gastos que pueden ser del inmueble arrendado o personales
     if (["Predial", "Vivienda", "Mantenimiento", "Servicios", "Seguros", "Arrendamiento"].includes(cat)) {
@@ -68,6 +82,9 @@ function fiscalSubOptions(ownerType, cat) {
 // Default fiscalCode conservador según (owner type, categoría) — replica el
 // normalizer cuando el usuario no ha elegido explícitamente.
 function defaultFiscalCode(ownerType, cat) {
+  // Commit 1.6: default para "Aporte tributario" es PV (más común en usuarios
+  // de clase media-alta asalariada). El usuario ajusta al subtipo real en el sub-selector.
+  if (cat === "Aporte tributario") return "AP_TRIB_PV";
   if (ownerType === "juridica") {
     if (cat === "Nómina") return "GAS_JUR_NOMINA";
     if (cat === "Honorarios") return "GAS_JUR_HONORARIOS_PROF";
@@ -353,8 +370,28 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const ow = (owners || []).find(o => o.id === form.owner);
                 const ownerType = ow ? ow.type : "natural";
                 setForm((p) => ({ ...p, cat: v, fiscalCode: defaultFiscalCode(ownerType, v) }));
-              }} options={[{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Predial",l:"🏛️ Predial e impuestos locales (ICA)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
+              }} options={[{v:"Aporte tributario",l:"🛡️ Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Predial",l:"🏛️ Predial e impuestos locales (ICA)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
+
+              {/* Commit 1.6: sub-selector para Aporte tributario (PV, AFC, Salud prepagada) */}
+              {form.cat === "Aporte tributario" && (() => {
+                const opts = fiscalSubOptions(null, "Aporte tributario");
+                const currentFC = form.fiscalCode || "AP_TRIB_PV";
+                return (
+                  <div style={{gridColumn:"1/-1",background:"rgba(168,85,247,0.04)",border:"1px solid rgba(168,85,247,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#a855f7",marginBottom:8}}>{opts.question}</div>
+                    <select value={currentFC} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
+                      style={{width:"100%",background:"#1e1e24",border:"1px solid rgba(255,255,255,0.06)",color:"#fafafa",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}>
+                      {opts.options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                    </select>
+                    <div style={{fontSize:10,color:"#a1a1aa",marginTop:8,lineHeight:1.5}}>{opts.help}</div>
+                    <div style={{fontSize:10,color:"#71717a",marginTop:6,lineHeight:1.5,fontStyle:"italic"}}>
+                      ℹ️ Esta categoría sólo reduce impuestos si la asignás a un propietario fiscal de tipo <strong>persona natural</strong> con ingresos laborales.
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div style={{display:"flex",gap:8}}><div style={{flex:1}}><In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" /></div><div style={{flex:1}}>
               <In l="Frecuencia" value={form.freq} onChange={(v) => setForm((p) => ({ ...p, freq: v }))} options={[{ v: "mes", l: "Mensual" }, { v: "año", l: "Anual" }]} /></div></div>
               <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => {

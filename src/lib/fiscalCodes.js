@@ -53,6 +53,15 @@ export const GAS_NAT_DEPENDIENTES            = "GAS_NAT_DEPENDIENTES";
 export const GAS_NAT_PERSONAL                = "GAS_NAT_PERSONAL";
 export const GAS_NAT_AHORRO                  = "GAS_NAT_AHORRO";
 
+// ─── APORTES TRIBUTARIOS (Commit 1.6) ────────────────────────────────────
+// Egresos que reducen la base gravable de persona natural. Shape nuevo:
+// viven en el módulo de Egresos con categoría "Aporte tributario".
+// Comparten tope 25% neto laboral / 2500 UVT entre PV y AFC (Art. 126-1, 126-4 ET).
+// Salud prepagada comparte tope 16 UVT/mes con gastos médicos (Art. 387 #2 ET).
+export const AP_TRIB_PV                      = "AP_TRIB_PV";                   // Pensión Voluntaria (Art. 126-1)
+export const AP_TRIB_AFC                     = "AP_TRIB_AFC";                  // Ahorro Fomento Construcción (Art. 126-4)
+export const AP_TRIB_SALUD_PREPAGADA         = "AP_TRIB_SALUD_PREPAGADA";      // Salud prepagada (Art. 387 #2)
+
 // Gastos del inmueble arrendado (natural, Art. 107)
 export const GAS_INMUEBLE_PREDIAL            = "GAS_INMUEBLE_PREDIAL";
 export const GAS_INMUEBLE_MANTENIMIENTO      = "GAS_INMUEBLE_MANTENIMIENTO";

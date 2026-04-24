@@ -27,6 +27,8 @@ import {
   PEN_JUBILACION,
   DEU_NAT_VIVIENDA_HABITACIONAL,
   GAS_JUR_NO_DEDUCIBLE,
+  // Commit 1.6: aportes tributarios del shape nuevo (Egresos → "Aporte tributario")
+  AP_TRIB_PV, AP_TRIB_AFC, AP_TRIB_SALUD_PREPAGADA,
 } from "./fiscalCodes.js";
 import { TABLA_ART_241, calcImpRenta as calcImpRentaCore } from "./tablaArt241.js";
 
@@ -277,7 +279,14 @@ export const estimarImpuesto = (u) => {
       const tieneDep = gastoEduc > 500000;
       const deducDep = tieneDep ? Math.min(ingLaboral * 0.10, 384 * UVT) : 0;
 
-      const gastoSalud = oGas.filter(g => g.cat === "Salud").reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastoSaludTradicional = oGas.filter(g => g.cat === "Salud").reduce((s, g) => s + (g.m || 0), 0) * 12;
+      // Bridge Commit 1.6: leer salud prepagada del shape nuevo (Egresos con categoría
+      // "Aporte tributario" y fiscalCode AP_TRIB_SALUD_PREPAGADA). Entra al mismo tope
+      // 16 UVT/mes (Art. 387 #2 ET). En 1.7 la categoría "Salud" se usará sólo para
+      // gastos médicos genéricos (consultas, medicinas) y la salud prepagada vivirá
+      // exclusivamente en "Aporte tributario".
+      const gastoSaludPrepagadaNueva = oGas.filter(g => g.fiscalCode === AP_TRIB_SALUD_PREPAGADA).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastoSalud = gastoSaludTradicional + gastoSaludPrepagadaNueva;
       const deducMedicina = Math.min(gastoSalud, 16 * UVT * 12);
 
       const interesesHip = oDeu.reduce((s, d) => {
@@ -295,9 +304,17 @@ export const estimarImpuesto = (u) => {
       const exenta25 = Math.min(baseExenta * 0.25, 790 * UVT);
 
       const lim40 = netoLaboral * 0.40;
-      // Pensión voluntaria manual (Art. 126-1 ET): si el usuario ya aporta hoy, entra como renta exenta en el escenario ACTUAL.
-      // Cap legal: 25% del neto laboral y 2500 UVT.
-      const pvManualAnual = aPensVol > 0 ? Math.min(aPensVol * 12, netoLaboral * 0.25, 2500 * UVT) : 0;
+      // Pensión voluntaria + AFC (Art. 126-1 y 126-4 ET): renta exenta bajo el cap
+      // compartido de 2500 UVT / 25% neto laboral.
+      //
+      // Bridge Commit 1.6: suma tres fuentes (las tres comparten el mismo cap):
+      //   1. ow.aportes.pensionVoluntariaMensual (shape viejo, será migrado en 1.7)
+      //   2. Egresos con fiscalCode AP_TRIB_PV  (shape nuevo)
+      //   3. Egresos con fiscalCode AP_TRIB_AFC (shape nuevo, antes no existía)
+      const pvEgresoAnual  = oGas.filter(g => g.fiscalCode === AP_TRIB_PV).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const afcEgresoAnual = oGas.filter(g => g.fiscalCode === AP_TRIB_AFC).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const pvManualBruto  = (aPensVol * 12) + pvEgresoAnual + afcEgresoAnual;
+      const pvManualAnual  = pvManualBruto > 0 ? Math.min(pvManualBruto, netoLaboral * 0.25, 2500 * UVT) : 0;
       const benefLaboral = Math.min(exenta25 + totalDeducciones + pvManualAnual, lim40);
 
       const rentaLiqTrabajo = Math.max(0, netoLaboral - benefLaboral);
