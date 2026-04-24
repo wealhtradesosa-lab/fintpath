@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { SimToggleInfoCompact } from "./SimToggleInfo";
 
 const T = {
   bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
@@ -153,6 +154,9 @@ export default function AsesorIA({ user, totals, userId }) {
           <button onClick={() => setMsgs([])} style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt3, padding: "6px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12 }}>Nueva consulta</button>
         )}
       </div>
+
+      {/* Aviso: items apagados no se incluyen en el análisis IA */}
+      <SimToggleInfoCompact />
 
       {/* Chat area */}
       <div ref={chatRef} style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, height: msgs.length > 0 ? 440 : "auto", overflowY: "auto", marginBottom: 16, padding: msgs.length > 0 ? 16 : 0 }}>

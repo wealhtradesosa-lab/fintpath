@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import SimToggleInfo from "./SimToggleInfo";
 
 const T = {
   bg2: "#18181b", bg3: "#1e1e24",
@@ -170,6 +171,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           <button onClick={openAdd} style={{ background: T.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </div>
       </div>
+
+      {/* Banner explicando toggle sim (Commit 8.8) */}
+      <SimToggleInfo total={items.length} activos={activos.length} moduloNombre="una inversión" />
 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>

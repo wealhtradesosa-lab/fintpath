@@ -20,6 +20,7 @@ import { useMemo, useState } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import AjustesFiscalesPersonalizados from "./AjustesFiscalesPersonalizados";
+import { SimToggleInfoCompact } from "./SimToggleInfo";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -265,6 +266,9 @@ export default function CalculadoraImpuestos({ user, trm, onNavigate, onUserUpda
           ))}
         </select>
       </div>
+
+      {/* Aviso: items apagados en Ingresos/Egresos/Deudas/Inversiones no entran en este cálculo */}
+      <SimToggleInfoCompact />
 
       {/* Dos columnas */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 18 }}>

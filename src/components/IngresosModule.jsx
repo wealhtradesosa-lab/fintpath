@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SimToggleInfo from "./SimToggleInfo";
 
 const T = {
   bg2: "#18181b", bg3: "#1e1e24",
@@ -239,6 +240,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           </button>
         </div>
       </div>
+
+      {/* Banner explicando toggle sim (Commit 8.8) */}
+      <SimToggleInfo total={allItems.length} activos={activos.length} moduloNombre="un ingreso" />
 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 20 }}>

@@ -19,6 +19,7 @@ import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import RecomendacionesFiscales from "./RecomendacionesFiscales";
 import ReporteFiscalPrint from "./ReporteFiscalPrint";
 import DeclaracionUpload from "./DeclaracionUpload";
+import { SimToggleInfoCompact } from "./SimToggleInfo";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -252,6 +253,9 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           />
         </div>
       )}
+
+      {/* Aviso: items apagados en Ingresos/Egresos/Deudas/Inversiones no entran en este cálculo */}
+      <SimToggleInfoCompact />
 
       {/* Banner de estado de declaración */}
       {tieneDeclaracion ? (

@@ -22,6 +22,7 @@ import { useMemo, useState, useEffect } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
 import AjustesFiscalesPersonalizados from "./AjustesFiscalesPersonalizados";
 import CalculadoraImpuestos from "./CalculadoraImpuestos";
+import { SimToggleInfoCompact } from "./SimToggleInfo";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -760,6 +761,9 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
         <div style={{ flex: 1 }}/>
         <div style={{ fontSize: 10, color: T.txt3, fontStyle: "italic" }}>Volvés acá y seguís donde estabas</div>
       </div>
+
+      {/* Aviso global: items apagados no se incluyen en el cálculo */}
+      <SimToggleInfoCompact />
 
       {/* Contenido del paso activo */}
       <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, padding: 20 }}>
