@@ -67,6 +67,15 @@ const DEFAULT_FISCAL_CODE = {
   "Otro": "NOL_OTROS",
 };
 
+// Estado inicial del form (centralizado para evitar repetición y drift)
+const INITIAL_FORM = {
+  nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO",
+  mensual: "", tipo: "fijo", fuente: "",
+  capital: "", tasa: "", moneda: "COP", owner: "",
+  // Commit 1.5: aportes obligatorios (sólo aplican a Salario)
+  aportePension: "", aporteSalud: "",
+};
+
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
       <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
@@ -127,7 +136,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     input.click();
   };
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" });
+  const [form, setForm] = useState(INITIAL_FORM);
   const [selected, setSelected] = useState(new Set());
 
   const items = ingresos || [];
@@ -147,16 +156,55 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     setSelected(new Set());
   };
   const handleSave = () => {
+    const isSalario = form.categoria === "Salario";
     const item = { ...form, mensual: Number(form.mensual) || 0, capital: Number(form.capital) || 0, tasa: Number(form.tasa) || 0 };
+    // Commit 1.5: persistir aportes obligatorios en shape anidado, sólo para Salario
+    if (isSalario) {
+      item.aportes = {
+        pension: Number(form.aportePension) || 0,
+        salud: Number(form.aporteSalud) || 0,
+      };
+    }
+    // Los campos del form no se persisten como top-level (viven dentro de item.aportes)
+    delete item.aportePension;
+    delete item.aporteSalud;
     let updated;
     if (editId) { updated = items.map((i) => (i.id === editId ? { ...item, id: editId } : i)); }
     else { item.id = "ing_" + Date.now(); updated = [...items, item]; }
     onUpdate(updated);
     setShowForm(false); setEditId(null);
-    setForm({ nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" });
+    setForm(INITIAL_FORM);
   };
   const handleEdit = (item) => {
-    setForm({ nombre: item.nombre, categoria: item.categoria, fiscalCode: item.fiscalCode || DEFAULT_FISCAL_CODE[item.categoria] || "NOL_OTROS", mensual: item.mensual, tipo: item.tipo, fuente: item.fuente || "", capital: item.capital || "", tasa: item.tasa || "", moneda: item.moneda || "COP", owner: item.owner || "" });
+    // Commit 1.5: migración silenciosa para salarios viejos sin item.aportes:
+    //   si categoria=Salario y no hay aportes guardados, prefill 4%+4% sobre el bruto.
+    //   Nunca mutamos item directamente; sólo el form. El usuario decide si guardar.
+    const isSalario = item.categoria === "Salario";
+    const mensualNum = Number(item.mensual) || 0;
+    const aportePensionGuardado = item.aportes?.pension;
+    const aporteSaludGuardado   = item.aportes?.salud;
+    const aportePensionForm =
+      aportePensionGuardado != null ? String(aportePensionGuardado)
+      : (isSalario && mensualNum > 0) ? String(Math.round(mensualNum * 0.04))
+      : "";
+    const aporteSaludForm =
+      aporteSaludGuardado != null ? String(aporteSaludGuardado)
+      : (isSalario && mensualNum > 0) ? String(Math.round(mensualNum * 0.04))
+      : "";
+    setForm({
+      nombre: item.nombre,
+      categoria: item.categoria,
+      fiscalCode: item.fiscalCode || DEFAULT_FISCAL_CODE[item.categoria] || "NOL_OTROS",
+      mensual: item.mensual,
+      tipo: item.tipo,
+      fuente: item.fuente || "",
+      capital: item.capital || "",
+      tasa: item.tasa || "",
+      moneda: item.moneda || "COP",
+      owner: item.owner || "",
+      aportePension: aportePensionForm,
+      aporteSalud: aporteSaludForm,
+    });
     setEditId(item.id); setShowForm(true);
   };
 
@@ -175,7 +223,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               🗑️ Eliminar ({selected.size})
             </button>
           )}
-          <button onClick={() => { setEditId(null); setForm({ nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO", mensual: "", tipo: "fijo", fuente: "", capital: "", tasa: "", moneda: "COP", owner: "" }); setShowForm(true); }}
+          <button onClick={() => { setEditId(null); setForm(INITIAL_FORM); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             + Agregar
           </button>
@@ -288,12 +336,50 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 const tas = Number(form.tasa) || 0;
                 if (m > 0 && cap > 0) nf.tasa = String(Math.round((m * 12 / cap) * 1000) / 10);
                 else if (m > 0 && tas > 0) nf.capital = String(Math.round((m * 12) / (tas / 100)));
+                // Commit 1.5: auto-prefill aportes obligatorios (4%+4%) para Salario.
+                // Sólo rellena si el campo está vacío → no pisa valores editados por el usuario.
+                if (form.categoria === "Salario" && m > 0) {
+                  if (!form.aportePension) nf.aportePension = String(Math.round(m * 0.04));
+                  if (!form.aporteSalud)   nf.aporteSalud   = String(Math.round(m * 0.04));
+                }
                 setForm(p => ({ ...p, ...nf }));
               }} type="number" placeholder={["Salario","Honorarios"].includes(form.categoria) ? "Monto en contrato, antes de retención y aportes" : "¿Cuánto recibes al mes?"} />
               {["Salario","Honorarios"].includes(form.categoria) && <div style={{gridColumn:"1/-1",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:8,padding:"10px 12px",marginTop:-4,marginBottom:4}}>
                 <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:3}}>ℹ️ Ingresá el monto BRUTO</div>
                 <div style={{fontSize:10,color:"#71717a",lineHeight:1.5}}>El monto que aparece en tu contrato o factura, <strong>antes</strong> de retención en la fuente y aportes obligatorios (salud+pensión). El sistema calcula automáticamente tu impuesto de renta aplicando la tabla progresiva de la DIAN 2026.</div>
               </div>}
+
+              {/* Commit 1.5: aportes obligatorios (sólo Salario) */}
+              {form.categoria === "Salario" && (
+                <div style={{gridColumn:"1/-1",background:"rgba(168,85,247,0.04)",border:"1px solid rgba(168,85,247,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4,marginBottom:4}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#a855f7",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+                    🛡️ Aportes obligatorios mensuales
+                  </div>
+                  <div style={{fontSize:10,color:T.txt3,lineHeight:1.5,marginBottom:10}}>
+                    Se prellenan en 4% (pensión) + 4% (salud) del bruto. Ajustá si tu descuento real en nómina es distinto.
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                    <In l="Aporte pensión / mes" value={form.aportePension} onChange={(v) => setForm(p => ({ ...p, aportePension: v }))} type="number" placeholder="4% del bruto" />
+                    <In l="Aporte salud / mes" value={form.aporteSalud} onChange={(v) => setForm(p => ({ ...p, aporteSalud: v }))} type="number" placeholder="4% del bruto" />
+                  </div>
+                  {(() => {
+                    const bruto = Number(form.mensual) || 0;
+                    const ap = Number(form.aportePension) || 0;
+                    const asl = Number(form.aporteSalud) || 0;
+                    if (bruto <= 0) return null;
+                    const gravable = Math.max(0, bruto - ap - asl);
+                    return (
+                      <div style={{marginTop:10,padding:"10px 12px",background:"rgba(34,197,94,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.5}}>
+                        💰 Salario gravable = <strong>{fm(gravable)}</strong> / mes · <span style={{color:T.txt2}}>{fm(gravable * 12)}</span> anual
+                        <div style={{fontSize:10,color:T.txt3,marginTop:4,fontWeight:400}}>
+                          Bruto {fm(bruto)} − aportes {fm(ap + asl)}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
               <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa, propiedad, fondo..." />
 
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
@@ -302,7 +388,16 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 <div style={{fontSize:11,fontWeight:600,color:"#a1a1aa",marginBottom:8}}>🧾 Clasificación tributaria (opcional)</div>
               </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} /></div>
-              <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => ({ ...p, categoria: v, fiscalCode: DEFAULT_FISCAL_CODE[v] || "NOL_OTROS" }))} options={CATS} /></div>
+              <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => {
+                const nf = { ...p, categoria: v, fiscalCode: DEFAULT_FISCAL_CODE[v] || "NOL_OTROS" };
+                // Commit 1.5: si cambia a Salario y ya hay bruto pero no aportes, prefill 4%+4%
+                const m = Number(p.mensual) || 0;
+                if (v === "Salario" && m > 0) {
+                  if (!p.aportePension) nf.aportePension = String(Math.round(m * 0.04));
+                  if (!p.aporteSalud)   nf.aporteSalud   = String(Math.round(m * 0.04));
+                }
+                return nf;
+              })} options={CATS} /></div>
               <div style={{fontSize:10,color:"#71717a",marginTop:-8,marginBottom:4,padding:"0 4px",gridColumn:"1/-1"}}>Si asignas propietario, este ingreso se incluirá en el cálculo de impuestos de esa persona o empresa.</div>
 
               {FISCAL_SUBOPTIONS[form.categoria] && (
