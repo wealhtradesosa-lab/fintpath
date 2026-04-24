@@ -235,9 +235,45 @@ function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
 // ═══════════════════════════════════════════════════════════════════════════
 function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
   const ownerId = selectedOwner?.id;
-  const ownerIng = useMemo(() => (user?.ingresos || []).filter(i => i.owner === ownerId), [user, ownerId]);
-  const ownerGas = useMemo(() => Object.values(user?.gas || {}).flat().filter(g => g.owner === ownerId), [user, ownerId]);
-  const ownerDeu = useMemo(() => (user?.deu || []).filter(d => d.owner === ownerId), [user, ownerId]);
+
+  // Commit 9.1b: Gaps descartados por owner. Si el usuario dice "no, no tengo
+  // aportes obligatorios porque apagué mi salario", descartar y no volver a
+  // pedir. Persiste en localStorage por owner.id + gap id.
+  const dismissKey = `fp3_dismissed_gaps_${ownerId || "none"}`;
+  const [dismissedGaps, setDismissedGaps] = useState(() => {
+    try {
+      const raw = localStorage.getItem(dismissKey);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+  // Re-cargar cuando cambia el owner
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(dismissKey);
+      setDismissedGaps(raw ? new Set(JSON.parse(raw)) : new Set());
+    } catch { setDismissedGaps(new Set()); }
+  }, [dismissKey]);
+  const dismissGap = (gapId) => {
+    setDismissedGaps(prev => {
+      const next = new Set(prev);
+      next.add(gapId);
+      try { localStorage.setItem(dismissKey, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+
+  // Commit 9.1: Respetar sim. Los items apagados (⬜) NO se incluyen en el cálculo
+  // ni en la detección de data gaps — son decisiones explícitas del usuario.
+  // También exponemos apagados para poder informar al usuario (sin pedir acción).
+  const ownerIngAll = useMemo(() => (user?.ingresos || []).filter(i => i.owner === ownerId), [user, ownerId]);
+  const ownerIng = useMemo(() => ownerIngAll.filter(i => i.sim !== false), [ownerIngAll]);
+  const ownerIngApagados = useMemo(() => ownerIngAll.filter(i => i.sim === false), [ownerIngAll]);
+
+  const ownerGasAll = useMemo(() => Object.values(user?.gas || {}).flat().filter(g => g.owner === ownerId), [user, ownerId]);
+  const ownerGas = useMemo(() => ownerGasAll.filter(g => g.sim !== false), [ownerGasAll]);
+
+  const ownerDeuAll = useMemo(() => (user?.deu || []).filter(d => d.owner === ownerId), [user, ownerId]);
+  const ownerDeu = useMemo(() => ownerDeuAll.filter(d => d.sim !== false), [ownerDeuAll]);
 
   const resumen = useMemo(() => {
     const salario = ownerIng.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0);
@@ -254,6 +290,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
     const gaps = [];
     if (resumen.arriendos > 0 && resumen.gastosInmueble === 0) {
       gaps.push({
+        id: "arriendo_sin_gastos",
         titulo: "Arriendo sin gastos del inmueble",
         desc: "Registraste arriendos como ingreso, pero no predial, administración ni mantenimiento. Si los pagás, son deducibles.",
         page: "gas", icono: "🏠",
@@ -261,16 +298,13 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
     }
     if (resumen.honorarios > 0 && resumen.gastosActividad === 0) {
       gaps.push({
+        id: "honorarios_sin_gastos",
         titulo: "Honorarios sin gastos de actividad",
         desc: "Como independiente, podés deducir oficina, servicios, transporte, tecnología con causalidad. No veo ninguno.",
         page: "gas", icono: "💼",
       });
     }
     const tieneSalario = resumen.salario > 0;
-    // Fix Commit 9.0: coerce a Number porque los aportes pueden venir como string
-    // desde persistencia. Sin el coerce, "400000" > 0 da false y generaba alerta falsa.
-    // Además considerar también aportes.pensionVoluntariaMensual por si el usuario
-    // registró aportes por ese campo.
     const tieneAportes = ownerIng.some(i => {
       if (i.categoria !== "Salario") return false;
       const ap = i.aportes || {};
@@ -280,6 +314,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
     });
     if (tieneSalario && !tieneAportes) {
       gaps.push({
+        id: "salario_sin_aportes",
         titulo: "Salario sin aportes obligatorios registrados",
         desc: "Todo empleado aporta 4% pensión + 4% salud. Sin registrarlos el motor sobrestima el impuesto.",
         page: "ing", icono: "💼",
@@ -289,13 +324,15 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
     const marcadaComoVivienda = ownerDeu.some(d => d.fiscalCode === "DEU_NAT_VIVIENDA_HABITACIONAL");
     if (tieneDeudaHipotecaria && !marcadaComoVivienda) {
       gaps.push({
+        id: "hipoteca_sin_clasificar",
         titulo: "Hipoteca sin clasificar como vivienda habitacional",
         desc: "Si es tu casa, los intereses son deducibles hasta 1.200 UVT/año.",
         page: "deu", icono: "🏡",
       });
     }
-    return gaps;
-  }, [resumen, ownerIng, ownerDeu]);
+    // Filtrar los que el usuario descartó explícitamente
+    return gaps.filter(g => !dismissedGaps.has(g.id));
+  }, [resumen, ownerIng, ownerDeu, dismissedGaps]);
 
   const filas = [
     { label: "Salario mensual", value: resumen.salario, icono: "💼" },
@@ -340,27 +377,45 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
         </div>
       )}
 
+      {/* Commit 9.1: Aviso INFORMATIVO cuando hay items apagados — no es alerta, es transparencia */}
+      {ownerIngApagados.length > 0 && (
+        <div style={{ padding: "10px 12px", background: "rgba(107,114,128,0.1)", border: "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 14 }}>⬜</div>
+          <div style={{ flex: 1, minWidth: 200, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
+            Tenés <strong style={{ color: T.txt2 }}>{ownerIngApagados.length}</strong> ingreso{ownerIngApagados.length > 1 ? "s" : ""} apagado{ownerIngApagados.length > 1 ? "s" : ""} ({ownerIngApagados.map(i => i.nombre).join(", ")}). Por eso no aparecen acá — el cálculo los excluye. Si querés incluirlos, encendélos en Ingresos.
+          </div>
+          <button onClick={() => onNavigate?.("ing")} style={{ padding: "5px 10px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+            Ir a Ingresos
+          </button>
+        </div>
+      )}
+
       {dataGaps.length > 0 && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
             ⚠️ Datos que te podrían faltar ({dataGaps.length})
           </div>
           {dataGaps.map((g, i) => (
-            <div key={i} style={{ padding: "12px 14px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.2)", borderLeft: "3px solid " + T.orange, borderRadius: 8, marginBottom: 8 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <div key={g.id || i} style={{ padding: "12px 14px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.2)", borderLeft: "3px solid " + T.orange, borderRadius: 8, marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 18 }}>{g.icono}</div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: T.txt }}>{g.titulo}</div>
                   <div style={{ fontSize: 11, color: T.txt2, marginTop: 3, lineHeight: 1.5 }}>{g.desc}</div>
                 </div>
-                <button onClick={() => onNavigate?.(g.page)} style={{ padding: "8px 14px", background: T.orange, border: "none", color: "#000", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  Completar ahora →
-                </button>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <button onClick={() => dismissGap(g.id)} title="No aplica a mi situación, no me recuerdes esto de nuevo" style={{ padding: "8px 12px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    No aplica
+                  </button>
+                  <button onClick={() => onNavigate?.(g.page)} style={{ padding: "8px 14px", background: T.orange, border: "none", color: "#000", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    Completar ahora →
+                  </button>
+                </div>
               </div>
             </div>
           ))}
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 8, fontStyle: "italic", lineHeight: 1.5 }}>
-            💡 Tu progreso se guarda automáticamente. Podés completar ahora y volver acá, o seguir con el cálculo aproximado y volver después.
+            💡 Tu progreso se guarda automáticamente. "No aplica" descarta el aviso para este propietario; podés volver a verlo borrando caché.
           </div>
         </div>
       )}
