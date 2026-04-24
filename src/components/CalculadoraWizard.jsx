@@ -114,21 +114,67 @@ function NavButtons({ currentStep, onBack, onNext, disableNext, nextLabel }) {
   );
 }
 
+// Helper: ¿tiene datos de fiscalProfile más allá del default?
+function ownerConfigurado(owner) {
+  const fp = owner?.fiscalProfile || {};
+  const tieneDep = (fp.dependientes?.cantidad || 0) > 0;
+  const tieneAuxilio = !!(fp.auxilios?.alimentacion || fp.auxilios?.transporte);
+  const tieneContab = !!fp.obligadoContabilidad;
+  const tieneHonorPers = !!fp.honorariosConPersonal;
+  const tieneEventos = !!(fp.eventosAno?.recibioHerencia || fp.eventosAno?.vendioInmuebleAntiguo || fp.eventosAno?.ganoLoteria);
+  const tieneDon = (fp.donaciones?.monto || 0) > 0;
+  const tieneCTI = (fp.inversionesCTI?.monto || 0) > 0;
+  const tieneRegimen = !!fp.regimenEspecial;
+  return tieneDep || tieneAuxilio || tieneContab || tieneHonorPers || tieneEventos || tieneDon || tieneCTI || tieneRegimen;
+}
+
+// Contar optimizaciones activas (para resumen en Paso 5)
+function resumenOptimizaciones(owner) {
+  const fp = owner?.fiscalProfile || {};
+  const items = [];
+  if ((fp.dependientes?.cantidad || 0) > 0) {
+    items.push({ icono: "👨‍👩‍👧", texto: `${fp.dependientes.cantidad} dependiente${fp.dependientes.cantidad > 1 ? 's' : ''}${fp.dependientes.conDiscapacidad ? ' (con discapacidad)' : ''}` });
+  }
+  if (fp.auxilios?.alimentacion) items.push({ icono: "🍽️", texto: "Auxilio de alimentación" });
+  if (fp.auxilios?.transporte) items.push({ icono: "🚍", texto: "Auxilio de transporte" });
+  if (fp.obligadoContabilidad) items.push({ icono: "📚", texto: "Obligado a llevar contabilidad" });
+  if (fp.honorariosConPersonal) items.push({ icono: "💼", texto: "Honorarios con personal a cargo" });
+  if (fp.eventosAno?.recibioHerencia) items.push({ icono: "🎁", texto: "Herencia/legado recibido" });
+  if (fp.eventosAno?.vendioInmuebleAntiguo) items.push({ icono: "🏠", texto: "Venta de inmueble > 2 años" });
+  if (fp.eventosAno?.ganoLoteria) items.push({ icono: "🎰", texto: "Lotería/rifa ganada" });
+  if ((fp.donaciones?.monto || 0) > 0) items.push({ icono: "💝", texto: `Donaciones ESAL` });
+  if ((fp.inversionesCTI?.monto || 0) > 0) items.push({ icono: "🔬", texto: `Inversión CTI/cine/primera infancia` });
+  if (fp.regimenEspecial) items.push({ icono: "⚖️", texto: `Régimen especial: ${fp.regimenEspecial}` });
+  return items;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // PASO 1 — Selector de owner
 // ═══════════════════════════════════════════════════════════════════════════
 function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
+  const ownersConfigurados = owners.filter(ownerConfigurado).length;
   return (
     <div>
-      <div style={{ textAlign: "center", marginBottom: 24, padding: "0 20px" }}>
-        <div style={{ fontSize: 40, marginBottom: 10 }}>🧑</div>
+      <div style={{ textAlign: "center", marginBottom: 18, padding: "0 20px" }}>
+        <div style={{ fontSize: 36, marginBottom: 8 }}>🧑</div>
         <div style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 6 }}>
           ¿Para quién querés calcular el impuesto?
         </div>
-        <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5, maxWidth: 480, margin: "0 auto" }}>
-          Elegí uno de tus propietarios fiscales. Podés volver y cambiar de persona cuando quieras.
+        <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, maxWidth: 480, margin: "0 auto" }}>
+          Elegí uno de tus propietarios fiscales. Podés volver y calcular cada uno por separado — tus respuestas se guardan automáticamente.
         </div>
       </div>
+
+      {/* Progreso global */}
+      {owners.length > 1 && (
+        <div style={{ padding: "10px 14px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 10, maxWidth: 520, margin: "0 auto 14px" }}>
+          <div style={{ fontSize: 16 }}>📊</div>
+          <div style={{ flex: 1, fontSize: 12, color: T.txt2 }}>
+            <strong style={{ color: T.green }}>{ownersConfigurados}</strong> de <strong style={{ color: T.txt }}>{owners.length}</strong> propietarios configurados
+          </div>
+          {ownersConfigurados === owners.length && <div style={{ fontSize: 11, color: T.green, fontWeight: 700 }}>✓ Completo</div>}
+        </div>
+      )}
 
       {owners.length === 0 ? (
         <div style={{ padding: 30, textAlign: "center", background: T.bg3, borderRadius: 10 }}>
@@ -138,33 +184,39 @@ function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 520, margin: "0 auto" }}>
-          {owners.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => onSelect(o.id)}
-              style={{
-                padding: "16px 18px",
-                background: selectedOwnerId === o.id ? "rgba(34,197,94,0.1)" : T.bg3,
-                border: "2px solid " + (selectedOwnerId === o.id ? T.green : T.border),
-                borderRadius: 10,
-                cursor: "pointer",
-                textAlign: "left",
-                color: T.txt,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ fontSize: 24 }}>{o.type === "juridica" ? "🏢" : "🧑"}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{o.name}</div>
-                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                    {o.type === "juridica" ? "Persona jurídica" : "Persona natural"}
-                    {o.regimen && o.regimen !== "ordinario" && ` · Régimen ${o.regimen}`}
+          {owners.map((o) => {
+            const yaConfigurado = ownerConfigurado(o);
+            return (
+              <button
+                key={o.id}
+                onClick={() => onSelect(o.id)}
+                style={{
+                  padding: "14px 16px",
+                  background: selectedOwnerId === o.id ? "rgba(34,197,94,0.1)" : T.bg3,
+                  border: "2px solid " + (selectedOwnerId === o.id ? T.green : T.border),
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  color: T.txt,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ fontSize: 22 }}>{o.type === "juridica" ? "🏢" : "🧑"}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{o.name}</div>
+                      {yaConfigurado && <span style={{ fontSize: 9, padding: "2px 6px", background: "rgba(34,197,94,0.15)", color: T.green, borderRadius: 4, fontWeight: 700 }}>✓ configurado</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+                      {o.type === "juridica" ? "Persona jurídica" : "Persona natural"}
+                      {o.regimen && o.regimen !== "ordinario" && ` · Régimen ${o.regimen}`}
+                    </div>
                   </div>
+                  {selectedOwnerId === o.id && <div style={{ fontSize: 18, color: T.green }}>✓</div>}
                 </div>
-                {selectedOwnerId === o.id && <div style={{ fontSize: 18, color: T.green }}>✓</div>}
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -359,15 +411,41 @@ function Paso4Eventos({ selectedOwner, onUpdateProfile, onBack, onNext }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // PASO 5 — Resultado + acciones concretas
 // ═══════════════════════════════════════════════════════════════════════════
-function Paso5Resultado({ user, selectedOwner, onBack, onNavigate, onReiniciar }) {
+function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onReiniciar, onSelectOwner, onGotoStep }) {
   const estimacion = useMemo(() => estimarImpuesto(user), [user]);
   const det = useMemo(() => (estimacion?.detalle || []).find((d) => d.name === selectedOwner?.name), [estimacion, selectedOwner]);
 
+  // Siguiente owner pendiente (que aún no esté configurado)
+  const siguienteOwner = useMemo(() => {
+    if (!owners || owners.length <= 1) return null;
+    const idxActual = owners.findIndex((o) => o.id === selectedOwner?.id);
+    // Primero buscá pendientes desde el actual+1 en adelante
+    for (let i = idxActual + 1; i < owners.length; i++) {
+      if (!ownerConfigurado(owners[i])) return owners[i];
+    }
+    // Si no hay, volvé al principio
+    for (let i = 0; i < idxActual; i++) {
+      if (!ownerConfigurado(owners[i])) return owners[i];
+    }
+    return null; // todos configurados
+  }, [owners, selectedOwner]);
+
+  const ownersConfigurados = owners.filter(ownerConfigurado).length;
+  const todosConfigurados = ownersConfigurados === owners.length;
+
+  const optimizacionesActivas = useMemo(() => resumenOptimizaciones(selectedOwner), [selectedOwner]);
+
   if (!det) {
     return (
-      <div style={{ padding: 30, textAlign: "center", background: T.bg3, borderRadius: 10 }}>
-        <div style={{ fontSize: 13, color: T.txt2 }}>
-          No hay suficientes datos para calcular. Volvé al Paso 2 y completá los ingresos.
+      <div>
+        <div style={{ padding: 30, textAlign: "center", background: T.bg3, borderRadius: 10 }}>
+          <div style={{ fontSize: 24, marginBottom: 8 }}>📭</div>
+          <div style={{ fontSize: 13, color: T.txt2, marginBottom: 12 }}>
+            No hay suficientes datos para calcular el impuesto de este propietario. Volvé al Paso 2 y completá los ingresos.
+          </div>
+          <button onClick={() => onGotoStep?.(1)} style={{ padding: "8px 16px", background: T.blue, border: "none", color: "white", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+            ← Volver al Paso 2
+          </button>
         </div>
         <NavButtons currentStep={4} onBack={onBack} />
       </div>
@@ -379,66 +457,77 @@ function Paso5Resultado({ user, selectedOwner, onBack, onNavigate, onReiniciar }
   const ahorro = Math.max(0, impActual - impOpt);
   const impGO = Number(det.impGO || 0);
 
-  // Construcción de acciones concretas
+  // Acciones concretas que construyo contextualmente
   const acciones = [];
-  const fp = selectedOwner?.fiscalProfile || {};
+  const tieneDeclaracion = selectedOwner?.declaraciones && selectedOwner.declaraciones.length > 0;
   if (ahorro > 1_000_000) {
     acciones.push({
       icono: "💸",
-      titulo: `Registrá aportes a PV/AFC para ahorrar hasta ${fm(ahorro)}`,
-      desc: "El motor detectó espacio legal disponible para aportes voluntarios que reducen tu base gravable.",
+      titulo: `Registrá aportes a PV/AFC para capturar tu ahorro`,
+      desc: `El motor detectó espacio legal hasta ${fm(ahorro)}/año. Aportando a PV o AFC en Egresos, activás esa optimización real.`,
       cta: "Ir a Egresos",
       page: "gas",
     });
   }
-  const tieneDeclaracion = selectedOwner?.declaraciones && selectedOwner.declaraciones.length > 0;
   if (!tieneDeclaracion) {
     acciones.push({
       icono: "📤",
       titulo: "Subí tu declaración del año pasado",
-      desc: "Así puedo comparar lo que pagaste el año anterior vs lo que estás pagando hoy.",
-      cta: "Ir a Dashboard",
+      desc: "Así comparamos lo que pagaste el año anterior vs lo que estás proyectando hoy. Se sube con IA en 30 segundos.",
+      cta: "Ir al Dashboard",
       page: "tax-dashboard",
     });
   }
   acciones.push({
     icono: "👨‍💼",
     titulo: "Compartí este reporte con tu contador",
-    desc: "Exportá un PDF con todos los números para revisar en conjunto.",
+    desc: "Exportá un PDF con todos los números para revisar con él antes de declarar.",
     cta: "Exportar PDF",
     page: "tax-dashboard",
   });
 
   return (
     <div>
-      <div style={{ textAlign: "center", marginBottom: 22 }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>🎯</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
+      <div style={{ textAlign: "center", marginBottom: 14 }}>
+        <div style={{ fontSize: 34, marginBottom: 6 }}>🎯</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, marginBottom: 3 }}>
           Tu impuesto estimado para {selectedOwner?.name}
         </div>
-        <div style={{ fontSize: 12, color: T.txt2 }}>
+        <div style={{ fontSize: 11, color: T.txt3 }}>
           Año gravable {new Date().getFullYear()}
         </div>
       </div>
 
-      {/* Grandes números */}
+      {/* Banner de guardado automático */}
+      <div style={{ padding: "10px 14px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ fontSize: 16 }}>💾</div>
+        <div style={{ flex: 1, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+          <strong style={{ color: T.green }}>Tu configuración se guardó automáticamente.</strong>
+          {optimizacionesActivas.length > 0 && ` Activaste ${optimizacionesActivas.length} optimización${optimizacionesActivas.length > 1 ? 'es' : ''} para este propietario.`}
+        </div>
+      </div>
+
+      {/* Números grandes */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 14 }}>
-        <div style={{ padding: 18, background: T.bg3, border: "2px solid " + T.border, borderRadius: 12, textAlign: "center" }}>
+        <div style={{ padding: 16, background: T.bg3, border: "2px solid " + T.border, borderRadius: 12, textAlign: "center" }}>
           <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Sin optimizar</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>{fm(impActual)}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>{fm(impActual)}</div>
           <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${((impActual / det.ingreso) * 100).toFixed(1)}% de tus ingresos` : ""}</div>
         </div>
-        <div style={{ padding: 18, background: "rgba(34,197,94,0.08)", border: "2px solid " + T.green, borderRadius: 12, textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: T.green, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Con optimización</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>{fm(impOpt)}</div>
+        <div style={{ padding: 16, background: "rgba(34,197,94,0.08)", border: "2px solid " + T.green, borderRadius: 12, textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: T.green, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Con optimización máxima</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>{fm(impOpt)}</div>
           <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${((impOpt / det.ingreso) * 100).toFixed(1)}% de tus ingresos` : ""}</div>
         </div>
       </div>
 
       {ahorro > 1_000_000 && (
-        <div style={{ padding: "14px 18px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 10, marginBottom: 14, textAlign: "center" }}>
-          <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>Tu ahorro potencial</div>
+        <div style={{ padding: "12px 16px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 10, marginBottom: 14, textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>Tu ahorro potencial máximo</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>{fm(ahorro)}/año</div>
+          <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.4, maxWidth: 440, margin: "4px auto 0" }}>
+            Este es el techo legal. Para capturarlo necesitás aportar a PV/AFC hasta el tope del 40% de tus ingresos.
+          </div>
         </div>
       )}
 
@@ -446,22 +535,53 @@ function Paso5Resultado({ user, selectedOwner, onBack, onNavigate, onReiniciar }
         <div style={{ padding: "10px 14px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.25)", borderRadius: 10, marginBottom: 14 }}>
           <div style={{ fontSize: 11, color: T.purple, fontWeight: 700, marginBottom: 4 }}>💸 Ganancias ocasionales (cédula separada)</div>
           <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
-            Dentro del impuesto de arriba, hay <strong style={{ color: T.purple }}>{fm(impGO)}</strong> que corresponden a ganancias ocasionales (herencia, venta de inmueble, lotería). Se gravan aparte al 15% / 20%.
+            Dentro del impuesto de arriba, hay <strong style={{ color: T.purple }}>{fm(impGO)}</strong> de ganancias ocasionales (herencia, venta de inmueble, lotería). Tarifa 15% / 20%.
           </div>
+        </div>
+      )}
+
+      {/* Resumen de optimizaciones activas */}
+      {optimizacionesActivas.length > 0 && (
+        <div style={{ marginBottom: 14, padding: "12px 14px", background: T.bg3, borderRadius: 10, border: "1px solid " + T.border }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: T.txt2, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+            <span>✅</span> Optimizaciones aplicadas ({optimizacionesActivas.length})
+            <button onClick={() => onGotoStep?.(2)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 5, padding: "3px 8px", fontSize: 10, cursor: "pointer" }}>
+              Modificar
+            </button>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {optimizacionesActivas.map((it, i) => (
+              <div key={i} style={{ padding: "5px 10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 6, fontSize: 11, color: T.txt2, display: "flex", alignItems: "center", gap: 5 }}>
+                <span>{it.icono}</span>
+                <span>{it.texto}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {optimizacionesActivas.length === 0 && (
+        <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, fontSize: 11, color: T.txt2, display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ fontSize: 16 }}>💡</div>
+          <div style={{ flex: 1, lineHeight: 1.5 }}>
+            No activaste ninguna optimización. Probablemente hay deducciones legales que aplican a tu caso — volvé al Paso 3 o 4 y revisá las preguntas.
+          </div>
+          <button onClick={() => onGotoStep?.(2)} style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + T.orange, color: T.orange, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+            Revisar
+          </button>
         </div>
       )}
 
       {/* Acciones concretas */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
-          ▶️ Tus próximos pasos
+        <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+          ▶️ Próximos pasos recomendados
         </div>
         {acciones.map((a, i) => (
-          <div key={i} style={{ padding: "12px 14px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, marginBottom: 8 }}>
+          <div key={i} style={{ padding: "11px 14px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, marginBottom: 7 }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-              <div style={{ fontSize: 20 }}>{a.icono}</div>
+              <div style={{ fontSize: 18 }}>{a.icono}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, marginBottom: 3 }}>{a.titulo}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.txt, marginBottom: 3 }}>{a.titulo}</div>
                 <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>{a.desc}</div>
               </div>
               <button onClick={() => onNavigate?.(a.page)} style={{ padding: "6px 12px", background: T.blue, border: "none", color: "white", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -472,13 +592,52 @@ function Paso5Resultado({ user, selectedOwner, onBack, onNavigate, onReiniciar }
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 10, justifyContent: "space-between", marginTop: 20, paddingTop: 18, borderTop: "1px solid " + T.border }}>
-        <button onClick={onBack} style={{ padding: "10px 18px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-          ← Atrás
+      {/* CTA principal: siguiente owner o finalizado */}
+      {siguienteOwner ? (
+        <div style={{ padding: "14px 18px", background: "rgba(59,130,246,0.08)", border: "2px solid " + T.blue, borderRadius: 12, marginBottom: 14, display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ fontSize: 28 }}>{siguienteOwner.type === "juridica" ? "🏢" : "🧑"}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Siguiente propietario</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: T.txt }}>{siguienteOwner.name}</div>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+              {ownersConfigurados} de {owners.length} configurados
+            </div>
+          </div>
+          <button
+            onClick={() => { onSelectOwner?.(siguienteOwner.id); onGotoStep?.(1); }}
+            style={{ padding: "10px 18px", background: T.blue, border: "none", color: "white", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}
+          >
+            Calcular para {siguienteOwner.name.split(" ")[0]} →
+          </button>
+        </div>
+      ) : owners.length > 1 && todosConfigurados ? (
+        <div style={{ padding: "14px 18px", background: "rgba(34,197,94,0.08)", border: "2px solid " + T.green, borderRadius: 12, marginBottom: 14, textAlign: "center" }}>
+          <div style={{ fontSize: 22, marginBottom: 4 }}>🎉</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: T.green, marginBottom: 3 }}>¡Listo! Configuraste todos tus propietarios</div>
+          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+            Todos tus {owners.length} propietarios tienen su optimización configurada. Revisá el Dashboard para ver el panorama completo.
+          </div>
+          <button onClick={() => onNavigate?.("tax-dashboard")} style={{ marginTop: 10, padding: "8px 16px", background: T.green, border: "none", color: "#000", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+            Ver Dashboard →
+          </button>
+        </div>
+      ) : null}
+
+      {/* Navegación inferior */}
+      <div style={{ display: "flex", gap: 10, justifyContent: "space-between", marginTop: 20, paddingTop: 18, borderTop: "1px solid " + T.border, flexWrap: "wrap" }}>
+        <button onClick={onBack} style={{ padding: "9px 16px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+          ← Modificar respuestas
         </button>
-        <button onClick={onReiniciar} style={{ padding: "10px 18px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-          Calcular de nuevo ↻
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {owners.length > 1 && (
+            <button onClick={() => onGotoStep?.(0)} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+              Elegir otro propietario
+            </button>
+          )}
+          <button onClick={onReiniciar} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+            Empezar de cero ↻
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -606,9 +765,12 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
           <Paso5Resultado
             user={user}
             selectedOwner={selectedOwner}
+            owners={owners}
             onBack={goBack}
             onNavigate={onNavigate}
             onReiniciar={reiniciar}
+            onSelectOwner={setSelectedOwnerId}
+            onGotoStep={setCurrentStep}
           />
         )}
       </div>
