@@ -468,16 +468,25 @@ function PasoHeader({ owner, titulo, descripcion }) {
   return (
     <div style={{ marginBottom: 22, paddingBottom: 16, borderBottom: "1px solid " + T.border }}>
       {owner && (
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 12, marginBottom: 10 }}>
-          <span style={{ fontSize: 12 }}>{owner.type === "juridica" ? "🏢" : "🧑"}</span>
-          <span style={{ fontSize: 10, fontWeight: 600, color: T.blue, letterSpacing: 0.3 }}>
-            {owner.name}
-          </span>
-          <span style={{ fontSize: 10, color: T.txt3 }}>·</span>
-          <span style={{ fontSize: 10, color: T.txt3 }}>{owner.type === "juridica" ? "Jurídica" : "Natural"}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+            {owner.type === "juridica" ? "🏢" : "🧑"}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 2 }}>
+              Calculando para
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, lineHeight: 1.2, textTransform: "capitalize" }}>
+              {owner.name}
+            </div>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+              {owner.type === "juridica" ? "Persona Jurídica" : "Persona Natural"}
+              {owner.regimen && owner.regimen !== "ordinario" ? ` · Régimen ${owner.regimen}` : ""}
+            </div>
+          </div>
         </div>
       )}
-      <h2 style={F.h1}>{titulo}</h2>
+      <h2 style={{ ...F.h2, color: T.txt2 }}>{titulo}</h2>
       {descripcion && <p style={{ ...F.body, marginTop: 6 }}>{descripcion}</p>}
     </div>
   );
@@ -528,7 +537,7 @@ function Paso4Eventos({ selectedOwner, onUpdateProfile, onBack, onNext }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // PASO 5 — Resultado + acciones concretas
 // ═══════════════════════════════════════════════════════════════════════════
-function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onReiniciar, onSelectOwner, onGotoStep }) {
+function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onReiniciar, onSelectOwner, onGotoStep, onVerResumen }) {
   const estimacion = useMemo(() => estimarImpuesto(user), [user]);
   const det = useMemo(() => (estimacion?.detalle || []).find((d) => d.name === selectedOwner?.name), [estimacion, selectedOwner]);
 
@@ -770,7 +779,12 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
         <button onClick={onBack} style={{ padding: "9px 16px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
           ← Modificar respuestas
         </button>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {owners.length > 1 && onVerResumen && (
+            <button onClick={onVerResumen} style={{ padding: "9px 14px", background: T.bg2, border: "1px solid " + T.blue, color: T.blue, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+              📊 Ver resumen consolidado
+            </button>
+          )}
           {owners.length > 1 && (
             <button onClick={() => onGotoStep?.(0)} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
               Elegir otro propietario
@@ -788,8 +802,173 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// VISTA RESUMEN MULTI-OWNER — Ficha consolidada
+// ─────────────────────────────────────────────────────────────────────────
+// Muestra una tarjeta por cada responsable fiscal con su impuesto calculado,
+// estado de configuración (completo/parcial/sin configurar) y total
+// consolidado al final. Permite entrar a calcular uno específico o empezar
+// uno nuevo.
+// ═══════════════════════════════════════════════════════════════════════════
+function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, onNavigate }) {
+  const estimacion = useMemo(() => estimarImpuesto(user), [user]);
+
+  const resumenPorOwner = useMemo(() => {
+    return owners.map((o) => {
+      const det = (estimacion?.detalle || []).find((d) => d.name === o.name);
+      const configurado = ownerConfigurado(o);
+      const tieneIngresos = (user?.ingresos || []).some((i) => i.owner === o.id && i.sim !== false);
+
+      // Estado: completo (configurado + con ingresos) | parcial (ingresos sin switches) | sin datos
+      let estado = "sin_datos";
+      if (tieneIngresos && configurado) estado = "completo";
+      else if (tieneIngresos) estado = "parcial";
+
+      return {
+        owner: o,
+        det,
+        estado,
+        configurado,
+        tieneIngresos,
+        impActual: Number(det?.impBruto || det?.impuesto || 0),
+        impOpt: Number(det?.impOpt || det?.impOptimizado || 0),
+        ahorro: Math.max(0, Number(det?.impBruto || det?.impuesto || 0) - Number(det?.impOpt || det?.impOptimizado || 0)),
+      };
+    });
+  }, [owners, estimacion, user]);
+
+  const totales = useMemo(() => ({
+    impActual: resumenPorOwner.reduce((s, r) => s + r.impActual, 0),
+    impOpt: resumenPorOwner.reduce((s, r) => s + r.impOpt, 0),
+    ahorro: resumenPorOwner.reduce((s, r) => s + r.ahorro, 0),
+  }), [resumenPorOwner]);
+
+  const cantCompletos = resumenPorOwner.filter((r) => r.estado === "completo").length;
+
+  return (
+    <div>
+      <PasoHeader
+        titulo="Resumen consolidado"
+        descripcion={`Tenés ${owners.length} responsables fiscales. ${cantCompletos} con cálculo completo. Desde acá podés revisar cada uno o agregar uno nuevo.`}
+      />
+
+      {/* Tarjetas por owner */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+        {resumenPorOwner.map(({ owner, det, estado, impActual, impOpt, ahorro }) => {
+          const estadoColor = estado === "completo" ? T.green : estado === "parcial" ? T.orange : T.txt3;
+          const estadoLabel = estado === "completo" ? "Completo" : estado === "parcial" ? "Parcial" : "Sin configurar";
+          const estadoIcono = estado === "completo" ? "✓" : estado === "parcial" ? "○" : "—";
+          return (
+            <div key={owner.id} style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, overflow: "hidden" }}>
+              {/* Header de la tarjeta con owner */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: det ? "1px solid " + T.border : "none" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 9, background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                  {owner.type === "juridica" ? "🏢" : "🧑"}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, textTransform: "capitalize", lineHeight: 1.2 }}>
+                    {owner.name}
+                  </div>
+                  <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>
+                    {owner.type === "juridica" ? "Jurídica" : "Natural"}
+                    {owner.regimen && owner.regimen !== "ordinario" ? ` · ${owner.regimen}` : ""}
+                  </div>
+                </div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", background: `${estadoColor}15`, border: `1px solid ${estadoColor}40`, borderRadius: 10 }}>
+                  <span style={{ fontSize: 10, color: estadoColor, fontWeight: 700 }}>{estadoIcono}</span>
+                  <span style={{ fontSize: 10, color: estadoColor, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>{estadoLabel}</span>
+                </div>
+              </div>
+
+              {/* Números del cálculo */}
+              {det ? (
+                <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Sin optimizar</div>
+                    <div style={{ ...F.mono, fontSize: 13, color: T.red }}>{fm(impActual)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Optimizado</div>
+                    <div style={{ ...F.mono, fontSize: 13, color: T.green }}>{fm(impOpt)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Ahorro</div>
+                    <div style={{ ...F.mono, fontSize: 13, color: ahorro > 0 ? T.green : T.txt3 }}>{ahorro > 0 ? "+" + fm(ahorro) : "—"}</div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: "10px 16px 12px", fontSize: 11, color: T.txt3, fontStyle: "italic" }}>
+                  {estado === "sin_datos" ? "Sin ingresos registrados para este responsable" : "Sin cálculo disponible"}
+                </div>
+              )}
+
+              {/* Acción */}
+              <div style={{ padding: "10px 16px", borderTop: "1px solid " + T.border, display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                <button onClick={() => onSelectOwner(owner.id)} style={{ padding: "6px 14px", background: estado === "completo" ? T.bg2 : T.blue, color: estado === "completo" ? T.txt2 : "#fff", border: estado === "completo" ? "1px solid " + T.border : "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  {estado === "completo" ? "Revisar" : estado === "parcial" ? "Completar cálculo →" : "Empezar cálculo →"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Totales consolidados */}
+      {cantCompletos > 0 && (
+        <div style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: 16, marginBottom: 18 }}>
+          <div style={{ fontSize: 10, color: T.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+            Total consolidado ({cantCompletos} de {owners.length} responsables)
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>Sin optimizar</div>
+              <div style={{ ...F.mono, fontSize: 16, color: T.red }}>{fm(totales.impActual)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>Con optimización</div>
+              <div style={{ ...F.mono, fontSize: 16, color: T.green }}>{fm(totales.impOpt)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>Ahorro potencial</div>
+              <div style={{ ...F.mono, fontSize: 16, color: totales.ahorro > 0 ? T.green : T.txt3 }}>{totales.ahorro > 0 ? "+" + fm(totales.ahorro) : "—"}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Acciones al pie */}
+      <div style={{ display: "flex", gap: 10, justifyContent: "space-between", flexWrap: "wrap", paddingTop: 16, borderTop: "1px solid " + T.border }}>
+        <button onClick={onNuevoCalculo} style={{ padding: "10px 18px", background: "transparent", border: "1px dashed " + T.border, color: T.txt2, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+          + Calcular otro responsable
+        </button>
+        <button onClick={() => onNavigate?.("tax-dashboard")} style={{ padding: "10px 18px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+          Ir al Dashboard de declaraciones →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate }) {
   const owners = useMemo(() => (user?.owners || []), [user]);
+
+  // Commit 9.4: Vista activa — "resumen" (multi-owner) o "wizard" (flujo por owner)
+  // Default: si hay multi-owner Y al menos uno configurado, entrar por resumen.
+  // Si solo hay 1 owner, siempre entrar al wizard directo.
+  // Persiste en localStorage para que no reaparezca la vista resumen cada vez.
+  const [vistaActiva, setVistaActiva] = useState(() => {
+    try {
+      const saved = localStorage.getItem("fp3_calc_vista");
+      if (saved === "resumen" || saved === "wizard") return saved;
+    } catch {}
+    // Default inteligente: resumen si multi-owner con al menos 1 configurado
+    const ows = user?.owners || [];
+    const algunoConfigurado = ows.some(ownerConfigurado);
+    return (ows.length > 1 && algunoConfigurado) ? "resumen" : "wizard";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("fp3_calc_vista", vistaActiva); } catch {}
+  }, [vistaActiva]);
 
   // Modo: wizard (default) o classic (vista todo a la vez)
   const [modo, setModo] = useState(() => {
@@ -850,6 +1029,42 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
   }
 
   // Modo wizard (default)
+  // Si está en vista resumen y hay multi-owner, mostrar resumen consolidado
+  if (vistaActiva === "resumen" && owners.length > 1) {
+    return (
+      <div style={{ maxWidth: 920, margin: "0 auto", padding: "20px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <h1 style={F.h1}>Calculadora de impuestos</h1>
+            <p style={{ ...F.caption, marginTop: 4 }}>
+              Resumen de {owners.length} responsables fiscales
+            </p>
+          </div>
+          <button onClick={() => setModo("classic")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
+            Ver todo a la vez ↗
+          </button>
+        </div>
+
+        <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, padding: 24 }}>
+          <VistaResumenMultiOwner
+            user={user}
+            owners={owners}
+            onSelectOwner={(ownerId) => {
+              setSelectedOwnerId(ownerId);
+              setCurrentStep(1); // ir directo a Paso 2 (tus datos) ya que el owner está elegido
+              setVistaActiva("wizard");
+            }}
+            onNuevoCalculo={() => {
+              setCurrentStep(0); // ir al Paso 1 (selector)
+              setVistaActiva("wizard");
+            }}
+            onNavigate={onNavigate}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: 920, margin: "0 auto", padding: "20px 16px" }}>
       {/* Header con toggle modo */}
@@ -860,6 +1075,11 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
             Paso {currentStep + 1} de {STEPS.length} — {STEPS[currentStep].titulo}
           </p>
         </div>
+        {owners.length > 1 && (
+          <button onClick={() => setVistaActiva("resumen")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+            ← Ver resumen
+          </button>
+        )}
         <button onClick={() => setModo("classic")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
           Ver todo a la vez ↗
         </button>
@@ -921,6 +1141,7 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
             onReiniciar={reiniciar}
             onSelectOwner={setSelectedOwnerId}
             onGotoStep={setCurrentStep}
+            onVerResumen={owners.length > 1 ? () => setVistaActiva("resumen") : null}
           />
         )}
       </div>
