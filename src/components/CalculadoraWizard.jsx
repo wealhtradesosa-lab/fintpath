@@ -743,36 +743,46 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
         ))}
       </div>
 
-      {/* CTA principal: siguiente owner o finalizado */}
-      {siguienteOwner ? (
-        <div style={{ padding: "14px 18px", background: "rgba(59,130,246,0.08)", border: "2px solid " + T.blue, borderRadius: 12, marginBottom: 14, display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ fontSize: 28 }}>{siguienteOwner.type === "juridica" ? "🏢" : "🧑"}</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Siguiente propietario</div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: T.txt }}>{siguienteOwner.name}</div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-              {ownersConfigurados} de {owners.length} configurados
+      {/* CTA principal: volver a las fichas. Siguiente owner queda como opción secundaria.
+          Bug fixado en 9.5: antes el wizard empujaba automaticamente al siguiente owner
+          y el usuario quedaba en loop sin poder salir. */}
+      {owners.length > 1 && (
+        <div style={{ padding: "14px 18px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 12, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
+                {todosConfigurados ? "🎉 Configuraste todos tus propietarios" : `Este propietario ya está configurado (${ownersConfigurados} de ${owners.length} listos)`}
+              </div>
+              <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+                {todosConfigurados
+                  ? "Volvé a las fichas para ver el resumen consolidado."
+                  : siguienteOwner
+                    ? `Podés volver a las fichas o configurar directamente a ${siguienteOwner.name}.`
+                    : "Volvé a las fichas para ver el panorama."}
+              </div>
             </div>
+            <button
+              onClick={onVerResumen}
+              style={{ padding: "10px 18px", background: T.green, border: "none", color: "#000", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}
+            >
+              ← Volver a mis fichas
+            </button>
           </div>
-          <button
-            onClick={() => { onSelectOwner?.(siguienteOwner.id); onGotoStep?.(1); }}
-            style={{ padding: "10px 18px", background: T.blue, border: "none", color: "white", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}
-          >
-            Calcular para {siguienteOwner.name.split(" ")[0]} →
-          </button>
+          {siguienteOwner && !todosConfigurados && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed " + T.border, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 11, color: T.txt3, flex: 1, minWidth: 200 }}>
+                O si preferís configurar ahora: <strong style={{ color: T.txt2 }}>{siguienteOwner.name}</strong> ({siguienteOwner.type === "juridica" ? "Jurídica" : "Natural"})
+              </div>
+              <button
+                onClick={() => { onSelectOwner?.(siguienteOwner.id); onGotoStep?.(1); }}
+                style={{ padding: "7px 14px", background: "transparent", border: "1px solid " + T.blue, color: T.blue, borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}
+              >
+                Configurar {siguienteOwner.name.split(" ")[0]} →
+              </button>
+            </div>
+          )}
         </div>
-      ) : owners.length > 1 && todosConfigurados ? (
-        <div style={{ padding: "14px 18px", background: "rgba(34,197,94,0.08)", border: "2px solid " + T.green, borderRadius: 12, marginBottom: 14, textAlign: "center" }}>
-          <div style={{ fontSize: 22, marginBottom: 4 }}>🎉</div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: T.green, marginBottom: 3 }}>¡Listo! Configuraste todos tus propietarios</div>
-          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
-            Todos tus {owners.length} propietarios tienen su optimización configurada. Revisá el Dashboard para ver el panorama completo.
-          </div>
-          <button onClick={() => onNavigate?.("tax-dashboard")} style={{ marginTop: 10, padding: "8px 16px", background: T.green, border: "none", color: "#000", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
-            Ver Dashboard →
-          </button>
-        </div>
-      ) : null}
+      )}
 
       {/* Navegación inferior */}
       <div style={{ display: "flex", gap: 10, justifyContent: "space-between", marginTop: 20, paddingTop: 18, borderTop: "1px solid " + T.border, flexWrap: "wrap" }}>
@@ -780,9 +790,9 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
           ← Modificar respuestas
         </button>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {owners.length > 1 && onVerResumen && (
+          {onVerResumen && (
             <button onClick={onVerResumen} style={{ padding: "9px 14px", background: T.bg2, border: "1px solid " + T.blue, color: T.blue, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              📊 Ver resumen consolidado
+              ← Volver a mis fichas
             </button>
           )}
           {owners.length > 1 && (
@@ -844,12 +854,16 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
   }), [resumenPorOwner]);
 
   const cantCompletos = resumenPorOwner.filter((r) => r.estado === "completo").length;
+  const titulo = owners.length === 1 ? "Tu responsable fiscal" : "Tus responsables fiscales";
+  const descripcion = owners.length === 1
+    ? "Esta es tu ficha fiscal. Revisá los números y editá cuando cambie tu situación."
+    : `${owners.length} responsables fiscales. ${cantCompletos} con cálculo completo. Desde acá podés revisar cada uno o agregar uno nuevo.`;
 
   return (
     <div>
       <PasoHeader
-        titulo="Resumen consolidado"
-        descripcion={`Tenés ${owners.length} responsables fiscales. ${cantCompletos} con cálculo completo. Desde acá podés revisar cada uno o agregar uno nuevo.`}
+        titulo={titulo}
+        descripcion={descripcion}
       />
 
       {/* Tarjetas por owner */}
@@ -952,19 +966,17 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
 export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate }) {
   const owners = useMemo(() => (user?.owners || []), [user]);
 
-  // Commit 9.4: Vista activa — "resumen" (multi-owner) o "wizard" (flujo por owner)
-  // Default: si hay multi-owner Y al menos uno configurado, entrar por resumen.
-  // Si solo hay 1 owner, siempre entrar al wizard directo.
-  // Persiste en localStorage para que no reaparezca la vista resumen cada vez.
+  // Commit 9.5 (Parte B): VistaResumen es el default ABSOLUTO.
+  // - Incluso con 1 owner: ve su tarjeta con "Empezar cálculo →".
+  // - Wizard solo se activa desde "Editar ficha" o "+ Agregar responsable".
+  // - Al terminar el wizard (Paso 5 → "Guardar y volver"), vuelve al resumen.
   const [vistaActiva, setVistaActiva] = useState(() => {
     try {
       const saved = localStorage.getItem("fp3_calc_vista");
       if (saved === "resumen" || saved === "wizard") return saved;
     } catch {}
-    // Default inteligente: resumen si multi-owner con al menos 1 configurado
-    const ows = user?.owners || [];
-    const algunoConfigurado = ows.some(ownerConfigurado);
-    return (ows.length > 1 && algunoConfigurado) ? "resumen" : "wizard";
+    // Default: siempre resumen.
+    return "resumen";
   });
   useEffect(() => {
     try { localStorage.setItem("fp3_calc_vista", vistaActiva); } catch {}
@@ -1029,15 +1041,15 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
   }
 
   // Modo wizard (default)
-  // Si está en vista resumen y hay multi-owner, mostrar resumen consolidado
-  if (vistaActiva === "resumen" && owners.length > 1) {
+  // Si está en vista resumen, mostrar VistaResumenMultiOwner (funciona con 1 o más owners).
+  if (vistaActiva === "resumen") {
     return (
       <div style={{ maxWidth: 920, margin: "0 auto", padding: "20px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 200 }}>
             <h1 style={F.h1}>Calculadora de impuestos</h1>
             <p style={{ ...F.caption, marginTop: 4 }}>
-              Resumen de {owners.length} responsables fiscales
+              {owners.length === 1 ? "Tu ficha fiscal" : `${owners.length} responsables fiscales`}
             </p>
           </div>
           <button onClick={() => setModo("classic")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
@@ -1075,13 +1087,8 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
             Paso {currentStep + 1} de {STEPS.length} — {STEPS[currentStep].titulo}
           </p>
         </div>
-        {owners.length > 1 && (
-          <button onClick={() => setVistaActiva("resumen")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-            ← Ver resumen
-          </button>
-        )}
-        <button onClick={() => setModo("classic")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
-          Ver todo a la vez ↗
+        <button onClick={() => setVistaActiva("resumen")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+          ← Volver a mis fichas
         </button>
       </div>
 
@@ -1141,7 +1148,7 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
             onReiniciar={reiniciar}
             onSelectOwner={setSelectedOwnerId}
             onGotoStep={setCurrentStep}
-            onVerResumen={owners.length > 1 ? () => setVistaActiva("resumen") : null}
+            onVerResumen={() => setVistaActiva("resumen")}
           />
         )}
       </div>
