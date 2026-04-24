@@ -73,7 +73,7 @@ const Section = ({ title, icon, color, children }) => (
   </div>
 );
 
-export default function ImportDeclaracionAnterior({ owner, onSave, onCancel }) {
+export default function ImportDeclaracionAnterior({ owner, onSave, onSaveAndBootstrap, onCancel }) {
   const tipo = owner?.type === "juridica" ? "F110" : "F210";
   // Array-based: todas las declaraciones guardadas de este owner.
   // Si solo existe el legacy owner.declaracionAnterior (sin array), se convierte.
@@ -119,6 +119,64 @@ export default function ImportDeclaracionAnterior({ owner, onSave, onCancel }) {
       total_historial_despues: historial.length + (historial.some(d => d.anoGravable === anoGravable) ? 0 : 1),
     });
     if (onSave) onSave(declaracion);
+  };
+
+  // Punto de partida: además de guardar la declaración anterior, genera
+  // items iniciales en los módulos del año en curso para que el usuario
+  // no empiece en blanco. El usuario puede ajustarlos después.
+  const handleSaveAndBootstrap = () => {
+    const declaracion = {
+      tipo,
+      anoGravable,
+      uvtDelAno,
+      renglones: rg,
+      capturadoEn: new Date().toISOString(),
+    };
+    // Construir items iniciales a partir de los renglones
+    const bootstrap = { ingresos: [] };
+    const mkId = () => "ba_" + Math.random().toString(36).slice(2, 10);
+
+    if (tipo === "F210") {
+      // Persona natural
+      if (+rg.salarios > 0) {
+        bootstrap.ingresos.push({ id: mkId(), categoria: "Salario", concepto: "Salario (del año " + anoGravable + ")", mensual: Math.round(+rg.salarios / 12), owner: owner?.id, moneda: "COP" });
+      }
+      if (+rg.honorarios > 0) {
+        bootstrap.ingresos.push({ id: mkId(), categoria: "Honorarios", concepto: "Honorarios (del año " + anoGravable + ")", mensual: Math.round(+rg.honorarios / 12), owner: owner?.id, moneda: "COP" });
+      }
+      if (+rg.arrendamientos > 0) {
+        bootstrap.ingresos.push({ id: mkId(), categoria: "Arriendo", concepto: "Arriendo (del año " + anoGravable + ")", mensual: Math.round(+rg.arrendamientos / 12), owner: owner?.id, moneda: "COP" });
+      }
+      if (+rg.intereses > 0) {
+        bootstrap.ingresos.push({ id: mkId(), categoria: "Rendimiento", concepto: "Intereses (del año " + anoGravable + ")", mensual: Math.round(+rg.intereses / 12), owner: owner?.id, moneda: "COP" });
+      }
+      if (+rg.dividendos > 0) {
+        bootstrap.ingresos.push({ id: mkId(), categoria: "Dividendos", concepto: "Dividendos (del año " + anoGravable + ")", mensual: Math.round(+rg.dividendos / 12), owner: owner?.id, moneda: "COP" });
+      }
+      if (+rg.pensiones > 0) {
+        bootstrap.ingresos.push({ id: mkId(), categoria: "Pensión", concepto: "Pensión (del año " + anoGravable + ")", mensual: Math.round(+rg.pensiones / 12), owner: owner?.id, moneda: "COP" });
+      }
+    } else {
+      // Persona jurídica
+      if (+rg.ingresosOperacionales > 0) {
+        bootstrap.ingresos.push({ id: mkId(), categoria: "Negocio", concepto: "Ingresos operacionales (del año " + anoGravable + ")", mensual: Math.round(+rg.ingresosOperacionales / 12), owner: owner?.id, moneda: "COP" });
+      }
+      if (+rg.ingresosNoOperacionales > 0) {
+        bootstrap.ingresos.push({ id: mkId(), categoria: "Otro", concepto: "Ingresos no operacionales (del año " + anoGravable + ")", mensual: Math.round(+rg.ingresosNoOperacionales / 12), owner: owner?.id, moneda: "COP" });
+      }
+      if (+rg.dividendos > 0) {
+        bootstrap.ingresos.push({ id: mkId(), categoria: "Dividendos", concepto: "Dividendos (del año " + anoGravable + ")", mensual: Math.round(+rg.dividendos / 12), owner: owner?.id, moneda: "COP" });
+      }
+    }
+
+    track("declaracion_anterior_bootstrap", {
+      tipo,
+      ano_gravable: anoGravable,
+      items_generados: bootstrap.ingresos.length,
+    });
+
+    if (onSaveAndBootstrap) onSaveAndBootstrap(declaracion, bootstrap);
+    else if (onSave) onSave(declaracion);
   };
 
   const isJuridica = tipo === "F110";
@@ -265,13 +323,22 @@ export default function ImportDeclaracionAnterior({ owner, onSave, onCancel }) {
         </>
       )}
 
-      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+      <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
         <button onClick={onCancel} style={{ padding: "12px 20px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, color: T.txt2, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
           Cancelar
         </button>
-        <button onClick={handleSave} style={{ flex: 1, padding: "12px 20px", background: T.green, border: "none", borderRadius: 8, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
+        <button onClick={handleSave} style={{ flex: 1, minWidth: 180, padding: "12px 20px", background: T.green, border: "none", borderRadius: 8, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
           💾 Guardar declaración del {anoGravable}
         </button>
+        {onSaveAndBootstrap && (
+          <button onClick={handleSaveAndBootstrap} style={{ flex: 1, minWidth: 200, padding: "12px 20px", background: T.cyan, border: "none", borderRadius: 8, color: "#000", cursor: "pointer", fontSize: 13, fontWeight: 700 }} title="Guarda la declaración Y pre-carga los ingresos como punto de partida para el año en curso">
+            🚀 Guardar y usar como punto de partida
+          </button>
+        )}
+      </div>
+
+      <div style={{ marginTop: 12, padding: 10, background: "rgba(6,182,212,0.04)", border: "1px solid rgba(6,182,212,0.15)", borderRadius: 8, fontSize: 10, color: T.txt2, lineHeight: 1.6 }}>
+        <strong style={{ color: T.cyan }}>💡 ¿Qué hace "Punto de partida"?</strong> Pre-carga los ingresos (salarios, arriendos, honorarios, dividendos...) como items en el módulo Ingresos — divididos por 12 para quedar como "mensual promedio". Después podés editarlos uno por uno con los valores reales del año en curso. Te ahorra empezar en blanco.
       </div>
 
       <div style={{ marginTop: 20, padding: 12, background: T.bg3, borderRadius: 10, fontSize: 10, color: T.txt3, textAlign: "center", lineHeight: 1.6 }}>

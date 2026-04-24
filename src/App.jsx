@@ -1735,23 +1735,34 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       if(importForOwnerId){
         const impOwner=(u?.owners||[]).find(o=>o.id===importForOwnerId);
         if(impOwner){
+          const saveDecl=(declaracion)=>{
+            const nw=(u.owners||[]).map(o=>{
+              if(o.id!==importForOwnerId)return o;
+              const existing=o.declaracionesAnteriores||(o.declaracionAnterior?[o.declaracionAnterior]:[]);
+              const filtered=existing.filter(d=>d.anoGravable!==declaracion.anoGravable);
+              const nueva=[...filtered,declaracion].sort((a,b)=>parseInt(b.anoGravable||0)-parseInt(a.anoGravable||0));
+              return {...o,declaracionesAnteriores:nueva,declaracionAnterior:nueva[0]};
+            });
+            return nw;
+          };
           return gated("tax","Pro",<ImportDeclaracionAnterior
             owner={impOwner}
             onCancel={()=>setImportForOwnerId(null)}
             onSave={(declaracion)=>{
-              const nw=(u.owners||[]).map(o=>{
-                if(o.id!==importForOwnerId)return o;
-                // Migración silenciosa: si existe declaracionAnterior legacy pero no el array,
-                // inicializar el array con esa declaración para no perder el histórico previo.
-                const existing=o.declaracionesAnteriores||(o.declaracionAnterior?[o.declaracionAnterior]:[]);
-                // Reemplazar por año (si ya existe uno con ese anoGravable) o agregar.
-                const filtered=existing.filter(d=>d.anoGravable!==declaracion.anoGravable);
-                const nueva=[...filtered,declaracion].sort((a,b)=>parseInt(b.anoGravable||0)-parseInt(a.anoGravable||0));
-                return {...o,declaracionesAnteriores:nueva,declaracionAnterior:nueva[0]};
-              });
-              setU({...u,owners:nw});
+              setU({...u,owners:saveDecl(declaracion)});
               setImportForOwnerId(null);
               showToast(`✅ Declaración ${declaracion.anoGravable} importada para ${impOwner.name}`);
+            }}
+            onSaveAndBootstrap={(declaracion,bootstrap)=>{
+              // Guardar declaración Y agregar los items de ingresos pre-cargados
+              const newOwners=saveDecl(declaracion);
+              // Dedupe: no agregar items que ya existen para este owner con la misma categoría
+              const existingCats=new Set((u.ingresos||[]).filter(i=>i.owner===importForOwnerId).map(i=>i.categoria));
+              const nuevosIngresos=bootstrap.ingresos.filter(i=>!existingCats.has(i.categoria));
+              const mergedIngresos=[...(u.ingresos||[]),...nuevosIngresos];
+              setU({...u,owners:newOwners,ingresos:mergedIngresos});
+              setImportForOwnerId(null);
+              showToast(`🚀 Declaración importada y ${nuevosIngresos.length} ingresos pre-cargados como punto de partida`);
             }}
           />);
         }
