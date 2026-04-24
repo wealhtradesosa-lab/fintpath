@@ -13,6 +13,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
+import { generarRecomendaciones } from "../lib/recomendaciones.js";
+import RecomendacionesFiscales from "./RecomendacionesFiscales";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -101,6 +103,12 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
     if (!warnings) return [];
     return warnings.filter((w) => !w.itemId || w.itemId === selectedOwnerId);
   }, [warnings, selectedOwnerId]);
+
+  // Commit 6: recomendaciones con números concretos
+  const todasLasRecomendaciones = useMemo(() => {
+    if (!u || !estimacion) return [];
+    return generarRecomendaciones(u, estimacion);
+  }, [u, estimacion]);
 
   // Derivar KPIs actuales desde el motor
   const patrimonioLiquidoActual = useMemo(() => {
@@ -281,6 +289,13 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           </div>
         )}
       </div>
+
+      {/* Bloque 4 (Commit 6): Recomendaciones con números concretos */}
+      <RecomendacionesFiscales
+        recomendaciones={todasLasRecomendaciones}
+        ownerId={selectedOwnerId}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }
