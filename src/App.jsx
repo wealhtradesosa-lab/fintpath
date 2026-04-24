@@ -1996,9 +1996,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       const nats=(u?.owners||[]).filter(o=>o.type==="natural");
       return gated("tax","Pro",<div>
         <div style={{display:"flex",gap:8,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
-          <button onClick={()=>setTaxTab("dashboard")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?T.bl:T.border),background:taxTab==="dashboard"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="dashboard"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>🏛️ Dashboard</button>
           <button onClick={()=>setTaxTab("rapido")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?T.bl:T.border),background:taxTab==="rapido"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="rapido"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>📊 Calculadora de impuestos</button>
-          <button onClick={()=>setTaxTab("completa")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="completa"?T.bl:T.border),background:taxTab==="completa"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="completa"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>📋 Declaración completa</button>
+          <button onClick={()=>setTaxTab("dashboard")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?T.bl:T.border),background:taxTab==="dashboard"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="dashboard"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>🏛️ Dashboard declaraciones</button>
           <div style={{flex:1}}/>
           <button onClick={()=>setShowAyuda(true)} style={{padding:"10px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer"}} title="Guía de uso del sistema de declaración">❓ ¿Cómo uso esto?</button>
         </div>
@@ -2008,8 +2007,29 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           estimacion={estimarImpuesto(u)}
           warnings={getFiscalWarnings(u)}
           onNavigate={setPg}
-          onGoToUpload={()=>setTaxTab("completa")}
+          onSaveDeclaracion={(ownerId,declaracion)=>{
+            // Commit 5.5 FIFO: mismo handler que el tab completa viejo, ahora
+            // consumido desde dentro del Dashboard via componente DeclaracionUpload inline.
+            const owners=(u&&u.owners||[]).map(o=>{
+              if(o.id!==ownerId)return o;
+              const actuales=Array.isArray(o.declaraciones)?[...o.declaraciones]:[];
+              const anoNuevo=Number(declaracion.anoGravable)||0;
+              const idxMismoAno=actuales.findIndex(d=>Number(d?.anoGravable)===anoNuevo);
+              if(idxMismoAno>=0){actuales[idxMismoAno]=declaracion}else{actuales.push(declaracion)}
+              actuales.sort((a,b)=>(Number(b?.anoGravable)||0)-(Number(a?.anoGravable)||0));
+              return{...o,declaraciones:actuales.slice(0,3)};
+            });
+            upd("owners",owners);
+            const ow=owners.find(o=>o.id===ownerId);
+            const n=ow?.declaraciones?.length||0;
+            showToast("✅ Declaración guardada en "+(ow?.name||"owner")+" ("+n+"/3 años)");
+          }}
+          isPro={plan==="pro"||plan==="advisor_pro"}
+          onUpsell={()=>setPg("price")}
         />}
+        {(taxTab!=="dashboard"&&taxTab!=="rapido")&&<div>{/* Fallback para usuarios con taxTab viejo (ej: 'completa' eliminado) */}
+          <CalculadoraImpuestos user={u} trm={(u&&u.trm)||4200} onNavigate={setPg} onUserUpdate={setU}/>
+        </div>}
         {taxTab==="rapido"&&<div>
           <CalculadoraImpuestos user={u} trm={(u&&u.trm)||4200} onNavigate={setPg} onUserUpdate={setU}/>
           <details style={{maxWidth:1100,margin:"20px auto",padding:"0 16px"}}>
@@ -2021,34 +2041,6 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             </div>
           </details>
         </div>}
-        {taxTab==="completa"&&<DeclaracionUpload
-          owners={(u&&u.owners)||[]}
-          isPro={plan==="pro"||plan==="advisor_pro"}
-          onUpsell={()=>setPg("price")}
-          onSaveToOwner={(ownerId,declaracion)=>{
-            // Commit 5.5: FIFO con límite 3. Si el año ya existe, reemplaza ese entry.
-            // Si no existe y el array tiene 3, descarta el más viejo (último del array
-            // ya que vienen ordenados descendente por año).
-            const owners=(u&&u.owners||[]).map(o=>{
-              if(o.id!==ownerId)return o;
-              const actuales=Array.isArray(o.declaraciones)?[...o.declaraciones]:[];
-              const anoNuevo=Number(declaracion.anoGravable)||0;
-              const idxMismoAno=actuales.findIndex(d=>Number(d?.anoGravable)===anoNuevo);
-              if(idxMismoAno>=0){
-                actuales[idxMismoAno]=declaracion;
-              }else{
-                actuales.push(declaracion);
-              }
-              actuales.sort((a,b)=>(Number(b?.anoGravable)||0)-(Number(a?.anoGravable)||0));
-              const recortadas=actuales.slice(0,3);
-              return{...o,declaraciones:recortadas};
-            });
-            upd("owners",owners);
-            const ow=owners.find(o=>o.id===ownerId);
-            const n=ow?.declaraciones?.length||0;
-            showToast("✅ Declaración guardada en "+(ow?.name||"owner")+" ("+n+"/3 años)");
-          }}
-        />}
       </div>);
     }
     case"aportes":return <AportesCalculadora fmt={fm}/>;

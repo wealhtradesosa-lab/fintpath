@@ -18,6 +18,7 @@ import { useState, useMemo } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import RecomendacionesFiscales from "./RecomendacionesFiscales";
 import ReporteFiscalPrint from "./ReporteFiscalPrint";
+import DeclaracionUpload from "./DeclaracionUpload";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -88,12 +89,14 @@ function DiffRow({ label, actual, declarado, fmt = fm }) {
   );
 }
 
-export default function DashboardFiscal({ u, owners, estimacion, warnings, onNavigate, onGoToUpload }) {
+export default function DashboardFiscal({ u, owners, estimacion, warnings, onNavigate, onSaveDeclaracion, isPro, onUpsell, onGoToUpload }) {
   const [selectedOwnerId, setSelectedOwnerId] = useState(owners[0]?.id || "");
   // Commit 5.5: año seleccionado dentro del owner (null = la más reciente)
   const [selectedAno, setSelectedAno] = useState(null);
   // Commit 7: modo imprimible
   const [printMode, setPrintMode] = useState(false);
+  // Commit 8.3: upload colapsable dentro del dashboard
+  const [showUpload, setShowUpload] = useState(false);
 
   const selectedOwner = useMemo(() => owners.find((o) => o.id === selectedOwnerId), [owners, selectedOwnerId]);
 
@@ -197,9 +200,9 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
       {/* Header + selector de owner */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: T.txt }}>🏛️ Dashboard Fiscal</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.txt }}>🏛️ Dashboard declaraciones</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
-            Comparación año actual (simulado) vs año declarado, y alertas accionables.
+            Histórico de lo declarado, comparación con tu situación actual, y alertas accionables.
           </div>
         </div>
         <select
@@ -213,6 +216,14 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
             </option>
           ))}
         </select>
+        {/* Commit 8.3: toggle de upload */}
+        <button
+          onClick={() => setShowUpload((s) => !s)}
+          title="Subir o cargar una declaración"
+          style={{ background: showUpload ? T.orange : T.green, border: "none", color: showUpload ? "#000" : "#000", padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+        >
+          {showUpload ? "✕ Cerrar upload" : "📤 Subir declaración"}
+        </button>
         {/* Commit 7: export PDF */}
         <button
           onClick={() => setPrintMode(true)}
@@ -222,6 +233,25 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           📄 Exportar PDF
         </button>
       </div>
+
+      {/* Commit 8.3: upload inline cuando toggle está abierto */}
+      {showUpload && onSaveDeclaracion && (
+        <div style={{ background: T.bg2, border: "2px solid " + T.green, borderRadius: 12, padding: 16, marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>📤 Subir declaración (PDF)</div>
+            <button onClick={() => setShowUpload(false)} style={{ background: "transparent", border: "1px solid " + T.border, color: T.txt3, padding: "4px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Cerrar</button>
+          </div>
+          <DeclaracionUpload
+            owners={owners}
+            isPro={isPro}
+            onUpsell={onUpsell}
+            onSaveToOwner={(ownerId, declaracion) => {
+              onSaveDeclaracion(ownerId, declaracion);
+              setShowUpload(false);
+            }}
+          />
+        </div>
+      )}
 
       {/* Banner de estado de declaración */}
       {tieneDeclaracion ? (
@@ -252,7 +282,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5, marginBottom: 10 }}>
             Subí la declaración {selectedOwner?.type === "juridica" ? "F-110" : "F-210"} de {selectedOwner?.name} para ver comparaciones año-a-año y detectar deducciones perdidas automáticamente.
           </div>
-          <button onClick={onGoToUpload} style={{ padding: "8px 14px", background: T.blue, border: "none", borderRadius: 8, color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={() => { if (onGoToUpload) { onGoToUpload(); } else { setShowUpload(true); } }} style={{ padding: "8px 14px", background: T.blue, border: "none", borderRadius: 8, color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             Subir declaración →
           </button>
         </div>
