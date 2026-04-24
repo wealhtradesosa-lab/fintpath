@@ -161,6 +161,90 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         </div>
       )}
 
+      {/* Banner diagnóstico para jurídicas con impuesto alto: detecta
+          condiciones típicas de data incompleta. Guardas estrictas para
+          no romper si calc/inv/deu llegan en un estado inesperado. */}
+      {(() => {
+        try {
+          if (!isJ) return null;
+          if (!calc || typeof calc !== "object") return null;
+          const ingAnual = Number(calc.ingAnual) || 0;
+          if (ingAnual < 10_000_000) return null;
+
+          const diagnos = [];
+          const pctGastos = Number(calc.pctGastos) || 0;
+          if (pctGastos < 15) {
+            diagnos.push({
+              msg: `Gastos registrados: ${pctGastos.toFixed(0)}% de ingresos (típico operativo: 40–70%).`,
+              accion: "Registrá gastos como nómina, honorarios, mantenimiento, predial, servicios públicos en el módulo Gastos.",
+            });
+          }
+
+          const deprec = Number(calc.deprec) || 0;
+          const invArr = Array.isArray(inv) ? inv : [];
+          if (deprec === 0 && owner?.id) {
+            const tieneInmuebles = invArr.some(i => {
+              if (!i || i.owner !== owner.id) return false;
+              const tp = String(i.tp || i.tipo || "").toLowerCase();
+              return /real estate|bodega|local|oficina|apto|apartamento|casa|inmueble/i.test(tp);
+            });
+            if (tieneInmuebles) {
+              diagnos.push({
+                msg: "No hay depreciación aplicada aunque hay inmuebles registrados.",
+                accion: "La depreciación del 2.22%/año sobre inmuebles (vida útil 45 años) se aplica automáticamente si los activos están vinculados al owner. Verificá el campo owner del inmueble.",
+              });
+            }
+          }
+
+          const intereses = Number(calc.intereses) || 0;
+          const deuArr = Array.isArray(deu) ? deu : [];
+          if (intereses === 0 && owner?.id) {
+            const tieneDeudas = deuArr.some(d => d && d.owner === owner.id && (Number(d.mt) || 0) > 0);
+            if (tieneDeudas) {
+              diagnos.push({
+                msg: "Hay deudas pero los intereses no aparecen como deducción.",
+                accion: "Verificá que las deudas tengan tasa de interés configurada. Intereses = saldo × tasa anual.",
+              });
+            }
+          }
+
+          const descuentosSolicitados = Number(calc.descuentosSolicitados) || 0;
+          const r = (owner && owner.declaracionAnterior && owner.declaracionAnterior.renglones) || {};
+          const hubo = (Number(r.descICA) || 0) + (Number(r.descDonaciones) || 0) + (Number(r.descCree) || 0) + (Number(r.descCTI) || 0);
+          if (hubo > 1_000_000 && descuentosSolicitados < hubo * 0.3) {
+            diagnos.push({
+              msg: `Año anterior usaste ~${fm(hubo)} en descuentos tributarios y ahora apenas ${fm(descuentosSolicitados)}.`,
+              accion: `Tocá el botón '⭐ Descuentos' en la tarjeta de ${owner?.name || "este owner"} para capturar ICA, donaciones, CT&I. Son directo del impuesto, no de la base.`,
+            });
+          }
+
+          if (diagnos.length === 0) return null;
+
+          return (
+            <div style={{ padding: "12px 20px", borderBottom: "1px solid " + T.border, background: "rgba(245,158,11,0.06)" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.orange, marginBottom: 6 }}>
+                💡 ¿Por qué este impuesto parece alto?
+              </div>
+              <div style={{ fontSize: 11, color: T.txt2, marginBottom: 8, lineHeight: 1.5 }}>
+                El motor calcula impuesto con la data registrada. Detectamos lo siguiente que puede estar haciéndolo más alto de lo real:
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {diagnos.map((d, i) => (
+                  <div key={i} style={{ padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 6, borderLeft: "2px solid " + T.orange, fontSize: 11, lineHeight: 1.5 }}>
+                    <div style={{ color: T.txt, fontWeight: 600 }}>{d.msg}</div>
+                    <div style={{ color: T.txt3, marginTop: 2, fontSize: 10 }}>→ {d.accion}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        } catch (e) {
+          // Si algo falla en el diagnóstico, no rompemos toda la UI
+          if (typeof window !== "undefined" && window.console) window.console.warn("[banner-diagnostico] error:", e);
+          return null;
+        }
+      })()}
+
       {/* KPIs: Actual vs Estrategia */}
       <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr auto 1fr", gap: 0 }}>
         {/* Sin Estrategia */}
@@ -307,6 +391,45 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           <div style={{ fontSize: 11, fontWeight: 700, color: T.green, textTransform: "uppercase", marginBottom: 12 }}>🎯 Con Estrategia</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>{fm(impOptimo)}<span style={{ fontSize: 12, fontWeight: 400, color: T.txt3 }}>/año</span></div>
           <div style={{ fontSize: 13, color: T.txt3 }}>{fm(impOptimo / 12)}/mes • Tasa: {(tasaOptima || 0).toFixed(1)}%</div>
+
+          {/* Diagnóstico cuando no hay diferencia entre actual y optimizado */}
+          {(() => {
+            try {
+              const actual = Number(impActual) || 0;
+              const optimo = Number(impOptimo) || 0;
+              const dif = Math.abs(actual - optimo);
+              if (dif > 100_000) return null; // Hay diferencia real, no mostrar
+
+              let titulo, texto;
+              if (isJ) {
+                titulo = "Sin optimización automática (persona jurídica)";
+                texto = "Las optimizaciones jurídicas (depreciación acelerada, distribución de dividendos, descuento ICA, CT&I) requieren decisiones estratégicas que no se automatizan. Para reducir el impuesto, capturá los descuentos tributarios reales con el botón ⭐ Descuentos en la tarjeta de " + (owner?.name || "este owner") + ".";
+              } else if (calc?.regimen === "simple") {
+                titulo = "Régimen Simple (RST) no admite optimización";
+                texto = "El régimen Simple tributa sobre ingresos brutos con tarifa fija (1,4%–8,3% según grupo de actividad). No admite deducciones de cédula general ni aportes voluntarios como reductores de base.";
+              } else if (actual < 100_000) {
+                titulo = "No hay impuesto a optimizar";
+                texto = "Con la renta líquida gravable actual estás por debajo del mínimo gravable o en el primer rango de la tabla Art. 241 ET (sin impuesto). No hay nada que reducir.";
+              } else if ((Number(calc?.neto) || 0) < 1_000_000) {
+                titulo = "Sin ingresos laborales para aplicar PV/AFC";
+                texto = "La optimización automática sugiere aportes a pensión voluntaria + AFC hasta llenar el tope 40%. Estos aportes solo reducen la cédula laboral (salario + honorarios). Como tus ingresos son de capital/arrendamientos/dividendos, no hay base donde aplicar la estrategia.";
+              } else {
+                titulo = "Ya aprovechás el máximo legal de deducciones";
+                texto = "Entre tus aportes obligatorios, exenta 25%, dependientes, intereses de vivienda, salud prepagada y pensión voluntaria ya capturada, llenaste el tope 40% / 1340 UVT (Art. 336 ET). No hay espacio adicional de optimización automática. Si querés reducir más, mirá las recomendaciones estratégicas abajo.";
+              }
+
+              return (
+                <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 8, fontSize: 11, lineHeight: 1.55 }}>
+                  <div style={{ color: "#a78bfa", fontWeight: 700, marginBottom: 4 }}>💡 ¿Por qué no hay diferencia?</div>
+                  <div style={{ color: T.txt2, fontWeight: 600, marginBottom: 4 }}>{titulo}</div>
+                  <div style={{ color: T.txt3, fontSize: 10 }}>{texto}</div>
+                </div>
+              );
+            } catch (e) {
+              if (typeof window !== "undefined" && window.console) window.console.warn("[diagnostico-optimo] error:", e);
+              return null;
+            }
+          })()}
 
           <div style={{ marginTop: 16, fontSize: 11 }}>
             <div style={{ fontWeight: 600, color: T.txt2, marginBottom: 6 }}>Deducciones automáticas aplicadas:</div>
