@@ -27,6 +27,18 @@ export function track(event, payload = {}) {
       window.console.info("[finpathia-analytics]", event, payload);
     }
 
+    // Guardar últimos 50 eventos en localStorage para dashboard interno
+    // (ver Dashboard de observabilidad en el menú admin). Falla silenciosa
+    // si localStorage está bloqueado.
+    try {
+      const KEY = "finpathia_analytics_recent";
+      const raw = window.localStorage.getItem(KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      arr.unshift({ event, payload, ts: Date.now() });
+      const truncated = arr.slice(0, 50);
+      window.localStorage.setItem(KEY, JSON.stringify(truncated));
+    } catch { /* noop */ }
+
     // GA4 via gtag directo (sin GTM) — la forma nativa de enviar eventos
     // Santiago tiene configurado gtag con G-51CV6PWRLT en index.html,
     // por lo que los eventos emitidos acá aparecen en GA4 → Reports → Events.
@@ -52,4 +64,23 @@ export function track(event, payload = {}) {
     // Analytics nunca debe romper la experiencia principal
     if (window.console) window.console.warn("[finpathia-analytics] track failed:", e);
   }
+}
+
+// Helper para leer los eventos recientes del buffer local (dashboard interno)
+export function getRecentEvents() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem("finpathia_analytics_recent");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Helper para limpiar el buffer (útil después de exportar o debug)
+export function clearRecentEvents() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem("finpathia_analytics_recent");
+  } catch { /* noop */ }
 }

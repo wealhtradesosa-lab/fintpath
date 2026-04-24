@@ -2,6 +2,7 @@ import LandingPage from "./components/LandingPage";
 import LandingAsesores from "./components/LandingAsesores";
 import AdvisorWorkspace from "./components/AdvisorWorkspace";
 import AcceptInvite from "./components/AcceptInvite";
+import DashboardObservabilidad from "./components/DashboardObservabilidad";
 import IngresosModule from "./components/IngresosModule";
 
 // Build tag: sprint-2c-context-switch-2026-04-22
@@ -463,6 +464,16 @@ export default function FinPath(){
 
   // ═══ INVITE ROUTE ═══
   // URL /invite/:token → renderizar AcceptInvite independiente de sesión
+  // Debug observabilidad: ?debug=1 en la URL abre el dashboard de analytics
+  {
+    if(typeof window!=="undefined"){
+      const search=window.location.search||"";
+      if(search.includes("debug=1")){
+        return<DashboardObservabilidad onClose={()=>{window.history.pushState({},'',window.location.pathname);window.location.reload()}}/>;
+      }
+    }
+  }
+
   // El componente maneja validación, signup/login, y vinculación al asesor.
   {
     const pathname=typeof window!=="undefined"?window.location.pathname:"";
