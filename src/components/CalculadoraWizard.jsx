@@ -334,21 +334,21 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
             ⚠️ Datos que te podrían faltar ({dataGaps.length})
           </div>
           {dataGaps.map((g, i) => (
-            <div key={i} style={{ padding: "10px 12px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.2)", borderLeft: "3px solid " + T.orange, borderRadius: 8, marginBottom: 6 }}>
+            <div key={i} style={{ padding: "12px 14px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.2)", borderLeft: "3px solid " + T.orange, borderRadius: 8, marginBottom: 8 }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                <div style={{ fontSize: 16 }}>{g.icono}</div>
+                <div style={{ fontSize: 18 }}>{g.icono}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: T.txt }}>{g.titulo}</div>
                   <div style={{ fontSize: 11, color: T.txt2, marginTop: 3, lineHeight: 1.5 }}>{g.desc}</div>
                 </div>
-                <button onClick={() => onNavigate?.(g.page)} style={{ padding: "5px 10px", background: "transparent", border: "1px solid " + T.orange, color: T.orange, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  Completar →
+                <button onClick={() => onNavigate?.(g.page)} style={{ padding: "8px 14px", background: T.orange, border: "none", color: "#000", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  Completar ahora →
                 </button>
               </div>
             </div>
           ))}
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 8, fontStyle: "italic", lineHeight: 1.5 }}>
-            Podés completar estos datos ahora o seguir adelante. El cálculo será más preciso si los cargás primero.
+            💡 Tu progreso se guarda automáticamente. Podés completar ahora y volver acá, o seguir con el cálculo aproximado y volver después.
           </div>
         </div>
       )}
@@ -460,6 +460,13 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
   // Acciones concretas que construyo contextualmente
   const acciones = [];
   const tieneDeclaracion = selectedOwner?.declaraciones && selectedOwner.declaraciones.length > 0;
+
+  // Detectar si el owner YA tiene aportes tributarios (PV/AFC/prepagada) en Egresos
+  const aportesOwner = Object.values(user?.gas || {}).flat().filter(
+    (g) => g.owner === selectedOwner?.id && g.cat === "Aporte tributario"
+  );
+  const tieneAporteTributario = aportesOwner.length > 0 && aportesOwner.some((a) => (a.m || 0) > 0);
+
   if (ahorro > 1_000_000) {
     acciones.push({
       icono: "💸",
@@ -467,8 +474,23 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
       desc: `El motor detectó espacio legal hasta ${fm(ahorro)}/año. Aportando a PV o AFC en Egresos, activás esa optimización real.`,
       cta: "Ir a Egresos",
       page: "gas",
+      prioridad: "alta",
+    });
+  } else if (!tieneAporteTributario && det.ingreso > 30_000_000) {
+    // Caso: no tiene aportes tributarios registrados Y tiene ingresos relevantes.
+    // Mostrar la oportunidad aunque el ahorro calculado actual sea bajo —
+    // a menudo es bajo precisamente porque no tiene aportes que el motor
+    // pueda optimizar.
+    acciones.push({
+      icono: "🎯",
+      titulo: "Oportunidad: no tenés aportes tributarios registrados",
+      desc: "Pensión Voluntaria (PV) y AFC son las 2 palancas más potentes para bajar tu impuesto legalmente. Podés aportar hasta 30% de tus ingresos con tope 3.800 UVT/año. Registrá tu primer aporte en Egresos.",
+      cta: "Ir a Egresos",
+      page: "gas",
+      prioridad: "alta",
     });
   }
+
   if (!tieneDeclaracion) {
     acciones.push({
       icono: "📤",
@@ -476,14 +498,17 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
       desc: "Así comparamos lo que pagaste el año anterior vs lo que estás proyectando hoy. Se sube con IA en 30 segundos.",
       cta: "Ir al Dashboard",
       page: "tax-dashboard",
+      prioridad: "media",
     });
   }
+
   acciones.push({
     icono: "👨‍💼",
     titulo: "Compartí este reporte con tu contador",
     desc: "Exportá un PDF con todos los números para revisar con él antes de declarar.",
     cta: "Exportar PDF",
     page: "tax-dashboard",
+    prioridad: "baja",
   });
 
   return (
@@ -725,6 +750,16 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
 
       {/* Stepper */}
       <Stepper currentStep={currentStep} onGotoStep={setCurrentStep} />
+
+      {/* Navegación rápida a módulos para cargar/editar datos sin perder progreso */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap", padding: "10px 12px", background: T.bg3, border: "1px dashed " + T.border, borderRadius: 8 }}>
+        <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600, marginRight: 4 }}>📌 ¿Te falta cargar algo?</div>
+        <button onClick={() => onNavigate?.("ing")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>💼 Ingresos</button>
+        <button onClick={() => onNavigate?.("gas")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>💸 Egresos / Aportes</button>
+        <button onClick={() => onNavigate?.("deu")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>💳 Deudas</button>
+        <div style={{ flex: 1 }}/>
+        <div style={{ fontSize: 10, color: T.txt3, fontStyle: "italic" }}>Volvés acá y seguís donde estabas</div>
+      </div>
 
       {/* Contenido del paso activo */}
       <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, padding: 20 }}>
