@@ -117,7 +117,7 @@ const FAQ = [
           <li><strong>⚠️ Warnings</strong> — posibles pérdidas de dinero (ej: descuentos no capturados vs año pasado).</li>
           <li><strong>ℹ️ Info</strong> — el sistema infirió una clasificación, confirmá o editá (ej: "asumí que este arriendo es de inmueble").</li>
         </ul>
-        <p style={{ marginTop: 8 }}>Cada alerta tiene botones "✓ Aprobar" (confirma la clasificación sugerida) y "✏️ {Módulo}" (llevarte al lugar donde editar). Los warnings que se repiten (ej: 3 arriendos iguales) se agrupan en una sola fila con detalle expandible.</p>
+        <p style={{ marginTop: 8 }}>Cada alerta tiene botones "✓ Aprobar" (confirma la clasificación sugerida) y "✏️ [Módulo]" (llevarte al lugar donde editar). Los warnings que se repiten (ej: 3 arriendos iguales) se agrupan en una sola fila con detalle expandible.</p>
       </>
     ),
   },

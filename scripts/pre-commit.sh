@@ -21,6 +21,7 @@ set -e
 CHANGED=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
 TOUCHES_ENGINE=$(echo "$CHANGED" | grep -E '^(src/lib/(taxCO|fiscalCodes|normalize|ownerPlanAdapter|tablaArt241|alertasCore)\.js|src/components/Formulario(110|210)\.jsx|scripts/(verify_tax|verify_normalize|verify_adapter|verify_wizard_parity|verify_flujo_declaracion|snapshot_tax)\.mjs|tests/snapshots/)' || true)
 TOUCHES_AUDIT=$(echo "$CHANGED" | grep -E '^(src/|audit\.py|package\.json)' || true)
+TOUCHES_UI=$(echo "$CHANGED" | grep -E '^(src/(App|main)\.jsx|src/components/.+\.jsx)' || true)
 
 echo ""
 echo "🔍 FINPATHIA pre-commit checks..."
@@ -62,6 +63,29 @@ if [ -n "$TOUCHES_ENGINE" ]; then
     exit 1
   }
   tail -2 /tmp/fp_snap.log | head -1
+fi
+
+if [ -n "$TOUCHES_UI" ] && [ -d "node_modules/playwright" ]; then
+  echo "  → test_page_load.mjs (Playwright UI test)"
+  # Build + servir + probar con headless browser. CRÍTICO: atrapa
+  # errores de runtime que rompen el arranque (como ReferenceError en JSX)
+  # que no detectan los tests del motor ni el build.
+  npm run build > /tmp/fp_build.log 2>&1 || { cat /tmp/fp_build.log; echo "❌ build falló"; exit 1; }
+  pkill -f "python3 -m http.server 4173" 2>/dev/null || true
+  sleep 1
+  (cd dist && setsid python3 -m http.server 4173 </dev/null >/tmp/fp_srv.log 2>&1 &)
+  sleep 3
+  node scripts/test_page_load.mjs http://localhost:4173/ > /tmp/fp_load.log 2>&1
+  LOAD_RC=$?
+  pkill -f "python3 -m http.server 4173" 2>/dev/null || true
+  if [ $LOAD_RC -ne 0 ]; then
+    cat /tmp/fp_load.log
+    echo ""
+    echo "❌ test_page_load falló — la página no carga o tira errores de runtime."
+    echo "   Revisá el output de arriba para identificar la causa."
+    exit 1
+  fi
+  grep -E "PAGE ERRORS|✅ ninguno|body:" /tmp/fp_load.log | head -3
 fi
 
 echo "✅ OK — commit permitido"
