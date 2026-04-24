@@ -157,7 +157,17 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   };
   const handleSave = () => {
     const isSalario = form.categoria === "Salario";
-    const item = { ...form, mensual: Number(form.mensual) || 0, capital: Number(form.capital) || 0, tasa: Number(form.tasa) || 0 };
+    // Fix: derivar mensual desde capital × tasa si mensual quedó en 0 pero hay capital y tasa.
+    // Cubre el caso donde el usuario edita un ingreso, actualiza la tasa, pero los
+    // onChange encadenados no recalcularon mensual por race condition o porque mensual
+    // estaba vacío al cargar. Net de seguridad final antes de persistir.
+    let mensualFinal = Number(form.mensual) || 0;
+    const capitalFinal = Number(form.capital) || 0;
+    const tasaFinal = Number(form.tasa) || 0;
+    if (mensualFinal === 0 && capitalFinal > 0 && tasaFinal > 0) {
+      mensualFinal = Math.round((capitalFinal * tasaFinal / 100) / 12);
+    }
+    const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal };
     // Commit 1.5: persistir aportes obligatorios en shape anidado, sólo para Salario
     if (isSalario) {
       item.aportes = {
@@ -424,17 +434,29 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       const cap = Number(v) || 0;
                       const m = Number(form.mensual) || 0;
                       const tas = Number(form.tasa) || 0;
-                      if (cap > 0 && tas > 0) nf.mensual = String(Math.round((cap * tas / 100) / 12));
-                      else if (cap > 0 && m > 0) nf.tasa = String(Math.round((m * 12 / cap) * 1000) / 10);
+                      // Fix: si hay tasa, SIEMPRE recalcular mensual al cambiar capital.
+                      // Sin tasa pero con mensual, derivar tasa.
+                      if (cap > 0 && tas > 0) {
+                        nf.mensual = String(Math.round((cap * tas / 100) / 12));
+                      } else if (cap > 0 && m > 0 && tas === 0) {
+                        nf.tasa = String(Math.round((m * 12 / cap) * 1000) / 10);
+                      }
                       setForm(p => ({ ...p, ...nf }));
                     }} type="number" placeholder="Valor del activo" />
                     <In l="📈 % Rentabilidad anual" value={form.tasa} onChange={(v) => {
+                      // Fix: si hay capital, SIEMPRE recalcular mensual (la tasa es la fuente
+                      // de verdad cuando cambia). Sin capital pero con mensual, derivar capital.
                       const nf = { tasa: v };
                       const tas = Number(v) || 0;
                       const cap = Number(form.capital) || 0;
                       const m = Number(form.mensual) || 0;
-                      if (tas > 0 && cap > 0) nf.mensual = String(Math.round((cap * tas / 100) / 12));
-                      else if (tas > 0 && m > 0) nf.capital = String(Math.round((m * 12) / (tas / 100)));
+                      if (tas > 0 && cap > 0) {
+                        nf.mensual = String(Math.round((cap * tas / 100) / 12));
+                      } else if (tas > 0 && m > 0 && cap === 0) {
+                        nf.capital = String(Math.round((m * 12) / (tas / 100)));
+                      } else if (tas === 0) {
+                        // Si limpia la tasa, dejar mensual y capital como estaban (no pisar).
+                      }
                       setForm(p => ({ ...p, ...nf }));
                     }} type="number" placeholder="Ej: 24" />
                   </div>

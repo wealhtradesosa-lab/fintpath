@@ -25,7 +25,14 @@ function simulateHandleEdit(item) {
 
 function simulateHandleSave(form) {
   const isSalario = form.categoria === "Salario";
-  const item = { ...form, mensual: Number(form.mensual) || 0 };
+  // Fix bug rendimiento: derivar mensual si quedó en 0 con capital + tasa
+  let mensualFinal = Number(form.mensual) || 0;
+  const capitalFinal = Number(form.capital) || 0;
+  const tasaFinal = Number(form.tasa) || 0;
+  if (mensualFinal === 0 && capitalFinal > 0 && tasaFinal > 0) {
+    mensualFinal = Math.round((capitalFinal * tasaFinal / 100) / 12);
+  }
+  const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal };
   if (isSalario) {
     item.aportes = {
       pension: Number(form.aportePension) || 0,
@@ -126,7 +133,42 @@ test("cálculo de salario gravable: bruto − aportes", () => {
   assertEq(gravable, 9_200_000);
 });
 
-// ───────── Run ─────────
+test("FIX bug rendimiento: handleSave deriva mensual si quedó en 0 con capital+tasa", () => {
+  // Reproduce el bug reportado: edito un ingreso, pongo %, pero mensual queda en 0.
+  // El handler de guardar debe derivarlo como red de seguridad.
+  const form = {
+    nombre: "CDT Bancolombia",
+    categoria: "Rendimientos",
+    mensual: "",          // ← quedó vacío, no se recalculó
+    capital: "10000000",
+    tasa: "15",
+  };
+  const item = simulateHandleSave(form);
+  // Esperado: 10_000_000 * 15 / 100 / 12 = 125_000
+  assertEq(item.mensual, 125000, "handleSave debe derivar mensual = capital×tasa/100/12");
+});
+
+test("FIX bug rendimiento: mensual=0 numérico también se deriva", () => {
+  const form = { nombre: "CDT", categoria: "Rendimientos", mensual: 0, capital: "5000000", tasa: "10" };
+  const item = simulateHandleSave(form);
+  assertEq(item.mensual, 41667, "5M×10%/100/12 redondeado");
+});
+
+test("FIX bug rendimiento: si ya hay mensual cargado, NO lo pisa", () => {
+  const form = { nombre: "CDT", categoria: "Rendimientos", mensual: 200000, capital: "10000000", tasa: "15" };
+  const item = simulateHandleSave(form);
+  // Esperado: respetar el mensual del usuario (200k), no pisar con el cálculo (125k)
+  assertEq(item.mensual, 200000, "no pisa mensual existente");
+});
+
+test("FIX bug rendimiento: sin capital o sin tasa, no inventa mensual", () => {
+  const form1 = { nombre: "x", categoria: "Salario", mensual: 0, capital: "10000000", tasa: "" };
+  assertEq(simulateHandleSave(form1).mensual, 0, "sin tasa, mensual queda 0");
+  const form2 = { nombre: "x", categoria: "Salario", mensual: 0, capital: "", tasa: "15" };
+  assertEq(simulateHandleSave(form2).mensual, 0, "sin capital, mensual queda 0");
+});
+
+
 let ok = 0, fail = 0;
 for (const t of tests) {
   try { t.fn(); console.log(`  ✅ ${t.name}`); ok++; }
