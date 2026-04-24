@@ -19,9 +19,6 @@ import InversionesModule from "./components/InversionesModule";
 import DeudasModule from "./components/DeudasModule";
 import PensionesColpensiones from "./components/PensionesColpensiones";
 import SimuladorTributario from "./components/SimuladorTributario";
-import Formulario110 from "./components/Formulario110";
-import Formulario210 from "./components/Formulario210";
-import ImportDeclaracionAnterior from "./components/ImportDeclaracionAnterior";
 import CsvImport from "./components/CsvImport";
 import MetasModule from "./components/MetasModule";
 import PensionColombia from "./components/PensionColombia";
@@ -169,7 +166,7 @@ const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div sty
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 export default function FinPath(){
-  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("rapido");const[f110OwnerId,setF110OwnerId]=useState(null);const[f210OwnerId,setF210OwnerId]=useState(null);const[importForOwnerId,setImportForOwnerId]=useState(null);const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);
+  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("rapido");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);
   // ═══ ADVISOR MODE STATE ═══
   // isAdvisor: true si el usuario loggeado existe en la tabla `advisors`
   // advisorProfile: datos del asesor (plan, max_clients, firm_name, etc.)
@@ -1815,75 +1812,6 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"pen":return isUS?<RetirementModuleUS user={u}/>:gated("pen","Básico",<PensionesColpensiones trm={(u&&u.trm)||4200}/>);
     case"tax":{
       if(isUS)return<TaxPlanningUS user={u} fmt={fm}/>;
-      // Si está editando Formulario 110 de un owner específico, mostrar wizard
-      if(f110OwnerId){
-        const f110Owner=(u?.owners||[]).find(o=>o.id===f110OwnerId);
-        if(f110Owner){
-          return gated("tax","Pro",<Formulario110
-            owner={f110Owner}
-            onCancel={()=>setF110OwnerId(null)}
-            onSave={(formData)=>{
-              const nw=(u.owners||[]).map(o=>o.id===f110OwnerId?{...o,formulario110:formData}:o);
-              setU({...u,owners:nw});
-              setF110OwnerId(null);
-              showToast("✅ Declaración guardada para "+f110Owner.name);
-            }}
-          />);
-        }
-      }
-      // Si está editando Formulario 210 de un owner natural específico
-      if(f210OwnerId){
-        const f210Owner=(u?.owners||[]).find(o=>o.id===f210OwnerId);
-        if(f210Owner){
-          return gated("tax","Pro",<Formulario210
-            owner={f210Owner}
-            user={u}
-            onCancel={()=>setF210OwnerId(null)}
-            onSave={(formData)=>{
-              const nw=(u.owners||[]).map(o=>o.id===f210OwnerId?{...o,formulario210:formData}:o);
-              setU({...u,owners:nw});
-              setF210OwnerId(null);
-              showToast("✅ Declaración guardada para "+f210Owner.name);
-            }}
-          />);
-        }
-      }
-      // Si está importando declaración del año anterior
-      if(importForOwnerId){
-        const impOwner=(u?.owners||[]).find(o=>o.id===importForOwnerId);
-        if(impOwner){
-          const saveDecl=(declaracion)=>{
-            const nw=(u.owners||[]).map(o=>{
-              if(o.id!==importForOwnerId)return o;
-              const existing=o.declaracionesAnteriores||(o.declaracionAnterior?[o.declaracionAnterior]:[]);
-              const filtered=existing.filter(d=>d.anoGravable!==declaracion.anoGravable);
-              const nueva=[...filtered,declaracion].sort((a,b)=>parseInt(b.anoGravable||0)-parseInt(a.anoGravable||0));
-              return {...o,declaracionesAnteriores:nueva,declaracionAnterior:nueva[0]};
-            });
-            return nw;
-          };
-          return gated("tax","Pro",<ImportDeclaracionAnterior
-            owner={impOwner}
-            onCancel={()=>setImportForOwnerId(null)}
-            onSave={(declaracion)=>{
-              setU({...u,owners:saveDecl(declaracion)});
-              setImportForOwnerId(null);
-              showToast(`✅ Declaración ${declaracion.anoGravable} importada para ${impOwner.name}`);
-            }}
-            onSaveAndBootstrap={(declaracion,bootstrap)=>{
-              // Guardar declaración Y agregar los items de ingresos pre-cargados
-              const newOwners=saveDecl(declaracion);
-              // Dedupe: no agregar items que ya existen para este owner con la misma categoría
-              const existingCats=new Set((u.ingresos||[]).filter(i=>i.owner===importForOwnerId).map(i=>i.categoria));
-              const nuevosIngresos=bootstrap.ingresos.filter(i=>!existingCats.has(i.categoria));
-              const mergedIngresos=[...(u.ingresos||[]),...nuevosIngresos];
-              setU({...u,owners:newOwners,ingresos:mergedIngresos});
-              setImportForOwnerId(null);
-              showToast(`🚀 Declaración importada y ${nuevosIngresos.length} ingresos pre-cargados como punto de partida`);
-            }}
-          />);
-        }
-      }
       if(descuentosOwnerId){
         const descOwner=(u?.owners||[]).find(o=>o.id===descuentosOwnerId);
         if(descOwner&&descOwner.type==="juridica"){
@@ -1928,97 +1856,23 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <button onClick={()=>setShowAyuda(true)} style={{padding:"10px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer"}} title="Guía de uso del sistema de declaración">❓ ¿Cómo uso esto?</button>
         </div>
         {taxTab==="rapido"&&<SimuladorTributario trm={(u&&u.trm)||4200} user={u} onNavigate={setPg} onUpdate={setU}/>}
-        {taxTab==="completa"&&<div style={{maxWidth:900,margin:"0 auto",padding:"16px"}}>
-          <div style={{marginBottom:20,padding:"18px 22px",background:"linear-gradient(135deg, rgba(59,130,246,0.08), rgba(167,139,250,0.08))",borderRadius:14,border:"1px solid "+T.border}}>
-            <div style={{fontSize:18,fontWeight:800,marginBottom:8}}>📋 Declaración completa · Formularios DIAN</div>
-            <div style={{fontSize:12,color:T.tx3,lineHeight:1.6}}>
-              Wizards guiados que replican la estructura real de los formularios DIAN — renglón por renglón — para calcular tu impuesto con la misma precisión que tu contador.
-              <br/><br/>
-              <strong>Formulario 110</strong> para personas jurídicas (SAS, Ltda, SA). <strong>Formulario 210</strong> para personas naturales residentes fiscales.
-              <br/><br/>
-              Los datos se guardan <strong>por owner</strong> y son independientes del simulador rápido. Al terminar, el resultado es el mismo que verías en tu declaración oficial.
+        {taxTab==="completa"&&<div style={{maxWidth:700,margin:"0 auto",padding:"16px"}}>
+          <Cd s={{padding:"40px 32px",textAlign:"center"}}>
+            <div style={{fontSize:42,marginBottom:16}}>🔨</div>
+            <div style={{fontSize:18,fontWeight:700,marginBottom:10}}>Módulo Fiscal en renovación</div>
+            <div style={{fontSize:13,color:T.tx2,lineHeight:1.7,marginBottom:20,maxWidth:500,marginLeft:"auto",marginRight:"auto"}}>
+              Estamos reconstruyendo esta sección para que aporte valor real:<br/>
+              <br/>
+              <strong style={{color:T.gn}}>✓ Upload de PDF</strong> — subí tu declaración oficial DIAN y la IA extrae los datos automáticamente<br/>
+              <strong style={{color:T.gn}}>✓ Historial de 3+ años</strong> — patrimonio, ingresos, impuesto y tasa efectiva en una sola vista<br/>
+              <strong style={{color:T.gn}}>✓ Alertas de divergencia</strong> — detecta desajustes entre lo declarado y tu situación actual<br/>
+              <strong style={{color:T.gn}}>✓ Recomendaciones con números</strong> — optimizaciones concretas o mensaje honesto si no hay margen<br/>
+              <strong style={{color:T.gn}}>✓ Export PDF</strong> — informe listo para tu contador
             </div>
-          </div>
-          {jurs.length===0&&nats.length===0?
-            <Cd s={{padding:40,textAlign:"center"}}>
-              <div style={{fontSize:40,marginBottom:12}}>📋</div>
-              <div style={{fontSize:14,fontWeight:600,marginBottom:8}}>No tenés propietarios registrados</div>
-              <div style={{fontSize:12,color:T.tx3,marginBottom:16,lineHeight:1.5}}>Para usar los wizards de declaración, primero registrá las personas (naturales o jurídicas) en <strong>Configuración → Planeación Tributaria</strong>.</div>
-              <button onClick={()=>setPg("set")} style={{padding:"10px 16px",background:T.bl,border:"none",borderRadius:8,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Ir a Configuración</button>
-            </Cd>
-            :
-            <div style={{display:"flex",flexDirection:"column",gap:16}}>
-              {nats.length>0&&<div>
-                <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:8,letterSpacing:0.3}}>👤 PERSONAS NATURALES · Formulario 210</div>
-                <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  {nats.map(ow=>{
-                    const hasF210=!!ow.formulario210&&Object.keys(ow.formulario210).length>0;
-                    const anoG=ow.formulario210?.identificacion?.anoGravable;
-                    return<Cd key={ow.id} s={{padding:16}}>
-                      <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-                        <span style={{fontSize:24}}>👤</span>
-                        <div style={{flex:1,minWidth:180}}>
-                          <div style={{fontSize:15,fontWeight:700}}>{ow.name}</div>
-                          <div style={{fontSize:11,color:T.tx3,marginTop:2}}>
-                            {ow.regimen==="simple"?"Régimen Simple (RST)":"Régimen Ordinario · Cédula General"}
-                            {hasF210&&<span style={{color:T.gn,marginLeft:8}}>· ✅ Declaración guardada{anoG?` (${anoG})`:""}</span>}
-                            {ow.declaracionAnterior?.anoGravable&&<span style={{color:T.cyan||T.bl,marginLeft:8}}>· 📥 {(ow.declaracionesAnteriores?.length||0)>1?`${ow.declaracionesAnteriores.length} años de histórico (último: ${ow.declaracionAnterior.anoGravable})`:`Año anterior (${ow.declaracionAnterior.anoGravable}) importado`}</span>}
-                          </div>
-                        </div>
-                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                          <button onClick={()=>setImportForOwnerId(ow.id)} style={{padding:"10px 12px",background:"transparent",border:"1px solid "+T.border,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:11,fontWeight:600}}>
-                            {ow.declaracionAnterior?"✏️ Editar año anterior":"📥 Importar año anterior"}
-                          </button>
-                          <button onClick={()=>setAportesOwnerId(ow.id)} style={{padding:"10px 12px",background:"transparent",border:"1px solid "+T.border,borderRadius:8,color:T.cy||T.tx2,cursor:"pointer",fontSize:11,fontWeight:600}} title="Overrides de aportes a seguridad social">
-                            🏥 Aportes{ow.aportes&&Object.values(ow.aportes).some(v=>typeof v==="number"&&v>0)?" ✓":""}
-                          </button>
-                          <button onClick={()=>setF210OwnerId(ow.id)} style={{padding:"10px 16px",background:hasF210?T.bg3:T.gn,border:"1px solid "+(hasF210?T.border:T.gn),borderRadius:8,color:hasF210?T.gn:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
-                            {hasF210?"✏️ Editar declaración":"📄 Completar F-210"}
-                          </button>
-                        </div>
-                      </div>
-                    </Cd>;
-                  })}
-                </div>
-              </div>}
-              {jurs.length>0&&<div>
-                <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:8,letterSpacing:0.3}}>🏢 PERSONAS JURÍDICAS · Formulario 110</div>
-                <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  {jurs.map(ow=>{
-                    const hasF110=!!ow.formulario110&&Object.keys(ow.formulario110).length>0;
-                    const anoG=ow.formulario110?.identificacion?.anoGravable;
-                    return<Cd key={ow.id} s={{padding:16}}>
-                      <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-                        <span style={{fontSize:24}}>🏢</span>
-                        <div style={{flex:1,minWidth:180}}>
-                          <div style={{fontSize:15,fontWeight:700}}>{ow.name}</div>
-                          <div style={{fontSize:11,color:T.tx3,marginTop:2}}>
-                            {ow.regimen==="ordinario"?"Régimen Ordinario (35%)":
-                             ow.regimen==="simple"?"Régimen Simple (RST)":
-                             ow.regimen==="zona_franca"?"Zona Franca (20%)":
-                             ow.regimen==="chc"?"CHC":ow.regimen||"Ordinario"}
-                            {hasF110&&<span style={{color:T.gn,marginLeft:8}}>· ✅ Declaración guardada{anoG?` (${anoG})`:""}</span>}
-                            {ow.declaracionAnterior?.anoGravable&&<span style={{color:T.cyan||T.bl,marginLeft:8}}>· 📥 {(ow.declaracionesAnteriores?.length||0)>1?`${ow.declaracionesAnteriores.length} años de histórico (último: ${ow.declaracionAnterior.anoGravable})`:`Año anterior (${ow.declaracionAnterior.anoGravable}) importado`}</span>}
-                          </div>
-                        </div>
-                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                          <button onClick={()=>setImportForOwnerId(ow.id)} style={{padding:"10px 12px",background:"transparent",border:"1px solid "+T.border,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:11,fontWeight:600}}>
-                            {ow.declaracionAnterior?"✏️ Editar año anterior":"📥 Importar año anterior"}
-                          </button>
-                          <button onClick={()=>setDescuentosOwnerId(ow.id)} style={{padding:"10px 12px",background:"transparent",border:"1px solid "+T.border,borderRadius:8,color:T.or||T.tx2,cursor:"pointer",fontSize:11,fontWeight:600}} title="Descuentos tributarios (CTI, ICA, donaciones, etc)">
-                            ⭐ Descuentos{ow.descuentosTributarios&&Object.values(ow.descuentosTributarios).some(v=>+v>0)?" ✓":""}
-                          </button>
-                          <button onClick={()=>setF110OwnerId(ow.id)} style={{padding:"10px 16px",background:hasF110?T.bg3:T.bl,border:"1px solid "+(hasF110?T.border:T.bl),borderRadius:8,color:hasF110?T.bl:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
-                            {hasF110?"✏️ Editar declaración":"📋 Completar F-110"}
-                          </button>
-                        </div>
-                      </div>
-                    </Cd>;
-                  })}
-                </div>
-              </div>}
+            <div style={{fontSize:11,color:T.tx3,marginTop:24,padding:"12px 16px",background:T.bg3,borderRadius:8,maxWidth:460,marginLeft:"auto",marginRight:"auto"}}>
+              Tus declaraciones ya capturadas <strong>no se perdieron</strong> — quedan guardadas en el perfil del owner. Cuando la nueva sección esté lista, se migran automáticamente.
             </div>
-          }
+          </Cd>
         </div>}
       </div>);
     }
