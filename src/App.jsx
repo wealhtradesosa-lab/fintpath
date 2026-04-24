@@ -40,6 +40,7 @@ import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17 } from "./lib/migrations";
 import DeclaracionUpload from "./components/DeclaracionUpload";
+import DashboardFiscal from "./components/DashboardFiscal";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
 const T={bg:"#09090b",bg2:"#18181b",bg3:"#27272a",card:"#111113",border:"rgba(255,255,255,0.06)",borderL:"rgba(255,255,255,0.1)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f59e0b",gd:"#eab308",ch:["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"]};
@@ -1852,11 +1853,20 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       const nats=(u?.owners||[]).filter(o=>o.type==="natural");
       return gated("tax","Pro",<div>
         <div style={{display:"flex",gap:8,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+          <button onClick={()=>setTaxTab("dashboard")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?T.bl:T.border),background:taxTab==="dashboard"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="dashboard"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>🏛️ Dashboard</button>
           <button onClick={()=>setTaxTab("rapido")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?T.bl:T.border),background:taxTab==="rapido"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="rapido"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>⚡ Simulador rápido</button>
           <button onClick={()=>setTaxTab("completa")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="completa"?T.bl:T.border),background:taxTab==="completa"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="completa"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>📋 Declaración completa</button>
           <div style={{flex:1}}/>
           <button onClick={()=>setShowAyuda(true)} style={{padding:"10px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer"}} title="Guía de uso del sistema de declaración">❓ ¿Cómo uso esto?</button>
         </div>
+        {taxTab==="dashboard"&&<DashboardFiscal
+          u={u}
+          owners={(u&&u.owners)||[]}
+          estimacion={estimarImpuesto(u)}
+          warnings={getFiscalWarnings(u)}
+          onNavigate={setPg}
+          onGoToUpload={()=>setTaxTab("completa")}
+        />}
         {taxTab==="rapido"&&<SimuladorTributario trm={(u&&u.trm)||4200} user={u} onNavigate={setPg} onUpdate={setU}/>}
         {taxTab==="completa"&&<DeclaracionUpload
           owners={(u&&u.owners)||[]}
