@@ -42,6 +42,7 @@ import { migrateAportesVoluntariosV17, migrateDeclaracionesV55 } from "./lib/mig
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import DashboardFiscal from "./components/DashboardFiscal";
 import CalculadoraImpuestos from "./components/CalculadoraImpuestos";
+import CalculadoraWizard from "./components/CalculadoraWizard";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
 const T={bg:"#09090b",bg2:"#18181b",bg3:"#27272a",card:"#111113",border:"rgba(255,255,255,0.06)",borderL:"rgba(255,255,255,0.1)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f59e0b",gd:"#eab308",ch:["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"]};
@@ -2028,10 +2029,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           onUpsell={()=>setPg("price")}
         />}
         {(taxTab!=="dashboard"&&taxTab!=="rapido")&&<div>{/* Fallback para usuarios con taxTab viejo (ej: 'completa' eliminado) */}
-          <CalculadoraImpuestos user={u} trm={(u&&u.trm)||4200} onNavigate={setPg} onUserUpdate={setU}/>
+          <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
         </div>}
         {taxTab==="rapido"&&<div>
-          <CalculadoraImpuestos user={u} trm={(u&&u.trm)||4200} onNavigate={setPg} onUserUpdate={setU}/>
+          <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
           <details style={{maxWidth:1100,margin:"20px auto",padding:"0 16px"}}>
             <summary style={{cursor:"pointer",padding:"12px 16px",background:T.bg3,borderRadius:8,fontSize:12,fontWeight:600,color:T.tx2,listStyle:"none"}}>
               🔬 Ver cálculo detallado y recomendaciones (vista completa)

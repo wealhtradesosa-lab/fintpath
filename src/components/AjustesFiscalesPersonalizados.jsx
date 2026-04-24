@@ -126,7 +126,13 @@ function Collapsible({ icono, titulo, descripcion, cantActivos, total, defaultOp
 // ─────────────────────────────────────────────────────────────────────────
 // Componente principal
 // ─────────────────────────────────────────────────────────────────────────
-export default function AjustesFiscalesPersonalizados({ owner, onUpdate }) {
+export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterGroup = "all" }) {
+  // filterGroup: 'all' | 'personal' (grupos A + personal de C) | 'eventos' (grupos B + beneficios de C)
+  const showGrupoA = filterGroup === "all" || filterGroup === "personal";
+  const showGrupoB = filterGroup === "all" || filterGroup === "eventos";
+  const showGrupoC = filterGroup === "all";
+  const showGrupoCPersonal = filterGroup === "personal"; // subset de C: contabilidad, honorarios
+  const showGrupoCEventos = filterGroup === "eventos"; // subset de C: donaciones, CTI, régimen especial
   const profile = owner?.fiscalProfile || {};
   const eventos = profile.eventosAno || {};
 
@@ -185,7 +191,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate }) {
       </div>
 
       {/* ═══════════════ GRUPO A — Personal ═══════════════ */}
-      {esNatural && (
+      {showGrupoA && esNatural && (
         <Collapsible
           icono="👨‍👩‍👧"
           titulo="Familia y auxilios laborales"
@@ -252,7 +258,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate }) {
       )}
 
       {/* ═══════════════ GRUPO B — Eventos del año ═══════════════ */}
-      {esNatural && (
+      {showGrupoB && esNatural && (
         <Collapsible
           icono="📅"
           titulo="Eventos del año gravable"
@@ -313,16 +319,16 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate }) {
         </Collapsible>
       )}
 
-      {/* ═══════════════ GRUPO C — Estatus y beneficios ═══════════════ */}
-      <Collapsible
-        icono="⚖️"
-        titulo="Estatus del contribuyente y beneficios especiales"
-        descripcion="Situaciones que cambian tu régimen o te dan descuentos tributarios"
-        cantActivos={cantGrupoC}
-        total={5}
-      >
-        {/* 8: Contabilidad */}
-        {esNatural && (
+      {/* ═══════════════ GRUPO C1 (personal) — Estatus del contribuyente ═══════════════ */}
+      {(filterGroup === "all" || filterGroup === "personal") && esNatural && (
+        <Collapsible
+          icono="⚖️"
+          titulo="Estatus del contribuyente"
+          descripcion="Cómo tributás cambia según tu situación como persona"
+          cantActivos={(profile.obligadoContabilidad ? 1 : 0) + (profile.honorariosConPersonal ? 1 : 0)}
+          total={2}
+        >
+          {/* 8: Contabilidad */}
           <SwitchRow
             label="Estoy obligado a llevar contabilidad"
             descripcion="Cambia el tratamiento de rendimientos financieros — NO se aplica componente inflacionario a los intereses recibidos."
@@ -331,10 +337,8 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate }) {
             value={!!profile.obligadoContabilidad}
             onChange={(v) => updateProfile({ obligadoContabilidad: v })}
           />
-        )}
 
-        {/* 9: Honorarios con personal */}
-        {esNatural && (
+          {/* 9: Honorarios con personal */}
           <SwitchRow
             label="Mis honorarios requieren contratar personal"
             descripcion="Si tenés 2 o más empleados contratados por 90+ días para ejercer tu actividad, se amplían las deducciones permitidas."
@@ -343,85 +347,91 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate }) {
             value={!!profile.honorariosConPersonal}
             onChange={(v) => updateProfile({ honorariosConPersonal: v })}
           />
-        )}
+        </Collapsible>
+      )}
 
-        {/* 10: Donaciones ESAL */}
-        <SwitchRow
-          label="Hice donaciones a entidades sin ánimo de lucro calificadas"
-          descripcion="Las donaciones a ESAL del régimen tributario especial (fundaciones calificadas) dan descuento tributario del 25%."
-          baseLegal="Art. 257 ET"
-          impactoTexto="Descuento directo del 25% del valor donado sobre el impuesto a pagar"
-          value={(profile.donaciones?.monto || 0) > 0}
-          onChange={(v) => updateProfile({ donaciones: v ? { monto: profile.donaciones?.monto || 0 } : { monto: 0 } })}
+      {/* ═══════════════ GRUPO C2 (eventos) — Beneficios especiales ═══════════════ */}
+      {(filterGroup === "all" || filterGroup === "eventos") && (
+        <Collapsible
+          icono="🎁"
+          titulo="Beneficios y descuentos tributarios"
+          descripcion="Donaciones, inversiones en programas certificados y regímenes especiales"
+          cantActivos={((profile.donaciones?.monto || 0) > 0 ? 1 : 0) + ((profile.inversionesCTI?.monto || 0) > 0 ? 1 : 0) + (profile.regimenEspecial ? 1 : 0)}
+          total={3}
         >
-          <NumberInput
-            label="Total donado en el año"
-            value={profile.donaciones?.monto}
-            onChange={(v) => updateProfile({ donaciones: { ...profile.donaciones, monto: v } })}
-            placeholder="$"
-            hint="Asegurate que la ESAL esté en el régimen tributario especial y te dé certificado de donación."
-          />
-        </SwitchRow>
+          {/* 10: Donaciones ESAL */}
+          <SwitchRow
+            label="Hice donaciones a entidades sin ánimo de lucro calificadas"
+            descripcion="Las donaciones a ESAL del régimen tributario especial (fundaciones calificadas) dan descuento tributario del 25%."
+            baseLegal="Art. 257 ET"
+            impactoTexto="Descuento directo del 25% del valor donado sobre el impuesto a pagar"
+            value={(profile.donaciones?.monto || 0) > 0}
+            onChange={(v) => updateProfile({ donaciones: v ? { monto: profile.donaciones?.monto || 0 } : { monto: 0 } })}
+          >
+            <NumberInput
+              label="Total donado en el año"
+              value={profile.donaciones?.monto}
+              onChange={(v) => updateProfile({ donaciones: { ...profile.donaciones, monto: v } })}
+              placeholder="$"
+              hint="Asegurate que la ESAL esté en el régimen tributario especial y te dé certificado de donación."
+            />
+          </SwitchRow>
 
-        {/* 11: CTI / cine / primera infancia */}
-        <SwitchRow
-          label="Invertí en CTI, cine colombiano o primera infancia"
-          descripcion="Inversiones en Ciencia/Tecnología/Innovación, producciones cinematográficas (Ley 814), o programas de primera infancia dan descuentos tributarios importantes."
-          baseLegal="Arts. 256, 114-2 ET; Ley 814/2003"
-          impactoTexto="Descuento tributario entre 25% y 50% según el programa (con topes)"
-          value={(profile.inversionesCTI?.monto || 0) > 0}
-          onChange={(v) => updateProfile({ inversionesCTI: v ? { monto: profile.inversionesCTI?.monto || 0, tipo: profile.inversionesCTI?.tipo || "cti" } : { monto: 0 } })}
-        >
-          <div style={{ marginBottom: 8 }}>
-            <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Tipo</div>
-            <select
-              value={profile.inversionesCTI?.tipo || "cti"}
-              onChange={(e) => updateProfile({ inversionesCTI: { ...profile.inversionesCTI, tipo: e.target.value } })}
-              style={{ width: "100%", background: T.bg2, border: "1px solid " + T.border, color: T.txt, padding: "8px 10px", borderRadius: 6, fontSize: 12 }}
-            >
-              <option value="cti">Ciencia, Tecnología e Innovación (Art. 256)</option>
-              <option value="cine">Producción cinematográfica (Ley 814)</option>
-              <option value="primera_infancia">Primera infancia (Art. 114-2)</option>
-            </select>
-          </div>
-          <NumberInput
-            label="Monto invertido"
-            value={profile.inversionesCTI?.monto}
-            onChange={(v) => updateProfile({ inversionesCTI: { ...profile.inversionesCTI, monto: v } })}
-            placeholder="$"
-            hint="Requiere certificación del programa al momento de declarar."
-          />
-        </SwitchRow>
+          {/* 11: CTI / cine / primera infancia */}
+          <SwitchRow
+            label="Invertí en CTI, cine colombiano o primera infancia"
+            descripcion="Inversiones en Ciencia/Tecnología/Innovación, producciones cinematográficas (Ley 814), o programas de primera infancia dan descuentos tributarios importantes."
+            baseLegal="Arts. 256, 114-2 ET; Ley 814/2003"
+            impactoTexto="Descuento tributario entre 25% y 50% según el programa (con topes)"
+            value={(profile.inversionesCTI?.monto || 0) > 0}
+            onChange={(v) => updateProfile({ inversionesCTI: v ? { monto: profile.inversionesCTI?.monto || 0, tipo: profile.inversionesCTI?.tipo || "cti" } : { monto: 0 } })}
+          >
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Tipo</div>
+              <select
+                value={profile.inversionesCTI?.tipo || "cti"}
+                onChange={(e) => updateProfile({ inversionesCTI: { ...profile.inversionesCTI, tipo: e.target.value } })}
+                style={{ width: "100%", background: T.bg2, border: "1px solid " + T.border, color: T.txt, padding: "8px 10px", borderRadius: 6, fontSize: 12 }}
+              >
+                <option value="cti">Ciencia, Tecnología e Innovación (Art. 256)</option>
+                <option value="cine">Producción cinematográfica (Ley 814)</option>
+                <option value="primera_infancia">Primera infancia (Art. 114-2)</option>
+              </select>
+            </div>
+            <NumberInput
+              label="Monto invertido"
+              value={profile.inversionesCTI?.monto}
+              onChange={(v) => updateProfile({ inversionesCTI: { ...profile.inversionesCTI, monto: v } })}
+              placeholder="$"
+              hint="Requiere certificación del programa al momento de declarar."
+            />
+          </SwitchRow>
 
-        {/* 12: Régimen especial */}
-        <SwitchRow
-          label="Estoy en un régimen tributario especial"
-          descripcion="Zona Franca, ZOMAC (Zonas Más Afectadas por el Conflicto), CHC (Compañías Holding Colombianas) — cada uno con su tarifa preferencial."
-          baseLegal="Arts. 240-1 (ZF), 150-237 Ley 1819 (ZOMAC), 894-898 ET (CHC)"
-          impactoTexto="Tarifas reducidas: ZF 20%, ZOMAC progresivo 0-50%, CHC exenciones específicas"
-          value={!!profile.regimenEspecial}
-          onChange={(v) => updateProfile({ regimenEspecial: v ? (profile.regimenEspecial || "zona_franca") : null })}
-        >
-          <div>
-            <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Régimen</div>
-            <select
-              value={profile.regimenEspecial || "zona_franca"}
-              onChange={(e) => updateProfile({ regimenEspecial: e.target.value })}
-              style={{ width: "100%", background: T.bg2, border: "1px solid " + T.border, color: T.txt, padding: "8px 10px", borderRadius: 6, fontSize: 12 }}
-            >
-              <option value="zona_franca">Zona Franca (tarifa 20%)</option>
-              <option value="zomac">ZOMAC (tarifa progresiva)</option>
-              <option value="chc">CHC — Compañía Holding Colombiana</option>
-              <option value="mega_inversion">Mega-inversión (Art. 235-3)</option>
-            </select>
-          </div>
-        </SwitchRow>
-      </Collapsible>
-
-      {/* Nota Fase 2 */}
-      <div style={{ padding: "12px 14px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 8, fontSize: 11, color: T.txt2, lineHeight: 1.6 }}>
-        ⚠️ <strong style={{ color: T.orange }}>Fase 2 en progreso:</strong> por ahora los ajustes que activás se <strong>guardan en tu perfil</strong> pero el motor de cálculo todavía no los aplica al impuesto mostrado arriba. Eso viene en Fase 3 (arreglo de los bugs fiscales pendientes). Contestá las preguntas que apliquen — cuando el motor los consuma, tus datos ya estarán cargados.
-      </div>
+          {/* 12: Régimen especial */}
+          <SwitchRow
+            label="Estoy en un régimen tributario especial"
+            descripcion="Zona Franca, ZOMAC (Zonas Más Afectadas por el Conflicto), CHC (Compañías Holding Colombianas) — cada uno con su tarifa preferencial."
+            baseLegal="Arts. 240-1 (ZF), 150-237 Ley 1819 (ZOMAC), 894-898 ET (CHC)"
+            impactoTexto="Tarifas reducidas: ZF 20%, ZOMAC progresivo 0-50%, CHC exenciones específicas"
+            value={!!profile.regimenEspecial}
+            onChange={(v) => updateProfile({ regimenEspecial: v ? (profile.regimenEspecial || "zona_franca") : null })}
+          >
+            <div>
+              <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Régimen</div>
+              <select
+                value={profile.regimenEspecial || "zona_franca"}
+                onChange={(e) => updateProfile({ regimenEspecial: e.target.value })}
+                style={{ width: "100%", background: T.bg2, border: "1px solid " + T.border, color: T.txt, padding: "8px 10px", borderRadius: 6, fontSize: 12 }}
+              >
+                <option value="zona_franca">Zona Franca (tarifa 20%)</option>
+                <option value="zomac">ZOMAC (tarifa progresiva)</option>
+                <option value="chc">CHC — Compañía Holding Colombiana</option>
+                <option value="mega_inversion">Mega-inversión (Art. 235-3)</option>
+              </select>
+            </div>
+          </SwitchRow>
+        </Collapsible>
+      )}
     </div>
   );
 }
