@@ -15,6 +15,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/parse-declaration"
+  to = "/.netlify/functions/parse-declaration"
+  status = 200
+
+[[redirects]]
   from = "/api/stock-price"
   to = "/.netlify/functions/stock-prices"
   status = 200

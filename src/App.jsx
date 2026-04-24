@@ -39,6 +39,7 @@ import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17 } from "./lib/migrations";
+import DeclaracionUpload from "./components/DeclaracionUpload";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
 const T={bg:"#09090b",bg2:"#18181b",bg3:"#27272a",card:"#111113",border:"rgba(255,255,255,0.06)",borderL:"rgba(255,255,255,0.1)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f59e0b",gd:"#eab308",ch:["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"]};
@@ -1857,24 +1858,16 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <button onClick={()=>setShowAyuda(true)} style={{padding:"10px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer"}} title="Guía de uso del sistema de declaración">❓ ¿Cómo uso esto?</button>
         </div>
         {taxTab==="rapido"&&<SimuladorTributario trm={(u&&u.trm)||4200} user={u} onNavigate={setPg} onUpdate={setU}/>}
-        {taxTab==="completa"&&<div style={{maxWidth:700,margin:"0 auto",padding:"16px"}}>
-          <Cd s={{padding:"40px 32px",textAlign:"center"}}>
-            <div style={{fontSize:42,marginBottom:16}}>🔨</div>
-            <div style={{fontSize:18,fontWeight:700,marginBottom:10}}>Módulo Fiscal en renovación</div>
-            <div style={{fontSize:13,color:T.tx2,lineHeight:1.7,marginBottom:20,maxWidth:500,marginLeft:"auto",marginRight:"auto"}}>
-              Estamos reconstruyendo esta sección para que aporte valor real:<br/>
-              <br/>
-              <strong style={{color:T.gn}}>✓ Upload de PDF</strong> — subí tu declaración oficial DIAN y la IA extrae los datos automáticamente<br/>
-              <strong style={{color:T.gn}}>✓ Historial de 3+ años</strong> — patrimonio, ingresos, impuesto y tasa efectiva en una sola vista<br/>
-              <strong style={{color:T.gn}}>✓ Alertas de divergencia</strong> — detecta desajustes entre lo declarado y tu situación actual<br/>
-              <strong style={{color:T.gn}}>✓ Recomendaciones con números</strong> — optimizaciones concretas o mensaje honesto si no hay margen<br/>
-              <strong style={{color:T.gn}}>✓ Export PDF</strong> — informe listo para tu contador
-            </div>
-            <div style={{fontSize:11,color:T.tx3,marginTop:24,padding:"12px 16px",background:T.bg3,borderRadius:8,maxWidth:460,marginLeft:"auto",marginRight:"auto"}}>
-              Tus declaraciones ya capturadas <strong>no se perdieron</strong> — quedan guardadas en el perfil del owner. Cuando la nueva sección esté lista, se migran automáticamente.
-            </div>
-          </Cd>
-        </div>}
+        {taxTab==="completa"&&<DeclaracionUpload
+          owners={(u&&u.owners)||[]}
+          isPro={plan==="pro"||plan==="advisor_pro"}
+          onUpsell={()=>setPg("price")}
+          onSaveToOwner={(ownerId,declaracion)=>{
+            const owners=(u&&u.owners||[]).map(o=>o.id===ownerId?{...o,declaracionAnterior:declaracion}:o);
+            upd("owners",owners);
+            showToast("✅ Declaración guardada en "+(owners.find(o=>o.id===ownerId)?.name||"owner"));
+          }}
+        />}
       </div>);
     }
     case"aportes":return <AportesCalculadora fmt={fm}/>;
