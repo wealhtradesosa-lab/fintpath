@@ -17,6 +17,7 @@
 import { useState, useMemo } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import RecomendacionesFiscales from "./RecomendacionesFiscales";
+import ReporteFiscalPrint from "./ReporteFiscalPrint";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -91,6 +92,8 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
   const [selectedOwnerId, setSelectedOwnerId] = useState(owners[0]?.id || "");
   // Commit 5.5: año seleccionado dentro del owner (null = la más reciente)
   const [selectedAno, setSelectedAno] = useState(null);
+  // Commit 7: modo imprimible
+  const [printMode, setPrintMode] = useState(false);
 
   const selectedOwner = useMemo(() => owners.find((o) => o.id === selectedOwnerId), [owners, selectedOwnerId]);
 
@@ -176,6 +179,21 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
 
   return (
     <div style={{ maxWidth: 940, margin: "0 auto", padding: "16px" }}>
+      {/* Commit 7: modo imprimible en overlay fullscreen */}
+      {printMode && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "white", zIndex: 9999, overflow: "auto" }}>
+          <ReporteFiscalPrint
+            owner={selectedOwner}
+            declaraciones={declaraciones}
+            estimacionDetalle={detalleActual}
+            patrimonioLiquidoActual={patrimonioLiquidoActual}
+            alertas={alertasDelOwner}
+            recomendaciones={todasLasRecomendaciones.filter(r => r.ownerId === selectedOwnerId)}
+            onClose={() => setPrintMode(false)}
+          />
+        </div>
+      )}
+
       {/* Header + selector de owner */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 200 }}>
@@ -195,6 +213,14 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
             </option>
           ))}
         </select>
+        {/* Commit 7: export PDF */}
+        <button
+          onClick={() => setPrintMode(true)}
+          title="Exportar reporte como PDF"
+          style={{ background: T.blue, border: "none", color: "white", padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+        >
+          📄 Exportar PDF
+        </button>
       </div>
 
       {/* Banner de estado de declaración */}
