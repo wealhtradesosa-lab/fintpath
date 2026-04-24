@@ -177,34 +177,42 @@ export default function FinPath(){
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
   useEffect(()=>{if(mb)sSb(false)},[mb]);
   useEffect(()=>{(async()=>{
-    if(isSupabaseConfigured&&supabase){
-      const{data:{session}}=await supabase.auth.getSession();
-      if(session?.user){
-        setAuthUser(session.user);
-        const d=await sL(session.user.id);
-        if(d)setU(sanitize(d));
-        // ═══ Check if user is an advisor ═══
-        try{
-          const{data:advData,error:advErr}=await supabase
-            .from("advisors")
-            .select("id,email,firm_name,advisor_plan,max_clients,subscription_status")
-            .eq("id",session.user.id)
-            .maybeSingle();
-          if(!advErr&&advData){
-            setIsAdvisor(true);
-            setAdvisorProfile(advData);
-            // Load advisor's clients
-            const{data:clientsData}=await supabase
-              .from("advisor_client_data")
-              .select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at")
-              .eq("advisor_id",session.user.id);
-            if(clientsData)setAdvisorClients(clientsData);
-          }
-        }catch(e){/* silent - not an advisor */}
+    // Timeout defensivo: si supabase se cuelga (problemas de red, session corrupta,
+    // retry silencioso), la app cargaba para siempre con 'Cargando tu patrimonio...'.
+    // Con este timeout de 8s, la app sigue cargando como unauthenticated y se
+    // recupera cuando la sesión llegue (si alguna vez llega).
+    const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error("auth timeout")),8000));
+    try{
+      if(isSupabaseConfigured&&supabase){
+        const{data:{session}}=await Promise.race([supabase.auth.getSession(),timeout]);
+        if(session?.user){
+          setAuthUser(session.user);
+          try{
+            const d=await Promise.race([sL(session.user.id),timeout]);
+            if(d)setU(sanitize(d));
+          }catch(e){if(typeof console!=="undefined")console.warn("[load] data load timeout:",e)}
+          // ═══ Check if user is an advisor ═══
+          try{
+            const{data:advData,error:advErr}=await Promise.race([
+              supabase.from("advisors").select("id,email,firm_name,advisor_plan,max_clients,subscription_status").eq("id",session.user.id).maybeSingle(),
+              timeout,
+            ]);
+            if(!advErr&&advData){
+              setIsAdvisor(true);
+              setAdvisorProfile(advData);
+              const{data:clientsData}=await Promise.race([
+                supabase.from("advisor_client_data").select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at").eq("advisor_id",session.user.id),
+                timeout,
+              ]);
+              if(clientsData)setAdvisorClients(clientsData);
+            }
+          }catch(e){/* silent - not an advisor, or timeout */}
+        }
+      }else{
+        try{const d=await sL();if(d)setU(sanitize(d))}catch(e){if(typeof console!=="undefined")console.warn("[load] local data error:",e)}
       }
-    }else{
-      const d=await sL();
-      if(d)setU(sanitize(d));
+    }catch(e){
+      if(typeof console!=="undefined")console.warn("[load] session fetch failed/timeout, continuando sin auth:",e);
     }
     setLd(false);
     try{const r=await fetch('/api/trm');const j=await r.json();if(j.trm)setU(p=>p?{...p,trm:j.trm,trmSrc:j.source}:p)}catch{}
