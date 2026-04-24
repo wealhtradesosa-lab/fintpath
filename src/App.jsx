@@ -2011,7 +2011,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           onGoToUpload={()=>setTaxTab("completa")}
         />}
         {taxTab==="rapido"&&<div>
-          <CalculadoraImpuestos user={u} trm={(u&&u.trm)||4200} onNavigate={setPg}/>
+          <CalculadoraImpuestos user={u} trm={(u&&u.trm)||4200} onNavigate={setPg} onUserUpdate={setU}/>
           <details style={{maxWidth:1100,margin:"20px auto",padding:"0 16px"}}>
             <summary style={{cursor:"pointer",padding:"12px 16px",background:T.bg3,borderRadius:8,fontSize:12,fontWeight:600,color:T.tx2,listStyle:"none"}}>
               🔬 Ver cálculo detallado y recomendaciones (vista completa)

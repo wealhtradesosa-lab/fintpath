@@ -19,6 +19,7 @@
 import { useMemo, useState } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
 import { getFiscalWarnings } from "../lib/normalize.js";
+import AjustesFiscalesPersonalizados from "./AjustesFiscalesPersonalizados";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -140,7 +141,7 @@ function ResultColumn({ titulo, subtitle, detalle, color, accentColor, tipo }) {
 // ─────────────────────────────────────────────────────────────────────────
 // Componente principal
 // ─────────────────────────────────────────────────────────────────────────
-export default function CalculadoraImpuestos({ user, trm, onNavigate }) {
+export default function CalculadoraImpuestos({ user, trm, onNavigate, onUserUpdate }) {
   const owners = (user && user.owners) || [];
   const [selectedOwnerId, setSelectedOwnerId] = useState(owners[0]?.id || "");
 
@@ -317,9 +318,21 @@ export default function CalculadoraImpuestos({ user, trm, onNavigate }) {
         </div>
       )}
 
-      {/* Nota Fase 1 */}
-      <div style={{ padding: "12px 14px", background: T.bg3, border: "1px dashed " + T.border, borderRadius: 8, fontSize: 11, color: T.txt3, lineHeight: 1.6 }}>
-        💡 <strong style={{ color: T.txt2 }}>Próximamente:</strong> switches para capturar información adicional que un contador preguntaría (dependientes, donaciones, ganancias ocasionales, régimen especial, etc.) y que permitiría afinar aún más el cálculo.
+      {/* Fase 2: Ajustes fiscales personalizados (12 switches) */}
+      <AjustesFiscalesPersonalizados
+        owner={selectedOwner}
+        onUpdate={(newProfile) => {
+          if (!onUserUpdate || !selectedOwner) return;
+          const newOwners = (user.owners || []).map((o) =>
+            o.id === selectedOwner.id ? { ...o, fiscalProfile: newProfile } : o
+          );
+          onUserUpdate({ ...user, owners: newOwners });
+        }}
+      />
+
+      {/* Nota del estado de fases */}
+      <div style={{ padding: "12px 14px", background: T.bg3, border: "1px dashed " + T.border, borderRadius: 8, fontSize: 11, color: T.txt3, lineHeight: 1.6, marginTop: 14 }}>
+        💡 <strong style={{ color: T.txt2 }}>Próximamente (Fase 3):</strong> el motor de cálculo va a leer los ajustes activos y reflejarlos en la columna "Con optimización" automáticamente. Hoy los datos se guardan pero el impuesto mostrado arriba aún no los aplica.
       </div>
     </div>
   );
