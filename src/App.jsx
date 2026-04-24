@@ -243,7 +243,11 @@ export default function FinPath(){
   // NO al authUser.id del advisor. Esto evita que el advisor sobreescriba su propia data.
   useEffect(()=>{
     if(!u)return;
+    // Guarda para prevenir race condition durante logout: si authUser ya fue
+    // limpiado, no intentar guardar. Esto evita que sS() corra con un id
+    // obsoleto justo cuando u está siendo limpiado a null.
     const targetId=(isAdvisor&&viewMode==="client"&&currentClientId)?currentClientId:authUser?.id;
+    if(!targetId)return;
     sS(u,targetId);
   },[u]);
 
@@ -280,7 +284,48 @@ export default function FinPath(){
   const trm=u?.trm||4200;
   const { regPack, jurisdiction } = useJurisdiction(u);
   const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),3000)};
-  const logout=async()=>{try{await supabase.auth.signOut()}catch{}localStorage.removeItem(SK);localStorage.removeItem("fp3_enc_key");_setU(null);setShowAuth(false);setIsAdvisor(false);setAdvisorProfile(null);setAdvisorClients([]);setViewMode("workspace");setCurrentClientId(null);setAdvisorOwnUser(null);setCurrentClient(null);setSwitchingClient(false)};
+  // logout: limpia COMPLETAMENTE el estado local + supabase. Debe dejar
+  // la app en el mismo estado que si acabara de abrirse por primera vez.
+  // Si supabase.signOut falla (común cuando el token ya expiró del lado
+  // servidor), limpiamos igual lo local para que el usuario nunca quede
+  // atrapado en un estado "medio-logueado".
+  const logout=async()=>{
+    // 1) Supabase signOut (no bloqueante — si falla, seguimos)
+    try{await supabase.auth.signOut({scope:"local"})}catch(e){/* silent */}
+    // 2) Limpiar TODO el localStorage/sessionStorage de Finpathia y Supabase
+    try{
+      const keysToRemove=[];
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k&&(k.startsWith("fp3")||k.startsWith("sb-")||k.includes("supabase"))){
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k=>localStorage.removeItem(k));
+    }catch(e){/* silent */}
+    try{
+      const sKeys=[];
+      for(let i=0;i<sessionStorage.length;i++){
+        const k=sessionStorage.key(i);
+        if(k&&(k.startsWith("fp3")||k.startsWith("sb-"))) sKeys.push(k);
+      }
+      sKeys.forEach(k=>sessionStorage.removeItem(k));
+    }catch(e){/* silent */}
+    // 3) Resetear TODO el estado de React en el orden correcto
+    setAuthUser(null);
+    setIsAdvisor(false);
+    setAdvisorProfile(null);
+    setAdvisorClients([]);
+    setViewMode("workspace");
+    setCurrentClientId(null);
+    setAdvisorOwnUser(null);
+    setCurrentClient(null);
+    setSwitchingClient(false);
+    setShowAuth(false);
+    setPg("dash");
+    // setU(null) al FINAL para que el useEffect de auto-save no dispare con authUser aún seteado
+    _setU(null);
+  };
 
   // ═══ Sprint 2C: Volver del dashboard del cliente al workspace del asesor ═══
   // Restaura el u del advisor desde advisorOwnUser (el backup hecho al entrar al cliente).
@@ -316,8 +361,24 @@ export default function FinPath(){
           return;
         }
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);
-        const d=await sL(data.user.id);
-        if(d)setU(sanitize(d));else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id)}
+        try{
+          const d=await Promise.race([
+            sL(data.user.id),
+            new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout cargando datos")),10000))
+          ]);
+          if(d)setU(sanitize(d));
+          else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id)}
+        }catch(loadErr){
+          // Si falla la carga de datos: limpiamos el estado a medio-loguear para no
+          // dejar al usuario atrapado con authUser seteado pero sin data (lo que
+          // causaría loader infinito). Mostramos error accionable.
+          setAuthUser(null);
+          try{await supabase.auth.signOut({scope:"local"})}catch{}
+          localStorage.removeItem("fp3_enc_key");
+          setAuthError("No se pudo cargar tus datos: "+loadErr.message+". Volvé a intentar.");
+          setAuthLoading(false);
+          return;
+        }
         // Si la cuenta tiene plan Asesor, marca isAdvisor y carga clientes (para poder cambiar de modo si está en personal)
         if(advData){
           setIsAdvisor(true);
@@ -2369,7 +2430,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     {sb&&<aside style={{width:220,minWidth:220,height:"100vh",position:mb?"fixed":"sticky",top:0,background:T.bg2,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",zIndex:100,overflowY:"auto"}}><div style={{padding:"20px 18px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div style={{fontSize:16,fontWeight:800,color:T.gn}}>FINPATHIA</div>{mb&&<button onClick={()=>sSb(false)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:16}}>✕</button>}</div><nav style={{flex:1,padding:"0 8px"}}>{nvs.map(n=>{if(n.hidden)return null;
             if(n.sep)return<div key={n.id} style={{padding:n.l?"10px 12px 4px":"6px 0",fontSize:9,fontWeight:700,color:T.tx3,letterSpacing:"0.1em",borderTop:n.l?`1px solid ${T.border}`:"none",marginTop:n.l?4:0}}>{n.l||""}</div>;const a=pg===n.id;return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span>{n.l}{n.id==="price"&&plan==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:8}}><div style={{width:28,height:28,borderRadius:99,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{(u?.p?.name||"U").charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u?.p?.name||"Usuario"}</div><div style={{fontSize:10,color:T.tx3}}>{plan==="free"?(trialEnd?"Free":"Free"):plan==="basico"?"Básico ⚡":trialActive?"Pro ⭐ Trial":"Pro ⭐"}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",marginBottom:6,fontSize:10,color:T.tx3}}><span>🔒</span> Datos encriptados y privados</div><button onClick={()=>window.open("https://wa.me/?text=🏦 Encontré esta plataforma para gestionar tu patrimonio con inteligencia artificial.%0A%0APones tus inversiones, ingresos, gastos y deudas → te dice en qué nivel de libertad financiera estás, simula escenarios y un asesor IA analiza tus números reales.%0A%0A14 días gratis del plan completo, sin tarjeta.%0A%0A👉 https://finpathia.com","_blank")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.2)",color:"#25d366",cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12,marginBottom:6}}>💬 Compartir por WhatsApp</button><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:T.bg3,border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12}}>🚪 Cerrar sesión</button></div></aside>}
     {mb&&sb&&<div onClick={()=>sSb(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99}}/>}
-    <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{isAdvisor&&viewMode==="client"&&currentClient&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(167,139,250,0.14))",borderBottom:"2px solid rgba(59,130,246,0.4)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#bfdbfe",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>👁</span><span><strong style={{color:"#fff"}}>Viendo como asesor:</strong> {currentClient.name||currentClient.email} <span style={{opacity:0.7}}>({currentClient.email})</span></span></span><button onClick={returnToAdvisorWorkspace} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>← Volver a mis clientes</button></div>}{isAdvisor&&viewMode==="personal"&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(167,139,250,0.10))",borderBottom:"1px solid rgba(59,130,246,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#93c5fd",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📊</span><span>Modo personal — gestionas tu propio patrimonio.</span></span><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setViewMode("workspace");setCurrentClientId(null)}} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>👥 Ir a mis clientes</button></div></div>}{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(249,115,22,0.1),rgba(234,179,8,0.08))",borderBottom:"1px solid rgba(249,115,22,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12}}><span style={{color:T.orange}}>📊 Estás explorando con datos de ejemplo.</span><button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Crear cuenta para guardar →</button></div>}<header style={{height:52,padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:10}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} style={{background:"none",border:"none",color:T.tx2,cursor:"pointer",fontSize:18}}>☰</button>}{!sb&&<span style={{fontSize:14,fontWeight:800,color:T.gn}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:10}}><button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4,marginRight:6}}>📥 Importar Excel</button><Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#22c55e",border:"none",color:"#fff",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11,marginLeft:4}}>{cur==="USD"?"🇺🇸 USD":"🇨🇴 COP"}</button><button onClick={()=>setU(p=>p?{...p,lang:isEN?"es":"en"}:p)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:"#fafafa",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11,marginLeft:4}} title="Toggle language">{isEN?"🇺🇸 EN":"🇨🇴 ES"}</button>{u.trm&&<span style={{fontSize:10,color:T.tx3,marginLeft:4}}>TRM: ${Math.round(u.trm).toLocaleString()}</span>}<button onClick={()=>setMasked(m=>!m)} title={masked?"Mostrar valores":"Ocultar valores"} style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:11}}>{masked?"👁️":"🙈"}</button>{plan==="free"&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}</div></header><div style={{flex:1,padding:mb?14:28,maxWidth:1200,width:"100%"}}>{rp()}</div>{showImport&&<CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/>}{toast&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#22c55e",color:"#000",padding:"12px 24px",borderRadius:12,fontWeight:700,fontSize:13,zIndex:9999,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",animation:"slideUp 0.3s ease"}}>{toast}</div>}</main>
+    <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{isAdvisor&&viewMode==="client"&&currentClient&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(167,139,250,0.14))",borderBottom:"2px solid rgba(59,130,246,0.4)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#bfdbfe",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>👁</span><span><strong style={{color:"#fff"}}>Viendo como asesor:</strong> {currentClient.name||currentClient.email} <span style={{opacity:0.7}}>({currentClient.email})</span></span></span><button onClick={returnToAdvisorWorkspace} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>← Volver a mis clientes</button></div>}{isAdvisor&&viewMode==="personal"&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(167,139,250,0.10))",borderBottom:"1px solid rgba(59,130,246,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#93c5fd",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📊</span><span>Modo personal — gestionas tu propio patrimonio.</span></span><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setViewMode("workspace");setCurrentClientId(null)}} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>👥 Ir a mis clientes</button></div></div>}{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(249,115,22,0.1),rgba(234,179,8,0.08))",borderBottom:"1px solid rgba(249,115,22,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12}}><span style={{color:T.orange}}>📊 Estás explorando con datos de ejemplo.</span><button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Crear cuenta para guardar →</button></div>}<header style={{height:52,padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:10}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} style={{background:"none",border:"none",color:T.tx2,cursor:"pointer",fontSize:18}}>☰</button>}{!sb&&<span style={{fontSize:14,fontWeight:800,color:T.gn}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:10}}><button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4,marginRight:6}}>📥 Importar Excel</button><Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#22c55e",border:"none",color:"#fff",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11,marginLeft:4}}>{cur==="USD"?"🇺🇸 USD":"🇨🇴 COP"}</button><button onClick={()=>setU(p=>p?{...p,lang:isEN?"es":"en"}:p)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:"#fafafa",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11,marginLeft:4}} title="Toggle language">{isEN?"🇺🇸 EN":"🇨🇴 ES"}</button>{u.trm&&<span style={{fontSize:10,color:T.tx3,marginLeft:4}}>TRM: ${Math.round(u.trm).toLocaleString()}</span>}<button onClick={()=>setMasked(m=>!m)} title={masked?"Mostrar valores":"Ocultar valores"} style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:11}}>{masked?"👁️":"🙈"}</button>{plan==="free"&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}<button onClick={logout} title="Cerrar sesión" style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:13,marginLeft:4}}>🚪</button></div></header><div style={{flex:1,padding:mb?14:28,maxWidth:1200,width:"100%"}}>{rp()}</div>{showImport&&<CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/>}{toast&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#22c55e",color:"#000",padding:"12px 24px",borderRadius:12,fontWeight:700,fontSize:13,zIndex:9999,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",animation:"slideUp 0.3s ease"}}>{toast}</div>}</main>
   </div>;
 }
 // v1775826625
