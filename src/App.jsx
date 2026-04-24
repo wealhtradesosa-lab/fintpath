@@ -170,6 +170,12 @@ const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div 
 
 export default function FinPath(){
   const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("rapido");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);
+  // Password recovery flow: detectar link de recovery y pedir nueva contraseña
+  const[showResetPassword,setShowResetPassword]=useState(false);
+  const[resetNewPassword,setResetNewPassword]=useState("");
+  const[resetLoading,setResetLoading]=useState(false);
+  const[resetError,setResetError]=useState("");
+  const[resetSent,setResetSent]=useState(false);
   // ═══ ADVISOR MODE STATE ═══
   // isAdvisor: true si el usuario loggeado existe en la tabla `advisors`
   // advisorProfile: datos del asesor (plan, max_clients, firm_name, etc.)
@@ -206,6 +212,19 @@ export default function FinPath(){
   const[currentClient,setCurrentClient]=useState(null);
   const[switchingClient,setSwitchingClient]=useState(false);
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
+  // Password recovery: escuchar el evento de Supabase cuando el usuario hace
+  // click en el link del email. Muestra el modal para que ingrese nueva contraseña.
+  useEffect(()=>{
+    if(!supabase||!isSupabaseConfigured)return;
+    const{data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
+      if(event==="PASSWORD_RECOVERY"){
+        setShowResetPassword(true);
+        setResetError("");
+        setResetNewPassword("");
+      }
+    });
+    return()=>subscription?.unsubscribe();
+  },[]);
   useEffect(()=>{if(mb)sSb(false)},[mb]);
   // Persistir viewMode en localStorage cuando cambia — solo si hay usuario loggeado
   // para evitar que después del logout se re-escriba al resetear el estado.
@@ -625,6 +644,52 @@ export default function FinPath(){
   }
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
+    {/* Modal de nueva contraseña tras click en link del email */}
+    {showResetPassword&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20}}>
+      <div style={{background:T.bg2,border:`1px solid ${T.borderL||T.border}`,borderRadius:20,width:"100%",maxWidth:460,padding:32}}>
+        <div style={{fontSize:32,marginBottom:8,textAlign:"center"}}>🔐</div>
+        <h2 style={{fontSize:20,fontWeight:800,textAlign:"center",marginBottom:8,color:T.tx}}>Nueva contraseña</h2>
+        <p style={{fontSize:13,color:T.tx3,textAlign:"center",marginBottom:24,lineHeight:1.5}}>
+          Ingresá tu nueva contraseña. Debe tener al menos 8 caracteres.
+        </p>
+        <input
+          type="password"
+          placeholder="Nueva contraseña (mínimo 8 caracteres)"
+          value={resetNewPassword}
+          onChange={(e)=>{setResetNewPassword(e.target.value);setResetError("")}}
+          autoFocus
+          style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 14px",color:T.tx,fontSize:14,outline:"none",marginBottom:12}}
+        />
+        {resetError&&<div style={{color:T.rd,fontSize:12,marginBottom:12,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{resetError}</div>}
+        <button
+          onClick={async()=>{
+            if(resetNewPassword.length<8){setResetError("La contraseña debe tener al menos 8 caracteres");return}
+            setResetLoading(true);setResetError("");
+            try{
+              const{error}=await supabase.auth.updateUser({password:resetNewPassword});
+              if(error)throw error;
+              // IMPORTANTE: después de cambiar password, Supabase mantiene la sesión abierta
+              // con el token del recovery. Cerramos sesión para forzar login limpio con la
+              // contraseña nueva. Esto evita que queden sesiones raras por el reset.
+              await supabase.auth.signOut({scope:"local"});
+              localStorage.removeItem("fp3_enc_key");
+              setShowResetPassword(false);
+              setResetNewPassword("");
+              setAuthError("✅ Contraseña actualizada. Iniciá sesión con la nueva.");
+              sAM("login");
+            }catch(e){setResetError("No pudimos actualizar: "+e.message)}
+            finally{setResetLoading(false)}
+          }}
+          disabled={resetLoading}
+          style={{width:"100%",background:resetLoading?T.tx3:T.gn,color:"#000",border:"none",padding:"12px 20px",borderRadius:10,cursor:resetLoading?"wait":"pointer",fontWeight:700,fontSize:14}}
+        >
+          {resetLoading?"Actualizando...":"Actualizar contraseña"}
+        </button>
+        <div style={{marginTop:16,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,fontSize:11,color:T.tx3,lineHeight:1.5}}>
+          ⚠️ Tu información está cifrada con tu contraseña. Al cambiarla, si tenías datos encriptados bajo la contraseña anterior no podrás recuperarlos — tendrás que volver a cargarlos.
+        </div>
+      </div>
+    </div>}
     <div style={{width:"100%",maxWidth:420,padding:"40px 32px"}}>
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
       <div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"12px 16px",marginBottom:20,fontSize:12,color:T.tx3,lineHeight:2}}>
@@ -668,7 +733,26 @@ export default function FinPath(){
       <p style={{textAlign:"center",marginTop:20,color:T.tx3,fontSize:14}}>{"¿No tienes cuenta? "}<span onClick={()=>sAM(aM==="login"?"signup":"login")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{aM==="login"?"Regístrate":"Ingresa"}</span></p>
       <div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
       <div style={{marginTop:16,padding:"16px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.12)",borderRadius:12,textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.orange,marginBottom:6}}>📊 ¿Quieres ver cómo funciona?</div><div style={{fontSize:11,color:T.tx3,marginBottom:10}}>Explora la plataforma con datos de ejemplo: patrimonio, ingresos, gastos, deudas, impuestos y simulador.</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}><button onClick={()=>{const nd=mkU("Pedro Pérez","demo@finpathia.com");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.demo=true;setU(nd);setTimeout(()=>demo(),500)}} style={{background:"linear-gradient(135deg,#f97316,#eab308)",color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇨🇴 Demo Colombia</button><button onClick={()=>demoUS()} style={{background:"linear-gradient(135deg,#3b82f6,#1d4ed8)",color:"#fff",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇺🇸 Demo USA</button></div></div>
-      {aM==="login"&&<p style={{textAlign:"center",marginTop:8}}><span onClick={async()=>{if(!aF.e){setAuthError("Escribe tu email primero");return}try{await supabase.auth.resetPasswordForEmail(aF.e);setAuthError("✅ Email enviado")}catch(e){setAuthError(e.message)}}} style={{color:T.tx3,cursor:"pointer",fontSize:12}}>¿Olvidaste tu contraseña?</span></p>}
+      {aM==="login"&&<p style={{textAlign:"center",marginTop:14}}>
+        <span onClick={async()=>{
+          if(!aF.e){setAuthError("Escribe tu email arriba para enviarte el link");return}
+          setResetLoading(true);setAuthError("");
+          try{
+            const{error}=await supabase.auth.resetPasswordForEmail(aF.e,{
+              redirectTo:window.location.origin+"/"
+            });
+            if(error)throw error;
+            setResetSent(true);
+            setTimeout(()=>setResetSent(false),8000);
+          }catch(e){setAuthError("No pudimos enviar el email: "+e.message)}
+          finally{setResetLoading(false)}
+        }} style={{color:resetSent?T.gn:T.bl,cursor:resetLoading?"wait":"pointer",fontSize:13,fontWeight:600,textDecoration:"underline",opacity:resetLoading?0.5:1}}>
+          {resetLoading?"Enviando...":resetSent?"✅ Email enviado — revisá tu bandeja":"¿Olvidaste tu contraseña?"}
+        </span>
+        {resetSent&&<div style={{fontSize:11,color:T.tx3,marginTop:6,lineHeight:1.5}}>
+          Revisá tu bandeja de entrada y spam. El link expira en 1 hora.
+        </div>}
+      </p>}
     </div>
   </div>;
 
