@@ -66,7 +66,16 @@ export const estimarImpuesto = (u) => {
       if (!i.owner || i.owner === "" || i.owner === "na") return false;
       return i.owner === ow.id;
     });
-    if (oIng.length === 0) return;
+    // Bug #7: también procesar owner si tiene eventos de ganancia ocasional
+    // (herencia, venta inmueble, lotería). Alguien que solo recibe herencia y
+    // no tiene ingresos recurrentes todavía debe ver su impuesto GO calculado.
+    const eventosAno = ow.fiscalProfile?.eventosAno || {};
+    const tieneEventosGO = !!(
+      (eventosAno.recibioHerencia && Number(eventosAno.herenciaMonto) > 0) ||
+      (eventosAno.vendioInmuebleAntiguo && Number(eventosAno.inmuebleValorVenta) > 0) ||
+      (eventosAno.ganoLoteria && Number(eventosAno.loteriaMonto) > 0)
+    );
+    if (oIng.length === 0 && !tieneEventosGO) return;
 
     const isJ = ow.type === "juridica";
 
@@ -270,6 +279,52 @@ export const estimarImpuesto = (u) => {
       const ingCapital = rendAnual;
       const ingNoLaboral = rentasAnual + otrosAnual;
       const ingAnual = ingLaboral + ingCapital + ingNoLaboral + divAnual + pensAnual;
+      // Bug #7: si el owner tiene solo eventos de ganancia ocasional (sin ingresos
+      // ordinarios), procesarlo en rama especial — calcular solo impGO y empujar
+      // un detalle minimalista. No queremos saltar al return porque entonces este
+      // owner no aparece en el listado y su GO nunca se calcula.
+      if (ingAnual <= 0 && tieneEventosGO) {
+        const fpSoloGO = ow.fiscalProfile || {};
+        const evSoloGO = fpSoloGO.eventosAno || {};
+        let impGOSolo = 0;
+        const desgloseGOSolo = [];
+        if (evSoloGO.recibioHerencia && Number(evSoloGO.herenciaMonto) > 0) {
+          const monto = Number(evSoloGO.herenciaMonto) || 0;
+          const exento = 3490 * UVT;
+          const gravable = Math.max(0, monto - exento);
+          const imp = gravable * 0.15;
+          impGOSolo += imp;
+          desgloseGOSolo.push({ tipo: "herencia", monto, exento: Math.min(monto, exento), gravable, tarifa: 0.15, impuesto: imp, baseLegal: "Arts. 302, 307, 313 ET" });
+        }
+        if (evSoloGO.vendioInmuebleAntiguo) {
+          const valorVenta = Number(evSoloGO.inmuebleValorVenta) || 0;
+          const costoFiscal = Number(evSoloGO.inmuebleCostoFiscal) || 0;
+          const utilidad = Math.max(0, valorVenta - costoFiscal);
+          const imp = utilidad * 0.15;
+          impGOSolo += imp;
+          desgloseGOSolo.push({ tipo: "venta_inmueble", valorVenta, costoFiscal, utilidad, tarifa: 0.15, impuesto: imp, baseLegal: "Arts. 300, 313 ET" });
+        }
+        if (evSoloGO.ganoLoteria && Number(evSoloGO.loteriaMonto) > 0) {
+          const monto = Number(evSoloGO.loteriaMonto) || 0;
+          const imp = monto * 0.20;
+          impGOSolo += imp;
+          desgloseGOSolo.push({ tipo: "loteria", monto, tarifa: 0.20, impuesto: imp, baseLegal: "Art. 317 ET" });
+        }
+        totalImp += impGOSolo;
+        detalle.push({
+          name: ow.name, type: "natural",
+          ingreso: 0, regimen: ow.regimen || "ordinario",
+          regimenNota: "Solo ganancias ocasionales — sin ingresos ordinarios en el año.",
+          ingLaboral: 0, ingCapital: 0, ingNoLaboral: 0, divAnual: 0, pensAnual: 0,
+          noConst: 0, neto: 0,
+          impuesto: impGOSolo, impSinOpt: impGOSolo, impOptimizado: impGOSolo,
+          impBruto: impGOSolo, impOptBruto: impGOSolo, ahorroOptimo: 0,
+          tasa: 0, tasaBruta: 0,
+          impGO: impGOSolo, desgloseGO: desgloseGOSolo,
+          baseGravable: 0, rentaSin: 0, rentaCon: 0,
+        });
+        return;
+      }
       if (ingAnual <= 0) return;
 
       // ── 1. INGRESOS NO CONSTITUTIVOS DE RENTA (Art. 55-56 ET) ──
@@ -433,6 +488,77 @@ export const estimarImpuesto = (u) => {
       }
 
       const ahorroNat = impActualNat - impOptNat;
+
+      // ── 6. GANANCIAS OCASIONALES (Bug #7, Arts. 299-317 ET) ──
+      // Cédula separada del régimen ordinario. Tarifa 15% general (herencias,
+      // venta inmueble > 2 años), 20% para loterías/rifas (Art. 317).
+      //
+      // Lee de ow.fiscalProfile.eventosAno. Si no existe o los montos son 0,
+      // impGO = 0 (invariante con motor pre-Fase 3).
+      //
+      // Decisiones conservadoras:
+      // - Herencia: exención 3.490 UVT (Art. 307 — caso cónyuge/hijos, el más
+      //   común). Lo que excede tributa al 15%.
+      // - Venta inmueble: utilidad = valorVenta - costoFiscal, × 15% sin exención
+      //   adicional (el 15% ya es beneficio vs 39% ordinario; Art. 311-1 tiene
+      //   exención adicional de 7.500 UVT pero requiere condiciones específicas
+      //   que no se capturan en el switch — el contador los aplicará en la
+      //   declaración real).
+      // - Lotería: 20% sin exención (Art. 317).
+      let impGO = 0;
+      const eventos = fp.eventosAno || {};
+      const desgloseGO = [];
+      if (eventos.recibioHerencia && Number(eventos.herenciaMonto) > 0) {
+        const monto = Number(eventos.herenciaMonto) || 0;
+        const exentoHerencia = 3490 * UVT; // Art. 307 — cónyuge/hijos
+        const gravableHerencia = Math.max(0, monto - exentoHerencia);
+        const impHerencia = gravableHerencia * 0.15;
+        impGO += impHerencia;
+        desgloseGO.push({
+          tipo: "herencia",
+          monto,
+          exento: Math.min(monto, exentoHerencia),
+          gravable: gravableHerencia,
+          tarifa: 0.15,
+          impuesto: impHerencia,
+          baseLegal: "Arts. 302, 307, 313 ET"
+        });
+      }
+      if (eventos.vendioInmuebleAntiguo) {
+        const valorVenta = Number(eventos.inmuebleValorVenta) || 0;
+        const costoFiscal = Number(eventos.inmuebleCostoFiscal) || 0;
+        const utilidad = Math.max(0, valorVenta - costoFiscal);
+        const impInmueble = utilidad * 0.15;
+        impGO += impInmueble;
+        desgloseGO.push({
+          tipo: "venta_inmueble",
+          valorVenta,
+          costoFiscal,
+          utilidad,
+          tarifa: 0.15,
+          impuesto: impInmueble,
+          baseLegal: "Arts. 300, 313 ET"
+        });
+      }
+      if (eventos.ganoLoteria && Number(eventos.loteriaMonto) > 0) {
+        const monto = Number(eventos.loteriaMonto) || 0;
+        const impLoteria = monto * 0.20;
+        impGO += impLoteria;
+        desgloseGO.push({
+          tipo: "loteria",
+          monto,
+          tarifa: 0.20,
+          impuesto: impLoteria,
+          baseLegal: "Art. 317 ET"
+        });
+      }
+
+      // Sumar GO al impuesto total y actualizar impActualNat para que el detalle
+      // muestre el total correcto (incluyendo GO).
+      impActualNat += impGO;
+      impOptNat += impGO; // GO no admite optimización (tarifa fija por cédula)
+      impBrutoNat += impGO;
+
       totalImp += impActualNat;
       detalle.push({
         name: ow.name, type: "natural", ingreso: ingAnual,
@@ -474,6 +600,8 @@ export const estimarImpuesto = (u) => {
         tasa: ingAnual > 0 ? (impActualNat / ingAnual * 100) : 0,
         tasaBruta: ingAnual > 0 ? (impBrutoNat / ingAnual * 100) : 0,
         espacioParaPVyAFC: espacioPV, reteN, impDiv,
+        // Bug #7 Fase 3: ganancias ocasionales
+        impGO, desgloseGO,
       });
     }
   });
