@@ -286,6 +286,33 @@ export function normalizeFiscalData(user) {
     }));
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // Warning: owner jurídica que tiene descuentos tributarios declarados
+  // el año anterior pero NO los capturó este año en descuentosTributarios.
+  // Los descuentos CTI, empleo, exterior, donaciones son directo del
+  // impuesto (no de la base), así que olvidarlos cuesta el 100% del monto.
+  // ─────────────────────────────────────────────────────────────────────
+  normOwners.forEach(ow => {
+    if (ow.type !== "juridica") return;
+    const da = ow.declaracionAnterior;
+    if (!da || da.tipo !== "F110") return;
+    const r = da.renglones || {};
+    const tuvoDescuentos = (+r.descICA || 0) + (+r.descCree || 0) + (+r.descDonaciones || 0) + (+r.descCTI || 0);
+    if (tuvoDescuentos < 1_000_000) return;
+    const descActual = ow.descuentosTributarios || {};
+    const totalActual = (+descActual.cti || 0) + (+descActual.empleo || 0) + (+descActual.exterior || 0) + (+descActual.donaciones || 0) + (+descActual.otros || 0);
+    if (totalActual >= tuvoDescuentos * 0.3) return; // Ya capturó al menos 30% de lo del año pasado
+    warnings.push({
+      severity: "warning",
+      itemId: ow.id,
+      itemType: "owner",
+      ownerName: ow.name,
+      code: "DESCUENTOS_AÑO_ANTERIOR_NO_CAPTURADOS",
+      message: `${ow.name} tuvo ~$${Math.round(tuvoDescuentos / 1e6)}M en descuentos tributarios en ${da.anoGravable} y este año solo $${Math.round(totalActual / 1e6)}M`,
+      accionSugerida: "Si la empresa sigue teniendo las mismas actividades (ICA, donaciones, CTI), los descuentos se siguen aplicando. Capturá los valores actuales en el perfil del owner.",
+    });
+  });
+
   const data = {
     ...user,
     owners: normOwners,
