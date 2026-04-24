@@ -95,41 +95,20 @@ test("Salud prepagada shape VIEJO + NUEVO suma (no pisa)", () => {
 
 // ───────── Pensión Voluntaria ─────────
 
-test("PV shape VIEJO (ow.aportes.pensionVoluntariaMensual) reduce el impuesto", () => {
+// NOTA Commit 1.7: el shape viejo de PV (ow.aportes.pensionVoluntariaMensual)
+// ya NO reduce impuesto sin migrar previamente. La migración silenciosa
+// (migrateAportesVoluntariosV17) convierte el shape viejo al nuevo.
+// Los tests específicos de PV viejo vs nuevo viven en verify_switch_v17.mjs.
+
+test("PV shape NUEVO (AP_TRIB_PV) reduce el impuesto", () => {
   const u = highEarner();
   const sinPV = estimarImpuesto(u).detalle.find(d => d.name === "Yo").impBruto;
 
-  u.owners[0].aportes = { ...u.owners[0].aportes, pensionVoluntariaMensual: 500_000 };
-  const conPV = estimarImpuesto(u).detalle.find(d => d.name === "Yo").impBruto;
+  const uConPV = highEarner();
+  uConPV.gas = { "Aporte tributario": [{ c: "Fondo PV", m: 500_000, t: "f", freq: "mes", owner: "own_1", fiscalCode: "AP_TRIB_PV" }] };
+  const conPV = estimarImpuesto(uConPV).detalle.find(d => d.name === "Yo").impBruto;
 
-  if (conPV >= sinPV) throw new Error(`PV viejo debe reducir impBruto: sinPV=${sinPV}, conPV=${conPV}`);
-});
-
-test("PV shape NUEVO (AP_TRIB_PV) produce el MISMO impuesto que shape viejo", () => {
-  const uViejo = baseUser();
-  uViejo.owners[0].aportes = { pensionVoluntariaMensual: 500_000 };
-
-  const uNuevo = baseUser();
-  uNuevo.gas = { "Aporte tributario": [{ c: "Fondo PV", m: 500_000, t: "f", freq: "mes", owner: "own_1", fiscalCode: "AP_TRIB_PV" }] };
-
-  const impViejo = estimarImpuesto(uViejo).detalle.find(d => d.name === "Yo").impuesto;
-  const impNuevo = estimarImpuesto(uNuevo).detalle.find(d => d.name === "Yo").impuesto;
-
-  assertClose(impNuevo, impViejo, 1, "PV viejo vs nuevo debe dar el mismo impuesto");
-});
-
-test("PV shape VIEJO + NUEVO suma (caps 2500 UVT y 25% respetados)", () => {
-  const u = baseUser();
-  // 250k viejo + 250k nuevo = 500k total
-  u.owners[0].aportes = { pensionVoluntariaMensual: 250_000 };
-  u.gas = { "Aporte tributario": [{ c: "Fondo PV", m: 250_000, t: "f", freq: "mes", owner: "own_1", fiscalCode: "AP_TRIB_PV" }] };
-  const impSuma = estimarImpuesto(u).detalle.find(d => d.name === "Yo").impuesto;
-
-  const uSolo = baseUser();
-  uSolo.owners[0].aportes = { pensionVoluntariaMensual: 500_000 };
-  const impSolo = estimarImpuesto(uSolo).detalle.find(d => d.name === "Yo").impuesto;
-
-  assertClose(impSuma, impSolo, 1, "250+250 debe coincidir con 500 en un solo lado");
+  if (conPV >= sinPV) throw new Error(`PV nuevo debe reducir impBruto: sinPV=${sinPV}, conPV=${conPV}`);
 });
 
 // ───────── AFC ─────────

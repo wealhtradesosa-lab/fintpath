@@ -218,14 +218,25 @@ export const estimarImpuesto = (u) => {
       // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022, ET Arts. 55,206,336,383,387) ═══
       const trm = u.trm || 4200;
 
-      // ── APORTES A SEGURIDAD SOCIAL (valores manuales del owner) ──
-      // Cada campo es opcional: si está > 0, sobreescribe el heurístico por default.
+      // ── APORTES A SEGURIDAD SOCIAL ──
+      // Commit 1.7: aportes obligatorios se leen en shape nuevo desde `ing.aportes`
+      // (prefilled al crear/editar salario, 4%+4% auto). Fallback al shape viejo
+      // `ow.aportes.pensionObligatoriaMensual/saludObligatoriaMensual` para
+      // retro-compat con datos anteriores a 1.5 y para escenarios del snapshot.
       const apt = ow.aportes || {};
-      const aPensObl = Number(apt.pensionObligatoriaMensual) || 0;     // salario mensual
-      const aPensVol = Number(apt.pensionVoluntariaMensual) || 0;      // Art. 126-1
-      const aSaludObl = Number(apt.saludObligatoriaMensual) || 0;      // salario mensual
-      const aSSIndep = Number(apt.segSocialIndependienteMensual) || 0; // honorarios mensual total
+      const aSSIndep = Number(apt.segSocialIndependienteMensual) || 0; // honorarios mensual total (sin refactor — fuera de scope sprint)
       const salarioEsBruto = apt.salarioEsBruto !== false;             // default true
+
+      // Sumar aportes obligatorios de los salarios del owner (shape nuevo — 1.5)
+      const salariosDelOwner = oIng.filter(i => i.fiscalCode === LAB_SALARIO);
+      const aPensOblNuevoMes = salariosDelOwner.reduce((s, i) => s + (Number(i.aportes?.pension) || 0), 0);
+      const aSaludOblNuevoMes = salariosDelOwner.reduce((s, i) => s + (Number(i.aportes?.salud) || 0), 0);
+      // Fallback al shape viejo si el nuevo está vacío (0). Si cualquiera >0 en shape nuevo, gana el shape nuevo.
+      const aPensObl  = aPensOblNuevoMes  > 0 ? aPensOblNuevoMes  : (Number(apt.pensionObligatoriaMensual) || 0);
+      const aSaludObl = aSaludOblNuevoMes > 0 ? aSaludOblNuevoMes : (Number(apt.saludObligatoriaMensual)   || 0);
+      // Commit 1.7: pensión voluntaria ya NO se lee de ow.aportes; vive exclusivamente
+      // como egreso con fiscalCode AP_TRIB_PV (shape nuevo). La migración silenciosa
+      // (sanitize en App.jsx) convierte datos viejos antes de llegar acá.
 
       // Clasificar ingresos por subcédula
       const salAnualInput = oIng.filter(i => i.fiscalCode === LAB_SALARIO).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
@@ -307,13 +318,12 @@ export const estimarImpuesto = (u) => {
       // Pensión voluntaria + AFC (Art. 126-1 y 126-4 ET): renta exenta bajo el cap
       // compartido de 2500 UVT / 25% neto laboral.
       //
-      // Bridge Commit 1.6: suma tres fuentes (las tres comparten el mismo cap):
-      //   1. ow.aportes.pensionVoluntariaMensual (shape viejo, será migrado en 1.7)
-      //   2. Egresos con fiscalCode AP_TRIB_PV  (shape nuevo)
-      //   3. Egresos con fiscalCode AP_TRIB_AFC (shape nuevo, antes no existía)
+      // Commit 1.7: después de la migración silenciosa, PV y AFC viven sólo en
+      // Egresos (fiscalCode AP_TRIB_PV y AP_TRIB_AFC). El lector viejo
+      // ow.aportes.pensionVoluntariaMensual ya no se usa acá.
       const pvEgresoAnual  = oGas.filter(g => g.fiscalCode === AP_TRIB_PV).reduce((s, g) => s + (g.m || 0), 0) * 12;
       const afcEgresoAnual = oGas.filter(g => g.fiscalCode === AP_TRIB_AFC).reduce((s, g) => s + (g.m || 0), 0) * 12;
-      const pvManualBruto  = (aPensVol * 12) + pvEgresoAnual + afcEgresoAnual;
+      const pvManualBruto  = pvEgresoAnual + afcEgresoAnual;
       const pvManualAnual  = pvManualBruto > 0 ? Math.min(pvManualBruto, netoLaboral * 0.25, 2500 * UVT) : 0;
       const benefLaboral = Math.min(exenta25 + totalDeducciones + pvManualAnual, lim40);
 
@@ -405,7 +415,7 @@ export const estimarImpuesto = (u) => {
         ingLaboral, ingCapital, ingNoLaboral, divAnual, pensAnual,
         noConst: totalNoConst, neto: netoLaboral,
         // Desglose de aportes (para UI y debugging)
-        aportesManuales: (aPensObl + aPensVol + aSaludObl + aSSIndep) > 0,
+        aportesManuales: (aPensObl + aSaludObl + aSSIndep) > 0,
         aportesDesglose: {
           pensionObligatoriaAnual: noConstSalPens,
           saludObligatoriaAnual: noConstSalSalud,
