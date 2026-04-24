@@ -182,7 +182,18 @@ export default function FinPath(){
     // Persistir preferencia del usuario entre sesiones. Para usuarios que son
     // AMBOS (asesor + cliente), defaultear a 'personal' previene el flash
     // de AdvisorWorkspace al recargar la página como cliente.
-    try{return localStorage.getItem("fp3_viewMode")||"personal"}catch{return "personal"}
+    //
+    // FIX bug: si entra por /asesores o /asesores/, forzar 'workspace' sin
+    // importar lo que diga localStorage. Caso contrario, un asesor que alguna
+    // vez tocó "Modo personal" quedaba con 'personal' guardado y al volver
+    // por /asesores caía directo a su dashboard privado (bug reportado).
+    try{
+      if(typeof window!=="undefined"){
+        const p=window.location.pathname;
+        if(p==="/asesores"||p==="/asesores/")return "workspace";
+      }
+      return localStorage.getItem("fp3_viewMode")||"personal";
+    }catch{return "personal"}
   });
   const[currentClientId,setCurrentClientId]=useState(null);
   const[advisorClients,setAdvisorClients]=useState([]);
