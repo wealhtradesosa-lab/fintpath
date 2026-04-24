@@ -291,25 +291,46 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
     const rendimientos = ownerIng.filter(i => i.categoria === "Rendimientos").reduce((s, i) => s + (i.mensual || 0), 0);
     const dividendos = ownerIng.filter(i => i.categoria === "Dividendos").reduce((s, i) => s + (i.mensual || 0), 0);
     const gastosActividad = ownerGas.filter(g => ["Oficina", "Servicios", "Tecnología", "Transporte"].includes(g.cat)).reduce((s, g) => s + (g.m || 0), 0);
-    const gastosInmueble = ownerGas.filter(g => ["Predial", "Mantenimiento", "Seguros"].includes(g.cat)).reduce((s, g) => s + (g.m || 0), 0);
+    // Categorías de gastos del inmueble — ampliadas para evitar falso positivo
+    // cuando el usuario registró el predial/mantenimiento bajo otro nombre.
+    const categoriasInmueble = [
+      "Predial", "Mantenimiento", "Seguros",
+      "Administración", "Vivienda", "Servicios", "Servicios públicos",
+    ];
+    const gastosInmueble = ownerGas.filter(g => {
+      const cat = (g.cat || "").toLowerCase();
+      // Match por categoría exacta o por palabras clave en el nombre
+      if (categoriasInmueble.some(c => c.toLowerCase() === cat)) return true;
+      const nombre = (g.nombre || g.c || "").toLowerCase();
+      return nombre.includes("predial") || nombre.includes("administra") ||
+             nombre.includes("manteni") || nombre.includes("seguro");
+    }).reduce((s, g) => s + (g.m || 0), 0);
     return { salario, honorarios, arriendos, rendimientos, dividendos, gastosActividad, gastosInmueble };
   }, [ownerIng, ownerGas]);
 
   const dataGaps = useMemo(() => {
     const gaps = [];
     if (resumen.arriendos > 0 && resumen.gastosInmueble === 0) {
+      // Mensaje distinto según tipo de owner:
+      // - Natural: probablemente pague predial de su propiedad arrendada
+      // - Jurídica: depende de estructura (puede no aplicar)
+      const esJuridica = selectedOwner?.type === "juridica";
       gaps.push({
         id: "arriendo_sin_gastos",
-        titulo: "Arriendo sin gastos del inmueble",
-        desc: "Registraste arriendos como ingreso, pero no predial, administración ni mantenimiento. Si los pagás, son deducibles.",
+        titulo: esJuridica
+          ? "¿Hay gastos deducibles de los inmuebles arrendados?"
+          : "¿Pagás predial o administración de los inmuebles que arrendás?",
+        desc: esJuridica
+          ? "Como sociedad que recibe arriendos, si pagás predial, administración, mantenimiento o seguros de los inmuebles, son deducibles (Art. 107 ET). Si los paga el arrendatario directamente o no aplica a tu estructura, descartá este aviso."
+          : "Si como arrendador pagás predial, administración, mantenimiento o seguros, son deducibles del ingreso de arriendo. Si el arrendatario los paga directamente o no tenés estos gastos, descartá este aviso.",
         page: "gas", icono: "🏠",
       });
     }
     if (resumen.honorarios > 0 && resumen.gastosActividad === 0) {
       gaps.push({
         id: "honorarios_sin_gastos",
-        titulo: "Honorarios sin gastos de actividad",
-        desc: "Como independiente, podés deducir oficina, servicios, transporte, tecnología con causalidad. No veo ninguno.",
+        titulo: "¿Tenés gastos relacionados a tu actividad profesional?",
+        desc: "Como independiente con honorarios, podés deducir oficina, servicios, transporte o tecnología que uses para ejercer tu actividad (Art. 107 ET, causalidad). Si no tenés estos gastos o ya los cargaste en otra categoría, descartá este aviso.",
         page: "gas", icono: "💼",
       });
     }
@@ -324,8 +345,8 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
     if (tieneSalario && !tieneAportes) {
       gaps.push({
         id: "salario_sin_aportes",
-        titulo: "Salario sin aportes obligatorios registrados",
-        desc: "Todo empleado aporta 4% pensión + 4% salud. Sin registrarlos el motor sobrestima el impuesto.",
+        titulo: "¿Cargaste tus aportes obligatorios de pensión y salud?",
+        desc: "Todo empleado aporta ~4% pensión + 4% salud del salario. Si no los registrás en el ingreso, el motor sobrestima tu impuesto. Si ya los registraste en otro campo o no aplican a tu caso, descartá este aviso.",
         page: "ing", icono: "💼",
       });
     }
@@ -334,8 +355,8 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
     if (tieneDeudaHipotecaria && !marcadaComoVivienda) {
       gaps.push({
         id: "hipoteca_sin_clasificar",
-        titulo: "Hipoteca sin clasificar como vivienda habitacional",
-        desc: "Si es tu casa, los intereses son deducibles hasta 1.200 UVT/año.",
+        titulo: "¿Es tu vivienda de habitación la hipoteca que tenés?",
+        desc: "Si la hipoteca es sobre la casa donde vivís, los intereses son deducibles hasta 1.200 UVT/año (Art. 119 ET). Si es de un inmueble de inversión o comercial, descartá este aviso — esa deducción solo aplica a vivienda habitacional.",
         page: "deu", icono: "🏡",
       });
     }
@@ -396,7 +417,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
       {dataGaps.length > 0 && (
         <div style={{ marginBottom: 18 }}>
           <div style={{ ...F.caption, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, color: T.orange, marginBottom: 10 }}>
-            Datos que te podrían faltar — {dataGaps.length}
+            Sugerencias para revisar — {dataGaps.length}
           </div>
           <div style={{ background: T.bg3, borderRadius: 10, overflow: "hidden" }}>
             {dataGaps.map((g, i) => (
@@ -418,7 +439,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
             ))}
           </div>
           <p style={{ ...F.caption, marginTop: 8, fontStyle: "italic" }}>
-            Tu progreso se guarda automáticamente. "No aplica" descarta el aviso para este propietario.
+            Cada sugerencia es una pregunta — si no aplica a tu caso (por ejemplo no pagás ese gasto, o ya lo cargaste en otra categoría), descartala con "No aplica" y no se vuelve a mostrar.
           </p>
         </div>
       )}
