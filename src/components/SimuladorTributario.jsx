@@ -209,7 +209,8 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           }
 
           const descuentosSolicitados = Number(calc.descuentosSolicitados) || 0;
-          const r = (owner && owner.declaracionAnterior && owner.declaracionAnterior.renglones) || {};
+          const _decl = (owner && owner.declaraciones && owner.declaraciones[0]) || (owner && owner.declaracionAnterior);
+          const r = (_decl && _decl.renglones) || {};
           const hubo = (Number(r.descICA) || 0) + (Number(r.descDonaciones) || 0) + (Number(r.descCree) || 0) + (Number(r.descCTI) || 0);
           if (hubo > 1_000_000 && descuentosSolicitados < hubo * 0.3) {
             diagnos.push({

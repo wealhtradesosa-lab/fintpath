@@ -8,22 +8,6 @@
 // Se ejecutan dentro de sanitize() en App.jsx en cada carga del user (Supabase
 // o localStorage), antes de que la UI o el motor vean los datos.
 
-/**
- * Commit 1.7: migra PV voluntaria desde ow.aportes.pensionVoluntariaMensual
- * hacia un egreso en Gastos con fiscalCode AP_TRIB_PV.
- *
- * Motivo: post-1.7 el motor taxCO.js ya NO lee ow.aportes.pensionVoluntariaMensual.
- * Sin esta migración, usuarios que tenían PV configurada en el modal viejo
- * perderían su deducible silenciosamente.
- *
- * Reglas:
- *   1. Si ya existe un egreso AP_TRIB_PV para el mismo owner, NO duplicar
- *      (asumimos que cubre la intención del usuario).
- *   2. Siempre borrar ow.aportes.pensionVoluntariaMensual al terminar, aunque
- *      haya habido un egreso existente. Esto cierra cualquier posibilidad de
- *      doble-conteo si el motor o un componente futuro volviera a leer el campo.
- *   3. Marcar user.migratedAportesVoluntariosV17 = true para no reprocesar.
- */
 export function migrateAportesVoluntariosV17(d) {
   if (!d || typeof d !== "object") return d;
   if (d.migratedAportesVoluntariosV17) return d;
@@ -50,5 +34,47 @@ export function migrateAportesVoluntariosV17(d) {
   }
   d.gas = gas;
   d.migratedAportesVoluntariosV17 = true;
+  return d;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Commit 5.5: migra owner.declaracionAnterior (singular) a
+// owner.declaraciones (array con máximo 3 entries, más recientes primero).
+//
+// Motivo: el shape singular pisa cada upload nuevo. El array permite
+// historial de hasta 3 años para comparaciones y timeline.
+//
+// Reglas:
+//   1. Si owner.declaracionAnterior existe y owner.declaraciones no, crear
+//      owner.declaraciones = [declaracionAnterior].
+//   2. Si owner.declaraciones ya existe, respetarlo (idempotencia).
+//   3. Siempre borrar owner.declaracionAnterior al terminar para evitar
+//      confusión futura sobre cuál es la fuente de verdad.
+//   4. Ordenar descendente por anoGravable (más reciente primero).
+//   5. Recortar a MAX_DECLARACIONES si acumuló más que eso.
+//   6. Marcar user.migratedDeclaracionesV55 = true para no reprocesar.
+// ─────────────────────────────────────────────────────────────────────────
+export const MAX_DECLARACIONES = 3;
+
+export function migrateDeclaracionesV55(d) {
+  if (!d || typeof d !== "object") return d;
+  if (d.migratedDeclaracionesV55) return d;
+  for (const ow of (d.owners || [])) {
+    const singular = ow.declaracionAnterior;
+    if (singular && (!ow.declaraciones || !Array.isArray(ow.declaraciones))) {
+      ow.declaraciones = [singular];
+    }
+    if (ow.declaraciones && Array.isArray(ow.declaraciones)) {
+      // Ordenar descendente por anoGravable (null/undefined al final)
+      ow.declaraciones.sort((a, b) => (Number(b?.anoGravable) || 0) - (Number(a?.anoGravable) || 0));
+      // Recortar a MAX
+      if (ow.declaraciones.length > MAX_DECLARACIONES) {
+        ow.declaraciones = ow.declaraciones.slice(0, MAX_DECLARACIONES);
+      }
+    }
+    // Siempre borrar singular al final, exista o no el nuevo array
+    delete ow.declaracionAnterior;
+  }
+  d.migratedDeclaracionesV55 = true;
   return d;
 }

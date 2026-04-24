@@ -69,8 +69,9 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
   const upd = (k, v) => setD({ ...d, [k]: v });
 
   // Valores año anterior (si hay declaración F-110 importada)
-  const prev = owner?.declaracionAnterior?.tipo === "F110" ? (owner.declaracionAnterior.renglones || {}) : {};
-  const prevAno = owner?.declaracionAnterior?.anoGravable;
+  const _decl = (owner?.declaraciones && owner.declaraciones[0]) || owner?.declaracionAnterior;
+  const prev = _decl?.tipo === "F110" ? (_decl.renglones || {}) : {};
+  const prevAno = _decl?.anoGravable;
   const prevLabel = prevAno ? `Año ${prevAno}` : null;
 
   const total = Object.values(d).reduce((s, v) => s + (+v || 0), 0);

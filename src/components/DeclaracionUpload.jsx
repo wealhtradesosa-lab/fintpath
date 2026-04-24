@@ -125,27 +125,56 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
 
   const handleConfirm = () => {
     if (!parsed || !selectedOwner) return;
+
+    // Commit 5.5: hard block. anoGravable debe estar entre currentYear-5 y currentYear-1.
+    const ano = Number(parsed.anoGravable) || 0;
+    const currentYear = new Date().getFullYear();
+    const minAno = currentYear - 5;
+    const maxAno = currentYear - 1;
+    if (ano < minAno || ano > maxAno) {
+      setError(`Año gravable ${ano || "no detectado"} fuera de rango permitido (${minAno}–${maxAno}). Si el año está mal, corregilo arriba antes de guardar.`);
+      return;
+    }
+
+    // Commit 5.5: si el array tiene 3 y el año no existe, avisar que se descarta el más viejo.
+    const existentes = selectedOwner.declaraciones || [];
+    const yaExisteMismoAno = existentes.some(d => Number(d?.anoGravable) === ano);
+    if (!yaExisteMismoAno && existentes.length >= 3) {
+      const masVieja = [...existentes].sort((a, b) => (Number(a?.anoGravable) || 0) - (Number(b?.anoGravable) || 0))[0];
+      const ok = window.confirm(
+        `Ya tenés 3 declaraciones guardadas para ${selectedOwner.name}. Se descartará la más vieja (año ${masVieja?.anoGravable || "?"}) para guardar esta nueva (año ${ano}).\n\n¿Continuar?`
+      );
+      if (!ok) return;
+    }
+    if (yaExisteMismoAno) {
+      const ok = window.confirm(
+        `Ya tenés una declaración cargada del año ${ano} para ${selectedOwner.name}. Se reemplazará por la nueva.\n\n¿Continuar?`
+      );
+      if (!ok) return;
+    }
+
     const cleaned = {};
     Object.keys(editedRenglones).forEach((k) => {
       cleaned[k] = Number(editedRenglones[k]) || 0;
     });
     const payload = {
       tipo: parsed.tipo,
-      anoGravable: Number(parsed.anoGravable) || null,
+      anoGravable: ano,
       renglones: cleaned,
       capturadoEl: new Date().toISOString(),
       fuenteCaptura: "upload_pdf_ia",
     };
     onSaveToOwner(selectedOwner.id, payload);
-    // Reset para permitir subir otra
     setFile(null);
     setParsed(null);
     setEditedRenglones({});
+    setError("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const labels = parsed?.tipo === "F110" ? RENGLON_LABELS_F110 : RENGLON_LABELS_F210;
-  const existingDeclaration = selectedOwner?.declaracionAnterior;
+  // Commit 5.5: mostrar lista de declaraciones ya guardadas (hasta 3)
+  const declaracionesGuardadas = selectedOwner?.declaraciones || [];
 
   return (
     <div style={{ maxWidth: 820, margin: "0 auto", padding: "16px" }}>
@@ -192,9 +221,21 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
             </option>
           ))}
         </select>
-        {existingDeclaration?.anoGravable && (
-          <div style={{ fontSize: 10, color: T.orange, marginTop: 6 }}>
-            ⚠️ Este owner ya tiene una declaración guardada del año {existingDeclaration.anoGravable}. Subir una nueva la reemplazará.
+        {declaracionesGuardadas.length > 0 && (
+          <div style={{ marginTop: 8, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+            📚 Declaraciones guardadas para este owner ({declaracionesGuardadas.length}/3):{" "}
+            {declaracionesGuardadas
+              .map((d) => d?.anoGravable)
+              .filter(Boolean)
+              .sort((a, b) => b - a)
+              .map((y) => (
+                <span key={y} style={{ display: "inline-block", padding: "2px 8px", background: T.bg3, borderRadius: 4, marginRight: 4, fontWeight: 600, color: T.txt2, fontFamily: "monospace" }}>
+                  {y}
+                </span>
+              ))}
+            {declaracionesGuardadas.length >= 3 && (
+              <span style={{ color: T.orange, marginLeft: 4 }}>· Al subir una nueva se descarta la más vieja.</span>
+            )}
           </div>
         )}
       </div>

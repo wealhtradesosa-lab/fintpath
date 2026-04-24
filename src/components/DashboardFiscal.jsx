@@ -2,14 +2,16 @@
 // DASHBOARD FISCAL — Plan Tributario → tab "Dashboard"
 // ─────────────────────────────────────────────────────────────────────────
 // Vista consolidada del estado fiscal por owner:
-//   Bloque 1 — KPIs año declarado vs año simulado (patrimonio, impuesto,
-//              tasa efectiva, saldo)
-//   Bloque 2 — Diff año-a-año con Δ absoluto y porcentual
+//   Bloque 0 — Selector de año (Commit 5.5): hasta 3 años guardados + actual
+//   Bloque 1 — KPIs año declarado vs año simulado
+//   Bloque 2 — Diff año-a-año
 //   Bloque 3 — Alertas visibles con CTAs accionables
+//   Bloque 4 — Recomendaciones con números concretos (Commit 6)
+//   Bloque 5 — Timeline mini de patrimonio/impuesto (Commit 5.5)
 //
-// Scope Commit 5 (5b): soporta UNA declaración por owner (shape actual
-// `owner.declaracionAnterior`). Timeline multi-año queda para 5.5 cuando
-// refactoreemos a `owner.declaraciones: []`.
+// Commit 5.5: soporta array owner.declaraciones[] (hasta 3 años, FIFO).
+// La declaración comparada por defecto es la más reciente; el selector
+// permite cambiar a años anteriores guardados.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
@@ -87,9 +89,30 @@ function DiffRow({ label, actual, declarado, fmt = fm }) {
 
 export default function DashboardFiscal({ u, owners, estimacion, warnings, onNavigate, onGoToUpload }) {
   const [selectedOwnerId, setSelectedOwnerId] = useState(owners[0]?.id || "");
+  // Commit 5.5: año seleccionado dentro del owner (null = la más reciente)
+  const [selectedAno, setSelectedAno] = useState(null);
 
   const selectedOwner = useMemo(() => owners.find((o) => o.id === selectedOwnerId), [owners, selectedOwnerId]);
-  const declarada = selectedOwner?.declaracionAnterior;
+
+  // Commit 5.5: declaraciones[] ordenadas descendente por año (fallback legacy)
+  const declaraciones = useMemo(() => {
+    if (!selectedOwner) return [];
+    if (Array.isArray(selectedOwner.declaraciones) && selectedOwner.declaraciones.length > 0) {
+      return [...selectedOwner.declaraciones].sort((a, b) => (Number(b?.anoGravable) || 0) - (Number(a?.anoGravable) || 0));
+    }
+    if (selectedOwner.declaracionAnterior) return [selectedOwner.declaracionAnterior];
+    return [];
+  }, [selectedOwner]);
+
+  // Declaración "activa" para comparar: la del año seleccionado, o la más reciente por default
+  const declarada = useMemo(() => {
+    if (declaraciones.length === 0) return null;
+    if (selectedAno != null) {
+      const match = declaraciones.find((d) => Number(d?.anoGravable) === Number(selectedAno));
+      if (match) return match;
+    }
+    return declaraciones[0];
+  }, [declaraciones, selectedAno]);
   const tieneDeclaracion = !!declarada?.renglones;
 
   // Encontrar el detalle de este owner en la estimación actual (motor)
@@ -176,9 +199,26 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
 
       {/* Banner de estado de declaración */}
       {tieneDeclaracion ? (
-        <div style={{ padding: "10px 14px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, marginBottom: 14, fontSize: 12, color: T.txt2 }}>
-          ✅ Declaración {declarada.tipo} del año <strong style={{ color: T.green }}>{declarada.anoGravable}</strong> cargada.
-          {declarada.capturadoEl && <span style={{ color: T.txt3 }}> · Capturada el {new Date(declarada.capturadoEl).toLocaleDateString("es-CO")}</span>}
+        <div style={{ padding: "10px 14px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, marginBottom: 14, fontSize: 12, color: T.txt2, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            ✅ Declaración {declarada.tipo} del año <strong style={{ color: T.green }}>{declarada.anoGravable}</strong> cargada.
+            {declarada.capturadoEl && <span style={{ color: T.txt3 }}> · Capturada el {new Date(declarada.capturadoEl).toLocaleDateString("es-CO")}</span>}
+          </div>
+          {/* Commit 5.5: selector de año si hay más de uno */}
+          {declaraciones.length > 1 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>Comparar vs</span>
+              <select
+                value={selectedAno ?? declaraciones[0]?.anoGravable ?? ""}
+                onChange={(e) => setSelectedAno(Number(e.target.value))}
+                style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "4px 8px", borderRadius: 6, fontSize: 12, outline: "none", cursor: "pointer", fontFamily: "monospace", fontWeight: 600 }}
+              >
+                {declaraciones.map((d) => (
+                  <option key={d.anoGravable} value={d.anoGravable}>{d.anoGravable}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ padding: "14px 16px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, marginBottom: 14 }}>
@@ -289,6 +329,90 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           </div>
         )}
       </div>
+
+      {/* Bloque 5 (Commit 5.5): Timeline mini de patrimonio/impuesto */}
+      {declaraciones.length >= 2 && (() => {
+        const puntos = declaraciones
+          .slice()
+          .sort((a, b) => (Number(a?.anoGravable) || 0) - (Number(b?.anoGravable) || 0))
+          .map((d) => {
+            const rr = d?.renglones || {};
+            const esF110 = d?.tipo === "F110";
+            return {
+              ano: d.anoGravable,
+              patrimonio: Number(rr.patrimonioLiquido) || 0,
+              impuesto: esF110 ? (Number(rr.impuestoNeto) || Number(rr.impuestoCalculado) || 0) : (Number(rr.impuestoCalculado) || 0),
+              tipo: d.tipo,
+            };
+          });
+        // Agregar punto "Actual" (simulación del motor) al final
+        puntos.push({
+          ano: "Actual",
+          patrimonio: patrimonioLiquidoActual,
+          impuesto: impuestoActual,
+          tipo: "sim",
+        });
+        const maxPat = Math.max(...puntos.map((p) => p.patrimonio), 1);
+        const maxImp = Math.max(...puntos.map((p) => p.impuesto), 1);
+        return (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+              Timeline — {puntos.length} puntos
+            </div>
+            <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 10, padding: "16px 18px" }}>
+              {/* Patrimonio */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 10, color: T.txt3, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Patrimonio líquido
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${puntos.length}, 1fr)`, gap: 8, alignItems: "flex-end", minHeight: 80 }}>
+                  {puntos.map((p, i) => {
+                    const h = (p.patrimonio / maxPat) * 60;
+                    const esSim = p.tipo === "sim";
+                    return (
+                      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                        <div style={{ fontSize: 10, color: esSim ? T.blue : T.txt2, fontFamily: "monospace", fontWeight: 600 }}>
+                          {fm(p.patrimonio).replace("$", "$").replace(/(\d{3})(?=\d{3}(?:\d{3})?$)/g, "$1")}
+                        </div>
+                        <div style={{ width: "100%", maxWidth: 40, height: Math.max(h, 4), background: esSim ? T.blue : T.purple, borderRadius: 4, opacity: esSim ? 0.7 : 1 }} />
+                        <div style={{ fontSize: 10, color: esSim ? T.blue : T.txt3, fontWeight: 600, fontFamily: "monospace" }}>
+                          {p.ano}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Impuesto */}
+              <div>
+                <div style={{ fontSize: 10, color: T.txt3, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Impuesto
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${puntos.length}, 1fr)`, gap: 8, alignItems: "flex-end", minHeight: 80 }}>
+                  {puntos.map((p, i) => {
+                    const h = (p.impuesto / maxImp) * 60;
+                    const esSim = p.tipo === "sim";
+                    return (
+                      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                        <div style={{ fontSize: 10, color: esSim ? T.blue : T.txt2, fontFamily: "monospace", fontWeight: 600 }}>
+                          {fm(p.impuesto)}
+                        </div>
+                        <div style={{ width: "100%", maxWidth: 40, height: Math.max(h, 4), background: esSim ? T.blue : T.red, borderRadius: 4, opacity: esSim ? 0.7 : 1 }} />
+                        <div style={{ fontSize: 10, color: esSim ? T.blue : T.txt3, fontWeight: 600, fontFamily: "monospace" }}>
+                          {p.ano}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ fontSize: 9, color: T.txt3, marginTop: 12, fontStyle: "italic", textAlign: "center" }}>
+                Últimas {declaraciones.length} declaraciones + simulación del año en curso (en azul).
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Bloque 4 (Commit 6): Recomendaciones con números concretos */}
       <RecomendacionesFiscales

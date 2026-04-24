@@ -294,7 +294,9 @@ export function normalizeFiscalData(user) {
   // ─────────────────────────────────────────────────────────────────────
   normOwners.forEach(ow => {
     if (ow.type !== "juridica") return;
-    const da = ow.declaracionAnterior;
+    // Commit 5.5: leer de declaraciones[0] (la más reciente). Fallback al shape
+    // singular viejo por si un user llega sin pasar por sanitize() (ej: tests aislados).
+    const da = (ow.declaraciones && ow.declaraciones[0]) || ow.declaracionAnterior;
     if (!da || da.tipo !== "F110") return;
     const r = da.renglones || {};
     const tuvoDescuentos = (+r.descICA || 0) + (+r.descCree || 0) + (+r.descDonaciones || 0) + (+r.descCTI || 0);
@@ -321,7 +323,7 @@ export function normalizeFiscalData(user) {
   // ─────────────────────────────────────────────────────────────────────
   normOwners.forEach(ow => {
     if (ow.type !== "natural") return;
-    const da = ow.declaracionAnterior;
+    const da = (ow.declaraciones && ow.declaraciones[0]) || ow.declaracionAnterior;
     if (!da || da.tipo !== "F210") return;
     const r = da.renglones || {};
     const tuvoPVAFC = +r.pvAFC || 0;

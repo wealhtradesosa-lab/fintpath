@@ -38,7 +38,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
-import { migrateAportesVoluntariosV17 } from "./lib/migrations";
+import { migrateAportesVoluntariosV17, migrateDeclaracionesV55 } from "./lib/migrations";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import DashboardFiscal from "./components/DashboardFiscal";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
@@ -81,7 +81,7 @@ function LoadingScreen(){
 }
 
 
-const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.owners)d.owners=[{id:"own_1",name:"Personal",type:"natural",regimen:"ordinario"}];d.owners=d.owners.map(o=>({...o,regimen:o.regimen||"ordinario"}));if(!d.inv)d.inv=[];d.inv=d.inv.map(i=>{if(i.tp&&!isNaN(Number(i.tp))){i.tp=inferType(i);i.tipo=i.tp}return i});if(!d.deu)d.deu=[];if(!d.gas)d.gas={};if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateAportesVoluntariosV17(d)};
+const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.owners)d.owners=[{id:"own_1",name:"Personal",type:"natural",regimen:"ordinario"}];d.owners=d.owners.map(o=>({...o,regimen:o.regimen||"ordinario"}));if(!d.inv)d.inv=[];d.inv=d.inv.map(i=>{if(i.tp&&!isNaN(Number(i.tp))){i.tp=inferType(i);i.tipo=i.tp}return i});if(!d.deu)d.deu=[];if(!d.gas)d.gas={};if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateDeclaracionesV55(migrateAportesVoluntariosV17(d))};
 
 // ═══ END-TO-END ENCRYPTION ═══
 const E2E={
@@ -1873,9 +1873,27 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           isPro={plan==="pro"||plan==="advisor_pro"}
           onUpsell={()=>setPg("price")}
           onSaveToOwner={(ownerId,declaracion)=>{
-            const owners=(u&&u.owners||[]).map(o=>o.id===ownerId?{...o,declaracionAnterior:declaracion}:o);
+            // Commit 5.5: FIFO con límite 3. Si el año ya existe, reemplaza ese entry.
+            // Si no existe y el array tiene 3, descarta el más viejo (último del array
+            // ya que vienen ordenados descendente por año).
+            const owners=(u&&u.owners||[]).map(o=>{
+              if(o.id!==ownerId)return o;
+              const actuales=Array.isArray(o.declaraciones)?[...o.declaraciones]:[];
+              const anoNuevo=Number(declaracion.anoGravable)||0;
+              const idxMismoAno=actuales.findIndex(d=>Number(d?.anoGravable)===anoNuevo);
+              if(idxMismoAno>=0){
+                actuales[idxMismoAno]=declaracion;
+              }else{
+                actuales.push(declaracion);
+              }
+              actuales.sort((a,b)=>(Number(b?.anoGravable)||0)-(Number(a?.anoGravable)||0));
+              const recortadas=actuales.slice(0,3);
+              return{...o,declaraciones:recortadas};
+            });
             upd("owners",owners);
-            showToast("✅ Declaración guardada en "+(owners.find(o=>o.id===ownerId)?.name||"owner"));
+            const ow=owners.find(o=>o.id===ownerId);
+            const n=ow?.declaraciones?.length||0;
+            showToast("✅ Declaración guardada en "+(ow?.name||"owner")+" ("+n+"/3 años)");
           }}
         />}
       </div>);
