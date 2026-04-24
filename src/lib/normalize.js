@@ -313,6 +313,33 @@ export function normalizeFiscalData(user) {
     });
   });
 
+  // ─────────────────────────────────────────────────────────────────────
+  // Warning: owner natural que aporta a pensión voluntaria según la
+  // declaración del año anterior, pero no capturó owner.aportes este año.
+  // Sin captura, el motor asume 0 aportes voluntarios y no aplica la
+  // deducción correspondiente — costo típico ~$1M-$5M en impuesto anual.
+  // ─────────────────────────────────────────────────────────────────────
+  normOwners.forEach(ow => {
+    if (ow.type !== "natural") return;
+    const da = ow.declaracionAnterior;
+    if (!da || da.tipo !== "F210") return;
+    const r = da.renglones || {};
+    const tuvoPVAFC = +r.pvAFC || 0;
+    if (tuvoPVAFC < 1_000_000) return;
+    const apt = ow.aportes || {};
+    const tienePVCapturada = (+apt.pensionVoluntariaMensual || 0) > 0;
+    if (tienePVCapturada) return;
+    warnings.push({
+      severity: "warning",
+      itemId: ow.id,
+      itemType: "owner",
+      ownerName: ow.name,
+      code: "APORTES_VOLUNTARIOS_NO_CAPTURADOS",
+      message: `${ow.name} declaró ~$${Math.round(tuvoPVAFC / 1e6)}M en pensión voluntaria + AFC en ${da.anoGravable} pero no hay aportes capturados este año`,
+      accionSugerida: "Si seguís aportando a PV/AFC, capturalos en el perfil del owner. Son deducibles dentro del tope 40%/1340 UVT — olvidarlos puede costar varios millones en impuesto.",
+    });
+  });
+
   const data = {
     ...user,
     owners: normOwners,
