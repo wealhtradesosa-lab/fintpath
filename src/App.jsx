@@ -176,6 +176,9 @@ export default function FinPath(){
   const[resetLoading,setResetLoading]=useState(false);
   const[resetError,setResetError]=useState("");
   const[resetSent,setResetSent]=useState(false);
+  // Modal de solicitar recuperación (el usuario escribe email acá explícitamente)
+  const[showRecoveryRequest,setShowRecoveryRequest]=useState(false);
+  const[recoveryEmail,setRecoveryEmail]=useState("");
   // ═══ ADVISOR MODE STATE ═══
   // isAdvisor: true si el usuario loggeado existe en la tabla `advisors`
   // advisorProfile: datos del asesor (plan, max_clients, firm_name, etc.)
@@ -644,6 +647,59 @@ export default function FinPath(){
   }
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
+    {/* Modal SOLICITAR recuperación: el usuario escribe su email acá */}
+    {showRecoveryRequest&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20}}>
+      <div style={{background:T.bg2,border:`1px solid ${T.borderL||T.border}`,borderRadius:20,width:"100%",maxWidth:460,padding:32,position:"relative"}}>
+        <button onClick={()=>{setShowRecoveryRequest(false);setResetSent(false);setResetError("")}} style={{position:"absolute",top:16,right:16,background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:20}}>✕</button>
+        <div style={{fontSize:32,marginBottom:8,textAlign:"center"}}>📧</div>
+        <h2 style={{fontSize:20,fontWeight:800,textAlign:"center",marginBottom:8,color:T.tx}}>Recuperar contraseña</h2>
+        {!resetSent?<>
+          <p style={{fontSize:13,color:T.tx3,textAlign:"center",marginBottom:20,lineHeight:1.5}}>
+            Escribí tu email y te enviaremos un link para crear una contraseña nueva.
+          </p>
+          <input
+            type="email"
+            placeholder="tu@email.com"
+            value={recoveryEmail}
+            onChange={(e)=>{setRecoveryEmail(e.target.value);setResetError("")}}
+            autoFocus
+            onKeyDown={(e)=>{if(e.key==="Enter"&&recoveryEmail)document.getElementById("btn-send-recovery")?.click()}}
+            style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 14px",color:T.tx,fontSize:14,outline:"none",marginBottom:12}}
+          />
+          {resetError&&<div style={{color:T.rd,fontSize:12,marginBottom:12,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{resetError}</div>}
+          <button
+            id="btn-send-recovery"
+            onClick={async()=>{
+              if(!recoveryEmail||!recoveryEmail.includes("@")){setResetError("Escribí un email válido");return}
+              setResetLoading(true);setResetError("");
+              try{
+                const{error}=await supabase.auth.resetPasswordForEmail(recoveryEmail,{
+                  redirectTo:window.location.origin+"/"
+                });
+                if(error)throw error;
+                setResetSent(true);
+              }catch(e){setResetError("No pudimos enviar el email: "+e.message)}
+              finally{setResetLoading(false)}
+            }}
+            disabled={resetLoading}
+            style={{width:"100%",background:resetLoading?T.tx3:T.gn,color:"#000",border:"none",padding:"12px 20px",borderRadius:10,cursor:resetLoading?"wait":"pointer",fontWeight:700,fontSize:14}}
+          >
+            {resetLoading?"Enviando...":"Enviar link de recuperación"}
+          </button>
+        </>:<>
+          <div style={{fontSize:48,textAlign:"center",marginBottom:12}}>✅</div>
+          <p style={{fontSize:14,color:T.tx,textAlign:"center",marginBottom:12,lineHeight:1.5,fontWeight:600}}>
+            Email enviado a <span style={{color:T.gn}}>{recoveryEmail}</span>
+          </p>
+          <p style={{fontSize:12,color:T.tx3,textAlign:"center",marginBottom:20,lineHeight:1.6}}>
+            Revisá tu bandeja de entrada y la carpeta de spam. El link expira en 1 hora. Cuando lo abras vas a volver acá para crear tu nueva contraseña.
+          </p>
+          <button onClick={()=>{setShowRecoveryRequest(false);setResetSent(false)}} style={{width:"100%",background:T.bg3,color:T.tx,border:`1px solid ${T.border}`,padding:"12px 20px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>
+            Cerrar
+          </button>
+        </>}
+      </div>
+    </div>}
     {/* Modal de nueva contraseña tras click en link del email */}
     {showResetPassword&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20}}>
       <div style={{background:T.bg2,border:`1px solid ${T.borderL||T.border}`,borderRadius:20,width:"100%",maxWidth:460,padding:32}}>
@@ -734,24 +790,15 @@ export default function FinPath(){
       <div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
       <div style={{marginTop:16,padding:"16px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.12)",borderRadius:12,textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.orange,marginBottom:6}}>📊 ¿Quieres ver cómo funciona?</div><div style={{fontSize:11,color:T.tx3,marginBottom:10}}>Explora la plataforma con datos de ejemplo: patrimonio, ingresos, gastos, deudas, impuestos y simulador.</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}><button onClick={()=>{const nd=mkU("Pedro Pérez","demo@finpathia.com");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.demo=true;setU(nd);setTimeout(()=>demo(),500)}} style={{background:"linear-gradient(135deg,#f97316,#eab308)",color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇨🇴 Demo Colombia</button><button onClick={()=>demoUS()} style={{background:"linear-gradient(135deg,#3b82f6,#1d4ed8)",color:"#fff",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇺🇸 Demo USA</button></div></div>
       {aM==="login"&&<p style={{textAlign:"center",marginTop:14}}>
-        <span onClick={async()=>{
-          if(!aF.e){setAuthError("Escribe tu email arriba para enviarte el link");return}
-          setResetLoading(true);setAuthError("");
-          try{
-            const{error}=await supabase.auth.resetPasswordForEmail(aF.e,{
-              redirectTo:window.location.origin+"/"
-            });
-            if(error)throw error;
-            setResetSent(true);
-            setTimeout(()=>setResetSent(false),8000);
-          }catch(e){setAuthError("No pudimos enviar el email: "+e.message)}
-          finally{setResetLoading(false)}
-        }} style={{color:resetSent?T.gn:T.bl,cursor:resetLoading?"wait":"pointer",fontSize:13,fontWeight:600,textDecoration:"underline",opacity:resetLoading?0.5:1}}>
-          {resetLoading?"Enviando...":resetSent?"✅ Email enviado — revisá tu bandeja":"¿Olvidaste tu contraseña?"}
+        <span onClick={()=>{
+          // Pre-llenar con el email del form si ya lo escribió, si no queda vacío para que lo escriba
+          setRecoveryEmail(aF.e||"");
+          setResetError("");
+          setResetSent(false);
+          setShowRecoveryRequest(true);
+        }} style={{color:T.bl,cursor:"pointer",fontSize:13,fontWeight:600,textDecoration:"underline"}}>
+          ¿Olvidaste tu contraseña?
         </span>
-        {resetSent&&<div style={{fontSize:11,color:T.tx3,marginTop:6,lineHeight:1.5}}>
-          Revisá tu bandeja de entrada y spam. El link expira en 1 hora.
-        </div>}
       </p>}
     </div>
   </div>;
