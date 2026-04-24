@@ -267,7 +267,17 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
       });
     }
     const tieneSalario = resumen.salario > 0;
-    const tieneAportes = ownerIng.some(i => i.categoria === "Salario" && i.aportes && ((i.aportes.pension || 0) + (i.aportes.salud || 0)) > 0);
+    // Fix Commit 9.0: coerce a Number porque los aportes pueden venir como string
+    // desde persistencia. Sin el coerce, "400000" > 0 da false y generaba alerta falsa.
+    // Además considerar también aportes.pensionVoluntariaMensual por si el usuario
+    // registró aportes por ese campo.
+    const tieneAportes = ownerIng.some(i => {
+      if (i.categoria !== "Salario") return false;
+      const ap = i.aportes || {};
+      const pension = Number(ap.pension) || 0;
+      const salud = Number(ap.salud) || 0;
+      return (pension + salud) > 0;
+    });
     if (tieneSalario && !tieneAportes) {
       gaps.push({
         titulo: "Salario sin aportes obligatorios registrados",
@@ -297,13 +307,14 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
 
   return (
     <div>
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>📋</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
-          Revisá los datos de {selectedOwner?.name}
+      {/* Chip de owner prominente */}
+      <div style={{ textAlign: "center", marginBottom: 18 }}>
+        <OwnerChip owner={selectedOwner} />
+        <div style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
+          📋 Revisá los datos cargados
         </div>
         <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, maxWidth: 500, margin: "0 auto" }}>
-          Esto es lo que ya tengo cargado. Si algo falta, podés completarlo antes de seguir.
+          Esto es lo que ya cargaste. Si algo falta o tenés dudas, completá antes de seguir para que el cálculo sea más preciso.
         </div>
       </div>
 
@@ -370,13 +381,32 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
 // PASO 3 — Tu situación personal (Grupo A + parte de C)
 // Reutiliza AjustesFiscalesPersonalizados pero filtrando grupos a mostrar
 // ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────
+// OwnerChip — Identifica claramente para qué owner es el paso.
+// Se usa al top de Pasos 2, 3 y 4 para que el usuario nunca pierda el contexto.
+// ─────────────────────────────────────────────────────────────────────────
+function OwnerChip({ owner }) {
+  if (!owner) return null;
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: 20, marginBottom: 10 }}>
+      <span style={{ fontSize: 14 }}>{owner.type === "juridica" ? "🏢" : "🧑"}</span>
+      <span style={{ fontSize: 11, fontWeight: 700, color: T.blue, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        Calculando para: {owner.name}
+      </span>
+      <span style={{ fontSize: 10, color: T.txt3 }}>
+        · {owner.type === "juridica" ? "Jurídica" : "Natural"}
+      </span>
+    </div>
+  );
+}
+
 function Paso3Situacion({ selectedOwner, onUpdateProfile, onBack, onNext }) {
   return (
     <div>
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>👨‍👩‍👧</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
-          Contanos sobre tu situación personal
+      <div style={{ textAlign: "center", marginBottom: 18 }}>
+        <OwnerChip owner={selectedOwner} />
+        <div style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
+          👨‍👩‍👧 Tu situación personal
         </div>
         <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, maxWidth: 520, margin: "0 auto" }}>
           Estas preguntas aplican deducciones legales que el sistema no puede adivinar. Contestá solo las que apliquen; las demás se quedan sin efecto.
@@ -394,10 +424,10 @@ function Paso3Situacion({ selectedOwner, onUpdateProfile, onBack, onNext }) {
 function Paso4Eventos({ selectedOwner, onUpdateProfile, onBack, onNext }) {
   return (
     <div>
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>📅</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
-          ¿Pasó algo especial este año?
+      <div style={{ textAlign: "center", marginBottom: 18 }}>
+        <OwnerChip owner={selectedOwner} />
+        <div style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
+          📅 ¿Pasó algo especial este año?
         </div>
         <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, maxWidth: 520, margin: "0 auto" }}>
           Eventos como herencia, venta de inmueble o lotería se gravan aparte (ganancias ocasionales). Donaciones e inversiones especiales dan descuentos.
