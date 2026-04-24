@@ -219,6 +219,75 @@ function recomendacionesNatural(user, ow, det) {
 function recomendacionesJuridica(user, ow, det) {
   const recs = [];
   const impBruto = Number(det.impBruto) || 0;
+  const ingAnual = Number(det.ingreso) || 0;
+
+  // ═════════════ PALANCA 0: Régimen SIMPLE (Art. 905 ET) ═════════════
+  //
+  // SIMPLE unifica renta + ICA + avisos. Tarifa sobre ingresos brutos (no
+  // sobre utilidad), 1.4%–11.5% según grupo de actividad. Requiere:
+  //   - Ingresos brutos año < 100.000 UVT (~$5.237M en 2026).
+  //   - No ser excluida (financiera, minera, profesional de servicios con
+  //     más de ciertas personas, etc.).
+  //
+  // Usamos tarifa efectiva conservadora de 5% (promedio grupos 1-3) para
+  // estimar. Si SIMPLE < ordinario significativamente, recomendamos evaluar.
+  const regimenActual = ow.regimen || "ordinario";
+  const LIMITE_SIMPLE_UVT = 100_000;
+  const limiteSimple = LIMITE_SIMPLE_UVT * UVT;
+  if (regimenActual === "ordinario" && ingAnual > 100_000_000 && ingAnual < limiteSimple && impBruto > 0) {
+    // Estimar impuesto bajo SIMPLE con tarifa conservadora 5%.
+    // Realidad: 1.4%–11.5% según grupo. Usamos 5% porque es el promedio y
+    // además la mayoría de las jurídicas que no son hidrocarburos/minería
+    // entran en grupos 1-3 que son <= 5.4%.
+    const impSimpleEstimado = ingAnual * 0.05;
+    const diferencia = impBruto - impSimpleEstimado;
+    if (diferencia > 3_000_000) {
+      recs.push({
+        code: "EVALUAR_REGIMEN_SIMPLE",
+        severity: severityByAhorro(diferencia),
+        ownerId: ow.id,
+        ownerName: ow.name,
+        titulo: `Evaluar cambio a Régimen Simple (RST)`,
+        descripcion: `${ow.name} tiene ingresos anuales de ${fm(ingAnual)}, por debajo del tope de 100.000 UVT (${fm(limiteSimple)}). Bajo régimen ordinario paga ~${fm(impBruto)}; estimado bajo SIMPLE ~${fm(impSimpleEstimado)} (5% sobre ingresos). Sujeto a elegibilidad por tipo de actividad.`,
+        ahorroAnualEstimado: Math.round(diferencia),
+        cta: { label: "Cambiar régimen en perfil del owner", page: "set" },
+        base: "Arts. 903-916 ET",
+        supuestos: [
+          `Tarifa SIMPLE estimada al 5% (promedio grupos 1-3; real 1,4%–11,5% según actividad).`,
+          `SIMPLE unifica renta + ICA + avisos (comparación más compleja si hay ICA actual).`,
+          `Requisitos adicionales: no ser excluida (financiera, minera, profesionales con +3 empleados, etc).`,
+          `Cambio se hace hasta el último día hábil de febrero en MUISCA.`,
+          `Incluye anticipos bimestrales (flujo distinto al ordinario).`,
+        ],
+      });
+    }
+  }
+
+  // Si ya está en SIMPLE, no sugerir cambio. Si es otra cosa (zona_franca, CHC,
+  // exenta), tampoco: son regímenes especiales elegidos por razones específicas.
+
+  // ═════════════ PALANCA 0b: Alerta — SIMPLE con ingresos sobre el tope ═════════════
+  //
+  // Si está en SIMPLE pero superó 100K UVT, legalmente debe salir. No es
+  // ahorro — es compliance. Severity 'error' (no se ordena por ahorro).
+  if (regimenActual === "simple" && ingAnual >= limiteSimple) {
+    recs.push({
+      code: "SIMPLE_FUERA_DE_RANGO",
+      severity: "high",  // lo tratamos como alerta, no como optimización
+      ownerId: ow.id,
+      ownerName: ow.name,
+      titulo: `⚠️ ${ow.name} podría haber superado el tope de 100.000 UVT en SIMPLE`,
+      descripcion: `Los ingresos anuales estimados son ${fm(ingAnual)}, por encima del tope legal de ${fm(limiteSimple)}. Si se supera el tope, el régimen SIMPLE deja de aplicar y debe pasarse a ordinario. Verificá con tu contador.`,
+      ahorroAnualEstimado: 0,
+      cta: { label: "Revisar régimen en perfil del owner", page: "set" },
+      base: "Art. 905 ET",
+      supuestos: [
+        `Tope: 100.000 UVT × UVT 2026 = ${fm(limiteSimple)}.`,
+        `Ingresos estimados desde módulo Ingresos del owner.`,
+        `Si el año anterior también superó el tope, la obligación de salir del SIMPLE es retroactiva.`,
+      ],
+    });
+  }
 
   // ═════════════ PALANCA 1: Descuento ICA (50% del ICA pagado, Art. 115 ET) ═════════════
   //

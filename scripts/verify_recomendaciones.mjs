@@ -88,6 +88,84 @@ test("low earner con impuesto cero no recibe APORTAR_PV_AFC", () => {
   assertNotIncludes(recs, "APORTAR_PV_AFC");
 });
 
+// ───────── Régimen SIMPLE (Commit 6.1) ─────────
+
+test("SIMPLE: juridica ordinaria con ingresos $500M recibe EVALUAR_REGIMEN_SIMPLE", () => {
+  const u = {
+    owners: [{ id: "own_j", name: "SAS Pequeña", type: "juridica", regimen: "ordinario" }],
+    ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
+                 mensual: 42_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const recs = generarRecomendaciones(u, estimarImpuesto(u));
+  assertIncludes(recs, "EVALUAR_REGIMEN_SIMPLE");
+  const r = recs.find(r => r.code === "EVALUAR_REGIMEN_SIMPLE");
+  assert(r.ahorroAnualEstimado > 0, "debe tener ahorro positivo");
+  assert(r.supuestos.length >= 3, "debe incluir supuestos legales");
+  assert(r.base.includes("903"), "debe referenciar Arts. 903-916 ET");
+});
+
+test("SIMPLE: juridica ya en SIMPLE no recibe EVALUAR_REGIMEN_SIMPLE", () => {
+  const u = {
+    owners: [{ id: "own_j", name: "SAS", type: "juridica", regimen: "simple" }],
+    ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
+                 mensual: 40_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const recs = generarRecomendaciones(u, estimarImpuesto(u));
+  assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE");
+});
+
+test("SIMPLE: juridica con ingresos > 100K UVT NO recibe recomendación (fuera de tope)", () => {
+  const u = {
+    owners: [{ id: "own_j", name: "SAS Grande", type: "juridica", regimen: "ordinario" }],
+    ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
+                 mensual: 500_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const recs = generarRecomendaciones(u, estimarImpuesto(u));
+  assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE", "$500M/mes × 12 = $6000M > $5237M tope 100K UVT");
+});
+
+test("SIMPLE: juridica con ingresos muy bajos ($50M/año) no recibe rec", () => {
+  const u = {
+    owners: [{ id: "own_j", name: "SAS Chica", type: "juridica", regimen: "ordinario" }],
+    ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
+                 mensual: 3_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const recs = generarRecomendaciones(u, estimarImpuesto(u));
+  // Ingresos $36M/año, muy poco — impuesto ordinario ya es bajo, el ahorro
+  // estimado puede no superar el umbral de $3M que usamos como gate.
+  assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE", "ingresos muy bajos, no hay margen útil");
+});
+
+test("SIMPLE: alerta SIMPLE_FUERA_DE_RANGO cuando está en SIMPLE pero superó 100K UVT", () => {
+  const u = {
+    owners: [{ id: "own_j", name: "SAS Creció", type: "juridica", regimen: "simple" }],
+    ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
+                 mensual: 500_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const recs = generarRecomendaciones(u, estimarImpuesto(u));
+  assertIncludes(recs, "SIMPLE_FUERA_DE_RANGO");
+  const r = recs.find(r => r.code === "SIMPLE_FUERA_DE_RANGO");
+  assert(r.base.includes("905"), "debe referenciar Art. 905 ET");
+  assert(r.ahorroAnualEstimado === 0, "no es optimización, es compliance");
+});
+
+test("SIMPLE: juridica en zona_franca NO recibe recomendación de cambio a SIMPLE", () => {
+  const u = {
+    owners: [{ id: "own_j", name: "SAS ZF", type: "juridica", regimen: "zona_franca" }],
+    ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
+                 mensual: 40_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const recs = generarRecomendaciones(u, estimarImpuesto(u));
+  assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE", "zona_franca no debe recibir sugerencia");
+  assertNotIncludes(recs, "SIMPLE_FUERA_DE_RANGO");
+});
+
 // ───────── Ordenamiento ─────────
 
 test("recomendaciones vienen ordenadas por ahorro descendente", () => {
