@@ -22,13 +22,22 @@ import { useMemo, useState, useEffect } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
 import AjustesFiscalesPersonalizados from "./AjustesFiscalesPersonalizados";
 import CalculadoraImpuestos from "./CalculadoraImpuestos";
-import { SimToggleInfoCompact } from "./SimToggleInfo";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   border: "rgba(255,255,255,0.06)",
   green: "#22c55e", red: "#ef4444", orange: "#f97316", blue: "#3b82f6", purple: "#a78bfa",
+};
+
+// ─── SISTEMA TIPOGRÁFICO (consistente con Ingresos/Egresos/Dashboard) ────
+// En vez de usar fontSize inline aleatorios (9-22), 4 niveles definidos.
+const F = {
+  h1: { fontSize: 22, fontWeight: 700, color: T.txt, margin: 0, lineHeight: 1.3 },   // Título de pantalla
+  h2: { fontSize: 16, fontWeight: 700, color: T.txt, margin: 0, lineHeight: 1.35 },  // Subtítulo de sección
+  body: { fontSize: 13, color: T.txt2, margin: 0, lineHeight: 1.5 },                 // Texto descriptivo
+  caption: { fontSize: 11, color: T.txt3, margin: 0, lineHeight: 1.4 },              // Nota pequeña
+  mono: { fontFamily: "monospace", fontSize: 14, fontWeight: 700 },                  // Números
 };
 
 const UVT = 52_374;
@@ -344,86 +353,79 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
 
   return (
     <div>
-      {/* Chip de owner prominente */}
-      <div style={{ textAlign: "center", marginBottom: 18 }}>
-        <OwnerChip owner={selectedOwner} />
-        <div style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
-          📋 Revisá los datos cargados
-        </div>
-        <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, maxWidth: 500, margin: "0 auto" }}>
-          Esto es lo que ya cargaste. Si algo falta o tenés dudas, completá antes de seguir para que el cálculo sea más preciso.
-        </div>
-      </div>
+      <PasoHeader
+        owner={selectedOwner}
+        titulo="Revisá los datos cargados"
+        descripcion="Esto es lo que ya cargaste. Si algo falta, completá antes de seguir para que el cálculo sea más preciso."
+      />
 
       {filas.length === 0 ? (
-        <div style={{ padding: 24, background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.25)", borderRadius: 10, textAlign: "center", marginBottom: 14 }}>
-          <div style={{ fontSize: 13, color: T.txt, fontWeight: 700, marginBottom: 6 }}>⚠️ Sin ingresos registrados para {selectedOwner?.name}</div>
-          <div style={{ fontSize: 12, color: T.txt2, marginBottom: 12, lineHeight: 1.5 }}>
-            Para calcular el impuesto necesitás tener al menos un ingreso cargado. Podés seguir para activar switches de ganancias ocasionales (herencia/venta inmueble) si aplica.
-          </div>
-          <button onClick={() => onNavigate?.("ing")} style={{ padding: "8px 16px", background: T.blue, border: "none", color: "white", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-            Ir a cargar ingresos →
+        <div style={{ padding: 20, background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, marginBottom: 16 }}>
+          <h3 style={{ ...F.h2, marginBottom: 6 }}>Sin ingresos registrados</h3>
+          <p style={{ ...F.body, marginBottom: 12 }}>
+            Para calcular el impuesto necesitás tener al menos un ingreso cargado. Podés seguir igualmente para capturar eventos especiales (herencia, venta de inmueble) si aplican.
+          </p>
+          <button onClick={() => onNavigate?.("ing")} style={{ padding: "8px 14px", background: T.bg2, border: "1px solid " + T.border, color: T.txt, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+            Ir a Ingresos →
           </button>
         </div>
       ) : (
-        <div style={{ background: T.bg3, borderRadius: 10, padding: "8px 0", marginBottom: 14 }}>
-          {filas.map((f) => (
-            <div key={f.label} style={{ display: "flex", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid " + T.border, gap: 10 }}>
-              <div style={{ fontSize: 18 }}>{f.icono}</div>
-              <div style={{ flex: 1, fontSize: 12, color: T.txt2 }}>{f.label}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{fm(f.value)}</div>
-            </div>
-          ))}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ ...F.caption, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, marginBottom: 10 }}>
+            Ingresos del año
+          </div>
+          <div style={{ background: T.bg3, borderRadius: 10, overflow: "hidden" }}>
+            {filas.map((f, idx) => (
+              <div key={f.label} style={{ display: "flex", alignItems: "center", padding: "12px 16px", borderBottom: idx < filas.length - 1 ? "1px solid " + T.border : "none", gap: 12 }}>
+                <div style={{ fontSize: 16 }}>{f.icono}</div>
+                <div style={{ flex: 1, ...F.body }}>{f.label}</div>
+                <div style={{ ...F.mono, color: T.green }}>{fm(f.value)}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Commit 9.1: Aviso INFORMATIVO cuando hay items apagados — no es alerta, es transparencia */}
+      {/* Nota discreta sobre items apagados — informativo, no alerta */}
       {ownerIngApagados.length > 0 && (
-        <div style={{ padding: "10px 12px", background: "rgba(107,114,128,0.1)", border: "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 14 }}>⬜</div>
-          <div style={{ flex: 1, minWidth: 200, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
-            Tenés <strong style={{ color: T.txt2 }}>{ownerIngApagados.length}</strong> ingreso{ownerIngApagados.length > 1 ? "s" : ""} apagado{ownerIngApagados.length > 1 ? "s" : ""} ({ownerIngApagados.map(i => i.nombre).join(", ")}). Por eso no aparecen acá — el cálculo los excluye. Si querés incluirlos, encendélos en Ingresos.
-          </div>
-          <button onClick={() => onNavigate?.("ing")} style={{ padding: "5px 10px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-            Ir a Ingresos
-          </button>
+        <div style={{ padding: "10px 14px", marginBottom: 18, fontSize: 11, color: T.txt3, lineHeight: 1.5, borderLeft: "2px solid " + T.border, paddingLeft: 12 }}>
+          <strong style={{ color: T.txt2 }}>Nota:</strong> {ownerIngApagados.length} ingreso{ownerIngApagados.length > 1 ? "s" : ""} apagado{ownerIngApagados.length > 1 ? "s" : ""} ({ownerIngApagados.map(i => i.nombre).join(", ")}) no aparecen acá porque están excluidos del cálculo. Podés encenderlos en Ingresos si querés incluirlos.
         </div>
       )}
 
       {dataGaps.length > 0 && (
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-            ⚠️ Datos que te podrían faltar ({dataGaps.length})
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ ...F.caption, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, color: T.orange, marginBottom: 10 }}>
+            Datos que te podrían faltar — {dataGaps.length}
           </div>
-          {dataGaps.map((g, i) => (
-            <div key={g.id || i} style={{ padding: "12px 14px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.2)", borderLeft: "3px solid " + T.orange, borderRadius: 8, marginBottom: 8 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
-                <div style={{ fontSize: 18 }}>{g.icono}</div>
+          <div style={{ background: T.bg3, borderRadius: 10, overflow: "hidden" }}>
+            {dataGaps.map((g, i) => (
+              <div key={g.id || i} style={{ padding: "14px 16px", borderBottom: i < dataGaps.length - 1 ? "1px solid " + T.border : "none", display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 16, marginTop: 1 }}>{g.icono}</div>
                 <div style={{ flex: 1, minWidth: 200 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: T.txt }}>{g.titulo}</div>
-                  <div style={{ fontSize: 11, color: T.txt2, marginTop: 3, lineHeight: 1.5 }}>{g.desc}</div>
+                  <div style={{ ...F.h2, fontSize: 13, marginBottom: 4 }}>{g.titulo}</div>
+                  <div style={{ ...F.caption, color: T.txt2 }}>{g.desc}</div>
                 </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <button onClick={() => dismissGap(g.id)} title="No aplica a mi situación, no me recuerdes esto de nuevo" style={{ padding: "8px 12px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => dismissGap(g.id)} title="No aplica a mi situación" style={{ padding: "6px 10px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                     No aplica
                   </button>
-                  <button onClick={() => onNavigate?.(g.page)} style={{ padding: "8px 14px", background: T.orange, border: "none", color: "#000", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    Completar ahora →
+                  <button onClick={() => onNavigate?.(g.page)} style={{ padding: "6px 12px", background: T.bg2, border: "1px solid " + T.orange, color: T.orange, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    Completar →
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
-          <div style={{ fontSize: 11, color: T.txt3, marginTop: 8, fontStyle: "italic", lineHeight: 1.5 }}>
-            💡 Tu progreso se guarda automáticamente. "No aplica" descarta el aviso para este propietario; podés volver a verlo borrando caché.
+            ))}
           </div>
+          <p style={{ ...F.caption, marginTop: 8, fontStyle: "italic" }}>
+            Tu progreso se guarda automáticamente. "No aplica" descarta el aviso para este propietario.
+          </p>
         </div>
       )}
 
       {dataGaps.length === 0 && filas.length > 0 && (
-        <div style={{ padding: "10px 14px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 8, marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>✅ Tus datos se ven completos</div>
-          <div style={{ fontSize: 11, color: T.txt2, marginTop: 3 }}>No detecté datos obvios que te falten. Continuemos.</div>
+        <div style={{ padding: "10px 14px", marginBottom: 18, fontSize: 12, color: T.green, borderLeft: "2px solid " + T.green, paddingLeft: 12 }}>
+          Datos completos. No detecté nada obvio que falte.
         </div>
       )}
 
@@ -437,20 +439,36 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
 // Reutiliza AjustesFiscalesPersonalizados pero filtrando grupos a mostrar
 // ═══════════════════════════════════════════════════════════════════════════
 // ─────────────────────────────────────────────────────────────────────────
-// OwnerChip — Identifica claramente para qué owner es el paso.
-// Se usa al top de Pasos 2, 3 y 4 para que el usuario nunca pierda el contexto.
+// PasoHeader — Header unificado para todos los pasos.
+// Sistema tipográfico consistente: chip owner (pequeño) → título h1 → descripción.
+// Reemplaza headers inconsistentes con 5 tamaños de fuente mezclados.
 // ─────────────────────────────────────────────────────────────────────────
+function PasoHeader({ owner, titulo, descripcion }) {
+  return (
+    <div style={{ marginBottom: 22, paddingBottom: 16, borderBottom: "1px solid " + T.border }}>
+      {owner && (
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 12, marginBottom: 10 }}>
+          <span style={{ fontSize: 12 }}>{owner.type === "juridica" ? "🏢" : "🧑"}</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: T.blue, letterSpacing: 0.3 }}>
+            {owner.name}
+          </span>
+          <span style={{ fontSize: 10, color: T.txt3 }}>·</span>
+          <span style={{ fontSize: 10, color: T.txt3 }}>{owner.type === "juridica" ? "Jurídica" : "Natural"}</span>
+        </div>
+      )}
+      <h2 style={F.h1}>{titulo}</h2>
+      {descripcion && <p style={{ ...F.body, marginTop: 6 }}>{descripcion}</p>}
+    </div>
+  );
+}
+
+// OwnerChip legacy (solo usado en Paso 2 viejo) — mantener mínimo.
 function OwnerChip({ owner }) {
   if (!owner) return null;
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: 20, marginBottom: 10 }}>
-      <span style={{ fontSize: 14 }}>{owner.type === "juridica" ? "🏢" : "🧑"}</span>
-      <span style={{ fontSize: 11, fontWeight: 700, color: T.blue, textTransform: "uppercase", letterSpacing: 0.5 }}>
-        Calculando para: {owner.name}
-      </span>
-      <span style={{ fontSize: 10, color: T.txt3 }}>
-        · {owner.type === "juridica" ? "Jurídica" : "Natural"}
-      </span>
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 12 }}>
+      <span style={{ fontSize: 12 }}>{owner.type === "juridica" ? "🏢" : "🧑"}</span>
+      <span style={{ fontSize: 10, fontWeight: 600, color: T.blue }}>{owner.name}</span>
     </div>
   );
 }
@@ -458,15 +476,11 @@ function OwnerChip({ owner }) {
 function Paso3Situacion({ selectedOwner, onUpdateProfile, onBack, onNext }) {
   return (
     <div>
-      <div style={{ textAlign: "center", marginBottom: 18 }}>
-        <OwnerChip owner={selectedOwner} />
-        <div style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
-          👨‍👩‍👧 Tu situación personal
-        </div>
-        <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, maxWidth: 520, margin: "0 auto" }}>
-          Estas preguntas aplican deducciones legales que el sistema no puede adivinar. Contestá solo las que apliquen; las demás se quedan sin efecto.
-        </div>
-      </div>
+      <PasoHeader
+        owner={selectedOwner}
+        titulo="Tu situación personal"
+        descripcion="Estas preguntas aplican deducciones legales que el sistema no puede adivinar. Contestá solo las que apliquen; las demás se quedan sin efecto."
+      />
       <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
       <NavButtons currentStep={2} onBack={onBack} onNext={onNext} />
     </div>
@@ -479,15 +493,11 @@ function Paso3Situacion({ selectedOwner, onUpdateProfile, onBack, onNext }) {
 function Paso4Eventos({ selectedOwner, onUpdateProfile, onBack, onNext }) {
   return (
     <div>
-      <div style={{ textAlign: "center", marginBottom: 18 }}>
-        <OwnerChip owner={selectedOwner} />
-        <div style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
-          📅 ¿Pasó algo especial este año?
-        </div>
-        <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, maxWidth: 520, margin: "0 auto" }}>
-          Eventos como herencia, venta de inmueble o lotería se gravan aparte (ganancias ocasionales). Donaciones e inversiones especiales dan descuentos.
-        </div>
-      </div>
+      <PasoHeader
+        owner={selectedOwner}
+        titulo="¿Pasó algo especial este año?"
+        descripcion="Eventos como herencia, venta de inmueble o lotería se gravan aparte (ganancias ocasionales). Donaciones e inversiones especiales dan descuentos."
+      />
       <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="eventos" />
       <NavButtons currentStep={3} onBack={onBack} onNext={onNext} nextLabel="Ver mi impuesto →" />
     </div>
@@ -824,10 +834,10 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
       {/* Header con toggle modo */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 20, fontWeight: 800, color: T.txt }}>📊 Calculadora de impuestos</div>
-          <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-            Paso {currentStep + 1} de {STEPS.length}: {STEPS[currentStep].titulo}
-          </div>
+          <h1 style={F.h1}>Calculadora de impuestos</h1>
+          <p style={{ ...F.caption, marginTop: 4 }}>
+            Paso {currentStep + 1} de {STEPS.length} — {STEPS[currentStep].titulo}
+          </p>
         </div>
         <button onClick={() => setModo("classic")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
           Ver todo a la vez ↗
@@ -838,20 +848,15 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
       <Stepper currentStep={currentStep} onGotoStep={setCurrentStep} />
 
       {/* Navegación rápida a módulos para cargar/editar datos sin perder progreso */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap", padding: "10px 12px", background: T.bg3, border: "1px dashed " + T.border, borderRadius: 8 }}>
-        <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600, marginRight: 4 }}>📌 ¿Te falta cargar algo?</div>
-        <button onClick={() => onNavigate?.("ing")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>💼 Ingresos</button>
-        <button onClick={() => onNavigate?.("gas")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>💸 Egresos / Aportes</button>
-        <button onClick={() => onNavigate?.("deu")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>💳 Deudas</button>
-        <div style={{ flex: 1 }}/>
-        <div style={{ fontSize: 10, color: T.txt3, fontStyle: "italic" }}>Volvés acá y seguís donde estabas</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap", padding: "10px 14px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8 }}>
+        <span style={{ ...F.caption, fontWeight: 600, color: T.txt2 }}>¿Te falta cargar algo?</span>
+        <button onClick={() => onNavigate?.("ing")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Ingresos</button>
+        <button onClick={() => onNavigate?.("gas")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Egresos / Aportes</button>
+        <button onClick={() => onNavigate?.("deu")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Deudas</button>
       </div>
 
-      {/* Aviso global: items apagados no se incluyen en el cálculo */}
-      <SimToggleInfoCompact />
-
       {/* Contenido del paso activo */}
-      <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, padding: 20 }}>
+      <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, padding: 24 }}>
         {currentStep === 0 && (
           <Paso1Owner
             owners={owners}
