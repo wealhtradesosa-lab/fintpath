@@ -27,6 +27,8 @@
 //   - base: referencia legal (artículo ET)
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { GRUPOS_SIMPLE, TOPE_SIMPLE_UVT, calcularImpuestoSimple } from "./regimenSimple.js";
+
 const UVT = 52_374; // 2026
 
 /**
@@ -223,43 +225,92 @@ function recomendacionesJuridica(user, ow, det) {
 
   // ═════════════ PALANCA 0: Régimen SIMPLE (Art. 905 ET) ═════════════
   //
-  // SIMPLE unifica renta + ICA + avisos. Tarifa sobre ingresos brutos (no
-  // sobre utilidad), 1.4%–11.5% según grupo de actividad. Requiere:
-  //   - Ingresos brutos año < 100.000 UVT (~$5.237M en 2026).
-  //   - No ser excluida (financiera, minera, profesional de servicios con
-  //     más de ciertas personas, etc.).
+  // Commit 6.1 profesional: usa tarifas reales por grupo y tramo (Art. 908 ET)
+  // en vez de 5% plano. Valida exclusiones del Art. 906 ET.
   //
-  // Usamos tarifa efectiva conservadora de 5% (promedio grupos 1-3) para
-  // estimar. Si SIMPLE < ordinario significativamente, recomendamos evaluar.
+  // Requisitos para recomendar el cambio:
+  //   1. Régimen actual = "ordinario" (no sugerir a ZF, CHC, exenta, SIMPLE).
+  //   2. Ingresos anuales < 100.000 UVT (Art. 905 ET).
+  //   3. Owner NO en lista de exclusiones (Art. 906 ET, ow.simpleExcluido).
+  //   4. Owner tiene grupo SIMPLE asignado (ow.simpleGrupo) — sin grupo,
+  //      mostramos mensaje pidiendo configurarlo en vez de inventar 5%.
+  //   5. Impuesto bajo SIMPLE debe ser > $3M menor al ordinario actual
+  //      (umbral de relevancia práctica).
   const regimenActual = ow.regimen || "ordinario";
-  const LIMITE_SIMPLE_UVT = 100_000;
-  const limiteSimple = LIMITE_SIMPLE_UVT * UVT;
+  const limiteSimple = TOPE_SIMPLE_UVT * UVT;
+
+  // ═════════════ Caso A: está en ordinario, podría evaluar SIMPLE ═════════════
   if (regimenActual === "ordinario" && ingAnual > 100_000_000 && ingAnual < limiteSimple && impBruto > 0) {
-    // Estimar impuesto bajo SIMPLE con tarifa conservadora 5%.
-    // Realidad: 1.4%–11.5% según grupo. Usamos 5% porque es el promedio y
-    // además la mayoría de las jurídicas que no son hidrocarburos/minería
-    // entran en grupos 1-3 que son <= 5.4%.
-    const impSimpleEstimado = ingAnual * 0.05;
-    const diferencia = impBruto - impSimpleEstimado;
-    if (diferencia > 3_000_000) {
+    // Chequeo exclusión
+    if (ow.simpleExcluido === true) {
+      // No recomendar nada — el owner ya fue marcado como excluido por el usuario/contador.
+      // Opcional: futuro info explicando por qué no aparece la recomendación SIMPLE.
+    } else if (!ow.simpleGrupo) {
+      // Owner no tiene grupo asignado: recomendar que lo configure, sin dar ahorro
+      // inventado. Es honesto.
       recs.push({
-        code: "EVALUAR_REGIMEN_SIMPLE",
-        severity: severityByAhorro(diferencia),
+        code: "CONFIGURAR_GRUPO_SIMPLE",
+        severity: "medium",
         ownerId: ow.id,
         ownerName: ow.name,
-        titulo: `Evaluar cambio a Régimen Simple (RST)`,
-        descripcion: `${ow.name} tiene ingresos anuales de ${fm(ingAnual)}, por debajo del tope de 100.000 UVT (${fm(limiteSimple)}). Bajo régimen ordinario paga ~${fm(impBruto)}; estimado bajo SIMPLE ~${fm(impSimpleEstimado)} (5% sobre ingresos). Sujeto a elegibilidad por tipo de actividad.`,
-        ahorroAnualEstimado: Math.round(diferencia),
-        cta: { label: "Cambiar régimen en perfil del owner", page: "set" },
-        base: "Arts. 903-916 ET",
+        titulo: `Podría aplicar al Régimen SIMPLE — configurá el grupo de actividad`,
+        descripcion: `${ow.name} tiene ingresos de ${fm(ingAnual)}, por debajo del tope legal de ${fm(limiteSimple)} para SIMPLE. Para calcular si conviene el cambio, necesitamos saber a qué grupo de actividad pertenece (Art. 908 ET). Configurá el grupo en el perfil del owner.`,
+        ahorroAnualEstimado: 0,
+        cta: { label: "Configurar grupo SIMPLE en perfil", page: "set" },
+        base: "Arts. 905, 908 ET",
         supuestos: [
-          `Tarifa SIMPLE estimada al 5% (promedio grupos 1-3; real 1,4%–11,5% según actividad).`,
-          `SIMPLE unifica renta + ICA + avisos (comparación más compleja si hay ICA actual).`,
-          `Requisitos adicionales: no ser excluida (financiera, minera, profesionales con +3 empleados, etc).`,
-          `Cambio se hace hasta el último día hábil de febrero en MUISCA.`,
-          `Incluye anticipos bimestrales (flujo distinto al ordinario).`,
+          `Tarifa SIMPLE varía entre 1,2% y 13,7% según grupo de actividad.`,
+          `Sin saber el grupo, no podemos estimar el impuesto con precisión.`,
+          `Consultá a tu contador para identificar el grupo correcto según CIIU.`,
         ],
       });
+    } else {
+      // Tiene grupo asignado: cálculo real con tarifa oficial
+      const grupoInfo = GRUPOS_SIMPLE[ow.simpleGrupo];
+      if (grupoInfo) {
+        const { impuesto: impSimpleReal, tarifaEfectiva } = calcularImpuestoSimple(ingAnual, ow.simpleGrupo, UVT);
+        const diferencia = impBruto - impSimpleReal;
+
+        if (diferencia > 3_000_000) {
+          // SIMPLE es más barato — recomendar evaluar
+          recs.push({
+            code: "EVALUAR_REGIMEN_SIMPLE",
+            severity: severityByAhorro(diferencia),
+            ownerId: ow.id,
+            ownerName: ow.name,
+            titulo: `Evaluar cambio a Régimen Simple (RST)`,
+            descripcion: `${ow.name} pagaría aproximadamente ${fm(impSimpleReal)}/año bajo SIMPLE (grupo: ${grupoInfo.label}, tarifa efectiva ${(tarifaEfectiva * 100).toFixed(2)}%), vs ${fm(impBruto)}/año bajo ordinario. SIMPLE también sustituye el ICA y avisos, lo que puede ampliar el ahorro real si hoy pagás ICA alto.`,
+            ahorroAnualEstimado: Math.round(diferencia),
+            cta: { label: "Cambiar régimen en perfil del owner", page: "set" },
+            base: "Arts. 903-916 ET (tarifas Art. 908)",
+            supuestos: [
+              `Grupo asignado: "${grupoInfo.label}".`,
+              `Tarifa efectiva aplicada: ${(tarifaEfectiva * 100).toFixed(2)}% (cálculo por tramos marginales, Art. 908 ET).`,
+              `Comparación entre impuesto de renta ordinario vs SIMPLE; no incluye posible ahorro adicional por ICA absorbido (ampliaría el beneficio).`,
+              `SIMPLE exige anticipos bimestrales (6 pagos/año) — afecta flujo de caja.`,
+              `Cambio de régimen se formaliza en MUISCA hasta último día hábil de febrero.`,
+              `Verificá con tu contador que no caés en exclusiones del Art. 906 ET (financiera, minera, combustibles, etc.).`,
+            ],
+          });
+        } else if (diferencia < -1_000_000) {
+          // SIMPLE sería MÁS CARO — advertir si el usuario estaba pensando cambiarse
+          recs.push({
+            code: "SIMPLE_NO_CONVIENE",
+            severity: "info",
+            ownerId: ow.id,
+            ownerName: ow.name,
+            titulo: `SIMPLE no conviene para ${ow.name} según el grupo configurado`,
+            descripcion: `Bajo SIMPLE pagarías ${fm(impSimpleReal)} (tarifa ${(tarifaEfectiva * 100).toFixed(2)}%), más que los ${fm(impBruto)} del régimen ordinario actual. La tarifa efectiva del grupo "${grupoInfo.label}" es alta para tu nivel de ingresos.`,
+            ahorroAnualEstimado: 0,
+            cta: null,
+            base: "Art. 908 ET",
+            supuestos: [
+              `Grupo asignado: "${grupoInfo.label}".`,
+              `Para grupos profesionales (consultoría, profesiones liberales) la tarifa SIMPLE al máximo tramo es 13,7% sobre ingresos brutos, lo que a menudo supera al 35% sobre utilidad del ordinario cuando la utilidad es baja-media.`,
+            ],
+          });
+        }
+      }
     }
   }
 

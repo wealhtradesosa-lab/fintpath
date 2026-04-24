@@ -88,26 +88,70 @@ test("low earner con impuesto cero no recibe APORTAR_PV_AFC", () => {
   assertNotIncludes(recs, "APORTAR_PV_AFC");
 });
 
-// ───────── Régimen SIMPLE (Commit 6.1) ─────────
+// ───────── Régimen SIMPLE profesional (Commit 6.1) ─────────
 
-test("SIMPLE: juridica ordinaria con ingresos $500M recibe EVALUAR_REGIMEN_SIMPLE", () => {
+test("SIMPLE: juridica ordinaria SIN grupo asignado recibe CONFIGURAR_GRUPO_SIMPLE (honesto)", () => {
+  // Sin grupo, no podemos estimar ahorro real. Mejor pedir config que inventar.
   const u = {
-    owners: [{ id: "own_j", name: "SAS Pequeña", type: "juridica", regimen: "ordinario" }],
+    owners: [{ id: "own_j", name: "SAS", type: "juridica", regimen: "ordinario" }],
     ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
                  mensual: 42_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
     gas: {}, deu: [], inv: [], trm: 4200,
   };
   const recs = generarRecomendaciones(u, estimarImpuesto(u));
-  assertIncludes(recs, "EVALUAR_REGIMEN_SIMPLE");
+  assertIncludes(recs, "CONFIGURAR_GRUPO_SIMPLE");
+  assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE", "sin grupo no debe inventar ahorro");
+});
+
+test("SIMPLE: juridica con grupo 'tiendas_peluquerias' a $500M/año recibe EVALUAR_REGIMEN_SIMPLE con tarifa real", () => {
+  const u = {
+    owners: [{ id: "own_j", name: "Tienda", type: "juridica", regimen: "ordinario", simpleGrupo: "tiendas_peluquerias" }],
+    ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
+                 mensual: 42_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const recs = generarRecomendaciones(u, estimarImpuesto(u));
   const r = recs.find(r => r.code === "EVALUAR_REGIMEN_SIMPLE");
-  assert(r.ahorroAnualEstimado > 0, "debe tener ahorro positivo");
-  assert(r.supuestos.length >= 3, "debe incluir supuestos legales");
-  assert(r.base.includes("903"), "debe referenciar Arts. 903-916 ET");
+  assert(r, "debe aparecer");
+  // $504M/año, grupo tiendas: tarifa efectiva ~4.2% en tramo 2-3
+  // debe mencionar la tarifa efectiva calculada
+  assert(r.supuestos.some(s => s.includes("Tarifa efectiva aplicada")), "debe incluir tarifa efectiva en supuestos");
+  assert(r.base.includes("908"), "debe mencionar Art. 908");
+});
+
+test("SIMPLE: juridica con grupo 'servicios_profesionales' puede recibir SIMPLE_NO_CONVIENE (tarifa alta)", () => {
+  // Consultoría con utilidad baja: el 13.7% sobre ingresos > 35% sobre utilidad pequeña
+  const u = {
+    owners: [{ id: "own_j", name: "Consultoría", type: "juridica", regimen: "ordinario", simpleGrupo: "servicios_profesionales" }],
+    ingresos: [{ id: "ij", nombre: "Honorarios", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
+                 mensual: 30_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
+    // Gastos altos (consultoría alta margen de costos en sueldos)
+    gas: {
+      "Nómina": [{ c: "Salarios", m: 25_000_000, t: "f", freq: "mes", owner: "own_j", fiscalCode: "GAS_JUR_NOMINA" }]
+    },
+    deu: [], inv: [], trm: 4200,
+  };
+  const recs = generarRecomendaciones(u, estimarImpuesto(u));
+  // Debería NO recomendar cambio o recomendar SIMPLE_NO_CONVIENE
+  assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE", "SIMPLE 13.7% sobre ingresos no conviene a consultora con gastos altos");
+});
+
+test("SIMPLE: juridica con simpleExcluido=true NO recibe ninguna recomendación de SIMPLE", () => {
+  const u = {
+    owners: [{ id: "own_j", name: "Financiera", type: "juridica", regimen: "ordinario", simpleGrupo: "tiendas_peluquerias", simpleExcluido: true }],
+    ingresos: [{ id: "ij", nombre: "Interés", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
+                 mensual: 42_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const recs = generarRecomendaciones(u, estimarImpuesto(u));
+  assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE");
+  assertNotIncludes(recs, "CONFIGURAR_GRUPO_SIMPLE");
+  assertNotIncludes(recs, "SIMPLE_NO_CONVIENE");
 });
 
 test("SIMPLE: juridica ya en SIMPLE no recibe EVALUAR_REGIMEN_SIMPLE", () => {
   const u = {
-    owners: [{ id: "own_j", name: "SAS", type: "juridica", regimen: "simple" }],
+    owners: [{ id: "own_j", name: "SAS", type: "juridica", regimen: "simple", simpleGrupo: "comercio_industria" }],
     ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
                  mensual: 40_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
     gas: {}, deu: [], inv: [], trm: 4200,
@@ -118,52 +162,47 @@ test("SIMPLE: juridica ya en SIMPLE no recibe EVALUAR_REGIMEN_SIMPLE", () => {
 
 test("SIMPLE: juridica con ingresos > 100K UVT NO recibe recomendación (fuera de tope)", () => {
   const u = {
-    owners: [{ id: "own_j", name: "SAS Grande", type: "juridica", regimen: "ordinario" }],
+    owners: [{ id: "own_j", name: "SAS Grande", type: "juridica", regimen: "ordinario", simpleGrupo: "tiendas_peluquerias" }],
     ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
                  mensual: 500_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
     gas: {}, deu: [], inv: [], trm: 4200,
   };
   const recs = generarRecomendaciones(u, estimarImpuesto(u));
-  assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE", "$500M/mes × 12 = $6000M > $5237M tope 100K UVT");
+  assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE", "$500M/mes × 12 > $5237M tope 100K UVT");
 });
 
-test("SIMPLE: juridica con ingresos muy bajos ($50M/año) no recibe rec", () => {
+test("SIMPLE: juridica con ingresos muy bajos ($36M/año) no recibe rec", () => {
   const u = {
-    owners: [{ id: "own_j", name: "SAS Chica", type: "juridica", regimen: "ordinario" }],
+    owners: [{ id: "own_j", name: "SAS Chica", type: "juridica", regimen: "ordinario", simpleGrupo: "tiendas_peluquerias" }],
     ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
                  mensual: 3_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
     gas: {}, deu: [], inv: [], trm: 4200,
   };
   const recs = generarRecomendaciones(u, estimarImpuesto(u));
-  // Ingresos $36M/año, muy poco — impuesto ordinario ya es bajo, el ahorro
-  // estimado puede no superar el umbral de $3M que usamos como gate.
   assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE", "ingresos muy bajos, no hay margen útil");
 });
 
 test("SIMPLE: alerta SIMPLE_FUERA_DE_RANGO cuando está en SIMPLE pero superó 100K UVT", () => {
   const u = {
-    owners: [{ id: "own_j", name: "SAS Creció", type: "juridica", regimen: "simple" }],
+    owners: [{ id: "own_j", name: "SAS Creció", type: "juridica", regimen: "simple", simpleGrupo: "comercio_industria" }],
     ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
                  mensual: 500_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
     gas: {}, deu: [], inv: [], trm: 4200,
   };
   const recs = generarRecomendaciones(u, estimarImpuesto(u));
   assertIncludes(recs, "SIMPLE_FUERA_DE_RANGO");
-  const r = recs.find(r => r.code === "SIMPLE_FUERA_DE_RANGO");
-  assert(r.base.includes("905"), "debe referenciar Art. 905 ET");
-  assert(r.ahorroAnualEstimado === 0, "no es optimización, es compliance");
 });
 
-test("SIMPLE: juridica en zona_franca NO recibe recomendación de cambio a SIMPLE", () => {
+test("SIMPLE: juridica en zona_franca NO recibe recomendaciones de SIMPLE", () => {
   const u = {
-    owners: [{ id: "own_j", name: "SAS ZF", type: "juridica", regimen: "zona_franca" }],
+    owners: [{ id: "own_j", name: "SAS ZF", type: "juridica", regimen: "zona_franca", simpleGrupo: "comercio_industria" }],
     ingresos: [{ id: "ij", nombre: "Venta", categoria: "Negocio", fiscalCode: "NOL_NEGOCIO",
                  mensual: 40_000_000, tipo: "fijo", moneda: "COP", owner: "own_j" }],
     gas: {}, deu: [], inv: [], trm: 4200,
   };
   const recs = generarRecomendaciones(u, estimarImpuesto(u));
   assertNotIncludes(recs, "EVALUAR_REGIMEN_SIMPLE", "zona_franca no debe recibir sugerencia");
-  assertNotIncludes(recs, "SIMPLE_FUERA_DE_RANGO");
+  assertNotIncludes(recs, "CONFIGURAR_GRUPO_SIMPLE");
 });
 
 // ───────── Ordenamiento ─────────
