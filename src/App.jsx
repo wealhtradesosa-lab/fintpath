@@ -66,6 +66,40 @@ const sL=async(uid)=>{
   }catch{return null}
 };
 
+// LoadingScreen: splash con botón de emergencia después de 3s para que el
+// usuario NUNCA quede bloqueado si alguna promesa del arranque no resuelve.
+// Muestra también versión del bundle y acciones de recuperación.
+const BUILD_VERSION="v2026-04-24-timeout";
+function LoadingScreen({onForce}){
+  const[tick,setTick]=useState(0);
+  useEffect(()=>{const i=setInterval(()=>setTick(t=>t+1),1000);return()=>clearInterval(i)},[]);
+  const showForce=tick>=3;
+  const showClear=tick>=8;
+  return <div style={{background:"#0c0c0f",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",padding:24}}>
+    <div style={{textAlign:"center",maxWidth:420}}>
+      <div style={{fontSize:32,fontWeight:900,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>FINPATHIA</div>
+      <div style={{width:40,height:3,background:"linear-gradient(90deg,#22c55e,#3b82f6)",borderRadius:2,margin:"16px auto",animation:"pulse 1.5s infinite"}}/>
+      <div style={{color:"#6b7280",fontSize:12}}>Cargando tu patrimonio... {tick > 0 ? `(${tick}s)` : ""}</div>
+      <div style={{color:"#3f3f46",fontSize:9,marginTop:6,fontFamily:"monospace"}}>build {BUILD_VERSION}</div>
+      {showForce && <div style={{marginTop:24,display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
+        <div style={{color:"#b8bcc4",fontSize:11,lineHeight:1.5}}>
+          ¿Se quedó cargando? Podés forzar la entrada:
+        </div>
+        <button onClick={onForce} style={{padding:"10px 20px",background:"#22c55e",border:"none",borderRadius:8,color:"#000",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          ➡️ Forzar entrada
+        </button>
+      </div>}
+      {showClear && <div style={{marginTop:16,padding:12,background:"#141418",borderRadius:8,border:"1px solid rgba(255,255,255,0.08)",fontSize:10,color:"#b8bcc4",lineHeight:1.6,textAlign:"left"}}>
+        <div style={{fontWeight:700,color:"#f59e0b",marginBottom:4}}>💡 Si persiste el problema:</div>
+        1. <strong>Hard refresh</strong>: Ctrl+Shift+R (Windows) o Cmd+Shift+R (Mac)<br/>
+        2. <strong>Limpiar caché</strong>: abrí DevTools (F12) → Console y pegá:<br/>
+        <code style={{display:"block",background:"#0c0c0f",padding:6,borderRadius:4,marginTop:4,fontSize:10,color:"#22c55e"}}>localStorage.clear();location.reload();</code>
+        <div style={{marginTop:8,fontSize:9,color:"#6b7280"}}>Esto no borra tu cuenta ni datos de Supabase — solo caché local del navegador.</div>
+      </div>}
+    </div>
+  </div>;
+}
+
 const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.owners)d.owners=[{id:"own_1",name:"Personal",type:"natural",regimen:"ordinario"}];d.owners=d.owners.map(o=>({...o,regimen:o.regimen||"ordinario"}));if(!d.inv)d.inv=[];d.inv=d.inv.map(i=>{if(i.tp&&!isNaN(Number(i.tp))){i.tp=inferType(i);i.tipo=i.tp}return i});if(!d.deu)d.deu=[];if(!d.gas)d.gas={};if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return d};
 
 // ═══ END-TO-END ENCRYPTION ═══
@@ -471,7 +505,7 @@ export default function FinPath(){
   const ib=useMemo(()=>{if(!u?.ibk?.length)return{tc:0,tv:0,pnl:0,pp:0,pos:[]};let tc=0,tv=0;const pos=u.ibk.map(p=>{const va=p.sh*p.pr,cbb=p.sh*p.cb,pnl=va-cbb,pp=cbb>0?((va/cbb)-1)*100:0,up=p.pr>0?((p.tg/p.pr)-1)*100:0;tc+=cbb;tv+=va;return{...p,va,cbb,pnl,pp,up}});return{tc,tv,pnl:tv-tc,pp:tc>0?((tv/tc)-1)*100:0,pos}},[u?.ibk]);
   const pen=useMemo(()=>{if(!u)return{};const p=u.pen||{},yrs=Math.max(0,(p.rAge||60)-(p.age||35)),mr=(p.ret||7)/100/12;let fv=+(p.cur||0);for(let m=0;m<yrs*12;m++)fv=fv*(1+mr)+(+(p.sv||0));const rfv=fv/Math.pow(1+(p.inf||3)/100,yrs),mo=rfv>0?rfv/360:0;const proj=[];let rv=+(p.cur||0);for(let y=0;y<=yrs;y++){proj.push({age:(p.age||35)+y,val:Math.round(rv)});for(let m=0;m<12&&y<yrs;m++)rv=rv*(1+mr)+(+(p.sv||0))}let ba=0;const bc=(p.btcC||56)/100,bp=p.btcP||50000;for(let y=1;y<=yrs;y++)for(let m=1;m<=12;m++)ba+=(+(p.sv||0))/(bp*Math.pow(1+bc,((y-1)*12+m)/12));const bfv=ba*bp*Math.pow(1+bc,yrs),bmo=(bfv*.04)/12;return{yrs,fv:Math.round(rfv),mo:Math.round(mo),ok:mo>=(p.des||6000),gap:Math.max(0,(p.des||6000)-mo),proj,ba,bfv,bmo:Math.round(bmo)}},[u?.pen]);
   const simT=useMemo(()=>{const im={actual:1,conservador:.8,optimista:1.3,crisis:.6},gm={actual:1,conservador:1.1,optimista:.85,crisis:1.05};const sni=t.ni*(im[simS]||1),sgf=t.gfm*(gm[simS]||1),ste=sgf+t.tc,scf=sni-ste;return{...t,ni:sni,gfm:sgf,te:ste,cf:scf,ind:ste>0?(sni/ste)*100:0}},[t,simS]);
-  if(ld)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui"}}><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:900,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>FINPATHIA</div><div style={{width:40,height:3,background:"linear-gradient(90deg,#22c55e,#3b82f6)",borderRadius:2,margin:"16px auto",animation:"pulse 1.5s infinite"}}></div><div style={{color:T.tx3,fontSize:12}}>Cargando tu patrimonio...</div></div></div>;
+  if(ld)return<LoadingScreen onForce={()=>setLd(false)}/>;
 
   // ═══ INVITE ROUTE ═══
   // URL /invite/:token → renderizar AcceptInvite independiente de sesión

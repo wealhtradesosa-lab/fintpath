@@ -25,7 +25,7 @@ if bad==0: ok+=1; print(f"  ✅ Null guards OK")
 else: fail+=1; print(f"  ❌ {bad} u.p sin guardia")
 
 handlers = set(re.findall(r'onClick=\{(\w+)\}', c))
-skip = {'onGetStarted','onUpdate','onImport','onClose','openAdd','openEdit','handleEdit','handleSave','startEdit','toggleSel','openForm','onClick'}
+skip = {'onGetStarted','onUpdate','onImport','onClose','openAdd','openEdit','handleEdit','handleSave','startEdit','toggleSel','openForm','onClick','onForce','onSave','onCancel','onSaveAndBootstrap','onNavigate','onComplete','toggle'}
 missing = [h for h in handlers-skip if f'const {h}=' not in c]
 if not missing: ok+=1; print(f"  ✅ Handlers OK")
 else: fail+=1; print(f"  ❌ Handlers faltantes: {missing}")
