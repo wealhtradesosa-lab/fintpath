@@ -178,7 +178,12 @@ export default function FinPath(){
   // advisorClients: lista de clientes del asesor
   const[isAdvisor,setIsAdvisor]=useState(false);
   const[advisorProfile,setAdvisorProfile]=useState(null);
-  const[viewMode,setViewMode]=useState("workspace"); // "workspace" | "client" | "personal"
+  const[viewMode,setViewMode]=useState(()=>{
+    // Persistir preferencia del usuario entre sesiones. Para usuarios que son
+    // AMBOS (asesor + cliente), defaultear a 'personal' previene el flash
+    // de AdvisorWorkspace al recargar la página como cliente.
+    try{return localStorage.getItem("fp3_viewMode")||"personal"}catch{return "personal"}
+  });
   const[currentClientId,setCurrentClientId]=useState(null);
   const[advisorClients,setAdvisorClients]=useState([]);
   // ═══ CONTEXT SWITCH (Sprint 2C) ═══
@@ -191,6 +196,10 @@ export default function FinPath(){
   const[switchingClient,setSwitchingClient]=useState(false);
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
   useEffect(()=>{if(mb)sSb(false)},[mb]);
+  // Persistir viewMode en localStorage cuando cambia (para mantener preferencia al recargar)
+  useEffect(()=>{
+    try{if(viewMode==="workspace"||viewMode==="personal")localStorage.setItem("fp3_viewMode",viewMode)}catch{}
+  },[viewMode]);
   useEffect(()=>{(async()=>{
     // Timeout defensivo: si supabase se cuelga (problemas de red, session corrupta,
     // retry silencioso), la app cargaba para siempre con 'Cargando tu patrimonio...'.
@@ -213,13 +222,15 @@ export default function FinPath(){
               timeout,
             ]);
             if(!advErr&&advData){
+              // viewMode ya está inicializado desde localStorage con preferencia previa.
+              // Si nunca eligió, default es "personal" (evita flash para usuarios cliente-y-asesor).
               setIsAdvisor(true);
               setAdvisorProfile(advData);
-              const{data:clientsData}=await Promise.race([
-                supabase.from("advisor_client_data").select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at").eq("advisor_id",session.user.id),
-                timeout,
-              ]);
-              if(clientsData)setAdvisorClients(clientsData);
+              // Cargar clientes en background — no bloquea render del dashboard.
+              // El usuario ya ve su contenido mientras se carga.
+              supabase.from("advisor_client_data").select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at").eq("advisor_id",session.user.id).then(({data:cd})=>{
+                if(cd)setAdvisorClients(cd);
+              }).catch(()=>{});
             }
           }catch(e){/* silent - not an advisor, or timeout */}
         }
@@ -290,8 +301,11 @@ export default function FinPath(){
   // servidor), limpiamos igual lo local para que el usuario nunca quede
   // atrapado en un estado "medio-logueado".
   const logout=async()=>{
-    // 1) Supabase signOut (no bloqueante — si falla, seguimos)
-    try{await supabase.auth.signOut({scope:"local"})}catch(e){/* silent */}
+    // 1) Supabase signOut en BACKGROUND (no esperamos respuesta del servidor).
+    // signOut({scope:"local"}) limpia el storage localmente sin hacer request
+    // al servidor, y lo que demora a veces es el request de logout global.
+    // Hacemos fire-and-forget para que el usuario vea la respuesta UI inmediata.
+    try{supabase.auth.signOut({scope:"local"}).catch(()=>{})}catch(e){/* silent */}
     // 2) Limpiar TODO el localStorage/sessionStorage de Finpathia y Supabase
     try{
       const keysToRemove=[];
@@ -379,15 +393,32 @@ export default function FinPath(){
           setAuthLoading(false);
           return;
         }
-        // Si la cuenta tiene plan Asesor, marca isAdvisor y carga clientes (para poder cambiar de modo si está en personal)
+        // Setear viewMode y isAdvisor JUNTOS (React 18 batchea setStates síncronos)
+        // para evitar flash de AdvisorWorkspace cuando el usuario entra como cliente.
+        // Si entra como asesor: workspace. Si entra como cliente: personal.
         if(advData){
+          // IMPORTANTE: setViewMode ANTES que setIsAdvisor para que el condicional
+          // de render (u&&isAdvisor&&viewMode==="workspace") nunca sea true con
+          // viewMode todavía en el valor inicial "workspace" cuando el usuario eligió cliente.
+          setViewMode(loginRole==="advisor"?"workspace":"personal");
           setIsAdvisor(true);
           setAdvisorProfile(advData);
-          const{data:clientsData}=await supabase.from("advisor_client_data").select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at").eq("advisor_id",data.user.id);
-          if(clientsData)setAdvisorClients(clientsData);
+          if(loginRole==="advisor"){
+            // Si entra como asesor, cargamos clientes AHORA (los necesita para workspace)
+            try{
+              const{data:clientsData}=await supabase.from("advisor_client_data").select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at").eq("advisor_id",data.user.id);
+              if(clientsData)setAdvisorClients(clientsData);
+            }catch(e){/* silent */}
+          }else{
+            // Si entra como cliente, cargamos clientes en BACKGROUND (no bloquea UI).
+            // Los necesita solo si luego cambia a modo asesor.
+            supabase.from("advisor_client_data").select("id,email,data,plan,jurisdiction,updated_at,client_status,invited_at,accepted_at").eq("advisor_id",data.user.id).then(({data:cd})=>{
+              if(cd)setAdvisorClients(cd);
+            }).catch(()=>{});
+          }
+        }else{
+          setViewMode("personal");
         }
-        // viewMode según elección del toggle (respeta la decisión del usuario)
-        setViewMode(loginRole==="advisor"?"workspace":"personal");
       }else{
         const sr=await fetch("/.netlify/functions/auth-signup",{
           method:"POST",headers:{"Content-Type":"application/json"},
