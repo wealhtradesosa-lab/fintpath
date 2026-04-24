@@ -540,6 +540,37 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
         const pgMap = { ingreso: "ing", gasto: "gas", deuda: "deu", inversion: "inv", owner: "set" };
         const pgLabel = { ingreso: "💰 Ingresos", gasto: "💳 Egresos", deuda: "📋 Deudas", inversion: "🏦 Patrimonio", owner: "⚙️ Config" };
 
+        // Agrupar warnings duplicados (mismo code + mismo itemType).
+        // Ejemplo: 3 arriendos separados generan 3 warnings
+        // ARRIENDO_INFERIDO_INMUEBLE idénticos. Los juntamos en una sola
+        // fila que muestra "3 items afectados" con lista expandible.
+        const agruparWarnings = (lista) => {
+          const grupos = new Map();
+          for (const w of lista) {
+            const clave = (w.code || "NO_CODE") + "::" + (w.itemType || "");
+            if (!grupos.has(clave)) grupos.set(clave, []);
+            grupos.get(clave).push(w);
+          }
+          const resultado = [];
+          for (const items of grupos.values()) {
+            if (items.length === 1) {
+              resultado.push(items[0]);
+            } else {
+              // Warning grupal: conserva el primer item como representativo
+              // pero marca la cantidad y la lista completa para bulk approve.
+              const montoTotal = items.reduce((s, x) => s + (x.itemMonto || 0), 0);
+              resultado.push({
+                ...items[0],
+                _grupo: items,
+                _count: items.length,
+                itemConcepto: `${items.length} ítems (${items[0].itemCategoria || items[0].itemConcepto || ""})`,
+                itemMonto: montoTotal,
+              });
+            }
+          }
+          return resultado;
+        };
+
         const renderRow = (w, i) => {
           const color = w.severity === "error" ? T.red : w.severity === "warning" ? T.orange : T.blue;
           const icon = w.severity === "error" ? "⛔" : w.severity === "warning" ? "⚠️" : "ℹ️";
@@ -549,6 +580,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
           const itemLbl = w.itemConcepto || w.itemCategoria || "Item";
           const monto = w.itemMonto ? fmM(w.itemMonto * 12) + "/año" : null;
           const canApprove = onUpdate && w.fiscalCodeSugerido && (w.itemId || (w.itemType === "gasto" && w.itemGastoCat != null));
+          const esGrupo = w._grupo && w._count > 1;
 
           return (
             <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 8, fontSize: 11, borderLeft: "2px solid " + color }}>
@@ -557,16 +589,30 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
                 <div style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap", marginBottom: 2 }}>
                   <span style={{ color: T.txt, fontWeight: 700, fontSize: 12 }}>{itemLbl}</span>
                   {monto && <span style={{ color: T.txt3, fontSize: 10 }}>· {monto}</span>}
-                  {w.itemOwnerName && <span style={{ color: T.txt3, fontSize: 10 }}>· {w.itemOwnerName}</span>}
+                  {w.itemOwnerName && !esGrupo && <span style={{ color: T.txt3, fontSize: 10 }}>· {w.itemOwnerName}</span>}
                 </div>
                 <div style={{ color: color, fontSize: 11 }}>{w.message}</div>
+                {esGrupo && (
+                  <details style={{ marginTop: 4, fontSize: 10, color: T.txt3 }}>
+                    <summary style={{ cursor: "pointer", userSelect: "none" }}>Ver los {w._count} items</summary>
+                    <ul style={{ margin: "4px 0 0 14px", padding: 0, lineHeight: 1.6 }}>
+                      {w._grupo.map((sub, si) => (
+                        <li key={si} style={{ listStyle: "disc" }}>
+                          <span style={{ color: T.txt2 }}>{sub.itemConcepto || sub.itemCategoria || "Item"}</span>
+                          {sub.itemMonto ? <span style={{ color: T.txt3 }}> · {fmM(sub.itemMonto * 12)}/año</span> : null}
+                          {sub.itemOwnerName ? <span style={{ color: T.txt3 }}> · {sub.itemOwnerName}</span> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
                 {w.accionSugerida && <div style={{ color: T.txt3, marginTop: 3, fontSize: 10 }}>→ {w.accionSugerida}</div>}
                 {w.articuloET && w.articuloET !== "—" && <div style={{ color: T.txt3, fontSize: 10, marginTop: 2, fontStyle: "italic" }}>{w.articuloET}</div>}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
                 {canApprove && (
-                  <button onClick={() => aprobar(w)} style={{ background: T.green + "22", border: "1px solid " + T.green, color: T.green, padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }} title={`Aprobar clasificación sugerida: ${w.fiscalCodeSugerido}`}>
-                    ✓ Aprobar
+                  <button onClick={() => esGrupo ? aprobarGrupo(w._grupo) : aprobar(w)} style={{ background: T.green + "22", border: "1px solid " + T.green, color: T.green, padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }} title={esGrupo ? `Aprobar ${w._count} items` : `Aprobar clasificación sugerida: ${w.fiscalCodeSugerido}`}>
+                    ✓ Aprobar{esGrupo ? ` (${w._count})` : ""}
                   </button>
                 )}
                 {onNavigate && target && (
@@ -593,13 +639,21 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
               )}
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginBottom: 12, lineHeight: 1.6 }}>
-              {warns.length} ítem(s) con clasificación sugerida pero no confirmada. Revisá cada uno y aprobá o editá.
-              {errs.length > 0 && <> • <strong style={{ color: T.red }}>{errs.length} error(es)</strong></>}
-              {warnings.length > 0 && <> • <span style={{ color: T.orange }}>{warnings.length} advertencia(s)</span></>}
-              {infos.length > 0 && <> • <span style={{ color: T.blue }}>{infos.length} info</span></>}
+              {(() => {
+                const grupErrs = agruparWarnings(errs);
+                const grupWarnings = agruparWarnings(warnings);
+                const grupInfos = agruparWarnings(infos);
+                const total = grupErrs.length + grupWarnings.length + grupInfos.length;
+                return <>
+                  {total} alerta{total !== 1 ? "s" : ""} de clasificación fiscal ({warns.length} ítem{warns.length !== 1 ? "s" : ""} afectado{warns.length !== 1 ? "s" : ""}). Revisá cada una y aprobá o editá.
+                  {grupErrs.length > 0 && <> • <strong style={{ color: T.red }}>{grupErrs.length} error{grupErrs.length !== 1 ? "es" : ""}</strong></>}
+                  {grupWarnings.length > 0 && <> • <span style={{ color: T.orange }}>{grupWarnings.length} advertencia{grupWarnings.length !== 1 ? "s" : ""}</span></>}
+                  {grupInfos.length > 0 && <> • <span style={{ color: T.blue }}>{grupInfos.length} info</span></>}
+                </>;
+              })()}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {[...errs, ...warnings, ...infos].map(renderRow)}
+              {[...agruparWarnings(errs), ...agruparWarnings(warnings), ...agruparWarnings(infos)].map(renderRow)}
             </div>
           </div>
         );
