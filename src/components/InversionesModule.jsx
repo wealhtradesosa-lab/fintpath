@@ -199,7 +199,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
                     style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
                 </th>
-                {["Inversión", "Tipo", "Valor", "Ganancia", "Deuda", "Sim", ""].map((h) => (
+                {["Inversión", "Tipo", "Valor", "Ganancia", "Deuda", "On/Off", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: h === "Inversión" || h === "" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr>

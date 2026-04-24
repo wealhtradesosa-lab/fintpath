@@ -153,7 +153,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
                     style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
                 </th>
-                {["Deuda", "Tipo", "Saldo", "Cuota", "Tasa", "Activo", "Sim", ""].map((h) => (
+                {["Deuda", "Tipo", "Saldo", "Cuota", "Tasa", "Activo", "On/Off", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: ["Deuda", "Activo", ""].includes(h) ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr>
