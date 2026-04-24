@@ -31,6 +31,7 @@ import {
   AP_TRIB_PV, AP_TRIB_AFC, AP_TRIB_SALUD_PREPAGADA,
 } from "./fiscalCodes.js";
 import { TABLA_ART_241, calcImpRenta as calcImpRentaCore } from "./tablaArt241.js";
+import { GRUPOS_SIMPLE as SIMPLE_GRUPOS, calcularImpuestoSimple as calcularImpSimple } from "./regimenSimple.js";
 
 export const UVT = 52374;
 
@@ -286,9 +287,20 @@ export const estimarImpuesto = (u) => {
       const netoLaboral = ingLaboral - totalNoConst;
 
       // Deducciones solo para rentas de trabajo (Art. 387 ET):
+      // Fase 3 (Commit 8.4): si el owner configuró fiscalProfile.dependientes.cantidad,
+      // ese es la fuente de verdad. Fallback legacy: inferir desde gastoEduc > 500K
+      // para NO romper usuarios que nunca configuraron el switch.
       const gastoEduc = oGas.filter(g => g.cat === "Educación").reduce((s, g) => s + (g.m || 0), 0);
-      const tieneDep = gastoEduc > 500000;
-      const deducDep = tieneDep ? Math.min(ingLaboral * 0.10, 384 * UVT) : 0;
+      const fp = ow.fiscalProfile || {};
+      const dependientesDeclarados = Number(fp.dependientes?.cantidad) || 0;
+      const tieneDepExplicito = dependientesDeclarados > 0;
+      const tieneDepLegacy = !fp.dependientes && gastoEduc > 500000; // solo si no configuró fiscalProfile
+      const tieneDep = tieneDepExplicito || tieneDepLegacy;
+      const conDiscapacidad = !!fp.dependientes?.conDiscapacidad;
+      // Tope base: 10% del ingreso laboral, 384 UVT/año. Con discapacidad se amplía
+      // (Art. 387 parr 2: dependientes con discapacidad tienen tratamiento expandido).
+      const topeDepUVT = conDiscapacidad ? 768 : 384;
+      const deducDep = tieneDep ? Math.min(ingLaboral * 0.10, topeDepUVT * UVT) : 0;
 
       const gastoSaludTradicional = oGas.filter(g => g.cat === "Salud").reduce((s, g) => s + (g.m || 0), 0) * 12;
       // Bridge Commit 1.6: leer salud prepagada del shape nuevo (Egresos con categoría
@@ -344,7 +356,11 @@ export const estimarImpuesto = (u) => {
       // sus costos reales (custodia, asesorías) como gastos.
       const pctComponenteInflac = ((u.componenteInflacionarioPct != null ? u.componenteInflacionarioPct : 50.88) / 100);
       const rendCompInflacAplicable = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual;
-      const componenteInflacExcluido = rendCompInflacAplicable * pctComponenteInflac;
+      // Fase 3: el componente inflacionario (Arts. 38-39 ET) NO aplica si el contribuyente
+      // está obligado a llevar contabilidad. Por default no lo está → se aplica. Se skip
+      // sólo cuando el switch explícito está activo.
+      const obligadoContabilidad = !!(ow.fiscalProfile?.obligadoContabilidad);
+      const componenteInflacExcluido = obligadoContabilidad ? 0 : (rendCompInflacAplicable * pctComponenteInflac);
       const rendGravable = rendCompInflacAplicable - componenteInflacExcluido + inversionAnual;
       const rentaLiqCapital = Math.max(0, rendGravable);
 
@@ -393,12 +409,21 @@ export const estimarImpuesto = (u) => {
       const regimenN = ow.regimen || "ordinario";
       let impActualNat, impOptNat, impBrutoNat, regimenNotaN = "";
       if (regimenN === "simple") {
-        // SIMPLE para natural empresario: ~3% sobre ingresos brutos (promedio grupos 1-3)
-        // Tarifa real depende de actividad: 1.4% comercio, 3.4% servicios, 8.3% hidrocarburos.
-        impBrutoNat = ingAnual * 0.03;
-        impActualNat = impBrutoNat; // SIMPLE sustituye retención
-        impOptNat = impBrutoNat;    // SIMPLE no admite las deducciones de cédula general
-        regimenNotaN = "Régimen Simple (RST) — estimación 3% sobre ingresos brutos (aproximación; tarifa real depende de grupo de actividad: 1,4%–8,3%).";
+        // Fase 3 (Bug #10): usar tarifas reales por grupo (Arts. 908 ET) via
+        // regimenSimple.js. Si el owner tiene simpleGrupo configurado, calcula
+        // con tramos marginales. Si no, fallback conservador 13.7% (el más alto)
+        // para no recomendar en falso un cambio a SIMPLE que podría salir peor.
+        const simpleGrupo = ow.simpleGrupo;
+        if (simpleGrupo && SIMPLE_GRUPOS[simpleGrupo]) {
+          const { impuesto: impSimple, tarifaEfectiva } = calcularImpSimple(ingAnual, simpleGrupo, UVT);
+          impBrutoNat = impSimple;
+          regimenNotaN = `Régimen Simple (RST) — grupo "${SIMPLE_GRUPOS[simpleGrupo].label}", tarifa efectiva ${(tarifaEfectiva * 100).toFixed(2)}% (tramos marginales Art. 908 ET).`;
+        } else {
+          impBrutoNat = ingAnual * 0.137; // fallback conservador
+          regimenNotaN = "Régimen Simple (RST) — estimación conservadora 13,7% (configurá el grupo de actividad en el perfil para tarifa real).";
+        }
+        impActualNat = impBrutoNat;
+        impOptNat = impBrutoNat;
       } else {
         // Ordinario (Cédula General)
         impBrutoNat = imp;
