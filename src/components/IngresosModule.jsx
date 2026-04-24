@@ -345,7 +345,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 const cap = Number(form.capital) || 0;
                 const tas = Number(form.tasa) || 0;
                 if (m > 0 && cap > 0) nf.tasa = String(Math.round((m * 12 / cap) * 1000) / 10);
-                else if (m > 0 && tas > 0) nf.capital = String(Math.round((m * 12) / (tas / 100)));
+                else if (m > 0 && tas > 0) {
+                  // Fix: solo derivar capital si el resultado es razonable (> $10K).
+                  // Si mensual es tan pequeño que el capital calculado sale < $10K,
+                  // probablemente el usuario está tipeando y no quiere derivar nada.
+                  const capCalc = Math.round((m * 12) / (tas / 100));
+                  if (capCalc >= 10_000) nf.capital = String(capCalc);
+                }
                 // Commit 1.5: auto-prefill aportes obligatorios (4%+4%) para Salario.
                 // Sólo rellena si el campo está vacío → no pisa valores editados por el usuario.
                 if (form.categoria === "Salario" && m > 0) {
@@ -446,6 +452,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     <In l="📈 % Rentabilidad anual" value={form.tasa} onChange={(v) => {
                       // Fix: si hay capital, SIEMPRE recalcular mensual (la tasa es la fuente
                       // de verdad cuando cambia). Sin capital pero con mensual, derivar capital.
+                      // Guard: no derivar capital si el resultado sale absurdo (<$10K).
                       const nf = { tasa: v };
                       const tas = Number(v) || 0;
                       const cap = Number(form.capital) || 0;
@@ -453,7 +460,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       if (tas > 0 && cap > 0) {
                         nf.mensual = String(Math.round((cap * tas / 100) / 12));
                       } else if (tas > 0 && m > 0 && cap === 0) {
-                        nf.capital = String(Math.round((m * 12) / (tas / 100)));
+                        const capCalc = Math.round((m * 12) / (tas / 100));
+                        if (capCalc >= 10_000) nf.capital = String(capCalc);
                       } else if (tas === 0) {
                         // Si limpia la tasa, dejar mensual y capital como estaban (no pisar).
                       }
@@ -463,6 +471,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   {Number(form.capital) > 0 && Number(form.tasa) > 0 && Number(form.mensual) > 0 && (
                     <div style={{marginTop:10,padding:"10px 12px",background:"rgba(34,197,94,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.6}}>
                       💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString()} × {form.tasa}% anual = {"$" + Math.round(Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString()}/mes
+                    </div>
+                  )}
+                  {/* Fix: warning si el capital guardado es sospechosamente bajo (<$10K) */}
+                  {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
+                    <div style={{marginTop:10,padding:"10px 12px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,fontSize:11,color:T.red,lineHeight:1.5}}>
+                      ⚠️ El capital invertido es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString()}). ¿Faltan ceros? Un capital típico de inversión es &gt;$100.000. Si el valor es correcto, ignorá este aviso.
                     </div>
                   )}
                 </div>
