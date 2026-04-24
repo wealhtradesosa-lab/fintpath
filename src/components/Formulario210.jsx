@@ -468,6 +468,9 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
               pvAFC: (+depP.pensionVoluntaria || 0) + (+depP.afc || 0),
               saludPrepagada: +depP.saludPrepagada || 0,
               gmf: +depP.gmf50 || 0,
+              descDonaciones: +liq.descDonaciones || 0,
+              gananciasOcasionales: +ocP.gananciasOcasionalesBruto || 0,
+              impuestoGO: impGO || 0,
             },
             anterior: {
               ingresos: (anterior.salarios || 0) + (anterior.honorarios || 0) + (anterior.intereses || 0) + (anterior.arrendamientos || 0),
@@ -482,6 +485,9 @@ function Paso5Liquidacion({ data, update, rentaLiqGeneralFinal, impGO, sugeridos
               pvAFC: anterior.pvAFC || 0,
               saludPrepagada: anterior.saludPrepagada || 0,
               gmf: anterior.gmf50 || 0,
+              descDonaciones: anterior.descDonaciones || 0,
+              gananciasOcasionales: anterior.gananciasOcasionales || 0,
+              impuestoGO: anterior.impuestoGO || 0,
             },
           }}
           tendenciaContext={serie && serie.length >= 2 ? {
@@ -625,6 +631,10 @@ export default function Formulario210({ owner, user, onSave, onCancel }) {
       impuestoRenta: +r.impuestoRenta || 0,
       retenciones: +r.retenciones || 0,
       anticipoGenerado: +r.anticipoGenerado || 0,
+      descDonaciones: +r.descDonaciones || 0,
+      descCree: +r.descCree || 0,
+      gananciasOcasionales: +r.gananciasOcasionales || 0,
+      impuestoGO: +r.impuestoGO || 0,
     };
   }, [owner?.declaracionAnterior]);
 

@@ -855,12 +855,16 @@ function Paso5Liquidacion({ data, update, rentaLiqGravable, regimen, ingresosGra
                 retenciones: retenciones,
                 impuesto: totalImpuesto,
                 dividendos: +data.ingresos?.dividendos || 0,
+                descICA: +data.liquidacion?.descuentoICA || 0,
+                descDonaciones: +data.liquidacion?.descuentoDonaciones || 0,
               },
               anterior: {
                 ingresos: (anterior.ingresosOperacionales || 0) + (anterior.ingresosNoOperacionales || 0) + (anterior.dividendos || 0),
                 retenciones: anterior.retenciones || 0,
                 impuesto: anterior.impuestoRenta || 0,
                 dividendos: anterior.dividendos || 0,
+                descICA: anterior.descICA || 0,
+                descDonaciones: anterior.descDonaciones || 0,
               },
             }}
             tendenciaContext={serie && serie.length >= 2 ? {
@@ -956,6 +960,10 @@ export default function Formulario110({ owner, onSave, onCancel }) {
       impuestoRenta: +r.impuestoRenta || 0,
       retenciones: +r.retenciones || 0,
       anticipoGenerado: +r.anticipoGenerado || 0,
+      descICA: +r.descICA || 0,
+      descCree: +r.descCree || 0,
+      descDonaciones: +r.descDonaciones || 0,
+      descCTI: +r.descCTI || 0,
     };
   }, [owner?.declaracionAnterior]);
 

@@ -219,6 +219,13 @@ export default function ImportDeclaracionAnterior({ owner, onSave, onCancel }) {
             <Field label="Anticipo declarado (quedó para este año)" casilla="151" value={rg.anticipoGenerado} onChange={(v) => upd("anticipoGenerado", v)} optional />
             <Field label="Saldo pagado / a favor" casilla="161" value={rg.saldoFinal} onChange={(v) => upd("saldoFinal", v)} optional hint="Usá positivo si pagaste, negativo si quedó saldo a favor." />
           </Section>
+
+          <Section title="Descuentos y ganancias ocasionales" icon="⭐" color={T.orange}>
+            <Field label="Descuento por donaciones (25%)" casilla="128" value={rg.descDonaciones} onChange={(v) => upd("descDonaciones", v)} optional hint="25% del valor donado a entidades sin ánimo de lucro calificadas (Art. 257 ET)." />
+            <Field label="Descuento por CREE / impuestos pagados" casilla="129" value={rg.descCree} onChange={(v) => upd("descCree", v)} optional hint="Otros descuentos tributarios (ICA, CREE, impuestos exterior)." />
+            <Field label="Ganancias ocasionales gravables" casilla="110" value={rg.gananciasOcasionales} onChange={(v) => upd("gananciasOcasionales", v)} optional hint="Venta de activos fijos >2 años, herencias, loterías, etc. Tarifa 15%." />
+            <Field label="Impuesto ganancias ocasionales" casilla="113" value={rg.impuestoGO} onChange={(v) => upd("impuestoGO", v)} optional hint="15% × ganancias ocasionales gravables." />
+          </Section>
         </>
       ) : (
         <>
@@ -247,6 +254,13 @@ export default function ImportDeclaracionAnterior({ owner, onSave, onCancel }) {
             <Field label="Retenciones en la fuente" casilla="99" value={rg.retenciones} onChange={(v) => upd("retenciones", v)} />
             <Field label="Anticipo de renta generado" casilla="103" value={rg.anticipoGenerado} onChange={(v) => upd("anticipoGenerado", v)} optional />
             <Field label="Saldo pagado / a favor" casilla="111" value={rg.saldoFinal} onChange={(v) => upd("saldoFinal", v)} optional />
+          </Section>
+
+          <Section title="Descuentos tributarios (Art. 115, 254, 257 ET)" icon="⭐" color={T.orange}>
+            <Field label="Descuento ICA (50% del ICA pagado)" casilla="88" value={rg.descICA} onChange={(v) => upd("descICA", v)} optional hint="50% del ICA pagado en el municipio. Se descuenta del impuesto de renta, no es deducible." />
+            <Field label="Descuento CREE / impuestos exterior" casilla="89" value={rg.descCree} onChange={(v) => upd("descCree", v)} optional hint="Impuestos pagados en el exterior con convenio de doble tributación (Art. 254 ET)." />
+            <Field label="Descuento por donaciones (25%)" casilla="90" value={rg.descDonaciones} onChange={(v) => upd("descDonaciones", v)} optional hint="25% del valor donado a entidades sin ánimo de lucro calificadas (Art. 257 ET)." />
+            <Field label="Descuento CTI (inversión tecnología/ambiental)" casilla="91" value={rg.descCTI} onChange={(v) => upd("descCTI", v)} optional hint="Crédito tributario por inversión en ciencia, tecnología o conservación ambiental." />
           </Section>
         </>
       )}

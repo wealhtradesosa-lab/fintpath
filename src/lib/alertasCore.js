@@ -162,6 +162,33 @@ export function calcPatronesAnomalos(ctx) {
     });
   }
 
+  // Patrón 11: descuento por donaciones desapareció (Art. 257 ET)
+  if (p.descDonaciones > MIN && (!a.descDonaciones || a.descDonaciones < MIN)) {
+    patrones.push({
+      severity: "warning",
+      label: "Descuento por donaciones: desapareció",
+      sugerencia: `El año anterior usaste $${Math.round(p.descDonaciones).toLocaleString("es-CO")} de descuento por donaciones (Art. 257 ET, 25% del donado). Si seguís donando a las mismas ESAL, pedí el certificado anual de donaciones — el descuento se aplica directo del impuesto, no de la base.`,
+    });
+  }
+
+  // Patrón 12: ganancias ocasionales declaradas pero impuesto GO en cero
+  if (p.gananciasOcasionales > MIN && a.gananciasOcasionales > MIN && p.impuestoGO > MIN && (!a.impuestoGO || a.impuestoGO < MIN)) {
+    patrones.push({
+      severity: "critical",
+      label: "Ganancias ocasionales sin impuesto",
+      sugerencia: `Declaraste $${Math.round(a.gananciasOcasionales).toLocaleString("es-CO")} en ganancias ocasionales pero el impuesto GO está en cero. La tarifa es 15% fija (Art. 314 ET). Revisá si aplicaste las exenciones correctas (venta vivienda principal tiene tope de 7.500 UVT exento, herencias hasta 3.250 UVT) o si te falta calcular el impuesto.`,
+    });
+  }
+
+  // Patrón 13: descuento ICA desapareció (solo jurídicas)
+  if (p.descICA > MIN && (!a.descICA || a.descICA < MIN)) {
+    patrones.push({
+      severity: "warning",
+      label: "Descuento ICA: desapareció",
+      sugerencia: `El año anterior usaste $${Math.round(p.descICA).toLocaleString("es-CO")} de descuento por el 50% del ICA pagado (Art. 115 ET). Si tu empresa siguió operando y pagando ICA, este descuento se sigue aplicando — verificá las casillas 88-90 del F-110.`,
+    });
+  }
+
   return patrones;
 }
 
