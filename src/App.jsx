@@ -196,10 +196,12 @@ export default function FinPath(){
   const[switchingClient,setSwitchingClient]=useState(false);
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
   useEffect(()=>{if(mb)sSb(false)},[mb]);
-  // Persistir viewMode en localStorage cuando cambia (para mantener preferencia al recargar)
+  // Persistir viewMode en localStorage cuando cambia — solo si hay usuario loggeado
+  // para evitar que después del logout se re-escriba al resetear el estado.
   useEffect(()=>{
+    if(!u)return;
     try{if(viewMode==="workspace"||viewMode==="personal")localStorage.setItem("fp3_viewMode",viewMode)}catch{}
-  },[viewMode]);
+  },[viewMode,u]);
   useEffect(()=>{(async()=>{
     // Timeout defensivo: si supabase se cuelga (problemas de red, session corrupta,
     // retry silencioso), la app cargaba para siempre con 'Cargando tu patrimonio...'.
