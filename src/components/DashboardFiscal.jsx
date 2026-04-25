@@ -21,11 +21,16 @@ import ReporteFiscalPrint from "./ReporteFiscalPrint";
 import DeclaracionUpload from "./DeclaracionUpload";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
 
+import { C } from "../lib/designTokens.js";
+
+// Tokens unificados (Commit 9.9). Antes este archivo tenía colores
+// LIGERAMENTE distintos al resto (txt: #e8eaed vs #fafafa, orange amber vs naranja).
+// Esa diferencia sutil es lo que hacía sentir el sitio "amateur" — incoherente.
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  txt: "#e8eaed", txt2: "#b8bcc4", txt3: "#6b7280",
-  border: "rgba(255,255,255,0.08)",
-  green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#a78bfa",
+  bg: C.bg, bg2: C.surface, bg3: C.raised,
+  txt: C.text, txt2: C.muted, txt3: C.subtle,
+  border: C.border,
+  green: C.ok, red: C.danger, orange: C.warn, blue: C.accent, purple: C.purple,
 };
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");

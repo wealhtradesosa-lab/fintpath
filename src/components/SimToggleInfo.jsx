@@ -16,11 +16,14 @@
 // hace que "el impuesto baje" o que "no aparezca en el reporte".
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { C } from "../lib/designTokens.js";
+
+// Alias de compat para no reescribir todo el JSX.
 const T = {
-  bg2: "#141418",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
-  border: "rgba(255,255,255,0.06)",
-  green: "#22c55e", orange: "#f97316", blue: "#3b82f6",
+  bg2: C.surface,
+  txt: C.text, txt2: C.muted, txt3: C.subtle,
+  border: C.border,
+  green: C.ok, orange: C.warn, blue: C.accent,
 };
 
 export default function SimToggleInfo({ total, activos, moduloNombre = "estos ítems" }) {

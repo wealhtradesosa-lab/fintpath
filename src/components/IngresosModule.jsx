@@ -1,14 +1,19 @@
 import { useState } from "react";
 import SimToggleInfo from "./SimToggleInfo";
 
+import { C } from "../lib/designTokens.js";
+
+// Commit 9.9: tokens unificados. Antes bg2 era #18181b (distinto del resto del app
+// que usa #141418). Esa diferencia de 4 pixeles en luminosidad creaba la sensación
+// de "diseño inconsistente" entre módulos.
 const T = {
-  bg2: "#18181b", bg3: "#1e1e24",
-  card: "#111113", border: "rgba(255,255,255,0.06)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
-  green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
-  red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
-  blue: "#3b82f6", orange: "#f97316",
-  ch: ["#22c55e", "#3b82f6", "#f97316", "#a78bfa", "#ec4899", "#22d3ee", "#eab308"],
+  bg2: C.surface, bg3: C.raised,
+  card: "#111113", border: C.border,
+  txt: C.text, txt2: C.muted, txt3: C.subtle,
+  green: C.ok, greenDim: "rgba(34,197,94,0.1)",
+  red: C.danger, redDim: "rgba(239,68,68,0.08)",
+  blue: C.accent, orange: C.warn,
+  ch: [C.ok, C.accent, C.warn, C.purple, "#ec4899", "#22d3ee", "#eab308"],
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
 const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];

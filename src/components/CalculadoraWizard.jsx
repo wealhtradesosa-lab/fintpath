@@ -20,25 +20,22 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
+import { C, F as F_CENTRAL, S, R } from "../lib/designTokens.js";
 import AjustesFiscalesPersonalizados from "./AjustesFiscalesPersonalizados";
 import CalculadoraImpuestos from "./CalculadoraImpuestos";
 
+// Alias de compatibilidad: T mapea a los tokens centrales C.
+// Los archivos que ya usan T.txt, T.bl, T.green etc siguen funcionando,
+// pero ahora todos los colores vienen del mismo sitio (designTokens.js).
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
-  border: "rgba(255,255,255,0.06)",
-  green: "#22c55e", red: "#ef4444", orange: "#f97316", blue: "#3b82f6", purple: "#a78bfa",
+  bg: C.bg, bg2: C.surface, bg3: C.raised,
+  txt: C.text, txt2: C.muted, txt3: C.subtle,
+  border: C.border,
+  green: C.ok, red: C.danger, orange: C.warn, blue: C.accent, purple: C.purple,
 };
 
-// ─── SISTEMA TIPOGRÁFICO (consistente con Ingresos/Egresos/Dashboard) ────
-// En vez de usar fontSize inline aleatorios (9-22), 4 niveles definidos.
-const F = {
-  h1: { fontSize: 22, fontWeight: 700, color: T.txt, margin: 0, lineHeight: 1.3 },   // Título de pantalla
-  h2: { fontSize: 16, fontWeight: 700, color: T.txt, margin: 0, lineHeight: 1.35 },  // Subtítulo de sección
-  body: { fontSize: 13, color: T.txt2, margin: 0, lineHeight: 1.5 },                 // Texto descriptivo
-  caption: { fontSize: 11, color: T.txt3, margin: 0, lineHeight: 1.4 },              // Nota pequeña
-  mono: { fontFamily: "monospace", fontSize: 14, fontWeight: 700 },                  // Números
-};
+// F: re-export del sistema tipográfico central. Igual que antes pero unificado.
+const F = F_CENTRAL;
 
 const UVT = 52_374;
 const fm = (v) => {
