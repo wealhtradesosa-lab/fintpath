@@ -324,6 +324,69 @@ test("Bug #7 GO se suma al impuesto total del owner (no en cédula separada ocul
   assert(det.impGO === 20_000_000, "impGO exacto");
 });
 
+// ═════════════════════ BUG #8 — Pensiones (Art. 337 ET) ═════════════════════
+
+test("Bug #8: pension < 12.000 UVT/año (1.000 UVT/mes) → impPension=0 (toda exenta)", () => {
+  // 800 UVT/mes = $41.9M/mes, debajo del tope de 1.000 UVT
+  const u = {
+    owners: [{ id: "o1", name: "P", type: "natural" }],
+    ingresos: [{ id: "i1", nombre: "Mesada", categoria: "Pensión", fiscalCode: "PEN_JUBILACION",
+                 mensual: 800 * UVT_2026, tipo: "fijo", moneda: "COP", owner: "o1" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const det = estimarImpuesto(u).detalle[0];
+  assert(det.impPension === 0, `pension debajo tope: esperaba impPension=0, fue ${det.impPension}`);
+  assert(det.pensGravable === 0, "pensGravable debe ser 0");
+});
+
+test("Bug #8: pension > 12.000 UVT/año → exceso tributa segun tabla progresiva", () => {
+  // 1.500 UVT/mes = anual 18.000 UVT. Exenta 12.000, gravable 6.000 UVT.
+  const u = {
+    owners: [{ id: "o1", name: "P", type: "natural" }],
+    ingresos: [{ id: "i1", nombre: "Mesada", categoria: "Pensión", fiscalCode: "PEN_JUBILACION",
+                 mensual: 1500 * UVT_2026, tipo: "fijo", moneda: "COP", owner: "o1" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const det = estimarImpuesto(u).detalle[0];
+  assert(det.impPension > 0, `pension > tope: esperaba impPension>0, fue ${det.impPension}`);
+  assert(det.pensGravable > 0, "pensGravable debe ser > 0");
+  // Exenta debe ser 12.000 UVT
+  assert(Math.abs(det.pensExenta - 12000 * UVT_2026) < 1, `pensExenta debe ser 12.000 UVT`);
+});
+
+test("Bug #8: pension alta + sin otros ingresos → impuesto refleja la cedula pensional", () => {
+  // Antes este caso daba impuesto=$0 (sub-estimacion grave). Ahora debe gravar.
+  // 60M/mes = 720M/año. Tope exento es 12.000 UVT = ~628M. Gravable ~92M.
+  const u = {
+    owners: [{ id: "o1", name: "P", type: "natural" }],
+    ingresos: [{ id: "i1", nombre: "Mesada", categoria: "Pensión", fiscalCode: "PEN_JUBILACION",
+                 mensual: 60_000_000, tipo: "fijo", moneda: "COP", owner: "o1" }],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const det = estimarImpuesto(u).detalle[0];
+  assert(det.impuesto > 0, `con pension alta: impuesto debe ser > 0, fue ${det.impuesto}`);
+  assert(det.impPension === det.impuesto, "impPension debe ser igual al impuesto total cuando solo hay pension");
+});
+
+test("Bug #8: pension + salario coexisten correctamente (cedulas separadas)", () => {
+  // Pension de 60M/mes (gravable ~92M anual) + salario alto que tambien genere impuesto
+  const u = {
+    owners: [{ id: "o1", name: "P", type: "natural" }],
+    ingresos: [
+      { id: "i1", nombre: "Mesada", categoria: "Pensión", fiscalCode: "PEN_JUBILACION",
+        mensual: 60_000_000, tipo: "fijo", moneda: "COP", owner: "o1" },
+      { id: "i2", nombre: "Salario", categoria: "Salario", fiscalCode: "LAB_SALARIO",
+        mensual: 80_000_000, tipo: "fijo", moneda: "COP", owner: "o1",
+        aportes: { pension: 3_200_000, salud: 3_200_000 } },
+    ],
+    gas: {}, deu: [], inv: [], trm: 4200,
+  };
+  const det = estimarImpuesto(u).detalle[0];
+  // Ambas cedulas suman al impuesto total
+  assert(det.impPension > 0, "pension genera impuesto");
+  assert(det.impuesto > det.impPension, `impuesto total (${det.impuesto}) debe ser > impPension (${det.impPension}) porque laboral tambien aporta`);
+});
+
 // ═════════════════════ Run ═════════════════════
 let ok = 0, fail = 0;
 for (const t of tests) {

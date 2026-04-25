@@ -432,9 +432,19 @@ export const estimarImpuesto = (u) => {
       const divGravados = Math.max(0, divAnual - divExentos);
       const impDiv = divGravados * 0.15;
 
+      // ── 5.5. PENSIONES (Bug #8, Art. 337 ET) ──
+      // La mesada pensional tiene exencion de 1.000 UVT/mes = 12.000 UVT/año.
+      // Lo que excede tributa segun la tabla progresiva del Art. 241 (igual
+      // que la cedula laboral). Antes este monto no se gravaba (rentaLiqGeneral
+      // no incluia pensiones), entonces alguien con $20M/mes de mesada pensional
+      // y $0 de otros ingresos pagaba impuesto $0 — sub-estimacion grave.
+      const pensExenta = Math.min(pensAnual, 12000 * UVT);
+      const pensGravable = Math.max(0, pensAnual - pensExenta);
+      const impPension = calcImpRenta(pensGravable / UVT);
+
       // ── 6. RENTA LÍQUIDA CÉDULA GENERAL ──
       const rentaLiqGeneral = rentaLiqTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
-      const imp = calcImpRenta(rentaLiqGeneral / UVT) + impDiv;
+      const imp = calcImpRenta(rentaLiqGeneral / UVT) + impDiv + impPension;
 
       // ── CON OPTIMIZACIÓN: PV + AFC llenan tope 40% ──
       // El espacio disponible se mide sin contar la PV manual (la sugerencia podría reemplazarla o subirla).
@@ -447,7 +457,7 @@ export const estimarImpuesto = (u) => {
       const afc = Math.min(espacioAFC, netoLaboral * 0.30, 3800 * UVT);
       const rentaOptTrabajo = Math.max(0, netoLaboral - Math.min(exenta25 + totalDeducciones + pensionVol + afc, lim40));
       const rentaOptGeneral = rentaOptTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
-      const impOpt = calcImpRenta(rentaOptGeneral / UVT) + impDiv;
+      const impOpt = calcImpRenta(rentaOptGeneral / UVT) + impDiv + impPension;
 
       // ── RETENCIÓN EN LA FUENTE ──
       let reteN = 0;
@@ -602,6 +612,8 @@ export const estimarImpuesto = (u) => {
         espacioParaPVyAFC: espacioPV, reteN, impDiv,
         // Bug #7 Fase 3: ganancias ocasionales
         impGO, desgloseGO,
+        // Bug #8 Fase 3: pension cedula separada
+        impPension, pensExenta, pensGravable,
       });
     }
   });
