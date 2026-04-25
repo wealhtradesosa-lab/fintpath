@@ -2033,9 +2033,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         </div>}
         {taxTab==="rapido"&&<div>
           <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
-          <details style={{maxWidth:1100,margin:"20px auto",padding:"0 16px"}}>
-            <summary style={{cursor:"pointer",padding:"12px 16px",background:T.bg3,borderRadius:8,fontSize:12,fontWeight:600,color:T.tx2,listStyle:"none"}}>
-              🔬 Ver cálculo detallado y recomendaciones (vista completa)
+          <details style={{maxWidth:1300,margin:"24px auto 8px",padding:"0 16px"}}>
+            <summary style={{cursor:"pointer",padding:"10px 14px",background:"transparent",border:"1px dashed "+T.border,borderRadius:8,fontSize:11,fontWeight:600,color:T.tx3,listStyle:"none",display:"flex",alignItems:"center",gap:8,transition:"all 0.15s"}}
+              onMouseOver={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.15)";e.currentTarget.style.color=T.tx2}}
+              onMouseOut={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.tx3}}>
+              <span style={{fontSize:10,opacity:0.6}}>▾</span>
+              <span style={{flex:1}}>Ver cálculo detallado por cédulas, deducciones aplicadas y recomendaciones</span>
+              <span style={{fontSize:9,color:T.tx3,fontStyle:"italic"}}>Vista avanzada · opcional</span>
             </summary>
             <div style={{marginTop:14}}>
               <SimuladorTributario trm={(u&&u.trm)||4200} user={u} onNavigate={setPg} onUpdate={setU}/>

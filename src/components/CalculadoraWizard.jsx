@@ -877,107 +877,124 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
         descripcion={descripcion}
       />
 
-      {/* Tarjetas por owner */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-        {resumenPorOwner.map(({ owner, det, estado, impActual, impOpt, ahorro }) => {
-          const estadoColor = estado === "completo" ? T.green : estado === "parcial" ? T.orange : T.txt3;
-          const estadoLabel = estado === "completo" ? "Completo" : estado === "parcial" ? "Parcial" : "Sin configurar";
-          const estadoIcono = estado === "completo" ? "✓" : estado === "parcial" ? "○" : "—";
-          return (
-            <div key={owner.id} style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, overflow: "hidden" }}>
-              {/* Header de la tarjeta con owner */}
-              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: det ? "1px solid " + T.border : "none" }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-                  {owner.type === "juridica" ? "🏢" : "🧑"}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, textTransform: "capitalize", lineHeight: 1.2 }}>
-                    {owner.name}
-                  </div>
-                  <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>
-                    {owner.type === "juridica" ? "Jurídica" : "Natural"}
-                    {owner.regimen && owner.regimen !== "ordinario" ? ` · ${owner.regimen}` : ""}
-                  </div>
-                </div>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", background: `${estadoColor}15`, border: `1px solid ${estadoColor}40`, borderRadius: 10 }}>
-                  <span style={{ fontSize: 10, color: estadoColor, fontWeight: 700 }}>{estadoIcono}</span>
-                  <span style={{ fontSize: 10, color: estadoColor, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>{estadoLabel}</span>
-                </div>
-              </div>
+      {/* Layout principal:
+          - Desktop (>=900px): Grid 2 columnas — tarjetas a la izquierda, total a la derecha
+          - Mobile: 1 columna apilada
+          Esto aprovecha el espacio horizontal del desktop y reduce scroll. */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(280px, 1fr)", gap: 16, marginBottom: 16 }}>
 
-              {/* Números del cálculo */}
-              {det ? (
-                <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Sin optimizar</div>
-                    <div style={{ ...F.mono, fontSize: 13, color: T.red }}>{fm(impActual)}</div>
+        {/* Columna izquierda: tarjetas de owners en grid 2 cols (desktop) o 1 col (mobile) */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10, alignContent: "start" }}>
+          {resumenPorOwner.map(({ owner, det, estado, impActual, impOpt, ahorro }) => {
+            const estadoColor = estado === "completo" ? T.green : estado === "parcial" ? T.orange : T.txt3;
+            const estadoLabel = estado === "completo" ? "Completo" : estado === "parcial" ? "Parcial" : "Sin configurar";
+            const estadoIcono = estado === "completo" ? "✓" : estado === "parcial" ? "○" : "—";
+            return (
+              <div key={owner.id} style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                {/* Header compacto */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+                    {owner.type === "juridica" ? "🏢" : "🧑"}
                   </div>
-                  <div>
-                    <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Optimizado</div>
-                    <div style={{ ...F.mono, fontSize: 13, color: T.green }}>{fm(impOpt)}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Ahorro</div>
-                    <div style={{ ...F.mono, fontSize: 13, color: ahorro > 0 ? T.green : T.txt3 }}>{ahorro > 0 ? "+" + fm(ahorro) : "—"}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, textTransform: "capitalize", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {owner.name}
+                    </div>
+                    <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.3 }}>
+                      {owner.type === "juridica" ? "Jurídica" : "Natural"}
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <div style={{ padding: "10px 16px 12px", fontSize: 11, color: T.txt3, fontStyle: "italic" }}>
-                  {estado === "sin_datos" ? "Sin ingresos registrados para este responsable" : "Sin cálculo disponible"}
-                </div>
-              )}
 
-              {/* Acción */}
-              <div style={{ padding: "10px 16px", borderTop: "1px solid " + T.border, display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                {estado === "parcial" && onMarcarCompletoOwner && (
-                  <button
-                    onClick={() => onMarcarCompletoOwner(owner.id)}
-                    title="Si ya revisaste este responsable y no tiene más optimizaciones aplicables, márcalo como revisado."
-                    style={{ padding: "6px 12px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
-                  >
-                    ✓ Marcar como revisado
-                  </button>
+                {/* Badge estado */}
+                <div style={{ display: "inline-flex", alignSelf: "flex-start", alignItems: "center", gap: 4, padding: "2px 7px", background: `${estadoColor}15`, border: `1px solid ${estadoColor}40`, borderRadius: 8 }}>
+                  <span style={{ fontSize: 9, color: estadoColor, fontWeight: 700 }}>{estadoIcono}</span>
+                  <span style={{ fontSize: 9, color: estadoColor, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>{estadoLabel}</span>
+                </div>
+
+                {/* Cifras compactas en lista vertical (no grid 3 cols) */}
+                {det ? (
+                  <div style={{ background: T.bg2, borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <span style={{ fontSize: 10, color: T.txt3 }}>Sin optimizar</span>
+                      <span style={{ ...F.mono, fontSize: 12, color: T.red }}>{fm(impActual)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <span style={{ fontSize: 10, color: T.txt3 }}>Optimizado</span>
+                      <span style={{ ...F.mono, fontSize: 12, color: T.green }}>{fm(impOpt)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingTop: 4, borderTop: "1px dashed " + T.border }}>
+                      <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>Ahorro</span>
+                      <span style={{ ...F.mono, fontSize: 13, color: ahorro > 0 ? T.green : T.txt3 }}>{ahorro > 0 ? "+" + fm(ahorro) : "—"}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 10, color: T.txt3, fontStyle: "italic", padding: "4px 0" }}>
+                    {estado === "sin_datos" ? "Sin ingresos registrados" : "Sin cálculo disponible"}
+                  </div>
                 )}
-                <button onClick={() => onSelectOwner(owner.id)} style={{ padding: "6px 14px", background: estado === "completo" ? T.bg2 : T.blue, color: estado === "completo" ? T.txt2 : "#fff", border: estado === "completo" ? "1px solid " + T.border : "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                  {estado === "completo" ? "Revisar" : estado === "parcial" ? "Completar cálculo →" : "Empezar cálculo →"}
-                </button>
+
+                {/* Acciones */}
+                <div style={{ display: "flex", gap: 4, marginTop: "auto", flexWrap: "wrap" }}>
+                  {estado === "parcial" && onMarcarCompletoOwner && (
+                    <button
+                      onClick={() => onMarcarCompletoOwner(owner.id)}
+                      title="Si ya revisaste este responsable y no tiene más optimizaciones aplicables, márcalo como revisado."
+                      style={{ flex: 1, padding: "6px 8px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      ✓ Marcar revisado
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onSelectOwner(owner.id)}
+                    style={{ flex: 1, padding: "6px 10px", background: estado === "completo" ? T.bg2 : T.blue, color: estado === "completo" ? T.txt2 : "#fff", border: estado === "completo" ? "1px solid " + T.border : "none", borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                  >
+                    {estado === "completo" ? "Revisar →" : estado === "parcial" ? "Completar →" : "Empezar →"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Columna derecha: total consolidado + acciones al pie en una sola tarjeta lateral */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {cantCompletos > 0 && (
+            <div style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 10, color: T.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+                Total consolidado
+              </div>
+              <div style={{ fontSize: 10, color: T.txt3, marginBottom: 14 }}>
+                {cantCompletos} de {owners.length} responsables
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Sin optimizar</div>
+                  <div style={{ ...F.mono, fontSize: 18, color: T.red }}>{fm(totales.impActual)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Optimizado</div>
+                  <div style={{ ...F.mono, fontSize: 18, color: T.green }}>{fm(totales.impOpt)}</div>
+                </div>
+                <div style={{ paddingTop: 10, borderTop: "1px solid rgba(34,197,94,0.2)" }}>
+                  <div style={{ fontSize: 9, color: T.green, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3, fontWeight: 700 }}>Ahorro potencial</div>
+                  <div style={{ ...F.mono, fontSize: 22, color: totales.ahorro > 0 ? T.green : T.txt3 }}>{totales.ahorro > 0 ? "+" + fm(totales.ahorro) : "—"}</div>
+                </div>
               </div>
             </div>
-          );
-        })}
-      </div>
+          )}
 
-      {/* Totales consolidados */}
-      {cantCompletos > 0 && (
-        <div style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: 16, marginBottom: 18 }}>
-          <div style={{ fontSize: 10, color: T.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
-            Total consolidado ({cantCompletos} de {owners.length} responsables)
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-            <div>
-              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>Sin optimizar</div>
-              <div style={{ ...F.mono, fontSize: 16, color: T.red }}>{fm(totales.impActual)}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>Con optimización</div>
-              <div style={{ ...F.mono, fontSize: 16, color: T.green }}>{fm(totales.impOpt)}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>Ahorro potencial</div>
-              <div style={{ ...F.mono, fontSize: 16, color: totales.ahorro > 0 ? T.green : T.txt3 }}>{totales.ahorro > 0 ? "+" + fm(totales.ahorro) : "—"}</div>
-            </div>
+          {/* Acciones */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button onClick={onNuevoCalculo} style={{ padding: "10px 14px", background: "transparent", border: "1px dashed " + T.border, color: T.txt2, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", textAlign: "left" }}>
+              + Calcular otro responsable
+            </button>
+            <button onClick={() => onNavigate?.("tax-dashboard")} style={{ padding: "10px 14px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", textAlign: "left" }}>
+              Ir al Dashboard →
+            </button>
           </div>
         </div>
-      )}
-
-      {/* Acciones al pie */}
-      <div style={{ display: "flex", gap: 10, justifyContent: "space-between", flexWrap: "wrap", paddingTop: 16, borderTop: "1px solid " + T.border }}>
-        <button onClick={onNuevoCalculo} style={{ padding: "10px 18px", background: "transparent", border: "1px dashed " + T.border, color: T.txt2, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-          + Calcular otro responsable
-        </button>
-        <button onClick={() => onNavigate?.("tax-dashboard")} style={{ padding: "10px 18px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-          Ir al Dashboard de declaraciones →
-        </button>
       </div>
     </div>
   );
@@ -1078,7 +1095,7 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
   // Si está en vista resumen, mostrar VistaResumenMultiOwner (funciona con 1 o más owners).
   if (vistaActiva === "resumen") {
     return (
-      <div style={{ maxWidth: 920, margin: "0 auto", padding: "20px 16px" }}>
+      <div style={{ maxWidth: 1300, margin: "0 auto", padding: "20px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 200 }}>
             <h1 style={F.h1}>Calculadora de impuestos</h1>
@@ -1123,7 +1140,7 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
   }
 
   return (
-    <div style={{ maxWidth: 920, margin: "0 auto", padding: "20px 16px" }}>
+    <div style={{ maxWidth: 1300, margin: "0 auto", padding: "20px 16px" }}>
       {/* Header con toggle modo */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 200 }}>
