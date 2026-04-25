@@ -127,6 +127,13 @@ function NavButtons({ currentStep, onBack, onNext, disableNext, nextLabel }) {
 // Helper: ¿tiene datos de fiscalProfile más allá del default?
 function ownerConfigurado(owner) {
   const fp = owner?.fiscalProfile || {};
+  // Fix 9.6: si el usuario termino el wizard explicitamente (llego al Paso 5
+  // y confirmo), se marca wizardCompletado=true. Ese flag por si solo ya
+  // cuenta como "configurado" — cubre el caso valido de owners que no
+  // tienen ninguna optimizacion aplicable a su situacion.
+  if (fp.wizardCompletado) return true;
+
+  // Fallback: si al menos activo un switch, consideramos que ya interactuo.
   const tieneDep = (fp.dependientes?.cantidad || 0) > 0;
   const tieneAuxilio = !!(fp.auxilios?.alimentacion || fp.auxilios?.transporte);
   const tieneContab = !!fp.obligadoContabilidad;
@@ -537,7 +544,7 @@ function Paso4Eventos({ selectedOwner, onUpdateProfile, onBack, onNext }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // PASO 5 — Resultado + acciones concretas
 // ═══════════════════════════════════════════════════════════════════════════
-function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onReiniciar, onSelectOwner, onGotoStep, onVerResumen }) {
+function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onReiniciar, onSelectOwner, onGotoStep, onVerResumen, onMarcarCompleto }) {
   const estimacion = useMemo(() => estimarImpuesto(user), [user]);
   const det = useMemo(() => (estimacion?.detalle || []).find((d) => d.name === selectedOwner?.name), [estimacion, selectedOwner]);
 
@@ -774,7 +781,11 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
                 O si preferís configurar ahora: <strong style={{ color: T.txt2 }}>{siguienteOwner.name}</strong> ({siguienteOwner.type === "juridica" ? "Jurídica" : "Natural"})
               </div>
               <button
-                onClick={() => { onSelectOwner?.(siguienteOwner.id); onGotoStep?.(1); }}
+                onClick={() => {
+                  onMarcarCompleto?.();
+                  onSelectOwner?.(siguienteOwner.id);
+                  onGotoStep?.(1);
+                }}
                 style={{ padding: "7px 14px", background: "transparent", border: "1px solid " + T.blue, color: T.blue, borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}
               >
                 Configurar {siguienteOwner.name.split(" ")[0]} →
@@ -796,7 +807,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
             </button>
           )}
           {owners.length > 1 && (
-            <button onClick={() => onGotoStep?.(0)} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+            <button onClick={() => { onMarcarCompleto?.(); onGotoStep?.(0); }} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
               Elegir otro propietario
             </button>
           )}
@@ -820,7 +831,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 // consolidado al final. Permite entrar a calcular uno específico o empezar
 // uno nuevo.
 // ═══════════════════════════════════════════════════════════════════════════
-function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, onNavigate }) {
+function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, onNavigate, onMarcarCompletoOwner }) {
   const estimacion = useMemo(() => estimarImpuesto(user), [user]);
 
   const resumenPorOwner = useMemo(() => {
@@ -917,7 +928,16 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
               )}
 
               {/* Acción */}
-              <div style={{ padding: "10px 16px", borderTop: "1px solid " + T.border, display: "flex", gap: 6, justifyContent: "flex-end" }}>
+              <div style={{ padding: "10px 16px", borderTop: "1px solid " + T.border, display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                {estado === "parcial" && onMarcarCompletoOwner && (
+                  <button
+                    onClick={() => onMarcarCompletoOwner(owner.id)}
+                    title="Si ya revisaste este responsable y no tiene más optimizaciones aplicables, márcalo como revisado."
+                    style={{ padding: "6px 12px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+                  >
+                    ✓ Marcar como revisado
+                  </button>
+                )}
                 <button onClick={() => onSelectOwner(owner.id)} style={{ padding: "6px 14px", background: estado === "completo" ? T.bg2 : T.blue, color: estado === "completo" ? T.txt2 : "#fff", border: estado === "completo" ? "1px solid " + T.border : "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                   {estado === "completo" ? "Revisar" : estado === "parcial" ? "Completar cálculo →" : "Empezar cálculo →"}
                 </button>
@@ -1022,6 +1042,20 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
     onUserUpdate({ ...user, owners: newOwners });
   };
 
+  // Fix 9.6: marcar owner como wizardCompletado cuando el usuario finaliza
+  // el flujo, independientemente de si activo o no optimizaciones.
+  // Cubre el caso real: "ya revisé todo, este responsable no tiene nada
+  // aplicable a su situacion, marcalo como completo igual".
+  const handleMarcarCompleto = () => {
+    if (!onUserUpdate || !selectedOwner) return;
+    const newOwners = (user.owners || []).map((o) =>
+      o.id === selectedOwner.id
+        ? { ...o, fiscalProfile: { ...(o.fiscalProfile || {}), wizardCompletado: true } }
+        : o
+    );
+    onUserUpdate({ ...user, owners: newOwners });
+  };
+
   const goNext = () => setCurrentStep((s) => Math.min(STEPS.length - 1, s + 1));
   const goBack = () => setCurrentStep((s) => Math.max(0, s - 1));
   const reiniciar = () => setCurrentStep(0);
@@ -1071,6 +1105,17 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
               setVistaActiva("wizard");
             }}
             onNavigate={onNavigate}
+            onMarcarCompletoOwner={(ownerId) => {
+              // Marcar explícitamente este owner como wizardCompletado desde la lista.
+              // Útil cuando el usuario ya revisó y no tiene optimizaciones aplicables.
+              if (!onUserUpdate) return;
+              const newOwners = (user.owners || []).map((o) =>
+                o.id === ownerId
+                  ? { ...o, fiscalProfile: { ...(o.fiscalProfile || {}), wizardCompletado: true } }
+                  : o
+              );
+              onUserUpdate({ ...user, owners: newOwners });
+            }}
           />
         </div>
       </div>
@@ -1148,7 +1193,11 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
             onReiniciar={reiniciar}
             onSelectOwner={setSelectedOwnerId}
             onGotoStep={setCurrentStep}
-            onVerResumen={() => setVistaActiva("resumen")}
+            onVerResumen={() => {
+              handleMarcarCompleto();
+              setVistaActiva("resumen");
+            }}
+            onMarcarCompleto={handleMarcarCompleto}
           />
         )}
       </div>
