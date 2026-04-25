@@ -10,7 +10,7 @@
 //   sale y vuelve, siga donde estaba.
 // - Cada paso renderiza una sección distinta pero comparten el mismo
 //   `selectedOwnerId` y `fiscalProfile` via props.
-// - Botón "Ver todo a la vez" para modo experto — muestra la vista clásica.
+// - Botón "Ver todo a la vez" eliminado en commit 9.11 (modo clásico ya no se usa).
 // - Reutiliza lógica de estimarImpuesto, getFiscalWarnings, data gaps.
 //
 // Este componente NO toca el motor ni la persistencia. Solo reorganiza la
@@ -22,7 +22,6 @@ import { useMemo, useState, useEffect } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
 import { C, F as F_CENTRAL, S, R } from "../lib/designTokens.js";
 import AjustesFiscalesPersonalizados from "./AjustesFiscalesPersonalizados";
-import CalculadoraImpuestos from "./CalculadoraImpuestos";
 
 // Alias de compatibilidad: T mapea a los tokens centrales C.
 // Los archivos que ya usan T.txt, T.bl, T.green etc siguen funcionando,
@@ -1015,15 +1014,6 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
     try { localStorage.setItem("fp3_calc_vista", vistaActiva); } catch {}
   }, [vistaActiva]);
 
-  // Modo: wizard (default) o classic (vista todo a la vez)
-  const [modo, setModo] = useState(() => {
-    try { return localStorage.getItem("fp3_calc_modo") || "wizard"; }
-    catch { return "wizard"; }
-  });
-  useEffect(() => {
-    try { localStorage.setItem("fp3_calc_modo", modo); } catch {}
-  }, [modo]);
-
   const [currentStep, setCurrentStep] = useState(() => {
     try { return Number(localStorage.getItem("fp3_calc_step") || "0") || 0; }
     catch { return 0; }
@@ -1073,21 +1063,6 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
   const goBack = () => setCurrentStep((s) => Math.max(0, s - 1));
   const reiniciar = () => setCurrentStep(0);
 
-  // Modo clásico = vista anterior sin wizard
-  if (modo === "classic") {
-    return (
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "12px 16px" }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-          <button onClick={() => setModo("wizard")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-            🧭 Volver al modo guiado
-          </button>
-        </div>
-        <CalculadoraImpuestos user={user} trm={trm} onNavigate={onNavigate} onUserUpdate={onUserUpdate} />
-      </div>
-    );
-  }
-
-  // Modo wizard (default)
   // Si está en vista resumen, mostrar VistaResumenMultiOwner (funciona con 1 o más owners).
   if (vistaActiva === "resumen") {
     return (
@@ -1099,9 +1074,6 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
               {owners.length === 1 ? "Tu ficha fiscal" : `${owners.length} responsables fiscales`}
             </p>
           </div>
-          <button onClick={() => setModo("classic")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
-            Ver todo a la vez ↗
-          </button>
         </div>
 
         <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, padding: 24 }}>

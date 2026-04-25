@@ -41,7 +41,6 @@ import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55 } from "./lib/migrations";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import DashboardFiscal from "./components/DashboardFiscal";
-import CalculadoraImpuestos from "./components/CalculadoraImpuestos";
 import CalculadoraWizard from "./components/CalculadoraWizard";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
