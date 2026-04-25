@@ -833,7 +833,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 // consolidado al final. Permite entrar a calcular uno específico o empezar
 // uno nuevo.
 // ═══════════════════════════════════════════════════════════════════════════
-function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, onNavigate, onMarcarCompletoOwner, onVerDesglose }) {
+function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, onNavigate, onMarcarCompletoOwner }) {
   const estimacion = useMemo(() => estimarImpuesto(user), [user]);
 
   const resumenPorOwner = useMemo(() => {
@@ -945,16 +945,6 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                       ✓ Marcar revisado
                     </button>
                   )}
-                  {/* Ver desglose: abre modal con SimuladorTributario filtrado a este owner */}
-                  {det && onVerDesglose && (
-                    <button
-                      onClick={() => onVerDesglose(owner.id)}
-                      title="Ver cédulas, deducciones aplicadas, retenciones y plan de acción para este responsable"
-                      style={{ flex: 1, padding: "6px 10px", background: "transparent", border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
-                    >
-                      🔬 Desglose
-                    </button>
-                  )}
                   <button
                     onClick={() => onSelectOwner(owner.id)}
                     style={{ flex: 1, padding: "6px 10px", background: estado === "completo" ? T.bg2 : T.blue, color: estado === "completo" ? T.txt2 : "#fff", border: estado === "completo" ? "1px solid " + T.border : "none", borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
@@ -1011,7 +1001,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
   );
 }
 
-export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate, onVerDesglose }) {
+export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate }) {
   const owners = useMemo(() => (user?.owners || []), [user]);
 
   // Commit 9.5 (Parte B): VistaResumen es el default ABSOLUTO.
@@ -1117,7 +1107,6 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate,
               );
               onUserUpdate({ ...user, owners: newOwners });
             }}
-            onVerDesglose={onVerDesglose}
           />
         </div>
       </div>
