@@ -747,14 +747,10 @@ export default function FinPath(){
         </div>
       </div>
     </div>}
-    <div style={{width:"100%",maxWidth:420,padding:"40px 32px"}}>
+    <div style={{width:"100%",maxWidth:920,padding:"40px 32px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(360px,1fr))",gap:48,alignItems:"start"}}>
+      {/* Columna izquierda: form de auth */}
+      <div>
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
-      <div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"12px 16px",marginBottom:20,fontSize:12,color:T.tx3,lineHeight:2}}>
-        <span style={{color:T.gn}}>✓</span> <strong style={{color:T.tx2}}>Encriptación End-to-End</strong> · tus datos se encriptan con tu contraseña<br/>
-        <span style={{color:T.gn}}>✓</span> Ni FINPATHIA puede leer tu información financiera<br/>
-        <span style={{color:T.gn}}>✓</span> No vendemos ni compartimos datos. Cero publicidad<br/>
-        <span style={{color:T.gn}}>✓</span> Exporta o borra todo en cualquier momento
-      </div>
       <div style={{fontSize:28,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:24}}>FINPATHIA</div>
       <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Inicia sesión":"Crea tu cuenta gratis"}</h2>
       <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Accede a tu patrimonio":"14 días de acceso Pro incluidos"}</p>
@@ -788,11 +784,8 @@ export default function FinPath(){
       <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":"Crear cuenta — 14 días Pro gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:12,textAlign:"center",marginTop:8,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{authError}</div>}
       <p style={{textAlign:"center",marginTop:20,color:T.tx3,fontSize:14}}>{"¿No tienes cuenta? "}<span onClick={()=>sAM(aM==="login"?"signup":"login")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{aM==="login"?"Regístrate":"Ingresa"}</span></p>
-      <div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
-      <div style={{marginTop:16,padding:"16px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.12)",borderRadius:12,textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.orange,marginBottom:6}}>📊 ¿Quieres ver cómo funciona?</div><div style={{fontSize:11,color:T.tx3,marginBottom:10}}>Explora la plataforma con datos de ejemplo: patrimonio, ingresos, gastos, deudas, impuestos y simulador.</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}><button onClick={()=>{const nd=mkU("Pedro Pérez","demo@finpathia.com");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.demo=true;setU(nd);setTimeout(()=>demo(),500)}} style={{background:"linear-gradient(135deg,#f97316,#eab308)",color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇨🇴 Demo Colombia</button><button onClick={()=>demoUS()} style={{background:"linear-gradient(135deg,#3b82f6,#1d4ed8)",color:"#fff",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇺🇸 Demo USA</button></div></div>
       {aM==="login"&&<p style={{textAlign:"center",marginTop:14}}>
         <span onClick={()=>{
-          // Pre-llenar con el email del form si ya lo escribió, si no queda vacío para que lo escriba
           setRecoveryEmail(aF.e||"");
           setResetError("");
           setResetSent(false);
@@ -801,6 +794,30 @@ export default function FinPath(){
           ¿Olvidaste tu contraseña?
         </span>
       </p>}
+      </div>
+
+      {/* Columna derecha: trust + acceso anónimo + demos */}
+      <div style={{display:"flex",flexDirection:"column",gap:16}}>
+        <div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"16px 18px",fontSize:12,color:T.tx3,lineHeight:1.9}}>
+          <div style={{fontSize:11,fontWeight:700,color:T.tx2,textTransform:"uppercase",letterSpacing:0.5,marginBottom:10}}>🔒 Tu información, tu control</div>
+          <span style={{color:T.gn}}>✓</span> <strong style={{color:T.tx2}}>Encriptación End-to-End</strong> · tus datos se cifran con tu contraseña<br/>
+          <span style={{color:T.gn}}>✓</span> Ni FINPATHIA puede leer tu información financiera<br/>
+          <span style={{color:T.gn}}>✓</span> No vendemos ni compartimos datos. Cero publicidad<br/>
+          <span style={{color:T.gn}}>✓</span> Exporta o borra todo en cualquier momento
+        </div>
+        <div style={{padding:"16px 18px",background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:12,textAlign:"center"}}>
+          <div style={{fontSize:11,fontWeight:700,color:T.gn,marginBottom:6,textTransform:"uppercase",letterSpacing:0.5}}>Sin compromiso</div>
+          <span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:14,color:T.gn,cursor:"pointer",fontWeight:700}}>Explorar sin cuenta — 14 días gratis →</span>
+        </div>
+        <div style={{padding:"16px 18px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.12)",borderRadius:12,textAlign:"center"}}>
+          <div style={{fontSize:12,fontWeight:600,color:T.orange,marginBottom:6}}>📊 ¿Quieres ver cómo funciona?</div>
+          <div style={{fontSize:11,color:T.tx3,marginBottom:12,lineHeight:1.4}}>Explora la plataforma con datos de ejemplo: patrimonio, ingresos, gastos, deudas, impuestos y simulador.</div>
+          <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+            <button onClick={()=>{const nd=mkU("Pedro Pérez","demo@finpathia.com");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.demo=true;setU(nd);setTimeout(()=>demo(),500)}} style={{background:"linear-gradient(135deg,#f97316,#eab308)",color:"#000",border:"none",padding:"9px 14px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:12,whiteSpace:"nowrap"}}>🇨🇴 Demo Colombia</button>
+            <button onClick={()=>demoUS()} style={{background:"linear-gradient(135deg,#3b82f6,#1d4ed8)",color:"#fff",border:"none",padding:"9px 14px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:12,whiteSpace:"nowrap"}}>🇺🇸 Demo USA</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>;
 
