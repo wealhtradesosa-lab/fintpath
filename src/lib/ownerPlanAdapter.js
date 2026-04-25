@@ -105,9 +105,14 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
       ...base,
       // Aliases legacy usados por el JSX de OwnerPlan:
       ingAnual: d.ingreso,
-      impActual: d.impuesto,
-      impOptimo: d.impOptimizado,
-      tasaActual: d.tasa,
+      // FIX abr 2026: impActual/impOptimo apuntan a impBruto (impuesto total
+      // segun tabla, antes de retencion) en vez de impuesto (saldo despues
+      // de retencion). Esto unifica los numeros con la Calculadora (Wizard)
+      // y con el Simulador de Bienestar Financiero, que ambos usan impBruto.
+      // Ver SimuladorTributario.jsx linea 118 y SimuladorAvanzado.jsx linea 336.
+      impActual: d.impBruto != null ? d.impBruto : d.impuesto,
+      impOptimo: d.impOptBruto != null ? d.impOptBruto : d.impOptimizado,
+      tasaActual: d.tasaBruta != null ? d.tasaBruta : d.tasa,
       totalDeduc: d.gastosDeduc,
       ahorro: d.ahorroOptimo,
       // Cosméticos:
@@ -121,10 +126,12 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     ...base,
     // Aliases legacy:
     ingAnual: d.ingreso,
-    impSin: d.impuesto,
-    impCon: d.impOptimizado,
-    tasaSin: d.tasa,
-    tasaCon: d.ingreso > 0 ? (d.impOptimizado / d.ingreso * 100) : 0,
+    // FIX abr 2026 (mismo razonamiento que jurídica):
+    // impSin/impCon ahora apuntan a impBruto/impOptBruto, no a saldo.
+    impSin: d.impBruto != null ? d.impBruto : d.impuesto,
+    impCon: d.impOptBruto != null ? d.impOptBruto : d.impOptimizado,
+    tasaSin: d.tasaBruta != null ? d.tasaBruta : d.tasa,
+    tasaCon: d.ingreso > 0 ? ((d.impOptBruto != null ? d.impOptBruto : d.impOptimizado) / d.ingreso * 100) : 0,
     ahorro: d.ahorroOptimo,
     deducViv: d.deducVivienda,
     gastosDeducNat: d.totalDeducciones,
