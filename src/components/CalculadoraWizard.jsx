@@ -935,7 +935,164 @@ function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
   );
 }
 
-function Paso3Situacion({ selectedOwner, onUpdateProfile, onUpdateOwner, onBack, onNext }) {
+// ═══════════════════════════════════════════════════════════════════════════
+// DEDUCCIONES NATURALES — Panel informativo (Commit 9.15, Fase 2)
+// ═══════════════════════════════════════════════════════════════════════════
+// Las deducciones de personas naturales (medicina prepagada, intereses
+// vivienda, AFC, PV) NO se cargan en el wizard sino en los modulos de
+// Egresos/Deudas. Este panel le muestra al usuario QUE DEDUCCIONES leyó
+// el motor de su data, con los topes legales claros (basados en el script
+// del contador). Si el campo está vacío pero debería tenerlo, ofrece CTA
+// para cargarlo.
+//
+// Topes legales aplicados (Art. 387 #2 ET, Art. 119 ET, Art. 126-1 y 126-4):
+//   - Medicina prepagada: 16 UVT/mes
+//   - Intereses vivienda: 100 UVT/mes (1.200 UVT/año)
+//   - PV + AFC combinados: 30% del ingreso laboral, máximo 3.800 UVT/año
+//   - Renta exenta 25%: máximo 790 UVT/año
+//   - Dependientes: 10% ingreso, máximo 384 UVT/año
+function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
+  const UVT_2026 = 52374;
+  const det = useMemo(() => {
+    const e = estimarImpuesto(user);
+    return (e?.detalle || []).find((d) => d.name === selectedOwner?.name);
+  }, [user, selectedOwner]);
+
+  if (!det) return null;
+
+  const items = [
+    {
+      key: "dep",
+      icono: "👨‍👩‍👧",
+      label: "Dependientes",
+      art: "Art. 387 ET",
+      topeMensual: `Tope: 10% ingreso, máx 384 UVT/año (~$${Math.round(384 * UVT_2026 / 1_000_000)}M)`,
+      valor: det.deducDep || 0,
+      cta: null,
+      hint: (det.deducDep || 0) > 0 ? "Aplicado según wizard" : "Cargá cantidad en este Paso 3 abajo",
+    },
+    {
+      key: "medicina",
+      icono: "💊",
+      label: "Medicina prepagada",
+      art: "Art. 387 #2 ET",
+      topeMensual: `Tope: 16 UVT/mes (~$${Math.round(16 * UVT_2026 / 1000)}k/mes)`,
+      valor: det.deducMedicina || 0,
+      cta: (det.deducMedicina || 0) === 0 ? "→ Cargar en Egresos" : null,
+      navTarget: "egresos",
+      hint: (det.deducMedicina || 0) > 0
+        ? "Detectado en módulo Egresos (categoría Salud o Aporte tributario)"
+        : "Cargá tu pago mensual en Egresos como 'Aporte tributario → Salud prepagada'",
+    },
+    {
+      key: "vivienda",
+      icono: "🏠",
+      label: "Intereses de vivienda",
+      art: "Art. 119 ET",
+      topeMensual: `Tope: 100 UVT/mes, 1.200 UVT/año (~$${Math.round(1200 * UVT_2026 / 1_000_000)}M)`,
+      valor: det.deducVivienda || 0,
+      cta: (det.deducVivienda || 0) === 0 ? "→ Cargar en Deudas" : null,
+      navTarget: "deudas",
+      hint: (det.deducVivienda || 0) > 0
+        ? "Detectado en módulo Deudas (hipoteca vivienda)"
+        : "Si tenés hipoteca, cargala en Deudas como 'Vivienda habitación'. El motor lee los intereses pagados.",
+    },
+    {
+      key: "pv",
+      icono: "🏛️",
+      label: "Pensión Voluntaria (PV)",
+      art: "Art. 126-1 ET",
+      topeMensual: "Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año",
+      valor: det.pensionVol || 0,
+      cta: (det.pensionVol || 0) === 0 ? "→ Cargar en Egresos" : null,
+      navTarget: "egresos",
+      hint: (det.pensionVol || 0) > 0
+        ? "Detectado en módulo Egresos (Aporte tributario → PV)"
+        : "Si haces aportes a Pensión Voluntaria (fondos privados), cargalos en Egresos.",
+    },
+    {
+      key: "afc",
+      icono: "💰",
+      label: "AFC (Ahorro Fomento Construcción)",
+      art: "Art. 126-4 ET",
+      topeMensual: "Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año. Si retirás antes de 10 años para algo distinto a vivienda, pierde el beneficio.",
+      valor: det.afc || 0,
+      cta: (det.afc || 0) === 0 ? "→ Cargar en Egresos" : null,
+      navTarget: "egresos",
+      hint: (det.afc || 0) > 0
+        ? "Detectado en módulo Egresos (Aporte tributario → AFC)"
+        : "Si tenés cuenta AFC, cargá los aportes mensuales en Egresos.",
+    },
+  ];
+
+  const fmt = (n) => "$" + Math.round((Number(n) || 0) / 1_000_000 * 10) / 10 + "M";
+
+  return (
+    <div style={{ background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
+        <span style={{ fontSize: 20 }}>📋</span>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
+            Deducciones aplicadas — qué detecté de tus datos
+          </div>
+          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+            Estas son las deducciones legales que el motor está aplicando o puede aplicar para vos.
+            Cada una tiene un tope legal del Estatuto Tributario.
+            <strong style={{ color: T.txt2 }}> Si una está en $0 pero te aplica, te indico dónde cargarla.</strong>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {items.map((it) => {
+          const aplicada = it.valor > 0;
+          return (
+            <div key={it.key} style={{ background: aplicada ? "rgba(34,197,94,0.06)" : T.bg3, border: "1px solid " + (aplicada ? "rgba(34,197,94,0.2)" : T.border), borderRadius: 8, padding: 12 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <span style={{ fontSize: 18, flexShrink: 0, marginTop: 2 }}>{it.icono}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between", marginBottom: 4, flexWrap: "wrap" }}>
+                    <div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: aplicada ? T.green : T.txt2 }}>
+                        {aplicada ? "✓ " : "○ "}{it.label}
+                      </span>
+                      <span style={{ fontSize: 9, color: T.txt3, marginLeft: 8 }}>{it.art}</span>
+                    </div>
+                    <span style={{ ...F.mono, fontSize: 12, color: aplicada ? T.green : T.txt3, fontWeight: 700 }}>
+                      {aplicada ? fmt(it.valor) : "$0"}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginBottom: 4 }}>
+                    {it.topeMensual}
+                  </div>
+                  <div style={{ fontSize: 10, color: aplicada ? T.txt2 : T.txt3, lineHeight: 1.4, marginBottom: it.cta ? 6 : 0 }}>
+                    {it.hint}
+                  </div>
+                  {it.cta && onNavigate && (
+                    <button
+                      onClick={() => onNavigate(it.navTarget)}
+                      style={{ padding: "4px 10px", background: "transparent", border: "1px solid " + T.blue, color: T.blue, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      {it.cta}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+        <strong style={{ color: T.txt2 }}>⚖️ Tope global Art. 336 #3 ET:</strong> el total de exenta 25%
+        + deducciones del Art. 387 + AFC + PV no puede superar el <strong>40% de la renta neta</strong>.
+        El motor lo respeta automáticamente y prioriza llenar primero las deducciones que no caben en la base laboral.
+      </div>
+    </div>
+  );
+}
+
+function Paso3Situacion({ user, selectedOwner, onUpdateProfile, onUpdateOwner, onBack, onNext, onNavigate }) {
   const isJur = selectedOwner?.type === "juridica";
   return (
     <div>
@@ -952,7 +1109,10 @@ function Paso3Situacion({ selectedOwner, onUpdateProfile, onUpdateOwner, onBack,
           <DescuentosTributariosForm selectedOwner={selectedOwner} onUpdateProfile={onUpdateProfile} />
         </>
       ) : (
-        <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
+        <>
+          <DeduccionesNaturalesPanel user={user} selectedOwner={selectedOwner} onNavigate={onNavigate} />
+          <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
+        </>
       )}
       <NavButtons currentStep={2} onBack={onBack} onNext={onNext} />
     </div>
@@ -1691,11 +1851,13 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
         )}
         {currentStep === 2 && (
           <Paso3Situacion
+            user={user}
             selectedOwner={selectedOwner}
             onUpdateProfile={handleUpdateProfile}
             onUpdateOwner={handleUpdateOwner}
             onBack={goBack}
             onNext={goNext}
+            onNavigate={onNavigate}
           />
         )}
         {currentStep === 3 && (
