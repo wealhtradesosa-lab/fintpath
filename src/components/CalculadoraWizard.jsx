@@ -20,6 +20,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
+import { GRUPOS_SIMPLE } from "../lib/regimenSimple.js";
 import { C, F as F_CENTRAL, S, R } from "../lib/designTokens.js";
 import AjustesFiscalesPersonalizados from "./AjustesFiscalesPersonalizados";
 
@@ -618,6 +619,181 @@ function OwnerChip({ owner }) {
 // Permite al usuario cargar los descuentos tributarios opcionales que su
 // empresa puede aplicar legalmente. Si no carga nada → ahorro $0 (honesto).
 // Si carga → el motor aplica con tope 25% Art. 259 ET y muestra ahorro real.
+// ═══════════════════════════════════════════════════════════════════════════
+// REGIMEN TRIBUTARIO — Solo jurídicas (Commit 9.14, Fase 1)
+// ═══════════════════════════════════════════════════════════════════════════
+// El motor soporta 5 regímenes para jurídicas: ordinario (35%), simple (RST
+// con tramos por grupo), zona_franca (20%), chc, exenta. Antes el wizard NO
+// preguntaba por esto — asumía "ordinario" siempre, lo cual hacía que una
+// SAS de Régimen Simple grupo 1 viera 35% cuando debería ver ~3-5%.
+//
+// Este componente expone los regímenes como cards seleccionables. Si elige
+// Simple, expone los grupos del Art. 908 ET con sus tramos.
+
+const REGIMENES_JURIDICA = [
+  {
+    id: "ordinario",
+    label: "Ordinario",
+    tarifa: "35%",
+    descripcion: "El régimen más común para empresas. 35% sobre utilidad neta. Permite todos los descuentos (ICA, GMF, CT&I, donaciones, etc).",
+    art: "Art. 240 ET",
+  },
+  {
+    id: "simple",
+    label: "Régimen Simple (RST)",
+    tarifa: "1.2% – 8%",
+    descripcion: "Régimen simplificado para empresas con ingresos < 100.000 UVT/año (~$5.240M). Sustituye renta + ICA + INC en una sola tarifa.",
+    art: "Arts. 903-916 ET",
+  },
+  {
+    id: "zona_franca",
+    label: "Zona Franca",
+    tarifa: "20%",
+    descripcion: "Empresa calificada como Usuario Industrial de Zona Franca. Tarifa preferencial 20% sobre utilidad calificada.",
+    art: "Art. 240-1 ET",
+  },
+  {
+    id: "chc",
+    label: "Compañía Holding (CHC)",
+    tarifa: "35%",
+    descripcion: "Compañía Holding Colombiana. Aplica si principal actividad es tenencia de inversiones en sociedades extranjeras.",
+    art: "Arts. 894-898 ET",
+  },
+  {
+    id: "exenta",
+    label: "Exenta",
+    tarifa: "0%",
+    descripcion: "Entidades sin ánimo de lucro calificadas, ESAL del Régimen Tributario Especial, fundaciones, ciertas cooperativas.",
+    art: "Art. 19 ET",
+  },
+];
+
+function RegimenSelector({ selectedOwner, onUpdateOwner }) {
+  const regimenActual = selectedOwner?.regimen || "ordinario";
+  const grupoActual = selectedOwner?.simpleGrupo || null;
+
+  const setRegimen = (regimen) => {
+    // Si cambia desde simple a otro régimen, limpia el grupo.
+    const update = { regimen };
+    if (regimen !== "simple" && selectedOwner?.simpleGrupo) {
+      update.simpleGrupo = null;
+    }
+    onUpdateOwner(update);
+  };
+
+  const setGrupo = (grupoKey) => {
+    onUpdateOwner({ simpleGrupo: grupoKey });
+  };
+
+  return (
+    <div style={{ background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.18)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
+        <span style={{ fontSize: 20 }}>⚖️</span>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
+            Régimen tributario
+          </div>
+          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+            Las tarifas y los descuentos disponibles dependen del régimen.
+            <strong style={{ color: T.txt2 }}> Si no estás seguro, consultá tu RUT o tu contador.</strong>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {REGIMENES_JURIDICA.map((r) => {
+          const sel = regimenActual === r.id;
+          return (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => setRegimen(r.id)}
+              style={{
+                textAlign: "left",
+                padding: "12px 14px",
+                background: sel ? "rgba(167,139,250,0.08)" : T.bg3,
+                border: "2px solid " + (sel ? T.purple : T.border),
+                borderRadius: 8,
+                cursor: "pointer",
+                color: T.txt,
+                transition: "all 0.15s",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: sel ? T.purple : T.txt }}>
+                  {sel ? "● " : "○ "}{r.label}
+                </span>
+                <span style={{ ...F.mono, fontSize: 12, color: sel ? T.purple : T.txt3 }}>{r.tarifa}</span>
+              </div>
+              <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginBottom: 2 }}>
+                {r.descripcion}
+              </div>
+              <div style={{ fontSize: 9, color: T.txt3, fontStyle: "italic" }}>{r.art}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Si elige Simple, mostrar selector de grupo */}
+      {regimenActual === "simple" && (
+        <div style={{ marginTop: 14, padding: 14, background: T.bg2, border: "1px solid " + T.border, borderRadius: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.txt, marginBottom: 8 }}>
+            Grupo de actividad económica (Art. 908 ET)
+          </div>
+          <div style={{ fontSize: 10, color: T.txt3, marginBottom: 12, lineHeight: 1.4 }}>
+            La tarifa del Régimen Simple depende del grupo de actividad principal de tu empresa.
+            Elegí el que mejor describa lo que hace tu negocio.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {Object.entries(GRUPOS_SIMPLE).map(([key, grupo]) => {
+              const sel = grupoActual === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setGrupo(key)}
+                  style={{
+                    textAlign: "left",
+                    padding: "10px 12px",
+                    background: sel ? "rgba(34,197,94,0.08)" : "transparent",
+                    border: "1px solid " + (sel ? T.green : T.border),
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    color: T.txt,
+                  }}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 700, color: sel ? T.green : T.txt2, marginBottom: 2 }}>
+                    {sel ? "✓ " : "○ "}{grupo.label}
+                  </div>
+                  <div style={{ fontSize: 9, color: T.txt3, lineHeight: 1.3 }}>
+                    {grupo.descripcion}
+                  </div>
+                  <div style={{ fontSize: 9, color: T.txt3, marginTop: 3, fontFamily: "monospace" }}>
+                    Tramos: {grupo.tramos.map(t => `${(t.tarifa * 100).toFixed(1)}%`).join(" → ")}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {!grupoActual && (
+            <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 6, fontSize: 10, color: T.orange, lineHeight: 1.4 }}>
+              ⚠️ Sin grupo seleccionado, el motor estimará 5% como fallback. Elegí el grupo correcto para ver tu tarifa real.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Nota sobre régimen actual */}
+      {regimenActual === "exenta" && (
+        <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+          <strong style={{ color: T.green }}>Régimen Exenta:</strong> el impuesto de renta es 0%, pero
+          la entidad debe declarar igual y cumplir requisitos del Art. 356 ET (RTE) o el régimen aplicable.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
   const fp = selectedOwner?.fiscalProfile || {};
   const dt = fp.descuentosTributarios || {};
@@ -759,19 +935,22 @@ function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
   );
 }
 
-function Paso3Situacion({ selectedOwner, onUpdateProfile, onBack, onNext }) {
+function Paso3Situacion({ selectedOwner, onUpdateProfile, onUpdateOwner, onBack, onNext }) {
   const isJur = selectedOwner?.type === "juridica";
   return (
     <div>
       <PasoHeader
         owner={selectedOwner}
-        titulo={isJur ? "Descuentos tributarios" : "Tu situación personal"}
+        titulo={isJur ? "Régimen y descuentos" : "Tu situación personal"}
         descripcion={isJur
-          ? "Cargá los descuentos tributarios que tu empresa puede aplicar. El motor calculará el ahorro real con tope legal del 25%."
+          ? "El régimen tributario define la tarifa que paga tu empresa. Los descuentos opcionales se restan del impuesto bruto (tope 25% Art. 259 ET)."
           : "Estas preguntas aplican deducciones legales que el sistema no puede adivinar. Contestá solo las que apliquen; las demás se quedan sin efecto."}
       />
       {isJur ? (
-        <DescuentosTributariosForm selectedOwner={selectedOwner} onUpdateProfile={onUpdateProfile} />
+        <>
+          <RegimenSelector selectedOwner={selectedOwner} onUpdateOwner={onUpdateOwner} />
+          <DescuentosTributariosForm selectedOwner={selectedOwner} onUpdateProfile={onUpdateProfile} />
+        </>
       ) : (
         <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
       )}
@@ -1393,6 +1572,16 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
     onUserUpdate({ ...user, owners: newOwners });
   };
 
+  // handleUpdateOwner: actualiza campos directos del owner (regimen, simpleGrupo,
+  // type, name) que NO viven dentro de fiscalProfile. Acepta un objeto parcial.
+  const handleUpdateOwner = (partialUpdate) => {
+    if (!onUserUpdate || !selectedOwner) return;
+    const newOwners = (user.owners || []).map((o) =>
+      o.id === selectedOwner.id ? { ...o, ...partialUpdate } : o
+    );
+    onUserUpdate({ ...user, owners: newOwners });
+  };
+
   // Fix 9.6: marcar owner como wizardCompletado cuando el usuario finaliza
   // el flujo, independientemente de si activo o no optimizaciones.
   // Cubre el caso real: "ya revisé todo, este responsable no tiene nada
@@ -1504,6 +1693,7 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
           <Paso3Situacion
             selectedOwner={selectedOwner}
             onUpdateProfile={handleUpdateProfile}
+            onUpdateOwner={handleUpdateOwner}
             onBack={goBack}
             onNext={goNext}
           />

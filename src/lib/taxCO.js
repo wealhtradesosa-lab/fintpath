@@ -145,12 +145,23 @@ export const estimarImpuesto = (u) => {
         impBruto = baseOrd * 0.35;
         regimenNota = "Régimen Ordinario 35% sobre utilidad. Dividendos inter-societarios no gravados (Art. 48 ET).";
       } else if (regimen === "simple") {
-        // SIMPLE: tarifa sobre ingresos brutos. Usamos 5% conservador (promedio grupos 1-4).
-        // Grupos reales: 1.4% (comercio), 3.4% (servicios), 5.0% (consultoría), 11.5% (hidrocarburos).
-        tarifa = 0.05;
-        baseGravable = ingAnual;
-        impBruto = ingAnual * 0.05;
-        regimenNota = "Régimen Simple (RST) — estimación 5% sobre ingresos brutos (aproximación; tarifa real depende de grupo de actividad: 1,4%–11,5%).";
+        // FIX abr 2026: jurídicas Simple ahora usan tramos reales por grupo
+        // (Art. 908 ET via regimenSimple.js), igual que naturales (línea 502).
+        // Antes usaba 5% fijo ignorando ow.simpleGrupo.
+        const simpleGrupo = ow.simpleGrupo;
+        if (simpleGrupo && SIMPLE_GRUPOS[simpleGrupo]) {
+          const { impuesto: impSimple, tarifaEfectiva } = calcularImpSimple(ingAnual, simpleGrupo, UVT);
+          tarifa = tarifaEfectiva;
+          baseGravable = ingAnual;
+          impBruto = impSimple;
+          regimenNota = `Régimen Simple (RST) — grupo "${SIMPLE_GRUPOS[simpleGrupo].label}", tarifa efectiva ${(tarifaEfectiva * 100).toFixed(2)}% (tramos marginales Art. 908 ET).`;
+        } else {
+          // Fallback conservador si no hay grupo configurado
+          tarifa = 0.05;
+          baseGravable = ingAnual;
+          impBruto = ingAnual * 0.05;
+          regimenNota = "Régimen Simple (RST) — estimación 5% conservadora. Configurá el grupo de actividad en el wizard para ver tarifa real.";
+        }
       } else if (regimen === "zona_franca") {
         tarifa = 0.20;
         const baseZF = Math.max(0, utilidad - dividIntersocietarios);
