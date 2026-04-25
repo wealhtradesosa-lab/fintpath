@@ -58,7 +58,7 @@ const STEPS = [
 // ─────────────────────────────────────────────────────────────────────────
 function Stepper({ currentStep, onGotoStep }) {
   return (
-    <div style={{ display: "flex", gap: 4, marginBottom: 20, padding: "0 4px" }}>
+    <div style={{ display: "flex", gap: 4, marginBottom: 20, padding: "0 4px", flexWrap: "wrap" }}>
       {STEPS.map((s, i) => {
         const isActive = i === currentStep;
         const isDone = i < currentStep;
@@ -69,8 +69,9 @@ function Stepper({ currentStep, onGotoStep }) {
             onClick={() => !isFuture && onGotoStep(i)}
             disabled={isFuture}
             style={{
-              flex: 1,
-              padding: "10px 6px",
+              flex: "1 1 100px",
+              minWidth: 0,
+              padding: "8px 6px",
               background: isActive ? "rgba(59,130,246,0.12)" : isDone ? "rgba(34,197,94,0.08)" : T.bg3,
               border: "1px solid " + (isActive ? T.blue : isDone ? T.green : T.border),
               borderRadius: 8,
@@ -81,10 +82,10 @@ function Stepper({ currentStep, onGotoStep }) {
               transition: "all 0.2s",
             }}
           >
-            <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 2 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {isDone ? "✓" : `${i + 1}`} · {s.titulo}
             </div>
-            <div style={{ fontSize: 9, color: isActive ? T.blue : T.txt3, lineHeight: 1.3 }}>
+            <div style={{ fontSize: 9, color: isActive ? T.blue : T.txt3, lineHeight: 1.3, display: isActive ? "block" : "none" }}>
               {s.descripcion}
             </div>
           </button>
@@ -793,25 +794,24 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
       )}
 
       {/* Navegación inferior */}
-      <div style={{ display: "flex", gap: 10, justifyContent: "space-between", marginTop: 20, paddingTop: 18, borderTop: "1px solid " + T.border, flexWrap: "wrap" }}>
-        <button onClick={onBack} style={{ padding: "9px 16px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-          ← Modificar respuestas
+      <div style={{ display: "flex", gap: 8, marginTop: 20, paddingTop: 18, borderTop: "1px solid " + T.border, flexWrap: "wrap", alignItems: "center" }}>
+        <button onClick={onBack} style={{ padding: "9px 14px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+          ← Modificar
         </button>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {onVerResumen && (
-            <button onClick={onVerResumen} style={{ padding: "9px 14px", background: T.bg2, border: "1px solid " + T.blue, color: T.blue, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              ← Volver a mis fichas
-            </button>
-          )}
-          {owners.length > 1 && (
-            <button onClick={() => { onMarcarCompleto?.(); onGotoStep?.(0); }} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
-              Elegir otro propietario
-            </button>
-          )}
-          <button onClick={onReiniciar} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
-            Empezar de cero ↻
+        <div style={{ flex: 1, minWidth: 0 }}/>
+        {onVerResumen && (
+          <button onClick={onVerResumen} style={{ padding: "9px 14px", background: T.bg2, border: "1px solid " + T.blue, color: T.blue, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
+            ← Volver a mis fichas
           </button>
-        </div>
+        )}
+        {owners.length > 1 && (
+          <button onClick={() => { onMarcarCompleto?.(); onGotoStep?.(0); }} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+            Elegir otro
+          </button>
+        )}
+        <button onClick={onReiniciar} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+          ↻ De cero
+        </button>
       </div>
     </div>
   );
@@ -874,14 +874,12 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
         descripcion={descripcion}
       />
 
-      {/* Layout principal:
-          - Desktop (>=900px): Grid 2 columnas — tarjetas a la izquierda, total a la derecha
-          - Mobile: 1 columna apilada
-          Esto aprovecha el espacio horizontal del desktop y reduce scroll. */}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(280px, 1fr)", gap: 16, marginBottom: 16 }}>
+      {/* Layout: flex con wrap para que en mobile la columna derecha pase debajo,
+          en desktop quede a la derecha. minWidth en cada columna evita overflow. */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
 
-        {/* Columna izquierda: tarjetas de owners en grid 2 cols (desktop) o 1 col (mobile) */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10, alignContent: "start" }}>
+        {/* Tarjetas de owners: ocupan el ancho disponible, mínimo 280px */}
+        <div style={{ flex: "2 1 380px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10, alignContent: "start" }}>
           {resumenPorOwner.map(({ owner, det, estado, impActual, impOpt, ahorro }) => {
             const estadoColor = estado === "completo" ? T.green : estado === "parcial" ? T.orange : T.txt3;
             const estadoLabel = estado === "completo" ? "Completo" : estado === "parcial" ? "Parcial" : "Sin configurar";
@@ -894,7 +892,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                     {owner.type === "juridica" ? "🏢" : "🧑"}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, textTransform: "capitalize", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, textTransform: "capitalize", lineHeight: 1.2, wordBreak: "break-word" }}>
                       {owner.name}
                     </div>
                     <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.3 }}>
@@ -954,8 +952,9 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
           })}
         </div>
 
-        {/* Columna derecha: total consolidado + acciones al pie en una sola tarjeta lateral */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* Columna derecha: total + acciones. flex 1 1 280px = ocupa al menos 280px,
+            crece hasta 1 parte del espacio. En mobile pasa debajo (flex-wrap). */}
+        <div style={{ flex: "1 1 280px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           {cantCompletos > 0 && (
             <div style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: 16 }}>
               <div style={{ fontSize: 10, color: T.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>

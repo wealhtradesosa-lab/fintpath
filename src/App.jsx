@@ -1996,12 +1996,12 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       const jurs=(u?.owners||[]).filter(o=>o.type==="juridica");
       const nats=(u?.owners||[]).filter(o=>o.type==="natural");
       return gated("tax","Pro",<div>
-        <div style={{display:"flex",gap:8,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
-          <button onClick={()=>setTaxTab("rapido")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?T.bl:T.border),background:taxTab==="rapido"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="rapido"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>📊 Calculadora de impuestos</button>
-          <button onClick={()=>setTaxTab("detallado")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="detallado"?T.bl:T.border),background:taxTab==="detallado"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="detallado"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>🔬 Cálculo detallado</button>
-          <button onClick={()=>setTaxTab("dashboard")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?T.bl:T.border),background:taxTab==="dashboard"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="dashboard"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>🏛️ Dashboard declaraciones</button>
-          <div style={{flex:1}}/>
-          <button onClick={()=>setShowAyuda(true)} style={{padding:"10px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer"}} title="Guía de uso del sistema de declaración">❓ ¿Cómo uso esto?</button>
+        <div style={{display:"flex",gap:6,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+          <button onClick={()=>setTaxTab("rapido")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?T.bl:T.border),background:taxTab==="rapido"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="rapido"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>📊 Calculadora</button>
+          <button onClick={()=>setTaxTab("detallado")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="detallado"?T.bl:T.border),background:taxTab==="detallado"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="detallado"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🔬 Detallado</button>
+          <button onClick={()=>setTaxTab("dashboard")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?T.bl:T.border),background:taxTab==="dashboard"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="dashboard"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🏛️ Declaraciones</button>
+          <div style={{flex:1,minWidth:0}}/>
+          <button onClick={()=>setShowAyuda(true)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}} title="Guía de uso del sistema de declaración">❓ Ayuda</button>
         </div>
         {taxTab==="dashboard"&&<DashboardFiscal
           u={u}
