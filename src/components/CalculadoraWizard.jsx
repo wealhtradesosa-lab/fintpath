@@ -612,15 +612,169 @@ function OwnerChip({ owner }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// DESCUENTOS TRIBUTARIOS — Solo jurídicas (Commit 9.13)
+// ═══════════════════════════════════════════════════════════════════════════
+// Permite al usuario cargar los descuentos tributarios opcionales que su
+// empresa puede aplicar legalmente. Si no carga nada → ahorro $0 (honesto).
+// Si carga → el motor aplica con tope 25% Art. 259 ET y muestra ahorro real.
+function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
+  const fp = selectedOwner?.fiscalProfile || {};
+  const dt = fp.descuentosTributarios || {};
+
+  // Helper: actualiza un campo dentro de descuentosTributarios
+  const setCampo = (campo, valor) => {
+    onUpdateProfile({
+      ...fp,
+      descuentosTributarios: { ...dt, [campo]: valor },
+    });
+  };
+
+  // Cada descuento es { id, label, base, descuentoPct, articulo, descripcion }
+  const descuentos = [
+    {
+      id: "cti",
+      label: "Inversión en CT&I",
+      articulo: "Art. 158-1 / 256 ET",
+      descuentoPct: "30% del monto invertido",
+      descripcion: "Inversión en proyectos calificados de ciencia, tecnología, innovación.",
+    },
+    {
+      id: "donaciones",
+      label: "Donaciones a entidades sin ánimo de lucro",
+      articulo: "Art. 257 ET",
+      descuentoPct: "25% del monto donado",
+      descripcion: "Donaciones a fundaciones / ONGs calificadas como Régimen Tributario Especial.",
+    },
+    {
+      id: "exterior",
+      label: "Impuestos pagados en el exterior",
+      articulo: "Art. 254 ET",
+      descuentoPct: "100% del impuesto extranjero pagado",
+      descripcion: "Para ingresos de fuente extranjera ya gravados afuera.",
+    },
+    {
+      id: "empleo",
+      label: "Empleo de personas <28 años (primera vez)",
+      articulo: "Art. 108-5 ET",
+      descuentoPct: "120% del salario como deducción",
+      descripcion: "Salarios anuales pagados a empleados nuevos primera vez con contrato laboral.",
+    },
+    {
+      id: "otros",
+      label: "Otros descuentos",
+      articulo: "Varios",
+      descuentoPct: "Según norma específica",
+      descripcion: "Cualquier otro descuento tributario aplicable que no esté en los anteriores.",
+    },
+  ];
+
+  const fmt = (n) => {
+    const num = Number(n) || 0;
+    if (num === 0) return "";
+    return num.toLocaleString("es-CO");
+  };
+
+  return (
+    <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
+        <span style={{ fontSize: 20 }}>🏢</span>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
+            Descuentos tributarios disponibles
+          </div>
+          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+            Si tu empresa aplica alguno de estos descuentos legales, cargá el monto. El motor calculará
+            el ahorro real (con tope global del 25% del impuesto bruto, Art. 259 ET).
+            <strong style={{ color: T.txt2 }}> Si no aplican o no querés cargar, dejá en blanco.</strong>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {descuentos.map((d) => {
+          const valorActual = dt[d.id] || 0;
+          const tieneValor = valorActual > 0;
+          return (
+            <div key={d.id} style={{ background: tieneValor ? "rgba(34,197,94,0.05)" : "transparent", border: "1px solid " + (tieneValor ? "rgba(34,197,94,0.2)" : T.border), borderRadius: 8, padding: 12 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: tieneValor ? T.green : T.txt2, marginBottom: 2 }}>
+                    {d.label}
+                  </div>
+                  <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>
+                    <span style={{ fontWeight: 600 }}>{d.articulo}</span> · {d.descuentoPct}
+                  </div>
+                  <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4 }}>
+                    {d.descripcion}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label style={{ fontSize: 10, color: T.txt3, fontWeight: 600, whiteSpace: "nowrap" }}>
+                  Monto anual COP:
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={fmt(valorActual)}
+                  onChange={(e) => {
+                    const limpio = e.target.value.replace(/[^\d]/g, "");
+                    setCampo(d.id, limpio === "" ? 0 : Number(limpio));
+                  }}
+                  placeholder="0"
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    padding: "7px 10px",
+                    background: T.bg2,
+                    border: "1px solid " + T.border,
+                    borderRadius: 6,
+                    color: T.txt,
+                    fontSize: 12,
+                    fontFamily: "ui-monospace, monospace",
+                  }}
+                />
+                {tieneValor && (
+                  <button
+                    onClick={() => setCampo(d.id, 0)}
+                    title="Limpiar este campo"
+                    style={{ padding: "6px 10px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}
+                  >
+                    Limpiar
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+        <strong style={{ color: T.txt2 }}>⚖️ Tope global Art. 259 ET:</strong> el total de descuentos
+        aplicados no puede exceder el 25% del impuesto bruto. Si excede, el motor lo ajusta automáticamente
+        al límite legal.
+      </div>
+    </div>
+  );
+}
+
 function Paso3Situacion({ selectedOwner, onUpdateProfile, onBack, onNext }) {
+  const isJur = selectedOwner?.type === "juridica";
   return (
     <div>
       <PasoHeader
         owner={selectedOwner}
-        titulo="Tu situación personal"
-        descripcion="Estas preguntas aplican deducciones legales que el sistema no puede adivinar. Contestá solo las que apliquen; las demás se quedan sin efecto."
+        titulo={isJur ? "Descuentos tributarios" : "Tu situación personal"}
+        descripcion={isJur
+          ? "Cargá los descuentos tributarios que tu empresa puede aplicar. El motor calculará el ahorro real con tope legal del 25%."
+          : "Estas preguntas aplican deducciones legales que el sistema no puede adivinar. Contestá solo las que apliquen; las demás se quedan sin efecto."}
       />
-      <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
+      {isJur ? (
+        <DescuentosTributariosForm selectedOwner={selectedOwner} onUpdateProfile={onUpdateProfile} />
+      ) : (
+        <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
+      )}
       <NavButtons currentStep={2} onBack={onBack} onNext={onNext} />
     </div>
   );
