@@ -1998,6 +1998,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       return gated("tax","Pro",<div>
         <div style={{display:"flex",gap:8,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
           <button onClick={()=>setTaxTab("rapido")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?T.bl:T.border),background:taxTab==="rapido"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="rapido"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>📊 Calculadora de impuestos</button>
+          <button onClick={()=>setTaxTab("detallado")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="detallado"?T.bl:T.border),background:taxTab==="detallado"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="detallado"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>🔬 Cálculo detallado</button>
           <button onClick={()=>setTaxTab("dashboard")} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?T.bl:T.border),background:taxTab==="dashboard"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="dashboard"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer"}}>🏛️ Dashboard declaraciones</button>
           <div style={{flex:1}}/>
           <button onClick={()=>setShowAyuda(true)} style={{padding:"10px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer"}} title="Guía de uso del sistema de declaración">❓ ¿Cómo uso esto?</button>
@@ -2028,23 +2029,31 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           isPro={plan==="pro"||plan==="advisor_pro"}
           onUpsell={()=>setPg("price")}
         />}
-        {(taxTab!=="dashboard"&&taxTab!=="rapido")&&<div>{/* Fallback para usuarios con taxTab viejo (ej: 'completa' eliminado) */}
+        {(taxTab!=="dashboard"&&taxTab!=="rapido"&&taxTab!=="detallado")&&<div>{/* Fallback para usuarios con taxTab viejo (ej: 'completa' eliminado) */}
           <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
         </div>}
         {taxTab==="rapido"&&<div>
           <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
-          <details style={{maxWidth:1300,margin:"24px auto 8px",padding:"0 16px"}}>
-            <summary style={{cursor:"pointer",padding:"10px 14px",background:"transparent",border:"1px dashed "+T.border,borderRadius:8,fontSize:11,fontWeight:600,color:T.tx3,listStyle:"none",display:"flex",alignItems:"center",gap:8,transition:"all 0.15s"}}
-              onMouseOver={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.15)";e.currentTarget.style.color=T.tx2}}
-              onMouseOut={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.tx3}}>
-              <span style={{fontSize:10,opacity:0.6}}>▾</span>
-              <span style={{flex:1}}>Ver cálculo detallado por cédulas, deducciones aplicadas y recomendaciones</span>
-              <span style={{fontSize:9,color:T.tx3,fontStyle:"italic"}}>Vista avanzada · opcional</span>
-            </summary>
-            <div style={{marginTop:14}}>
-              <SimuladorTributario trm={(u&&u.trm)||4200} user={u} onNavigate={setPg} onUpdate={setU}/>
-            </div>
-          </details>
+          {/* CTA chico al final del wizard que invita al tab detallado */}
+          <div style={{maxWidth:1300,margin:"24px auto 8px",padding:"0 16px",display:"flex",justifyContent:"center"}}>
+            <button onClick={()=>setTaxTab("detallado")} style={{padding:"10px 18px",background:"transparent",border:"1px solid "+T.border,borderRadius:8,fontSize:11,fontWeight:600,color:T.tx2,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:13}}>🔬</span>
+              <span>¿Querés ver el detalle por cédulas y todas las recomendaciones?</span>
+              <span style={{color:T.bl,fontWeight:700}}>Abrir cálculo detallado →</span>
+            </button>
+          </div>
+        </div>}
+        {taxTab==="detallado"&&<div style={{maxWidth:1300,margin:"0 auto",padding:"20px 16px"}}>
+          <div style={{marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+T.border}}>
+            <h1 style={{fontSize:22,fontWeight:700,color:T.tx,margin:0}}>🔬 Cálculo detallado</h1>
+            <p style={{fontSize:13,color:T.tx2,margin:"6px 0 0",lineHeight:1.5}}>
+              Desglose por cédula (laboral, capital, no laboral, dividendos, ganancias ocasionales), retenciones aplicadas, deducciones y recomendaciones puntuales con números.
+            </p>
+            <p style={{fontSize:11,color:T.tx3,margin:"6px 0 0",fontStyle:"italic"}}>
+              Vista avanzada — útil para revisar el cálculo línea por línea o para compartir con tu contador.
+            </p>
+          </div>
+          <SimuladorTributario trm={(u&&u.trm)||4200} user={u} onNavigate={setPg} onUpdate={setU}/>
         </div>}
       </div>);
     }
