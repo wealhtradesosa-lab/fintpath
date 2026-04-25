@@ -583,7 +583,13 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
   }
 
   const impActual = Number(det.impBruto || det.impuesto || 0);
-  const impOpt = Number(det.impOpt || det.impOptimizado || 0);
+  // Fix: el motor expone impOptBruto (impuesto bruto optimizado segun tabla),
+  // no impOpt. Antes leiamos det.impOpt → undefined → caia al saldo
+  // (impOptimizado = impuesto despues de retencion), creando discrepancia
+  // con el SimuladorTributario y mostrando "$0 optimizado" en owners
+  // sin ingresos laborales (donde impOptBruto = impBruto = no hay optimizacion
+  // aplicable, comportamiento correcto fiscalmente).
+  const impOpt = Number(det.impOptBruto != null ? det.impOptBruto : (det.impOpt || det.impOptimizado || 0));
   const ahorro = Math.max(0, impActual - impOpt);
   const impGO = Number(det.impGO || 0);
 
@@ -848,8 +854,8 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
         configurado,
         tieneIngresos,
         impActual: Number(det?.impBruto || det?.impuesto || 0),
-        impOpt: Number(det?.impOpt || det?.impOptimizado || 0),
-        ahorro: Math.max(0, Number(det?.impBruto || det?.impuesto || 0) - Number(det?.impOpt || det?.impOptimizado || 0)),
+        impOpt: Number(det?.impOptBruto != null ? det.impOptBruto : (det?.impOpt || det?.impOptimizado || 0)),
+        ahorro: Math.max(0, Number(det?.impBruto || det?.impuesto || 0) - Number(det?.impOptBruto != null ? det.impOptBruto : (det?.impOpt || det?.impOptimizado || 0))),
       };
     });
   }, [owners, estimacion, user]);
