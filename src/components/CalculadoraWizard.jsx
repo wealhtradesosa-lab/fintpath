@@ -163,6 +163,111 @@ function resumenOptimizaciones(owner) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// HELPERS DE INTEGRACIÓN — Capa 1 (hint inline) y Capa 2 (acordeón desglose)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// getHintContextual: una sola línea breve para mostrar inline en la tarjeta,
+// debajo del número. Responde la duda del usuario en el momento exacto que
+// la tiene. Ej: "Optimizado igual al actual" → ¿por qué?
+//
+// Devuelve { tono, icono, texto } o null si no hay hint relevante.
+function getHintContextual(det, owner) {
+  if (!det) return null;
+  const impAct = Number(det.impBruto || det.impuesto || 0);
+  const impOpt = Number(det.impOptBruto != null ? det.impOptBruto : (det.impOpt || det.impOptimizado || 0));
+  const ahorro = Math.max(0, impAct - impOpt);
+  const tieneSalario = Number(det.ingLaboral || 0) > 0;
+  const isJur = owner?.type === "juridica";
+
+  // Caso 1: optimizado = actual y no hay base laboral → no aplica PV/AFC
+  if (impAct > 0 && ahorro === 0 && !tieneSalario && !isJur) {
+    return {
+      tono: "info",
+      icono: "💡",
+      texto: "Sin ingresos laborales para aplicar PV/AFC. La optimización requiere salario u honorarios como base.",
+    };
+  }
+
+  // Caso 2: hay ahorro real → mostrar magnitud y mecanismo
+  if (ahorro > 1_000_000) {
+    const pct = impAct > 0 ? Math.round((ahorro / impAct) * 100) : 0;
+    return {
+      tono: "ok",
+      icono: "💰",
+      texto: `Podés ahorrar $${(ahorro / 1_000_000).toFixed(1)}M (${pct}%) optimizando aportes a PV/AFC.`,
+    };
+  }
+
+  // Caso 3: ahorro pequeño pero existe
+  if (ahorro > 0) {
+    return {
+      tono: "info",
+      icono: "💡",
+      texto: `Ahorro pequeño detectado ($${Math.round(ahorro / 1000).toLocaleString('es-CO')}k). Hay margen limitado para optimizar.`,
+    };
+  }
+
+  // Caso 4: impuesto cero
+  if (impAct === 0) {
+    return {
+      tono: "ok",
+      icono: "✓",
+      texto: "Sin impuesto a pagar este año según los datos registrados.",
+    };
+  }
+
+  return null;
+}
+
+// getTopRecomendaciones: devuelve hasta N recomendaciones con base legal
+// derivadas del detalle del motor. Para mostrar en la Capa 2 (acordeón).
+//
+// Devuelve array de { icono, titulo, desc, monto?, tono }.
+function getTopRecomendaciones(det, owner, n = 4) {
+  if (!det) return [];
+  const recs = [];
+  const fp = owner?.fiscalProfile || {};
+
+  // Dependientes ya aplicados
+  if ((det.deducDep || 0) > 0) {
+    recs.push({
+      icono: "👨‍👩‍👧",
+      titulo: `Dependientes: $${(det.deducDep / 1_000_000).toFixed(1)}M/año`,
+      desc: `Ya se está deduciendo 10% del ingreso por ${fp.dependientes?.cantidad || 1} dependiente(s).`,
+      tono: "ok",
+    });
+  }
+
+  // Intereses vivienda
+  if ((det.deducVivienda || 0) > 0) {
+    recs.push({
+      icono: "🏠",
+      titulo: `Intereses vivienda: $${(det.deducVivienda / 1_000_000).toFixed(1)}M/año`,
+      desc: "Los intereses de tu hipoteca ya se deducen automáticamente.",
+      tono: "ok",
+    });
+  }
+
+  // Donaciones (Art. 257 ET)
+  recs.push({
+    icono: "🤝",
+    titulo: "Donaciones con descuento 25% (Art. 257 ET)",
+    desc: "Las donaciones a entidades sin ánimo de lucro calificadas dan un descuento del 25% del valor donado, directo del impuesto a pagar. Tope legal: 25% del impuesto de renta del año.",
+    tono: "info",
+  });
+
+  // GMF deducible
+  recs.push({
+    icono: "💳",
+    titulo: "GMF 4×1000 deducible (Art. 115 ET)",
+    desc: "El 50% del GMF pagado es deducible. Se calcula automáticamente según tus movimientos bancarios.",
+    tono: "ok",
+  });
+
+  return recs.slice(0, n);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // PASO 1 — Selector de owner
 // ═══════════════════════════════════════════════════════════════════════════
 function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
@@ -932,6 +1037,89 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                   <div style={{ fontSize: 10, color: T.txt3, fontStyle: "italic", padding: "4px 0" }}>
                     {estado === "sin_datos" ? "Sin ingresos registrados" : "Sin cálculo disponible"}
                   </div>
+                )}
+
+                {/* Capa 1 — Hint contextual inline (Commit 9.12) */}
+                {(() => {
+                  const hint = getHintContextual(det, owner);
+                  if (!hint) return null;
+                  const tonoBg = hint.tono === "ok" ? "rgba(34,197,94,0.06)" : "rgba(167,139,250,0.06)";
+                  const tonoBorder = hint.tono === "ok" ? "rgba(34,197,94,0.18)" : "rgba(167,139,250,0.18)";
+                  const tonoText = hint.tono === "ok" ? T.green : T.purple;
+                  return (
+                    <div style={{ background: tonoBg, border: `1px solid ${tonoBorder}`, borderRadius: 8, padding: "8px 10px", display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, lineHeight: 1.4 }}>
+                      <span style={{ flexShrink: 0, fontSize: 13, marginTop: 1 }}>{hint.icono}</span>
+                      <span style={{ color: T.txt2 }}>
+                        <strong style={{ color: tonoText }}>{hint.tono === "ok" ? "Listo:" : "Por qué:"}</strong> {hint.texto}
+                      </span>
+                    </div>
+                  );
+                })()}
+
+                {/* Capa 2 — Acordeón "Ver desglose y plan de acción" */}
+                {det && (
+                  <details style={{ borderTop: "1px solid " + T.border, paddingTop: 8, marginTop: 4 }}>
+                    <summary style={{ cursor: "pointer", fontSize: 11, color: T.txt3, fontWeight: 600, listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "2px 0" }}>
+                      <span style={{ fontSize: 9, transition: "transform 0.2s" }}>▾</span>
+                      Ver desglose y plan de acción
+                    </summary>
+                    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
+                      {/* Desglose breve */}
+                      <div style={{ background: T.bg2, borderRadius: 6, padding: 10, fontSize: 11 }}>
+                        <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 8 }}>Desglose fiscal</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {Number(det.ingreso || 0) > 0 && (
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: T.txt3 }}>Ingresos brutos</span>
+                              <span style={{ ...F.mono, fontSize: 11, color: T.txt2 }}>{fm(det.ingreso)}</span>
+                            </div>
+                          )}
+                          {Number(det.totalDeducciones || det.gastosDeduc || 0) > 0 && (
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: T.txt3 }}>(-) Deducciones aplicadas</span>
+                              <span style={{ ...F.mono, fontSize: 11, color: T.green }}>{fm(det.totalDeducciones || det.gastosDeduc)}</span>
+                            </div>
+                          )}
+                          {Number(det.retencionFuente || 0) > 0 && (
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: T.txt3 }}>(-) Retención en la fuente</span>
+                              <span style={{ ...F.mono, fontSize: 11, color: T.blue }}>−{fm(det.retencionFuente)}</span>
+                            </div>
+                          )}
+                          {Number(det.rentaGravable || 0) > 0 && (
+                            <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 4, borderTop: "1px dashed " + T.border }}>
+                              <span style={{ color: T.txt2, fontWeight: 600 }}>Renta gravable</span>
+                              <span style={{ ...F.mono, fontSize: 11, color: T.txt }}>{fm(det.rentaGravable)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Plan de acción */}
+                      {(() => {
+                        const recs = getTopRecomendaciones(det, owner, 4);
+                        if (recs.length === 0) return null;
+                        return (
+                          <div>
+                            <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 8 }}>
+                              Plan de acción ({recs.length})
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              {recs.map((r, i) => (
+                                <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: 8, background: T.bg2, borderRadius: 6 }}>
+                                  <span style={{ flexShrink: 0, fontSize: 14 }}>{r.icono}</span>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: r.tono === "ok" ? T.green : T.txt2, marginBottom: 2 }}>{r.titulo}</div>
+                                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4 }}>{r.desc}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </details>
                 )}
 
                 {/* Acciones */}
