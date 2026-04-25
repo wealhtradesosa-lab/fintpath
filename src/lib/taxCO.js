@@ -204,8 +204,25 @@ export const estimarImpuesto = (u) => {
       const impActual = Math.max(0, impBruto - descICA - descuentosAplicados - reteJ);
       totalImp += impActual;
 
-      // impOptimizado = impActual para jurídica (sin ahorro fabricado — estrategias requieren contador)
-      const impBrutoOpt = impBruto;
+      // FIX abr 2026: lógica honesta de optimización para jurídicas.
+      //
+      // El motor NO inventa descuentos. Solo aplica los que el usuario declaró
+      // en owner.fiscalProfile.descuentosTributarios (CT&I, donaciones, empleo,
+      // exterior). Si el usuario no cargó ninguno → ahorro = 0 (honesto).
+      // Si cargó X → ahorro = X (sujeto a tope 25% Art. 259 ET).
+      //
+      // Definición de campos:
+      // - impBruto:    impuesto bruto antes de cualquier descuento ni retención
+      // - impBrutoSinOpt: impBruto - descICA (incluye solo descuento ICA permanente)
+      // - impBrutoOpt: impBruto - descICA - descuentosOpcionales (con descuentos del usuario)
+      // - impuesto/impActual: impBrutoOpt - reteJ (saldo después de retención)
+      //
+      // Esto hace que:
+      //   "Sin optimizar" = impBrutoSinOpt
+      //   "Con optimizar" = impBrutoOpt
+      //   Diferencia = descuentosAplicados (cargados por el usuario)
+      const impBrutoSinOpt = Math.max(0, impBruto - descICA);
+      const impBrutoOpt = Math.max(0, impBruto - descICA - descuentosAplicados);
       const impOptimoJ = impActual;
       detalle.push({
         name: ow.name, type: "juridica", ingreso: ingAnual,
@@ -218,7 +235,10 @@ export const estimarImpuesto = (u) => {
         gmf50, gastosTotal: gastosTotalJ,
         pctGastos: ingAnual > 0 ? (totalDeduc / ingAnual * 100) : 0,
         baseGravable, impuesto: impActual, impSinOpt: impActual, impOptimizado: impOptimoJ,
-        impBruto: impBruto, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
+        // FIX abr 2026: impBruto ahora descuenta ICA (descuento permanente legal).
+        // impOptBruto adicionalmente descuenta los descuentos opcionales cargados.
+        // Diferencia = descuentos opcionales = ahorro real declarado por el usuario.
+        impBruto: impBrutoSinOpt, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
         ahorroOptimo: impActual - impOptimoJ,
         tasa: ingAnual > 0 ? (impActual / ingAnual * 100) : 0,
         tasaBruta: ingAnual > 0 ? (impBruto / ingAnual * 100) : 0,
