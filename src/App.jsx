@@ -170,7 +170,7 @@ const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div sty
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 export default function FinPath(){
-  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("rapido");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);
+  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("rapido");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[desgloseOwnerId,setDesgloseOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);
   // Password recovery flow: detectar link de recovery y pedir nueva contraseña
   const[showResetPassword,setShowResetPassword]=useState(false);
   const[resetNewPassword,setResetNewPassword]=useState("");
@@ -2014,7 +2014,6 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       return gated("tax","Pro",<div>
         <div style={{display:"flex",gap:6,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
           <button onClick={()=>setTaxTab("rapido")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?T.bl:T.border),background:taxTab==="rapido"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="rapido"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>📊 Calculadora</button>
-          <button onClick={()=>setTaxTab("detallado")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="detallado"?T.bl:T.border),background:taxTab==="detallado"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="detallado"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🔬 Detallado</button>
           <button onClick={()=>setTaxTab("dashboard")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?T.bl:T.border),background:taxTab==="dashboard"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="dashboard"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🏛️ Declaraciones</button>
           <div style={{flex:1,minWidth:0}}/>
           <button onClick={()=>setShowAyuda(true)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}} title="Guía de uso del sistema de declaración">❓ Ayuda</button>
@@ -2026,8 +2025,6 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           warnings={getFiscalWarnings(u)}
           onNavigate={setPg}
           onSaveDeclaracion={(ownerId,declaracion)=>{
-            // Commit 5.5 FIFO: mismo handler que el tab completa viejo, ahora
-            // consumido desde dentro del Dashboard via componente DeclaracionUpload inline.
             const owners=(u&&u.owners||[]).map(o=>{
               if(o.id!==ownerId)return o;
               const actuales=Array.isArray(o.declaraciones)?[...o.declaraciones]:[];
@@ -2045,31 +2042,21 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           isPro={plan==="pro"||plan==="advisor_pro"}
           onUpsell={()=>setPg("price")}
         />}
-        {(taxTab!=="dashboard"&&taxTab!=="rapido"&&taxTab!=="detallado")&&<div>{/* Fallback para usuarios con taxTab viejo (ej: 'completa' eliminado) */}
-          <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
+        {taxTab!=="dashboard"&&<div>
+          <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU} onVerDesglose={(ownerId)=>setDesgloseOwnerId(ownerId)}/>
         </div>}
-        {taxTab==="rapido"&&<div>
-          <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
-          {/* CTA chico al final del wizard que invita al tab detallado */}
-          <div style={{maxWidth:1300,margin:"24px auto 8px",padding:"0 16px",display:"flex",justifyContent:"center"}}>
-            <button onClick={()=>setTaxTab("detallado")} style={{padding:"10px 18px",background:"transparent",border:"1px solid "+T.border,borderRadius:8,fontSize:11,fontWeight:600,color:T.tx2,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:13}}>🔬</span>
-              <span>¿Querés ver el detalle por cédulas y todas las recomendaciones?</span>
-              <span style={{color:T.bl,fontWeight:700}}>Abrir cálculo detallado →</span>
-            </button>
+        {/* Modal de desglose fiscal: SimuladorTributario filtrado al owner clickeado */}
+        {desgloseOwnerId&&<div onClick={()=>setDesgloseOwnerId(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:9999,padding:20,overflowY:"auto"}}>
+          <div onClick={(e)=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:16,maxWidth:1300,width:"100%",margin:"40px auto",padding:24,position:"relative"}}>
+            <button onClick={()=>setDesgloseOwnerId(null)} style={{position:"sticky",top:0,right:0,float:"right",background:T.bg3,border:`1px solid ${T.border}`,color:T.tx,cursor:"pointer",fontSize:18,width:36,height:36,borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}} title="Cerrar">✕</button>
+            <div style={{marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+T.border}}>
+              <h2 style={{fontSize:20,fontWeight:700,color:T.tx,margin:0}}>🔬 Desglose fiscal completo</h2>
+              <p style={{fontSize:12,color:T.tx3,margin:"4px 0 0",lineHeight:1.5}}>
+                Régimen, cédulas, deducciones aplicadas, retenciones y plan de acción para este responsable.
+              </p>
+            </div>
+            <SimuladorTributario trm={(u&&u.trm)||4200} user={{...u,owners:(u?.owners||[]).filter(o=>o.id===desgloseOwnerId)}} onNavigate={setPg} onUpdate={setU}/>
           </div>
-        </div>}
-        {taxTab==="detallado"&&<div style={{maxWidth:1300,margin:"0 auto",padding:"20px 16px"}}>
-          <div style={{marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+T.border}}>
-            <h1 style={{fontSize:22,fontWeight:700,color:T.tx,margin:0}}>🔬 Cálculo detallado</h1>
-            <p style={{fontSize:13,color:T.tx2,margin:"6px 0 0",lineHeight:1.5}}>
-              Desglose por cédula (laboral, capital, no laboral, dividendos, ganancias ocasionales), retenciones aplicadas, deducciones y recomendaciones puntuales con números.
-            </p>
-            <p style={{fontSize:11,color:T.tx3,margin:"6px 0 0",fontStyle:"italic"}}>
-              Vista avanzada — útil para revisar el cálculo línea por línea o para compartir con tu contador.
-            </p>
-          </div>
-          <SimuladorTributario trm={(u&&u.trm)||4200} user={u} onNavigate={setPg} onUpdate={setU}/>
         </div>}
       </div>);
     }
