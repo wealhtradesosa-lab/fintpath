@@ -469,11 +469,16 @@ export const estimarImpuesto = (u) => {
       const gastoSalud = gastoSaludTradicional + gastoSaludPrepagadaNueva;
       const deducMedicina = Math.min(gastoSalud, 16 * UVT * 12);
 
-      const interesesHip = oDeu.reduce((s, d) => {
+      const interesesHipBruto = oDeu.reduce((s, d) => {
         const saldo = d.mt || 0; const tasa = (d.ts || d.tasa || 0) / 100;
         if (d.fiscalCode === DEU_NAT_VIVIENDA_HABITACIONAL) return s + saldo * tasa;
         return s;
       }, 0);
+      // Commit B abr 2026: vivienda proporcional a responsables fiscales.
+      // Si la deuda es compartida (ej. pareja al 50%), solo deduce el % proporcional.
+      // Default 100% si no se especificó. Rango válido 1-100.
+      const viviendaPct = Math.max(0, Math.min(100, Number(fp.viviendaResponsablesPct ?? 100))) / 100;
+      const interesesHip = interesesHipBruto * viviendaPct;
       const deducVivienda = Math.min(interesesHip, 1200 * UVT);
 
       const gmfDeducible = ingAnual * 0.004 * 0.50;
@@ -689,6 +694,11 @@ export const estimarImpuesto = (u) => {
           salarioGravableAnual: salAnual,
         },
         exenta25, deducDep, deducMedicina, deducVivienda, gmfDeducible,
+        // Commit B: campos para que la UI pueda mostrar transparencia
+        interesesHipBruto,
+        viviendaResponsablesPct: viviendaPct * 100,
+        dependientesDeclarados,
+        dependientesConDiscapacidad: conDiscapacidad,
         // Gastos de actividad de honorarios (Art. 107 ET) — para que la UI los muestre
         honorariosBruto: honAnual,
         gastosHonorariosDed,

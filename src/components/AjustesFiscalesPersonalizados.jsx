@@ -153,6 +153,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
     if (profile.dependientes?.conDiscapacidad) n++;
     if (profile.auxilios?.alimentacion) n++;
     if (profile.auxilios?.transporte) n++;
+    if (profile.viviendaResponsablesPct != null && profile.viviendaResponsablesPct < 100) n++;
     return n;
   }, [profile]);
 
@@ -196,8 +197,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
           icono="👨‍👩‍👧"
           titulo="Familia y auxilios laborales"
           descripcion="Dependientes económicos y beneficios laborales exentos"
-          cantActivos={cantGrupoA}
-          total={4}
+          total={5}
         >
           {/* 1 y 2: Dependientes */}
           <SwitchRow
@@ -224,6 +224,34 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
                 />
                 Alguno tiene <strong style={{ color: T.txt }}>discapacidad certificada</strong> (amplía la deducción)
               </label>
+            </div>
+          </SwitchRow>
+
+          {/* Commit B: Vivienda con copropietarios responsables (Art. 119 ET) */}
+          <SwitchRow
+            label="Mi crédito de vivienda es compartido con otros responsables"
+            descripcion="Si la hipoteca está a tu nombre con tu pareja, hermano, etc., solo podés deducir el % proporcional a tu responsabilidad legal. Si la deuda es 100% tuya, dejá esto desactivado."
+            baseLegal="Art. 119 ET — proporcionalidad"
+            impactoTexto={profile.viviendaResponsablesPct != null && profile.viviendaResponsablesPct < 100
+              ? `Deduzco solo el ${profile.viviendaResponsablesPct}% de los intereses pagados`
+              : ""}
+            value={profile.viviendaResponsablesPct != null && profile.viviendaResponsablesPct < 100}
+            onChange={(v) => updateProfile({ viviendaResponsablesPct: v ? 50 : 100 })}
+          >
+            <NumberInput
+              label="¿Cuál es tu % de responsabilidad sobre la deuda?"
+              value={profile.viviendaResponsablesPct}
+              onChange={(v) => {
+                const pct = Math.max(1, Math.min(100, Number(v) || 0));
+                updateProfile({ viviendaResponsablesPct: pct });
+              }}
+              placeholder="Ej: 50"
+              hint="Si la deuda es compartida 50/50 con tu pareja, escribí 50. Si es 100% tuya, dejá este toggle apagado."
+            />
+            <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.20)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
+              <strong style={{ color: T.txt }}>⚖️ Por qué importa:</strong> el Art. 119 ET permite
+              deducir intereses solo en proporción a tu responsabilidad legal. Si declarás 100% sin
+              serlo, la DIAN puede cuestionar la deducción.
             </div>
           </SwitchRow>
 
