@@ -80,9 +80,18 @@ function reglaItem(item, owners) {
   if (!item.owner || item.owner === "" || item.owner === "na") return null;
   const ow = (owners || []).find(o => o.id === item.owner);
   // Prioridad 1: leer fiscalCode REAL del item
-  const fc = item.fiscalCode;
+  let fc = item.fiscalCode;
+  // Commit 16 Tarea 3: items legacy sin fiscalCode → derivar de la categoria
+  // usando defaultFiscalCode (asume natural por defecto si no hay owner).
+  // Esto evita que la tabla muestre "— sin clasificar" para items que tienen
+  // categoria valida pero fueron creados antes del Commit 14 que persistia
+  // fiscalCode al guardar.
+  if (!fc && item.cat) {
+    const ownerType = ow?.type === "juridica" ? "juridica" : "natural";
+    fc = defaultFiscalCode(ownerType, item.cat);
+  }
   if (fc && REGLA_POR_FISCAL_CODE[fc]) return REGLA_POR_FISCAL_CODE[fc];
-  // Fallback: items pre-1.5 sin fiscalCode → mostrar "—" honesto en lugar de mentira
+  // Fallback final: solo cuando no hay forma de derivar
   return { txt: "— sin clasificar", color: "#71717a", help: "Edita este item y elegí la clasificación fiscal correspondiente" };
 }
 
@@ -178,11 +187,18 @@ function defaultFiscalCode(ownerType, cat) {
   }
   // natural
   if (cat === "Salud") return "GAS_NAT_SALUD_MEDICINA";
-  if (cat === "Predial") return "GAS_INMUEBLE_PREDIAL";
-  if (cat === "Mantenimiento") return "GAS_INMUEBLE_MANTENIMIENTO";
-  if (cat === "Vivienda" || cat === "Arrendamiento") return "GAS_INMUEBLE_ADMINISTRACION";
-  if (cat === "Servicios") return "GAS_INMUEBLE_SERVICIOS";
-  if (cat === "Seguros") return "GAS_INMUEBLE_SEGUROS";
+  // Commit 16 Tarea 3 (BUG REPORTADO): default conservador para gastos que pueden
+  // ser personales O del inmueble arrendado. Antes el default asumia "del inmueble"
+  // (deducible 100%) lo cual es DEMASIADO OPTIMISTA — la mayoria de usuarios
+  // categoriza "Vivienda" o "Arrendamiento" para SU vivienda donde viven (no
+  // deducible), no para administrar un inmueble arrendado a terceros. El usuario
+  // que SI tiene inmueble arrendado puede cambiarlo en el sub-selector.
+  if (cat === "Vivienda" || cat === "Arrendamiento") return "GAS_NAT_PERSONAL";
+  if (cat === "Mantenimiento") return "GAS_NAT_PERSONAL";
+  if (cat === "Servicios") return "GAS_NAT_PERSONAL";
+  if (cat === "Seguros") return "SEG_GENERICO"; // sin clasificar el subtipo
+  // Predial sigue mostrando sub-selector (tiene 5 opciones), default conservador
+  if (cat === "Predial") return "GAS_NAT_PERSONAL";
   if (cat === "Depreciación") return "GAS_INMUEBLE_DEPRECIACION";
   if (cat === "Ahorro") return "GAS_NAT_AHORRO";
   return "GAS_NAT_PERSONAL";
