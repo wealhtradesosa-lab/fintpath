@@ -21,6 +21,8 @@
 import { normalizeFiscalData } from "./normalize.js";
 import {
   LAB_SALARIO, LAB_HONORARIOS_CON_EMPLEADOS, LAB_HONORARIOS_SIN_EMPLEADOS,
+  // Commit 3 Tarea 3: cesantías y prima como rentas de trabajo (Art. 206 #4 ET)
+  LAB_PRESTACIONES_CESANTIAS, LAB_PRESTACIONES_PRIMA,
   CAP_INTERESES_BANCARIOS, CAP_FIC, CAP_RENDIMIENTO_GENERICO, CAP_VENTA_ACTIVOS,
   NOL_ARRIENDO_INMUEBLE,
   DIV_ART49_GRAVADOS, DIV_INTERSOCIETARIOS,
@@ -38,6 +40,38 @@ import { TABLA_ART_241, calcImpRenta as calcImpRentaCore } from "./tablaArt241.j
 import { GRUPOS_SIMPLE as SIMPLE_GRUPOS, calcularImpuestoSimple as calcularImpSimple } from "./regimenSimple.js";
 
 export const UVT = 52374;
+
+// ─── ART. 206 #4 ET: CESANTÍAS Y INTERESES SOBRE CESANTÍAS EXENTOS ────────
+// Las cesantías y sus intereses son RENTA EXENTA con tope variable según el
+// salario mensual promedio del último semestre del trabajador:
+//   ≤ 350 UVT/mes:    100% exento
+//   350-410 UVT/mes:  90% exento
+//   410-470 UVT/mes:  80% exento
+//   470-530 UVT/mes:  60% exento
+//   530-590 UVT/mes:  40% exento
+//   590-650 UVT/mes:  20% exento
+//   > 650 UVT/mes:    0% exento (no exonerado)
+//
+// La porción exenta sí entra al cap 40% del Art. 336 #3 (no es excluyente).
+//
+// @param {number} cesantiasAnual - Total de cesantías + intereses recibidos en el año
+// @param {number} salarioMensualPromedio - Salario base mensual promedio del último semestre
+// @param {number} uvtValue - Valor del UVT del año aplicable
+// @returns {number} Monto exento en COP
+export function cesantiasExentasArt206_4(cesantiasAnual, salarioMensualPromedio, uvtValue = UVT) {
+  if (!cesantiasAnual || cesantiasAnual <= 0) return 0;
+  if (!salarioMensualPromedio || salarioMensualPromedio < 0) return cesantiasAnual; // sin salario base, asumir 100% exento (caso liquidación pura)
+  const salarioUVT = salarioMensualPromedio / uvtValue;
+  let pctExento;
+  if (salarioUVT <= 350) pctExento = 1.00;
+  else if (salarioUVT < 410) pctExento = 0.90;
+  else if (salarioUVT < 470) pctExento = 0.80;
+  else if (salarioUVT < 530) pctExento = 0.60;
+  else if (salarioUVT < 590) pctExento = 0.40;
+  else if (salarioUVT < 650) pctExento = 0.20;
+  else pctExento = 0;
+  return Math.round(cesantiasAnual * pctExento);
+}
 
 // Re-exports para compatibilidad con consumidores existentes.
 // La fuente única de verdad está ahora en src/lib/tablaArt241.js.
@@ -287,6 +321,11 @@ export const estimarImpuesto = (u) => {
       const salAnualInput = oIng.filter(i => i.fiscalCode === LAB_SALARIO).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       // Gross-up: si el salario registrado es neto (después de aportes), sumarlos para obtener el bruto gravable
       const salAnual = salarioEsBruto ? salAnualInput : salAnualInput + (aPensObl + aSaludObl) * 12;
+      // Commit 3 Tarea 3 (Art. 206 #4 ET): cesantías y prima son rentas de TRABAJO,
+      // no rentas no laborales. Antes el motor las dejaba caer en otrosAnual (bug).
+      // Las cesantías además tienen exenta proporcional al salario mensual promedio.
+      const cesantiasAnual = oIng.filter(i => i.fiscalCode === LAB_PRESTACIONES_CESANTIAS).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const primaAnual = oIng.filter(i => i.fiscalCode === LAB_PRESTACIONES_PRIMA).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
       const honAnual = oIng.filter(i => i.fiscalCode === LAB_HONORARIOS_CON_EMPLEADOS || i.fiscalCode === LAB_HONORARIOS_SIN_EMPLEADOS).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       const rentasAnual = oIng.filter(i => i.fiscalCode === NOL_ARRIENDO_INMUEBLE).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
       // Sub-tipos de rendimientos con tratamiento diferenciado:
@@ -305,12 +344,14 @@ export const estimarImpuesto = (u) => {
       // Van a ingNoLaboral como fallback conservador.
       const categorizadas = new Set([
         LAB_SALARIO, LAB_HONORARIOS_CON_EMPLEADOS, LAB_HONORARIOS_SIN_EMPLEADOS,
+        // Commit 3 Tarea 3: prestaciones laborales son cédula laboral, no NOL_OTROS
+        LAB_PRESTACIONES_CESANTIAS, LAB_PRESTACIONES_PRIMA,
         NOL_ARRIENDO_INMUEBLE, CAP_INTERESES_BANCARIOS, CAP_FIC,
         CAP_RENDIMIENTO_GENERICO, CAP_VENTA_ACTIVOS, DIV_ART49_GRAVADOS, PEN_JUBILACION,
       ]);
       const otrosAnual = oIng.filter(i => !categorizadas.has(i.fiscalCode)).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
 
-      const ingLaboral = salAnual + honAnual;
+      const ingLaboral = salAnual + honAnual + cesantiasAnual + primaAnual;
       const ingCapital = rendAnual;
       const ingNoLaboral = rentasAnual + otrosAnual;
       const ingAnual = ingLaboral + ingCapital + ingNoLaboral + divAnual + pensAnual;
@@ -523,7 +564,15 @@ export const estimarImpuesto = (u) => {
       const afcEgresoAnual = oGas.filter(g => g.fiscalCode === AP_TRIB_AFC).reduce((s, g) => s + (g.m || 0), 0) * 12;
       const pvManualBruto  = pvEgresoAnual + afcEgresoAnual;
       const pvManualAnual  = pvManualBruto > 0 ? Math.min(pvManualBruto, netoLaboral * 0.25, 2500 * UVT) : 0;
-      const benefLaboral = Math.min(exenta25 + totalDeducciones + pvManualAnual, lim40);
+      // Commit 3 Tarea 3: cesantías exentas Art. 206 #4. Calcular la porción exenta
+      // en función del salario mensual promedio (proxy: salAnual/12 si hay salario,
+      // si solo hay cesantías sueltas, asumir 100% exento como caso de liquidación).
+      const salarioMensualProxy = salAnual > 0 ? salAnual / 12 : 0;
+      const cesantiasExentas = cesantiasExentasArt206_4(cesantiasAnual, salarioMensualProxy, UVT);
+      // El cap 40% del Art. 336 #3 incluye TODAS las rentas exentas y deducciones
+      // imputables, incluso las del Art. 206 #4. Por eso sumamos cesantiasExentas
+      // dentro del Math.min(..., lim40).
+      const benefLaboral = Math.min(exenta25 + totalDeducciones + pvManualAnual + cesantiasExentas, lim40);
 
       const rentaLiqTrabajo = Math.max(0, netoLaboral - benefLaboral);
 
@@ -724,6 +773,8 @@ export const estimarImpuesto = (u) => {
           salarioGravableAnual: salAnual,
         },
         exenta25, deducDep, deducMedicina, deducVivienda, gmfDeducible,
+        // Commit 3 Tarea 3: cesantías y prima Art. 206 #4
+        cesantiasAnual, primaAnual, cesantiasExentas,
         // Commit B: campos para que la UI pueda mostrar transparencia
         interesesHipBruto,
         viviendaResponsablesPct: viviendaPct * 100,

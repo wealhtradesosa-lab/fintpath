@@ -48,7 +48,7 @@ const T = {
   ch: [C.ok, C.accent, C.warn, C.purple, "#ec4899", "#22d3ee", "#eab308"],
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
-const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
+const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Cesantías",l:"💵 Cesantías / Intereses cesantías"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
 
 // Sub-opciones de fiscalCode por categoría ambigua. Si la categoría no está
 // aquí, el fiscalCode se deriva automáticamente vía normalize.js (no pregunta).
@@ -93,6 +93,7 @@ const FISCAL_SUBOPTIONS = {
 // aclare en el sub-select). Replica el comportamiento conservador del normalizer.
 const DEFAULT_FISCAL_CODE = {
   "Salario": "LAB_SALARIO",
+  "Cesantías": "LAB_PRESTACIONES_CESANTIAS",
   "Honorarios": "LAB_HONORARIOS_SIN_EMPLEADOS",
   "Arriendo": "NOL_ARRIENDO_INMUEBLE",
   "Intereses bancarios": "CAP_INTERESES_BANCARIOS",
