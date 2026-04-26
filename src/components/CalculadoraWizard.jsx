@@ -1062,7 +1062,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
       {/* Desglose si hay gastos */}
       {itemsDesglose.length > 0 && (
         <details style={{ marginBottom: 12 }}>
-          <summary style={{ cursor: "pointer", fontSize: 11, color: T.txt2, fontWeight: 600, padding: "6px 0" }}>
+          <summary style={{ cursor: "pointer", fontSize: 11, color: T.txt2, fontWeight: 700, padding: "6px 10px", background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, borderRadius: 6, listStyle: "none", userSelect: "none" }}>
             ▾ Desglose por categoría ({itemsDesglose.length})
           </summary>
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1722,10 +1722,13 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
 
                 {/* Capa 2 — Acordeón "Ver desglose y plan de acción" */}
                 {det && (
-                  <details style={{ borderTop: "1px solid " + T.border, paddingTop: 8, marginTop: 4 }}>
-                    <summary style={{ cursor: "pointer", fontSize: 11, color: T.txt3, fontWeight: 600, listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "2px 0" }}>
-                      <span style={{ fontSize: 9, transition: "transform 0.2s" }}>▾</span>
-                      Ver desglose y plan de acción
+                  <details style={{ paddingTop: 8, marginTop: 8 }}>
+                    <summary style={{ cursor: "pointer", fontSize: 12, color: T.blue, fontWeight: 700, listStyle: "none", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 14px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 8, userSelect: "none" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 14 }}>📊</span>
+                        Ver desglose y plan de acción
+                      </span>
+                      <span style={{ fontSize: 11, opacity: 0.7 }}>▼</span>
                     </summary>
                     <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
                       {/* Desglose breve */}
