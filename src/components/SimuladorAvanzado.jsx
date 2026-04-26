@@ -744,11 +744,39 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         const toggleActual = () => { setTaxOptimizado(p => ({ ...p, [nameKey]: false })); setSimVals(p => { const n = { ...p }; delete n[`tax_${nameKey}`]; return n; }); };
                         const toggleOpt = () => { setTaxOptimizado(p => ({ ...p, [nameKey]: true })); setSimVals(p => { const n = { ...p }; delete n[`tax_${nameKey}`]; return n; }); };
                         const isJuridica = grp.tax.type === "juridica";
+                        // Commit 8 Tarea 3 (BUG REPORTADO): los toggles "Actual / Optimizado"
+                        // mostraban el impuesto BRUTO (lo que la tabla DIAN dice se debe pagar
+                        // antes de retencion). Pero los usuarios miran el SALDO a pagar (bruto −
+                        // retencion) que es lo que efectivamente desembolsan. En usuarios con
+                        // retencion alta (como contribuyente con cap 40% saturado), el bruto es
+                        // \$X pero el saldo es \$0. Mostrar el bruto en el toggle confunde al
+                        // usuario que ya ve "Saldo a pagar \$0" abajo.
+                        // Fix: toggles muestran SALDO (que es lo relevante al usuario), bruto
+                        // se sigue mostrando en el detalle abajo claramente etiquetado.
+                        const saldoActualAnualToggle = Math.max(0, impBrutoActualMes - reteNMes) * 12;
+                        const saldoOptAnualToggle = Math.max(0, impBrutoOptMes - reteNMes) * 12;
+                        const ambosSaldosCero = saldoActualAnualToggle === 0 && saldoOptAnualToggle === 0;
                         return <div>
                           <div style={{display:"flex",gap:6,marginBottom:8}}>
-                            <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(255,255,255,0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600}}>Actual: {fm(impBrutoActualMes*12)}/año</button>
-                            <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(255,255,255,0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600}}>Optimizado: {fm(impBrutoOptMes*12)}/año</button>
+                            <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(255,255,255,0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+                              <span>Actual</span>
+                              <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoActualAnualToggle)}/año</span>
+                              <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoActualMes*12)}/año</span>
+                            </button>
+                            <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(255,255,255,0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+                              <span>Optimizado</span>
+                              <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoOptAnualToggle)}/año</span>
+                              <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoOptMes*12)}/año</span>
+                            </button>
                           </div>
+                          {/* Mensaje explicativo cuando ambos saldos son cero (caso típico
+                              de retencion mayor al impuesto bruto). Aclara al usuario por
+                              que "Actual" y "Optimizado" muestran el mismo bruto. */}
+                          {ambosSaldosCero && impBrutoActualMes > 0 && (
+                            <div style={{marginBottom:8,padding:"10px 12px",background:"rgba(34,197,94,0.08)",border:"1.5px solid rgba(34,197,94,0.3)",borderRadius:8,fontSize:10,color:T.gn,lineHeight:1.5,fontWeight:600}}>
+                              ✅ Tu saldo a pagar ya es \$0 — la retención del año cubre tu impuesto. El modo Optimizado no aporta diferencia porque las palancas estándar (PV/AFC) no reducen el saldo cuando ya es cero. Incluso podrías recibir devolución.
+                            </div>
+                          )}
                           <div style={{background:isOpt?"rgba(34,197,94,0.06)":"rgba(167,139,250,0.06)",borderRadius:10,padding:"12px 14px",border:"1px solid "+(isOpt?"rgba(34,197,94,0.15)":"rgba(167,139,250,0.15)"),marginBottom:8}}>
                             {/* 3 líneas transparentes: Total / Retención / Saldo */}
                             <div style={{display:"flex",flexDirection:"column",gap:6}}>
