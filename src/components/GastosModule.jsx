@@ -22,8 +22,69 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
+// Commit 14 Tarea 3 (BUG REPORTADO):
+// 'clasifique el soat del deepal como de vehiculo en una parte me dice no
+//  deducible pero en la tabla de egresos sale dian 50% NO ENTIENDO'
+//
+// Problema: la tabla DIAN_REGLAS legacy estaba hardcoded por CATEGORÍA
+// (ej: "Seguros" → "📊 50%") cuando la realidad fiscal depende del
+// fiscalCode REAL del item, no de la categoría visual. Resultado:
+//   - Item con fiscalCode SEG_VEHICULO (NO deducible) mostraba "50%" ❌
+//   - Item con fiscalCode AP_TRIB_PV (detracción fiscal) mostraba "50%" ❌
+//   - Item con GAS_HON_VEHICULO (sí 50% Art. 107) mostraba "50%" ✅ por casualidad
+//
+// Solución: leer el fiscalCode del item y mapear a la regla legal real.
+// Fallback al comportamiento legacy si no hay fiscalCode (items pre-1.5).
+const REGLA_POR_FISCAL_CODE = {
+  // Aporte tributario (detracción de la base, Arts. 126-1, 126-4, 387)
+  "AP_TRIB_PV":                 { txt: "✅ Detracción fiscal", color: "#22c55e", help: "Pensión voluntaria — detrae base hasta tope conjunto Art. 126-1 ET" },
+  "AP_TRIB_AFC":                { txt: "✅ Detracción fiscal", color: "#22c55e", help: "AFC — detrae base hasta tope conjunto Art. 126-4 ET" },
+  "AP_TRIB_SALUD_PREPAGADA":    { txt: "✅ Hasta 16 UVT/mes", color: "#22c55e", help: "Salud prepagada — Art. 387 #2 ET, tope 16 UVT mensuales" },
+  // Vivienda
+  "DEU_NAT_VIVIENDA_HABITACIONAL": { txt: "✅ Intereses 1.200 UVT", color: "#22c55e", help: "Intereses vivienda habitacional — Art. 119 ET, tope 1.200 UVT/año" },
+  // Inmueble (depende del uso)
+  "GAS_INMUEBLE_ADMINISTRACION":   { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Gasto del inmueble arrendado — deducible 100% de la renta de capital" },
+  "GAS_INMUEBLE_SERVICIOS":        { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Servicios del inmueble arrendado" },
+  "GAS_INMUEBLE_REPARACION":       { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Reparación del inmueble arrendado" },
+  "GAS_INMUEBLE_PREDIAL":          { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Predial del inmueble arrendado" },
+  "GAS_INMUEBLE_SEGUROS":          { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Seguros del inmueble arrendado" },
+  // Honorarios (Art. 107 ET — actividad independiente)
+  "GAS_HON_SEG_SOCIAL":          { txt: "✅ 100% Art. 126-1", color: "#22c55e", help: "Seguridad social independiente — deducible 100%" },
+  "GAS_HON_NOMINA_TERCEROS":     { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Nómina/honorarios a terceros — deducible 100%" },
+  "GAS_HON_OFICINA":             { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Arriendo oficina — deducible 100%" },
+  "GAS_HON_SERVICIOS_OFICINA":   { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Servicios oficina — deducible 100%" },
+  "GAS_HON_INTERNET_TELEFONIA":  { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Internet/telefonía profesional" },
+  "GAS_HON_MATERIALES":          { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Materiales y suministros profesionales" },
+  "GAS_HON_VEHICULO":            { txt: "📊 50% Art. 107", color: "#eab308", help: "Vehículo profesional — 50% conservador (uso mixto), máx 1" },
+  "GAS_HON_VIAJES":              { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Viajes con propósito profesional documentado" },
+  "GAS_HON_REPRESENTACION":      { txt: "📊 Tope 10%", color: "#eab308", help: "Representación — tope 10% Art. 107-1 ET" },
+  "GAS_HON_CAPACITACION":        { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Capacitación profesional" },
+  "GAS_HON_OTROS":               { txt: "✅ Con causalidad", color: "#22c55e", help: "Otros con causalidad documentada" },
+  // Seguros (persona natural — la mayoría NO deducibles)
+  "SEG_SALUD":                   { txt: "✅ Hasta 16 UVT/mes", color: "#22c55e", help: "Seguro de salud — Art. 387 #2 ET, tope 16 UVT mensuales" },
+  "SEG_VIDA":                    { txt: "❌ No deducible", color: "#71717a", help: "Seguro de vida personal — no cumple Art. 107 ET" },
+  "SEG_VEHICULO":                { txt: "❌ No deducible", color: "#71717a", help: "Seguro de vehículo personal — no cumple Art. 107 ET" },
+  "SEG_HOGAR":                   { txt: "❌ No deducible", color: "#71717a", help: "Seguro de hogar personal — no cumple Art. 107 ET" },
+  // Gastos juridica
+  "GAS_JUR_DEDUCIBLE":           { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Gasto deducible con causalidad" },
+  "GAS_JUR_NO_DEDUCIBLE":        { txt: "❌ No deducible", color: "#71717a", help: "Gasto sin causalidad probada" },
+  // Personal
+  "GAS_NAT_PERSONAL":            { txt: "❌ No deducible", color: "#71717a", help: "Gasto personal — no cumple Art. 107 ET" },
+};
+
+function reglaItem(item, owners) {
+  if (!item.owner || item.owner === "" || item.owner === "na") return null;
+  const ow = (owners || []).find(o => o.id === item.owner);
+  // Prioridad 1: leer fiscalCode REAL del item
+  const fc = item.fiscalCode;
+  if (fc && REGLA_POR_FISCAL_CODE[fc]) return REGLA_POR_FISCAL_CODE[fc];
+  // Fallback: items pre-1.5 sin fiscalCode → mostrar "—" honesto en lugar de mentira
+  return { txt: "— sin clasificar", color: "#71717a", help: "Edita este item y elegí la clasificación fiscal correspondiente" };
+}
+
+// Tabla legacy SOLO para owner juridica. Para natural ya usamos reglaItem(...)
+// que lee el fiscalCode real. Refactor de juridica queda pendiente.
 const DIAN_REGLAS = {
-  natural: { "Aporte tributario": "✅ Detracción fiscal", "Salud": "✅ Deducible", "Vivienda": "✅ Deducible", "Seguros": "📊 50%", "Seguridad Social": "✅ Ya incluido", "Nómina": "❌", "Honorarios": "❌", "Mantenimiento": "❌", "Predial": "❌", "Representación": "❌", "Alimentación": "❌", "Transporte": "❌", "Arrendamiento": "❌", "Servicios": "❌", "Educación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Tecnología": "❌", "Ahorro": "❌", "Otro": "❌" },
   juridica: { "Aporte tributario": "⚠️ Sólo natural", "Nómina": "✅ Deducible", "Honorarios": "✅ Deducible", "Vivienda": "✅ Deducible", "Servicios": "✅ Deducible", "Mantenimiento": "✅ Deducible", "Seguros": "✅ Deducible", "Transporte": "✅ Deducible", "Arrendamiento": "✅ Deducible", "Predial": "✅ Deducible", "Representación": "✅ Deducible", "Tecnología": "✅ Deducible", "Educación": "✅ Deducible", "Seguridad Social": "✅ Deducible", "Depreciación": "✅ Deducible", "Salud": "❌", "Alimentación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Mascotas": "❌", "Deporte": "❌", "Ahorro": "❌", "Otro": "📊 50%" }
 };
 
@@ -336,10 +397,18 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   {(()=>{
                     if(!item.owner || item.owner==="" || item.owner==="na") return <span style={{color:"#71717a"}}>—</span>;
                     const ow = (owners||[]).find(o=>o.id===item.owner);
-                    const tipo = ow?.type === "juridica" ? "juridica" : "natural";
-                    const regla = DIAN_REGLAS[tipo]?.[item.cat] || "❌";
-                    const color = regla.includes("✅") ? "#22c55e" : regla.includes("📊") ? "#eab308" : "#71717a";
-                    return <span style={{color,fontWeight:600}}>{regla}</span>;
+                    // Commit 14 Tarea 3: leer fiscalCode REAL del item para natural.
+                    // Para juridica seguimos con el mapeo legacy por categoria
+                    // (refactor de juridica queda para commit posterior).
+                    if (ow?.type === "juridica") {
+                      const regla = DIAN_REGLAS.juridica?.[item.cat] || "❌";
+                      const color = regla.includes("✅") ? "#22c55e" : regla.includes("📊") ? "#eab308" : "#71717a";
+                      return <span style={{color,fontWeight:600}} title="Clasificación según categoría (jurídica)">{regla}</span>;
+                    }
+                    // Natural: usar fiscalCode real del item
+                    const r = reglaItem(item, owners);
+                    if (!r) return <span style={{color:"#71717a"}}>—</span>;
+                    return <span style={{color: r.color, fontWeight: 600}} title={r.help}>{r.txt}</span>;
                   })()}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
