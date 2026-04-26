@@ -158,7 +158,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
-  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "" });
+  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   const [selected, setSelected] = useState(new Set()); // "cat|idx"
 
   const gas = gastos || {};
@@ -184,6 +184,16 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
   const handleSave = () => {
     const newGas = { ...gas };
+    const buildItem = () => {
+      const base = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined, causalidad: form.causalidad || undefined };
+      if (form.montoModo === "tasa") {
+        base.montoModo = "tasa";
+        base.capital = Number(form.capital) || 0;
+        base.tasa = Number(form.tasa) || 0;
+        base.tasaModo = form.tasaModo || "mensual";
+      }
+      return base;
+    };
     if (editKey) {
       const [eCat, eIdx] = editKey.split("|");
       const idx = parseInt(eIdx);
@@ -192,29 +202,29 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         newGas[eCat] = newGas[eCat].filter((_, i) => i !== idx);
         if (newGas[eCat].length === 0) delete newGas[eCat];
         if (!newGas[form.cat]) newGas[form.cat] = [];
-        newGas[form.cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined, causalidad: form.causalidad || undefined });
+        newGas[form.cat].push(buildItem());
       } else {
-        newGas[eCat][idx] = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined, causalidad: form.causalidad || undefined };
+        newGas[eCat][idx] = buildItem();
       }
     } else {
       const cat = form.cat || "Otro";
       if (!newGas[cat]) newGas[cat] = [];
-      newGas[cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined, causalidad: form.causalidad || undefined });
+      newGas[cat].push(buildItem());
     }
     onUpdate(newGas);
     setShowForm(false);
     setEditKey(null);
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   };
 
   const openEdit = (item) => {
-    setForm({ cat: item.cat, c: item.c, m: item.freq==="año"?(item.m*12):item.m, t: item.t, freq: item.freq||"mes", owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "" });
+    setForm({ cat: item.cat, c: item.c, m: item.freq==="año"?(item.m*12):item.m, t: item.t, freq: item.freq||"mes", owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setEditKey(item.key);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
     setEditKey(null);
     setShowForm(true);
   };
@@ -397,8 +407,55 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 );
               })()}
 
-              <div style={{display:"flex",gap:8}}><div style={{flex:1}}><In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" /></div><div style={{flex:1}}>
-              <In l="Frecuencia" value={form.freq} onChange={(v) => setForm((p) => ({ ...p, freq: v }))} options={[{ v: "mes", l: "Mensual" }, { v: "año", l: "Anual" }]} /></div></div>
+              {/* Toggle modo: valor fijo vs capital × tasa */}
+              <div style={{ gridColumn: "1/-1", background: T.bg3, borderRadius: 10, padding: "8px", display: "flex", gap: 6, marginTop: 4, marginBottom: 4 }}>
+                <button type="button" onClick={() => setForm(p => ({ ...p, montoModo: "fijo" }))}
+                  style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: form.montoModo !== "tasa" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: form.montoModo !== "tasa" ? "rgba(34,197,94,0.08)" : "transparent", color: form.montoModo !== "tasa" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: form.montoModo !== "tasa" ? 700 : 500, cursor: "pointer" }}>
+                  💵 Valor fijo
+                </button>
+                <button type="button" onClick={() => setForm(p => ({ ...p, montoModo: "tasa" }))}
+                  style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: form.montoModo === "tasa" ? "1.5px solid #3b82f6" : "1px solid rgba(255,255,255,0.06)", background: form.montoModo === "tasa" ? "rgba(59,130,246,0.08)" : "transparent", color: form.montoModo === "tasa" ? "#3b82f6" : T.txt3, fontSize: 12, fontWeight: form.montoModo === "tasa" ? 700 : 500, cursor: "pointer" }}>
+                  📊 Capital × tasa
+                </button>
+              </div>
+
+              {form.montoModo !== "tasa" ? (
+                <div style={{display:"flex",gap:8,gridColumn:"1/-1"}}>
+                  <div style={{flex:1}}><In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" /></div>
+                  <div style={{flex:1}}><In l="Frecuencia" value={form.freq} onChange={(v) => setForm((p) => ({ ...p, freq: v }))} options={[{ v: "mes", l: "Mensual" }, { v: "año", l: "Anual" }]} /></div>
+                </div>
+              ) : (
+                <div style={{ gridColumn: "1/-1", background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 11, color: "#3b82f6", marginBottom: 8, fontWeight: 600 }}>📊 Cálculo automático: capital × tasa = monto mensual</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <In l="💼 Capital" value={form.capital} onChange={(v) => {
+                      const cap = Number(v) || 0;
+                      const tas = Number(form.tasa) || 0;
+                      const tm = form.tasaModo || "mensual";
+                      const mensual = tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100);
+                      setForm(p => ({ ...p, capital: v, m: (cap > 0 && tas > 0) ? String(mensual) : p.m, freq: "mes" }));
+                    }} type="number" placeholder="500000000" />
+                    <In l="📈 Tasa %" value={form.tasa} onChange={(v) => {
+                      const tas = Number(v) || 0;
+                      const cap = Number(form.capital) || 0;
+                      const tm = form.tasaModo || "mensual";
+                      const mensual = tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100);
+                      setForm(p => ({ ...p, tasa: v, m: (cap > 0 && tas > 0) ? String(mensual) : p.m, freq: "mes" }));
+                    }} type="number" placeholder="1" />
+                  </div>
+                  <In l="Periodicidad de la tasa" value={form.tasaModo} onChange={(v) => {
+                    const cap = Number(form.capital) || 0;
+                    const tas = Number(form.tasa) || 0;
+                    const mensual = v === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100);
+                    setForm(p => ({ ...p, tasaModo: v, m: (cap > 0 && tas > 0) ? String(mensual) : p.m, freq: "mes" }));
+                  }} options={[{ v: "mensual", l: "📅 Mensual (ej: 1% mensual)" }, { v: "anual", l: "📅 Anual (ej: 12% anual)" }]} />
+                  {Number(form.capital) > 0 && Number(form.tasa) > 0 && (
+                    <div style={{ marginTop: 4, padding: "10px 12px", background: "rgba(34,197,94,0.08)", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#22c55e" }}>
+                      💰 Monto calculado: {fm(form.tasaModo === "anual" ? (Number(form.capital) * Number(form.tasa) / 100) / 12 : Number(form.capital) * Number(form.tasa) / 100)} / mes
+                    </div>
+                  )}
+                </div>
+              )}
               <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => {
                 const ow = (owners || []).find(o => o.id === v);
                 const ownerType = ow ? ow.type : "natural";

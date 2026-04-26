@@ -77,7 +77,7 @@ const DEFAULT_FISCAL_CODE = {
 const INITIAL_FORM = {
   nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO",
   mensual: "", tipo: "fijo", fuente: "",
-  capital: "", tasa: "", moneda: "COP", owner: "",
+  capital: "", tasa: "", tasaModo: "anual", moneda: "COP", owner: "",
   // Commit 1.5: aportes obligatorios (sólo aplican a Salario)
   aportePension: "", aporteSalud: "",
 };
@@ -171,7 +171,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     const capitalFinal = Number(form.capital) || 0;
     const tasaFinal = Number(form.tasa) || 0;
     if (mensualFinal === 0 && capitalFinal > 0 && tasaFinal > 0) {
-      mensualFinal = Math.round((capitalFinal * tasaFinal / 100) / 12);
+      const tm = form.tasaModo || "anual";
+      mensualFinal = tm === "anual" ? Math.round((capitalFinal * tasaFinal / 100) / 12) : Math.round(capitalFinal * tasaFinal / 100);
     }
     const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal };
     // Commit 1.5: persistir aportes obligatorios en shape anidado, sólo para Salario
@@ -216,6 +217,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       fuente: item.fuente || "",
       capital: item.capital || "",
       tasa: item.tasa || "",
+      tasaModo: item.tasaModo || "anual",
       moneda: item.moneda || "COP",
       owner: item.owner || "",
       aportePension: aportePensionForm,
@@ -449,37 +451,47 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       const cap = Number(v) || 0;
                       const m = Number(form.mensual) || 0;
                       const tas = Number(form.tasa) || 0;
+                      const tm = form.tasaModo || "anual";
                       // Fix: si hay tasa, SIEMPRE recalcular mensual al cambiar capital.
                       // Sin tasa pero con mensual, derivar tasa.
                       if (cap > 0 && tas > 0) {
-                        nf.mensual = String(Math.round((cap * tas / 100) / 12));
+                        nf.mensual = String(tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
                       } else if (cap > 0 && m > 0 && tas === 0) {
-                        nf.tasa = String(Math.round((m * 12 / cap) * 1000) / 10);
+                        // derivar tasa: si modo mensual, m/cap*100; si anual, m*12/cap*100
+                        nf.tasa = String(tm === "anual" ? Math.round((m * 12 / cap) * 1000) / 10 : Math.round((m / cap) * 1000) / 10);
                       }
                       setForm(p => ({ ...p, ...nf }));
                     }} type="number" placeholder="Valor del activo" />
-                    <In l="📈 % Rentabilidad anual" value={form.tasa} onChange={(v) => {
-                      // Fix: si hay capital, SIEMPRE recalcular mensual (la tasa es la fuente
-                      // de verdad cuando cambia). Sin capital pero con mensual, derivar capital.
-                      // Guard: no derivar capital si el resultado sale absurdo (<$10K).
+                    <In l={form.tasaModo === "mensual" ? "📈 % Rentabilidad mensual" : "📈 % Rentabilidad anual"} value={form.tasa} onChange={(v) => {
                       const nf = { tasa: v };
                       const tas = Number(v) || 0;
                       const cap = Number(form.capital) || 0;
                       const m = Number(form.mensual) || 0;
+                      const tm = form.tasaModo || "anual";
                       if (tas > 0 && cap > 0) {
-                        nf.mensual = String(Math.round((cap * tas / 100) / 12));
+                        nf.mensual = String(tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
                       } else if (tas > 0 && m > 0 && cap === 0) {
-                        const capCalc = Math.round((m * 12) / (tas / 100));
+                        const capCalc = tm === "anual" ? Math.round((m * 12) / (tas / 100)) : Math.round(m / (tas / 100));
                         if (capCalc >= 10_000) nf.capital = String(capCalc);
                       } else if (tas === 0) {
                         // Si limpia la tasa, dejar mensual y capital como estaban (no pisar).
                       }
                       setForm(p => ({ ...p, ...nf }));
-                    }} type="number" placeholder="Ej: 24" />
+                    }} type="number" placeholder={form.tasaModo === "mensual" ? "Ej: 1" : "Ej: 24"} />
                   </div>
+                  <In l="Periodicidad de la tasa" value={form.tasaModo || "anual"} onChange={(v) => {
+                    // Al cambiar la periodicidad, recalculamos mensual en base a la nueva interpretación
+                    const cap = Number(form.capital) || 0;
+                    const tas = Number(form.tasa) || 0;
+                    const nf = { tasaModo: v };
+                    if (cap > 0 && tas > 0) {
+                      nf.mensual = String(v === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
+                    }
+                    setForm(p => ({ ...p, ...nf }));
+                  }} options={[{ v: "anual", l: "📅 Anual (ej: 24% al año)" }, { v: "mensual", l: "📅 Mensual (ej: 1% al mes)" }]} />
                   {Number(form.capital) > 0 && Number(form.tasa) > 0 && Number(form.mensual) > 0 && (
-                    <div style={{marginTop:10,padding:"10px 12px",background:"rgba(34,197,94,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.6}}>
-                      💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString()} × {form.tasa}% anual = {"$" + Math.round(Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString()}/mes
+                    <div style={{marginTop:4,padding:"10px 12px",background:"rgba(34,197,94,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.6}}>
+                      💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString()} × {form.tasa}% {form.tasaModo === "mensual" ? "mensual" : "anual"} = {"$" + Math.round(form.tasaModo === "mensual" ? Number(form.capital) * Number(form.tasa) / 100 : Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString()}/mes
                     </div>
                   )}
                   {/* Fix: warning si el capital guardado es sospechosamente bajo (<$10K) */}
