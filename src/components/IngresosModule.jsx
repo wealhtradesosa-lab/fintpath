@@ -3,6 +3,38 @@ import SimToggleInfo from "./SimToggleInfo";
 
 import { C } from "../lib/designTokens.js";
 
+// ─── Aportes obligatorios por SMMLV (Colombia, Ley 100) ────────────────────
+// SMMLV 2026 = $1.750.905. Tope IBC = 25 SMMLV (Art. 18 Ley 100).
+// Fondo de Solidaridad Pensional adicional al 4% trabajador (Art. 27 Ley 100):
+//   IBC < 4 SMMLV     → +0%
+//   IBC 4-16 SMMLV    → +1%
+//   IBC 16-17 SMMLV   → +1.2%
+//   IBC 17-18 SMMLV   → +1.4%
+//   IBC 18-19 SMMLV   → +1.6%
+//   IBC 19-20 SMMLV   → +1.8%
+//   IBC ≥ 20 SMMLV    → +2.0%
+const SMMLV_2026 = 1_750_905;
+const TOPE_IBC_SMMLV = 25;
+function fondoSolidaridadPct(nSmmlv) {
+  if (nSmmlv < 4) return 0;
+  if (nSmmlv < 16) return 0.01;
+  if (nSmmlv < 17) return 0.012;
+  if (nSmmlv < 18) return 0.014;
+  if (nSmmlv < 19) return 0.016;
+  if (nSmmlv < 20) return 0.018;
+  return 0.02;
+}
+function aportePensionPorSmmlv(nSmmlv) {
+  if (!nSmmlv || nSmmlv <= 0) return 0;
+  const ibc = nSmmlv * SMMLV_2026;
+  const tasa = 0.04 + fondoSolidaridadPct(nSmmlv);
+  return Math.round(ibc * tasa);
+}
+function aporteSaludPorSmmlv(nSmmlv) {
+  if (!nSmmlv || nSmmlv <= 0) return 0;
+  return Math.round(nSmmlv * SMMLV_2026 * 0.04);
+}
+
 // Commit 9.9: tokens unificados. Antes bg2 era #18181b (distinto del resto del app
 // que usa #141418). Esa diferencia de 4 pixeles en luminosidad creaba la sensación
 // de "diseño inconsistente" entre módulos.
@@ -80,6 +112,9 @@ const INITIAL_FORM = {
   capital: "", tasa: "", tasaModo: "anual", moneda: "COP", owner: "",
   // Commit 1.5: aportes obligatorios (sólo aplican a Salario)
   aportePension: "", aporteSalud: "",
+  // Commit IBC: modo y # SMMLV (alternativa al valor en pesos)
+  aportePensionModo: "valor", aportePensionSmmlv: "",
+  aporteSaludModo: "valor", aporteSaludSmmlv: "",
 };
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
@@ -180,11 +215,20 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       item.aportes = {
         pension: Number(form.aportePension) || 0,
         salud: Number(form.aporteSalud) || 0,
+        // Commit IBC: persistir modo y # SMMLV para reconstruir UI al editar
+        pensionModo: form.aportePensionModo || "valor",
+        pensionSmmlv: Number(form.aportePensionSmmlv) || 0,
+        saludModo: form.aporteSaludModo || "valor",
+        saludSmmlv: Number(form.aporteSaludSmmlv) || 0,
       };
     }
     // Los campos del form no se persisten como top-level (viven dentro de item.aportes)
     delete item.aportePension;
     delete item.aporteSalud;
+    delete item.aportePensionModo;
+    delete item.aportePensionSmmlv;
+    delete item.aporteSaludModo;
+    delete item.aporteSaludSmmlv;
     let updated;
     if (editId) { updated = items.map((i) => (i.id === editId ? { ...item, id: editId } : i)); }
     else { item.id = "ing_" + Date.now(); updated = [...items, item]; }
@@ -222,6 +266,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       owner: item.owner || "",
       aportePension: aportePensionForm,
       aporteSalud: aporteSaludForm,
+      // Commit IBC: leer modo persistido (default "valor" para items legacy)
+      aportePensionModo: item.aportes?.pensionModo || "valor",
+      aportePensionSmmlv: item.aportes?.pensionSmmlv ? String(item.aportes.pensionSmmlv) : "",
+      aporteSaludModo: item.aportes?.saludModo || "valor",
+      aporteSaludSmmlv: item.aportes?.saludSmmlv ? String(item.aportes.saludSmmlv) : "",
     });
     setEditId(item.id); setShowForm(true);
   };
@@ -376,19 +425,129 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 <div style={{fontSize:10,color:"#71717a",lineHeight:1.5}}>El monto que aparece en tu contrato o factura, <strong>antes</strong> de retención en la fuente y aportes obligatorios (salud+pensión). El sistema calcula automáticamente tu impuesto de renta aplicando la tabla progresiva de la DIAN 2026.</div>
               </div>}
 
-              {/* Commit 1.5: aportes obligatorios (sólo Salario) */}
+              {/* Commit 1.5 + Commit IBC: aportes obligatorios con opción $ valor o # SMMLV */}
               {form.categoria === "Salario" && (
                 <div style={{gridColumn:"1/-1",background:"rgba(168,85,247,0.04)",border:"1px solid rgba(168,85,247,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4,marginBottom:4}}>
                   <div style={{fontSize:11,fontWeight:700,color:"#a855f7",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
                     🛡️ Aportes obligatorios mensuales
                   </div>
-                  <div style={{fontSize:10,color:T.txt3,lineHeight:1.5,marginBottom:10}}>
-                    Se prellenan en 4% (pensión) + 4% (salud) del bruto. Ajustá si tu descuento real en nómina es distinto.
+                  <div style={{fontSize:10,color:T.txt3,lineHeight:1.5,marginBottom:12}}>
+                    Por defecto se calculan en 4%+4% del bruto. Si cotizás sobre un IBC distinto (ej: 25 SMMLV para maximizar pensión), elegí "📊 # SMMLV" y el sistema aplica las tasas legales completas, incluyendo Fondo de Solidaridad Pensional (Art. 27 Ley 100).
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                    <In l="Aporte pensión / mes" value={form.aportePension} onChange={(v) => setForm(p => ({ ...p, aportePension: v }))} type="number" placeholder="4% del bruto" />
-                    <In l="Aporte salud / mes" value={form.aporteSalud} onChange={(v) => setForm(p => ({ ...p, aporteSalud: v }))} type="number" placeholder="4% del bruto" />
+
+                  {/* Pensión: toggle + input */}
+                  <div style={{marginBottom:14}}>
+                    <div style={{fontSize:10,fontWeight:600,color:T.txt3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Aporte pensión / mes</div>
+                    <div style={{background:T.bg3,borderRadius:8,padding:6,display:"flex",gap:4,marginBottom:8}}>
+                      <button type="button" onClick={() => setForm(p => ({ ...p, aportePensionModo: "valor" }))}
+                        style={{flex:1,padding:"6px 8px",borderRadius:6,border:form.aportePensionModo!=="smmlv"?"1.5px solid #a855f7":"1px solid transparent",background:form.aportePensionModo!=="smmlv"?"rgba(168,85,247,0.1)":"transparent",color:form.aportePensionModo!=="smmlv"?"#a855f7":T.txt3,fontSize:11,fontWeight:form.aportePensionModo!=="smmlv"?700:500,cursor:"pointer"}}>
+                        💵 Valor fijo
+                      </button>
+                      <button type="button" onClick={() => {
+                        // Al cambiar a SMMLV: si no hay # cargado, sugiere uno equivalente al valor actual
+                        setForm(p => {
+                          const next = { ...p, aportePensionModo: "smmlv" };
+                          if (!p.aportePensionSmmlv) {
+                            const ap = Number(p.aportePension) || 0;
+                            const ibc = ap > 0 ? ap / 0.04 : 0;
+                            const nApprox = ibc > 0 ? Math.round(ibc / SMMLV_2026) : 0;
+                            if (nApprox >= 1 && nApprox <= TOPE_IBC_SMMLV) next.aportePensionSmmlv = String(nApprox);
+                          }
+                          return next;
+                        });
+                      }}
+                        style={{flex:1,padding:"6px 8px",borderRadius:6,border:form.aportePensionModo==="smmlv"?"1.5px solid #a855f7":"1px solid transparent",background:form.aportePensionModo==="smmlv"?"rgba(168,85,247,0.1)":"transparent",color:form.aportePensionModo==="smmlv"?"#a855f7":T.txt3,fontSize:11,fontWeight:form.aportePensionModo==="smmlv"?700:500,cursor:"pointer"}}>
+                        📊 # SMMLV
+                      </button>
+                    </div>
+                    {form.aportePensionModo === "smmlv" ? (
+                      <>
+                        <input type="number" min="1" max="25" step="0.5" value={form.aportePensionSmmlv}
+                          onChange={(e) => {
+                            const n = e.target.value;
+                            const nNum = Number(n) || 0;
+                            const valor = aportePensionPorSmmlv(nNum);
+                            setForm(p => ({ ...p, aportePensionSmmlv: n, aportePension: valor > 0 ? String(valor) : "" }));
+                          }}
+                          placeholder="Ej: 25 (tope IBC)"
+                          style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14,outline:"none"}} />
+                        {Number(form.aportePensionSmmlv) > 0 && (() => {
+                          const n = Number(form.aportePensionSmmlv);
+                          const ibc = n * SMMLV_2026;
+                          const fs = fondoSolidaridadPct(n);
+                          const valor = aportePensionPorSmmlv(n);
+                          const supera = n > TOPE_IBC_SMMLV;
+                          return (
+                            <div style={{marginTop:6,padding:"8px 10px",background:supera?"rgba(239,68,68,0.06)":"rgba(168,85,247,0.06)",borderRadius:6,fontSize:10,color:supera?T.red:T.txt2,lineHeight:1.5}}>
+                              {supera ? <strong>⚠️ Excede tope IBC (25 SMMLV — Art. 18 Ley 100). El sistema lo cuenta como ingresaste pero verificá que sea correcto.</strong> : <>
+                                {n} SMMLV × {fm(SMMLV_2026)} = IBC <strong>{fm(ibc)}</strong>/mes<br/>
+                                Aporte: 4% {fs > 0 && `+ ${(fs*100).toFixed(1)}% (Fondo Solidaridad)`} = <strong style={{color:"#a855f7"}}>{fm(valor)}</strong>/mes
+                              </>}
+                            </div>
+                          );
+                        })()}
+                      </>
+                    ) : (
+                      <In l="" value={form.aportePension} onChange={(v) => setForm(p => ({ ...p, aportePension: v }))} type="number" placeholder="4% del bruto" />
+                    )}
                   </div>
+
+                  {/* Salud: toggle + input */}
+                  <div style={{marginBottom:6}}>
+                    <div style={{fontSize:10,fontWeight:600,color:T.txt3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Aporte salud / mes</div>
+                    <div style={{background:T.bg3,borderRadius:8,padding:6,display:"flex",gap:4,marginBottom:8}}>
+                      <button type="button" onClick={() => setForm(p => ({ ...p, aporteSaludModo: "valor" }))}
+                        style={{flex:1,padding:"6px 8px",borderRadius:6,border:form.aporteSaludModo!=="smmlv"?"1.5px solid #a855f7":"1px solid transparent",background:form.aporteSaludModo!=="smmlv"?"rgba(168,85,247,0.1)":"transparent",color:form.aporteSaludModo!=="smmlv"?"#a855f7":T.txt3,fontSize:11,fontWeight:form.aporteSaludModo!=="smmlv"?700:500,cursor:"pointer"}}>
+                        💵 Valor fijo
+                      </button>
+                      <button type="button" onClick={() => {
+                        setForm(p => {
+                          const next = { ...p, aporteSaludModo: "smmlv" };
+                          if (!p.aporteSaludSmmlv) {
+                            const asl = Number(p.aporteSalud) || 0;
+                            const ibc = asl > 0 ? asl / 0.04 : 0;
+                            const nApprox = ibc > 0 ? Math.round(ibc / SMMLV_2026) : 0;
+                            if (nApprox >= 1 && nApprox <= TOPE_IBC_SMMLV) next.aporteSaludSmmlv = String(nApprox);
+                          }
+                          return next;
+                        });
+                      }}
+                        style={{flex:1,padding:"6px 8px",borderRadius:6,border:form.aporteSaludModo==="smmlv"?"1.5px solid #a855f7":"1px solid transparent",background:form.aporteSaludModo==="smmlv"?"rgba(168,85,247,0.1)":"transparent",color:form.aporteSaludModo==="smmlv"?"#a855f7":T.txt3,fontSize:11,fontWeight:form.aporteSaludModo==="smmlv"?700:500,cursor:"pointer"}}>
+                        📊 # SMMLV
+                      </button>
+                    </div>
+                    {form.aporteSaludModo === "smmlv" ? (
+                      <>
+                        <input type="number" min="1" max="25" step="0.5" value={form.aporteSaludSmmlv}
+                          onChange={(e) => {
+                            const n = e.target.value;
+                            const nNum = Number(n) || 0;
+                            const valor = aporteSaludPorSmmlv(nNum);
+                            setForm(p => ({ ...p, aporteSaludSmmlv: n, aporteSalud: valor > 0 ? String(valor) : "" }));
+                          }}
+                          placeholder="Ej: 25 (tope IBC)"
+                          style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14,outline:"none"}} />
+                        {Number(form.aporteSaludSmmlv) > 0 && (() => {
+                          const n = Number(form.aporteSaludSmmlv);
+                          const ibc = n * SMMLV_2026;
+                          const valor = aporteSaludPorSmmlv(n);
+                          const supera = n > TOPE_IBC_SMMLV;
+                          return (
+                            <div style={{marginTop:6,padding:"8px 10px",background:supera?"rgba(239,68,68,0.06)":"rgba(168,85,247,0.06)",borderRadius:6,fontSize:10,color:supera?T.red:T.txt2,lineHeight:1.5}}>
+                              {supera ? <strong>⚠️ Excede tope IBC (25 SMMLV — Art. 18 Ley 100).</strong> : <>
+                                {n} SMMLV × {fm(SMMLV_2026)} = IBC <strong>{fm(ibc)}</strong>/mes<br/>
+                                Aporte: 4% = <strong style={{color:"#a855f7"}}>{fm(valor)}</strong>/mes
+                              </>}
+                            </div>
+                          );
+                        })()}
+                      </>
+                    ) : (
+                      <In l="" value={form.aporteSalud} onChange={(v) => setForm(p => ({ ...p, aporteSalud: v }))} type="number" placeholder="4% del bruto" />
+                    )}
+                  </div>
+
+                  {/* Resumen salario gravable */}
                   {(() => {
                     const bruto = Number(form.mensual) || 0;
                     const ap = Number(form.aportePension) || 0;
