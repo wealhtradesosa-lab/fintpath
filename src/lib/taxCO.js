@@ -29,6 +29,8 @@ import {
   GAS_JUR_NO_DEDUCIBLE,
   // Commit 1.6: aportes tributarios del shape nuevo (Egresos → "Aporte tributario")
   AP_TRIB_PV, AP_TRIB_AFC, AP_TRIB_SALUD_PREPAGADA,
+  // Commit honorarios: gastos deducibles de actividad independiente (Art. 107)
+  GASTOS_HONORARIOS, GAS_HON_REPRESENTACION, GAS_HON_VEHICULO,
 } from "./fiscalCodes.js";
 import { TABLA_ART_241, calcImpRenta as calcImpRentaCore } from "./tablaArt241.js";
 import { GRUPOS_SIMPLE as SIMPLE_GRUPOS, calcularImpuestoSimple as calcularImpSimple } from "./regimenSimple.js";
@@ -369,8 +371,77 @@ export const estimarImpuesto = (u) => {
       const noConstHon = aSSIndep > 0 ? aSSIndep * 12 : ibcIndep * 0.04;
       const totalNoConst = noConstSal + noConstHon;
 
-      // ── 2. RENTAS DE TRABAJO (salario + honorarios) ──
-      const netoLaboral = ingLaboral - totalNoConst;
+      // ── 1.5 GASTOS DEDUCIBLES DE HONORARIOS (Art. 107 ET) ──
+      // Para personas naturales con honorarios. Aplica reglas profesionales:
+      //   - Causalidad, necesidad y proporcionalidad (Art. 107 ET)
+      //   - Vehículo (GAS_HON_VEHICULO): aplicado al 50% conservador (uso mixto)
+      //   - Representación (GAS_HON_REPRESENTACION): tope 10% del honorario bruto (Art. 107-1)
+      //   - Resto: 100% si está marcado con causalidad
+      //
+      // Si el owner no tiene honorarios o no marcó gastos de actividad, este
+      // bloque no afecta el cálculo (gastosHonorariosDed = 0).
+      let gastosHonorariosDed = 0;
+      const gastosHonorariosDesglose = {
+        segSocial: 0, nominaTerceros: 0, oficina: 0, serviciosOficina: 0,
+        internetTel: 0, materiales: 0, vehiculoBruto: 0, vehiculoAplicado: 0,
+        viajes: 0, representacionBruto: 0, representacionAplicado: 0, representacionTope: 0,
+        capacitacion: 0, otros: 0,
+      };
+      let alertaHonorarios = null; // null | "amarilla" | "roja"
+      if (honAnual > 0) {
+        const tope10Repr = honAnual * 0.10;
+        for (const g of oGas) {
+          if (!GASTOS_HONORARIOS.includes(g.fiscalCode)) continue;
+          const monto = (g.m || 0) * 12;
+          if (g.fiscalCode === GAS_HON_VEHICULO) {
+            // Vehículo: 50% conservador. UI valida que sea solo 1.
+            gastosHonorariosDesglose.vehiculoBruto += monto;
+            gastosHonorariosDesglose.vehiculoAplicado += monto * 0.50;
+          } else if (g.fiscalCode === GAS_HON_REPRESENTACION) {
+            gastosHonorariosDesglose.representacionBruto += monto;
+          } else {
+            // 100% deducible si está marcado con causalidad
+            const key = ({
+              GAS_HON_SEG_SOCIAL: "segSocial",
+              GAS_HON_NOMINA_TERCEROS: "nominaTerceros",
+              GAS_HON_OFICINA: "oficina",
+              GAS_HON_SERVICIOS_OFICINA: "serviciosOficina",
+              GAS_HON_INTERNET_TELEFONIA: "internetTel",
+              GAS_HON_MATERIALES: "materiales",
+              GAS_HON_VIAJES: "viajes",
+              GAS_HON_CAPACITACION: "capacitacion",
+              GAS_HON_OTROS: "otros",
+            })[g.fiscalCode] || "otros";
+            gastosHonorariosDesglose[key] += monto;
+          }
+        }
+        // Aplicar tope 10% a representación (Art. 107-1)
+        gastosHonorariosDesglose.representacionTope = tope10Repr;
+        gastosHonorariosDesglose.representacionAplicado = Math.min(
+          gastosHonorariosDesglose.representacionBruto,
+          tope10Repr
+        );
+        // Total deducible
+        gastosHonorariosDed =
+          gastosHonorariosDesglose.segSocial +
+          gastosHonorariosDesglose.nominaTerceros +
+          gastosHonorariosDesglose.oficina +
+          gastosHonorariosDesglose.serviciosOficina +
+          gastosHonorariosDesglose.internetTel +
+          gastosHonorariosDesglose.materiales +
+          gastosHonorariosDesglose.vehiculoAplicado +
+          gastosHonorariosDesglose.viajes +
+          gastosHonorariosDesglose.representacionAplicado +
+          gastosHonorariosDesglose.capacitacion +
+          gastosHonorariosDesglose.otros;
+        // Salvaguarda fiscal: alertas si la proporción es estadísticamente sospechosa
+        const ratioGastos = gastosHonorariosDed / honAnual;
+        if (ratioGastos > 0.80) alertaHonorarios = "roja";
+        else if (ratioGastos > 0.60) alertaHonorarios = "amarilla";
+      }
+
+      // ── 2. RENTAS DE TRABAJO (salario + honorarios netos de gastos de actividad) ──
+      const netoLaboral = ingLaboral - totalNoConst - gastosHonorariosDed;
 
       // Deducciones solo para rentas de trabajo (Art. 387 ET):
       // Fase 3 (Commit 8.4): si el owner configuró fiscalProfile.dependientes.cantidad,
@@ -618,6 +689,12 @@ export const estimarImpuesto = (u) => {
           salarioGravableAnual: salAnual,
         },
         exenta25, deducDep, deducMedicina, deducVivienda, gmfDeducible,
+        // Gastos de actividad de honorarios (Art. 107 ET) — para que la UI los muestre
+        honorariosBruto: honAnual,
+        gastosHonorariosDed,
+        gastosHonorariosDesglose,
+        alertaHonorarios,
+        honorariosNeto: Math.max(0, honAnual - gastosHonorariosDed),
         pensionVol, afc, totalDeducciones,
         // Topes legales y espacio disponible (Sprint 4B1 — para consumo por OwnerPlan):
         afcMax: Math.min(netoLaboral * 0.30, 3800 * UVT),

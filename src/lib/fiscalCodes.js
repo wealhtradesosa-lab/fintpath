@@ -70,6 +70,30 @@ export const GAS_INMUEBLE_SERVICIOS          = "GAS_INMUEBLE_SERVICIOS";
 export const GAS_INMUEBLE_SEGUROS            = "GAS_INMUEBLE_SEGUROS";
 export const GAS_INMUEBLE_DEPRECIACION       = "GAS_INMUEBLE_DEPRECIACION";
 
+// ─── GASTOS DEDUCIBLES DE HONORARIOS (Art. 107 ET — actividad independiente) ───
+// Solo aplicables a personas naturales con ingresos por LAB_HONORARIOS_*.
+// El motor los descuenta del ingreso por honorarios ANTES de aplicar la cédula
+// laboral. Cumplimiento: causalidad, necesidad y proporcionalidad (Art. 107 ET).
+//
+// Diseño profesional (no sólo lo que listó el contador):
+//   - Salvaguarda fiscal: si el total deducido supera el 60% del honorario, el
+//     motor sigue deduciendo (Art. 107 no impone tope %), pero la UI muestra
+//     alerta amarilla. Sobre el 80%, alerta roja.
+//   - Vehículo: solo UNO deducible (validación en UI). 50% conservador si no
+//     se especifica uso profesional.
+//   - Gastos de representación: tope 10% del ingreso bruto por honorarios.
+export const GAS_HON_SEG_SOCIAL              = "GAS_HON_SEG_SOCIAL";              // Seguridad social del profesional independiente (100%)
+export const GAS_HON_NOMINA_TERCEROS         = "GAS_HON_NOMINA_TERCEROS";         // Nómina/honorarios pagados a terceros (con retención)
+export const GAS_HON_OFICINA                 = "GAS_HON_OFICINA";                 // Arriendo oficina/coworking
+export const GAS_HON_SERVICIOS_OFICINA       = "GAS_HON_SERVICIOS_OFICINA";       // Servicios públicos del lugar de trabajo
+export const GAS_HON_INTERNET_TELEFONIA      = "GAS_HON_INTERNET_TELEFONIA";      // Internet/telefonía profesional
+export const GAS_HON_MATERIALES              = "GAS_HON_MATERIALES";              // Materiales y suministros profesionales
+export const GAS_HON_VEHICULO                = "GAS_HON_VEHICULO";                // Vehículo (máx 1, proporcional uso profesional)
+export const GAS_HON_VIAJES                  = "GAS_HON_VIAJES";                  // Viajes con relación documentada
+export const GAS_HON_REPRESENTACION          = "GAS_HON_REPRESENTACION";          // Gastos representación (tope 10% honorarios brutos)
+export const GAS_HON_CAPACITACION            = "GAS_HON_CAPACITACION";            // Capacitación con relación a la actividad
+export const GAS_HON_OTROS                   = "GAS_HON_OTROS";                   // Otros gastos con causalidad documentada
+
 // Jurídica
 export const GAS_JUR_NOMINA                  = "GAS_JUR_NOMINA";
 export const GAS_JUR_PARAFISCALES            = "GAS_JUR_PARAFISCALES";
@@ -169,6 +193,18 @@ export const FISCAL_CODE_META = {
   [GAS_INMUEBLE_SERVICIOS]:       { kind: "gasto", scope: "inmueble", label: "Servicios del inmueble",     et: "Art. 107" },
   [GAS_INMUEBLE_SEGUROS]:         { kind: "gasto", scope: "inmueble", label: "Seguros del inmueble",       et: "Art. 107" },
   [GAS_INMUEBLE_DEPRECIACION]:    { kind: "gasto", scope: "inmueble", label: "Depreciación construcción",  et: "Art. 137 (si lleva contabilidad)" },
+  // Gastos deducibles de honorarios (actividad independiente, Art. 107 ET)
+  [GAS_HON_SEG_SOCIAL]:           { kind: "gasto", scope: "honorarios", label: "Seguridad social independiente", et: "Art. 126-1 (100%)" },
+  [GAS_HON_NOMINA_TERCEROS]:      { kind: "gasto", scope: "honorarios", label: "Nómina/honorarios a terceros",   et: "Art. 107 (con retención practicada)" },
+  [GAS_HON_OFICINA]:              { kind: "gasto", scope: "honorarios", label: "Arriendo oficina/coworking",     et: "Art. 107" },
+  [GAS_HON_SERVICIOS_OFICINA]:    { kind: "gasto", scope: "honorarios", label: "Servicios públicos oficina",     et: "Art. 107" },
+  [GAS_HON_INTERNET_TELEFONIA]:   { kind: "gasto", scope: "honorarios", label: "Internet/telefonía profesional", et: "Art. 107" },
+  [GAS_HON_MATERIALES]:           { kind: "gasto", scope: "honorarios", label: "Materiales y suministros",       et: "Art. 107" },
+  [GAS_HON_VEHICULO]:             { kind: "gasto", scope: "honorarios", label: "Vehículo (1 máx, prop. uso)",    et: "Art. 107 (50% conservador)" },
+  [GAS_HON_VIAJES]:               { kind: "gasto", scope: "honorarios", label: "Viajes con propósito",           et: "Art. 107 (documentados)" },
+  [GAS_HON_REPRESENTACION]:       { kind: "gasto", scope: "honorarios", label: "Gastos de representación",       et: "Art. 107-1 (tope 10% honorarios)" },
+  [GAS_HON_CAPACITACION]:         { kind: "gasto", scope: "honorarios", label: "Capacitación profesional",       et: "Art. 107" },
+  [GAS_HON_OTROS]:                { kind: "gasto", scope: "honorarios", label: "Otros con causalidad",           et: "Art. 107 (causalidad documentada)" },
   // Gastos jurídica
   [GAS_JUR_NOMINA]:               { kind: "gasto", scope: "juridica", label: "Nómina + prestaciones",      et: "Art. 107" },
   [GAS_JUR_PARAFISCALES]:         { kind: "gasto", scope: "juridica", label: "Parafiscales",               et: "Art. 108" },
@@ -222,4 +258,5 @@ export const INGRESOS_NO_LABORAL = [NOL_ARRIENDO_INMUEBLE, NOL_HONORARIOS_INDEP,
 export const INGRESOS_DIVIDENDOS = [DIV_ART49_NO_GRAVADOS, DIV_ART49_GRAVADOS, DIV_EXTERIOR, DIV_INTERSOCIETARIOS];
 export const INGRESOS_APLICA_COMPONENTE_INFLACIONARIO = [CAP_INTERESES_BANCARIOS, CAP_FIC, CAP_RENDIMIENTO_GENERICO];
 export const GASTOS_INMUEBLE_ARRENDADO = [GAS_INMUEBLE_PREDIAL, GAS_INMUEBLE_MANTENIMIENTO, GAS_INMUEBLE_ADMINISTRACION, GAS_INMUEBLE_SERVICIOS, GAS_INMUEBLE_SEGUROS, GAS_INMUEBLE_DEPRECIACION];
+export const GASTOS_HONORARIOS = [GAS_HON_SEG_SOCIAL, GAS_HON_NOMINA_TERCEROS, GAS_HON_OFICINA, GAS_HON_SERVICIOS_OFICINA, GAS_HON_INTERNET_TELEFONIA, GAS_HON_MATERIALES, GAS_HON_VEHICULO, GAS_HON_VIAJES, GAS_HON_REPRESENTACION, GAS_HON_CAPACITACION, GAS_HON_OTROS];
 export const INVERSIONES_DEPRECIABLES = Object.entries(FISCAL_CODE_META).filter(([,m]) => m.kind === "inversion" && m.deprecia).map(([k]) => k);
