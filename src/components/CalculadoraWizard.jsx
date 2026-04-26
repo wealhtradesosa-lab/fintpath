@@ -1811,39 +1811,95 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                   <span style={{ fontSize: 9, color: estadoColor, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>{estadoLabel}</span>
                 </div>
 
-                {/* Camino A: cifras honestas. Cuando "Sin optimizar" == "Optimizado",
-                    mostrar UN solo número con texto explicativo. Cuando hay ahorro real
-                    por palanca opcional (ej: PV/AFC), mostrar comparación con nombres claros. */}
-                {det ? (
-                  ahorro > 100_000 ? (
+                {/* Camino A + Commit 2 (Tarea 3 revisada): cifras honestas con
+                    distinción entre IMPUESTO BRUTO (lo que se debe en total) y
+                    SALDO A PAGAR estimado (lo que efectivamente se desembolsa
+                    al presentar, después de retención en la fuente).
+
+                    Diagnóstico de declaración real demostró que el malentendido
+                    entre estos dos números es la confusión más común: el usuario
+                    compara su "saldo a pagar" del año anterior contra el impuesto
+                    bruto que muestra la calculadora. Ambos son correctos pero
+                    miden cosas distintas (Casillas 126 vs 134 del F-210 DIAN).
+                */}
+                {det ? (() => {
+                  // El motor expone retefuenteNat para naturales y retefuenteCalc para jurídicas.
+                  // Ambos representan retención del año estimada según los ingresos cargados.
+                  const reteAnual = Number(det.retefuenteNat || det.retefuenteCalc || 0);
+                  const saldoPagar = Math.max(0, impActual - reteAnual);
+                  const saldoPagarOpt = Math.max(0, impOpt - reteAnual);
+                  const muestraDesglose = reteAnual > 100_000; // solo si hay retención significativa
+
+                  if (ahorro > 100_000) {
                     // Modo comparativo: hay ahorro real por palanca opcional
-                    <div style={{ background: T.bg2, borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                        <span style={{ fontSize: 10, color: T.txt3 }}>Tu impuesto hoy</span>
-                        <span style={{ ...F.mono, fontSize: 12, color: T.red }}>{fm(impActual)}</span>
+                    return (
+                      <div style={{ background: T.bg2, borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                          <span style={{ fontSize: 10, color: T.txt3 }}>Tu impuesto hoy</span>
+                          <span style={{ ...F.mono, fontSize: 12, color: T.red }}>{fm(impActual)}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                          <span style={{ fontSize: 10, color: T.txt3 }}>Si aplicás PV/AFC</span>
+                          <span style={{ ...F.mono, fontSize: 12, color: T.green }}>{fm(impOpt)}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingTop: 4, borderTop: "1px dashed " + T.border }}>
+                          <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>Ahorro potencial</span>
+                          <span style={{ ...F.mono, fontSize: 13, color: T.green }}>+{fm(ahorro)}</span>
+                        </div>
+                        {muestraDesglose && (
+                          <details style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed " + T.border }}>
+                            <summary style={{ cursor: "pointer", fontSize: 9, color: T.blue, fontWeight: 600, listStyle: "none", letterSpacing: 0.3 }}>
+                              ▾ Saldo a pagar estimado
+                            </summary>
+                            <div style={{ marginTop: 6, fontSize: 9, color: T.txt3, lineHeight: 1.5 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                <span>(−) Retenciones del año</span>
+                                <span style={F.mono}>−{fm(reteAnual)}</span>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                                <span style={{ color: T.txt2, fontWeight: 600 }}>= Saldo a pagar hoy</span>
+                                <span style={{ ...F.mono, color: T.txt2, fontWeight: 700 }}>{fm(saldoPagar)}</span>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                                <span style={{ color: T.green, fontWeight: 600 }}>= Saldo si aplicás PV/AFC</span>
+                                <span style={{ ...F.mono, color: T.green, fontWeight: 700 }}>{fm(saldoPagarOpt)}</span>
+                              </div>
+                              <div style={{ marginTop: 4, fontStyle: "italic" }}>
+                                Las retenciones ya las pagaste durante el año. El saldo es lo que efectivamente desembolsás al presentar.
+                              </div>
+                            </div>
+                          </details>
+                        )}
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                        <span style={{ fontSize: 10, color: T.txt3 }}>Si aplicás PV/AFC</span>
-                        <span style={{ ...F.mono, fontSize: 12, color: T.green }}>{fm(impOpt)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingTop: 4, borderTop: "1px dashed " + T.border }}>
-                        <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>Ahorro potencial</span>
-                        <span style={{ ...F.mono, fontSize: 13, color: T.green }}>+{fm(ahorro)}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    // Modo unificado: el motor ya aplicó todas las deducciones automáticas
+                    );
+                  }
+                  // Modo unificado
+                  return (
                     <div style={{ background: T.bg2, borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                         <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>Tu impuesto estimado</span>
                         <span style={{ ...F.mono, fontSize: 14, color: T.txt }}>{fm(impActual)}</span>
                       </div>
+                      {muestraDesglose && (
+                        <>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 9, color: T.txt3 }}>
+                            <span>(−) Retenciones del año</span>
+                            <span style={F.mono}>−{fm(reteAnual)}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingTop: 4, borderTop: "1px dashed " + T.border }}>
+                            <span style={{ fontSize: 10, color: T.green, fontWeight: 700 }}>= Saldo a pagar estimado</span>
+                            <span style={{ ...F.mono, fontSize: 13, color: T.green, fontWeight: 700 }}>{fm(saldoPagar)}</span>
+                          </div>
+                        </>
+                      )}
                       <div style={{ fontSize: 9, color: T.txt3, lineHeight: 1.4, fontStyle: "italic" }}>
-                        Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos.
+                        {muestraDesglose
+                          ? "Las retenciones del año ya las pagaste sin verlas. El saldo es lo que efectivamente desembolsás al presentar la declaración."
+                          : "Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos."}
                       </div>
                     </div>
-                  )
-                ) : (
+                  );
+                })() : (
                   <div style={{ fontSize: 10, color: T.txt3, fontStyle: "italic", padding: "4px 0" }}>
                     {estado === "sin_datos" ? "Sin ingresos registrados" : "Sin cálculo disponible"}
                   </div>
