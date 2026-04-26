@@ -99,6 +99,36 @@ export const estimarImpuesto = (u) => {
   const detalle = [];
   const sinClasificar = ing.filter(i => !i.owner || i.owner === "").length;
 
+  // ── COMMIT 13 TAREA 3: PRE-CÁLCULO UTILIDAD DISTRIBUIBLE DE JURÍDICAS ──
+  // Para automatizar el flujo dividendos jurídica → natural (gap 4 del reporte
+  // de análisis comparativo), pre-calculamos cuánta utilidad después de impuesto
+  // tiene cada jurídica disponible para distribuir como dividendos a sus socios.
+  // Si una persona natural tiene `fiscalProfile.socios = [{ ownerJuridicaId, pct }]`,
+  // el motor le inyecta automáticamente dividendos virtuales = utilidadDistribuible × pct/100.
+  //
+  // Esto es UNIVERSAL (aplica a cualquier socio de SAS/SAS unipersonal/Ltda) y
+  // OPCIONAL (si el usuario no define `socios`, el comportamiento es idéntico al
+  // legacy: cada owner se calcula aislado).
+  const utilidadDistribuiblePorJuridica = {};
+  owners.forEach(ow => {
+    if (ow.type !== "juridica") return;
+    const oIng = ing.filter(i => i.owner === ow.id);
+    const oGas = Object.values(gas).flat().filter(g => g.owner === ow.id);
+    const oDeu = deu.filter(d => d.owner === ow.id);
+    const trm = u.trm || 4200;
+    const ingAnualJ = oIng.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+    const gastosDeducJ = oGas.filter(g => g.fiscalCode !== GAS_JUR_NO_DEDUCIBLE).reduce((s, g) => s + (g.m || 0), 0) * 12;
+    const interesesJ = oDeu.reduce((s, d) => { const saldo = d.mt || 0; const tasa = (d.ts || d.tasa || 0) / 100; return s + saldo * tasa; }, 0);
+    const gmf50J = ingAnualJ * 0.004 * 0.50;
+    const utilidadJ = Math.max(0, ingAnualJ - gastosDeducJ - interesesJ - gmf50J);
+    // Tarifa aproximada: 35% ordinario, 20% ZF, 0% exenta — para pre-cálculo basta
+    const regimenJ = ow.regimen || "ordinario";
+    const tarifaAprox = regimenJ === "exenta" ? 0 : (regimenJ === "zona_franca" ? 0.20 : 0.35);
+    const impuestoAprox = utilidadJ * tarifaAprox;
+    const utilidadDistribuible = Math.max(0, utilidadJ - impuestoAprox);
+    utilidadDistribuiblePorJuridica[ow.id] = utilidadDistribuible;
+  });
+
   owners.forEach(ow => {
     const oIng = ing.filter(i => {
       if (!i.owner || i.owner === "" || i.owner === "na") return false;
@@ -338,7 +368,35 @@ export const estimarImpuesto = (u) => {
       const rendimientoGenAnual = oIng.filter(i => i.fiscalCode === CAP_RENDIMIENTO_GENERICO).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
       const inversionAnual = oIng.filter(i => i.fiscalCode === CAP_VENTA_ACTIVOS).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
       const rendAnual = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual + inversionAnual;
-      const divAnual = oIng.filter(i => i.fiscalCode === DIV_ART49_GRAVADOS).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      const divAnualManual = oIng.filter(i => i.fiscalCode === DIV_ART49_GRAVADOS).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+      // Commit 13 Tarea 3: dividendos automáticos derivados de jurídicas en las que
+      // el natural es socio (Gap 4 del reporte). Si fiscalProfile.socios está definido,
+      // sumamos % de la utilidad distribuible de cada jurídica vinculada como
+      // dividendos virtuales gravados Art. 242 ET. Esto cierra el gap donde un
+      // fundador SAS no veía reflejados sus dividendos automáticamente.
+      const sociosDeclarados = ow.fiscalProfile?.socios || [];
+      let divAnualAutomatico = 0;
+      const dividendosAutoDesglose = [];
+      sociosDeclarados.forEach(s => {
+        const juridicaId = s.ownerJuridicaId;
+        const pct = Number(s.porcentaje) || 0;
+        if (!juridicaId || pct <= 0) return;
+        const utilDistr = utilidadDistribuiblePorJuridica[juridicaId] || 0;
+        const dividendoEstimado = utilDistr * (pct / 100);
+        if (dividendoEstimado > 0) {
+          divAnualAutomatico += dividendoEstimado;
+          // Buscar nombre de la jurídica para trazabilidad en det
+          const juridicaOwner = owners.find(o => o.id === juridicaId);
+          dividendosAutoDesglose.push({
+            juridicaId,
+            juridicaName: juridicaOwner?.name || juridicaId,
+            porcentaje: pct,
+            utilidadDistribuible: utilDistr,
+            dividendoEstimado,
+          });
+        }
+      });
+      const divAnual = divAnualManual + divAnualAutomatico;
       const pensAnual = oIng.filter(i => i.fiscalCode === PEN_JUBILACION).reduce((s, i) => s + (i.mensual || 0), 0) * 12;
       // "Otros" = ingresos que no caen en ninguna cédula específica arriba (NOL_OTROS, NOL_NEGOCIO, NOL_HONORARIOS_INDEP, ganancia ocasional, etc).
       // Van a ingNoLaboral como fallback conservador.
@@ -775,6 +833,8 @@ export const estimarImpuesto = (u) => {
         exenta25, deducDep, deducMedicina, deducVivienda, gmfDeducible,
         // Commit 3 Tarea 3: cesantías y prima Art. 206 #4
         cesantiasAnual, primaAnual, cesantiasExentas,
+        // Commit 13 Tarea 3: dividendos automáticos derivados de jurídicas
+        divAnualManual, divAnualAutomatico, dividendosAutoDesglose,
         // Commit B: campos para que la UI pueda mostrar transparencia
         interesesHipBruto,
         viviendaResponsablesPct: viviendaPct * 100,
