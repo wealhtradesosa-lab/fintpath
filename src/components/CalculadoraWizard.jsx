@@ -20,6 +20,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
+import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { GRUPOS_SIMPLE } from "../lib/regimenSimple.js";
 import { C, F as F_CENTRAL, S, R } from "../lib/designTokens.js";
 import AjustesFiscalesPersonalizados from "./AjustesFiscalesPersonalizados";
@@ -1657,6 +1658,21 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, onNavigate, onMarcarCompletoOwner }) {
   const estimacion = useMemo(() => estimarImpuesto(user), [user]);
 
+  // Tarea 2 (Camino 1): cuando "Sin optimizar" == "Optimizado", mostrar recomendaciones
+  // del módulo recomendaciones.js. Cubre todas las palancas reales del ET (PV/AFC,
+  // intereses vivienda, dependientes, salud prepagada, ICA descuento, etc.) y no solo
+  // PV/AFC como hacía el hint contextual.
+  const recomendaciones = useMemo(() => generarRecomendaciones(user, estimacion), [user, estimacion]);
+  const recsByOwner = useMemo(() => {
+    const map = {};
+    for (const r of recomendaciones) {
+      if (!r.ownerId) continue;
+      if (!map[r.ownerId]) map[r.ownerId] = [];
+      map[r.ownerId].push(r);
+    }
+    return map;
+  }, [recomendaciones]);
+
   const resumenPorOwner = useMemo(() => {
     return owners.map((o) => {
       const det = (estimacion?.detalle || []).find((d) => d.name === o.name);
@@ -1768,6 +1784,54 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                       <span style={{ color: T.txt2 }}>
                         <strong style={{ color: tonoText }}>{hint.tono === "ok" ? "Listo:" : "Por qué:"}</strong> {hint.texto}
                       </span>
+                    </div>
+                  );
+                })()}
+
+                {/* Tarea 2 (Camino 1): panel de oportunidades de ahorro real cuando
+                    el "Optimizado" actual no aporta diferencia visible. Cubre palancas
+                    que el hint contextual no menciona (vivienda, dependientes, salud
+                    prepagada, ICA descuento, Régimen Simple, etc.) — todas vienen del
+                    módulo recomendaciones.js que ya analiza el ET completo. */}
+                {(() => {
+                  if (!det) return null;
+                  if (ahorro > 100_000) return null; // ya hay optimización significativa, no mostrar
+                  const recsOwner = (recsByOwner[owner.id] || []).filter(r => r.code !== "TODO_OPTIMIZADO" && r.code !== "TODO_OPTIMIZADO_JURIDICA");
+                  if (recsOwner.length === 0) return null;
+                  const top = recsOwner.slice(0, 3); // mostrar top 3 por impacto
+                  const totalAhorroEstimado = top.reduce((s, r) => s + (Number(r.ahorroAnualEstimado) || 0), 0);
+                  return (
+                    <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: T.blue }}>
+                          💡 {recsOwner.length} oportunidad{recsOwner.length > 1 ? "es" : ""} de ahorro detectada{recsOwner.length > 1 ? "s" : ""}
+                        </span>
+                        {totalAhorroEstimado > 0 && (
+                          <span style={{ ...F.mono, fontSize: 11, color: T.green, fontWeight: 700 }}>
+                            +{fm(totalAhorroEstimado)}/año
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {top.map((r, idx) => (
+                          <div key={r.code || idx} style={{ background: T.bg2, borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 3 }}>
+                            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, color: T.txt2, lineHeight: 1.3 }}>{r.titulo}</span>
+                              {Number(r.ahorroAnualEstimado) > 0 && (
+                                <span style={{ ...F.mono, fontSize: 10, color: T.green, whiteSpace: "nowrap", flexShrink: 0 }}>
+                                  ~{fm(r.ahorroAnualEstimado)}/año
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4 }}>{r.descripcion}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {recsOwner.length > 3 && (
+                        <div style={{ fontSize: 10, color: T.txt3, fontStyle: "italic" }}>
+                          + {recsOwner.length - 3} oportunidad{recsOwner.length - 3 > 1 ? "es" : ""} más al ver el desglose completo.
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
