@@ -108,7 +108,7 @@ function defaultFiscalCode(ownerType, cat) {
   return "GAS_NAT_PERSONAL";
 }
 
-export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, plan, onUpgrade}) {
+export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, ingresos, plan, onUpgrade}) {
   const [scanning, setScanning] = useState(false);
 
   const scanImage = async () => {
@@ -158,7 +158,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
-  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "" });
+  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "" });
   const [selected, setSelected] = useState(new Set()); // "cat|idx"
 
   const gas = gastos || {};
@@ -192,29 +192,29 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         newGas[eCat] = newGas[eCat].filter((_, i) => i !== idx);
         if (newGas[eCat].length === 0) delete newGas[eCat];
         if (!newGas[form.cat]) newGas[form.cat] = [];
-        newGas[form.cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined });
+        newGas[form.cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined, causalidad: form.causalidad || undefined });
       } else {
-        newGas[eCat][idx] = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined };
+        newGas[eCat][idx] = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined, causalidad: form.causalidad || undefined };
       }
     } else {
       const cat = form.cat || "Otro";
       if (!newGas[cat]) newGas[cat] = [];
-      newGas[cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined });
+      newGas[cat].push({ c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined, causalidad: form.causalidad || undefined });
     }
     onUpdate(newGas);
     setShowForm(false);
     setEditKey(null);
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "" });
   };
 
   const openEdit = (item) => {
-    setForm({ cat: item.cat, c: item.c, m: item.freq==="año"?(item.m*12):item.m, t: item.t, freq: item.freq||"mes", owner: item.owner||"", fiscalCode: item.fiscalCode || "" });
+    setForm({ cat: item.cat, c: item.c, m: item.freq==="año"?(item.m*12):item.m, t: item.t, freq: item.freq||"mes", owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "" });
     setEditKey(item.key);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "" });
     setEditKey(null);
     setShowForm(true);
   };
@@ -431,6 +431,123 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   </div>
                 );
               })()}
+
+              {/* Commit A Fase 2: toggle "gasto de actividad por honorarios" para naturales */}
+              {(() => {
+                const ow = (owners || []).find(o => o.id === form.owner);
+                if (!ow || ow.type !== "natural") return null;
+                // ¿El owner tiene ingresos por honorarios?
+                const tieneHonorarios = (ingresos || []).some(i =>
+                  i.owner === ow.id &&
+                  (i.fiscalCode === "LAB_HONORARIOS_CON_EMPLEADOS" ||
+                   i.fiscalCode === "LAB_HONORARIOS_SIN_EMPLEADOS" ||
+                   i.fiscalCode === "NOL_HONORARIOS_INDEP")
+                );
+                if (!tieneHonorarios) return null;
+
+                // Categorías que típicamente pueden ser de actividad por honorarios
+                const catsApp = ["Vivienda", "Servicios", "Mantenimiento", "Transporte", "Representación",
+                                 "Tecnología", "Educación", "Honorarios", "Nómina", "Arrendamiento",
+                                 "Seguridad Social", "Otro"];
+                if (!catsApp.includes(form.cat)) return null;
+
+                const isHon = String(form.fiscalCode || "").startsWith("GAS_HON_");
+                // Mapping de categoría → fiscalCode honorarios sugerido
+                const sugeridoPorCat = {
+                  "Seguridad Social": "GAS_HON_SEG_SOCIAL",
+                  "Nómina": "GAS_HON_NOMINA_TERCEROS",
+                  "Honorarios": "GAS_HON_NOMINA_TERCEROS",
+                  "Vivienda": "GAS_HON_OFICINA",
+                  "Arrendamiento": "GAS_HON_OFICINA",
+                  "Servicios": "GAS_HON_SERVICIOS_OFICINA",
+                  "Mantenimiento": "GAS_HON_OFICINA",
+                  "Tecnología": "GAS_HON_INTERNET_TELEFONIA",
+                  "Transporte": "GAS_HON_VEHICULO",
+                  "Representación": "GAS_HON_REPRESENTACION",
+                  "Educación": "GAS_HON_CAPACITACION",
+                  "Otro": "GAS_HON_OTROS",
+                };
+
+                return (
+                  <div style={{gridColumn:"1/-1",background:"rgba(99,102,241,0.04)",border:`1px solid ${isHon?"#6366f1":"rgba(99,102,241,0.2)"}`,borderRadius:10,padding:"12px 14px",marginTop:4}}>
+                    <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+                      <input
+                        type="checkbox"
+                        checked={isHon}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const fc = sugeridoPorCat[form.cat] || "GAS_HON_OTROS";
+                            setForm(p => ({ ...p, fiscalCode: fc }));
+                          } else {
+                            // volver al default según owner type + categoría
+                            setForm(p => ({ ...p, fiscalCode: defaultFiscalCode("natural", p.cat), causalidad: "" }));
+                          }
+                        }}
+                        style={{width:16,height:16,accentColor:"#6366f1",cursor:"pointer"}}
+                      />
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:12,fontWeight:700,color:isHon?"#6366f1":T.txt}}>
+                          🧾 ¿Es gasto de tu actividad por honorarios? (Art. 107 ET)
+                        </div>
+                        <div style={{fontSize:10,color:T.txt3,marginTop:2,lineHeight:1.4}}>
+                          Marcalo si este gasto cumple causalidad, necesidad y proporcionalidad con tu actividad independiente. Reduce la base gravable de tus honorarios antes de aplicar la cédula laboral.
+                        </div>
+                      </div>
+                    </label>
+
+                    {isHon && (
+                      <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(99,102,241,0.15)"}}>
+                        <div style={{fontSize:11,fontWeight:700,color:"#6366f1",marginBottom:6}}>Tipo de gasto deducible</div>
+                        <select
+                          value={form.fiscalCode}
+                          onChange={(e) => setForm(p => ({ ...p, fiscalCode: e.target.value }))}
+                          style={{width:"100%",background:"#1e1e24",border:"1px solid rgba(255,255,255,0.06)",color:"#fafafa",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}
+                        >
+                          <option value="GAS_HON_SEG_SOCIAL">🏛️ Seguridad social independiente (100%, Art. 126-1)</option>
+                          <option value="GAS_HON_NOMINA_TERCEROS">👥 Nómina/honorarios a terceros (con retención)</option>
+                          <option value="GAS_HON_OFICINA">🏢 Arriendo oficina/coworking</option>
+                          <option value="GAS_HON_SERVICIOS_OFICINA">💡 Servicios públicos del lugar de trabajo</option>
+                          <option value="GAS_HON_INTERNET_TELEFONIA">📞 Internet/telefonía profesional</option>
+                          <option value="GAS_HON_MATERIALES">📦 Materiales y suministros profesionales</option>
+                          <option value="GAS_HON_VEHICULO">🚗 Vehículo (50% conservador, máx 1)</option>
+                          <option value="GAS_HON_VIAJES">✈️ Viajes con propósito documentado</option>
+                          <option value="GAS_HON_REPRESENTACION">🤝 Representación (tope 10% Art. 107-1)</option>
+                          <option value="GAS_HON_CAPACITACION">📚 Capacitación profesional</option>
+                          <option value="GAS_HON_OTROS">📝 Otros con causalidad documentada</option>
+                        </select>
+
+                        <div style={{marginTop:10}}>
+                          <label style={{fontSize:11,fontWeight:700,color:"#6366f1",display:"block",marginBottom:4}}>
+                            Nota de causalidad (opcional pero recomendado)
+                          </label>
+                          <input
+                            type="text"
+                            value={form.causalidad || ""}
+                            onChange={(e) => setForm(p => ({ ...p, causalidad: e.target.value }))}
+                            placeholder="Ej: Internet de oficina usado para reuniones con clientes"
+                            style={{width:"100%",background:"#1e1e24",border:"1px solid rgba(255,255,255,0.06)",color:"#fafafa",padding:"10px 12px",borderRadius:8,fontSize:12,outline:"none"}}
+                          />
+                          <div style={{fontSize:10,color:T.txt3,marginTop:4,lineHeight:1.4}}>
+                            Si la DIAN cuestiona la deducción, esta nota ayuda a justificar la causalidad. No es obligatorio.
+                          </div>
+                        </div>
+
+                        {form.fiscalCode === "GAS_HON_VEHICULO" && (
+                          <div style={{marginTop:10,padding:"8px 10px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.2)",borderRadius:6,fontSize:10,color:T.orange,lineHeight:1.4}}>
+                            ⚠️ El motor aplica solo el 50% del gasto del vehículo (uso mixto). Solo se permite UN vehículo deducible por persona.
+                          </div>
+                        )}
+                        {form.fiscalCode === "GAS_HON_REPRESENTACION" && (
+                          <div style={{marginTop:10,padding:"8px 10px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.2)",borderRadius:6,fontSize:10,color:T.orange,lineHeight:1.4}}>
+                            ⚠️ Los gastos de representación tienen tope rígido del 10% del honorario bruto (Art. 107-1 ET). El motor lo aplica automáticamente.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               <In l="Tipo" value={form.t} onChange={(v) => setForm((p) => ({ ...p, t: v }))} options={[{ v: "f", l: "Fijo" }, { v: "v", l: "Variable" }]} />
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
