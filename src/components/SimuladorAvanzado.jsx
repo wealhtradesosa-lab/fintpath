@@ -744,48 +744,63 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         const toggleActual = () => { setTaxOptimizado(p => ({ ...p, [nameKey]: false })); setSimVals(p => { const n = { ...p }; delete n[`tax_${nameKey}`]; return n; }); };
                         const toggleOpt = () => { setTaxOptimizado(p => ({ ...p, [nameKey]: true })); setSimVals(p => { const n = { ...p }; delete n[`tax_${nameKey}`]; return n; }); };
                         const isJuridica = grp.tax.type === "juridica";
-                        // Commit 8 Tarea 3 (BUG REPORTADO): los toggles "Actual / Optimizado"
-                        // mostraban el impuesto BRUTO (lo que la tabla DIAN dice se debe pagar
-                        // antes de retencion). Pero los usuarios miran el SALDO a pagar (bruto −
-                        // retencion) que es lo que efectivamente desembolsan. En usuarios con
-                        // retencion alta (como contribuyente con cap 40% saturado), el bruto es
-                        // \$X pero el saldo es \$0. Mostrar el bruto en el toggle confunde al
-                        // usuario que ya ve "Saldo a pagar \$0" abajo.
-                        // Fix: toggles muestran SALDO (que es lo relevante al usuario), bruto
-                        // se sigue mostrando en el detalle abajo claramente etiquetado.
                         const saldoActualAnualToggle = Math.max(0, impBrutoActualMes - reteNMes) * 12;
                         const saldoOptAnualToggle = Math.max(0, impBrutoOptMes - reteNMes) * 12;
-                        const ambosSaldosCero = saldoActualAnualToggle === 0 && saldoOptAnualToggle === 0;
+                        // Commit 9 Tarea 3: aplicar Camino A al simulador.
+                        // El motor ya aplica TODAS las deducciones legales automaticas (Art. 119,
+                        // 387, 206, 336, etc). El "Optimizado" solo agrega palancas hipoteticas
+                        // (PV/AFC adicional). Cuando el ahorro real entre Actual y Optimizado es
+                        // <= \$100K, mostrar UN SOLO numero es mas honesto que toggles que sugieren
+                        // "2 escenarios" cuando en realidad solo hay 1 escenario real (Actual) +
+                        // un escenario hipotetico que no aporta nada.
+                        //
+                        // Coincide con la decision tomada en CalculadoraWizard.jsx (Commit 14
+                        // "Camino A"). Aplicar misma logica al simulador es coherencia UX.
+                        const ahorroOptAnual = (impBrutoActualMes - impBrutoOptMes) * 12;
+                        const mostrarComparativo = ahorroOptAnual > 100_000;
+                        // Si NO hay ahorro real, forzar modo Actual (no Optimizado) para evitar
+                        // estado inconsistente. El usuario nunca ve el toggle pero internamente
+                        // estamos en modo Actual = el unico escenario real.
+                        const isOptEffectivo = mostrarComparativo ? isOpt : false;
+                        const baseMesEffectivo = isOptEffectivo ? impBrutoOptMes : impBrutoActualMes;
+                        const simImpEffectivo = mostrarComparativo ? simImp : (getVal(`tax_${nameKey}`, impBrutoActualMes));
+                        const simImpAnualEffectivo = simImpEffectivo * 12;
+                        const saldoMesEffectivo = Math.max(0, simImpEffectivo - reteNMes);
+                        const saldoAnualEffectivo = saldoMesEffectivo * 12;
+                        const tasaEfectivaEff = ingresoAnual > 0 ? (simImpAnualEffectivo / ingresoAnual * 100) : 0;
                         return <div>
-                          <div style={{display:"flex",gap:6,marginBottom:8}}>
-                            <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(255,255,255,0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
-                              <span>Actual</span>
-                              <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoActualAnualToggle)}/año</span>
-                              <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoActualMes*12)}/año</span>
-                            </button>
-                            <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(255,255,255,0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
-                              <span>Optimizado</span>
-                              <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoOptAnualToggle)}/año</span>
-                              <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoOptMes*12)}/año</span>
-                            </button>
-                          </div>
-                          {/* Mensaje explicativo cuando ambos saldos son cero (caso típico
-                              de retencion mayor al impuesto bruto). Aclara al usuario por
-                              que "Actual" y "Optimizado" muestran el mismo bruto. */}
-                          {ambosSaldosCero && impBrutoActualMes > 0 && (
-                            <div style={{marginBottom:8,padding:"10px 12px",background:"rgba(34,197,94,0.08)",border:"1.5px solid rgba(34,197,94,0.3)",borderRadius:8,fontSize:10,color:T.gn,lineHeight:1.5,fontWeight:600}}>
-                              ✅ Tu saldo a pagar ya es \$0 — la retención del año cubre tu impuesto. El modo Optimizado no aporta diferencia porque las palancas estándar (PV/AFC) no reducen el saldo cuando ya es cero. Incluso podrías recibir devolución.
+                          {/* Modo COMPARATIVO: solo cuando hay ahorro real > \$100K via PV/AFC */}
+                          {mostrarComparativo && (
+                            <div style={{display:"flex",gap:6,marginBottom:8}}>
+                              <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(255,255,255,0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+                                <span>Tu impuesto hoy</span>
+                                <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoActualAnualToggle)}/año</span>
+                                <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoActualMes*12)}/año</span>
+                              </button>
+                              <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(255,255,255,0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+                                <span>Si aplicás PV/AFC</span>
+                                <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoOptAnualToggle)}/año</span>
+                                <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoOptMes*12)}/año</span>
+                              </button>
                             </div>
                           )}
-                          <div style={{background:isOpt?"rgba(34,197,94,0.06)":"rgba(167,139,250,0.06)",borderRadius:10,padding:"12px 14px",border:"1px solid "+(isOpt?"rgba(34,197,94,0.15)":"rgba(167,139,250,0.15)"),marginBottom:8}}>
+                          {/* Modo UNIFICADO: cuando no hay ahorro real adicional, mostrar SOLO
+                              el escenario actual con texto explicativo de que ya esta optimizado. */}
+                          {!mostrarComparativo && (
+                            <div style={{marginBottom:8,padding:"10px 12px",background:"rgba(167,139,250,0.06)",border:"1px solid rgba(167,139,250,0.15)",borderRadius:8,fontSize:10,color:T.txt2,lineHeight:1.5}}>
+                              <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:4}}>📋 Tu impuesto estimado</div>
+                              <div style={{lineHeight:1.5}}>Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos {isJuridica ? "(35% utilidad, ICA, retenciones)" : "(Art. 119, 206, 387, 336 ET)"}. Las palancas estándar (PV/AFC) no aportan ahorro adicional en tu caso. Si querés simular estrategias por fuera del modelo, usá el slider manual abajo.</div>
+                            </div>
+                          )}
+                          <div style={{background:isOptEffectivo?"rgba(34,197,94,0.06)":"rgba(167,139,250,0.06)",borderRadius:10,padding:"12px 14px",border:"1px solid "+(isOptEffectivo?"rgba(34,197,94,0.15)":"rgba(167,139,250,0.15)"),marginBottom:8}}>
                             {/* 3 líneas transparentes: Total / Retención / Saldo */}
                             <div style={{display:"flex",flexDirection:"column",gap:6}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
                                 <div>
                                   <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>{isJuridica ? "🧾 Impuesto corporativo bruto (35% × utilidad)" : "🧾 Impuesto total (tabla progresiva DIAN)"}</div>
-                                  <div style={{fontSize:9,color:T.txt3,marginTop:1}}>{isJuridica ? "Tasa efectiva sobre ingresos: " : "Tasa efectiva sobre ingreso bruto: "}{tasaEfectiva.toFixed(1)}%{isJuridica && grp.tax.baseGravable > 0 && grp.tax.ingreso > 0 && <span> · Utilidad/ingreso: {((grp.tax.baseGravable / grp.tax.ingreso) * 100).toFixed(0)}%</span>}</div>
+                                  <div style={{fontSize:9,color:T.txt3,marginTop:1}}>{isJuridica ? "Tasa efectiva sobre ingresos: " : "Tasa efectiva sobre ingreso bruto: "}{tasaEfectivaEff.toFixed(1)}%{isJuridica && grp.tax.baseGravable > 0 && grp.tax.ingreso > 0 && <span> · Utilidad/ingreso: {((grp.tax.baseGravable / grp.tax.ingreso) * 100).toFixed(0)}%</span>}</div>
                                 </div>
-                                <div style={{fontSize:17,fontWeight:800,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImpAnual)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
+                                <div style={{fontSize:17,fontWeight:800,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                               </div>
                               {reteNMes > 0 && <>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px dashed rgba(255,255,255,0.06)"}}>
@@ -794,53 +809,45 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                                 </div>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
                                   <div style={{fontSize:11,color:T.txt,fontWeight:700}}>📋 Saldo a pagar en declaración</div>
-                                  <div style={{fontSize:16,fontWeight:800,color:saldoAnual===0?T.gn:T.txt}}>{fm(saldoAnual)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
+                                  <div style={{fontSize:16,fontWeight:800,color:saldoAnualEffectivo===0?T.gn:T.txt}}>{fm(saldoAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                                 </div>
-                                {saldoAnual === 0 && simImpAnual > 0 && <div style={{fontSize:10,color:T.gn,fontWeight:600,marginTop:2}}>✅ Los descuentos ya cubren tu impuesto. Incluso podrías recibir devolución.</div>}
+                                {saldoAnualEffectivo === 0 && simImpAnualEffectivo > 0 && <div style={{fontSize:10,color:T.gn,fontWeight:600,marginTop:2}}>✅ Los descuentos ya cubren tu impuesto. Incluso podrías recibir devolución.</div>}
                               </>}
                             </div>
-                            {ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Optimizar ahorra {fm(ahorroOpt)}/año → activa el toggle para ver el impacto en cash flow</div>}
+                            {/* Hint solo aplica en modo comparativo cuando el usuario esta en Actual y hay ahorro real disponible */}
+                            {mostrarComparativo && ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Aplicar PV/AFC ahorra {fm(ahorroOpt)}/año → activá el toggle para ver el impacto en cash flow</div>}
                           </div>
-                          {/* Hint cuando Actual===Optimizado (sin ahorro adicional vía estrategias estándar) */}
-                          {impBrutoActualMes === impBrutoOptMes && impBrutoActualMes > 0 && (
-                            <div style={{marginBottom:6,padding:"8px 12px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:8,fontSize:10,color:"#93c5fd",lineHeight:1.5}}>
-                              ℹ️ {isJuridica
-                                ? "El simulador no aplica automáticamente estrategias corporativas (bonificaciones, donaciones, provisión de cartera, apalancamiento, depreciación acelerada) porque su valor depende de la estructura contable de cada empresa. Por eso 'Actual' y 'Optimizado' muestran lo mismo para jurídica. Usá el slider manual si tu contador identifica estrategias aplicables a tu caso."
-                                : "La optimización estándar (pensión voluntaria + AFC) no aporta ahorro adicional en tu caso — probablemente ya llegaste al tope del 40% o no tenés suficiente ingreso laboral. Usá el slider manual si podés aplicar estrategias fuera del modelo."}
-                            </div>
-                          )}
                           {/* Slider manual — opera sobre el BRUTO (impuesto total anual, no saldo) */}
-                          <div style={{background:(isOpt?T.gn:"#a78bfa")+"08",border:"1px solid "+(isOpt?T.gn:"#a78bfa")+"20",borderRadius:10,padding:"10px 12px"}}>
-                            <div style={{fontSize:10,fontWeight:700,color:isOpt?T.gn:"#a78bfa",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — impuesto total anual</div>
-                            {/* Commit 7 Tarea 3: mensaje educativo cuando el modo Optimizado lleva
-                                el impuesto bruto a $0 (caso de cap 40% Art. 336 saturando todas las
-                                palancas + retenciones cubriendo el impuesto residual). El slider en
-                                este caso esta CORRECTAMENTE en 0 — antes el bug visual del perc=100
-                                hacia parecer que estaba en posicion del Actual. */}
-                            {isOpt && baseMes === 0 && (
+                          <div style={{background:(isOptEffectivo?T.gn:"#a78bfa")+"08",border:"1px solid "+(isOptEffectivo?T.gn:"#a78bfa")+"20",borderRadius:10,padding:"10px 12px"}}>
+                            <div style={{fontSize:10,fontWeight:700,color:isOptEffectivo?T.gn:"#a78bfa",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — simular estrategias adicionales</div>
+                            {/* Commit 7 Tarea 3: mensaje cuando el modo Optimizado lleva el bruto a 0 */}
+                            {isOptEffectivo && baseMesEffectivo === 0 && (
                               <div style={{marginBottom:8,padding:"8px 10px",background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:6,fontSize:10,color:T.gn,lineHeight:1.5,fontWeight:600}}>
-                                ✅ En modo Optimizado, tu impuesto bruto es $0 — las deducciones legales aplicadas (PV/AFC + cap 40% Art. 336 ET) cubren todo. El slider está correctamente en cero.
+                                ✅ Con PV/AFC, tu impuesto bruto es $0 — las deducciones legales (PV/AFC + cap 40% Art. 336 ET) cubren todo. El slider está correctamente en cero.
                               </div>
                             )}
                             <div style={{fontSize:10,color:T.txt3,marginBottom:8,lineHeight:1.5}}>
-                              Movelo hacia abajo si lográs <strong>estrategias adicionales</strong> que el sistema no modela (donaciones, depreciación agresiva, créditos fiscales especiales). {saldoAnual === 0 && simImpAnual > 0 && <span style={{color:"#93c5fd"}}>⚠ Aunque tu saldo en declaración es $0, bajar el total mejora tu cash flow porque pagás menos retención durante el año.</span>}
+                              Movelo hacia abajo si lográs <strong>estrategias adicionales</strong> que el sistema no modela (donaciones, depreciación agresiva, créditos fiscales especiales). {saldoAnualEffectivo === 0 && simImpAnualEffectivo > 0 && <span style={{color:"#93c5fd"}}>⚠ Aunque tu saldo en declaración es $0, bajar el total mejora tu cash flow porque pagás menos retención durante el año.</span>}
                             </div>
-                            <Slider label="" value={simImp} base={baseMes}
-                              max={sliderMax} color={isOpt ? T.gn : "#a78bfa"}
+                            <Slider label="" value={simImpEffectivo} base={baseMesEffectivo}
+                              max={sliderMax} color={isOptEffectivo ? T.gn : "#a78bfa"}
                               onChange={(v) => setVal(`tax_${nameKey}`, v)}
                               sub="" />
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginTop:4,fontSize:11}}>
                               <span style={{color:T.txt3}}>Total anual ajustado:</span>
-                              <span style={{fontWeight:700,color:isOpt?T.gn:"#a78bfa"}}>{fm(simImpAnual)}<span style={{fontSize:9,color:T.txt3,fontWeight:400}}> · {fm(simImp)}/mes</span></span>
+                              <span style={{fontWeight:700,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:9,color:T.txt3,fontWeight:400}}> · {fm(simImpEffectivo)}/mes</span></span>
                             </div>
                           </div>
-                          {ajusteExtra !== 0 && <div style={{marginTop:6,fontSize:10,color:ajusteExtra>0?T.gn:T.or,fontWeight:600,paddingLeft:4}}>
-                            {ajusteExtra > 0
-                              ? `🎯 Ahorro adicional sobre ${isOpt?"Optimizado":"Actual"}: ${fm(ajusteExtra*12)}/año`
-                              : `⚠️ Escenario más conservador: +${fm(Math.abs(ajusteExtra)*12)}/año de impuesto`}
-                          </div>}
+                          {(() => {
+                            const ajusteExtraEff = baseMesEffectivo - simImpEffectivo;
+                            return ajusteExtraEff !== 0 && <div style={{marginTop:6,fontSize:10,color:ajusteExtraEff>0?T.gn:T.or,fontWeight:600,paddingLeft:4}}>
+                              {ajusteExtraEff > 0
+                                ? `🎯 Ahorro adicional con ajuste manual: ${fm(ajusteExtraEff*12)}/año`
+                                : `⚠️ Escenario más conservador: +${fm(Math.abs(ajusteExtraEff)*12)}/año de impuesto`}
+                            </div>;
+                          })()}
                           <div style={{marginTop:6,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4,lineHeight:1.5}}>
-                            {reteNMes > simImp
+                            {reteNMes > simImpEffectivo
                               ? "⚠ Tu retención anual ya supera el impuesto total que debés según tabla. Bajar el slider NO afecta el cash flow del año (la retención ya salió de tu cuenta) — pero sí aumenta la devolución que te llega en la declaración."
                               : isJuridica
                                 ? "Cash flow descuenta el máximo entre impuesto bruto (35% utilidad) y las retenciones recibidas — lo que realmente salió del flujo del año."
