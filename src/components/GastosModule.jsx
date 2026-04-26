@@ -454,6 +454,35 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       💰 Monto calculado: {fm(form.tasaModo === "anual" ? (Number(form.capital) * Number(form.tasa) / 100) / 12 : Number(form.capital) * Number(form.tasa) / 100)} / mes
                     </div>
                   )}
+                  {/* Commit E: warning si capital muy bajo (<$10K) */}
+                  {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
+                    <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 11, color: T.red, lineHeight: 1.5 }}>
+                      ⚠️ El capital es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString()}). ¿Faltan ceros? Si el valor es correcto, ignorá este aviso.
+                    </div>
+                  )}
+                  {/* Commit E: validacion de tasa absurda */}
+                  {(() => {
+                    const tas = Number(form.tasa) || 0;
+                    if (tas <= 0) return null;
+                    const tm = form.tasaModo || "mensual";
+                    const altoRojo = tm === "mensual" ? tas > 10 : tas > 100;
+                    const altoNaranja = tm === "mensual" ? tas > 5 : tas > 50;
+                    if (altoRojo) {
+                      return (
+                        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 11, color: T.red, lineHeight: 1.5 }}>
+                          ⚠️ Tasa muy alta: {tas}% {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
+                        </div>
+                      );
+                    }
+                    if (altoNaranja) {
+                      return (
+                        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.25)", borderRadius: 8, fontSize: 11, color: "#f97316", lineHeight: 1.5 }}>
+                          🟠 Tasa alta: {tas}% {tm}. Verificá que la periodicidad ({tm}) sea correcta.
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
               <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => {

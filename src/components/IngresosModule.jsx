@@ -500,6 +500,31 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       ⚠️ El capital invertido es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString()}). ¿Faltan ceros? Un capital típico de inversión es &gt;$100.000. Si el valor es correcto, ignorá este aviso.
                     </div>
                   )}
+                  {/* Commit E: validacion de tasa absurda (warning, no bloqueo) */}
+                  {(() => {
+                    const tas = Number(form.tasa) || 0;
+                    if (tas <= 0) return null;
+                    const tm = form.tasaModo || "anual";
+                    // Umbrales: anual > 100% o mensual > 10% = error probable (rojo)
+                    //          anual > 50%  o mensual > 5%  = revisar (naranja)
+                    const altoRojo = tm === "mensual" ? tas > 10 : tas > 100;
+                    const altoNaranja = tm === "mensual" ? tas > 5 : tas > 50;
+                    if (altoRojo) {
+                      return (
+                        <div style={{marginTop:10,padding:"10px 12px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,fontSize:11,color:T.red,lineHeight:1.5}}>
+                          ⚠️ Tasa muy alta: {tas}% {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambiá la periodicidad arriba si es el caso.
+                        </div>
+                      );
+                    }
+                    if (altoNaranja) {
+                      return (
+                        <div style={{marginTop:10,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.25)",borderRadius:8,fontSize:11,color:T.orange,lineHeight:1.5}}>
+                          🟠 Rentabilidad alta: {tas}% {tm}. Verificá que la periodicidad ({tm}) sea correcta. Rentabilidades de mercado típicas: 8-20% anual.
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
             </div>
