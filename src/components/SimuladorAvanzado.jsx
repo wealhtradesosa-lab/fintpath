@@ -36,7 +36,17 @@ const LEVELS = [
 const fadeStyle = typeof document !== "undefined" ? (() => { const s = document.createElement("style"); s.textContent = "@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}"; if (!document.querySelector("[data-finpath-anim]")) { s.setAttribute("data-finpath-anim","1"); document.head.appendChild(s); } return null; })() : null;
 
 function Slider({ label, value, base, max, color, onChange, sub }) {
-  const perc = base > 0 ? Math.round((value / base) * 100) : 100;
+  // Commit 7 Tarea 3 (BUG FIX reportado): cuando base=0 (escenario tipico:
+  // owner cuyo Optimizado real es \$0 porque el cap 40% Art. 336 satura
+  // todas las palancas), el codigo legacy forzaba perc=100, sugiriendo
+  // visualmente que "el slider sigue cobrando como el actual" cuando en
+  // realidad value=0 era correcto. Ahora:
+  //   - base > 0: porcentaje relativo al baseline (caso normal)
+  //   - base = 0 y value = 0: 0% (slider esta en cero, mostrar cero)
+  //   - base = 0 y value > 0: porcentaje relativo a max (excedente sobre cero)
+  const perc = base > 0
+    ? Math.round((value / base) * 100)
+    : (value === 0 ? 0 : (max > 0 ? Math.round((value / max) * 100) : 0));
   const diff = value - base;
   return (
     <div style={{ marginBottom: 4, background: color + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + color }}>
@@ -774,6 +784,16 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                           {/* Slider manual — opera sobre el BRUTO (impuesto total anual, no saldo) */}
                           <div style={{background:(isOpt?T.gn:"#a78bfa")+"08",border:"1px solid "+(isOpt?T.gn:"#a78bfa")+"20",borderRadius:10,padding:"10px 12px"}}>
                             <div style={{fontSize:10,fontWeight:700,color:isOpt?T.gn:"#a78bfa",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — impuesto total anual</div>
+                            {/* Commit 7 Tarea 3: mensaje educativo cuando el modo Optimizado lleva
+                                el impuesto bruto a $0 (caso de cap 40% Art. 336 saturando todas las
+                                palancas + retenciones cubriendo el impuesto residual). El slider en
+                                este caso esta CORRECTAMENTE en 0 — antes el bug visual del perc=100
+                                hacia parecer que estaba en posicion del Actual. */}
+                            {isOpt && baseMes === 0 && (
+                              <div style={{marginBottom:8,padding:"8px 10px",background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:6,fontSize:10,color:T.gn,lineHeight:1.5,fontWeight:600}}>
+                                ✅ En modo Optimizado, tu impuesto bruto es $0 — las deducciones legales aplicadas (PV/AFC + cap 40% Art. 336 ET) cubren todo. El slider está correctamente en cero.
+                              </div>
+                            )}
                             <div style={{fontSize:10,color:T.txt3,marginBottom:8,lineHeight:1.5}}>
                               Movelo hacia abajo si lográs <strong>estrategias adicionales</strong> que el sistema no modela (donaciones, depreciación agresiva, créditos fiscales especiales). {saldoAnual === 0 && simImpAnual > 0 && <span style={{color:"#93c5fd"}}>⚠ Aunque tu saldo en declaración es $0, bajar el total mejora tu cash flow porque pagás menos retención durante el año.</span>}
                             </div>
