@@ -131,10 +131,33 @@ const sS=async(d,uid)=>{
     if(isSupabaseConfigured&&uid){
       clearTimeout(_svT);
       _svT=setTimeout(async()=>{
-        try{await supabase.from("user_data").upsert({id:uid,data:d,jurisdiction:d.jurisdiction||"CO",updated_at:new Date().toISOString()},{onConflict:"id"})}catch{}
+        // Commit 12 Tarea 3 (BUG REPORTADO: 'no quedan guardados'): el catch
+        // silencioso original ocultaba errores del upsert. Si Supabase rechazaba
+        // el guardado (RLS, schema mismatch, tamaño), el usuario veia "✅ Guardado"
+        // pero los datos nunca llegaban al backend. Al recargar la pagina se
+        // perdian. Ahora hacemos visible el error y el estado al window para
+        // diagnostico inmediato.
+        try{
+          const result=await supabase.from("user_data").upsert(
+            {id:uid,data:d,jurisdiction:d.jurisdiction||"CO",updated_at:new Date().toISOString()},
+            {onConflict:"id"}
+          );
+          if(result.error){
+            console.error("[fp3] Supabase upsert ERROR:",result.error);
+            window.__fp3LastSaveError=result.error;
+            // Toast visible al usuario para que sepa que hay un problema
+            try{const ev=new CustomEvent("fp3-save-error",{detail:result.error});window.dispatchEvent(ev)}catch{}
+          }else{
+            window.__fp3LastSaveOk=new Date().toISOString();
+          }
+        }catch(e){
+          console.error("[fp3] Supabase upsert EXCEPTION:",e);
+          window.__fp3LastSaveError=e;
+          try{const ev=new CustomEvent("fp3-save-error",{detail:e});window.dispatchEvent(ev)}catch{}
+        }
       },2000);
     }
-  }catch{}
+  }catch(e){console.error("[fp3] localStorage save ERROR:",e)}
 };
 const mkU=(n,e)=>({p:{name:n,email:e,plan:"free"},trm:4200,inv:[],deu:[],gas:{},ibk:[],ingresos:[],pen:{age:35,rAge:60,sv:2500,cur:120000,ret:7,inf:3,des:6000,btcC:56,btcP:50000},metas:[]});
 
@@ -296,6 +319,22 @@ export default function FinPath(){
     if(!targetId)return;
     sS(u,targetId);
   },[u]);
+
+  // Commit 12 Tarea 3: listener de errores de Supabase para hacer visible al
+  // usuario cuando un guardado falla. Antes el catch silencioso ocultaba el
+  // problema y el usuario veia "✅ Guardado" sin que los datos llegaran al
+  // backend. Al recargar la pagina se perdian.
+  useEffect(()=>{
+    const handler=(e)=>{
+      const err=e.detail;
+      const msg=err?.message||err?.code||String(err);
+      console.error("[fp3] Save error caught by listener:",err);
+      setToast(`⚠️ Error guardando: ${msg.slice(0,80)}. Revisa la consola.`);
+      setTimeout(()=>setToast(""),8000);
+    };
+    window.addEventListener("fp3-save-error",handler);
+    return ()=>window.removeEventListener("fp3-save-error",handler);
+  },[]);
 
 
   // Session timeout — lock after 15 min inactivity
