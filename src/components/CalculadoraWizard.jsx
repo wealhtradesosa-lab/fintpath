@@ -1176,72 +1176,95 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
 
   if (!det) return null;
 
+  // Camino 1.5: montos máximos teóricos por deducción (para mostrar el tamaño del beneficio).
+  const MAX_DEP = Math.round(384 * UVT_2026);                      // $20.1M (10% lab, máx 384 UVT)
+  const MAX_MEDICINA = Math.round(16 * UVT_2026 * 12);             // $10.05M (16 UVT/mes)
+  const MAX_VIVIENDA = Math.round(1200 * UVT_2026);                // $62.85M (1.200 UVT/año)
+  const MAX_PV_AFC = Math.round(3800 * UVT_2026);                  // $199.02M conjunto
+
+  // Helper: ejecutar scroll suave a un id dentro del Paso 3 (mismo wizard step).
+  const scrollTo = (id) => {
+    const el = typeof document !== "undefined" ? document.getElementById(id) : null;
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Cada item tiene:
+  //   valor: monto aplicado en COP
+  //   montoMaximoTexto: descripción del beneficio máximo posible (Camino 1.5)
+  //   ctaTexto: botón fuerte cuando $0
+  //   linkTexto: link discreto cuando aplicada
+  //   accion: { tipo: "scroll" | "navigate", target: id }
   const items = [
     {
       key: "dep",
       icono: "👨‍👩‍👧",
       label: "Dependientes",
-      art: "Art. 387 ET",
-      topeMensual: `Tope: 10% ingreso, máx 384 UVT/año (~$${Math.round(384 * UVT_2026 / 1_000_000)}M)`,
+      art: "Art. 387 #2 ET",
+      topeMensual: `Tope: 10% ingreso, máx 384 UVT/año (~$${Math.round(MAX_DEP / 1_000_000)}M)`,
       valor: det.deducDep || 0,
-      cta: null,
-      hint: (det.deducDep || 0) > 0 ? "Aplicado según wizard" : "Cargá cantidad en este Paso 3 abajo",
+      montoMaximoTexto: `Hasta $${(MAX_DEP / 1_000_000).toFixed(1)}M/año si tenés al menos 1 dependiente (10% del ingreso laboral, máx 384 UVT). Sube a $${(MAX_DEP * 2 / 1_000_000).toFixed(1)}M si hay discapacidad certificada.`,
+      ctaTexto: "→ Declarar dependientes",
+      linkTexto: "Modificar dependientes →",
+      accion: { tipo: "scroll", target: "ajustes-fiscales" },
     },
     {
       key: "medicina",
       icono: "💊",
-      label: "Medicina prepagada",
+      label: "Medicina prepagada / salud / vida",
       art: "Art. 387 #2 ET",
-      topeMensual: `Tope: 16 UVT/mes (~$${Math.round(16 * UVT_2026 / 1000)}k/mes)`,
+      topeMensual: `Tope: 16 UVT/mes (~$${Math.round(16 * UVT_2026 / 1000)}k/mes, $${(MAX_MEDICINA / 1_000_000).toFixed(1)}M/año)`,
       valor: det.deducMedicina || 0,
-      cta: (det.deducMedicina || 0) === 0 ? "→ Cargar en Egresos" : null,
-      navTarget: "egresos",
-      hint: (det.deducMedicina || 0) > 0
-        ? "Detectado en módulo Egresos (categoría Salud o Aporte tributario)"
-        : "Cargá tu pago mensual en Egresos como 'Aporte tributario → Salud prepagada'",
+      montoMaximoTexto: `Hasta $${(MAX_MEDICINA / 1_000_000).toFixed(1)}M/año combinando medicina prepagada + seguros de salud + seguros de vida. Tope conjunto 16 UVT/mes.`,
+      ctaTexto: "→ Cargar en Egresos",
+      linkTexto: "Modificar en Egresos →",
+      accion: { tipo: "navigate", target: "egresos" },
     },
     {
       key: "vivienda",
       icono: "🏠",
       label: "Intereses de vivienda",
       art: "Art. 119 ET",
-      topeMensual: `Tope: 100 UVT/mes, 1.200 UVT/año (~$${Math.round(1200 * UVT_2026 / 1_000_000)}M)`,
+      topeMensual: `Tope: 100 UVT/mes, 1.200 UVT/año (~$${(MAX_VIVIENDA / 1_000_000).toFixed(1)}M)`,
       valor: det.deducVivienda || 0,
-      cta: (det.deducVivienda || 0) === 0 ? "→ Cargar en Deudas" : null,
-      navTarget: "deudas",
-      hint: (det.deducVivienda || 0) > 0
-        ? "Detectado en módulo Deudas (hipoteca vivienda)"
-        : "Si tenés hipoteca, cargala en Deudas como 'Vivienda habitación'. El motor lee los intereses pagados.",
+      montoMaximoTexto: `Hasta $${(MAX_VIVIENDA / 1_000_000).toFixed(1)}M/año de intereses si tenés crédito hipotecario sobre tu vivienda de habitación. El motor lee los intereses pagados según tasa y saldo.`,
+      ctaTexto: "→ Cargar en Deudas",
+      linkTexto: "Modificar deuda →",
+      accion: { tipo: "navigate", target: "deudas" },
     },
     {
       key: "pv",
       icono: "🏛️",
       label: "Pensión Voluntaria (PV)",
       art: "Art. 126-1 ET",
-      topeMensual: "Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año",
+      topeMensual: `Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año (~$${(MAX_PV_AFC / 1_000_000).toFixed(0)}M)`,
       valor: det.pensionVol || 0,
-      cta: (det.pensionVol || 0) === 0 ? "→ Cargar en Egresos" : null,
-      navTarget: "egresos",
-      hint: (det.pensionVol || 0) > 0
-        ? "Detectado en módulo Egresos (Aporte tributario → PV)"
-        : "Si haces aportes a Pensión Voluntaria (fondos privados), cargalos en Egresos.",
+      montoMaximoTexto: `Aportes 100% deducibles, tope conjunto con AFC del 30% del ingreso laboral o $${(MAX_PV_AFC / 1_000_000).toFixed(0)}M/año (lo menor). Si retirás antes de 10 años para algo distinto a vivienda, perdés el beneficio.`,
+      ctaTexto: "→ Cargar en Egresos",
+      linkTexto: "Modificar PV →",
+      accion: { tipo: "navigate", target: "egresos" },
     },
     {
       key: "afc",
       icono: "💰",
       label: "AFC (Ahorro Fomento Construcción)",
       art: "Art. 126-4 ET",
-      topeMensual: "Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año. Si retirás antes de 10 años para algo distinto a vivienda, pierde el beneficio.",
+      topeMensual: `Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año (~$${(MAX_PV_AFC / 1_000_000).toFixed(0)}M)`,
       valor: det.afc || 0,
-      cta: (det.afc || 0) === 0 ? "→ Cargar en Egresos" : null,
-      navTarget: "egresos",
-      hint: (det.afc || 0) > 0
-        ? "Detectado en módulo Egresos (Aporte tributario → AFC)"
-        : "Si tenés cuenta AFC, cargá los aportes mensuales en Egresos.",
+      montoMaximoTexto: `Aportes 100% deducibles, tope conjunto con PV. Si retirás antes de 10 años para algo distinto a vivienda, perdés el beneficio.`,
+      ctaTexto: "→ Cargar en Egresos",
+      linkTexto: "Modificar AFC →",
+      accion: { tipo: "navigate", target: "egresos" },
     },
   ];
 
   const fmt = (n) => "$" + Math.round((Number(n) || 0) / 1_000_000 * 10) / 10 + "M";
+
+  // Camino 1.5: handler unificado de acción según tipo (scroll dentro del paso o navigate al módulo).
+  const handleAccion = (accion) => {
+    if (!accion) return;
+    if (accion.tipo === "scroll") scrollTo(accion.target);
+    else if (accion.tipo === "navigate" && onNavigate) onNavigate(accion.target);
+  };
 
   return (
     <div style={{ background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
@@ -1254,7 +1277,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
           <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
             Estas son las deducciones legales que el motor está aplicando o puede aplicar para vos.
             Cada una tiene un tope legal del Estatuto Tributario.
-            <strong style={{ color: T.txt2 }}> Si una está en $0 pero te aplica, te indico dónde cargarla.</strong>
+            <strong style={{ color: T.txt2 }}> Si una está en $0 te indico cuánto podrías ahorrar y dónde activarla.</strong>
           </div>
         </div>
       </div>
@@ -1262,36 +1285,63 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {items.map((it) => {
           const aplicada = it.valor > 0;
+          // Camino 1.5: dos modos visuales claros.
+          //   APLICADA: borde + fondo verde, valor mostrado, link discreto "Modificar →"
+          //   $0:       borde + fondo naranja con header ⚠️, monto máximo, botón fuerte
+          if (aplicada) {
+            return (
+              <div key={it.key} style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 8, padding: 12 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <span style={{ fontSize: 18, flexShrink: 0, marginTop: 2 }}>{it.icono}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between", marginBottom: 4, flexWrap: "wrap" }}>
+                      <div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: T.green }}>✓ {it.label}</span>
+                        <span style={{ fontSize: 9, color: T.txt3, marginLeft: 8 }}>{it.art}</span>
+                      </div>
+                      <span style={{ ...F.mono, fontSize: 12, color: T.green, fontWeight: 700 }}>{fmt(it.valor)}</span>
+                    </div>
+                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginBottom: 6 }}>
+                      {it.topeMensual}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleAccion(it.accion)}
+                      style={{ background: "transparent", border: "none", color: T.blue, fontSize: 10, fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                    >
+                      {it.linkTexto}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          // NO aplicada (en $0): tarjeta de oportunidad con CTA fuerte
           return (
-            <div key={it.key} style={{ background: aplicada ? "rgba(34,197,94,0.06)" : T.bg3, border: "1px solid " + (aplicada ? "rgba(34,197,94,0.2)" : T.border), borderRadius: 8, padding: 12 }}>
+            <div key={it.key} style={{ background: "rgba(249,115,22,0.05)", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 8, padding: 12 }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <span style={{ fontSize: 18, flexShrink: 0, marginTop: 2 }}>{it.icono}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between", marginBottom: 4, flexWrap: "wrap" }}>
                     <div>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: aplicada ? T.green : T.txt2 }}>
-                        {aplicada ? "✓ " : "○ "}{it.label}
-                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: T.txt2 }}>○ {it.label}</span>
                       <span style={{ fontSize: 9, color: T.txt3, marginLeft: 8 }}>{it.art}</span>
                     </div>
-                    <span style={{ ...F.mono, fontSize: 12, color: aplicada ? T.green : T.txt3, fontWeight: 700 }}>
-                      {aplicada ? fmt(it.valor) : "$0"}
-                    </span>
+                    <span style={{ ...F.mono, fontSize: 12, color: T.txt3, fontWeight: 700 }}>$0</span>
                   </div>
-                  <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginBottom: 4 }}>
-                    {it.topeMensual}
+                  <div style={{ fontSize: 10, color: T.orange, fontWeight: 700, marginBottom: 6, lineHeight: 1.4 }}>
+                    ⚠️ Esta deducción está disponible y no la estás aplicando
                   </div>
-                  <div style={{ fontSize: 10, color: aplicada ? T.txt2 : T.txt3, lineHeight: 1.4, marginBottom: it.cta ? 6 : 0 }}>
-                    {it.hint}
+                  <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5, marginBottom: 8 }}>
+                    {it.montoMaximoTexto}
                   </div>
-                  {it.cta && onNavigate && (
-                    <button
-                      onClick={() => onNavigate(it.navTarget)}
-                      style={{ padding: "4px 10px", background: "transparent", border: "1px solid " + T.blue, color: T.blue, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}
-                    >
-                      {it.cta}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleAccion(it.accion)}
+                    style={{ padding: "8px 14px", background: T.orange, border: "none", color: "#fff", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    {it.ctaTexto}
+                  </button>
                 </div>
               </div>
             </div>
@@ -1335,7 +1385,9 @@ function Paso3Situacion({ user, selectedOwner, onUpdateProfile, onUpdateOwner, o
           <RegimenSelector selectedOwner={selectedOwner} onUpdateOwner={onUpdateOwner} ownerType="natural" ingresoBrutoAnual={ingresoBrutoAnual} />
           <HonorariosGastosPanel user={user} selectedOwner={selectedOwner} onNavigate={onNavigate} />
           <DeduccionesNaturalesPanel user={user} selectedOwner={selectedOwner} onNavigate={onNavigate} />
-          <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
+          <div id="ajustes-fiscales">
+            <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
+          </div>
         </>
       )}
       <NavButtons currentStep={2} onBack={onBack} onNext={onNext} />
