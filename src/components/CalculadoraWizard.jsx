@@ -668,9 +668,39 @@ const REGIMENES_JURIDICA = [
   },
 ];
 
-function RegimenSelector({ selectedOwner, onUpdateOwner }) {
+// Commit B3 (F del plan): regímenes elegibles para persona natural (Art. 905 ET).
+// Solo Ordinario (Cédula General) y Régimen Simple. Las naturales no califican
+// para Zona Franca, CHC ni Exenta.
+const REGIMENES_NATURAL = [
+  {
+    id: "ordinario",
+    label: "Ordinario (Cédula General)",
+    tarifa: "0% – 39%",
+    descripcion: "Régimen ordinario por cédulas. Tabla progresiva Art. 241 ET. Permite todas las deducciones legales (PV, AFC, dependientes, salud, vivienda, etc.).",
+    art: "Arts. 241, 336 ET",
+  },
+  {
+    id: "simple",
+    label: "Régimen Simple (RST)",
+    tarifa: "1.2% – 8.3%",
+    descripcion: "Régimen simplificado para profesionales independientes y comerciantes con ingresos < 100.000 UVT/año (~$5.240M). Sustituye renta + ICA + INC. NO permite las deducciones del régimen ordinario.",
+    art: "Arts. 903-916 ET",
+  },
+];
+
+function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica", ingresoBrutoAnual = 0 }) {
   const regimenActual = selectedOwner?.regimen || "ordinario";
   const grupoActual = selectedOwner?.simpleGrupo || null;
+  // Commit B3: elegir lista de regímenes según tipo de owner.
+  // Naturales: solo Ordinario y Simple (Art. 905 ET).
+  // Jurídicas: Ordinario, Simple, ZF, CHC, Exenta.
+  const regimenes = ownerType === "natural" ? REGIMENES_NATURAL : REGIMENES_JURIDICA;
+
+  // Commit B3: validación de elegibilidad para Régimen Simple (Art. 905 ET).
+  // Tope: 100.000 UVT/año de ingresos brutos. Aplica tanto a naturales como jurídicas.
+  const TOPE_SIMPLE_UVT = 100_000;
+  const ingresoBrutoEnUVT = ingresoBrutoAnual / UVT;
+  const superaTopeSimple = ingresoBrutoEnUVT > TOPE_SIMPLE_UVT;
 
   const setRegimen = (regimen) => {
     // Si cambia desde simple a otro régimen, limpia el grupo.
@@ -701,8 +731,10 @@ function RegimenSelector({ selectedOwner, onUpdateOwner }) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {REGIMENES_JURIDICA.map((r) => {
+        {regimenes.map((r) => {
           const sel = regimenActual === r.id;
+          // Commit B3: deshabilitar Simple si supera tope UVT (informativo, no bloqueante)
+          const noElegible = r.id === "simple" && superaTopeSimple;
           return (
             <button
               key={r.id}
@@ -712,11 +744,12 @@ function RegimenSelector({ selectedOwner, onUpdateOwner }) {
                 textAlign: "left",
                 padding: "12px 14px",
                 background: sel ? "rgba(167,139,250,0.08)" : T.bg3,
-                border: "2px solid " + (sel ? T.purple : T.border),
+                border: "2px solid " + (sel ? T.purple : (noElegible ? "rgba(239,68,68,0.3)" : T.border)),
                 borderRadius: 8,
                 cursor: "pointer",
                 color: T.txt,
                 transition: "all 0.15s",
+                opacity: noElegible && !sel ? 0.7 : 1,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
@@ -729,6 +762,11 @@ function RegimenSelector({ selectedOwner, onUpdateOwner }) {
                 {r.descripcion}
               </div>
               <div style={{ fontSize: 9, color: T.txt3, fontStyle: "italic" }}>{r.art}</div>
+              {noElegible && (
+                <div style={{ fontSize: 10, color: T.red, marginTop: 6, fontWeight: 600 }}>
+                  ⚠️ Tus ingresos brutos ({ingresoBrutoEnUVT.toFixed(0)} UVT/año) superan el tope de 100.000 UVT (~${(TOPE_SIMPLE_UVT * UVT / 1_000_000).toFixed(0)}M COP). No sos elegible para Régimen Simple.
+                </div>
+              )}
             </button>
           );
         })}
@@ -1271,6 +1309,12 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
 
 function Paso3Situacion({ user, selectedOwner, onUpdateProfile, onUpdateOwner, onBack, onNext, onNavigate }) {
   const isJur = selectedOwner?.type === "juridica";
+  // Commit B3: calcular ingreso bruto anual del owner para validación UVT del Régimen Simple.
+  // Suma de ingresos mensuales activos × 12, convirtiendo USD a COP con TRM si aplica.
+  const trm = Number(user?.trm) || 4200;
+  const ingresoBrutoAnual = (user?.ingresos || [])
+    .filter(i => i.owner === selectedOwner?.id && i.sim !== false)
+    .reduce((s, i) => s + ((Number(i.mensual) || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
   return (
     <div>
       <PasoHeader
@@ -1282,11 +1326,12 @@ function Paso3Situacion({ user, selectedOwner, onUpdateProfile, onUpdateOwner, o
       />
       {isJur ? (
         <>
-          <RegimenSelector selectedOwner={selectedOwner} onUpdateOwner={onUpdateOwner} />
+          <RegimenSelector selectedOwner={selectedOwner} onUpdateOwner={onUpdateOwner} ownerType="juridica" ingresoBrutoAnual={ingresoBrutoAnual} />
           <DescuentosTributariosForm selectedOwner={selectedOwner} onUpdateProfile={onUpdateProfile} />
         </>
       ) : (
         <>
+          <RegimenSelector selectedOwner={selectedOwner} onUpdateOwner={onUpdateOwner} ownerType="natural" ingresoBrutoAnual={ingresoBrutoAnual} />
           <HonorariosGastosPanel user={user} selectedOwner={selectedOwner} onNavigate={onNavigate} />
           <DeduccionesNaturalesPanel user={user} selectedOwner={selectedOwner} onNavigate={onNavigate} />
           <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
