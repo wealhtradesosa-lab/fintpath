@@ -113,7 +113,7 @@ function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ibcFuturo, iblPr
     pensionBruta, pensionTope, pensionAplicada, descuentoSalud, pensionNeta, pensionFinal,
     semanasTotales, semanasExtra, semanasQueFaltan, bloques50, pctDescuento,
     cumpleSemanas, cumpleRequisitos,
-    aniosFaltantes, mesesFaltantes, total20Anios, IBL, saltoIBC: typeof saltoIBC !== "undefined" ? saltoIBC : 1, edadJub, pensionMinima,
+    aniosFaltantes, mesesFaltantes, total20Anios, saltoIBC: typeof saltoIBC !== "undefined" ? saltoIBC : 1, edadJub, pensionMinima,
   };
 }
 
