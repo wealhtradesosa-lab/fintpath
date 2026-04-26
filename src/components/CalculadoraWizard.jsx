@@ -936,6 +936,176 @@ function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// HONORARIOS - GASTOS DEDUCIBLES — Solo naturales con honorarios (Commit A Fase 3)
+// ═══════════════════════════════════════════════════════════════════════════
+// Muestra al usuario natural con ingresos por honorarios:
+//   - Honorarios brutos anuales
+//   - Gastos deducibles cargados (suma efectiva tras topes)
+//   - Ratio gastos/honorarios con alerta visual (verde/amarilla/roja)
+//   - CTA para cargar gastos en Egresos si no tiene
+//
+// El motor (Commit A Fase 1) aplica:
+//   - Vehículo al 50% conservador (uso mixto)
+//   - Representación con tope rígido 10% (Art. 107-1)
+//   - Resto 100% si está marcado con causalidad
+//   - Alerta amarilla si ratio > 60%, roja si > 80%
+function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
+  const det = useMemo(() => {
+    const e = estimarImpuesto(user);
+    return (e?.detalle || []).find((d) => d.name === selectedOwner?.name);
+  }, [user, selectedOwner]);
+
+  if (!det) return null;
+  const honorariosBruto = Number(det.honorariosBruto || 0);
+  // Sólo aparece si el owner tiene honorarios cargados
+  if (honorariosBruto === 0) return null;
+
+  const gastosHon = Number(det.gastosHonorariosDed || 0);
+  const honorariosNeto = Number(det.honorariosNeto || honorariosBruto);
+  const ratio = honorariosBruto > 0 ? gastosHon / honorariosBruto : 0;
+  const alerta = det.alertaHonorarios; // null | "amarilla" | "roja"
+  const desglose = det.gastosHonorariosDesglose || {};
+
+  // Formato monetario
+  const fmtM = (n) => "$" + (Math.round((Number(n) || 0) / 100_000) / 10).toFixed(1) + "M";
+  const fmtPct = (n) => Math.round(n * 1000) / 10 + "%";
+
+  // Color del banner según alerta
+  const tono = alerta === "roja"
+    ? { bg: "rgba(239,68,68,0.06)", border: "rgba(239,68,68,0.25)", text: T.red, icon: "🚨", label: "Riesgo alto de revisión DIAN" }
+    : alerta === "amarilla"
+    ? { bg: "rgba(249,115,22,0.06)", border: "rgba(249,115,22,0.25)", text: T.orange, icon: "⚠️", label: "Zona de atención" }
+    : gastosHon > 0
+    ? { bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.20)", text: T.green, icon: "✓", label: "Estructura saludable" }
+    : { bg: "rgba(99,102,241,0.06)", border: "rgba(99,102,241,0.20)", text: T.blue, icon: "💡", label: "Sin gastos cargados" };
+
+  // Categorías con monto > 0 para mostrar desglose
+  const itemsDesglose = [
+    { key: "segSocial", label: "Seguridad social independiente", art: "Art. 126-1", monto: desglose.segSocial },
+    { key: "nominaTerceros", label: "Nómina/honorarios a terceros", art: "Art. 107", monto: desglose.nominaTerceros },
+    { key: "oficina", label: "Arriendo oficina/coworking", art: "Art. 107", monto: desglose.oficina },
+    { key: "serviciosOficina", label: "Servicios públicos oficina", art: "Art. 107", monto: desglose.serviciosOficina },
+    { key: "internetTel", label: "Internet/telefonía profesional", art: "Art. 107", monto: desglose.internetTel },
+    { key: "materiales", label: "Materiales y suministros", art: "Art. 107", monto: desglose.materiales },
+    { key: "vehiculoAplicado", label: "Vehículo (al 50%)", art: "Art. 107", monto: desglose.vehiculoAplicado, bruto: desglose.vehiculoBruto },
+    { key: "viajes", label: "Viajes con propósito", art: "Art. 107", monto: desglose.viajes },
+    { key: "representacionAplicado", label: "Representación (tope 10%)", art: "Art. 107-1", monto: desglose.representacionAplicado, bruto: desglose.representacionBruto, tope: desglose.representacionTope },
+    { key: "capacitacion", label: "Capacitación profesional", art: "Art. 107", monto: desglose.capacitacion },
+    { key: "otros", label: "Otros con causalidad", art: "Art. 107", monto: desglose.otros },
+  ].filter((i) => Number(i.monto || 0) > 0);
+
+  return (
+    <div style={{ background: "rgba(99,102,241,0.04)", border: "1px solid rgba(99,102,241,0.18)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
+        <span style={{ fontSize: 20 }}>📋</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
+            Honorarios y gastos de actividad (Art. 107 ET)
+          </div>
+          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+            Como persona natural con honorarios, los gastos legítimos de tu actividad
+            (oficina, internet, viajes, etc.) reducen la base gravable.
+            <strong style={{ color: T.txt2 }}> Cargá los gastos en el módulo Egresos y marcalos como "actividad por honorarios".</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Header con cifras principales */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 12 }}>
+        <div style={{ background: T.bg2, padding: 10, borderRadius: 8 }}>
+          <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>
+            Honorarios brutos
+          </div>
+          <div style={{ ...F.mono, fontSize: 14, fontWeight: 700, color: T.txt }}>{fmtM(honorariosBruto)}</div>
+        </div>
+        <div style={{ background: T.bg2, padding: 10, borderRadius: 8 }}>
+          <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>
+            Gastos deducibles
+          </div>
+          <div style={{ ...F.mono, fontSize: 14, fontWeight: 700, color: gastosHon > 0 ? T.green : T.txt3 }}>−{fmtM(gastosHon)}</div>
+        </div>
+        <div style={{ background: T.bg2, padding: 10, borderRadius: 8 }}>
+          <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>
+            Honorarios netos
+          </div>
+          <div style={{ ...F.mono, fontSize: 14, fontWeight: 700, color: T.txt }}>{fmtM(honorariosNeto)}</div>
+        </div>
+        <div style={{ background: T.bg2, padding: 10, borderRadius: 8 }}>
+          <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>
+            Ratio gastos
+          </div>
+          <div style={{ ...F.mono, fontSize: 14, fontWeight: 700, color: tono.text }}>{fmtPct(ratio)}</div>
+        </div>
+      </div>
+
+      {/* Banner de estado / alerta */}
+      <div style={{ background: tono.bg, border: `1px solid ${tono.border}`, borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: tono.text, marginBottom: 4 }}>
+          {tono.icon} {tono.label}
+        </div>
+        <div style={{ fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
+          {alerta === "roja" && (
+            <>El ratio gastos/honorarios supera el 80%. Esto puede activar revisión DIAN. Asegurate de tener documentación impecable de cada gasto (facturas, comprobantes, notas de causalidad).</>
+          )}
+          {alerta === "amarilla" && (
+            <>El ratio gastos/honorarios está entre 60% y 80%. Es estadísticamente alto pero defendible. Revisá que cada gasto cumpla causalidad, necesidad y proporcionalidad (Art. 107 ET).</>
+          )}
+          {!alerta && gastosHon > 0 && (
+            <>Tus gastos de actividad están dentro de un rango razonable. El motor descontó {fmtM(gastosHon)} del ingreso por honorarios antes de aplicar la cédula laboral.</>
+          )}
+          {!alerta && gastosHon === 0 && (
+            <>Tenés honorarios por {fmtM(honorariosBruto)} pero ningún gasto de actividad cargado. Si tenés arriendo de oficina, internet profesional, viajes con clientes, etc., podés deducirlos legalmente bajo el Art. 107 ET.</>
+          )}
+        </div>
+      </div>
+
+      {/* Desglose si hay gastos */}
+      {itemsDesglose.length > 0 && (
+        <details style={{ marginBottom: 12 }}>
+          <summary style={{ cursor: "pointer", fontSize: 11, color: T.txt2, fontWeight: 600, padding: "6px 0" }}>
+            ▾ Desglose por categoría ({itemsDesglose.length})
+          </summary>
+          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+            {itemsDesglose.map((it) => (
+              <div key={it.key} style={{ background: T.bg2, padding: "8px 10px", borderRadius: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: T.txt2 }}>{it.label}</div>
+                  <div style={{ fontSize: 9, color: T.txt3 }}>{it.art}</div>
+                  {it.bruto != null && it.bruto !== it.monto && (
+                    <div style={{ fontSize: 9, color: T.txt3, marginTop: 2 }}>
+                      Bruto: {fmtM(it.bruto)} · {it.tope ? `tope ${fmtM(it.tope)}` : "aplicado al 50%"}
+                    </div>
+                  )}
+                </div>
+                <div style={{ ...F.mono, fontSize: 12, color: T.green, fontWeight: 700, whiteSpace: "nowrap" }}>
+                  {fmtM(it.monto)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {/* CTA si no hay gastos cargados */}
+      {gastosHon === 0 && onNavigate && (
+        <button
+          onClick={() => onNavigate("gas")}
+          style={{ width: "100%", padding: "10px 14px", background: "transparent", border: `1px solid ${T.blue}`, color: T.blue, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+        >
+          → Cargar gastos de actividad en Egresos
+        </button>
+      )}
+
+      <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+        <strong style={{ color: T.txt2 }}>⚖️ Art. 107 ET:</strong> los gastos deben tener
+        causalidad, necesidad y proporcionalidad con tu actividad. Mantené facturas y
+        comprobantes para sustentar cada deducción si la DIAN los requiere.
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // DEDUCCIONES NATURALES — Panel informativo (Commit 9.15, Fase 2)
 // ═══════════════════════════════════════════════════════════════════════════
 // Las deducciones de personas naturales (medicina prepagada, intereses
@@ -1110,6 +1280,7 @@ function Paso3Situacion({ user, selectedOwner, onUpdateProfile, onUpdateOwner, o
         </>
       ) : (
         <>
+          <HonorariosGastosPanel user={user} selectedOwner={selectedOwner} onNavigate={onNavigate} />
           <DeduccionesNaturalesPanel user={user} selectedOwner={selectedOwner} onNavigate={onNavigate} />
           <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
         </>
