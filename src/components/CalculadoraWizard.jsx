@@ -181,14 +181,13 @@ function getHintContextual(det, owner) {
   const tieneSalario = Number(det.ingLaboral || 0) > 0;
   const isJur = owner?.type === "juridica";
 
-  // Caso 1: optimizado = actual y no hay base laboral → no aplica PV/AFC
-  if (impAct > 0 && ahorro === 0 && !tieneSalario && !isJur) {
-    return {
-      tono: "info",
-      icono: "💡",
-      texto: "Sin ingresos laborales para aplicar PV/AFC. La optimización requiere salario u honorarios como base.",
-    };
-  }
+  // Caso 1: ELIMINADO en Camino A — el modo unificado de la ficha ya cubre el
+  // caso "Sin optimizar == Optimizado" con texto honesto. Mostrar aquí "Sin
+  // ingresos laborales para PV/AFC" era engañoso porque hacía pensar que no
+  // había nada que hacer cuando en realidad hay otras palancas (Régimen Simple,
+  // donaciones, gastos del inmueble, etc.) que se muestran en el panel de
+  // oportunidades.
+  void tieneSalario; void isJur; // mantenidos por si caso 2 quiere afinarse
 
   // Caso 2: hay ahorro real → mostrar magnitud y mecanismo
   if (ahorro > 1_000_000) {
@@ -1542,19 +1541,30 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
         </div>
       </div>
 
-      {/* Números grandes */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 14 }}>
-        <div style={{ padding: 16, background: T.bg3, border: "2px solid " + T.border, borderRadius: 12, textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Sin optimizar</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>{fm(impActual)}</div>
-          <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${((impActual / det.ingreso) * 100).toFixed(1)}% de tus ingresos` : ""}</div>
+      {/* Números grandes — Camino A: modo honesto */}
+      {ahorro > 100_000 ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 14 }}>
+          <div style={{ padding: 16, background: T.bg3, border: "2px solid " + T.border, borderRadius: 12, textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Tu impuesto hoy</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>{fm(impActual)}</div>
+            <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${((impActual / det.ingreso) * 100).toFixed(1)}% de tus ingresos` : ""}</div>
+          </div>
+          <div style={{ padding: 16, background: "rgba(34,197,94,0.08)", border: "2px solid " + T.green, borderRadius: 12, textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: T.green, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Si aplicás PV/AFC al máximo</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>{fm(impOpt)}</div>
+            <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${((impOpt / det.ingreso) * 100).toFixed(1)}% de tus ingresos` : ""}</div>
+          </div>
         </div>
-        <div style={{ padding: 16, background: "rgba(34,197,94,0.08)", border: "2px solid " + T.green, borderRadius: 12, textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: T.green, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Con optimización máxima</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>{fm(impOpt)}</div>
-          <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${((impOpt / det.ingreso) * 100).toFixed(1)}% de tus ingresos` : ""}</div>
+      ) : (
+        <div style={{ padding: 18, background: T.bg3, border: "2px solid " + T.border, borderRadius: 12, textAlign: "center", marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Tu impuesto estimado</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: T.txt, fontFamily: "monospace" }}>{fm(impActual)}</div>
+          <div style={{ fontSize: 10, color: T.txt3, marginTop: 6 }}>{det.ingreso > 0 ? `${((impActual / det.ingreso) * 100).toFixed(1)}% de tus ingresos` : ""}</div>
+          <div style={{ fontSize: 11, color: T.txt2, marginTop: 14, lineHeight: 1.5, maxWidth: 480, margin: "14px auto 0", fontStyle: "italic" }}>
+            Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos. Para reducir más, revisá el plan de acción abajo.
+          </div>
         </div>
-      </div>
+      )}
 
       {ahorro > 1_000_000 && (
         <div style={{ padding: "12px 16px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 10, marginBottom: 14, textAlign: "center" }}>
@@ -1801,22 +1811,38 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                   <span style={{ fontSize: 9, color: estadoColor, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>{estadoLabel}</span>
                 </div>
 
-                {/* Cifras compactas en lista vertical (no grid 3 cols) */}
+                {/* Camino A: cifras honestas. Cuando "Sin optimizar" == "Optimizado",
+                    mostrar UN solo número con texto explicativo. Cuando hay ahorro real
+                    por palanca opcional (ej: PV/AFC), mostrar comparación con nombres claros. */}
                 {det ? (
-                  <div style={{ background: T.bg2, borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ fontSize: 10, color: T.txt3 }}>Sin optimizar</span>
-                      <span style={{ ...F.mono, fontSize: 12, color: T.red }}>{fm(impActual)}</span>
+                  ahorro > 100_000 ? (
+                    // Modo comparativo: hay ahorro real por palanca opcional
+                    <div style={{ background: T.bg2, borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                        <span style={{ fontSize: 10, color: T.txt3 }}>Tu impuesto hoy</span>
+                        <span style={{ ...F.mono, fontSize: 12, color: T.red }}>{fm(impActual)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                        <span style={{ fontSize: 10, color: T.txt3 }}>Si aplicás PV/AFC</span>
+                        <span style={{ ...F.mono, fontSize: 12, color: T.green }}>{fm(impOpt)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingTop: 4, borderTop: "1px dashed " + T.border }}>
+                        <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>Ahorro potencial</span>
+                        <span style={{ ...F.mono, fontSize: 13, color: T.green }}>+{fm(ahorro)}</span>
+                      </div>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ fontSize: 10, color: T.txt3 }}>Optimizado</span>
-                      <span style={{ ...F.mono, fontSize: 12, color: T.green }}>{fm(impOpt)}</span>
+                  ) : (
+                    // Modo unificado: el motor ya aplicó todas las deducciones automáticas
+                    <div style={{ background: T.bg2, borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                        <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>Tu impuesto estimado</span>
+                        <span style={{ ...F.mono, fontSize: 14, color: T.txt }}>{fm(impActual)}</span>
+                      </div>
+                      <div style={{ fontSize: 9, color: T.txt3, lineHeight: 1.4, fontStyle: "italic" }}>
+                        Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos.
+                      </div>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingTop: 4, borderTop: "1px dashed " + T.border }}>
-                      <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>Ahorro</span>
-                      <span style={{ ...F.mono, fontSize: 13, color: ahorro > 0 ? T.green : T.txt3 }}>{ahorro > 0 ? "+" + fm(ahorro) : "—"}</span>
-                    </div>
-                  </div>
+                  )
                 ) : (
                   <div style={{ fontSize: 10, color: T.txt3, fontStyle: "italic", padding: "4px 0" }}>
                     {estado === "sin_datos" ? "Sin ingresos registrados" : "Sin cálculo disponible"}
@@ -1993,18 +2019,34 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div>
-                  <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Sin optimizar</div>
-                  <div style={{ ...F.mono, fontSize: 18, color: T.red }}>{fm(totales.impActual)}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Optimizado</div>
-                  <div style={{ ...F.mono, fontSize: 18, color: T.green }}>{fm(totales.impOpt)}</div>
-                </div>
-                <div style={{ paddingTop: 10, borderTop: "1px solid rgba(34,197,94,0.2)" }}>
-                  <div style={{ fontSize: 9, color: T.green, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3, fontWeight: 700 }}>Ahorro potencial</div>
-                  <div style={{ ...F.mono, fontSize: 22, color: totales.ahorro > 0 ? T.green : T.txt3 }}>{totales.ahorro > 0 ? "+" + fm(totales.ahorro) : "—"}</div>
-                </div>
+                {/* Camino A: si el ahorro agregado es significativo, modo comparativo;
+                    si no, modo unificado con texto honesto. */}
+                {totales.ahorro > 100_000 ? (
+                  <>
+                    <div>
+                      <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Tu impuesto hoy</div>
+                      <div style={{ ...F.mono, fontSize: 18, color: T.red }}>{fm(totales.impActual)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Si aplicás PV/AFC</div>
+                      <div style={{ ...F.mono, fontSize: 18, color: T.green }}>{fm(totales.impOpt)}</div>
+                    </div>
+                    <div style={{ paddingTop: 10, borderTop: "1px solid rgba(34,197,94,0.2)" }}>
+                      <div style={{ fontSize: 9, color: T.green, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3, fontWeight: 700 }}>Ahorro potencial</div>
+                      <div style={{ ...F.mono, fontSize: 22, color: T.green }}>+{fm(totales.ahorro)}</div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Tu impuesto estimado</div>
+                      <div style={{ ...F.mono, fontSize: 22, color: T.txt }}>{fm(totales.impActual)}</div>
+                    </div>
+                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.5, fontStyle: "italic", paddingTop: 6 }}>
+                      Ya con todas las deducciones automáticas que el motor pudo aplicar. Para reducir más, revisá el plan de acción de cada responsable.
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
