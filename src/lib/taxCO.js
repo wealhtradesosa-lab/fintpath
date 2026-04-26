@@ -31,6 +31,8 @@ import {
   AP_TRIB_PV, AP_TRIB_AFC, AP_TRIB_SALUD_PREPAGADA,
   // Commit honorarios: gastos deducibles de actividad independiente (Art. 107)
   GASTOS_HONORARIOS, GAS_HON_REPRESENTACION, GAS_HON_VEHICULO,
+  // Commit B2: seguros (Art. 387 #2 para salud/vida; resto no deducibles natural)
+  SEG_SALUD, SEG_VIDA, GAS_INMUEBLE_SEGUROS,
 } from "./fiscalCodes.js";
 import { TABLA_ART_241, calcImpRenta as calcImpRentaCore } from "./tablaArt241.js";
 import { GRUPOS_SIMPLE as SIMPLE_GRUPOS, calcularImpuestoSimple as calcularImpSimple } from "./regimenSimple.js";
@@ -485,7 +487,10 @@ export const estimarImpuesto = (u) => {
       // gastos médicos genéricos (consultas, medicinas) y la salud prepagada vivirá
       // exclusivamente en "Aporte tributario".
       const gastoSaludPrepagadaNueva = oGas.filter(g => g.fiscalCode === AP_TRIB_SALUD_PREPAGADA).reduce((s, g) => s + (g.m || 0), 0) * 12;
-      const gastoSalud = gastoSaludTradicional + gastoSaludPrepagadaNueva;
+      // Commit B2: seguros de salud y vida también entran al mismo tope (Art. 387 #2 ET).
+      // Sumamos SEG_SALUD y SEG_VIDA al gastoSalud antes de aplicar el tope conjunto.
+      const gastoSegSaludVida = oGas.filter(g => g.fiscalCode === SEG_SALUD || g.fiscalCode === SEG_VIDA).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastoSalud = gastoSaludTradicional + gastoSaludPrepagadaNueva + gastoSegSaludVida;
       const deducMedicina = Math.min(gastoSalud, 16 * UVT * 12);
 
       const interesesHipBruto = oDeu.reduce((s, d) => {
@@ -548,9 +553,15 @@ export const estimarImpuesto = (u) => {
       // ── 4. RENTAS NO LABORALES ──
       // Gastos del inmueble arrendado: deducibles al 100% cuando cumplen
       // causalidad, necesidad y proporcionalidad con el ingreso (Art. 107 ET).
-      // Predial, administración, mantenimiento, seguros y servicios son gastos
-      // típicos que sí cumplen.
-      const gastosInmueble = oGas.filter(g => ["Predial", "Mantenimiento", "Vivienda", "Seguros", "Servicios"].includes(g.cat)).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      // Predial, administración, mantenimiento y servicios son gastos típicos
+      // que sí cumplen.
+      // Commit B2: los seguros se manejan por fiscalCode específico para no
+      // contaminar este bloque. Solo GAS_INMUEBLE_SEGUROS cuenta acá. Items
+      // legacy con cat="Seguros" sin fiscalCode son tratados como SEG_GENERICO
+      // (no deducibles, criterio conservador) y NO entran al gastosInmueble.
+      const gastosInmuebleBase = oGas.filter(g => ["Predial", "Mantenimiento", "Vivienda", "Servicios"].includes(g.cat)).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastosInmuebleSeguros = oGas.filter(g => g.fiscalCode === GAS_INMUEBLE_SEGUROS).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastosInmueble = gastosInmuebleBase + gastosInmuebleSeguros;
       const rentaLiqNoLaboral = Math.max(0, ingNoLaboral - gastosInmueble);
 
       // ── 5. DIVIDENDOS (tarifa especial Art. 242 ET) ──

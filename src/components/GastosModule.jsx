@@ -407,6 +407,38 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 );
               })()}
 
+              {/* Commit B2: sub-selector cuando categoría = "Seguros". Discrimina tipos
+                  de seguro porque NO todos son deducibles (Art. 387 #2 ET salud y vida sí;
+                  vehículo y hogar NO para persona natural). */}
+              {form.cat === "Seguros" && (() => {
+                const currentFC = form.fiscalCode || "SEG_GENERICO";
+                const opts = [
+                  { v: "SEG_SALUD", l: "🏥 Seguro de salud — deducible (Art. 387 #2)" },
+                  { v: "SEG_VIDA", l: "❤️ Seguro de vida — deducible (Art. 387 #2)" },
+                  { v: "GAS_INMUEBLE_SEGUROS", l: "🏘️ Seguro del inmueble arrendado — deducible si tenés arriendos" },
+                  { v: "SEG_VEHICULO", l: "🚗 Seguro de vehículo — NO deducible (persona natural)" },
+                  { v: "SEG_HOGAR", l: "🏠 Seguro de hogar — NO deducible (persona natural)" },
+                  { v: "SEG_GENERICO", l: "❓ Otro / Sin clasificar — NO deducible por defecto" },
+                ];
+                const help = currentFC === "SEG_SALUD" || currentFC === "SEG_VIDA"
+                  ? "Entra al tope de 16 UVT/mes (~$839K) compartido con medicina prepagada y gastos médicos."
+                  : currentFC === "GAS_INMUEBLE_SEGUROS"
+                  ? "Solo se deduce si el owner tiene ingresos por arriendo de inmueble. Cae al 100% sobre la renta no laboral."
+                  : currentFC === "SEG_VEHICULO" || currentFC === "SEG_HOGAR"
+                  ? "Para persona natural NO es deducible. Sólo en jurídica con causalidad probada (Art. 107 ET)."
+                  : "Default conservador. Si tenés un seguro deducible, especificá el tipo correcto.";
+                return (
+                  <div style={{gridColumn:"1/-1",background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#22c55e",marginBottom:8}}>🛡️ ¿Qué tipo de seguro es?</div>
+                    <select value={currentFC} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
+                      style={{width:"100%",background:"#1e1e24",border:"1px solid rgba(255,255,255,0.06)",color:"#fafafa",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}>
+                      {opts.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                    </select>
+                    <div style={{fontSize:10,color:"#a1a1aa",marginTop:8,lineHeight:1.5}}>{help}</div>
+                  </div>
+                );
+              })()}
+
               {/* Toggle modo: valor fijo vs capital × tasa */}
               <div style={{ gridColumn: "1/-1", background: T.bg3, borderRadius: 10, padding: "8px", display: "flex", gap: 6, marginTop: 4, marginBottom: 4 }}>
                 <button type="button" onClick={() => setForm(p => ({ ...p, montoModo: "fijo" }))}

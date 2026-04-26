@@ -53,6 +53,21 @@ export const GAS_NAT_DEPENDIENTES            = "GAS_NAT_DEPENDIENTES";
 export const GAS_NAT_PERSONAL                = "GAS_NAT_PERSONAL";
 export const GAS_NAT_AHORRO                  = "GAS_NAT_AHORRO";
 
+// ─── SEGUROS (Commit B2) ──────────────────────────────────────────────────
+// Distinción por tipo. Para persona natural:
+//   SEG_SALUD, SEG_VIDA: deducibles Art. 387 #2 (entran al tope 16 UVT/mes
+//                        compartido con medicina prepagada)
+//   SEG_VEHICULO, SEG_HOGAR: NO deducibles (no cumplen Art. 107 ET salvo
+//                            causalidad probada con actividad por honorarios)
+//   SEG_GENERICO: default conservador para items legacy sin clasificar →
+//                 NO deducible hasta que el usuario lo re-categorice
+// Para seguro del inmueble arrendado se usa el ya existente GAS_INMUEBLE_SEGUROS.
+export const SEG_SALUD                       = "SEG_SALUD";       // Salud individual (Art. 387 #2 — tope 16 UVT/mes con medicina prepagada)
+export const SEG_VIDA                        = "SEG_VIDA";        // Vida (Art. 387 #2 — mismo tope que salud)
+export const SEG_VEHICULO                    = "SEG_VEHICULO";    // Vehículo (NO deducible natural)
+export const SEG_HOGAR                       = "SEG_HOGAR";       // Hogar (NO deducible natural)
+export const SEG_GENERICO                    = "SEG_GENERICO";    // Default conservador (legacy, sin clasificar)
+
 // ─── APORTES TRIBUTARIOS (Commit 1.6) ────────────────────────────────────
 // Egresos que reducen la base gravable de persona natural. Shape nuevo:
 // viven en el módulo de Egresos con categoría "Aporte tributario".
@@ -186,6 +201,12 @@ export const FISCAL_CODE_META = {
   [GAS_NAT_DEPENDIENTES]:         { kind: "gasto", scope: "natural", label: "Evidencia dependientes",      et: "Art. 387 (10% lab, tope 384 UVT)" },
   [GAS_NAT_PERSONAL]:             { kind: "gasto", scope: "natural", label: "Personal (no deducible)",     et: "—" },
   [GAS_NAT_AHORRO]:               { kind: "gasto", scope: "natural", label: "Ahorro (no deducible)",       et: "—" },
+  // Seguros (Commit B2)
+  [SEG_SALUD]:                    { kind: "gasto", scope: "natural", label: "Seguro de salud",            et: "Art. 387 #2 (tope 16 UVT/mes)" },
+  [SEG_VIDA]:                     { kind: "gasto", scope: "natural", label: "Seguro de vida",             et: "Art. 387 #2 (tope 16 UVT/mes)" },
+  [SEG_VEHICULO]:                 { kind: "gasto", scope: "natural", label: "Seguro de vehículo",         et: "NO deducible natural" },
+  [SEG_HOGAR]:                    { kind: "gasto", scope: "natural", label: "Seguro de hogar",            et: "NO deducible natural" },
+  [SEG_GENERICO]:                 { kind: "gasto", scope: "natural", label: "Seguro sin clasificar",      et: "NO deducible (especificá tipo)" },
   // Gastos inmueble arrendado
   [GAS_INMUEBLE_PREDIAL]:         { kind: "gasto", scope: "inmueble", label: "Predial inmueble arrendado", et: "Art. 107" },
   [GAS_INMUEBLE_MANTENIMIENTO]:   { kind: "gasto", scope: "inmueble", label: "Mantenimiento inmueble",     et: "Art. 107" },
@@ -259,4 +280,9 @@ export const INGRESOS_DIVIDENDOS = [DIV_ART49_NO_GRAVADOS, DIV_ART49_GRAVADOS, D
 export const INGRESOS_APLICA_COMPONENTE_INFLACIONARIO = [CAP_INTERESES_BANCARIOS, CAP_FIC, CAP_RENDIMIENTO_GENERICO];
 export const GASTOS_INMUEBLE_ARRENDADO = [GAS_INMUEBLE_PREDIAL, GAS_INMUEBLE_MANTENIMIENTO, GAS_INMUEBLE_ADMINISTRACION, GAS_INMUEBLE_SERVICIOS, GAS_INMUEBLE_SEGUROS, GAS_INMUEBLE_DEPRECIACION];
 export const GASTOS_HONORARIOS = [GAS_HON_SEG_SOCIAL, GAS_HON_NOMINA_TERCEROS, GAS_HON_OFICINA, GAS_HON_SERVICIOS_OFICINA, GAS_HON_INTERNET_TELEFONIA, GAS_HON_MATERIALES, GAS_HON_VEHICULO, GAS_HON_VIAJES, GAS_HON_REPRESENTACION, GAS_HON_CAPACITACION, GAS_HON_OTROS];
+// Commit B2: seguros que entran al tope 16 UVT/mes (Art. 387 #2 ET) junto con
+// medicina prepagada y gastos médicos tradicionales. Para persona natural.
+export const SEGUROS_DEDUCIBLES_NATURAL = [SEG_SALUD, SEG_VIDA];
+// Seguros que NO son deducibles para persona natural (vehículo, hogar, sin clasificar)
+export const SEGUROS_NO_DEDUCIBLES_NATURAL = [SEG_VEHICULO, SEG_HOGAR, SEG_GENERICO];
 export const INVERSIONES_DEPRECIABLES = Object.entries(FISCAL_CODE_META).filter(([,m]) => m.kind === "inversion" && m.deprecia).map(([k]) => k);
