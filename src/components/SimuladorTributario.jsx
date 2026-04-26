@@ -161,6 +161,35 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         </div>
       )}
 
+      {/* Resumen 3 líneas: Total bruto + Retención estimada + Saldo a pagar */}
+      {(() => {
+        const impBrutoVal = Number(calc.impBruto) || 0;
+        const retencionEstimada = Number(isJ ? calc.retefuenteCalc : calc.retefuenteNat) || 0;
+        const saldoAPagar = Math.max(0, impBrutoVal - retencionEstimada);
+        if (impBrutoVal <= 0) return null;
+        return (
+          <div style={{ padding: mb ? "12px 16px" : "14px 24px", borderBottom: "1px solid " + T.border, background: "rgba(34,197,94,0.02)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr 1fr 1fr", gap: mb ? 8 : 12 }}>
+              <div>
+                <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>Total bruto / año</div>
+                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 800, color: T.txt, fontFamily: "monospace" }}>{fm(impBrutoVal)}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>(−) Retención estimada</div>
+                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 800, color: T.blue, fontFamily: "monospace" }}>{retencionEstimada > 0 ? fm(retencionEstimada) : "$0"}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>(=) Saldo a pagar</div>
+                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 800, color: saldoAPagar > 0 ? T.orange : T.green, fontFamily: "monospace" }}>{fm(saldoAPagar)}</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 8, fontSize: 9, color: T.txt3, lineHeight: 1.5, fontStyle: "italic" }}>
+              Retención estimada según tarifas legales (Art. 383-401 ET) por tipo de ingreso: salario tabla progresiva Art. 383, honorarios 11% Art. 392, arriendo 3,5% Art. 401, rendimientos/dividendos 7% Art. 392-395. Verificá con tu certificado de retención del año.
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Banner diagnóstico para jurídicas con impuesto alto: detecta
           condiciones típicas de data incompleta. Guardas estrictas para
           no romper si calc/inv/deu llegan en un estado inesperado. */}
