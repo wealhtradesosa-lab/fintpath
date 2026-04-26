@@ -1717,8 +1717,103 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 // consolidado al final. Permite entrar a calcular uno específico o empezar
 // uno nuevo.
 // ═══════════════════════════════════════════════════════════════════════════
-function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, onNavigate, onMarcarCompletoOwner }) {
+function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, onNavigate, onMarcarCompletoOwner, onUserUpdate }) {
   const estimacion = useMemo(() => estimarImpuesto(user), [user]);
+
+  // ── Commit 6 Tarea 3: BANNER DE MIGRACIÓN DE CESANTÍAS ─────────────────
+  // El Commit 4 introdujo auto-creación de cesantías cuando el usuario carga
+  // un salario nuevo. Pero los usuarios existentes (que ya tenían salario
+  // cargado antes) no se benefician retroactivamente. Este banner detecta
+  // owners en esa situación y les ofrece agregar cesantías con un click.
+  //
+  // Lógica de detección (universal, no específica):
+  //   - Owner es persona NATURAL
+  //   - Tiene al menos un item LAB_SALARIO
+  //   - Al menos uno de esos salarios tiene tipoVinculacion="ordinario"
+  //     (el default — usuarios legacy también caen aquí)
+  //   - El owner NO tiene cesantías cargadas (LAB_PRESTACIONES_CESANTIAS)
+  //
+  // El banner desaparece naturalmente cuando:
+  //   - Usuario clickea "Sí, agregar" → crea cesantías → condición de
+  //     detección ya no se cumple
+  //   - Usuario clickea "Salario integral" → cambia tipoVinculacion="integral"
+  //     → condición ya no se cumple
+  //   - Usuario clickea "No aplican" → cambia tipoVinculacion="no_aplica"
+  //     → condición ya no se cumple
+  //   - Usuario clickea "Cerrar" → dismiss en sessionStorage hasta refresh
+  const ownersConSalarioSinCesantias = useMemo(() => {
+    return (owners || []).filter(o => {
+      if (o.type !== "natural") return false;
+      const salariosOwner = (user.ingresos || []).filter(i => i.owner === o.id && i.fiscalCode === "LAB_SALARIO" && i.sim !== false);
+      if (!salariosOwner.length) return false;
+      // Solo si al menos uno está como "ordinario" (default o explícito)
+      const algunoOrdinario = salariosOwner.some(s => (s.tipoVinculacion || "ordinario") === "ordinario");
+      if (!algunoOrdinario) return false;
+      // Y NO tiene ya cesantías cargadas
+      const tieneCesantias = (user.ingresos || []).some(i => i.owner === o.id && i.fiscalCode === "LAB_PRESTACIONES_CESANTIAS" && i.sim !== false);
+      return !tieneCesantias;
+    });
+  }, [owners, user.ingresos]);
+
+  const [bannerCesantiasDismissed, setBannerCesantiasDismissed] = useState(() => {
+    try { return sessionStorage.getItem("fp3_bannerCesantiasMig") === "true"; } catch { return false; }
+  });
+  const dismissBannerCesantias = () => {
+    setBannerCesantiasDismissed(true);
+    try { sessionStorage.setItem("fp3_bannerCesantiasMig", "true"); } catch {}
+  };
+
+  // Acción: crear cesantías auto-generadas para todos los owners detectados
+  const accionAgregarCesantias = () => {
+    if (!onUserUpdate) return;
+    const nuevasCesantias = ownersConSalarioSinCesantias.flatMap(o => {
+      const salariosOwner = (user.ingresos || []).filter(i => i.owner === o.id && i.fiscalCode === "LAB_SALARIO" && i.sim !== false);
+      // Una sola entrada de cesantías por owner (suma los salarios si tiene más de uno)
+      const totalSalarioMensual = salariosOwner.reduce((s, x) => s + (Number(x.mensual) || 0), 0);
+      if (totalSalarioMensual <= 0) return [];
+      return [{
+        id: "ing_" + Date.now() + "_" + o.id,
+        nombre: `Cesantías + intereses (estimadas, ${o.name})`,
+        categoria: "Cesantías",
+        fiscalCode: "LAB_PRESTACIONES_CESANTIAS",
+        mensual: Math.round(totalSalarioMensual * 1.12 / 12),
+        tipo: "fijo",
+        moneda: "COP",
+        owner: o.id,
+        autoGenerado: true,
+        salarioOrigenId: salariosOwner[0].id,
+        fuente: "Auto-generado por banner de migración Commit 6",
+      }];
+    });
+    onUserUpdate({ ...user, ingresos: [...(user.ingresos || []), ...nuevasCesantias] });
+  };
+
+  // Acción: marcar todos los salarios de owners detectados como "integral"
+  const accionMarcarIntegral = () => {
+    if (!onUserUpdate) return;
+    const idsAfectados = new Set(ownersConSalarioSinCesantias.map(o => o.id));
+    const nuevosIngresos = (user.ingresos || []).map(i => {
+      if (idsAfectados.has(i.owner) && i.fiscalCode === "LAB_SALARIO") {
+        return { ...i, tipoVinculacion: "integral" };
+      }
+      return i;
+    });
+    onUserUpdate({ ...user, ingresos: nuevosIngresos });
+  };
+
+  // Acción: marcar como "no aplica" (honorarios, prestación de servicios, etc)
+  const accionMarcarNoAplica = () => {
+    if (!onUserUpdate) return;
+    const idsAfectados = new Set(ownersConSalarioSinCesantias.map(o => o.id));
+    const nuevosIngresos = (user.ingresos || []).map(i => {
+      if (idsAfectados.has(i.owner) && i.fiscalCode === "LAB_SALARIO") {
+        return { ...i, tipoVinculacion: "no_aplica" };
+      }
+      return i;
+    });
+    onUserUpdate({ ...user, ingresos: nuevosIngresos });
+  };
+  // ── Fin Commit 6 ───────────────────────────────────────────────────────
 
   // Tarea 2 (Camino 1): cuando "Sin optimizar" == "Optimizado", mostrar recomendaciones
   // del módulo recomendaciones.js. Cubre todas las palancas reales del ET (PV/AFC,
@@ -1777,6 +1872,65 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
         titulo={titulo}
         descripcion={descripcion}
       />
+
+      {/* Commit 6 Tarea 3: Banner migración cesantías para usuarios existentes.
+          Aparece SOLO si:
+            - Hay al menos 1 owner natural con salario "ordinario" sin cesantías
+            - El usuario no clickeó "Cerrar" en esta sesión
+          Desaparece naturalmente al elegir cualquier acción real. */}
+      {!bannerCesantiasDismissed && ownersConSalarioSinCesantias.length > 0 && (
+        <div style={{ background: "rgba(34,197,94,0.06)", border: "1.5px solid rgba(34,197,94,0.3)", borderRadius: 12, padding: "16px 18px", marginBottom: 16, position: "relative" }}>
+          <button
+            onClick={dismissBannerCesantias}
+            aria-label="Cerrar banner"
+            style={{ position: "absolute", top: 10, right: 12, background: "transparent", border: "none", color: T.txt3, fontSize: 18, cursor: "pointer", lineHeight: 1, padding: 4 }}
+          >×</button>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>💵</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#22c55e", marginBottom: 4 }}>
+                Detectamos {ownersConSalarioSinCesantias.length === 1 ? "un salario sin cesantías cargadas" : `${ownersConSalarioSinCesantias.length} salarios sin cesantías cargadas`}
+              </div>
+              <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+                Las cesantías son <strong>renta exenta del Art. 206 #4 ET</strong> con tope variable según salario. Muchos usuarios las olvidan y pagan más impuesto del que deben. Te ayudamos a cargarlas si aplica a tu caso.
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de owners afectados (cuando son varios) */}
+          {ownersConSalarioSinCesantias.length > 1 && (
+            <div style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, padding: "8px 10px", marginBottom: 10, fontSize: 11, color: T.txt2 }}>
+              <strong>Afectados:</strong> {ownersConSalarioSinCesantias.map(o => o.name).join(", ")}
+            </div>
+          )}
+
+          {/* 3 acciones */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              onClick={accionAgregarCesantias}
+              style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+            >
+              ✓ Sí, agregar cesantías estimadas
+            </button>
+            <button
+              onClick={accionMarcarIntegral}
+              style={{ background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)", color: "#a855f7", padding: "8px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+            >
+              Tengo salario integral (ya incluidas)
+            </button>
+            <button
+              onClick={accionMarcarNoAplica}
+              style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.4)", color: "#6366f1", padding: "8px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+            >
+              No aplica (honorarios / otro)
+            </button>
+          </div>
+
+          <div style={{ marginTop: 10, fontSize: 10, color: T.txt3, fontStyle: "italic", lineHeight: 1.4 }}>
+            💡 La estimación se basa en 1 mes de salario al año + 12% de intereses (1.12 sueldos anuales). Podés modificar o eliminar el item después.
+          </div>
+        </div>
+      )}
 
       {/* Layout: flex con wrap para que en mobile la columna derecha pase debajo,
           en desktop quede a la derecha. minWidth en cada columna evita overflow. */}
@@ -2217,6 +2371,7 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
           <VistaResumenMultiOwner
             user={user}
             owners={owners}
+            onUserUpdate={onUserUpdate}
             onSelectOwner={(ownerId) => {
               setSelectedOwnerId(ownerId);
               setCurrentStep(1); // ir directo a Paso 2 (tus datos) ya que el owner está elegido
