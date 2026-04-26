@@ -72,6 +72,14 @@ const REGLA_POR_FISCAL_CODE = {
   // Gastos juridica
   "GAS_JUR_DEDUCIBLE":           { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Gasto deducible con causalidad" },
   "GAS_JUR_NO_DEDUCIBLE":        { txt: "❌ No deducible", color: "#71717a", help: "Gasto sin causalidad probada" },
+  // Commit 17 Tarea 3: fiscalCodes de juridica con sus reglas reales
+  "GAS_JUR_NOMINA":              { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Nómina + prestaciones de empleados — deducible 100%" },
+  "GAS_JUR_PARAFISCALES":        { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Parafiscales (SENA, ICBF, Cajas) — deducible 100%" },
+  "GAS_JUR_HONORARIOS_PROF":     { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Honorarios profesionales (contador, abogado, etc.) — deducible 100%" },
+  "GAS_JUR_OPERATIVO":           { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Gasto operativo con causalidad — deducible 100%" },
+  "GAS_JUR_PREDIAL":             { txt: "✅ 100% Art. 115", color: "#22c55e", help: "Predial pagado por la empresa — deducible 100% (Art. 115 ET)" },
+  "GAS_JUR_DEPRECIACION":        { txt: "✅ 100% Art. 128-141", color: "#22c55e", help: "Depreciación de activos productivos — deducible según vida útil fiscal" },
+  "GAS_JUR_CAPACITACION":        { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Capacitación de empleados — deducible 100%" },
   // Personal
   "GAS_NAT_PERSONAL":            { txt: "❌ No deducible", color: "#71717a", help: "Gasto personal — no cumple Art. 107 ET" },
 };
@@ -94,12 +102,6 @@ function reglaItem(item, owners) {
   // Fallback final: solo cuando no hay forma de derivar
   return { txt: "— sin clasificar", color: "#71717a", help: "Edita este item y elegí la clasificación fiscal correspondiente" };
 }
-
-// Tabla legacy SOLO para owner juridica. Para natural ya usamos reglaItem(...)
-// que lee el fiscalCode real. Refactor de juridica queda pendiente.
-const DIAN_REGLAS = {
-  juridica: { "Aporte tributario": "⚠️ Sólo natural", "Nómina": "✅ Deducible", "Honorarios": "✅ Deducible", "Vivienda": "✅ Deducible", "Servicios": "✅ Deducible", "Mantenimiento": "✅ Deducible", "Seguros": "✅ Deducible", "Transporte": "✅ Deducible", "Arrendamiento": "✅ Deducible", "Predial": "✅ Deducible", "Representación": "✅ Deducible", "Tecnología": "✅ Deducible", "Educación": "✅ Deducible", "Seguridad Social": "✅ Deducible", "Depreciación": "✅ Deducible", "Salud": "❌", "Alimentación": "❌", "Entretenimiento": "❌", "Personal": "❌", "Vestimenta": "❌", "Mascotas": "❌", "Deporte": "❌", "Ahorro": "❌", "Otro": "📊 50%" }
-};
 
 // Sub-opciones de fiscalCode según (owner type, categoría). Si la combinación
 // no aparece aquí, no hay ambigüedad y el fiscalCode se infiere automático.
@@ -431,16 +433,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 <td style={{ padding: "10px 14px", fontSize: 10 }}>
                   {(()=>{
                     if(!item.owner || item.owner==="" || item.owner==="na") return <span style={{color:"#71717a"}}>—</span>;
-                    const ow = (owners||[]).find(o=>o.id===item.owner);
-                    // Commit 14 Tarea 3: leer fiscalCode REAL del item para natural.
-                    // Para juridica seguimos con el mapeo legacy por categoria
-                    // (refactor de juridica queda para commit posterior).
-                    if (ow?.type === "juridica") {
-                      const regla = DIAN_REGLAS.juridica?.[item.cat] || "❌";
-                      const color = regla.includes("✅") ? "#22c55e" : regla.includes("📊") ? "#eab308" : "#71717a";
-                      return <span style={{color,fontWeight:600}} title="Clasificación según categoría (jurídica)">{regla}</span>;
-                    }
-                    // Natural: usar fiscalCode real del item
+                    // Commit 17 Tarea 3: jurídica también usa reglaItem para coherencia
+                    // total. La migración silenciosa interna deriva fiscalCode si falta.
                     const r = reglaItem(item, owners);
                     if (!r) return <span style={{color:"#71717a"}}>—</span>;
                     return <span style={{color: r.color, fontWeight: 600}} title={r.help}>{r.txt}</span>;
