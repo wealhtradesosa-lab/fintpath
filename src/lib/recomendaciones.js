@@ -109,7 +109,7 @@ function recomendacionesNatural(user, ow, det) {
   // y los intereses NO están siendo deducidos (porque deducVivienda es 0 o
   // muy bajo), hay una deducción perdida.
   const deducViviendaActual = Number(det.deducVivienda) || 0;
-  const deudasViviendaOwner = (user.deu || []).filter(d => d.owner === ow.id && d.fiscalCode === "DEU_NAT_VIVIENDA_HABITACIONAL");
+  const deudasViviendaOwner = (user.deu || []).filter(d => d.owner === ow.id && d.fiscalCode === "DEU_NAT_VIVIENDA_HABITACIONAL" && d.sim !== false);
   const interesesAnualesEstimados = deudasViviendaOwner.reduce((s, d) => {
     const rem = Number(d.rem) || 0;
     const tasa = Number(d.tasa) || 0;
@@ -345,7 +345,7 @@ function recomendacionesJuridica(user, ow, det) {
   // Si tiene gastos categoría "Predial" o fiscalCode GAS_JUR_PREDIAL y no
   // declaró descuento ICA el año pasado, hay una palanca obvia.
   const gastosICA = Object.values(user.gas || {}).flat().filter(g =>
-    g.owner === ow.id && (g.fiscalCode === "GAS_JUR_PREDIAL" || g.cat === "Predial")
+    g.owner === ow.id && (g.fiscalCode === "GAS_JUR_PREDIAL" || g.cat === "Predial") && g.sim !== false
   );
   const icaPagadoAnual = gastosICA.reduce((s, g) => s + ((Number(g.m) || 0) * 12), 0);
   if (icaPagadoAnual > 500_000 && impBruto > 0) {
@@ -411,7 +411,7 @@ function estimarTasaMarginal(det) {
 
 function pvAportadaHoyAnual(user, ownerId) {
   return Object.values(user.gas || {}).flat()
-    .filter(g => g.owner === ownerId && (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC"))
+    .filter(g => g.owner === ownerId && (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC") && g.sim !== false)
     .reduce((s, g) => s + ((Number(g.m) || 0) * 12), 0);
 }
 

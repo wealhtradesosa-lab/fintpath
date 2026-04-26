@@ -66,10 +66,15 @@ const LEVELS = [
 export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
   if(!u) return null;
 
-  const inv       = u.inv||[];
-  const ingresos  = u.ingresos||[];
-  const gas       = u.gas||{};
-  const deu       = u.deu||[];
+  const inv       = (u.inv||[]).filter(i=>i.sim!==false);
+  const ingresos  = (u.ingresos||[]).filter(i=>i.sim!==false);
+  const gasRaw    = u.gas||{};
+  const gas       = {};
+  Object.entries(gasRaw).forEach(([cat, items]) => {
+    const filtered = (items || []).filter(g => g.sim !== false);
+    if (filtered.length > 0) gas[cat] = filtered;
+  });
+  const deu       = (u.deu||[]).filter(d=>d.sim!==false);
   const name      = u.p?.name||"";
   const firstName = (name&&name!=="Usuario")?name.split(" ")[0]:u.p?.email?.split("@")[0]||"";
 
