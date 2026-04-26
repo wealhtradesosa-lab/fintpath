@@ -116,6 +116,11 @@ const INITIAL_FORM = {
   // Commit IBC: modo y # SMMLV (alternativa al valor en pesos)
   aportePensionModo: "valor", aportePensionSmmlv: "",
   aporteSaludModo: "valor", aporteSaludSmmlv: "",
+  // Commit 4 Tarea 3: tipo de vinculación (define si auto-crear cesantías)
+  // "ordinario" = salario regular con cesantías por separado (default)
+  // "integral"  = salario integral Art. 132 CST (cesantías ya incluidas)
+  // "no_aplica" = honorarios, pensión, etc. (no hay cesantías)
+  tipoVinculacion: "ordinario",
 };
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
@@ -230,9 +235,62 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     delete item.aportePensionSmmlv;
     delete item.aporteSaludModo;
     delete item.aporteSaludSmmlv;
+
+    // Commit 4 Tarea 3: persistir tipoVinculacion en el item del salario.
+    // El campo NO va al motor (no afecta cálculo) pero permite que handleEdit
+    // restaure el valor y futuros cambios al salario sepan si auto-recrear cesantías.
+    if (isSalario) {
+      item.tipoVinculacion = form.tipoVinculacion || "ordinario";
+    }
+    delete item.tipoVinculacion; // limpiar de top-level del form, ya está dentro de item
+
     let updated;
-    if (editId) { updated = items.map((i) => (i.id === editId ? { ...item, id: editId } : i)); }
-    else { item.id = "ing_" + Date.now(); updated = [...items, item]; }
+    if (editId) {
+      updated = items.map((i) => (i.id === editId ? { ...item, id: editId, tipoVinculacion: form.tipoVinculacion } : i));
+    } else {
+      item.id = "ing_" + Date.now();
+      // Re-asignar tipoVinculacion (la línea de arriba lo borró del item)
+      if (isSalario) item.tipoVinculacion = form.tipoVinculacion || "ordinario";
+      updated = [...items, item];
+
+      // Commit 4 Tarea 3: AUTO-CREACIÓN DE CESANTÍAS para salario ordinario.
+      // Solo en CREACIÓN (no en edición) y solo si:
+      //   - categoría = "Salario"
+      //   - tipoVinculacion = "ordinario"
+      //   - hay un monto mensual válido
+      //   - el owner aún NO tiene cesantías cargadas (evitar duplicar)
+      const debeAutoCrearCesantias =
+        isSalario &&
+        form.tipoVinculacion === "ordinario" &&
+        mensualFinal > 0 &&
+        item.owner;
+      if (debeAutoCrearCesantias) {
+        const yaTieneCesantias = items.some(
+          (i) => i.owner === item.owner && i.fiscalCode === "LAB_PRESTACIONES_CESANTIAS"
+        );
+        if (!yaTieneCesantias) {
+          // Cesantías + intereses: ~1 mes de salario al año + 12% sobre cesantías
+          // = 1.12 meses de salario al año = mensual × 1.12 / 12 (porque el motor multiplica × 12)
+          const cesantiasMensual = Math.round((mensualFinal * 1.12) / 12);
+          const cesantiasItem = {
+            id: "ing_" + (Date.now() + 1),
+            nombre: `Cesantías + intereses (estimadas, ${item.nombre || "salario"})`,
+            categoria: "Cesantías",
+            fiscalCode: "LAB_PRESTACIONES_CESANTIAS",
+            mensual: cesantiasMensual,
+            tipo: "fijo",
+            fuente: "Auto-generado al crear salario ordinario",
+            moneda: "COP",
+            owner: item.owner,
+            // Flags de trazabilidad
+            autoGenerado: true,
+            salarioOrigenId: item.id,
+          };
+          updated = [...updated, cesantiasItem];
+        }
+      }
+    }
+
     onUpdate(updated);
     setShowForm(false); setEditId(null);
     setForm(INITIAL_FORM);
@@ -272,6 +330,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       aportePensionSmmlv: item.aportes?.pensionSmmlv ? String(item.aportes.pensionSmmlv) : "",
       aporteSaludModo: item.aportes?.saludModo || "valor",
       aporteSaludSmmlv: item.aportes?.saludSmmlv ? String(item.aportes.saludSmmlv) : "",
+      // Commit 4 Tarea 3: leer tipoVinculacion (default "ordinario" para items legacy
+      // que no tenían el campo). Solo aplica a Salario.
+      tipoVinculacion: item.tipoVinculacion || "ordinario",
     });
     setEditId(item.id); setShowForm(true);
   };
@@ -425,6 +486,52 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:3}}>ℹ️ Ingresá el monto BRUTO</div>
                 <div style={{fontSize:10,color:"#71717a",lineHeight:1.5}}>El monto que aparece en tu contrato o factura, <strong>antes</strong> de retención en la fuente y aportes obligatorios (salud+pensión). El sistema calcula automáticamente tu impuesto de renta aplicando la tabla progresiva de la DIAN 2026.</div>
               </div>}
+
+              {/* Commit 4 Tarea 3: selector de tipo de vinculación. Solo aparece para Salario.
+                  Define si auto-creamos cesantías al guardar (caso ordinario) o no (integral/no aplica).
+                  CRÍTICO: cesantías son renta exenta Art. 206 #4 ET — los usuarios suelen olvidarlas. */}
+              {form.categoria === "Salario" && !editId && (
+                <div style={{gridColumn:"1/-1",background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4,marginBottom:4}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#22c55e",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+                    💵 ¿Tu vinculación incluye cesantías por separado?
+                  </div>
+                  <div style={{fontSize:10,color:T.txt3,lineHeight:1.5,marginBottom:10}}>
+                    Las cesantías son <strong>renta exenta Art. 206 #4 ET</strong> con tope variable según salario. Muchos usuarios las olvidan y pagan más impuesto del que deben.
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    <label style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 10px",background:form.tipoVinculacion==="ordinario"?"rgba(34,197,94,0.08)":"transparent",border:`1.5px solid ${form.tipoVinculacion==="ordinario"?"#22c55e":T.border}`,borderRadius:8,cursor:"pointer"}}>
+                      <input type="radio" name="tipoVinc" value="ordinario" checked={form.tipoVinculacion==="ordinario"} onChange={() => setForm(p => ({ ...p, tipoVinculacion: "ordinario" }))} style={{marginTop:3,flexShrink:0}} />
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:12,fontWeight:700,color:form.tipoVinculacion==="ordinario"?"#22c55e":T.txt2}}>Sí — salario ordinario</div>
+                        <div style={{fontSize:10,color:T.txt3,marginTop:2,lineHeight:1.4}}>Tu empresa consigna ~1 mes de salario al año al Fondo de Cesantías. <strong style={{color:T.txt2}}>El sistema te creará automáticamente un ingreso de "Cesantías + intereses" estimado para que la exenta del Art. 206 #4 se aplique.</strong></div>
+                      </div>
+                    </label>
+                    <label style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 10px",background:form.tipoVinculacion==="integral"?"rgba(168,85,247,0.08)":"transparent",border:`1.5px solid ${form.tipoVinculacion==="integral"?"#a855f7":T.border}`,borderRadius:8,cursor:"pointer"}}>
+                      <input type="radio" name="tipoVinc" value="integral" checked={form.tipoVinculacion==="integral"} onChange={() => setForm(p => ({ ...p, tipoVinculacion: "integral" }))} style={{marginTop:3,flexShrink:0}} />
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:12,fontWeight:700,color:form.tipoVinculacion==="integral"?"#a855f7":T.txt2}}>No — salario integral (Art. 132 CST)</div>
+                        <div style={{fontSize:10,color:T.txt3,marginTop:2,lineHeight:1.4}}>Aplica a salarios pactados ≥ 13 SMMLV. Cesantías y prestaciones <strong style={{color:T.txt2}}>ya están incluidas</strong> en el monto. NO se cargan por separado.</div>
+                      </div>
+                    </label>
+                    <label style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 10px",background:form.tipoVinculacion==="no_aplica"?"rgba(99,102,241,0.08)":"transparent",border:`1.5px solid ${form.tipoVinculacion==="no_aplica"?"#6366f1":T.border}`,borderRadius:8,cursor:"pointer"}}>
+                      <input type="radio" name="tipoVinc" value="no_aplica" checked={form.tipoVinculacion==="no_aplica"} onChange={() => setForm(p => ({ ...p, tipoVinculacion: "no_aplica" }))} style={{marginTop:3,flexShrink:0}} />
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:12,fontWeight:700,color:form.tipoVinculacion==="no_aplica"?"#6366f1":T.txt2}}>No aplica</div>
+                        <div style={{fontSize:10,color:T.txt3,marginTop:2,lineHeight:1.4}}>Caso atípico: contrato de prestación de servicios, exterior, o que no genera cesantías. No se cargan.</div>
+                      </div>
+                    </label>
+                  </div>
+                  {form.tipoVinculacion === "ordinario" && Number(form.mensual) > 0 && (() => {
+                    const mens = Number(form.mensual);
+                    const cesAnual = mens * 1.12;
+                    return (
+                      <div style={{marginTop:10,padding:"8px 10px",background:T.bg2,borderRadius:6,fontSize:10,color:T.txt2,lineHeight:1.5}}>
+                        Al guardar se creará: <strong style={{color:"#22c55e"}}>"Cesantías + intereses (estimadas)"</strong> = {fm(Math.round(mens * 1.12 / 12))}/mes (≈ {fm(Math.round(cesAnual))}/año, equivalente a 1.12 sueldos). Podés modificar o eliminar el item después.
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
 
               {/* Commit 1.5 + Commit IBC: aportes obligatorios con opción $ valor o # SMMLV */}
               {form.categoria === "Salario" && (
