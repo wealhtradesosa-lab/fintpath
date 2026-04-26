@@ -46,8 +46,12 @@ const REGLA_POR_FISCAL_CODE = {
   "GAS_INMUEBLE_ADMINISTRACION":   { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Gasto del inmueble arrendado — deducible 100% de la renta de capital" },
   "GAS_INMUEBLE_SERVICIOS":        { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Servicios del inmueble arrendado" },
   "GAS_INMUEBLE_REPARACION":       { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Reparación del inmueble arrendado" },
+  "GAS_INMUEBLE_MANTENIMIENTO":    { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Mantenimiento del inmueble arrendado" },
   "GAS_INMUEBLE_PREDIAL":          { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Predial del inmueble arrendado" },
   "GAS_INMUEBLE_SEGUROS":          { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Seguros del inmueble arrendado" },
+  // Commit 15 Tarea 3: impuesto vehicular (rodamiento)
+  "IMP_VEHICULAR_PERSONAL":        { txt: "❌ No deducible", color: "#71717a", help: "Rodamiento vehículo personal — no cumple Art. 107 ET" },
+  "IMP_VEHICULAR_PROFESIONAL":     { txt: "📊 50% Art. 107", color: "#eab308", help: "Rodamiento vehículo profesional — 50% conservador (uso mixto), máx 1" },
   // Honorarios (Art. 107 ET — actividad independiente)
   "GAS_HON_SEG_SOCIAL":          { txt: "✅ 100% Art. 126-1", color: "#22c55e", help: "Seguridad social independiente — deducible 100%" },
   "GAS_HON_NOMINA_TERCEROS":     { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Nómina/honorarios a terceros — deducible 100%" },
@@ -107,15 +111,30 @@ function fiscalSubOptions(ownerType, cat) {
     };
   }
   if (ownerType === "natural") {
+    // Commit 15 Tarea 3: categoría Predial expandida para cubrir TODOS los
+    // impuestos territoriales (predial inmuebles + rodamiento vehículos + ICA).
+    // Sub-selector con 5 opciones que mapean al fiscalCode correcto.
+    if (cat === "Predial") {
+      return {
+        question: "🏛️ ¿Qué tipo de impuesto territorial?",
+        help: "El predial de tu vivienda personal y el rodamiento de tu vehículo personal NO son deducibles para persona natural (no cumplen Art. 107 ET). Los relacionados con inmuebles arrendados o actividad profesional sí.",
+        options: [
+          { v: "GAS_NAT_PERSONAL",            l: "Predial vivienda personal (no deducible)" },
+          { v: "GAS_INMUEBLE_PREDIAL",        l: "Predial inmueble arrendado (100% renta capital)" },
+          { v: "IMP_VEHICULAR_PERSONAL",      l: "Impuesto vehicular personal — rodamiento (no deducible)" },
+          { v: "IMP_VEHICULAR_PROFESIONAL",   l: "Impuesto vehicular profesional — actividad independiente (50% Art. 107)" },
+          { v: "GAS_NAT_PERSONAL",            l: "Otro impuesto local sin causalidad (no deducible)" },
+        ],
+      };
+    }
     // Gastos que pueden ser del inmueble arrendado o personales
-    if (["Predial", "Vivienda", "Mantenimiento", "Servicios", "Seguros", "Arrendamiento"].includes(cat)) {
+    if (["Vivienda", "Mantenimiento", "Servicios", "Seguros", "Arrendamiento"].includes(cat)) {
       return {
         question: "🏠 ¿Es del inmueble arrendado o de tu vivienda personal?",
         help: "Si es del inmueble que arrendás a terceros, se deduce 100% de la renta no laboral (Art. 107 ET). Si es personal, no deduce.",
         options: [
           { v: "GAS_NAT_PERSONAL", l: "Personal — mi vivienda (no deducible)" },
-          { v: cat === "Predial" ? "GAS_INMUEBLE_PREDIAL"
-              : cat === "Mantenimiento" ? "GAS_INMUEBLE_MANTENIMIENTO"
+          { v: cat === "Mantenimiento" ? "GAS_INMUEBLE_MANTENIMIENTO"
               : cat === "Servicios" ? "GAS_INMUEBLE_SERVICIOS"
               : cat === "Seguros" ? "GAS_INMUEBLE_SEGUROS"
               : "GAS_INMUEBLE_ADMINISTRACION", l: "Del inmueble arrendado (deducible 100%)" },
@@ -454,7 +473,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const ow = (owners || []).find(o => o.id === form.owner);
                 const ownerType = ow ? ow.type : "natural";
                 setForm((p) => ({ ...p, cat: v, fiscalCode: defaultFiscalCode(ownerType, v) }));
-              }} options={[{v:"Aporte tributario",l:"🛡️ Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Predial",l:"🏛️ Predial e impuestos locales (ICA)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
+              }} options={[{v:"Aporte tributario",l:"🛡️ Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Predial",l:"🏛️ Impuestos territoriales (predial, rodamiento, ICA)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
 
               {/* Commit 1.6: sub-selector para Aporte tributario (PV, AFC, Salud prepagada) */}

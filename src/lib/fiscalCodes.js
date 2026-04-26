@@ -67,6 +67,13 @@ export const SEG_VIDA                        = "SEG_VIDA";        // Vida (Art. 
 export const SEG_VEHICULO                    = "SEG_VEHICULO";    // Vehículo (NO deducible natural)
 export const SEG_HOGAR                       = "SEG_HOGAR";       // Hogar (NO deducible natural)
 export const SEG_GENERICO                    = "SEG_GENERICO";    // Default conservador (legacy, sin clasificar)
+// Commit 15 Tarea 3: impuesto vehicular (rodamiento). El usuario reportó que
+// no había categoría para clasificarlo. Dos variantes según uso del vehículo:
+//   - Personal: NO deducible (igual que SEG_VEHICULO, no cumple Art. 107)
+//   - Profesional: 50% deducible Art. 107 (uso mixto, conservador, máx 1)
+// Para vehículo de jurídica: sigue cayendo en GAS_JUR_DEDUCIBLE genérico.
+export const IMP_VEHICULAR_PERSONAL           = "IMP_VEHICULAR_PERSONAL";    // Rodamiento personal (NO deducible)
+export const IMP_VEHICULAR_PROFESIONAL        = "IMP_VEHICULAR_PROFESIONAL"; // Rodamiento vehículo profesional (50% Art. 107)
 
 // ─── APORTES TRIBUTARIOS (Commit 1.6) ────────────────────────────────────
 // Egresos que reducen la base gravable de persona natural. Shape nuevo:
@@ -207,6 +214,9 @@ export const FISCAL_CODE_META = {
   [SEG_VEHICULO]:                 { kind: "gasto", scope: "natural", label: "Seguro de vehículo",         et: "NO deducible natural" },
   [SEG_HOGAR]:                    { kind: "gasto", scope: "natural", label: "Seguro de hogar",            et: "NO deducible natural" },
   [SEG_GENERICO]:                 { kind: "gasto", scope: "natural", label: "Seguro sin clasificar",      et: "NO deducible (especificá tipo)" },
+  // Commit 15 Tarea 3: impuesto vehicular (rodamiento)
+  [IMP_VEHICULAR_PERSONAL]:       { kind: "gasto", scope: "natural", label: "Impuesto vehicular (personal)", et: "NO deducible natural" },
+  [IMP_VEHICULAR_PROFESIONAL]:    { kind: "gasto", scope: "honorarios", label: "Impuesto vehicular (profesional)", et: "Art. 107 (50% conservador)" },
   // Gastos inmueble arrendado
   [GAS_INMUEBLE_PREDIAL]:         { kind: "gasto", scope: "inmueble", label: "Predial inmueble arrendado", et: "Art. 107" },
   [GAS_INMUEBLE_MANTENIMIENTO]:   { kind: "gasto", scope: "inmueble", label: "Mantenimiento inmueble",     et: "Art. 107" },

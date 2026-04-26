@@ -35,6 +35,9 @@ import {
   GASTOS_HONORARIOS, GAS_HON_REPRESENTACION, GAS_HON_VEHICULO,
   // Commit B2: seguros (Art. 387 #2 para salud/vida; resto no deducibles natural)
   SEG_SALUD, SEG_VIDA, GAS_INMUEBLE_SEGUROS,
+  // Commit 15 Tarea 3: impuesto vehicular (rodamiento) profesional
+  // El personal NO necesita import porque cae automaticamente como no-deducible
+  IMP_VEHICULAR_PROFESIONAL,
 } from "./fiscalCodes.js";
 import { TABLA_ART_241, calcImpRenta as calcImpRentaCore } from "./tablaArt241.js";
 import { GRUPOS_SIMPLE as SIMPLE_GRUPOS, calcularImpuestoSimple as calcularImpSimple } from "./regimenSimple.js";
@@ -497,7 +500,10 @@ export const estimarImpuesto = (u) => {
         // contribuyente tiene varios vehículos pero solo usa UNO para su actividad
         // independiente, solo ese cumple causalidad. Aplicamos criterio de máximo
         // aprovechamiento legal: deducir el de mayor monto.
-        const vehiculosTodos = oGas.filter(g => g.fiscalCode === GAS_HON_VEHICULO);
+        // Commit 15 Tarea 3: el impuesto vehicular profesional sigue la misma
+        // logica que el GAS_HON_VEHICULO (Art. 107, 50% conservador, max 1).
+        // Lo unimos en el mismo flujo para coherencia.
+        const vehiculosTodos = oGas.filter(g => g.fiscalCode === GAS_HON_VEHICULO || g.fiscalCode === IMP_VEHICULAR_PROFESIONAL);
         const vehiculoUnico = vehiculosTodos.length > 0
           ? vehiculosTodos.reduce((max, g) => ((g.m || 0) > (max.m || 0) ? g : max))
           : null;
@@ -507,9 +513,11 @@ export const estimarImpuesto = (u) => {
           .filter(g => g !== vehiculoUnico)
           .reduce((s, g) => s + (g.m || 0), 0) * 12;
         for (const g of oGas) {
-          if (!GASTOS_HONORARIOS.includes(g.fiscalCode)) continue;
+          // Commit 15: incluir IMP_VEHICULAR_PROFESIONAL en el filter de honorarios
+          const esGastoHonorarios = GASTOS_HONORARIOS.includes(g.fiscalCode) || g.fiscalCode === IMP_VEHICULAR_PROFESIONAL;
+          if (!esGastoHonorarios) continue;
           const monto = (g.m || 0) * 12;
-          if (g.fiscalCode === GAS_HON_VEHICULO) {
+          if (g.fiscalCode === GAS_HON_VEHICULO || g.fiscalCode === IMP_VEHICULAR_PROFESIONAL) {
             // Commit B1: solo el vehículo de mayor monto deduce (Art. 107 ET).
             // Los demás se cuentan en vehiculosIgnorados para informar al usuario.
             if (g === vehiculoUnico) {
