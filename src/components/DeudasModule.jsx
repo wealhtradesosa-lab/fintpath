@@ -75,6 +75,15 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "" });
   const [selected, setSelected] = useState(new Set());
+  // Commit 5 Tarea 3: confirmaciones del Art. 119 ET cuando el usuario marca
+  // una deuda como vivienda habitacional. Es solo UI — no se persiste al item
+  // ni se envía al motor. Sirve para alertar al usuario si está clasificando
+  // mal una deuda (uno de los errores fiscales más comunes).
+  const [viviendaConfirmaciones, setViviendaConfirmaciones] = useState({
+    esHabitacion: true,
+    esTitular: true,
+    noArrendado: true,
+  });
 
   const items = deudas || [];
   const activos = items.filter((d) => d.sim !== false);
@@ -91,7 +100,10 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   };
 
   const handleSave = () => {
-    const item = { n: form.n || "", tp: form.tp || "loan", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, la: form.la || null, owner: form.owner || "" };
+    // Commit 5 Tarea 3 (bugfix): persistir fiscalCode al guardar. Antes el campo
+    // se omitía y el motor caía al default vía normalizer, ignorando la elección
+    // del usuario en el sub-selector "¿Para qué usaste esta deuda?".
+    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, la: form.la || null, owner: form.owner || "" };
     if (editId) {
       onUpdate(items.map((i) => (i.id === editId ? { ...i, ...item } : i)));
     } else {
@@ -101,6 +113,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     setShowForm(false);
     setEditId(null);
     setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "" });
+    setViviendaConfirmaciones({ esHabitacion: true, esTitular: true, noArrendado: true });
   };
 
   const openEdit = (d) => {
@@ -284,6 +297,66 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer" }}>
                       {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
                     </select>
+
+                    {/* Commit 5 Tarea 3: confirmación legal Art. 119 ET cuando se elige
+                        vivienda habitacional. Solo aplica a personas naturales. Las 3
+                        condiciones son acumulativas — si alguna falla, el Art. 119 NO
+                        aplica y los intereses NO son deducibles como vivienda. Es uno
+                        de los errores fiscales más comunes (clasificar como vivienda
+                        habitacional una deuda de inversión o segunda vivienda). */}
+                    {!isJ && form.fiscalCode === "DEU_NAT_VIVIENDA_HABITACIONAL" && (() => {
+                      const todasOk = viviendaConfirmaciones.esHabitacion && viviendaConfirmaciones.esTitular && viviendaConfirmaciones.noArrendado;
+                      const alertColor = todasOk ? "#22c55e" : "#ef4444";
+                      const alertBg = todasOk ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)";
+                      const alertBorder = todasOk ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.30)";
+                      return (
+                        <div style={{ marginTop: 12, padding: "12px 14px", background: alertBg, border: `1.5px solid ${alertBorder}`, borderRadius: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: alertColor, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                            🛡️ Confirmá los 3 requisitos del Art. 119 ET
+                          </div>
+                          <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.5, marginBottom: 10 }}>
+                            Los intereses solo son deducibles (hasta 1.200 UVT/año) si TODAS estas condiciones se cumplen. Si alguna falla, los intereses NO son deducibles como vivienda — reclasificá según corresponda.
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 11, color: T.txt2 }}>
+                              <input type="checkbox" checked={viviendaConfirmaciones.esHabitacion} onChange={(e) => setViviendaConfirmaciones(p => ({ ...p, esHabitacion: e.target.checked }))} style={{ marginTop: 2, flexShrink: 0 }} />
+                              <span><strong>Es para mi vivienda DE HABITACIÓN</strong> (donde efectivamente vivo, no segunda vivienda ni inversión).</span>
+                            </label>
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 11, color: T.txt2 }}>
+                              <input type="checkbox" checked={viviendaConfirmaciones.esTitular} onChange={(e) => setViviendaConfirmaciones(p => ({ ...p, esTitular: e.target.checked }))} style={{ marginTop: 2, flexShrink: 0 }} />
+                              <span><strong>Soy titular del crédito</strong> (figuro como deudor en la escritura/pagaré). Si la deuda es solo de mi pareja sin que yo figure, no aplica.</span>
+                            </label>
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 11, color: T.txt2 }}>
+                              <input type="checkbox" checked={viviendaConfirmaciones.noArrendado} onChange={(e) => setViviendaConfirmaciones(p => ({ ...p, noArrendado: e.target.checked }))} style={{ marginTop: 2, flexShrink: 0 }} />
+                              <span><strong>El inmueble NO está arrendado</strong> a terceros (si recibo arriendo de él, es renta de capital, no vivienda).</span>
+                            </label>
+                          </div>
+                          {!todasOk && (
+                            <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 6 }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", marginBottom: 6 }}>⚠️ El Art. 119 ET NO aplica</div>
+                              <div style={{ fontSize: 10, color: T.txt2, lineHeight: 1.5, marginBottom: 8 }}>
+                                Sin las 3 condiciones, los intereses no son deducibles como vivienda. Reclasificá:
+                              </div>
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                <button type="button" onClick={() => { setForm(p => ({ ...p, fiscalCode: "DEU_NAT_INVERSION" })); setViviendaConfirmaciones({ esHabitacion: true, esTitular: true, noArrendado: true }); }}
+                                  style={{ background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)", color: "#a855f7", padding: "6px 12px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                                  → Reclasificar como Inversión
+                                </button>
+                                <button type="button" onClick={() => { setForm(p => ({ ...p, fiscalCode: "DEU_NAT_CONSUMO" })); setViviendaConfirmaciones({ esHabitacion: true, esTitular: true, noArrendado: true }); }}
+                                  style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.4)", color: "#6366f1", padding: "6px 12px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                                  → Reclasificar como Consumo
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {todasOk && (
+                            <div style={{ marginTop: 10, fontSize: 10, color: "#22c55e", fontStyle: "italic", lineHeight: 1.4 }}>
+                              ✅ Cumplís el Art. 119 ET. Los intereses serán deducibles hasta 1.200 UVT/año.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })()}
