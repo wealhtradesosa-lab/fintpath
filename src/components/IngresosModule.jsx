@@ -185,6 +185,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [selected, setSelected] = useState(new Set());
+  // Commit 11 Tarea 3: feedback visible para el usuario sobre lo que paso
+  // con la auto-creacion de cesantias (creada / saltada / no aplica). El silencio
+  // del Commit 4 confundia a usuarios que no veian si el sistema actuo o no.
+  // Estructura: { tipo: "creada"|"saltada"|null, mensaje: "..." }
+  const [cesantiasNotif, setCesantiasNotif] = useState(null);
 
   const items = ingresos || [];
   
@@ -236,29 +241,29 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     delete item.aporteSaludModo;
     delete item.aporteSaludSmmlv;
 
-    // Commit 4 Tarea 3: persistir tipoVinculacion en el item del salario.
-    // El campo NO va al motor (no afecta cálculo) pero permite que handleEdit
-    // restaure el valor y futuros cambios al salario sepan si auto-recrear cesantías.
+    // Commit 4 Tarea 3 (REVISADO Commit 11): persistir tipoVinculacion en el item del salario.
+    // Solo si es Salario. Si NO es salario, NO debe existir tipoVinculacion en el item.
     if (isSalario) {
       item.tipoVinculacion = form.tipoVinculacion || "ordinario";
+    } else {
+      // Para no-salario: limpiar el campo si vino del spread de form
+      delete item.tipoVinculacion;
     }
-    delete item.tipoVinculacion; // limpiar de top-level del form, ya está dentro de item
 
     let updated;
     if (editId) {
-      updated = items.map((i) => (i.id === editId ? { ...item, id: editId, tipoVinculacion: form.tipoVinculacion } : i));
+      updated = items.map((i) => (i.id === editId ? { ...item, id: editId } : i));
     } else {
       item.id = "ing_" + Date.now();
-      // Re-asignar tipoVinculacion (la línea de arriba lo borró del item)
-      if (isSalario) item.tipoVinculacion = form.tipoVinculacion || "ordinario";
       updated = [...items, item];
 
-      // Commit 4 Tarea 3: AUTO-CREACIÓN DE CESANTÍAS para salario ordinario.
+      // Commit 4 Tarea 3 (mejorado en Commit 11): AUTO-CREACIÓN DE CESANTÍAS.
       // Solo en CREACIÓN (no en edición) y solo si:
       //   - categoría = "Salario"
       //   - tipoVinculacion = "ordinario"
       //   - hay un monto mensual válido
       //   - el owner aún NO tiene cesantías cargadas (evitar duplicar)
+      // Commit 11: agregar feedback visible al usuario sobre lo que paso.
       const debeAutoCrearCesantias =
         isSalario &&
         form.tipoVinculacion === "ordinario" &&
@@ -287,7 +292,28 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             salarioOrigenId: item.id,
           };
           updated = [...updated, cesantiasItem];
+          // Feedback visible: confirmar al usuario que se creo
+          setCesantiasNotif({
+            tipo: "creada",
+            mensaje: `✅ Se creó automáticamente "Cesantías + intereses (estimadas)" por ${fm(cesantiasMensual)}/mes para que la exenta del Art. 206 #4 ET se aplique.`
+          });
+        } else {
+          // Feedback visible: explicar por que NO se creo (evita confusion del usuario)
+          setCesantiasNotif({
+            tipo: "saltada",
+            mensaje: `ℹ️ No se creó cesantía nueva: el owner ya tiene una cargada. Si querés actualizar el monto, editá manualmente el item de cesantías existente.`
+          });
         }
+      } else if (isSalario && form.tipoVinculacion === "integral") {
+        setCesantiasNotif({
+          tipo: "saltada",
+          mensaje: `ℹ️ Salario integral: no se cargan cesantías por separado (Art. 132 CST — ya están incluidas en el monto pactado).`
+        });
+      } else if (isSalario && form.tipoVinculacion === "no_aplica") {
+        setCesantiasNotif({
+          tipo: "saltada",
+          mensaje: `ℹ️ Sin cesantías: este caso no genera prestaciones laborales. Recordá que si tu vinculación cambia, podés agregar cesantías manualmente como ingreso aparte.`
+        });
       }
     }
 
@@ -361,6 +387,28 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
       {/* Banner explicando toggle sim (Commit 8.8) */}
       <SimToggleInfo total={allItems.length} activos={activos.length} moduloNombre="un ingreso" />
+
+      {/* Commit 11 Tarea 3: Notificacion visible sobre auto-creacion de cesantias.
+          Aparece despues de guardar un salario y se cierra con la X. Resuelve el
+          reporte: 'agrego un salario y no agrego cesantias por defecto' — el sistema
+          si actua, pero el usuario no veia feedback. Ahora el feedback es explicito. */}
+      {cesantiasNotif && (
+        <div style={{
+          background: cesantiasNotif.tipo === "creada" ? "rgba(34,197,94,0.08)" : "rgba(99,102,241,0.06)",
+          border: `1.5px solid ${cesantiasNotif.tipo === "creada" ? "rgba(34,197,94,0.3)" : "rgba(99,102,241,0.25)"}`,
+          borderRadius: 10,
+          padding: "12px 14px",
+          marginBottom: 16,
+          position: "relative",
+          fontSize: 12,
+          color: cesantiasNotif.tipo === "creada" ? T.green : T.txt2,
+          lineHeight: 1.5,
+        }}>
+          <button onClick={() => setCesantiasNotif(null)} aria-label="Cerrar"
+            style={{ position: "absolute", top: 8, right: 10, background: "transparent", border: "none", color: T.txt3, fontSize: 18, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
+          <div style={{ paddingRight: 24 }}>{cesantiasNotif.mensaje}</div>
+        </div>
+      )}
 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 20 }}>
