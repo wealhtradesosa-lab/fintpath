@@ -386,17 +386,36 @@ export const estimarImpuesto = (u) => {
         internetTel: 0, materiales: 0, vehiculoBruto: 0, vehiculoAplicado: 0,
         viajes: 0, representacionBruto: 0, representacionAplicado: 0, representacionTope: 0,
         capacitacion: 0, otros: 0,
+        // Commit B1: trazabilidad de vehículos (Art. 107 ET — solo uno cumple causalidad)
+        vehiculosTotalRegistrados: 0, vehiculosIgnorados: 0, vehiculoIgnoradoMonto: 0,
       };
       let alertaHonorarios = null; // null | "amarilla" | "roja"
       if (honAnual > 0) {
         const tope10Repr = honAnual * 0.10;
+        // Commit B1: pre-pass para vehículos. Art. 107 ET exige causalidad: si el
+        // contribuyente tiene varios vehículos pero solo usa UNO para su actividad
+        // independiente, solo ese cumple causalidad. Aplicamos criterio de máximo
+        // aprovechamiento legal: deducir el de mayor monto.
+        const vehiculosTodos = oGas.filter(g => g.fiscalCode === GAS_HON_VEHICULO);
+        const vehiculoUnico = vehiculosTodos.length > 0
+          ? vehiculosTodos.reduce((max, g) => ((g.m || 0) > (max.m || 0) ? g : max))
+          : null;
+        gastosHonorariosDesglose.vehiculosTotalRegistrados = vehiculosTodos.length;
+        gastosHonorariosDesglose.vehiculosIgnorados = Math.max(0, vehiculosTodos.length - 1);
+        gastosHonorariosDesglose.vehiculoIgnoradoMonto = vehiculosTodos
+          .filter(g => g !== vehiculoUnico)
+          .reduce((s, g) => s + (g.m || 0), 0) * 12;
         for (const g of oGas) {
           if (!GASTOS_HONORARIOS.includes(g.fiscalCode)) continue;
           const monto = (g.m || 0) * 12;
           if (g.fiscalCode === GAS_HON_VEHICULO) {
-            // Vehículo: 50% conservador. UI valida que sea solo 1.
-            gastosHonorariosDesglose.vehiculoBruto += monto;
-            gastosHonorariosDesglose.vehiculoAplicado += monto * 0.50;
+            // Commit B1: solo el vehículo de mayor monto deduce (Art. 107 ET).
+            // Los demás se cuentan en vehiculosIgnorados para informar al usuario.
+            if (g === vehiculoUnico) {
+              gastosHonorariosDesglose.vehiculoBruto += monto;
+              gastosHonorariosDesglose.vehiculoAplicado += monto * 0.50;
+            }
+            // Si no es el único: NO suma al desglose deducible
           } else if (g.fiscalCode === GAS_HON_REPRESENTACION) {
             gastosHonorariosDesglose.representacionBruto += monto;
           } else {

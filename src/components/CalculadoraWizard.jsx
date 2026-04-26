@@ -987,7 +987,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
     { key: "serviciosOficina", label: "Servicios públicos oficina", art: "Art. 107", monto: desglose.serviciosOficina },
     { key: "internetTel", label: "Internet/telefonía profesional", art: "Art. 107", monto: desglose.internetTel },
     { key: "materiales", label: "Materiales y suministros", art: "Art. 107", monto: desglose.materiales },
-    { key: "vehiculoAplicado", label: "Vehículo (al 50%)", art: "Art. 107", monto: desglose.vehiculoAplicado, bruto: desglose.vehiculoBruto },
+    { key: "vehiculoAplicado", label: Number(desglose.vehiculosTotalRegistrados || 0) > 1 ? "Vehículo de mayor monto (al 50%)" : "Vehículo (al 50%)", art: "Art. 107", monto: desglose.vehiculoAplicado, bruto: desglose.vehiculoBruto },
     { key: "viajes", label: "Viajes con propósito", art: "Art. 107", monto: desglose.viajes },
     { key: "representacionAplicado", label: "Representación (tope 10%)", art: "Art. 107-1", monto: desglose.representacionAplicado, bruto: desglose.representacionBruto, tope: desglose.representacionTope },
     { key: "capacitacion", label: "Capacitación profesional", art: "Art. 107", monto: desglose.capacitacion },
@@ -1084,6 +1084,13 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
             ))}
           </div>
         </details>
+      )}
+
+      {/* Commit B1: warning si hay >1 vehículo registrado (solo uno es deducible — Art. 107 ET) */}
+      {Number(desglose.vehiculosTotalRegistrados || 0) > 1 && (
+        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 8, fontSize: 11, color: T.orange, lineHeight: 1.5 }}>
+          🚗 <strong>{desglose.vehiculosTotalRegistrados} vehículos registrados</strong> como gasto de actividad. <strong>Art. 107 ET</strong> exige causalidad: solo <strong>uno</strong> puede ser deducible (el de mayor monto). Los otros {desglose.vehiculosIgnorados} ({fmtM(desglose.vehiculoIgnoradoMonto || 0)}/año) <strong>NO</strong> se están deduciendo. Si efectivamente usás más de un vehículo para tu actividad profesional, marcá los otros con otra categoría.
+        </div>
       )}
 
       {/* CTA si no hay gastos cargados */}
