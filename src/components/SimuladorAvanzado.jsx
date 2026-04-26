@@ -817,41 +817,61 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                             {/* Hint solo aplica en modo comparativo cuando el usuario esta en Actual y hay ahorro real disponible */}
                             {mostrarComparativo && ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Aplicar PV/AFC ahorra {fm(ahorroOpt)}/año → activá el toggle para ver el impacto en cash flow</div>}
                           </div>
-                          {/* Slider manual — opera sobre el BRUTO (impuesto total anual, no saldo) */}
-                          <div style={{background:(isOptEffectivo?T.gn:"#a78bfa")+"08",border:"1px solid "+(isOptEffectivo?T.gn:"#a78bfa")+"20",borderRadius:10,padding:"10px 12px"}}>
-                            <div style={{fontSize:10,fontWeight:700,color:isOptEffectivo?T.gn:"#a78bfa",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — simular estrategias adicionales</div>
-                            {/* Commit 7 Tarea 3: mensaje cuando el modo Optimizado lleva el bruto a 0 */}
-                            {isOptEffectivo && baseMesEffectivo === 0 && (
-                              <div style={{marginBottom:8,padding:"8px 10px",background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:6,fontSize:10,color:T.gn,lineHeight:1.5,fontWeight:600}}>
-                                ✅ Con PV/AFC, tu impuesto bruto es $0 — las deducciones legales (PV/AFC + cap 40% Art. 336 ET) cubren todo. El slider está correctamente en cero.
-                              </div>
-                            )}
-                            <div style={{fontSize:10,color:T.txt3,marginBottom:8,lineHeight:1.5}}>
-                              Movelo hacia abajo si lográs <strong>estrategias adicionales</strong> que el sistema no modela (donaciones, depreciación agresiva, créditos fiscales especiales). {saldoAnualEffectivo === 0 && simImpAnualEffectivo > 0 && <span style={{color:"#93c5fd"}}>⚠ Aunque tu saldo en declaración es $0, bajar el total mejora tu cash flow porque pagás menos retención durante el año.</span>}
-                            </div>
-                            <Slider label="" value={simImpEffectivo} base={baseMesEffectivo}
-                              max={sliderMax} color={isOptEffectivo ? T.gn : "#a78bfa"}
-                              onChange={(v) => setVal(`tax_${nameKey}`, v)}
-                              sub="" />
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginTop:4,fontSize:11}}>
-                              <span style={{color:T.txt3}}>Total anual ajustado:</span>
-                              <span style={{fontWeight:700,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:9,color:T.txt3,fontWeight:400}}> · {fm(simImpEffectivo)}/mes</span></span>
-                            </div>
-                          </div>
+                          {/* Commit 10 Tarea 3: el slider ahora opera sobre el SALDO A PAGAR
+                              (lo que el usuario efectivamente desembolsa), no sobre el impuesto
+                              bruto. Razon: el usuario piensa en lo que paga, no en lo que la
+                              tabla DIAN dice. Si su saldo es \$0, el slider arranca en \$0. Si
+                              quiere subir el slider para simular un escenario peor, esta en su
+                              libertad. Cualquier "ajuste manual" que haga sobre el saldo se
+                              traduce internamente a un ajuste equivalente sobre el bruto
+                              (saldoSimulado + retencion = brutoSimulado).
+                           */}
                           {(() => {
-                            const ajusteExtraEff = baseMesEffectivo - simImpEffectivo;
-                            return ajusteExtraEff !== 0 && <div style={{marginTop:6,fontSize:10,color:ajusteExtraEff>0?T.gn:T.or,fontWeight:600,paddingLeft:4}}>
-                              {ajusteExtraEff > 0
-                                ? `🎯 Ahorro adicional con ajuste manual: ${fm(ajusteExtraEff*12)}/año`
-                                : `⚠️ Escenario más conservador: +${fm(Math.abs(ajusteExtraEff)*12)}/año de impuesto`}
-                            </div>;
+                            // Valor que muestra el slider: SALDO mensual (lo relevante)
+                            const saldoMesEff = saldoMesEffectivo;
+                            const saldoMesBase = Math.max(0, baseMesEffectivo - reteNMes);
+                            const saldoMesMax = Math.max(saldoMesBase * 2, baseMesEffectivo + reteNMes); // permite explorar hasta el bruto si quiere
+                            // Cuando el usuario mueve el slider de saldo, se traduce a bruto
+                            const onChangeSaldo = (saldoNuevo) => {
+                              // bruto = saldo + retencion (manteniendo retencion fija)
+                              const brutoEquivalente = Math.max(0, saldoNuevo + reteNMes);
+                              setVal(`tax_${nameKey}`, brutoEquivalente);
+                            };
+                            return (
+                              <div style={{background:(isOptEffectivo?T.gn:"#a78bfa")+"08",border:"1px solid "+(isOptEffectivo?T.gn:"#a78bfa")+"20",borderRadius:10,padding:"10px 12px"}}>
+                                <div style={{fontSize:10,fontWeight:700,color:isOptEffectivo?T.gn:"#a78bfa",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — saldo a pagar</div>
+                                <div style={{fontSize:10,color:T.txt3,marginBottom:8,lineHeight:1.5}}>
+                                  El slider arranca en tu <strong>saldo real</strong>. Movelo hacia arriba para simular escenarios más conservadores, o si lográs <strong>estrategias adicionales</strong> que el sistema no modela (donaciones, depreciación agresiva, créditos fiscales especiales) que cambien el saldo final.
+                                </div>
+                                <Slider label="" value={saldoMesEff} base={saldoMesBase}
+                                  max={saldoMesMax} color={isOptEffectivo ? T.gn : "#a78bfa"}
+                                  onChange={onChangeSaldo}
+                                  sub="" />
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginTop:4,fontSize:11}}>
+                                  <span style={{color:T.txt3}}>Saldo anual ajustado:</span>
+                                  <span style={{fontWeight:700,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(saldoMesEff*12)}<span style={{fontSize:9,color:T.txt3,fontWeight:400}}> · {fm(saldoMesEff)}/mes</span></span>
+                                </div>
+                                {/* Diferencia respecto al saldo real (no al bruto) */}
+                                {(() => {
+                                  const diffSaldoMes = saldoMesEff - saldoMesBase;
+                                  if (Math.abs(diffSaldoMes) < 100) return null;
+                                  return (
+                                    <div style={{marginTop:6,fontSize:10,color:diffSaldoMes>0?T.or:T.gn,fontWeight:600}}>
+                                      {diffSaldoMes > 0
+                                        ? `⚠️ Escenario más conservador: +${fm(diffSaldoMes*12)}/año de saldo`
+                                        : `🎯 Ahorro adicional: ${fm(Math.abs(diffSaldoMes)*12)}/año menos de saldo`}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            );
                           })()}
                           <div style={{marginTop:6,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4,lineHeight:1.5}}>
-                            {reteNMes > simImpEffectivo
-                              ? "⚠ Tu retención anual ya supera el impuesto total que debés según tabla. Bajar el slider NO afecta el cash flow del año (la retención ya salió de tu cuenta) — pero sí aumenta la devolución que te llega en la declaración."
+                            {saldoAnualEffectivo === 0 && simImpAnualEffectivo > 0
+                              ? "ℹ️ Tu saldo es $0 porque la retención ya cubre tu impuesto. Si subís el slider, simulás un escenario con menos retenciones del año (ej: cambio de empleador, freelance) o más impuesto causado."
                               : isJuridica
-                                ? "Cash flow descuenta el máximo entre impuesto bruto (35% utilidad) y las retenciones recibidas — lo que realmente salió del flujo del año."
-                                : "Cash flow descuenta el máximo entre impuesto bruto (tabla progresiva) y la retención — lo que realmente salió del flujo del año."}
+                                ? "El saldo a pagar es el desembolso real al presentar la declaración: impuesto bruto menos retenciones recibidas."
+                                : "El saldo a pagar es lo que efectivamente desembolsás al presentar la declaración (impuesto causado menos retención del año)."}
                           </div>
                         </div>;
                       })()}
