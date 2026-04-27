@@ -3,11 +3,12 @@
 ## Estado actual
 - Schema SQL listo en `01-migration-schema.sql`
 - **Patches críticos** en `01b-patches.sql` (5 patches: cierran gaps de auditoría)
+- **Cliente managed by advisor** en `01c-patches.sql` (8 patches: Opción A - tiers de asesor definen max_members del cliente)
 - Backward compatible: usuarios actuales siguen funcionando
-- RLS configurado con 8 policies + 2 triggers de protección originales + patches del 01b
+- RLS configurado con 8 policies + 2 triggers de protección originales + 5 patches del 01b + 3 triggers + 1 función del 01c
 - **No aplicado a Supabase productivo todavía**
 
-> ⚠️ **Importante:** Aplicar SIEMPRE `01-migration-schema.sql` seguido de `01b-patches.sql`. El 01 solo no es seguro: deja activas las policies legacy de `user_data` que permiten bypass del aislamiento multi-cuenta. Ver `03-auditoria-fase1.md` Finding 1 para detalle.
+> ⚠️ **Importante:** Aplicar SIEMPRE en orden `01-migration-schema.sql` → `01b-patches.sql` → `01c-patches.sql`. El 01 solo no es seguro: deja activas las policies legacy de `user_data`. El 01c agrega tracking del plan corporativo del asesor sobre el plan del cliente. Ver `03-auditoria-fase1.md` para detalles del 01b y `07-cliente-managed-por-asesor.md` para el 01c.
 
 ---
 
@@ -53,7 +54,23 @@ Resultados esperados:
 - Función `is_account_member` existe
 - Smoke test del helper devuelve TRUE
 
-### Paso 7 — Smoke test cliente
+### Paso 7 — Ejecutar `01c-patches.sql` (cliente managed by advisor)
+1. Supabase Dashboard → SQL Editor → New query
+2. Copiar contenido completo de `01c-patches.sql` (8 patches: PATCH 6 a PATCH 13)
+3. Click "Run" → debería completarse en <1 segundo (todo dentro de BEGIN/COMMIT)
+4. Si falla en el `REVOKE UPDATE ON public.accounts` (PATCH 13), verificar que las policies de UPDATE en `accounts` ya estén creadas por 01 (deberían estarlo). Si no, abortar y revisar.
+
+### Paso 8 — Validar con queries de verificación del 01c
+Ejecutar las 5 queries del bloque "VERIFICACIÓN POST-PATCH" al final del 01c.
+
+Resultados esperados:
+- 5 columnas nuevas en `accounts` (managed_by_advisor_id, managed_tier, managed_at, subscription_status, grace_until)
+- CHECK de `accounts_plan_check` contiene `'managed'`
+- 3 triggers nuevos instalados (promote_to_managed, sync_managed_accounts, start_grace)
+- `has_column_privilege('authenticated','accounts','plan','UPDATE')` = FALSE
+- `has_column_privilege('authenticated','accounts','display_name','UPDATE')` = TRUE
+
+### Paso 9 — Smoke test cliente
 1. Recargar finpathia.com con `Cmd+Shift+R`
 2. Login normal funciona
 3. Cargar/editar un ingreso → verificar que se guarda

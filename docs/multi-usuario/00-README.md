@@ -15,10 +15,13 @@ Leer en este orden si es la primera vez:
 | 0 | **`00-README.md`** | Este archivo (overview + decisiones cerradas) |
 | 1 | `01-migration-schema.sql` | Schema SQL original de Fase 1 (4 tablas + RLS + triggers + migración retroactiva) |
 | 2 | `01b-patches.sql` | **CRÍTICO:** 5 patches que cierran gaps detectados en auditoría. Ejecutar inmediatamente después del 01 |
-| 3 | `02-plan-operativo.md` | Runbook de aplicación (backup, ejecución, verificación, rollback) |
-| 4 | `03-auditoria-fase1.md` | Auditoría detallada del schema con findings críticos y menores |
-| 5 | `04-fase2-diseno.md` | Refactor cliente: useAccount, gating de edición, RoleContext (Fase 2 detallada) |
-| 6 | `05-fases-3-6-resumen.md` | Roadmap alto nivel: UI Mi Cuenta, email invitaciones, tests E2E, Stripe |
+| 3 | `01c-patches.sql` | **Cliente managed by advisor (Opción A):** 8 patches (PATCH 6-13) que conectan plan corporativo del asesor con `max_members` del cliente. Ejecutar después del 01b |
+| 4 | `02-plan-operativo.md` | Runbook de aplicación (backup, ejecución, verificación, rollback) |
+| 5 | `03-auditoria-fase1.md` | Auditoría detallada del schema con findings críticos y menores |
+| 6 | `04-fase2-diseno.md` | Refactor cliente: useAccount, gating de edición, RoleContext (Fase 2 detallada) |
+| 7 | `05-fases-3-6-resumen.md` | Roadmap alto nivel: UI Mi Cuenta, email invitaciones, tests E2E, Stripe |
+| 8 | `06-fase2-snippets.md` | Diffs exactos para `App.jsx` cuando se implemente Fase 2 |
+| 9 | `07-cliente-managed-por-asesor.md` | Diseño completo de Opción A: tiers Starter/Professional/Boutique → max_members 1/3/5, grace period, casos edge |
 
 ---
 
@@ -73,6 +76,19 @@ El trigger `handle_new_user` se actualiza para crear automáticamente: (a) la cu
 
 ### Decisión 4 — Backward compatibility durante transición
 Las RLS policies de Fase 1 incluyen un brazo `OR (account_id IS NULL AND id = auth.uid())` que permite al cliente legacy seguir funcionando entre la aplicación de Fase 1 y la de Fase 2. Una vez que Fase 2 esté en producción y todos los `user_data` tengan `account_id`, en una `01d-cleanup.sql` futura se elimina ese brazo.
+
+### Decisión 5 — Cliente managed by advisor (Opción A)
+El plan corporativo del asesor define cuántos miembros adicionales puede tener cada cliente. Cuando un asesor vincula un cliente cuya cuenta era `basic`, la cuenta se promueve a `plan='managed'` con `max_members` heredado del tier del asesor:
+
+| advisor_plan | max_members del cliente |
+|---|---|
+| starter | 1 |
+| professional | 3 |
+| boutique | 5 |
+
+Si el cliente ya tenía `pro_familiar` propio, su plan tiene prioridad y no se sobrescribe. Si el asesor pierde al cliente, la cuenta entra en grace period 30 días antes de bajar a `basic`. Si el asesor cambia de plan, todas sus cuentas managed se reajustan automáticamente. Defensa en profundidad mediante column-level REVOKE: el cliente solo puede modificar `display_name` directamente; el resto de campos solo cambian vía triggers `SECURITY DEFINER`.
+
+Ver SQL completo en `01c-patches.sql` (8 patches: PATCH 6 a PATCH 13) y diseño detallado en `07-cliente-managed-por-asesor.md`.
 
 ---
 
