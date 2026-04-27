@@ -33,8 +33,11 @@ import AssetsModuleUS from "./components/AssetsModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
+import { useAccount } from "./lib/useAccount";
+import { RoleProvider } from "./lib/RoleContext.jsx";
+import RoleBanner from "./components/RoleBanner";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55 } from "./lib/migrations";
@@ -47,10 +50,16 @@ const T={bg:"#09090b",bg2:"#18181b",bg3:"#27272a",card:"#111113",border:"rgba(25
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>(n||0).toFixed(1)+"%";
 const SK="fp3";
-const sL=async(uid)=>{
+const sL=async(uid,accountId)=>{
   try{
     if(isSupabaseConfigured&&uid){
-      const{data,error}=await supabase.from("user_data").select("data,jurisdiction").eq("id",uid).single();
+      // Multi-cuenta (Fase 2): si tenemos accountId, leer por account_id.
+      // Sino, fallback legacy a leer por uid (período transitorio donde
+      // useAccount aun no resolvió, o usuario sin membresía multi-usuario).
+      const q=supabase.from("user_data").select("data,jurisdiction");
+      const{data,error}=accountId
+        ?await q.eq("account_id",accountId).maybeSingle()
+        :await q.eq("id",uid).maybeSingle();
       if(!error&&data?.data){
         let sd=data.data;
         if(sd._encrypted&&sd.payload){
@@ -190,7 +199,7 @@ const takeSnapshot=(d)=>{
     }
   }catch{}
 };
-const sS=async(d,uid)=>{
+const sS=async(d,uid,accountId,isLegacy)=>{
   try{
     localStorage.setItem(SK,JSON.stringify(d));
     takeSnapshot(d);
@@ -204,12 +213,26 @@ const sS=async(d,uid)=>{
         // perdian. Ahora hacemos visible el error y el estado al window para
         // diagnostico inmediato.
         try{
-          const result=await supabase.from("user_data").upsert(
-            {id:uid,data:d,jurisdiction:d.jurisdiction||"CO",updated_at:new Date().toISOString()},
-            {onConflict:"id"}
-          );
+          // Multi-cuenta (Fase 2 commit 1): si tenemos accountId y NO estamos
+          // en modo legacy, hacer UPDATE por account_id. Esto funciona aunque
+          // el admin que escribe sea distinto al `id` del row de user_data
+          // (caso futuro de admin invitado). El row ya existe — lo creó
+          // handle_new_user (PATCH 5/FIX 1) o la migración retroactiva.
+          // Caso legacy (accountId nulo o isLegacy=true): mantener upsert
+          // por id, idéntico al comportamiento pre-Fase 2.
+          let result;
+          if(accountId&&!isLegacy){
+            result=await supabase.from("user_data")
+              .update({data:d,jurisdiction:d.jurisdiction||"CO",updated_at:new Date().toISOString()})
+              .eq("account_id",accountId);
+          }else{
+            result=await supabase.from("user_data").upsert(
+              {id:uid,data:d,jurisdiction:d.jurisdiction||"CO",updated_at:new Date().toISOString()},
+              {onConflict:"id"}
+            );
+          }
           if(result.error){
-            console.error("[fp3] Supabase upsert ERROR:",result.error);
+            console.error("[fp3] Supabase save ERROR:",result.error);
             window.__fp3LastSaveError=result.error;
             // Toast visible al usuario para que sepa que hay un problema
             try{const ev=new CustomEvent("fp3-save-error",{detail:result.error});window.dispatchEvent(ev)}catch{}
@@ -223,7 +246,7 @@ const sS=async(d,uid)=>{
             try{const ev=new CustomEvent("fp3-save-ok",{detail:{at:new Date().toISOString()}});window.dispatchEvent(ev)}catch{}
           }
         }catch(e){
-          console.error("[fp3] Supabase upsert EXCEPTION:",e);
+          console.error("[fp3] Supabase save EXCEPTION:",e);
           window.__fp3LastSaveError=e;
           try{const ev=new CustomEvent("fp3-save-error",{detail:e});window.dispatchEvent(ev)}catch{}
         }
@@ -274,6 +297,18 @@ export default function FinPath(){
   // Modal de solicitar recuperación (el usuario escribe email acá explícitamente)
   const[showRecoveryRequest,setShowRecoveryRequest]=useState(false);
   const[recoveryEmail,setRecoveryEmail]=useState("");
+  // ═══ MULTI-USUARIO STATE (Fase 2 commit 1) ═══
+  // useAccount detecta la cuenta activa del usuario y su rol. Si la migración
+  // 01+01b+01c+01d aún no está aplicada, devuelve isLegacy=true con defaults
+  // (admin) y todo el flujo cae al camino legacy. Cuando está aplicada, los
+  // saves van a public.user_data por account_id en lugar de por id.
+  const{accountId,role,isLegacy,displayName,loading:accountLoading}=useAccount(authUser,supabase);
+  // Refs para que sS() (que es global, fuera del componente) acceda a los
+  // values frescos sin recrear el callback ni cerrar sobre values stale del
+  // setTimeout de 2s del debounce de save.
+  const accountIdRef=useRef(null);
+  const isLegacyRef=useRef(true);
+  useEffect(()=>{accountIdRef.current=accountId;isLegacyRef.current=isLegacy;},[accountId,isLegacy]);
   // ═══ ADVISOR MODE STATE ═══
   // isAdvisor: true si el usuario loggeado existe en la tabla `advisors`
   // advisorProfile: datos del asesor (plan, max_clients, firm_name, etc.)
@@ -342,7 +377,10 @@ export default function FinPath(){
         if(session?.user){
           setAuthUser(session.user);
           try{
-            const d=await Promise.race([sL(session.user.id),timeout]);
+            // Multi-cuenta (Fase 2): pasar accountIdRef.current. En el primer
+            // mount es null (useAccount aún no resolvió) → sL cae a path legacy.
+            // Subsecuentemente, los saves usan los refs actualizados.
+            const d=await Promise.race([sL(session.user.id,accountIdRef.current),timeout]);
             if(d)setU(sanitize(d));
           }catch(e){if(typeof console!=="undefined")console.warn("[load] data load timeout:",e)}
           // ═══ Check if user is an advisor ═══
@@ -389,7 +427,15 @@ export default function FinPath(){
     // obsoleto justo cuando u está siendo limpiado a null.
     const targetId=(isAdvisor&&viewMode==="client"&&currentClientId)?currentClientId:authUser?.id;
     if(!targetId)return;
-    sS(u,targetId);
+    // Multi-cuenta (Fase 2): pasar accountId/isLegacy SOLO en modo retail
+    // (no en modo asesor-viendo-cliente, donde el save va contra el row del
+    // cliente vía advisor_client_data y no aplica el flujo multi-cuenta).
+    const isAdvisorViewingClient=isAdvisor&&viewMode==="client"&&currentClientId;
+    if(isAdvisorViewingClient){
+      sS(u,targetId);
+    }else{
+      sS(u,targetId,accountIdRef.current,isLegacyRef.current);
+    }
   },[u]);
 
   // Commit 12 Tarea 3: listener de errores de Supabase para hacer visible al
@@ -544,7 +590,10 @@ export default function FinPath(){
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);
         try{
           const d=await Promise.race([
-            sL(data.user.id),
+            // Multi-cuenta (Fase 2): paso accountIdRef.current. Inicialmente
+            // null porque useAccount no resolvió tras setAuthUser; sL cae a
+            // path legacy y trae los datos correctamente.
+            sL(data.user.id,accountIdRef.current),
             new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout cargando datos")),10000))
           ]);
           if(d)setU(sanitize(d));
@@ -2599,12 +2648,12 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       </div></div>;
     default:return<div style={{padding:56,textAlign:"center",color:T.tx3}}>Próximamente</div>}};
 
-  return<div style={{background:T.bg,minHeight:"100vh",display:"flex",fontFamily:"'Inter',system-ui",color:T.tx}}>
+  return <RoleProvider value={{role,isLegacy,accountId}}><div style={{background:T.bg,minHeight:"100vh",display:"flex",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:${T.bg}}input:focus,select:focus{border-color:${T.gn}!important;outline:none}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${T.bg3};border-radius:3px}::selection{background:${T.gn}30}`}</style>
     {sb&&<aside style={{width:220,minWidth:220,height:"100vh",position:mb?"fixed":"sticky",top:0,background:T.bg2,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",zIndex:100,overflowY:"auto"}}><div style={{padding:"20px 18px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div style={{fontSize:16,fontWeight:800,color:T.gn}}>FINPATHIA</div>{mb&&<button onClick={()=>sSb(false)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:16}}>✕</button>}</div><nav style={{flex:1,padding:"0 8px"}}>{nvs.map(n=>{if(n.hidden)return null;
             if(n.sep)return<div key={n.id} style={{padding:n.l?"10px 12px 4px":"6px 0",fontSize:9,fontWeight:700,color:T.tx3,letterSpacing:"0.1em",borderTop:n.l?`1px solid ${T.border}`:"none",marginTop:n.l?4:0}}>{n.l||""}</div>;const a=pg===n.id;return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span>{n.l}{n.id==="price"&&plan==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:8}}><div style={{width:28,height:28,borderRadius:99,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{(u?.p?.name||"U").charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u?.p?.name||"Usuario"}</div><div style={{fontSize:10,color:T.tx3}}>{plan==="free"?(trialEnd?"Free":"Free"):plan==="basico"?"Básico ⚡":trialActive?"Pro ⭐ Trial":"Pro ⭐"}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",marginBottom:6,fontSize:10,color:T.tx3}}><span>🔒</span> Datos encriptados y privados</div><button onClick={()=>window.open("https://wa.me/?text=🏦 Encontré esta plataforma para gestionar tu patrimonio con inteligencia artificial.%0A%0APones tus inversiones, ingresos, gastos y deudas → te dice en qué nivel de libertad financiera estás, simula escenarios y un asesor IA analiza tus números reales.%0A%0A14 días gratis del plan completo, sin tarjeta.%0A%0A👉 https://finpathia.com","_blank")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.2)",color:"#25d366",cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12,marginBottom:6}}>💬 Compartir por WhatsApp</button><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:T.bg3,border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12}}>🚪 Cerrar sesión</button></div></aside>}
     {mb&&sb&&<div onClick={()=>sSb(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99}}/>}
-    <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{isAdvisor&&viewMode==="client"&&currentClient&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(167,139,250,0.14))",borderBottom:"2px solid rgba(59,130,246,0.4)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#bfdbfe",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>👁</span><span><strong style={{color:"#fff"}}>Viendo como asesor:</strong> {currentClient.name||currentClient.email} <span style={{opacity:0.7}}>({currentClient.email})</span></span></span><button onClick={returnToAdvisorWorkspace} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>← Volver a mis clientes</button></div>}{isAdvisor&&viewMode==="personal"&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(167,139,250,0.10))",borderBottom:"1px solid rgba(59,130,246,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#93c5fd",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📊</span><span>Modo personal — gestionas tu propio patrimonio.</span></span><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setViewMode("workspace");setCurrentClientId(null)}} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>👥 Ir a mis clientes</button></div></div>}{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(249,115,22,0.1),rgba(234,179,8,0.08))",borderBottom:"1px solid rgba(249,115,22,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12}}><span style={{color:T.orange}}>📊 Estás explorando con datos de ejemplo.</span><button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Crear cuenta para guardar →</button></div>}<header style={{height:52,padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:6}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} title="Abrir menú" style={{background:"none",border:"none",color:T.tx2,cursor:"pointer",fontSize:20,padding:"4px 8px"}}>☰</button>}{!sb&&!mb&&<span style={{fontSize:14,fontWeight:800,color:T.gn,marginLeft:4}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"nowrap",minWidth:0}}>{!mb&&<button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4}}>📥 Importar Excel</button>}<Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#22c55e",border:"none",color:"#fff",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11}}>{cur==="USD"?"🇺🇸 USD":"🇨🇴 COP"}</button>{!mb&&<button onClick={()=>setU(p=>p?{...p,lang:isEN?"es":"en"}:p)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:"#fafafa",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11}} title="Toggle language">{isEN?"🇺🇸 EN":"🇨🇴 ES"}</button>}{!mb&&u.trm&&<span style={{fontSize:10,color:T.tx3}}>TRM: ${Math.round(u.trm).toLocaleString()}</span>}<button onClick={()=>setMasked(m=>!m)} title={masked?"Mostrar valores":"Ocultar valores"} style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:11}}>{masked?"👁️":"🙈"}</button>{plan==="free"&&!mb&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}</div></header><div style={{flex:1,padding:mb?14:28,maxWidth:1200,width:"100%"}}>{rp()}</div>{showImport&&<CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/>}{toast&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#22c55e",color:"#000",padding:"12px 24px",borderRadius:12,fontWeight:700,fontSize:13,zIndex:9999,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",animation:"slideUp 0.3s ease"}}>{toast}</div>}</main>
-  </div>;
+    <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{isAdvisor&&viewMode==="client"&&currentClient&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(167,139,250,0.14))",borderBottom:"2px solid rgba(59,130,246,0.4)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#bfdbfe",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>👁</span><span><strong style={{color:"#fff"}}>Viendo como asesor:</strong> {currentClient.name||currentClient.email} <span style={{opacity:0.7}}>({currentClient.email})</span></span></span><button onClick={returnToAdvisorWorkspace} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>← Volver a mis clientes</button></div>}{isAdvisor&&viewMode==="personal"&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(167,139,250,0.10))",borderBottom:"1px solid rgba(59,130,246,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#93c5fd",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📊</span><span>Modo personal — gestionas tu propio patrimonio.</span></span><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setViewMode("workspace");setCurrentClientId(null)}} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>👥 Ir a mis clientes</button></div></div>}{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(249,115,22,0.1),rgba(234,179,8,0.08))",borderBottom:"1px solid rgba(249,115,22,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12}}><span style={{color:T.orange}}>📊 Estás explorando con datos de ejemplo.</span><button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Crear cuenta para guardar →</button></div>}{!isLegacy&&role==="reader"&&viewMode!=="client"&&<RoleBanner accountName={displayName}/>}<header style={{height:52,padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:6}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} title="Abrir menú" style={{background:"none",border:"none",color:T.tx2,cursor:"pointer",fontSize:20,padding:"4px 8px"}}>☰</button>}{!sb&&!mb&&<span style={{fontSize:14,fontWeight:800,color:T.gn,marginLeft:4}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"nowrap",minWidth:0}}>{!mb&&<button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4}}>📥 Importar Excel</button>}<Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#22c55e",border:"none",color:"#fff",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11}}>{cur==="USD"?"🇺🇸 USD":"🇨🇴 COP"}</button>{!mb&&<button onClick={()=>setU(p=>p?{...p,lang:isEN?"es":"en"}:p)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:"#fafafa",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11}} title="Toggle language">{isEN?"🇺🇸 EN":"🇨🇴 ES"}</button>}{!mb&&u.trm&&<span style={{fontSize:10,color:T.tx3}}>TRM: ${Math.round(u.trm).toLocaleString()}</span>}<button onClick={()=>setMasked(m=>!m)} title={masked?"Mostrar valores":"Ocultar valores"} style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:11}}>{masked?"👁️":"🙈"}</button>{plan==="free"&&!mb&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}</div></header><div style={{flex:1,padding:mb?14:28,maxWidth:1200,width:"100%"}}>{rp()}</div>{showImport&&<CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/>}{toast&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#22c55e",color:"#000",padding:"12px 24px",borderRadius:12,fontWeight:700,fontSize:13,zIndex:9999,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",animation:"slideUp 0.3s ease"}}>{toast}</div>}</main>
+  </div></RoleProvider>;
 }
 // v1775826625
