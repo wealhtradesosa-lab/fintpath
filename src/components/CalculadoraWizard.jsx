@@ -1385,7 +1385,7 @@ function Paso3Situacion({ user, selectedOwner, onUpdateProfile, onUpdateOwner, o
           <HonorariosGastosPanel user={user} selectedOwner={selectedOwner} onNavigate={onNavigate} />
           <DeduccionesNaturalesPanel user={user} selectedOwner={selectedOwner} onNavigate={onNavigate} />
           <div id="ajustes-fiscales">
-            <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" />
+            <AjustesFiscalesPersonalizados owner={selectedOwner} onUpdate={onUpdateProfile} filterGroup="personal" owners={owners} />
           </div>
         </>
       )}

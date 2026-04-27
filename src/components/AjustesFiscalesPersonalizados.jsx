@@ -126,15 +126,21 @@ function Collapsible({ icono, titulo, descripcion, cantActivos, total, defaultOp
 // ─────────────────────────────────────────────────────────────────────────
 // Componente principal
 // ─────────────────────────────────────────────────────────────────────────
-export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterGroup = "all" }) {
-  // filterGroup: 'all' | 'personal' (grupos A + personal de C) | 'eventos' (grupos B + beneficios de C)
+export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterGroup = "all", owners = [] }) {
+  // filterGroup: 'all' | 'personal' (grupos A + personal de C + socios) | 'eventos' (grupos B + beneficios de C)
   const showGrupoA = filterGroup === "all" || filterGroup === "personal";
   const showGrupoB = filterGroup === "all" || filterGroup === "eventos";
   const showGrupoC = filterGroup === "all";
   const showGrupoCPersonal = filterGroup === "personal"; // subset de C: contabilidad, honorarios
   const showGrupoCEventos = filterGroup === "eventos"; // subset de C: donaciones, CTI, régimen especial
+  // Commit 19 Tarea 3: nuevo grupo "socios" para participaciones societarias
+  // (cierra Gap 4 al 100%). Solo visible para natural en filterGroup personal.
+  const showGrupoSocios = filterGroup === "all" || filterGroup === "personal";
   const profile = owner?.fiscalProfile || {};
   const eventos = profile.eventosAno || {};
+  const socios = profile.socios || [];
+  // Lista de jurídicas disponibles para vincular como participación
+  const juridicasDisponibles = (owners || []).filter(o => o.type === "juridica" && o.id !== owner?.id);
 
   // Helpers de update
   const updateProfile = (patch) => {
@@ -282,6 +288,108 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
             value={!!profile.auxilios?.transporte}
             onChange={(v) => updateProfile({ auxilios: { ...profile.auxilios, transporte: v } })}
           />
+        </Collapsible>
+      )}
+
+      {/* ═══════════════ GRUPO SOCIOS — Participaciones societarias ═══════════════
+          Commit 19 Tarea 3: cierra Gap 4 al 100%. El motor (Commit 13) ya distribuye
+          dividendos auto si fiscalProfile.socios está definido. Esta UI permite
+          configurarlo sin tocar JSON. */}
+      {showGrupoSocios && esNatural && (
+        <Collapsible
+          icono="🏢"
+          titulo="Soy socio de una empresa"
+          descripcion="Si sos accionista o dueño de una jurídica, los dividendos se calculan automáticamente"
+          total={socios.length}
+        >
+          <div style={{ marginBottom: 12, padding: "10px 12px", background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 8, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+            ℹ️ Si sos socio de una empresa que tenés cargada como owner jurídica, declará tu participación. El motor calculará automáticamente los dividendos que te corresponden y los aplicará a tu impuesto (Art. 49 #3 + Art. 242 ET) — sin que tengas que cargarlos manualmente como ingreso.
+          </div>
+
+          {juridicasDisponibles.length === 0 ? (
+            <div style={{ padding: "12px 14px", background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 8, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+              ⚠️ No tenés owners jurídicos cargados todavía. Primero creá la empresa como owner jurídica desde la pantalla principal de la calculadora; después podés vincular tu participación acá.
+            </div>
+          ) : (
+            <>
+              {/* Lista de socios actuales */}
+              {socios.map((s, idx) => {
+                const juridica = juridicasDisponibles.find(j => j.id === s.ownerJuridicaId);
+                return (
+                  <div key={idx} style={{ marginBottom: 8, padding: "10px 12px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.txt }}>{juridica?.name || "Empresa eliminada"}</div>
+                      <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Tu participación: <strong style={{ color: T.green }}>{s.porcentaje}%</strong></div>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={s.porcentaje}
+                      onChange={(e) => {
+                        const newSocios = [...socios];
+                        newSocios[idx] = { ...newSocios[idx], porcentaje: Math.max(0, Math.min(100, Number(e.target.value) || 0)) };
+                        updateProfile({ socios: newSocios });
+                      }}
+                      style={{ width: 70, padding: "6px 8px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, color: T.txt, fontSize: 11, textAlign: "right" }}
+                    />
+                    <span style={{ fontSize: 11, color: T.txt3 }}>%</span>
+                    <button
+                      onClick={() => updateProfile({ socios: socios.filter((_, i) => i !== idx) })}
+                      style={{ background: "transparent", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", padding: "4px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer" }}
+                      title="Quitar esta participación"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* Agregar nueva participación */}
+              {(() => {
+                const yaVinculadas = new Set(socios.map(s => s.ownerJuridicaId));
+                const disponibles = juridicasDisponibles.filter(j => !yaVinculadas.has(j.id));
+                if (disponibles.length === 0) {
+                  return (
+                    <div style={{ marginTop: 8, padding: "8px 12px", fontSize: 10, color: T.txt3, fontStyle: "italic", textAlign: "center" }}>
+                      Ya vinculaste todas las jurídicas disponibles.
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ marginTop: 8, padding: "10px 12px", background: T.bg3, border: "1px dashed " + T.border, borderRadius: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: T.txt2, marginBottom: 6 }}>+ Agregar participación</div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      <select
+                        id={`add-socio-${owner?.id || "default"}`}
+                        defaultValue=""
+                        style={{ flex: 1, minWidth: 120, padding: "6px 8px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 6, color: T.txt, fontSize: 11 }}
+                      >
+                        <option value="">— Elegí la empresa —</option>
+                        {disponibles.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
+                      </select>
+                      <button
+                        onClick={() => {
+                          const sel = document.getElementById(`add-socio-${owner?.id || "default"}`);
+                          if (!sel || !sel.value) return;
+                          const nuevoSocio = { ownerJuridicaId: sel.value, porcentaje: 100 };
+                          updateProfile({ socios: [...socios, nuevoSocio] });
+                          sel.value = "";
+                        }}
+                        style={{ background: T.green, color: "#000", border: "none", padding: "6px 14px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                      >
+                        + Agregar
+                      </button>
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 9, color: T.txt3, fontStyle: "italic" }}>
+                      Por defecto se asigna 100%. Ajustá el porcentaje después según tu participación real.
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
+          )}
         </Collapsible>
       )}
 
