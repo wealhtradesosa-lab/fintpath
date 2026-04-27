@@ -88,7 +88,66 @@ const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d
 // campo tp (mortgage→VIVIENDA_HABITACIONAL, otros→CONSUMO) cuando falta.
 // Esto es DEFENSIVO: si el campo ya existe, no se toca. Sin riesgo de regresión.
 d.deu=d.deu.map(deuda=>{if(deuda.fiscalCode)return deuda;const fcInferido=deuda.tp==="mortgage"?"DEU_NAT_VIVIENDA_HABITACIONAL":"DEU_NAT_CONSUMO";return {...deuda,fiscalCode:fcInferido}});
-if(!d.gas)d.gas={};if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateDeclaracionesV55(migrateAportesVoluntariosV17(d))};
+if(!d.gas)d.gas={};
+// Commit 22 Tarea 3: migración silenciosa para gastos legacy sin fiscalCode.
+// Mismo patrón que Commit 18 (deudas) y Commit 16 (UI fallback). Items
+// creados antes de que se persistiera fiscalCode quedaron sin ese campo.
+// Aquí derivamos el fiscalCode desde la categoría según el OWNER del item.
+//
+// IMPORTANTE: necesitamos saber si el owner es natural o jurídica para
+// asignar el fiscalCode correcto. Si el owner ya no existe (eliminado),
+// asumimos natural por default (más conservador).
+//
+// Reglas (mismas que defaultFiscalCode en GastosModule.jsx):
+//   Universal:
+//     - Aporte tributario → AP_TRIB_PV (más común)
+//   Natural:
+//     - Salud → GAS_NAT_SALUD_MEDICINA
+//     - Vivienda/Arrendamiento/Mantenimiento/Servicios → GAS_NAT_PERSONAL (conservador)
+//     - Seguros → SEG_GENERICO (sub-selector clarifica)
+//     - Predial → GAS_NAT_PERSONAL (sub-selector clarifica)
+//     - Ahorro → GAS_NAT_AHORRO
+//     - Resto → GAS_NAT_PERSONAL
+//   Jurídica:
+//     - Nómina → GAS_JUR_NOMINA
+//     - Honorarios → GAS_JUR_HONORARIOS_PROF
+//     - Predial → GAS_JUR_PREDIAL
+//     - Depreciación → GAS_JUR_DEPRECIACION
+//     - Educación → GAS_JUR_CAPACITACION
+//     - Gastos personales (Alimentación, Entretenimiento, etc) → GAS_JUR_NO_DEDUCIBLE
+//     - Resto → GAS_JUR_OPERATIVO
+const _ownersById = {};
+(d.owners || []).forEach(o => { _ownersById[o.id] = o; });
+const _deriveGasFiscalCode = (cat, ownerId) => {
+  if (cat === "Aporte tributario") return "AP_TRIB_PV";
+  const ow = _ownersById[ownerId];
+  const isJur = ow?.type === "juridica";
+  if (isJur) {
+    if (cat === "Nómina") return "GAS_JUR_NOMINA";
+    if (cat === "Honorarios") return "GAS_JUR_HONORARIOS_PROF";
+    if (cat === "Predial") return "GAS_JUR_PREDIAL";
+    if (cat === "Depreciación") return "GAS_JUR_DEPRECIACION";
+    if (cat === "Educación") return "GAS_JUR_CAPACITACION";
+    if (["Alimentación", "Entretenimiento", "Personal", "Vestimenta", "Mascotas", "Deporte", "Ahorro"].includes(cat)) return "GAS_JUR_NO_DEDUCIBLE";
+    return "GAS_JUR_OPERATIVO";
+  }
+  // natural
+  if (cat === "Salud") return "GAS_NAT_SALUD_MEDICINA";
+  if (cat === "Vivienda" || cat === "Arrendamiento" || cat === "Mantenimiento" || cat === "Servicios") return "GAS_NAT_PERSONAL";
+  if (cat === "Seguros") return "SEG_GENERICO";
+  if (cat === "Predial") return "GAS_NAT_PERSONAL";
+  if (cat === "Depreciación") return "GAS_INMUEBLE_DEPRECIACION";
+  if (cat === "Ahorro") return "GAS_NAT_AHORRO";
+  return "GAS_NAT_PERSONAL";
+};
+Object.keys(d.gas).forEach(cat => {
+  if (!Array.isArray(d.gas[cat])) return;
+  d.gas[cat] = d.gas[cat].map(item => {
+    if (item.fiscalCode) return item;
+    return { ...item, fiscalCode: _deriveGasFiscalCode(cat, item.owner) };
+  });
+});
+if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateDeclaracionesV55(migrateAportesVoluntariosV17(d))};
 
 // ═══ END-TO-END ENCRYPTION ═══
 const E2E={
