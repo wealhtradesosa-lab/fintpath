@@ -215,6 +215,12 @@ const sS=async(d,uid)=>{
             try{const ev=new CustomEvent("fp3-save-error",{detail:result.error});window.dispatchEvent(ev)}catch{}
           }else{
             window.__fp3LastSaveOk=new Date().toISOString();
+            // Commit 23 Tarea 3: notificar al usuario cuando el upsert a Supabase
+            // se confirma. Resuelve la duda 'se guardo o no?' que tenia el usuario
+            // (caso del bug reportado 'AGREGO SALARIOS PERO NO QUEDAN GUARDADOS'
+            // - los datos SI se guardaban, pero el toast '✅ Guardado' se mostraba
+            // antes del debounce de 2s, generando incertidumbre).
+            try{const ev=new CustomEvent("fp3-save-ok",{detail:{at:new Date().toISOString()}});window.dispatchEvent(ev)}catch{}
           }
         }catch(e){
           console.error("[fp3] Supabase upsert EXCEPTION:",e);
@@ -400,6 +406,27 @@ export default function FinPath(){
     };
     window.addEventListener("fp3-save-error",handler);
     return ()=>window.removeEventListener("fp3-save-error",handler);
+  },[]);
+
+  // Commit 23 Tarea 3: listener de OK de Supabase. Cuando el upsert se
+  // confirma (despues del debounce de 2s en sS()), mostramos toast
+  // '☁️ Sincronizado' por 2 segundos. Esto reemplaza el feedback enganoso
+  // '✅ Guardado' inmediato por un flujo de dos etapas honesto:
+  //   '💾 Guardando…' (al instante, localStorage hecho)
+  //   '☁️ Sincronizado' (a los ~2s, backend confirmo)
+  // Solo se muestra si hay un toast 'Guardando' activo o si el toast esta
+  // vacio (no sobreescribir mensajes informativos).
+  useEffect(()=>{
+    const handler=()=>{
+      // Lee toast actual desde el state callback para evitar dependencia
+      setToast(prev=>{
+        if(prev && !prev.includes("Guardando")) return prev; // respetar otros toasts
+        return "☁️ Sincronizado";
+      });
+      setTimeout(()=>setToast(prev=>prev==="☁️ Sincronizado"?"":prev),2000);
+    };
+    window.addEventListener("fp3-save-ok",handler);
+    return ()=>window.removeEventListener("fp3-save-ok",handler);
   },[]);
 
 
@@ -706,7 +733,16 @@ export default function FinPath(){
   const handleImport=(key,rows,isGastos)=>{if(isGastos){const g={...(u&&u.gas||{})};rows.forEach(r=>{const cat=r.cat||"Otro";if(!g[cat])g[cat]=[];g[cat].push({c:r.c,m:r.m,t:r.t})});upd("gas",g)}else{upd(key,[...((u&&u[key])||[]),...rows])}};
 
   const fm=n=>{if(masked)return"$•••••";if(n==null||isNaN(n))return"$0";const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
-  const upd=(k,v)=>{showToast("✅ Guardado");setU(p=>p?{...p,[k]:v}:p);};
+  // Commit 23 Tarea 3: feedback honesto del estado de guardado.
+  // Antes 'showToast' decia '✅ Guardado' inmediato, pero tecnicamente solo
+  // era localStorage — el upsert a Supabase tenia debounce de 2s y podia
+  // tardar mas. Generaba la duda '¿se guardo realmente?' que reporto el
+  // usuario. Ahora el flujo es:
+  //   1. upd() → toast '💾 Guardando...' (honesto: localStorage hecho, backend pendiente)
+  //   2. sS() debounce 2s → upsert a Supabase
+  //   3. Si OK → evento 'fp3-save-ok' → toast '☁️ Sincronizado'
+  //   4. Si error → evento 'fp3-save-error' → toast '⚠️ Error guardando'
+  const upd=(k,v)=>{showToast("💾 Guardando…");setU(p=>p?{...p,[k]:v}:p);};
   const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";
   const INVITADOS=["andres.isaza@grupogiesas.com","renatomaestri76@hotmail.com"];
   const getTrialDays=(email)=>INVITADOS.includes(email)?30:14;
