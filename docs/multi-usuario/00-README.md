@@ -16,12 +16,13 @@ Leer en este orden si es la primera vez:
 | 1 | `01-migration-schema.sql` | Schema SQL original de Fase 1 (4 tablas + RLS + triggers + migración retroactiva) |
 | 2 | `01b-patches.sql` | **CRÍTICO:** 5 patches que cierran gaps detectados en auditoría. Ejecutar inmediatamente después del 01 |
 | 3 | `01c-patches.sql` | **Cliente managed by advisor (Opción A):** 8 patches (PATCH 6-13) que conectan plan corporativo del asesor con `max_members` del cliente. Ejecutar después del 01b |
-| 4 | `02-plan-operativo.md` | Runbook de aplicación (backup, ejecución, verificación, rollback) |
-| 5 | `03-auditoria-fase1.md` | Auditoría detallada del schema con findings críticos y menores |
-| 6 | `04-fase2-diseno.md` | Refactor cliente: useAccount, gating de edición, RoleContext (Fase 2 detallada) |
-| 7 | `05-fases-3-6-resumen.md` | Roadmap alto nivel: UI Mi Cuenta, email invitaciones, tests E2E, Stripe |
-| 8 | `06-fase2-snippets.md` | Diffs exactos para `App.jsx` cuando se implemente Fase 2 |
-| 9 | `07-cliente-managed-por-asesor.md` | Diseño completo de Opción A: tiers Starter/Professional/Boutique → max_members 1/3/5, grace period, casos edge |
+| 4 | `01d-validacion-fixes.sql` | **Fixes finales:** 4 fixes detectados al validar el diseño completo (campo `pen` en handle_new_user, UNIQUE account_id, cancelar grace al reactivar paused, enforce_max_members trigger). Ejecutar al final, después del 01c |
+| 5 | `02-plan-operativo.md` | Runbook de aplicación (backup, ejecución, verificación, rollback) |
+| 6 | `03-auditoria-fase1.md` | Auditoría detallada del schema con findings críticos y menores |
+| 7 | `04-fase2-diseno.md` | Refactor cliente: useAccount, gating de edición, RoleContext (Fase 2 detallada) |
+| 8 | `05-fases-3-6-resumen.md` | Roadmap alto nivel: UI Mi Cuenta, email invitaciones, tests E2E, Stripe |
+| 9 | `06-fase2-snippets.md` | Diffs exactos para `App.jsx` cuando se implemente Fase 2 |
+| 10 | `07-cliente-managed-por-asesor.md` | Diseño completo de Opción A: tiers Starter/Professional/Boutique → max_members 1/3/5, grace period, casos edge |
 
 ---
 
@@ -129,15 +130,21 @@ docs/multi-usuario/
 ├── 00-README.md                    ← este archivo
 ├── 01-migration-schema.sql         ← schema Fase 1 (323 LOC, NO aplicado)
 ├── 01b-patches.sql                 ← 5 patches críticos (NO aplicado)
-├── 02-plan-operativo.md            ← runbook
+├── 01c-patches.sql                 ← 8 patches managed-by-advisor (NO aplicado)
+├── 01d-validacion-fixes.sql        ← 4 fixes finales de validación (NO aplicado)
+├── 02-plan-operativo.md            ← runbook (10 pasos: 01 → 01b → 01c → 01d → smoke)
 ├── 03-auditoria-fase1.md           ← auditoría con 5 findings críticos + 4 menores
 ├── 04-fase2-diseno.md              ← diseño detallado refactor cliente
-└── 05-fases-3-6-resumen.md         ← roadmap fases siguientes
+├── 05-fases-3-6-resumen.md         ← roadmap fases siguientes
+├── 06-fase2-snippets.md            ← diffs exactos para App.jsx
+└── 07-cliente-managed-por-asesor.md ← Opción A completa
 
-src/lib/useAccount.js               ← hook defensivo (escrito, no integrado todavía)
+src/lib/useAccount.js               ← hook defensivo extendido (commiteado, no integrado)
+src/lib/RoleContext.jsx             ← Context para gating de edición
+src/components/RoleBanner.jsx       ← banner solo-lectura
 ```
 
-**Audit:** 19/19 OK · **Build:** OK · **HEAD:** ced1766 (Tarea 3 cerrada).
+**Audit:** 19/19 OK · **Build:** OK · **HEAD:** post-validación.
 
 ---
 

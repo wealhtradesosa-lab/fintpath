@@ -4,11 +4,12 @@
 - Schema SQL listo en `01-migration-schema.sql`
 - **Patches críticos** en `01b-patches.sql` (5 patches: cierran gaps de auditoría)
 - **Cliente managed by advisor** en `01c-patches.sql` (8 patches: Opción A - tiers de asesor definen max_members del cliente)
+- **Fixes de validación** en `01d-validacion-fixes.sql` (4 fixes detectados al validar el diseño completo: campo `pen` faltante, UNIQUE account_id, cancelar grace al reactivar, enforce_max_members)
 - Backward compatible: usuarios actuales siguen funcionando
-- RLS configurado con 8 policies + 2 triggers de protección originales + 5 patches del 01b + 3 triggers + 1 función del 01c
+- RLS configurado con 8 policies + 2 triggers de protección originales + 5 patches del 01b + 3 triggers + 1 función del 01c + 1 trigger del 01d
 - **No aplicado a Supabase productivo todavía**
 
-> ⚠️ **Importante:** Aplicar SIEMPRE en orden `01-migration-schema.sql` → `01b-patches.sql` → `01c-patches.sql`. El 01 solo no es seguro: deja activas las policies legacy de `user_data`. El 01c agrega tracking del plan corporativo del asesor sobre el plan del cliente. Ver `03-auditoria-fase1.md` para detalles del 01b y `07-cliente-managed-por-asesor.md` para el 01c.
+> ⚠️ **Importante:** Aplicar SIEMPRE en orden `01-migration-schema.sql` → `01b-patches.sql` → `01c-patches.sql` → `01d-validacion-fixes.sql`. El 01 solo no es seguro: deja activas las policies legacy de `user_data`. El 01c agrega tracking del plan corporativo del asesor sobre el plan del cliente. El 01d cierra 4 gaps detectados al validar el diseño antes de aplicar. Ver `03-auditoria-fase1.md` para detalles del 01b, `07-cliente-managed-por-asesor.md` para el 01c, y comentarios del propio `01d-validacion-fixes.sql` para los fixes.
 
 ---
 
@@ -70,7 +71,23 @@ Resultados esperados:
 - `has_column_privilege('authenticated','accounts','plan','UPDATE')` = FALSE
 - `has_column_privilege('authenticated','accounts','display_name','UPDATE')` = TRUE
 
-### Paso 9 — Smoke test cliente
+### Paso 9 — Ejecutar `01d-validacion-fixes.sql` (fixes finales)
+1. Supabase Dashboard → SQL Editor → New query
+2. **Antes de copiar:** abrir Database → Functions → `handle_new_user` y comparar el `jsonb_build_object` actual contra el del FIX 1 del 01d. Si hay campos adicionales en producción (otro setup post-migration), agregarlos al FIX 1 antes de ejecutar.
+3. Copiar contenido completo de `01d-validacion-fixes.sql` (4 fixes: FIX 1 a FIX 4)
+4. Click "Run" → debería completarse en <1 segundo (todo dentro de BEGIN/COMMIT)
+5. **Si FIX 2 falla con "Hay account_id duplicados":** ejecutar la query del HINT para ver cuáles, investigar por qué se duplicaron (no debería pasar tras 01-migration-schema.sql). Resolver duplicados antes de re-ejecutar.
+
+### Paso 10 — Validar con queries de verificación del 01d
+Ejecutar las 4 queries del bloque "VERIFICACIÓN POST-FIX" al final del 01d.
+
+Resultados esperados:
+- `handle_new_user` contiene el bloque `'pen'` con parámetros del simulador de pensión
+- Constraint `user_data_account_id_unique` existe
+- `promote_account_to_managed` contiene el caso `OLD.status IN ('paused', 'orphan')`
+- Trigger `enforce_max_members_trigger` existe en `account_members`
+
+### Paso 11 — Smoke test cliente
 1. Recargar finpathia.com con `Cmd+Shift+R`
 2. Login normal funciona
 3. Cargar/editar un ingreso → verificar que se guarda
@@ -106,6 +123,13 @@ Esto vuelve al comportamiento legacy en segundos.
 ```sql
 -- ⚠️ DESTRUCTIVO: borra cuentas y membresías. Usar SOLO si no se llegó
 -- a usar productivamente y querés volver al estado pre-migration.
+
+-- 01d: remover trigger enforce_max_members + UNIQUE account_id
+DROP TRIGGER IF EXISTS enforce_max_members_trigger ON public.account_members;
+DROP FUNCTION IF EXISTS public.enforce_max_members();
+ALTER TABLE public.user_data DROP CONSTRAINT IF EXISTS user_data_account_id_unique;
+
+-- 01 + 01b + 01c: borrar todo
 DROP TABLE IF EXISTS public.account_audit_log CASCADE;
 DROP TABLE IF EXISTS public.account_invitations CASCADE;
 DROP TABLE IF EXISTS public.account_members CASCADE;
@@ -115,9 +139,14 @@ DROP FUNCTION IF EXISTS public.protect_last_admin() CASCADE;
 DROP FUNCTION IF EXISTS public.update_accounts_updated_at() CASCADE;
 DROP FUNCTION IF EXISTS public.is_account_member(UUID, TEXT) CASCADE;
 DROP FUNCTION IF EXISTS public.create_owner_membership() CASCADE;
+DROP FUNCTION IF EXISTS public.promote_account_to_managed() CASCADE;
+DROP FUNCTION IF EXISTS public.sync_managed_accounts_on_advisor_plan_change() CASCADE;
+DROP FUNCTION IF EXISTS public.start_grace_on_advisor_disconnect() CASCADE;
+DROP FUNCTION IF EXISTS public.expire_managed_grace_period() CASCADE;
+DROP FUNCTION IF EXISTS public.max_members_for_advisor_tier(TEXT) CASCADE;
 
--- Restaurar trigger handle_new_user original
--- (copiar el bloque que se respaldó en el Paso 2 del runbook)
+-- Restaurar trigger handle_new_user original (sin bloque 'pen' lo perderías,
+-- copiar el bloque que se respaldó en el Paso 2 del runbook)
 
 -- Restaurar policies legacy de user_data (mismo SQL que en Opción A)
 ```
@@ -166,15 +195,32 @@ SELECT public.is_account_member('00000000-0000-0000-0000-000000000000');
 -- DEBE devolver FALSE.
 ```
 
-### Test 5 — Bootstrap signup (introducido por 01b PATCH 5)
+### Test 5 — Bootstrap signup (introducido por 01b PATCH 5, fixeado por 01d FIX 1)
 Crear un usuario nuevo desde la UI de Finpathia (signup). Después:
 ```sql
-SELECT a.id, a.plan, a.display_name, am.role, ud.email
+SELECT a.id, a.plan, a.display_name, am.role, ud.email,
+       ud.data ? 'pen' AS tiene_pen
 FROM public.accounts a
 JOIN public.account_members am ON am.account_id = a.id
 JOIN public.user_data ud ON ud.account_id = a.id
 WHERE a.owner_user_id = (SELECT id FROM auth.users WHERE email = 'usuario_nuevo@test.com');
--- DEBE devolver 1 fila con plan='basic', role='admin', email del nuevo usuario.
+-- DEBE devolver 1 fila con plan='basic', role='admin', email del nuevo usuario,
+-- y tiene_pen=TRUE (el FIX 1 del 01d garantiza el campo 'pen').
+```
+
+### Test 6 — enforce_max_members (introducido por 01d FIX 4)
+```sql
+-- Como admin de tu cuenta basic (max_members=1), intentar agregar un
+-- segundo miembro activo:
+INSERT INTO public.account_members (account_id, user_id, role, status, accepted_at)
+VALUES (
+  (SELECT account_id FROM public.user_data WHERE id = auth.uid()),
+  gen_random_uuid(),
+  'reader',
+  'active',
+  NOW()
+);
+-- DEBE fallar con: "Cuenta llena: 1 miembros activos (límite del plan: 1)"
 ```
 
 ---

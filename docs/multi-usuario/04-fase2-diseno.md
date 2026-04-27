@@ -90,13 +90,45 @@ Hoy `App.jsx` no llama a `useAccount`. Hay que:
    - función de save — al guardar
    - todos los módulos que renderizan UI de edición (vía contexto o props)
 
-### 1.4 Invalidación de cache local al cambiar de cuenta
+### 1.4 Account switcher mínimo (NUEVO, post-validación)
 
-Hoy `localStorage["fp3"]` se asume del usuario actual. Si en el futuro un usuario tiene múltiples cuentas y switchea, hay que invalidar.
+**Problema que resuelve:** un usuario puede ser miembro de varias cuentas (su cuenta personal donde es admin + cuenta familiar de su pareja donde es reader). El `useAccount.js` actual elige "la primera con prioridad de owner" — siempre la cuenta personal. **Sin un switcher, el invitado nunca puede acceder a la cuenta a la que lo invitaron.**
 
-**Para Fase 2 (1 cuenta por usuario):** suficiente con limpiar al logout. Ya se hace.
+Originalmente el switcher se postergaba a Fase 3, pero la validación del diseño detectó que sin él, el flujo end-to-end de invitación a usuarios con cuenta existente queda roto entre Fase 2 y Fase 3. Por eso entra en Fase 2 con UX mínima.
 
-**Para Fase 3+ (cuando haya account switcher):** cambiar la key a `fp3_${accountId}` y mantener un mapa de cachés. Documentar en Fase 3.
+**Diseño:**
+
+1. **Persistencia:** clave `fp3_active_account` en localStorage. Si está y matchea una membresía activa del user, usar esa cuenta. Si no, fallback a la heurística owner-first del hook actual.
+
+2. **Modificación a `useAccount.js`** (~15 LOC adicionales):
+   ```js
+   // Después de obtener `data` (lista de membresías activas):
+   const stored = localStorage.getItem("fp3_active_account");
+   const storedMatch = stored && data.find(m => m.account_id === stored);
+   const ownCuenta = data.find(m => m.accounts?.owner_user_id === authUser.id);
+   const cuentaActiva = storedMatch || ownCuenta || data[0];
+   ```
+
+3. **Componente nuevo `src/components/AccountSwitcher.jsx`** (~80 LOC):
+   - Botón en header que muestra `displayName` + `role`.
+   - Click abre dropdown con todas las membresías activas del user.
+   - Click en otra cuenta: `localStorage.setItem("fp3_active_account", id)` + `localStorage.removeItem("fp3")` (invalidar cache de la cuenta vieja) + `refreshAccount()` + reload de `user_data`.
+   - Si el user tiene **una sola cuenta**, NO renderizar el switcher (no agrega valor).
+
+4. **Renderizado en App.jsx** (Cambio 7 actualizado):
+   ```jsx
+   {!isLegacy && memberships.length > 1 && viewMode !== "client" && (
+     <AccountSwitcher
+       memberships={memberships}
+       activeAccountId={accountId}
+       onSwitch={handleAccountSwitch}
+     />
+   )}
+   ```
+
+5. **Cache invalidation:** al cambiar de cuenta, limpiar `localStorage["fp3"]` (que es de la cuenta anterior). El próximo `sL(uid, accountId)` carga de Supabase la nueva cuenta. **Esto requiere que `useAccount` también devuelva la lista completa de membresías** (no solo la activa) para que el switcher tenga qué mostrar — extender el hook para devolver `memberships: data` además de los campos actuales.
+
+**Decisión:** este switcher mínimo entra en Fase 2 como Cambio 10 (ver `06-fase2-snippets.md`). Refinamientos UX (avatares, último login por cuenta, ordenamiento por uso reciente) van en Fase 3.
 
 ### 1.5 Estado de loading combinado
 
@@ -293,6 +325,14 @@ Multi-cuenta (requiere set up manual en SQL Editor):
 [ ] 14. Click en "+ Agregar ingreso" → toast "Solo lectura"
 [ ] 15. Sliders del simulador funcionan (escenarios sí permitidos)
 [ ] 16. Logout y re-login del admin original → todo igual a antes
+
+Account switcher (post-validación, sólo si user tiene >1 membresía):
+[ ] 17. User invitado a 2da cuenta + acepta → AccountSwitcher visible en header
+[ ] 18. Click switcher → dropdown muestra ambas cuentas con rol
+[ ] 19. Switch a cuenta 2 → localStorage.fp3 limpio, datos de cuenta 2 cargan
+[ ] 20. Reload página → cuenta activa persiste (localStorage.fp3_active_account)
+[ ] 21. Switch a cuenta 1 → datos correctos, sin mezcla con cuenta 2
+[ ] 22. User con 1 sola membresía → switcher NO se renderiza
 ```
 
 ---
@@ -326,11 +366,12 @@ Si Fase 2 deploy se queda mal en producción y hay que revertir mientras se debu
 | Refactor `sL` y save en App.jsx | ~30 LOC | bajo |
 | Integrar `useAccount` y `RoleContext` | ~50 LOC | bajo |
 | Crear `RoleContext.js` y `RoleBanner.jsx` | ~80 LOC | bajo |
+| **Account switcher mínimo (post-validación):** extender `useAccount` con `memberships` + nuevo `AccountSwitcher.jsx` + lógica de switch + invalidación cache | ~120 LOC | medio |
 | Gating en módulos (Opción A) | ~5 LOC × 11 módulos = 55 LOC | medio |
-| Smoke tests manuales | — | medio (1-2 horas) |
-| **Total Fase 2** | **~200 LOC** | **1 sesión de trabajo** |
+| Smoke tests manuales (incluye 6 nuevos del switcher) | — | medio (1.5-2 horas) |
+| **Total Fase 2** | **~330 LOC** | **1-1.5 sesiones de trabajo** |
 
-> **Recomendación:** dividir en 2 commits separados: (1) infra (sL/save/useAccount/RoleContext), (2) gating en módulos. Permite verificar la base antes de tocar 11 archivos.
+> **Recomendación:** dividir en 3 commits separados: (1) infra base (sL/save/useAccount/RoleContext), (2) switcher (AccountSwitcher + extensión useAccount), (3) gating en módulos. Permite verificar cada base antes de tocar 11 archivos.
 
 ---
 
@@ -339,7 +380,7 @@ Si Fase 2 deploy se queda mal en producción y hay que revertir mientras se debu
 - UI "Mi cuenta" con lista de miembros, plan, botón de invitar.
 - Flujo de invitación end-to-end con email.
 - Pantalla de aceptación de invitación familiar (similar a `AcceptInvite.jsx` pero para `account_invitations`).
-- Account switcher (solo necesario cuando un usuario es miembro de >1 cuenta).
+- Refinamiento UX del switcher (avatares, último login por cuenta, ordenamiento por uso reciente). El switcher mínimo SÍ entra en Fase 2.
 - Refinamiento UX de gating (Opción B en módulos).
 - Tests E2E automatizados.
 

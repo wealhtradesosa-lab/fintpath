@@ -139,13 +139,18 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 
 ## Cambio 5 — Pasar `accountId` a las llamadas de `sL()`
 
-Hay **2 llamadas a `sL()`** en App.jsx que deben recibir `accountId`. Buscarlas con:
+Hay **3 llamadas a `sL()` en App.jsx** — pero solo **2 necesitan refactor** (las que cargan datos del usuario autenticado contra Supabase). Buscarlas:
 
 ```bash
-grep -n "await sL(" src/App.jsx
+grep -n "sL(" src/App.jsx
 ```
 
-**Cambio en cada una:**
+Resultado esperado (3 ocurrencias):
+- **Línea ~345** (load inicial al recuperar sesión): refactor SÍ — pasarle `accountId`.
+- **Línea ~368** (`sL()` sin uid, fallback localStorage offline): NO tocar — no usa account.
+- **Línea ~547** (load tras login exitoso): refactor SÍ — pasarle `accountId`.
+
+**Cambio en cada una de las 2 que llevan uid:**
 
 Antes:
 ```js
@@ -300,14 +305,198 @@ useEffect(() => {
 
 ---
 
+## Cambio 10 — Account switcher mínimo (post-validación)
+
+**Pre-requisito:** extender `useAccount.js` para devolver también la lista completa de membresías (no solo la cuenta activa) y respetar la cuenta seleccionada en `localStorage.fp3_active_account`.
+
+### 10.1 Extender `useAccount.js`
+
+Agregar al state inicial:
+```js
+const [state, setState] = useState({
+  // ...campos existentes
+  memberships: [],  // NUEVO: lista completa de membresías activas del user
+});
+```
+
+En el path "happy" del hook (donde `data` ya tiene la lista), reemplazar la heurística de selección de cuenta:
+
+```js
+// ANTES:
+const ownCuenta = data.find(m => m.accounts?.owner_user_id === authUser.id);
+const cuentaActiva = ownCuenta || data[0];
+
+// DESPUÉS:
+const stored = typeof localStorage !== "undefined"
+  ? localStorage.getItem("fp3_active_account") : null;
+const storedMatch = stored && data.find(m => m.account_id === stored);
+const ownCuenta = data.find(m => m.accounts?.owner_user_id === authUser.id);
+const cuentaActiva = storedMatch || ownCuenta || data[0];
+```
+
+Y en el `setState` final, agregar:
+```js
+setState({
+  // ...campos existentes
+  memberships: data,  // NUEVO
+});
+```
+
+> Aplicar el mismo patrón al fallback pre-01c (caso `PGRST204`/`42703`): extraer la lista filtrada en una variable `memberships = fallback.data || []` y devolverla.
+
+### 10.2 Crear `src/components/AccountSwitcher.jsx`
+
+```jsx
+// Ubicación: src/components/AccountSwitcher.jsx
+// Renderizado solo cuando memberships.length > 1.
+import { useState, useRef, useEffect } from "react";
+
+const C = {
+  bg: "rgba(255,255,255,0.04)",
+  border: "rgba(255,255,255,0.1)",
+  txt: "#fafafa",
+  txt2: "#a1a1aa",
+  accent: "#3b82f6",
+  hover: "rgba(255,255,255,0.06)",
+};
+
+export default function AccountSwitcher({ memberships, activeAccountId, onSwitch }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const active = memberships.find(m => m.account_id === activeAccountId) || memberships[0];
+  if (!active) return null;
+  const activeName = active.accounts?.display_name || "Cuenta sin nombre";
+  const activeRole = active.role;
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: C.bg, border: `1px solid ${C.border}`,
+          borderRadius: 6, padding: "6px 12px",
+          color: C.txt, fontSize: 13, cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 8,
+        }}
+      >
+        <span>{activeName}</span>
+        <span style={{ color: C.txt2, fontSize: 11 }}>· {activeRole}</span>
+        <span style={{ color: C.txt2, fontSize: 10, marginLeft: 4 }}>▾</span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", right: 0, marginTop: 4,
+          minWidth: 240, background: "#1a1a1d",
+          border: `1px solid ${C.border}`, borderRadius: 8,
+          boxShadow: "0 4px 16px rgba(0,0,0,0.4)", zIndex: 100,
+        }}>
+          {memberships.map(m => {
+            const isActive = m.account_id === activeAccountId;
+            return (
+              <button
+                key={m.account_id}
+                onClick={() => { setOpen(false); if (!isActive) onSwitch(m.account_id); }}
+                style={{
+                  width: "100%", textAlign: "left",
+                  background: isActive ? C.hover : "transparent",
+                  border: "none", padding: "10px 14px",
+                  color: C.txt, fontSize: 13, cursor: isActive ? "default" : "pointer",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = C.hover; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+              >
+                <div>
+                  <div>{m.accounts?.display_name || "Sin nombre"}</div>
+                  <div style={{ color: C.txt2, fontSize: 11 }}>{m.role}</div>
+                </div>
+                {isActive && <span style={{ color: C.accent, fontSize: 12 }}>● activo</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### 10.3 Integrar en App.jsx
+
+Agregar al import (junto a RoleBanner):
+```js
+import AccountSwitcher from "./components/AccountSwitcher";
+```
+
+Extender el destructuring de `useAccount` (modifica el Cambio 4):
+```js
+const {
+  accountId, role, isLegacy,
+  plan, maxMembers, displayName,
+  managedByAdvisor, managedTier,
+  subscriptionStatus, graceUntil,
+  memberships,                       // NUEVO
+  loading: accountLoading,
+  refresh: refreshAccount,
+} = useAccount(authUser, supabase);
+```
+
+Handler de switch (función nueva en App.jsx, junto a otros handlers):
+```js
+const handleAccountSwitch = useCallback((newAccountId) => {
+  // Persistir elección y limpiar cache de la cuenta vieja
+  localStorage.setItem("fp3_active_account", newAccountId);
+  localStorage.removeItem("fp3");  // invalida cache local
+  // Limpiar también el state local de datos para forzar reload visible
+  setU(null);
+  // Disparar refetch del hook (volverá a leer con la nueva cuenta seleccionada)
+  refreshAccount();
+}, [refreshAccount]);
+```
+
+Renderizar el switcher en el header (modifica el Cambio 7):
+```jsx
+{!isLegacy && memberships?.length > 1 && viewMode !== "client" && (
+  <AccountSwitcher
+    memberships={memberships}
+    activeAccountId={accountId}
+    onSwitch={handleAccountSwitch}
+  />
+)}
+```
+
+> **Ubicación recomendada del switcher:** en el topbar, cerca del menú de usuario / logout. Mantenerlo discreto. Si solo hay 1 membresía, NO se renderiza (la condición `memberships?.length > 1` lo cubre).
+
+### 10.4 Verificación específica del switcher
+
+```
+[ ] User con 1 cuenta → AccountSwitcher NO se renderiza
+[ ] User con 2 cuentas → switcher visible en header
+[ ] Click switcher → dropdown muestra ambas cuentas con role
+[ ] Click en cuenta inactiva → cache fp3 limpio, datos nuevos cargan
+[ ] Reload página → cuenta seleccionada persiste vía fp3_active_account
+[ ] Modo asesor (viewMode='client') → switcher NO se renderiza
+```
+
+---
+
 ## Verificación post-implementación
 
 ```
-[ ] git diff src/App.jsx | wc -l          → debería ser ~50 líneas modificadas
-[ ] git diff src/components/ | wc -l       → ~100 líneas modificadas (gating en 10 módulos)
+[ ] git diff src/App.jsx | wc -l          → debería ser ~70 líneas modificadas
+[ ] git diff src/components/ | wc -l       → ~180 líneas modificadas (gating + AccountSwitcher)
+[ ] git diff src/lib/useAccount.js | wc -l → ~15 líneas (extender memberships + storedMatch)
 [ ] python3 audit.py                       → 19/19 OK
 [ ] npm run build                          → ✓ built (warning chunk size pre-existente OK)
 [ ] grep -c "guardEdit" src/components/    → ≥ 25 ocurrencias (multiple handlers × 10 módulos)
+[ ] grep -c "AccountSwitcher" src/         → ≥ 2 (componente + import en App.jsx)
 [ ] curl -sI https://finpathia.com         → tras push, esperar 90-120s y verificar HTTP 200
 ```
 
