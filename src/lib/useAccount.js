@@ -41,6 +41,7 @@ import { useState, useEffect, useCallback } from "react";
  *   managedTier: 'starter' | 'professional' | 'boutique' | null,
  *   subscriptionStatus: 'active' | 'grace' | 'past_due' | 'canceled',
  *   graceUntil: Date | null,
+ *   memberships: Array<{account_id: string, role: string, status: string, accounts: object}>,
  *   loading: boolean,
  *   error: Error | null,
  *   refresh: () => void
@@ -58,6 +59,7 @@ export function useAccount(authUser, supabase) {
     managedTier: null,
     subscriptionStatus: "active",
     graceUntil: null,
+    memberships: [], // lista completa de membresías activas (para AccountSwitcher)
     loading: true,
     error: null,
   });
@@ -119,6 +121,7 @@ export function useAccount(authUser, supabase) {
               managedTier: null,
               subscriptionStatus: "active",
               graceUntil: null,
+              memberships: [],
               loading: false,
               error: null,
             });
@@ -135,10 +138,16 @@ export function useAccount(authUser, supabase) {
               .eq("status", "active");
             if (cancelled) return;
             if (fallback.error) throw fallback.error;
-            const ownCuenta = fallback.data?.find(m => m.accounts?.owner_user_id === authUser.id);
-            const cuentaActiva = ownCuenta || fallback.data?.[0];
+            const fbData = fallback.data || [];
+            // Aplicar misma lógica de selección que en el path happy
+            const stored = (typeof localStorage !== "undefined")
+              ? localStorage.getItem("fp3_active_account")
+              : null;
+            const storedMatch = stored && fbData.find(m => m.account_id === stored);
+            const ownCuenta = fbData.find(m => m.accounts?.owner_user_id === authUser.id);
+            const cuentaActiva = storedMatch || ownCuenta || fbData[0];
             if (!cuentaActiva) {
-              setState(s => ({ ...s, isLegacy: true, loading: false, error: null }));
+              setState(s => ({ ...s, isLegacy: true, memberships: [], loading: false, error: null }));
               return;
             }
             setState({
@@ -152,6 +161,7 @@ export function useAccount(authUser, supabase) {
               managedTier: null,
               subscriptionStatus: "active",
               graceUntil: null,
+              memberships: fbData,
               loading: false,
               error: null,
             });
@@ -175,15 +185,24 @@ export function useAccount(authUser, supabase) {
             managedTier: null,
             subscriptionStatus: "active",
             graceUntil: null,
+            memberships: [],
             loading: false,
             error: null,
           });
           return;
         }
 
-        // Elegir la cuenta activa: priorizar la cuenta donde el usuario ES owner
+        // Elegir la cuenta activa:
+        // 1. Si el usuario eligió una cuenta vía AccountSwitcher (persistida
+        //    en localStorage.fp3_active_account) y sigue siendo miembro, usarla.
+        // 2. Sino, priorizar la cuenta donde el usuario ES owner.
+        // 3. Sino, primera membresía.
+        const stored = (typeof localStorage !== "undefined")
+          ? localStorage.getItem("fp3_active_account")
+          : null;
+        const storedMatch = stored && data.find(m => m.account_id === stored);
         const ownCuenta = data.find(m => m.accounts?.owner_user_id === authUser.id);
-        const cuentaActiva = ownCuenta || data[0];
+        const cuentaActiva = storedMatch || ownCuenta || data[0];
         const acc = cuentaActiva.accounts || {};
 
         setState({
@@ -197,6 +216,7 @@ export function useAccount(authUser, supabase) {
           managedTier: acc.managed_tier || null,
           subscriptionStatus: acc.subscription_status || "active",
           graceUntil: acc.grace_until ? new Date(acc.grace_until) : null,
+          memberships: data, // lista completa para AccountSwitcher
           loading: false,
           error: null,
         });
@@ -215,6 +235,7 @@ export function useAccount(authUser, supabase) {
           managedTier: null,
           subscriptionStatus: "active",
           graceUntil: null,
+          memberships: [],
           loading: false,
           error: e,
         });
