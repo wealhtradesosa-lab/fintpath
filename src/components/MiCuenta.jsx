@@ -1,22 +1,23 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// FINPATHIA · MiCuenta — gestión de miembros e invitaciones (Fase 3 commit 2)
+// FINPATHIA · MiCuenta — perfil, configuración y miembros (Fase 3)
 //
-// Página accesible desde el sidebar "Mi cuenta". Solo visible cuando el
-// usuario tiene una cuenta multi-usuario activa (no en modo legacy).
+// Página unificada que reemplaza la antigua "Configuración" + "Mi cuenta".
+// Tiene tabs:
+//   - Miembros y permisos: gestión de invitaciones (Pro Familiar)
+//   - Configuración: perfil, preferencias, datos, plan
 //
-// Para admin:
-//   - Ver lista de miembros activos (email, nombre, rol, owner badge)
-//   - Cambiar rol de otros miembros (admin <-> reader)
-//   - Expulsar miembros (excepto a sí mismo)
-//   - Ver invitaciones pendientes
-//   - Crear nuevas invitaciones (genera link copyable)
-//   - Revocar invitaciones pendientes
+// La tab "Configuración" recibe su contenido como prop `configContent`
+// (JSX rendereado por App.jsx), porque ese contenido tiene muchas
+// dependencias internas (componentes Cd/Bt/In/T, callbacks setU, demo,
+// showToast, etc.) que viven en el closure de App.jsx. Mover todo eso
+// a este componente requeriría un refactor enorme; render-prop es la
+// manera más limpia de mantener la separación de responsabilidades.
 //
-// Para reader:
-//   - Solo ver la lista de miembros (sin acciones)
-//   - Mensaje claro de "vista de solo lectura"
+// Para readers: la tab "Miembros" muestra el listado read-only.
+// Para isLegacy (mono-cuenta sin multi-usuario): la tab "Miembros"
+// se oculta y la tab activa es "Configuración" por default.
 //
-// Llama a las RPCs del Fase 3 commit 1:
+// Llama a las RPCs del Fase 3 commit 1 para gestión de miembros:
 //   list_account_members, list_pending_invitations,
 //   create_invitation, revoke_invitation, remove_member, update_member_role
 // ═══════════════════════════════════════════════════════════════════════════
@@ -61,13 +62,82 @@ const daysUntil = (d) => {
 };
 
 // ── Componente principal ───────────────────────────────────────────────────
-export default function MiCuenta({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, onChange }) {
+export default function MiCuenta({
+  supabase, accountId, role, displayName, plan, maxMembers,
+  currentUserId, onChange, isLegacy, configContent, defaultTab,
+}) {
+  // Tabs disponibles según contexto
+  const showMembersTab = !isLegacy && accountId;
+  const tabs = [
+    showMembersTab && { id: "miembros", label: "👨‍👩‍👧 Miembros y permisos" },
+    configContent && { id: "config", label: "⚙️ Configuración" },
+  ].filter(Boolean);
+
+  // Tab activa: si vienen explícitamente, respetar. Sino, default según contexto.
+  const initialTab = defaultTab || (showMembersTab ? "miembros" : "config");
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Si no hay tabs (caso edge), no renderizar nada
+  if (tabs.length === 0) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Header con tabs */}
+      <div>
+        <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 16px" }}>Mi cuenta</h2>
+        {tabs.length > 1 && (
+          <div style={{
+            display: "flex", gap: 4, borderBottom: `1px solid ${T.border}`,
+            marginBottom: 4, overflowX: "auto", flexWrap: "wrap",
+          }}>
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: `2px solid ${activeTab === tab.id ? T.green : "transparent"}`,
+                  color: activeTab === tab.id ? T.txt : T.txt3,
+                  padding: "10px 14px",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: activeTab === tab.id ? 700 : 500,
+                  transition: "all 0.15s",
+                  marginBottom: -1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Contenido según tab activa */}
+      {activeTab === "miembros" && showMembersTab && (
+        <MiembrosTab
+          supabase={supabase} accountId={accountId} role={role}
+          displayName={displayName} plan={plan} maxMembers={maxMembers}
+          currentUserId={currentUserId} onChange={onChange}
+        />
+      )}
+      {activeTab === "config" && configContent && (
+        <div>{configContent}</div>
+      )}
+    </div>
+  );
+}
+
+// ═══ Tab Miembros ═══════════════════════════════════════════════════════
+function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, onChange }) {
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showInvite, setShowInvite] = useState(false);
-  const [inviteResult, setInviteResult] = useState(null); // { invitation_url, email, role, expires_at }
+  const [inviteResult, setInviteResult] = useState(null);
 
   const isAdmin = role === "admin";
   const totalUsed = members.length + invitations.length;
@@ -81,8 +151,6 @@ export default function MiCuenta({ supabase, accountId, role, displayName, plan,
     try {
       const [membersRes, invitationsRes] = await Promise.all([
         supabase.rpc("list_account_members", { p_account_id: accountId }),
-        // Solo admin tiene permiso de listar invitaciones; readers reciben error.
-        // En vez de gastar el round-trip, salteamos para readers.
         isAdmin
           ? supabase.rpc("list_pending_invitations", { p_account_id: accountId })
           : Promise.resolve({ data: [], error: null }),
@@ -143,7 +211,6 @@ export default function MiCuenta({ supabase, accountId, role, displayName, plan,
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────
   if (loading) {
     return <div style={{ padding: 40, textAlign: "center", color: T.txt3 }}>Cargando...</div>;
   }
@@ -154,12 +221,9 @@ export default function MiCuenta({ supabase, accountId, role, displayName, plan,
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
           <div>
-            <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>
-              Mi cuenta
-            </div>
-            <h2 style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 8px", color: T.txt }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 8px", color: T.txt }}>
               {displayName || "Mi cuenta"}
-            </h2>
+            </h3>
             <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
               <span style={{ background: T.blueB, color: T.blue, padding: "3px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600 }}>
                 Plan {PLAN_LABELS[plan] || plan}
