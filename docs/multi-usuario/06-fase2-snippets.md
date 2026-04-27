@@ -111,9 +111,18 @@ const[authUser,setAuthUser]=useState(null);
 **Agregar después de `setAuthUser`:**
 
 ```js
-// Fase 2: hook multi-cuenta. Si la migración Fase 1 está aplicada, devuelve
-// accountId + role. Si no (modo legacy), devuelve isLegacy=true.
-const{accountId,role,isLegacy,loading:accountLoading,refresh:refreshAccount}=useAccount(authUser,supabase);
+// Fase 2: hook multi-cuenta. Si la migración Fase 1 + 01b + 01c está aplicada,
+// devuelve accountId, role y los campos extendidos (plan, max_members,
+// managed_*, subscription_status, grace_until). Si no (modo legacy),
+// devuelve isLegacy=true con defaults.
+const {
+  accountId, role, isLegacy,
+  plan, maxMembers, displayName,
+  managedByAdvisor, managedTier,
+  subscriptionStatus, graceUntil,
+  loading: accountLoading,
+  refresh: refreshAccount,
+} = useAccount(authUser, supabase);
 
 // Refs para que sL/save accedan a values frescas sin recrear callbacks
 const accountIdRef=useRef(accountId);
@@ -181,7 +190,7 @@ Cada uno de esos usos pasa a `ldCombined`. Si hay `setLd(false)` después de car
 
 ---
 
-## Cambio 7 — Envolver el árbol con `RoleProvider`
+## Cambio 7 — Envolver el árbol con `RoleProvider` + banners condicionales
 
 Buscar el `return (` principal del componente App. Probablemente alrededor de la línea 1000-1500.
 
@@ -189,15 +198,27 @@ Buscar el `return (` principal del componente App. Probablemente alrededor de la
 
 ```jsx
 <RoleProvider value={{role, isLegacy, accountId}}>
-  {/* Banner solo si NO estamos en modo asesor-cliente y el rol es reader */}
-  {!isLegacy && role==="reader" && viewMode!=="client" && (
-    <RoleBanner accountName={/* leer de accounts.display_name si está disponible */} />
+  {/* Banner de solo lectura: cuenta multi-usuario, rol reader, NO modo asesor-cliente */}
+  {!isLegacy && role === "reader" && viewMode !== "client" && (
+    <RoleBanner accountName={displayName} />
   )}
+
+  {/* Banner de grace period (post-01c): cuenta managed que perdió asesor */}
+  {!isLegacy && subscriptionStatus === "grace" && graceUntil && viewMode !== "client" && (
+    <GraceBanner
+      accountName={displayName}
+      graceUntil={graceUntil}
+      onUpgrade={() => /* navegar a Stripe checkout Pro Familiar */}
+    />
+  )}
+
   {/* ...todo el árbol existente... */}
 </RoleProvider>
 ```
 
-> **Nota sobre `accountName`:** `useAccount` ya hace JOIN con `accounts(display_name)`. Para exponerlo, agregar `displayName` al return del hook (cambio menor en `useAccount.js`). Por ahora puede pasarse `undefined` y el banner usa el fallback genérico.
+> **Sobre `accountName` y `displayName`:** ya vienen del `useAccount` extendido (Cambio 4). No requiere cambios adicionales en el hook.
+
+> **Sobre `GraceBanner`:** componente nuevo opcional. Si se prefiere postergar a Fase 3, omitir ese segundo bloque y conformarse con que el cliente vea el plan="managed" sin alerta visible. Decisión: **incluirlo en Fase 2 si es trivial (~50 LOC), postergar si surgen complicaciones**.
 
 ---
 
@@ -244,6 +265,38 @@ const handleAdd = () => {
 - `SimuladorAvanzado.jsx`, `SimuladorTributario.jsx`, `SimuladorUS.jsx`, `TaxPlanningUS.jsx` — son escenarios no persistentes, readers pueden usarlos.
 - `DashboardObservabilidad.jsx`, `DashboardFiscal.jsx`, `DashboardUS.jsx` — solo lectura por naturaleza.
 - `AsesorIA.jsx` — chat, no escribe en `user_data`.
+
+---
+
+## Cambio 9 — Lazy call a `expire_managed_grace_period()` (post-01c)
+
+Para que las cuentas con grace expirado se actualicen sin necesidad de cron diario, llamar la función SQL `expire_managed_grace_period()` cada vez que un usuario haga login. Es idempotente: si no hay cuentas que expirar, no toca nada.
+
+**Ubicación:** dentro del componente App, en un `useEffect` separado que dispara después del login exitoso.
+
+```js
+// Lazy maintenance: si hay cuentas en grace expirado en el sistema, esta
+// función las baja a basic. Idempotente. Solo dispara cuando el usuario
+// está autenticado y el modo no es legacy.
+useEffect(() => {
+  if (!authUser?.id || isLegacy) return;
+  if (!isSupabaseConfigured) return;
+  supabase.rpc("expire_managed_grace_period").then(({ data, error }) => {
+    if (error) {
+      // Si la función no existe (01c no aplicado), no es error fatal
+      if (error.code === "PGRST202" || error.code === "42883") return;
+      console.warn("[lazy grace expire]", error);
+      return;
+    }
+    if (data && data > 0) {
+      console.log(`[lazy grace expire] ${data} cuenta(s) bajadas a basic`);
+      refreshAccount(); // forzar re-fetch del useAccount con nuevo plan
+    }
+  });
+}, [authUser?.id, isLegacy]);
+```
+
+> **Nota:** la función SQL afecta TODAS las cuentas en grace expirado del sistema (no solo la del usuario actual). Eso es intencional: cualquier usuario "ayuda" al sistema completo. Postgres maneja la concurrencia. Si se llega a querer scope de "solo mi cuenta", se modifica la función SQL.
 
 ---
 

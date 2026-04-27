@@ -197,6 +197,43 @@ En el header, debajo del logo, un banner sutil cuando `role === "reader"`:
 
 Componente nuevo: `src/components/RoleBanner.jsx`. Se renderiza condicionalmente en App.jsx cuando `!isLegacy && isReader`.
 
+> **Post-01c:** pasarle `accountName={displayName}` desde useAccount para personalizar el texto.
+
+### 2.5 Banners adicionales por estado de cuenta (post-01c)
+
+Los campos extendidos de `useAccount` (`plan`, `subscriptionStatus`, `graceUntil`, `managedByAdvisor`, `maxMembers`) habilitan UI extra que conviene tener desde Fase 2. Decisión: **renderizar solo el caso crítico (`grace`) en Fase 2; el resto en Fase 3 con la UI completa de MiCuenta**.
+
+| Caso | Cuándo se muestra | Acción del banner |
+|---|---|---|
+| `subscriptionStatus === 'grace'` | Cuenta managed que perdió asesor, dentro del período de gracia (30 días) | Banner amarillo: "Tu plan asesor termina el [graceUntil]. Suscribite a Pro Familiar para mantener tus miembros." + botón a Stripe checkout |
+| `plan === 'managed'` (no grace) | Cliente activo de asesor | Indicador sutil en MiCuenta (Fase 3): "Plan provisto por tu asesor [advisor_firm_name]" |
+| `account_members.active >= maxMembers` | Cuenta llena | En Fase 3 deshabilitar botón "Invitar". Fase 2 no expone UI de invitación todavía. |
+
+Componente nuevo opcional para Fase 2: `src/components/GraceBanner.jsx` (similar a RoleBanner pero amarillo, con botón CTA y countdown). Si se posterga a Fase 3, basta con que `useAccount` exponga los campos — los banners se construyen después.
+
+### 2.6 Llamada lazy a `expire_managed_grace_period()` en login
+
+Después del 01c, las cuentas con grace expirado (`grace_until < NOW()`) no se actualizan automáticamente — la función SQL `expire_managed_grace_period()` es la que las baja a basic. Idealmente eso lo hace un cron diario (Fase 4), pero como fallback simple en Fase 2:
+
+```js
+// En App.jsx, después de cargar el authUser y resolver useAccount:
+useEffect(() => {
+  if (!authUser?.id || isLegacy) return;
+  // Lazy call: si esta cuenta está en grace expirado, la función la baja a basic.
+  // Es idempotente: si no hay nada que expirar, no hace cambios.
+  // SECURITY DEFINER permite a authenticated llamarla sin RLS.
+  supabase.rpc("expire_managed_grace_period").then(({ data, error }) => {
+    if (error) console.warn("[lazy grace expire]", error);
+    if (data && data > 0) {
+      console.log(`[lazy grace expire] ${data} cuentas bajadas a basic`);
+      refreshAccount(); // forzar re-fetch del useAccount con nuevo plan
+    }
+  });
+}, [authUser?.id, isLegacy]);
+```
+
+> **Caveat:** la función afecta TODAS las cuentas en grace expirado del sistema, no solo la del usuario actual. Eso está bien porque (a) la operación es idempotente, (b) un usuario llamándola "ayuda" al sistema completo, (c) Postgres maneja la concurrencia correctamente. Si en algún momento se quiere restringir a solo "mi cuenta", se modifica la función SQL para tomar un parámetro.
+
 ---
 
 ## 3. Coexistencia con sistema asesor↔cliente

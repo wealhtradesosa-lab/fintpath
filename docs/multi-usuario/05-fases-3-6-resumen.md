@@ -14,9 +14,10 @@ Este documento sintetiza las Fases 3-6 del roadmap multi-usuario para que el ord
 
 | Archivo | Función |
 |---|---|
-| `src/components/MiCuenta.jsx` | Pantalla principal de gestión de cuenta. Lista miembros, plan actual, botones de invitar / cambiar rol / revocar. |
-| `src/components/InvitarMiembro.jsx` | Modal con form de invitación: email, rol (admin/reader), mensaje opcional. |
+| `src/components/MiCuenta.jsx` | Pantalla principal de gestión de cuenta. Lista miembros, plan actual, botones de invitar / cambiar rol / revocar. **Post-01c:** muestra plan vigente con badge ("managed by [advisor_firm]" si aplica), countdown de grace si `subscriptionStatus='grace'`, y deshabilita botón "Invitar" si `account_members.active >= maxMembers`. |
+| `src/components/InvitarMiembro.jsx` | Modal con form de invitación: email, rol (admin/reader), mensaje opcional. **Post-01c:** valida que el slot esté disponible antes de crear `account_invitations`. |
 | `src/components/AcceptFamilyInvite.jsx` | Pantalla pública (token URL) para aceptar invitación. Análoga a `AcceptInvite.jsx` pero para `account_invitations` (no `advisor_invitations`). |
+| `src/components/GraceBanner.jsx` | (Si no se hizo en Fase 2) banner amarillo con countdown + CTA a Stripe checkout. |
 | `src/lib/accountActions.js` | Funciones puras: `inviteMember`, `acceptInvitation`, `removeMember`, `changeRole`. Encapsulan los upserts a Supabase y las llamadas a edge functions. |
 
 ### Cambios en App.jsx
@@ -27,7 +28,21 @@ Este documento sintetiza las Fases 3-6 del roadmap multi-usuario para que el ord
 
 ### RLS adicional necesaria
 
-Las policies ya cubren CRUD de `account_invitations` por admin. No hay nuevo SQL en Fase 3.
+Las policies ya cubren CRUD de `account_invitations` por admin. **Recomendado en Fase 3:** agregar trigger `enforce_max_members_on_insert` en `account_members` que valide a nivel BD el límite (defensa en profundidad — el cliente ya valida pero un admin puede bypassear via API directa). Trigger sugerido:
+
+```sql
+CREATE FUNCTION enforce_max_members() RETURNS TRIGGER AS $$
+DECLARE v_current_count INT; v_max INT;
+BEGIN
+  SELECT COUNT(*) INTO v_current_count FROM account_members
+    WHERE account_id = NEW.account_id AND status = 'active';
+  SELECT max_members INTO v_max FROM accounts WHERE id = NEW.account_id;
+  IF v_current_count >= v_max THEN
+    RAISE EXCEPTION 'La cuenta ya tiene % miembros activos (límite: %)', v_current_count, v_max;
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+```
 
 ### Decisiones a cerrar antes de implementar
 
@@ -115,47 +130,66 @@ Lo dejamos para definir cuando se aborde Fase 4 — no afecta Fase 1.
 
 ## Fase 6 — Stripe products y plan management
 
-**Objetivo:** Vincular el campo `accounts.plan` con productos Stripe reales y manejar webhooks.
+**Objetivo:** Vincular el campo `accounts.plan` con productos Stripe reales y manejar webhooks. **Parte del schema ya está cubierto por `01c-patches.sql`** (subscription_status, grace_until, managed_*); Fase 6 agrega los Stripe-specific.
 
 ### Productos Stripe
 
-| Producto | Stripe Price ID | Precio | max_members | Descripción |
+| Producto | Stripe Price ID | Precio | max_members | Cuándo aplica |
 |---|---|---|---|---|
-| Finpathia Basic | `price_BASIC` | $0 | 1 | Plan gratuito (default) |
-| Finpathia Pro | `price_PRO_MONTHLY` / `price_PRO_YEARLY` | $X / $Y | 1 | Pro individual (todas las features Pro) |
-| Finpathia Pro Familiar | `price_FAMILIAR_MONTHLY` / `price_FAMILIAR_YEARLY` | $X / $Y | 5 (o 10) | Pro + multi-usuario |
+| Finpathia Basic | gratis | $0 | 1 | Default. Sin asesor, sin Pro pago. |
+| Finpathia Pro | `price_PRO_MONTHLY` / `price_PRO_YEARLY` | $X / $Y | 1 | Pro individual sin multi-usuario familiar |
+| Finpathia Pro Familiar | `price_FAMILIAR_MONTHLY` / `price_FAMILIAR_YEARLY` | $X / $Y | 5 (o 10) | Multi-usuario familiar pagado por el cliente |
+| **Managed (no pago directo)** | **n/a** | **$0** | **1/3/5** | **Cuenta provista por asesor (definido por advisor_plan)** |
 
-> **Decisión abierta:** pricing exacto y `max_members` del Familiar. Memoria del proyecto recuerda que esto es prerequisito antes de paid Google Ads.
+> **Decisión abierta:** pricing exacto y `max_members` del Familiar. Prerequisito antes de paid Google Ads.
 
 ### Edge function webhook
 
 `supabase/functions/stripe-account-webhook/index.ts`:
-- Maneja `checkout.session.completed` → busca/crea `account` para el customer, setea `plan` y `max_members`.
+- Maneja `checkout.session.completed` → busca/crea `account` para el customer, setea `plan='pro'|'pro_familiar'`, max_members del producto, stripe_customer_id, stripe_subscription_id.
 - Maneja `customer.subscription.updated` → actualiza plan si cambió.
-- Maneja `customer.subscription.deleted` → downgrade a basic, mantiene miembros pero pone `max_members=1`. Si tiene >1 miembro activo, marca cuenta como `past_due` y notifica al admin.
+- Maneja `customer.subscription.deleted` → downgrade. Si la cuenta era `pro_familiar`, los readers entran en grace 30 días (similar a managed) antes de bajar a basic.
+
+### Interacción con plan 'managed' (post-01c)
+
+Hay 2 caminos cruzados que la edge function debe manejar:
+
+**Caso A — Cliente managed compra Pro Familiar individual:**
+1. Webhook recibe checkout.session.completed con plan=pro_familiar.
+2. Edge function detecta que la cuenta tenía `plan='managed'`.
+3. Acción: cambia plan a `pro_familiar`, setea max_members del nuevo plan, **mantiene `managed_by_advisor_id` poblado** (el cliente sigue siendo cliente del asesor) pero el plan ya no se hereda del tier del asesor.
+4. Si el asesor pierde al cliente después, el trigger `start_grace_on_advisor_disconnect` (PATCH 11) verifica que `plan='managed'` antes de actuar — como ahora es `pro_familiar`, NO entra en grace. Correcto: el cliente paga su propio plan.
+
+**Caso B — Cliente con Pro Familiar pagado cancela su Stripe mientras tiene asesor:**
+1. Webhook recibe customer.subscription.deleted.
+2. Edge function detecta `managed_by_advisor_id` poblado en la cuenta.
+3. Acción: en lugar de bajar a basic, llamar a una función SQL `reapply_advisor_managed(account_id)` que vuelve a setear plan=managed con tier del asesor activo. Función a diseñar en Fase 6 (no está en 01c porque solo se necesita cuando hay Stripe).
+4. Si no hay asesor vinculado, baja a basic con grace 30 días para los readers de pro_familiar.
 
 ### Decisiones a cerrar
 
 1. **Pricing exacto** (memorizable: prerequisito antes de Ads).
-2. **Si bajan de Familiar a Pro/Basic con miembros activos**: ¿qué pasa con los readers? Opciones:
-   - (a) Se mantienen leyendo pero el admin no puede agregar más.
-   - (b) Se desactivan automáticamente y el admin debe re-invitarlos al re-upgradear.
-   - (c) Período de gracia 30 días para downgrades.
-   **Recomendación:** opción (a) durante grace period 7 días, después (b).
+2. **`max_members` del Familiar individual:** 5 vs 10. Decidir junto con pricing.
 3. **Trial** del Familiar: 14 días free trial estándar de Stripe, o trial específico.
+4. **Política de Founding** (no aparece en `advisor_plan` CHECK del schema actual del asesor): ¿se mapea a 'professional' funcionalmente, o se agrega como tier 4?
+5. **Reapply advisor managed function:** SQL en `01d-patches.sql` futuro o en migration de Fase 6.
 
 ### Cambios al schema
 
-Mínimos, posiblemente:
+Aditivos al 01c, que ya cubre `subscription_status` y `grace_until`:
+
 ```sql
 ALTER TABLE public.accounts
   ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT,
   ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT,
-  ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'active'
-    CHECK (subscription_status IN ('trialing','active','past_due','canceled','unpaid'));
+  ADD COLUMN IF NOT EXISTS stripe_price_id TEXT,
+  ADD COLUMN IF NOT EXISTS trial_until TIMESTAMPTZ;
+
+-- Función para re-aplicar tier de asesor cuando cliente cancela Pro propio
+CREATE FUNCTION reapply_advisor_managed(p_account_id UUID) ...
 ```
 
-Se aplicaría como `01c-patches.sql` cuando se aborde Fase 6.
+Se aplicaría como `01d-patches.sql` cuando se aborde Fase 6 (NO antes — depende de productos Stripe creados).
 
 ### Esfuerzo estimado
 
