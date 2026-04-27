@@ -193,43 +193,121 @@ export default function LandingPage({ onGetStarted }) {
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Proyecta tu futuro financiero hoy</h2>
             <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Regístrate gratis y toma control de tu patrimonio</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, maxWidth: 1280, margin: "0 auto" }}>
             {[
-              { name: "Free", price: "$0", per: "gratis", features: ["Dashboard básico", "3 inversiones", "Gastos y deudas", "Simulador limitado", "1 meta financiera"], no: ["Coaches IA", "Pensiones", "Trading", "Alertas", "PDF"], cta: "Comenzar gratis" },
-              { name: "Básico", price: "$8", per: "USD/mes", sub: "$6 USD/mes anual — Ahorra 25%", features: ["Todo en Free", "10 inversiones y 10 metas", "Simulador avanzado", "Pensiones Colpensiones + BTC", "Trading portfolio", "CSV import + PDF export"], no: ["Coaches IA", "Family Office KPIs", "Alertas inteligentes"], cta: "Probar 14 días" },
-              { name: "Pro", price: "$16", per: "USD/mes", sub: "$12 USD/mes anual — Ahorra 25%", features: ["Todo en Básico", "Inversiones ilimitadas", "5 Coaches IA", "Family Office KPIs", "Alertas inteligentes", "Percentil de riqueza", "Benchmark vs mercado", "Resumen ejecutivo", "Soporte prioritario"], no: [], accent: true, cta: "Probar 14 días Pro" },
-              { name: "Para Asesores", price: "$79", per: "USD/mes", sub: "Desde — hasta $399 según tamaño de cartera", features: ["Hasta 40 clientes gestionados", "Dashboard Pro completo por cliente", "Panel unificado del asesor", "Plan tributario automático", "Reportes PDF profesionales", "Onboarding 1-a-1"], no: [], advisor: true, cta: "Ver planes →" },
+              {
+                name: "Free", price: "$0", per: "gratis",
+                tag: "Para empezar a organizarte",
+                users: "1 usuario",
+                features: [
+                  "Dashboard con resumen patrimonial",
+                  "Hasta 3 inversiones y 1 meta",
+                  "Ingresos, gastos y deudas",
+                  "Encriptación E2E de tus datos",
+                ],
+                no: ["Simulador", "Pensiones", "Ahorro BTC", "Trading", "Asesor IA", "Plan Tributario"],
+                cta: "Comenzar gratis",
+              },
+              {
+                name: "Básico", price: "$8", per: "USD/mes",
+                sub: "$6 USD/mes anual — Ahorra 25%",
+                tag: "Para gestionar tu vida financiera completa",
+                users: "1 usuario",
+                features: [
+                  "Todo lo de Free + 10 inversiones, 10 metas",
+                  "🖥️ Simulador financiero avanzado",
+                  "🏛️ Pensiones (Colpensiones + RAIS) o 401(k)",
+                  "💰 Cálculo de aportes obligatorios y voluntarios",
+                  "₿ Ahorro en Bitcoin con proyecciones",
+                  "💹 Trading portfolio (acciones + crypto)",
+                  "📥 Importar Excel y 📸 leer facturas con IA",
+                ],
+                no: ["Asesor IA", "Coaches IA", "Plan Tributario completo"],
+                cta: "Probar 14 días",
+              },
+              {
+                name: "Pro", price: "$16", per: "USD/mes",
+                sub: "$12 USD/mes anual — Ahorra 25%",
+                tag: "Para planificar y optimizar como un experto",
+                users: "Hasta 3 usuarios",
+                features: [
+                  "Todo lo de Básico, sin límites",
+                  "🤖 Asesor Financiero IA",
+                  "🧠 5 Coaches IA (Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian)",
+                  "🧾 Plan Tributario completo (Colombia + US)",
+                  "👥 Hasta 3 miembros (vos + pareja/contador)",
+                  "📊 Resumen ejecutivo de patrimonio en PDF",
+                  "🚀 Soporte prioritario",
+                ],
+                no: [], accent: true, cta: "Probar 14 días Pro",
+              },
+              {
+                name: "Pro Familiar", price: "Pronto", per: "",
+                tag: "Para tu familia + tu contador en un solo espacio",
+                users: "Hasta 10 usuarios",
+                features: [
+                  "Todo lo de Pro, sin restricciones",
+                  "👨‍👩‍👧 Hasta 10 personas con acceso al mismo patrimonio",
+                  "🔐 Roles: administrador y solo lectura",
+                  "🧾 Tu contador puede revisar sin tocar tus datos",
+                  "📊 Auditoría de cambios (quién cambió qué y cuándo)",
+                  "🏆 Soporte prioritario en 24h",
+                ],
+                no: [], comingSoon: true, cta: "Únete a la lista",
+              },
+              {
+                name: "Para Asesores", price: "$79", per: "USD/mes",
+                sub: "Desde — hasta $399 según tamaño de cartera",
+                tag: "Para asesores y contadores",
+                users: "Hasta 40+ clientes",
+                features: [
+                  "Hasta 40 clientes gestionados",
+                  "Dashboard Pro completo por cliente",
+                  "Panel unificado del asesor",
+                  "Plan tributario automático",
+                  "Reportes PDF profesionales",
+                  "Onboarding 1-a-1",
+                ],
+                no: [], advisor: true, cta: "Ver planes →",
+              },
             ].map((p) => (
-              <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : p.advisor ? "1px solid rgba(59,130,246,0.35)" : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative" }}>
+              <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : p.advisor ? "1px solid rgba(59,130,246,0.35)" : p.comingSoon ? "1px dashed " + T.border : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative", opacity: p.comingSoon ? 0.95 : 1 }}>
                 {p.accent && <div style={{ background: T.grad, color: "#000", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>MÁS POPULAR</div>}
                 {p.advisor && <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>PARA PROFESIONALES</div>}
-                <div style={{ padding: 32 }}>
+                {p.comingSoon && <div style={{ background: "linear-gradient(135deg, #a78bfa 0%, #3b82f6 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>PRONTO DISPONIBLE</div>}
+                <div style={{ padding: 24 }}>
                   <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{p.name}</div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12, color: T.txt3, marginBottom: 14, lineHeight: 1.4, minHeight: 32 }}>{p.tag}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4, flexWrap: "wrap" }}>
                     {p.advisor && <span style={{ fontSize: 14, color: T.txt3, fontWeight: 500, marginRight: 2 }}>Desde</span>}
-                    <span style={{ fontSize: 44, fontWeight: 900, letterSpacing: "-0.04em" }}>{p.price}</span>
-                    <span style={{ color: T.txt3, fontSize: 15 }}>{p.per}</span>
+                    <span style={{ fontSize: p.comingSoon ? 26 : 40, fontWeight: 900, letterSpacing: "-0.04em", color: p.comingSoon ? T.txt3 : T.txt }}>{p.price}</span>
+                    {p.per && <span style={{ color: T.txt3, fontSize: 14 }}>{p.per}</span>}
                   </div>
-                  {p.sub && <div style={{ fontSize: 12, color: p.advisor ? T.blue : T.green, fontWeight: 600, marginBottom: 16 }}>{p.sub}</div>}
-                  {!p.sub && <div style={{ marginBottom: 16 }} />}
+                  {p.sub && <div style={{ fontSize: 12, color: p.advisor ? T.blue : T.green, fontWeight: 600, marginBottom: 14 }}>{p.sub}</div>}
+                  {!p.sub && <div style={{ marginBottom: 14 }} />}
+                  <div style={{ background: T.bg3, padding: "8px 12px", borderRadius: 8, fontSize: 11, color: T.txt2, marginBottom: 16, fontWeight: 600 }}>👤 {p.users}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
                     {p.features.map((f) => (
-                      <div key={f} style={{ fontSize: 14, color: T.txt2, display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ color: p.advisor ? T.blue : T.green, fontSize: 14 }}>✓</span> {f}
+                      <div key={f} style={{ fontSize: 12, color: T.txt2, display: "flex", alignItems: "flex-start", gap: 6, lineHeight: 1.5 }}>
+                        <span style={{ color: p.advisor ? T.blue : p.comingSoon ? T.purple : T.green, fontSize: 12, flexShrink: 0, marginTop: 2 }}>✓</span> {f}
                       </div>
                     ))}
                     {(p.no || []).map((f) => (
-                      <div key={f} style={{ fontSize: 14, color: T.txt3, display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ color: T.txt3, fontSize: 14 }}>✗</span> {f}
+                      <div key={f} style={{ fontSize: 12, color: T.txt3, display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ color: T.txt3, fontSize: 12 }}>✗</span> {f}
                       </div>
                     ))}
                   </div>
                   {p.advisor ? (
-                    <a href="/asesores" style={{ display: "block", textAlign: "center", width: "100%", padding: "14px", borderRadius: 10, textDecoration: "none", fontSize: 15, fontWeight: 700, background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", boxSizing: "border-box" }}>
+                    <a href="/asesores" style={{ display: "block", textAlign: "center", width: "100%", padding: "14px", borderRadius: 10, textDecoration: "none", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", boxSizing: "border-box" }}>
+                      {p.cta}
+                    </a>
+                  ) : p.comingSoon ? (
+                    <a href="mailto:soporte@finpathia.com?subject=Plan Pro Familiar — interesado&body=Hola, quiero entrar a la lista de espera del plan Pro Familiar." style={{ display: "block", textAlign: "center", width: "100%", padding: "14px", borderRadius: 10, textDecoration: "none", fontSize: 14, fontWeight: 700, background: T.bg3, border: "1px solid " + T.borderL, color: T.txt, boxSizing: "border-box" }}>
                       {p.cta}
                     </a>
                   ) : (
-                    <button onClick={onGetStarted} style={{ width: "100%", padding: "14px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 700, background: p.accent ? T.grad : T.bg3, color: p.accent ? "#000" : T.txt }}>
+                    <button onClick={onGetStarted} style={{ width: "100%", padding: "14px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, background: p.accent ? T.grad : T.bg3, color: p.accent ? "#000" : T.txt }}>
                       {p.cta}
                     </button>
                   )}

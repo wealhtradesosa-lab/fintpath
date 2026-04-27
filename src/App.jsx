@@ -2261,30 +2261,79 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"coach":{const msgs=adv?getCoach(adv.id):[];return gated("coach","Pro",<div><div style={{textAlign:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 6px"}}>Coaches Financieros IA</h2><p style={{color:T.tx3,fontSize:13}}>5 asesores analizan tus datos</p><p style={{color:T.tx3,fontSize:10,margin:"4px 0 0"}}>📋 Solo se analizan ítems encendidos. Los apagados no se incluyen en el análisis.</p></div><div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center",marginBottom:20}}>{ADV.map(a=>{const ac=adv?.id===a.id;return<button key={a.id} onClick={()=>sAdv(a)} style={{background:ac?`linear-gradient(135deg,${a.cl}20,${a.cl}10)`:T.card,border:`1px solid ${ac?a.cl:T.border}`,color:T.tx,padding:"14px 20px",borderRadius:14,cursor:"pointer",textAlign:"center",minWidth:90}}><div style={{fontSize:22,marginBottom:4}}>{a.av}</div><div style={{fontWeight:700,fontSize:11,color:ac?a.cl:T.tx}}>{a.nm}</div><div style={{fontSize:9,color:ac?`${a.cl}aa`:T.tx3}}>{a.ti}</div></button>})}</div><Cd>{adv?<div style={{padding:20}}><div style={{display:"flex",alignItems:"center",gap:10,paddingBottom:14,borderBottom:`2px solid ${adv.cl}`,marginBottom:20}}><span style={{fontSize:28}}>{adv.av}</span><div><div style={{fontWeight:700,fontSize:15}}>{adv.nm}</div><div style={{fontSize:12,color:T.tx3}}>{adv.ti}</div></div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:6,marginBottom:20}}>{[{l:"Patrimonio",v:fm(t.nw),c:T.tx},{l:"Cash Flow",v:fm(t.cf),c:t.cf>=0?T.gn:T.rd},{l:"Independencia",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2},{l:"Deuda/Act",v:pc(t.dta),c:t.dta<30?T.gn:T.rd}].map(m=><div key={m.l} style={{background:T.bg3,padding:8,borderRadius:8,borderLeft:`3px solid ${m.c}`}}><div style={{fontSize:9,color:T.tx3,textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:15,fontWeight:700,color:m.c}}>{m.v}</div></div>)}</div>{msgs.map((msg,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:14}}><div style={{width:32,height:32,borderRadius:"50%",background:adv.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{adv.av}</div><div style={{flex:1,background:adv.bg,padding:"14px 18px",borderRadius:"0 14px 14px 14px",border:`1px solid ${adv.cl}10`}}><div style={{fontWeight:700,fontSize:13,color:adv.cl,marginBottom:6}}>{msg.t}</div><div style={{fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",color:T.tx}}>{msg.c}</div></div></div>)}</div>:<div style={{padding:56,textAlign:"center",color:T.tx3}}><div style={{fontSize:40,marginBottom:12}}>👆</div><p>Selecciona un coach</p></div>}</Cd></div>)}
     case"price":{
       const isCO=!isUS;
+      // Lista de features por plan. Lo que esta plataforma realmente entrega hoy:
+      // Dashboard, Ingresos/Gastos/Deudas/Inversiones, Metas, Simulador, Pensiones
+      // (Colpensiones+RAIS o 401k), BTC savings, Trading, Plan Tributario CO+US,
+      // Asesor IA, 5 Coaches IA, Lectura de facturas, Multi-usuario hasta 10.
       const plans=[
         {n:"Free",
+         tag:"Para empezar a organizarte",
          p:{mensual:"$0",anual:"$0"},
          pr:{mensual:"gratis",anual:"gratis"},
          save:null,
-         f:["Dashboard básico","3 inversiones","1 meta financiera","Gastos y deudas","Encriptación E2E (base)"],
-         no:["Simulador","Pensiones","Trading","Ahorro BTC","📸 Lectura de facturas IA","🤖 Asesor IA","Coaches IA","Planeación tributaria"],
+         users:"1 usuario",
+         f:[
+           "Dashboard con resumen patrimonial",
+           "Hasta 3 inversiones y 1 meta financiera",
+           "Registro de ingresos, gastos y deudas",
+           "Encriptación E2E de tus datos",
+         ],
+         no:["Simulador financiero","Pensiones","Ahorro BTC","Trading","Plan Tributario","Asesor IA","Coaches IA","Lectura de facturas IA"],
          cur:plan==="free"},
         {n:"Básico",
+         tag:"Para gestionar tu vida financiera completa",
          p:{mensual:isUS?"$8":"$34,000",anual:isUS?"$6":"$25,200"},
          pr:{mensual:isUS?"USD /mes":"COP /mes",anual:isUS?"USD /mes":"COP /mes"},
          pRef:{mensual:isUS?null:"≈ $8 USD",anual:isUS?null:"≈ $6 USD"},
          save:"Ahorra 25%",
-         f:["Todo en Free","10 inversiones","10 metas","Simulador avanzado","Pensiones Colpensiones + RAIS","Ahorro BTC","Trading portfolio","Importar Excel con IA","📸 Lectura de facturas IA"],
-         no:["🤖 Asesor IA","5 Coaches IA","Planeación tributaria"],
+         users:"1 usuario",
+         f:[
+           "Todo lo de Free, sin límites en inversiones (hasta 10) ni metas (hasta 10)",
+           "🖥️ Simulador financiero avanzado con palancas (cambia ingresos/gastos y simulá)",
+           isUS?"🏛️ Pensión y retiro: 401(k) + IRA + Social Security":"🏛️ Pensión Colombia: Colpensiones (RPM) + RAIS",
+           isCO?"💰 Calculá tus aportes obligatorios (4%+4%) y voluntarios":null,
+           "₿ Ahorro en Bitcoin: proyecciones por ciclo halving",
+           "💹 Trading portfolio: acciones US + crypto",
+           "📥 Importar Excel/CSV con IA",
+           "📸 Lectura de facturas y comprobantes con IA",
+         ].filter(Boolean),
+         no:["Asesor IA","5 Coaches IA","Plan Tributario completo","Multi-usuario"],
          cur:plan==="basico",ac:false},
         {n:"Pro",
+         tag:"Para planificar y optimizar como un experto",
          p:{mensual:isUS?"$16":"$67,200",anual:isUS?"$12":"$50,400"},
          pr:{mensual:isUS?"USD /mes":"COP /mes",anual:isUS?"USD /mes":"COP /mes"},
          pRef:{mensual:isUS?null:"≈ $16 USD",anual:isUS?null:"≈ $12 USD"},
          save:"Ahorra 25%",
-         f:["Todo en Básico","Inversiones ilimitadas","Metas ilimitadas","🤖 Asesor Financiero IA","5 Coaches IA especializados (Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian)","🧾 Planeación tributaria (Colombia / US)","Resumen ejecutivo de patrimonio","Soporte prioritario"],
+         users:"Hasta 3 usuarios (vos + pareja + contador)",
+         f:[
+           "Todo lo de Básico, sin límites de nada",
+           "🤖 Asesor Financiero IA que analiza tus números reales",
+           "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
+           isCO?"🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF, optimización)":"🧾 Tax Planning US (federal + state, deductions, optimization)",
+           "👥 Hasta 3 miembros con la misma información (admin + lectura)",
+           "📊 Resumen ejecutivo de patrimonio en PDF",
+           "🚀 Soporte prioritario por email",
+         ],
          no:[],
-         cur:plan==="pro",ac:true}
+         cur:plan==="pro",ac:true},
+        {n:"Pro Familiar",
+         tag:"Para tu familia + tu contador en un solo espacio",
+         p:{mensual:"Pronto",anual:"Pronto"},
+         pr:{mensual:"",anual:""},
+         save:null,
+         users:"Hasta 10 usuarios compartiendo la misma información",
+         f:[
+           "Todo lo de Pro, sin restricciones",
+           "👨‍👩‍👧 Hasta 10 personas con acceso al mismo patrimonio familiar",
+           "🔐 Roles: administrador (edita) y solo lectura (solo ve)",
+           "🧾 Tu contador puede revisar tus números sin tocarlos",
+           "📊 Auditoría: quién cambió qué y cuándo",
+           "🏆 Soporte prioritario con respuesta en 24h",
+         ],
+         no:[],
+         cur:plan==="pro_familiar",
+         comingSoon:true},
       ];
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
@@ -2296,26 +2345,32 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             ))}
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr 1fr",gap:16,maxWidth:950,margin:"0 auto"}}>
+        <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(240px, 1fr))",gap:16,maxWidth:1200,margin:"0 auto"}}>
           {plans.map(pl=>(
-            <Cd key={pl.n} s={{border:pl.ac?"2px solid "+T.gn:"1px solid "+T.border,position:"relative"}}>
+            <Cd key={pl.n} s={{border:pl.ac?"2px solid "+T.gn:pl.comingSoon?"1px dashed "+T.border:"1px solid "+T.border,position:"relative",opacity:pl.comingSoon?0.95:1}}>
               {pl.ac&&<div style={{background:"linear-gradient(135deg,"+T.gn+",#16a34a)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>MÁS POPULAR</div>}
-              <div style={{padding:28}}>
+              {pl.comingSoon&&<div style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>PRONTO DISPONIBLE</div>}
+              <div style={{padding:24}}>
                 <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>{pl.n}</div>
+                <div style={{fontSize:12,color:T.tx3,marginBottom:14,lineHeight:1.4,minHeight:32}}>{pl.tag}</div>
                 <div style={{marginBottom:4}}>
-                  <div style={{display:"flex",alignItems:"baseline",gap:4}}>
-                    <span style={{fontSize:40,fontWeight:800,color:pl.ac?T.gn:T.tx}}>{pl.p[billingCycle]}</span>
-                    <span style={{color:T.tx3,fontSize:14,fontWeight:600}}>{pl.pr[billingCycle]}</span>
+                  <div style={{display:"flex",alignItems:"baseline",gap:4,flexWrap:"wrap"}}>
+                    <span style={{fontSize:pl.comingSoon?22:36,fontWeight:800,color:pl.ac?T.gn:pl.comingSoon?T.tx3:T.tx}}>{pl.p[billingCycle]}</span>
+                    {pl.pr[billingCycle]&&<span style={{color:T.tx3,fontSize:14,fontWeight:600}}>{pl.pr[billingCycle]}</span>}
                   </div>
-                  {pl.pRef&&pl.pRef[billingCycle]&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>{pl.pRef[billingCycle]} · el cobro se procesa en dólares</div>}
+                  {pl.pRef&&pl.pRef[billingCycle]&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>{pl.pRef[billingCycle]} · cobro en dólares</div>}
                 </div>
                 {billingCycle==="anual"&&pl.save&&<div style={{fontSize:12,color:T.gn,fontWeight:600,marginBottom:12}}>{pl.save} vs plan mensual</div>}
                 {billingCycle==="mensual"&&pl.save&&<div style={{fontSize:12,color:T.tx3,marginBottom:12}}>{isUS?"or pay annually & save 25%":"o paga anual y ahorra 25%"}</div>}
                 {!pl.save&&<div style={{marginBottom:12}}/>}
-                <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
-                  {pl.f.map(f=><div key={f} style={{fontSize:13,color:T.tx2}}><span style={{color:T.gn,marginRight:8}}>✓</span>{f}</div>)}
-                  {(pl.no||[]).map(f=><div key={f} style={{fontSize:13,color:T.tx3}}><span style={{color:T.tx3,marginRight:8}}>✗</span>{f}</div>)}
+                <div style={{background:T.bg3,padding:"8px 12px",borderRadius:8,fontSize:11,color:T.tx2,marginBottom:14,fontWeight:600}}>👤 {pl.users}</div>
+                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+                  {pl.f.map(f=><div key={f} style={{fontSize:12,color:T.tx2,lineHeight:1.5}}><span style={{color:T.gn,marginRight:6,fontWeight:700}}>✓</span>{f}</div>)}
+                  {(pl.no||[]).map(f=><div key={f} style={{fontSize:12,color:T.tx3,lineHeight:1.5}}><span style={{color:T.tx3,marginRight:6}}>✗</span>{f}</div>)}
                 </div>
+                {pl.comingSoon?(
+                  <Bt v="s" sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{window.location.href="mailto:soporte@finpathia.com?subject=Plan Pro Familiar — interesado&body=Hola, quiero entrar a la lista de espera del plan Pro Familiar para mi familia/equipo. Mi email: "+(u?.p?.email||"")}}>Únete a la lista de espera</Bt>
+                ):(
                 <Bt v={pl.ac?"p":pl.cur?"s":"p"} sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{if(!pl.cur)(async()=>{
                   try{
                     const prices={
@@ -2334,6 +2389,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     else alert("Error: "+(d.error||"No se pudo crear la sesión"));
                   }catch(e){alert("Error conectando con Stripe: "+e.message)}
                 })()}}>{pl.cur?"Plan actual":"Comenzar"}</Bt>
+                )}
               </div>
             </Cd>
           ))}
