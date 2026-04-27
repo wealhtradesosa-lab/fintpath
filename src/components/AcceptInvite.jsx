@@ -39,6 +39,24 @@ export default function AcceptInvite({ token, onComplete }) {
     let cancelled = false;
     (async () => {
       try {
+        // PASO 1A: intentar como invitación de cuenta familiar (Fase 3)
+        // La RPC validate_invitation_token devuelve null si no encuentra,
+        // así caemos limpiamente al flujo legacy de advisor sin error.
+        if (isSupabaseConfigured && supabase) {
+          const { data: familyData, error: familyErr } = await supabase.rpc(
+            "validate_invitation_token",
+            { p_token: token }
+          );
+          if (cancelled) return;
+          if (!familyErr && familyData) {
+            setInvitation({ ...familyData, type: "family" });
+            setForm((f) => ({ ...f, email: familyData.email_invited || "" }));
+            setStage("ready");
+            return;
+          }
+        }
+
+        // PASO 1B: fallback a invitación de advisor (flujo legacy intacto)
         const r = await fetch("/.netlify/functions/advisor-accept-invite", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -47,7 +65,7 @@ export default function AcceptInvite({ token, onComplete }) {
         const j = await r.json();
         if (cancelled) return;
         if (r.ok && j.valid) {
-          setInvitation(j);
+          setInvitation({ ...j, type: "advisor" });
           setForm((f) => ({ ...f, email: j.email_invited || "" }));
           setStage("ready");
         } else {
@@ -103,14 +121,24 @@ export default function AcceptInvite({ token, onComplete }) {
 
       // Step 3: Llamar API accept para vincular
       setStage("accepting");
-      const acceptRes = await fetch("/.netlify/functions/advisor-accept-invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "accept", token, client_id: userId }),
-      });
-      const acceptJson = await acceptRes.json();
-      if (!acceptRes.ok) {
-        throw new Error(acceptJson.error || "No se pudo aceptar la invitación");
+
+      if (invitation?.type === "family") {
+        // Flujo family (Fase 3): la RPC accept_invitation matchea email
+        // del caller con el de la invitación, crea/reactiva membership
+        // y marca consumed_at.
+        const { error: acceptErr } = await supabase.rpc("accept_invitation", { p_token: token });
+        if (acceptErr) throw new Error(acceptErr.message || "No se pudo aceptar la invitación");
+      } else {
+        // Flujo advisor (legacy): netlify function intacta
+        const acceptRes = await fetch("/.netlify/functions/advisor-accept-invite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "accept", token, client_id: userId }),
+        });
+        const acceptJson = await acceptRes.json();
+        if (!acceptRes.ok) {
+          throw new Error(acceptJson.error || "No se pudo aceptar la invitación");
+        }
       }
 
       setStage("done");
@@ -198,6 +226,7 @@ export default function AcceptInvite({ token, onComplete }) {
 
   // ─── Done ───
   if (stage === "done") {
+    const isFamily = invitation?.type === "family";
     return (
       <div style={wrap}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
@@ -206,7 +235,17 @@ export default function AcceptInvite({ token, onComplete }) {
           <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(34,197,94,0.12)", border: `2px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 20px" }}>✓</div>
           <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 10 }}>¡Bienvenido!</h1>
           <p style={{ fontSize: 14, color: T.txt2, marginBottom: 20, lineHeight: 1.6 }}>
-            Tu cuenta está vinculada con <strong style={{ color: T.txt }}>{invitation?.advisor_firm}</strong>. Tienes acceso Pro completo. Redirigiendo...
+            {isFamily ? (
+              <>
+                Ya tenés acceso a <strong style={{ color: T.txt }}>{invitation?.account_name}</strong>
+                {invitation?.role === "reader" ? " como solo lectura" : " como administrador"}.
+                Redirigiendo...
+              </>
+            ) : (
+              <>
+                Tu cuenta está vinculada con <strong style={{ color: T.txt }}>{invitation?.advisor_firm}</strong>. Tienes acceso Pro completo. Redirigiendo...
+              </>
+            )}
           </p>
           <div style={{ fontSize: 13, color: T.txt3 }}>Cargando tu dashboard...</div>
         </div>
@@ -222,15 +261,30 @@ export default function AcceptInvite({ token, onComplete }) {
         <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 24, textAlign: "center" }}>FINPATHIA</div>
 
         {/* Invitation banner */}
-        <div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.1), rgba(167,139,250,0.08))", border: `1px solid rgba(59,130,246,0.25)`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
-          <div style={{ fontSize: 11, color: T.blue, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Invitación de tu asesor</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
-            {invitation?.advisor_firm || "Tu asesor"}
+        {invitation?.type === "family" ? (
+          <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.1), rgba(167,139,250,0.08))", border: `1px solid rgba(34,197,94,0.25)`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
+            <div style={{ fontSize: 11, color: T.green, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Invitación familiar</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
+              {invitation?.invited_by_name || "Te invitaron"} te invitó a {invitation?.account_name || "su cuenta"}
+            </div>
+            <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
+              Vas a tener acceso como <strong style={{ color: T.txt }}>{invitation?.role === "admin" ? "administrador" : "solo lectura"}</strong>
+              {invitation?.role === "admin"
+                ? " — podés ver y editar toda la información financiera."
+                : " — podés ver toda la información financiera, pero no editarla."}
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
-            Te invitó a gestionar tu patrimonio con acceso <strong style={{ color: T.txt }}>Pro completo</strong> — cortesía de tu asesor.
+        ) : (
+          <div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.1), rgba(167,139,250,0.08))", border: `1px solid rgba(59,130,246,0.25)`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
+            <div style={{ fontSize: 11, color: T.blue, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Invitación de tu asesor</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
+              {invitation?.advisor_firm || "Tu asesor"}
+            </div>
+            <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
+              Te invitó a gestionar tu patrimonio con acceso <strong style={{ color: T.txt }}>Pro completo</strong> — cortesía de tu asesor.
+            </div>
           </div>
-        </div>
+        )}
 
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6, letterSpacing: "-0.02em" }}>
           {mode === "signup" ? "Crea tu cuenta" : "Inicia sesión"}
