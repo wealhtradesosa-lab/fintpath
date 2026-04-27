@@ -1360,7 +1360,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
   );
 }
 
-function Paso3Situacion({ user, selectedOwner, onUpdateProfile, onUpdateOwner, onBack, onNext, onNavigate }) {
+function Paso3Situacion({ user, selectedOwner, onUpdateProfile, onUpdateOwner, onBack, onNext, onNavigate, owners }) {
   const isJur = selectedOwner?.type === "juridica";
   // Commit B3: calcular ingreso bruto anual del owner para validación UVT del Régimen Simple.
   // Suma de ingresos mensuales activos × 12, convirtiendo USD a COP con TRM si aplica.
@@ -2487,6 +2487,7 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
           <Paso3Situacion
             user={user}
             selectedOwner={selectedOwner}
+            owners={owners}
             onUpdateProfile={handleUpdateProfile}
             onUpdateOwner={handleUpdateOwner}
             onBack={goBack}

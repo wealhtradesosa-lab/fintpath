@@ -94,7 +94,14 @@ export function calcularEscenarioOptimo(user, owner, detActual) {
 // del Optimizador V2. Ya tenemos el detector + simulador en regimenSimple.js.
 // Aquí los envolvemos en el shape estándar de "Palanca" del optimizador.
 import { simularRegimenSimple } from "./regimenSimple.js";
-import { UVT } from "./taxCO.js";
+
+// Commit 24 Tarea 3 (BUG FIX reportado: 'algo salio mal' al pasar a Paso 3):
+// Antes importábamos UVT desde taxCO.js, que a su vez importa de regimenSimple.js.
+// Esto creaba un orden de evaluación frágil: UVT podía quedar undefined cuando
+// detectarPalancasAutomatizables se llamaba desde el render de React, causando
+// crash de la aplicación. Solución: declarar UVT localmente. Es una constante
+// fija del año (52374 para 2026), no requiere importación.
+const UVT = 52374;
 
 /**
  * Construye una palanca de Régimen Simple si el owner es elegible.
