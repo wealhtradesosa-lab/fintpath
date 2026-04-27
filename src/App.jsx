@@ -81,7 +81,14 @@ function LoadingScreen(){
 }
 
 
-const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.owners)d.owners=[{id:"own_1",name:"Personal",type:"natural",regimen:"ordinario"}];d.owners=d.owners.map(o=>({...o,regimen:o.regimen||"ordinario"}));if(!d.inv)d.inv=[];d.inv=d.inv.map(i=>{if(i.tp&&!isNaN(Number(i.tp))){i.tp=inferType(i);i.tipo=i.tp}return i});if(!d.deu)d.deu=[];if(!d.gas)d.gas={};if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateDeclaracionesV55(migrateAportesVoluntariosV17(d))};
+const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.owners)d.owners=[{id:"own_1",name:"Personal",type:"natural",regimen:"ordinario"}];d.owners=d.owners.map(o=>({...o,regimen:o.regimen||"ordinario"}));if(!d.inv)d.inv=[];d.inv=d.inv.map(i=>{if(i.tp&&!isNaN(Number(i.tp))){i.tp=inferType(i);i.tipo=i.tp}return i});if(!d.deu)d.deu=[];
+// Commit 18 Tarea 3: migración silenciosa para deudas legacy sin fiscalCode.
+// El bug latente del Commit 19 (handleSave no persistía fiscalCode) dejó deudas
+// guardadas SIN ese campo. Aquí derivamos el fiscalCode automáticamente del
+// campo tp (mortgage→VIVIENDA_HABITACIONAL, otros→CONSUMO) cuando falta.
+// Esto es DEFENSIVO: si el campo ya existe, no se toca. Sin riesgo de regresión.
+d.deu=d.deu.map(deuda=>{if(deuda.fiscalCode)return deuda;const fcInferido=deuda.tp==="mortgage"?"DEU_NAT_VIVIENDA_HABITACIONAL":"DEU_NAT_CONSUMO";return {...deuda,fiscalCode:fcInferido}});
+if(!d.gas)d.gas={};if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateDeclaracionesV55(migrateAportesVoluntariosV17(d))};
 
 // ═══ END-TO-END ENCRYPTION ═══
 const E2E={
