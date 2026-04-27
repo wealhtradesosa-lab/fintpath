@@ -22,6 +22,9 @@ import { useMemo, useState, useEffect } from "react";
 import { estimarImpuesto } from "../lib/taxCO.js";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { GRUPOS_SIMPLE } from "../lib/regimenSimple.js";
+// Commit 21 Tarea 3: detector de palancas del Optimizador V2 para mostrar
+// recomendación destacada de Régimen Simple cuando aplica
+import { detectarPalancasAutomatizables } from "../lib/optimizador.js";
 import { C, F as F_CENTRAL, S, R } from "../lib/designTokens.js";
 import AjustesFiscalesPersonalizados from "./AjustesFiscalesPersonalizados";
 
@@ -2072,6 +2075,42 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                       <span style={{ color: T.txt2 }}>
                         <strong style={{ color: tonoText }}>{hint.tono === "ok" ? "Listo:" : "Por qué:"}</strong> {hint.texto}
                       </span>
+                    </div>
+                  );
+                })()}
+
+                {/* Commit 21 Tarea 3: badge destacado de Régimen Simple cuando
+                    el optimizador detecta una palanca de alto impacto (cierra el
+                    último gap del reporte de análisis comparativo). Aparece
+                    SIEMPRE — incluso si ya hay otras optimizaciones — porque el
+                    cambio de régimen es decisión estratégica que el usuario
+                    debe ver explícitamente con todo su contador. */}
+                {(() => {
+                  if (!det) return null;
+                  const palancas = detectarPalancasAutomatizables(user, owner, det);
+                  const palancaSimple = palancas.find(p => p.codigo === "REGIMEN_SIMPLE");
+                  if (!palancaSimple) return null;
+                  const mejor = palancaSimple.datos?.mejorOpcion;
+                  if (!mejor) return null;
+                  return (
+                    <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(168,85,247,0.10))", border: "1.5px solid rgba(34,197,94,0.35)", borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 16 }}>⚡</span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: T.green, letterSpacing: 0.3 }}>
+                            POSIBLE CAMBIO DE RÉGIMEN
+                          </span>
+                        </div>
+                        <span style={{ ...F.mono, fontSize: 12, color: T.green, fontWeight: 800 }}>
+                          ~{fm(palancaSimple.impactoEstimado)}/año
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+                        Si <strong>{owner.name}</strong> cumple los criterios de actividad del grupo <strong>"{mejor.label}"</strong>, podría acogerse al <strong>Régimen Simple (Arts. 903-916 ET)</strong> y pagar <strong>{fm(mejor.impuestoSimple)}</strong> en lugar de <strong>{fm(mejor.impuestoOrdinario)}</strong> al año <span style={{ color: T.green, fontWeight: 700 }}>(ahorro ~{mejor.ahorroPct.toFixed(0)}%)</span>.
+                      </div>
+                      <div style={{ background: "rgba(0,0,0,0.20)", borderRadius: 6, padding: "6px 10px", fontSize: 9, color: T.txt3, lineHeight: 1.5 }}>
+                        ⚠️ <strong>Esto es una sugerencia estratégica, no automática.</strong> Cambiar de régimen requiere validar el grupo CIIU exacto con tu contador, presentar formulario ante DIAN antes del 28 de febrero, y NO se puede deshacer hasta el siguiente año fiscal. Hay también exclusiones (Art. 906 ET) — no todas las actividades califican aunque cumplan el tope de ingresos.
+                      </div>
                     </div>
                   );
                 })()}

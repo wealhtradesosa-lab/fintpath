@@ -90,34 +90,93 @@ export function calcularEscenarioOptimo(user, owner, detActual) {
   };
 }
 
+// Commit 21 Tarea 3: integración de Régimen Simple como primera palanca real
+// del Optimizador V2. Ya tenemos el detector + simulador en regimenSimple.js.
+// Aquí los envolvemos en el shape estándar de "Palanca" del optimizador.
+import { simularRegimenSimple } from "./regimenSimple.js";
+import { UVT } from "./taxCO.js";
+
+/**
+ * Construye una palanca de Régimen Simple si el owner es elegible.
+ * @returns {Palanca | null} La palanca, o null si no aplica.
+ *
+ * Características:
+ *   - codigo: 'REGIMEN_SIMPLE'
+ *   - articulo: 'Arts. 903-916 ET'
+ *   - impacto = ahorro de la mejorOpcion devuelta por simularRegimenSimple
+ *
+ * IMPORTANTE: la decisión de cambiar a SIMPLE es ESTRATÉGICA, no automática:
+ *   - Requiere cambio formal del régimen ante DIAN
+ *   - Una vez en SIMPLE no se puede salir hasta el siguiente año
+ *   - Implica cambios contables (no factura IVA, paga ICA dentro del SIMPLE)
+ *
+ * Por eso esta palanca es 'sugerida', no 'auto-aplicada'. El optimizador la
+ * marca como detectada pero no la suma automáticamente al impuestoOptimo. La
+ * UI debe mostrarla como recomendación con call-to-action explícito.
+ */
+function construirPalancaRegimenSimple(user, owner, detActual) {
+  void user;
+  // Solo evaluamos para owners en régimen ordinario (los que ya están en SIMPLE
+  // no tienen nada que optimizar acá).
+  if (owner?.regimen === "simple") return null;
+  // Solo natural y juridica que tengan ingresos
+  if (!owner || !detActual) return null;
+  if ((Number(detActual.ingreso) || 0) <= 0) return null;
+
+  const sim = simularRegimenSimple(owner, detActual, UVT);
+  if (!sim.elegibilidad.elegible) return null;
+  if (!sim.mejorOpcion) return null; // no hay grupo que ahorre
+  if (sim.mejorOpcion.ahorro <= 100_000) return null; // ahorro insignificante
+
+  return {
+    codigo: "REGIMEN_SIMPLE",
+    nombre: "Cambio a Régimen Simple",
+    articulo: "Arts. 903-916 ET",
+    impactoEstimado: sim.mejorOpcion.ahorro,
+    descripcion: `Bajo el grupo "${sim.mejorOpcion.label}" del Régimen Simple, este owner pagaría aproximadamente ${formatearCOP(sim.mejorOpcion.impuestoSimple)} en lugar de ${formatearCOP(sim.mejorOpcion.impuestoOrdinario)}, ahorrando ~${(sim.mejorOpcion.ahorroPct).toFixed(0)}%.`,
+    // Datos crudos para que la UI pueda mostrar más detalle si quiere
+    datos: {
+      simulacion: sim,
+      mejorOpcion: sim.mejorOpcion,
+    },
+    // Esta palanca NO se auto-aplica al impuestoOptimo. Es decisión del usuario.
+    autoAplicable: false,
+    elegibilidad: () => true,
+    aplicar: (escenario) => ({
+      aceptable: false, // sugerencia, no aplicación automática
+      nuevoEscenario: { ...escenario },
+      ahorro: 0,
+    }),
+  };
+}
+
+function formatearCOP(n) {
+  const num = Number(n) || 0;
+  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `$${(num / 1_000).toFixed(0)}K`;
+  return `$${num.toFixed(0)}`;
+}
+
 /**
  * Detecta qué palancas son automatizables para este owner según sus datos.
- * Cada palanca es un objeto con su lógica de aplicación encapsulada.
  *
- * @param {object} user
- * @param {object} owner
- * @param {object} detActual
- * @returns {Array<Palanca>} Lista de palancas aplicables, ordenadas por
- *                            impacto estimado descendente.
+ * @returns {Array<Palanca>} Lista ordenada por impacto descendente.
  *
- * COMMIT 1: devuelve array vacío. Las palancas reales se agregarán en
- * Commits 2-6.
- *
- * Estructura esperada de Palanca (definida formalmente en Commit 2):
- *   {
- *     codigo: string,
- *     nombre: string,
- *     articulo: string,
- *     impactoEstimado: number,
- *     elegibilidad: () => boolean,
- *     aplicar: (escenario) => { aceptable, nuevoEscenario, ahorro }
- *   }
+ * COMMIT 21: integración de la palanca de Régimen Simple. Más palancas
+ * vendrán en commits posteriores (reclasificación deuda, seguros, etc).
  */
 export function detectarPalancasAutomatizables(user, owner, detActual) {
-  // PLACEHOLDER (Commit 1): sin palancas.
-  // Voids para evitar warnings de variables no usadas que se usarán pronto.
-  void user; void owner; void detActual;
-  return [];
+  const palancas = [];
+
+  // Palanca 1: Régimen Simple (Arts. 903-916 ET)
+  const palancaSimple = construirPalancaRegimenSimple(user, owner, detActual);
+  if (palancaSimple) palancas.push(palancaSimple);
+
+  // Más palancas se agregan aquí en commits futuros...
+
+  // Ordenar por impacto descendente (la mayor primero)
+  palancas.sort((a, b) => (b.impactoEstimado || 0) - (a.impactoEstimado || 0));
+  return palancas;
 }
 
 /**
