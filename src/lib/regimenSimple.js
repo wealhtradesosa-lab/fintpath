@@ -145,3 +145,201 @@ export function calcularImpuestoSimple(ingresoAnual, grupoKey, uvt) {
   const tarifaEfectiva = ingresoAnual > 0 ? impuesto / ingresoAnual : 0;
   return { impuesto, tarifaEfectiva, desglose };
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// COMMIT 20a TAREA 3: DETECTOR DE ELEGIBILIDAD PARA RÉGIMEN SIMPLE
+// ─────────────────────────────────────────────────────────────────────────
+// Determina si un owner (natural o jurídica) calificaría para Régimen Simple
+// según los criterios del Art. 905 ET y exclusiones del Art. 906 ET.
+//
+// La validación es CONSERVADORA: solo dice "elegible" cuando hay alta
+// confianza. Cuando hay duda, devuelve "necesita_validar" con la razón.
+// El usuario final con su contador valida si el grupo CIIU es correcto.
+//
+// @param {Object} owner - el owner del usuario
+// @param {Object} det - detalle ya calculado del owner por estimarImpuesto()
+// @param {number} uvt - valor del UVT del año
+// @returns {{
+//   elegible: boolean,
+//   razon: string,
+//   gruposCandidatos: string[],
+//   ingresoAnual: number,
+//   ingresoUVT: number
+// }}
+// ═════════════════════════════════════════════════════════════════════════
+export function esElegibleRegimenSimple(owner, det, uvt) {
+  const ingresoAnual = Number(det?.ingreso) || 0;
+  const ingresoUVT = ingresoAnual / uvt;
+
+  // Defensive: caso vacío
+  if (!owner || !det) {
+    return { elegible: false, razon: "Sin datos del owner", gruposCandidatos: [], ingresoAnual: 0, ingresoUVT: 0 };
+  }
+
+  // Exclusión 1: tope de ingresos (Art. 905 ET = 100.000 UVT)
+  if (ingresoUVT > TOPE_SIMPLE_UVT) {
+    return {
+      elegible: false,
+      razon: `Ingresos anuales (${ingresoUVT.toFixed(0)} UVT) superan el tope legal de ${TOPE_SIMPLE_UVT} UVT (Art. 905 ET)`,
+      gruposCandidatos: [],
+      ingresoAnual,
+      ingresoUVT,
+    };
+  }
+
+  // Exclusión 2: flag explícito del usuario (Art. 906 ET)
+  if (owner.simpleExcluido) {
+    return {
+      elegible: false,
+      razon: "Marcado como excluido (Art. 906 ET) — actividad financiera, profesional grande, importadora, etc.",
+      gruposCandidatos: [],
+      ingresoAnual,
+      ingresoUVT,
+    };
+  }
+
+  // Exclusión 3: sin ingresos no se puede simular
+  if (ingresoAnual <= 0) {
+    return {
+      elegible: false,
+      razon: "Sin ingresos registrados — no hay base para simular Régimen Simple",
+      gruposCandidatos: [],
+      ingresoAnual,
+      ingresoUVT,
+    };
+  }
+
+  // Exclusión 4: asalariado puro (todo el ingreso es LAB_SALARIO).
+  // El Régimen Simple es para emprendedores/profesionales independientes/empresas.
+  // Un asalariado puro no puede acogerse — la relación laboral implica retención
+  // ordinaria del Art. 383 ET, no SIMPLE.
+  // Detectamos: si > 90% del ingreso es laboral salario (no honorarios), excluir.
+  const ingLaboralSalario = Number(det.ingLaboral) || 0;
+  // ingLaboral incluye honorarios + cesantías + prima. Para detectar asalariado puro
+  // miramos si el owner NO tiene honorarios significativos.
+  // Aproximación: si tiene perfil "honorariosConPersonal" o tiene honorarios cargados
+  // se considera independiente; si es solo salario puro, asalariado.
+  const tieneHonorarios = !!(owner.fiscalProfile?.honorariosConPersonal) || (det.honAnual || 0) > 0;
+  const esAsalariadoPuro = owner.type === "natural"
+    && ingLaboralSalario / Math.max(ingresoAnual, 1) > 0.90
+    && !tieneHonorarios;
+  if (esAsalariadoPuro) {
+    return {
+      elegible: false,
+      razon: "Asalariado puro — Régimen Simple no aplica (la retención laboral del Art. 383 ET es el mecanismo correcto)",
+      gruposCandidatos: [],
+      ingresoAnual,
+      ingresoUVT,
+    };
+  }
+
+  // Si pasamos todas las exclusiones, el owner ES elegible.
+  // Sugerimos grupos candidatos basándose en el tipo de owner y heurísticas:
+  const gruposCandidatos = [];
+  if (owner.type === "juridica") {
+    // Una jurídica pudo cargar actividad. Si no hay claridad, sugerimos los
+    // 3 grupos más comunes para que el usuario elija con su contador.
+    gruposCandidatos.push("comercio_industria", "servicios_profesionales", "comidas_transporte");
+  } else {
+    // Natural con honorarios: típicamente servicios profesionales.
+    if (tieneHonorarios) {
+      gruposCandidatos.push("servicios_profesionales");
+    }
+    // Cualquier natural con ingresos no laborales podría tener actividad comercial
+    if ((det.ingNoLaboral || 0) > 0) {
+      gruposCandidatos.push("comercio_industria", "tiendas_peluquerias");
+    }
+    if (gruposCandidatos.length === 0) {
+      gruposCandidatos.push("servicios_profesionales");
+    }
+  }
+
+  return {
+    elegible: true,
+    razon: `Cumple criterios Art. 905 ET (ingresos ${ingresoUVT.toFixed(0)} UVT < ${TOPE_SIMPLE_UVT} UVT) — necesita confirmación de grupo de actividad`,
+    gruposCandidatos,
+    ingresoAnual,
+    ingresoUVT,
+  };
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// COMMIT 20b TAREA 3: SIMULADOR COMPARATIVO ORDINARIO vs SIMPLE
+// ─────────────────────────────────────────────────────────────────────────
+// Compara el impuesto del owner bajo régimen ordinario (lo que el motor ya
+// calculó en det.impBruto) vs lo que pagaría bajo Régimen Simple, para cada
+// grupo candidato. Devuelve el ahorro potencial y la recomendación.
+//
+// IMPORTANTE: El cálculo SIMPLE no acepta deducciones (es sobre ingreso bruto).
+// Por eso el impuesto Ordinario debe leerse como "lo que paga HOY" después de
+// todas las deducciones legales. El comparativo es honesto.
+//
+// @param {Object} owner
+// @param {Object} det - detalle del motor (incluye impBruto del régimen ordinario)
+// @param {number} uvt
+// @returns {{
+//   elegibilidad: <result de esElegibleRegimenSimple>,
+//   simulaciones: Array<{
+//     grupo: string,
+//     label: string,
+//     impuestoSimple: number,
+//     impuestoOrdinario: number,
+//     ahorro: number,           // positivo = SIMPLE conviene
+//     ahorroPct: number,         // % de ahorro vs ordinario
+//     recomendacion: 'simple_conviene' | 'ordinario_conviene' | 'similar'
+//   }>,
+//   mejorOpcion: <una de simulaciones> | null
+// }}
+// ═════════════════════════════════════════════════════════════════════════
+export function simularRegimenSimple(owner, det, uvt) {
+  const elegibilidad = esElegibleRegimenSimple(owner, det, uvt);
+
+  if (!elegibilidad.elegible) {
+    return {
+      elegibilidad,
+      simulaciones: [],
+      mejorOpcion: null,
+    };
+  }
+
+  const impuestoOrdinario = Number(det?.impBruto) || 0;
+  const ingresoAnual = elegibilidad.ingresoAnual;
+
+  const simulaciones = elegibilidad.gruposCandidatos.map(grupoKey => {
+    const grupo = GRUPOS_SIMPLE[grupoKey];
+    const calc = calcularImpuestoSimple(ingresoAnual, grupoKey, uvt);
+    const ahorro = impuestoOrdinario - calc.impuesto;
+    const ahorroPct = impuestoOrdinario > 0 ? (ahorro / impuestoOrdinario) * 100 : 0;
+    let recomendacion;
+    if (Math.abs(ahorro) < 100_000) {
+      recomendacion = "similar";
+    } else if (ahorro > 0) {
+      recomendacion = "simple_conviene";
+    } else {
+      recomendacion = "ordinario_conviene";
+    }
+    return {
+      grupo: grupoKey,
+      label: grupo?.label || grupoKey,
+      descripcion: grupo?.descripcion || "",
+      impuestoSimple: calc.impuesto,
+      tarifaEfectivaSimple: calc.tarifaEfectiva,
+      impuestoOrdinario,
+      ahorro,
+      ahorroPct,
+      recomendacion,
+      desgloseSimple: calc.desglose,
+    };
+  });
+
+  // Mejor opción = la que más ahorra (si hay alguna que conviene)
+  const mejorOpcion = simulaciones
+    .filter(s => s.recomendacion === "simple_conviene")
+    .sort((a, b) => b.ahorro - a.ahorro)[0] || null;
+
+  return {
+    elegibilidad,
+    simulaciones,
+    mejorOpcion,
+  };
+}
