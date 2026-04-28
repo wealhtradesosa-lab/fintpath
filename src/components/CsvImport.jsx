@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 /* ═══════════════════════════════════════════════════
    EXCEL IMPORT — AI-Powered
@@ -137,6 +138,11 @@ const fmt = (v) => {
 };
 
 export default function CsvImport({ onImport, onClose }) {
+  // Fase 3 commit 8: gating reader. Guard único en handleConfirm — el flujo
+  // de upload + parse con IA no se gateamos para evitar bloquear al reader
+  // que solo quiere previsualizar lo que un admin podría importar después.
+  // La escritura real ocurre en onImport(), llamado solo desde handleConfirm.
+  const { role } = useRole();
   const [step, setStep] = useState(1);        // 1=module, 2=upload, 3=preview
   const [module, setModule] = useState(null);
   const [parsed, setParsed] = useState([]);
@@ -203,6 +209,7 @@ export default function CsvImport({ onImport, onClose }) {
   };
 
   const handleConfirm = () => {
+    if (!guardEdit(role)) return;
     if (!module || !parsed.length) return;
     const mod = MODULES[module];
     onImport(mod.key, parsed, mod.isGastos);

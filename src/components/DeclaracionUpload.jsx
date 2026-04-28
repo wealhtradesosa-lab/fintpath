@@ -14,6 +14,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useRef } from "react";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -66,6 +67,10 @@ const RENGLON_LABELS_F110 = {
 };
 
 export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpsell }) {
+  // Fase 3 commit 8: gating reader. Mismo patrón que CsvImport — el flujo
+  // de upload + parse no se gateamos (lectura/preview); guard solo en
+  // handleConfirm donde se persiste a través de onSaveToOwner.
+  const { role } = useRole();
   const [selectedOwnerId, setSelectedOwnerId] = useState(owners[0]?.id || "");
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -124,6 +129,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
   };
 
   const handleConfirm = () => {
+    if (!guardEdit(role)) return;
     if (!parsed || !selectedOwner) return;
 
     // Commit 5.5: hard block. anoGravable debe estar entre currentYear-5 y currentYear-1.
