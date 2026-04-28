@@ -107,6 +107,10 @@ export function guardEdit(role, showToast) {
   if (role === "reader") {
     if (typeof showToast === "function") {
       showToast("Solo lectura · pedile al admin de la cuenta que actualice este dato");
+    } else {
+      // Sin showToast disponible (módulos hijos sin prop), emitir evento
+      // global. App.jsx tiene un listener que muestra el toast para readers.
+      try { window.dispatchEvent(new CustomEvent("fp3-reader-blocked")); } catch {}
     }
     return false;
   }

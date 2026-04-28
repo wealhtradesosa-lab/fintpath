@@ -1,5 +1,6 @@
 import { useState } from "react";
 import SimToggleInfo from "./SimToggleInfo";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 import { C } from "../lib/designTokens.js";
 
@@ -134,6 +135,11 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
 
 export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport}) {
   const fm = fmt || _fm;
+  // Fase 3 commit 5 — gating reader: si role==='reader', los handlers
+  // de escritura abortan vía guardEdit() y emiten 'fp3-reader-blocked'.
+  // App.jsx muestra el toast unificado. Los readers pueden ver y abrir
+  // los modales pero no persisten cambios (RLS también bloquea en BD).
+  const { role } = useRole();
   const [showForm, setShowForm] = useState(false);
   const [scanning, setScanning] = useState(false);
 
@@ -203,11 +209,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   const toggleSelect = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((i) => i.id)));
   const deleteSelected = () => {
+    if (!guardEdit(role)) return;
     if (!selected.size || !confirm(`¿Eliminar ${selected.size} ingreso(s)?`)) return;
     onUpdate(items.filter((i) => !selected.has(i.id))); // only deletes standalone, not inv-derived
     setSelected(new Set());
   };
   const handleSave = () => {
+    if (!guardEdit(role)) return;
     const isSalario = form.categoria === "Salario";
     // Fix: derivar mensual desde capital × tasa si mensual quedó en 0 pero hay capital y tasa.
     // Cubre el caso donde el usuario edita un ingreso, actualiza la tasa, pero los
@@ -479,9 +487,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{fm(item.moneda==="USD" ? (item.mensual||0)*(trm||4200) : (item.mensual||0))}{item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(item.mensual).toLocaleString()}</span>}</td>
                     <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString() + (item.tasa ? " • " + item.tasa + "%" : "") : item.fuente || "—"}</td>
                     <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
-                      <button onClick={() => { const upd = items.map(x => x.id === item.id ? {...x, sim: !(item.sim!==false)} : x); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{item.sim===false?"⬜":"✅"}</button>
+                      <button onClick={() => { if (!guardEdit(role)) return; const upd = items.map(x => x.id === item.id ? {...x, sim: !(item.sim!==false)} : x); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{item.sim===false?"⬜":"✅"}</button>
                       <button onClick={() => handleEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
-                      <button onClick={() => { if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== item.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button></div>
+                      <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== item.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button></div>
                     </td>
                   </tr>
                 ))}

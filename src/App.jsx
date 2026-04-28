@@ -201,11 +201,21 @@ const takeSnapshot=(d)=>{
     }
   }catch{}
 };
-const sS=async(d,uid,accountId,isLegacy)=>{
+const sS=async(d,uid,accountId,isLegacy,role)=>{
   try{
     localStorage.setItem(SK,JSON.stringify(d));
     takeSnapshot(d);
     if(isSupabaseConfigured&&uid){
+      // Fase 3 commit 5 — gating reader: si el usuario es READER en una
+      // cuenta multi-usuario (no legacy), abortar el upsert antes del
+      // setTimeout. RLS en BD ya bloquearía el UPDATE (policy account_admins
+      // only), pero hacerlo en cliente evita el roundtrip y muestra UX
+      // clara. localStorage ya se guardó arriba (cache local OK), pero NO
+      // se persiste a Supabase. Emitir evento para que App muestre toast.
+      if(role==="reader"&&!isLegacy){
+        try{const ev=new CustomEvent("fp3-reader-blocked");window.dispatchEvent(ev)}catch{}
+        return;
+      }
       clearTimeout(_svT);
       _svT=setTimeout(async()=>{
         // Commit 12 Tarea 3 (BUG REPORTADO: 'no quedan guardados'): el catch
@@ -310,7 +320,12 @@ export default function FinPath(){
   // setTimeout de 2s del debounce de save.
   const accountIdRef=useRef(null);
   const isLegacyRef=useRef(true);
-  useEffect(()=>{accountIdRef.current=accountId;isLegacyRef.current=isLegacy;},[accountId,isLegacy]);
+  // roleRef: necesario para que sS() (global, fuera del componente) chequee
+  // el rol activo sin cerrar sobre value stale del setTimeout debounce de 2s.
+  // Default 'admin' garantiza que el flujo legacy (sin provider envolvente)
+  // o el primer mount (antes de que useAccount resuelva) NO bloquee saves.
+  const roleRef=useRef("admin");
+  useEffect(()=>{accountIdRef.current=accountId;isLegacyRef.current=isLegacy;roleRef.current=role||"admin";},[accountId,isLegacy,role]);
   // Handler del AccountSwitcher (Fase 2 commit 2): persistir elección,
   // limpiar cache local de la cuenta vieja, forzar refetch del hook, y
   // setU(null) para que el próximo useEffect cargue data de la nueva cuenta.
@@ -469,7 +484,7 @@ export default function FinPath(){
     if(isAdvisorViewingClient){
       sS(u,targetId);
     }else{
-      sS(u,targetId,accountIdRef.current,isLegacyRef.current);
+      sS(u,targetId,accountIdRef.current,isLegacyRef.current,roleRef.current);
     }
   },[u]);
 
@@ -508,6 +523,20 @@ export default function FinPath(){
     };
     window.addEventListener("fp3-save-ok",handler);
     return ()=>window.removeEventListener("fp3-save-ok",handler);
+  },[]);
+
+  // Fase 3 commit 5: listener global de readers bloqueados. Disparado
+  // por sS() (cuando un reader intenta auto-save) y por guardEdit() en
+  // módulos hijos (cuando un reader hace click en agregar/editar/eliminar).
+  // Toast unificado evita que cada módulo tenga que recibir showToast
+  // como prop o duplicar el mensaje.
+  useEffect(()=>{
+    const handler=()=>{
+      setToast("🔒 Solo lectura · pedile al admin de la cuenta que actualice este dato");
+      setTimeout(()=>setToast(prev=>prev.startsWith("🔒")?"":prev),3500);
+    };
+    window.addEventListener("fp3-reader-blocked",handler);
+    return ()=>window.removeEventListener("fp3-reader-blocked",handler);
   },[]);
 
 
