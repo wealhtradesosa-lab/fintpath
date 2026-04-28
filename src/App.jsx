@@ -2378,9 +2378,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
          cur:plan==="pro",ac:true},
         {n:"Pro Familiar",
          tag:"Para tu familia + tu contador en un solo espacio",
-         p:{mensual:"$27",anual:"$243"},
-         pr:{mensual:"USD /mes",anual:"USD /año"},
-         pRef:{mensual:null,anual:"≈ $20 USD/mes"},
+         p:{mensual:isUS?"$27":"$113,400",anual:isUS?"$20":"$84,000"},
+         pr:{mensual:isUS?"USD /mes":"COP /mes",anual:isUS?"USD /mes":"COP /mes"},
+         pRef:{mensual:isUS?null:"≈ $27 USD",anual:isUS?null:"≈ $20 USD"},
          save:"Ahorra 25%",
          users:"Hasta 10 usuarios compartiendo la misma información",
          f:[
@@ -2440,15 +2440,34 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     };
                     const priceId=prices[pl.n]?.[billingCycle];
                     if(!priceId)return;
+                    // Email fallback: u?.p?.email puede no estar cargado para users
+                    // recién signup. authUser.email SIEMPRE está si hay sesión.
+                    const userEmail=u?.p?.email||authUser?.email||"";
+                    const userIdReal=authUser?.id||"";
+                    if(!userEmail){alert("Necesitamos tu email para procesar el pago. Completá tu perfil primero (Configuración → Datos personales) y volvé a intentar.");return;}
+                    if(!userIdReal){alert("Sesión no detectada. Hacé logout/login y volvé a intentar.");return;}
                     const r=await fetch("/.netlify/functions/stripe-checkout",{
                       method:"POST",
                       headers:{"Content-Type":"application/json"},
-                      body:JSON.stringify({priceId,email:u?.p?.email||"",userId:authUser?.id||"",successUrl:window.location.origin+"/?success=1&session_id={CHECKOUT_SESSION_ID}",cancelUrl:window.location.origin+"/?canceled=true"})
+                      body:JSON.stringify({priceId,email:userEmail,userId:userIdReal,successUrl:window.location.origin+"/?success=1&session_id={CHECKOUT_SESSION_ID}",cancelUrl:window.location.origin+"/?canceled=true"})
                     });
+                    if(!r.ok){
+                      const txt=await r.text().catch(()=>"(no body)");
+                      console.error("[checkout] HTTP",r.status,txt);
+                      alert("Error de Stripe (HTTP "+r.status+"):\n"+txt.slice(0,200)+"\n\nRevisá la consola del browser (F12) o contactá soporte@finpathia.com.");
+                      return;
+                    }
                     const d=await r.json();
                     if(d.url)window.location.href=d.url;
-                    else alert("Error: "+(d.error||"No se pudo crear la sesión"));
-                  }catch(e){alert("Error conectando con Stripe: "+e.message)}
+                    else alert("Error de Stripe: "+(d.error||"No se pudo crear la sesión")+". Si el problema persiste, escribinos a soporte@finpathia.com");
+                  }catch(e){
+                    console.error("[checkout] fetch failed:",e);
+                    const isBlocked=e.message&&/blocked|aborted|failed|network|cors/i.test(e.message);
+                    alert(
+                      "Error conectando con Stripe: "+e.message+
+                      (isBlocked?"\n\n⚠️ Posible AdBlocker o extensión del browser bloqueando la conexión.\nProbá:\n• Desactivar adblocker para finpathia.com\n• Abrir en modo incógnito\n• Probar con otro browser":"\n\nVerificá tu conexión. Detalle del error en consola (F12 → Console).")
+                    );
+                  }
                 })()}}>{pl.cur?"Plan actual":"Comenzar"}</Bt>
                 )}
               </div>

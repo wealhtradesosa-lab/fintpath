@@ -64,13 +64,35 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "priceId requerido" }) };
     }
 
+    // Validación email: Stripe requiere email válido o NO incluir el campo.
+    // Si llega vacío del frontend (caso típico: user recién signup sin email
+    // en su perfil aún), retornamos mensaje claro en lugar de propagar el
+    // "Invalid email address" de Stripe.
+    const cleanEmail = (email || "").trim();
+    if (!cleanEmail) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: "email requerido — completá tu perfil antes de suscribirte",
+        }),
+      };
+    }
+    if (!cleanEmail.includes("@") || cleanEmail.length < 5) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: `email inválido: ${cleanEmail}` }),
+      };
+    }
+
     // Construcción de la session. Trial period solo para Pro Familiar.
     // metadata.userId es CRÍTICO — el webhook lo usa para identificar al
     // usuario y crear la account correcta.
     const sessionParams = {
       mode: "subscription",
       payment_method_types: ["card"],
-      customer_email: email,
+      customer_email: cleanEmail,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl || "https://finpathia.com/?success=true",
       cancel_url: cancelUrl || "https://finpathia.com/?canceled=true",

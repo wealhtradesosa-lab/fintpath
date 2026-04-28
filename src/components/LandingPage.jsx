@@ -243,7 +243,7 @@ export default function LandingPage({ onGetStarted }) {
               },
               {
                 name: "Pro Familiar", price: "$27", per: "USD/mes",
-                sub: "$20 USD/mes anual — Ahorra 25%",
+                sub: "$20 USD/mes anual ($243/año) — Ahorra 25%",
                 tag: "Para tu familia + tu contador en un solo espacio",
                 users: "Hasta 10 usuarios",
                 features: [
