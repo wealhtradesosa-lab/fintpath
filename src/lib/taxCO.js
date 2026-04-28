@@ -226,7 +226,10 @@ export const estimarImpuesto = (u) => {
         });
       }
       // Descuento 50% ICA (solo ordinario y zona franca)
-      const icaGas = oGas.filter(g => g.cat === "Predial").reduce((s, g) => s + (g.m || 0), 0) * 12 * 0.30;
+      // Categoría "Impuesto" cubre predial, ICA, rodamiento, etc. "Predial" es
+      // legacy — items viejos que aún no se migraron a "Impuesto". El motor
+      // procesa ambos hasta que toda la base esté migrada.
+      const icaGas = oGas.filter(g => g.cat === "Impuesto" || g.cat === "Predial").reduce((s, g) => s + (g.m || 0), 0) * 12 * 0.30;
       const descICA = (regimen === "ordinario" || regimen === "zona_franca") ? icaGas * 0.50 : 0;
 
       // ── CÁLCULO POR RÉGIMEN ──
@@ -703,7 +706,7 @@ export const estimarImpuesto = (u) => {
       // contaminar este bloque. Solo GAS_INMUEBLE_SEGUROS cuenta acá. Items
       // legacy con cat="Seguros" sin fiscalCode son tratados como SEG_GENERICO
       // (no deducibles, criterio conservador) y NO entran al gastosInmueble.
-      const gastosInmuebleBase = oGas.filter(g => ["Predial", "Mantenimiento", "Vivienda", "Servicios"].includes(g.cat)).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastosInmuebleBase = oGas.filter(g => ["Predial", "Impuesto", "Mantenimiento", "Vivienda", "Servicios"].includes(g.cat)).reduce((s, g) => s + (g.m || 0), 0) * 12;
       const gastosInmuebleSeguros = oGas.filter(g => g.fiscalCode === GAS_INMUEBLE_SEGUROS).reduce((s, g) => s + (g.m || 0), 0) * 12;
       const gastosInmueble = gastosInmuebleBase + gastosInmuebleSeguros;
       const rentaLiqNoLaboral = Math.max(0, ingNoLaboral - gastosInmueble);
