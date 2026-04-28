@@ -65,6 +65,7 @@ const daysUntil = (d) => {
 export default function MiCuenta({
   supabase, accountId, role, displayName, plan, maxMembers,
   currentUserId, currentUserName, onChange, isLegacy, configContent, defaultTab,
+  subscriptionStatus, graceUntil,
 }) {
   // Tabs disponibles según contexto
   const showMembersTab = !isLegacy && accountId;
@@ -121,6 +122,7 @@ export default function MiCuenta({
           supabase={supabase} accountId={accountId} role={role}
           displayName={displayName} plan={plan} maxMembers={maxMembers}
           currentUserId={currentUserId} currentUserName={currentUserName} onChange={onChange}
+          subscriptionStatus={subscriptionStatus} graceUntil={graceUntil}
         />
       )}
       {activeTab === "config" && configContent && (
@@ -131,7 +133,7 @@ export default function MiCuenta({
 }
 
 // ═══ Tab Miembros ═══════════════════════════════════════════════════════
-function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, currentUserName, onChange }) {
+function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, currentUserName, onChange, subscriptionStatus, graceUntil }) {
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -239,7 +241,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             </div>
           </div>
           {isAdmin && (
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {slotsLeft > 0 ? (
                 <button
                   onClick={() => setShowInvite(true)}
@@ -256,9 +258,69 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                   Cuenta llena · sube de plan para invitar más
                 </div>
               )}
+              {/* Botón Gestionar suscripción — solo para owners de planes pagos */}
+              {(plan === "pro_familiar" || plan === "pro") && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch("/.netlify/functions/stripe-customer-portal", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          userId: currentUserId,
+                          returnUrl: window.location.href,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        if (data.error === "no_stripe_customer") {
+                          alert("No tenés una suscripción de Stripe asociada todavía. Si pagaste recién, esperá unos minutos. Si tu plan es legacy (sin Stripe), contactá soporte.");
+                        } else if (data.error === "portal_not_configured") {
+                          alert("El portal de Stripe no está configurado todavía. Soporte ya fue notificado.");
+                        } else {
+                          alert("Error abriendo portal: " + (data.message || data.error || "desconocido"));
+                        }
+                        return;
+                      }
+                      window.location.href = data.url;
+                    } catch (e) {
+                      alert("Error de red abriendo portal: " + e.message);
+                    }
+                  }}
+                  style={{
+                    background: T.bg3, color: T.txt, border: `1px solid ${T.border}`,
+                    padding: "10px 16px", borderRadius: 10, cursor: "pointer",
+                    fontWeight: 600, fontSize: 12,
+                  }}
+                  title="Cancelar, cambiar plan, ver facturas"
+                >
+                  ⚙️ Gestionar suscripción
+                </button>
+              )}
             </div>
           )}
         </div>
+
+        {/* Banner: subscription cancelada · grace period activo */}
+        {subscriptionStatus === "canceled" && graceUntil && (
+          <div style={{
+            marginTop: 16,
+            padding: "12px 14px",
+            background: T.amberB,
+            border: `1px solid ${T.amber}`,
+            borderRadius: 10,
+            fontSize: 12,
+            color: T.amber,
+            lineHeight: 1.6,
+          }}>
+            <strong>⚠️ Tu plan {PLAN_LABELS[plan] || plan} fue cancelado.</strong>{" "}
+            Seguís teniendo acceso completo hasta el {new Date(graceUntil).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}.
+            Después, tu cuenta vuelve al plan Free.{" "}
+            {isAdmin && (
+              <span>Si fue un error, click en "⚙️ Gestionar suscripción" arriba para reactivar.</span>
+            )}
+          </div>
+        )}
 
         {/* Explicación del modelo */}
         <div style={{ marginTop: 16, padding: "12px 14px", background: T.bg3, borderRadius: 10, fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>

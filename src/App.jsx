@@ -314,7 +314,7 @@ export default function FinPath(){
   // 01+01b+01c+01d aún no está aplicada, devuelve isLegacy=true con defaults
   // (admin) y todo el flujo cae al camino legacy. Cuando está aplicada, los
   // saves van a public.user_data por account_id en lugar de por id.
-  const{accountId,role,isLegacy,displayName,plan:planAccount,maxMembers,memberships,loading:accountLoading,refresh:refreshAccount}=useAccount(authUser,supabase);
+  const{accountId,role,isLegacy,displayName,plan:planAccount,maxMembers,memberships,subscriptionStatus,graceUntil,loading:accountLoading,refresh:refreshAccount}=useAccount(authUser,supabase);
   // Refs para que sS() (que es global, fuera del componente) acceda a los
   // values frescos sin recrear el callback ni cerrar sobre values stale del
   // setTimeout de 2s del debounce de save.
@@ -462,8 +462,38 @@ export default function FinPath(){
     try{const r=await fetch('/api/trm');const j=await r.json();if(j.trm)setU(p=>p?{...p,trm:j.trm,trmSrc:j.source}:p)}catch{}
     // Handle Stripe success redirect
     const params=new URLSearchParams(window.location.search);
-    if(params.get('success')==='true'){
+    const successFlag=params.get('success');
+    const sessionId=params.get('session_id');
+    if(successFlag==='true'){
+      // Legacy flow (Pro/Básico): hardcoded plan='pro'
       setU(p=>p?{...p,p:{...p.p,plan:'pro'}}:p);
+      window.history.replaceState({},'',window.location.pathname);
+    } else if(successFlag==='1' && sessionId && sessionId !== '{CHECKOUT_SESSION_ID}'){
+      // Pro Familiar flow: trigger recovery activation. Esto:
+      // 1. Verifica con Stripe que el pago fue exitoso (anti-fraude)
+      // 2. Activa la account si el webhook todavía no lo hizo (race condition)
+      // 3. Es idempotente: si ya estaba activa, retorna sin duplicar
+      try {
+        const userId = (await supabase.auth.getUser()).data?.user?.id;
+        if (userId) {
+          const r = await fetch('/.netlify/functions/stripe-recover-activation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, sessionId }),
+          });
+          const data = await r.json();
+          console.log('[checkout success] recovery result:', data);
+          // Refrescar la account después del recovery
+          if (data.ok) {
+            // El useAccount se va a re-correr en el próximo render automáticamente
+            // gracias al estado interno del hook. Para forzar visibilidad inmediata:
+            setTimeout(() => window.location.reload(), 1500);
+          }
+        }
+      } catch (e) {
+        console.warn('[checkout success] recovery failed:', e);
+        // No bloqueamos al usuario — el webhook normal eventualmente activará
+      }
       window.history.replaceState({},'',window.location.pathname);
     }
   })()},[]);
@@ -2413,7 +2443,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     const r=await fetch("/.netlify/functions/stripe-checkout",{
                       method:"POST",
                       headers:{"Content-Type":"application/json"},
-                      body:JSON.stringify({priceId,email:u?.p?.email||"",userId:authUser?.id||"",successUrl:window.location.origin+"/?success=true",cancelUrl:window.location.origin+"/?canceled=true"})
+                      body:JSON.stringify({priceId,email:u?.p?.email||"",userId:authUser?.id||"",successUrl:window.location.origin+"/?success=1&session_id={CHECKOUT_SESSION_ID}",cancelUrl:window.location.origin+"/?canceled=true"})
                     });
                     const d=await r.json();
                     if(d.url)window.location.href=d.url;
@@ -2770,7 +2800,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               </div>
               <Bt v="s" onClick={()=>{const inp=document.createElement("input");inp.type="file";inp.accept=".json";inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);localStorage.setItem(SK,JSON.stringify(d));setU(sanitize(d));alert("✅ Datos importados correctamente. Recarga la página.")}catch{alert("Error: archivo no válido")}};r.readAsText(f)};inp.click()}} st={{justifyContent:"center"}}>📤 Importar Datos (JSON)</Bt>
               <Bt v="d" onClick={()=>{if(confirm("⚠️ ¿Borrar TODOS tus datos financieros? Esta acción no se puede deshacer. Tus inversiones, gastos, ingresos y deudas se perderán."))setU(mkU(u?.p?.name||"Usuario",u?.p?.email||""))}} st={{justifyContent:"center"}}>Borrar Datos</Bt></div></Cd></div>;
-    return <MiCuenta supabase={supabase} accountId={accountId} role={role} displayName={displayName} plan={planAccount} maxMembers={maxMembers} currentUserId={authUser?.id} currentUserName={u?.p?.name||authUser?.user_metadata?.name||authUser?.email?.split("@")[0]||"El administrador"} onChange={refreshAccount} isLegacy={isLegacy} configContent={cuentaConfig} defaultTab={pg==="set"?"config":undefined}/>;}
+    return <MiCuenta supabase={supabase} accountId={accountId} role={role} displayName={displayName} plan={planAccount} maxMembers={maxMembers} currentUserId={authUser?.id} currentUserName={u?.p?.name||authUser?.user_metadata?.name||authUser?.email?.split("@")[0]||"El administrador"} onChange={refreshAccount} isLegacy={isLegacy} configContent={cuentaConfig} defaultTab={pg==="set"?"config":undefined} subscriptionStatus={subscriptionStatus} graceUntil={graceUntil}/>;}
     default:return<div style={{padding:56,textAlign:"center",color:T.tx3}}>Próximamente</div>}};
 
   return <RoleProvider value={{role,isLegacy,accountId}}><div style={{background:T.bg,minHeight:"100vh",display:"flex",fontFamily:"'Inter',system-ui",color:T.tx}}>

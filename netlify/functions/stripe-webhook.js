@@ -191,23 +191,46 @@ exports.handler = async (event) => {
       }
 
       case "customer.subscription.updated": {
-        // Cambios de plan, fin de trial, status updates.
-        // Por ahora solo loggeamos — el caso más común (alguien cambia plan)
-        // se manejaría re-resolviendo el plan y llamando RPCs apropiadas.
-        // TODO en una iteración siguiente.
+        // Cambios de plan (upgrade/downgrade desde Customer Portal), fin de
+        // trial → active, reactivación después de cancelación, etc.
         const sub = stripeEvent.data.object;
-        console.log(`[stripe-webhook] subscription.updated · status=${sub.status} customer=${sub.customer}`);
+        const stripeCustomerId = sub.customer;
+        const status = sub.status; // 'active' | 'trialing' | 'past_due' | etc.
+
+        // Resolver el plan del subscription actual (puede haber cambiado)
+        const newPlan = resolvePlanFromLineItems(sub, priceMap);
+
+        if (!newPlan) {
+          console.warn(`[stripe-webhook] subscription.updated · no pude resolver plan para customer=${stripeCustomerId}, status=${status}. Loggeo pero no actualizo.`);
+          break;
+        }
+
+        console.log(`[stripe-webhook] subscription.updated · customer=${stripeCustomerId} status=${status} plan=${newPlan}`);
+
+        const result = await callSupabaseRpc("handle_subscription_updated", {
+          p_stripe_customer_id: stripeCustomerId,
+          p_new_plan: newPlan,
+          p_status: status,
+        });
+        console.log(`[stripe-webhook] ✅ subscription.updated procesado:`, result);
         break;
       }
 
       case "customer.subscription.deleted": {
-        // Cancelación. El usuario debería volver a 'free'. Idealmente para
-        // pro_familiar también: marcar account.subscription_status = 'canceled'.
-        // Por ahora solo loggeamos — un downgrade automático es delicado y
-        // queremos darle al usuario tiempo de gracia (ver subscription_status
-        // / grace_until en la tabla accounts).
+        // Cancelación. Marcamos account como 'canceled' con grace_until 30 días.
+        // NO downgrade inmediato — el usuario sigue teniendo acceso durante el
+        // grace period. El job expire_canceled_accounts() (cron diario) hace
+        // el downgrade automático cuando grace expira.
         const sub = stripeEvent.data.object;
-        console.log(`[stripe-webhook] subscription.deleted · customer=${sub.customer} status=${sub.status}`);
+        const stripeCustomerId = sub.customer;
+
+        console.log(`[stripe-webhook] subscription.deleted · customer=${stripeCustomerId}`);
+
+        const result = await callSupabaseRpc("handle_subscription_canceled", {
+          p_stripe_customer_id: stripeCustomerId,
+          p_canceled_at: new Date().toISOString(),
+        });
+        console.log(`[stripe-webhook] ✅ subscription.canceled procesado:`, result);
         break;
       }
 
