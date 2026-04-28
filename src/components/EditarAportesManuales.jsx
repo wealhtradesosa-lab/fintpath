@@ -16,6 +16,7 @@
 
 import { useState } from "react";
 import { track } from "../lib/analytics.js";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -75,6 +76,8 @@ const Toggle = ({ label, value, onChange, hint }) => (
 );
 
 export default function EditarAportesManuales({ owner, onSave, onCancel }) {
+  // Fase 3 commit 7: gating reader.
+  const { role } = useRole();
   const existing = owner?.aportes || {};
   const [a, setA] = useState({
     // Commit 1.8: sólo 2 campos sobreviven — el resto vive en Ingresos/Egresos
@@ -85,6 +88,7 @@ export default function EditarAportesManuales({ owner, onSave, onCancel }) {
   const upd = (k, v) => setA({ ...a, [k]: v });
 
   const handleSave = () => {
+    if (!guardEdit(role)) return;
     track("ajustes_fiscales_avanzados_guardados", {
       owner_id: owner?.id,
       tiene_ss_indep: +a.segSocialIndependienteMensual > 0,

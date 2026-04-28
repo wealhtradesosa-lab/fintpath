@@ -16,6 +16,7 @@
 
 import { useState } from "react";
 import { track } from "../lib/analytics.js";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -57,6 +58,8 @@ const Field = ({ label, articulo, value, onChange, hint, prevYear, prevYearLabel
 );
 
 export default function EditarDescuentosTributarios({ owner, onSave, onCancel }) {
+  // Fase 3 commit 7: gating reader.
+  const { role } = useRole();
   const existing = owner?.descuentosTributarios || {};
   const [d, setD] = useState({
     cti: existing.cti || null,
@@ -77,6 +80,7 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
   const total = Object.values(d).reduce((s, v) => s + (+v || 0), 0);
 
   const handleSave = () => {
+    if (!guardEdit(role)) return;
     track("descuentos_tributarios_guardados", {
       owner_id: owner?.id,
       total_pesos_m: Math.round(total / 1e6),

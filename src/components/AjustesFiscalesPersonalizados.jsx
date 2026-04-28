@@ -18,6 +18,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -127,6 +128,10 @@ function Collapsible({ icono, titulo, descripcion, cantActivos, total, defaultOp
 // Componente principal
 // ─────────────────────────────────────────────────────────────────────────
 export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterGroup = "all", owners = [] }) {
+  // Fase 3 commit 7: gating reader. Único callsite de onUpdate es a través
+  // de updateProfile() — todos los inputs y eventos canalizan ahí. Un único
+  // guard cierra el path completo (updateEvento → updateProfile → onUpdate).
+  const { role } = useRole();
   // filterGroup: 'all' | 'personal' (grupos A + personal de C + socios) | 'eventos' (grupos B + beneficios de C)
   const showGrupoA = filterGroup === "all" || filterGroup === "personal";
   const showGrupoB = filterGroup === "all" || filterGroup === "eventos";
@@ -144,6 +149,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
 
   // Helpers de update
   const updateProfile = (patch) => {
+    if (!guardEdit(role)) return;
     const newProfile = { ...profile, ...patch };
     onUpdate?.(newProfile);
   };

@@ -19,6 +19,7 @@
  */
 
 import { useState, useMemo } from "react";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const C = {
@@ -212,6 +213,8 @@ export default function GoalsModuleUS({
   netWorth = 0, annualIncome = 0, monthlyExpenses = 0,
   monthlySavings = 0, currentAge = 35, retirementBalance = 0,
 }) {
+  // Fase 3 commit 7: gating reader.
+  const { role } = useRole();
   const [tab, setTab]       = useState("dashboard");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm]     = useState(EMPTY_GOAL);
@@ -262,13 +265,14 @@ export default function GoalsModuleUS({
   }), [goals]);
 
   const saveGoal = () => {
+    if (!guardEdit(role)) return;
     const list = editing!==null
       ? goals.map((x,i)=>i===editing?{...form}:x)
       : [...goals,{...form}];
     onUpdateGoals(list);
     setShowForm(false); setEditing(null); setForm(EMPTY_GOAL);
   };
-  const remove = (i) => { if(confirm("Remove this goal?")) onUpdateGoals(goals.filter((_,j)=>j!==i)); };
+  const remove = (i) => { if (!guardEdit(role)) return; if(confirm("Remove this goal?")) onUpdateGoals(goals.filter((_,j)=>j!==i)); };
 
   const selType = gtInfo(form.type);
 
