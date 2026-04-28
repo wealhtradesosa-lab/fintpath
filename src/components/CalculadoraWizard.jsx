@@ -407,7 +407,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
     // Categorías de gastos del inmueble — ampliadas para evitar falso positivo
     // cuando el usuario registró el predial/mantenimiento bajo otro nombre.
     const categoriasInmueble = [
-      "Predial", "Mantenimiento", "Seguros",
+      "Predial", "Impuesto", "Mantenimiento", "Seguros",
       "Administración", "Vivienda", "Servicios", "Servicios públicos",
     ];
     const gastosInmueble = ownerGas.filter(g => {

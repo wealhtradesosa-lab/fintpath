@@ -23,7 +23,7 @@ const fm = (v) => {
 // (Pensión Voluntaria y AFC). No afecta los números del motor.
 const calcImp = (uvtBase) => calcImpRentaCore(uvtBase, UVT);
 
-const DEDUC_JUR = { "Nómina": 1, "Honorarios": 1, "Vivienda": 1, "Servicios": 1, "Mantenimiento": 1, "Seguros": 1, "Transporte": 1, "Arrendamiento": 1, "Predial": 1, "Representación": 1, "Tecnología": 1, "Educación": 1, "Seguridad Social": 1, "Depreciación": 1 };
+const DEDUC_JUR = { "Nómina": 1, "Honorarios": 1, "Vivienda": 1, "Servicios": 1, "Mantenimiento": 1, "Seguros": 1, "Transporte": 1, "Arrendamiento": 1, "Impuesto": 1, "Predial": 1, "Representación": 1, "Tecnología": 1, "Educación": 1, "Seguridad Social": 1, "Depreciación": 1 };
 const NO_DEDUC = ["Alimentación","Entretenimiento","Personal","Vestimenta","Mascotas","Deporte","Ahorro"];
 const DEDUC_NAT = { "Salud": 1, "Vivienda": 1, "Seguros": 0.5 };
 const LIM_NAT = { "Salud": 16 * UVT * 12, "Vivienda": 100 * UVT * 12, "Seguros": 16 * UVT * 12 };
@@ -56,7 +56,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       if (!gbc["Nómina"]) recs.push({ icon: "👥", title: "Nómina y empleados", desc: "Salarios y prestaciones son 100% deducibles. Cada $1M en nómina ahorra $350K en impuestos.", impact: 0, color: T.blue });
       if (!gbc["Honorarios"]) recs.push({ icon: "📋", title: "Honorarios profesionales", desc: "Contador, abogado, revisor fiscal. Registra estos gastos como deducibles.", impact: 0, color: T.blue });
       if (!gbc["Mantenimiento"]) recs.push({ icon: "🔧", title: "Mantenimiento de propiedades", desc: "Reparaciones, pintura, plomería — todo deducible para inmuebles de la empresa.", impact: 0, color: T.blue });
-      if (!gbc["Predial"]) recs.push({ icon: "🏛️", title: "Predial e impuestos locales", desc: "Predial, ICA, contribuciones — impuestos pagados son deducibles.", impact: 0, color: T.blue });
+      if (!gbc["Impuesto"] && !gbc["Predial"]) recs.push({ icon: "🏛️", title: "Impuestos locales (predial, ICA, rodamiento)", desc: "Predial, ICA, contribuciones, rodamiento — impuestos pagados son deducibles.", impact: 0, color: T.blue });
       if ((fiscalData.pctGastos || 0) < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + (fiscalData.pctGastos || 0).toFixed(0) + "% de ingresos", desc: "Una empresa operativa típica registra 40–70% de sus ingresos como gastos. Revisa si te faltan gastos operativos por registrar (nómina, honorarios, mantenimiento, servicios). Cada peso deducible real baja el impuesto en $0,35.", impact: 0, color: T.orange });
       if ((fiscalData.utilidad || 0) > 50e6) {
         recs.push({ icon: "🎁", title: "Bonificaciones a empleados (Art. 107 ET)", desc: "Primas extralegales y bonificaciones son deducibles si cumplen relación de causalidad, necesidad y proporcionalidad. Consulta con tu contador el monto viable según tu estructura de nómina.", impact: 0, color: T.purple });
@@ -205,7 +205,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           if (pctGastos < 15) {
             diagnos.push({
               msg: `Gastos registrados: ${pctGastos.toFixed(0)}% de ingresos (típico operativo: 40–70%).`,
-              accion: "Registrá gastos como nómina, honorarios, mantenimiento, predial, servicios públicos en el módulo Gastos.",
+              accion: "Registrá gastos como nómina, honorarios, mantenimiento, impuestos (predial/ICA), servicios públicos en el módulo Gastos.",
             });
           }
 

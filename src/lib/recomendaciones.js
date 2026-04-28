@@ -342,10 +342,10 @@ function recomendacionesJuridica(user, ow, det) {
 
   // ═════════════ PALANCA 1: Descuento ICA (50% del ICA pagado, Art. 115 ET) ═════════════
   //
-  // Si tiene gastos categoría "Predial" o fiscalCode GAS_JUR_PREDIAL y no
-  // declaró descuento ICA el año pasado, hay una palanca obvia.
+  // Si tiene gastos categoría "Impuesto" (o "Predial" legacy) o fiscalCode
+  // GAS_JUR_PREDIAL y no declaró descuento ICA el año pasado, hay palanca.
   const gastosICA = Object.values(user.gas || {}).flat().filter(g =>
-    g.owner === ow.id && (g.fiscalCode === "GAS_JUR_PREDIAL" || g.cat === "Predial") && g.sim !== false
+    g.owner === ow.id && (g.fiscalCode === "GAS_JUR_PREDIAL" || g.cat === "Impuesto" || g.cat === "Predial") && g.sim !== false
   );
   const icaPagadoAnual = gastosICA.reduce((s, g) => s + ((Number(g.m) || 0) * 12), 0);
   if (icaPagadoAnual > 500_000 && impBruto > 0) {

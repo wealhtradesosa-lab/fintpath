@@ -123,12 +123,13 @@ function fiscalSubOptions(ownerType, cat) {
     };
   }
   if (ownerType === "natural") {
-    // Commit 15 Tarea 3: categoría Predial expandida para cubrir TODOS los
+    // Commit 15 Tarea 3: categoría Impuesto (legacy: "Predial") cubre TODOS los
     // impuestos territoriales (predial inmuebles + rodamiento vehículos + ICA).
     // Sub-selector con 5 opciones que mapean al fiscalCode correcto.
-    if (cat === "Predial") {
+    // Compat legacy: gastos viejos guardados como "Predial" siguen funcionando.
+    if (cat === "Impuesto" || cat === "Predial") {
       return {
-        question: "🏛️ ¿Qué tipo de impuesto territorial?",
+        question: "🏛️ ¿Qué tipo de impuesto?",
         help: "El predial de tu vivienda personal y el rodamiento de tu vehículo personal NO son deducibles para persona natural (no cumplen Art. 107 ET). Los relacionados con inmuebles arrendados o actividad profesional sí.",
         options: [
           { v: "GAS_NAT_PERSONAL",            l: "Predial vivienda personal (no deducible)" },
@@ -182,7 +183,7 @@ function defaultFiscalCode(ownerType, cat) {
   if (ownerType === "juridica") {
     if (cat === "Nómina") return "GAS_JUR_NOMINA";
     if (cat === "Honorarios") return "GAS_JUR_HONORARIOS_PROF";
-    if (cat === "Predial") return "GAS_JUR_PREDIAL";
+    if (cat === "Impuesto" || cat === "Predial") return "GAS_JUR_PREDIAL";
     if (cat === "Depreciación") return "GAS_JUR_DEPRECIACION";
     if (["Educación"].includes(cat)) return "GAS_JUR_CAPACITACION";
     if (["Alimentación", "Entretenimiento", "Personal", "Vestimenta", "Mascotas", "Deporte", "Ahorro"].includes(cat)) return "GAS_JUR_NO_DEDUCIBLE";
@@ -200,8 +201,8 @@ function defaultFiscalCode(ownerType, cat) {
   if (cat === "Mantenimiento") return "GAS_NAT_PERSONAL";
   if (cat === "Servicios") return "GAS_NAT_PERSONAL";
   if (cat === "Seguros") return "SEG_GENERICO"; // sin clasificar el subtipo
-  // Predial sigue mostrando sub-selector (tiene 5 opciones), default conservador
-  if (cat === "Predial") return "GAS_NAT_PERSONAL";
+  // Impuesto (legacy: Predial) sigue mostrando sub-selector (tiene 5 opciones), default conservador
+  if (cat === "Impuesto" || cat === "Predial") return "GAS_NAT_PERSONAL";
   if (cat === "Depreciación") return "GAS_INMUEBLE_DEPRECIACION";
   if (cat === "Ahorro") return "GAS_NAT_AHORRO";
   return "GAS_NAT_PERSONAL";
@@ -489,7 +490,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const ow = (owners || []).find(o => o.id === form.owner);
                 const ownerType = ow ? ow.type : "natural";
                 setForm((p) => ({ ...p, cat: v, fiscalCode: defaultFiscalCode(ownerType, v) }));
-              }} options={[{v:"Aporte tributario",l:"🛡️ Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Predial",l:"🏛️ Impuestos territoriales (predial, rodamiento, ICA)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
+              }} options={[{v:"Aporte tributario",l:"🛡️ Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Impuesto",l:"🏛️ Impuesto (predial, rodamiento, ICA, otros)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
 
               {/* Commit 1.6: sub-selector para Aporte tributario (PV, AFC, Salud prepagada) */}

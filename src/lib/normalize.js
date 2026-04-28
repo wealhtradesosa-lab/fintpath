@@ -85,7 +85,7 @@ export function inferGastoFiscalCode(gas, owner) {
   if (isJ) {
     if (/Nómina|Nomina/i.test(cat)) return GAS_JUR_NOMINA;
     if (/Honorarios/i.test(cat)) return GAS_JUR_HONORARIOS_PROF;
-    if (/Predial/i.test(cat)) return GAS_JUR_PREDIAL;
+    if (/Predial|Impuesto/i.test(cat)) return GAS_JUR_PREDIAL;
     if (/Educación|Educacion|Capacitación|Capacitacion/i.test(cat)) return GAS_JUR_CAPACITACION;
     // Default jurídica: operativo (deducible)
     if (["Vivienda", "Servicios", "Mantenimiento", "Seguros", "Transporte", "Arrendamiento", "Representación", "Tecnología", "Seguridad Social"].includes(cat)) {
@@ -98,7 +98,7 @@ export function inferGastoFiscalCode(gas, owner) {
   } else {
     // Natural
     if (/Salud/i.test(cat)) return GAS_NAT_SALUD_MEDICINA;
-    if (/Predial/i.test(cat)) return GAS_INMUEBLE_PREDIAL;
+    if (/Predial|Impuesto/i.test(cat)) return GAS_INMUEBLE_PREDIAL;
     if (/Mantenimiento/i.test(cat)) return GAS_INMUEBLE_MANTENIMIENTO;
     if (/Vivienda|Arrendamiento/i.test(cat)) return GAS_INMUEBLE_ADMINISTRACION;
     if (/Servicios/i.test(cat)) return GAS_INMUEBLE_SERVICIOS;

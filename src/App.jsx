@@ -116,13 +116,13 @@ if(!d.gas)d.gas={};
 //     - Salud → GAS_NAT_SALUD_MEDICINA
 //     - Vivienda/Arrendamiento/Mantenimiento/Servicios → GAS_NAT_PERSONAL (conservador)
 //     - Seguros → SEG_GENERICO (sub-selector clarifica)
-//     - Predial → GAS_NAT_PERSONAL (sub-selector clarifica)
+//     - Impuesto (legacy: Predial) → GAS_NAT_PERSONAL (sub-selector clarifica)
 //     - Ahorro → GAS_NAT_AHORRO
 //     - Resto → GAS_NAT_PERSONAL
 //   Jurídica:
 //     - Nómina → GAS_JUR_NOMINA
 //     - Honorarios → GAS_JUR_HONORARIOS_PROF
-//     - Predial → GAS_JUR_PREDIAL
+//     - Impuesto (legacy: Predial) → GAS_JUR_PREDIAL
 //     - Depreciación → GAS_JUR_DEPRECIACION
 //     - Educación → GAS_JUR_CAPACITACION
 //     - Gastos personales (Alimentación, Entretenimiento, etc) → GAS_JUR_NO_DEDUCIBLE
@@ -136,7 +136,7 @@ const _deriveGasFiscalCode = (cat, ownerId) => {
   if (isJur) {
     if (cat === "Nómina") return "GAS_JUR_NOMINA";
     if (cat === "Honorarios") return "GAS_JUR_HONORARIOS_PROF";
-    if (cat === "Predial") return "GAS_JUR_PREDIAL";
+    if (cat === "Impuesto" || cat === "Predial") return "GAS_JUR_PREDIAL";
     if (cat === "Depreciación") return "GAS_JUR_DEPRECIACION";
     if (cat === "Educación") return "GAS_JUR_CAPACITACION";
     if (["Alimentación", "Entretenimiento", "Personal", "Vestimenta", "Mascotas", "Deporte", "Ahorro"].includes(cat)) return "GAS_JUR_NO_DEDUCIBLE";
@@ -146,7 +146,7 @@ const _deriveGasFiscalCode = (cat, ownerId) => {
   if (cat === "Salud") return "GAS_NAT_SALUD_MEDICINA";
   if (cat === "Vivienda" || cat === "Arrendamiento" || cat === "Mantenimiento" || cat === "Servicios") return "GAS_NAT_PERSONAL";
   if (cat === "Seguros") return "SEG_GENERICO";
-  if (cat === "Predial") return "GAS_NAT_PERSONAL";
+  if (cat === "Impuesto" || cat === "Predial") return "GAS_NAT_PERSONAL";
   if (cat === "Depreciación") return "GAS_INMUEBLE_DEPRECIACION";
   if (cat === "Ahorro") return "GAS_NAT_AHORRO";
   return "GAS_NAT_PERSONAL";
