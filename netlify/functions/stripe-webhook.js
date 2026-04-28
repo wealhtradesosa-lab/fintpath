@@ -56,13 +56,24 @@ function buildPriceMap() {
 
 // ── Llamada genérica a Supabase REST (con service_role) ───────────────────
 async function callSupabaseRpc(rpcName, payload) {
-  const url = `${process.env.SUPABASE_URL}/rest/v1/rpc/${rpcName}`;
+  // Fallback: si SUPABASE_URL no está configurada (caso típico cuando solo
+  // existe VITE_SUPABASE_URL del frontend), usamos esa. Ambas apuntan al
+  // mismo proyecto Supabase, solo cambia el prefijo según el contexto.
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+  if (!supabaseUrl) {
+    throw new Error("SUPABASE_URL ni VITE_SUPABASE_URL configuradas en Netlify");
+  }
+  if (!supabaseKey) {
+    throw new Error("SUPABASE_SERVICE_KEY no configurada en Netlify");
+  }
+  const url = `${supabaseUrl}/rest/v1/rpc/${rpcName}`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "apikey": process.env.SUPABASE_SERVICE_KEY,
-      "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+      "apikey": supabaseKey,
+      "Authorization": `Bearer ${supabaseKey}`,
     },
     body: JSON.stringify(payload),
   });
