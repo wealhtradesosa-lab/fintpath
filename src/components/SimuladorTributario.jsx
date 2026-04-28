@@ -338,6 +338,15 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
                 </div>
                 <span style={{ fontSize: 10, color: T.txt3, whiteSpace: "nowrap" }}>Gastos: {(calc.pctGastos || 0).toFixed(0)}%</span>
               </div>
+              {calc.deduccionesAvanzadas > 0 && <>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.purple, fontWeight: 600 }}>
+                  <span>(-) Deducciones avanzadas (palancas Art. 145 / 158-1 / Ley 361)</span>
+                  <span style={{ fontFamily: "monospace" }}>-{fm(calc.deduccionesAvanzadas)}</span>
+                </div>
+                {calc.provisionCartera > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Provisión de cartera (Art. 145 ET): {fm(calc.provisionCartera)}</div>}
+                {calc.cti175Adicional > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• CT&I 75% adicional (Art. 158-1 ET): {fm(calc.cti175Adicional)} <span style={{ color: T.txt3 }}>(sobre inversión {fm(calc.inversionCTI)})</span></div>}
+                {calc.discapacidadAdicional > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Discapacidad 100% adicional (Ley 361/97 Art. 31): {fm(calc.discapacidadAdicional)} <span style={{ color: T.txt3 }}>(sobre nómina {fm(calc.salariosDiscapacidad)})</span></div>}
+              </>}
               <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, fontWeight: 600, borderTop: "1px solid " + T.border, marginTop: 4 }}>
                 <span>Impuesto bruto ({(calc.tarifa * 100).toFixed(0)}%)</span>
                 <span style={{ fontFamily: "monospace" }}>{fm(calc.impBruto)}</span>
@@ -471,7 +480,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               {calc.descuentoICA > 0 && <div style={{ padding: "4px 0", color: T.blue }}>✅ Descuento 50% ICA aplicado</div>}
               <div style={{ padding: "4px 0", color: T.blue }}>✅ Retención en la fuente descontada</div>
               <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
-                ℹ️ <strong>No hay ahorro automático para persona jurídica.</strong> Las estrategias corporativas (bonificaciones, donaciones Art. 257 ET, provisión de cartera, depreciación acelerada, apalancamiento) existen pero su monto viable depende de tu estructura contable. El simulador no inventa porcentajes genéricos — consultá con tu contador para estimar ahorros concretos. Mirá las recomendaciones abajo.
+                ℹ️ <strong>El motor ahora aplica 3 palancas avanzadas si las cargás:</strong> provisión de cartera (Art. 145), CT&I deducción 175% (Art. 158-1), y discapacidad 200% (Ley 361/97). Otras palancas (bonificaciones, depreciación acelerada, apalancamiento, zona franca, donaciones específicas) requieren análisis caso-por-caso con tu contador. Mirá las recomendaciones abajo para ver cuáles aplican a tu empresa.
               </div>
             </> : <>
               <div style={{ padding: "4px 0", color: T.green }}>✅ Renta exenta 25% ({fm(calc.exenta25)})</div>
@@ -526,9 +535,11 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#fbbf24", marginBottom: 4 }}>Qué modela el simulador — y qué no</div>
               <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.6 }}>
-                <strong style={{ color: T.green }}>Sí se aplica automáticamente:</strong> tarifa del 35% sobre utilidad (Art. 240 ET), deducción de intereses y gastos operativos registrados, depreciación según tipo de activo, GMF 4×1000 al 50% (Art. 115 ET), descuento del 50% del ICA (Art. 115 ET) y retención en la fuente por tipo de ingreso.
+                <strong style={{ color: T.green }}>Sí se aplica automáticamente:</strong> tarifa del 35% sobre utilidad (Art. 240 ET), deducción de intereses y gastos operativos registrados, depreciación según tipo de activo, GMF 4×1000 al 50% (Art. 115 ET), descuento del 50% del ICA (Art. 115 ET), retención en la fuente por tipo de ingreso, pérdidas fiscales acumuladas (Art. 147 ET), y descuentos manuales (CT&I, empleo 1ra vez, exterior, donaciones).
                 <br /><br />
-                <strong style={{ color: "#fbbf24" }}>No se estiman automáticamente:</strong> bonificaciones extralegales, donaciones con descuento (Art. 257 ET), provisión de cartera (Art. 145 ET), depreciación acelerada (Art. 137 ET), apalancamiento productivo (Art. 117 ET), zona franca, créditos tributarios especiales. Existen en el Estatuto Tributario pero su monto viable depende de la estructura contable de cada empresa — el simulador no inventa porcentajes genéricos que no tienen soporte legal universal.
+                <strong style={{ color: T.purple }}>Palancas avanzadas si las cargás manualmente:</strong> provisión de cartera (Art. 145 ET), CT&I deducción 175% (Art. 158-1 ET), salarios a personas con discapacidad 200% (Ley 361/97 Art. 31). Estas son las palancas que tu contador suele aplicar — el motor ahora las acepta como input para que tu cálculo coincida con el suyo.
+                <br /><br />
+                <strong style={{ color: "#fbbf24" }}>No se estiman automáticamente todavía:</strong> bonificaciones extralegales (Art. 107 ET), depreciación acelerada (Art. 137 ET), apalancamiento productivo (Art. 117 ET), zona franca, IVA sobre activos productivos (Art. 258-2 ET), beneficios sectoriales (turismo, agroindustria, energías renovables). Existen en el Estatuto Tributario pero su monto viable depende de la estructura contable de cada empresa — consultá con tu contador.
                 <br /><br />
                 <strong>Este simulador no sustituye la asesoría de un contador.</strong> Es una herramienta de referencia basada en los datos que tú registras. Para tu declaración oficial y para estructurar estrategias de optimización específicas, consulta con un contador público.
               </div>

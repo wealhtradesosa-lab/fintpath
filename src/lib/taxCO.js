@@ -181,7 +181,30 @@ export const estimarImpuesto = (u) => {
       // ya queda incluida en gastosDeducJ. Esta variable `deprec` es solo para display/desglose.
       const deprec = oGas.filter(g => /Depreciación|Depreciacion|Depreciation/i.test(g.cat || "")).reduce((s, g) => s + (g.m || 0), 0) * 12;
       const gmf50 = ingAnual * 0.004 * 0.50;
-      const totalDeduc = gastosDeducJ + interesesJ + gmf50;
+
+      // ── DEDUCCIONES AVANZADAS jurídica (palancas que un contador aplica) ──
+      // Se leen de owner.descuentosTributarios pero son DEDUCCIONES (reducen
+      // base gravable), no descuentos (que reducen el impuesto). El usuario las
+      // carga en EditarDescuentosTributarios; el motor las aplica acá.
+      const _descuentosJ = ow.descuentosTributarios || {};
+      // Art. 145 ET: provisión por deterioro de cartera. Deducible al 33% sobre
+      // cartera vencida +90d (cap. global 5% del total cartera). El usuario
+      // ingresa el monto ya calculado/aprobado por su contador.
+      const provisionCartera = Math.max(0, Number(_descuentosJ.provisionCarteraAnual) || 0);
+      // Art. 158-1 ET inciso 1: deducción del 175% del valor invertido en CT&I
+      // calificada por Minciencias. Como el gasto base ya está en gastosDeducJ
+      // (categoría Tecnología/Educación con causalidad), el beneficio adicional
+      // es el 75% extra. El descuento del 25% (descuentos.cti) es independiente.
+      const inversionCTI = Math.max(0, Number(_descuentosJ.inversionCTIanual) || 0);
+      const cti175Adicional = inversionCTI * 0.75;
+      // Ley 361/97 Art. 31: deducción del 200% del salario pagado a personas
+      // con discapacidad ≥25%. Como el salario base ya está en nómina (gastosDeducJ
+      // al 100%), el beneficio adicional es 100% más. Sin tope.
+      const salariosDiscapacidad = Math.max(0, Number(_descuentosJ.salariosDiscapacidadAnual) || 0);
+      const discapacidadAdicional = salariosDiscapacidad * 1.0;
+
+      const deduccionesAvanzadas = provisionCartera + cti175Adicional + discapacidadAdicional;
+      const totalDeduc = gastosDeducJ + interesesJ + gmf50 + deduccionesAvanzadas;
       const utilidad = Math.max(0, ingAnual - totalDeduc);
 
       // Sub-tipos de ingresos con tratamiento especial por Art. 48 ET
@@ -312,6 +335,12 @@ export const estimarImpuesto = (u) => {
         perdidasAcumuladas, perdidasAplicadas,
         descuentosSolicitados, descuentosAplicados, descuentosDesglose: { cti: descCTI, empleo: descEmpleo, exterior: descExterior, donaciones: descDonaciones, otros: descOtros },
         gastosRegistrados: gastosDeducJ, intereses: interesesJ, deprec, gastosDeduc: totalDeduc,
+        // Deducciones avanzadas (Art. 145 + Art. 158-1 + Ley 361/97) — exposición
+        // explícita para el desglose en SimuladorTributario y la documentación
+        // del cálculo. Permite mostrar al usuario cuánto está deduciendo por
+        // cada palanca.
+        deduccionesAvanzadas, provisionCartera, inversionCTI, cti175Adicional,
+        salariosDiscapacidad, discapacidadAdicional,
         // Campos intermedios del cálculo (Sprint 4B1 — para consumo por OwnerPlan):
         utilidad, descuentoICA: descICA, retefuenteCalc: reteJ,
         gmf50, gastosTotal: gastosTotalJ,
