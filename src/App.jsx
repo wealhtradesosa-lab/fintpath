@@ -1336,7 +1336,36 @@ export default function FinPath(){
         <div>
           <h1 style={{fontSize:26,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>{new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}, {(u?.p?.name&&u?.p?.name!=="Usuario"&&u?.p?.name!=="")?(u?.p?.name||"").split(" ")[0]:(u?.p?.email||"").split("@")[0]}</h1>
           {((u?.p?.name)==="Usuario"||!(u?.p?.name))&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:10,padding:"10px 14px",marginTop:10,fontSize:12,color:T.bl,cursor:"pointer"}} onClick={()=>setPg("set")}>👤 Configura tu nombre en <strong>⚙️ Config</strong> para personalizar tu experiencia</div>}
-          {trialActive&&<div style={{background:trialDays<=3?"rgba(239,68,68,0.06)":trialDays<=5?"rgba(234,179,8,0.06)":"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(59,130,246,0.05))",border:"1px solid "+(trialDays<=3?"rgba(239,68,68,0.15)":trialDays<=5?"rgba(234,179,8,0.15)":"rgba(34,197,94,0.15)"),borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+          {/* Banner Pro Familiar — muestra estado de trial o suscripción activa.
+              Lógica:
+                - Si planAccount === "pro_familiar" Y trialActive (trial 14d Stripe
+                  todavía no expira): "Plan Pro Familiar — Trial gratuito · X días"
+                - Si planAccount === "pro_familiar" Y NO trialActive: "Plan Pro
+                  Familiar activo" (post-trial, suscripción cobrando normal)
+              El campo trialEnd en user_data.p.trialEnd se setea al signup como 14
+              días desde signup. Coincide con el trial 14d de Stripe que damos
+              automáticamente. Si el user pasa los 14 días sin cancelar, Stripe
+              empieza a cobrar y el banner cambia a "activo". */}
+          {planAccount==="pro_familiar"&&<div style={{background:trialActive?"linear-gradient(135deg,rgba(167,139,250,0.10),rgba(34,197,94,0.06))":"linear-gradient(135deg,rgba(167,139,250,0.10),rgba(59,130,246,0.06))",border:"1px solid rgba(167,139,250,0.20)",borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:18}}>👨‍👩‍👧</span>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#a78bfa"}}>
+                  {trialActive?"Plan Pro Familiar — Trial gratuito":"Plan Pro Familiar activo"}
+                </div>
+                <div style={{fontSize:11,color:T.tx3}}>
+                  {trialActive
+                    ?(trialDays<=1?"⚠️ Tu trial vence HOY · después se cobra $27 USD/mes automáticamente":trialDays<=3?"⏰ Solo "+trialDays+" días de trial · cancela antes para no recibir cobro":trialDays+" días de acceso completo · hasta 10 personas pueden compartir esta cuenta")
+                    :"Hasta 10 personas pueden compartir esta cuenta. Invitá a tu familia o contador desde Mi Cuenta."}
+                </div>
+              </div>
+            </div>
+            <button onClick={()=>setPg("acc")} style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Mi Cuenta →</button>
+          </div>}
+          {/* Banner Pro Trial — solo para users que NO compraron Pro Familiar.
+              Mantiene el flow tradicional: signup → 14 días Pro free → upgrade
+              al final del trial. */}
+          {trialActive&&planAccount!=="pro_familiar"&&<div style={{background:trialDays<=3?"rgba(239,68,68,0.06)":trialDays<=5?"rgba(234,179,8,0.06)":"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(59,130,246,0.05))",border:"1px solid "+(trialDays<=3?"rgba(239,68,68,0.15)":trialDays<=5?"rgba(234,179,8,0.15)":"rgba(34,197,94,0.15)"),borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:18}}>⭐</span>
               <div><div style={{fontSize:13,fontWeight:700,color:T.gn}}>Plan Pro — Trial gratuito</div><div style={{fontSize:11,color:T.tx3}}>{trialDays<=1?"⚠️ ¡Tu acceso Pro se vence HOY! Crea tu cuenta para no perder tus datos.":trialDays<=3?"⏰ ¡Solo "+trialDays+" días! Después pierdes el Asesor IA y los Coaches.":trialDays<=5?"Tu trial Pro se vence en "+trialDays+" días — crea tu cuenta para mantener acceso":trialDays+" días de acceso Pro completo"}</div></div>
