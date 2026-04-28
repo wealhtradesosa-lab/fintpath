@@ -2320,6 +2320,16 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"coach":{const msgs=adv?getCoach(adv.id):[];return gated("coach","Pro",<div><div style={{textAlign:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 6px"}}>Coaches Financieros IA</h2><p style={{color:T.tx3,fontSize:13}}>5 asesores analizan tus datos</p><p style={{color:T.tx3,fontSize:10,margin:"4px 0 0"}}>📋 Solo se analizan ítems encendidos. Los apagados no se incluyen en el análisis.</p></div><div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center",marginBottom:20}}>{ADV.map(a=>{const ac=adv?.id===a.id;return<button key={a.id} onClick={()=>sAdv(a)} style={{background:ac?`linear-gradient(135deg,${a.cl}20,${a.cl}10)`:T.card,border:`1px solid ${ac?a.cl:T.border}`,color:T.tx,padding:"14px 20px",borderRadius:14,cursor:"pointer",textAlign:"center",minWidth:90}}><div style={{fontSize:22,marginBottom:4}}>{a.av}</div><div style={{fontWeight:700,fontSize:11,color:ac?a.cl:T.tx}}>{a.nm}</div><div style={{fontSize:9,color:ac?`${a.cl}aa`:T.tx3}}>{a.ti}</div></button>})}</div><Cd>{adv?<div style={{padding:20}}><div style={{display:"flex",alignItems:"center",gap:10,paddingBottom:14,borderBottom:`2px solid ${adv.cl}`,marginBottom:20}}><span style={{fontSize:28}}>{adv.av}</span><div><div style={{fontWeight:700,fontSize:15}}>{adv.nm}</div><div style={{fontSize:12,color:T.tx3}}>{adv.ti}</div></div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:6,marginBottom:20}}>{[{l:"Patrimonio",v:fm(t.nw),c:T.tx},{l:"Cash Flow",v:fm(t.cf),c:t.cf>=0?T.gn:T.rd},{l:"Independencia",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2},{l:"Deuda/Act",v:pc(t.dta),c:t.dta<30?T.gn:T.rd}].map(m=><div key={m.l} style={{background:T.bg3,padding:8,borderRadius:8,borderLeft:`3px solid ${m.c}`}}><div style={{fontSize:9,color:T.tx3,textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:15,fontWeight:700,color:m.c}}>{m.v}</div></div>)}</div>{msgs.map((msg,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:14}}><div style={{width:32,height:32,borderRadius:"50%",background:adv.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{adv.av}</div><div style={{flex:1,background:adv.bg,padding:"14px 18px",borderRadius:"0 14px 14px 14px",border:`1px solid ${adv.cl}10`}}><div style={{fontWeight:700,fontSize:13,color:adv.cl,marginBottom:6}}>{msg.t}</div><div style={{fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",color:T.tx}}>{msg.c}</div></div></div>)}</div>:<div style={{padding:56,textAlign:"center",color:T.tx3}}><div style={{fontSize:40,marginBottom:12}}>👆</div><p>Selecciona un coach</p></div>}</Cd></div>)}
     case"price":{
       const isCO=!isUS;
+      // Helper: convertir USD a string COP usando la TRM del día (viene de
+      // /api/trm que se llama al cargar la app). Fallback a 4200 si TRM no
+      // se cargó. Redondeo a centena para presentación más limpia.
+      // Filosofía: USD es la "fuente de verdad" (Stripe cobra USD). COP es
+      // referencia visual para el user CO. Si la TRM cambia, el equivalente
+      // se actualiza solo. Cero riesgo de mostrar precio incorrecto.
+      const usdToCop=(usd)=>{
+        const cop=Math.round(usd*(trm||4200)/100)*100;
+        return "≈ $"+cop.toLocaleString()+" COP";
+      };
       // Lista de features por plan. Lo que esta plataforma realmente entrega hoy:
       // Dashboard, Ingresos/Gastos/Deudas/Inversiones, Metas, Simulador, Pensiones
       // (Colpensiones+RAIS o 401k), BTC savings, Trading, Plan Tributario CO+US,
@@ -2341,9 +2351,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
          cur:plan==="free"},
         {n:"Básico",
          tag:"Para gestionar tu vida financiera completa",
-         p:{mensual:isUS?"$8":"$34,000",anual:isUS?"$6":"$25,200"},
-         pr:{mensual:isUS?"USD /mes":"COP /mes",anual:isUS?"USD /mes":"COP /mes"},
-         pRef:{mensual:isUS?null:"≈ $8 USD",anual:isUS?null:"≈ $6 USD"},
+         p:{mensual:"$8",anual:"$6"},
+         pr:{mensual:"USD /mes",anual:"USD /mes"},
+         pRef:{mensual:isUS?null:usdToCop(8),anual:isUS?null:usdToCop(6)},
          save:"Ahorra 25%",
          users:"1 usuario",
          f:[
@@ -2360,9 +2370,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
          cur:plan==="basico",ac:false},
         {n:"Pro",
          tag:"Para planificar y optimizar como un experto",
-         p:{mensual:isUS?"$16":"$67,200",anual:isUS?"$12":"$50,400"},
-         pr:{mensual:isUS?"USD /mes":"COP /mes",anual:isUS?"USD /mes":"COP /mes"},
-         pRef:{mensual:isUS?null:"≈ $16 USD",anual:isUS?null:"≈ $12 USD"},
+         p:{mensual:"$16",anual:"$12"},
+         pr:{mensual:"USD /mes",anual:"USD /mes"},
+         pRef:{mensual:isUS?null:usdToCop(16),anual:isUS?null:usdToCop(12)},
          save:"Ahorra 25%",
          users:"Hasta 3 usuarios (vos + pareja + contador)",
          f:[
@@ -2378,9 +2388,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
          cur:plan==="pro",ac:true},
         {n:"Pro Familiar",
          tag:"Para tu familia + tu contador en un solo espacio",
-         p:{mensual:isUS?"$27":"$113,400",anual:isUS?"$20":"$84,000"},
-         pr:{mensual:isUS?"USD /mes":"COP /mes",anual:isUS?"USD /mes":"COP /mes"},
-         pRef:{mensual:isUS?null:"≈ $27 USD",anual:isUS?null:"≈ $20 USD"},
+         p:{mensual:"$27",anual:"$20"},
+         pr:{mensual:"USD /mes",anual:"USD /mes"},
+         pRef:{mensual:isUS?null:usdToCop(27),anual:isUS?null:usdToCop(20)},
          save:"Ahorra 25%",
          users:"Hasta 10 usuarios compartiendo la misma información",
          f:[
@@ -2476,6 +2486,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         </div>
         <div style={{textAlign:"center",marginTop:24,color:T.tx3,fontSize:13,lineHeight:1.8}}>
           🔒 Pagos seguros con Stripe • Cancela cuando quieras • Sin compromisos<br/>
+          {isCO&&<><span style={{fontSize:11}}>🇨🇴 Conversión a TRM ≈ ${Math.round(trm||4200).toLocaleString()} COP/USD · tu banco aplica su propia tasa al cargo en USD.</span><br/></>}
           💬 ¿Preguntas? Escríbenos a soporte@finpathia.com
         </div>
         <div style={{marginTop:32,padding:"20px 24px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:14,textAlign:"center"}}>
