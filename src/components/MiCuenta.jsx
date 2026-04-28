@@ -64,7 +64,7 @@ const daysUntil = (d) => {
 // ── Componente principal ───────────────────────────────────────────────────
 export default function MiCuenta({
   supabase, accountId, role, displayName, plan, maxMembers,
-  currentUserId, onChange, isLegacy, configContent, defaultTab,
+  currentUserId, currentUserName, onChange, isLegacy, configContent, defaultTab,
 }) {
   // Tabs disponibles según contexto
   const showMembersTab = !isLegacy && accountId;
@@ -120,7 +120,7 @@ export default function MiCuenta({
         <MiembrosTab
           supabase={supabase} accountId={accountId} role={role}
           displayName={displayName} plan={plan} maxMembers={maxMembers}
-          currentUserId={currentUserId} onChange={onChange}
+          currentUserId={currentUserId} currentUserName={currentUserName} onChange={onChange}
         />
       )}
       {activeTab === "config" && configContent && (
@@ -131,7 +131,7 @@ export default function MiCuenta({
 }
 
 // ═══ Tab Miembros ═══════════════════════════════════════════════════════
-function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, onChange }) {
+function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, currentUserName, onChange }) {
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -330,6 +330,8 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
         <InviteModal
           supabase={supabase}
           accountId={accountId}
+          accountName={displayName}
+          inviterName={currentUserName}
           onClose={() => { setShowInvite(false); setInviteResult(null); loadAll(); }}
           onSuccess={(result) => setInviteResult(result)}
           inviteResult={inviteResult}
@@ -464,12 +466,17 @@ function InvitationRow({ invitation, isLast, onRevoke }) {
   );
 }
 
-function InviteModal({ supabase, accountId, onClose, onSuccess, inviteResult }) {
+function InviteModal({ supabase, accountId, accountName, inviterName, onClose, onSuccess, inviteResult }) {
   const [email, setEmail] = useState("");
   const [memberRole, setMemberRole] = useState("reader");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [copied, setCopied] = useState(false);
+  // Fase 3 commit 4: estado del envío automático del email vía Resend.
+  // 'idle' antes del submit, 'sending' mientras se llama a la function,
+  // 'sent' si el email salió OK, 'fallback' si Resend no está configurado
+  // o falló (el link copyable sigue siendo el camino de respaldo).
+  const [emailStatus, setEmailStatus] = useState("idle");
 
   const submit = async (e) => {
     e?.preventDefault?.();
@@ -483,7 +490,38 @@ function InviteModal({ supabase, accountId, onClose, onSuccess, inviteResult }) 
         p_role: memberRole,
       });
       if (error) throw error;
+      // Mostrar pantalla de éxito inmediatamente con el link copyable.
+      // El envío del email es non-blocking — si falla, el admin igual tiene
+      // el link visible y puede mandarlo manualmente.
       onSuccess(data);
+      // Disparar envío del email en background.
+      setEmailStatus("sending");
+      try {
+        const res = await fetch("/.netlify/functions/family-invite-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: data.email,
+            invitation_url: data.invitation_url,
+            role: data.role,
+            account_name: accountName,
+            invited_by_name: inviterName,
+            expires_at: data.expires_at,
+          }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (body?.sent) {
+          setEmailStatus("sent");
+        } else {
+          // Fallback graceful: Resend no configurado, o error de envío.
+          // Loguear pero no preocupar al usuario — el link copyable está visible.
+          console.log("[invite-email] no enviado:", body?.reason || body?.error || "unknown");
+          setEmailStatus("fallback");
+        }
+      } catch (e) {
+        console.warn("[invite-email] fetch falló:", e);
+        setEmailStatus("fallback");
+      }
     } catch (e) {
       setSubmitError(e.message || "No se pudo crear la invitación");
     } finally {
@@ -516,8 +554,34 @@ function InviteModal({ supabase, accountId, onClose, onSuccess, inviteResult }) 
             <button onClick={onClose} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
           </div>
           <div style={{ fontSize: 13, color: T.txt2, marginBottom: 16, lineHeight: 1.6 }}>
-            Mandale este link a <strong style={{ color: T.txt }}>{inviteResult.email}</strong> por WhatsApp, email o como prefieras. Al abrirlo y hacer login con ese email, va a quedar como <strong style={{ color: T.txt }}>{ROLE_LABELS[inviteResult.role]}</strong> en tu cuenta.
+            {emailStatus === "sent"
+              ? <>Le mandamos un email a <strong style={{ color: T.txt }}>{inviteResult.email}</strong> con el link de invitación. Al abrirlo y hacer login, va a quedar como <strong style={{ color: T.txt }}>{ROLE_LABELS[inviteResult.role]}</strong> en tu cuenta.</>
+              : <>Mandale este link a <strong style={{ color: T.txt }}>{inviteResult.email}</strong> por WhatsApp, email o como prefieras. Al abrirlo y hacer login con ese email, va a quedar como <strong style={{ color: T.txt }}>{ROLE_LABELS[inviteResult.role]}</strong> en tu cuenta.</>}
           </div>
+          {emailStatus === "sending" && (
+            <div style={{
+              background: "rgba(59,130,246,0.08)", border: `1px solid rgba(59,130,246,0.25)`,
+              borderRadius: 10, padding: "8px 12px", fontSize: 12, color: T.blue, marginBottom: 12,
+            }}>
+              ✉️ Enviando email…
+            </div>
+          )}
+          {emailStatus === "sent" && (
+            <div style={{
+              background: "rgba(16,185,129,0.08)", border: `1px solid rgba(16,185,129,0.25)`,
+              borderRadius: 10, padding: "8px 12px", fontSize: 12, color: T.green, marginBottom: 12,
+            }}>
+              ✓ Email enviado · igualmente podés copiar el link como respaldo
+            </div>
+          )}
+          {emailStatus === "fallback" && (
+            <div style={{
+              background: "rgba(234,179,8,0.08)", border: `1px solid rgba(234,179,8,0.25)`,
+              borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#eab308", marginBottom: 12,
+            }}>
+              ℹ️ Email automático no disponible · copiá el link y mandalo manualmente
+            </div>
+          )}
           <div style={{
             background: T.bg3, border: `1px solid ${T.borderL}`, borderRadius: 10,
             padding: 14, fontSize: 12, color: T.txt, wordBreak: "break-all",
