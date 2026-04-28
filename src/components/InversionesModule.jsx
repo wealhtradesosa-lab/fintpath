@@ -74,7 +74,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport}) {
+export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user}) {
   const fm = fmt || _fm;
   // Fase 3 commit 6: gating reader.
   const { role } = useRole();
@@ -177,6 +177,47 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           <button onClick={openAdd} style={{ background: T.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </div>
       </div>
+
+      {/* Banner contextual: inversiones sin propietario asignado.
+          Sin owner las rentas/dividendos no se atribuyen a un contribuyente
+          específico para el cálculo de Impuestos. */}
+      {(() => {
+        if (!user) return null;
+        const sinOwner = (inversiones || []).filter(i => !i.owner || i.owner === "");
+        if (sinOwner.length === 0) return null;
+        return (
+          <div style={{ marginBottom: 16, padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 14 }}>⚠️</span>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", flex: 1 }}>
+                {sinOwner.length} inversi{sinOwner.length !== 1 ? "ones" : "ón"} sin propietario asignado
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
+              Sin propietario, los rendimientos y dividendos no se atribuyen a un contribuyente para el cálculo de Impuestos.
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {sinOwner.slice(0, 6).map((inv, idx) => (
+                <div key={"fw_" + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(0,0,0,0.2)", border: "1px solid " + T.border, borderRadius: 8 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 3, background: "#ef4444", flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: T.txt, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {inv.n || "(sin nombre)"} <span style={{ color: T.txt3, fontWeight: 400, fontFamily: "monospace" }}>· valor {fm(inv.v || 0)}</span>
+                    </div>
+                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginTop: 2 }}>Asignale un propietario para atribuir los rendimientos correctamente</div>
+                  </div>
+                  <button onClick={() => openEdit(inv)} style={{ padding: "5px 10px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, color: "#22c55e", cursor: "pointer", fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
+                    Editar →
+                  </button>
+                </div>
+              ))}
+              {sinOwner.length > 6 && (
+                <div style={{ fontSize: 10, color: T.txt3, textAlign: "center", padding: "4px 0" }}>+ {sinOwner.length - 6} más</div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Banner explicando toggle sim (Commit 8.8) */}
       <SimToggleInfo total={items.length} activos={activos.length} moduloNombre="una inversión" />

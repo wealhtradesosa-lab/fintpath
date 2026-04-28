@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
+import { getFiscalWarnings } from "../lib/normalize.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -208,7 +209,7 @@ function defaultFiscalCode(ownerType, cat) {
   return "GAS_NAT_PERSONAL";
 }
 
-export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, ingresos, plan, onUpgrade}) {
+export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, ingresos, plan, onUpgrade, user}) {
   // Fase 3 commit 6: gating reader. Mismo patrón que IngresosModule.
   const { role } = useRole();
   const [scanning, setScanning] = useState(false);
@@ -343,6 +344,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
   
 
+  // Banner contextual: warnings fiscales de gastos. Cada warning tiene
+  // itemGastoCat e itemGastoIdx que reconstruyen el `key` que usa openEdit.
+  const _rawWarnings = user ? getFiscalWarnings(user) : [];
+  const fiscalWarnings = _rawWarnings.filter(w => w.itemType === "gasto" && w.itemId);
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
@@ -361,6 +367,49 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </div>
       </div>
+
+      {/* Banner contextual: warnings fiscales de gastos */}
+      {fiscalWarnings.length > 0 && (
+        <div style={{ marginBottom: 16, padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 14 }}>⚠️</span>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", flex: 1 }}>
+              {fiscalWarnings.length} egreso{fiscalWarnings.length !== 1 ? "s" : ""} con clasificación fiscal pendiente
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
+            Estos items requieren confirmación de causalidad o tipo fiscal. Afectan tu cálculo de Impuestos.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {fiscalWarnings.slice(0, 6).map((w, idx) => {
+              // Reconstruir key del item: cat|idx (mismo patrón que línea 269)
+              const key = w.itemGastoCat + "|" + w.itemGastoIdx;
+              const item = allItems.find(it => it.key === key);
+              if (!item) return null;
+              const colorBySev = w.severity === "error" ? "#ef4444" : (w.severity === "warning" ? "#f59e0b" : "#3b82f6");
+              return (
+                <div key={"fw_" + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(0,0,0,0.2)", border: "1px solid " + T.border, borderRadius: 8 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 3, background: colorBySev, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: T.txt, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {item.c || w.itemConcepto || w.itemCategoria || "(sin descripción)"} <span style={{ color: T.txt3, fontWeight: 400, fontFamily: "monospace" }}>· {fm(item.m || 0)}/mes · {item.cat}</span>
+                    </div>
+                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginTop: 2 }}>{w.message || w.accionSugerida}</div>
+                  </div>
+                  <button onClick={() => openEdit(item)} style={{ padding: "5px 10px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, color: "#22c55e", cursor: "pointer", fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
+                    Editar →
+                  </button>
+                </div>
+              );
+            })}
+            {fiscalWarnings.length > 6 && (
+              <div style={{ fontSize: 10, color: T.txt3, textAlign: "center", padding: "4px 0" }}>
+                + {fiscalWarnings.length - 6} más
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Banner explicando toggle sim (Commit 8.8) */}
       <SimToggleInfo total={allItems.length} activos={activos.length} moduloNombre="un gasto" />

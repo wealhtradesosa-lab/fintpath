@@ -1,6 +1,7 @@
 import { useState } from "react";
 import SimToggleInfo from "./SimToggleInfo";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
+import { getFiscalWarnings } from "../lib/normalize.js";
 
 import { C } from "../lib/designTokens.js";
 
@@ -133,7 +134,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport}) {
+export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user }) {
   const fm = fmt || _fm;
   // Fase 3 commit 5 — gating reader: si role==='reader', los handlers
   // de escritura abortan vía guardEdit() y emiten 'fp3-reader-blocked'.
@@ -373,6 +374,25 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
   
 
+  // Banner contextual de warnings fiscales para esta sección.
+  // Lista los items específicos sin clasificación o con problemas, con CTA "Editar →"
+  // que abre el modal del item directamente.
+  const _rawWarnings = user ? getFiscalWarnings(user) : [];
+  const _itemWarnings = _rawWarnings.filter(w => w.itemType === "ingreso" && w.itemId);
+  // INGRESO_SIN_PROPIETARIO viene como warning agregado sin itemId — lo expandimos
+  // a un warning por item para que cada ingreso sin owner aparezca en la lista.
+  const _ingresosSinOwner = (ingresos || []).filter(i => !i.owner || i.owner === "");
+  const _sinOwnerWarnings = _ingresosSinOwner.map(i => ({
+    itemId: i.id,
+    itemConcepto: i.nombre,
+    severity: "error",
+    code: "INGRESO_SIN_PROPIETARIO",
+    message: "Ingreso sin propietario asignado — no se incluye en el cálculo de Impuestos",
+    accionSugerida: "Asigná un propietario",
+  }));
+  const fiscalWarnings = [..._sinOwnerWarnings, ..._itemWarnings];
+  const ingresoItemsById = Object.fromEntries((ingresos || []).map(i => [i.id, i]));
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
@@ -392,6 +412,47 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           </button>
         </div>
       </div>
+
+      {/* Banner contextual: warnings fiscales de esta sección con lista navegable */}
+      {fiscalWarnings.length > 0 && (
+        <div style={{ marginBottom: 16, padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 14 }}>⚠️</span>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", flex: 1 }}>
+              {fiscalWarnings.length} ingreso{fiscalWarnings.length !== 1 ? "s" : ""} con clasificación fiscal pendiente
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
+            Estos items afectan el cálculo de Impuestos. Revisalos y editalos para mayor precisión.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {fiscalWarnings.slice(0, 6).map((w, idx) => {
+              const item = ingresoItemsById[w.itemId];
+              if (!item) return null;
+              const colorBySev = w.severity === "error" ? "#ef4444" : (w.severity === "warning" ? "#f59e0b" : "#3b82f6");
+              return (
+                <div key={"fw_" + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(0,0,0,0.2)", border: "1px solid " + T.border, borderRadius: 8 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 3, background: colorBySev, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: T.txt, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {item.nombre || w.itemConcepto || "(sin nombre)"} {item.mensual > 0 && <span style={{ color: T.txt3, fontWeight: 400, fontFamily: "monospace" }}>· {fm(item.mensual)}/mes</span>}
+                    </div>
+                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginTop: 2 }}>{w.message || w.accionSugerida}</div>
+                  </div>
+                  <button onClick={() => handleEdit(item)} style={{ padding: "5px 10px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, color: T.green, cursor: "pointer", fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
+                    Editar →
+                  </button>
+                </div>
+              );
+            })}
+            {fiscalWarnings.length > 6 && (
+              <div style={{ fontSize: 10, color: T.txt3, textAlign: "center", padding: "4px 0" }}>
+                + {fiscalWarnings.length - 6} más
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Banner explicando toggle sim (Commit 8.8) */}
       <SimToggleInfo total={allItems.length} activos={activos.length} moduloNombre="un ingreso" />
