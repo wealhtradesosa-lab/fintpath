@@ -1252,7 +1252,7 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Deductions":"Egresos"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"deu",i:"📋",l:"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Plan Tributario"},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador"},{id:"met",i:"🎯",l:isEN?"Goals":"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:isEN?"Retirement / 401(k)":"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC",hidden:isUS},{id:"aportes",i:"💰",l:"Calcula tus aportes",hidden:isUS},{id:"_sep3",sep:true,l:isEN?"ARTIFICIAL INTELLIGENCE":"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:isEN?"AI Advisor":"Asesor IA"},{id:"coach",i:"🧠",l:isEN?"AI Coaches":"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"cuenta",i:"⚙️",l:isEN?"My Account":"Mi cuenta"}];
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Deductions":"Egresos"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"deu",i:"📋",l:"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Taxes":"Impuestos"},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador"},{id:"met",i:"🎯",l:isEN?"Goals":"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:isEN?"Retirement / 401(k)":"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC",hidden:isUS},{id:"aportes",i:"💰",l:"Calcula tus aportes",hidden:isUS},{id:"_sep3",sep:true,l:isEN?"ARTIFICIAL INTELLIGENCE":"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:isEN?"AI Advisor":"Asesor IA"},{id:"coach",i:"🧠",l:isEN?"AI Coaches":"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"cuenta",i:"⚙️",l:isEN?"My Account":"Mi cuenta"}];
 
   const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",pen:"Pensiones",tax:"Planeación Tributaria",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",cuenta:"Mi cuenta"};
   if(typeof document!=="undefined")document.title="FINPATHIA"+(secNames[pg]?" — "+secNames[pg]:"");
@@ -1452,7 +1452,7 @@ export default function FinPath(){
         </Cd>
         {/* Tax Estimate */}
         {(()=>{const tx=estimarImpuesto(u);return tx.total>0?<Cd s={{padding:16}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:10}}>🧾 Plan Tributario (Anual)</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:10}}>🧾 Impuestos (Anual)</div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <span style={{fontSize:11,color:T.tx3}}>Total estimado</span>
             <span style={{fontSize:18,fontWeight:800,color:T.pr,fontFamily:"monospace"}}>{fm(tx.total)}/año</span>
@@ -1466,7 +1466,7 @@ export default function FinPath(){
                     {d.ahorroOptimo>100000&&<div style={{fontSize:9,color:T.gn}}>Optimizable: -{fm(d.ahorroOptimo)}</div>}
                   </div>
           </div>)}
-          <button onClick={()=>setPg("tax")} style={{width:"100%",marginTop:10,padding:"8px",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,color:T.pr,cursor:"pointer",fontSize:11,fontWeight:600}}>Ver detalle → 🧾 Plan Tributario</button>
+          <button onClick={()=>setPg("tax")} style={{width:"100%",marginTop:10,padding:"8px",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,color:T.pr,cursor:"pointer",fontSize:11,fontWeight:600}}>Ver detalle → 🧾 Impuestos</button>
         </Cd>:null})()}
         {/* Patrimonio Distribution */}
         <Cd s={{padding:20}}>
@@ -2570,7 +2570,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>🧾 Planeación Tributaria</div>
                 <div style={{fontSize:11,color:T.tx3,marginBottom:10,lineHeight:1.6}}>Registra las personas o empresas <strong>en Colombia</strong> para las que quieras estimar impuestos. Al asignar un propietario a tus ingresos, la sección <strong>🧾 Impuestos</strong> calculará un aproximado del pago de renta por cada uno.<br/><br/>Es opcional: solo registra los que quieras analizar. Si tienes entidades en otros países (ej. USA), no las incluyas aquí.</div>
                 {(() => {
-                  // Contar items sin fiscalCode explícito (necesitan migración).
+                  // Contar items sin fiscalCode explícito por sección.
                   const pendIng = (u?.ingresos || []).filter(i => !i.fiscalCode).length;
                   const pendDeu = (u?.deu || []).filter(d => !d.fiscalCode).length;
                   const pendInv = (u?.inv || []).filter(i => !i.fiscalCode).length;
@@ -2581,24 +2581,28 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                   const errs = warns.filter(w => w.severity === "error").length;
                   const warnCount = warns.filter(w => w.severity === "warning").length;
                   if (totalPend === 0 && warns.length === 0) return null;
+                  // Lista de secciones con pendientes (con label + count + page id para navegación)
+                  const secciones = [
+                    { count: pendIng, label: pendIng === 1 ? "ingreso" : "ingresos", emoji: "💰", page: "ing" },
+                    { count: pendGas, label: pendGas === 1 ? "egreso" : "egresos", emoji: "💳", page: "gas" },
+                    { count: pendDeu, label: pendDeu === 1 ? "deuda" : "deudas", emoji: "📋", page: "deu" },
+                    { count: pendInv, label: pendInv === 1 ? "inversión" : "inversiones", emoji: "🏦", page: "inv" },
+                  ].filter(s => s.count > 0);
                   return (
-                    <div style={{marginBottom:12,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.2)",borderRadius:10}}>
-                      <div style={{fontSize:11,fontWeight:700,color:T.or||"#f97316",marginBottom:6}}>🔧 Clasificación fiscal</div>
-                      <div style={{fontSize:10,color:T.tx2,lineHeight:1.6,marginBottom:8}}>
-                        {totalPend > 0 && <>Hay <strong>{totalPend} item(s)</strong> sin clasificación fiscal explícita (usando inferencia automática). </>}
-                        {errs > 0 && <>• <strong style={{color:T.rd}}>{errs} error(es)</strong> </>}
-                        {warnCount > 0 && <>• {warnCount} advertencia(s) </>}
-                        {totalPend > 0 && "Podés asignarles fiscalCode automáticamente con el botón de abajo (uno click, reversible — solo escribe la inferencia actual)."}
+                    <div style={{marginBottom:12,padding:"12px 14px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.2)",borderRadius:10}}>
+                      <div style={{fontSize:11,fontWeight:700,color:T.or||"#f97316",marginBottom:6}}>🔧 Clasificación fiscal pendiente</div>
+                      <div style={{fontSize:10,color:T.tx2,lineHeight:1.6,marginBottom:secciones.length>0?10:0}}>
+                        {totalPend > 0 ? <>Hay <strong>{totalPend} item(s)</strong> sin clasificación fiscal explícita. El motor está usando inferencia automática, pero podés revisar y confirmar item por item directamente en cada sección para mayor precisión.</> : "Hay items con advertencias fiscales."}
+                        {(errs > 0 || warnCount > 0) && <div style={{marginTop:4}}>{errs > 0 && <span style={{color:T.rd}}>• <strong>{errs} error(es)</strong> </span>}{warnCount > 0 && <span>• {warnCount} advertencia(s)</span>}</div>}
                       </div>
-                      {totalPend > 0 && (
-                        <button onClick={() => {
-                          if (!confirm(`Se asignará fiscalCode explícito a ${totalPend} item(s) basado en la inferencia automática (categoría legacy + contexto del owner).\n\nCero impacto en los números del Plan Tributario — solo se hace visible la clasificación que hoy está implícita.\n\n¿Continuar?`)) return;
-                          const { data: norm } = normalizeFiscalData(u);
-                          setU({...u, ingresos: norm.ingresos, gas: norm.gas, deu: norm.deu, inv: norm.inv, owners: norm.owners});
-                          showToast(`✅ ${totalPend} item(s) clasificados`);
-                        }} style={{padding:"6px 12px",background:T.or||"#f97316",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>
-                          🪄 Migrar {totalPend} item(s) ahora
-                        </button>
+                      {secciones.length > 0 && (
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                          {secciones.map(s => (
+                            <button key={s.page} onClick={()=>setPg(s.page)} style={{padding:"6px 10px",background:T.bg3,border:"1px solid "+T.border,borderRadius:6,color:T.tx,cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",alignItems:"center",gap:5}}>
+                              <span>{s.emoji}</span><span><strong>{s.count}</strong> {s.label}</span><span style={{color:T.tx3,marginLeft:2}}>→</span>
+                            </button>
+                          ))}
+                        </div>
                       )}
                     </div>
                   );
