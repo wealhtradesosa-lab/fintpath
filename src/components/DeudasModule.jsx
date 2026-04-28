@@ -127,7 +127,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     setShowForm(true);
   };
 
-  
+  // Set de IDs de deudas sin propietario asignado, para badges en rows.
+  const deudasSinOwnerIds = new Set((deudas || []).filter(d => !d.owner || d.owner === "").map(d => d.id));
 
   return (
     <div>
@@ -250,7 +251,16 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                         style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
                     </td>
                     <td style={{ padding: "10px 14px" }}>
-                      <div style={{fontWeight: 600}}>{d.n}</div>
+                      <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6}}>
+                        {deudasSinOwnerIds.has(d.id) && (
+                          <span
+                            onClick={() => openEdit(d)}
+                            title="Sin propietario asignado — los intereses no se deducen del cálculo de Impuestos"
+                            style={{ fontSize: 13, cursor: "pointer", color: "#ef4444", flexShrink: 0 }}
+                          >⚠️</span>
+                        )}
+                        <span>{d.n}</span>
+                      </div>
                       {(()=>{
                         if(!d.owner || d.owner==="") return null;
                         if(d.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;

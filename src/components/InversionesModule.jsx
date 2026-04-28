@@ -157,7 +157,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "" });
   };
 
-  
+  // Set de IDs de inversiones sin propietario asignado, para badges en rows.
+  const inversionesSinOwnerIds = new Set((inversiones || []).filter(i => !i.owner || i.owner === "").map(i => i.id));
 
   return (
     <div>
@@ -288,7 +289,16 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
                     </td>
                     <td style={{ padding: "12px 14px" }}>
-                      <div style={{ fontWeight: 600 }}>{name}</div>
+                      <div style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                        {inversionesSinOwnerIds.has(inv.id) && (
+                          <span
+                            onClick={() => openEdit(inv)}
+                            title="Sin propietario asignado — los rendimientos no se atribuyen al cálculo de Impuestos"
+                            style={{ fontSize: 13, cursor: "pointer", color: "#ef4444", flexShrink: 0 }}
+                          >⚠️</span>
+                        )}
+                        <span>{name}</span>
+                      </div>
                       <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? inv.tasa + "% anual" : ""].filter(Boolean).join(" • ")}</div>
                       {(()=>{
                         if(!inv.owner || inv.owner==="") return null;

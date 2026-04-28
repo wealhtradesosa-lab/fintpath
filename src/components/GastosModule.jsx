@@ -348,6 +348,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   // itemGastoCat e itemGastoIdx que reconstruyen el `key` que usa openEdit.
   const _rawWarnings = user ? getFiscalWarnings(user) : [];
   const fiscalWarnings = _rawWarnings.filter(w => w.itemType === "gasto" && w.itemId);
+  // Map para badges en rows: itemKey (cat|idx) → array de warnings
+  const warningsByItemKey = new Map();
+  fiscalWarnings.forEach(w => {
+    const key = w.itemGastoCat + "|" + w.itemGastoIdx;
+    if (!warningsByItemKey.has(key)) warningsByItemKey.set(key, []);
+    warningsByItemKey.get(key).push(w);
+  });
 
   return (
     <div>
@@ -474,7 +481,20 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
                 </td>
                 <td style={{ padding: "10px 14px" }}>
-                  <div style={{fontWeight: 600}}>{item.c || "—"}</div>
+                  <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6}}>
+                    {warningsByItemKey.has(item.key) && (() => {
+                      const ws = warningsByItemKey.get(item.key);
+                      const hasError = ws.some(w => w.severity === "error");
+                      return (
+                        <span
+                          onClick={() => openEdit(item)}
+                          title={ws.map(w => "• " + (w.message || w.accionSugerida)).join("\n")}
+                          style={{ fontSize: 13, cursor: "pointer", color: hasError ? "#ef4444" : "#f59e0b", flexShrink: 0 }}
+                        >⚠️</span>
+                      );
+                    })()}
+                    <span>{item.c || "—"}</span>
+                  </div>
                   {(()=>{
                     if(!item.owner || item.owner==="") return null;
                     if(item.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;

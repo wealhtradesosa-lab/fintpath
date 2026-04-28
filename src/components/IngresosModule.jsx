@@ -392,6 +392,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   }));
   const fiscalWarnings = [..._sinOwnerWarnings, ..._itemWarnings];
   const ingresoItemsById = Object.fromEntries((ingresos || []).map(i => [i.id, i]));
+  // Map para badges en rows: itemId → array de warnings (color por max severity)
+  const warningsByItemId = new Map();
+  fiscalWarnings.forEach(w => {
+    if (!w.itemId) return;
+    if (!warningsByItemId.has(w.itemId)) warningsByItemId.set(w.itemId, []);
+    warningsByItemId.get(w.itemId).push(w);
+  });
 
   return (
     <div>
@@ -534,7 +541,20 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
                     </td>
                     <td style={{ padding: "10px 14px" }}>
-                      <div style={{fontWeight: 600}}>{item.nombre}</div>
+                      <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6}}>
+                        {warningsByItemId.has(item.id) && (() => {
+                          const ws = warningsByItemId.get(item.id);
+                          const hasError = ws.some(w => w.severity === "error");
+                          return (
+                            <span
+                              onClick={() => handleEdit(item)}
+                              title={ws.map(w => "• " + (w.message || w.accionSugerida)).join("\n")}
+                              style={{ fontSize: 13, cursor: "pointer", color: hasError ? "#ef4444" : "#f59e0b", flexShrink: 0 }}
+                            >⚠️</span>
+                          );
+                        })()}
+                        <span>{item.nombre}</span>
+                      </div>
                       {(()=>{
                         if(!item.owner || item.owner==="") return null;
                         if(item.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;
