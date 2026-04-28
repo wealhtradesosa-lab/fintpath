@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -16,12 +17,15 @@ const CATS = ["Propiedad","Vehículo","Educación","Viaje","Negocio","Retiro","A
 
 export default function MetasModule({ metas, onUpdate, cashFlow, fmt}) {
   const fm = fmt || _fm;
+  // Fase 3 commit 6: gating reader.
+  const { role } = useRole();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ nombre: "", categoria: "Ahorro", monto: "", fechaMeta: "", ahorrado: "", icono: "🎯", prioridad: "media" });
   const items = metas || [];
 
   const handleSave = () => {
+    if (!guardEdit(role)) return;
     const item = {
       ...form,
       monto: Number(form.monto) || 0,
@@ -117,7 +121,7 @@ export default function MetasModule({ metas, onUpdate, cashFlow, fmt}) {
                   </div>
                   <div style={{ display: "flex", gap: 4 }}>
                     <button onClick={() => handleEdit(meta)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11 }}>✏️</button>
-                    <button onClick={() => { if (confirm("¿Eliminar?")) onUpdate(items.filter(i => i.id !== meta.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
+                    <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter(i => i.id !== meta.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
                   </div>
                 </div>
 

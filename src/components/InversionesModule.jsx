@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -75,6 +76,8 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
 
 export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport}) {
   const fm = fmt || _fm;
+  // Fase 3 commit 6: gating reader.
+  const { role } = useRole();
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -89,6 +92,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
 
   const deleteSelected = () => {
+    if (!guardEdit(role)) return;
     if (!selected.size || !confirm(`¿Eliminar ${selected.size} activo(s)?`)) return;
     onUpdate(items.filter((i) => !selected.has(i.id)));
     setSelected(new Set());
@@ -117,6 +121,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   };
 
   const handleSave = () => {
+    if (!guardEdit(role)) return;
     const va = Math.abs(parseFloat(form.va)) || 0;
     const tasa = parseFloat(form.tasa) || 0;
     const ingresoCalc = tasa > 0 ? Math.round((va * tasa / 100) / 12) : 0;
@@ -257,11 +262,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: (va-getVC(inv)) >= 0 ? T.green : T.red }}>{fm(va-getVC(inv))}</td>
                     <td style={{ padding: "12px 14px", textAlign: "right", color: m.debtTotal > 0 ? T.red : T.txt3 }}>{m.debtTotal>0?fm(m.debtTotal):"-"}</td>
                     <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                      <button onClick={() => { onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{inv.sim===false?"⬜":"✅"}</button>
+                      <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{inv.sim===false?"⬜":"✅"}</button>
                     </td>
                     <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
                       <button onClick={() => openEdit(inv)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11 }}>✏️</button>
-                      <button onClick={() => { if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }}
+                      <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }}
                         style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
                     </div></td>
                   </tr>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -25,6 +26,8 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
 
 export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fmt, onImport}) {
   const fm = fmt || _fm;
+  // Fase 3 commit 6: gating reader.
+  const { role } = useRole();
   const [showForm, setShowForm] = useState(false);
   const [scanning, setScanning] = useState(false);
 
@@ -94,12 +97,14 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
 
   const deleteSelected = () => {
+    if (!guardEdit(role)) return;
     if (!selected.size || !confirm(`¿Eliminar ${selected.size} deuda(s)?`)) return;
     onUpdate(items.filter((i) => !selected.has(i.id)));
     setSelected(new Set());
   };
 
   const handleSave = () => {
+    if (!guardEdit(role)) return;
     // Commit 5 Tarea 3 (bugfix): persistir fiscalCode al guardar. Antes el campo
     // se omitía y el motor caía al default vía normalizer, ignorando la elección
     // del usuario en el sub-selector "¿Para qué usaste esta deuda?".
@@ -221,9 +226,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>{d.ts}%</td>
                     <td style={{ padding: "10px 14px" }}>{lk ? <span style={{ background: T.blue + "15", color: T.blue, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{lk.n || lk.nombre || lk.name || "—"}</span> : <span style={{ color: T.txt3 }}>—</span>}</td>
                     <td style={{ padding: "10px 14px" }}>
-                      <button onClick={() => { onUpdate(deudas.map(x => x.id===d.id ? {...x, sim: !(d.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={d.sim===false?"Mostrar":"Ocultar"}>{d.sim===false?"⬜":"✅"}</button>
+                      <button onClick={() => { if (!guardEdit(role)) return; onUpdate(deudas.map(x => x.id===d.id ? {...x, sim: !(d.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={d.sim===false?"Mostrar":"Ocultar"}>{d.sim===false?"⬜":"✅"}</button>
                       <button onClick={() => openEdit(d)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
-                      <button onClick={() => { if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== d.id)); }}
+                      <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== d.id)); }}
                         style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
                     </td>
                   </tr>

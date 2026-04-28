@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
+import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -207,6 +208,8 @@ function defaultFiscalCode(ownerType, cat) {
 }
 
 export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, ingresos, plan, onUpgrade}) {
+  // Fase 3 commit 6: gating reader. Mismo patrón que IngresosModule.
+  const { role } = useRole();
   const [scanning, setScanning] = useState(false);
 
   const scanImage = async () => {
@@ -270,6 +273,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((g) => g.key)));
 
   const deleteSelected = () => {
+    if (!guardEdit(role)) return;
     if (!selected.size || !confirm(`¿Eliminar ${selected.size} gasto(s)?`)) return;
     const newGas = {};
     cats.forEach(([cat, its]) => {
@@ -281,6 +285,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   };
 
   const handleSave = () => {
+    if (!guardEdit(role)) return;
     const newGas = { ...gas };
     const buildItem = () => {
       const base = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined, causalidad: form.causalidad || undefined };
@@ -328,6 +333,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   };
 
   const delCat = (cat) => {
+    if (!guardEdit(role)) return;
     if (!confirm("¿Eliminar categoría " + cat + "?")) return;
     const newGas = { ...gas };
     delete newGas[cat];
@@ -445,9 +451,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 </td>
                 <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.red, fontFamily: "monospace" }}>{fm(item.m)}</td>
                 <td style={{ padding: "10px 14px" }}>
-                  <button onClick={() => { const upd = {...gastos}; upd[item.cat] = upd[item.cat].map((g,i) => i===item.idx ? {...g, sim: !(item.sim!==false)} : g); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar":"Ocultar"}>{item.sim===false?"⬜":"✅"}</button>
+                  <button onClick={() => { if (!guardEdit(role)) return; const upd = {...gastos}; upd[item.cat] = upd[item.cat].map((g,i) => i===item.idx ? {...g, sim: !(item.sim!==false)} : g); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar":"Ocultar"}>{item.sim===false?"⬜":"✅"}</button>
                   <button onClick={() => openEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
-                  <button onClick={() => { const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }}
+                  <button onClick={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }}
                     style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
                 </td>
               </tr>
