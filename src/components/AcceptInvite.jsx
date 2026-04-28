@@ -262,18 +262,37 @@ export default function AcceptInvite({ token, onComplete }) {
 
         {/* Invitation banner */}
         {invitation?.type === "family" ? (
-          <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.1), rgba(167,139,250,0.08))", border: `1px solid rgba(34,197,94,0.25)`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
-            <div style={{ fontSize: 11, color: T.green, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Invitación familiar</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
-              {invitation?.invited_by_name || "Te invitaron"} te invitó a {invitation?.account_name || "su cuenta"}
+          <>
+            <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(167,139,250,0.08))", border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 14, padding: 18, marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: T.green, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>🎉 Invitación recibida</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: T.txt, marginBottom: 6, lineHeight: 1.35 }}>
+                {invitation?.invited_by_name || "Alguien"} te invitó a su cuenta{invitation?.account_name ? <> <strong style={{ color: T.green }}>{invitation.account_name}</strong></> : ""} en Finpathia
+              </div>
+              <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.55 }}>
+                {invitation?.role === "admin"
+                  ? <>Vas a poder <strong style={{ color: T.txt }}>ver y editar</strong> toda la información financiera de la cuenta compartida.</>
+                  : <>Vas a poder <strong style={{ color: T.txt }}>ver</strong> toda la información financiera de la cuenta compartida (modo solo lectura).</>}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
-              Vas a tener acceso como <strong style={{ color: T.txt }}>{invitation?.role === "admin" ? "administrador" : "solo lectura"}</strong>
-              {invitation?.role === "admin"
-                ? " — podés ver y editar toda la información financiera."
-                : " — podés ver toda la información financiera, pero no editarla."}
+            {/* Pasos 1-2-3: explicar qué va a pasar */}
+            <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.border}`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 11, color: T.txt3, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>Cómo funciona</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13, lineHeight: 1.5 }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.green }}>1</div>
+                  <div style={{ color: T.txt2 }}>Acá abajo creás <strong style={{ color: T.txt }}>tu usuario y contraseña</strong> personales (gratis, sin elegir plan).</div>
+                </div>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.green }}>2</div>
+                  <div style={{ color: T.txt2 }}>Te <strong style={{ color: T.txt }}>vinculamos automáticamente</strong> a la cuenta de {invitation?.invited_by_name || "quien te invitó"}.</div>
+                </div>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.green }}>3</div>
+                  <div style={{ color: T.txt2 }}>Entrás al dashboard y <strong style={{ color: T.txt }}>ves los datos compartidos</strong>.</div>
+                </div>
+              </div>
             </div>
-          </div>
+          </>
         ) : (
           <div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.1), rgba(167,139,250,0.08))", border: `1px solid rgba(59,130,246,0.25)`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
             <div style={{ fontSize: 11, color: T.blue, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Invitación de tu asesor</div>
@@ -287,10 +306,16 @@ export default function AcceptInvite({ token, onComplete }) {
         )}
 
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6, letterSpacing: "-0.02em" }}>
-          {mode === "signup" ? "Crea tu cuenta" : "Inicia sesión"}
+          {invitation?.type === "family"
+            ? (mode === "signup" ? "Creá tu usuario y contraseña" : "Iniciá sesión con tu usuario")
+            : (mode === "signup" ? "Crea tu cuenta" : "Inicia sesión")}
         </h1>
-        <p style={{ fontSize: 13, color: T.txt3, marginBottom: 20 }}>
-          {mode === "signup" ? "Solo toma 30 segundos" : "Si ya tenías cuenta en Finpathia"}
+        <p style={{ fontSize: 13, color: T.txt3, marginBottom: 20, lineHeight: 1.5 }}>
+          {invitation?.type === "family"
+            ? (mode === "signup"
+                ? "Es tu llave personal para entrar. No estás creando una cuenta nueva — vas a entrar a la cuenta compartida."
+                : "Si ya tenías cuenta en Finpathia con este email.")
+            : (mode === "signup" ? "Solo toma 30 segundos" : "Si ya tenías cuenta en Finpathia")}
         </p>
 
         <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -308,7 +333,9 @@ export default function AcceptInvite({ token, onComplete }) {
             </div>
           )}
           <div>
-            <label style={{ fontSize: 11, color: T.txt3, marginBottom: 4, display: "block", textTransform: "uppercase", letterSpacing: "0.05em" }}>Email</label>
+            <label style={{ fontSize: 11, color: T.txt3, marginBottom: 4, display: "block", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Email {invitation?.type === "family" && <span style={{ color: T.txt3, textTransform: "none", letterSpacing: 0 }}>· lo vas a usar para entrar</span>}
+            </label>
             <input
               type="email"
               value={form.email}
@@ -318,13 +345,15 @@ export default function AcceptInvite({ token, onComplete }) {
               required
             />
             {invitation?.email_invited && form.email.trim().toLowerCase() !== invitation.email_invited.toLowerCase() && (
-              <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
-                💡 La invitación se envió a <strong>{invitation.email_invited}</strong>
+              <div style={{ fontSize: 11, color: "#fbbf24", marginTop: 6, padding: "8px 10px", background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 6, lineHeight: 1.4 }}>
+                ⚠️ La invitación se envió a <strong>{invitation.email_invited}</strong>. Tenés que usar ese mismo email — si usás otro, no vamos a poder vincularte.
               </div>
             )}
           </div>
           <div>
-            <label style={{ fontSize: 11, color: T.txt3, marginBottom: 4, display: "block", textTransform: "uppercase", letterSpacing: "0.05em" }}>Contraseña</label>
+            <label style={{ fontSize: 11, color: T.txt3, marginBottom: 4, display: "block", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Contraseña {invitation?.type === "family" && mode === "signup" && <span style={{ color: T.txt3, textTransform: "none", letterSpacing: 0 }}>· una que recuerdes</span>}
+            </label>
             <input
               type="password"
               value={form.password}
@@ -334,6 +363,11 @@ export default function AcceptInvite({ token, onComplete }) {
               required
               minLength={6}
             />
+            {invitation?.type === "family" && mode === "signup" && (
+              <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>
+                Es nueva, vos la elegís. La vas a necesitar cada vez que entres.
+              </div>
+            )}
           </div>
 
           {error && (
@@ -357,30 +391,43 @@ export default function AcceptInvite({ token, onComplete }) {
               marginTop: 6,
             }}
           >
-            {submitting ? "Procesando..." : mode === "signup" ? "Crear cuenta y vincular →" : "Iniciar sesión y vincular →"}
+            {submitting
+              ? "Procesando..."
+              : invitation?.type === "family"
+                ? (mode === "signup"
+                    ? `Crear mi acceso y entrar${invitation?.account_name ? ` a ${invitation.account_name}` : ""} →`
+                    : `Iniciar sesión y entrar${invitation?.account_name ? ` a ${invitation.account_name}` : ""} →`)
+                : (mode === "signup" ? "Crear cuenta y vincular →" : "Iniciar sesión y vincular →")}
           </button>
         </form>
 
         <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: T.txt3 }}>
           {mode === "signup" ? (
             <>
-              ¿Ya tienes cuenta?{" "}
+              ¿Ya tenés cuenta de Finpathia con este email?{" "}
               <button onClick={() => { setMode("login"); setError(""); }} style={{ background: "none", border: "none", color: T.blue, cursor: "pointer", fontWeight: 600, fontSize: 13, padding: 0 }}>
-                Inicia sesión
+                Iniciá sesión
               </button>
             </>
           ) : (
             <>
-              ¿Eres nuevo?{" "}
+              ¿Es la primera vez?{" "}
               <button onClick={() => { setMode("signup"); setError(""); }} style={{ background: "none", border: "none", color: T.blue, cursor: "pointer", fontWeight: 600, fontSize: 13, padding: 0 }}>
-                Crea tu cuenta
+                Creá tu acceso
               </button>
             </>
           )}
         </div>
 
-        <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 24, paddingTop: 16, fontSize: 11, color: T.txt3, lineHeight: 1.6, textAlign: "center" }}>
-          🔒 Tus datos se encriptan end-to-end. Ni tu asesor ni Finpathia pueden leerlos sin tu contraseña.
+        <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 24, paddingTop: 16, fontSize: 11, color: T.txt3, lineHeight: 1.7, textAlign: "center" }}>
+          {invitation?.type === "family" ? (
+            <>
+              ✓ Sin costo &nbsp;·&nbsp; ✓ Sin elegir plan &nbsp;·&nbsp; ✓ La cuenta es de {invitation?.invited_by_name || "quien te invitó"}
+              <br />🔒 Tus datos se encriptan end-to-end.
+            </>
+          ) : (
+            <>🔒 Tus datos se encriptan end-to-end. Ni tu asesor ni Finpathia pueden leerlos sin tu contraseña.</>
+          )}
         </div>
       </div>
     </div>
