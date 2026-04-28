@@ -2348,9 +2348,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
          cur:plan==="pro",ac:true},
         {n:"Pro Familiar",
          tag:"Para tu familia + tu contador en un solo espacio",
-         p:{mensual:"Pronto",anual:"Pronto"},
-         pr:{mensual:"",anual:""},
-         save:null,
+         p:{mensual:"$27",anual:"$243"},
+         pr:{mensual:"USD /mes",anual:"USD /año"},
+         pRef:{mensual:null,anual:"≈ $20 USD/mes"},
+         save:"Ahorra 25%",
          users:"Hasta 10 usuarios compartiendo la misma información",
          f:[
            "Todo lo de Pro, sin restricciones",
@@ -2358,11 +2359,11 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
            "🔐 Roles: administrador (edita) y solo lectura (solo ve)",
            "🧾 Tu contador puede revisar tus números sin tocarlos",
            "📊 Auditoría: quién cambió qué y cuándo",
+           "🎁 14 días de prueba gratis · sin tarjeta",
            "🏆 Soporte prioritario con respuesta en 24h",
          ],
          no:[],
-         cur:plan==="pro_familiar",
-         comingSoon:true},
+         cur:plan==="pro_familiar"},
       ];
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
@@ -2404,7 +2405,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                   try{
                     const prices={
                       "Básico":{mensual:"price_1TIGRWKEnhNr9wQd2oEgNin9",anual:"price_1TIGRWKEnhNr9wQdJTMTGfYa"},
-                      "Pro":{mensual:"price_1TIGRXKEnhNr9wQdC8eKj2xS",anual:"price_1TIGRYKEnhNr9wQd7QTFxT6z"}
+                      "Pro":{mensual:"price_1TIGRXKEnhNr9wQdC8eKj2xS",anual:"price_1TIGRYKEnhNr9wQd7QTFxT6z"},
+                      "Pro Familiar":{mensual:"price_1TRC9mKEnhNr9wQdQr9gsRot",anual:"price_1TRCCaKEnhNr9wQdpWlaXP0r"}
                     };
                     const priceId=prices[pl.n]?.[billingCycle];
                     if(!priceId)return;
