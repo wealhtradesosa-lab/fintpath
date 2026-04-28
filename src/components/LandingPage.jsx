@@ -242,7 +242,8 @@ export default function LandingPage({ onGetStarted }) {
                 no: [], accent: true, cta: "Probar 14 días Pro",
               },
               {
-                name: "Pro Familiar", price: "Pronto", per: "",
+                name: "Pro Familiar", price: "$27", per: "USD/mes",
+                sub: "$20 USD/mes anual — Ahorra 25%",
                 tag: "Para tu familia + tu contador en un solo espacio",
                 users: "Hasta 10 usuarios",
                 features: [
@@ -251,9 +252,10 @@ export default function LandingPage({ onGetStarted }) {
                   "🔐 Roles: administrador y solo lectura",
                   "🧾 Tu contador puede revisar sin tocar tus datos",
                   "📊 Auditoría de cambios (quién cambió qué y cuándo)",
+                  "🎁 14 días de prueba gratis · sin tarjeta",
                   "🏆 Soporte prioritario en 24h",
                 ],
-                no: [], comingSoon: true, cta: "Únete a la lista",
+                no: [], cta: "Probar 14 días Pro Familiar",
               },
               {
                 name: "Para Asesores", price: "$79", per: "USD/mes",
