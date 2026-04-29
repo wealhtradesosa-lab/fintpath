@@ -2324,6 +2324,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       const nats=(u?.owners||[]).filter(o=>o.type==="natural");
       return gated("tax","Pro",<div>
         <div style={{display:"flex",gap:6,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+          <button onClick={()=>setTaxTab("rapido")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?T.bl:T.border),background:taxTab==="rapido"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="rapido"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>📊 Calculadora</button>
           <button onClick={()=>setTaxTab("borrador")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="borrador"?T.purple:T.border),background:taxTab==="borrador"?"rgba(168,85,247,0.1)":T.bg3,color:taxTab==="borrador"?T.purple:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🤖 Agente Tributario IA</button>
           <button onClick={()=>setTaxTab("dashboard")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?T.bl:T.border),background:taxTab==="dashboard"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="dashboard"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🏛️ Declaraciones históricas</button>
           <div style={{flex:1,minWidth:0}}/>
@@ -2371,6 +2372,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           estimacion={estimarImpuesto(u)}
           onUpdateUser={(newUser)=>setU(newUser)}
         />}
+        {taxTab==="rapido"&&<div>
+          <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
+        </div>}
       </div>);
     }
     case"aportes":return <AportesCalculadora fmt={fm}/>;

@@ -53,9 +53,51 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
 
   if (ownersJur.length === 0) {
     return (
-      <div style={{ padding: 40, textAlign: "center", color: T.txt3, fontSize: 14 }}>
-        No tenés personas jurídicas (sociedades) cargadas. El borrador F-110 aplica solo a SAS,
-        Ltda. y otras sociedades. Para ver el borrador F-210 (persona natural), próximamente.
+      <div style={{ padding: "24px 0" }}>
+        {/* Header del Agente Tributario IA */}
+        <div style={{ marginBottom: 20, padding: "20px 24px", background: "linear-gradient(135deg, rgba(168,85,247,0.08) 0%, rgba(59,130,246,0.06) 100%)", border: `1px solid ${T.purple}40`, borderRadius: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+            <span style={{ fontSize: 28 }}>🤖</span>
+            <div>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: T.txt, margin: 0, lineHeight: 1.2 }}>
+                Agente Tributario IA
+              </h2>
+              <div style={{ fontSize: 11, color: T.purple, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>
+                Tu copiloto fiscal con IA
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mensaje específico para personas naturales / sin sociedad */}
+        <div style={{ padding: "32px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>👤</div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: T.txt, marginBottom: 12 }}>
+            ¿Sos persona natural? Próximamente acá
+          </h3>
+          <p style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6, maxWidth: 520, margin: "0 auto 20px" }}>
+            El Agente Tributario IA hoy genera el <strong style={{ color: T.txt }}>borrador F-110</strong> para
+            sociedades (SAS, Ltda, etc). El borrador <strong style={{ color: T.txt }}>F-210 para personas
+            naturales</strong> con cédulas (laboral, pensión, capital, no laboral, dividendos) está en
+            desarrollo y llega en próxima actualización.
+          </p>
+          <div style={{ padding: "16px 20px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 10, maxWidth: 520, margin: "0 auto" }}>
+            <div style={{ fontSize: 13, color: T.txt, fontWeight: 700, marginBottom: 6 }}>
+              💡 Mientras tanto, podés usar:
+            </div>
+            <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6, textAlign: "left" }}>
+              <strong style={{ color: T.blue }}>📊 Calculadora</strong> — wizard paso a paso que te guía
+              con preguntas, te explica cada concepto y calcula tu impuesto natural con base en tus datos
+              cargados.
+              <br /><br />
+              <strong style={{ color: T.blue }}>🏛️ Declaraciones históricas</strong> — subí tus F-210
+              anteriores y te detectamos diferencias, oportunidades y errores comunes.
+            </div>
+          </div>
+          <p style={{ fontSize: 11, color: T.txt3, marginTop: 16, fontStyle: "italic" }}>
+            Si tenés una SAS o sociedad cargada, aparecerá automáticamente acá.
+          </p>
+        </div>
       </div>
     );
   }
