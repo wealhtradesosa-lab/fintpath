@@ -46,6 +46,7 @@ import { migrateAportesVoluntariosV17, migrateDeclaracionesV55 } from "./lib/mig
 import { getPlansForApp, STRIPE_PRICE_IDS } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import DashboardFiscal from "./components/DashboardFiscal";
+import BorradorDeclaracionF110 from "./components/BorradorDeclaracionF110";
 import CalculadoraWizard from "./components/CalculadoraWizard";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
@@ -2325,6 +2326,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         <div style={{display:"flex",gap:6,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
           <button onClick={()=>setTaxTab("rapido")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?T.bl:T.border),background:taxTab==="rapido"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="rapido"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>📊 Calculadora</button>
           <button onClick={()=>setTaxTab("dashboard")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?T.bl:T.border),background:taxTab==="dashboard"?"rgba(59,130,246,0.1)":T.bg3,color:taxTab==="dashboard"?T.bl:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🏛️ Declaraciones</button>
+          <button onClick={()=>setTaxTab("borrador")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+(taxTab==="borrador"?T.purple:T.border),background:taxTab==="borrador"?"rgba(168,85,247,0.1)":T.bg3,color:taxTab==="borrador"?T.purple:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>📋 Borrador F-110</button>
           <div style={{flex:1,minWidth:0}}/>
           <button onClick={()=>setShowAyuda(true)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}} title="Guía de uso del sistema de declaración">❓ Ayuda</button>
         </div>
@@ -2365,7 +2367,12 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           isPro={hasProAccess}
           onUpsell={()=>setPg("price")}
         />}
-        {taxTab!=="dashboard"&&<div>
+        {taxTab==="borrador"&&<BorradorDeclaracionF110
+          user={u}
+          estimacion={estimarImpuesto(u)}
+          onUpdateUser={(newUser)=>setU(newUser)}
+        />}
+        {taxTab==="rapido"&&<div>
           <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
         </div>}
       </div>);
