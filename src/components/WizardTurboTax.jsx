@@ -138,21 +138,27 @@ export default function WizardTurboTax({ user, onComplete, onCancel }) {
             marginBottom: 10,
           }}
         >
-          <div style={{ fontSize: 12, color: C.txt3, fontWeight: 600 }}>
+          <div style={{ fontSize: 13, color: C.txt, fontWeight: 700 }}>
             Paso {stepIndex + 1} de {totalSteps}
           </div>
           <button
-            onClick={onCancel}
+            onClick={() => {
+              if (stepIndex === 0 || confirm("¿Salir del wizard? Tu progreso no se guardará.")) {
+                onCancel();
+              }
+            }}
             style={{
-              background: "transparent",
-              border: "none",
-              color: C.txt3,
+              background: C.bg3,
+              border: `1.5px solid ${C.border}`,
+              color: C.txt,
+              padding: "8px 14px",
+              borderRadius: 8,
               cursor: "pointer",
               fontSize: 12,
-              textDecoration: "underline",
+              fontWeight: 700,
             }}
           >
-            Cancelar wizard
+            ← Salir
           </button>
         </div>
         <div

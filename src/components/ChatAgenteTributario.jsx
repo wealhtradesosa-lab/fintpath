@@ -254,17 +254,19 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
           <button
             onClick={onCerrar}
             style={{
-              background: "transparent",
-              border: `1px solid ${C.border}`,
-              color: C.txt2,
-              padding: "8px 14px",
-              borderRadius: 8,
+              background: C.green,
+              border: `1.5px solid ${C.green}`,
+              color: "#000",
+              padding: "10px 18px",
+              borderRadius: 10,
               cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 600,
+              fontSize: 13,
+              fontWeight: 800,
+              flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
-            ← Volver al resumen
+            ← Volver al Auditor IA
           </button>
         )}
       </div>

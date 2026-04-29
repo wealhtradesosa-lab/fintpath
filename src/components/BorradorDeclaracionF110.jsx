@@ -272,23 +272,26 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   // ─────────────────────────────────────────────────────────────────────
   return (
     <div style={{ padding: "24px 0" }}>
-      {/* Botón "Volver al resumen" arriba para escapar del modo experto */}
-      <div style={{ marginBottom: 16 }}>
+      {/* Botón "Volver" prominente — siempre visible al top para no dejar al user encerrado */}
+      <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
         <button
           onClick={() => setModoExperto(false)}
           style={{
-            background: T.bg2,
-            border: `1px solid ${T.border}`,
-            color: T.txt,
+            background: "#22c55e",
+            border: "1.5px solid #22c55e",
+            color: "#000",
             padding: "10px 18px",
             borderRadius: 10,
             fontSize: 13,
-            fontWeight: 700,
+            fontWeight: 800,
             cursor: "pointer",
           }}
         >
-          ← Volver al resumen amigable
+          ← Volver al Auditor IA
         </button>
+        <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          📋 Modo Experto
+        </div>
       </div>
       {/* Header con branding "Agente Tributario IA" — alto contraste para legibilidad */}
       <div style={{ marginBottom: 20, padding: "24px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.purple}`, borderRadius: 12 }}>
