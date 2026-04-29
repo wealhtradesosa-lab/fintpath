@@ -122,15 +122,21 @@ export default function AgenteTributarioBienvenida({
 
   return (
     <div style={{ padding: "20px 0" }}>
-      {/* ─────── Saludo conversacional ─────── */}
+      {/* ─────── Saludo conversacional con badge de paso 2 ─────── */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 14, color: C.txt2, marginBottom: 4 }}>{saludo} 👋</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "rgba(124,58,237,0.15)", border: "1px solid rgba(196,181,253,0.4)", borderRadius: 999 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: "#c4b5fd", letterSpacing: 0.5 }}>2️⃣ PASO 2 · AUDITORÍA IA</span>
+          </div>
+          <span style={{ fontSize: 13, color: C.txt2 }}>{saludo} 👋</span>
+        </div>
         <h1 style={{ fontSize: 28, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.2 }}>
-          {isJuridica ? `Resumen de ${ownerName}` : `Tu resumen tributario`}
+          {isJuridica ? `Auditoría de ${ownerName}` : `Auditoría de tu declaración`}
         </h1>
         <p style={{ fontSize: 15, color: C.txt2, marginTop: 8, lineHeight: 1.5 }}>
-          Esto es lo que entendimos de tu año <strong style={{ color: C.txt }}>{ano}</strong>{" "}
-          en lenguaje simple. Si querés ver el detalle técnico, hay un botón abajo.
+          El auditor IA <strong style={{ color: C.txt }}>revisó tu borrador</strong> y detectó
+          oportunidades de optimización. Acá ves un resumen claro y concreto. Si querés ver
+          el detalle técnico del formulario, hay un botón abajo.
         </p>
       </div>
 

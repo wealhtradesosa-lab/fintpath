@@ -2322,11 +2322,44 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // Vista normal con tabs
       const jurs=(u?.owners||[]).filter(o=>o.type==="juridica");
       const nats=(u?.owners||[]).filter(o=>o.type==="natural");
+      // Sesión 29-abr-2026: rebrand de tabs como PROCESO de 2 pasos.
+      // Visión Santiago: "calculadora es el paso 1 (lo que la plataforma
+      // entiende), auditor IA es el paso 2 (optimización con IA)". Esto
+      // narrativiza la UX: el user siente progreso, no herramientas sueltas.
+      const pasoActual = taxTab === "rapido" ? 1 : taxTab === "borrador" ? 2 : 0;
       return gated("tax","Pro",<div>
+        {/* Banner explicativo del proceso */}
+        <div style={{marginBottom:14,padding:"14px 18px",background:"linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(124,58,237,0.06) 100%)",border:"1px solid "+T.border,borderRadius:12}}>
+          <div style={{fontSize:12,fontWeight:700,color:T.tx,marginBottom:6,letterSpacing:0.3}}>🧾 Tu declaración de renta tiene 2 pasos</div>
+          <div style={{fontSize:12,color:T.tx2,lineHeight:1.5}}>
+            <strong style={{color:"#60a5fa"}}>1. Borrador inicial</strong>: lo que entendemos según los datos que cargaste.
+            {" → "}
+            <strong style={{color:"#c4b5fd"}}>2. Auditor IA</strong>: revisa tu borrador y propone mejoras para optimizar legalmente. Resultado: una declaración casi lista para que tu contador valide.
+          </div>
+        </div>
+
+        {/* Stepper visual: muestra dónde está el user */}
+        {pasoActual > 0 && (
+          <div style={{marginBottom:16,display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:T.bg2,borderRadius:10,border:"1px solid "+T.border}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,opacity:pasoActual===1?1:0.55}}>
+              <div style={{width:24,height:24,borderRadius:"50%",background:pasoActual===1?"#3b82f6":(pasoActual>1?"#3b82f6":T.bg3),color:pasoActual>=1?"#fff":T.tx3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800}}>{pasoActual>1?"✓":"1"}</div>
+              <span style={{fontSize:12,color:pasoActual===1?T.tx:T.tx2,fontWeight:pasoActual===1?700:600}}>Borrador inicial</span>
+            </div>
+            <div style={{flex:"0 1 60px",height:2,background:pasoActual>1?"#7c3aed":T.border}}/>
+            <div style={{display:"flex",alignItems:"center",gap:6,opacity:pasoActual===2?1:0.55}}>
+              <div style={{width:24,height:24,borderRadius:"50%",background:pasoActual===2?"#7c3aed":T.bg3,color:pasoActual===2?"#fff":T.tx3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800}}>2</div>
+              <span style={{fontSize:12,color:pasoActual===2?T.tx:T.tx2,fontWeight:pasoActual===2?700:600}}>Auditor IA</span>
+            </div>
+            <div style={{flex:1}}/>
+            <span style={{fontSize:11,color:T.tx3}}>{pasoActual===1?"Estás en el paso 1":pasoActual===2?"Estás en el paso 2":""}</span>
+          </div>
+        )}
+
+        {/* Tabs renombrados como pasos */}
         <div style={{display:"flex",gap:6,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
-          <button onClick={()=>setTaxTab("rapido")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?"#3b82f6":T.border),background:taxTab==="rapido"?"#3b82f6":T.bg3,color:taxTab==="rapido"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>📊 Calculadora</button>
-          <button onClick={()=>setTaxTab("borrador")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="borrador"?"#7c3aed":T.border),background:taxTab==="borrador"?"#7c3aed":T.bg3,color:taxTab==="borrador"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🤖 Agente Tributario IA</button>
-          <button onClick={()=>setTaxTab("dashboard")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?"#3b82f6":T.border),background:taxTab==="dashboard"?"#3b82f6":T.bg3,color:taxTab==="dashboard"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🏛️ Declaraciones históricas</button>
+          <button onClick={()=>setTaxTab("rapido")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?"#3b82f6":T.border),background:taxTab==="rapido"?"#3b82f6":T.bg3,color:taxTab==="rapido"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>1️⃣ Mi borrador inicial</button>
+          <button onClick={()=>setTaxTab("borrador")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="borrador"?"#7c3aed":T.border),background:taxTab==="borrador"?"#7c3aed":T.bg3,color:taxTab==="borrador"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>2️⃣ Auditor IA</button>
+          <button onClick={()=>setTaxTab("dashboard")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?"#3b82f6":T.border),background:taxTab==="dashboard"?"#3b82f6":T.bg3,color:taxTab==="dashboard"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>📚 Mis declaraciones anteriores</button>
           <div style={{flex:1,minWidth:0}}/>
           <button onClick={()=>setShowAyuda(true)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}} title="Guía de uso del sistema de declaración">❓ Ayuda</button>
         </div>
@@ -2374,6 +2407,15 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         />}
         {taxTab==="rapido"&&<div>
           <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
+          {/* Botón puente del paso 1 al paso 2 — invita a continuar al Auditor IA */}
+          <div style={{marginTop:32,padding:"24px 28px",background:"linear-gradient(135deg, rgba(124,58,237,0.10) 0%, rgba(59,130,246,0.06) 100%)",border:"1.5px solid rgba(196,181,253,0.30)",borderRadius:14,textAlign:"center"}}>
+            <div style={{fontSize:14,color:T.tx2,marginBottom:6,fontWeight:600}}>✓ Tu borrador inicial está listo</div>
+            <div style={{fontSize:18,color:T.tx,fontWeight:800,marginBottom:14,lineHeight:1.3}}>¿Listo para que el Auditor IA revise y optimice tu declaración?</div>
+            <button onClick={()=>setTaxTab("borrador")} style={{padding:"14px 28px",background:"#7c3aed",border:"none",borderRadius:10,color:"#ffffff",fontSize:15,fontWeight:800,cursor:"pointer"}}>
+              Continuar al Auditor IA →
+            </button>
+            <div style={{fontSize:12,color:T.tx3,marginTop:12}}>El auditor revisa tu borrador y detecta oportunidades de ahorro legal.</div>
+          </div>
         </div>}
       </div>);
     }
