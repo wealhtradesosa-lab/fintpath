@@ -47,6 +47,10 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   // Sesión 28-abr-2026 noche: state para tips contextuales expandibles.
   // Cuando el user hace click en 💡 de un renglón, se expande su tip educativo.
   const [showTipFor, setShowTipFor] = useState(null);
+  // Sesión 29-abr-2026: feedback Santiago sobre experiencia para usuarios
+  // no-técnicos. Default ahora es 'simple' — tabla DIAN técnica queda
+  // detrás de un botón "Ver el cálculo paso a paso (modo experto)".
+  const [viewMode, setViewMode] = useState("simple"); // 'simple' | 'detalle'
 
   const selectedOwner = allOwners.find(o => o.id === selectedOwnerId);
   const isJuridica = selectedOwner?.type === "juridica";
@@ -216,7 +220,54 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         </div>
       </div>
 
-      {/* Mini-guía contextual según tipo de owner — alto contraste y lenguaje humano */}
+      {/* ════════════════════════════════════════════════════════════════
+          VISTA SIMPLE (default) — Para usuarios no técnicos
+          Lenguaje conversacional, números grandes, cero tecnicismos.
+          ════════════════════════════════════════════════════════════════ */}
+      {viewMode === "simple" && (
+        <VistaSimple
+          owner={selectedOwner}
+          renglones={renglones}
+          isJuridica={isJuridica}
+          allOwners={allOwners}
+          selectedOwnerId={selectedOwnerId}
+          setSelectedOwnerId={setSelectedOwnerId}
+          ano={ano}
+          setAno={setAno}
+          onVerDetalle={() => setViewMode("detalle")}
+        />
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════
+          VISTA DETALLE (modo experto) — Tabla DIAN técnica con renglones
+          Solo visible cuando el user explícitamente la pide.
+          ════════════════════════════════════════════════════════════════ */}
+      {viewMode === "detalle" && (
+        <>
+          {/* Botón de volver al modo simple */}
+          <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            <button
+              onClick={() => setViewMode("simple")}
+              style={{
+                background: T.bg3,
+                border: `1px solid ${T.border}`,
+                color: T.txt,
+                padding: "10px 16px",
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              ← Volver a la vista simple
+            </button>
+            <div style={{ fontSize: 12, color: T.txt3, fontWeight: 600 }}>
+              📊 Modo experto · Formulario {formulario} oficial DIAN
+            </div>
+          </div>
       {!isJuridica ? (
         <div style={{ marginBottom: 20, padding: "20px 24px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.green}`, borderRadius: 12 }}>
           <div style={{ fontSize: 16, color: T.txt, fontWeight: 700, marginBottom: 10 }}>
@@ -480,6 +531,8 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           </ul>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
@@ -498,6 +551,240 @@ function ResumenCard({ label, value, color, prefix = "", bold = false }) {
       </div>
       <div style={{ fontSize: bold ? 22 : 18, fontWeight: bold ? 800 : 700, color, fontFamily: "monospace" }}>
         {prefix}{fm(value)}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VistaSimple — Pantalla amigable para usuarios no técnicos
+//
+// FILOSOFÍA:
+//   - Cero tecnicismos. Todo en lenguaje cotidiano.
+//   - Foco en LO QUE TE PASA (no en cómo se calcula).
+//   - 1-3 números grandes, no tablas.
+//   - Acciones claras: "Ver cómo se calcula" / "Ideas para pagar menos"
+//
+// Inspiración: TurboTax muestra "Tax Refund: $2,847" como hero antes
+// de cualquier formulario. Acá hacemos lo mismo con saldo a pagar.
+// ═══════════════════════════════════════════════════════════════════════════
+function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId, setSelectedOwnerId, ano, setAno, onVerDetalle }) {
+  // Extraer los números clave para mostrar conversacionalmente
+  const findVal = (num) => renglones.find(r => r.numero === num)?.valor || 0;
+
+  const ingresoTotal = isJuridica ? findVal(58) : (findVal(34) + findVal(50) + findVal(60) + findVal(70) + findVal(71));
+  const impuestoTotal = isJuridica ? findVal(99) : findVal(91);
+  const retenciones = isJuridica ? findVal(107) : findVal(102);
+  const saldoFinal = isJuridica ? findVal(113) : findVal(113);
+
+  // Tasa efectiva
+  const tasaEfectiva = ingresoTotal > 0 ? (impuestoTotal / ingresoTotal * 100) : 0;
+
+  const nombreOwner = owner?.name || (isJuridica ? "tu sociedad" : "vos");
+
+  return (
+    <div>
+      {/* Selector de owner — pero más amigable */}
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: "block", fontSize: 13, color: T.txt2, fontWeight: 600, marginBottom: 8 }}>
+          ¿De quién querés ver la declaración?
+        </label>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <select
+            value={selectedOwnerId}
+            onChange={(e) => setSelectedOwnerId(e.target.value)}
+            style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 16px", color: T.txt, fontSize: 15, fontWeight: 600, minWidth: 280 }}
+          >
+            {allOwners.map(o => (
+              <option key={o.id} value={o.id}>
+                {o.type === "juridica" ? "🏢" : "👤"} {o.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={ano}
+            onChange={(e) => setAno(Number(e.target.value))}
+            style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 16px", color: T.txt, fontSize: 15, fontWeight: 600 }}
+          >
+            {[2024, 2025, 2026].map(y => <option key={y} value={y}>Año {y}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* HERO: Card grande con saldo final + explicación humana */}
+      <div style={{
+        marginBottom: 20,
+        padding: "32px 28px",
+        background: "linear-gradient(135deg, rgba(59,130,246,0.10) 0%, rgba(168,85,247,0.06) 100%)",
+        border: `2px solid ${T.blue}`,
+        borderRadius: 16,
+      }}>
+        <div style={{ fontSize: 14, color: T.txt2, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          {isJuridica ? "🏢" : "👤"} Resumen para {nombreOwner} · Año {ano}
+        </div>
+        <div style={{ fontSize: 16, color: T.txt, marginBottom: 6, fontWeight: 500 }}>
+          Lo que tendrías que pagar {isJuridica ? "tu empresa" : "vos"} en mayo:
+        </div>
+        <div style={{ fontSize: 48, fontWeight: 800, color: T.txt, lineHeight: 1.1, marginBottom: 12, fontFamily: "monospace" }}>
+          {fm(saldoFinal)}
+        </div>
+        <div style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6 }}>
+          {saldoFinal > 0 ? (
+            <>Esto es <strong style={{ color: T.txt }}>una estimación</strong> según los datos que cargaste.
+            Si todo lo que ingresaste es correcto, este es el valor que tu contador validaría antes de presentar
+            la declaración.</>
+          ) : (
+            <>Según los datos que cargaste, no te tocaría pagar nada en mayo. Aún así, validá esto con tu
+            contador antes de presentar la declaración.</>
+          )}
+        </div>
+      </div>
+
+      {/* 3 cards de explicación: cuánto ganaste, impuesto bruto, retenciones, saldo */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 24 }}>
+        <CardSimple
+          icon="💰"
+          label={isJuridica ? "Lo que ingresó la empresa" : "Lo que ganaste"}
+          value={ingresoTotal}
+          color={T.green}
+          explica={isJuridica
+            ? "Total de ventas + intereses + arriendos + dividendos durante el año."
+            : "Sueldo, honorarios, intereses, arriendos y dividendos sumados."}
+        />
+        <CardSimple
+          icon="🧾"
+          label="Impuesto que te toca"
+          value={impuestoTotal}
+          color={T.red}
+          explica={isJuridica
+            ? `35% sobre la utilidad gravable (${tasaEfectiva.toFixed(1)}% real sobre ingresos).`
+            : `Calculado con la tabla progresiva DIAN. Tasa efectiva ${tasaEfectiva.toFixed(1)}% sobre ingresos.`}
+        />
+        <CardSimple
+          icon="✅"
+          label="Lo que ya pagaste"
+          value={retenciones}
+          color={T.blue}
+          explica="Retenciones que el banco, empleador o inquilinos descontaron durante el año. Esto se resta del impuesto."
+          esResta
+        />
+        <CardSimple
+          icon="📅"
+          label="Lo que falta pagar"
+          value={saldoFinal}
+          color={T.purple}
+          explica="= Impuesto que te toca − lo que ya pagaste durante el año. Se paga en mayo."
+          destacado
+        />
+      </div>
+
+      {/* Acciones siguientes */}
+      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px" }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: T.txt, marginBottom: 14 }}>
+          ¿Qué querés hacer ahora?
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+          <button
+            onClick={onVerDetalle}
+            style={{
+              background: T.bg3,
+              border: `2px solid ${T.blue}`,
+              borderRadius: 12,
+              padding: "16px 18px",
+              cursor: "pointer",
+              textAlign: "left",
+              color: T.txt,
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(59,130,246,0.10)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = T.bg3}
+          >
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 20 }}>📊</span>
+              Ver el cálculo paso a paso
+            </div>
+            <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
+              El detalle técnico del formulario {isJuridica ? "F-110" : "F-210"} con cada renglón editable. Para cuando tu contador quiere revisar.
+            </div>
+          </button>
+
+          <button
+            disabled
+            title="Próximamente: el agente IA va a sugerirte oportunidades específicas"
+            style={{
+              background: T.bg3,
+              border: `2px solid ${T.border}`,
+              borderRadius: 12,
+              padding: "16px 18px",
+              cursor: "not-allowed",
+              textAlign: "left",
+              color: T.txt2,
+              opacity: 0.6,
+            }}
+          >
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 20 }}>💡</span>
+              ¿Cómo pago menos? <span style={{ fontSize: 10, background: T.purple, color: "#fff", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>PRÓXIMAMENTE</span>
+            </div>
+            <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
+              El agente IA detectará oportunidades legales de ahorro específicas para tu caso.
+            </div>
+          </button>
+
+          <button
+            disabled
+            title="Próximamente: exportar el borrador como PDF para que tu contador lo revise"
+            style={{
+              background: T.bg3,
+              border: `2px solid ${T.border}`,
+              borderRadius: 12,
+              padding: "16px 18px",
+              cursor: "not-allowed",
+              textAlign: "left",
+              color: T.txt2,
+              opacity: 0.6,
+            }}
+          >
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 20 }}>📄</span>
+              Compartir con mi contador <span style={{ fontSize: 10, background: T.purple, color: "#fff", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>PRÓXIMAMENTE</span>
+            </div>
+            <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
+              Generar un PDF con el resumen + detalle para enviar a tu contador.
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Mensaje final tranquilizador */}
+      <div style={{ marginTop: 20, padding: "16px 20px", background: "rgba(34,197,94,0.06)", border: `1px solid rgba(34,197,94,0.20)`, borderRadius: 10, fontSize: 14, color: T.txt, lineHeight: 1.6 }}>
+        💬 <strong>¿Tenés dudas?</strong> El número de arriba es solo una estimación. Tu contador es quien
+        firma y presenta la declaración a DIAN. Si nunca declaraste, no te preocupes: con este resumen y la
+        ayuda de un contador, lo manejás tranquilo.
+      </div>
+    </div>
+  );
+}
+
+// Card simple para mostrar una métrica con su explicación
+function CardSimple({ icon, label, value, color, explica, esResta = false, destacado = false }) {
+  return (
+    <div style={{
+      background: T.bg2,
+      border: `1px solid ${destacado ? color : T.border}`,
+      borderLeft: `4px solid ${color}`,
+      borderRadius: 12,
+      padding: "16px 18px",
+    }}>
+      <div style={{ fontSize: 13, color: T.txt2, fontWeight: 600, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 18 }}>{icon}</span>
+        {label}
+      </div>
+      <div style={{ fontSize: 22, fontWeight: 800, color, fontFamily: "monospace", marginBottom: 8 }}>
+        {esResta && value > 0 ? "−" : ""}{fm(value)}
+      </div>
+      <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
+        {explica}
       </div>
     </div>
   );
