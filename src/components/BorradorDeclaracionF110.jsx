@@ -23,6 +23,7 @@ import { useState, useMemo } from "react";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
 import AgenteTributarioBienvenida from "./AgenteTributarioBienvenida.jsx";
+import WizardTributario from "./WizardTributario.jsx";
 import WizardTurboTax, { aplicarRespuestasWizard } from "./WizardTurboTax.jsx";
 
 const T = {
@@ -85,19 +86,19 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   // WIZARD TURBOTAX: si está abierto, ocultar todo el resto y mostrar
   // solo el wizard (UX inmersiva con 1 pregunta por pantalla). Importante:
   // este check va PRIMERO, antes del check de owners, porque el wizard
-  // puede crear el primer owner si no existe.
+  // ─────────────────────────────────────────────────────────────────────
+  // VISTA WIZARD: Cuando user clickea "Modo paso a paso" desde la pantalla
+  // amigable, se abre el wizard inmersivo (1 pregunta por pantalla).
   // ─────────────────────────────────────────────────────────────────────
   if (wizardAbierto) {
     return (
-      <WizardTurboTax
+      <WizardTributario
         user={user}
-        onComplete={(answers) => {
-          const newUser = aplicarRespuestasWizard(user, answers);
+        selectedOwnerId={selectedOwnerId}
+        onUpdateUser={(newUser) => {
           onUpdateUser(newUser);
-          setWizardAbierto(false);
-          setModoExperto(false);
         }}
-        onCancel={() => setWizardAbierto(false)}
+        onClose={() => setWizardAbierto(false)}
       />
     );
   }
