@@ -136,18 +136,47 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
 
   return (
     <div style={{ padding: "24px 0" }}>
-      {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 6 }}>
-          📋 Borrador Declaración F-110
-        </h2>
-        <p style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5, marginBottom: 16 }}>
-          Réplica editable del formulario F-110 de DIAN. Los valores en gris vienen de tus datos cargados.
-          Los renglones <strong style={{ color: T.purple }}>marcados con ✏️</strong> los podés editar tu o
-          tu contador. Los <strong>totales (Σ)</strong> se recalculan automáticamente.
+      {/* Header con branding "Agente Tributario IA" */}
+      <div style={{ marginBottom: 20, padding: "20px 24px", background: "linear-gradient(135deg, rgba(168,85,247,0.08) 0%, rgba(59,130,246,0.06) 100%)", border: `1px solid ${T.purple}40`, borderRadius: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+          <span style={{ fontSize: 28 }}>🤖</span>
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: T.txt, margin: 0, lineHeight: 1.2 }}>
+              Agente Tributario IA
+            </h2>
+            <div style={{ fontSize: 11, color: T.purple, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>
+              Tu copiloto fiscal con IA
+            </div>
+          </div>
+        </div>
+        <p style={{ fontSize: 13, color: T.txt2, lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
+          Esta sección utiliza <strong style={{ color: T.txt }}>inteligencia artificial</strong> para
+          proyectar y calcular tu declaración a partir de los datos que cargaste. Te ofrece{" "}
+          <strong style={{ color: T.txt }}>estrategias y opciones para optimizar tus impuestos legalmente</strong>,
+          mostrándote escenarios y oportunidades específicas para tu caso. Cada renglón del formulario F-110
+          es <strong style={{ color: T.txt }}>editable</strong>: tú o tu contador pueden ajustar los valores
+          y los totales recalculan en vivo.
         </p>
+      </div>
 
-        {/* Selector owner + año */}
+      {/* Disclaimer destacado */}
+      <div style={{ marginBottom: 20, padding: "14px 18px", background: "rgba(245,158,11,0.08)", border: `1px solid rgba(245,158,11,0.30)`, borderRadius: 10 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
+          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
+            <strong style={{ color: T.orange, fontSize: 13 }}>Importante — leé esto:</strong>
+            <br />
+            Este es un <strong style={{ color: T.txt }}>borrador proyectado por IA</strong>, NO es un
+            resultado final ni una recomendación contable definitiva. <strong style={{ color: T.txt }}>Debe
+            ser revisado y validado por tu contador</strong> antes de presentar a DIAN. FINPATHIA es una
+            herramienta de apoyo: no reemplaza el asesoramiento profesional de un contador certificado, ni
+            asume responsabilidad sobre decisiones fiscales tomadas con base en estas proyecciones.
+          </div>
+        </div>
+      </div>
+
+      {/* Selector owner + año */}
+      <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div>
             <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Sociedad</label>
