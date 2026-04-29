@@ -22,6 +22,7 @@
 import { useState, useMemo } from "react";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
+import AgenteTributarioBienvenida from "./AgenteTributarioBienvenida.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -47,6 +48,11 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   // Sesión 28-abr-2026 noche: state para tips contextuales expandibles.
   // Cuando el user hace click en 💡 de un renglón, se expande su tip educativo.
   const [showTipFor, setShowTipFor] = useState(null);
+  // Sesión 29-abr-2026: state para alternar entre vista amigable (default)
+  // y vista técnica (modo experto / tabla DIAN). Por defecto FALSE: el user
+  // ve primero la pantalla conversacional. Solo si clickea "Ver detalle
+  // completo" entra al modo experto.
+  const [modoExperto, setModoExperto] = useState(false);
   // Sesión 29-abr-2026: feedback Santiago sobre experiencia para usuarios
   // no-técnicos. Default ahora es 'simple' — tabla DIAN técnica queda
   // detrás de un botón "Ver el cálculo paso a paso (modo experto)".
@@ -182,15 +188,54 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
     items: renglones.filter(r => r.seccion === sec),
   }));
 
+  // ─────────────────────────────────────────────────────────────────────
+  // VISTA POR DEFECTO: pantalla amigable conversacional.
+  // Solo si el user clickea "Ver formulario completo" entra al modo experto
+  // (la tabla DIAN técnica con todos los renglones editables).
+  // ─────────────────────────────────────────────────────────────────────
+  if (!modoExperto) {
+    return (
+      <AgenteTributarioBienvenida
+        user={user}
+        selectedOwner={selectedOwner}
+        estimacion={estimacion}
+        onVerFormulario={() => setModoExperto(true)}
+        onCambiarOwner={(id) => setSelectedOwnerId(id)}
+        ano={ano}
+      />
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // MODO EXPERTO: tabla F-110/F-210 con renglones editables (vista técnica).
+  // ─────────────────────────────────────────────────────────────────────
   return (
     <div style={{ padding: "24px 0" }}>
+      {/* Botón "Volver al resumen" arriba para escapar del modo experto */}
+      <div style={{ marginBottom: 16 }}>
+        <button
+          onClick={() => setModoExperto(false)}
+          style={{
+            background: T.bg2,
+            border: `1px solid ${T.border}`,
+            color: T.txt,
+            padding: "10px 18px",
+            borderRadius: 10,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          ← Volver al resumen amigable
+        </button>
+      </div>
       {/* Header con branding "Agente Tributario IA" — alto contraste para legibilidad */}
       <div style={{ marginBottom: 20, padding: "24px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.purple}`, borderRadius: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
           <span style={{ fontSize: 36 }}>🤖</span>
           <div>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: T.txt, margin: 0, lineHeight: 1.2 }}>
-              Agente Tributario IA
+              Modo experto · Formulario {formulario}
             </h2>
             <div style={{ fontSize: 13, color: T.txt2, fontWeight: 500, marginTop: 4 }}>
               Tu copiloto fiscal — te explica y acompaña paso a paso
