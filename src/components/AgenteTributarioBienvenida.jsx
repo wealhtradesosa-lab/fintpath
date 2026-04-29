@@ -75,6 +75,7 @@ export default function AgenteTributarioBienvenida({
   onCambiarOwner,
   onAbrirWizard,
   onAbrirChat,
+  onUpdateUser,
   ano = 2025,
 }) {
   const allOwners = useMemo(() => user?.owners || [], [user]);
@@ -251,6 +252,20 @@ export default function AgenteTributarioBienvenida({
           // TODO: handlers para asignar_owner, editar_deuda, agregar_gasto, etc
         }}
         onAbrirWizard={onAbrirWizard}
+        onIgnorar={(hallazgoId) => {
+          // Marcar el hallazgo como decisión consciente del user
+          if (!onUpdateUser) return;
+          const dismissed = new Set(user?.auditDismissed || []);
+          dismissed.add(hallazgoId);
+          onUpdateUser({ ...user, auditDismissed: Array.from(dismissed) });
+        }}
+        onReactivar={(hallazgoId) => {
+          // Quitar de la lista de ignorados → vuelve a aparecer
+          if (!onUpdateUser) return;
+          const dismissed = new Set(user?.auditDismissed || []);
+          dismissed.delete(hallazgoId);
+          onUpdateUser({ ...user, auditDismissed: Array.from(dismissed) });
+        }}
       />
 
       {/* ─────── Oportunidades de ahorro ─────── */}

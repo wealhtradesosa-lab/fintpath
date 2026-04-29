@@ -50,16 +50,25 @@ const SEVERIDAD = {
  * @param {object} user - User completo
  * @param {function} onAccion - Callback (accion) => void para resolver hallazgos
  * @param {function} onAbrirWizard - Callback para abrir el wizard
+ * @param {function} onIgnorar - Callback (hallazgoId) => void cuando user marca "está bien así"
+ * @param {function} onReactivar - Callback (hallazgoId) => void cuando user quita el ignore
  */
-export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard }) {
+export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, onIgnorar, onReactivar }) {
   const [expandido, setExpandido] = useState(true);
-  const [seccionExpandida, setSeccionExpandida] = useState({ errores: true, faltantes: true, advertencias: false, oportunidades: false });
+  const [seccionExpandida, setSeccionExpandida] = useState({
+    errores: true,
+    faltantes: true,
+    advertencias: false,
+    oportunidades: false,
+    ignorados: false, // colapsada por default
+  });
 
   const auditoria = useMemo(() => auditarDatos(user), [user]);
-  const { errores, advertencias, oportunidadesData, faltantes, resumen, total } = auditoria;
+  const { errores, advertencias, oportunidadesData, faltantes, ignorados, resumen, total } = auditoria;
+  const totalIncluyendoIgnorados = total + (ignorados?.length || 0);
 
-  // Si todo está OK, mostrar banner verde compacto
-  if (total === 0) {
+  // Si todo está OK Y no hay ignorados, mostrar banner verde compacto
+  if (total === 0 && (!ignorados || ignorados.length === 0)) {
     return (
       <div style={{
         marginBottom: 16,
@@ -78,6 +87,51 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard }) 
             Tu data está completa y consistente. Listo para calcular impuestos.
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Si solo hay ignorados (todo lo demás resuelto), banner verde con contador
+  if (total === 0 && ignorados && ignorados.length > 0) {
+    return (
+      <div style={{
+        marginBottom: 16,
+        background: C.greenBg,
+        border: `1px solid ${C.green}40`,
+        borderRadius: 10,
+        overflow: "hidden",
+      }}>
+        <div style={{ padding: "12px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 20 }}>✅</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, color: C.green, fontWeight: 700 }}>Auditoría: todo resuelto</div>
+            <div style={{ fontSize: 12, color: C.txt2, marginTop: 2 }}>
+              {ignorados.length} {ignorados.length === 1 ? "punto marcado" : "puntos marcados"} como "está bien así".
+            </div>
+          </div>
+          <button
+            onClick={() => setSeccionExpandida(s => ({ ...s, ignorados: !s.ignorados }))}
+            style={{
+              background: "transparent",
+              border: `1px solid ${C.border}`,
+              color: C.txt2,
+              padding: "5px 10px",
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {seccionExpandida.ignorados ? "Ocultar" : "Ver"}
+          </button>
+        </div>
+        {seccionExpandida.ignorados && (
+          <div style={{ padding: "8px 18px 14px", borderTop: `1px solid ${C.border}` }}>
+            {ignorados.map(h => (
+              <HallazgoIgnorado key={h.id} hallazgo={h} onReactivar={onReactivar} />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -141,6 +195,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard }) 
               onToggle={() => setSeccionExpandida(s => ({ ...s, errores: !s.errores }))}
               onAccion={onAccion}
               onAbrirWizard={onAbrirWizard}
+              onIgnorar={onIgnorar}
             />
           )}
 
@@ -155,6 +210,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard }) 
               onToggle={() => setSeccionExpandida(s => ({ ...s, faltantes: !s.faltantes }))}
               onAccion={onAccion}
               onAbrirWizard={onAbrirWizard}
+              onIgnorar={onIgnorar}
             />
           )}
 
@@ -169,6 +225,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard }) 
               onToggle={() => setSeccionExpandida(s => ({ ...s, advertencias: !s.advertencias }))}
               onAccion={onAccion}
               onAbrirWizard={onAbrirWizard}
+              onIgnorar={onIgnorar}
             />
           )}
 
@@ -183,7 +240,42 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard }) 
               onToggle={() => setSeccionExpandida(s => ({ ...s, oportunidades: !s.oportunidades }))}
               onAccion={onAccion}
               onAbrirWizard={onAbrirWizard}
+              onIgnorar={onIgnorar}
             />
+          )}
+
+          {/* Decisiones del user (ignorados) — sección separada al final */}
+          {ignorados && ignorados.length > 0 && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px dashed ${C.border}` }}>
+              <button
+                onClick={() => setSeccionExpandida(s => ({ ...s, ignorados: !s.ignorados }))}
+                style={{
+                  width: "100%",
+                  padding: "8px 0",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  color: C.txt3,
+                }}
+              >
+                <span style={{ fontSize: 13 }}>✓</span>
+                <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
+                  Decisiones tomadas ({ignorados.length}) — marcadas como "está bien así"
+                </span>
+                <span style={{ fontSize: 12 }}>{seccionExpandida.ignorados ? "▾" : "▸"}</span>
+              </button>
+              {seccionExpandida.ignorados && (
+                <div style={{ marginTop: 8 }}>
+                  {ignorados.map(h => (
+                    <HallazgoIgnorado key={h.id} hallazgo={h} onReactivar={onReactivar} />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -195,7 +287,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard }) 
 // Sección colapsable de hallazgos
 // ─────────────────────────────────────────────────────────────────────────
 
-function Seccion({ titulo, color, icon, hallazgos, expandido, onToggle, onAccion, onAbrirWizard }) {
+function Seccion({ titulo, color, icon, hallazgos, expandido, onToggle, onAccion, onAbrirWizard, onIgnorar }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <button
@@ -221,7 +313,7 @@ function Seccion({ titulo, color, icon, hallazgos, expandido, onToggle, onAccion
       </button>
       {expandido && (
         <div style={{ paddingTop: 10 }}>
-          {hallazgos.map(h => <Hallazgo key={h.id} hallazgo={h} onAccion={onAccion} onAbrirWizard={onAbrirWizard} />)}
+          {hallazgos.map(h => <Hallazgo key={h.id} hallazgo={h} onAccion={onAccion} onAbrirWizard={onAbrirWizard} onIgnorar={onIgnorar} />)}
         </div>
       )}
     </div>
@@ -232,7 +324,7 @@ function Seccion({ titulo, color, icon, hallazgos, expandido, onToggle, onAccion
 // Tarjeta individual de hallazgo
 // ─────────────────────────────────────────────────────────────────────────
 
-function Hallazgo({ hallazgo, onAccion, onAbrirWizard }) {
+function Hallazgo({ hallazgo, onAccion, onAbrirWizard, onIgnorar }) {
   const sev = SEVERIDAD[hallazgo.severidad] || SEVERIDAD.info;
 
   // Texto del botón de acción según el tipo
@@ -302,23 +394,44 @@ function Hallazgo({ hallazgo, onAccion, onAbrirWizard }) {
             </div>
           )}
 
-          {textoBoton && (
-            <button
-              onClick={handleClick}
-              style={{
-                padding: "6px 12px",
-                background: sev.color,
-                border: "none",
-                borderRadius: 6,
-                color: "#000",
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              {textoBoton} →
-            </button>
-          )}
+          {/* Acciones: resolver y/o marcar como decisión consciente */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            {textoBoton && (
+              <button
+                onClick={handleClick}
+                style={{
+                  padding: "6px 12px",
+                  background: sev.color,
+                  border: "none",
+                  borderRadius: 6,
+                  color: "#000",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {textoBoton} →
+              </button>
+            )}
+            {onIgnorar && (
+              <button
+                onClick={() => onIgnorar(hallazgo.id)}
+                style={{
+                  padding: "6px 12px",
+                  background: "transparent",
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  color: C.txt2,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                title="Marca este hallazgo como decisión consciente. No lo voy a volver a mostrar."
+              >
+                ✓ Está bien así
+              </button>
+            )}
+          </div>
 
           {hallazgo.ahorroEstimado && (
             <div style={{ marginTop: 6, fontSize: 11, color: C.green, fontWeight: 600 }}>
@@ -327,6 +440,54 @@ function Hallazgo({ hallazgo, onAccion, onAbrirWizard }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Tarjeta compacta para hallazgos ignorados (con opción de revertir)
+// ─────────────────────────────────────────────────────────────────────────
+
+function HallazgoIgnorado({ hallazgo, onReactivar }) {
+  return (
+    <div style={{
+      padding: "8px 12px",
+      background: "transparent",
+      border: `1px solid ${C.border}`,
+      borderRadius: 6,
+      marginBottom: 6,
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+    }}>
+      <span style={{ fontSize: 12, color: C.green, flexShrink: 0 }}>✓</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, color: C.txt2, fontWeight: 600 }}>
+          {hallazgo.titulo}
+        </div>
+        <div style={{ fontSize: 11, color: C.txt3, marginTop: 1 }}>
+          Marcado como "está bien así"
+        </div>
+      </div>
+      {onReactivar && (
+        <button
+          onClick={() => onReactivar(hallazgo.id)}
+          style={{
+            background: "transparent",
+            border: `1px solid ${C.border}`,
+            color: C.txt3,
+            padding: "4px 8px",
+            borderRadius: 5,
+            fontSize: 10,
+            fontWeight: 600,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+          title="Volver a mostrar este hallazgo"
+        >
+          ↺ Revertir
+        </button>
+      )}
     </div>
   );
 }

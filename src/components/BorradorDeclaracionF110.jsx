@@ -297,6 +297,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         onCambiarOwner={(id) => setSelectedOwnerId(id)}
         onAbrirWizard={() => setWizardAbierto(true)}
         onAbrirChat={() => setChatAbierto(true)}
+        onUpdateUser={onUpdateUser}
         ano={ano}
       />
     );

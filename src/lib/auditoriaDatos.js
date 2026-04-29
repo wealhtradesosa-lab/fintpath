@@ -36,15 +36,19 @@ const SMMLV_2026 = 1750905;
  * Audita los datos del user y devuelve hallazgos categorizados.
  *
  * @param {object} user - User completo con owners, ingresos, gas, deu, inv, trm
- * @returns {object} { errores, advertencias, oportunidadesData, faltantes, total }
+ * @param {object} options - { dismissed: Array<string> } IDs de hallazgos ignorados
+ * @returns {object} { errores, advertencias, oportunidadesData, faltantes, ignorados, total }
  */
-export function auditarDatos(user) {
+export function auditarDatos(user, options = {}) {
   if (!user) return vacio();
+
+  const dismissed = new Set(options.dismissed || user.auditDismissed || []);
 
   const errores = [];
   const advertencias = [];
   const oportunidadesData = [];
   const faltantes = [];
+  const ignorados = [];
 
   const owners = user.owners || [];
   const ingresos = user.ingresos || [];
@@ -337,18 +341,44 @@ export function auditarDatos(user) {
   });
 
   // ═══════════════════════════════════════════════════════════════════════
+  // FILTRAR HALLAZGOS IGNORADOS POR EL USUARIO
+  // ═══════════════════════════════════════════════════════════════════════
+  // El user puede haber marcado algunos hallazgos como "está bien así".
+  // Por ejemplo: activos en el exterior que NO quiere declarar en Colombia
+  // → no son errores, son decisiones conscientes. Los movemos a 'ignorados'
+  // que el UI puede mostrar como "X decisiones tomadas" colapsadas.
+
+  const filtrarYMover = (lista) => {
+    const filtrados = [];
+    for (const h of lista) {
+      if (dismissed.has(h.id)) {
+        ignorados.push(h);
+      } else {
+        filtrados.push(h);
+      }
+    }
+    return filtrados;
+  };
+
+  const erroresFiltrados = filtrarYMover(errores);
+  const advertenciasFiltradas = filtrarYMover(advertencias);
+  const oportunidadesFiltradas = filtrarYMover(oportunidadesData);
+  const faltantesFiltrados = filtrarYMover(faltantes);
+
+  // ═══════════════════════════════════════════════════════════════════════
   // RESUMEN FINAL
   // ═══════════════════════════════════════════════════════════════════════
 
-  const total = errores.length + advertencias.length + oportunidadesData.length + faltantes.length;
+  const total = erroresFiltrados.length + advertenciasFiltradas.length + oportunidadesFiltradas.length + faltantesFiltrados.length;
 
   return {
-    errores,
-    advertencias,
-    oportunidadesData,
-    faltantes,
+    errores: erroresFiltrados,
+    advertencias: advertenciasFiltradas,
+    oportunidadesData: oportunidadesFiltradas,
+    faltantes: faltantesFiltrados,
+    ignorados,
     total,
-    resumen: resumenEjecutivo(errores, advertencias, oportunidadesData, faltantes),
+    resumen: resumenEjecutivo(erroresFiltrados, advertenciasFiltradas, oportunidadesFiltradas, faltantesFiltrados),
   };
 }
 
@@ -384,6 +414,7 @@ function vacio() {
     advertencias: [],
     oportunidadesData: [],
     faltantes: [],
+    ignorados: [],
     total: 0,
     resumen: { estado: "ok", mensaje: "Sin datos cargados aún." },
   };
