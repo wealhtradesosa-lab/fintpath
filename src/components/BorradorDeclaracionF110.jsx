@@ -20,7 +20,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
-import { generarBorradorF110, aplicarOverride, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
+import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
+import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -33,25 +34,39 @@ const T = {
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 
 export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser }) {
-  // Owners jurídicas disponibles
-  const ownersJur = useMemo(() => {
-    return (user?.owners || []).filter(o => o.type === "juridica");
-  }, [user]);
+  // Owners disponibles: jurídicas + naturales
+  const ownersJur = useMemo(() => (user?.owners || []).filter(o => o.type === "juridica"), [user]);
+  const ownersNat = useMemo(() => (user?.owners || []).filter(o => o.type === "natural"), [user]);
+  const allOwners = useMemo(() => [...ownersJur, ...ownersNat], [ownersJur, ownersNat]);
 
-  const [selectedOwnerId, setSelectedOwnerId] = useState(ownersJur[0]?.id || "");
+  // Default: prioriza jurídica, fallback a natural
+  const [selectedOwnerId, setSelectedOwnerId] = useState(allOwners[0]?.id || "");
   const [ano, setAno] = useState(2025);
-  const [editingRenglon, setEditingRenglon] = useState(null); // numero del renglón en edición
+  const [editingRenglon, setEditingRenglon] = useState(null);
   const [editValue, setEditValue] = useState("");
+  // Sesión 28-abr-2026 noche: state para tips contextuales expandibles.
+  // Cuando el user hace click en 💡 de un renglón, se expande su tip educativo.
+  const [showTipFor, setShowTipFor] = useState(null);
 
-  const selectedOwner = ownersJur.find(o => o.id === selectedOwnerId);
+  const selectedOwner = allOwners.find(o => o.id === selectedOwnerId);
+  const isJuridica = selectedOwner?.type === "juridica";
+  const formulario = isJuridica ? "F-110" : "F-210";
 
-  // Generar renglones (recalculado automáticamente cuando user cambia)
+  // Generar renglones según tipo de owner
   const renglones = useMemo(() => {
     if (!selectedOwner) return null;
-    return generarBorradorF110(user, selectedOwner, estimacion, ano);
-  }, [user, selectedOwner, estimacion, ano]);
+    return isJuridica
+      ? generarBorradorF110(user, selectedOwner, estimacion, ano)
+      : generarBorradorF210(user, selectedOwner, estimacion, ano);
+  }, [user, selectedOwner, estimacion, ano, isJuridica]);
 
-  if (ownersJur.length === 0) {
+  // Secciones según tipo
+  const SECCIONES = isJuridica ? SECCIONES_F110 : SECCIONES_F210;
+  const seccionesOrden = isJuridica
+    ? ["patrimonio", "ingresos", "costos", "renta", "impuesto", "liquidacion"]
+    : ["patrimonio", "trabajo", "deducciones", "capital", "noLaboral", "dividendos", "rentaTotal", "impuesto", "liquidacion"];
+
+  if (allOwners.length === 0) {
     return (
       <div style={{ padding: "24px 0" }}>
         {/* Header del Agente Tributario IA */}
@@ -69,34 +84,22 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           </div>
         </div>
 
-        {/* Mensaje específico para personas naturales / sin sociedad */}
         <div style={{ padding: "32px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, textAlign: "center" }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>👤</div>
           <h3 style={{ fontSize: 18, fontWeight: 700, color: T.txt, marginBottom: 12 }}>
-            ¿Sos persona natural? Próximamente acá
+            Necesitamos tus datos para arrancar
           </h3>
           <p style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6, maxWidth: 520, margin: "0 auto 20px" }}>
-            El Agente Tributario IA hoy genera el <strong style={{ color: T.txt }}>borrador F-110</strong> para
-            sociedades (SAS, Ltda, etc). El borrador <strong style={{ color: T.txt }}>F-210 para personas
-            naturales</strong> con cédulas (laboral, pensión, capital, no laboral, dividendos) está en
-            desarrollo y llega en próxima actualización.
+            Para generar tu borrador de declaración (F-110 jurídica o F-210 natural), primero tenés
+            que tener al menos un <strong style={{ color: T.txt }}>owner fiscal</strong> creado:
           </p>
-          <div style={{ padding: "16px 20px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 10, maxWidth: 520, margin: "0 auto" }}>
-            <div style={{ fontSize: 13, color: T.txt, fontWeight: 700, marginBottom: 6 }}>
-              💡 Mientras tanto, podés usar:
-            </div>
-            <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6, textAlign: "left" }}>
-              <strong style={{ color: T.blue }}>📊 Calculadora</strong> — wizard paso a paso que te guía
-              con preguntas, te explica cada concepto y calcula tu impuesto natural con base en tus datos
-              cargados.
-              <br /><br />
-              <strong style={{ color: T.blue }}>🏛️ Declaraciones históricas</strong> — subí tus F-210
-              anteriores y te detectamos diferencias, oportunidades y errores comunes.
+          <div style={{ padding: "16px 20px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 10, maxWidth: 520, margin: "0 auto", textAlign: "left" }}>
+            <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.7 }}>
+              📍 Andá a <strong style={{ color: T.green }}>Configuración → Owners fiscales</strong> y agregá:
+              <br />• <strong>👤 Persona natural</strong> (vos): para tu declaración personal F-210
+              <br />• <strong>🏢 Persona jurídica</strong> (tu SAS/Ltda): para declaración F-110 de la sociedad
             </div>
           </div>
-          <p style={{ fontSize: 11, color: T.txt3, marginTop: 16, fontStyle: "italic" }}>
-            Si tenés una SAS o sociedad cargada, aparecerá automáticamente acá.
-          </p>
         </div>
       </div>
     );
@@ -168,11 +171,10 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   const totalRetenciones = renglones.find(r => r.numero === 107)?.valor || 0;
   const impuestoCargo = renglones.find(r => r.numero === 99)?.valor || 0;
 
-  // Agrupar renglones por sección
-  const seccionesOrden = ["patrimonio", "ingresos", "costos", "renta", "impuesto", "liquidacion"];
+  // Agrupar renglones por sección (usa seccionesOrden dinámico según tipo de owner)
   const renglonesPorSeccion = seccionesOrden.map(sec => ({
     seccion: sec,
-    info: SECCIONES_F110[sec],
+    info: SECCIONES[sec],
     items: renglones.filter(r => r.seccion === sec),
   }));
 
@@ -195,9 +197,15 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           Esta sección utiliza <strong style={{ color: T.txt }}>inteligencia artificial</strong> para
           proyectar y calcular tu declaración a partir de los datos que cargaste. Te ofrece{" "}
           <strong style={{ color: T.txt }}>estrategias y opciones para optimizar tus impuestos legalmente</strong>,
-          mostrándote escenarios y oportunidades específicas para tu caso. Cada renglón del formulario F-110
+          mostrándote escenarios y oportunidades específicas para tu caso. Cada renglón del formulario{" "}
+          <strong style={{ color: T.txt }}>{formulario}</strong>{" "}
           es <strong style={{ color: T.txt }}>editable</strong>: tú o tu contador pueden ajustar los valores
-          y los totales recalculan en vivo.
+          y los totales recalculan en vivo.{" "}
+          {!isJuridica && (
+            <span style={{ color: T.purple, fontWeight: 600 }}>
+              Pasá el cursor sobre cualquier renglón para ver tips contextuales que te orientan paso a paso.
+            </span>
+          )}
         </p>
       </div>
 
@@ -217,18 +225,58 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         </div>
       </div>
 
+      {/* Mini-guía contextual según tipo de owner */}
+      {!isJuridica ? (
+        <div style={{ marginBottom: 20, padding: "16px 20px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 10 }}>
+          <div style={{ fontSize: 12, color: T.green, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            👤 Cómo leer este borrador F-210 (persona natural)
+          </div>
+          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
+            El F-210 trabaja con <strong style={{ color: T.txt }}>cédulas</strong>: cada tipo de ingreso
+            tributa por separado. Vas a ver:
+            <ul style={{ margin: "6px 0 0 0", paddingLeft: 20 }}>
+              <li><strong style={{ color: T.green }}>💼 Cédula General (Trabajo):</strong> tu salario y honorarios. Acá aplican deducciones (dependientes, vivienda, medicina, AFC).</li>
+              <li><strong style={{ color: T.gold }}>📈 Cédula de Capital:</strong> intereses CDT, fondos. Tip: el componente inflacionario te exime ~50% de los intereses.</li>
+              <li><strong style={{ color: "#06b6d4" }}>🏠 Cédula No Laboral:</strong> arriendos. Tributan a parte sin las deducciones del trabajo.</li>
+              <li><strong style={{ color: "#eab308" }}>📊 Cédula Dividendos:</strong> dividendos recibidos. Tarifa especial.</li>
+            </ul>
+            <div style={{ marginTop: 8, color: T.txt3, fontSize: 11 }}>
+              💡 Click en el botón <span style={{ background: "rgba(168,85,247,0.15)", padding: "1px 5px", borderRadius: 3, color: T.purple, fontWeight: 700 }}>💡</span> de cualquier renglón para ver tips específicos.
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ marginBottom: 20, padding: "16px 20px", background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 10 }}>
+          <div style={{ fontSize: 12, color: T.purple, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            🏢 Cómo leer este borrador F-110 (persona jurídica)
+          </div>
+          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
+            El F-110 calcula utilidad fiscal: <strong style={{ color: T.txt }}>Ingresos − Costos − Gastos = Renta líquida</strong>,
+            que se grava al 35% (ordinario). Las palancas legales para reducir el impuesto incluyen:
+            <ul style={{ margin: "6px 0 0 0", paddingLeft: 20 }}>
+              <li><strong>Provisión cartera</strong> (Art. 145 ET): hasta 33% deducible</li>
+              <li><strong>Capacitación 175%</strong> (Art. 158-1): si está certificada SENA</li>
+              <li><strong>IVA activos productivos</strong> (Art. 258-2): descuento del impuesto</li>
+              <li><strong>Depreciación inmuebles arrendados</strong> (Art. 128-141): vida útil 45 años</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
       {/* Selector owner + año */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Sociedad</label>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Owner fiscal · Formulario {formulario}</label>
             <select
               value={selectedOwnerId}
               onChange={(e) => setSelectedOwnerId(e.target.value)}
-              style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 12px", color: T.txt, fontSize: 13, minWidth: 220 }}
+              style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 12px", color: T.txt, fontSize: 13, minWidth: 240 }}
             >
-              {ownersJur.map(o => (
-                <option key={o.id} value={o.id}>🏢 {o.name}</option>
+              {allOwners.map(o => (
+                <option key={o.id} value={o.id}>
+                  {o.type === "juridica" ? "🏢" : "👤"} {o.name} · {o.type === "juridica" ? "F-110" : "F-210"}
+                </option>
               ))}
             </select>
           </div>
@@ -304,19 +352,48 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                         color: r.destacado ? T.txt : T.txt2,
                         fontWeight: r.destacado ? 700 : 500,
                         lineHeight: 1.4,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        flexWrap: "wrap",
                       }}
                       title={r.fuente ? "Viene de: " + r.fuente : ""}
                     >
-                      {r.concepto}
+                      <span>{r.concepto}</span>
                       {r.articulo && (
-                        <span style={{ fontSize: 10, color: T.txt3, marginLeft: 6, fontWeight: 500 }}>
+                        <span style={{ fontSize: 10, color: T.txt3, fontWeight: 500 }}>
                           ({r.articulo})
                         </span>
+                      )}
+                      {r.tip && (
+                        <button
+                          onClick={() => setShowTipFor(showTipFor === r.numero ? null : r.numero)}
+                          style={{
+                            background: showTipFor === r.numero ? "rgba(168,85,247,0.2)" : "transparent",
+                            border: `1px solid ${showTipFor === r.numero ? T.purple : T.border}`,
+                            color: T.purple,
+                            padding: "1px 6px",
+                            borderRadius: 4,
+                            fontSize: 10,
+                            cursor: "pointer",
+                            fontWeight: 600,
+                          }}
+                          title="Ver tip educativo"
+                        >
+                          💡
+                        </button>
                       )}
                     </div>
                     {r.fuente && !isFormula && (
                       <div style={{ fontSize: 10, color: T.txt3, marginTop: 2, fontStyle: "italic" }}>
                         ↳ {r.fuente}
+                      </div>
+                    )}
+                    {/* Tip expandido */}
+                    {r.tip && showTipFor === r.numero && (
+                      <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 8, fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
+                        <span style={{ color: T.purple, fontWeight: 700, fontSize: 11, marginRight: 6 }}>💡 TIP:</span>
+                        {r.tip}
                       </div>
                     )}
                   </div>
