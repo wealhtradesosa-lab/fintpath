@@ -18,8 +18,9 @@
 
 import { useState, useMemo } from "react";
 import {
-  WIZARD_NATURAL,
+  getWizardSteps,
   mapearRespuestasAUser,
+  mapearRespuestasJuridicaAUser,
   siguientePasoVisible,
   pasoAnteriorVisible,
   totalPasosVisibles,
@@ -50,6 +51,17 @@ const C = {
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 
 export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, onClose }) {
+  const owner = (user?.owners || []).find(o => o.id === selectedOwnerId);
+  const ownerName = owner?.name || "vos";
+  const ownerType = owner?.type || "natural";
+
+  // ─── Bifurcación crítica: elegir el wizard correcto según tipo de owner.
+  // Antes (BUG): el wizard solo soportaba persona natural y le preguntaba
+  // "salario" a una SAS jurídica. Ahora detecta el tipo y usa el set de
+  // pasos apropiado: WIZARD_NATURAL (salario, dependientes, etc.) o
+  // WIZARD_JURIDICA (régimen, ingresos operacionales, costos, ICA, etc.)
+  const STEPS = useMemo(() => getWizardSteps(ownerType), [ownerType]);
+
   // Sesión 29-abr-2026: precarga inteligente. Si el user ya tiene datos
   // cargados (manualmente o de wizard anterior), los detectamos y precargamos
   // las respuestas del wizard. Así NO repreguntamos cosas que ya sabemos.
@@ -66,23 +78,20 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
   // Set de IDs de pasos cuyas respuestas vienen precargadas (para mostrar badge)
   const precargados = setPrecargados;
 
-  const owner = (user?.owners || []).find(o => o.id === selectedOwnerId);
-  const ownerName = owner?.name || "vos";
-
-  // Si no hay owner natural, mostrar mensaje
-  if (!owner || owner.type !== "natural") {
+  // Si no hay owner válido, error
+  if (!owner) {
     return (
       <div style={{ padding: 32, textAlign: "center", color: C.txt2 }}>
-        El wizard paso a paso es para personas naturales. Para sociedades usá el modo experto.
+        No se encontró la persona fiscal seleccionada.
         <br /><br />
         <button onClick={onClose} style={btnStyle(C.bg3, C.txt)}>Volver al resumen</button>
       </div>
     );
   }
 
-  const currentStep = WIZARD_NATURAL[stepIndex];
-  const totalVisible = useMemo(() => totalPasosVisibles(answers), [answers]);
-  const posActual = useMemo(() => posicionPasoVisible(stepIndex, answers), [stepIndex, answers]);
+  const currentStep = STEPS[stepIndex];
+  const totalVisible = useMemo(() => totalPasosVisibles(answers, STEPS), [answers, STEPS]);
+  const posActual = useMemo(() => posicionPasoVisible(stepIndex, answers, STEPS), [stepIndex, answers, STEPS]);
   const progreso = (posActual / totalVisible) * 100;
 
   // ── Manejo de respuestas ─────────────────────────────────────────────
@@ -92,8 +101,8 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
   };
 
   const handleNext = () => {
-    const next = siguientePasoVisible(stepIndex, answers);
-    if (next >= WIZARD_NATURAL.length) {
+    const next = siguientePasoVisible(stepIndex, answers, STEPS);
+    if (next >= STEPS.length) {
       // Llegamos al final → mostrar resultado
       handleFinalizar();
     } else {
@@ -106,13 +115,23 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
       onClose?.();
       return;
     }
-    const prev = pasoAnteriorVisible(stepIndex, answers);
+    const prev = pasoAnteriorVisible(stepIndex, answers, STEPS);
     setStepIndex(prev);
   };
 
+  // ── Función que mapea respuestas según el tipo de owner.
+  // Bifurcación crítica: persona natural usa estructura cedular (salarios,
+  // honorarios, dependientes), persona jurídica usa estructura contable
+  // (régimen, ingresos op., costos, ICA, patrimonio bruto declarado, etc).
+  const mapearRespuestas = (answers) => {
+    if (ownerType === "juridica") {
+      return mapearRespuestasJuridicaAUser(answers, user, selectedOwnerId);
+    }
+    return mapearRespuestasAUser(answers, user, selectedOwnerId);
+  };
+
   const handleFinalizar = () => {
-    // Mapear respuestas a user format
-    const newUser = mapearRespuestasAUser(answers, user, selectedOwnerId);
+    const newUser = mapearRespuestas(answers);
     onUpdateUser?.(newUser);
     setShowResult(true);
   };
@@ -132,7 +151,7 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
 
   // ── Pantalla de resultado final ──────────────────────────────────────
   if (showResult) {
-    const newUser = mapearRespuestasAUser(answers, user, selectedOwnerId);
+    const newUser = mapearRespuestas(answers);
     return <PantallaResultado user={newUser} ownerName={ownerName} answers={answers} onClose={onClose} />;
   }
 
@@ -200,7 +219,7 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
           </div>
         )}
 
-        {currentStep.type === "intro" && <IntroStep step={currentStep} ownerName={ownerName} cantidadPrecargados={precargados.size} />}
+        {currentStep.type === "intro" && <IntroStep step={currentStep} ownerName={ownerName} ownerType={ownerType} cantidadPrecargados={precargados.size} />}
         {currentStep.type === "single_select" && (
           <SingleSelectStep step={currentStep} value={answers[currentStep.id]} onChange={handleAnswer} />
         )}
@@ -211,8 +230,8 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
           <NumberStep step={currentStep} value={answers[currentStep.id]} onChange={handleAnswer} onSubmit={handleNext} />
         )}
         {currentStep.type === "review" && (
-          <ReviewStep answers={answers} onEdit={(stepId) => {
-            const idx = WIZARD_NATURAL.findIndex(s => s.id === stepId);
+          <ReviewStep answers={answers} ownerType={ownerType} onEdit={(stepId) => {
+            const idx = STEPS.findIndex(s => s.id === stepId);
             if (idx >= 0) setStepIndex(idx);
           }} />
         )}
@@ -247,22 +266,40 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
 // SUB-COMPONENTES POR TIPO DE PASO
 // ─────────────────────────────────────────────────────────────────────────
 
-function IntroStep({ step, ownerName, cantidadPrecargados = 0 }) {
+function IntroStep({ step, ownerName, cantidadPrecargados = 0, ownerType = "natural" }) {
   const tieneDatos = cantidadPrecargados > 0;
+  const isJur = ownerType === "juridica";
   return (
     <div>
-      <div style={{ fontSize: 48, marginBottom: 16, textAlign: "center" }}>🤖</div>
+      <div style={{ fontSize: 48, marginBottom: 16, textAlign: "center" }}>{isJur ? "🏢" : "🤖"}</div>
       <h2 style={{ fontSize: 24, fontWeight: 800, color: C.txt, margin: "0 0 14px 0", textAlign: "center", lineHeight: 1.3 }}>
-        {tieneDatos
-          ? <>Hola {ownerName !== "vos" ? ownerName : ""} 👋 ya tengo {cantidadPrecargados} datos tuyos cargados</>
-          : <>Hola {ownerName !== "vos" ? ownerName : ""} 👋 vamos a entender tus impuestos juntos</>}
+        {tieneDatos ? (
+          isJur
+            ? <>Hola, vamos con la declaración de <span style={{ color: C.purple }}>{ownerName}</span> — ya tengo {cantidadPrecargados} datos cargados</>
+            : <>Hola {ownerName !== "vos" ? ownerName : ""} 👋 ya tengo {cantidadPrecargados} datos tuyos cargados</>
+        ) : (
+          isJur
+            ? <>Vamos a preparar la declaración de renta de <span style={{ color: C.purple }}>{ownerName}</span></>
+            : <>Hola {ownerName !== "vos" ? ownerName : ""} 👋 vamos a entender tus impuestos juntos</>
+        )}
       </h2>
       <p style={{ fontSize: 15, color: C.txt2, lineHeight: 1.6, textAlign: "center", margin: "0 auto", maxWidth: 540 }}>
         {tieneDatos
-          ? "Detecté que ya cargaste varios datos en la plataforma. Vamos a confirmarlos rápido y completar lo que falte. Si algo cambió, lo ajustás en el camino."
+          ? `Detecté que ya cargaste varios datos ${isJur ? "de la sociedad" : "en la plataforma"}. Vamos a confirmarlos rápido y completar lo que falte. Si algo cambió, lo ajustás en el camino.`
           : step.helpText}
       </p>
-      <div style={{ marginTop: 24, padding: "16px 20px", background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 10 }}>
+      {isJur && (
+        <div style={{ marginTop: 14, padding: "12px 16px", background: C.purpleBg || "rgba(196,181,253,0.10)", border: `1px solid ${C.purple}40`, borderRadius: 10 }}>
+          <div style={{ fontSize: 12, color: C.purple, fontWeight: 700, marginBottom: 4, letterSpacing: 0.5 }}>
+            🏢 PERSONA JURÍDICA · F-110
+          </div>
+          <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5 }}>
+            Te voy a preguntar sobre régimen tributario, ingresos operacionales, costos, ICA y patrimonio.
+            <strong style={{ color: C.txt }}> No te pregunto cosas de persona natural</strong> (salario, dependientes) porque no aplican a una sociedad.
+          </div>
+        </div>
+      )}
+      <div style={{ marginTop: 16, padding: "16px 20px", background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 10 }}>
         <div style={{ fontSize: 13, color: C.green, fontWeight: 700, marginBottom: 6 }}>
           {tieneDatos ? "✨ Cómo va a ir esto:" : "✨ Lo que voy a hacer por vos:"}
         </div>
@@ -273,6 +310,13 @@ function IntroStep({ step, ownerName, cantidadPrecargados = 0 }) {
               <li>Solo confirmás (o ajustás si cambió)</li>
               <li>Los datos que falten te los pregunto normalmente</li>
               <li>Al final se actualiza tu cuenta con la nueva información</li>
+            </>
+          ) : isJur ? (
+            <>
+              <li>Te hago preguntas profesionales, una por vez</li>
+              <li>Cada concepto contable explicado en lenguaje claro</li>
+              <li>Detecto automáticamente palancas de optimización (régimen, donaciones, etc)</li>
+              <li>Al final tenés un borrador F-110 para tu contador</li>
             </>
           ) : (
             <>
@@ -401,34 +445,81 @@ function NumberStep({ step, value, onChange, onSubmit }) {
   );
 }
 
-function ReviewStep({ answers, onEdit }) {
-  // Construir resumen legible
+function ReviewStep({ answers, ownerType, onEdit }) {
+  // Construir resumen legible — ramificado por tipo de owner.
+  // Persona natural: salario, dependientes, deducciones, etc.
+  // Persona jurídica: régimen, ingresos op., costos, ICA, patrimonio.
   const items = [];
-  if (answers.tipoTrabajo) {
-    const labels = {
-      empleado: "Empleado con contrato",
-      independiente: "Independiente con honorarios",
-      ambos: "Empleo + honorarios",
-      pensionado: "Pensionado",
-      ninguno: "No trabajaste",
-    };
-    items.push({ key: "tipoTrabajo", label: "Tipo de trabajo", value: labels[answers.tipoTrabajo] });
+
+  if (ownerType === "juridica") {
+    // ─── REVISIÓN PARA PERSONA JURÍDICA ─────────────────────────────────
+    if (answers.regimenTributario) {
+      const labelsRegimen = {
+        ordinario: "Régimen Ordinario (35% sobre utilidad)",
+        simple: "Régimen Simple (1.2-14% sobre ingresos)",
+        zese_zomac: "Régimen especial (ZESE/ZOMAC)",
+        esal: "Entidad Sin Ánimo de Lucro",
+        no_se: "Régimen no determinado",
+      };
+      items.push({ key: "regimenTributario", label: "Régimen tributario", value: labelsRegimen[answers.regimenTributario] || answers.regimenTributario });
+    }
+    if (answers.actividadEconomica) {
+      const labelsAct = {
+        comercio_minorista: "Comercio al por menor",
+        comercio_mayorista: "Comercio al por mayor",
+        servicios_profesionales: "Servicios profesionales",
+        tecnologia: "Tecnología / SaaS",
+        manufactura: "Manufactura",
+        construccion_inmobiliario: "Construcción / inmobiliario",
+        alimentos_restaurantes: "Restaurantes / alimentos",
+        salud: "Salud",
+        educacion: "Educación",
+        transporte_logistica: "Transporte / logística",
+        agropecuario: "Agropecuario",
+        rentas_pasivas: "Inversiones / holding",
+        otra: "Otra actividad",
+      };
+      items.push({ key: "actividadEconomica", label: "Actividad económica", value: labelsAct[answers.actividadEconomica] || answers.actividadEconomica });
+    }
+    if (answers.ingresosOperacionalesAnual) items.push({ key: "ingresosOperacionalesAnual", label: "Ingresos operacionales", value: fm(answers.ingresosOperacionalesAnual) + " / año" });
+    if (answers.tieneIngresosNoOp === "si" && answers.ingresosNoOpAnual) items.push({ key: "ingresosNoOpAnual", label: "Ingresos no operacionales", value: fm(answers.ingresosNoOpAnual) + " / año" });
+    if (answers.costoVentasAnual) items.push({ key: "costoVentasAnual", label: "Costo de ventas", value: fm(answers.costoVentasAnual) + " / año" });
+    if (answers.gastosOperacionalesAnual) items.push({ key: "gastosOperacionalesAnual", label: "Gastos operacionales", value: fm(answers.gastosOperacionalesAnual) + " / año" });
+    if (answers.tieneInteresesPagados === "si" && answers.interesesPagadosAnual) items.push({ key: "interesesPagadosAnual", label: "Intereses pagados", value: fm(answers.interesesPagadosAnual) + " / año" });
+    if (answers.icaPagadoAnual) items.push({ key: "icaPagadoAnual", label: "ICA pagado", value: fm(answers.icaPagadoAnual) + " / año" });
+    if (answers.patrimonioBrutoCierre) items.push({ key: "patrimonioBrutoCierre", label: "Patrimonio bruto al cierre", value: fm(answers.patrimonioBrutoCierre) });
+    if (answers.tieneDeudas === "si" && answers.pasivosTotales) items.push({ key: "pasivosTotales", label: "Pasivos totales", value: fm(answers.pasivosTotales) });
+    if (answers.tieneRetenciones === "si" && answers.retencionesAnual) items.push({ key: "retencionesAnual", label: "Retenciones recibidas", value: fm(answers.retencionesAnual) + " / año" });
+    if (answers.anticipoAnoAnterior) items.push({ key: "anticipoAnoAnterior", label: "Anticipo año anterior", value: fm(answers.anticipoAnoAnterior) });
+    if (answers.tieneDonaciones === "si" && answers.donacionesAnual) items.push({ key: "donacionesAnual", label: "Donaciones a ESAL", value: fm(answers.donacionesAnual) + " / año" });
+  } else {
+    // ─── REVISIÓN PARA PERSONA NATURAL ──────────────────────────────────
+    if (answers.tipoTrabajo) {
+      const labels = {
+        empleado: "Empleado con contrato",
+        independiente: "Independiente con honorarios",
+        ambos: "Empleo + honorarios",
+        pensionado: "Pensionado",
+        ninguno: "No trabajaste",
+      };
+      items.push({ key: "tipoTrabajo", label: "Tipo de trabajo", value: labels[answers.tipoTrabajo] });
+    }
+    if (answers.salarioMensual) items.push({ key: "salarioMensual", label: "Salario mensual", value: fm(answers.salarioMensual) });
+    if (answers.honorariosAnual) items.push({ key: "honorariosAnual", label: "Honorarios anuales", value: fm(answers.honorariosAnual) });
+    if (answers.pensionMensual) items.push({ key: "pensionMensual", label: "Pensión mensual", value: fm(answers.pensionMensual) });
+    if (answers.tieneDependientes === "si") items.push({ key: "cantidadDependientes", label: "Dependientes", value: `${answers.cantidadDependientes || 1} personas` });
+    if (answers.medicinaMensual) items.push({ key: "medicinaMensual", label: "Medicina prepagada", value: fm(answers.medicinaMensual) + "/mes" });
+    if (answers.interesesViviendaAnual) items.push({ key: "interesesViviendaAnual", label: "Intereses vivienda", value: fm(answers.interesesViviendaAnual) + " anual" });
+    if (answers.aportesPVMensual) items.push({ key: "aportesPVMensual", label: "Aportes pensión voluntaria", value: fm(answers.aportesPVMensual) + "/mes" });
+    if (answers.rendimientosAnual) items.push({ key: "rendimientosAnual", label: "Rendimientos financieros", value: fm(answers.rendimientosAnual) + " anual" });
+    if (answers.arriendosMensual) items.push({ key: "arriendosMensual", label: "Arriendos", value: fm(answers.arriendosMensual) + "/mes" });
   }
-  if (answers.salarioMensual) items.push({ key: "salarioMensual", label: "Salario mensual", value: fm(answers.salarioMensual) });
-  if (answers.honorariosAnual) items.push({ key: "honorariosAnual", label: "Honorarios anuales", value: fm(answers.honorariosAnual) });
-  if (answers.pensionMensual) items.push({ key: "pensionMensual", label: "Pensión mensual", value: fm(answers.pensionMensual) });
-  if (answers.tieneDependientes === "si") items.push({ key: "cantidadDependientes", label: "Dependientes", value: `${answers.cantidadDependientes || 1} personas` });
-  if (answers.medicinaMensual) items.push({ key: "medicinaMensual", label: "Medicina prepagada", value: fm(answers.medicinaMensual) + "/mes" });
-  if (answers.interesesViviendaAnual) items.push({ key: "interesesViviendaAnual", label: "Intereses vivienda", value: fm(answers.interesesViviendaAnual) + " anual" });
-  if (answers.aportesPVMensual) items.push({ key: "aportesPVMensual", label: "Aportes pensión voluntaria", value: fm(answers.aportesPVMensual) + "/mes" });
-  if (answers.rendimientosAnual) items.push({ key: "rendimientosAnual", label: "Rendimientos financieros", value: fm(answers.rendimientosAnual) + " anual" });
-  if (answers.arriendosMensual) items.push({ key: "arriendosMensual", label: "Arriendos", value: fm(answers.arriendosMensual) + "/mes" });
 
   return (
     <div>
       <div style={{ fontSize: 36, marginBottom: 12, textAlign: "center" }}>📋</div>
       <h2 style={{ fontSize: 22, fontWeight: 800, color: C.txt, margin: "0 0 12px 0", lineHeight: 1.3, textAlign: "center" }}>
-        Revisemos lo que me contaste
+        {ownerType === "juridica" ? "Revisemos los datos de la sociedad" : "Revisemos lo que me contaste"}
       </h2>
       <p style={{ fontSize: 13, color: C.txt2, textAlign: "center", margin: "0 0 24px 0" }}>
         Si algo está mal, podés editarlo antes de calcular tu impuesto
