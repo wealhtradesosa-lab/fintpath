@@ -22,6 +22,7 @@
 
 import { useMemo } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
+import { exportarBorradorPDF } from "../lib/pdfExport.js";
 
 // Paleta de colores con alto contraste sobre fondo oscuro
 const C = {
@@ -342,6 +343,31 @@ export default function AgenteTributarioBienvenida({
             </div>
             <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5 }}>
               Chat con un contador IA que ya conoce tus datos y responde dudas estratégicas.
+            </div>
+          </button>
+
+          {/* Acción 4: Descargar PDF para el contador */}
+          <button
+            onClick={() => exportarBorradorPDF(user, selectedOwner, estimacion, ano)}
+            style={{
+              padding: "16px 20px",
+              background: C.greenBg,
+              border: `1.5px solid ${C.green}`,
+              borderRadius: 12,
+              color: C.txt,
+              cursor: "pointer",
+              textAlign: "left",
+              transition: "all 0.15s",
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.background = "rgba(74,222,128,0.18)"; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = C.greenBg; }}
+          >
+            <div style={{ fontSize: 22, marginBottom: 6 }}>📄</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.txt, marginBottom: 4 }}>
+              Descargar PDF para mi contador
+            </div>
+            <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5 }}>
+              PDF profesional con tu borrador {isJuridica ? "F-110" : "F-210"} listo para enviar a tu contador.
             </div>
           </button>
         </div>

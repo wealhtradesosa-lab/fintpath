@@ -25,6 +25,7 @@ import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF
 import AgenteTributarioBienvenida from "./AgenteTributarioBienvenida.jsx";
 import WizardTurboTax, { aplicarRespuestasWizard } from "./WizardTurboTax.jsx";
 import ChatAgenteTributario from "./ChatAgenteTributario.jsx";
+import { exportarBorradorPDF } from "../lib/pdfExport.js";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -289,8 +290,27 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         >
           ← Volver al Auditor IA
         </button>
-        <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-          📋 Modo Experto
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button
+            onClick={() => exportarBorradorPDF(user, selectedOwner, estimacion, ano)}
+            style={{
+              background: "#7c3aed",
+              border: "1.5px solid #7c3aed",
+              color: "#fff",
+              padding: "10px 18px",
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+            title="Descargar PDF profesional para enviar a tu contador"
+          >
+            📄 Descargar PDF
+          </button>
+          <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            📋 Modo Experto
+          </div>
         </div>
       </div>
       {/* Header con branding "Agente Tributario IA" — alto contraste para legibilidad */}
