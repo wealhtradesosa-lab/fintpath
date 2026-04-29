@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getPlansForLanding } from "../lib/plans.js";
 
 const T = {
   bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
@@ -20,13 +21,10 @@ export default function LandingPage({ onGetStarted }) {
       .then(j => { if (j?.trm) setTrm(j.trm); })
       .catch(() => {/* silent fallback a 4200 */});
   }, []);
-  // Helper: USD → string COP usando TRM en tiempo real. Redondeo a centena
-  // para presentación limpia. Mismo helper que App.jsx usa en el pricing
-  // del app autenticado.
-  const usdToCop = (usd) => {
-    const cop = Math.round(usd * trm / 100) * 100;
-    return "≈ $" + cop.toLocaleString() + " COP";
-  };
+  // Lista de planes consumida del source-of-truth en src/lib/plans.js
+  // (refactor item #9). Cualquier cambio de pricing/features se hace allá
+  // y se refleja automáticamente acá Y en App.jsx.
+  const plansData = getPlansForLanding({ trm });
 
   const Section = ({ children, style: s }) => (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", ...s }}>{children}</div>
@@ -210,89 +208,7 @@ export default function LandingPage({ onGetStarted }) {
             <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Regístrate gratis y toma control de tu patrimonio</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, maxWidth: 1280, margin: "0 auto" }}>
-            {[
-              {
-                name: "Free", price: "$0", per: "gratis",
-                tag: "Para empezar a organizarte",
-                users: "1 usuario",
-                features: [
-                  "Dashboard con resumen patrimonial",
-                  "Hasta 3 inversiones y 1 meta",
-                  "Ingresos, gastos y deudas",
-                  "Encriptación E2E de tus datos",
-                ],
-                no: ["Simulador", "Pensiones", "Ahorro BTC", "Trading", "Asesor IA", "Plan Tributario"],
-                cta: "Comenzar gratis",
-              },
-              {
-                name: "Básico", price: "$8", per: "USD/mes",
-                sub: "$6 USD/mes anual — Ahorra 25%",
-                copEquiv: usdToCop(8),
-                tag: "Para gestionar tu vida financiera completa",
-                users: "1 usuario",
-                features: [
-                  "Todo lo de Free + 10 inversiones, 10 metas",
-                  "🖥️ Simulador financiero avanzado",
-                  "🏛️ Pensiones (Colpensiones + RAIS) o 401(k)",
-                  "💰 Cálculo de aportes obligatorios y voluntarios",
-                  "₿ Ahorro en Bitcoin con proyecciones",
-                  "💹 Trading portfolio (acciones + crypto)",
-                  "📥 Importar Excel y 📸 leer facturas con IA",
-                ],
-                no: ["Asesor IA", "Coaches IA", "Plan Tributario completo"],
-                cta: "Probar 14 días",
-              },
-              {
-                name: "Pro", price: "$16", per: "USD/mes",
-                sub: "$12 USD/mes anual — Ahorra 25%",
-                copEquiv: usdToCop(16),
-                tag: "Para planificar y optimizar como un experto",
-                users: "Hasta 3 usuarios",
-                features: [
-                  "Todo lo de Básico, sin límites",
-                  "🤖 Asesor Financiero IA",
-                  "🧠 5 Coaches IA (Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian)",
-                  "🧾 Plan Tributario completo (Colombia + US)",
-                  "👥 Hasta 3 miembros (vos + pareja/contador)",
-                  "📊 Resumen ejecutivo de patrimonio en PDF",
-                  "🚀 Soporte prioritario",
-                ],
-                no: [], accent: true, cta: "Probar 14 días Pro",
-              },
-              {
-                name: "Pro Familiar", price: "$27", per: "USD/mes",
-                sub: "$20 USD/mes anual — Ahorra 25%",
-                copEquiv: usdToCop(27),
-                tag: "Para tu familia + tu contador en un solo espacio",
-                users: "Hasta 10 usuarios",
-                features: [
-                  "Todo lo de Pro, sin restricciones",
-                  "👨‍👩‍👧 Hasta 10 personas con acceso al mismo patrimonio",
-                  "🔐 Roles: administrador y solo lectura",
-                  "🧾 Tu contador puede revisar sin tocar tus datos",
-                  "📊 Auditoría de cambios (quién cambió qué y cuándo)",
-                  "🎁 14 días de prueba gratis · sin tarjeta",
-                  "🏆 Soporte prioritario en 24h",
-                ],
-                no: [], cta: "Probar 14 días Pro Familiar",
-              },
-              {
-                name: "Para Asesores", price: "$79", per: "USD/mes",
-                sub: "Desde — hasta $399 según tamaño de cartera",
-                copEquiv: usdToCop(79),
-                tag: "Para asesores y contadores",
-                users: "Hasta 40+ clientes",
-                features: [
-                  "Hasta 40 clientes gestionados",
-                  "Dashboard Pro completo por cliente",
-                  "Panel unificado del asesor",
-                  "Plan tributario automático",
-                  "Reportes PDF profesionales",
-                  "Onboarding 1-a-1",
-                ],
-                no: [], advisor: true, cta: "Ver planes →",
-              },
-            ].map((p) => (
+            {plansData.map((p) => (
               <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : p.advisor ? "1px solid rgba(59,130,246,0.35)" : p.comingSoon ? "1px dashed " + T.border : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative", opacity: p.comingSoon ? 0.95 : 1 }}>
                 {p.accent && <div style={{ background: T.grad, color: "#000", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>MÁS POPULAR</div>}
                 {p.advisor && <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>PARA PROFESIONALES</div>}

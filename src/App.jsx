@@ -43,6 +43,7 @@ import MiCuenta from "./components/MiCuenta";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55 } from "./lib/migrations";
+import { getPlansForApp, STRIPE_PRICE_IDS } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import DashboardFiscal from "./components/DashboardFiscal";
 import CalculadoraWizard from "./components/CalculadoraWizard";
@@ -2364,91 +2365,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"coach":{const msgs=adv?getCoach(adv.id):[];return gated("coach","Pro",<div><div style={{textAlign:"center",marginBottom:20}}><h2 style={{fontSize:22,fontWeight:700,margin:"0 0 6px"}}>Coaches Financieros IA</h2><p style={{color:T.tx3,fontSize:13}}>5 asesores analizan tus datos</p><p style={{color:T.tx3,fontSize:10,margin:"4px 0 0"}}>📋 Solo se analizan ítems encendidos. Los apagados no se incluyen en el análisis.</p></div><div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center",marginBottom:20}}>{ADV.map(a=>{const ac=adv?.id===a.id;return<button key={a.id} onClick={()=>sAdv(a)} style={{background:ac?`linear-gradient(135deg,${a.cl}20,${a.cl}10)`:T.card,border:`1px solid ${ac?a.cl:T.border}`,color:T.tx,padding:"14px 20px",borderRadius:14,cursor:"pointer",textAlign:"center",minWidth:90}}><div style={{fontSize:22,marginBottom:4}}>{a.av}</div><div style={{fontWeight:700,fontSize:11,color:ac?a.cl:T.tx}}>{a.nm}</div><div style={{fontSize:9,color:ac?`${a.cl}aa`:T.tx3}}>{a.ti}</div></button>})}</div><Cd>{adv?<div style={{padding:20}}><div style={{display:"flex",alignItems:"center",gap:10,paddingBottom:14,borderBottom:`2px solid ${adv.cl}`,marginBottom:20}}><span style={{fontSize:28}}>{adv.av}</span><div><div style={{fontWeight:700,fontSize:15}}>{adv.nm}</div><div style={{fontSize:12,color:T.tx3}}>{adv.ti}</div></div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:6,marginBottom:20}}>{[{l:"Patrimonio",v:fm(t.nw),c:T.tx},{l:"Cash Flow",v:fm(t.cf),c:t.cf>=0?T.gn:T.rd},{l:"Independencia",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2},{l:"Deuda/Act",v:pc(t.dta),c:t.dta<30?T.gn:T.rd}].map(m=><div key={m.l} style={{background:T.bg3,padding:8,borderRadius:8,borderLeft:`3px solid ${m.c}`}}><div style={{fontSize:9,color:T.tx3,textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:15,fontWeight:700,color:m.c}}>{m.v}</div></div>)}</div>{msgs.map((msg,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:14}}><div style={{width:32,height:32,borderRadius:"50%",background:adv.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{adv.av}</div><div style={{flex:1,background:adv.bg,padding:"14px 18px",borderRadius:"0 14px 14px 14px",border:`1px solid ${adv.cl}10`}}><div style={{fontWeight:700,fontSize:13,color:adv.cl,marginBottom:6}}>{msg.t}</div><div style={{fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",color:T.tx}}>{msg.c}</div></div></div>)}</div>:<div style={{padding:56,textAlign:"center",color:T.tx3}}><div style={{fontSize:40,marginBottom:12}}>👆</div><p>Selecciona un coach</p></div>}</Cd></div>)}
     case"price":{
       const isCO=!isUS;
-      // Helper: convertir USD a string COP usando la TRM del día (viene de
-      // /api/trm que se llama al cargar la app). Fallback a 4200 si TRM no
-      // se cargó. Redondeo a centena para presentación más limpia.
-      // Filosofía: USD es la "fuente de verdad" (Stripe cobra USD). COP es
-      // referencia visual para el user CO. Si la TRM cambia, el equivalente
-      // se actualiza solo. Cero riesgo de mostrar precio incorrecto.
-      const usdToCop=(usd)=>{
-        const cop=Math.round(usd*(trm||4200)/100)*100;
-        return "≈ $"+cop.toLocaleString()+" COP";
-      };
-      // Lista de features por plan. Lo que esta plataforma realmente entrega hoy:
-      // Dashboard, Ingresos/Gastos/Deudas/Inversiones, Metas, Simulador, Pensiones
-      // (Colpensiones+RAIS o 401k), BTC savings, Trading, Plan Tributario CO+US,
-      // Asesor IA, 5 Coaches IA, Lectura de facturas, Multi-usuario hasta 10.
-      const plans=[
-        {n:"Free",
-         tag:"Para empezar a organizarte",
-         p:{mensual:"$0",anual:"$0"},
-         pr:{mensual:"gratis",anual:"gratis"},
-         save:null,
-         users:"1 usuario",
-         f:[
-           "Dashboard con resumen patrimonial",
-           "Hasta 3 inversiones y 1 meta financiera",
-           "Registro de ingresos, gastos y deudas",
-           "Encriptación E2E de tus datos",
-         ],
-         no:["Simulador financiero","Pensiones","Ahorro BTC","Trading","Plan Tributario","Asesor IA","Coaches IA","Lectura de facturas IA"],
-         cur:plan==="free"},
-        {n:"Básico",
-         tag:"Para gestionar tu vida financiera completa",
-         p:{mensual:"$8",anual:"$6"},
-         pr:{mensual:"USD /mes",anual:"USD /mes"},
-         pRef:{mensual:isUS?null:usdToCop(8),anual:isUS?null:usdToCop(6)},
-         save:"Ahorra 25%",
-         users:"1 usuario",
-         f:[
-           "Todo lo de Free, sin límites en inversiones (hasta 10) ni metas (hasta 10)",
-           "🖥️ Simulador financiero avanzado con palancas (cambia ingresos/gastos y simulá)",
-           isUS?"🏛️ Pensión y retiro: 401(k) + IRA + Social Security":"🏛️ Pensión Colombia: Colpensiones (RPM) + RAIS",
-           isCO?"💰 Calculá tus aportes obligatorios (4%+4%) y voluntarios":null,
-           "₿ Ahorro en Bitcoin: proyecciones por ciclo halving",
-           "💹 Trading portfolio: acciones US + crypto",
-           "📥 Importar Excel/CSV con IA",
-           "📸 Lectura de facturas y comprobantes con IA",
-         ].filter(Boolean),
-         no:["Asesor IA","5 Coaches IA","Plan Tributario completo","Multi-usuario"],
-         cur:plan==="basico",ac:false},
-        {n:"Pro",
-         tag:"Para planificar y optimizar como un experto",
-         p:{mensual:"$16",anual:"$12"},
-         pr:{mensual:"USD /mes",anual:"USD /mes"},
-         pRef:{mensual:isUS?null:usdToCop(16),anual:isUS?null:usdToCop(12)},
-         save:"Ahorra 25%",
-         users:"Hasta 3 usuarios (vos + pareja + contador)",
-         f:[
-           "Todo lo de Básico, sin límites de nada",
-           "🤖 Asesor Financiero IA que analiza tus números reales",
-           "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
-           isCO?"🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF, optimización)":"🧾 Tax Planning US (federal + state, deductions, optimization)",
-           "👥 Hasta 3 miembros con la misma información (admin + lectura)",
-           "📊 Resumen ejecutivo de patrimonio en PDF",
-           "🚀 Soporte prioritario por email",
-         ],
-         no:[],
-         cur:plan==="pro",ac:true},
-        {n:"Pro Familiar",
-         tag:"Para tu familia + tu contador en un solo espacio",
-         p:{mensual:"$27",anual:"$20"},
-         pr:{mensual:"USD /mes",anual:"USD /mes"},
-         pRef:{mensual:isUS?null:usdToCop(27),anual:isUS?null:usdToCop(20)},
-         save:"Ahorra 25%",
-         users:"Hasta 10 usuarios compartiendo la misma información",
-         f:[
-           "Todo lo de Pro, sin restricciones",
-           "👨‍👩‍👧 Hasta 10 personas con acceso al mismo patrimonio familiar",
-           "🔐 Roles: administrador (edita) y solo lectura (solo ve)",
-           "🧾 Tu contador puede revisar tus números sin tocarlos",
-           "📊 Auditoría: quién cambió qué y cuándo",
-           "🎁 14 días de prueba gratis · sin tarjeta",
-           "🏆 Soporte prioritario con respuesta en 24h",
-         ],
-         no:[],
-         cur:plan==="pro_familiar"},
-      ];
+      // Pricing es source-of-truth en src/lib/plans.js (refactor item #9
+      // del backlog 28-abr-2026). Antes había duplicación entre App.jsx y
+      // LandingPage.jsx que causó al menos 2 desincronizaciones (Pro
+      // Familiar oculto en home + monedas distintas). Ahora ambos consumen
+      // la misma definición. Cualquier cambio de precio/feature se hace
+      // en plans.js únicamente.
+      const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle});
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
           <h2 style={{fontSize:26,fontWeight:800,margin:"0 0 8px"}}>{isUS?"Choose your plan":"Elige tu plan"}</h2>
@@ -2487,12 +2410,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 ):(
                 <Bt v={pl.ac?"p":pl.cur?"s":"p"} sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{if(!pl.cur)(async()=>{
                   try{
-                    const prices={
-                      "Básico":{mensual:"price_1TIGRWKEnhNr9wQd2oEgNin9",anual:"price_1TIGRWKEnhNr9wQdJTMTGfYa"},
-                      "Pro":{mensual:"price_1TIGRXKEnhNr9wQdC8eKj2xS",anual:"price_1TIGRYKEnhNr9wQd7QTFxT6z"},
-                      "Pro Familiar":{mensual:"price_1TRC9mKEnhNr9wQdQr9gsRot",anual:"price_1TRCCaKEnhNr9wQdpWlaXP0r"}
-                    };
-                    const priceId=prices[pl.n]?.[billingCycle];
+                    // PriceIds vienen de src/lib/plans.js (STRIPE_PRICE_IDS),
+                    // source-of-truth única. Refactor item #9.
+                    const priceId=STRIPE_PRICE_IDS[pl.n]?.[billingCycle];
                     if(!priceId)return;
                     // Email fallback: u?.p?.email puede no estar cargado para users
                     // recién signup. authUser.email SIEMPRE está si hay sesión.
