@@ -23,7 +23,7 @@ import { useState, useMemo } from "react";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
 import AgenteTributarioBienvenida from "./AgenteTributarioBienvenida.jsx";
-import WizardTurboTax, { aplicarRespuestasWizard } from "./WizardTurboTax.jsx";
+import WizardTributario from "./WizardTributario.jsx";
 import ChatAgenteTributario from "./ChatAgenteTributario.jsx";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import TerminoTributario from "./TerminoTributario.jsx";
@@ -112,15 +112,48 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // WIZARD TRIBUTARIO: si está abierto, ocultar todo el resto y mostrar
+  // solo el wizard (UX inmersiva con 1 pregunta por pantalla).
+  //
+  // Garantía importante: el wizard necesita un owner natural existente.
+  // Si el user no tiene ninguno, creamos uno temporalmente antes de abrir.
+  // ─────────────────────────────────────────────────────────────────────
   if (wizardAbierto) {
+    // Asegurar que hay un owner natural (el wizard solo aplica a personas naturales)
+    let ownerNaturalId = (user?.owners || []).find(o => o.type === "natural")?.id;
+
+    if (!ownerNaturalId) {
+      // No hay owner natural: lo creamos primero y persistimos
+      const nuevoOwner = {
+        id: "own_wizard_" + Date.now(),
+        name: "Yo (persona natural)",
+        type: "natural",
+        fiscalProfile: {},
+      };
+      const newUser = { ...user, owners: [...(user?.owners || []), nuevoOwner] };
+      // Disparar la actualización en el siguiente tick para no causar render-during-render
+      setTimeout(() => onUpdateUser(newUser), 0);
+      // Mientras se aplica, mostrar loading
+      return (
+        <div style={{ padding: 40, textAlign: "center", color: T.txt2 }}>
+          Preparando el wizard...
+        </div>
+      );
+    }
+
     return (
       <WizardTributario
         user={user}
-        selectedOwnerId={selectedOwnerId}
+        selectedOwnerId={ownerNaturalId}
         onUpdateUser={(newUser) => {
           onUpdateUser(newUser);
         }}
-        onClose={() => setWizardAbierto(false)}
+        onClose={() => {
+          setWizardAbierto(false);
+          // Tras completar, dejar al user en la vista amigable
+          setModoExperto(false);
+        }}
       />
     );
   }
