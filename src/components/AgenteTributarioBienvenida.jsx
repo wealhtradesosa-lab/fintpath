@@ -70,6 +70,7 @@ export default function AgenteTributarioBienvenida({
   estimacion,
   onVerFormulario,
   onCambiarOwner,
+  onAbrirWizard,
   ano = 2025,
 }) {
   const allOwners = useMemo(() => user?.owners || [], [user]);
@@ -290,23 +291,25 @@ export default function AgenteTributarioBienvenida({
           </button>
 
           <button
-            disabled
+            onClick={onAbrirWizard}
             style={{
               padding: "16px 20px",
               background: C.bg3,
-              border: `1.5px dashed ${C.border}`,
+              border: `1.5px solid ${C.border}`,
               borderRadius: 12,
-              color: C.txt3,
-              cursor: "not-allowed",
+              color: C.txt,
+              cursor: "pointer",
               textAlign: "left",
-              opacity: 0.6,
+              transition: "all 0.15s",
             }}
+            onMouseOver={(e) => { e.currentTarget.style.borderColor = C.green; }}
+            onMouseOut={(e) => { e.currentTarget.style.borderColor = C.border; }}
           >
             <div style={{ fontSize: 22, marginBottom: 6 }}>🪄</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: C.txt2, marginBottom: 4 }}>
-              Modo paso a paso (próximamente)
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.txt, marginBottom: 4 }}>
+              Modo paso a paso
             </div>
-            <div style={{ fontSize: 12, color: C.txt3, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5 }}>
               Wizard guiado tipo TurboTax. Te hacemos preguntas simples y armamos tu declaración juntos.
             </div>
           </button>

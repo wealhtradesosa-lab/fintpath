@@ -23,6 +23,7 @@ import { useState, useMemo } from "react";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
 import AgenteTributarioBienvenida from "./AgenteTributarioBienvenida.jsx";
+import WizardTurboTax, { aplicarRespuestasWizard } from "./WizardTurboTax.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -53,6 +54,10 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   // ve primero la pantalla conversacional. Solo si clickea "Ver detalle
   // completo" entra al modo experto.
   const [modoExperto, setModoExperto] = useState(false);
+  // Sesión 29-abr-2026: state para mostrar el wizard tipo TurboTax. Cuando
+  // está abierto, oculta todo el resto del componente y muestra solo el
+  // wizard (UX inmersiva, 1 pregunta por pantalla).
+  const [wizardAbierto, setWizardAbierto] = useState(false);
   // Sesión 29-abr-2026: feedback Santiago sobre experiencia para usuarios
   // no-técnicos. Default ahora es 'simple' — tabla DIAN técnica queda
   // detrás de un botón "Ver el cálculo paso a paso (modo experto)".
@@ -76,6 +81,27 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
     ? ["patrimonio", "ingresos", "costos", "renta", "impuesto", "liquidacion"]
     : ["patrimonio", "trabajo", "deducciones", "capital", "noLaboral", "dividendos", "rentaTotal", "impuesto", "liquidacion"];
 
+  // ─────────────────────────────────────────────────────────────────────
+  // WIZARD TURBOTAX: si está abierto, ocultar todo el resto y mostrar
+  // solo el wizard (UX inmersiva con 1 pregunta por pantalla). Importante:
+  // este check va PRIMERO, antes del check de owners, porque el wizard
+  // puede crear el primer owner si no existe.
+  // ─────────────────────────────────────────────────────────────────────
+  if (wizardAbierto) {
+    return (
+      <WizardTurboTax
+        user={user}
+        onComplete={(answers) => {
+          const newUser = aplicarRespuestasWizard(user, answers);
+          onUpdateUser(newUser);
+          setWizardAbierto(false);
+          setModoExperto(false);
+        }}
+        onCancel={() => setWizardAbierto(false)}
+      />
+    );
+  }
+
   if (allOwners.length === 0) {
     return (
       <div style={{ padding: "24px 0" }}>
@@ -95,20 +121,32 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         </div>
 
         <div style={{ padding: "32px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, textAlign: "center" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>👤</div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: T.txt, marginBottom: 12 }}>
-            Necesitamos tus datos para arrancar
+          <div style={{ fontSize: 48, marginBottom: 16 }}>👋</div>
+          <h3 style={{ fontSize: 22, fontWeight: 800, color: T.txt, marginBottom: 12 }}>
+            ¿Es tu primera vez? Empecemos juntos
           </h3>
-          <p style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6, maxWidth: 520, margin: "0 auto 20px" }}>
-            Para generar tu borrador de declaración (F-110 jurídica o F-210 natural), primero tenés
-            que tener al menos un <strong style={{ color: T.txt }}>owner fiscal</strong> creado:
+          <p style={{ fontSize: 15, color: T.txt2, lineHeight: 1.6, maxWidth: 520, margin: "0 auto 24px" }}>
+            Te voy a hacer unas <strong style={{ color: T.txt }}>preguntas simples</strong> sobre
+            tu año (5-10 minutos). No necesitás saber nada de impuestos: te explico cada cosa
+            en el camino. Al final tenés un borrador para validar con tu contador.
           </p>
-          <div style={{ padding: "16px 20px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 10, maxWidth: 520, margin: "0 auto", textAlign: "left" }}>
-            <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.7 }}>
-              📍 Andá a <strong style={{ color: T.green }}>Configuración → Owners fiscales</strong> y agregá:
-              <br />• <strong>👤 Persona natural</strong> (vos): para tu declaración personal F-210
-              <br />• <strong>🏢 Persona jurídica</strong> (tu SAS/Ltda): para declaración F-110 de la sociedad
-            </div>
+          <button
+            onClick={() => setWizardAbierto(true)}
+            style={{
+              padding: "14px 28px",
+              background: T.green,
+              border: "none",
+              borderRadius: 10,
+              color: "#000",
+              fontSize: 15,
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            🪄 Empezar paso a paso
+          </button>
+          <div style={{ fontSize: 12, color: T.txt3, marginTop: 16 }}>
+            Si preferís cargar datos manualmente, andá a Configuración → Owners fiscales.
           </div>
         </div>
       </div>
@@ -201,6 +239,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         estimacion={estimacion}
         onVerFormulario={() => setModoExperto(true)}
         onCambiarOwner={(id) => setSelectedOwnerId(id)}
+        onAbrirWizard={() => setWizardAbierto(true)}
         ano={ano}
       />
     );
