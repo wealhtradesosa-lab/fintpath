@@ -329,6 +329,61 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
         </div>
       </div>
 
+      {/* Sesión 28-abr-2026: Desglose de retenciones aplicadas (solo si hay).
+          Muestra al user CÓMO se está llegando al saldo a pagar = impuesto - retención.
+          Reduce confusión cuando el user ve "$190M impuesto" pero el saldo final es menor. */}
+      {detalleActual?.retencionDesglose && detalleActual.retencionDesglose.total > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+            🏦 Retención en la fuente estimada
+            {detalleActual.retencionDesglose.fuente === "override_global" && (
+              <span style={{ marginLeft: 8, padding: "2px 8px", background: "rgba(168,85,247,0.15)", borderRadius: 4, fontSize: 9, color: "#a78bfa" }}>
+                OVERRIDE MANUAL
+              </span>
+            )}
+          </div>
+          <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid " + T.border }}>
+              <div>
+                <div style={{ fontSize: 13, color: T.txt2, marginBottom: 2 }}>Impuesto bruto</div>
+                <div style={{ fontSize: 11, color: T.txt3 }}>(antes de retenciones aplicadas)</div>
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: T.red }}>
+                ${Math.round((detalleActual?.impBruto || 0) - (detalleActual?.descuentoICA || 0) - (detalleActual?.descuentosAplicados || 0)).toLocaleString()}
+              </div>
+            </div>
+            {detalleActual.retencionDesglose.detallePorIngreso.filter(d => d.anual > 0).map((d, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", fontSize: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <span style={{ color: T.txt2 }}>{d.nombre}</span>
+                  <span style={{ marginLeft: 8, color: T.txt3, fontSize: 11 }}>· {(d.tasa * 100).toFixed(1)}%</span>
+                </div>
+                <div style={{ color: T.green, fontWeight: 600 }}>-${Math.round(d.anual).toLocaleString()}</div>
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 10, marginTop: 8, borderTop: "1px solid " + T.border, fontSize: 13 }}>
+              <div style={{ color: T.txt, fontWeight: 700 }}>Total retención estimada</div>
+              <div style={{ color: T.green, fontWeight: 700 }}>-${Math.round(detalleActual.retencionDesglose.total).toLocaleString()}</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 12, paddingTop: 10, borderTop: "2px solid " + T.border }}>
+              <div>
+                <div style={{ fontSize: 13, color: T.txt, fontWeight: 700, marginBottom: 2 }}>Saldo a pagar (mayo)</div>
+                <div style={{ fontSize: 11, color: T.txt3 }}>= Impuesto bruto − retenciones</div>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: T.blue }}>
+                ${Math.round(saldoActual).toLocaleString()}
+              </div>
+            </div>
+            <div style={{ fontSize: 10, color: T.txt3, marginTop: 12, fontStyle: "italic", lineHeight: 1.4 }}>
+              ℹ️ Las retenciones son lo que el banco/inquilino te descuentan automáticamente durante el año.
+              Cuando declarás en mayo, ese monto ya fue pagado. El "saldo a pagar" es lo que efectivamente
+              transferís en mayo después del cálculo final. Podés ajustar tasas o desactivar retención por
+              ingreso desde el módulo Ingresos.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bloque 2: Diff año-a-año */}
       {tieneDeclaracion && (
         <div style={{ marginBottom: 18 }}>

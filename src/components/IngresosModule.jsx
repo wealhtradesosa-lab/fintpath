@@ -2,6 +2,7 @@ import { useState } from "react";
 import SimToggleInfo from "./SimToggleInfo";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
+import { obtenerInfoRetencion } from "../lib/retencionesTax.js";
 
 import { C } from "../lib/designTokens.js";
 
@@ -123,6 +124,13 @@ const INITIAL_FORM = {
   // "integral"  = salario integral Art. 132 CST (cesantías ya incluidas)
   // "no_aplica" = honorarios, pensión, etc. (no hay cesantías)
   tipoVinculacion: "ordinario",
+  // Sesión 28-abr-2026 noche: configuración de retención en la fuente.
+  // - retencionAplica: true (default) → motor estima vía tabla retencionesTax.js
+  //                    false → user marca "no aplica" (ej: inquilino persona natural)
+  // - retencionTasaCustom: "" (default) → usa tasa de la tabla
+  //                        "0.05" → user override (5% custom)
+  retencionAplica: true,
+  retencionTasaCustom: "",
 };
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
@@ -259,6 +267,25 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       delete item.tipoVinculacion;
     }
 
+    // Sesión 28-abr-2026 noche: persistir retencionConfig si difiere del default.
+    // Si está en default (aplica=true + sin tasaCustom), NO guardamos nada para
+    // mantener limpio el item. El motor usa default automáticamente.
+    const retencionAplica = form.retencionAplica !== false; // default true
+    const retencionTasaCustom = form.retencionTasaCustom !== "" && form.retencionTasaCustom != null
+      ? Number(form.retencionTasaCustom) / 100  // user pone 7 → guardamos 0.07
+      : null;
+    if (!retencionAplica || retencionTasaCustom != null) {
+      item.retencionConfig = {
+        ...(retencionAplica ? {} : { aplica: false }),
+        ...(retencionTasaCustom != null ? { tasaCustom: retencionTasaCustom } : {}),
+      };
+    } else {
+      delete item.retencionConfig;
+    }
+    // Limpiar campos del form que no se persisten como top-level
+    delete item.retencionAplica;
+    delete item.retencionTasaCustom;
+
     let updated;
     if (editId) {
       updated = items.map((i) => (i.id === editId ? { ...item, id: editId } : i));
@@ -368,6 +395,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       // Commit 4 Tarea 3: leer tipoVinculacion (default "ordinario" para items legacy
       // que no tenían el campo). Solo aplica a Salario.
       tipoVinculacion: item.tipoVinculacion || "ordinario",
+      // Sesión 28-abr-2026: leer retencionConfig (default = aplica:true sin tasa custom)
+      retencionAplica: item.retencionConfig?.aplica !== false,
+      retencionTasaCustom: item.retencionConfig?.tasaCustom != null
+        ? String(item.retencionConfig.tasaCustom * 100)  // 0.07 → "7"
+        : "",
     });
     setEditId(item.id); setShowForm(true);
   };
@@ -931,6 +963,95 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   })()}
                 </div>
               )}
+
+              {/* Sesión 28-abr-2026: Bloque de configuración de retención en
+                  la fuente. Aparece SIEMPRE (excepto Salario que usa tabla
+                  progresiva separada). Por default: estimación automática vía
+                  tabla retencionesTax.js. El user puede:
+                  - Marcar "no aplica" (toggle)
+                  - Override con tasa custom (input %) */}
+              {form.categoria !== "Salario" && form.categoria !== "Pensión" && form.fiscalCode && (() => {
+                // Buscar info de la retención default según fiscalCode + tipo de owner
+                const ownerObj = (owners || []).find(o => o.id === form.owner);
+                const ownerType = ownerObj?.type || "natural";
+                const info = obtenerInfoRetencion(form.fiscalCode, ownerType);
+                const monto = Number(form.mensual) || 0;
+                const tasaUsada = form.retencionAplica === false ? 0
+                  : (form.retencionTasaCustom !== "" && form.retencionTasaCustom != null)
+                    ? Number(form.retencionTasaCustom) / 100
+                    : (info?.tasa || 0);
+                const retencionAnual = monto * 12 * tasaUsada;
+                return (
+                  <div style={{ gridColumn: "1/-1", marginTop: 4, padding: "14px 16px", background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 10 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+                      🏦 Retención en la fuente
+                    </div>
+                    {!info ? (
+                      <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>
+                        No hay retención automática configurada para este tipo de ingreso{ownerType === "juridica" ? "" : " a personas naturales"}.
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6, marginBottom: 10 }}>
+                          <strong style={{ color: T.txt }}>Tasa default: {(info.tasa * 100).toFixed(1)}%</strong> ({info.articulo})
+                          {info.retenedor && <span style={{ color: T.txt3 }}> · Retiene: {info.retenedor}</span>}
+                        </div>
+                        {info.advertencia && (
+                          <div style={{ fontSize: 11, color: "#f97316", marginBottom: 10, lineHeight: 1.5 }}>
+                            ⚠️ {info.advertencia}
+                          </div>
+                        )}
+                        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.txt2, cursor: "pointer" }}>
+                            <input
+                              type="checkbox"
+                              checked={form.retencionAplica !== false}
+                              onChange={(e) => setForm(p => ({ ...p, retencionAplica: e.target.checked }))}
+                              style={{ cursor: "pointer" }}
+                            />
+                            Aplicar retención automática
+                          </label>
+                          {form.retencionAplica !== false && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.txt3 }}>
+                              <span>Tasa custom:</span>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="100"
+                                value={form.retencionTasaCustom}
+                                onChange={(e) => setForm(p => ({ ...p, retencionTasaCustom: e.target.value }))}
+                                placeholder={(info.tasa * 100).toFixed(1)}
+                                style={{ width: 70, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 6, padding: "4px 8px", color: T.txt, fontSize: 12 }}
+                              />
+                              <span>%</span>
+                              {form.retencionTasaCustom !== "" && (
+                                <button
+                                  type="button"
+                                  onClick={() => setForm(p => ({ ...p, retencionTasaCustom: "" }))}
+                                  style={{ background: "transparent", border: "none", color: T.txt3, cursor: "pointer", fontSize: 11, textDecoration: "underline" }}
+                                >
+                                  Reset
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {monto > 0 && (
+                          <div style={{ fontSize: 12, color: form.retencionAplica === false ? T.txt3 : "#22c55e", fontWeight: 600, marginTop: 4 }}>
+                            {form.retencionAplica === false
+                              ? "🚫 No se calculará retención para este ingreso."
+                              : `💰 Retención estimada: ${"$" + Math.round(retencionAnual).toLocaleString()}/año (${(tasaUsada * 100).toFixed(1)}% de ${"$" + Math.round(monto * 12).toLocaleString()})`}
+                          </div>
+                        )}
+                        <div style={{ fontSize: 10, color: T.txt3, marginTop: 8, lineHeight: 1.4, fontStyle: "italic" }}>
+                          ℹ️ Marcá "No aplicar" si quien te paga NO retiene (ej: inquilino persona natural no declarante). Usá tasa custom si tu certificado de retención muestra una tasa distinta.
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
               <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>

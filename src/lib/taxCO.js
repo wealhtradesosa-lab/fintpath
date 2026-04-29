@@ -41,6 +41,7 @@ import {
 } from "./fiscalCodes.js";
 import { TABLA_ART_241, calcImpRenta as calcImpRentaCore } from "./tablaArt241.js";
 import { GRUPOS_SIMPLE as SIMPLE_GRUPOS, calcularImpuestoSimple as calcularImpSimple } from "./regimenSimple.js";
+import { calcularRetencionOwner } from "./retencionesTax.js";
 
 export const UVT = 52374;
 
@@ -237,19 +238,17 @@ export const estimarImpuesto = (u) => {
       const dividIntersocietarios = oIng.filter(i => i.fiscalCode === DIV_INTERSOCIETARIOS).reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (u.trm || 4200) : 1)), 0) * 12;
 
       // Retención automática según tipo de ingreso (solo aplica a régimen ordinario/ZF/CHC; SIMPLE sustituye retención)
+      // Retención fuente jurídica: ahora vía módulo central src/lib/retencionesTax.js
+      // (refactor sesión 28-abr-2026 noche). Antes: tasas hardcoded inline. Ahora:
+      // - Tabla central con override por ingreso (ing.retencionConfig)
+      // - Override global por owner (descuentosTributarios.retencionesEsperadasAnual)
+      // - Soporte para "no aplica" cuando inquilino no es agente retenedor
+      // - Transparencia: el motor expone detalle por ingreso para UI
       let reteJ = 0;
+      let retencionDesgloseJ = null;
       if (regimen !== "simple" && regimen !== "exenta") {
-        oIng.forEach(i => {
-          const m = (i.mensual || 0) * (i.moneda === "USD" ? (u.trm || 4200) : 1) * 12;
-          const fc = i.fiscalCode;
-          if (fc === NOL_ARRIENDO_INMUEBLE) reteJ += m * 0.035;
-          else if (fc === CAP_INTERESES_BANCARIOS) reteJ += m * 0.07;
-          else if (fc === CAP_FIC) reteJ += 0; // FIC: retención a nivel del fondo, no del partícipe
-          else if (fc === DIV_INTERSOCIETARIOS) reteJ += 0; // Inter-societarios: no retención (Art. 48 ET)
-          else if (fc === CAP_RENDIMIENTO_GENERICO) reteJ += m * 0.07;
-          else if (fc === LAB_HONORARIOS_CON_EMPLEADOS || fc === LAB_HONORARIOS_SIN_EMPLEADOS) reteJ += m * 0.11;
-          else reteJ += m * 0.025;
-        });
+        retencionDesgloseJ = calcularRetencionOwner(oIng, ow, u.trm || 4200);
+        reteJ = retencionDesgloseJ.total;
       }
       // Descuento 50% ICA (solo ordinario y zona franca)
       // Categoría "Impuesto" cubre predial, ICA, rodamiento, etc. "Predial" es
@@ -383,6 +382,10 @@ export const estimarImpuesto = (u) => {
         depreciacionInmuebles,
         // Campos intermedios del cálculo (Sprint 4B1 — para consumo por OwnerPlan):
         utilidad, descuentoICA: descICA, retefuenteCalc: reteJ,
+        // Sesión 28-abr-2026: detalle de retención por ingreso para mostrar
+        // en UI con transparencia. Permite que el user vea exactamente cómo
+        // se calculó cada retención y override si es necesario.
+        retencionDesglose: retencionDesgloseJ,
         gmf50, gastosTotal: gastosTotalJ,
         pctGastos: ingAnual > 0 ? (totalDeduc / ingAnual * 100) : 0,
         baseGravable, impuesto: impActual, impSinOpt: impActual, impOptimizado: impOptimoJ,
