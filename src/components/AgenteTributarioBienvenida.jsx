@@ -24,6 +24,7 @@ import { useMemo } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import TerminoTributario from "./TerminoTributario.jsx";
+import BannerAuditoriaDatos from "./BannerAuditoriaDatos.jsx";
 
 // Paleta de colores con alto contraste sobre fondo oscuro
 const C = {
@@ -235,6 +236,22 @@ export default function AgenteTributarioBienvenida({
           icon="📊"
         />
       </div>
+
+      {/* ─────── Auditoría de datos del Contador IA ─────── */}
+      <BannerAuditoriaDatos
+        user={user}
+        onAccion={(hallazgo) => {
+          // Por ahora solo manejamos las acciones de wizard; las acciones
+          // específicas de editar owner/deuda/etc se delegan a la navegación
+          // del Auditor. En próxima iteración agregamos handlers concretos
+          // para cada tipo de acción (asignar_owner_X, editar_deuda, etc).
+          if (hallazgo.accion?.tipo === "abrir_wizard") {
+            onAbrirWizard?.();
+          }
+          // TODO: handlers para asignar_owner, editar_deuda, agregar_gasto, etc
+        }}
+        onAbrirWizard={onAbrirWizard}
+      />
 
       {/* ─────── Oportunidades de ahorro ─────── */}
       {recomendacionesOwner.length > 0 && (
