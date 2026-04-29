@@ -23,6 +23,7 @@
 import { useMemo } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
+import TerminoTributario from "./TerminoTributario.jsx";
 
 // Paleta de colores con alto contraste sobre fondo oscuro
 const C = {
@@ -195,7 +196,7 @@ export default function AgenteTributarioBienvenida({
           {saldoFinal > 0 ? (
             <>
               Esto es <strong style={{ color: C.txt }}>{tasaEfectiva.toFixed(1)}%</strong>{" "}
-              de tus ingresos. {tasaEfectiva < 5
+              de tus ingresos (<TerminoTributario clave="tasaEfectiva">tasa efectiva</TerminoTributario>). {tasaEfectiva < 5
                 ? "Está dentro del rango bajo — pagás poco impuesto efectivo."
                 : tasaEfectiva < 15
                   ? "Es un nivel típico para alguien con tu perfil."
@@ -220,7 +221,7 @@ export default function AgenteTributarioBienvenida({
         />
         <NumeroSimple
           label="Ya pagaste durante el año"
-          subLabel="Retenciones automáticas (banco, empleador, etc.)"
+          subLabel={<>Retenciones automáticas <TerminoTributario clave="retencion">(¿qué es?)</TerminoTributario> del banco, empleador, etc.</>}
           value={retencionTotal}
           color={C.green}
           icon="✅"
@@ -294,7 +295,7 @@ export default function AgenteTributarioBienvenida({
               Ver el detalle completo
             </div>
             <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5 }}>
-              Modo experto: el formulario {isJuridica ? "F-110" : "F-210"} con todos los renglones editables
+              Modo experto: el formulario <TerminoTributario clave={isJuridica ? "f110" : "f210"}>{isJuridica ? "F-110" : "F-210"}</TerminoTributario> con todos los renglones editables
             </div>
           </button>
 

@@ -26,6 +26,7 @@ import AgenteTributarioBienvenida from "./AgenteTributarioBienvenida.jsx";
 import WizardTurboTax, { aplicarRespuestasWizard } from "./WizardTurboTax.jsx";
 import ChatAgenteTributario from "./ChatAgenteTributario.jsx";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
+import TerminoTributario from "./TerminoTributario.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -319,7 +320,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           <span style={{ fontSize: 36 }}>🤖</span>
           <div>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: T.txt, margin: 0, lineHeight: 1.2 }}>
-              Modo experto · Formulario {formulario}
+              Modo experto · Formulario <TerminoTributario clave={isJuridica ? "f110" : "f210"}>{formulario}</TerminoTributario>
             </h2>
             <div style={{ fontSize: 13, color: T.txt2, fontWeight: 500, marginTop: 4 }}>
               Tu copiloto fiscal — te explica y acompaña paso a paso
