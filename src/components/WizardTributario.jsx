@@ -24,6 +24,7 @@ import {
   pasoAnteriorVisible,
   totalPasosVisibles,
   posicionPasoVisible,
+  precargarRespuestasDesdeUser,
 } from "../lib/wizardSteps.js";
 import { estimarImpuesto } from "../lib/taxCO.js";
 
@@ -49,9 +50,21 @@ const C = {
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 
 export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, onClose }) {
+  // Sesión 29-abr-2026: precarga inteligente. Si el user ya tiene datos
+  // cargados (manualmente o de wizard anterior), los detectamos y precargamos
+  // las respuestas del wizard. Así NO repreguntamos cosas que ya sabemos.
+  // El user solo confirma/ajusta los valores existentes.
+  const { answers: precargInicial, precargados: setPrecargados } = useMemo(
+    () => precargarRespuestasDesdeUser(user, selectedOwnerId),
+    [user, selectedOwnerId]
+  );
+
   const [stepIndex, setStepIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState(precargInicial);
   const [showResult, setShowResult] = useState(false);
+
+  // Set de IDs de pasos cuyas respuestas vienen precargadas (para mostrar badge)
+  const precargados = setPrecargados;
 
   const owner = (user?.owners || []).find(o => o.id === selectedOwnerId);
   const ownerName = owner?.name || "vos";
@@ -166,7 +179,28 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
         borderRadius: 16,
         marginBottom: 20,
       }}>
-        {currentStep.type === "intro" && <IntroStep step={currentStep} ownerName={ownerName} />}
+        {/* Banner de precarga: si esta respuesta vino de datos existentes,
+            le avisamos al user para que confirme/ajuste en lugar de empezar de cero */}
+        {precargados.has(currentStep.id) && currentStep.type !== "intro" && currentStep.type !== "review" && (
+          <div style={{
+            background: C.greenBg,
+            border: `1px solid ${C.green}40`,
+            borderRadius: 10,
+            padding: "10px 14px",
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>✓</span>
+            <div style={{ flex: 1, fontSize: 13, color: C.txt2, lineHeight: 1.5 }}>
+              <strong style={{ color: C.green }}>Ya tengo este dato cargado.</strong>{" "}
+              Confirmá si está bien o ajustá el valor si cambió.
+            </div>
+          </div>
+        )}
+
+        {currentStep.type === "intro" && <IntroStep step={currentStep} ownerName={ownerName} cantidadPrecargados={precargados.size} />}
         {currentStep.type === "single_select" && (
           <SingleSelectStep step={currentStep} value={answers[currentStep.id]} onChange={handleAnswer} />
         )}
@@ -213,23 +247,41 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
 // SUB-COMPONENTES POR TIPO DE PASO
 // ─────────────────────────────────────────────────────────────────────────
 
-function IntroStep({ step, ownerName }) {
+function IntroStep({ step, ownerName, cantidadPrecargados = 0 }) {
+  const tieneDatos = cantidadPrecargados > 0;
   return (
     <div>
       <div style={{ fontSize: 48, marginBottom: 16, textAlign: "center" }}>🤖</div>
       <h2 style={{ fontSize: 24, fontWeight: 800, color: C.txt, margin: "0 0 14px 0", textAlign: "center", lineHeight: 1.3 }}>
-        Hola {ownerName !== "vos" ? ownerName : ""} 👋 vamos a entender tus impuestos juntos
+        {tieneDatos
+          ? <>Hola {ownerName !== "vos" ? ownerName : ""} 👋 ya tengo {cantidadPrecargados} datos tuyos cargados</>
+          : <>Hola {ownerName !== "vos" ? ownerName : ""} 👋 vamos a entender tus impuestos juntos</>}
       </h2>
       <p style={{ fontSize: 15, color: C.txt2, lineHeight: 1.6, textAlign: "center", margin: "0 auto", maxWidth: 540 }}>
-        {step.helpText}
+        {tieneDatos
+          ? "Detecté que ya cargaste varios datos en la plataforma. Vamos a confirmarlos rápido y completar lo que falte. Si algo cambió, lo ajustás en el camino."
+          : step.helpText}
       </p>
       <div style={{ marginTop: 24, padding: "16px 20px", background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 10 }}>
-        <div style={{ fontSize: 13, color: C.green, fontWeight: 700, marginBottom: 6 }}>✨ Lo que voy a hacer por vos:</div>
+        <div style={{ fontSize: 13, color: C.green, fontWeight: 700, marginBottom: 6 }}>
+          {tieneDatos ? "✨ Cómo va a ir esto:" : "✨ Lo que voy a hacer por vos:"}
+        </div>
         <ul style={{ margin: 0, paddingLeft: 20, color: C.txt2, fontSize: 13, lineHeight: 1.7 }}>
-          <li>Te hago preguntas simples, una por vez</li>
-          <li>Traduzco los términos técnicos a lenguaje humano</li>
-          <li>Detecto automáticamente formas de ahorrar impuestos</li>
-          <li>Al final tenés un borrador para mostrarle a tu contador</li>
+          {tieneDatos ? (
+            <>
+              <li>Los pasos con datos ya cargados muestran <strong style={{ color: C.green }}>✓ Ya tengo este dato</strong></li>
+              <li>Solo confirmás (o ajustás si cambió)</li>
+              <li>Los datos que falten te los pregunto normalmente</li>
+              <li>Al final se actualiza tu cuenta con la nueva información</li>
+            </>
+          ) : (
+            <>
+              <li>Te hago preguntas simples, una por vez</li>
+              <li>Traduzco los términos técnicos a lenguaje humano</li>
+              <li>Detecto automáticamente formas de ahorrar impuestos</li>
+              <li>Al final tenés un borrador para mostrarle a tu contador</li>
+            </>
+          )}
         </ul>
       </div>
     </div>

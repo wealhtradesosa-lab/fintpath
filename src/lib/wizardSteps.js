@@ -467,3 +467,199 @@ export function posicionPasoVisible(currentIndex, answers, steps = WIZARD_NATURA
   }
   return count;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PRECARGA DE RESPUESTAS DESDE DATOS EXISTENTES DEL USER
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Si el user ya cargó datos antes (manualmente o en otro wizard), el wizard
+// debería detectarlos y NO preguntar de nuevo. Esta función inspecciona el
+// user actual y devuelve un objeto answers con los valores que ya tiene.
+//
+// Cada respuesta precargada se marca con _precargado: true para que el UI
+// pueda mostrar "Ya tengo cargado X — ¿confirmás?" en lugar de "?".
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Detecta datos existentes del user para el owner dado y devuelve un objeto
+ * answers con los valores precargados. Si una respuesta no se puede inferir,
+ * queda undefined (el wizard la pregunta normal).
+ *
+ * @param {object} user - User completo
+ * @param {string} ownerId - ID del owner natural a inspeccionar
+ * @returns {object} answers con valores precargados + flag _precargado
+ */
+export function precargarRespuestasDesdeUser(user, ownerId) {
+  const answers = {};
+  const precargados = new Set(); // ids de pasos con datos precargados
+
+  if (!user || !ownerId) return { answers, precargados };
+
+  const owner = (user.owners || []).find(o => o.id === ownerId);
+  if (!owner) return { answers, precargados };
+
+  // Solo considerar items "encendidos" (sim !== false)
+  const ingresosOwner = (user.ingresos || []).filter(i => i.owner === ownerId && i.sim !== false);
+  const deudasOwner = (user.deu || []).filter(d => d.owner === ownerId && d.sim !== false);
+  const invOwner = (user.inv || []).filter(i => i.owner === ownerId && i.sim !== false);
+
+  // Helper: suma anual de ingresos por fiscalCode
+  const sumaAnual = (fc) => {
+    return ingresosOwner
+      .filter(i => i.fiscalCode === fc)
+      .reduce((s, i) => s + (Number(i.mensual) || 0) * 12 * (i.moneda === "USD" ? (user.trm || 4200) : 1), 0);
+  };
+  const sumaMensual = (fc) => sumaAnual(fc) / 12;
+
+  // ── Tipo de trabajo ─────────────────────────────────────────────────────
+  const tieneSalario = ingresosOwner.some(i => i.fiscalCode === "LAB_SALARIO");
+  const tieneHonorarios = ingresosOwner.some(i =>
+    i.fiscalCode === "LAB_HONORARIOS_CON_EMPLEADOS" || i.fiscalCode === "LAB_HONORARIOS_SIN_EMPLEADOS"
+  );
+  const tienePension = ingresosOwner.some(i => i.fiscalCode === "LAB_PENSIONES");
+
+  if (tienePension && !tieneSalario && !tieneHonorarios) {
+    answers.tipoTrabajo = "pensionado";
+    precargados.add("tipoTrabajo");
+  } else if (tieneSalario && tieneHonorarios) {
+    answers.tipoTrabajo = "mixto";
+    precargados.add("tipoTrabajo");
+  } else if (tieneSalario) {
+    answers.tipoTrabajo = "empleado";
+    precargados.add("tipoTrabajo");
+  } else if (tieneHonorarios) {
+    answers.tipoTrabajo = "independiente";
+    precargados.add("tipoTrabajo");
+  } else if (ingresosOwner.length === 0 && invOwner.length === 0 && deudasOwner.length === 0) {
+    // Sin ningún dato cargado — no precargamos tipoTrabajo (el wizard pregunta normal)
+  }
+
+  // ── Salario mensual ─────────────────────────────────────────────────────
+  if (tieneSalario) {
+    answers.salarioMensual = Math.round(sumaMensual("LAB_SALARIO"));
+    precargados.add("salarioMensual");
+  }
+
+  // ── Honorarios anuales ──────────────────────────────────────────────────
+  if (tieneHonorarios) {
+    const anualHonor = sumaAnual("LAB_HONORARIOS_CON_EMPLEADOS") + sumaAnual("LAB_HONORARIOS_SIN_EMPLEADOS");
+    answers.honorariosAnual = Math.round(anualHonor);
+    precargados.add("honorariosAnual");
+  }
+
+  // ── Pensión mensual ─────────────────────────────────────────────────────
+  if (tienePension) {
+    answers.pensionMensual = Math.round(sumaMensual("LAB_PENSIONES"));
+    precargados.add("pensionMensual");
+  }
+
+  // ── Aportes automáticos (asumimos sí si tiene salario) ──────────────────
+  if (tieneSalario) {
+    answers.aportesAutomaticos = "si";
+    precargados.add("aportesAutomaticos");
+  }
+
+  // ── Dependientes ────────────────────────────────────────────────────────
+  const dependientes = owner?.fiscalProfile?.dependientes;
+  if (dependientes != null) {
+    if (dependientes.cantidad > 0) {
+      answers.tieneDependientes = "si";
+      answers.cantidadDependientes = dependientes.cantidad;
+    } else {
+      answers.tieneDependientes = "no";
+    }
+    precargados.add("tieneDependientes");
+    if (dependientes.cantidad > 0) precargados.add("cantidadDependientes");
+  }
+
+  // ── Medicina prepagada ──────────────────────────────────────────────────
+  const gastosSalud = (user.gas?.["Salud"] || []).filter(g => g.owner === ownerId && g.sim !== false);
+  if (gastosSalud.length > 0) {
+    const totalMensualSalud = gastosSalud.reduce((s, g) => s + (Number(g.m) || 0), 0);
+    if (totalMensualSalud > 0) {
+      answers.pagaMedicinaPrepagada = "si";
+      answers.medicinaMensual = Math.round(totalMensualSalud);
+      precargados.add("pagaMedicinaPrepagada");
+      precargados.add("medicinaMensual");
+    }
+  }
+
+  // ── Vivienda con crédito ────────────────────────────────────────────────
+  const deudaVivienda = deudasOwner.find(d => d.fiscalCode === "DEU_NAT_VIVIENDA_HABITACIONAL");
+  if (deudaVivienda) {
+    answers.tieneViviendaCredito = "si";
+    // Estimar interés anual desde saldo × tasa
+    const saldo = Number(deudaVivienda.mt || deudaVivienda.saldo || 0);
+    const tasaAnual = (Number(deudaVivienda.ts || deudaVivienda.tasa || 12)) / 100;
+    answers.interesesViviendaAnual = Math.round(saldo * tasaAnual);
+    precargados.add("tieneViviendaCredito");
+    precargados.add("interesesViviendaAnual");
+  } else if (deudasOwner.length > 0 || invOwner.length > 0) {
+    // Si tiene otros datos pero no vivienda, asumir "no"
+    answers.tieneViviendaCredito = "no";
+    precargados.add("tieneViviendaCredito");
+  }
+
+  // ── Aportes Pensión Voluntaria / AFC ────────────────────────────────────
+  const gastosPV = (user.gas?.["Aporte tributario"] || []).filter(g =>
+    g.owner === ownerId && g.sim !== false &&
+    (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC")
+  );
+  if (gastosPV.length > 0) {
+    const totalMensualPV = gastosPV.reduce((s, g) => s + (Number(g.m) || 0), 0);
+    if (totalMensualPV > 0) {
+      answers.tieneAportesPV = "si";
+      answers.aportesPVMensual = Math.round(totalMensualPV);
+      precargados.add("tieneAportesPV");
+      precargados.add("aportesPVMensual");
+    }
+  }
+
+  // ── CDT / Ahorros con rendimientos ──────────────────────────────────────
+  const tieneRendimientos = ingresosOwner.some(i =>
+    i.fiscalCode === "CAP_INTERESES_BANCARIOS" ||
+    i.fiscalCode === "CAP_RENDIMIENTO_GENERICO" ||
+    i.fiscalCode === "CAP_FIC"
+  );
+  if (tieneRendimientos) {
+    const anualRend = sumaAnual("CAP_INTERESES_BANCARIOS") +
+                       sumaAnual("CAP_RENDIMIENTO_GENERICO") +
+                       sumaAnual("CAP_FIC");
+    answers.tieneCDTOAhorros = "si";
+    answers.rendimientosAnual = Math.round(anualRend);
+    precargados.add("tieneCDTOAhorros");
+    precargados.add("rendimientosAnual");
+  } else if (invOwner.length > 0) {
+    answers.tieneCDTOAhorros = "no";
+    precargados.add("tieneCDTOAhorros");
+  }
+
+  // ── Arriendos recibidos ─────────────────────────────────────────────────
+  const tieneArriendos = ingresosOwner.some(i =>
+    i.fiscalCode === "NOL_ARRIENDO_INMUEBLE" || i.fiscalCode === "NOL_ARRIENDO_BIENES_MUEBLES"
+  );
+  if (tieneArriendos) {
+    const mensualArr = sumaMensual("NOL_ARRIENDO_INMUEBLE") + sumaMensual("NOL_ARRIENDO_BIENES_MUEBLES");
+    answers.recibeArriendos = "si";
+    answers.arriendosMensual = Math.round(mensualArr);
+    precargados.add("recibeArriendos");
+    precargados.add("arriendosMensual");
+  } else if (ingresosOwner.length > 0) {
+    answers.recibeArriendos = "no";
+    precargados.add("recibeArriendos");
+  }
+
+  // ── Patrimonio aproximado ───────────────────────────────────────────────
+  if (invOwner.length > 0) {
+    const totalActivos = invOwner.reduce((s, i) => {
+      const v = Number(i.valor || i.va || i.ubi || i.vc || 0);
+      return s + v * (i.moneda === "USD" ? (user.trm || 4200) : 1);
+    }, 0);
+    const totalDeudas = deudasOwner.reduce((s, d) => s + Number(d.mt || d.saldo || 0), 0);
+    answers.patrimonioAprox = Math.round(totalActivos - totalDeudas);
+    precargados.add("patrimonioAprox");
+  }
+
+  return { answers, precargados };
+}
+
