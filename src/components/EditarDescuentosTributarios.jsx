@@ -78,6 +78,8 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
     // capacitación laboral 175% (Art. 158-1 inciso 2 ET)
     bonificacionesExtralegalesAnual: existing.bonificacionesExtralegalesAnual || null,
     capacitacionLaboralAnual: existing.capacitacionLaboralAnual || null,
+    // Depreciación inmuebles arrendados (Art. 128-141 ET)
+    depreciacionInmueblesAnual: existing.depreciacionInmueblesAnual || null,
   });
 
   const upd = (k, v) => setD({ ...d, [k]: v });
@@ -101,7 +103,9 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
   const discImpacto = (+d.salariosDiscapacidadAnual || 0) * 1.0 * 0.35;
   const bonifImpacto = (+d.bonificacionesExtralegalesAnual || 0) * 0.35;
   const capImpacto = (+d.capacitacionLaboralAnual || 0) * 0.75 * 0.35;
-  const totalImpactoDeducciones = provImpacto + ctiImpacto + discImpacto + bonifImpacto + capImpacto;
+  // Depreciación inmuebles: 100% deducible × 35% tarifa = ahorro real
+  const depImpacto = (+d.depreciacionInmueblesAnual || 0) * 0.35;
+  const totalImpactoDeducciones = provImpacto + ctiImpacto + discImpacto + bonifImpacto + capImpacto + depImpacto;
   const total = totalDescuentos + totalImpactoDeducciones;
 
   const handleSave = () => {
@@ -175,6 +179,13 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
           value={d.capacitacionLaboralAnual}
           onChange={(v) => upd("capacitacionLaboralAnual", v)}
           hint="Total anual invertido en capacitación de empleados, certificada por SENA, CFF o instituciones calificadas. Deducción del 175% del valor (el 100% ya está como gasto en Egresos categoría Educación; este campo aplica el 75% adicional). Requiere certificado de capacitación."
+        />
+        <Field
+          label="Depreciación de inmuebles arrendados"
+          articulo="Art. 128-141 ET"
+          value={d.depreciacionInmueblesAnual}
+          onChange={(v) => upd("depreciacionInmueblesAnual", v)}
+          hint="Depreciación anual de inmuebles propios usados para producir renta (típicamente arrendados). Vida útil fiscal 45 años (Decreto 2235/2017). Solo se deprecia la construcción (no terreno). Estimación rápida: valor de compra × 75% / 45. IMPORTANTE: tu contador calcula el monto correcto considerando depreciación acumulada de años anteriores. Cargá el monto que él te indique."
         />
         {totalImpactoDeducciones > 0 && (
           <div style={{ padding: "10px 12px", background: "rgba(167,139,250,0.08)", border: "1px solid " + T.purple, borderRadius: 8, marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>

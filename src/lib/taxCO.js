@@ -218,8 +218,18 @@ export const estimarImpuesto = (u) => {
       // adicional es el 75% extra. NO tope global, sí requiere certificación.
       const capacitacion = Math.max(0, Number(_descuentosJ.capacitacionLaboralAnual) || 0);
       const cap75Adicional = capacitacion * 0.75;
+      // Art. 128-141 ET: depreciación de inmuebles propios usados para producir
+      // renta (típicamente arrendados por la sociedad). Vida útil fiscal 45 años
+      // (Decreto 2235/2017 Art. 137). Solo se deprecia la construcción (no el
+      // terreno). Reglas que NO podemos validar desde el motor:
+      //   - Si Lagoon es la dueña jurídica del inmueble (no el socio personal)
+      //   - Si ya se ha depreciado parcialmente en años anteriores
+      //   - Si la base depreciable real es 70% / 75% / 80% del costo
+      // Por eso este campo es MANUAL: el usuario carga el monto que su contador
+      // calculó. El motor lo aplica como deducción común (35% de impacto).
+      const depreciacionInmuebles = Math.max(0, Number(_descuentosJ.depreciacionInmueblesAnual) || 0);
 
-      const deduccionesAvanzadas = provisionCartera + cti175Adicional + discapacidadAdicional + bonificaciones + cap75Adicional;
+      const deduccionesAvanzadas = provisionCartera + cti175Adicional + discapacidadAdicional + bonificaciones + cap75Adicional + depreciacionInmuebles;
       const totalDeduc = gastosDeducJ + interesesJ + gmf50 + deduccionesAvanzadas;
       const utilidad = Math.max(0, ingAnual - totalDeduc);
 
@@ -370,6 +380,7 @@ export const estimarImpuesto = (u) => {
         deduccionesAvanzadas, provisionCartera, inversionCTI, cti175Adicional,
         salariosDiscapacidad, discapacidadAdicional,
         bonificaciones, capacitacion, cap75Adicional,
+        depreciacionInmuebles,
         // Campos intermedios del cálculo (Sprint 4B1 — para consumo por OwnerPlan):
         utilidad, descuentoICA: descICA, retefuenteCalc: reteJ,
         gmf50, gastosTotal: gastosTotalJ,

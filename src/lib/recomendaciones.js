@@ -562,6 +562,52 @@ function recomendacionesJuridica(user, ow, det) {
     });
   }
 
+  // ═════════════ PALANCA 8: Depreciación inmuebles arrendados (Art. 128-141 ET) ═════════════
+  //
+  // Detectamos si la sociedad tiene inmuebles activos (encendidos) con
+  // fiscalCode INV_INMUEBLE_ARRENDADO O tipo Real Estate/Bodega/Local Comercial,
+  // y NO ha cargado depreciación. Sugerimos monto estimado pero NO lo aplicamos
+  // automáticamente — el contador conoce la depreciación acumulada que ya
+  // existe y la base depreciable real. Sprint A C2 / sesión 28-abr-2026.
+  const tieneDepreciacion = Number(ow.descuentosTributarios?.depreciacionInmueblesAnual) > 0;
+  const inmueblesArrendados = (user.inv || [])
+    .filter(i => i.owner === ow.id && i.sim !== false)
+    .filter(i => i.fiscalCode === "INV_INMUEBLE_ARRENDADO"
+              || /Real Estate|Bodega|Local Comercial|Inmueble/i.test(i.tipo || i.tp || ""))
+    // Usar valor de compra (ubi) como costo fiscal; fallback a valor catastral (vc)
+    // y por último al valor comercial (va). Compra es el más conservador.
+    .map(i => ({
+      nombre: i.nombre || i.name || i.n || "Sin nombre",
+      costoFiscal: Number(i.ubi || i.vc || i.va || 0),
+    }))
+    .filter(i => i.costoFiscal > 0);
+  if (inmueblesArrendados.length > 0 && !tieneDepreciacion && impBruto > 0 &&
+      (regimenActual === "ordinario" || regimenActual === "zona_franca" || regimenActual === "chc")) {
+    const totalCostoFiscal = inmueblesArrendados.reduce((s, i) => s + i.costoFiscal, 0);
+    // Estimación conservadora: 75% construcción × 1/45 vida útil = 1.67% anual sobre costo
+    const depreciacionEstimada = totalCostoFiscal * 0.75 / 45;
+    const ahorroEstimado = depreciacionEstimada * 0.35;
+    recs.push({
+      code: "DEPRECIACION_INMUEBLES_ART128",
+      severity: "warning",
+      ownerId: ow.id,
+      ownerName: ow.name,
+      titulo: "Depreciación de inmuebles arrendados (Art. 128-141 ET)",
+      descripcion: `${ow.name} tiene ${inmueblesArrendados.length} inmueble(s) arrendado(s) con costo fiscal total ${fm(totalCostoFiscal)}. Si la sociedad es la dueña jurídica (escritura a nombre de ${ow.name}, no del socio personal), podés depreciar la construcción (~75% del costo) en 45 años. Estimación: ${fm(depreciacionEstimada)}/año → ahorro fiscal ~${fm(ahorroEstimado)}. CONFIRMÁ con tu contador antes de cargar — él conoce la depreciación acumulada de años anteriores.`,
+      ahorroAnualEstimado: ahorroEstimado,
+      cta: { label: "Cargar en Descuentos Tributarios", page: "set" },
+      base: "Art. 128-141 ET · Decreto 2235/2017 Art. 137",
+      supuestos: [
+        `IMPORTANTE: solo aplica si la sociedad es DUEÑA JURÍDICA del inmueble (escritura a su nombre).`,
+        `Si los inmuebles están a nombre del socio persona natural, la depreciación NO aplica a la sociedad.`,
+        `% construcción asumido: 75% (terreno 25%). El % real puede variar — verificá con tu contador.`,
+        `Vida útil fiscal: 45 años para edificios, locales, bodegas (Decreto 2235/2017).`,
+        `Depreciación acumulada de años anteriores REDUCE la base depreciable disponible.`,
+        `Si tu contador ya viene depreciando, cargá el monto que él calculó (no la estimación).`,
+      ],
+    });
+  }
+
   // Si hay impuesto > 0 pero NO hay recomendaciones
   if (recs.length === 0 && impBruto > 0) {
     recs.push({
