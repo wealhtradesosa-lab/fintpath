@@ -45,6 +45,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/agente-tributario-ia"
+  to = "/.netlify/functions/agente-tributario-ia"
+  status = 200
+
+[[redirects]]
   from = "/api/stock-prices"
   to = "/.netlify/functions/stock-prices"
   status = 200

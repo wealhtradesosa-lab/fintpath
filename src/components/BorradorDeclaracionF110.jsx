@@ -23,8 +23,8 @@ import { useState, useMemo } from "react";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
 import AgenteTributarioBienvenida from "./AgenteTributarioBienvenida.jsx";
-import WizardTributario from "./WizardTributario.jsx";
 import WizardTurboTax, { aplicarRespuestasWizard } from "./WizardTurboTax.jsx";
+import ChatAgenteTributario from "./ChatAgenteTributario.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -59,6 +59,10 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   // está abierto, oculta todo el resto del componente y muestra solo el
   // wizard (UX inmersiva, 1 pregunta por pantalla).
   const [wizardAbierto, setWizardAbierto] = useState(false);
+  // Sesión 29-abr-2026 (Fase 4): state para mostrar el chat con el Agente
+  // Tributario IA. Cuando está abierto, oculta todo el resto y muestra solo
+  // el chat (UX inmersiva igual que el wizard).
+  const [chatAbierto, setChatAbierto] = useState(false);
   // Sesión 29-abr-2026: feedback Santiago sobre experiencia para usuarios
   // no-técnicos. Default ahora es 'simple' — tabla DIAN técnica queda
   // detrás de un botón "Ver el cálculo paso a paso (modo experto)".
@@ -90,6 +94,22 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   // VISTA WIZARD: Cuando user clickea "Modo paso a paso" desde la pantalla
   // amigable, se abre el wizard inmersivo (1 pregunta por pantalla).
   // ─────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────
+  // CHAT AGENTE TRIBUTARIO: si está abierto, ocultar todo y mostrar solo
+  // el chat (UX inmersiva 1-a-1 con la IA, igual lógica que el wizard).
+  // ─────────────────────────────────────────────────────────────────────
+  if (chatAbierto) {
+    return (
+      <ChatAgenteTributario
+        user={user}
+        estimacion={estimacion}
+        selectedOwner={selectedOwner}
+        userId={user?.id || user?.userId || null}
+        onCerrar={() => setChatAbierto(false)}
+      />
+    );
+  }
+
   if (wizardAbierto) {
     return (
       <WizardTributario
@@ -241,6 +261,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         onVerFormulario={() => setModoExperto(true)}
         onCambiarOwner={(id) => setSelectedOwnerId(id)}
         onAbrirWizard={() => setWizardAbierto(true)}
+        onAbrirChat={() => setChatAbierto(true)}
         ano={ano}
       />
     );
