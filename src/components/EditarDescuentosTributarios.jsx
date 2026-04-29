@@ -67,11 +67,17 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
     empleo: existing.empleo || null,
     exterior: existing.exterior || null,
     donaciones: existing.donaciones || null,
+    // Sprint A Commit 2: IVA en activos productivos (Art. 258-2 ET)
+    ivaActivosProductivosAnual: existing.ivaActivosProductivosAnual || null,
     otros: existing.otros || null,
     // Deducciones avanzadas (reducen la base gravable, sin tope global)
     provisionCarteraAnual: existing.provisionCarteraAnual || null,
     inversionCTIanual: existing.inversionCTIanual || null,
     salariosDiscapacidadAnual: existing.salariosDiscapacidadAnual || null,
+    // Sprint A Commit 2: bonificaciones extralegales (Art. 107 ET) +
+    // capacitación laboral 175% (Art. 158-1 inciso 2 ET)
+    bonificacionesExtralegalesAnual: existing.bonificacionesExtralegalesAnual || null,
+    capacitacionLaboralAnual: existing.capacitacionLaboralAnual || null,
   });
 
   const upd = (k, v) => setD({ ...d, [k]: v });
@@ -83,15 +89,19 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
   const prevLabel = prevAno ? `Año ${prevAno}` : null;
 
   // Descuentos (reducen impuesto directo): impacto = monto cargado
-  const totalDescuentos = (+d.cti || 0) + (+d.empleo || 0) + (+d.exterior || 0) + (+d.donaciones || 0) + (+d.otros || 0);
+  const totalDescuentos = (+d.cti || 0) + (+d.empleo || 0) + (+d.exterior || 0) + (+d.donaciones || 0) + (+d.ivaActivosProductivosAnual || 0) + (+d.otros || 0);
   // Deducciones avanzadas (reducen base gravable). Impacto fiscal aproximado:
   //   - Provisión cartera: monto × 35% (régimen ordinario)
   //   - CT&I 175%: el 75% adicional × 35% = monto × 0.2625 sobre la inversión
   //   - Discapacidad 200%: el 100% adicional × 35% = monto × 0.35 sobre el salario
+  //   - Bonificaciones (Art. 107): monto × 35% (deducción 100%)
+  //   - Capacitación 175% (Art. 158-1 inc. 2): el 75% adicional × 35% = monto × 0.2625
   const provImpacto = (+d.provisionCarteraAnual || 0) * 0.35;
   const ctiImpacto = (+d.inversionCTIanual || 0) * 0.75 * 0.35;
   const discImpacto = (+d.salariosDiscapacidadAnual || 0) * 1.0 * 0.35;
-  const totalImpactoDeducciones = provImpacto + ctiImpacto + discImpacto;
+  const bonifImpacto = (+d.bonificacionesExtralegalesAnual || 0) * 0.35;
+  const capImpacto = (+d.capacitacionLaboralAnual || 0) * 0.75 * 0.35;
+  const totalImpactoDeducciones = provImpacto + ctiImpacto + discImpacto + bonifImpacto + capImpacto;
   const total = totalDescuentos + totalImpactoDeducciones;
 
   const handleSave = () => {
@@ -152,6 +162,20 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
           onChange={(v) => upd("salariosDiscapacidadAnual", v)}
           hint="Total anual pagado en salarios + prestaciones a empleados con certificación de discapacidad ≥25%. Deducción del 200% (el 100% ya está en nómina; este campo aplica el 100% adicional). Sin tope. Requiere certificación de la Junta Médica."
         />
+        <Field
+          label="Bonificaciones extralegales a empleados"
+          articulo="Art. 107 ET"
+          value={d.bonificacionesExtralegalesAnual}
+          onChange={(v) => upd("bonificacionesExtralegalesAnual", v)}
+          hint="Bonificaciones NO constitutivas de salario entregadas a empleados (no afectan parafiscales). Deducibles 100% si cumplen causalidad + necesidad + proporcionalidad. NO incluye sueldos fijos (esos van en nómina). Ejemplos: bonos de productividad, bonificaciones de fin de año, gratificaciones puntuales."
+        />
+        <Field
+          label="Capacitación laboral certificada (75% adicional)"
+          articulo="Art. 158-1 inc. 2 ET"
+          value={d.capacitacionLaboralAnual}
+          onChange={(v) => upd("capacitacionLaboralAnual", v)}
+          hint="Total anual invertido en capacitación de empleados, certificada por SENA, CFF o instituciones calificadas. Deducción del 175% del valor (el 100% ya está como gasto en Egresos categoría Educación; este campo aplica el 75% adicional). Requiere certificado de capacitación."
+        />
         {totalImpactoDeducciones > 0 && (
           <div style={{ padding: "10px 12px", background: "rgba(167,139,250,0.08)", border: "1px solid " + T.purple, borderRadius: 8, marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ color: T.txt2, fontSize: 12 }}>💰 Ahorro estimado de estas deducciones</span>
@@ -200,6 +224,13 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
           prevYear={+prev.descDonaciones || 0}
           prevYearLabel={prevLabel}
           hint="25% del valor donado a ESAL calificadas. NO es deducción de la base, es descuento directo. El certificado de la ESAL debe incluir el RUT y número de resolución DIAN."
+        />
+        <Field
+          label="IVA pagado en activos productivos"
+          articulo="Art. 258-2 ET"
+          value={d.ivaActivosProductivosAnual}
+          onChange={(v) => upd("ivaActivosProductivosAnual", v)}
+          hint="IVA pagado en la adquisición o importación de bienes de capital (maquinaria, equipo, instalaciones) usados en la actividad productiva. Se descuenta 100% del impuesto sobre la renta del año. Sujeto al tope global del 25% (Art. 259 ET). Aplica también a construcciones para producción primaria."
         />
         <Field
           label="Otros descuentos tributarios"

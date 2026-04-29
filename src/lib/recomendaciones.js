@@ -472,6 +472,96 @@ function recomendacionesJuridica(user, ow, det) {
     });
   }
 
+  // ═════════════ PALANCA 5: Bonificaciones extralegales (Art. 107 ET) ═════════════
+  //
+  // Sin forma automática de detectarlo (no sabemos si la empresa entrega
+  // bonificaciones extralegales además del sueldo). Sugerimos si tiene
+  // nómina significativa y NO ha cargado el campo. Sprint A Commit 2.
+  const tieneBonifExtralegales = Number(ow.descuentosTributarios?.bonificacionesExtralegalesAnual) > 0;
+  if (gastosNomina > 50_000_000 && !tieneBonifExtralegales && impBruto > 0 &&
+      (regimenActual === "ordinario" || regimenActual === "zona_franca" || regimenActual === "chc")) {
+    recs.push({
+      code: "BONIF_EXTRALEGAL_ART107_INFO",
+      severity: "info",
+      ownerId: ow.id,
+      ownerName: ow.name,
+      titulo: "¿Pagás bonificaciones extralegales? Deducibles 100% (Art. 107 ET)",
+      descripcion: `${ow.name} tiene nómina anual de ${fm(gastosNomina)}. Si pagaste bonificaciones NO constitutivas de salario (bonos de productividad, fin de año, gratificaciones), son deducibles al 100% si cumplen causalidad + necesidad + proporcionalidad. NO se incluyen en parafiscales (ventaja fiscal extra). Cargá el monto anual en Descuentos Tributarios.`,
+      ahorroAnualEstimado: 0,
+      cta: { label: "Configurar en Descuentos Tributarios", page: "set" },
+      base: "Art. 107 ET",
+      supuestos: [
+        `Solo aplica si efectivamente pagaste bonificaciones NO constitutivas de salario.`,
+        `Las bonificaciones de salarios fijos NO aplican (esas ya están en nómina).`,
+        `Se requiere causalidad (relación con la actividad), necesidad y proporcionalidad.`,
+        `Monto deducido × 35% (régimen ordinario) ≈ ahorro real.`,
+      ],
+    });
+  }
+
+  // ═════════════ PALANCA 6: Capacitación laboral 175% (Art. 158-1 inc. 2 ET) ═════════════
+  //
+  // Detectamos si la empresa tiene gastos en categoría "Educación" o
+  // "Capacitación" pero NO ha cargado el monto en el campo de capacitación
+  // 175%. Si los tiene, está dejando 75% adicional sobre la mesa. Sprint A C2.
+  const tieneCapacitacion175 = Number(ow.descuentosTributarios?.capacitacionLaboralAnual) > 0;
+  const gastosEducacion = Object.values(user.gas || {}).flat()
+    .filter(g => g.owner === ow.id && (g.cat === "Educación" || g.cat === "Capacitación" || g.fiscalCode === "GAS_JUR_CAPACITACION") && g.sim !== false)
+    .reduce((s, g) => s + ((Number(g.m) || 0) * 12), 0);
+  if (gastosEducacion > 5_000_000 && !tieneCapacitacion175 && impBruto > 0 &&
+      (regimenActual === "ordinario" || regimenActual === "zona_franca" || regimenActual === "chc")) {
+    const ahorroEstimado = gastosEducacion * 0.75 * 0.35;
+    recs.push({
+      code: "CAPACITACION_175_ART158_1_INC2",
+      severity: "warning",
+      ownerId: ow.id,
+      ownerName: ow.name,
+      titulo: "Capacitación de empleados: deducción 175% (Art. 158-1 inciso 2)",
+      descripcion: `${ow.name} tiene ${fm(gastosEducacion)} en gastos de capacitación / educación pero NO está cargado en el campo de capacitación 175%. Si esa capacitación está certificada por SENA, CFF o institución calificada, podés deducir el 75% ADICIONAL (sobre el 100% ya cargado en gasto). Ahorro estimado: ${fm(ahorroEstimado)}/año.`,
+      ahorroAnualEstimado: ahorroEstimado,
+      cta: { label: "Cargar en Descuentos Tributarios", page: "set" },
+      base: "Art. 158-1 inciso 2 ET",
+      supuestos: [
+        `Solo aplica a capacitación CERTIFICADA por SENA, CFF, o institución calificada.`,
+        `El 100% del gasto base ya está como egreso (categoría Educación).`,
+        `Este campo aplica el 75% adicional → deducción total 175%.`,
+        `Sin tope global.`,
+      ],
+    });
+  }
+
+  // ═════════════ PALANCA 7: IVA en activos productivos (Art. 258-2 ET) ═════════════
+  //
+  // Detectamos si la empresa tiene inversiones (categoría "Maquinaria",
+  // "Equipo", o assets con tipo "fixed") y NO ha cargado el IVA pagado en
+  // esos activos como descuento tributario. Sprint A C2.
+  const tieneIVAActivos = Number(ow.descuentosTributarios?.ivaActivosProductivosAnual) > 0;
+  const inversionesActivos = (user.inv || [])
+    .filter(i => i.owner === ow.id && (i.tipo === "fixed_asset" || i.cat === "Maquinaria" || i.cat === "Equipo") && i.sim !== false)
+    .reduce((s, i) => s + (Number(i.valor) || 0), 0);
+  const ivaEstimado = inversionesActivos * 0.19;
+  if (ivaEstimado > 1_000_000 && !tieneIVAActivos && impBruto > 0 &&
+      (regimenActual === "ordinario" || regimenActual === "zona_franca" || regimenActual === "chc")) {
+    recs.push({
+      code: "IVA_ACTIVOS_ART258_2",
+      severity: "warning",
+      ownerId: ow.id,
+      ownerName: ow.name,
+      titulo: "IVA en compra de maquinaria / equipo: descuento 100% (Art. 258-2)",
+      descripcion: `${ow.name} tiene ${fm(inversionesActivos)} en inversiones de bienes de capital. El IVA pagado (~${fm(ivaEstimado)} si es 19%) se descuenta 100% del impuesto sobre la renta del año en que adquiriste el activo. Sujeto al tope global del 25%. Cargá el IVA exacto pagado.`,
+      ahorroAnualEstimado: ivaEstimado,
+      cta: { label: "Cargar en Descuentos Tributarios", page: "set" },
+      base: "Art. 258-2 ET",
+      supuestos: [
+        `Solo aplica a bienes de capital usados en actividad productiva.`,
+        `Cargá el IVA REAL pagado (puede ser distinto al 19% estimado).`,
+        `El descuento es del impuesto bruto (no de la base gravable).`,
+        `Sujeto al tope global del 25% del Art. 259 ET.`,
+        `También aplica a construcciones e instalaciones para producción primaria.`,
+      ],
+    });
+  }
+
   // Si hay impuesto > 0 pero NO hay recomendaciones
   if (recs.length === 0 && impBruto > 0) {
     recs.push({

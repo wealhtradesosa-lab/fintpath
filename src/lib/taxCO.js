@@ -202,8 +202,24 @@ export const estimarImpuesto = (u) => {
       // al 100%), el beneficio adicional es 100% más. Sin tope.
       const salariosDiscapacidad = Math.max(0, Number(_descuentosJ.salariosDiscapacidadAnual) || 0);
       const discapacidadAdicional = salariosDiscapacidad * 1.0;
+      // Art. 107 ET: bonificaciones extralegales (no constitutivas de salario)
+      // entregadas a empleados. Son deducibles 100% si cumplen causalidad +
+      // necesidad + proporcionalidad. NO son salario (no afectan parafiscales),
+      // pero sí son gasto deducible. El usuario carga el monto anual NETO de
+      // bonificaciones que su empresa paga.
+      // Diferencia con sueldos: los sueldos ya están en gastosDeducJ. Esto es
+      // ADICIONAL, las bonificaciones que el contribuyente quiere registrar
+      // como gasto deducible y NO tiene en su nómina mensual cargada.
+      const bonificaciones = Math.max(0, Number(_descuentosJ.bonificacionesExtralegalesAnual) || 0);
+      // Art. 158-1 ET inciso 2: deducción adicional del 175% del valor pagado
+      // por capacitación laboral certificada por SENA, CFF, o instituciones
+      // calificadas. El gasto base (el 100%) ya debería estar en
+      // gastosDeducJ (categoría Educación/Capacitación). El beneficio
+      // adicional es el 75% extra. NO tope global, sí requiere certificación.
+      const capacitacion = Math.max(0, Number(_descuentosJ.capacitacionLaboralAnual) || 0);
+      const cap75Adicional = capacitacion * 0.75;
 
-      const deduccionesAvanzadas = provisionCartera + cti175Adicional + discapacidadAdicional;
+      const deduccionesAvanzadas = provisionCartera + cti175Adicional + discapacidadAdicional + bonificaciones + cap75Adicional;
       const totalDeduc = gastosDeducJ + interesesJ + gmf50 + deduccionesAvanzadas;
       const utilidad = Math.max(0, ingAnual - totalDeduc);
 
@@ -294,15 +310,24 @@ export const estimarImpuesto = (u) => {
 
       // ── DESCUENTOS TRIBUTARIOS (Art. 256-259 ET) ──
       // Inversión CT&I (Art. 158-1), empleo primera vez (Art. 108-5), impuestos exterior
-      // (Art. 254), donaciones (Art. 257), otros. Los descuentos NO pueden reducir el
-      // impuesto a menos del 75% de su valor bruto (tope del 25%, Art. 259 ET).
+      // (Art. 254), donaciones (Art. 257), IVA activos productivos (Art. 258-2),
+      // otros. Los descuentos NO pueden reducir el impuesto a menos del 75% de su
+      // valor bruto (tope del 25%, Art. 259 ET).
       const descuentos = ow.descuentosTributarios || {};
       const descCTI = Math.max(0, Number(descuentos.cti) || 0);
       const descEmpleo = Math.max(0, Number(descuentos.empleo) || 0);
       const descExterior = Math.max(0, Number(descuentos.exterior) || 0);
       const descDonaciones = Math.max(0, Number(descuentos.donaciones) || 0);
+      // Art. 258-2 ET: el IVA pagado en la adquisición o importación de
+      // bienes de capital (maquinaria, equipo) usados en la actividad
+      // productiva se puede tomar 100% como DESCUENTO del impuesto sobre
+      // la renta del año en que se realiza la inversión. Aplica también a
+      // construcciones e instalaciones para la producción primaria.
+      // NO es deducción de la base; ES descuento del impuesto bruto.
+      // Sujeto al tope global del 25% del Art. 259 ET (junto con los otros).
+      const descIVAActivos = Math.max(0, Number(descuentos.ivaActivosProductivosAnual) || 0);
       const descOtros = Math.max(0, Number(descuentos.otros) || 0);
-      const descuentosSolicitados = descCTI + descEmpleo + descExterior + descDonaciones + descOtros;
+      const descuentosSolicitados = descCTI + descEmpleo + descExterior + descDonaciones + descIVAActivos + descOtros;
       // Tope 25% Art. 259 ET: impuesto tras descuentos ≥ 75% del impuesto bruto (solo ordinario y ZF)
       const topeDescuentos = (regimen === "ordinario" || regimen === "zona_franca" || regimen === "chc")
         ? impBruto * 0.25
@@ -336,14 +361,15 @@ export const estimarImpuesto = (u) => {
         name: ow.name, type: "juridica", ingreso: ingAnual,
         regimen, regimenNota, tarifa,
         perdidasAcumuladas, perdidasAplicadas,
-        descuentosSolicitados, descuentosAplicados, descuentosDesglose: { cti: descCTI, empleo: descEmpleo, exterior: descExterior, donaciones: descDonaciones, otros: descOtros },
+        descuentosSolicitados, descuentosAplicados, descuentosDesglose: { cti: descCTI, empleo: descEmpleo, exterior: descExterior, donaciones: descDonaciones, ivaActivos: descIVAActivos, otros: descOtros },
         gastosRegistrados: gastosDeducJ, intereses: interesesJ, deprec, gastosDeduc: totalDeduc,
-        // Deducciones avanzadas (Art. 145 + Art. 158-1 + Ley 361/97) — exposición
-        // explícita para el desglose en SimuladorTributario y la documentación
-        // del cálculo. Permite mostrar al usuario cuánto está deduciendo por
-        // cada palanca.
+        // Deducciones avanzadas (Art. 145 + Art. 158-1 inciso 1 + Ley 361/97 +
+        // Art. 107 + Art. 158-1 inciso 2) — exposición explícita para el
+        // desglose en SimuladorTributario y la documentación del cálculo.
+        // Permite mostrar al usuario cuánto está deduciendo por cada palanca.
         deduccionesAvanzadas, provisionCartera, inversionCTI, cti175Adicional,
         salariosDiscapacidad, discapacidadAdicional,
+        bonificaciones, capacitacion, cap75Adicional,
         // Campos intermedios del cálculo (Sprint 4B1 — para consumo por OwnerPlan):
         utilidad, descuentoICA: descICA, retefuenteCalc: reteJ,
         gmf50, gastosTotal: gastosTotalJ,
