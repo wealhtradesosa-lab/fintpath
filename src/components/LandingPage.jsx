@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const T = {
   bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
@@ -11,6 +11,22 @@ const T = {
 
 export default function LandingPage({ onGetStarted }) {
   const [email, setEmail] = useState("");
+  // TRM dinámica: fetch al montar el componente. Fallback a 4200 si falla.
+  // Coherente con la lógica del app autenticado (App.jsx línea ~462).
+  const [trm, setTrm] = useState(4200);
+  useEffect(() => {
+    fetch("/api/trm")
+      .then(r => r.json())
+      .then(j => { if (j?.trm) setTrm(j.trm); })
+      .catch(() => {/* silent fallback a 4200 */});
+  }, []);
+  // Helper: USD → string COP usando TRM en tiempo real. Redondeo a centena
+  // para presentación limpia. Mismo helper que App.jsx usa en el pricing
+  // del app autenticado.
+  const usdToCop = (usd) => {
+    const cop = Math.round(usd * trm / 100) * 100;
+    return "≈ $" + cop.toLocaleString() + " COP";
+  };
 
   const Section = ({ children, style: s }) => (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", ...s }}>{children}</div>
@@ -211,6 +227,7 @@ export default function LandingPage({ onGetStarted }) {
               {
                 name: "Básico", price: "$8", per: "USD/mes",
                 sub: "$6 USD/mes anual — Ahorra 25%",
+                copEquiv: usdToCop(8),
                 tag: "Para gestionar tu vida financiera completa",
                 users: "1 usuario",
                 features: [
@@ -228,6 +245,7 @@ export default function LandingPage({ onGetStarted }) {
               {
                 name: "Pro", price: "$16", per: "USD/mes",
                 sub: "$12 USD/mes anual — Ahorra 25%",
+                copEquiv: usdToCop(16),
                 tag: "Para planificar y optimizar como un experto",
                 users: "Hasta 3 usuarios",
                 features: [
@@ -243,7 +261,8 @@ export default function LandingPage({ onGetStarted }) {
               },
               {
                 name: "Pro Familiar", price: "$27", per: "USD/mes",
-                sub: "$20 USD/mes anual ($243/año) — Ahorra 25%",
+                sub: "$20 USD/mes anual — Ahorra 25%",
+                copEquiv: usdToCop(27),
                 tag: "Para tu familia + tu contador en un solo espacio",
                 users: "Hasta 10 usuarios",
                 features: [
@@ -260,6 +279,7 @@ export default function LandingPage({ onGetStarted }) {
               {
                 name: "Para Asesores", price: "$79", per: "USD/mes",
                 sub: "Desde — hasta $399 según tamaño de cartera",
+                copEquiv: usdToCop(79),
                 tag: "Para asesores y contadores",
                 users: "Hasta 40+ clientes",
                 features: [
@@ -285,8 +305,10 @@ export default function LandingPage({ onGetStarted }) {
                     <span style={{ fontSize: p.comingSoon ? 26 : 40, fontWeight: 900, letterSpacing: "-0.04em", color: p.comingSoon ? T.txt3 : T.txt }}>{p.price}</span>
                     {p.per && <span style={{ color: T.txt3, fontSize: 14 }}>{p.per}</span>}
                   </div>
-                  {p.sub && <div style={{ fontSize: 12, color: p.advisor ? T.blue : T.green, fontWeight: 600, marginBottom: 14 }}>{p.sub}</div>}
-                  {!p.sub && <div style={{ marginBottom: 14 }} />}
+                  {p.sub && <div style={{ fontSize: 12, color: p.advisor ? T.blue : T.green, fontWeight: 600, marginBottom: 4 }}>{p.sub}</div>}
+                  {p.copEquiv && <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500, marginBottom: 14 }}>🇨🇴 {p.copEquiv}</div>}
+                  {!p.sub && !p.copEquiv && <div style={{ marginBottom: 14 }} />}
+                  {!p.copEquiv && p.sub && <div style={{ marginBottom: 10 }} />}
                   <div style={{ background: T.bg3, padding: "8px 12px", borderRadius: 8, fontSize: 11, color: T.txt2, marginBottom: 16, fontWeight: 600 }}>👤 {p.users}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
                     {p.features.map((f) => (
@@ -318,6 +340,7 @@ export default function LandingPage({ onGetStarted }) {
             ))}
           </div>
           <p style={{ textAlign: "center", marginTop: 20, color: T.txt3, fontSize: 13 }}>🔒 Pagos seguros con Stripe • Cancela cuando quieras • Sin compromisos</p>
+          <p style={{ textAlign: "center", marginTop: 8, color: T.txt3, fontSize: 11 }}>🇨🇴 Conversión a TRM ≈ ${Math.round(trm).toLocaleString()} COP/USD · tu banco aplica su propia tasa al cargo en USD</p>
 
         </Section>
       </div>
