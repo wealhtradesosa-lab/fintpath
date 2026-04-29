@@ -2351,6 +2351,17 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             const n=ow?.declaraciones?.length||0;
             showToast("✅ Declaración guardada en "+(ow?.name||"owner")+" ("+n+"/3 años)");
           }}
+          // Mejora B (sesión 28-abr-2026): callbacks para que el banner de
+          // mismatches pueda persistir el estado "revisado" en user.fiscalReviewed
+          onMarkReviewed={(reviewKey)=>{
+            const fr={...((u&&u.fiscalReviewed)||{}),[reviewKey]:{revisadoEn:new Date().toISOString()}};
+            upd("fiscalReviewed",fr);
+          }}
+          onUnmarkReviewed={(reviewKey)=>{
+            const fr={...((u&&u.fiscalReviewed)||{})};
+            delete fr[reviewKey];
+            upd("fiscalReviewed",fr);
+          }}
           isPro={hasProAccess}
           onUpsell={()=>setPg("price")}
         />}

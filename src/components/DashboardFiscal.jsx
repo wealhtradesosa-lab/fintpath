@@ -16,7 +16,9 @@
 
 import { useState, useMemo } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
+import { detectarMismatchTodos } from "../lib/mismatchDetection.js";
 import RecomendacionesFiscales from "./RecomendacionesFiscales";
+import BannerMismatchDeclaracion from "./BannerMismatchDeclaracion";
 import ReporteFiscalPrint from "./ReporteFiscalPrint";
 import DeclaracionUpload from "./DeclaracionUpload";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
@@ -95,7 +97,7 @@ function DiffRow({ label, actual, declarado, fmt = fm }) {
   );
 }
 
-export default function DashboardFiscal({ u, owners, estimacion, warnings, onNavigate, onSaveDeclaracion, isPro, onUpsell, onGoToUpload }) {
+export default function DashboardFiscal({ u, owners, estimacion, warnings, onNavigate, onSaveDeclaracion, isPro, onUpsell, onGoToUpload, onMarkReviewed, onUnmarkReviewed }) {
   const [selectedOwnerId, setSelectedOwnerId] = useState(owners[0]?.id || "");
   // Commit 5.5: año seleccionado dentro del owner (null = la más reciente)
   const [selectedAno, setSelectedAno] = useState(null);
@@ -132,6 +134,14 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
     if (!estimacion?.detalle || !selectedOwner) return null;
     return estimacion.detalle.find((d) => d.name === selectedOwner.name) || null;
   }, [estimacion, selectedOwner]);
+
+  // Mejora B: detector de mismatch declaración vs cálculo motor
+  // Aplica a TODOS los owners del user, no solo el seleccionado, porque
+  // queremos que el banner alerte si HAY discrepancias en cualquier owner.
+  const mismatchResults = useMemo(() => {
+    if (!u || !estimacion) return [];
+    return detectarMismatchTodos(u, estimacion);
+  }, [u, estimacion]);
 
   // Filtrar alertas relacionadas con este owner (o sin owner específico)
   const alertasDelOwner = useMemo(() => {
@@ -239,6 +249,15 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           📄 Exportar PDF
         </button>
       </div>
+
+      {/* Mejora B (28-abr-2026): banner de mismatch declaración vs datos cargados.
+          Aparece si el detector encontró diferencias significativas. NO acusa,
+          solo alerta y empuja al usuario a verificar con su contador. */}
+      <BannerMismatchDeclaracion
+        results={mismatchResults}
+        onMarkReviewed={onMarkReviewed}
+        onUnmark={onUnmarkReviewed}
+      />
 
       {/* Commit 8.3: upload inline cuando toggle está abierto */}
       {showUpload && onSaveDeclaracion && (
