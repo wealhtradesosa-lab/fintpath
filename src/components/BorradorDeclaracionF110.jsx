@@ -27,7 +27,7 @@ const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   border: "rgba(255,255,255,0.06)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
+  green: "#22c55e", blue: "#3b82f6", purple: "#c4b5fd",
   orange: "#f59e0b", red: "#ef4444", gold: "#eab308",
 };
 
@@ -69,16 +69,16 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   if (allOwners.length === 0) {
     return (
       <div style={{ padding: "24px 0" }}>
-        {/* Header del Agente Tributario IA */}
-        <div style={{ marginBottom: 20, padding: "20px 24px", background: "linear-gradient(135deg, rgba(168,85,247,0.08) 0%, rgba(59,130,246,0.06) 100%)", border: `1px solid ${T.purple}40`, borderRadius: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: 28 }}>🤖</span>
+        {/* Header del Agente Tributario IA — alto contraste */}
+        <div style={{ marginBottom: 20, padding: "24px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.purple}`, borderRadius: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontSize: 36 }}>🤖</span>
             <div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: T.txt, margin: 0, lineHeight: 1.2 }}>
+              <h2 style={{ fontSize: 24, fontWeight: 800, color: T.txt, margin: 0, lineHeight: 1.2 }}>
                 Agente Tributario IA
               </h2>
-              <div style={{ fontSize: 11, color: T.purple, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>
-                Tu copiloto fiscal con IA
+              <div style={{ fontSize: 13, color: T.txt2, fontWeight: 500, marginTop: 4 }}>
+                Tu copiloto fiscal — te explica y acompaña paso a paso
               </div>
             </div>
           </div>
@@ -180,85 +180,81 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
 
   return (
     <div style={{ padding: "24px 0" }}>
-      {/* Header con branding "Agente Tributario IA" */}
-      <div style={{ marginBottom: 20, padding: "20px 24px", background: "linear-gradient(135deg, rgba(168,85,247,0.08) 0%, rgba(59,130,246,0.06) 100%)", border: `1px solid ${T.purple}40`, borderRadius: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <span style={{ fontSize: 28 }}>🤖</span>
+      {/* Header con branding "Agente Tributario IA" — alto contraste para legibilidad */}
+      <div style={{ marginBottom: 20, padding: "24px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.purple}`, borderRadius: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+          <span style={{ fontSize: 36 }}>🤖</span>
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: T.txt, margin: 0, lineHeight: 1.2 }}>
+            <h2 style={{ fontSize: 24, fontWeight: 800, color: T.txt, margin: 0, lineHeight: 1.2 }}>
               Agente Tributario IA
             </h2>
-            <div style={{ fontSize: 11, color: T.purple, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>
-              Tu copiloto fiscal con IA
+            <div style={{ fontSize: 13, color: T.txt2, fontWeight: 500, marginTop: 4 }}>
+              Tu copiloto fiscal — te explica y acompaña paso a paso
             </div>
           </div>
         </div>
-        <p style={{ fontSize: 13, color: T.txt2, lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
-          Esta sección utiliza <strong style={{ color: T.txt }}>inteligencia artificial</strong> para
-          proyectar y calcular tu declaración a partir de los datos que cargaste. Te ofrece{" "}
-          <strong style={{ color: T.txt }}>estrategias y opciones para optimizar tus impuestos legalmente</strong>,
-          mostrándote escenarios y oportunidades específicas para tu caso. Cada renglón del formulario{" "}
-          <strong style={{ color: T.txt }}>{formulario}</strong>{" "}
-          es <strong style={{ color: T.txt }}>editable</strong>: tú o tu contador pueden ajustar los valores
-          y los totales recalculan en vivo.{" "}
-          {!isJuridica && (
-            <span style={{ color: T.purple, fontWeight: 600 }}>
-              Pasá el cursor sobre cualquier renglón para ver tips contextuales que te orientan paso a paso.
-            </span>
-          )}
+        <p style={{ fontSize: 15, color: T.txt, lineHeight: 1.6, marginTop: 0, marginBottom: 0 }}>
+          Acá te ayudamos a <strong>entender y preparar tu declaración de renta</strong>. Tomamos los datos que
+          ya cargaste, te explicamos en lenguaje simple cada parte, y al final tenés un borrador que{" "}
+          <strong>tu contador puede revisar y ajustar</strong>. No tenés que ser experto: el agente te
+          orienta en cada paso.
         </p>
       </div>
 
-      {/* Disclaimer destacado */}
-      <div style={{ marginBottom: 20, padding: "14px 18px", background: "rgba(245,158,11,0.08)", border: `1px solid rgba(245,158,11,0.30)`, borderRadius: 10 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-          <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
-          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
-            <strong style={{ color: T.orange, fontSize: 13 }}>Importante — leé esto:</strong>
-            <br />
-            Este es un <strong style={{ color: T.txt }}>borrador proyectado por IA</strong>, NO es un
-            resultado final ni una recomendación contable definitiva. <strong style={{ color: T.txt }}>Debe
-            ser revisado y validado por tu contador</strong> antes de presentar a DIAN. FINPATHIA es una
-            herramienta de apoyo: no reemplaza el asesoramiento profesional de un contador certificado, ni
-            asume responsabilidad sobre decisiones fiscales tomadas con base en estas proyecciones.
+      {/* Disclaimer — claro pero no intimidatorio */}
+      <div style={{ marginBottom: 20, padding: "16px 20px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.orange}`, borderRadius: 12 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <span style={{ fontSize: 22, flexShrink: 0 }}>⚠️</span>
+          <div style={{ fontSize: 14, color: T.txt, lineHeight: 1.6 }}>
+            <strong style={{ color: T.orange, fontSize: 15, display: "block", marginBottom: 4 }}>
+              Esto es un borrador, no la declaración final
+            </strong>
+            Te ayudamos a entender y proyectar tu declaración, pero <strong>tu contador siempre debe
+            revisarla y firmarla antes de enviarla a la DIAN</strong>. FINPATHIA es una herramienta de
+            apoyo, no reemplaza al asesor profesional.
           </div>
         </div>
       </div>
 
-      {/* Mini-guía contextual según tipo de owner */}
+      {/* Mini-guía contextual según tipo de owner — alto contraste y lenguaje humano */}
       {!isJuridica ? (
-        <div style={{ marginBottom: 20, padding: "16px 20px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 10 }}>
-          <div style={{ fontSize: 12, color: T.green, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            👤 Cómo leer este borrador F-210 (persona natural)
+        <div style={{ marginBottom: 20, padding: "20px 24px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.green}`, borderRadius: 12 }}>
+          <div style={{ fontSize: 16, color: T.txt, fontWeight: 700, marginBottom: 10 }}>
+            👤 ¿Cómo funciona tu declaración?
           </div>
-          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
-            El F-210 trabaja con <strong style={{ color: T.txt }}>cédulas</strong>: cada tipo de ingreso
-            tributa por separado. Vas a ver:
-            <ul style={{ margin: "6px 0 0 0", paddingLeft: 20 }}>
-              <li><strong style={{ color: T.green }}>💼 Cédula General (Trabajo):</strong> tu salario y honorarios. Acá aplican deducciones (dependientes, vivienda, medicina, AFC).</li>
-              <li><strong style={{ color: T.gold }}>📈 Cédula de Capital:</strong> intereses CDT, fondos. Tip: el componente inflacionario te exime ~50% de los intereses.</li>
-              <li><strong style={{ color: "#06b6d4" }}>🏠 Cédula No Laboral:</strong> arriendos. Tributan a parte sin las deducciones del trabajo.</li>
-              <li><strong style={{ color: "#eab308" }}>📊 Cédula Dividendos:</strong> dividendos recibidos. Tarifa especial.</li>
-            </ul>
-            <div style={{ marginTop: 8, color: T.txt3, fontSize: 11 }}>
-              💡 Click en el botón <span style={{ background: "rgba(168,85,247,0.15)", padding: "1px 5px", borderRadius: 3, color: T.purple, fontWeight: 700 }}>💡</span> de cualquier renglón para ver tips específicos.
-            </div>
+          <div style={{ fontSize: 14, color: T.txt, lineHeight: 1.7 }}>
+            En Colombia, las personas naturales pagamos impuesto según el tipo de plata que recibimos.
+            La ley separa tus ingresos en <strong>"cédulas"</strong> (categorías) y cada una se calcula
+            por separado:
+          </div>
+          <ul style={{ margin: "12px 0 0 0", paddingLeft: 22, color: T.txt, fontSize: 14, lineHeight: 1.8 }}>
+            <li><strong>💼 Lo que ganaste con tu trabajo:</strong> sueldo, honorarios. Acá podés descontar cosas como medicina, vivienda, dependientes.</li>
+            <li><strong>📈 Lo que ganaste con tu plata:</strong> intereses de CDT o cuentas. La ley te exime ~50% por inflación (es bastante).</li>
+            <li><strong>🏠 Arriendos que cobraste:</strong> si tenés inmuebles arrendados.</li>
+            <li><strong>📊 Dividendos:</strong> si te pagó plata una empresa donde sos socio.</li>
+          </ul>
+          <div style={{ marginTop: 14, padding: "10px 14px", background: T.bg3, borderRadius: 8, fontSize: 13, color: T.txt, lineHeight: 1.5 }}>
+            💡 <strong>Tip:</strong> tocá el botón <span style={{ background: T.purple, padding: "2px 7px", borderRadius: 4, color: "#fff", fontWeight: 700, fontSize: 11 }}>💡</span> de cualquier fila para que te explique
+            qué significa cada cosa, cuánto te conviene y por qué.
           </div>
         </div>
       ) : (
-        <div style={{ marginBottom: 20, padding: "16px 20px", background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 10 }}>
-          <div style={{ fontSize: 12, color: T.purple, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            🏢 Cómo leer este borrador F-110 (persona jurídica)
+        <div style={{ marginBottom: 20, padding: "20px 24px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.purple}`, borderRadius: 12 }}>
+          <div style={{ fontSize: 16, color: T.txt, fontWeight: 700, marginBottom: 10 }}>
+            🏢 ¿Cómo funciona la declaración de tu empresa?
           </div>
-          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
-            El F-110 calcula utilidad fiscal: <strong style={{ color: T.txt }}>Ingresos − Costos − Gastos = Renta líquida</strong>,
-            que se grava al 35% (ordinario). Las palancas legales para reducir el impuesto incluyen:
-            <ul style={{ margin: "6px 0 0 0", paddingLeft: 20 }}>
-              <li><strong>Provisión cartera</strong> (Art. 145 ET): hasta 33% deducible</li>
-              <li><strong>Capacitación 175%</strong> (Art. 158-1): si está certificada SENA</li>
-              <li><strong>IVA activos productivos</strong> (Art. 258-2): descuento del impuesto</li>
-              <li><strong>Depreciación inmuebles arrendados</strong> (Art. 128-141): vida útil 45 años</li>
-            </ul>
+          <div style={{ fontSize: 14, color: T.txt, lineHeight: 1.7 }}>
+            Las empresas pagan impuesto sobre la <strong>utilidad</strong> (lo que les sobra después de
+            gastos). La fórmula simple es:
+          </div>
+          <div style={{ margin: "14px 0", padding: "12px 18px", background: T.bg3, borderRadius: 8, fontSize: 14, color: T.txt, fontWeight: 600, textAlign: "center" }}>
+            Ingresos − Gastos = Utilidad &nbsp;→&nbsp; Impuesto = Utilidad × 35%
+          </div>
+          <div style={{ fontSize: 14, color: T.txt, lineHeight: 1.7 }}>
+            Hay <strong>palancas legales</strong> que la ley permite para reducir el impuesto. Las más
+            comunes: provisión de cartera, capacitación certificada (descuenta 175%), IVA de activos
+            productivos, depreciación de inmuebles arrendados. El agente las detecta automáticamente
+            cuando aplican.
           </div>
         </div>
       )}
