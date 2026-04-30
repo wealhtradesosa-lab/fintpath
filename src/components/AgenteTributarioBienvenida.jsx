@@ -26,6 +26,7 @@ import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import TerminoTributario from "./TerminoTributario.jsx";
 import BannerAuditoriaDatos from "./BannerAuditoriaDatos.jsx";
 import AsignarTitularMasivo from "./AsignarTitularMasivo.jsx";
+import AplicarOportunidadModal from "./AplicarOportunidadModal.jsx";
 
 // Paleta de colores con alto contraste sobre fondo oscuro
 const C = {
@@ -85,6 +86,9 @@ export default function AgenteTributarioBienvenida({
 
   // State del modal de asignación masiva (abierto cuando hay un hallazgo activo)
   const [hallazgoAsignar, setHallazgoAsignar] = useState(null);
+
+  // State del modal de aplicar oportunidad (PV/AFC, dependientes, salud, etc)
+  const [oportunidadAplicar, setOportunidadAplicar] = useState(null);
 
   // Datos del motor para este owner
   const det = useMemo(() => {
@@ -288,6 +292,17 @@ export default function AgenteTributarioBienvenida({
         />
       )}
 
+      {/* Modal de aplicar oportunidad: se renderiza cuando el user clickea
+          "⚡ Aplicar oportunidad" en una OportunidadCard */}
+      {oportunidadAplicar && (
+        <AplicarOportunidadModal
+          oportunidad={oportunidadAplicar}
+          user={user}
+          onUpdateUser={onUpdateUser}
+          onClose={() => setOportunidadAplicar(null)}
+        />
+      )}
+
       {/* ─────── Oportunidades de ahorro ─────── */}
       {recomendacionesOwner.length > 0 && (
         <div style={{
@@ -310,7 +325,12 @@ export default function AgenteTributarioBienvenida({
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {recomendacionesOwner.map((rec, i) => (
-              <OportunidadCard key={i} rec={rec} numero={i + 1} />
+              <OportunidadCard
+                key={i}
+                rec={rec}
+                numero={i + 1}
+                onAplicar={(r) => setOportunidadAplicar(r)}
+              />
             ))}
           </div>
         </div>
@@ -474,8 +494,11 @@ function NumeroSimple({ label, subLabel, value, color, icon, prefix = "" }) {
   );
 }
 
-function OportunidadCard({ rec, numero }) {
+function OportunidadCard({ rec, numero, onAplicar }) {
   const ahorro = rec.ahorroAnualEstimado || 0;
+  // Códigos que tienen handler de "Aplicar" en el modal
+  const APLICABLES = ["APORTAR_PV_AFC", "DEPENDIENTES_NO_DECLARADOS", "SALUD_PREPAGADA_NO_REGISTRADA"];
+  const esAplicable = APLICABLES.includes(rec.code);
   return (
     <div style={{
       padding: "14px 16px",
@@ -511,9 +534,26 @@ function OportunidadCard({ rec, numero }) {
           </div>
         )}
         {ahorro > 0 && (
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.green }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.green, marginBottom: esAplicable ? 10 : 0 }}>
             Ahorro estimado: {fm(ahorro)} / año
           </div>
+        )}
+        {esAplicable && onAplicar && (
+          <button
+            onClick={() => onAplicar(rec)}
+            style={{
+              padding: "8px 14px",
+              background: C.green,
+              border: "none",
+              borderRadius: 6,
+              color: "#000",
+              fontSize: 12,
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            ⚡ Aplicar oportunidad →
+          </button>
         )}
       </div>
     </div>
