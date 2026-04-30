@@ -136,7 +136,7 @@ export default function AgenteTributarioBienvenida({
   return (
     <div style={{ padding: "20px 0" }}>
       {/* ─────── Saludo conversacional con badge de paso 2 ─────── */}
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "rgba(124,58,237,0.15)", border: "1px solid rgba(196,181,253,0.4)", borderRadius: 999 }}>
             <span style={{ fontSize: 11, fontWeight: 800, color: "#c4b5fd", letterSpacing: 0.5 }}>2️⃣ PASO 2 · AUDITORÍA IA</span>
@@ -153,33 +153,87 @@ export default function AgenteTributarioBienvenida({
         </p>
       </div>
 
-      {/* ─────── Selector de owner si hay más de uno ─────── */}
-      {allOwners.length > 1 && (
-        <div style={{ marginBottom: 24, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {allOwners.map(o => {
-            const isActive = o.id === selectedOwner.id;
-            return (
-              <button
-                key={o.id}
-                onClick={() => onCambiarOwner?.(o.id)}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: 10,
-                  border: "1.5px solid " + (isActive ? C.txt : C.border),
-                  background: isActive ? C.txt : C.bg2,
-                  color: isActive ? C.bg : C.txt2,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
-              >
-                {o.type === "juridica" ? "🏢" : "👤"} {o.name}
-              </button>
-            );
-          })}
+      {/* ─────── Header destacado: PERSONA QUE SE ESTÁ AUDITANDO ───────
+          Siempre visible (incluso si solo hay 1 owner). Resuelve el problema
+          de UX: el user nunca duda sobre QUÉ persona está bajo auditoría.
+          Si hay más de un owner, muestra todos como tabs clickeables. */}
+      <div style={{
+        marginBottom: 20,
+        padding: "16px 18px",
+        background: isJuridica ? "rgba(196,181,253,0.10)" : "rgba(96,165,250,0.10)",
+        border: `1.5px solid ${isJuridica ? "rgba(196,181,253,0.35)" : "rgba(96,165,250,0.35)"}`,
+        borderRadius: 12,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 32,
+              flexShrink: 0,
+              width: 48,
+              height: 48,
+              borderRadius: 10,
+              background: C.bg3,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}>
+              {isJuridica ? "🏢" : "👤"}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: isJuridica ? "#c4b5fd" : "#60a5fa", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
+                Auditando ahora · {isJuridica ? "Persona jurídica" : "Persona natural"}
+              </div>
+              <div style={{ fontSize: 19, fontWeight: 800, color: C.txt, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis" }}>
+                {ownerName}
+              </div>
+              <div style={{ fontSize: 11, color: C.txt3, marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {selectedOwner?.nit && <span>NIT/CC {selectedOwner.nit}</span>}
+                {selectedOwner?.regimen && <span>· Régimen {selectedOwner.regimen}</span>}
+                {isJuridica && !selectedOwner?.regimen && <span style={{ color: "#fb923c" }}>· Régimen sin definir</span>}
+                <span>· {isJuridica ? "F-110" : "F-210"} · Año gravable {ano}</span>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Selector tabs si hay más de un owner */}
+        {allOwners.length > 1 && (
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+              Cambiar a otra persona fiscal:
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {allOwners.map(o => {
+                const isActive = o.id === selectedOwner.id;
+                const isJur = o.type === "juridica";
+                return (
+                  <button
+                    key={o.id}
+                    onClick={() => onCambiarOwner?.(o.id)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: "1.5px solid " + (isActive ? C.txt : C.border),
+                      background: isActive ? C.txt : "transparent",
+                      color: isActive ? C.bg : C.txt2,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <span style={{ fontSize: 14 }}>{isJur ? "🏢" : "👤"}</span>
+                    {o.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ─────── Tarjeta principal: lo que toca pagar ─────── */}
       <div style={{

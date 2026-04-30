@@ -120,11 +120,22 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   // Si el user no tiene ninguno, creamos uno temporalmente antes de abrir.
   // ─────────────────────────────────────────────────────────────────────
   if (wizardAbierto) {
-    // Asegurar que hay un owner natural (el wizard solo aplica a personas naturales)
-    let ownerNaturalId = (user?.owners || []).find(o => o.type === "natural")?.id;
+    // El wizard usa el owner SELECCIONADO en el Auditor IA (natural o jurídica).
+    // Antes (BUG): siempre forzaba al primer owner natural, ignorando la
+    // selección del user. Resultado: si el user seleccionaba Lagoon (jurídica)
+    // y abría el wizard, le hacía preguntas de persona natural ('¿cómo te
+    // pagaron?', '¿tenés dependientes?') aplicadas a una SAS — absurdo.
 
-    if (!ownerNaturalId) {
-      // No hay owner natural: lo creamos primero y persistimos
+    let ownerIdParaWizard = selectedOwnerId;
+
+    // Si por algún motivo no hay owner seleccionado válido, fallback:
+    // primero buscar owner natural, luego cualquiera, luego crear uno.
+    if (!ownerIdParaWizard || !allOwners.find(o => o.id === ownerIdParaWizard)) {
+      ownerIdParaWizard = (allOwners.find(o => o.type === "natural") || allOwners[0])?.id;
+    }
+
+    if (!ownerIdParaWizard) {
+      // No hay NINGÚN owner: crear uno natural temporal y persistir
       const nuevoOwner = {
         id: "own_wizard_" + Date.now(),
         name: "Yo (persona natural)",
@@ -132,9 +143,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         fiscalProfile: {},
       };
       const newUser = { ...user, owners: [...(user?.owners || []), nuevoOwner] };
-      // Disparar la actualización en el siguiente tick para no causar render-during-render
       setTimeout(() => onUpdateUser(newUser), 0);
-      // Mientras se aplica, mostrar loading
       return (
         <div style={{ padding: 40, textAlign: "center", color: T.txt2 }}>
           Preparando el wizard...
@@ -145,7 +154,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
     return (
       <WizardTributario
         user={user}
-        selectedOwnerId={ownerNaturalId}
+        selectedOwnerId={ownerIdParaWizard}
         onUpdateUser={(newUser) => {
           onUpdateUser(newUser);
         }}
