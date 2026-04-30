@@ -91,14 +91,18 @@ export const estimarImpuesto = (u) => {
   u = norm;
   const owners = (u.owners || [{ id: "own_1", name: "Personal", type: "natural" }]);
   // Respeta el flag sim: si el usuario desactivó un item, el simulador lo ignora.
-  const ing = (u.ingresos || []).filter(i => i.sim !== false);
+  // Filtros: solo items "encendidos" (sim !== false) y NO marcados como
+  // excluirDeclaracion=true (estos son items que tributan en otra
+  // jurisdicción y el user marcó conscientemente para no procesarlos
+  // en el cálculo de renta colombiana).
+  const ing = (u.ingresos || []).filter(i => i.sim !== false && !i.excluirDeclaracion);
   const gasRaw = u.gas || {};
   const gas = {};
   Object.entries(gasRaw).forEach(([cat, items]) => {
-    const filtered = (items || []).filter(g => g.sim !== false);
+    const filtered = (items || []).filter(g => g.sim !== false && !g.excluirDeclaracion);
     if (filtered.length > 0) gas[cat] = filtered;
   });
-  const deu = (u.deu || []).filter(d => d.sim !== false);
+  const deu = (u.deu || []).filter(d => d.sim !== false && !d.excluirDeclaracion);
   let totalImp = 0;
   const detalle = [];
   const sinClasificar = ing.filter(i => !i.owner || i.owner === "").length;

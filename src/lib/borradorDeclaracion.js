@@ -51,8 +51,8 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
   };
 
   // ── Cálculo de patrimonio desde inv + deu ───────────────────────────────
-  const oInv = (user.inv || []).filter(i => i.owner === owner.id && i.sim !== false);
-  const oDeu = (user.deu || []).filter(d => d.owner === owner.id && d.sim !== false);
+  const oInv = (user.inv || []).filter(i => i.owner === owner.id && i.sim !== false && !i.excluirDeclaracion);
+  const oDeu = (user.deu || []).filter(d => d.owner === owner.id && d.sim !== false && !d.excluirDeclaracion);
 
   // Efectivo: cuentas bancarias y similares
   const efectivo = oInv
@@ -73,7 +73,7 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
   const pasivos = oDeu.reduce((s, d) => s + (Number(d.saldo || d.s) || 0), 0);
 
   // ── Cálculo de ingresos por categoría F-110 ─────────────────────────────
-  const oIng = (user.ingresos || []).filter(i => i.owner === owner.id && i.sim !== false);
+  const oIng = (user.ingresos || []).filter(i => i.owner === owner.id && i.sim !== false && !i.excluirDeclaracion);
 
   // Renglón 47: ingresos brutos actividades ordinarias (arriendos + operacional)
   const ingActividades = oIng
@@ -103,7 +103,7 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
 
   // ── Cálculo de gastos por categoría F-110 ───────────────────────────────
   const allGastos = Object.values(user.gas || {}).flat()
-    .filter(g => g.owner === owner.id && g.sim !== false);
+    .filter(g => g.owner === owner.id && g.sim !== false && !g.excluirDeclaracion);
 
   // Renglón 63: gastos administración (servicios + nómina + admin)
   const gastosAdmin = allGastos

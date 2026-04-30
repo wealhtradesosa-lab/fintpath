@@ -56,13 +56,17 @@ export function auditarDatos(user, options = {}) {
   const deudas = user.deu || [];
   const inversiones = user.inv || [];
 
-  // ── Helper: solo items "encendidos" (sim !== false) ─────────────────────
+  // ── Helper: solo items "encendidos" (sim !== false) y NO marcados como
+  // excluirDeclaracion=true. Items con excluirDeclaracion son decisiones
+  // conscientes del user (ej: inversiones del exterior que tributan en
+  // otra jurisdicción). El auditor NO los considera huérfanos ni los
+  // procesa como problemas.
   const activos = {
-    ingresos: ingresos.filter(i => i.sim !== false),
-    deudas: deudas.filter(d => d.sim !== false),
-    inversiones: inversiones.filter(i => i.sim !== false),
+    ingresos: ingresos.filter(i => i.sim !== false && !i.excluirDeclaracion),
+    deudas: deudas.filter(d => d.sim !== false && !d.excluirDeclaracion),
+    inversiones: inversiones.filter(i => i.sim !== false && !i.excluirDeclaracion),
     gastos: Object.entries(gastos).reduce((acc, [cat, items]) => {
-      acc[cat] = (items || []).filter(g => g.sim !== false);
+      acc[cat] = (items || []).filter(g => g.sim !== false && !g.excluirDeclaracion);
       return acc;
     }, {}),
   };

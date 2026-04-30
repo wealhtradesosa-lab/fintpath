@@ -62,7 +62,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
   const capitalBruto = interesesBanc + utilidadFIC + rendGenerico + dividendosAuto + dividendosManual;
 
   // No laboral (arrendamientos típicamente)
-  const oIng = (user.ingresos || []).filter(i => i.owner === owner.id && i.sim !== false);
+  const oIng = (user.ingresos || []).filter(i => i.owner === owner.id && i.sim !== false && !i.excluirDeclaracion);
   const ingArriendos = oIng
     .filter(i => i.fiscalCode === "NOL_ARRIENDO_INMUEBLE" || i.fiscalCode === "NOL_ARRIENDO_BIENES_MUEBLES")
     .reduce((s, i) => s + (Number(i.mensual) || 0) * 12 * (i.moneda === "USD" ? trm : 1), 0);
@@ -81,7 +81,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
   const afc = det.afc || 0;
 
   // Patrimonio (mismo cálculo que F-110)
-  const oInv = (user.inv || []).filter(i => i.owner === owner.id && i.sim !== false);
+  const oInv = (user.inv || []).filter(i => i.owner === owner.id && i.sim !== false && !i.excluirDeclaracion);
   const efectivo = oInv
     .filter(i => i.fiscalCode === "INV_CUENTA_BANCARIA" || i.tipo === "cash")
     .reduce((s, i) => s + (Number(i.valor || i.va) || 0) * (i.moneda === "USD" ? trm : 1), 0);
@@ -91,7 +91,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
   const propiedades = oInv
     .filter(i => /Real Estate|Bodega|Local Comercial|Inmueble/i.test(i.tipo || i.tp || ""))
     .reduce((s, i) => s + (Number(i.ubi || i.va || i.vc) || 0) * (i.moneda === "USD" ? trm : 1), 0);
-  const oDeu = (user.deu || []).filter(d => d.owner === owner.id && d.sim !== false);
+  const oDeu = (user.deu || []).filter(d => d.owner === owner.id && d.sim !== false && !d.excluirDeclaracion);
   const pasivos = oDeu.reduce((s, d) => s + (Number(d.saldo || d.s || d.mt) || 0), 0);
 
   // Retenciones e impuesto
