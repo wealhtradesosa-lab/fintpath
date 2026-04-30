@@ -47,6 +47,7 @@ import { getPlansForApp, STRIPE_PRICE_IDS } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import DashboardFiscal from "./components/DashboardFiscal";
 import BorradorDeclaracionF110 from "./components/BorradorDeclaracionF110";
+import VistaFamiliarConsolidada from "./components/VistaFamiliarConsolidada";
 import CalculadoraWizard from "./components/CalculadoraWizard";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
@@ -301,7 +302,7 @@ const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div sty
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 export default function FinPath(){
-  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("borrador");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);
+  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("borrador");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
   // Password recovery flow: detectar link de recovery y pedir nueva contraseña
   const[showResetPassword,setShowResetPassword]=useState(false);
   const[resetNewPassword,setResetNewPassword]=useState("");
@@ -2359,6 +2360,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         <div style={{display:"flex",gap:6,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
           <button onClick={()=>setTaxTab("rapido")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?"#3b82f6":T.border),background:taxTab==="rapido"?"#3b82f6":T.bg3,color:taxTab==="rapido"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>1️⃣ Mi borrador inicial</button>
           <button onClick={()=>setTaxTab("borrador")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="borrador"?"#7c3aed":T.border),background:taxTab==="borrador"?"#7c3aed":T.bg3,color:taxTab==="borrador"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>2️⃣ Auditor IA</button>
+          {/* Tab Vista Familiar: solo aparece si hay >1 owner. Es la pantalla
+              que justifica el plan Pro Familiar y diferencia FINPATHIA de
+              cualquier app de renta de 1 persona. */}
+          {((u&&u.owners)||[]).length>1&&<button onClick={()=>setTaxTab("familia")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="familia"?"#c4b5fd":T.border),background:taxTab==="familia"?"#c4b5fd":T.bg3,color:taxTab==="familia"?"#000000":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>👨‍👩‍👧‍👦 Vista Familiar</button>}
           <button onClick={()=>setTaxTab("dashboard")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?"#3b82f6":T.border),background:taxTab==="dashboard"?"#3b82f6":T.bg3,color:taxTab==="dashboard"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>📚 Mis declaraciones anteriores</button>
           <div style={{flex:1,minWidth:0}}/>
           <button onClick={()=>setShowAyuda(true)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}} title="Guía de uso del sistema de declaración">❓ Ayuda</button>
@@ -2404,6 +2409,18 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           user={u}
           estimacion={estimarImpuesto(u)}
           onUpdateUser={(newUser)=>setU(newUser)}
+          initialOwnerId={ownerJumpFromFamilyView}
+        />}
+        {taxTab==="familia"&&<VistaFamiliarConsolidada
+          user={u}
+          estimacion={estimarImpuesto(u)}
+          ano={2025}
+          onSelectOwner={(ownerId)=>{
+            // Click en una tarjeta de owner desde la Vista Familiar:
+            // saltar al Auditor IA con ese owner ya pre-seleccionado.
+            setOwnerJumpFromFamilyView(ownerId);
+            setTaxTab("borrador");
+          }}
         />}
         {taxTab==="rapido"&&<div>
           <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>

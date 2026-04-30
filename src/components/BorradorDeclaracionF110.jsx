@@ -19,7 +19,7 @@
 //   - Reset disponible: siempre podés volver al valor automático
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
 import AgenteTributarioBienvenida from "./AgenteTributarioBienvenida.jsx";
@@ -38,14 +38,25 @@ const T = {
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 
-export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser }) {
+export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser, initialOwnerId }) {
   // Owners disponibles: jurídicas + naturales
   const ownersJur = useMemo(() => (user?.owners || []).filter(o => o.type === "juridica"), [user]);
   const ownersNat = useMemo(() => (user?.owners || []).filter(o => o.type === "natural"), [user]);
   const allOwners = useMemo(() => [...ownersJur, ...ownersNat], [ownersJur, ownersNat]);
 
-  // Default: prioriza jurídica, fallback a natural
-  const [selectedOwnerId, setSelectedOwnerId] = useState(allOwners[0]?.id || "");
+  // Default: si viene initialOwnerId desde el padre (ej: salto desde Vista Familiar),
+  // lo usa. Si no, prioriza jurídica, fallback a natural.
+  const [selectedOwnerId, setSelectedOwnerId] = useState(
+    (initialOwnerId && allOwners.find(o => o.id === initialOwnerId)?.id) || allOwners[0]?.id || ""
+  );
+
+  // Si el padre cambia initialOwnerId (ej: user clickea otro owner desde Vista
+  // Familiar mientras este componente ya está montado), actualizar la selección.
+  useEffect(() => {
+    if (initialOwnerId && allOwners.find(o => o.id === initialOwnerId)) {
+      setSelectedOwnerId(initialOwnerId);
+    }
+  }, [initialOwnerId]);
   const [ano, setAno] = useState(2025);
   const [editingRenglon, setEditingRenglon] = useState(null);
   const [editValue, setEditValue] = useState("");
