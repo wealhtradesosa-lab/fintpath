@@ -102,6 +102,13 @@ exports.handler = async (event) => {
       subscription_data: {
         metadata: { userId: userId || "", priceId },
       },
+      // Activa el campo "Add promotion code" en la página de Stripe Checkout.
+      // Cuando un user tiene un código (ej: 10AMPRO-ALPHAS para community),
+      // lo ingresa ahí y Stripe valida automáticamente. Si el código aplica
+      // 100% off por 3 meses sobre Pro Familiar, el user ve "$0 today" y
+      // se le cobra el monto normal a partir del mes 4.
+      // Crear los códigos desde Stripe Dashboard → Coupons → Promotion codes.
+      allow_promotion_codes: true,
     };
 
     // Trial de 14 días solo para Pro Familiar (los otros planes son cobro
