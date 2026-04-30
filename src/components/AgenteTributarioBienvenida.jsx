@@ -20,11 +20,12 @@
 //   5. Acompañamiento: explicación de "qué significa esto" en cada bloque
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import TerminoTributario from "./TerminoTributario.jsx";
 import BannerAuditoriaDatos from "./BannerAuditoriaDatos.jsx";
+import AsignarTitularMasivo from "./AsignarTitularMasivo.jsx";
 
 // Paleta de colores con alto contraste sobre fondo oscuro
 const C = {
@@ -81,6 +82,9 @@ export default function AgenteTributarioBienvenida({
   const allOwners = useMemo(() => user?.owners || [], [user]);
   const isJuridica = selectedOwner?.type === "juridica";
   const ownerName = selectedOwner?.name || "vos";
+
+  // State del modal de asignación masiva (abierto cuando hay un hallazgo activo)
+  const [hallazgoAsignar, setHallazgoAsignar] = useState(null);
 
   // Datos del motor para este owner
   const det = useMemo(() => {
@@ -242,31 +246,47 @@ export default function AgenteTributarioBienvenida({
       <BannerAuditoriaDatos
         user={user}
         onAccion={(hallazgo) => {
-          // Por ahora solo manejamos las acciones de wizard; las acciones
-          // específicas de editar owner/deuda/etc se delegan a la navegación
-          // del Auditor. En próxima iteración agregamos handlers concretos
-          // para cada tipo de acción (asignar_owner_X, editar_deuda, etc).
-          if (hallazgo.accion?.tipo === "abrir_wizard") {
-            onAbrirWizard?.();
+          // Las acciones de asignación masiva abren el modal correspondiente.
+          // Otras acciones (editar_owner, editar_deuda, agregar_gasto) por
+          // ahora redirigen al wizard como fallback hasta tener handlers
+          // específicos para cada caso.
+          const tipo = hallazgo?.accion?.tipo || "";
+          if (tipo.startsWith("asignar_owner_")) {
+            setHallazgoAsignar(hallazgo);
+            return;
           }
-          // TODO: handlers para asignar_owner, editar_deuda, agregar_gasto, etc
+          if (tipo === "abrir_wizard") {
+            onAbrirWizard?.();
+            return;
+          }
+          // Fallback: ir al wizard para que el user resuelva manualmente
+          onAbrirWizard?.();
         }}
         onAbrirWizard={onAbrirWizard}
         onIgnorar={(hallazgoId) => {
-          // Marcar el hallazgo como decisión consciente del user
           if (!onUpdateUser) return;
           const dismissed = new Set(user?.auditDismissed || []);
           dismissed.add(hallazgoId);
           onUpdateUser({ ...user, auditDismissed: Array.from(dismissed) });
         }}
         onReactivar={(hallazgoId) => {
-          // Quitar de la lista de ignorados → vuelve a aparecer
           if (!onUpdateUser) return;
           const dismissed = new Set(user?.auditDismissed || []);
           dismissed.delete(hallazgoId);
           onUpdateUser({ ...user, auditDismissed: Array.from(dismissed) });
         }}
       />
+
+      {/* Modal de asignación masiva: se renderiza cuando hay un hallazgo
+          activo del tipo asignar_owner_* */}
+      {hallazgoAsignar && (
+        <AsignarTitularMasivo
+          hallazgo={hallazgoAsignar}
+          user={user}
+          onUpdateUser={onUpdateUser}
+          onClose={() => setHallazgoAsignar(null)}
+        />
+      )}
 
       {/* ─────── Oportunidades de ahorro ─────── */}
       {recomendacionesOwner.length > 0 && (
