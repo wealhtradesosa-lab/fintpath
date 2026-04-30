@@ -158,6 +158,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         onUpdateUser={(newUser) => {
           onUpdateUser(newUser);
         }}
+        onCambiarOwner={(nuevoId) => setSelectedOwnerId(nuevoId)}
         onClose={() => {
           setWizardAbierto(false);
           // Tras completar, dejar al user en la vista amigable

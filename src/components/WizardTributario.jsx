@@ -16,7 +16,7 @@
 //   - selectedOwnerId: ID del owner natural a editar
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   getWizardSteps,
   mapearRespuestasAUser,
@@ -50,7 +50,7 @@ const C = {
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 
-export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, onClose }) {
+export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, onClose, onCambiarOwner }) {
   const owner = (user?.owners || []).find(o => o.id === selectedOwnerId);
   const ownerName = owner?.name || "vos";
   const ownerType = owner?.type || "natural";
@@ -73,6 +73,13 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
 
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState(precargInicial);
+
+  // Cuando el user cambia de owner desde el selector del wizard, las respuestas
+  // y el progreso deben resetearse: cada owner tiene sus propios datos.
+  useEffect(() => {
+    setStepIndex(0);
+    setAnswers(precargInicial);
+  }, [selectedOwnerId]);
   const [showResult, setShowResult] = useState(false);
 
   // Set de IDs de pasos cuyas respuestas vienen precargadas (para mostrar badge)
@@ -156,8 +163,82 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
   }
 
   // ── Render principal del wizard ──────────────────────────────────────
+  const allOwners = user?.owners || [];
+  const isJur = ownerType === "juridica";
+
   return (
     <div style={{ padding: "20px 0", maxWidth: 720, margin: "0 auto" }}>
+      {/* ─── Banner SIEMPRE VISIBLE: persona auditada + selector ───
+          Resuelve UX crítico: sin esto el user no sabe a qué owner
+          le está cargando datos. Si hay >1 owner, ofrece tabs para
+          cambiar SIN perder el wizard. */}
+      <div style={{
+        marginBottom: 18,
+        padding: "14px 16px",
+        background: isJur ? "rgba(196,181,253,0.10)" : "rgba(96,165,250,0.10)",
+        border: `1.5px solid ${isJur ? "rgba(196,181,253,0.40)" : "rgba(96,165,250,0.40)"}`,
+        borderRadius: 12,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{
+            fontSize: 24, flexShrink: 0,
+            width: 38, height: 38, borderRadius: 8,
+            background: C.bg3,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>{isJur ? "🏢" : "👤"}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: isJur ? "#c4b5fd" : "#60a5fa", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 2 }}>
+              Cargando datos para · {isJur ? "Persona jurídica · F-110" : "Persona natural · F-210"}
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.txt, lineHeight: 1.2 }}>
+              {ownerName}
+            </div>
+          </div>
+        </div>
+
+        {/* Selector de owners (solo si hay >1) */}
+        {allOwners.length > 1 && onCambiarOwner && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+              Cambiar a otra persona fiscal:
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {allOwners.map(o => {
+                const activo = o.id === selectedOwnerId;
+                const esJur = o.type === "juridica";
+                return (
+                  <button
+                    key={o.id}
+                    onClick={() => {
+                      if (activo) return;
+                      // Si hay progreso (no estamos en intro), confirmar antes de cambiar
+                      const hayProgreso = stepIndex > 0 || Object.keys(answers).length > Object.keys(precargInicial).length;
+                      if (hayProgreso) {
+                        const ok = confirm(`¿Cambiar a "${o.name}"? Los cambios sin guardar de "${ownerName}" se perderán.`);
+                        if (!ok) return;
+                      }
+                      onCambiarOwner(o.id);
+                    }}
+                    style={{
+                      padding: "7px 11px",
+                      borderRadius: 7,
+                      border: "1.5px solid " + (activo ? C.txt : C.border),
+                      background: activo ? C.txt : "transparent",
+                      color: activo ? C.bg : C.txt2,
+                      fontSize: 12, fontWeight: 700, cursor: activo ? "default" : "pointer",
+                      display: "flex", alignItems: "center", gap: 5,
+                    }}
+                  >
+                    <span style={{ fontSize: 13 }}>{esJur ? "🏢" : "👤"}</span>
+                    {o.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Barra de progreso */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
