@@ -27,6 +27,7 @@ import AgenteTributarioBienvenida from "./AgenteTributarioBienvenida.jsx";
 import WizardTributario from "./WizardTributario.jsx";
 import ChatAgenteTributario from "./ChatAgenteTributario.jsx";
 import AplicarOportunidadModal from "./AplicarOportunidadModal.jsx";
+import PlanAhorroTributario from "./PlanAhorroTributario.jsx";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import TerminoTributario from "./TerminoTributario.jsx";
 
@@ -89,6 +90,11 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   const [oportunidadActiva, setOportunidadActiva] = useState(null);
   // Toggle de la sección expandida de oportunidades
   const [mostrarOportunidades, setMostrarOportunidades] = useState(false);
+  // Plan de Ahorro Tributario abierto (sesión 1-may-2026 v2: feedback Santiago
+  // de que la lista de palancas técnicas no era amigable. Ahora "¿Cómo pago
+  // menos?" abre un checklist guiado área por área con preguntas en lenguaje
+  // humano y carga inline).
+  const [planAhorroAbierto, setPlanAhorroAbierto] = useState(false);
 
   const selectedOwner = allOwners.find(o => o.id === selectedOwnerId);
   const isJuridica = selectedOwner?.type === "juridica";
@@ -140,6 +146,23 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         selectedOwner={selectedOwner}
         userId={user?.id || user?.userId || null}
         onCerrar={() => setChatAbierto(false)}
+      />
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // PLAN DE AHORRO TRIBUTARIO: checklist guiado de palancas legales,
+  // con carga inline desde el componente mismo. Se abre desde el botón
+  // "¿Cómo pago menos?" en la pantalla amigable (sesión 1-may-2026 v2).
+  // ─────────────────────────────────────────────────────────────────────
+  if (planAhorroAbierto) {
+    return (
+      <PlanAhorroTributario
+        user={user}
+        selectedOwner={selectedOwner}
+        estimacion={estimacion}
+        onUpdateUser={onUpdateUser}
+        onClose={() => setPlanAhorroAbierto(false)}
       />
     );
   }
@@ -447,6 +470,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           setMostrarOportunidades={setMostrarOportunidades}
           onAplicarOportunidad={(opo) => setOportunidadActiva(opo)}
           onCompartirPDF={() => exportarBorradorPDF(user, selectedOwner, estimacion, ano)}
+          onAbrirPlanAhorro={() => setPlanAhorroAbierto(true)}
         />
       )}
 
@@ -796,7 +820,7 @@ function ResumenCard({ label, value, color, prefix = "", bold = false }) {
 // Inspiración: TurboTax muestra "Tax Refund: $2,847" como hero antes
 // de cualquier formulario. Acá hacemos lo mismo con saldo a pagar.
 // ═══════════════════════════════════════════════════════════════════════════
-function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId, setSelectedOwnerId, ano, setAno, onVerDetalle, oportunidadesOwner = [], ahorroTotalOwner = 0, mostrarOportunidades = false, setMostrarOportunidades = () => {}, onAplicarOportunidad = () => {}, onCompartirPDF = () => {} }) {
+function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId, setSelectedOwnerId, ano, setAno, onVerDetalle, oportunidadesOwner = [], ahorroTotalOwner = 0, mostrarOportunidades = false, setMostrarOportunidades = () => {}, onAplicarOportunidad = () => {}, onCompartirPDF = () => {}, onAbrirPlanAhorro = () => {} }) {
   // Extraer los números clave para mostrar conversacionalmente
   const findVal = (num) => renglones.find(r => r.numero === num)?.valor || 0;
 
@@ -937,42 +961,30 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
           </button>
 
           <button
-            onClick={() => setMostrarOportunidades(!mostrarOportunidades)}
-            disabled={oportunidadesOwner.length === 0}
-            title={oportunidadesOwner.length === 0
-              ? "No detectamos oportunidades adicionales — ya estás optimizado"
-              : `${oportunidadesOwner.length} formas legales de pagar menos detectadas`}
+            onClick={onAbrirPlanAhorro}
+            title="Te guiamos paso a paso por las palancas legales que aplican a tu caso"
             style={{
-              background: oportunidadesOwner.length > 0 ? T.bg3 : T.bg3,
-              border: `2px solid ${oportunidadesOwner.length > 0 ? "#22c55e" : T.border}`,
+              background: T.bg3,
+              border: `2px solid ${T.green}`,
               borderRadius: 12,
               padding: "16px 18px",
-              cursor: oportunidadesOwner.length > 0 ? "pointer" : "not-allowed",
+              cursor: "pointer",
               textAlign: "left",
               color: T.txt,
-              opacity: oportunidadesOwner.length > 0 ? 1 : 0.5,
               transition: "all 0.15s",
             }}
-            onMouseEnter={(e) => {
-              if (oportunidadesOwner.length > 0) e.currentTarget.style.background = "rgba(34,197,94,0.08)";
-            }}
-            onMouseLeave={(e) => {
-              if (oportunidadesOwner.length > 0) e.currentTarget.style.background = T.bg3;
-            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(34,197,94,0.08)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = T.bg3}
           >
             <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ fontSize: 20 }}>💡</span>
               ¿Cómo pago menos?
-              {oportunidadesOwner.length > 0 && (
-                <span style={{ fontSize: 11, background: "#22c55e", color: "#000", padding: "2px 8px", borderRadius: 4, fontWeight: 700 }}>
-                  {oportunidadesOwner.length} {oportunidadesOwner.length === 1 ? "oportunidad" : "oportunidades"}
-                </span>
-              )}
+              <span style={{ fontSize: 11, background: "#22c55e", color: "#000", padding: "2px 8px", borderRadius: 4, fontWeight: 700 }}>
+                PASO A PASO
+              </span>
             </div>
             <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
-              {oportunidadesOwner.length === 0
-                ? "Por ahora no hay palancas adicionales. Estás bien optimizado o no tenés saldo a cargo."
-                : `Detectamos ${oportunidadesOwner.length} ${oportunidadesOwner.length === 1 ? "forma legal" : "formas legales"} de bajar tu impuesto. Ahorro estimado: ${"$" + Math.round(ahorroTotalOwner).toLocaleString("es-CO")}/año.`}
+              Te hacemos {isJuridica ? "5" : "4"} preguntas simples sobre tu situación. Por cada SÍ, calculamos y aplicamos el ahorro automáticamente. Sin jerga técnica.
             </div>
           </button>
 
