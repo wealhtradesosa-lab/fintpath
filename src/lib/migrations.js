@@ -78,3 +78,31 @@ export function migrateDeclaracionesV55(d) {
   d.migratedDeclaracionesV55 = true;
   return d;
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Sesión 1-may-2026: en versiones tempranas del Plan de Optimización
+// (DeclaracionFlow.jsx) yo guardaba el fiscalCode "AP_TRIB_PENSION_VOL"
+// que NO EXISTE en el motor (taxCO.js lee solo AP_TRIB_PV). Resultado:
+// los aportes que el user aplicaba desde el wizard se guardaban pero
+// no impactaban el cálculo. Esta migración corrige los registros legacy.
+// Idempotente: una vez corre, marca migratedFiscalCodePV y no vuelve.
+// ─────────────────────────────────────────────────────────────────────────
+export function migrateFiscalCodePVLegacy(d) {
+  if (!d || typeof d !== "object") return d;
+  if (d.migratedFiscalCodePV) return d;
+  const gas = { ...(d.gas || {}) };
+  let cambios = 0;
+  for (const cat of Object.keys(gas)) {
+    if (!Array.isArray(gas[cat])) continue;
+    gas[cat] = gas[cat].map(g => {
+      if (g.fiscalCode === "AP_TRIB_PENSION_VOL") {
+        cambios++;
+        return { ...g, fiscalCode: "AP_TRIB_PV" };
+      }
+      return g;
+    });
+  }
+  if (cambios > 0) d.gas = gas;
+  d.migratedFiscalCodePV = true;
+  return d;
+}

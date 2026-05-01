@@ -345,7 +345,26 @@ const AREAS_NATURAL = [
       const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
       return Math.min(Math.round(aplicable * tasaMarg), saldoActual);
     },
-    permiteAplicarSinAhorro: (data) => Number(data.aporteMensual) > 0,
+    // Solo permitimos aplicar si el motor reporta espacio disponible.
+    // Sin espacio (ya topado en 40% renta laboral o sin renta laboral),
+    // aportar más no genera beneficio adicional, así que no tiene sentido
+    // guardar el dato.
+    permiteAplicarSinAhorro: (data, det) => {
+      const mensual = Number(data.aporteMensual) || 0;
+      const espacio = Number(det?.espacioParaPVyAFC) || 0;
+      return mensual > 0 && espacio > 0;
+    },
+    // Mensaje específico cuando el motor reporta sin espacio disponible
+    avisoEspecial: (det) => {
+      const espacio = Number(det?.espacioParaPVyAFC) || 0;
+      if (espacio === 0) {
+        return {
+          tipo: "info",
+          mensaje: "Para personas naturales, los aportes a PV/AFC son deducibles solo sobre rentas de TRABAJO (salario u honorarios). Si tu ingreso principal es por dividendos, arriendos o ganancias de capital, este beneficio no aplica. También puede ser que ya estés al máximo del beneficio (cap 40% de renta laboral).",
+        };
+      }
+      return null;
+    },
     // Detecta aportes a PV/AFC ya cargados. Buscamos en BOTH categorías
     // posibles ("Aporte tributario" del wizard tributario nuevo y
     // "Aportes tributarios" legacy) para retrocompatibilidad.
@@ -374,7 +393,7 @@ const AREAS_NATURAL = [
         label: "Tipo de cuenta",
         type: "select",
         options: [
-          { value: "AP_TRIB_PENSION_VOL", label: "Pensión Voluntaria" },
+          { value: "AP_TRIB_PV", label: "Pensión Voluntaria" },
           { value: "AP_TRIB_AFC", label: "AFC (Ahorro Fomento Construcción)" },
         ],
         defaultValue: "AP_TRIB_AFC",
@@ -386,12 +405,14 @@ const AREAS_NATURAL = [
       const newUser = { ...user, gas: { ...(user.gas || {}) } };
       const cat = "Aporte tributario";
       // Limpiamos solo entries de PV/AFC creadas por este Plan, dejamos
-      // las de medicina y otras intactas.
+      // las de medicina y otras intactas. Aceptamos los 3 fiscalCodes
+      // posibles (legacy AP_TRIB_PV oficial + AP_TRIB_PENSION_VOL legacy
+      // creado en versiones previas del Plan que ten\u00edan el c\u00f3digo equivocado).
       newUser.gas[cat] = (newUser.gas[cat] || []).filter(g =>
         !(g._planAhorro && g.owner === ownerId &&
-          (g.fiscalCode === "AP_TRIB_PENSION_VOL" || g.fiscalCode === "AP_TRIB_AFC"))
+          (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC" || g.fiscalCode === "AP_TRIB_PENSION_VOL"))
       );
-      const nombreTipo = tipo === "AP_TRIB_PENSION_VOL" ? "Aporte Pensión Voluntaria" : "Aporte AFC (vivienda)";
+      const nombreTipo = tipo === "AP_TRIB_PV" ? "Aporte Pensión Voluntaria" : "Aporte AFC (vivienda)";
       newUser.gas[cat].push({
         id: "gas_pa_pv_" + Date.now(),
         owner: ownerId,
@@ -984,9 +1005,15 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
   // motor no tiene salario cargado todavía, o saldo a cargo ya en cero).
   const permiteAplicar = useMemo(() => {
     if (ahorroPreview > 0) return true;
-    if (area.permiteAplicarSinAhorro && area.permiteAplicarSinAhorro(valores)) return true;
+    if (area.permiteAplicarSinAhorro && area.permiteAplicarSinAhorro(valores, det)) return true;
     return false;
-  }, [ahorroPreview, area, valores]);
+  }, [ahorroPreview, area, valores, det]);
+
+  // Aviso especial del área (ej: PV cuando no hay espacio disponible)
+  const avisoEspecial = useMemo(() => {
+    if (!area.avisoEspecial) return null;
+    return area.avisoEspecial(det);
+  }, [area, det]);
 
   // Detector de datos preexistentes en el sistema.
   // Si el motor ya tiene info cargada (ej: gastos de salud en Egresos,
@@ -1099,6 +1126,25 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
               Base legal: {area.baseLegal}
             </div>
           </div>
+
+          {/* Aviso especial del área (ej: PV/AFC sin espacio disponible) */}
+          {avisoEspecial && (
+            <div style={{
+              padding: "10px 12px",
+              background: avisoEspecial.tipo === "warning" ? C.orangeBg : C.blueBg,
+              border: `1px solid ${avisoEspecial.tipo === "warning" ? C.orange : C.blue}40`,
+              borderRadius: 8,
+              marginBottom: 12,
+              fontSize: 12,
+              color: C.txt2,
+              lineHeight: 1.5,
+            }}>
+              <strong style={{ color: avisoEspecial.tipo === "warning" ? C.orange : C.blue }}>
+                {avisoEspecial.tipo === "warning" ? "⚠️ Atención: " : "ℹ️ Importante: "}
+              </strong>
+              {avisoEspecial.mensaje}
+            </div>
+          )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
             {(area.inputs || []).map(input => (
