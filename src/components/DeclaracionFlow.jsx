@@ -237,6 +237,13 @@ const AREAS_NATURAL = [
     // Permitimos aplicar igual: el dato queda guardado para cuando cargue
     // el salario o cambien las retenciones.
     permiteAplicarSinAhorro: (data) => Number(data.cantidad) > 0,
+    // Detecta si el dato ya existe en el sistema. Si retorna {tiene: true},
+    // el área se muestra como "ya cargado" en vez de pedir la pregunta de cero.
+    yaTieneDatos: (owner) => {
+      const cant = Number(owner?.fiscalProfile?.dependientes?.cantidad) || 0;
+      if (cant > 0) return { tiene: true, descripcion: `${cant} dependiente${cant > 1 ? "s" : ""} ya registrado${cant > 1 ? "s" : ""}` };
+      return { tiene: false };
+    },
     inputs: [{
       key: "cantidad",
       label: "¿Cuántas personas dependen de vos?",
@@ -271,6 +278,22 @@ const AREAS_NATURAL = [
       return Math.min(Math.round(deducible * tasaMarg), saldoActual);
     },
     permiteAplicarSinAhorro: (data) => Number(data.gastoMensual) > 0,
+    // Detecta si ya hay gasto de salud cargado (Egresos categoría "Salud" o
+    // fiscalCode SEG_SALUD/AP_TRIB_SALUD_PREPAGADA). El motor calcula deducMedicina,
+    // si > 0 significa que ya tenemos algo cargado.
+    yaTieneDatos: (owner, user, det) => {
+      const deducMed = Number(det?.deducMedicina) || 0;
+      if (deducMed > 0) {
+        // Buscar el gasto cargado para mostrarlo descriptivamente
+        const gasSalud = (user?.gas?.["Salud"] || []).filter(g => g.owner === owner.id);
+        const totalMensual = gasSalud.reduce((s, g) => s + (Number(g.m) || 0), 0);
+        if (totalMensual > 0) {
+          return { tiene: true, descripcion: `Ya cargaste $${totalMensual.toLocaleString("es-CO")}/mes en Egresos → Salud` };
+        }
+        return { tiene: true, descripcion: `Ya hay gastos de salud aplicándose (deducción anual: $${deducMed.toLocaleString("es-CO")})` };
+      }
+      return { tiene: false };
+    },
     inputs: [{
       key: "gastoMensual",
       label: "¿Cuánto pagás cada mes?",
@@ -305,6 +328,18 @@ const AREAS_NATURAL = [
       return Math.min(Math.round(aplicable * tasaMarg), saldoActual);
     },
     permiteAplicarSinAhorro: (data) => Number(data.aporteMensual) > 0,
+    // Detecta aportes a PV/AFC ya cargados en Egresos
+    yaTieneDatos: (owner, user) => {
+      const aportes = (user?.gas?.["Aportes tributarios"] || []).filter(g =>
+        g.owner === owner.id &&
+        (g.fiscalCode === "AP_TRIB_PENSION_VOL" || g.fiscalCode === "AP_TRIB_AFC")
+      );
+      const totalMensual = aportes.reduce((s, g) => s + (Number(g.m) || 0), 0);
+      if (totalMensual > 0) {
+        return { tiene: true, descripcion: `Ya aportás $${totalMensual.toLocaleString("es-CO")}/mes a PV/AFC` };
+      }
+      return { tiene: false };
+    },
     inputs: [
       {
         key: "aporteMensual",
@@ -352,6 +387,18 @@ const AREAS_NATURAL = [
       return Math.min(Math.round(deducible * tasaMarg), saldoActual);
     },
     permiteAplicarSinAhorro: (data) => Number(data.interesesAnuales) > 0,
+    // Detecta si ya hay datos de vivienda. Dos vías:
+    // 1) intereses ya guardados en fiscalProfile (cargados via Plan)
+    // 2) deudas con fiscalCode DEU_NAT_VIVIENDA_HABITACIONAL (motor calcula intereses)
+    yaTieneDatos: (owner, user, det) => {
+      const intManual = Number(owner?.fiscalProfile?.interesesViviendaAnuales) || 0;
+      if (intManual > 0) return { tiene: true, descripcion: `Ya cargaste $${intManual.toLocaleString("es-CO")}/año en intereses` };
+      const deducVivienda = Number(det?.deducVivienda) || 0;
+      if (deducVivienda > 0) {
+        return { tiene: true, descripcion: `Ya hay deuda hipotecaria aplicándose (deducción: $${deducVivienda.toLocaleString("es-CO")})` };
+      }
+      return { tiene: false };
+    },
     inputs: [{
       key: "interesesAnuales",
       label: "¿Cuánto pagaste de intereses (no capital) en el año?",
@@ -459,7 +506,16 @@ export default function DeclaracionFlow({
 
   const cambiosAplicados = Object.entries(respuestasArea).filter(([_, r]) => r.tipo === "aplicado");
   const ahorroTotal = cambiosAplicados.reduce((s, [_, r]) => s + (r.ahorro || 0), 0);
-  const todasRevisadas = areas.every(a => respuestasArea[a.id]?.tipo);
+  // Un área está "revisada" si: (a) el user respondió manualmente OR (b) el sistema
+  // detecta que ya tiene datos cargados (ej: salud cargada en Egresos previamente).
+  const todasRevisadas = areas.every(a => {
+    if (respuestasArea[a.id]?.tipo) return true;
+    if (a.yaTieneDatos && selectedOwner) {
+      const datos = a.yaTieneDatos(selectedOwner, user, det);
+      if (datos?.tiene) return true;
+    }
+    return false;
+  });
 
   // Sin owners: estado vacío
   if (!selectedOwner) {
@@ -658,6 +714,8 @@ export default function DeclaracionFlow({
                   onAplicar={(data) => aplicarArea(area, data)}
                   onNoAplica={() => noAplicaArea(area)}
                   det={det}
+                  owner={selectedOwner}
+                  user={user}
                 />
               ))}
             </div>
@@ -871,7 +929,7 @@ function MiniCard({ icono, label, valor, color, sub }) {
   );
 }
 
-function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, onNoAplica, det }) {
+function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, onNoAplica, det, owner, user }) {
   const [valores, setValores] = useState(() => {
     const init = {};
     (area.inputs || []).forEach(i => {
@@ -896,11 +954,22 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
     return false;
   }, [ahorroPreview, area, valores]);
 
+  // Detector de datos preexistentes en el sistema.
+  // Si el motor ya tiene info cargada (ej: gastos de salud en Egresos,
+  // dependientes en fiscalProfile, etc.), evitamos preguntar de cero.
+  const datosExistentes = useMemo(() => {
+    if (!area.yaTieneDatos || !owner) return { tiene: false };
+    return area.yaTieneDatos(owner, user, det);
+  }, [area, owner, user, det]);
+
   const yaRespondida = !!respuesta;
   const aplicada = respuesta?.tipo === "aplicado";
   const noAplica = respuesta?.tipo === "noaplica";
+  // Marcamos como "ya configurado" si los datos existen en el sistema y el user
+  // no respondió manualmente esta área en esta sesión.
+  const yaConfigurado = !yaRespondida && datosExistentes.tiene;
 
-  const borderColor = aplicada ? C.green : noAplica ? C.txt3 : (expandida ? C.blue : C.border);
+  const borderColor = aplicada || yaConfigurado ? C.green : noAplica ? C.txt3 : (expandida ? C.blue : C.border);
 
   return (
     <div style={{
@@ -912,14 +981,14 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
     }}>
       <button
         onClick={!yaRespondida ? onExpandir : undefined}
-        disabled={yaRespondida}
+        disabled={yaRespondida || yaConfigurado}
         style={{
           width: "100%",
           padding: "12px 14px",
           background: "transparent",
           border: "none",
           textAlign: "left",
-          cursor: yaRespondida ? "default" : "pointer",
+          cursor: (yaRespondida || yaConfigurado) ? "default" : "pointer",
           display: "flex",
           alignItems: "center",
           gap: 12,
@@ -927,12 +996,12 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
       >
         <div style={{
           width: 28, height: 28, borderRadius: "50%",
-          background: aplicada ? C.green : noAplica ? C.bg3 : C.bg3,
-          color: aplicada ? "#000" : noAplica ? C.txt3 : C.txt2,
+          background: aplicada || yaConfigurado ? C.green : noAplica ? C.bg3 : C.bg3,
+          color: aplicada || yaConfigurado ? "#000" : noAplica ? C.txt3 : C.txt2,
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 13, fontWeight: 800, flexShrink: 0,
         }}>
-          {aplicada ? "✓" : noAplica ? "—" : index}
+          {aplicada || yaConfigurado ? "✓" : noAplica ? "—" : index}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -948,6 +1017,14 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
                 💚 {fmShort(respuesta.ahorro)}
               </span>
             )}
+            {yaConfigurado && (
+              <span style={{
+                fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                background: C.greenBg, color: C.green, fontWeight: 700,
+              }}>
+                ✓ Ya cargado
+              </span>
+            )}
             {noAplica && (
               <span style={{
                 fontSize: 11, padding: "2px 8px", borderRadius: 999,
@@ -957,20 +1034,25 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
               </span>
             )}
           </div>
-          {!expandida && !yaRespondida && (
+          {!expandida && !yaRespondida && !yaConfigurado && (
             <div style={{ fontSize: 12, color: C.txt3, marginTop: 4, lineHeight: 1.3 }}>
               {area.pregunta}
             </div>
           )}
+          {yaConfigurado && datosExistentes.descripcion && (
+            <div style={{ fontSize: 12, color: C.txt2, marginTop: 4, lineHeight: 1.3 }}>
+              {datosExistentes.descripcion}
+            </div>
+          )}
         </div>
-        {!yaRespondida && (
+        {!yaRespondida && !yaConfigurado && (
           <div style={{ fontSize: 14, color: C.txt3, transform: expandida ? "rotate(90deg)" : "none", transition: "transform 0.2s" }}>
             ▸
           </div>
         )}
       </button>
 
-      {expandida && !yaRespondida && (
+      {expandida && !yaRespondida && !yaConfigurado && (
         <div style={{ padding: "0 14px 14px 54px" }}>
           <div style={{ padding: "10px 12px", background: C.bg3, borderRadius: 8, marginBottom: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: C.txt, marginBottom: 4 }}>
