@@ -232,6 +232,11 @@ const AREAS_NATURAL = [
       const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
       return Math.min(Math.round(deducMax * tasaMarg), saldoActual);
     },
+    // Si la cantidad > 0 el dato es válido aunque el motor no detecte
+    // ahorro hoy (ej: salario no cargado todavía o retenciones cubren todo).
+    // Permitimos aplicar igual: el dato queda guardado para cuando cargue
+    // el salario o cambien las retenciones.
+    permiteAplicarSinAhorro: (data) => Number(data.cantidad) > 0,
     inputs: [{
       key: "cantidad",
       label: "¿Cuántas personas dependen de vos?",
@@ -265,6 +270,7 @@ const AREAS_NATURAL = [
       const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
       return Math.min(Math.round(deducible * tasaMarg), saldoActual);
     },
+    permiteAplicarSinAhorro: (data) => Number(data.gastoMensual) > 0,
     inputs: [{
       key: "gastoMensual",
       label: "¿Cuánto pagás cada mes?",
@@ -298,6 +304,7 @@ const AREAS_NATURAL = [
       const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
       return Math.min(Math.round(aplicable * tasaMarg), saldoActual);
     },
+    permiteAplicarSinAhorro: (data) => Number(data.aporteMensual) > 0,
     inputs: [
       {
         key: "aporteMensual",
@@ -344,6 +351,7 @@ const AREAS_NATURAL = [
       const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
       return Math.min(Math.round(deducible * tasaMarg), saldoActual);
     },
+    permiteAplicarSinAhorro: (data) => Number(data.interesesAnuales) > 0,
     inputs: [{
       key: "interesesAnuales",
       label: "¿Cuánto pagaste de intereses (no capital) en el año?",
@@ -877,6 +885,17 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
     return area.estimarAhorro(valores, det);
   }, [area, valores, det]);
 
+  // Determina si el botón "Aplicar" debe estar habilitado.
+  // Por default: solo si hay ahorro detectado.
+  // Pero si el área define `permiteAplicarSinAhorro`, permitimos aplicar
+  // aunque el motor no detecte ahorro hoy (caso típico: dato válido pero
+  // motor no tiene salario cargado todavía, o saldo a cargo ya en cero).
+  const permiteAplicar = useMemo(() => {
+    if (ahorroPreview > 0) return true;
+    if (area.permiteAplicarSinAhorro && area.permiteAplicarSinAhorro(valores)) return true;
+    return false;
+  }, [ahorroPreview, area, valores]);
+
   const yaRespondida = !!respuesta;
   const aplicada = respuesta?.tipo === "aplicado";
   const noAplica = respuesta?.tipo === "noaplica";
@@ -991,20 +1010,40 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
             </div>
           )}
 
+          {/* Caso: dato válido pero ahorro estimado es 0 (ej: salario no
+              cargado todavía o saldo a cargo ya en cero por retenciones).
+              Igual permitimos aplicar para guardar el dato. */}
+          {ahorroPreview === 0 && permiteAplicar && (
+            <div style={{
+              padding: "8px 12px",
+              background: C.blueBg,
+              border: `1px solid ${C.blue}40`,
+              borderRadius: 8,
+              marginBottom: 10,
+              fontSize: 12,
+              color: C.txt2,
+              lineHeight: 1.4,
+            }}>
+              ℹ️ El motor no detecta ahorro inmediato (puede que falte cargar tu salario
+              o las retenciones ya cubran todo). Igual <strong style={{ color: C.txt }}>el dato queda guardado</strong> en
+              tu perfil para próximos cálculos.
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
               onClick={() => onAplicar(valores)}
-              disabled={ahorroPreview === 0}
+              disabled={!permiteAplicar}
               style={{
                 flex: 1, minWidth: 140,
                 padding: "10px 14px",
-                background: ahorroPreview > 0 ? C.green : C.bg3,
+                background: permiteAplicar ? C.green : C.bg3,
                 border: "none",
                 borderRadius: 8,
-                color: ahorroPreview > 0 ? "#000" : C.txt3,
+                color: permiteAplicar ? "#000" : C.txt3,
                 fontSize: 13,
                 fontWeight: 700,
-                cursor: ahorroPreview > 0 ? "pointer" : "not-allowed",
+                cursor: permiteAplicar ? "pointer" : "not-allowed",
               }}
             >
               ✓ Sí, aplicar
