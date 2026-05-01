@@ -50,6 +50,7 @@ import BorradorDeclaracionF110 from "./components/BorradorDeclaracionF110";
 import VistaFamiliarConsolidada from "./components/VistaFamiliarConsolidada";
 import GlosarioPage from "./components/GlosarioPage";
 import EstrategiaTributaria from "./components/EstrategiaTributaria";
+import DeclaracionFlow from "./components/DeclaracionFlow";
 import CalculadoraWizard from "./components/CalculadoraWizard";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
@@ -1302,7 +1303,7 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Deductions":"Egresos"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"deu",i:"📋",l:"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Taxes":"Impuestos"},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador"},{id:"met",i:"🎯",l:isEN?"Goals":"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:isEN?"Retirement / 401(k)":"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC",hidden:isUS},{id:"aportes",i:"💰",l:"Calcula tus aportes",hidden:isUS},{id:"glosario",i:"📚",l:isEN?"Glossary":"Glosario"},{id:"_sep3",sep:true,l:isEN?"ARTIFICIAL INTELLIGENCE":"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:isEN?"AI Advisor":"Asesor IA"},{id:"coach",i:"🧠",l:isEN?"AI Coaches":"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"cuenta",i:"⚙️",l:isEN?"My Account":"Mi cuenta"}];
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Deductions":"Egresos"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"deu",i:"📋",l:"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Taxes":"Impuestos"},{id:"famtax",i:"👨‍👩‍👧‍👦",l:"Vista familiar",hidden:((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:"Declaraciones anteriores"},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador"},{id:"met",i:"🎯",l:isEN?"Goals":"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:isEN?"Retirement / 401(k)":"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC",hidden:isUS},{id:"aportes",i:"💰",l:"Calcula tus aportes",hidden:isUS},{id:"glosario",i:"📚",l:isEN?"Glossary":"Glosario"},{id:"_sep3",sep:true,l:isEN?"ARTIFICIAL INTELLIGENCE":"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:isEN?"AI Advisor":"Asesor IA"},{id:"coach",i:"🧠",l:isEN?"AI Coaches":"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"cuenta",i:"⚙️",l:isEN?"My Account":"Mi cuenta"}];
 
   const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",pen:"Pensiones",tax:"Planeación Tributaria",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",cuenta:"Mi cuenta"};
   if(typeof document!=="undefined")document.title="FINPATHIA"+(secNames[pg]?" — "+secNames[pg]:"");
@@ -2289,6 +2290,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"pen":return isUS?<RetirementModuleUS user={u}/>:gated("pen","Básico",<PensionesColpensiones trm={(u&&u.trm)||4200}/>);
     case"tax":{
       if(isUS)return<TaxPlanningUS user={u} fmt={fm}/>;
+      // Sub-pantallas modales (descuentos jurídica, aportes natural, ayuda)
       if(descuentosOwnerId){
         const descOwner=(u?.owners||[]).find(o=>o.id===descuentosOwnerId);
         if(descOwner&&descOwner.type==="juridica"){
@@ -2322,105 +2324,62 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       if(showAyuda){
         return gated("tax","Pro",<AyudaDeclaracion onClose={()=>setShowAyuda(false)}/>);
       }
-      // Vista normal con tabs
-      const jurs=(u?.owners||[]).filter(o=>o.type==="juridica");
-      const nats=(u?.owners||[]).filter(o=>o.type==="natural");
       // ─────────────────────────────────────────────────────────────────
-      // REDISEÑO STRATEGY-FIRST · Sesión 30-abr-2026
-      // El default ahora es "estrategia": una vista limpia sin tabs que
-      // responde directamente "¿cuánto pago?" + oportunidades + alertas.
-      // Las pantallas técnicas (borrador, familia, dashboard) viven adentro
-      // pero solo se acceden desde los CTAs secundarios de "estrategia".
+      // REDISEÑO LINEAL · Sesión 1-may-2026 (definitivo tras 4 iteraciones)
+      // UNA SOLA pantalla con 3 etapas en flow vertical.
+      //   Paso 1: Tu borrador (lo que entiende la app)
+      //   Paso 2: Optimización (preguntas de ahorro)
+      //   Paso 3: Declaración casi lista (con detalle F-110/F-210 embebido)
+      // Sin tabs, sin modos paralelos. Vista familiar y declaraciones
+      // anteriores se acceden desde el menú lateral como entradas separadas.
       // ─────────────────────────────────────────────────────────────────
-      if(taxTab==="estrategia"){
-        return gated("tax","Pro",<EstrategiaTributaria
-          user={u}
-          estimacion={estimarImpuesto(u)}
-          onUpdateUser={(newUser)=>setU(newUser)}
-          onAbrirDetalle={()=>setTaxTab("borrador")}
-          onAbrirWizard={()=>setTaxTab("rapido")}
-          onAbrirChat={()=>{setTaxTab("borrador");/* el chat vive dentro del Auditor */}}
-          onAbrirVistaFamiliar={()=>setTaxTab("familia")}
-          onAbrirDeclaracionesPrev={()=>setTaxTab("dashboard")}
-          ano={2025}
-        />);
-      }
-      // Pantallas técnicas (legacy) — solo accesibles desde la pantalla principal.
-      // Cada una tiene un botón "← Volver al resumen" que setea taxTab="estrategia".
-      return gated("tax","Pro",<div>
-        {/* Breadcrumb minimalista para volver al resumen */}
-        <div style={{marginBottom:14,display:"flex",alignItems:"center",gap:8,fontSize:12,color:T.tx3}}>
-          <button onClick={()=>setTaxTab("estrategia")} style={{background:"transparent",border:"none",color:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",padding:"4px 8px",borderRadius:6,display:"flex",alignItems:"center",gap:4}} onMouseOver={e=>e.currentTarget.style.color=T.tx} onMouseOut={e=>e.currentTarget.style.color=T.tx2}>
-            ← Volver al resumen
-          </button>
-          <span>·</span>
-          <span style={{color:T.tx3}}>
-            {taxTab==="borrador"?"Detalle técnico (formulario)":taxTab==="rapido"?"Wizard guiado":taxTab==="familia"?"Vista familiar":taxTab==="dashboard"?"Declaraciones anteriores":""}
-          </span>
-          <div style={{flex:1}}/>
-          <button onClick={()=>setPg("glosario")} style={{padding:"6px 10px",borderRadius:6,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}} title="Diccionario de términos tributarios">📚 Glosario</button>
-          <button onClick={()=>setShowAyuda(true)} style={{padding:"6px 10px",borderRadius:6,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>❓ Ayuda</button>
-        </div>
-        {taxTab==="dashboard"&&<DashboardFiscal
-          u={u}
-          owners={(u&&u.owners)||[]}
-          estimacion={estimarImpuesto(u)}
-          warnings={getFiscalWarnings(u)}
-          onNavigate={setPg}
-          onSaveDeclaracion={(ownerId,declaracion)=>{
-            const owners=(u&&u.owners||[]).map(o=>{
-              if(o.id!==ownerId)return o;
-              const actuales=Array.isArray(o.declaraciones)?[...o.declaraciones]:[];
-              const anoNuevo=Number(declaracion.anoGravable)||0;
-              const idxMismoAno=actuales.findIndex(d=>Number(d?.anoGravable)===anoNuevo);
-              if(idxMismoAno>=0){actuales[idxMismoAno]=declaracion}else{actuales.push(declaracion)}
-              actuales.sort((a,b)=>(Number(b?.anoGravable)||0)-(Number(a?.anoGravable)||0));
-              return{...o,declaraciones:actuales.slice(0,3)};
-            });
-            upd("owners",owners);
-            const ow=owners.find(o=>o.id===ownerId);
-            const n=ow?.declaraciones?.length||0;
-            showToast("✅ Declaración guardada en "+(ow?.name||"owner")+" ("+n+"/3 años)");
-          }}
-          onMarkReviewed={(reviewKey)=>{
-            const fr={...((u&&u.fiscalReviewed)||{}),[reviewKey]:{revisadoEn:new Date().toISOString()}};
-            upd("fiscalReviewed",fr);
-          }}
-          onUnmarkReviewed={(reviewKey)=>{
-            const fr={...((u&&u.fiscalReviewed)||{})};
-            delete fr[reviewKey];
-            upd("fiscalReviewed",fr);
-          }}
-          isPro={hasProAccess}
-          onUpsell={()=>setPg("price")}
-        />}
-        {taxTab==="borrador"&&<BorradorDeclaracionF110
-          user={u}
-          estimacion={estimarImpuesto(u)}
-          onUpdateUser={(newUser)=>setU(newUser)}
-          initialOwnerId={ownerJumpFromFamilyView}
-        />}
-        {taxTab==="familia"&&<VistaFamiliarConsolidada
-          user={u}
-          estimacion={estimarImpuesto(u)}
-          ano={2025}
-          onSelectOwner={(ownerId)=>{
-            setOwnerJumpFromFamilyView(ownerId);
-            setTaxTab("borrador");
-          }}
-        />}
-        {taxTab==="rapido"&&<div>
-          <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
-          <div style={{marginTop:32,padding:"24px 28px",background:"linear-gradient(135deg, rgba(124,58,237,0.10) 0%, rgba(59,130,246,0.06) 100%)",border:"1.5px solid rgba(196,181,253,0.30)",borderRadius:14,textAlign:"center"}}>
-            <div style={{fontSize:14,color:T.tx2,marginBottom:6,fontWeight:600}}>✓ Datos cargados</div>
-            <div style={{fontSize:18,color:T.tx,fontWeight:800,marginBottom:14,lineHeight:1.3}}>¿Volver a tu resumen tributario?</div>
-            <button onClick={()=>setTaxTab("estrategia")} style={{padding:"14px 28px",background:"#7c3aed",border:"none",borderRadius:10,color:"#ffffff",fontSize:15,fontWeight:800,cursor:"pointer"}}>
-              Ver mi estrategia →
-            </button>
-          </div>
-        </div>}
-      </div>);
+      return gated("tax","Pro",<DeclaracionFlow
+        user={u}
+        estimacion={estimarImpuesto(u)}
+        onUpdateUser={(newUser)=>setU(newUser)}
+        onAbrirSimulador={()=>setPg("sim")}
+        ano={2025}
+      />);
     }
+    case"famtax":return gated("tax","Pro",<VistaFamiliarConsolidada
+      user={u}
+      estimacion={estimarImpuesto(u)}
+      ano={2025}
+      onSelectOwner={()=>{setPg("tax")}}
+    />);
+    case"prevtax":return gated("tax","Pro",<DashboardFiscal
+      u={u}
+      owners={(u&&u.owners)||[]}
+      estimacion={estimarImpuesto(u)}
+      warnings={getFiscalWarnings(u)}
+      onNavigate={setPg}
+      onSaveDeclaracion={(ownerId,declaracion)=>{
+        const owners=(u&&u.owners||[]).map(o=>{
+          if(o.id!==ownerId)return o;
+          const actuales=Array.isArray(o.declaraciones)?[...o.declaraciones]:[];
+          const anoNuevo=Number(declaracion.anoGravable)||0;
+          const idxMismoAno=actuales.findIndex(d=>Number(d?.anoGravable)===anoNuevo);
+          if(idxMismoAno>=0){actuales[idxMismoAno]=declaracion}else{actuales.push(declaracion)}
+          actuales.sort((a,b)=>(Number(b?.anoGravable)||0)-(Number(a?.anoGravable)||0));
+          return{...o,declaraciones:actuales.slice(0,3)};
+        });
+        upd("owners",owners);
+        const ow=owners.find(o=>o.id===ownerId);
+        const n=ow?.declaraciones?.length||0;
+        showToast("✅ Declaración guardada en "+(ow?.name||"owner")+" ("+n+"/3 años)");
+      }}
+      onMarkReviewed={(reviewKey)=>{
+        const fr={...((u&&u.fiscalReviewed)||{}),[reviewKey]:{revisadoEn:new Date().toISOString()}};
+        upd("fiscalReviewed",fr);
+      }}
+      onUnmarkReviewed={(reviewKey)=>{
+        const fr={...((u&&u.fiscalReviewed)||{})};
+        delete fr[reviewKey];
+        upd("fiscalReviewed",fr);
+      }}
+      isPro={hasProAccess}
+      onUpsell={()=>setPg("price")}
+    />);
     case"aportes":return <AportesCalculadora fmt={fm}/>;
     case"glosario":return <GlosarioPage/>;
         case"btc":return gated("btc","Básico",<PensionColombia trm={(u&&u.trm)||4200}/>);
