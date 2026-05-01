@@ -278,17 +278,22 @@ const AREAS_NATURAL = [
       return Math.min(Math.round(deducible * tasaMarg), saldoActual);
     },
     permiteAplicarSinAhorro: (data) => Number(data.gastoMensual) > 0,
-    // Detecta si ya hay gasto de salud cargado (Egresos categoría "Salud" o
-    // fiscalCode SEG_SALUD/AP_TRIB_SALUD_PREPAGADA). El motor calcula deducMedicina,
-    // si > 0 significa que ya tenemos algo cargado.
+    // Detecta si ya hay gasto de salud cargado. El motor calcula deducMedicina
+    // sumando: cat="Salud" + fiscalCode AP_TRIB_SALUD_PREPAGADA + SEG_SALUD/VIDA.
     yaTieneDatos: (owner, user, det) => {
       const deducMed = Number(det?.deducMedicina) || 0;
       if (deducMed > 0) {
-        // Buscar el gasto cargado para mostrarlo descriptivamente
-        const gasSalud = (user?.gas?.["Salud"] || []).filter(g => g.owner === owner.id);
+        // Buscar cualquier gasto de salud del owner para mostrar info amigable
+        const todoGas = Object.values(user?.gas || {}).flat();
+        const gasSalud = todoGas.filter(g => g.owner === owner.id && (
+          g.cat === "Salud" ||
+          g.fiscalCode === "AP_TRIB_SALUD_PREPAGADA" ||
+          g.fiscalCode === "SEG_SALUD" ||
+          g.fiscalCode === "SEG_VIDA"
+        ));
         const totalMensual = gasSalud.reduce((s, g) => s + (Number(g.m) || 0), 0);
         if (totalMensual > 0) {
-          return { tiene: true, descripcion: `Ya cargaste $${totalMensual.toLocaleString("es-CO")}/mes en Egresos → Salud` };
+          return { tiene: true, descripcion: `Ya cargaste $${totalMensual.toLocaleString("es-CO")}/mes de salud en Egresos` };
         }
         return { tiene: true, descripcion: `Ya hay gastos de salud aplicándose (deducción anual: $${deducMed.toLocaleString("es-CO")})` };
       }
@@ -304,10 +309,23 @@ const AREAS_NATURAL = [
     aplicar: (user, ownerId, data) => {
       const mensual = Number(data.gastoMensual) || 0;
       const newUser = { ...user, gas: { ...(user.gas || {}) } };
-      newUser.gas["Salud"] = (newUser.gas["Salud"] || []).filter(g => !(g._planAhorro && g.owner === ownerId));
-      newUser.gas["Salud"].push({
-        id: "gas_pa_salud_" + Date.now(), owner: ownerId, cat: "Salud",
-        m: mensual, fuente: "Plan de Optimización", _planAhorro: true,
+      // Usamos misma categoría y patrón que el wizard tributario original
+      // (gas["Aporte tributario"] con fiscalCode AP_TRIB_SALUD_PREPAGADA)
+      // para que el gasto aparezca correctamente categorizado en Egresos
+      // y el motor lo procese como medicina prepagada (Art. 387 #2 ET).
+      const cat = "Aporte tributario";
+      newUser.gas[cat] = (newUser.gas[cat] || []).filter(g =>
+        !(g._planAhorro && g.owner === ownerId && g.fiscalCode === "AP_TRIB_SALUD_PREPAGADA")
+      );
+      newUser.gas[cat].push({
+        id: "gas_pa_salud_" + Date.now(),
+        owner: ownerId,
+        cat,
+        nombre: "Medicina prepagada / seguro de salud",
+        fiscalCode: "AP_TRIB_SALUD_PREPAGADA",
+        m: mensual,
+        fuente: "Plan de Optimización",
+        _planAhorro: true,
       });
       return newUser;
     },
@@ -328,11 +346,14 @@ const AREAS_NATURAL = [
       return Math.min(Math.round(aplicable * tasaMarg), saldoActual);
     },
     permiteAplicarSinAhorro: (data) => Number(data.aporteMensual) > 0,
-    // Detecta aportes a PV/AFC ya cargados en Egresos
+    // Detecta aportes a PV/AFC ya cargados. Buscamos en BOTH categorías
+    // posibles ("Aporte tributario" del wizard tributario nuevo y
+    // "Aportes tributarios" legacy) para retrocompatibilidad.
     yaTieneDatos: (owner, user) => {
-      const aportes = (user?.gas?.["Aportes tributarios"] || []).filter(g =>
+      const todoGas = Object.values(user?.gas || {}).flat();
+      const aportes = todoGas.filter(g =>
         g.owner === owner.id &&
-        (g.fiscalCode === "AP_TRIB_PENSION_VOL" || g.fiscalCode === "AP_TRIB_AFC")
+        (g.fiscalCode === "AP_TRIB_PENSION_VOL" || g.fiscalCode === "AP_TRIB_AFC" || g.fiscalCode === "AP_TRIB_PV")
       );
       const totalMensual = aportes.reduce((s, g) => s + (Number(g.m) || 0), 0);
       if (totalMensual > 0) {
@@ -363,10 +384,23 @@ const AREAS_NATURAL = [
       const mensual = Number(data.aporteMensual) || 0;
       const tipo = data.tipoCuenta || "AP_TRIB_AFC";
       const newUser = { ...user, gas: { ...(user.gas || {}) } };
-      newUser.gas["Aportes tributarios"] = (newUser.gas["Aportes tributarios"] || []).filter(g => !(g._planAhorro && g.owner === ownerId));
-      newUser.gas["Aportes tributarios"].push({
-        id: "gas_pa_pv_" + Date.now(), owner: ownerId, cat: "Aportes tributarios",
-        fiscalCode: tipo, m: mensual, fuente: "Plan de Optimización", _planAhorro: true,
+      const cat = "Aporte tributario";
+      // Limpiamos solo entries de PV/AFC creadas por este Plan, dejamos
+      // las de medicina y otras intactas.
+      newUser.gas[cat] = (newUser.gas[cat] || []).filter(g =>
+        !(g._planAhorro && g.owner === ownerId &&
+          (g.fiscalCode === "AP_TRIB_PENSION_VOL" || g.fiscalCode === "AP_TRIB_AFC"))
+      );
+      const nombreTipo = tipo === "AP_TRIB_PENSION_VOL" ? "Aporte Pensión Voluntaria" : "Aporte AFC (vivienda)";
+      newUser.gas[cat].push({
+        id: "gas_pa_pv_" + Date.now(),
+        owner: ownerId,
+        cat,
+        nombre: nombreTipo,
+        fiscalCode: tipo,
+        m: mensual,
+        fuente: "Plan de Optimización",
+        _planAhorro: true,
       });
       return newUser;
     },
