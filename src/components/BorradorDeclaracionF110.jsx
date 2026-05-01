@@ -22,9 +22,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
+import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import AgenteTributarioBienvenida from "./AgenteTributarioBienvenida.jsx";
 import WizardTributario from "./WizardTributario.jsx";
 import ChatAgenteTributario from "./ChatAgenteTributario.jsx";
+import AplicarOportunidadModal from "./AplicarOportunidadModal.jsx";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import TerminoTributario from "./TerminoTributario.jsx";
 
@@ -81,6 +83,13 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   // detrás de un botón "Ver el cálculo paso a paso (modo experto)".
   const [viewMode, setViewMode] = useState("simple"); // 'simple' | 'detalle'
 
+  // State para modal "Aplicar oportunidad" (sesión 1-may-2026: conexión de los
+  // botones que estaban como PRÓXIMAMENTE en VistaSimple a las funcionalidades
+  // reales que ya existen en el motor).
+  const [oportunidadActiva, setOportunidadActiva] = useState(null);
+  // Toggle de la sección expandida de oportunidades
+  const [mostrarOportunidades, setMostrarOportunidades] = useState(false);
+
   const selectedOwner = allOwners.find(o => o.id === selectedOwnerId);
   const isJuridica = selectedOwner?.type === "juridica";
   const formulario = isJuridica ? "F-110" : "F-210";
@@ -92,6 +101,18 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
       ? generarBorradorF110(user, selectedOwner, estimacion, ano)
       : generarBorradorF210(user, selectedOwner, estimacion, ano);
   }, [user, selectedOwner, estimacion, ano, isJuridica]);
+
+  // Oportunidades del owner seleccionado (sesión 1-may-2026: para conectar
+  // el botón "¿Cómo pago menos?" de VistaSimple). El motor ya genera todas
+  // las palancas relevantes — solo filtramos por owner activo y ahorro > 0.
+  const oportunidadesOwner = useMemo(() => {
+    if (!user || !estimacion || !selectedOwner) return [];
+    return generarRecomendaciones(user, estimacion)
+      .filter(r => r.ownerId === selectedOwner.id || r.ownerName === selectedOwner.name)
+      .filter(r => (r.ahorroAnualEstimado || 0) > 0)
+      .sort((a, b) => (b.ahorroAnualEstimado || 0) - (a.ahorroAnualEstimado || 0));
+  }, [user, estimacion, selectedOwner]);
+  const ahorroTotalOwner = oportunidadesOwner.reduce((s, o) => s + (o.ahorroAnualEstimado || 0), 0);
 
   // Secciones según tipo
   const SECCIONES = isJuridica ? SECCIONES_F110 : SECCIONES_F210;
@@ -420,6 +441,12 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           ano={ano}
           setAno={setAno}
           onVerDetalle={() => setViewMode("detalle")}
+          oportunidadesOwner={oportunidadesOwner}
+          ahorroTotalOwner={ahorroTotalOwner}
+          mostrarOportunidades={mostrarOportunidades}
+          setMostrarOportunidades={setMostrarOportunidades}
+          onAplicarOportunidad={(opo) => setOportunidadActiva(opo)}
+          onCompartirPDF={() => exportarBorradorPDF(user, selectedOwner, estimacion, ano)}
         />
       )}
 
@@ -718,6 +745,22 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
       </div>
         </>
       )}
+
+      {/* Modal de aplicación de oportunidad — se abre desde VistaSimple
+          cuando el user clickea "⚡ Aplicar →" en una oportunidad detectada
+          (sesión 1-may-2026: conexión del botón "¿Cómo pago menos?" placeholder
+          a la funcionalidad real). */}
+      {oportunidadActiva && (
+        <AplicarOportunidadModal
+          oportunidad={oportunidadActiva}
+          user={user}
+          onClose={() => setOportunidadActiva(null)}
+          onUpdateUser={(newUser) => {
+            onUpdateUser(newUser);
+            setOportunidadActiva(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -753,7 +796,7 @@ function ResumenCard({ label, value, color, prefix = "", bold = false }) {
 // Inspiración: TurboTax muestra "Tax Refund: $2,847" como hero antes
 // de cualquier formulario. Acá hacemos lo mismo con saldo a pagar.
 // ═══════════════════════════════════════════════════════════════════════════
-function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId, setSelectedOwnerId, ano, setAno, onVerDetalle }) {
+function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId, setSelectedOwnerId, ano, setAno, onVerDetalle, oportunidadesOwner = [], ahorroTotalOwner = 0, mostrarOportunidades = false, setMostrarOportunidades = () => {}, onAplicarOportunidad = () => {}, onCompartirPDF = () => {} }) {
   // Extraer los números clave para mostrar conversacionalmente
   const findVal = (num) => renglones.find(r => r.numero === num)?.valor || 0;
 
@@ -894,51 +937,167 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
           </button>
 
           <button
-            disabled
-            title="Próximamente: el agente IA va a sugerirte oportunidades específicas"
+            onClick={() => setMostrarOportunidades(!mostrarOportunidades)}
+            disabled={oportunidadesOwner.length === 0}
+            title={oportunidadesOwner.length === 0
+              ? "No detectamos oportunidades adicionales — ya estás optimizado"
+              : `${oportunidadesOwner.length} formas legales de pagar menos detectadas`}
             style={{
-              background: T.bg3,
-              border: `2px solid ${T.border}`,
+              background: oportunidadesOwner.length > 0 ? T.bg3 : T.bg3,
+              border: `2px solid ${oportunidadesOwner.length > 0 ? "#22c55e" : T.border}`,
               borderRadius: 12,
               padding: "16px 18px",
-              cursor: "not-allowed",
+              cursor: oportunidadesOwner.length > 0 ? "pointer" : "not-allowed",
               textAlign: "left",
-              color: T.txt2,
-              opacity: 0.6,
+              color: T.txt,
+              opacity: oportunidadesOwner.length > 0 ? 1 : 0.5,
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              if (oportunidadesOwner.length > 0) e.currentTarget.style.background = "rgba(34,197,94,0.08)";
+            }}
+            onMouseLeave={(e) => {
+              if (oportunidadesOwner.length > 0) e.currentTarget.style.background = T.bg3;
             }}
           >
-            <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ fontSize: 20 }}>💡</span>
-              ¿Cómo pago menos? <span style={{ fontSize: 10, background: T.purple, color: "#fff", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>PRÓXIMAMENTE</span>
+              ¿Cómo pago menos?
+              {oportunidadesOwner.length > 0 && (
+                <span style={{ fontSize: 11, background: "#22c55e", color: "#000", padding: "2px 8px", borderRadius: 4, fontWeight: 700 }}>
+                  {oportunidadesOwner.length} {oportunidadesOwner.length === 1 ? "oportunidad" : "oportunidades"}
+                </span>
+              )}
             </div>
             <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
-              El agente IA detectará oportunidades legales de ahorro específicas para tu caso.
+              {oportunidadesOwner.length === 0
+                ? "Por ahora no hay palancas adicionales. Estás bien optimizado o no tenés saldo a cargo."
+                : `Detectamos ${oportunidadesOwner.length} ${oportunidadesOwner.length === 1 ? "forma legal" : "formas legales"} de bajar tu impuesto. Ahorro estimado: ${"$" + Math.round(ahorroTotalOwner).toLocaleString("es-CO")}/año.`}
             </div>
           </button>
 
           <button
-            disabled
-            title="Próximamente: exportar el borrador como PDF para que tu contador lo revise"
+            onClick={onCompartirPDF}
             style={{
               background: T.bg3,
-              border: `2px solid ${T.border}`,
+              border: `2px solid ${T.purple}`,
               borderRadius: 12,
               padding: "16px 18px",
-              cursor: "not-allowed",
+              cursor: "pointer",
               textAlign: "left",
-              color: T.txt2,
-              opacity: 0.6,
+              color: T.txt,
+              transition: "all 0.15s",
             }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(196,181,253,0.10)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = T.bg3}
           >
             <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 20 }}>📄</span>
-              Compartir con mi contador <span style={{ fontSize: 10, background: T.purple, color: "#fff", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>PRÓXIMAMENTE</span>
+              Compartir con mi contador
             </div>
             <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
-              Generar un PDF con el resumen + detalle para enviar a tu contador.
+              Descargá un PDF con el resumen + detalle del formulario {isJuridica ? "F-110" : "F-210"} para enviar a tu contador.
             </div>
           </button>
         </div>
+
+        {/* ─── SECCIÓN OPORTUNIDADES (expandible) ───
+            Aparece cuando user clickea "¿Cómo pago menos?" y hay
+            oportunidades reales. Cada card tiene CTA "Aplicar" que
+            dispara el modal de aplicación.  */}
+        {mostrarOportunidades && oportunidadesOwner.length > 0 && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.txt2, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              💡 Formas legales de pagar menos · {oportunidadesOwner.length}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {oportunidadesOwner.slice(0, 5).map((opo, i) => {
+                const codigo = opo.code || opo.codigo;
+                const aplicable = codigo && [
+                  "APORTAR_PV_AFC",
+                  "DEPENDIENTES_NO_DECLARADOS",
+                  "SALUD_PREPAGADA_NO_REGISTRADA",
+                ].includes(codigo);
+                const ahorro = opo.ahorroAnualEstimado || 0;
+                return (
+                  <div key={opo.code || i} style={{
+                    padding: "14px 16px",
+                    background: T.bg3,
+                    border: `1px solid ${T.border}`,
+                    borderLeft: `4px solid #22c55e`,
+                    borderRadius: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    flexWrap: "wrap",
+                  }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: "50%",
+                      background: "rgba(34,197,94,0.15)", color: "#22c55e",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 13, fontWeight: 800, flexShrink: 0,
+                    }}>
+                      {i + 1}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, lineHeight: 1.3 }}>
+                        {opo.titulo || opo.recomendacion || "Oportunidad"}
+                      </div>
+                      <div style={{ fontSize: 12, color: T.txt2, marginTop: 4, lineHeight: 1.4 }}>
+                        {opo.descripcion || ""}
+                      </div>
+                      {opo.base && (
+                        <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, fontStyle: "italic" }}>
+                          Base legal: {opo.base}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontSize: 11, color: T.txt3 }}>Te ahorrás</div>
+                      <div style={{ fontSize: 17, fontWeight: 800, color: "#22c55e", lineHeight: 1 }}>
+                        {"$" + Math.round(ahorro).toLocaleString("es-CO")}
+                      </div>
+                      <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>al año</div>
+                    </div>
+                    {aplicable ? (
+                      <button
+                        onClick={() => onAplicarOportunidad(opo)}
+                        style={{
+                          padding: "9px 14px",
+                          background: "#22c55e",
+                          border: "none",
+                          borderRadius: 8,
+                          color: "#000",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          flexShrink: 0,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        ⚡ Aplicar →
+                      </button>
+                    ) : (
+                      <div style={{
+                        padding: "9px 14px",
+                        background: "transparent",
+                        border: `1px solid ${T.border}`,
+                        borderRadius: 8,
+                        color: T.txt3,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}>
+                        Configurar manualmente
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mensaje final tranquilizador */}
