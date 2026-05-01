@@ -75,12 +75,19 @@ function recomendacionesNatural(user, ow, det) {
   // hay margen legal para aportar más.
   const espacio = Number(det.espacioParaPVyAFC) || 0;
   const pvAportaHoy = pvAportadaHoyAnual(user, ow.id);
+  // Saldo a cargo actual: si es 0 (retenciones cubren todo o tarifa cero),
+  // no podemos prometer ahorros. Cap aplicado a TODAS las palancas de
+  // deducción a continuación. Sin esto, el user veía "ahorrá $20M" pero al
+  // aplicar la palanca el saldo seguía $0 — promesa rota.
+  const saldoACargoActual = Number(det.saldoACargo ?? det.impuesto ?? 0);
   if (espacio > 1_000_000 && tasaMarginalAprox > 0) {
-    const aporteSugeridoMensual = Math.round(espacio / 12 * 0.8); // conservador: 80% del espacio
-    const ahorro = Math.round(aporteSugeridoMensual * 12 * tasaMarginalAprox / 100);
+    const aporteSugeridoMensual = Math.round(espacio / 12 * 0.8);
+    const ahorroBruto = Math.round(aporteSugeridoMensual * 12 * tasaMarginalAprox / 100);
+    const ahorro = Math.min(ahorroBruto, Math.max(0, saldoACargoActual));
     if (ahorro >= 500_000) {
       recs.push({
         code: "APORTAR_PV_AFC",
+        codigo: "APORTAR_PV_AFC",
         severity: severityByAhorro(ahorro),
         ownerId: ow.id,
         ownerName: ow.name,
@@ -92,12 +99,14 @@ function recomendacionesNatural(user, ow, det) {
           : `No tenés aportes a PV/AFC registrados. Son 100% deducibles de la base gravable bajo el cap 25%/2500 UVT.`,
         aporteSugeridoMensual,
         ahorroAnualEstimado: ahorro,
-        cta: { label: "Registrar en Egresos", page: "gas" },
+        ahorroBrutoTeorico: ahorroBruto,
+        cta: { label: "Aplicar ahora", action: "aplicar_pv_afc" },
         base: "Arts. 126-1 y 126-4 ET",
         supuestos: [
           `Tasa marginal estimada: ${tasaMarginalAprox.toFixed(1)}%`,
           `Espacio legal disponible: ${fm(espacio)}/año`,
           `Aporte sugerido: 80% del espacio (conservador)`,
+          `Ahorro acotado al saldo a cargo actual: ${fm(saldoACargoActual)}`,
         ],
       });
     }
@@ -148,21 +157,31 @@ function recomendacionesNatural(user, ow, det) {
   if (ingLaboralAnual > 50_000_000 && deducDepActual === 0) {
     // Dependientes: hasta 10% del ingreso bruto del trabajador, topado en 32 UVT/mes
     const deducMax = Math.min(ingLaboralAnual * 0.10, 32 * UVT * 12);
-    const ahorro = Math.round(deducMax * tasaMarginalAprox / 100);
+    // CRÍTICO: el ahorro estimado debe estar acotado al impuesto REAL
+    // a cargo. Si el user ya paga $0 (porque retenciones cubren todo o
+    // está en el primer rango con tarifa 0%), no podemos prometerle un
+    // ahorro de $X. Sin este capping, mostrábamos "ahorrá $20M" cuando
+    // el impuesto era $0 y el user agregaba dependientes y NO veía nada.
+    const ahorroBruto = Math.round(deducMax * tasaMarginalAprox / 100);
+    const saldoACargoActual = Number(det.saldoACargo ?? det.impuesto ?? 0);
+    const ahorro = Math.min(ahorroBruto, Math.max(0, saldoACargoActual));
     if (ahorro >= 500_000) {
       recs.push({
         code: "DEPENDIENTES_NO_DECLARADOS",
+        codigo: "DEPENDIENTES_NO_DECLARADOS",
         severity: severityByAhorro(ahorro),
         ownerId: ow.id,
         ownerName: ow.name,
         titulo: "¿Tenés cónyuge, hijos o padres dependientes?",
         descripcion: `Con tu salario podés deducir hasta ${fm(deducMax)}/año por dependientes (10% del ingreso bruto, tope 32 UVT/mes). Aplica a cónyuge, hijos menores, hijos hasta 25 años estudiando, o padres/hermanos con discapacidad.`,
         ahorroAnualEstimado: ahorro,
-        cta: { label: "Configurar en perfil del owner", page: "set" },
+        ahorroBrutoTeorico: ahorroBruto, // Para mostrar potencial vs real
+        cta: { label: "Marcar dependientes ahora", action: "aplicar_dependientes" },
         base: "Art. 387 parr 2 ET",
         supuestos: [
           `Tasa marginal estimada: ${tasaMarginalAprox.toFixed(1)}%`,
           `Tope: 10% del bruto laboral, máx 32 UVT × 12 meses`,
+          `Ahorro acotado al impuesto a cargo actual: ${fm(saldoACargoActual)}`,
           `Requiere documentación (registro civil, certificados)`,
         ],
       });
@@ -174,23 +193,31 @@ function recomendacionesNatural(user, ow, det) {
   // Tope 16 UVT/mes. Si el owner no tiene salud prepagada registrada y
   // tiene impuesto > 0, vale la pena mencionarlo.
   const deducMedActual = Number(det.deducMedicina) || 0;
-  if (deducMedActual === 0 && impBruto > 2_000_000) {
+  // Cambio del trigger: antes se mostraba si impBruto > 2M (impuesto
+  // teórico antes de retenciones). Ahora exigimos saldoACargoActual > 0
+  // para que la palanca solo aparezca cuando el user EFECTIVAMENTE puede
+  // ahorrar al aplicarla.
+  if (deducMedActual === 0 && saldoACargoActual > 500_000) {
     const topeAnual = 16 * UVT * 12;
-    const ahorro = Math.round(topeAnual * tasaMarginalAprox / 100);
+    const ahorroBruto = Math.round(topeAnual * tasaMarginalAprox / 100);
+    const ahorro = Math.min(ahorroBruto, saldoACargoActual);
     if (ahorro >= 500_000) {
       recs.push({
         code: "SALUD_PREPAGADA_NO_REGISTRADA",
+        codigo: "SALUD_PREPAGADA_NO_REGISTRADA",
         severity: "medium",
         ownerId: ow.id,
         ownerName: ow.name,
         titulo: "Si pagás medicina prepagada, es deducible",
         descripcion: `No tenés salud prepagada registrada. Si pagás Colsanitas, Sura, Medplus u otra, es deducible hasta ${fm(topeAnual)}/año (16 UVT/mes).`,
         ahorroAnualEstimado: ahorro,
-        cta: { label: "Registrar en Egresos como Aporte Tributario", page: "gas" },
+        ahorroBrutoTeorico: ahorroBruto,
+        cta: { label: "Aplicar ahora", action: "aplicar_salud" },
         base: "Art. 387 #2 ET",
         supuestos: [
-          `Ahorro máximo teórico — depende de cuánto pagás realmente.`,
-          `Categoría Egresos: "Aporte tributario" → Salud prepagada`,
+          `Tope: 16 UVT × 12 meses = ${fm(topeAnual)}/año`,
+          `Tasa marginal: ${tasaMarginalAprox.toFixed(1)}%`,
+          `Ahorro acotado al saldo a cargo actual: ${fm(saldoACargoActual)}`,
         ],
       });
     }

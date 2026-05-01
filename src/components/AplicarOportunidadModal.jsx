@@ -174,7 +174,11 @@ const CODIGOS_APLICABLES = {
 
 export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUser, onClose }) {
   // Configuración del code
-  const config = CODIGOS_APLICABLES[oportunidad?.code];
+  // Aceptamos ambos campos: `code` (legacy de recomendaciones.js) y `codigo`
+  // (nuevo). Esto permite que la oportunidad se aplique sin importar de qué
+  // versión del motor venga.
+  const codigoOportunidad = oportunidad?.code || oportunidad?.codigo;
+  const config = CODIGOS_APLICABLES[codigoOportunidad];
 
   // Inicializar valores con sugeridos del motor
   const [valores, setValores] = useState(() => {

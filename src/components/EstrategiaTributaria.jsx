@@ -411,11 +411,16 @@ export default function EstrategiaTributaria({
 
 function OportunidadCard({ opo, index, onAplicar }) {
   const ahorro = opo.ahorroAnualEstimado || 0;
-  const aplicable = opo.codigo && [
+  const ahorroTeorico = opo.ahorroBrutoTeorico || ahorro;
+  const ahorroEsAcotado = ahorroTeorico > ahorro && ahorro > 0;
+  // El motor de recomendaciones expone el identificador como `code` (legacy)
+  // o `codigo` (nuevo). Aceptamos ambos para retrocompatibilidad.
+  const codigoOportunidad = opo.code || opo.codigo;
+  const aplicable = codigoOportunidad && [
     "APORTAR_PV_AFC",
     "DEPENDIENTES_NO_DECLARADOS",
     "SALUD_PREPAGADA_NO_REGISTRADA",
-  ].includes(opo.codigo);
+  ].includes(codigoOportunidad);
 
   return (
     <div style={{
