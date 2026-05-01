@@ -49,6 +49,7 @@ import DashboardFiscal from "./components/DashboardFiscal";
 import BorradorDeclaracionF110 from "./components/BorradorDeclaracionF110";
 import VistaFamiliarConsolidada from "./components/VistaFamiliarConsolidada";
 import GlosarioPage from "./components/GlosarioPage";
+import EstrategiaTributaria from "./components/EstrategiaTributaria";
 import CalculadoraWizard from "./components/CalculadoraWizard";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
@@ -303,7 +304,7 @@ const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div sty
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 export default function FinPath(){
-  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("borrador");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
+  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("anual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
   // Password recovery flow: detectar link de recovery y pedir nueva contraseña
   const[showResetPassword,setShowResetPassword]=useState(false);
   const[resetNewPassword,setResetNewPassword]=useState("");
@@ -2324,51 +2325,41 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // Vista normal con tabs
       const jurs=(u?.owners||[]).filter(o=>o.type==="juridica");
       const nats=(u?.owners||[]).filter(o=>o.type==="natural");
-      // Sesión 29-abr-2026: rebrand de tabs como PROCESO de 2 pasos.
-      // Visión Santiago: "calculadora es el paso 1 (lo que la plataforma
-      // entiende), auditor IA es el paso 2 (optimización con IA)". Esto
-      // narrativiza la UX: el user siente progreso, no herramientas sueltas.
-      const pasoActual = taxTab === "rapido" ? 1 : taxTab === "borrador" ? 2 : 0;
+      // ─────────────────────────────────────────────────────────────────
+      // REDISEÑO STRATEGY-FIRST · Sesión 30-abr-2026
+      // El default ahora es "estrategia": una vista limpia sin tabs que
+      // responde directamente "¿cuánto pago?" + oportunidades + alertas.
+      // Las pantallas técnicas (borrador, familia, dashboard) viven adentro
+      // pero solo se acceden desde los CTAs secundarios de "estrategia".
+      // ─────────────────────────────────────────────────────────────────
+      if(taxTab==="estrategia"){
+        return gated("tax","Pro",<EstrategiaTributaria
+          user={u}
+          estimacion={estimarImpuesto(u)}
+          onUpdateUser={(newUser)=>setU(newUser)}
+          onAbrirDetalle={()=>setTaxTab("borrador")}
+          onAbrirWizard={()=>setTaxTab("rapido")}
+          onAbrirChat={()=>{setTaxTab("borrador");/* el chat vive dentro del Auditor */}}
+          onAbrirVistaFamiliar={()=>setTaxTab("familia")}
+          onAbrirDeclaracionesPrev={()=>setTaxTab("dashboard")}
+          ano={2025}
+        />);
+      }
+      // Pantallas técnicas (legacy) — solo accesibles desde la pantalla principal.
+      // Cada una tiene un botón "← Volver al resumen" que setea taxTab="estrategia".
       return gated("tax","Pro",<div>
-        {/* Banner explicativo del proceso */}
-        <div style={{marginBottom:14,padding:"14px 18px",background:"linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(124,58,237,0.06) 100%)",border:"1px solid "+T.border,borderRadius:12}}>
-          <div style={{fontSize:12,fontWeight:700,color:T.tx,marginBottom:6,letterSpacing:0.3}}>🧾 Tu declaración de renta tiene 2 pasos</div>
-          <div style={{fontSize:12,color:T.tx2,lineHeight:1.5}}>
-            <strong style={{color:"#60a5fa"}}>1. Borrador inicial</strong>: lo que entendemos según los datos que cargaste.
-            {" → "}
-            <strong style={{color:"#c4b5fd"}}>2. Auditor IA</strong>: revisa tu borrador y propone mejoras para optimizar legalmente. Resultado: una declaración casi lista para que tu contador valide.
-          </div>
-        </div>
-
-        {/* Stepper visual: muestra dónde está el user */}
-        {pasoActual > 0 && (
-          <div style={{marginBottom:16,display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:T.bg2,borderRadius:10,border:"1px solid "+T.border}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,opacity:pasoActual===1?1:0.55}}>
-              <div style={{width:24,height:24,borderRadius:"50%",background:pasoActual===1?"#3b82f6":(pasoActual>1?"#3b82f6":T.bg3),color:pasoActual>=1?"#fff":T.tx3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800}}>{pasoActual>1?"✓":"1"}</div>
-              <span style={{fontSize:12,color:pasoActual===1?T.tx:T.tx2,fontWeight:pasoActual===1?700:600}}>Borrador inicial</span>
-            </div>
-            <div style={{flex:"0 1 60px",height:2,background:pasoActual>1?"#7c3aed":T.border}}/>
-            <div style={{display:"flex",alignItems:"center",gap:6,opacity:pasoActual===2?1:0.55}}>
-              <div style={{width:24,height:24,borderRadius:"50%",background:pasoActual===2?"#7c3aed":T.bg3,color:pasoActual===2?"#fff":T.tx3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800}}>2</div>
-              <span style={{fontSize:12,color:pasoActual===2?T.tx:T.tx2,fontWeight:pasoActual===2?700:600}}>Auditor IA</span>
-            </div>
-            <div style={{flex:1}}/>
-            <span style={{fontSize:11,color:T.tx3}}>{pasoActual===1?"Estás en el paso 1":pasoActual===2?"Estás en el paso 2":""}</span>
-          </div>
-        )}
-
-        {/* Tabs renombrados como pasos */}
-        <div style={{display:"flex",gap:6,marginBottom:18,borderBottom:"1px solid "+T.border,paddingBottom:12,flexWrap:"wrap",alignItems:"center"}}>
-          <button onClick={()=>setTaxTab("rapido")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="rapido"?"#3b82f6":T.border),background:taxTab==="rapido"?"#3b82f6":T.bg3,color:taxTab==="rapido"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>1️⃣ Mi borrador inicial</button>
-          <button onClick={()=>setTaxTab("borrador")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="borrador"?"#7c3aed":T.border),background:taxTab==="borrador"?"#7c3aed":T.bg3,color:taxTab==="borrador"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>2️⃣ Auditor IA</button>
-          {/* Tab Vista Familiar: solo aparece si hay >1 owner. Es la pantalla
-              que justifica el plan Pro Familiar y diferencia FINPATHIA de
-              cualquier app de renta de 1 persona. */}
-          {((u&&u.owners)||[]).length>1&&<button onClick={()=>setTaxTab("familia")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="familia"?"#c4b5fd":T.border),background:taxTab==="familia"?"#c4b5fd":T.bg3,color:taxTab==="familia"?"#000000":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>👨‍👩‍👧‍👦 Vista Familiar</button>}
-          <button onClick={()=>setTaxTab("dashboard")} style={{padding:"8px 14px",borderRadius:8,border:"1px solid "+(taxTab==="dashboard"?"#3b82f6":T.border),background:taxTab==="dashboard"?"#3b82f6":T.bg3,color:taxTab==="dashboard"?"#ffffff":T.tx,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>📚 Mis declaraciones anteriores</button>
-          <div style={{flex:1,minWidth:0}}/>
-          <button onClick={()=>setPg("glosario")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}} title="Diccionario de términos tributarios en lenguaje humano">📚 Glosario</button>
-          <button onClick={()=>setShowAyuda(true)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}} title="Guía de uso del sistema de declaración">❓ Ayuda</button>
+        {/* Breadcrumb minimalista para volver al resumen */}
+        <div style={{marginBottom:14,display:"flex",alignItems:"center",gap:8,fontSize:12,color:T.tx3}}>
+          <button onClick={()=>setTaxTab("estrategia")} style={{background:"transparent",border:"none",color:T.tx2,fontSize:12,fontWeight:600,cursor:"pointer",padding:"4px 8px",borderRadius:6,display:"flex",alignItems:"center",gap:4}} onMouseOver={e=>e.currentTarget.style.color=T.tx} onMouseOut={e=>e.currentTarget.style.color=T.tx2}>
+            ← Volver al resumen
+          </button>
+          <span>·</span>
+          <span style={{color:T.tx3}}>
+            {taxTab==="borrador"?"Detalle técnico (formulario)":taxTab==="rapido"?"Wizard guiado":taxTab==="familia"?"Vista familiar":taxTab==="dashboard"?"Declaraciones anteriores":""}
+          </span>
+          <div style={{flex:1}}/>
+          <button onClick={()=>setPg("glosario")} style={{padding:"6px 10px",borderRadius:6,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}} title="Diccionario de términos tributarios">📚 Glosario</button>
+          <button onClick={()=>setShowAyuda(true)} style={{padding:"6px 10px",borderRadius:6,border:"1px solid "+T.border,background:"transparent",color:T.tx2,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>❓ Ayuda</button>
         </div>
         {taxTab==="dashboard"&&<DashboardFiscal
           u={u}
@@ -2377,8 +2368,6 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           warnings={getFiscalWarnings(u)}
           onNavigate={setPg}
           onSaveDeclaracion={(ownerId,declaracion)=>{
-            // Commit 5.5 FIFO: mismo handler que el tab completa viejo, ahora
-            // consumido desde dentro del Dashboard via componente DeclaracionUpload inline.
             const owners=(u&&u.owners||[]).map(o=>{
               if(o.id!==ownerId)return o;
               const actuales=Array.isArray(o.declaraciones)?[...o.declaraciones]:[];
@@ -2393,8 +2382,6 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             const n=ow?.declaraciones?.length||0;
             showToast("✅ Declaración guardada en "+(ow?.name||"owner")+" ("+n+"/3 años)");
           }}
-          // Mejora B (sesión 28-abr-2026): callbacks para que el banner de
-          // mismatches pueda persistir el estado "revisado" en user.fiscalReviewed
           onMarkReviewed={(reviewKey)=>{
             const fr={...((u&&u.fiscalReviewed)||{}),[reviewKey]:{revisadoEn:new Date().toISOString()}};
             upd("fiscalReviewed",fr);
@@ -2418,22 +2405,18 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           estimacion={estimarImpuesto(u)}
           ano={2025}
           onSelectOwner={(ownerId)=>{
-            // Click en una tarjeta de owner desde la Vista Familiar:
-            // saltar al Auditor IA con ese owner ya pre-seleccionado.
             setOwnerJumpFromFamilyView(ownerId);
             setTaxTab("borrador");
           }}
         />}
         {taxTab==="rapido"&&<div>
           <CalculadoraWizard user={u} trm={(u&&u.trm)||4200} onNavigate={(p)=>{if(p==="tax-dashboard"){setTaxTab("dashboard")}else{setPg(p)}}} onUserUpdate={setU}/>
-          {/* Botón puente del paso 1 al paso 2 — invita a continuar al Auditor IA */}
           <div style={{marginTop:32,padding:"24px 28px",background:"linear-gradient(135deg, rgba(124,58,237,0.10) 0%, rgba(59,130,246,0.06) 100%)",border:"1.5px solid rgba(196,181,253,0.30)",borderRadius:14,textAlign:"center"}}>
-            <div style={{fontSize:14,color:T.tx2,marginBottom:6,fontWeight:600}}>✓ Tu borrador inicial está listo</div>
-            <div style={{fontSize:18,color:T.tx,fontWeight:800,marginBottom:14,lineHeight:1.3}}>¿Listo para que el Auditor IA revise y optimice tu declaración?</div>
-            <button onClick={()=>setTaxTab("borrador")} style={{padding:"14px 28px",background:"#7c3aed",border:"none",borderRadius:10,color:"#ffffff",fontSize:15,fontWeight:800,cursor:"pointer"}}>
-              Continuar al Auditor IA →
+            <div style={{fontSize:14,color:T.tx2,marginBottom:6,fontWeight:600}}>✓ Datos cargados</div>
+            <div style={{fontSize:18,color:T.tx,fontWeight:800,marginBottom:14,lineHeight:1.3}}>¿Volver a tu resumen tributario?</div>
+            <button onClick={()=>setTaxTab("estrategia")} style={{padding:"14px 28px",background:"#7c3aed",border:"none",borderRadius:10,color:"#ffffff",fontSize:15,fontWeight:800,cursor:"pointer"}}>
+              Ver mi estrategia →
             </button>
-            <div style={{fontSize:12,color:T.tx3,marginTop:12}}>El auditor revisa tu borrador y detecta oportunidades de ahorro legal.</div>
           </div>
         </div>}
       </div>);
