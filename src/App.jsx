@@ -1,5 +1,7 @@
 import LandingPage from "./components/LandingPage";
 import LandingAsesores from "./components/LandingAsesores";
+import HeroVariantA from "./components/HeroVariantA";
+import HeroVariantB from "./components/HeroVariantB";
 import AdvisorWorkspace from "./components/AdvisorWorkspace";
 import AcceptInvite from "./components/AcceptInvite";
 import DashboardObservabilidad from "./components/DashboardObservabilidad";
@@ -952,6 +954,15 @@ export default function FinPath(){
     const pathname=typeof window!=="undefined"?window.location.pathname:"";
     if(pathname==="/asesores"||pathname==="/asesores/"){
       return<LandingAsesores onGetStarted={(planKey)=>{setShowAuth(true);if(planKey)sessionStorage.setItem("fp3_advisor_plan_intent",planKey)}}/>;
+    }
+    // Sesión 1-may-2026: rutas preview hidden para comparar variantes de hero.
+    // El landing oficial sigue en /. /hero-a y /hero-b son temporales para
+    // que Santiago elija la dirección antes de hacer el cambio definitivo.
+    if(pathname==="/hero-a"||pathname==="/hero-a/"){
+      return<HeroVariantA onGetStarted={()=>setShowAuth(true)}/>;
+    }
+    if(pathname==="/hero-b"||pathname==="/hero-b/"){
+      return<HeroVariantB onGetStarted={()=>setShowAuth(true)}/>;
     }
     return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
   }
