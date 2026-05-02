@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
+import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(255,255,255,0.06)",txt:"#fafafa",txt2:"#a1a1aa",txt3:"#71717a",green:"#22c55e",greenDim:"rgba(34,197,94,0.1)",red:"#ef4444",blue:"#3b82f6",orange:"#f97316",orangeDim:"rgba(249,115,22,0.1)",gold:"#eab308"};
 const SM=1750905; // SMMLV 2026 Decreto 1469
 const fC=v=>{if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+Math.round(v).toLocaleString("es-CO")};
@@ -138,7 +139,7 @@ export default function PensionBTC({trm:pTrm}){
         <Cd style={{padding:24}}>
           <div style={{fontSize:15,fontWeight:700,marginBottom:16}}>₿ Tu BTC crece así (USD)</div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={btc.yd}><XAxis dataKey="anio" tick={{fill:T.txt3,fontSize:11}} axisLine={false} tickLine={false}/><YAxis tick={{fill:T.txt3,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"$"+(v/1e6).toFixed(1)+"M"}/><Tooltip contentStyle={TT} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={v=>fU(v)}/><Bar dataKey="valorUSD" radius={[4,4,0,0]}>{btc.yd.map((_,i)=><Cell key={i} fill={T.orange}/>)}</Bar></BarChart>
+            <BarChart data={btc.yd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="anio" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>"$"+(v/1e6).toFixed(1)+"M"}/><Tooltip cursor={{fill:"rgba(255,255,255,0.03)"}} content={<ChartTooltip formatter={v=>fU(v)}/>}/><Bar dataKey="valorUSD" radius={[8,8,0,0]} maxBarSize={48}>{btc.yd.map((_,i)=><Cell key={i} fill={CHART.orange}/>)}</Bar></BarChart>
           </ResponsiveContainer>
         </Cd>
         <Cd style={{padding:24}}>
@@ -268,7 +269,7 @@ export default function PensionBTC({trm:pTrm}){
         <div style={{fontSize:16,color:T.txt2}}>más que con la pensión tradicional</div>
         <div style={{fontSize:14,color:T.txt3,marginTop:8}}>Y el capital es 100% heredable</div>
       </Cd>
-      <Cd style={{padding:24,marginTop:20}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Crecimiento Portafolio BTC</div><ResponsiveContainer width="100%" height={250}><AreaChart data={btc.yd}><CartesianGrid strokeDasharray="3 3" stroke={T.border}/><XAxis dataKey="anio" tick={{fill:T.txt3,fontSize:11}} axisLine={false}/><YAxis tick={{fill:T.txt3,fontSize:10}} axisLine={false} tickFormatter={v=>"$"+(v/1e6).toFixed(1)+"M"}/><Tooltip contentStyle={TT} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={v=>fU(v)}/><defs><linearGradient id="btcG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={T.orange} stopOpacity={0.3}/><stop offset="100%" stopColor={T.orange} stopOpacity={0}/></linearGradient></defs><Area type="monotone" dataKey="valorUSD" stroke={T.orange} fill="url(#btcG)" strokeWidth={2.5}/></AreaChart></ResponsiveContainer></Cd>
+      <Cd style={{padding:24,marginTop:20}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Crecimiento Portafolio BTC</div><ResponsiveContainer width="100%" height={250}><AreaChart data={btc.yd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="anio" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>"$"+(v/1e6).toFixed(1)+"M"}/><Tooltip content={<ChartTooltip formatter={v=>fU(v)}/>}/><Area type="monotone" dataKey="valorUSD" stroke={CHART.orange} fill="url(#gradOrange)" strokeWidth={2.5}/></AreaChart></ResponsiveContainer></Cd>
     </div>}
 
     {tab==="analisis"&&<div>

@@ -1474,24 +1474,54 @@ export default function FinPath(){
 
       {/* ═══ ROW 1: Net Worth Hero + Health Score ═══ */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14,marginBottom:14}}>
-        <Cd s={{padding:0,background:"radial-gradient(ellipse at 30% 0%,rgba(34,197,94,.06)0%,transparent 60%)"}}>
+        <div style={{
+          background:"rgba(255,255,255,0.02)",
+          border:`1px solid ${CHART.border}`,
+          borderRadius:16,
+          padding:0,
+          position:"relative",
+          overflow:"hidden",
+          backgroundImage:`radial-gradient(circle at 0% 0%, ${CHART.green}15 0%, transparent 50%)`,
+        }}>
+          {/* Accent line vertical */}
+          <div style={{position:"absolute",left:0,top:24,bottom:24,width:2,background:CHART.green,borderRadius:"0 2px 2px 0"}}/>
           <div style={{padding:"32px 28px"}}>
-            <div style={{fontSize:11,color:T.tx3,letterSpacing:2,fontWeight:600}}>PATRIMONIO NETO</div>
-            <div style={{fontSize:"clamp(2rem,5vw,3rem)",fontWeight:800,letterSpacing:"-0.04em",marginTop:4}}>{fm(t.nw)}</div>
-            <div style={{display:"flex",gap:20,marginTop:20,flexWrap:"wrap"}}>
-              {[{l:"Activos",v:fm(totalPat),c:T.gn},{l:"Deuda",v:fm(t.td),c:T.rd},{l:"Ratio D/A",v:pc(t.dta),c:t.dta<50?T.gn:T.rd}].map(k=>
-                <div key={k.l}><div style={{fontSize:10,color:T.tx3,letterSpacing:1}}>{k.l}</div><div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:2}}>{k.v}</div></div>
+            <div style={{fontSize:10,color:CHART.txt3,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase"}}>PATRIMONIO NETO</div>
+            <div style={{fontFamily:CHART.fontDisplay,fontSize:"clamp(2.5rem,6vw,4rem)",fontWeight:800,letterSpacing:"-0.045em",marginTop:6,lineHeight:1.0,fontVariantNumeric:"tabular-nums",color:CHART.txt}}>{fm(t.nw)}</div>
+            <div style={{display:"flex",gap:28,marginTop:24,flexWrap:"wrap"}}>
+              {[{l:"Activos",v:fm(totalPat),c:CHART.green},{l:"Deuda",v:fm(t.td),c:CHART.red},{l:"Ratio D/A",v:pc(t.dta),c:t.dta<50?CHART.green:CHART.red}].map(k=>
+                <div key={k.l}><div style={{fontSize:10,color:CHART.txt3,letterSpacing:"0.06em",fontWeight:600,textTransform:"uppercase"}}>{k.l}</div><div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:4,fontFamily:CHART.fontMono,fontVariantNumeric:"tabular-nums"}}>{k.v}</div></div>
               )}
             </div>
           </div>
-        </Cd>
-        <Cd s={{padding:"28px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center"}}>
-          <div style={{width:90,height:90,borderRadius:"50%",border:"4px solid "+healthColor,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:12}}>
-            <div style={{fontSize:28,fontWeight:800,color:healthColor}}>{healthScore}</div>
+        </div>
+        <div style={{
+          background:"rgba(255,255,255,0.02)",
+          border:`1px solid ${CHART.border}`,
+          borderRadius:16,
+          padding:"28px",
+          display:"flex",
+          flexDirection:"column",
+          alignItems:"center",
+          justifyContent:"center",
+          textAlign:"center",
+          position:"relative",
+          overflow:"hidden",
+          backgroundImage:`radial-gradient(circle at 50% 0%, ${healthColor}15 0%, transparent 60%)`,
+        }}>
+          {/* Ring con glow */}
+          <div style={{
+            width:96,height:96,borderRadius:"50%",
+            border:"3px solid "+healthColor,
+            display:"flex",alignItems:"center",justifyContent:"center",
+            marginBottom:14,
+            boxShadow:`0 0 24px ${healthColor}30, inset 0 0 24px ${healthColor}10`,
+          }}>
+            <div style={{fontFamily:CHART.fontDisplay,fontSize:32,fontWeight:800,color:healthColor,fontVariantNumeric:"tabular-nums"}}>{healthScore}</div>
           </div>
-          <div style={{fontSize:13,fontWeight:700,color:healthColor}}>{healthLabel}</div>
-          <div style={{fontSize:11,color:T.tx3,marginTop:2}}>Salud Financiera</div>
-        </Cd>
+          <div style={{fontSize:13,fontWeight:700,color:healthColor,fontFamily:CHART.fontDisplay}}>{healthLabel}</div>
+          <div style={{fontSize:10,color:CHART.txt3,marginTop:4,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>Salud Financiera</div>
+        </div>
       </div>
 
       {/* ═══ ROW 1b: Wealth Percentile ═══ */}
@@ -1581,7 +1611,7 @@ export default function FinPath(){
           {pie.length>0?<div style={{display:"flex",gap:16,alignItems:"center"}}>
             <div style={{width:140,height:140,flexShrink:0}}>
               <ResponsiveContainer width="100%" height={140}>
-                <PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={32} outerRadius={60} paddingAngle={2}>{pie.map((_,i)=><Cell key={i} fill={T.ch[i%T.ch.length]}/>)}</Pie></PieChart>
+                <PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={32} outerRadius={60} paddingAngle={3} stroke="none">{pie.map((_,i)=><Cell key={i} fill={CHART.series[i%CHART.series.length]}/>)}</Pie></PieChart>
               </ResponsiveContainer>
             </div>
             <div style={{flex:1,fontSize:11}}>
@@ -1631,7 +1661,7 @@ export default function FinPath(){
         <Cd s={{padding:20}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Proyección Patrimonial (8% anual)</div>
           <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={pj}><CartesianGrid strokeDasharray="3 3" stroke={T.border}/><XAxis dataKey="yr" tick={{fill:T.tx3,fontSize:10}} axisLine={false}/><YAxis tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickFormatter={v=>fm(v)}/><Tooltip contentStyle={{background:"#1e1e24",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,color:"#fafafa",fontSize:12}} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={v=>fm(v)}/><Area type="monotone" dataKey="v" stroke={T.gn} fill={T.gn+"15"}/></AreaChart>
+            <AreaChart data={pj}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="yr" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/><Area type="monotone" dataKey="v" stroke={CHART.green} strokeWidth={2.5} fill="url(#gradGreen)"/></AreaChart>
           </ResponsiveContainer>
         </Cd>
         {/* Independence Progress */}

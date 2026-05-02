@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import PageHeader from "./PageHeader";
+import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
 const T = {
   bg2: "#18181b", bg3: "#27272a", bg4: "#2a2a32",
@@ -895,19 +896,14 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 14 }}>Acumulación Cash Flow — 12 Meses</div>
             <ResponsiveContainer width="100%" height={250}>
               <AreaChart data={proj}>
-                <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                <XAxis dataKey="m" tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} />
-                <YAxis tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(0)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v}} />
-                <Tooltip contentStyle={TT} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={(v) => fm(v)} />
-                <Area type="monotone" dataKey="actual" stroke={T.txt3} fill={T.txt3 + "08"} strokeDasharray="5 5" name="Actual" />
-                <defs>
-                  <linearGradient id="gsim2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={T.gn} stopOpacity={0.3} />
-                    <stop offset="100%" stopColor={T.gn} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area type="monotone" dataKey="simulado" stroke={T.gn} fill="url(#gsim2)" strokeWidth={2} name="Simulado" />
-                <Legend />
+                <ChartGradients/>
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="m" {...axisProps} />
+                <YAxis {...axisProps} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(0)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v}} />
+                <Tooltip content={<ChartTooltip formatter={(v) => fm(v)}/>} />
+                <Area type="monotone" dataKey="actual" stroke={CHART.txt3} fill="transparent" strokeDasharray="5 5" strokeWidth={1.5} name="Actual" />
+                <Area type="monotone" dataKey="simulado" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} name="Simulado" />
+                <Legend wrapperStyle={{fontSize:12,paddingTop:8}} iconType="circle"/>
               </AreaChart>
             </ResponsiveContainer>
             <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>

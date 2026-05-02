@@ -3,6 +3,7 @@
  * Standalone — does NOT touch App.jsx dashboard logic
  */
 import { useMemo } from "react";
+import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
          ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 
@@ -256,12 +257,13 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Monthly Cash Flow</div>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={cfData}>
-              <XAxis dataKey="name" tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>fm(v)}/>
-              <Tooltip contentStyle={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,color:T.tx,fontSize:12}}
-                formatter={v=>fm(v)}/>
-              <Bar dataKey="a" radius={[6,6,0,0]}>
-                {cfData.map((d,i)=><Cell key={i} fill={d.a>=0?T.gn:T.rd}/>)}
+              <ChartGradients/>
+              <CartesianGrid {...gridProps}/>
+              <XAxis dataKey="name" {...axisProps}/>
+              <YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/>
+              <Tooltip cursor={{fill:"rgba(255,255,255,0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/>
+              <Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>
+                {cfData.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -348,12 +350,12 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Net Worth Projection (8% annual)</div>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={proj}>
-              <CartesianGrid strokeDasharray="3 3" stroke={T.border}/>
-              <XAxis dataKey="yr" tick={{fill:T.tx3,fontSize:10}} axisLine={false}/>
-              <YAxis tick={{fill:T.tx3,fontSize:10}} axisLine={false} tickFormatter={v=>fm(v)}/>
-              <Tooltip contentStyle={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,color:T.tx,fontSize:12}}
-                formatter={v=>fm(v)}/>
-              <Area type="monotone" dataKey="v" stroke={T.gn} fill={T.gn+"15"}/>
+              <ChartGradients/>
+              <CartesianGrid {...gridProps}/>
+              <XAxis dataKey="yr" {...axisProps}/>
+              <YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/>
+              <Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/>
+              <Area type="monotone" dataKey="v" stroke={CHART.green} strokeWidth={2.5} fill="url(#gradGreen)"/>
             </AreaChart>
           </ResponsiveContainer>
         </Card>

@@ -18,10 +18,11 @@
 //   />
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine, CartesianGrid } from "recharts";
 import { useEffect } from "react";
 import { proyectarSiguienteAno } from "./AlertasAnoAnterior.jsx";
 import { track } from "../lib/analytics.js";
+import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
 const T = {
   txt: "#e8eaed", txt2: "#b8bcc4", txt3: "#6b7280",
@@ -103,17 +104,14 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
       <div style={{ width: "100%", height: 160 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={puntos} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-            <XAxis dataKey="ano" stroke={T.txt3} style={{ fontSize: 10 }} />
-            <YAxis tickFormatter={fmM} stroke={T.txt3} style={{ fontSize: 10 }} width={55} />
-            <Tooltip
-              contentStyle={tooltipStyle}
-              labelStyle={{ color: T.txt, fontWeight: 700, fontSize: 11 }}
-              formatter={(v) => fmM(v)}
-            />
-            <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
-            <Line type="monotone" dataKey="ingresos" stroke={T.blue} strokeWidth={2} dot={{ r: 3 }} name="Ingresos" />
-            <Line type="monotone" dataKey="impuesto" stroke={T.red} strokeWidth={2} dot={{ r: 3 }} name="Impuesto" />
-            <Line type="monotone" dataKey="retenciones" stroke={T.cyan} strokeWidth={2} dot={{ r: 3 }} name="Retenciones" />
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="ano" {...axisProps} />
+            <YAxis tickFormatter={fmM} {...axisProps} width={55} />
+            <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)}/>} />
+            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} iconType="circle"/>
+            <Line type="monotone" dataKey="ingresos" stroke={CHART.blue} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 0 }} activeDot={{r:5}} name="Ingresos" />
+            <Line type="monotone" dataKey="impuesto" stroke={CHART.red} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 0 }} activeDot={{r:5}} name="Impuesto" />
+            <Line type="monotone" dataKey="retenciones" stroke={CHART.cyan} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 0 }} activeDot={{r:5}} name="Retenciones" />
           </LineChart>
         </ResponsiveContainer>
       </div>

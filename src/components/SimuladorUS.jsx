@@ -6,6 +6,7 @@
  */
 import { useState, useMemo } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
 // ── Federal tax calculator (same logic as TaxPlanningUS) ──────────────────
 const BRACKETS_SIM = [
@@ -496,17 +497,16 @@ export default function SimuladorUS({ user, totals }) {
         </div>
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={projection}>
-            <CartesianGrid strokeDasharray="3 3" stroke={T.border}/>
-            <XAxis dataKey="year" tick={{fill:T.tx3,fontSize:11}} axisLine={false}/>
-            <YAxis tick={{fill:T.tx3,fontSize:10}} axisLine={false}
+            <ChartGradients/>
+            <CartesianGrid {...gridProps}/>
+            <XAxis dataKey="year" {...axisProps}/>
+            <YAxis {...axisProps}
               tickFormatter={v=>v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${(v/1000).toFixed(0)}K`:`$${v}`}/>
-            <Tooltip
-              contentStyle={{background:T.bg2,border:"1px solid "+T.border,borderRadius:10,color:T.tx,fontSize:12}}
-              formatter={v=>["$"+Math.round(v).toLocaleString(),"Net Worth"]}/>
+            <Tooltip content={<ChartTooltip formatter={v=>["$"+Math.round(v).toLocaleString(),"Net Worth"]}/>}/>
             <Area type="monotone" dataKey="value"
-              stroke={simT.cf>=0?T.gn:T.rd}
-              fill={(simT.cf>=0?T.gn:T.rd)+"20"}
-              strokeWidth={2}/>
+              stroke={simT.cf>=0?CHART.green:CHART.red}
+              fill={simT.cf>=0?"url(#gradGreen)":"url(#gradRed)"}
+              strokeWidth={2.5}/>
           </AreaChart>
         </ResponsiveContainer>
       </div>

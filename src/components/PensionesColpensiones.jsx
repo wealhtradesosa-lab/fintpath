@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
+import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
 /* ═══════════════════════════════════════════════════
    MÓDULO PENSIONES COLOMBIA — Cálculo Actuarial
@@ -752,12 +753,12 @@ export default function PensionesColpensiones({ trm }) {
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Crecimiento del Fondo</div>
             <ResponsiveContainer width="100%" height={240}>
               <AreaChart data={rais.proyeccion}>
-                <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                <XAxis dataKey="anio" tick={{ fill: T.txt3, fontSize: 11 }} axisLine={false} />
-                <YAxis tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} tickFormatter={(v) => fCOP(v)} />
-                <Tooltip contentStyle={TT} labelStyle={{color:"#fafafa"}} itemStyle={{color:"#fafafa"}} formatter={(v) => fCOP(v)} />
-                <defs><linearGradient id="raisG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={T.green} stopOpacity={0.3} /><stop offset="100%" stopColor={T.green} stopOpacity={0} /></linearGradient></defs>
-                <Area type="monotone" dataKey="saldo" stroke={T.green} fill="url(#raisG)" strokeWidth={2} />
+                <ChartGradients/>
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="anio" {...axisProps} />
+                <YAxis {...axisProps} tickFormatter={(v) => fCOP(v).replace("$","")} />
+                <Tooltip content={<ChartTooltip formatter={(v) => fCOP(v)}/>} />
+                <Area type="monotone" dataKey="saldo" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} />
               </AreaChart>
             </ResponsiveContainer>
           </Cd>
