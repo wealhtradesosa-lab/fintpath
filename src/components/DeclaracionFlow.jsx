@@ -110,6 +110,16 @@ const AREAS_JURIDICA = [
         })),
       };
     },
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const fp = { ...(o.fiscalProfile || {}) };
+        delete fp.carteraVencida;
+        delete fp.provisionCartera;
+        return { ...o, fiscalProfile: fp };
+      }),
+    }),
   },
   {
     id: "donaciones",
@@ -136,6 +146,15 @@ const AREAS_JURIDICA = [
         })),
       };
     },
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const dt = { ...(o.descuentosTributarios || {}) };
+        delete dt.donaciones;
+        return { ...o, descuentosTributarios: dt };
+      }),
+    }),
   },
   {
     id: "ica",
@@ -162,6 +181,15 @@ const AREAS_JURIDICA = [
         })),
       };
     },
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const fp = { ...(o.fiscalProfile || {}) };
+        delete fp.icaAnual;
+        return { ...o, fiscalProfile: fp };
+      }),
+    }),
   },
   {
     id: "perdidas",
@@ -185,6 +213,15 @@ const AREAS_JURIDICA = [
         owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({ ...o, perdidasFiscalesAcumuladas: monto })),
       };
     },
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const out = { ...o };
+        delete out.perdidasFiscalesAcumuladas;
+        return out;
+      }),
+    }),
   },
   {
     id: "iva_capital",
@@ -212,6 +249,15 @@ const AREAS_JURIDICA = [
         })),
       };
     },
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const dt = { ...(o.descuentosTributarios || {}) };
+        delete dt.ivaActivosProductivos;
+        return { ...o, descuentosTributarios: dt };
+      }),
+    }),
   },
 ];
 
@@ -269,6 +315,16 @@ const AREAS_NATURAL = [
         })),
       };
     },
+    // Limpia el dato persistido para permitir reedición
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const fp = { ...(o.fiscalProfile || {}) };
+        delete fp.dependientes;
+        return { ...o, fiscalProfile: fp };
+      }),
+    }),
   },
   {
     id: "salud",
@@ -348,6 +404,22 @@ const AREAS_NATURAL = [
         fuente: "Plan de Optimización",
         _planAhorro: true,
       });
+      return newUser;
+    },
+    // Limpia el dato persistido. Solo borra registros del Plan (`_planAhorro`),
+    // dejando intactos los gastos que el user cargó manualmente en Egresos.
+    // Si todo el dato detectado vino de Egresos manuales, el user va a tener
+    // que ir al módulo Egresos para modificarlo.
+    limpiar: (user, ownerId) => {
+      const newUser = { ...user, gas: { ...(user.gas || {}) } };
+      for (const cat of Object.keys(newUser.gas)) {
+        if (!Array.isArray(newUser.gas[cat])) continue;
+        newUser.gas[cat] = newUser.gas[cat].filter(g => !(
+          g._planAhorro &&
+          g.owner === ownerId &&
+          (g.fiscalCode === "AP_TRIB_SALUD_PREPAGADA" || g.cat === "Salud")
+        ));
+      }
       return newUser;
     },
   },
@@ -459,6 +531,19 @@ const AREAS_NATURAL = [
       });
       return newUser;
     },
+    // Limpia aportes PV/AFC del Plan (no toca aportes manuales en Egresos)
+    limpiar: (user, ownerId) => {
+      const newUser = { ...user, gas: { ...(user.gas || {}) } };
+      for (const cat of Object.keys(newUser.gas)) {
+        if (!Array.isArray(newUser.gas[cat])) continue;
+        newUser.gas[cat] = newUser.gas[cat].filter(g => !(
+          g._planAhorro &&
+          g.owner === ownerId &&
+          (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC" || g.fiscalCode === "AP_TRIB_PENSION_VOL")
+        ));
+      }
+      return newUser;
+    },
   },
   {
     id: "vivienda",
@@ -513,6 +598,18 @@ const AREAS_NATURAL = [
         })),
       };
     },
+    // Limpia el dato manual. Si la deducción venía de una deuda hipotecaria
+    // cargada en el módulo Deudas (DEU_NAT_VIVIENDA_HABITACIONAL), eso queda
+    // intacto — el user tiene que ir a Deudas para modificarla.
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const fp = { ...(o.fiscalProfile || {}) };
+        delete fp.interesesViviendaAnuales;
+        return { ...o, fiscalProfile: fp };
+      }),
+    }),
   },
 ];
 
@@ -1530,10 +1627,16 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
           {ordenSecciones.map(seccionId => {
             const renglonesSeccion = renglonesConValor.filter(r => r.seccion === seccionId);
             if (renglonesSeccion.length === 0) return null;
-            const seccionLabel = SECCIONES[seccionId] || seccionId;
+            // SECCIONES_F110/F210 son objetos { label, icon, color }
+            // (no strings). Hay que extraer .label para mostrar.
+            const seccionInfo = SECCIONES[seccionId] || {};
+            const seccionLabel = seccionInfo.label || seccionId;
+            const seccionIcon = seccionInfo.icon || "";
+            const seccionColor = seccionInfo.color || C.txt3;
             return (
-              <div key={seccionId} style={{ marginTop: 12 }}>
-                <div style={{ fontSize: 10, color: C.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+              <div key={seccionId} style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 11, color: seccionColor, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                  {seccionIcon && <span style={{ fontSize: 13 }}>{seccionIcon}</span>}
                   {seccionLabel}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
