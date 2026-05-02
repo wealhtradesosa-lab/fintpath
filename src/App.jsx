@@ -2342,7 +2342,6 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         user={u}
         estimacion={estimarImpuesto(u)}
         onUpdateUser={(newUser)=>setU(newUser)}
-        onAbrirSimulador={()=>setPg("sim")}
         ano={2025}
       />);
     }

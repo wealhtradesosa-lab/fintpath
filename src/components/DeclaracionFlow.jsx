@@ -653,7 +653,6 @@ export default function DeclaracionFlow({
   user,
   estimacion,
   onUpdateUser,
-  onAbrirSimulador,
   ano = 2025,
 }) {
   const allOwners = useMemo(() => user?.owners || [], [user]);
@@ -1082,21 +1081,16 @@ export default function DeclaracionFlow({
               </div>
             )}
 
-            {/* Acciones finales */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 16 }}>
+            {/* Acción final: descargar PDF para el contador. El simulador
+                vive como entrada propia en el menú lateral, así que no lo
+                duplicamos aquí (feedback Santiago 1-may-2026). */}
+            <div style={{ marginBottom: 16 }}>
               <BotonAccion
                 icono="📄"
                 titulo="Descargar PDF"
                 subtitulo="Para enviar a tu contador"
                 color={C.purple}
                 onClick={() => exportarBorradorPDF(user, selectedOwner, estimacion, ano)}
-              />
-              <BotonAccion
-                icono="🔮"
-                titulo="Probar en simulador"
-                subtitulo="¿Qué pasaría si...?"
-                color={C.blue}
-                onClick={() => onAbrirSimulador?.()}
               />
             </div>
 
