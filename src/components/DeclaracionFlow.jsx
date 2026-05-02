@@ -473,15 +473,12 @@ const AREAS_NATURAL = [
       const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
       return Math.min(Math.round(aplicable * tasaMarg), saldoActual);
     },
-    // Solo permitimos aplicar si el motor reporta espacio disponible.
-    // Sin espacio (ya topado en 40% renta laboral o sin renta laboral),
-    // aportar más no genera beneficio adicional, así que no tiene sentido
-    // guardar el dato.
-    permiteAplicarSinAhorro: (data, det) => {
-      const mensual = Number(data.aporteMensual) || 0;
-      const espacio = Number(det?.espacioParaPVyAFC) || 0;
-      return mensual > 0 && espacio > 0;
-    },
+    // Permitimos aplicar si hay un monto > 0, aunque el motor no detecte
+    // espacio disponible HOY. El aviso azul (avisoEspecial) explica por qué
+    // no impacta. El dato queda guardado para cuando el user agregue renta
+    // laboral o cambien las retenciones — consistente con dependientes,
+    // salud y vivienda donde "el dato queda guardado para próximos cálculos".
+    permiteAplicarSinAhorro: (data) => Number(data.aporteMensual) > 0,
     // Mensaje específico cuando el motor reporta sin espacio disponible
     avisoEspecial: (det) => {
       const espacio = Number(det?.espacioParaPVyAFC) || 0;
