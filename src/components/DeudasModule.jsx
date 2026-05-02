@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
+import PageHeader from "./PageHeader";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
@@ -132,19 +133,18 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Obligaciones Financieras</h2>
-          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{activos.length}{activos.length !== items.length ? ` de ${items.length}` : ""} deuda{activos.length !== 1 ? "s" : ""}{activos.length !== items.length ? " activa" + (activos.length !== 1 ? "s" : "") : ""} • Saldo: <span style={{ color: T.red, fontWeight: 700 }}>{fm(totalDeuda)}</span> • Cuotas: {fm(totalCuotas)}/mes</p>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
+      <PageHeader
+        label="Deudas"
+        title="Lo que debes"
+        subtitle={`${activos.length}${activos.length !== items.length ? ` de ${items.length}` : ""} deuda${activos.length !== 1 ? "s" : ""} · Saldo: ${fm(totalDeuda)} · Cuotas: ${fm(totalCuotas)}/mes`}
+        rightSlot={<>
           {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
+            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
           )}
           <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "" }); setShowForm(true); }}
-            style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
-        </div>
-      </div>
+            style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
+        </>}
+      />
 
       {/* Banner contextual: deudas sin propietario o sin clasificación fiscal explícita.
           Items sin owner no se atribuyen a una persona/empresa para el cálculo de

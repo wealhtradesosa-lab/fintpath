@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
+import PageHeader from "./PageHeader";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 
@@ -358,22 +359,19 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Gastos Familiares</h2>
-          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>
-            {activos.length}{activos.length !== allItems.length ? ` de ${allItems.length}` : ""} gasto{activos.length !== 1 ? "s" : ""}{activos.length !== allItems.length ? " activo" + (activos.length !== 1 ? "s" : "") : ""} en {cats.length} categorías • Total: <span style={{ color: T.red, fontWeight: 700 }}>{fm(totalMes)}/mes</span> • {fm(totalMes * 12)}/año
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
+      <PageHeader
+        label="Egresos"
+        title="Tus gastos"
+        subtitle={`${activos.length}${activos.length !== allItems.length ? ` de ${allItems.length}` : ""} gasto${activos.length !== 1 ? "s" : ""} en ${cats.length} categorías · Total: ${fm(totalMes)}/mes · ${fm(totalMes * 12)}/año`}
+        rightSlot={<>
           {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
               🗑️ Eliminar ({selected.size})
             </button>
           )}
-          <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
-        </div>
-      </div>
+          <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
+        </>}
+      />
 
       {/* Banner contextual: warnings fiscales de gastos */}
       {fiscalWarnings.length > 0 && (

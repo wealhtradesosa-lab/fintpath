@@ -22,6 +22,7 @@ import BannerMismatchDeclaracion from "./BannerMismatchDeclaracion";
 import ReporteFiscalPrint from "./ReporteFiscalPrint";
 import DeclaracionUpload from "./DeclaracionUpload";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
+import PageHeader from "./PageHeader.jsx";
 
 import { C } from "../lib/designTokens.js";
 
@@ -213,14 +214,14 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
         </div>
       )}
 
-      {/* Header + selector de owner */}
+      {/* Header con PageHeader (Sesión 2-may-2026: estilo Optimus unificado) */}
+      <PageHeader
+        label="Declaraciones"
+        title="Histórico fiscal"
+        subtitle="Lo declarado vs tu situación actual, con alertas accionables."
+      />
+      {/* Selector de owner: al lado del header pero como toolbar separada */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: T.txt }}>🏛️ Dashboard declaraciones</div>
-          <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
-            Histórico de lo declarado, comparación con tu situación actual, y alertas accionables.
-          </div>
-        </div>
         <select
           value={selectedOwnerId}
           onChange={(e) => setSelectedOwnerId(e.target.value)}

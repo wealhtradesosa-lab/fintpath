@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
+import PageHeader from "./PageHeader.jsx";
 
 const T = {
   bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
@@ -144,16 +145,17 @@ export default function AsesorIA({ user, totals, userId }) {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px" }}>🤖 Asesor Financiero IA</h2>
-          <p style={{ color: T.txt3, fontSize: 13, margin: 0 }}>Analiza tus datos financieros encendidos y te da recomendaciones personalizadas</p>
-        </div>
-        <span style={{fontSize:11,color:remaining<=5?"#ef4444":"#71717a",background:"#1e1e24",padding:"4px 10px",borderRadius:6}}>{remaining} consultas restantes hoy</span>
-        {msgs.length > 0 && (
-          <button onClick={() => setMsgs([])} style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt3, padding: "6px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12 }}>Nueva consulta</button>
-        )}
-      </div>
+      <PageHeader
+        label="Asesor IA"
+        title="Conversa con tu family office"
+        subtitle="Análisis de tus datos encendidos y recomendaciones personalizadas con datos reales."
+        rightSlot={<>
+          <span style={{fontSize:11,color:remaining<=5?"#ef4444":"#71717a",background:"#1e1e24",padding:"6px 12px",borderRadius:100}}>{remaining} consultas restantes hoy</span>
+          {msgs.length > 0 && (
+            <button onClick={() => setMsgs([])} style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt3, padding: "8px 16px", borderRadius: 100, cursor: "pointer", fontSize: 12 }}>Nueva consulta</button>
+          )}
+        </>}
+      />
 
       {/* Aviso: items apagados no se incluyen en el análisis IA */}
       <SimToggleInfoCompact />

@@ -48,6 +48,7 @@ import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import { generarRecomendacionesEstrategicas } from "../lib/recomendacionesEstrategicas.js";
 import RecomendacionesEstrategicas from "./RecomendacionesEstrategicas.jsx";
 import { estimarImpuesto } from "../lib/taxCO.js";
+import PageHeader from "./PageHeader.jsx";
 
 const C = {
   bg: "#0a0a0c",
@@ -1055,6 +1056,13 @@ export default function DeclaracionFlow({
 
   return (
     <div style={{ maxWidth: 820, margin: "0 auto" }}>
+      {/* Sesión 2-may-2026: PageHeader unificado estilo Optimus */}
+      <PageHeader
+        label="Impuestos"
+        title="Declaración de renta"
+        subtitle="Borrador, optimización y formulario final · F-110 / F-210"
+      />
+
       {/* ───────────────────── SELECTOR DE OWNER (compacto, top) ───────────────────── */}
       {allOwners.length > 1 && (
         <div style={{

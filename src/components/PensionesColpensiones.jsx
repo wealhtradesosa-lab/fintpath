@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
+import PageHeader from "./PageHeader.jsx";
 
 /* ═══════════════════════════════════════════════════
    MÓDULO PENSIONES COLOMBIA — Cálculo Actuarial
@@ -232,14 +233,12 @@ export default function PensionesColpensiones({ trm }) {
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px", color: T.blue }}>Simulador de Pensiones — Colombia</h1>
-          <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>Cálculo actuarial • Ley 100/1993 • Ley 797/2003 • SMMLV 2026: {fCOP(SM_2026)}</p>
-        </div>
-        <button onClick={() => { document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO")); window.print(); }} style={{ background: T.blue, color: "#fff", border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}>📄 Exportar PDF</button>
-      </div>
+      <PageHeader
+        label="Pensiones"
+        title="Cálculo actuarial"
+        subtitle={`Ley 100/1993 · Ley 797/2003 · SMMLV 2026: ${fCOP(SM_2026)}`}
+        rightSlot={<button onClick={() => { document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO")); window.print(); }} style={{ background: T.blue, color: "#fff", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>📄 Exportar PDF</button>}
+      />
 
       {/* ═══ PERFIL ═══ */}
       <Cd style={{ padding: 24, marginBottom: 20 }}>

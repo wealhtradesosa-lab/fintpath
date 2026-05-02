@@ -31,6 +31,7 @@
 import { useMemo, useState } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { auditarDatos } from "../lib/auditoriaDatos.js";
+import PageHeader from "./PageHeader.jsx";
 
 const C = {
   bg: "#0a0a0c",
@@ -429,24 +430,13 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
 // ─────────────────────────────────────────────────────────────────────────
 
 function HeaderConsolidado({ totalOwners, naturales, juridicas, ano }) {
+  const subtitle = `${totalOwners} titulares fiscales${naturales > 0 ? ` · ${naturales} ${naturales === 1 ? "persona natural" : "personas naturales"}` : ""}${juridicas > 0 ? ` · ${juridicas} ${juridicas === 1 ? "sociedad" : "sociedades"}` : ""} · Año gravable ${ano}`;
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "rgba(124,58,237,0.15)", border: "1px solid rgba(196,181,253,0.4)", borderRadius: 999 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: "#c4b5fd", letterSpacing: 0.5 }}>👨‍👩‍👧‍👦 VISTA FAMILIAR</span>
-        </div>
-        <span style={{ fontSize: 12, color: C.txt3 }}>Año gravable {ano}</span>
-      </div>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.2 }}>
-        Patrimonio del grupo familiar
-      </h1>
-      <p style={{ fontSize: 13, color: C.txt2, marginTop: 6, lineHeight: 1.5 }}>
-        Vista consolidada de los <strong style={{ color: C.txt }}>{totalOwners} titulares fiscales</strong>
-        {naturales > 0 && ` · ${naturales} ${naturales === 1 ? "persona natural" : "personas naturales"}`}
-        {juridicas > 0 && ` · ${juridicas} ${juridicas === 1 ? "sociedad" : "sociedades"}`}.
-        Mirá patrimonio, impuestos y oportunidades a nivel agregado y por miembro.
-      </p>
-    </div>
+    <PageHeader
+      label="Grupo Familiar"
+      title="Patrimonio consolidado"
+      subtitle={subtitle}
+    />
   );
 }
 

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
+import PageHeader from "./PageHeader.jsx";
 const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(255,255,255,0.06)",txt:"#fafafa",txt2:"#a1a1aa",txt3:"#71717a",green:"#22c55e",greenDim:"rgba(34,197,94,0.1)",red:"#ef4444",blue:"#3b82f6",orange:"#f97316",orangeDim:"rgba(249,115,22,0.1)",gold:"#eab308"};
 const SM=1750905; // SMMLV 2026 Decreto 1469
 const fC=v=>{if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+Math.round(v).toLocaleString("es-CO")};
@@ -44,16 +45,12 @@ export default function PensionBTC({trm:pTrm}){
 
   return<div style={{maxWidth:1100,margin:"0 auto"}}>
     <style>{"@media print { body { background: #fff !important; color: #000 !important; } [data-no-print] { display: none !important; } .recharts-wrapper { page-break-inside: avoid; } }"}</style>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,flexWrap:"wrap",gap:12}}>
-      <div style={{display:"flex",alignItems:"center",gap:14}}>
-        <div style={{width:48,height:48,borderRadius:14,background:T.orangeDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>₿</div>
-        <div><h1 style={{fontSize:24,fontWeight:800,margin:0,color:T.orange}}>Pensionarse con Bitcoin</h1><p style={{fontSize:13,color:T.txt3,margin:0}}>Simulador profesional • Sistema pensional colombiano + DCA Bitcoin</p></div>
-      </div>
-      <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={()=>{document.body.setAttribute("data-date",new Date().toLocaleDateString("es-CO"));window.print()}} style={{background:T.orange,color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>📄 Exportar PDF</button>
-        <div style={{textAlign:"right"}}><div style={{fontSize:13,color:T.green}}>● BTC {fU(pBTC)}</div><div style={{fontSize:13,color:T.orange}}>● USD/COP {"$"+trm.toLocaleString()}</div></div>
-      </div>
-    </div>
+    <PageHeader
+      label="Bitcoin"
+      title="Proyección DCA"
+      subtitle={`Sistema pensional colombiano + DCA Bitcoin · BTC ${fU(pBTC)} · USD/COP $${trm.toLocaleString()}`}
+      rightSlot={<button onClick={()=>{document.body.setAttribute("data-date",new Date().toLocaleDateString("es-CO"));window.print()}} style={{background:T.orange,color:"#000",border:"none",padding:"10px 22px",borderRadius:100,cursor:"pointer",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>📄 Exportar PDF</button>}
+    />
     <div style={{display:"flex",gap:4,marginBottom:24}}>{tabs.map(t=>{const a=tab===t.id;return<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"10px 20px",borderRadius:10,border:a?`1px solid ${T.orange}`:`1px solid ${T.border}`,background:a?T.orangeDim:"transparent",color:a?T.orange:T.txt3,cursor:"pointer",fontSize:14,fontWeight:a?700:500}}>{t.i} {t.l}</button>})}</div>
 
     {tab==="resumen"&&<div>

@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
+import PageHeader from "./PageHeader";
 
 const T = {
   bg2: "#18181b", bg3: "#27272a", bg4: "#2a2a32",
@@ -414,8 +415,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
 
   return (
     <div style={{overflowX:"hidden"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,flexWrap:"wrap",gap:8,width:"100%"}}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Simulador de Independencia Financiera</h2>
+      <PageHeader label="Simulador" title="Bienestar financiero" subtitle="Ajusta variables en tiempo real y proyecta tu camino a la independencia."/>
+      <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",marginBottom:6,flexWrap:"wrap",gap:8,width:"100%"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <input type="text" value={simName} onChange={e=>setSimName(e.target.value)} placeholder="Nombre del escenario..." style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"8px 12px",color:T.txt,fontSize:12,width:200,outline:"none"}} />
           <button onClick={()=>{

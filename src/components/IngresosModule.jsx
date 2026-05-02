@@ -1,5 +1,6 @@
 import { useState } from "react";
 import SimToggleInfo from "./SimToggleInfo";
+import PageHeader from "./PageHeader";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { obtenerInfoRetencion } from "../lib/retencionesTax.js";
@@ -434,23 +435,22 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Ingresos</h2>
-          <p style={{ color: T.txt3, fontSize: 13, margin: "3px 0 0" }}>{activos.length}{activos.length !== allItems.length ? ` de ${allItems.length}` : ""} fuente{activos.length !== 1 ? "s" : ""} de ingreso{activos.length !== allItems.length ? " activa" + (activos.length !== 1 ? "s" : "") : ""} • Total: <span style={{ color: T.green, fontWeight: 700 }}>{fm(totalMes)}/mes</span></p>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
+      <PageHeader
+        label="Ingresos"
+        title="Tus fuentes"
+        subtitle={`${activos.length}${activos.length !== allItems.length ? ` de ${allItems.length}` : ""} fuente${activos.length !== 1 ? "s" : ""} activa${activos.length !== 1 ? "s" : ""} · Total: ${fm(totalMes)}/mes`}
+        rightSlot={<>
           {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
               🗑️ Eliminar ({selected.size})
             </button>
           )}
           <button onClick={() => { setEditId(null); setForm(INITIAL_FORM); setShowForm(true); }}
-            style={{ background: T.green, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             + Agregar
           </button>
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Banner contextual: warnings fiscales de esta sección con lista navegable */}
       {fiscalWarnings.length > 0 && (

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PageHeader from "./PageHeader.jsx";
 
 const T = {
   bg2: "#18181b", bg3: "#1e1e24", card: "#111113",
@@ -36,8 +37,11 @@ export default function AportesCalculadora({ fmt }) {
 
   return (
     <div style={{ maxWidth: 700, margin: "0 auto" }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>💰 Calcula tus aportes de seguridad social</h2>
-      <p style={{ color: T.txt3, fontSize: 13, margin: "0 0 20px" }}>Conoce cuánto pagas de pensión, salud y ARL según tu tipo de vinculación</p>
+      <PageHeader
+        label="Aportes"
+        title="Seguridad social"
+        subtitle="Calcula cuánto pagas de pensión, salud y ARL según tu tipo de vinculación."
+      />
 
       <Cd s={{ padding: 24, marginBottom: 16 }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>

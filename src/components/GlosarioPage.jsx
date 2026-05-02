@@ -24,6 +24,7 @@
 
 import { useMemo, useState } from "react";
 import GLOSARIO from "../lib/glosario.js";
+import PageHeader from "./PageHeader.jsx";
 
 // Paleta consistente con el resto de la app
 const C = {
@@ -208,23 +209,11 @@ export default function GlosarioPage({ onClose }) {
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto" }}>
-      {/* ─────── HEADER ─────── */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 999 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: C.green, letterSpacing: 0.5 }}>📚 GLOSARIO TRIBUTARIO</span>
-          </div>
-          <span style={{ fontSize: 12, color: C.txt3 }}>{totalTerminos} términos · Actualizado 2026</span>
-        </div>
-        <h1 style={{ fontSize: 30, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.2 }}>
-          Aprendé el lenguaje de tu declaración
-        </h1>
-        <p style={{ fontSize: 15, color: C.txt2, marginTop: 8, lineHeight: 1.5, maxWidth: 720 }}>
-          La declaración de renta usa palabras técnicas que rara vez se explican bien.
-          Acá tenés todos los términos que aparecen en la app traducidos a lenguaje humano,
-          con ejemplos concretos. Sin DIAN-speak.
-        </p>
-      </div>
+      <PageHeader
+        label="Glosario"
+        title="Aprende el lenguaje de tu declaración"
+        subtitle={`${totalTerminos} términos técnicos traducidos a lenguaje humano. Sin DIAN-speak. Actualizado 2026.`}
+      />
 
       {/* ─────── BARRA DE BÚSQUEDA ─────── */}
       <div style={{
