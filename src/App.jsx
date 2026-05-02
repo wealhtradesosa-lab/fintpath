@@ -2,6 +2,7 @@ import LandingPage from "./components/LandingPage";
 import LandingAsesores from "./components/LandingAsesores";
 import HeroVariantA from "./components/HeroVariantA";
 import HeroVariantB from "./components/HeroVariantB";
+import HeroVariantC from "./components/HeroVariantC";
 import AdvisorWorkspace from "./components/AdvisorWorkspace";
 import AcceptInvite from "./components/AcceptInvite";
 import DashboardObservabilidad from "./components/DashboardObservabilidad";
@@ -963,6 +964,9 @@ export default function FinPath(){
     }
     if(pathname==="/hero-b"||pathname==="/hero-b/"){
       return<HeroVariantB onGetStarted={()=>setShowAuth(true)}/>;
+    }
+    if(pathname==="/hero-c"||pathname==="/hero-c/"){
+      return<HeroVariantC onGetStarted={()=>setShowAuth(true)}/>;
     }
     return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
   }
