@@ -88,16 +88,59 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
         .fade-up-4 { animation-delay: 0.7s; }
       `}</style>
 
-      {/* ─── BACKGROUND: candlestick chart pattern ─── */}
+      {/* ─── BACKGROUND: imagen FINPATHIA sailing crew ─── */}
+      {/* Sesión 2-may-2026: Santiago eligió imagen del crew sailing como
+          fondo del hero. Se mantienen los candlesticks como "data layer"
+          sutil encima para preservar identidad fintech. Overlay oscuro
+          en multi-capa para legibilidad del texto blanco. */}
+      <picture style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        <source media="(max-width: 768px)" srcSet="/hero-sailing-mobile.webp" type="image/webp" />
+        <source srcSet="/hero-sailing-desktop.webp" type="image/webp" />
+        <img
+          src="/hero-sailing-desktop.webp"
+          alt=""
+          aria-hidden="true"
+          loading="eager"
+          fetchpriority="high"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "center 30%",
+          }}
+        />
+      </picture>
+
+      {/* Overlay multi-capa para legibilidad del texto blanco encima */}
       <div style={{
         position: "absolute",
         inset: 0,
-        opacity: 0.18,
         pointerEvents: "none",
-        // Mask para que el centro respire (donde va el texto) y los bordes
-        // tengan más densidad de chart
+        // Stack:
+        //   1. Gradient lateral negro→transparente (oscurece izquierda donde va el texto)
+        //   2. Gradient inferior negro→transparente (transición suave al resto del landing)
+        //   3. Capa global oscura sutil para asegurar contraste universal
+        background: `
+          linear-gradient(90deg, rgba(9,9,11,0.85) 0%, rgba(9,9,11,0.65) 35%, rgba(9,9,11,0.4) 65%, rgba(9,9,11,0.55) 100%),
+          linear-gradient(180deg, rgba(9,9,11,0.3) 0%, rgba(9,9,11,0.5) 60%, #09090b 100%),
+          linear-gradient(rgba(9,9,11,0.25), rgba(9,9,11,0.25))
+        `,
+      }} />
+
+      {/* Candlesticks como "data layer" sutil — ahora menos densos
+          (opacidad 0.10 vs 0.18 original) para no competir con la imagen */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        opacity: 0.10,
+        pointerEvents: "none",
+        // Mask para que el centro/texto respire y los candlesticks vivan
+        // más en los bordes
         maskImage: "radial-gradient(ellipse 800px 600px at 50% 60%, transparent 0%, black 70%)",
         WebkitMaskImage: "radial-gradient(ellipse 800px 600px at 50% 60%, transparent 0%, black 70%)",
+        mixBlendMode: "screen",
       }}>
         <svg
           viewBox="0 0 100 100"
@@ -106,7 +149,6 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
         >
           {candles.map((c, i) => (
             <g key={i}>
-              {/* Mecha (línea vertical fina del high al low) */}
               <line
                 x1={c.x + c.width / 2}
                 x2={c.x + c.width / 2}
@@ -115,7 +157,6 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
                 stroke={c.isUp ? T.green : "#ef4444"}
                 strokeWidth="0.08"
               />
-              {/* Cuerpo de la vela (rectángulo open-close) */}
               <rect
                 x={c.x}
                 y={100 - Math.max(c.open, c.close)}
