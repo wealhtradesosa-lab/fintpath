@@ -3,6 +3,7 @@ import LandingAsesores from "./components/LandingAsesores";
 import HeroVariantA from "./components/HeroVariantA";
 import HeroVariantB from "./components/HeroVariantB";
 import HeroVariantC from "./components/HeroVariantC";
+import LandingPioneros from "./components/LandingPioneros";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "./lib/chartTheme.jsx";
@@ -970,6 +971,10 @@ export default function FinPath(){
     }
     if(pathname==="/hero-c"||pathname==="/hero-c/"){
       return<HeroVariantC onGetStarted={()=>setShowAuth(true)}/>;
+    }
+    // Sesión 2-may-2026: campaña Pioneros 2026 (100 plazas, 3 meses gratis Pro)
+    if(pathname==="/pioneros"||pathname==="/pioneros/"){
+      return<LandingPioneros onGetStarted={()=>setShowAuth(true)}/>;
     }
     return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
   }
@@ -2501,7 +2506,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     const r=await fetch("/.netlify/functions/stripe-checkout",{
                       method:"POST",
                       headers:{"Content-Type":"application/json"},
-                      body:JSON.stringify({priceId,email:userEmail,userId:userIdReal,successUrl:window.location.origin+"/?success=1&session_id={CHECKOUT_SESSION_ID}",cancelUrl:window.location.origin+"/?canceled=true"})
+                      body:JSON.stringify({priceId,email:userEmail,userId:userIdReal,promotionCode:sessionStorage.getItem("fp3_promo_code")||"",successUrl:window.location.origin+"/?success=1&session_id={CHECKOUT_SESSION_ID}",cancelUrl:window.location.origin+"/?canceled=true"})
                     });
                     if(!r.ok){
                       const txt=await r.text().catch(()=>"(no body)");

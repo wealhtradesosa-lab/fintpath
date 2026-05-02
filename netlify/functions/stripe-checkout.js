@@ -127,6 +127,48 @@ exports.handler = async (event) => {
       // pedimos tarjeta upfront (default behavior), que es más simple.
     }
 
+    // ─────────────────────────────────────────────────────────────────────
+    // Sesión 2-may-2026: campaña Pioneros 2026
+    // Si el frontend pasa promotionCode (ej: "PIONEROS2026"), lo buscamos
+    // en Stripe y lo pre-aplicamos al checkout. Esto evita que el user
+    // tenga que escribir el código manualmente.
+    //
+    // IMPORTANTE: si el código no existe o ya alcanzó max redemptions,
+    // NO bloqueamos el checkout — solo loggeamos el error y procedemos sin
+    // discount. El user aún puede pagar precio normal o ingresar otro código.
+    //
+    // allow_promotion_codes: true Y discounts son MUTUAMENTE EXCLUYENTES en
+    // Stripe — si pre-aplicamos un código, el campo input desaparece. Esto
+    // está OK para la flow de Pioneros (ya tenés el código aplicado).
+    // ─────────────────────────────────────────────────────────────────────
+    const promotionCode = (body.promotionCode || "").trim().toUpperCase();
+    if (promotionCode) {
+      try {
+        const promos = await stripe.promotionCodes.list({
+          code: promotionCode,
+          active: true,
+          limit: 1,
+        });
+        if (promos.data.length > 0) {
+          const promo = promos.data[0];
+          // Verificamos que no haya expirado ni alcanzado max redemptions
+          if (promo.active && (!promo.max_redemptions || promo.times_redeemed < promo.max_redemptions)) {
+            sessionParams.discounts = [{ promotion_code: promo.id }];
+            // Cuando hay discount pre-aplicado, NO podemos tener allow_promotion_codes
+            delete sessionParams.allow_promotion_codes;
+            console.log(`[stripe-checkout] promo aplicado: ${promotionCode} (id=${promo.id}, redeemed=${promo.times_redeemed}/${promo.max_redemptions || "∞"})`);
+          } else {
+            console.warn(`[stripe-checkout] promo ${promotionCode} ya alcanzó límite o está inactivo`);
+          }
+        } else {
+          console.warn(`[stripe-checkout] promo ${promotionCode} no encontrado en Stripe — el user puede ingresar uno manual`);
+        }
+      } catch (promoErr) {
+        // Si falla la búsqueda, no bloqueamos el checkout
+        console.error(`[stripe-checkout] error buscando promo ${promotionCode}:`, promoErr.message);
+      }
+    }
+
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     console.log(`[stripe-checkout] session creada · priceId=${priceId} userId=${userId} session=${session.id}`);
