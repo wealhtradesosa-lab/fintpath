@@ -11,7 +11,7 @@
 // 0 KB descarga adicional — todo SVG inline + CSS animation.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 
 const T = {
   bg: "#09090b", bg2: "#141418",
@@ -25,48 +25,14 @@ const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 const FONT_BODY = "'Inter', system-ui, sans-serif";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Generador determinístico de candlesticks (gráfico de velas) para fondo.
-// Inspirado en el pattern de Optimus de v0. Cada vela tiene posición x,
-// altura, y color (verde subiendo / rojo bajando). Una semilla fija para
-// que no cambie en cada render.
+// 2-may-2026: imagen sailing del crew FINPATHIA reemplaza el background de
+// candlesticks. Solo se mantiene imagen + overlay multi-capa para
+// preservar legibilidad del texto blanco sobre la imagen.
 // ─────────────────────────────────────────────────────────────────────────
-function generarCandlesticks(seed = 42, count = 80) {
-  // Pseudo-random determinístico (mulberry32)
-  let s = seed;
-  const rnd = () => {
-    s = (s + 0x6D2B79F5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-
-  const candles = [];
-  let prevClose = 50;
-  for (let i = 0; i < count; i++) {
-    const open = prevClose;
-    const range = 8 + rnd() * 30;
-    const direction = rnd() > 0.5 ? 1 : -1;
-    const close = Math.max(10, Math.min(90, open + direction * (rnd() * range)));
-    const high = Math.max(open, close) + rnd() * 6;
-    const low = Math.min(open, close) - rnd() * 6;
-    const isUp = close >= open;
-    candles.push({
-      x: (i / count) * 100,
-      open, close, high, low,
-      isUp,
-      width: 100 / count * 0.6,
-    });
-    prevClose = close;
-  }
-  return candles;
-}
 
 export default function HeroVariantC({ onGetStarted = () => {} }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
-
-  // Generamos candles una vez (memo). Renderizan como un mini chart al fondo.
-  const candles = useMemo(() => generarCandlesticks(42, 80), []);
 
   return (
     <div style={{
@@ -129,46 +95,8 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
         `,
       }} />
 
-      {/* Candlesticks como "data layer" sutil — ahora menos densos
-          (opacidad 0.10 vs 0.18 original) para no competir con la imagen */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        opacity: 0.10,
-        pointerEvents: "none",
-        // Mask para que el centro/texto respire y los candlesticks vivan
-        // más en los bordes
-        maskImage: "radial-gradient(ellipse 800px 600px at 50% 60%, transparent 0%, black 70%)",
-        WebkitMaskImage: "radial-gradient(ellipse 800px 600px at 50% 60%, transparent 0%, black 70%)",
-        mixBlendMode: "screen",
-      }}>
-        <svg
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          style={{ width: "100%", height: "100%" }}
-        >
-          {candles.map((c, i) => (
-            <g key={i}>
-              <line
-                x1={c.x + c.width / 2}
-                x2={c.x + c.width / 2}
-                y1={100 - c.high}
-                y2={100 - c.low}
-                stroke={c.isUp ? T.green : "#ef4444"}
-                strokeWidth="0.08"
-              />
-              <rect
-                x={c.x}
-                y={100 - Math.max(c.open, c.close)}
-                width={c.width}
-                height={Math.abs(c.close - c.open) || 0.5}
-                fill={c.isUp ? T.green : "#ef4444"}
-                opacity="0.9"
-              />
-            </g>
-          ))}
-        </svg>
-      </div>
+      {/* Candlesticks removidos por solicitud Santiago (2-may-2026):
+          ahora solo imagen + overlay limpio sin elementos de trading. */}
 
       {/* Glow muy sutil arriba para profundidad */}
       <div style={{
