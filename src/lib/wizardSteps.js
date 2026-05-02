@@ -715,25 +715,23 @@ export function mapearRespuestasAUser(answers, user, ownerId) {
     });
   }
 
-  // ── Deudas (vivienda hipotecaria) ────────────────────────────────────
-  newUser.deu = newUser.deu.filter(d => !(d.owner === ownerId && d._wizard === true));
+  // ── Intereses de vivienda hipotecaria ────────────────────────────────
+  // Sesión 1-may-2026: feedback Santiago. ANTES esto creaba una deuda
+  // fantasma "Crédito vivienda (wizard)" en user.deu, contaminando el
+  // simulador, las recomendaciones y el módulo de Deudas. Ahora el dato
+  // de intereses va al namespace planOptimizacion (aislado).
+  // Limpiamos cualquier deuda fantasma legacy del owner antes de actualizar.
+  newUser.deu = newUser.deu.filter(d => !(d.owner === ownerId && d._wizard === true && d.fiscalCode === "DEU_NAT_VIVIENDA_HABITACIONAL"));
 
   if (answers.tieneViviendaCredito === "si" && Number(answers.interesesViviendaAnual) > 0) {
-    // Estimación: si pagó X anual de intereses al ~12% (tasa típica), capital ≈ X / 0.12
-    const tasa = 12;
     const intereses = Number(answers.interesesViviendaAnual);
-    const capitalEstimado = Math.round(intereses / (tasa / 100));
-    newUser.deu.push({
-      id: "deu_wzd_viv_" + Date.now(),
-      owner: ownerId,
-      mt: capitalEstimado,
-      saldo: capitalEstimado,
-      ts: tasa,
-      tasa,
-      fiscalCode: "DEU_NAT_VIVIENDA_HABITACIONAL",
-      tipo: "Hipoteca",
-      nombre: "Crédito vivienda (wizard)",
-      _wizard: true,
+    newUser.owners = (newUser.owners || []).map(o => {
+      if (o.id !== ownerId) return o;
+      const fp = { ...(o.fiscalProfile || {}) };
+      const planOpt = { ...(fp.planOptimizacion || {}) };
+      planOpt.interesesViviendaAnuales = intereses;
+      fp.planOptimizacion = planOpt;
+      return { ...o, fiscalProfile: fp };
     });
   }
 

@@ -157,3 +157,73 @@ export function migratePlanOptimizacionNamespace(d) {
   d.migratedPlanOptimizacionNamespace = true;
   return d;
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Sesión 1-may-2026 (feedback Santiago en screenshot): el wizard antiguo
+// (wizardSteps.js) creaba una deuda fantasma "Crédito vivienda (wizard)"
+// en user.deu con _wizard: true cuando el user cargaba intereses de
+// hipoteca. El capital se inferíia como intereses/tasa.
+//
+// Esa deuda NO ES REAL — era inferencia para que el motor calculara
+// deducción. Pero como persiste en user.deu, contamina TODA la app:
+// aparece en simulador, en deudas, en patrimonio, en recomendaciones,
+// con nombre "(wizard)" colgado.
+//
+// Esta migración:
+// 1. Detecta deudas con `_wizard: true` Y fiscalCode DEU_NAT_VIVIENDA_HABITACIONAL
+// 2. Mueve el monto de intereses estimados al namespace
+//    planOptimizacion.interesesViviendaAnuales del owner (preserva la info
+//    útil para el cálculo en el módulo Impuestos)
+// 3. Elimina la deuda fantasma de user.deu
+//
+// Idempotente: marca user.migratedDeudaViviendaWizard = true.
+// ─────────────────────────────────────────────────────────────────────────
+export function migrateDeudaViviendaWizardLegacy(d) {
+  if (!d || typeof d !== "object") return d;
+  if (d.migratedDeudaViviendaWizard) return d;
+  if (!Array.isArray(d.deu)) {
+    d.migratedDeudaViviendaWizard = true;
+    return d;
+  }
+  const deudasFantasma = d.deu.filter(deuda =>
+    deuda._wizard === true &&
+    deuda.fiscalCode === "DEU_NAT_VIVIENDA_HABITACIONAL"
+  );
+  if (deudasFantasma.length === 0) {
+    d.migratedDeudaViviendaWizard = true;
+    return d;
+  }
+  // Para cada deuda fantasma, calcular intereses anuales y guardar en planOptimizacion
+  const interesesPorOwner = {};
+  for (const deuda of deudasFantasma) {
+    const ownerId = deuda.owner;
+    const saldo = Number(deuda.mt || deuda.saldo) || 0;
+    const tasa = Number(deuda.ts || deuda.tasa) || 0;
+    const intereses = Math.round(saldo * tasa / 100);
+    if (intereses > 0) {
+      interesesPorOwner[ownerId] = (interesesPorOwner[ownerId] || 0) + intereses;
+    }
+  }
+  // Aplicar al fiscalProfile.planOptimizacion de cada owner
+  if (Array.isArray(d.owners)) {
+    d.owners = d.owners.map(ow => {
+      const intereses = interesesPorOwner[ow.id];
+      if (!intereses) return ow;
+      const fp = { ...(ow.fiscalProfile || {}) };
+      const planOpt = { ...(fp.planOptimizacion || {}) };
+      // Preservar dato si ya existe; sumar si distinto
+      if (!planOpt.interesesViviendaAnuales) {
+        planOpt.interesesViviendaAnuales = intereses;
+      }
+      fp.planOptimizacion = planOpt;
+      return { ...ow, fiscalProfile: fp };
+    });
+  }
+  // Eliminar las deudas fantasma de user.deu
+  d.deu = d.deu.filter(deuda => !(
+    deuda._wizard === true &&
+    deuda.fiscalCode === "DEU_NAT_VIVIENDA_HABITACIONAL"
+  ));
+  d.migratedDeudaViviendaWizard = true;
+  return d;
+}
