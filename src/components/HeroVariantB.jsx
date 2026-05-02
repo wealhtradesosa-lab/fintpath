@@ -158,7 +158,7 @@ export default function HeroVariantB({ onGetStarted = () => {} }) {
             fontWeight: 700,
             letterSpacing: 0.3,
           }}>NUEVO</span>
-          Estrategias del contador con IA · ahorrá hasta $113M/año
+          Estrategias del contador con IA · ahorra hasta $113M/año
         </div>
 
         {/* H1 con tamaño masivo y gradient */}
@@ -191,7 +191,7 @@ export default function HeroVariantB({ onGetStarted = () => {} }) {
           fontWeight: 400,
           opacity: mounted ? 1 : 0,
         }}>
-          Centralizá patrimonio, impuestos y proyecciones. Recibí estrategias personalizadas como las de un family office — sin pagar como uno.
+          Centraliza patrimonio, impuestos y proyecciones. Recibe estrategias personalizadas como las de un family office — sin pagar como uno.
         </p>
 
         {/* CTAs con glow */}
@@ -222,7 +222,7 @@ export default function HeroVariantB({ onGetStarted = () => {} }) {
             e.currentTarget.style.boxShadow = `0 8px 32px ${T.green}50, 0 0 0 1px rgba(255,255,255,0.1) inset`;
           }}
           >
-            Comenzá 14 días gratis →
+            Comienza 14 días gratis →
           </button>
           <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{
             background: "rgba(255,255,255,0.04)",
@@ -243,7 +243,7 @@ export default function HeroVariantB({ onGetStarted = () => {} }) {
           fontSize: 13, color: T.txt3,
           opacity: mounted ? 1 : 0,
         }}>
-          Sin tarjeta · Datos cifrados · Cancelás cuando quieras
+          Sin tarjeta · Datos cifrados · Cancelas cuando quieras
         </p>
 
         {/* TARJETAS FLOTANTES — micro-features ─────────────────────────── */}

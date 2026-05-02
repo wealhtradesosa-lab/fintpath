@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getPlansForLanding } from "../lib/plans.js";
+import HeroVariantB from "./HeroVariantB.jsx";
 
 const T = {
   bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
@@ -31,55 +32,13 @@ export default function LandingPage({ onGetStarted }) {
   );
 
   return (
-    <div style={{ background: T.bg, color: T.txt, fontFamily: "'Inter', system-ui, sans-serif", minHeight: "100vh", overflowX: "hidden", backgroundImage: "linear-gradient(to bottom, rgba(9,9,11,0.4) 0%, rgba(9,9,11,0.6) 40%, rgba(9,9,11,0.85) 70%, #09090b 100%), url(/hero-bg.png)", backgroundSize: "cover, cover", backgroundPosition: "center, center top", backgroundRepeat: "no-repeat", backgroundAttachment: "scroll, fixed" }}>
+    <div style={{ background: T.bg, color: T.txt, fontFamily: "'Inter', system-ui, sans-serif", minHeight: "100vh", overflowX: "hidden" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
 
-      {/* ─── NAV ─── */}
-      <nav style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: "-0.04em" }}>
-          <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</span>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onGetStarted} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>Iniciar Sesión</button>
-          <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>Prueba 14 días gratis</button>
-        </div>
-      </nav>
-
-      {/* ─── HERO ─── */}
-      <Section style={{ paddingTop: 80, paddingBottom: 80, textAlign: "center", position: "relative" }}>
-        <div style={{ position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)", width: 600, height: 600, borderRadius: "50%", background: `radial-gradient(circle, ${T.green}06, transparent)`, pointerEvents: "none" }} />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 99, padding: "6px 16px", marginBottom: 24, fontSize: 13, color: T.txt2 }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, display: "inline-block" }} />
-            Gestión patrimonial inteligente para familias
-          </div>
-          <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: 20, maxWidth: 800, margin: "0 auto 20px" }}>
-            Tu family office, potenciado por{" "}
-            <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>inteligencia artificial</span>
-          </h1>
-          <p style={{ fontSize: 18, color: T.txt2, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 36px" }}>
-            Centraliza tu vida financiera en un sistema profesional: análisis, simulaciones, proyecciones y decisiones guiadas por expertos en patrimonio, pensiones, estrategia financiera y tributaria.
-          </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
-              Comenzar 14 días gratis →
-            </button>
-            <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{ background: T.bg3, color: T.txt, border: `1px solid ${T.border}`, padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 600 }}>
-              Ver Funciones
-            </button>
-          </div>
-          <p style={{ fontSize: 13, color: T.txt3, marginTop: 16 }}>✓ 14 días Pro gratis • ✓ Sin tarjeta de crédito • ✓ Asesor IA incluido</p>
-        </div>
-      </Section>
-
-      {/* ─── SOCIAL PROOF ─── */}
-      <Section style={{ paddingBottom: 60 }}>
-        <div style={{ display: "flex", justifyContent: "center", gap: 40, flexWrap: "wrap", opacity: 0.5 }}>
-          {["📊 Dashboard", "🖥️ Simulador de bienestar financiero", "🏛️ Hackea tus pensiones", "₿ Proyecta tu ahorro en BTC"].map((t) => (
-            <span key={t} style={{ fontSize: 14, color: T.txt, fontWeight: 500 }}>{t}</span>
-          ))}
-        </div>
-      </Section>
+      {/* ─── HERO ─── (Sesión 1-may-2026: Santiago eligió HeroVariantB con
+           copy "Inteligencia patrimonial para tu familia". Reemplaza el
+           hero anterior con hero-bg.png y el nav inline.) */}
+      <HeroVariantB onGetStarted={onGetStarted} />
 
       {/* ─── FEATURES ─── */}
       <div id="features" style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "80px 0" }}>
