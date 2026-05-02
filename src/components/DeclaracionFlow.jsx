@@ -39,7 +39,7 @@
 //     lo que se va a declarar.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, Component } from "react";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
@@ -110,6 +110,13 @@ const AREAS_JURIDICA = [
         })),
       };
     },
+    yaTieneDatos: (owner) => {
+      const monto = Number(owner?.fiscalProfile?.carteraVencida) || 0;
+      if (monto > 0) {
+        return { tiene: true, descripcion: `Cartera vencida cargada: $${monto.toLocaleString("es-CO")}` };
+      }
+      return { tiene: false };
+    },
     limpiar: (user, ownerId) => ({
       ...user,
       owners: (user.owners || []).map(o => {
@@ -146,6 +153,13 @@ const AREAS_JURIDICA = [
         })),
       };
     },
+    yaTieneDatos: (owner) => {
+      const monto = Number(owner?.descuentosTributarios?.donaciones) || 0;
+      if (monto > 0) {
+        return { tiene: true, descripcion: `Donaciones cargadas: $${monto.toLocaleString("es-CO")}` };
+      }
+      return { tiene: false };
+    },
     limpiar: (user, ownerId) => ({
       ...user,
       owners: (user.owners || []).map(o => {
@@ -181,6 +195,13 @@ const AREAS_JURIDICA = [
         })),
       };
     },
+    yaTieneDatos: (owner) => {
+      const monto = Number(owner?.fiscalProfile?.icaAnual) || 0;
+      if (monto > 0) {
+        return { tiene: true, descripcion: `ICA cargado: $${monto.toLocaleString("es-CO")}/año` };
+      }
+      return { tiene: false };
+    },
     limpiar: (user, ownerId) => ({
       ...user,
       owners: (user.owners || []).map(o => {
@@ -212,6 +233,13 @@ const AREAS_JURIDICA = [
         ...user,
         owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({ ...o, perdidasFiscalesAcumuladas: monto })),
       };
+    },
+    yaTieneDatos: (owner) => {
+      const monto = Number(owner?.perdidasFiscalesAcumuladas) || 0;
+      if (monto > 0) {
+        return { tiene: true, descripcion: `Pérdidas acumuladas: $${monto.toLocaleString("es-CO")}` };
+      }
+      return { tiene: false };
     },
     limpiar: (user, ownerId) => ({
       ...user,
@@ -248,6 +276,13 @@ const AREAS_JURIDICA = [
           descuentosTributarios: { ...(o.descuentosTributarios || {}), ivaActivosProductivos: ivaPagado },
         })),
       };
+    },
+    yaTieneDatos: (owner) => {
+      const ivaPagado = Number(owner?.descuentosTributarios?.ivaActivosProductivos) || 0;
+      if (ivaPagado > 0) {
+        return { tiene: true, descripcion: `IVA en activos cargado: $${ivaPagado.toLocaleString("es-CO")}` };
+      }
+      return { tiene: false };
     },
     limpiar: (user, ownerId) => ({
       ...user,
@@ -1068,8 +1103,11 @@ export default function DeclaracionFlow({
               />
             </div>
 
-            {/* Detalle del formulario embebido (modo experto inline) */}
-            <DetalleFormulario
+            {/* Detalle del formulario embebido (modo experto inline)
+                Envuelto en ErrorBoundary para que cualquier error en
+                generarBorradorF110/F210 o en el render de los renglones
+                no rompa toda la pantalla. */}
+            <DetalleFormularioErrorBoundary
               user={user}
               owner={selectedOwner}
               estimacion={estimacion}
@@ -1521,6 +1559,77 @@ function BotonAccion({ icono, titulo, subtitulo, color, onClick }) {
 // ─────────────────────────────────────────────────────────────────────────
 // DETALLE DEL FORMULARIO (embebido en Etapa 3, expandible)
 // ─────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────
+// ERROR BOUNDARY para DetalleFormulario
+// Captura cualquier error en el render y muestra un mensaje útil en lugar
+// de romper toda la pantalla. Sesión 1-may-2026: agregado tras feedback
+// "no se puede ver el detalle del formulario, sale error". Sin esto, un
+// error en generarBorradorF110 o en el render de un renglón rompía el
+// componente entero sin pista de qué falló.
+// ─────────────────────────────────────────────────────────────────────────
+class DetalleFormularioErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    // Log útil para debug en console del browser
+    console.error("[DetalleFormulario] Error capturado:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          background: C.bg3,
+          border: `1px solid ${C.red}`,
+          borderRadius: 10,
+          padding: "16px 18px",
+          color: C.txt2,
+          fontSize: 13,
+          lineHeight: 1.5,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 18 }}>⚠️</span>
+            <strong style={{ color: C.red, fontSize: 14 }}>
+              No pudimos generar el detalle del formulario
+            </strong>
+          </div>
+          <p style={{ margin: "0 0 10px", color: C.txt2 }}>
+            Hubo un problema técnico al armar el detalle línea por línea.
+            Tu cálculo y tu PDF siguen funcionando — solo es el detalle expandible
+            de esta sección el que falló.
+          </p>
+          {this.state.error && (
+            <details style={{ marginTop: 8, fontSize: 11, color: C.txt3 }}>
+              <summary style={{ cursor: "pointer" }}>Detalles técnicos (para soporte)</summary>
+              <pre style={{
+                marginTop: 6, padding: "8px 10px", background: C.bg2,
+                borderRadius: 6, fontSize: 10, overflow: "auto", maxHeight: 200,
+              }}>
+                {String(this.state.error?.message || this.state.error)}
+              </pre>
+            </details>
+          )}
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            style={{
+              marginTop: 10, padding: "6px 12px", background: "transparent",
+              border: `1px solid ${C.border}`, borderRadius: 6,
+              color: C.txt2, fontSize: 11, fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      );
+    }
+    return <DetalleFormulario {...this.props} />;
+  }
+}
 
 function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
   const [expandido, setExpandido] = useState(false);
