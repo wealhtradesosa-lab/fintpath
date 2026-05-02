@@ -28,7 +28,7 @@
 //   lo lleva al Auditor IA con ese owner seleccionado.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { auditarDatos } from "../lib/auditoriaDatos.js";
 
@@ -72,6 +72,13 @@ const fmShort = (v) => {
  */
 export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwner, ano = 2025 }) {
   const owners = user?.owners || [];
+  // Estado para expandir el detalle de advertencias/errores en el banner.
+  // Sesión 1-may-2026 (feedback Santiago): "qué gracia tiene decir que
+  // hay 3 advertencias si uno no sabe cuáles son". Sin esto el banner
+  // solo informa el count y obliga al user a entrar a cada owner para
+  // descubrir qué pasa, pero ese mismo owner es donde decimos "Entrá a
+  // cada miembro debajo para resolverlos" — no útil sin contexto.
+  const [advertenciasAbiertas, setAdvertenciasAbiertas] = useState(false);
 
   // ── Calcular métricas por owner ─────────────────────────────────────────
   const ownersData = useMemo(() => {
@@ -103,10 +110,15 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
       );
       const ahorroPotencial = recsOwner.reduce((s, r) => s + (r.ahorroAnualEstimado || 0), 0);
 
-      // Auditoría: cuántos hallazgos tiene este owner
+      // Auditoría: hallazgos por owner. Sesión 1-may-2026: además del
+      // count, guardamos los hallazgos completos para poder mostrarlos
+      // expandidos en el banner (sin esto, el "3 advertencias" no le
+      // dice al user QUÉ son las advertencias).
       const audit = auditarDatos(user);
-      const erroresOwner = (audit.errores || []).filter(h => detectaOwnerEnHallazgo(h, o.id, o.name)).length;
-      const advertenciasOwner = (audit.advertencias || []).filter(h => detectaOwnerEnHallazgo(h, o.id, o.name)).length;
+      const erroresOwnerLista = (audit.errores || []).filter(h => detectaOwnerEnHallazgo(h, o.id, o.name));
+      const advertenciasOwnerLista = (audit.advertencias || []).filter(h => detectaOwnerEnHallazgo(h, o.id, o.name));
+      const erroresOwner = erroresOwnerLista.length;
+      const advertenciasOwner = advertenciasOwnerLista.length;
 
       return {
         owner: o,
@@ -123,6 +135,8 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
         cantidadOportunidades: recsOwner.filter(r => (r.ahorroAnualEstimado || 0) > 0).length,
         erroresAuditoria: erroresOwner,
         advertenciasAuditoria: advertenciasOwner,
+        erroresLista: erroresOwnerLista,
+        advertenciasLista: advertenciasOwnerLista,
         tasaEfectiva: det?.ingreso > 0 ? ((det?.impuesto || 0) / det.ingreso * 100) : 0,
       };
     });
@@ -284,20 +298,108 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
         {(consolidado.erroresTotal > 0 || consolidado.advertenciasTotal > 0) && (
           <div style={{
             marginTop: 12,
-            padding: "10px 14px",
             background: consolidado.erroresTotal > 0 ? C.redBg : C.orangeBg,
             border: `1px solid ${consolidado.erroresTotal > 0 ? C.red : C.orange}40`,
             borderRadius: 8,
-            fontSize: 12,
-            color: C.txt2,
+            overflow: "hidden",
           }}>
-            {consolidado.erroresTotal > 0 && (
-              <span><strong style={{ color: C.red }}>{consolidado.erroresTotal} {consolidado.erroresTotal === 1 ? "error" : "errores"}</strong> en datos del grupo · </span>
+            {/* Resumen clickeable */}
+            <button
+              onClick={() => setAdvertenciasAbiertas(!advertenciasAbiertas)}
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                background: "transparent",
+                border: "none",
+                textAlign: "left",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                fontSize: 12,
+                color: C.txt2,
+              }}
+            >
+              <span style={{ flex: 1 }}>
+                {consolidado.erroresTotal > 0 && (
+                  <span><strong style={{ color: C.red }}>{consolidado.erroresTotal} {consolidado.erroresTotal === 1 ? "error" : "errores"}</strong> en datos del grupo · </span>
+                )}
+                {consolidado.advertenciasTotal > 0 && (
+                  <span><strong style={{ color: C.orange }}>{consolidado.advertenciasTotal} {consolidado.advertenciasTotal === 1 ? "advertencia" : "advertencias"}</strong> · </span>
+                )}
+                <span>{advertenciasAbiertas ? "Tocá para ocultar el detalle." : "Tocá para ver el detalle."}</span>
+              </span>
+              <span style={{
+                fontSize: 12, color: C.txt3,
+                transform: advertenciasAbiertas ? "rotate(90deg)" : "none",
+                transition: "transform 0.2s",
+              }}>
+                ▸
+              </span>
+            </button>
+
+            {/* Detalle expandible: lista por owner con cada hallazgo */}
+            {advertenciasAbiertas && (
+              <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
+                {ownersData.filter(d => d.erroresAuditoria > 0 || d.advertenciasAuditoria > 0).map(d => (
+                  <div key={d.owner.id} style={{
+                    padding: "10px 12px",
+                    background: "rgba(0,0,0,0.25)",
+                    borderRadius: 6,
+                    borderLeft: `3px solid ${d.erroresAuditoria > 0 ? C.red : C.orange}`,
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.txt }}>
+                        {d.owner.name}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onSelectOwner?.(d.owner.id); }}
+                        style={{
+                          fontSize: 10, padding: "3px 8px",
+                          background: "transparent", color: C.txt3,
+                          border: `1px solid ${C.border}`, borderRadius: 4,
+                          cursor: "pointer", fontWeight: 600,
+                        }}
+                      >
+                        Entrar →
+                      </button>
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                      {(d.erroresLista || []).map((h, i) => (
+                        <li key={"e" + i} style={{ fontSize: 11, lineHeight: 1.4 }}>
+                          <div style={{ color: C.red, fontWeight: 700 }}>
+                            {h.titulo || h.mensaje || "Error sin título"}
+                          </div>
+                          {h.titulo && h.mensaje && (
+                            <div style={{ color: C.txt2, marginTop: 2 }}>{h.mensaje}</div>
+                          )}
+                          {h.sugerencia && (
+                            <div style={{ color: C.txt3, marginTop: 2, fontStyle: "italic" }}>
+                              💡 {h.sugerencia}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                      {(d.advertenciasLista || []).map((h, i) => (
+                        <li key={"a" + i} style={{ fontSize: 11, lineHeight: 1.4 }}>
+                          <div style={{ color: C.orange, fontWeight: 700 }}>
+                            {h.titulo || h.mensaje || "Advertencia sin título"}
+                          </div>
+                          {h.titulo && h.mensaje && (
+                            <div style={{ color: C.txt2, marginTop: 2 }}>{h.mensaje}</div>
+                          )}
+                          {h.sugerencia && (
+                            <div style={{ color: C.txt3, marginTop: 2, fontStyle: "italic" }}>
+                              💡 {h.sugerencia}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
             )}
-            {consolidado.advertenciasTotal > 0 && (
-              <span><strong style={{ color: C.orange }}>{consolidado.advertenciasTotal} {consolidado.advertenciasTotal === 1 ? "advertencia" : "advertencias"}</strong> · </span>
-            )}
-            <span>Entrá a cada miembro debajo para resolverlos.</span>
           </div>
         )}
       </div>

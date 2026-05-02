@@ -109,9 +109,24 @@ function recomendacionesNaturalNoLaboral(perfil) {
                    ingNoLaboral > 300_000_000 ? 0.35 : 0.33;
 
   // ── REC 1: Crédito hipotecario sobre vivienda habitacional ──────────
-  // Aplica si: tiene saldo a cargo > $5M y no tiene ya un crédito hipotecario
-  const yaTieneCreditoVivienda = perfil.owner?.fiscalProfile?.interesesViviendaAnuales > 0 ||
-                                   (perfil.owner?.fiscalProfile && false); // otros checks
+  //
+  // Aplica si: tiene saldo a cargo > $5M y no tiene ya un crédito
+  // hipotecario REAL.
+  //
+  // ⚠️ Sesión 1-may-2026 (feedback Santiago): para detectar si "ya tiene
+  // crédito vivienda" SOLO leemos el módulo Deudas real (user.deu con
+  // fiscalCode DEU_NAT_VIVIENDA_HABITACIONAL). NO leemos
+  // fiscalProfile.interesesViviendaAnuales porque ese campo lo escribe
+  // el Plan de Optimización (wizard) — son proyecciones, no datos reales.
+  // Antes leía ese campo y eso generaba el bug "le pedí qué deuda pagar
+  // y me dice que pague crédito hipotecario que está en el wizard pero
+  // no en mis deudas reales".
+  const deudasReales = (perfil.user?.deu || []).filter(d =>
+    d.owner === perfil.owner.id &&
+    d.fiscalCode === "DEU_NAT_VIVIENDA_HABITACIONAL" &&
+    d.sim !== false
+  );
+  const yaTieneCreditoVivienda = deudasReales.length > 0;
   if (saldoACargo > 5_000_000 && !yaTieneCreditoVivienda) {
     const interesesAnualesEstimados = 60_000_000; // típico crédito $500M al 12%
     const ahorroAnual = Math.min(interesesAnualesEstimados * tasaMarg, saldoACargo);
@@ -239,9 +254,15 @@ function recomendacionesNaturalLaboral(perfil) {
 
   const tasaMarg = ingLaboral > 600_000_000 ? 0.37 : ingLaboral > 300_000_000 ? 0.35 : 0.33;
 
-  // REC 1: Aporte a Pensión Voluntaria
-  if (perfil.owner?.fiscalProfile?.dependientes?.cantidad === undefined ||
-      !((perfil.user?.gas?.["Aporte tributario"] || []).some(g => g.owner === perfil.owner.id && g.fiscalCode === "AP_TRIB_PV"))) {
+  // REC 1: Aporte a Pensión Voluntaria — solo si NO está aportando ya.
+  // Buscamos en gas REAL (no en proyecciones del wizard) para evitar
+  // contaminación cruzada.
+  const todoGas = Object.values(perfil.user?.gas || {}).flat();
+  const yaAportaPV = todoGas.some(g =>
+    g.owner === perfil.owner.id &&
+    (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC")
+  );
+  if (!yaAportaPV) {
     const aporteSugerido = Math.min(ingLaboral * 0.20, 2500 * UVT);
     const ahorroPV = Math.min(Math.round(aporteSugerido * tasaMarg), saldoACargo);
     recs.push({
