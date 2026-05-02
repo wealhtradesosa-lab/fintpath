@@ -45,6 +45,8 @@ import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { auditarDatos } from "../lib/auditoriaDatos.js";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
+import { generarRecomendacionesEstrategicas } from "../lib/recomendacionesEstrategicas.js";
+import RecomendacionesEstrategicas from "./RecomendacionesEstrategicas.jsx";
 
 const C = {
   bg: "#0a0a0c",
@@ -902,6 +904,15 @@ export default function DeclaracionFlow({
     return estimacion?.detalle?.find(d => d.name === selectedOwner?.name);
   }, [estimacion, selectedOwner]);
 
+  // Recomendaciones estratégicas (acciones futuras tipo contador estratega)
+  // Sesión 1-may-2026: feedback Santiago "necesito que recomiende como un
+  // contador real qué acciones tomar para ahorrar (comprar bodega, pedir
+  // crédito, donar a ESAL, etc.) — no solo capturar lo que ya tengo".
+  const recomendacionesEstrategicas = useMemo(() => {
+    if (!user || !selectedOwner || !det) return [];
+    return generarRecomendacionesEstrategicas(user, selectedOwner, det);
+  }, [user, selectedOwner, det]);
+
   // Saldo a cargo ANTES de optimizaciones (capturado al montar)
   const saldoOriginalRef = useRef(null);
   useEffect(() => {
@@ -1196,6 +1207,17 @@ export default function DeclaracionFlow({
                 />
               ))}
             </div>
+
+            {/* Estrategias del contador (acciones futuras proactivas).
+                Solo se muestran cuando hay saldo a cargo > 0 — el motor
+                ya devuelve [] en otros casos. Aparece debajo del checklist
+                porque después de revisar lo existente, el siguiente paso
+                lógico es ver "qué acciones nuevas podría tomar". */}
+            {recomendacionesEstrategicas.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <RecomendacionesEstrategicas recomendaciones={recomendacionesEstrategicas} />
+              </div>
+            )}
 
             {/* CTA continuar a etapa 3 */}
             {etapaActiva === 2 && (
