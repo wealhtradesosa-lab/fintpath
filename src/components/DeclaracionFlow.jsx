@@ -244,6 +244,14 @@ const AREAS_NATURAL = [
       if (cant > 0) return { tiene: true, descripcion: `${cant} dependiente${cant > 1 ? "s" : ""} ya registrado${cant > 1 ? "s" : ""}` };
       return { tiene: false };
     },
+    // Permite borrar datos legacy para que el user pueda re-editar
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({
+        ...o,
+        fiscalProfile: { ...(o.fiscalProfile || {}), dependientes: { cantidad: 0, conDiscapacidad: false } },
+      })),
+    }),
     inputs: [{
       key: "cantidad",
       label: "¿Cuántas personas dependen de vos?",
@@ -298,6 +306,19 @@ const AREAS_NATURAL = [
         return { tiene: true, descripcion: `Ya hay gastos de salud aplicándose (deducción anual: $${deducMed.toLocaleString("es-CO")})` };
       }
       return { tiene: false };
+    },
+    // Borra solo los registros de salud creados por este Plan (con flag _planAhorro)
+    // para que el user pueda reescribir. Los gastos manuales del user se preservan.
+    limpiar: (user, ownerId) => {
+      const newUser = { ...user, gas: { ...(user.gas || {}) } };
+      for (const cat of Object.keys(newUser.gas)) {
+        if (Array.isArray(newUser.gas[cat])) {
+          newUser.gas[cat] = newUser.gas[cat].filter(g =>
+            !(g._planAhorro && g.owner === ownerId && g.fiscalCode === "AP_TRIB_SALUD_PREPAGADA")
+          );
+        }
+      }
+      return newUser;
     },
     inputs: [{
       key: "gastoMensual",
@@ -380,6 +401,19 @@ const AREAS_NATURAL = [
       }
       return { tiene: false };
     },
+    // Borra solo registros del Plan, deja aportes manuales del user
+    limpiar: (user, ownerId) => {
+      const newUser = { ...user, gas: { ...(user.gas || {}) } };
+      for (const cat of Object.keys(newUser.gas)) {
+        if (Array.isArray(newUser.gas[cat])) {
+          newUser.gas[cat] = newUser.gas[cat].filter(g =>
+            !(g._planAhorro && g.owner === ownerId &&
+              (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC" || g.fiscalCode === "AP_TRIB_PENSION_VOL"))
+          );
+        }
+      }
+      return newUser;
+    },
     inputs: [
       {
         key: "aporteMensual",
@@ -454,6 +488,14 @@ const AREAS_NATURAL = [
       }
       return { tiene: false };
     },
+    // Borra el dato manual (deja deudas hipotecarias intactas)
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({
+        ...o,
+        fiscalProfile: { ...(o.fiscalProfile || {}), interesesViviendaAnuales: 0 },
+      })),
+    }),
     inputs: [{
       key: "interesesAnuales",
       label: "¿Cuánto pagaste de intereses (no capital) en el año?",
@@ -557,6 +599,29 @@ export default function DeclaracionFlow({
   function noAplicaArea(area) {
     setRespuestasArea(prev => ({ ...prev, [area.id]: { tipo: "noaplica", ahorro: 0 } }));
     setAreaExpandida(null);
+  }
+
+  // Permite re-abrir un área para editar el dato. Funciona en 2 escenarios:
+  // (a) área aplicada en esta sesión: borramos la respuesta del state local
+  //     (los datos en user persistidos quedan, el user los reescribe arriba)
+  // (b) área "yaConfigurado" (datos detectados de Egresos/fiscalProfile):
+  //     limpiamos los datos legacy del user para que vuelva a estar en blanco
+  //     y el user pueda reescribir desde cero.
+  function editarArea(area) {
+    // Borra la respuesta del state local (si la había)
+    setRespuestasArea(prev => {
+      const next = { ...prev };
+      delete next[area.id];
+      return next;
+    });
+    // Si el área tiene un método "limpiar" para borrar datos preexistentes,
+    // lo invocamos (útil para áreas "yaConfigurado" que tienen datos de Egresos).
+    if (area.limpiar) {
+      const newUser = area.limpiar(user, selectedOwner.id);
+      onUpdateUser(newUser);
+    }
+    // Abrir el panel para que el user reedite
+    setAreaExpandida(area.id);
   }
 
   const cambiosAplicados = Object.entries(respuestasArea).filter(([_, r]) => r.tipo === "aplicado");
@@ -768,6 +833,7 @@ export default function DeclaracionFlow({
                   onExpandir={() => setAreaExpandida(areaExpandida === area.id ? null : area.id)}
                   onAplicar={(data) => aplicarArea(area, data)}
                   onNoAplica={() => noAplicaArea(area)}
+                  onEditar={() => editarArea(area)}
                   det={det}
                   owner={selectedOwner}
                   user={user}
@@ -984,7 +1050,7 @@ function MiniCard({ icono, label, valor, color, sub }) {
   );
 }
 
-function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, onNoAplica, det, owner, user }) {
+function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, onNoAplica, onEditar, det, owner, user }) {
   const [valores, setValores] = useState(() => {
     const init = {};
     (area.inputs || []).forEach(i => {
@@ -1040,12 +1106,14 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
       overflow: "hidden",
       transition: "all 0.2s",
     }}>
+      <div style={{ position: "relative" }}>
       <button
-        onClick={!yaRespondida ? onExpandir : undefined}
+        onClick={!yaRespondida && !yaConfigurado ? onExpandir : undefined}
         disabled={yaRespondida || yaConfigurado}
         style={{
           width: "100%",
           padding: "12px 14px",
+          paddingRight: (yaRespondida || yaConfigurado) ? 90 : 14,
           background: "transparent",
           border: "none",
           textAlign: "left",
@@ -1113,7 +1181,37 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
         )}
       </button>
 
-      {expandida && !yaRespondida && !yaConfigurado && (
+      {/* Botón "Editar" para áreas ya aplicadas o ya configuradas.
+          Posicionado absolute para no entrar en conflicto con el button
+          principal. Permite re-abrir el panel y modificar el dato. */}
+      {(yaRespondida || yaConfigurado) && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onEditar) onEditar();
+          }}
+          style={{
+            position: "absolute",
+            right: 12,
+            top: "50%",
+            transform: "translateY(-50%)",
+            padding: "6px 10px",
+            background: "transparent",
+            border: `1px solid ${C.border}`,
+            borderRadius: 6,
+            color: C.txt2,
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+          title="Modificar este dato"
+        >
+          ✏️ Editar
+        </button>
+      )}
+      </div>
+
+      {expandida && (
         <div style={{ padding: "0 14px 14px 54px" }}>
           <div style={{ padding: "10px 12px", background: C.bg3, borderRadius: 8, marginBottom: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: C.txt, marginBottom: 4 }}>
@@ -1329,21 +1427,68 @@ function BotonAccion({ icono, titulo, subtitulo, color, onClick }) {
 
 function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
   const [expandido, setExpandido] = useState(false);
+
+  // Computar renglones con sus valores resueltos. Hay 2 tipos:
+  // - tipo "editable": tienen `valor` directo
+  // - tipo "formula": tienen función `calc(vals)` que depende de otros renglones
+  // Necesitamos resolver las formulas iterativamente sobre el mapa de valores.
   const renglones = useMemo(() => {
     if (!owner) return null;
-    return isJuridica
-      ? generarBorradorF110(user, owner, estimacion, ano)
-      : generarBorradorF210(user, owner, estimacion, ano);
+    try {
+      const raw = isJuridica
+        ? generarBorradorF110(user, owner, estimacion, ano)
+        : generarBorradorF210(user, owner, estimacion, ano);
+      if (!Array.isArray(raw)) return [];
+
+      // Construir mapa de valores: número de renglón -> valor numérico
+      const vals = {};
+      // Pasada 1: cargar valores directos
+      for (const r of raw) {
+        if (r && typeof r.valor === "number" && !Number.isNaN(r.valor)) {
+          vals[r.numero] = r.valor;
+        }
+      }
+      // Pasada 2-N: computar formulas hasta que estabilicen (max 5 iteraciones
+      // por si hay dependencias en cadena)
+      for (let iter = 0; iter < 5; iter++) {
+        let cambios = false;
+        for (const r of raw) {
+          if (r && r.tipo === "formula" && typeof r.calc === "function") {
+            try {
+              const nuevoValor = r.calc(vals);
+              const valorNum = Number(nuevoValor) || 0;
+              if (vals[r.numero] !== valorNum) {
+                vals[r.numero] = valorNum;
+                cambios = true;
+              }
+            } catch (e) {
+              // Formula con error: dejar 0 y seguir
+              vals[r.numero] = 0;
+            }
+          }
+        }
+        if (!cambios) break;
+      }
+
+      // Devolver renglones con valor resuelto inyectado
+      return raw.map(r => ({
+        ...r,
+        valorResuelto: typeof vals[r.numero] === "number" ? vals[r.numero] : 0,
+      }));
+    } catch (e) {
+      console.error("Error generando borrador:", e);
+      return [];
+    }
   }, [user, owner, estimacion, ano, isJuridica]);
 
-  if (!renglones) return null;
+  if (!Array.isArray(renglones) || renglones.length === 0) return null;
   const SECCIONES = isJuridica ? SECCIONES_F110 : SECCIONES_F210;
   const ordenSecciones = isJuridica
     ? ["patrimonio", "ingresos", "costos", "renta", "impuesto", "liquidacion"]
     : ["patrimonio", "trabajo", "deducciones", "capital", "noLaboral", "dividendos", "rentaTotal", "impuesto", "liquidacion"];
 
-  // Filtrar solo renglones con valor (esconder los $0)
-  const renglonesConValor = renglones.filter(r => r.valor && r.valor > 0);
+  // Filtrar solo renglones con valor resuelto > 0
+  const renglonesConValor = renglones.filter(r => r && r.valorResuelto > 0);
 
   return (
     <div style={{
@@ -1409,7 +1554,7 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
                         {r.concepto}
                       </span>
                       <span style={{ fontFamily: "monospace", color: r.destacado ? C.txt : C.txt2, fontWeight: r.destacado ? 700 : 400 }}>
-                        {fm(r.valor)}
+                        {fm(r.valorResuelto)}
                       </span>
                     </div>
                   ))}
