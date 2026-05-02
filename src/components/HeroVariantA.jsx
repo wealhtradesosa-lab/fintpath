@@ -170,7 +170,7 @@ export default function HeroVariantA({ onGetStarted = () => {} }) {
             fontWeight: 400,
             opacity: mounted ? 1 : 0,
           }}>
-            Patrimonio, impuestos, pensiones y proyecciones — analizados por un equipo de IA experto en finanzas colombianas. Sin contadores intermedios.
+            Patrimonio, impuestos, pensiones y proyecciones — analizados por un equipo de IA experto en finanzas personales. Sin contadores intermedios.
           </p>
 
           {/* CTAs */}

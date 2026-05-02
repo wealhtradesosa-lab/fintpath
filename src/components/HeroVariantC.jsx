@@ -253,7 +253,7 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
             fontWeight: 500,
             letterSpacing: "0.02em",
           }}>
-            La plataforma para familias inversionistas
+            Dale seguridad y control a tu patrimonio
           </span>
         </div>
 
@@ -298,7 +298,7 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
             margin: 0,
             fontWeight: 400,
           }}>
-            Centraliza patrimonio, impuestos y proyecciones en un solo sistema. Recibe estrategias personalizadas como las de un family office — analizadas por IA experta en finanzas colombianas.
+            Centraliza patrimonio, impuestos y proyecciones en un solo sistema. Recibe estrategias personalizadas como las de un family office — analizadas por IA experta en finanzas personales.
           </p>
 
           <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
