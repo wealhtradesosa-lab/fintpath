@@ -643,6 +643,234 @@ const AREAS_NATURAL = [
       }),
     }),
   },
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // ÁREAS PARA CÉDULA NO LABORAL (sesión 1-may-2026, feedback Santiago)
+  //
+  // Las 4 áreas anteriores aplican solo a personas con renta de TRABAJO
+  // (salario u honorarios). Pero hay personas naturales con ingresos por
+  // arriendos, dividendos, intereses — sin cédula laboral. Para esos
+  // casos las palancas son distintas:
+  //
+  //   - Costos asociados a arriendos (depreciación, mantenimiento, etc.)
+  //   - Dividendos no gravados Art. 49 ET (los que ya pagaron impuesto en
+  //     la sociedad)
+  //   - Descuento Art. 254 ET (impuestos pagados en el exterior — típico
+  //     en arriendos USA bajo LLC personal o dividendos extranjeros)
+  //   - Retenciones reales del año (cuando los pagadores aplicaron tasas
+  //     distintas al estándar 3.5% / 7%)
+  // ═════════════════════════════════════════════════════════════════════════
+
+  {
+    id: "costos_arriendo",
+    icono: "🔧",
+    titulo: "Costos asociados a tus arriendos",
+    pregunta: "¿Tenés gastos asociados a tus inmuebles arrendados (mantenimiento, predial, comisiones, intereses bancarios)?",
+    explicacion: "Los gastos directamente asociados al arriendo se RESTAN del ingreso bruto. Esto incluye: depreciación (~10% del valor del inmueble), intereses del crédito hipotecario, comisiones a inmobiliarias, mantenimiento, predial, seguros, y cualquier gasto relacionado. Es la palanca más impactante para personas con rentas de arriendo.",
+    baseLegal: "Art. 26 ET (renta líquida = ingreso − gastos)",
+    estimarAhorro: (data, det) => {
+      const monto = Number(data.gastosAnuales) || 0;
+      // Tasa marginal aproximada en cédula general (28-33% típico)
+      const tasaMarg = (det?.tasaMarginal || 28) / 100;
+      const saldoActual = Number(det?.impuesto) || 0;
+      // Limitar al monto del ingreso no laboral (no puede ser más que eso)
+      const ingNoLaboral = Number(det?.ingNoLaboral) || 0;
+      const aplicable = Math.min(monto, ingNoLaboral);
+      return Math.min(Math.round(aplicable * tasaMarg), saldoActual);
+    },
+    permiteAplicarSinAhorro: (data) => Number(data.gastosAnuales) > 0,
+    inputs: [{
+      key: "gastosAnuales",
+      label: "¿Cuánto suman tus gastos anuales asociados a los arriendos?",
+      type: "currency",
+      placeholder: "Ej: 80.000.000",
+      helpText: "Sumá depreciación + intereses + mantenimiento + predial + comisiones + seguros. Típicamente 25-40% del arriendo bruto. Si no estás seguro, pedile el monto a tu contador o revisá tu declaración del año pasado.",
+    }],
+    aplicar: (user, ownerId, data) => {
+      const monto = Number(data.gastosAnuales) || 0;
+      return {
+        ...user,
+        owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({
+          ...o,
+          fiscalProfile: { ...(o.fiscalProfile || {}), gastosArriendoAnuales: monto },
+        })),
+      };
+    },
+    yaTieneDatos: (owner) => {
+      const monto = Number(owner?.fiscalProfile?.gastosArriendoAnuales) || 0;
+      if (monto > 0) {
+        return { tiene: true, descripcion: `Gastos arriendo cargados: $${monto.toLocaleString("es-CO")}/año` };
+      }
+      return { tiene: false };
+    },
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const fp = { ...(o.fiscalProfile || {}) };
+        delete fp.gastosArriendoAnuales;
+        return { ...o, fiscalProfile: fp };
+      }),
+    }),
+  },
+
+  {
+    id: "dividendos_no_gravados",
+    icono: "💎",
+    titulo: "Dividendos NO gravados (Art. 49 ET)",
+    pregunta: "¿Parte de tus dividendos vienen de utilidades que YA pagaron impuesto en la sociedad?",
+    explicacion: "Cuando una sociedad ya pagó impuesto sobre sus utilidades, los dividendos que distribuye al accionista NO se gravan otra vez (Art. 49 ET). Pedile a tu contador o al revisor fiscal de la sociedad que te diga cuánto del dividendo recibido es gravado y cuánto NO. Solo la parte gravada paga impuesto al 15%.",
+    baseLegal: "Art. 49 ET",
+    estimarAhorro: (data, det) => {
+      const monto = Number(data.montoNoGravado) || 0;
+      // El ahorro es la tarifa de dividendos (15%) sobre el monto no gravado
+      // que de otra forma se gravaría
+      const divAnual = Number(det?.divAnual) || 0;
+      const aplicable = Math.min(monto, divAnual);
+      // Conservador: solo asumimos ahorro si excede los 300 UVT exentos
+      const UVT_LOCAL = 52374;
+      const yaExentos = Math.min(divAnual, 300 * UVT_LOCAL);
+      const partGravable = Math.max(0, divAnual - yaExentos);
+      const reduccionGravable = Math.min(aplicable, partGravable);
+      const saldoActual = Number(det?.impuesto) || 0;
+      return Math.min(Math.round(reduccionGravable * 0.15), saldoActual);
+    },
+    permiteAplicarSinAhorro: (data) => Number(data.montoNoGravado) > 0,
+    inputs: [{
+      key: "montoNoGravado",
+      label: "¿Cuánto de tus dividendos viene de utilidades ya gravadas en la sociedad?",
+      type: "currency",
+      placeholder: "Ej: 20.000.000",
+      helpText: "Tu certificado de dividendos lo separa: 'distribuible no gravado' vs 'distribuible gravado'. Si no lo tenés, pedíselo al revisor fiscal de la sociedad. Si toda la utilidad distribuida ya pagó renta como sociedad, todo es no gravado.",
+    }],
+    aplicar: (user, ownerId, data) => {
+      const monto = Number(data.montoNoGravado) || 0;
+      return {
+        ...user,
+        owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({
+          ...o,
+          fiscalProfile: { ...(o.fiscalProfile || {}), dividendosNoGravados: monto },
+        })),
+      };
+    },
+    yaTieneDatos: (owner) => {
+      const monto = Number(owner?.fiscalProfile?.dividendosNoGravados) || 0;
+      if (monto > 0) {
+        return { tiene: true, descripcion: `Dividendos no gravados: $${monto.toLocaleString("es-CO")}` };
+      }
+      return { tiene: false };
+    },
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const fp = { ...(o.fiscalProfile || {}) };
+        delete fp.dividendosNoGravados;
+        return { ...o, fiscalProfile: fp };
+      }),
+    }),
+  },
+
+  {
+    id: "impuestos_exterior",
+    icono: "🌍",
+    titulo: "Impuestos pagados en el exterior",
+    pregunta: "¿Pagaste impuestos en otro país sobre ingresos que también declarás en Colombia (ej: arriendos en USA, dividendos extranjeros)?",
+    explicacion: "Si una propiedad o inversión está en otro país y allá ya pagás impuesto, podés DESCONTAR ese impuesto del impuesto colombiano peso a peso (Art. 254 ET). El descuento está topado al impuesto que pagarías en Colombia sobre ese mismo ingreso. Es típico para personas con propiedades en USA bajo LLC personal.",
+    baseLegal: "Art. 254 ET",
+    estimarAhorro: (data, det) => {
+      const monto = Number(data.montoPagado) || 0;
+      const saldoActual = Number(det?.impuesto) || 0;
+      // El descuento es peso a peso, capeado al saldo a cargo
+      return Math.min(monto, saldoActual);
+    },
+    permiteAplicarSinAhorro: (data) => Number(data.montoPagado) > 0,
+    inputs: [{
+      key: "montoPagado",
+      label: "¿Cuánto pagaste en impuestos en el exterior durante el año?",
+      type: "currency",
+      placeholder: "Ej: 25.000.000",
+      helpText: "Convertí a pesos colombianos a la TRM del cierre del año. Para USA: federal income tax + state income tax. Necesitás certificación o la declaración del país extranjero como respaldo. Pedíselo a tu contador internacional.",
+    }],
+    aplicar: (user, ownerId, data) => {
+      const monto = Number(data.montoPagado) || 0;
+      return {
+        ...user,
+        owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({
+          ...o,
+          fiscalProfile: { ...(o.fiscalProfile || {}), impuestosExteriorPagados: monto },
+        })),
+      };
+    },
+    yaTieneDatos: (owner) => {
+      const monto = Number(owner?.fiscalProfile?.impuestosExteriorPagados) || 0;
+      if (monto > 0) {
+        return { tiene: true, descripcion: `Impuestos exterior cargados: $${monto.toLocaleString("es-CO")}` };
+      }
+      return { tiene: false };
+    },
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const fp = { ...(o.fiscalProfile || {}) };
+        delete fp.impuestosExteriorPagados;
+        return { ...o, fiscalProfile: fp };
+      }),
+    }),
+  },
+
+  {
+    id: "retenciones_reales",
+    icono: "🧾",
+    titulo: "Retenciones reales del año (avanzado, opcional)",
+    pregunta: "¿Querés cargar las retenciones REALES que te aplicaron en lugar de la estimación automática?",
+    explicacion: "Por defecto la app estima las retenciones según el tipo de ingreso (3.5% arriendos, 7% dividendos, etc.). Si tus pagadores te aplicaron un porcentaje distinto (autoretenciones, retención especial por arrendamientos comerciales, retenciones del exterior), cargá acá el monto real consolidado del año y reemplaza la estimación.",
+    baseLegal: "Art. 365 ET",
+    estimarAhorro: (data, det) => {
+      const monto = Number(data.retencionAnual) || 0;
+      const reteAuto = Number(det?.retefuenteNat) || 0;
+      const saldoActual = Number(det?.impuesto) || 0;
+      // Si la retención manual es mayor a la automática, hay ahorro
+      // por la diferencia (capeado al saldo)
+      const diferencia = Math.max(0, monto - reteAuto);
+      return Math.min(diferencia, saldoActual);
+    },
+    permiteAplicarSinAhorro: (data) => Number(data.retencionAnual) > 0,
+    inputs: [{
+      key: "retencionAnual",
+      label: "¿Cuánto te retuvieron en total durante el año?",
+      type: "currency",
+      placeholder: "Ej: 35.000.000",
+      helpText: "Sumá los montos de TODOS tus certificados de retención del año (renta y/o IVA si aplica). Cada pagador (arrendatario, banco, agente retenedor) debe haberte enviado un certificado anual.",
+    }],
+    aplicar: (user, ownerId, data) => {
+      const monto = Number(data.retencionAnual) || 0;
+      return {
+        ...user,
+        owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({
+          ...o,
+          fiscalProfile: { ...(o.fiscalProfile || {}), retencionesManualesAnio: monto },
+        })),
+      };
+    },
+    yaTieneDatos: (owner) => {
+      const monto = Number(owner?.fiscalProfile?.retencionesManualesAnio) || 0;
+      if (monto > 0) {
+        return { tiene: true, descripcion: `Retenciones reales cargadas: $${monto.toLocaleString("es-CO")}` };
+      }
+      return { tiene: false };
+    },
+    limpiar: (user, ownerId) => ({
+      ...user,
+      owners: (user.owners || []).map(o => {
+        if (o.id !== ownerId) return o;
+        const fp = { ...(o.fiscalProfile || {}) };
+        delete fp.retencionesManualesAnio;
+        return { ...o, fiscalProfile: fp };
+      }),
+    }),
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
