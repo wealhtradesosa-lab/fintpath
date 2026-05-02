@@ -82,8 +82,15 @@ export function cesantiasExentasArt206_4(cesantiasAnual, salarioMensualPromedio,
 export const TABLA_IMP = TABLA_ART_241;
 export const calcImpRenta = (uvtBase) => calcImpRentaCore(uvtBase, UVT);
 
-export const estimarImpuesto = (u) => {
+export const estimarImpuesto = (u, options = {}) => {
   if (!u) return { total: 0, mes: 0, detalle: [], sinClasificar: 0 };
+  // Sesión 1-may-2026 (feedback Santiago): el Plan de Optimización es un
+  // OVERLAY temporal — sus datos viven en owner.fiscalProfile.planOptimizacion.*
+  // y NO deben contaminar el simulador, vista familiar, recomendaciones, etc.
+  // Solo se leen cuando se pasa explícitamente `incluirPlanOptimizacion: true`.
+  // Default: false → vista "real" del usuario (lo que tiene cargado en
+  // Ingresos, Egresos, Deudas, Patrimonio).
+  const incluirPlan = options.incluirPlanOptimizacion === true;
   // Normalizar: asegurar que todos los items tengan fiscalCode (inferir si es
   // legacy). Los warnings no se consumen aquí; la UI los obtiene con
   // getFiscalWarnings() por separado.
@@ -752,22 +759,19 @@ export const estimarImpuesto = (u) => {
       // (no deducibles, criterio conservador) y NO entran al gastosInmueble.
       const gastosInmuebleBase = oGas.filter(g => ["Predial", "Impuesto", "Mantenimiento", "Vivienda", "Servicios"].includes(g.cat)).reduce((s, g) => s + (g.m || 0), 0) * 12;
       const gastosInmuebleSeguros = oGas.filter(g => g.fiscalCode === GAS_INMUEBLE_SEGUROS).reduce((s, g) => s + (g.m || 0), 0) * 12;
-      // Sesión 1-may-2026: feedback Santiago. Permitir cargar gastos
-      // de arriendo de forma agregada (sin desglosar en Egresos) desde
-      // el Plan de Optimización. Cubre depreciación, intereses bancarios,
-      // comisiones inmobiliarias, mantenimiento, predial, etc.
-      const gastosArriendoManual = Number(ow.fiscalProfile?.gastosArriendoAnuales) || 0;
+      // Plan de Optimización: namespace aislado. Solo cuando el caller pide
+      // incluirPlanOptimizacion=true (típicamente DeclaracionFlow al calcular
+      // el escenario optimizado). Default: lee 0 → no contamina simulador,
+      // vista familiar, dashboard.
+      const planOpt = (incluirPlan && ow.fiscalProfile?.planOptimizacion) || {};
+      const gastosArriendoManual = Number(planOpt.gastosArriendoAnuales) || 0;
       const gastosInmueble = gastosInmuebleBase + gastosInmuebleSeguros + gastosArriendoManual;
       const rentaLiqNoLaboral = Math.max(0, ingNoLaboral - gastosInmueble);
 
       // ── 5. DIVIDENDOS (tarifa especial Art. 242 ET) ──
-      // Sesión 1-may-2026: feedback Santiago. Permitir cargar el monto de
-      // dividendos NO GRAVADOS (Art. 49 ET): los que vienen de utilidades
-      // que ya pagaron impuesto en cabeza de la sociedad. Esos NO se
-      // gravan otra vez en el accionista. Si el user marca que parte de
-      // sus dividendos son no gravados, los restamos del divAnual antes
-      // de calcular la base.
-      const divNoGravadosArt49 = Number(ow.fiscalProfile?.dividendosNoGravados) || 0;
+      // Dividendos no gravados Art. 49 ET: solo desde Plan de Optimización
+      // (con flag explícito). Aislamiento de cross-contamination.
+      const divNoGravadosArt49 = Number(planOpt.dividendosNoGravados) || 0;
       const divAnualGravable = Math.max(0, divAnual - divNoGravadosArt49);
       const divExentos = Math.min(divAnualGravable, 300 * UVT);
       const divGravados = Math.max(0, divAnualGravable - divExentos);
@@ -810,12 +814,8 @@ export const estimarImpuesto = (u) => {
         else if (fc === NOL_ARRIENDO_INMUEBLE) reteN += m * 0.035;
         else if (fc === CAP_RENDIMIENTO_GENERICO || fc === DIV_ART49_GRAVADOS || fc === CAP_INTERESES_BANCARIOS || fc === CAP_VENTA_ACTIVOS) reteN += m * 0.07;
       });
-      // Sesión 1-may-2026: feedback Santiago. Si el user cargó la retención
-      // REAL del año (lo que sus pagadores efectivamente le retuvieron, según
-      // certificados), ese valor reemplaza el cálculo automático. Útil cuando
-      // los retenedores aplican porcentajes distintos al estándar (autoreten-
-      // ciones, retenciones especiales por arrendamientos comerciales, etc.).
-      const reteManual = Number(ow.fiscalProfile?.retencionesManualesAnio);
+      // Retenciones manuales: solo desde Plan de Optimización (con flag).
+      const reteManual = Number(planOpt.retencionesManualesAnio);
       if (reteManual > 0 && !Number.isNaN(reteManual)) {
         reteN = reteManual;
       }
@@ -846,14 +846,8 @@ export const estimarImpuesto = (u) => {
         impOptNat = Math.max(0, impOpt - reteN);
         regimenNotaN = "Régimen Ordinario — Cédula General (tabla Art. 241 ET con deducciones).";
       }
-      // Sesión 1-may-2026: descuento Art. 254 ET — impuestos pagados en
-      // el exterior (típico: arriendos en USA con propiedad bajo Salem
-      // Property Investments LLC, dividendos de fondos extranjeros, etc.).
-      // Es un DESCUENTO directo (peso a peso) sobre el impuesto colombiano,
-      // no una deducción. Se aplica después de calcular impActualNat.
-      // Cap legal: el descuento no puede superar el impuesto que se pagaría
-      // en Colombia sobre ese mismo ingreso (Art. 254 par. 1).
-      const impuestosExteriorPagados = Number(ow.fiscalProfile?.impuestosExteriorPagados) || 0;
+      // Descuento Art. 254 ET (impuestos exterior): solo desde Plan.
+      const impuestosExteriorPagados = Number(planOpt.impuestosExteriorPagados) || 0;
       if (impuestosExteriorPagados > 0) {
         const descuentoArt254 = Math.min(impuestosExteriorPagados, impActualNat);
         impActualNat = Math.max(0, impActualNat - descuentoArt254);

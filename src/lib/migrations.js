@@ -106,3 +106,54 @@ export function migrateFiscalCodePVLegacy(d) {
   d.migratedFiscalCodePV = true;
   return d;
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Sesión 1-may-2026 (feedback Santiago): aislar datos del Plan de
+// Optimización. Antes vivían como campos sueltos en owner.fiscalProfile.*
+// (gastosArriendoAnuales, dividendosNoGravados, etc.) y eso permitía que
+// el simulador, vista familiar y recomendaciones los leyeran como si
+// fueran datos reales.
+//
+// Ahora viven en owner.fiscalProfile.planOptimizacion.* y solo se leen
+// cuando estimarImpuesto() es llamado con incluirPlanOptimizacion: true.
+// Esta migración mueve los datos legacy al nuevo namespace.
+// Idempotente: marca user.migratedPlanOptimizacionNamespace = true.
+// ─────────────────────────────────────────────────────────────────────────
+export function migratePlanOptimizacionNamespace(d) {
+  if (!d || typeof d !== "object") return d;
+  if (d.migratedPlanOptimizacionNamespace) return d;
+  const camposPlan = [
+    "gastosArriendoAnuales",
+    "dividendosNoGravados",
+    "impuestosExteriorPagados",
+    "retencionesManualesAnio",
+  ];
+  // NOTA: interesesViviendaAnuales se queda en fiscalProfile directo
+  // porque el motor del simulador NO lo lee (lee de user.deu real). Y la
+  // info igual debe persistir cuando el user la carga.
+  // Si en el futuro ese campo causa contaminación, agregarlo aquí.
+  if (Array.isArray(d.owners)) {
+    d.owners = d.owners.map(ow => {
+      if (!ow.fiscalProfile) return ow;
+      const fp = { ...ow.fiscalProfile };
+      const planOpt = { ...(fp.planOptimizacion || {}) };
+      let movidos = 0;
+      for (const campo of camposPlan) {
+        if (fp[campo] !== undefined && planOpt[campo] === undefined) {
+          planOpt[campo] = fp[campo];
+          delete fp[campo];
+          movidos++;
+        } else if (fp[campo] !== undefined) {
+          // Ya estaba en planOpt (el wizard nuevo), borrar el legacy
+          delete fp[campo];
+        }
+      }
+      if (movidos > 0 || Object.keys(planOpt).length > 0) {
+        fp.planOptimizacion = planOpt;
+      }
+      return { ...ow, fiscalProfile: fp };
+    });
+  }
+  d.migratedPlanOptimizacionNamespace = true;
+  return d;
+}

@@ -92,8 +92,19 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         recs.push({ icon: "🏠", title: "Depreciación de inmuebles arrendados (Art. 137 ET)", desc: "Tus inmuebles en arriendo se deprecian 2,22%/año (vida útil 45 años). Esto reduce la renta no laboral directamente. Depreciación anual estimada: " + fm(deprecInmuebles) + ". El ahorro efectivo depende de tu tasa marginal (entre 19% y 39% según tu ingreso) — tu contador puede calcular el valor exacto.", impact: 0, color: T.purple });
       }
       if (ingAnual > 200e6) recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Las donaciones a entidades sin ánimo de lucro calificadas dan un DESCUENTO del 25% del valor donado, directo del impuesto a pagar (no de la base). El tope legal del descuento es el 25% del impuesto de renta del año. El monto que te conviene donar depende de tu estrategia fiscal y filantrópica — consúltalo con tu contador.", impact: 0, color: T.purple });
+      // Sesión 1-may-2026 (feedback Santiago): chequeamos hipoteca contra
+      // user.deu COMPLETO (sin filtro de sim) — el user puede tener la
+      // deuda con `sim: off` para verla apagada en el simulador, pero EXISTE
+      // en su realidad. Si la chequeamos solo contra `deu` filtrado, le
+      // recomendaríamos sacar un crédito que ya tiene.
+      // También chequeamos por fiscalCode oficial (más robusto que regex).
+      const todasLasDeudas = (user && user.deu) || [];
+      const tieneHipotecaReal = todasLasDeudas.some(d =>
+        d.fiscalCode === "DEU_NAT_VIVIENDA_HABITACIONAL" ||
+        /hipoteca|vivienda|casa|apto|mortgage/i.test((d.tp || "") + (d.n || ""))
+      );
       const interesesHip = deu.filter(d => /hipoteca|vivienda|casa|apto|mortgage/i.test((d.tp || "") + (d.n || ""))).reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
-      if (interesesHip === 0 && deu.length === 0 && ingAnual > 200e6) recs.push({ icon: "🏦", title: "Crédito de vivienda: intereses deducibles (Art. 119 ET)", desc: "Los intereses de un crédito hipotecario para vivienda del contribuyente son deducibles hasta 1.200 UVT/año (" + fm(1200 * UVT) + "). Es una de las deducciones más grandes disponibles — pero solo aplica si efectivamente tomas el crédito y usas la vivienda. No te endeudes solo por el beneficio fiscal; evalúalo con tu contador.", impact: 0, color: T.purple });
+      if (interesesHip === 0 && !tieneHipotecaReal && ingAnual > 200e6) recs.push({ icon: "🏦", title: "Crédito de vivienda: intereses deducibles (Art. 119 ET)", desc: "Los intereses de un crédito hipotecario para vivienda del contribuyente son deducibles hasta 1.200 UVT/año (" + fm(1200 * UVT) + "). Es una de las deducciones más grandes disponibles — pero solo aplica si efectivamente tomas el crédito y usas la vivienda. No te endeudes solo por el beneficio fiscal; evalúalo con tu contador.", impact: 0, color: T.purple });
       if (ingAnual > 100e6) recs.push({ icon: "💳", title: "GMF 4×1000 deducible (Art. 115 ET)", desc: "El 50% del GMF pagado es deducible. Se calcula automáticamente: " + fm(ingAnual * 0.004 * 0.50) + "/año.", impact: 0, color: T.green });
       if (ingAnual > 400e6) recs.push({ icon: "🏢", title: "Evalúa una estructura societaria", desc: "Con ingresos altos, una SAS puede optimizar tu carga fiscal canalizando ingresos por la empresa (35% sobre utilidad vs hasta 39% persona natural).", impact: 0, color: T.purple });
       if (ahorro < 100000 && pctUsado >= 95) {

@@ -47,6 +47,7 @@ import { auditarDatos } from "../lib/auditoriaDatos.js";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import { generarRecomendacionesEstrategicas } from "../lib/recomendacionesEstrategicas.js";
 import RecomendacionesEstrategicas from "./RecomendacionesEstrategicas.jsx";
+import { estimarImpuesto } from "../lib/taxCO.js";
 
 const C = {
   bg: "#0a0a0c",
@@ -694,12 +695,15 @@ const AREAS_NATURAL = [
         ...user,
         owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({
           ...o,
-          fiscalProfile: { ...(o.fiscalProfile || {}), gastosArriendoAnuales: monto },
+          fiscalProfile: {
+            ...(o.fiscalProfile || {}),
+            planOptimizacion: { ...((o.fiscalProfile || {}).planOptimizacion || {}), gastosArriendoAnuales: monto },
+          },
         })),
       };
     },
     yaTieneDatos: (owner) => {
-      const monto = Number(owner?.fiscalProfile?.gastosArriendoAnuales) || 0;
+      const monto = Number(owner?.fiscalProfile?.planOptimizacion?.gastosArriendoAnuales) || 0;
       if (monto > 0) {
         return { tiene: true, descripcion: `Gastos arriendo cargados: $${monto.toLocaleString("es-CO")}/año` };
       }
@@ -710,7 +714,9 @@ const AREAS_NATURAL = [
       owners: (user.owners || []).map(o => {
         if (o.id !== ownerId) return o;
         const fp = { ...(o.fiscalProfile || {}) };
-        delete fp.gastosArriendoAnuales;
+        const planOpt = { ...(fp.planOptimizacion || {}) };
+        delete planOpt.gastosArriendoAnuales;
+        fp.planOptimizacion = planOpt;
         return { ...o, fiscalProfile: fp };
       }),
     }),
@@ -751,12 +757,15 @@ const AREAS_NATURAL = [
         ...user,
         owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({
           ...o,
-          fiscalProfile: { ...(o.fiscalProfile || {}), dividendosNoGravados: monto },
+          fiscalProfile: {
+            ...(o.fiscalProfile || {}),
+            planOptimizacion: { ...((o.fiscalProfile || {}).planOptimizacion || {}), dividendosNoGravados: monto },
+          },
         })),
       };
     },
     yaTieneDatos: (owner) => {
-      const monto = Number(owner?.fiscalProfile?.dividendosNoGravados) || 0;
+      const monto = Number(owner?.fiscalProfile?.planOptimizacion?.dividendosNoGravados) || 0;
       if (monto > 0) {
         return { tiene: true, descripcion: `Dividendos no gravados: $${monto.toLocaleString("es-CO")}` };
       }
@@ -767,7 +776,9 @@ const AREAS_NATURAL = [
       owners: (user.owners || []).map(o => {
         if (o.id !== ownerId) return o;
         const fp = { ...(o.fiscalProfile || {}) };
-        delete fp.dividendosNoGravados;
+        const planOpt = { ...(fp.planOptimizacion || {}) };
+        delete planOpt.dividendosNoGravados;
+        fp.planOptimizacion = planOpt;
         return { ...o, fiscalProfile: fp };
       }),
     }),
@@ -800,12 +811,15 @@ const AREAS_NATURAL = [
         ...user,
         owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({
           ...o,
-          fiscalProfile: { ...(o.fiscalProfile || {}), impuestosExteriorPagados: monto },
+          fiscalProfile: {
+            ...(o.fiscalProfile || {}),
+            planOptimizacion: { ...((o.fiscalProfile || {}).planOptimizacion || {}), impuestosExteriorPagados: monto },
+          },
         })),
       };
     },
     yaTieneDatos: (owner) => {
-      const monto = Number(owner?.fiscalProfile?.impuestosExteriorPagados) || 0;
+      const monto = Number(owner?.fiscalProfile?.planOptimizacion?.impuestosExteriorPagados) || 0;
       if (monto > 0) {
         return { tiene: true, descripcion: `Impuestos exterior cargados: $${monto.toLocaleString("es-CO")}` };
       }
@@ -816,7 +830,9 @@ const AREAS_NATURAL = [
       owners: (user.owners || []).map(o => {
         if (o.id !== ownerId) return o;
         const fp = { ...(o.fiscalProfile || {}) };
-        delete fp.impuestosExteriorPagados;
+        const planOpt = { ...(fp.planOptimizacion || {}) };
+        delete planOpt.impuestosExteriorPagados;
+        fp.planOptimizacion = planOpt;
         return { ...o, fiscalProfile: fp };
       }),
     }),
@@ -852,12 +868,15 @@ const AREAS_NATURAL = [
         ...user,
         owners: (user.owners || []).map(o => o.id !== ownerId ? o : ({
           ...o,
-          fiscalProfile: { ...(o.fiscalProfile || {}), retencionesManualesAnio: monto },
+          fiscalProfile: {
+            ...(o.fiscalProfile || {}),
+            planOptimizacion: { ...((o.fiscalProfile || {}).planOptimizacion || {}), retencionesManualesAnio: monto },
+          },
         })),
       };
     },
     yaTieneDatos: (owner) => {
-      const monto = Number(owner?.fiscalProfile?.retencionesManualesAnio) || 0;
+      const monto = Number(owner?.fiscalProfile?.planOptimizacion?.retencionesManualesAnio) || 0;
       if (monto > 0) {
         return { tiene: true, descripcion: `Retenciones reales cargadas: $${monto.toLocaleString("es-CO")}` };
       }
@@ -868,7 +887,9 @@ const AREAS_NATURAL = [
       owners: (user.owners || []).map(o => {
         if (o.id !== ownerId) return o;
         const fp = { ...(o.fiscalProfile || {}) };
-        delete fp.retencionesManualesAnio;
+        const planOpt = { ...(fp.planOptimizacion || {}) };
+        delete planOpt.retencionesManualesAnio;
+        fp.planOptimizacion = planOpt;
         return { ...o, fiscalProfile: fp };
       }),
     }),
@@ -899,15 +920,27 @@ export default function DeclaracionFlow({
   // Areas según owner
   const areas = isJuridica ? AREAS_JURIDICA : AREAS_NATURAL;
 
-  // Datos del motor
-  const det = useMemo(() => {
-    return estimacion?.detalle?.find(d => d.name === selectedOwner?.name);
-  }, [estimacion, selectedOwner]);
+  // Datos del motor.
+  // Sesión 1-may-2026 (feedback Santiago): el Plan de Optimización es un
+  // OVERLAY. La `estimacion` que recibimos como prop fue calculada SIN
+  // flag (vista "real"). Acá la recalculamos CON flag para que las áreas
+  // del Plan (gastos arriendo, dividendos no gravados, etc.) impacten el
+  // saldo y se vean los ahorros. Pero esto solo afecta lo que renderizamos
+  // dentro de DeclaracionFlow — el resto del producto (simulador, vista
+  // familiar, dashboard, recomendaciones) sigue viendo la `estimacion` real.
+  const estimacionConPlan = useMemo(() => {
+    return estimarImpuesto(user, { incluirPlanOptimizacion: true });
+  }, [user]);
 
-  // Recomendaciones estratégicas (acciones futuras tipo contador estratega)
-  // Sesión 1-may-2026: feedback Santiago "necesito que recomiende como un
-  // contador real qué acciones tomar para ahorrar (comprar bodega, pedir
-  // crédito, donar a ESAL, etc.) — no solo capturar lo que ya tengo".
+  const det = useMemo(() => {
+    return estimacionConPlan?.detalle?.find(d => d.name === selectedOwner?.name);
+  }, [estimacionConPlan, selectedOwner]);
+
+  // Recomendaciones estratégicas (acciones futuras tipo contador estratega).
+  // Sesión 1-may-2026: feedback Santiago. Pasamos `det` que SÍ incluye el
+  // Plan, pero internamente las recomendaciones leen solo de fuentes reales
+  // (user.deu, user.gas) para "qué tiene cargado el user", no contaminadas
+  // por el wizard.
   const recomendacionesEstrategicas = useMemo(() => {
     if (!user || !selectedOwner || !det) return [];
     return generarRecomendacionesEstrategicas(user, selectedOwner, det);
@@ -1340,7 +1373,7 @@ export default function DeclaracionFlow({
                 titulo="Descargar PDF"
                 subtitulo="Para enviar a tu contador"
                 color={C.purple}
-                onClick={() => exportarBorradorPDF(user, selectedOwner, estimacion, ano)}
+                onClick={() => exportarBorradorPDF(user, selectedOwner, estimacionConPlan, ano)}
               />
             </div>
 
@@ -1351,7 +1384,7 @@ export default function DeclaracionFlow({
             <DetalleFormularioErrorBoundary
               user={user}
               owner={selectedOwner}
-              estimacion={estimacion}
+              estimacion={estimacionConPlan}
               ano={ano}
               isJuridica={isJuridica}
             />
