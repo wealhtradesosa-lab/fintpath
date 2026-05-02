@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getPlansForLanding } from "../lib/plans.js";
-import HeroVariantB from "./HeroVariantB.jsx";
+import HeroVariantC from "./HeroVariantC.jsx";
 import LandingAIAdvisorSection from "./LandingAIAdvisorSection.jsx";
 
 const T = {
@@ -36,10 +36,11 @@ export default function LandingPage({ onGetStarted }) {
     <div style={{ background: T.bg, color: T.txt, fontFamily: "'Inter', system-ui, sans-serif", minHeight: "100vh", overflowX: "hidden" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
 
-      {/* ─── HERO ─── (Sesión 1-may-2026: Santiago eligió HeroVariantB con
-           copy "Inteligencia patrimonial para tu familia". Reemplaza el
-           hero anterior con hero-bg.png y el nav inline.) */}
-      <HeroVariantB onGetStarted={onGetStarted} />
+      {/* ─── HERO ─── (Sesión 2-may-2026: Santiago eligió HeroVariantC
+           inspirado en Optimus de v0.dev. Estilo editorial minimalista
+           con typography masiva y candlestick chart de fondo. Las rutas
+           /hero-a, /hero-b y /hero-c siguen disponibles para preview.) */}
+      <HeroVariantC onGetStarted={onGetStarted} />
 
       {/* ─── FEATURES ─── */}
       <div id="features" style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "80px 0" }}>
