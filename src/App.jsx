@@ -972,9 +972,13 @@ export default function FinPath(){
     if(pathname==="/hero-c"||pathname==="/hero-c/"){
       return<HeroVariantC onGetStarted={()=>setShowAuth(true)}/>;
     }
-    // Sesión 2-may-2026: campaña Pioneros 2026 (100 plazas, 3 meses gratis Pro)
+    // Sesión 3-may-2026: campaña Pioneros 2026 (50 plazas, 3 meses gratis Pro)
+    // BUG FIX: el modal por default abría en MODO LOGIN, lo que confundía a
+    // los pioneros nuevos (intentaban login con un email que nunca crearon
+    // y veían "email o contraseña incorrectos"). Forzamos signup al venir
+    // de /pioneros.
     if(pathname==="/pioneros"||pathname==="/pioneros/"){
-      return<LandingPioneros onGetStarted={()=>setShowAuth(true)}/>;
+      return<LandingPioneros onGetStarted={()=>{sAM("signup");setShowAuth(true)}}/>;
     }
     return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
   }
