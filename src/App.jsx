@@ -4,6 +4,7 @@ import HeroVariantA from "./components/HeroVariantA";
 import HeroVariantB from "./components/HeroVariantB";
 import HeroVariantC from "./components/HeroVariantC";
 import LandingPioneros from "./components/LandingPioneros";
+import LandingSeguridad from "./components/LandingSeguridad";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "./lib/chartTheme.jsx";
@@ -979,6 +980,12 @@ export default function FinPath(){
     // de /pioneros.
     if(pathname==="/pioneros"||pathname==="/pioneros/"){
       return<LandingPioneros onGetStarted={()=>{sAM("signup");setShowAuth(true)}}/>;
+    }
+    // Sesión 3-may-2026: página /seguridad — explica el stack de seguridad
+    // (Stripe + Supabase + AWS) a usuarios desconfiados que preguntan
+    // "¿qué tan seguro es?". Linkeable desde footer y modales de signup.
+    if(pathname==="/seguridad"||pathname==="/seguridad/"){
+      return<LandingSeguridad/>;
     }
     return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
   }
