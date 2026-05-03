@@ -58,7 +58,8 @@ exports.handler = async (event) => {
 
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    const { priceId, email, userId, successUrl, cancelUrl } = JSON.parse(event.body);
+    const body = JSON.parse(event.body || "{}");
+    const { priceId, email, userId, successUrl, cancelUrl } = body;
 
     if (!priceId) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "priceId requerido" }) };
