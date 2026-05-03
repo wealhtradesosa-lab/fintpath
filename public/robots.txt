@@ -1,4 +1,65 @@
-User-agent: *
+# FINPATHIA — robots.txt
+# Política: permitir indexado a buscadores y previews de redes sociales.
+
+# ── Permiso explícito para crawlers de redes sociales (preview link) ──────
+# Necesario para que los previews de WhatsApp/Facebook/Twitter/LinkedIn/Slack
+# muestren la imagen y meta tags Open Graph correctas. Si bloqueamos estos
+# bots, el preview sale vacío o con info cacheada vieja.
+
+User-agent: facebookexternalhit
 Allow: /
 
+User-agent: facebookcatalog
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Slackbot-LinkExpanding
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: Pinterest
+Allow: /
+
+User-agent: SkypeUriPreview
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+# ── Buscadores ────────────────────────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# ── Política general (cualquier otro bot) ─────────────────────────────────
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /.netlify/
+
+# ── Sitemap ──────────────────────────────────────────────────────────────
 Sitemap: https://finpathia.com/sitemap.xml
