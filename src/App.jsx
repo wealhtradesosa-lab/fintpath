@@ -1092,8 +1092,8 @@ export default function FinPath(){
         <span style={{color:T.gn}}>✓</span> Exporta o borra todo en cualquier momento
       </div>
       <div style={{fontSize:28,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:24}}>FINPATHIA</div>
-      <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Inicia sesión":"Crea tu cuenta gratis"}</h2>
-      <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Accede a tu patrimonio":"14 días de acceso Pro incluidos"}</p>
+      <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Inicia sesión":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"🎁 Acceso Pioneros":"Crea tu cuenta gratis"}</h2>
+      <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Accede a tu patrimonio":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"14 días de prueba + 3 meses gratis del Plan Pro":"14 días de acceso Pro incluidos"}</p>
       <div style={{display:"flex",flexDirection:"column",gap:16,marginBottom:24}}>
         {aM==="login"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
           <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>Ingresar como</label>
@@ -1121,7 +1121,7 @@ export default function FinPath(){
           <div style={{fontSize:10,color:T.tx3,marginTop:2}}>🇲🇽 México · 🇪🇸 España — Próximamente</div>
         </div>}
       </div>
-      <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":"Crear cuenta — 14 días Pro gratis"}</Bt>
+      <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"Activar mi acceso Pioneros — 3.5 meses gratis":"Crear cuenta — 14 días Pro gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:13,marginTop:12,padding:"12px 14px",background:T.rdB,border:`1px solid ${T.rd}30`,borderRadius:10,display:"flex",gap:10,alignItems:"flex-start"}}><span style={{fontSize:16,flexShrink:0}}>⚠️</span><div style={{flex:1}}><div style={{fontWeight:700,marginBottom:2}}>{aM==="login"?"No pudimos iniciar sesión":"No pudimos crear tu cuenta"}</div><div style={{fontSize:12,color:T.rd,opacity:0.9}}>{authError}</div></div></div>}
       <p style={{textAlign:"center",marginTop:20,color:T.tx3,fontSize:14}}>{"¿No tienes cuenta? "}<span onClick={()=>sAM(aM==="login"?"signup":"login")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{aM==="login"?"Regístrate":"Ingresa"}</span></p>
       <div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
