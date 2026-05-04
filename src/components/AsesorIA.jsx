@@ -122,12 +122,17 @@ export default function AsesorIA({ user, totals, userId }) {
 
     try {
       const ctx = buildContext(user, totals);
+      // Sesión 4-may-2026: enviar jurisdiction al endpoint para que el system
+      // prompt y la knowledge base sean correctas (CO vs US). Los users US
+      // tienen 401k/IRA/Roth/HSA, los CO tienen Colpensiones/RAIS/UVT.
+      const jurisdiction = user?.jurisdiction === "US" ? "US" : "CO";
+      const taxConfig = user?.taxConfig || null;
       const apiMsgs = newMsgs.map(m => ({ role: m.role, content: m.content }));
 
       const res = await fetch("/api/ai-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMsgs, financialContext: ctx, userId: userId || "anon" }),
+        body: JSON.stringify({ messages: apiMsgs, financialContext: ctx, userId: userId || "anon", jurisdiction, taxConfig }),
       });
 
       const data = await res.json();
