@@ -258,8 +258,12 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                   Cuenta llena · sube de plan para invitar más
                 </div>
               )}
-              {/* Botón Gestionar suscripción — solo para owners de planes pagos */}
-              {(plan === "pro_familiar" || plan === "pro") && (
+              {/* Botón Gestionar suscripción — para todos los planes pagos (incluido Básico).
+                  El portal de Stripe muestra qué se puede hacer según el estado de la cuenta:
+                  si está en trial muestra "Cancel anyway", si pagó muestra cambio de plan, etc.
+                  Sesión 4-may-2026: ampliamos de solo pro/pro_familiar a también basico para
+                  que no haya users pagos sin acceso a su portal. */}
+              {(plan === "pro_familiar" || plan === "pro" || plan === "basico") && (
                 <button
                   onClick={async () => {
                     try {
