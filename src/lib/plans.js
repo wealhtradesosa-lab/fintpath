@@ -70,18 +70,22 @@ export function usdToCop(usd, trm) {
 export const PLAN_BASE = [
   {
     name: "Free",
-    tag: "Para empezar a organizarte",
+    tag: "Empezá a ordenar tu vida financiera",
     priceUSD: { mensual: 0, anual: 0 },
     users: "1 usuario",
     usersDetail: "1 usuario",
     maxMembers: 1,
     isFree: true,
     // Features universales (válidas para CO y US)
+    // Sesión 4-may-2026: copy aprobado por Santiago — listas COMPLETAS,
+    // no "lo del anterior + ...". Cada plan se cuenta solo, así el lector
+    // ve TODO lo que incluye sin tener que comparar mentalmente.
     features: [
-      "Dashboard con resumen patrimonial",
-      "Hasta 3 inversiones y 1 meta financiera",
-      "Registro de ingresos, gastos y deudas",
-      "Encriptación E2E de tus datos",
+      "👤 1 usuario",
+      "📊 Dashboard con resumen de tu patrimonio",
+      "💰 Registrá ingresos, gastos y deudas",
+      "📈 Hasta 3 inversiones y 1 meta financiera",
+      "🔒 Encriptación E2E de tus datos",
     ],
     notFeatures: [
       "Simulador financiero",
@@ -96,7 +100,7 @@ export const PLAN_BASE = [
   },
   {
     name: "Básico",
-    tag: "Para gestionar tu vida financiera completa",
+    tag: "Tu vida financiera completa, ordenada",
     priceUSD: { mensual: 8, anual: 6 },
     users: "1 usuario",
     usersDetail: "1 usuario",
@@ -104,22 +108,24 @@ export const PLAN_BASE = [
     save: "Ahorra 25%",
     // Features con dependencia de jurisdicción (resuelta en getters)
     features: ({ isCO, isUS }) => [
-      "Todo lo de Free, sin límites en inversiones (hasta 10) ni metas (hasta 10)",
-      "🖥️ Simulador financiero avanzado con palancas (cambia ingresos/gastos y simulá)",
+      "👤 1 usuario · sin límites en inversiones ni metas",
+      "📊 Dashboard con resumen patrimonial",
+      "💰 Ingresos, gastos y deudas ilimitados",
+      "🖥️ Simulador financiero con palancas (cambiá ingresos/gastos y simulá)",
       isUS
-        ? "🏛️ Pensión y retiro: 401(k) + IRA + Social Security"
+        ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
         : "🏛️ Pensión Colombia: Colpensiones (RPM) + RAIS",
-      isCO ? "💰 Calculá tus aportes obligatorios (4%+4%) y voluntarios" : null,
-      "₿ Ahorro en Bitcoin: proyecciones por ciclo halving",
+      isCO ? "💰 Aportes obligatorios (4%+4%) y voluntarios calculados" : null,
+      "₿ Ahorro en BTC con proyecciones por ciclo halving",
       "💹 Trading portfolio: acciones US + crypto",
-      "📥 Importar Excel/CSV con IA",
-      "📸 Lectura de facturas y comprobantes con IA",
+      "📥 Importá Excel/CSV con IA",
+      "📸 Lectura de facturas con IA",
     ].filter(Boolean),
     notFeatures: ["Asesor IA", "5 Coaches IA", "Plan Tributario completo", "Multi-usuario"],
   },
   {
     name: "Pro",
-    tag: "Para planificar y optimizar como un experto",
+    tag: "Como tener un asesor financiero personal",
     priceUSD: { mensual: 16, anual: 12 },
     users: "Hasta 3 usuarios",
     usersDetail: "Hasta 3 usuarios (vos + pareja + contador)",
@@ -127,34 +133,55 @@ export const PLAN_BASE = [
     accent: true, // MÁS POPULAR badge
     save: "Ahorra 25%",
     features: ({ isCO, isUS }) => [
-      "Todo lo de Básico, sin límites de nada",
-      "🤖 Asesor Financiero IA que analiza tus números reales",
+      "👥 Hasta 3 usuarios (vos + pareja + contador)",
+      "📊 Dashboard con resumen patrimonial",
+      "💰 Ingresos, gastos y deudas ilimitados",
+      "🖥️ Simulador financiero con palancas",
+      isUS
+        ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
+        : "🏛️ Pensión Colombia: Colpensiones + RAIS",
+      "₿ Ahorro en BTC con proyecciones por ciclo halving",
+      "💹 Trading portfolio: acciones US + crypto",
+      "🤖 Asesor IA que analiza tus números reales",
       "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
       isCO
-        ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF, optimización)"
+        ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
         : "🧾 Tax Planning US (federal + state, deductions, optimization)",
-      "👥 Hasta 3 miembros con la misma información (admin + lectura)",
-      "📊 Resumen ejecutivo de patrimonio en PDF",
+      "📥 Importá Excel/CSV y leé facturas con IA",
+      "📈 Resumen ejecutivo del patrimonio en PDF",
       "🚀 Soporte prioritario por email",
     ],
     notFeatures: [],
   },
   {
     name: "Pro Familiar",
-    tag: "Para tu familia + tu contador en un solo espacio",
+    tag: "Administra tu patrimonio en familia",
     priceUSD: { mensual: 27, anual: 20 },
     users: "Hasta 10 usuarios",
-    usersDetail: "Hasta 10 usuarios compartiendo la misma información",
+    usersDetail: "Hasta 10 usuarios compartiendo el mismo patrimonio",
     maxMembers: 10,
     save: "Ahorra 25%",
-    features: () => [
-      "Todo lo de Pro, sin restricciones",
-      "👨‍👩‍👧 Hasta 10 personas con acceso al mismo patrimonio familiar",
-      "🔐 Roles: administrador (edita) y solo lectura (solo ve)",
-      "🧾 Tu contador puede revisar tus números sin tocarlos",
-      "📊 Auditoría: quién cambió qué y cuándo",
-      "🎁 14 días de prueba gratis · sin tarjeta",
-      "🏆 Soporte prioritario con respuesta en 24h",
+    features: ({ isCO, isUS }) => [
+      "👨‍👩‍👧 10 usuarios con acceso al patrimonio compartido",
+      "🔐 Roles: administrador edita, contador y familia consultan",
+      "🧾 Tu contador revisa tus números sin pedirte nada",
+      "📊 Dashboard con resumen patrimonial",
+      "💰 Ingresos, gastos y deudas ilimitados",
+      "🖥️ Simulador financiero con palancas",
+      isUS
+        ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
+        : "🏛️ Pensión Colombia: Colpensiones + RAIS",
+      "₿ Ahorro en BTC con proyecciones por ciclo halving",
+      "💹 Trading portfolio: acciones US + crypto",
+      "🎯 Simulá escenarios para alcanzar tu libertad financiera",
+      "🤖 Asesor IA que analiza el patrimonio consolidado",
+      "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
+      isCO
+        ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
+        : "🧾 Tax Planning US (federal + state, deductions, optimization)",
+      "📥 Importá Excel/CSV y leé facturas con IA",
+      "📈 Reporte ejecutivo del patrimonio en PDF",
+      "🚀 Soporte prioritario con respuesta en 24h",
     ],
     notFeatures: [],
   },
