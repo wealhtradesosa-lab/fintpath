@@ -5,6 +5,7 @@ import HeroVariantB from "./components/HeroVariantB";
 import HeroVariantC from "./components/HeroVariantC";
 import LandingPioneros from "./components/LandingPioneros";
 import LandingSeguridad from "./components/LandingSeguridad";
+import { track, trackSignup, trackCheckoutStarted, captureUTMs, identifyUser } from "./lib/analytics";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "./lib/chartTheme.jsx";
@@ -414,6 +415,17 @@ export default function FinPath(){
   const[currentClient,setCurrentClient]=useState(null);
   const[switchingClient,setSwitchingClient]=useState(false);
   useEffect(()=>{const c=()=>sMb(window.innerWidth<900);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c)},[]);
+
+  // Sesión 4-may-2026: Boot analytics — capturar UTMs y disparar pageview.
+  // Si el user llega vía ?utm_source=whatsapp&utm_campaign=pioneros, esos
+  // datos se persisten en sessionStorage para atribuir el signup al canal.
+  useEffect(()=>{
+    captureUTMs();
+    track("app_loaded", {
+      pathname: typeof window !== "undefined" ? window.location.pathname : "",
+      referrer: typeof document !== "undefined" ? document.referrer : "",
+    });
+  },[]);
   // Password recovery: escuchar el evento de Supabase cuando el usuario hace
   // click en el link del email. Muestra el modal para que ingrese nueva contraseña.
   useEffect(()=>{
@@ -687,6 +699,10 @@ export default function FinPath(){
       if(aM==="login"){
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){const msg=error.message==="Invalid login credentials"?"Email o contraseña incorrectos":error.message==="Email not confirmed"?"Revisa tu email y confirma tu cuenta":error.message;setAuthError(msg);setAuthLoading(false);return}
+        // Sesión 4-may-2026: tracking GA4 — login exitoso con user_id
+        // para atribución cross-device.
+        track("login_completed",{ method:"email", user_id: data.user.id });
+        identifyUser(data.user.id);
         // Advisor lookup: corre SIEMPRE para saber si la cuenta tiene plan Asesor
         let advData=null;
         try{
@@ -757,7 +773,12 @@ export default function FinPath(){
         if(!sr.ok){const errMsg=srd.error||"Error creando cuenta";let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Probá iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intentá de nuevo o escribinos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verificá que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});
+        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);
+        // Sesión 4-may-2026: tracking GA4 — signup completed con metadata
+        // de promo (Pioneros) y user_id para atribución cross-device.
+        trackSignup({ method: "email", userId: data.user.id });
+        // Conversión Google Ads (legacy — pre-existente)
+        window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});
       }
     }else{setU(mkU(aF.n||"Usuario",aF.e))}
     }catch(e){setAuthError("Error: "+e.message)}
@@ -959,7 +980,7 @@ export default function FinPath(){
     // Route: /asesores → Landing dedicada para contadores/asesores (Plan PRO Corporativo)
     const pathname=typeof window!=="undefined"?window.location.pathname:"";
     if(pathname==="/asesores"||pathname==="/asesores/"){
-      return<LandingAsesores onGetStarted={(planKey)=>{setShowAuth(true);if(planKey)sessionStorage.setItem("fp3_advisor_plan_intent",planKey)}}/>;
+      return<LandingAsesores onGetStarted={(planKey)=>{track("signup_modal_opened",{from:"asesores",plan_intent:planKey});setShowAuth(true);if(planKey)sessionStorage.setItem("fp3_advisor_plan_intent",planKey)}}/>;
     }
     // Sesión 1-may-2026: rutas preview hidden para comparar variantes de hero.
     // El landing oficial sigue en /. /hero-a y /hero-b son temporales para
@@ -979,7 +1000,7 @@ export default function FinPath(){
     // y veían "email o contraseña incorrectos"). Forzamos signup al venir
     // de /pioneros.
     if(pathname==="/pioneros"||pathname==="/pioneros/"){
-      return<LandingPioneros onGetStarted={()=>{sAM("signup");setShowAuth(true)}}/>;
+      return<LandingPioneros onGetStarted={()=>{track("signup_modal_opened",{from:"pioneros"});sAM("signup");setShowAuth(true)}}/>;
     }
     // Sesión 3-may-2026: página /seguridad — explica el stack de seguridad
     // (Stripe + Supabase + AWS) a usuarios desconfiados que preguntan
@@ -987,7 +1008,7 @@ export default function FinPath(){
     if(pathname==="/seguridad"||pathname==="/seguridad/"){
       return<LandingSeguridad/>;
     }
-    return<LandingPage onGetStarted={()=>setShowAuth(true)}/>;
+    return<LandingPage onGetStarted={()=>{track("signup_modal_opened",{from:"home"});setShowAuth(true)}}/>;
   }
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
@@ -2514,6 +2535,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     const userIdReal=authUser?.id||"";
                     if(!userEmail){alert("Necesitamos tu email para procesar el pago. Completá tu perfil primero (Configuración → Datos personales) y volvé a intentar.");return;}
                     if(!userIdReal){alert("Sesión no detectada. Hacé logout/login y volvé a intentar.");return;}
+                    // Sesión 4-may-2026: tracking GA4 — checkout iniciado
+                    // con metadata de plan, ciclo y promo (Pioneros).
+                    trackCheckoutStarted({ plan: pl.n, billingCycle, priceId });
                     const r=await fetch("/.netlify/functions/stripe-checkout",{
                       method:"POST",
                       headers:{"Content-Type":"application/json"},

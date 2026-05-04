@@ -84,3 +84,95 @@ export function clearRecentEvents() {
     window.localStorage.removeItem("finpathia_analytics_recent");
   } catch { /* noop */ }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS DE FUNNEL (sesión 4-may-2026)
+//
+// Eventos canónicos del funnel de conversión FINPATHIA:
+//   - pioneros_view: alguien abre /pioneros (auto-disparado en pioneros.html)
+//   - signup_modal_opened: se abre el modal de registro
+//   - signup_completed: cuenta creada exitosamente
+//   - login_completed: login exitoso
+//   - upgrade_modal_opened: abre modal de planes/upgrade
+//   - checkout_started: click en upgrade Pro hacia Stripe
+//   - checkout_completed: pago confirmado (vía webhook Stripe)
+//   - feature_used: una feature key fue usada
+//
+// Estos helpers encapsulan eventos comunes con sus parámetros estandarizados.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Identifica al usuario en GA4 con su user_id (UUID Supabase).
+ * Permite conectar sesiones del mismo user en múltiples dispositivos.
+ */
+export function identifyUser(userId) {
+  if (typeof window === "undefined" || !userId) return;
+  try {
+    if (typeof window.gtag === "function") {
+      window.gtag("config", "G-51CV6PWRLT", { user_id: userId });
+    }
+  } catch (e) {
+    if (window.console) window.console.warn("[analytics] identify failed:", e);
+  }
+}
+
+/**
+ * Disparado cuando se completa un signup. Captura si vino con promo
+ * (campaña Pioneros) y vía qué método.
+ */
+export function trackSignup({ method = "email", userId } = {}) {
+  const promoCode = (typeof window !== "undefined" && window.sessionStorage)
+    ? window.sessionStorage.getItem("fp3_promo_code") || ""
+    : "";
+
+  track("signup_completed", {
+    method,
+    with_promo: !!promoCode,
+    promo_code: promoCode || undefined,
+    campaign: promoCode === "PIONEROS2026" ? "pioneros_2026" : undefined,
+  });
+
+  if (userId) identifyUser(userId);
+}
+
+/**
+ * Disparado cuando se inicia un checkout (click upgrade hacia Stripe).
+ */
+export function trackCheckoutStarted({ plan, billingCycle, priceId } = {}) {
+  const promoCode = (typeof window !== "undefined" && window.sessionStorage)
+    ? window.sessionStorage.getItem("fp3_promo_code") || ""
+    : "";
+
+  track("checkout_started", {
+    plan: plan || "unknown",
+    billing_cycle: billingCycle || "monthly",
+    price_id: priceId,
+    with_promo: !!promoCode,
+    promo_code: promoCode || undefined,
+  });
+}
+
+/**
+ * Lee UTMs de la URL al cargar la página y los guarda en sessionStorage.
+ * Si el user vino vía `?utm_source=whatsapp&utm_campaign=pioneros`, esos
+ * datos viajan en cada evento posterior — atribución de canal.
+ *
+ * Llamarse una vez al boot del app (en App.jsx useEffect inicial).
+ */
+export function captureUTMs() {
+  if (typeof window === "undefined") return;
+
+  const params = new URLSearchParams(window.location.search);
+  const utm = {};
+  ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].forEach((key) => {
+    const value = params.get(key);
+    if (value) utm[key] = value;
+  });
+
+  if (Object.keys(utm).length > 0) {
+    try {
+      window.sessionStorage.setItem("fp3_utm", JSON.stringify(utm));
+    } catch { /* noop */ }
+    track("campaign_landed", utm);
+  }
+}

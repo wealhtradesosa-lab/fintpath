@@ -253,6 +253,35 @@
       ]
     }
     </script>
+
+    <!-- ─────────────────────────────────────────────────────────────────
+         Google Analytics 4 · Sesión 4-may-2026
+         Tracking de visitas, eventos custom (signup, checkout, conversions)
+         y atribución de canales. Property: FINPATHIA Web (G-51CV6PWRLT).
+
+         Eventos custom disparados desde la app:
+           - pioneros_view (cuando alguien abre /pioneros)
+           - signup_modal_opened (modal de registro abierto)
+           - signup_completed (cuenta creada exitosamente)
+           - checkout_started (click en upgrade Pro)
+           - checkout_completed (pago confirmado vía webhook)
+
+         IMPORTANTE: este tag debe ir lo más alto posible en <head> para
+         capturar todas las visitas (incluso de usuarios que cierran rápido).
+         ───────────────────────────────────────────────────────────────── -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-51CV6PWRLT"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-51CV6PWRLT', {
+        // anonymize_ip cumple con GDPR/Ley 1581 Colombia (privacidad)
+        anonymize_ip: true,
+        // send_page_view: true es default — registra automáticamente cada
+        // navegación SPA si después llamamos gtag('event', 'page_view')
+        send_page_view: true,
+      });
+    </script>
   </head>
   <body style="margin:0;background:#09090b;">
     <div id="root"><div style="background:#09090b;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui"><div style="text-align:center"><div style="font-size:28px;font-weight:900;background:linear-gradient(135deg,#22c55e,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px">FINPATHIA</div><div style="color:#71717a;font-size:13px">Cargando tu patrimonio...</div></div></div></div>
