@@ -2,27 +2,35 @@
  * TaxPlanningUS.jsx — CPA Grade
  * Clarity-first: 3 hero numbers → Before / Savings / After
  * Then full waterfall breakdown
+ *
+ * Sesión 4-may-2026: subido al nivel de TaxCO con
+ *   - State income tax (50 estados, brackets 2025)
+ *   - Filing status (Single, Married Filing Jointly, Head of Household)
+ *   - Selector visual de estado y filing status
+ *   - Persistencia del setting en user.taxConfig
  */
 import { useState, useMemo } from "react";
 import { US } from "../lib/jurisdictions/US.js";
+import { US_STATE_TAX, calculateStateTax, getStateName, FILING_STATUS_LABELS, FEDERAL_BRACKETS_2025, STANDARD_DEDUCTION_2025 } from "../lib/jurisdictions/usStateTax.js";
 
 const C = {
-  STD_DED: 15000, K401: 23500, IRA: 7000, HSA: 4150,
+  K401: 23500, IRA: 7000, HSA: 4150,
   QBI: 0.20, NIIT_THRESH: 200000, NIIT_RATE: 0.038,
   SS_WAGE_BASE: 176100,
 };
-const BRACKETS = [
-  {max:11925,  rate:0.10},{max:48475, rate:0.12},{max:103350,rate:0.22},
-  {max:197300, rate:0.24},{max:250525,rate:0.32},{max:626350, rate:0.35},
-  {max:Infinity,rate:0.37},
-];
-function fedTax(income) {
+
+function fedTax(income, filingStatus = "single") {
+  const brackets = FEDERAL_BRACKETS_2025[filingStatus] || FEDERAL_BRACKETS_2025.single;
   let tax=0,prev=0;
-  for(const b of BRACKETS){if(income<=prev)break;tax+=(Math.min(income,b.max)-prev)*b.rate;prev=b.max;}
+  for(const b of brackets){if(income<=prev)break;tax+=(Math.min(income,b.max)-prev)*b.rate;prev=b.max;}
   return Math.max(0,Math.round(tax));
 }
-function marginalRate(income) {
-  return BRACKETS.find(b=>income<=b.max)?.rate||0.37;
+function marginalRate(income, filingStatus = "single") {
+  const brackets = FEDERAL_BRACKETS_2025[filingStatus] || FEDERAL_BRACKETS_2025.single;
+  return brackets.find(b=>income<=b.max)?.rate||0.37;
+}
+function getStdDed(filingStatus = "single") {
+  return STANDARD_DEDUCTION_2025[filingStatus] || STANDARD_DEDUCTION_2025.single;
 }
 
 const T = {
@@ -49,10 +57,25 @@ const WRow = ({label,amount,note,color,bold,indent,irc}) => (
   </div>
 );
 
-export default function TaxPlanningUS({user}) {
+export default function TaxPlanningUS({user, onUpdateUser}) {
   const [showDetail, setShowDetail] = useState(false);
   const ingresos = user?.ingresos || [];
   const trm = user?.trm || 1;
+
+  // Filing status & state — persisted in user.taxConfig (defaults: single + TX)
+  // Sesión 4-may-2026: agregado para que los users US tengan config personalizada
+  // y el cálculo refleje su realidad (NY+single muy distinto a TX+married jointly).
+  const filingStatus = user?.taxConfig?.filingStatus || "single";
+  const stateCode    = user?.taxConfig?.state || "TX";
+  const STD_DED = getStdDed(filingStatus);
+
+  const updateTaxConfig = (patch) => {
+    if (!onUpdateUser) return;
+    onUpdateUser((prev) => ({
+      ...prev,
+      taxConfig: { ...(prev?.taxConfig || {}), filingStatus, state: stateCode, ...patch },
+    }));
+  };
 
   // ── Parse income ──────────────────────────────────────────────────────────
   const inc = useMemo(() => {
@@ -78,14 +101,19 @@ export default function TaxPlanningUS({user}) {
     const seTax   = Math.round(inc.se*0.9235*0.153);
     const halfSE  = Math.round(seTax/2);
     const agi     = Math.max(0,inc.gross-halfSE);
-    const taxInc  = Math.max(0,agi-C.STD_DED);
-    const fed     = fedTax(taxInc);
+    const taxInc  = Math.max(0,agi-STD_DED);
+    const fed     = fedTax(taxInc, filingStatus);
+    // State income tax — depends on user's state (TX, NY, CA, etc.)
+    const stateRes = calculateStateTax(taxInc, stateCode);
+    const state   = stateRes.tax;
     const niit    = inc.inv>0&&agi>C.NIIT_THRESH?Math.round(Math.min(inc.inv,agi-C.NIIT_THRESH)*C.NIIT_RATE):0;
-    const total   = fed+fica+seTax+niit;
-    return {agi,taxInc,fed,fica,ficaSS,ficaMed,seTax,halfSE,niit,total,
+    const total   = fed+state+fica+seTax+niit;
+    return {agi,taxInc,fed,state,stateRate:stateRes.rate,stateType:stateRes.type,stateName:stateRes.stateName,
+      fica,ficaSS,ficaMed,seTax,halfSE,niit,total,
       takeHome:inc.gross-total,effRate:inc.gross>0?total/inc.gross:0,
-      mRate:marginalRate(taxInc),mLabel:`${(marginalRate(taxInc)*100).toFixed(0)}%`};
-  },[inc]);
+      mRate:marginalRate(taxInc, filingStatus),
+      mLabel:`${(marginalRate(taxInc, filingStatus)*100).toFixed(0)}%`};
+  },[inc,filingStatus,stateCode,STD_DED]);
 
   // ── SCENARIO B — Optimized ────────────────────────────────────────────────
   const B = useMemo(()=>{
@@ -103,14 +131,18 @@ export default function TaxPlanningUS({user}) {
     const fica    = ficaSS+ficaMed;
     const agiRed  = k401+hsa+ira+seHlth+halfSE;
     const agi     = Math.max(0,inc.gross-agiRed);
-    const taxInc  = Math.max(0,agi-C.STD_DED-qbi);
-    const fed     = fedTax(taxInc);
+    const taxInc  = Math.max(0,agi-STD_DED-qbi);
+    const fed     = fedTax(taxInc, filingStatus);
+    const stateRes = calculateStateTax(taxInc, stateCode);
+    const state   = stateRes.tax;
     const niit    = inc.inv>0&&agi>C.NIIT_THRESH?Math.round(Math.min(inc.inv,agi-C.NIIT_THRESH)*C.NIIT_RATE):0;
-    const total   = fed+fica+seTax+niit;
-    return {k401,hsa,ira,seHlth,qbi,agiRed,agi,taxInc,fed,fica,ficaSS,ficaMed,seTax,halfSE,niit,total,
+    const total   = fed+state+fica+seTax+niit;
+    return {k401,hsa,ira,seHlth,qbi,agiRed,agi,taxInc,fed,state,stateRate:stateRes.rate,stateType:stateRes.type,stateName:stateRes.stateName,
+      fica,ficaSS,ficaMed,seTax,halfSE,niit,total,
       takeHome:inc.gross-total,effRate:inc.gross>0?total/inc.gross:0,
-      mRate:marginalRate(taxInc),mLabel:`${(marginalRate(taxInc)*100).toFixed(0)}%`};
-  },[inc]);
+      mRate:marginalRate(taxInc, filingStatus),
+      mLabel:`${(marginalRate(taxInc, filingStatus)*100).toFixed(0)}%`};
+  },[inc,filingStatus,stateCode,STD_DED]);
 
   if(!inc.gross) return (
     <div style={{padding:48,textAlign:"center",background:T.card,border:`1px solid ${T.border}`,borderRadius:16,color:T.tx3}}>
@@ -127,7 +159,60 @@ export default function TaxPlanningUS({user}) {
       {/* Header */}
       <div style={{marginBottom:20}}>
         <h2 style={{fontSize:22,fontWeight:800,margin:"0 0 4px"}}>🧾 US Tax Planning 2025</h2>
-        <p style={{color:T.tx3,fontSize:12,margin:0}}>Federal estimate · Single filer · IRS brackets</p>
+        <p style={{color:T.tx3,fontSize:12,margin:0}}>Federal + State estimate · IRS brackets 2025</p>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          Tax Settings — Filing Status + State of residence
+          Estos dos drivers cambian dramáticamente el cálculo. Casado tributa
+          en brackets distintos. Estados como CA/NY agregan ~10% al total,
+          mientras TX/FL están en 0%.
+          ══════════════════════════════════════════════════════════════════ */}
+      <div style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:12,padding:16,marginBottom:16,
+        display:"flex",gap:16,alignItems:"flex-end",flexWrap:"wrap"}}>
+        <div style={{flex:"1 1 200px"}}>
+          <label style={{fontSize:10,fontWeight:700,color:T.tx3,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:6}}>
+            Filing Status
+          </label>
+          <select
+            value={filingStatus}
+            onChange={(e)=>updateTaxConfig({filingStatus:e.target.value})}
+            style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,color:T.tx,
+              padding:"8px 12px",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}
+          >
+            {Object.entries(FILING_STATUS_LABELS).map(([k,v])=>(
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{flex:"1 1 200px"}}>
+          <label style={{fontSize:10,fontWeight:700,color:T.tx3,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:6}}>
+            State of Residence
+          </label>
+          <select
+            value={stateCode}
+            onChange={(e)=>updateTaxConfig({state:e.target.value})}
+            style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,color:T.tx,
+              padding:"8px 12px",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}
+          >
+            {Object.entries(US_STATE_TAX)
+              .sort(([,a],[,b])=>a.name.localeCompare(b.name))
+              .map(([code,data])=>(
+                <option key={code} value={code}>
+                  {data.name} {data.type==="none"?"· No income tax":data.type==="flat"?`· Flat ${(data.rate*100).toFixed(2)}%`:""}
+                </option>
+              ))}
+          </select>
+        </div>
+        {A && (
+          <div style={{flex:"0 0 auto",fontSize:11,color:T.tx3,padding:"8px 0"}}>
+            {A.stateType==="none" ? (
+              <span style={{color:T.gn,fontWeight:700}}>✓ {A.stateName}: no state income tax</span>
+            ) : (
+              <span>{A.stateName}: <strong style={{color:T.tx2}}>{fm(A.state)}</strong> state tax/yr</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════
@@ -236,10 +321,16 @@ export default function TaxPlanningUS({user}) {
             </div>
             <WRow label="Gross Income"          amount={fm(inc.gross)} bold color={T.tx}/>
             {A.halfSE>0&&<WRow label="½ SE Tax deduction" amount={`–${fm(A.halfSE)}`} color={T.tx3} indent irc="§ 164(f)"/>}
-            <WRow label="Standard Deduction"    amount={`–${fm(C.STD_DED)}`} color={T.tx3} indent irc="§ 63"/>
+            <WRow label="Standard Deduction"    amount={`–${fm(STD_DED)}`} color={T.tx3} indent irc="§ 63"/>
             <WRow label="Taxable Income"         amount={fm(A.taxInc)} bold color={T.or}/>
             <div style={{margin:"10px 0 6px",fontSize:10,fontWeight:700,color:T.rd,letterSpacing:1}}>TAXES OWED</div>
             <WRow label="Federal Income Tax"     amount={fm(A.fed)}    color={T.rd} note={`${A.mLabel} bracket`}/>
+            {A.state>0 ? (
+              <WRow label={`${A.stateName} State Tax`} amount={fm(A.state)} color={T.rd}
+                note={A.stateType==="flat"?`Flat ${(A.stateRate*100).toFixed(2)}%`:`${(A.stateRate*100).toFixed(2)}% top rate`}/>
+            ) : A.stateType==="none" ? (
+              <WRow label={`${A.stateName} State Tax`} amount={fm(0)} color={T.gn} note="✓ No state income tax"/>
+            ) : null}
             {A.fica>0  &&<WRow label="FICA (SS + Medicare)" amount={fm(A.fica)}   color={T.rd} note={`SS: ${fm(A.ficaSS)} · Medicare: ${fm(A.ficaMed)}`}/>}
             {A.seTax>0 &&<WRow label="Self-Employment Tax"  amount={fm(A.seTax)}  color={T.rd} note="15.3% on 1099"/>}
             {A.niit>0  &&<WRow label="NIIT Surtax 3.8%"     amount={fm(A.niit)}   color={T.rd} note="Investment income over $200K"/>}
@@ -263,12 +354,18 @@ export default function TaxPlanningUS({user}) {
             {B.seHlth>0 &&<WRow label="SE Health Insurance" amount={`–${fm(B.seHlth)}`}color={T.gn} indent irc="§ 162(l)"/>}
             {B.halfSE>0 &&<WRow label="½ SE Tax deduction"  amount={`–${fm(B.halfSE)}`}color={T.gn} indent irc="§ 164(f)"/>}
             <WRow label="Adjusted Gross (AGI)"   amount={fm(B.agi)} bold color={T.cy}/>
-            <WRow label="Standard Deduction"     amount={`–${fm(C.STD_DED)}`} color={T.gn} indent irc="§ 63"/>
+            <WRow label="Standard Deduction"     amount={`–${fm(STD_DED)}`} color={T.gn} indent irc="§ 63"/>
             {B.qbi>0    &&<WRow label="QBI Deduction 20%"   amount={`–${fm(B.qbi)}`}   color={T.gn} indent note="Qualified Business Income" irc="§ 199A"/>}
             <WRow label="Taxable Income"          amount={fm(B.taxInc)} bold color={T.or}
               note={`${fm(A.taxInc-B.taxInc)} less than without optimization`}/>
             <div style={{margin:"10px 0 6px",fontSize:10,fontWeight:700,color:T.rd,letterSpacing:1}}>TAXES OWED</div>
             <WRow label="Federal Income Tax"      amount={fm(B.fed)}   color={T.rd} note={`${B.mLabel} bracket (was ${A.mLabel})`}/>
+            {B.state>0 ? (
+              <WRow label={`${B.stateName} State Tax`} amount={fm(B.state)} color={T.rd}
+                note={A.state>B.state?`Saved ${fm(A.state-B.state)} via ${B.stateType==="flat"?"flat rate":"lower bracket"}`:`${B.stateType==="flat"?"Flat":"Top"} ${(B.stateRate*100).toFixed(2)}%`}/>
+            ) : B.stateType==="none" ? (
+              <WRow label={`${B.stateName} State Tax`} amount={fm(0)} color={T.gn} note="✓ No state income tax"/>
+            ) : null}
             {B.fica>0  &&<WRow label="FICA (SS + Medicare)" amount={fm(B.fica)}  color={T.rd} note="Can't reduce — mandatory"/>}
             {B.seTax>0 &&<WRow label="Self-Employment Tax"  amount={fm(B.seTax)} color={T.rd} note="Slightly lower (reduced SE income)"/>}
             {B.niit>0  &&<WRow label="NIIT Surtax 3.8%"     amount={fm(B.niit)}  color={T.rd}/>}
