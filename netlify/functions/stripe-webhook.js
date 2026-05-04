@@ -231,6 +231,41 @@ exports.handler = async (event) => {
           p_canceled_at: new Date().toISOString(),
         });
         console.log(`[stripe-webhook] ✅ subscription.canceled procesado:`, result);
+
+        // Sesión 4-may-2026: enviar email de cancelación con feedback humano.
+        // Stripe nos da customer.email y cancellation_details.feedback (la razón
+        // que el user eligió en el portal). El email agradece, deja claro qué
+        // pasa con la cuenta y abre puerta a feedback. Fire-and-forget.
+        try {
+          const customer = await stripe.customers.retrieve(stripeCustomerId);
+          if (customer.email) {
+            const reason = sub.cancellation_details?.feedback || null;
+            const periodEnd = sub.current_period_end
+              ? new Date(sub.current_period_end * 1000).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })
+              : null;
+            const planFromMetadata = sub.metadata?.plan || "Pro";
+            // Llamada interna a send-email (mismo dominio Netlify)
+            const emailHost = process.env.URL || process.env.DEPLOY_URL || "https://finpathia.com";
+            await fetch(`${emailHost}/.netlify/functions/send-email`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                to: customer.email,
+                template: "cancellation",
+                vars: {
+                  name: customer.name || "",
+                  plan: planFromMetadata,
+                  periodEnd,
+                  reason,
+                },
+              }),
+            });
+            console.log(`[stripe-webhook] cancellation email enviado a ${customer.email}`);
+          }
+        } catch (mailErr) {
+          // Email no es crítico — loggeamos y seguimos
+          console.warn(`[stripe-webhook] cancellation email failed:`, mailErr.message);
+        }
         break;
       }
 

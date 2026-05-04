@@ -801,6 +801,18 @@ export default function FinPath(){
         // ~40% de los users nuevos quedan mirando un dashboard vacío sin saber
         // qué hacer. El tour los lleva a su primer momento de valor en 60s.
         setShowOnboarding(true);
+        // Enviar welcome email (fire-and-forget — si falla no bloquea el flow).
+        // Detecta si el user vino con cupón Pioneros para personalizar el copy.
+        const __isPioneros = sessionStorage.getItem("fp3_promo_code") === "PIONEROS2026";
+        fetch("/.netlify/functions/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: aF.e,
+            template: "welcome",
+            vars: { name: aF.n || "", isPioneros: __isPioneros },
+          }),
+        }).catch(err => console.warn("[welcome email] failed:", err));
         // Conversión Google Ads (legacy — pre-existente)
         window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});
       }
