@@ -692,7 +692,22 @@ export default function FinPath(){
   };
   const auth=async()=>{
     if(!aF.e||!aF.p){setAuthError("Ingresa email y contraseña");return}
-    if(aF.p.length<6){setAuthError("La contraseña debe tener mínimo 6 caracteres");return}
+    // Sesión 4-may-2026: subimos mínimo de 6 → 8 caracteres + validación
+    // de seguridad básica (no permitir passwords débiles obvios). Esto se
+    // aplica solo en SIGNUP — login deja pasar passwords viejas para no
+    // bloquear users existentes que tengan password de 6 chars.
+    if(aM==="signup"){
+      if(aF.p.length<8){setAuthError("La contraseña debe tener mínimo 8 caracteres");return}
+      // Lista de passwords débiles más comunes (top 20 en breaches conocidos).
+      // Si el user intenta uno de estos, lo rechazamos con mensaje claro.
+      const weakList=["12345678","password","qwerty12","11111111","00000000","abcdefgh","87654321","password1","password2","contrasena","password123","qwertyuiop","asdfghjkl","zxcvbnm123","12345abc","abc12345"];
+      if(weakList.includes(aF.p.toLowerCase())){setAuthError("Esa contraseña es muy común. Elegí algo único — por ejemplo una frase corta con números.");return}
+      // Anti-patrón: solo numéros (ej: "12345678" o "11223344")
+      if(/^\d+$/.test(aF.p)){setAuthError("La contraseña no puede ser solo números. Agregá letras o símbolos.");return}
+    }else{
+      // En login solo validamos largo mínimo para evitar requests vacíos.
+      if(aF.p.length<6){setAuthError("La contraseña debe tener mínimo 6 caracteres");return}
+    }
     setAuthLoading(true);setAuthError("");
     try{
     if(isSupabaseConfigured){
@@ -1136,7 +1151,7 @@ export default function FinPath(){
         </div>}
         {aM==="signup"&&<In l="Nombre" value={aF.n} onChange={v=>sAF(p=>({...p,n:v}))} placeholder="Tu nombre"/>}
         <In l="Email" value={aF.e} onChange={v=>sAF(p=>({...p,e:v}))} type="email" placeholder="tu@email.com"/>
-        <In l="Contraseña" value={aF.p} onChange={v=>sAF(p=>({...p,p:v}))} type="password" placeholder="••••••••"/>
+        <In l={aM==="signup"?"Contraseña (mínimo 8 caracteres)":"Contraseña"} value={aF.p} onChange={v=>sAF(p=>({...p,p:v}))} type="password" placeholder="••••••••"/>
         {aM==="signup"&&<div style={{display:"flex",flexDirection:"column",gap:5}}>
           <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>País / Country</label>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
