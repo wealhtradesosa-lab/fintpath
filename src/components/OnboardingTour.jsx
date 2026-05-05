@@ -247,7 +247,7 @@ export default function OnboardingTour({
           maxWidth: 720,
           maxHeight: "90vh",
           overflow: "auto",
-          padding: "40px 36px 32px",
+          padding: "clamp(24px, 6vw, 40px) clamp(20px, 5vw, 36px) clamp(20px, 5vw, 32px)",
           position: "relative",
           boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
         }}
@@ -301,7 +301,7 @@ export default function OnboardingTour({
             <h1
               style={{
                 fontFamily: FONT_DISPLAY,
-                fontSize: 36,
+                fontSize: "clamp(24px, 6vw, 36px)",
                 fontWeight: 800,
                 lineHeight: 1.1,
                 margin: "0 0 16px 0",

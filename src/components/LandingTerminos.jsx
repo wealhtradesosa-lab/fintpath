@@ -102,7 +102,7 @@ export default function LandingTerminos() {
       {/* Header simple */}
       <header
         style={{
-          padding: "24px 32px",
+          padding: "20px clamp(16px, 4vw, 32px)",
           borderBottom: `1px solid ${T.border}`,
           display: "flex",
           alignItems: "center",
@@ -142,7 +142,7 @@ export default function LandingTerminos() {
           <h1
             style={{
               fontFamily: FONT_DISPLAY,
-              fontSize: 42,
+              fontSize: "clamp(28px, 7vw, 42px)",
               fontWeight: 800,
               color: T.txt,
               margin: "0 0 12px",
@@ -459,7 +459,7 @@ export default function LandingTerminos() {
       {/* Footer común */}
       <footer
         style={{
-          padding: "24px 32px",
+          padding: "20px clamp(16px, 4vw, 32px)",
           borderTop: `1px solid ${T.border}`,
           background: T.bg2,
           textAlign: "center",

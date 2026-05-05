@@ -482,7 +482,7 @@ export default function TaxOptimizerUS({ user }) {
         {totalSavings > 0 && (
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 11, color: T.txt3, marginBottom: 2 }}>Potential annual savings</div>
-            <div style={{ fontSize: 36, fontWeight: 900, color: T.green, fontFamily: "monospace", lineHeight: 1 }}>
+            <div style={{ fontSize: "clamp(28px, 7vw, 36px)", fontWeight: 900, color: T.green, fontFamily: "monospace", lineHeight: 1 }}>
               {fm(totalSavings)}
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>tax savings · year 1</div>

@@ -1070,7 +1070,7 @@ export default function FinPath(){
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
     {/* Modal SOLICITAR recuperación: el usuario escribe su email acá */}
     {showRecoveryRequest&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20}}>
-      <div style={{background:T.bg2,border:`1px solid ${T.borderL||T.border}`,borderRadius:20,width:"100%",maxWidth:460,padding:32,position:"relative"}}>
+      <div style={{background:T.bg2,border:`1px solid ${T.borderL||T.border}`,borderRadius:20,width:"100%",maxWidth:460,padding:"clamp(20px, 5vw, 32px)",position:"relative"}}>
         <button onClick={()=>{setShowRecoveryRequest(false);setResetSent(false);setResetError("")}} style={{position:"absolute",top:16,right:16,background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:20}}>✕</button>
         <div style={{fontSize:32,marginBottom:8,textAlign:"center"}}>📧</div>
         <h2 style={{fontSize:20,fontWeight:800,textAlign:"center",marginBottom:8,color:T.tx}}>Recuperar contraseña</h2>
@@ -1123,7 +1123,7 @@ export default function FinPath(){
     </div>}
     {/* Modal de nueva contraseña tras click en link del email */}
     {showResetPassword&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20}}>
-      <div style={{background:T.bg2,border:`1px solid ${T.borderL||T.border}`,borderRadius:20,width:"100%",maxWidth:460,padding:32}}>
+      <div style={{background:T.bg2,border:`1px solid ${T.borderL||T.border}`,borderRadius:20,width:"100%",maxWidth:460,padding:"clamp(20px, 5vw, 32px)"}}>
         <div style={{fontSize:32,marginBottom:8,textAlign:"center"}}>🔐</div>
         <h2 style={{fontSize:20,fontWeight:800,textAlign:"center",marginBottom:8,color:T.tx}}>Nueva contraseña</h2>
         <p style={{fontSize:13,color:T.tx3,textAlign:"center",marginBottom:24,lineHeight:1.5}}>
@@ -1167,7 +1167,7 @@ export default function FinPath(){
         </div>
       </div>
     </div>}
-    <div style={{width:"100%",maxWidth:420,padding:"40px 32px"}}>
+    <div style={{width:"100%",maxWidth:420,padding:"clamp(24px, 6vw, 40px) clamp(20px, 5vw, 32px)"}}>
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
       <div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"12px 16px",marginBottom:20,fontSize:12,color:T.tx3,lineHeight:2}}>
         <span style={{color:T.gn}}>✓</span> <strong style={{color:T.tx2}}>Encriptación End-to-End</strong> · tus datos se encriptan con tu contraseña<br/>
