@@ -1470,7 +1470,7 @@ export default function FinPath(){
           los botones (Resumen, Reporte PDF) bajen a línea siguiente cuando no
           hay espacio. Sin flexWrap, el flex:1 del contenido se reducía a ~80px
           en pantallas chicas, apilando todo el texto letra por letra. */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,flexWrap:"wrap",gap:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"clamp(14px, 3vw, 24px)",flexWrap:"wrap",gap:12}}>
         <div style={{flex:"1 1 280px",minWidth:0}}>
           <PageHeader
             label={new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}
@@ -1488,21 +1488,21 @@ export default function FinPath(){
               días desde signup. Coincide con el trial 14d de Stripe que damos
               automáticamente. Si el user pasa los 14 días sin cancelar, Stripe
               empieza a cobrar y el banner cambia a "activo". */}
-          {planAccount==="pro_familiar"&&<div style={{background:trialActive?"linear-gradient(135deg,rgba(167,139,250,0.10),rgba(34,197,94,0.06))":"linear-gradient(135deg,rgba(167,139,250,0.10),rgba(59,130,246,0.06))",border:"1px solid rgba(167,139,250,0.20)",borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,flex:"1 1 200px",minWidth:0}}>
-              <span style={{fontSize:18,flexShrink:0}}>👨‍👩‍👧</span>
+          {planAccount==="pro_familiar"&&<div style={{background:trialActive?"linear-gradient(135deg,rgba(167,139,250,0.06),rgba(34,197,94,0.04))":"linear-gradient(135deg,rgba(167,139,250,0.06),rgba(59,130,246,0.04))",border:"1px solid rgba(167,139,250,0.15)",borderRadius:10,padding:"clamp(8px, 2vw, 12px) clamp(10px, 3vw, 16px)",marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}>
+              <span style={{fontSize:14,flexShrink:0}}>👨‍👩‍👧</span>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#a78bfa"}}>
+                <div style={{fontSize:12,fontWeight:600,color:"#a78bfa"}}>
                   {trialActive?"Plan Pro Familiar — Trial gratuito":"Plan Pro Familiar activo"}
                 </div>
-                <div style={{fontSize:11,color:T.tx3}}>
+                <div style={{fontSize:10,color:T.tx3,lineHeight:1.4,marginTop:1}}>
                   {trialActive
-                    ?(trialDays<=1?"⚠️ Tu trial vence HOY · después se cobra $27 USD/mes automáticamente":trialDays<=3?"⏰ Solo "+trialDays+" días de trial · cancela antes para no recibir cobro":trialDays+" días de acceso completo · hasta 10 personas pueden compartir esta cuenta")
-                    :"Hasta 10 personas pueden compartir esta cuenta. Invitá a tu familia o contador desde Mi Cuenta."}
+                    ?(trialDays<=1?"⚠️ Tu trial vence HOY · se cobra $27 USD/mes":trialDays<=3?"⏰ Solo "+trialDays+" días · cancela antes":trialDays+" días · hasta 10 personas")
+                    :"Hasta 10 personas pueden compartir esta cuenta"}
                 </div>
               </div>
             </div>
-            <button onClick={()=>setPg("acc")} style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>Mi Cuenta →</button>
+            <button onClick={()=>setPg("acc")} style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",border:"none",padding:"6px 12px",borderRadius:6,cursor:"pointer",fontWeight:600,fontSize:11,flexShrink:0}}>Mi Cuenta →</button>
           </div>}
           {/* Banner Pro Trial — solo para users que NO compraron Pro Familiar.
               Mantiene el flow tradicional: signup → 14 días Pro free → upgrade

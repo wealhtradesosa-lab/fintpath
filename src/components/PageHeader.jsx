@@ -37,7 +37,7 @@ export default function PageHeader({
 
   return (
     <div style={{
-      marginBottom: compact ? 24 : 36,
+      marginBottom: compact ? "clamp(16px, 4vw, 24px)" : "clamp(20px, 5vw, 36px)",
       paddingBottom: compact ? 0 : 4,
       display: "grid",
       gridTemplateColumns: rightSlot ? "1fr auto" : "1fr",
