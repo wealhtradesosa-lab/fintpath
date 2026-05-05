@@ -273,30 +273,25 @@ export default function PWAInstallPrompt() {
           fontFamily: FONT,
         }}
       >
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              background: "#09090b",
-              borderRadius: 10,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              border: `1px solid ${T.border}`,
-            }}
-          >
-            <span style={{ color: T.green, fontSize: 24, fontWeight: 800 }}>F</span>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
-              Instalá FINPATHIA en tu iPhone
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                background: "#09090b",
+                borderRadius: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                border: `1px solid ${T.border}`,
+              }}
+            >
+              <span style={{ color: T.green, fontSize: 22, fontWeight: 800 }}>F</span>
             </div>
-            <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
-              1. Tocá el botón <strong style={{ color: T.txt }}>Compartir</strong> ⬆️ abajo
-              <br />
-              2. Bajá y elegí <strong style={{ color: T.txt }}>"Agregar a pantalla de inicio"</strong>
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.txt }}>
+              Instalá FINPATHIA en tu iPhone
             </div>
           </div>
           <button
@@ -308,11 +303,119 @@ export default function PWAInstallPrompt() {
               fontSize: 18,
               cursor: "pointer",
               padding: 4,
+              flexShrink: 0,
             }}
             aria-label="Cerrar"
           >
             ✕
           </button>
+        </div>
+
+        {/* Instrucciones con SVG visuales del icono Compartir real */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span
+              style={{
+                background: T.green,
+                color: "#000",
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                fontWeight: 800,
+                flexShrink: 0,
+              }}
+            >
+              1
+            </span>
+            <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.4, flex: 1 }}>
+              Tocá este ícono en la barra inferior de Safari:
+              {/* SVG del icono Compartir REAL de iOS — un cuadrado con flecha hacia arriba */}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginLeft: 8,
+                  width: 32,
+                  height: 32,
+                  background: "rgba(0,122,255,0.15)",
+                  border: "1px solid rgba(0,122,255,0.4)",
+                  borderRadius: 6,
+                  verticalAlign: "middle",
+                }}
+              >
+                <svg width="18" height="22" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 1L8 13M8 1L4 5M8 1L12 5" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M2 9V17C2 18.1 2.9 19 4 19H12C13.1 19 14 18.1 14 17V9" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span
+              style={{
+                background: T.green,
+                color: "#000",
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                fontWeight: 800,
+                flexShrink: 0,
+              }}
+            >
+              2
+            </span>
+            <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.4, flex: 1 }}>
+              Bajá en la lista y elegí{" "}
+              <strong style={{ color: T.txt }}>"Agregar a inicio"</strong>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span
+              style={{
+                background: T.green,
+                color: "#000",
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                fontWeight: 800,
+                flexShrink: 0,
+              }}
+            >
+              3
+            </span>
+            <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.4, flex: 1 }}>
+              Tocá <strong style={{ color: T.txt }}>"Agregar"</strong> arriba a la derecha.
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            paddingTop: 12,
+            borderTop: `1px solid ${T.border}`,
+            fontSize: 11,
+            color: T.txt3,
+            textAlign: "center",
+            lineHeight: 1.5,
+          }}
+        >
+          💡 Si no ves la barra inferior, deslizá hacia abajo en la página.
         </div>
       </div>
     );
