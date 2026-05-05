@@ -19,7 +19,7 @@
 // el cache viejo.
 // ════════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = "v2-2026-05-05-mobile-fixes";
+const CACHE_VERSION = "v3-2026-05-05-auto-update";
 const CACHE_STATIC = `finpathia-static-${CACHE_VERSION}`;
 const CACHE_RUNTIME = `finpathia-runtime-${CACHE_VERSION}`;
 

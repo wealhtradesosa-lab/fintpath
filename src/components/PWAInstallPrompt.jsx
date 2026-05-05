@@ -59,21 +59,58 @@ export default function PWAInstallPrompt() {
   const [showBanner, setShowBanner] = useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
-  // ─── Registrar el Service Worker al montar ────────────────────────────
+  // ─── Registrar el Service Worker al montar + auto-update ──────────────
+  // Sesión 5-may-2026: cuando hay deploy nuevo, el SW viejo sigue sirviendo
+  // bundle JS cacheado a usuarios que ya lo tenían. Solución: detectar SW
+  // nuevo, mandarle SKIP_WAITING, escuchar controllerchange y recargar
+  // automáticamente la página. Sin intervención manual del usuario.
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
 
-    // Esperamos a que la página termine de cargar para no bloquear el render
-    const register = () => {
-      navigator.serviceWorker
-        .register("/sw.js", { scope: "/" })
-        .then((reg) => {
-          console.log("[PWA] Service Worker registrado:", reg.scope);
-        })
-        .catch((err) => {
-          console.warn("[PWA] Falló registro de SW:", err);
+    let reloadGuard = false; // evitar loops infinitos de reload
+
+    const register = async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        console.log("[PWA] Service Worker registrado:", reg.scope);
+
+        // Si ya hay un SW esperando (waiting), activarlo de inmediato
+        if (reg.waiting && navigator.serviceWorker.controller) {
+          console.log("[PWA] SW nuevo en waiting → skip waiting");
+          reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+
+        // Detectar cuando aparece un nuevo SW instalándose
+        reg.addEventListener("updatefound", () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          console.log("[PWA] Nuevo SW detectado, instalando...");
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              // Hay un SW viejo controlando + uno nuevo instalado.
+              // Activar el nuevo inmediatamente.
+              console.log("[PWA] SW nuevo instalado → skip waiting");
+              newWorker.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
         });
+
+        // Chequear updates periódicamente (cada 60s mientras la pestaña esté abierta)
+        setInterval(() => {
+          reg.update().catch(() => {});
+        }, 60000);
+      } catch (err) {
+        console.warn("[PWA] Falló registro de SW:", err);
+      }
     };
+
+    // Cuando el SW activo cambia (porque aceptamos un skipWaiting), recargar
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloadGuard) return;
+      reloadGuard = true;
+      console.log("[PWA] Controller cambió → recargando para usar nueva versión");
+      window.location.reload();
+    });
 
     if (document.readyState === "complete") {
       register();

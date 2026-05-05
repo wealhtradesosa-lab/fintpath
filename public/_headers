@@ -5,3 +5,20 @@
   X-XSS-Protection: 1; mode=block
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(self)
   Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# El service worker NUNCA debe cachearse — el navegador necesita ver
+# la versión más reciente para detectar updates de la app
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+# El manifest tampoco debe cachearse fuerte (puede actualizarse)
+/manifest.json
+  Cache-Control: no-cache, max-age=3600
+
+# index.html siempre fresco para detectar bundles JS nuevos
+/
+  Cache-Control: no-cache, no-store, must-revalidate
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
