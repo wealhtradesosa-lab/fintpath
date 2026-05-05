@@ -37,6 +37,7 @@ import SimuladorUS from "./components/SimuladorUS";
 import AsesorIA from "./components/AsesorIA";
 import AportesCalculadora from "./components/AportesCalculadora";
 import TaxPlanningUS from "./components/TaxPlanningUS";
+import TaxOptimizerUS from "./components/TaxOptimizerUS";
 import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import AssetsModuleUS from "./components/AssetsModuleUS";
@@ -1403,7 +1404,7 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Deductions":"Egresos"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"deu",i:"📋",l:"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Taxes":"Impuestos",hasChildren:true},{id:"famtax",i:"👨‍👩‍👧‍👦",l:"Vista familiar",parent:"tax",hidden:((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:"Declaraciones anteriores",parent:"tax"},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador"},{id:"met",i:"🎯",l:isEN?"Goals":"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:isEN?"Retirement / 401(k)":"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC",hidden:isUS},{id:"aportes",i:"💰",l:"Calcula tus aportes",hidden:isUS},{id:"glosario",i:"📚",l:isEN?"Glossary":"Glosario"},{id:"_sep3",sep:true,l:isEN?"ARTIFICIAL INTELLIGENCE":"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:isEN?"AI Advisor":"Asesor IA"},{id:"coach",i:"🧠",l:isEN?"AI Coaches":"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:"Planes"},{id:"cuenta",i:"⚙️",l:isEN?"My Account":"Mi cuenta"}];
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Optimizer",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:isUS||((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Declaraciones anteriores",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador"},{id:"met",i:"🎯",l:isEN?"Goals":"Metas"},{id:"trd",i:"💹",l:"Trading"},{id:"pen",i:"🏛️",l:isEN?"Retirement":"Pensiones"},{id:"btc",i:"₿",l:"Ahorro BTC",hidden:isUS},{id:"aportes",i:"💰",l:"Calcula tus aportes",hidden:isUS},{id:"glosario",i:"📚",l:isEN?"Glossary":"Glosario"},{id:"_sep3",sep:true,l:isEN?"ARTIFICIAL INTELLIGENCE":"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:isEN?"AI Advisor":"Asesor IA"},{id:"coach",i:"🧠",l:isEN?"AI Coaches":"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:isEN?"Plans":"Planes"},{id:"cuenta",i:"⚙️",l:isEN?"My Account":"Mi cuenta"}];
 
   const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",pen:"Pensiones",tax:"Planeación Tributaria",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",cuenta:"Mi cuenta"};
   if(typeof document!=="undefined")document.title="FINPATHIA"+(secNames[pg]?" — "+secNames[pg]:"");
@@ -2480,6 +2481,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       ano={2025}
       onSelectOwner={()=>{setPg("tax")}}
     />);
+    case"taxopt":return gated("tax","Pro",<TaxOptimizerUS user={u}/>);
     case"prevtax":return gated("tax","Pro",<DashboardFiscal
       u={u}
       owners={(u&&u.owners)||[]}
