@@ -1466,8 +1466,12 @@ export default function FinPath(){
 
     return<div>
       {/* Greeting con PageHeader (estilo Optimus) — Sesión 2-may-2026 */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
-        <div style={{flex:1,minWidth:0}}>
+      {/* BUG FIX 5-may-2026: agregamos flexWrap:"wrap" + gap para que en mobile
+          los botones (Resumen, Reporte PDF) bajen a línea siguiente cuando no
+          hay espacio. Sin flexWrap, el flex:1 del contenido se reducía a ~80px
+          en pantallas chicas, apilando todo el texto letra por letra. */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,flexWrap:"wrap",gap:12}}>
+        <div style={{flex:"1 1 280px",minWidth:0}}>
           <PageHeader
             label={new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}
             title={(u?.p?.name&&u?.p?.name!=="Usuario"&&u?.p?.name!=="")?(u?.p?.name||"").split(" ")[0]:(u?.p?.email||"").split("@")[0]}
@@ -1520,7 +1524,7 @@ export default function FinPath(){
           </div>}
           <p style={{color:T.tx3,fontSize:13,margin:0}}>Resumen de tu situación financiera</p>
         </div>
-        <div style={{display:"flex",gap:6}}>
+        <div style={{display:"flex",gap:6,flexShrink:0,flexWrap:"wrap"}}>
           <button onClick={()=>setPg("resumen")} style={{background:T.bl,color:"#fff",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📋 Resumen</button>
           <button onClick={generatePDF} style={{background:T.gn,color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📄 Reporte PDF</button>
         </div>
