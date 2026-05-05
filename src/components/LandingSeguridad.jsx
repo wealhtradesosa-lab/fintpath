@@ -359,7 +359,7 @@ export default function LandingSeguridad({ onBack = () => {} }) {
             escribinos directamente. Tu confianza es lo que más cuidamos.
           </p>
           <a
-            href="mailto:hola@finpathia.com?subject=Pregunta%20sobre%20seguridad"
+            href="mailto:soporte@finpathia.com?subject=Pregunta%20sobre%20seguridad"
             style={{
               display: "inline-block",
               background: T.green,
@@ -372,7 +372,7 @@ export default function LandingSeguridad({ onBack = () => {} }) {
               fontFamily: FONT_DISPLAY,
             }}
           >
-            hola@finpathia.com
+            soporte@finpathia.com
           </a>
         </section>
       </main>

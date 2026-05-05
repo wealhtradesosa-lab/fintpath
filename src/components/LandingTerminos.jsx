@@ -173,7 +173,7 @@ export default function LandingTerminos() {
           <strong style={{ color: T.txt }}>📜 En lenguaje claro:</strong> al crear una cuenta y usar
           FINPATHIA, aceptás estos términos. Te explicamos qué somos, qué te ofrecemos, qué esperamos
           de vos, qué pasa si querés cancelar, y cómo resolvemos diferencias. Si algo no te queda
-          claro, escribinos a <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a>.
+          claro, escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a>.
         </div>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
@@ -185,7 +185,7 @@ export default function LandingTerminos() {
           </p>
           <ul style={{ marginTop: 12, paddingLeft: 20 }}>
             <li style={{ marginBottom: 6 }}>Sitio web oficial: <a href="https://finpathia.com" style={{ color: T.green, textDecoration: "none" }}>finpathia.com</a></li>
-            <li style={{ marginBottom: 6 }}>Email de contacto: <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a></li>
+            <li style={{ marginBottom: 6 }}>Email de contacto: <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a></li>
             <li>Procesamiento de pagos: Stripe Inc. (Delaware, USA)</li>
           </ul>
         </Section>
@@ -256,7 +256,7 @@ export default function LandingTerminos() {
             <p>
               Sos responsable de mantener confidencial tu contraseña y de toda la actividad realizada
               desde tu cuenta. Si sospechás de un acceso no autorizado, escribinos inmediatamente a{" "}
-              <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a>.
+              <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a>.
             </p>
           </SubSection>
 
@@ -321,7 +321,7 @@ export default function LandingTerminos() {
             </p>
             <p style={{ marginTop: 12 }}>
               <strong style={{ color: T.txt }}>Reembolsos por insatisfacción:</strong> aunque no estamos legalmente obligados, evaluamos
-              caso por caso. Escribinos a <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a> y
+              caso por caso. Escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y
               respondemos en máximo 5 días hábiles.
             </p>
             <p style={{ marginTop: 12 }}>
@@ -405,7 +405,7 @@ export default function LandingTerminos() {
         <Section number="10." title="Resolución de conflictos y ley aplicable">
           <SubSection title="10.1 Intentemos resolverlo amigablemente primero">
             <p>
-              Si tenés un problema, escribinos a <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a>.
+              Si tenés un problema, escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a>.
               Nos comprometemos a responder en máximo 5 días hábiles e intentar resolver el caso en máximo 30 días.
             </p>
           </SubSection>
@@ -433,7 +433,7 @@ export default function LandingTerminos() {
             Para cualquier pregunta sobre estos términos:
           </p>
           <ul style={{ marginTop: 12, paddingLeft: 20 }}>
-            <li style={{ marginBottom: 4 }}>Email: <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a></li>
+            <li style={{ marginBottom: 4 }}>Email: <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a></li>
             <li style={{ marginBottom: 4 }}>Sitio: <a href="https://finpathia.com" style={{ color: T.green, textDecoration: "none" }}>finpathia.com</a></li>
             <li>Privacidad: <a href="/privacidad" style={{ color: T.green, textDecoration: "none" }}>finpathia.com/privacidad</a></li>
           </ul>

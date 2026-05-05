@@ -19,7 +19,7 @@
 //
 // ENV VARS:
 //   RESEND_API_KEY  (requerida — sin esto los emails no se envían)
-//   RESEND_FROM     (opcional — default 'FINPATHIA <hola@finpathia.com>')
+//   RESEND_FROM     (opcional — default 'FINPATHIA <soporte@finpathia.com>')
 //
 // DISEÑO DEFENSIVO:
 //   - Si RESEND no está configurado, responde 200 con sent:false (no rompe el flow)
@@ -302,7 +302,7 @@ exports.handler = async (event) => {
     }
 
     const { subject, html, preheader } = tmpl(vars);
-    const from = process.env.RESEND_FROM || "FINPATHIA <hola@finpathia.com>";
+    const from = process.env.RESEND_FROM || "FINPATHIA <soporte@finpathia.com>";
 
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",

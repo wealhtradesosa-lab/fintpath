@@ -179,7 +179,7 @@ export default function LandingPrivacidad() {
             tratamiento de los datos personales que recolectamos.
           </p>
           <ul style={{ marginTop: 12, paddingLeft: 20 }}>
-            <li style={{ marginBottom: 4 }}>Email para asuntos de privacidad: <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a></li>
+            <li style={{ marginBottom: 4 }}>Email para asuntos de privacidad: <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a></li>
             <li style={{ marginBottom: 4 }}>Sitio web: <a href="https://finpathia.com" style={{ color: T.green, textDecoration: "none" }}>finpathia.com</a></li>
             <li>Marco legal aplicable: Ley 1581/2012 (Colombia), CCPA (California, USA), principios GDPR (UE)</li>
           </ul>
@@ -389,7 +389,7 @@ export default function LandingPrivacidad() {
 
           <SubSection title="7.2 Por email (asistencia personalizada)">
             <p>
-              Escribinos a <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a> con
+              Escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> con
               asunto <strong style={{ color: T.txt }}>"Solicitud de Datos Personales"</strong>. Indicanos:
             </p>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
@@ -468,7 +468,7 @@ export default function LandingPrivacidad() {
           <p>
             FINPATHIA <strong style={{ color: T.txt }}>NO está dirigida a menores de 18 años</strong>. No recolectamos intencionalmente datos de
             menores. Si te das cuenta de que un menor creó una cuenta sin permiso de sus padres,
-            escribinos a <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a> y eliminaremos la cuenta inmediatamente.
+            escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y eliminaremos la cuenta inmediatamente.
           </p>
           <p style={{ marginTop: 12 }}>
             En el plan Pro Familiar, los administradores de cuenta confirman bajo su responsabilidad que
@@ -491,7 +491,7 @@ export default function LandingPrivacidad() {
         <Section number="13." title="Cómo presentar reclamos">
           <SubSection title="13.1 A nosotros primero">
             <p>
-              Escribinos a <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a> y
+              Escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y
               respondemos en máximo 15 días hábiles.
             </p>
           </SubSection>
@@ -510,7 +510,7 @@ export default function LandingPrivacidad() {
           <SubSection title="13.3 Para usuarios en USA">
             <p>
               California residents may exercise rights under the California Consumer Privacy Act (CCPA) by
-              contacting us at <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a>.
+              contacting us at <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a>.
               We do not sell personal information.
             </p>
           </SubSection>
@@ -518,7 +518,7 @@ export default function LandingPrivacidad() {
 
         <Section number="14." title="Contacto">
           <ul style={{ paddingLeft: 20 }}>
-            <li style={{ marginBottom: 4 }}>Email: <a href="mailto:hola@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>hola@finpathia.com</a></li>
+            <li style={{ marginBottom: 4 }}>Email: <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a></li>
             <li style={{ marginBottom: 4 }}>Términos y Condiciones: <a href="/terminos" style={{ color: T.green, textDecoration: "none" }}>finpathia.com/terminos</a></li>
             <li>Seguridad: <a href="/seguridad" style={{ color: T.green, textDecoration: "none" }}>finpathia.com/seguridad</a></li>
           </ul>
