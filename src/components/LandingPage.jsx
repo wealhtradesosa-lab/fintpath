@@ -211,9 +211,10 @@ export default function LandingPage({ onGetStarted }) {
           <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</span>
         </div>
         <p style={{ fontSize: 12, color: T.txt3 }}>
-          © 2026 FINPATHIA • {" "}
-          <a href="/seguridad" style={{color:"#71717a"}}>🔒 Seguridad</a> • {" "}
-          <a href="/privacidad" style={{color:"#71717a"}}>Política de Privacidad</a>
+          © 2026 FINPATHIA · {" "}
+          <a href="/seguridad" style={{color:"#71717a", textDecoration:"none"}}>🔒 Seguridad</a> · {" "}
+          <a href="/privacidad" style={{color:"#71717a", textDecoration:"none"}}>Privacidad</a> · {" "}
+          <a href="/terminos" style={{color:"#71717a", textDecoration:"none"}}>Términos</a>
         </p>
       </footer>
     </div>

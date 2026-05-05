@@ -5,6 +5,8 @@ import HeroVariantB from "./components/HeroVariantB";
 import HeroVariantC from "./components/HeroVariantC";
 import LandingPioneros from "./components/LandingPioneros";
 import LandingSeguridad from "./components/LandingSeguridad";
+import LandingTerminos from "./components/LandingTerminos";
+import LandingPrivacidad from "./components/LandingPrivacidad";
 import OnboardingTour from "./components/OnboardingTour";
 import { track, trackSignup, trackCheckoutStarted, captureUTMs, identifyUser } from "./lib/analytics";
 import PageHeader from "./components/PageHeader";
@@ -703,6 +705,9 @@ export default function FinPath(){
     // aplica solo en SIGNUP — login deja pasar passwords viejas para no
     // bloquear users existentes que tengan password de 6 chars.
     if(aM==="signup"){
+      // Sesión 4-may-2026: validar aceptación de Términos y Privacidad.
+      // Sin esto, los términos no son legalmente vinculantes en Colombia.
+      if(!aF.acceptTerms){setAuthError("Debés aceptar los Términos y Condiciones y la Política de Privacidad para crear tu cuenta.");return}
       if(aF.p.length<8){setAuthError("La contraseña debe tener mínimo 8 caracteres");return}
       // Lista de passwords débiles más comunes (top 20 en breaches conocidos).
       // Si el user intenta uno de estos, lo rechazamos con mensaje claro.
@@ -1049,6 +1054,15 @@ export default function FinPath(){
     if(pathname==="/seguridad"||pathname==="/seguridad/"){
       return<LandingSeguridad/>;
     }
+    // Sesión 4-may-2026: documentos legales — Términos y Privacidad cumpliendo
+    // Ley 1581/2012 Colombia y principios CCPA/GDPR para users US/EU.
+    // Linkeable desde footer y obligatorio aceptar al hacer signup.
+    if(pathname==="/terminos"||pathname==="/terminos/"){
+      return<LandingTerminos/>;
+    }
+    if(pathname==="/privacidad"||pathname==="/privacidad/"){
+      return<LandingPrivacidad/>;
+    }
     return<LandingPage onGetStarted={()=>{track("signup_modal_opened",{from:"home"});setShowAuth(true)}}/>;
   }
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
@@ -1189,6 +1203,18 @@ export default function FinPath(){
           </div>
           <div style={{fontSize:10,color:T.tx3,marginTop:2}}>🇲🇽 México · 🇪🇸 España — Próximamente</div>
         </div>}
+        {aM==="signup"&&<label style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 4px",cursor:"pointer",userSelect:"none"}}>
+          <input
+            type="checkbox"
+            checked={!!aF.acceptTerms}
+            onChange={e=>sAF(p=>({...p,acceptTerms:e.target.checked}))}
+            style={{marginTop:2,width:16,height:16,accentColor:T.gn,cursor:"pointer",flexShrink:0}}
+          />
+          <span style={{fontSize:12,color:T.tx2,lineHeight:1.5}}>
+            Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{color:T.gn,textDecoration:"none",fontWeight:600}}>Términos y Condiciones</a> y la{" "}
+            <a href="/privacidad" target="_blank" rel="noopener noreferrer" style={{color:T.gn,textDecoration:"none",fontWeight:600}}>Política de Privacidad</a> de FINPATHIA.
+          </span>
+        </label>}
       </div>
       <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"Activar mi acceso Pioneros — 3.5 meses gratis":"Crear cuenta — 14 días Pro gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:13,marginTop:12,padding:"12px 14px",background:T.rdB,border:`1px solid ${T.rd}30`,borderRadius:10,display:"flex",gap:10,alignItems:"flex-start"}}><span style={{fontSize:16,flexShrink:0}}>⚠️</span><div style={{flex:1}}><div style={{fontWeight:700,marginBottom:2}}>{aM==="login"?"No pudimos iniciar sesión":"No pudimos crear tu cuenta"}</div><div style={{fontSize:12,color:T.rd,opacity:0.9}}>{authError}</div></div></div>}
