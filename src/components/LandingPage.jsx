@@ -124,25 +124,25 @@ export default function LandingPage({ onGetStarted }) {
       </Section>
 
       {/* ─── PRICING ─── */}
-      <div style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "80px 0" }}>
+      <div style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "clamp(48px, 10vw, 80px) 0" }}>
         <Section>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{ textAlign: "center", marginBottom: "clamp(28px, 6vw, 48px)" }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: "1px solid " + T.border, borderRadius: 99, padding: "6px 16px", marginBottom: 20, fontSize: 13, color: T.txt2 }}>💰 Planes flexibles</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Proyecta tu futuro financiero hoy</h2>
+            <h2 style={{ fontSize: "clamp(24px, 6vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Proyecta tu futuro financiero hoy</h2>
             <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Regístrate gratis y toma control de tu patrimonio</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, maxWidth: 1280, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 16, maxWidth: 1280, margin: "0 auto" }}>
             {plansData.map((p) => (
               <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : p.advisor ? "1px solid rgba(59,130,246,0.35)" : p.comingSoon ? "1px dashed " + T.border : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative", opacity: p.comingSoon ? 0.95 : 1 }}>
                 {p.accent && <div style={{ background: T.grad, color: "#000", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>MÁS POPULAR</div>}
                 {p.advisor && <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>PARA PROFESIONALES</div>}
                 {p.comingSoon && <div style={{ background: "linear-gradient(135deg, #a78bfa 0%, #3b82f6 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>PRONTO DISPONIBLE</div>}
-                <div style={{ padding: 24 }}>
+                <div style={{ padding: "clamp(18px, 4vw, 24px)" }}>
                   <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{p.name}</div>
                   <div style={{ fontSize: 12, color: T.txt3, marginBottom: 14, lineHeight: 1.4, minHeight: 32 }}>{p.tag}</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4, flexWrap: "wrap" }}>
                     {p.advisor && <span style={{ fontSize: 14, color: T.txt3, fontWeight: 500, marginRight: 2 }}>Desde</span>}
-                    <span style={{ fontSize: p.comingSoon ? 26 : 40, fontWeight: 900, letterSpacing: "-0.04em", color: p.comingSoon ? T.txt3 : T.txt }}>{p.price}</span>
+                    <span style={{ fontSize: p.comingSoon ? "clamp(22px, 5vw, 26px)" : "clamp(28px, 7vw, 40px)", fontWeight: 900, letterSpacing: "-0.04em", color: p.comingSoon ? T.txt3 : T.txt }}>{p.price}</span>
                     {p.per && <span style={{ color: T.txt3, fontSize: 14 }}>{p.per}</span>}
                   </div>
                   {p.sub && <div style={{ fontSize: 12, color: p.advisor ? T.blue : T.green, fontWeight: 600, marginBottom: 4 }}>{p.sub}</div>}
