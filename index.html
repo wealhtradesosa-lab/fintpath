@@ -10,6 +10,25 @@
     <meta name="build-version" content="sprint-2a-v2" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#09090b" />
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PWA · Sesión 4-may-2026
+         Hace que FINPATHIA se pueda instalar en celular (Android & iOS).
+         Manifest + íconos + meta tags específicas iOS (Apple no usa manifest).
+         ═══════════════════════════════════════════════════════════════════ -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- iOS específico (Apple ignora manifest, usa estas meta tags) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FINPATHIA" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+    <!-- Favicons en múltiples tamaños -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+
     <link rel="alternate" hreflang="es" href="https://finpathia.com/" />
     <link rel="canonical" href="https://finpathia.com/" />
 
