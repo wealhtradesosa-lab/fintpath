@@ -635,12 +635,23 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         const safeIdx = ing._idx != null ? ing._idx : ii;
                         const baseRenta = (Number(ing.mensual)||0) * (ing.moneda==="USD"?4200:1);
                         const baseCap = Number(ing.capital) || 0;
-                        const simCap = getVal("cap_"+safeIdx, baseCap);
+                        // FIX conceptual 25-may-2026 (reportado por Santiago):
+                        // El capital invertido es un HECHO — ya está invertido y
+                        // sigue valiendo lo mismo. NO debe moverse con el slider.
+                        // La RENTA es la protagonista: es lo que varía (vacancia,
+                        // aumento de canon, cambio de rendimiento). El slider mueve
+                        // la renta directamente; la tasa de retorno se recalcula
+                        // como CONSECUENCIA de la renta sobre el capital fijo.
+                        const simCap = baseCap; // capital fijo, dato de referencia
                         const baseTasa = Number(ing.tasa) || 0;
-                        const simTasa = baseTasa || (simCap>0&&baseRenta>0?Math.round((baseRenta*12/simCap)*1000)/10:0);
-                        const hasCap = simCap > 0 && simTasa > 0;
                         const isInvType = ["Rendimiento","Dividendos","Arriendo","Inversión"].some(t => (ing.categoria||"").includes(t));
-                        const simRenta = hasCap ? Math.round((simCap*simTasa/100)/12) : getVal("ing_"+safeIdx, baseRenta);
+                        const hasCap = simCap > 0; // tiene capital registrado → es inversión
+                        // La renta la controla el slider directamente
+                        const simRenta = getVal("ing_"+safeIdx, baseRenta);
+                        // Tasa de retorno = consecuencia (renta anual / capital)
+                        const simTasa = simCap > 0
+                          ? Math.round((simRenta*12/simCap)*1000)/10
+                          : baseTasa;
                         const rentDiff = simRenta - baseRenta;
                         
                         return (
@@ -663,14 +674,14 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                                   <div style={{fontSize:14,fontWeight:700}}>{fm(simCap)}</div>
                                 </div>
                                 <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:"6px 10px"}}>
-                                  <div style={{fontSize:9,color:T.txt3}}>Renta mensual ({simTasa}%)</div>
+                                  <div style={{fontSize:9,color:T.txt3}}>Renta mensual ({simTasa}% anual)</div>
                                   <div style={{fontSize:14,fontWeight:700,color:"#22d3ee"}}>{fm(simRenta)}</div>
                                 </div>
                               </div>
-                              <Slider label="Capital invertido" value={simCap} base={baseCap}
-                                max={Math.round(baseCap*2)||1000000} color={"#22d3ee"}
-                                onChange={(v)=>{setVal("cap_"+safeIdx,v);setVal("ing_"+safeIdx,Math.round((v*simTasa/100)/12))}}
-                                sub="" />
+                              <Slider label="Renta mensual" value={simRenta} base={baseRenta}
+                                max={Math.max(Math.round(baseRenta*2),1000)} color={"#22d3ee"}
+                                onChange={(v)=>setVal("ing_"+safeIdx,v)}
+                                sub="el capital invertido se mantiene fijo" />
                             </>) : (
                               <Slider label={ing.nombre||"Ingreso"} value={simRenta} base={baseRenta}
                                 max={Math.max(baseRenta*3,1000)} color={"#22d3ee"}
