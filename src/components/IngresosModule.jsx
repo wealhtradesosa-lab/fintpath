@@ -878,7 +878,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               )}
 
 
-              {["Rendimiento","Dividendos","Arriendo","Inversión"].includes(form.categoria) && (
+              {/* Fix 25-may-2026: el campo Capital invertido aparecía solo para
+                  Rendimiento/Dividendos/Arriendo/Inversión. Pero CDT (Intereses
+                  bancarios) y fondos FIC TAMBIÉN tienen capital invertido —
+                  Santiago no podía editarlo. Lista ampliada a las 6 categorías
+                  de inversión que generan renta sobre un capital. */}
+              {["Rendimiento","Dividendos","Arriendo","Inversión","Intereses bancarios","Utilidad FIC"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
                   <div style={{fontSize:11,color:T.txt3,marginBottom:10}}>📊 Con 2 de 3 valores se calcula el tercero automáticamente</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>

@@ -644,7 +644,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         // como CONSECUENCIA de la renta sobre el capital fijo.
                         const simCap = baseCap; // capital fijo, dato de referencia
                         const baseTasa = Number(ing.tasa) || 0;
-                        const isInvType = ["Rendimiento","Dividendos","Arriendo","Inversión"].some(t => (ing.categoria||"").includes(t));
+                        const isInvType = ["Rendimiento","Dividendos","Arriendo","Inversión","Intereses bancarios","Utilidad FIC"].some(t => (ing.categoria||"").includes(t));
                         const hasCap = simCap > 0; // tiene capital registrado → es inversión
                         // La renta la controla el slider directamente
                         const simRenta = getVal("ing_"+safeIdx, baseRenta);
