@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
+import { exportInversionesExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
@@ -173,6 +174,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               🗑️ Eliminar ({selected.size})
             </button>
           )}
+          <button onClick={() => exportInversionesExcel(activos, owners)}
+            title="Descarga XLSX con activos + resumen por tipo + resumen por propietario fiscal"
+            style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            📊 Excel
+          </button>
           <button onClick={openAdd} style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
       />

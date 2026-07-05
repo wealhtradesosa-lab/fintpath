@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
+import { exportGastosExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 
@@ -369,6 +370,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               🗑️ Eliminar ({selected.size})
             </button>
           )}
+          <button onClick={() => exportGastosExcel(gastos)}
+            title="Descarga XLSX con detalle + resumen por categoría (Fijos vs Variables)"
+            style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            📊 Excel
+          </button>
           <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
       />

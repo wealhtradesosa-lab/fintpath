@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
+import { exportDeudasExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
@@ -141,6 +142,11 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           {selected.size > 0 && (
             <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
           )}
+          <button onClick={() => exportDeudasExcel(activos, inversiones, owners)}
+            title="Descarga XLSX con detalle de deudas + vinculación con activos"
+            style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            📊 Excel
+          </button>
           <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "" }); setShowForm(true); }}
             style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}

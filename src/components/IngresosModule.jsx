@@ -1,6 +1,7 @@
 import { useState } from "react";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
+import { exportIngresosExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { obtenerInfoRetencion } from "../lib/retencionesTax.js";
@@ -445,6 +446,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               🗑️ Eliminar ({selected.size})
             </button>
           )}
+          <button onClick={() => exportIngresosExcel(activos, owners)}
+            title="Descarga XLSX con detalle + resumen por categoría"
+            style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            📊 Excel
+          </button>
           <button onClick={() => { setEditId(null); setForm(INITIAL_FORM); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             + Agregar
