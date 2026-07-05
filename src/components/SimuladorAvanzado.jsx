@@ -249,6 +249,11 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
   if(dataHash !== lastHash) { setSimVals({}); setLastHash(dataHash); }
   const [scenario, setScenario] = useState("actual");
   const [simName, setSimName] = useState("");
+  // Descripción libre del escenario para que el user detalle contexto ("Que
+  // pasa si en 6 meses vendo el AP de Chapinero y bajo la deuda 30%?"). Se
+  // exporta tanto al PDF como al Excel para poder compartir con contador o
+  // socios de negocio con full contexto del planteo.
+  const [simDescripcion, setSimDescripcion] = useState("");
 
   const setVal = useCallback((key, val) => {
     setSimVals((prev) => ({ ...prev, [key]: val }));
@@ -417,13 +422,18 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
   return (
     <div style={{overflowX:"hidden"}}>
       <PageHeader label="Simulador" title="Bienestar financiero" subtitle="Ajusta variables en tiempo real y proyecta tu camino a la independencia."/>
-      <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",marginBottom:6,flexWrap:"wrap",gap:8,width:"100%"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <input type="text" value={simName} onChange={e=>setSimName(e.target.value)} placeholder="Nombre del escenario..." style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"8px 12px",color:T.txt,fontSize:12,width:200,outline:"none"}} />
+      <div style={{display:"flex",justifyContent:"flex-end",alignItems:"flex-start",marginBottom:6,flexWrap:"wrap",gap:8,width:"100%"}}>
+        <div style={{display:"flex",alignItems:"flex-start",gap:8,flexWrap:"wrap",justifyContent:"flex-end",flex:"1 1 auto",maxWidth:"100%"}}>
+          <div style={{display:"flex",flexDirection:"column",gap:6,flex:"1 1 480px",minWidth:0,maxWidth:640}}>
+            <input type="text" value={simName} onChange={e=>setSimName(e.target.value)} placeholder="Nombre del escenario..." style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"8px 12px",color:T.txt,fontSize:12,width:"100%",outline:"none"}} />
+            <textarea value={simDescripcion} onChange={e=>setSimDescripcion(e.target.value)} placeholder="Descripción del escenario (opcional): contexto, supuestos, decisiones a evaluar..." rows={2} style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"8px 12px",color:T.txt,fontSize:12,width:"100%",outline:"none",resize:"vertical",fontFamily:"inherit",lineHeight:1.4,minHeight:52}} />
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"flex-start"}}>
           <button onClick={()=>{
               const w = window.open("","_blank");
               const fecha = new Date().toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
               const scenarioName = simName || "Simulación";
+              const scenarioDesc = simDescripcion || "";
               const niveles = ["Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
               const nivel = simT.ind >= 250 ? 4 : simT.ind >= 150 ? 3 : simT.ind >= 100 ? 2 : simT.ind >= 75 ? 1 : 0;
               
@@ -452,6 +462,7 @@ body{font-family:-apple-system,system-ui,sans-serif;font-size:11px;color:#222;pa
 h1{font-size:18px;font-weight:800;color:#16a34a;margin:0 0 2px}
 h2{font-size:13px;font-weight:700;color:#333;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:3px}
 .sub{font-size:10px;color:#888;margin-bottom:12px}
+.desc{background:#f9fafb;border-left:3px solid #16a34a;padding:10px 14px;margin:0 0 14px;font-size:11px;color:#374151;line-height:1.5;border-radius:0 6px 6px 0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
 .grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px}
@@ -470,6 +481,7 @@ td{padding:4px 6px;border-bottom:1px solid #f0f0f0}
 </style></head><body>
 <h1>FINPATHIA — ${scenarioName}</h1>
 <div class="sub">${scenarioName} • ${fecha}</div>
+${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(/\n/g,"<br>")}</div>` : ""}
 
 <div class="grid4">
   <div class="kpi"><div class="label">Ingreso neto</div><div class="val gn">$${Math.round(simT.ni).toLocaleString()}</div></div>
@@ -520,7 +532,102 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               w.document.write(html);
               w.document.close();
               setTimeout(()=>w.print(), 500);
-            }} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📄 PDF</button>
+            }} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>📄 PDF</button>
+          <button onClick={async()=>{
+              // Dynamic import de SheetJS para no cargar 500KB en el bundle
+              // inicial — solo se descarga cuando el user hace click en Excel.
+              const XLSX = await import("xlsx");
+              const fecha = new Date().toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
+              const scenarioName = simName || "Simulacion";
+              const scenarioDesc = simDescripcion || "";
+              const niveles = ["Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
+              const nivel = simT.ind >= 250 ? 4 : simT.ind >= 150 ? 3 : simT.ind >= 100 ? 2 : simT.ind >= 75 ? 1 : 0;
+
+              const wb = XLSX.utils.book_new();
+
+              // ── HOJA 1: Resumen ejecutivo ──
+              const resumenData = [
+                ["FINPATHIA — Simulación de Escenario"],
+                [],
+                ["Escenario:", scenarioName],
+                ["Fecha:", fecha],
+                ...(scenarioDesc ? [["Descripción:", scenarioDesc]] : []),
+                [],
+                ["═══ KPIs PRINCIPALES ═══"],
+                ["Ingreso neto mensual", Math.round(simT.ni)],
+                ["Egresos totales mensual", Math.round(simT.te)],
+                ["Cash flow mensual", Math.round(simT.cf)],
+                ["Cash flow anual", Math.round(simT.cf*12)],
+                ["Índice de independencia (%)", Number((simT.ind||0).toFixed(2))],
+                ["Nivel de libertad", `${niveles[nivel]} (${nivel+1}/5)`],
+                [],
+                ["═══ ANÁLISIS ═══"],
+                ["Estado independencia", simT.ind>=100?"Alcanzada":"En construcción"],
+                ["Estado cash flow", simT.cf>=0?"Positivo":"Negativo"],
+                ["Disponible por día", Math.round(simT.cf/30)],
+                ["Falta para independencia (mensual)", Math.max(0, Math.round(simT.te - simT.ni))],
+              ];
+              const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+              wsResumen["!cols"] = [{wch:38},{wch:28}];
+              XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+
+              // ── HOJA 2: Ingresos ──
+              const ingresosData = [["Fuente","Categoría","Monto Mensual","Moneda","Capital","Tasa Anual %","Anual"]];
+              (user.ingresos||[]).filter(i=>i.sim!==false).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).forEach(i => {
+                ingresosData.push([
+                  i.nombre || "",
+                  i.categoria || "",
+                  Math.round(i.mensual || 0),
+                  i.moneda || "COP",
+                  i.capital || 0,
+                  i.tasa || 0,
+                  Math.round((i.mensual || 0) * 12),
+                ]);
+              });
+              ingresosData.push([]);
+              ingresosData.push(["TOTAL","",Math.round(simT.ni),"","","",Math.round(simT.ni*12)]);
+              const wsIng = XLSX.utils.aoa_to_sheet(ingresosData);
+              wsIng["!cols"] = [{wch:30},{wch:20},{wch:16},{wch:8},{wch:18},{wch:12},{wch:16}];
+              XLSX.utils.book_append_sheet(wb, wsIng, "Ingresos");
+
+              // ── HOJA 3: Gastos ──
+              const gastosData = [["Categoría","Ítem","Monto","Tipo"]];
+              Object.entries(user.gastos||{}).forEach(([cat, items]) => {
+                (items||[]).filter(g=>g.sim!==false).forEach(g => {
+                  gastosData.push([cat, g.c || "", Math.round(g.m || 0), g.t === "f" ? "Fijo" : "Variable"]);
+                });
+              });
+              gastosData.push([]);
+              gastosData.push(["TOTAL","",Math.round(simT.gfm),""]);
+              const wsGas = XLSX.utils.aoa_to_sheet(gastosData);
+              wsGas["!cols"] = [{wch:24},{wch:32},{wch:16},{wch:12}];
+              XLSX.utils.book_append_sheet(wb, wsGas, "Gastos");
+
+              // ── HOJA 4: Deudas ──
+              const deudasData = [["Deuda","Saldo","Cuota Mensual","Tasa %","Meses Restantes"]];
+              (user.deudas||[]).filter(d=>d.sim!==false && (d.mt||0)>0).forEach(d => {
+                deudasData.push([
+                  d.n || d.nombre || "",
+                  Math.round(d.mt || 0),
+                  Math.round(d.pg || 0),
+                  d.ts || 0,
+                  d.meses || d.n_cuotas || "",
+                ]);
+              });
+              const totalDeudas = (user.deudas||[]).filter(d=>d.sim!==false && (d.mt||0)>0).reduce((s,d)=>s+(d.mt||0),0);
+              const totalCuotas = (user.deudas||[]).filter(d=>d.sim!==false && (d.mt||0)>0).reduce((s,d)=>s+(d.pg||0),0);
+              deudasData.push([]);
+              deudasData.push(["TOTAL", Math.round(totalDeudas), Math.round(totalCuotas), "", ""]);
+              const wsDeu = XLSX.utils.aoa_to_sheet(deudasData);
+              wsDeu["!cols"] = [{wch:30},{wch:18},{wch:16},{wch:10},{wch:16}];
+              XLSX.utils.book_append_sheet(wb, wsDeu, "Deudas");
+
+              // Nombre de archivo limpio (sin caracteres raros para el filesystem)
+              const safeName = scenarioName.replace(/[^\w\s-]/g,"").replace(/\s+/g,"_").slice(0,40) || "simulacion";
+              const fileDate = new Date().toISOString().slice(0,10);
+              XLSX.writeFile(wb, `FINPATHIA_${safeName}_${fileDate}.xlsx`);
+            }} style={{background:"#059669",color:"#fff",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>📊 Excel</button>
+          </div>
         </div>
       </div>
       <p style={{ color: T.txt3, fontSize: 13, marginBottom: 20 }}>Ajusta cada ingreso y gasto — la barra de libertad reacciona en tiempo real</p>
