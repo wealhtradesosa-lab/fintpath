@@ -165,7 +165,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     <div>
       <PageHeader
         label="Inversiones"
-        title="Portfolio"
+        title="Portafolio"
         subtitle={`${activos.length}${activos.length !== items.length ? ` de ${items.length}` : ""} activo${activos.length !== 1 ? "s" : ""} · Valor total: ${fm(totalValor)}`}
         rightSlot={<>
           {selected.size > 0 && (

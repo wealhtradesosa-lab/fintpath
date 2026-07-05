@@ -928,7 +928,26 @@ export default function FinPath(){
   };
   const generatePDF=()=>{
     const fecha=new Date().toLocaleDateString("es-CO",{year:"numeric",month:"long",day:"numeric"});
-    const inv=(u&&u.inv)||[];const deu=(u&&u.deu)||[];const gas=(u&&u.gas)||{};const ing=(u&&u.ingresos)||[];
+    // BUG FIX 13-jun-2026: santiago reportó que el PDF incluía items apagados
+    // (toggle OFF) en los cálculos como si estuvieran activos. El patrón del
+    // sistema usa `item.sim !== false` para "encendido" (los items viejos sin
+    // la prop sim también cuentan como encendidos por retrocompatibilidad).
+    // Ver: DeudasModule:93, GastosModule:272, IngresosModule:213,
+    // InversionesModule:89 — todos usan el mismo filtro.
+    // Al filtrar acá en las 4 líneas iniciales, TODO el resto del PDF
+    // (totales, conteos en h2, tablas, KPIs, runway, FIRE) se corrige en
+    // cascada sin más cambios porque todo consume estas 4 variables.
+    // Para gastos también se filtran categorías vacías (donde todos los
+    // items quedaron apagados) para no imprimir headers vacíos.
+    const inv=((u&&u.inv)||[]).filter(i=>i.sim!==false);
+    const deu=((u&&u.deu)||[]).filter(d=>d.sim!==false);
+    const gasRaw=(u&&u.gas)||{};
+    const gas=Object.fromEntries(
+      Object.entries(gasRaw)
+        .map(([cat,items])=>[cat,(items||[]).filter(g=>g.sim!==false)])
+        .filter(([,items])=>items.length>0)
+    );
+    const ing=((u&&u.ingresos)||[]).filter(i=>i.sim!==false);
     const gasCats=Object.entries(gas).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+(g.m||0),0)})).sort((a,b)=>b.total-a.total);
     const totalGas=gasCats.reduce((s,c)=>s+c.total,0);
     const totalIng=ing.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u&&u.trm||4200):1)),0);
@@ -2652,10 +2671,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       </div>}
     case"resumen":{
       const nwUSD=trm>0?t.nw/trm:t.nw/4200;
-      const passI=((u&&u.ingresos)||[]).filter(i=>["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i)=>s+(i.mensual||0),0);
+      // BUG FIX 13-jun-2026: mismo bug del PDF — esta vista también sumaba
+      // items con sim===false. Ahora filtramos igual que en cT() para que la
+      // vista sea consistente con los KPIs del Dashboard.
+      const passI=((u&&u.ingresos)||[]).filter(i=>i.sim!==false&&["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i)=>s+(i.mensual||0),0);
       const passR=t.ti>0?(passI/t.ti*100):0;
-      const totalInv=((u&&u.inv)||[]).reduce((s,i)=>s+(i.vc||0),0);
-      const totalVal=((u&&u.inv)||[]).reduce((s,i)=>s+(i.va||0),0);
+      const totalInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i)=>s+(i.vc||0),0);
+      const totalVal=((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i)=>s+(i.va||0),0);
       const gainPct=totalInv>0?((totalVal/totalInv)-1)*100:0;
       const fireN=t.te*12*25;
       const fireProg=fireN>0?Math.min((t.nw/fireN)*100,100):0;
@@ -2692,7 +2714,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(min(260px, 100%), 1fr))",gap:20,marginBottom:24}}>
             <div>
               <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>💰 Ingresos mensuales</div>
-              {((u&&u.ingresos)||[]).filter(i=>(i.mensual||0)>0).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,6).map((i,idx)=>(
+              {((u&&u.ingresos)||[]).filter(i=>i.sim!==false&&(i.mensual||0)>0).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,6).map((i,idx)=>(
                 <div key={idx} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
                   <span style={{color:T.tx2}}>{i.nombre}</span>
                   <span style={{fontWeight:600,fontFamily:"monospace",color:T.gn}}>{fm(i.mensual||0)}</span>
@@ -2704,7 +2726,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             </div>
             <div>
               <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>💳 Egresos principales</div>
-              {Object.entries((u&&u.gas)||{}).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+(g.m||0),0)})).sort((a,b)=>b.total-a.total).slice(0,5).map((g,idx)=>(
+              {Object.entries((u&&u.gas)||{}).map(([cat,items])=>({cat,total:(items||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+(g.m||0),0)})).filter(g=>g.total>0).sort((a,b)=>b.total-a.total).slice(0,5).map((g,idx)=>(
                 <div key={idx} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
                   <span style={{color:T.tx2}}>{g.cat}</span>
                   <span style={{fontWeight:600,fontFamily:"monospace",color:T.rd}}>{fm(g.total)}</span>
@@ -2737,7 +2759,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <div style={{marginBottom:24}}>
             <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>🏦 Patrimonio por tipo</div>
             {(() => {
-              const byType={};((u&&u.inv)||[]).forEach(i=>{const tp=i.tp||i.tipo||"Otro";byType[tp]=(byType[tp]||0)+(i.va||0)});
+              const byType={};((u&&u.inv)||[]).filter(i=>i.sim!==false).forEach(i=>{const tp=i.tp||i.tipo||"Otro";byType[tp]=(byType[tp]||0)+(i.va||0)});
               return Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([tp,val],idx)=>{
                 const pct=totalVal>0?(val/totalVal*100):0;
                 return(
@@ -2754,9 +2776,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             })()}
           </div>
 
-          {((u&&u.deu)||[]).length>0&&<div style={{marginBottom:24}}>
+          {((u&&u.deu)||[]).filter(d=>d.sim!==false).length>0&&<div style={{marginBottom:24}}>
             <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>📋 Obligaciones financieras</div>
-            {((u&&u.deu)||[]).map((d,i)=>(
+            {((u&&u.deu)||[]).filter(d=>d.sim!==false).map((d,i)=>(
               <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
                 <span style={{color:T.tx2}}>{d.n||d.nombre||"Deuda"} <span style={{color:T.tx3}}>({d.ts||0}%)</span></span>
                 <div><span style={{color:T.rd,fontFamily:"monospace"}}>{fm(d.mt||0)}</span><span style={{color:T.tx3,marginLeft:8}}>cuota: {fm(d.pg||0)}</span></div>
