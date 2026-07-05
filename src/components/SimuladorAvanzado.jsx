@@ -448,20 +448,32 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
               const nivel = simT.ind >= 250 ? 4 : simT.ind >= 150 ? 3 : simT.ind >= 100 ? 2 : simT.ind >= 75 ? 1 : 0;
               
               // Build income rows
-              const ingRows = (user.ingresos||[]).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).map(i => {
+              // BUG FIX 4-jul-2026: sesión anterior solo se arregló el PDF del
+              // Dashboard (App.jsx generatePDF). Este PDF del Simulador tenía
+              // el mismo bug — mostraba y sumaba items con sim===false. Los
+              // KPIs de arriba (simT.ni/te/cf/ind) ya filtraban bien vía el
+              // useMemo simT línea 291 pero las tablas del cuerpo del PDF
+              // NO. Ahora aplican el mismo filtro sim!==false que el resto
+              // del sistema (patrón DeudasModule:93 GastosModule:272 etc).
+              const ingRows = (user.ingresos||[]).filter(i=>i.sim!==false).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).map(i => {
                 const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: $${(i.capital/1e6).toFixed(0)}M × ${i.tasa}%</span>` : "";
                 return `<tr><td>${i.nombre||""}</td><td style="color:#888">${i.categoria||""}</td><td style="text-align:right;font-weight:600;color:#16a34a">$${Math.round(i.mensual||0).toLocaleString()}</td><td>${cap}</td></tr>`;
               }).join("");
               
-              // Build expense rows by category
-              const gasCats = Object.entries(user.gastos||{}).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+(g.m||0),0),items})).sort((a,b)=>b.total-a.total);
+              // Build expense rows by category — filtra items apagados dentro
+              // de cada categoría y elimina categorías que quedaron vacías
+              // (por si todos los items estaban apagados).
+              const gasCats = Object.entries(user.gastos||{}).map(([cat,items])=>{
+                const active = (items||[]).filter(g=>g.sim!==false);
+                return {cat,total:active.reduce((s,g)=>s+(g.m||0),0),items:active};
+              }).filter(g=>g.total>0).sort((a,b)=>b.total-a.total);
               const gasRows = gasCats.map(g => {
                 const detail = g.items.slice(0,3).map(i=>i.c).join(", ");
                 return `<tr><td>${g.cat}</td><td style="color:#888;font-size:10px">${detail}</td><td style="text-align:right;font-weight:600;color:#dc2626">$${Math.round(g.total).toLocaleString()}</td></tr>`;
               }).join("");
               
-              // Build debt rows
-              const deuRows = (user.deudas||[]).filter(d=>(d.mt||0)>0).map(d => 
+              // Build debt rows — filtra apagadas y las que no tienen saldo
+              const deuRows = (user.deudas||[]).filter(d=>d.sim!==false && (d.mt||0)>0).map(d => 
                 `<tr><td>${d.n||d.nombre||""}</td><td style="text-align:right">$${Math.round(d.mt||0).toLocaleString()}</td><td style="text-align:right">$${Math.round(d.pg||0).toLocaleString()}/mes</td><td style="text-align:right">${d.ts||0}%</td></tr>`
               ).join("");
               
@@ -521,7 +533,7 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
 ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
 <table><thead><tr><th>Deuda</th><th style="text-align:right">Saldo</th><th style="text-align:right">Cuota</th><th style="text-align:right">Tasa</th></tr></thead>
 <tbody>${deuRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td>TOTAL CUOTAS</td><td></td><td style="text-align:right;color:#dc2626">$${Math.round((user.deudas||[]).filter(d=>(d.mt||0)>0).reduce((s,d)=>s+(d.pg||0),0)).toLocaleString()}/mes</td><td></td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td>TOTAL CUOTAS</td><td></td><td style="text-align:right;color:#dc2626">$${Math.round((user.deudas||[]).filter(d=>d.sim!==false && (d.mt||0)>0).reduce((s,d)=>s+(d.pg||0),0)).toLocaleString()}/mes</td><td></td></tr></tfoot>
 </table>` : ""}
 
 <h2>📊 Resumen</h2>
