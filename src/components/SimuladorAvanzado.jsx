@@ -422,14 +422,24 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
   return (
     <div style={{overflowX:"hidden"}}>
       <PageHeader label="Simulador" title="Bienestar financiero" subtitle="Ajusta variables en tiempo real y proyecta tu camino a la independencia."/>
-      <div style={{display:"flex",justifyContent:"flex-end",alignItems:"flex-start",marginBottom:6,flexWrap:"wrap",gap:8,width:"100%"}}>
-        <div style={{display:"flex",alignItems:"flex-start",gap:8,flexWrap:"wrap",justifyContent:"flex-end",flex:"1 1 auto",maxWidth:"100%"}}>
-          <div style={{display:"flex",flexDirection:"column",gap:6,flex:"1 1 480px",minWidth:0,maxWidth:640}}>
-            <input type="text" value={simName} onChange={e=>setSimName(e.target.value)} placeholder="Nombre del escenario..." style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"8px 12px",color:T.txt,fontSize:12,width:"100%",outline:"none"}} />
-            <textarea value={simDescripcion} onChange={e=>setSimDescripcion(e.target.value)} placeholder="Descripción del escenario (opcional): contexto, supuestos, decisiones a evaluar..." rows={2} style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"8px 12px",color:T.txt,fontSize:12,width:"100%",outline:"none",resize:"vertical",fontFamily:"inherit",lineHeight:1.4,minHeight:52}} />
+
+      {/* ═══ Card de escenario ═══
+          Agrupa nombre + descripción + export en una card sutil bajo el header,
+          alineada con la jerarquía visual del resto de la página. Antes esto
+          flotaba alineado a la derecha del PageHeader lo que rompía la
+          diagramación (screenshot Santiago 4-jul-2026). */}
+      <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 20, marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+          <div style={{ minWidth: 0, flex: "1 1 auto" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 4 }}>
+              📋 Escenario
+            </div>
+            <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
+              Nómbralo y descríbelo para exportarlo en PDF o Excel y compartirlo con tu contador o socios.
+            </div>
           </div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"flex-start"}}>
-          <button onClick={()=>{
+          <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "flex-start" }}>
+            <button onClick={()=>{
               const w = window.open("","_blank");
               const fecha = new Date().toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
               const scenarioName = simName || "Simulación";
@@ -532,7 +542,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               w.document.write(html);
               w.document.close();
               setTimeout(()=>w.print(), 500);
-            }} style={{background:"#22c55e",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>📄 PDF</button>
+            }} style={{background:"#22c55e",color:"#000",border:"none",padding:"9px 16px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,flexShrink:0,display:"flex",alignItems:"center",gap:6}}>📄 PDF</button>
           <button onClick={async()=>{
               // Dynamic import de SheetJS para no cargar 500KB en el bundle
               // inicial — solo se descarga cuando el user hace click en Excel.
@@ -626,11 +636,30 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               const safeName = scenarioName.replace(/[^\w\s-]/g,"").replace(/\s+/g,"_").slice(0,40) || "simulacion";
               const fileDate = new Date().toISOString().slice(0,10);
               XLSX.writeFile(wb, `FINPATHIA_${safeName}_${fileDate}.xlsx`);
-            }} style={{background:"#059669",color:"#fff",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>📊 Excel</button>
+            }} style={{background:"#059669",color:"#fff",border:"none",padding:"9px 16px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,flexShrink:0,display:"flex",alignItems:"center",gap:6}}>📊 Excel</button>
           </div>
         </div>
+
+        {/* Inputs: nombre + descripción del escenario. Grid responsivo que en
+            desktop pone el nombre y la descripción en 2 columnas y en mobile
+            los apila (auto-fit + minmax). */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 10 }}>
+          <input
+            type="text"
+            value={simName}
+            onChange={e=>setSimName(e.target.value)}
+            placeholder="Nombre del escenario…"
+            style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 13, outline: "none", width: "100%" }}
+          />
+          <textarea
+            value={simDescripcion}
+            onChange={e=>setSimDescripcion(e.target.value)}
+            placeholder="Descripción (opcional): contexto, supuestos, decisiones a evaluar…"
+            rows={1}
+            style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 13, outline: "none", resize: "vertical", fontFamily: "inherit", lineHeight: 1.5, minHeight: 42, width: "100%" }}
+          />
+        </div>
       </div>
-      <p style={{ color: T.txt3, fontSize: 13, marginBottom: 20 }}>Ajusta cada ingreso y gasto — la barra de libertad reacciona en tiempo real</p>
 
       {/* ═══ FREEDOM BAR — reacts to simulated values ═══ */}
       <FreedomBarLive ni={simT.ni} te={simT.te} cf={simT.cf} />
