@@ -2753,21 +2753,70 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             <div style={{fontSize:13,color:T.tx3,marginTop:4}}>{u?.p?.name||"Usuario"} • {fecha}</div>
           </div>
 
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(min(160px, 100%), 1fr))",gap:12,marginBottom:24}}>
+          {/* Fase 3 (4-jul-2026): KPIs top del Resumen ahora reflejan el
+              nuevo modelo family office. Muestran Patrimonio + Disponible
+              (protagonista) + Independencia. El desglose Bruto→Retención→
+              Disponible y Egresos por categoría va debajo en cards separadas. */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(min(160px, 100%), 1fr))",gap:12,marginBottom:20}}>
             <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
-              <div style={{fontSize:10,color:T.tx3}}>PATRIMONIO NETO</div>
+              <div style={{fontSize:10,color:T.tx3,letterSpacing:1,fontWeight:600}}>PATRIMONIO NETO</div>
               <div style={{fontSize:24,fontWeight:800,color:T.gn,marginTop:4}}>{fm(t.nw)}</div>
               <div style={{fontSize:10,color:T.tx3}}>≈ USD ${Math.round(nwUSD).toLocaleString()}</div>
             </div>
             <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
-              <div style={{fontSize:10,color:T.tx3}}>CASH FLOW MENSUAL</div>
+              <div style={{fontSize:10,color:T.tx3,letterSpacing:1,fontWeight:600}}>DISPONIBLE EN CUENTA</div>
+              <div style={{fontSize:24,fontWeight:800,color:T.gn,marginTop:4}}>{fm(t.disponibleCuenta||t.ni||0)}</div>
+              <div style={{fontSize:10,color:T.tx3}}>mensual, tras retención</div>
+            </div>
+            <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
+              <div style={{fontSize:10,color:T.tx3,letterSpacing:1,fontWeight:600}}>CASH FLOW</div>
               <div style={{fontSize:24,fontWeight:800,color:t.cf>=0?T.gn:T.rd,marginTop:4}}>{fm(t.cf)}</div>
               <div style={{fontSize:10,color:T.tx3}}>{fm(t.cf*12)}/año</div>
             </div>
             <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
-              <div style={{fontSize:10,color:T.tx3}}>INDEPENDENCIA</div>
+              <div style={{fontSize:10,color:T.tx3,letterSpacing:1,fontWeight:600}}>INDEPENDENCIA</div>
               <div style={{fontSize:24,fontWeight:800,color:t.ind>=100?T.gn:"#eab308",marginTop:4}}>{(t.ind).toFixed(0)}%</div>
               <div style={{fontSize:10,color:T.tx3}}>FIRE: {fireProg.toFixed(0)}%</div>
+            </div>
+          </div>
+
+          {/* Desglose Bruto → Retención → Disponible + Egresos por línea */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(min(280px, 100%), 1fr))",gap:14,marginBottom:24}}>
+            {/* Ingresos con desglose */}
+            <div style={{background:T.bg3,borderRadius:12,padding:16}}>
+              <div style={{fontSize:10,color:T.tx3,letterSpacing:1.2,fontWeight:700,textTransform:"uppercase",marginBottom:12}}>💰 Ingresos mensuales</div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:6}}>
+                <span style={{color:T.tx2}}>Bruto Total</span>
+                <span style={{fontFamily:"monospace",color:T.tx}}>{fm(t.brutoTotal||t.ti||0)}</span>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:10,paddingLeft:8,borderLeft:`2px solid ${T.border}`}}>
+                <span style={{color:"#a78bfa"}}>− Retención <span style={{fontSize:9,opacity:0.7}}>(recuperable)</span></span>
+                <span style={{fontFamily:"monospace",color:"#a78bfa"}}>−{fm(t.retencionMensual||0)}</span>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
+                <span style={{color:T.gn}}>= DISPONIBLE</span>
+                <span style={{fontFamily:"monospace",color:T.gn}}>{fm(t.disponibleCuenta||t.ni||0)}</span>
+              </div>
+            </div>
+
+            {/* Egresos con desglose 4 líneas */}
+            <div style={{background:T.bg3,borderRadius:12,padding:16}}>
+              <div style={{fontSize:10,color:T.tx3,letterSpacing:1.2,fontWeight:700,textTransform:"uppercase",marginBottom:12}}>💸 Egresos mensuales</div>
+              {[
+                {l:"A. Aportes obligatorios",v:t.aportesObligatorios||0,c:"#f59e0b"},
+                {l:"B. Gastos familiares",v:t.gastosFamiliares||0,c:T.tx2},
+                {l:"C. Cuotas de deudas",v:t.cuotasDeudas||0,c:T.tx2},
+                {l:"D. Impuesto neto",v:t.impuestoNeto||0,c:"#a78bfa"},
+              ].map((r,i)=>(
+                <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:5,opacity:r.v>0?1:0.5}}>
+                  <span style={{color:r.c}}>{r.l}</span>
+                  <span style={{fontFamily:"monospace",color:r.c}}>{fm(r.v)}</span>
+                </div>
+              ))}
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,paddingTop:10,borderTop:`1px solid ${T.border}`,marginTop:6}}>
+                <span style={{color:T.rd}}>= EGRESOS TOTALES</span>
+                <span style={{fontFamily:"monospace",color:T.rd}}>{fm(t.egresosTotales||t.te||0)}</span>
+              </div>
             </div>
           </div>
 
