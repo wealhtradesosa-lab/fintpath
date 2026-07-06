@@ -789,42 +789,133 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
         })}
       </div>
 
-      {/* KPI Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 20 }}>
-        {[
-          { l: "Ingreso Neto", v: fm(simT.ni), c: T.gn, d: fm(simT.ni - baseT.ni) },
-          { l: "Egresos Totales", v: fm(simT.te), c: T.rd, d: fm(simT.te - baseT.te), tip: "Gastos + deudas + impuestos" },
-          { l: "Impuestos (est.)", v: fm(simT.tTax||0), c: "#a78bfa", d: fm((simT.tTax||0) - (baseT.tTax||0)), tip: "Suma de impuestos de todos los propietarios" },
+      {/* ═══════════════════════════════════════════════════════════════════
+          FASE 2 (4-jul-2026): rediseño family office del bloque de KPIs.
+          Antes: 5 KPI cards horizontales sin desglose.
+          Ahora: 2 cards estructuradas (INGRESOS y EGRESOS) con el desglose
+          del contrato Bruto→Retención→Disponible y Aportes/Gastos/Deudas/Imp.
+          Más el Hero Cash Flow (rediseñado). Todo con delta vs baseline.
+          ═══════════════════════════════════════════════════════════════════ */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))", gap: 14, marginBottom: 16 }}>
 
-          { l: "Cash Flow", v: fm(simT.cf), c: simT.cf >= 0 ? T.gn : T.rd, d: fm(simT.cf - baseT.cf), tip: "Dinero que te sobra (o falta) cada mes después de pagar todo" },
-          { l: "Independencia", v: pc(simT.ind), c: simT.ind >= 100 ? T.gn : T.txt2, tip: "% de tus gastos que cubren tus ingresos. 100% = no necesitas empleo" },
-        ].map((m) => (
-          <div key={m.l} style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 14, padding: 16 }}>
-            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: m.c, marginTop: 4 }}>{m.v}</div>
-            {m.d && <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Δ {m.d}</div>}
-            {m.tip && <div style={{ fontSize: 9, color: T.txt3, marginTop: 4, lineHeight: 1.3, opacity: 0.7 }}>{m.tip}</div>}
+        {/* ─────────── CARD INGRESOS (Bruto → Retención → Disponible) ─────────── */}
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 14 }}>
+            💰 Ingresos mensuales
           </div>
-        ))}
+
+          {/* Fila 1: Bruto Total */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 13, color: T.txt2 }}>Bruto Total</div>
+              <div style={{ fontSize: 10, color: T.txt3, marginTop: 1 }}>Lo que generan tus activos</div>
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: T.txt, fontFamily: "'Plus Jakarta Sans',ui-monospace" }}>
+              {fm(simT.brutoTotal || 0)}
+            </div>
+          </div>
+
+          {/* Fila 2: Retención (crédito recuperable) */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14, paddingLeft: 12, borderLeft: `2px solid ${T.txt3}20` }}>
+            <div>
+              <div style={{ fontSize: 12, color: T.txt3 }}>− Retención en la fuente</div>
+              <div style={{ fontSize: 10, color: "#a78bfa", marginTop: 1 }}>💳 Crédito recuperable en declaración</div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "#a78bfa", fontFamily: "'Plus Jakarta Sans',ui-monospace" }}>
+              −{fm(simT.retencionMensual || 0)}
+            </div>
+          </div>
+
+          {/* Divisor + Fila 3: Disponible en Cuenta (protagonista) */}
+          <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.gn, letterSpacing: 0.5 }}>= DISPONIBLE EN CUENTA</div>
+                <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Lo que efectivamente entra al banco</div>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: T.gn, fontFamily: "'Plus Jakarta Sans',ui-monospace", letterSpacing: "-0.02em" }}>
+                {fm(simT.disponibleCuenta || 0)}
+              </div>
+            </div>
+            {baseT.disponibleCuenta != null && Math.abs((simT.disponibleCuenta || 0) - (baseT.disponibleCuenta || 0)) > 1 && (
+              <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, textAlign: "right" }}>
+                Δ vs base: {(simT.disponibleCuenta || 0) - (baseT.disponibleCuenta || 0) >= 0 ? "+" : ""}{fm((simT.disponibleCuenta || 0) - (baseT.disponibleCuenta || 0))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ─────────── CARD EGRESOS (4 líneas del desglose) ─────────── */}
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 14 }}>
+            💸 Egresos mensuales
+          </div>
+
+          {/* Las 4 líneas del desglose */}
+          {[
+            { label: "A. Aportes obligatorios", sub: "Pensión + salud (independiente)", value: simT.aportesObligatorios || 0, color: "#f59e0b" },
+            { label: "B. Gastos familiares", sub: "Vivienda, educación, transporte…", value: simT.gastosFamiliares || 0, color: T.txt2 },
+            { label: "C. Cuotas de deudas", sub: "Hipotecas, préstamos, TC", value: simT.cuotasDeudas || 0, color: T.txt2 },
+            { label: "D. Impuesto neto", sub: "Saldo a pagar tras retención", value: simT.impuestoNeto || 0, color: "#a78bfa" },
+          ].map((row, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8, opacity: row.value > 0 ? 1 : 0.5 }}>
+              <div>
+                <div style={{ fontSize: 12, color: T.txt2 }}>{row.label}</div>
+                <div style={{ fontSize: 9.5, color: T.txt3, marginTop: 1 }}>{row.sub}</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: row.color, fontFamily: "'Plus Jakarta Sans',ui-monospace" }}>
+                {fm(row.value)}
+              </div>
+            </div>
+          ))}
+
+          {/* Divisor + Total */}
+          <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.rd, letterSpacing: 0.5 }}>= EGRESOS TOTALES</div>
+                <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Todo lo que sale cada mes</div>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: T.rd, fontFamily: "'Plus Jakarta Sans',ui-monospace", letterSpacing: "-0.02em" }}>
+                {fm(simT.egresosTotales || 0)}
+              </div>
+            </div>
+            {baseT.egresosTotales != null && Math.abs((simT.egresosTotales || 0) - (baseT.egresosTotales || 0)) > 1 && (
+              <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, textAlign: "right" }}>
+                Δ vs base: {(simT.egresosTotales || 0) - (baseT.egresosTotales || 0) >= 0 ? "+" : ""}{fm((simT.egresosTotales || 0) - (baseT.egresosTotales || 0))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* DISPONIBLE - Hero section */}
-      <div style={{ background: simT.cf >= 0 ? "linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02))" : "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.02))", border: "1px solid " + (simT.cf >= 0 ? T.gn : T.rd) + "20", borderRadius: 16, padding: "20px 28px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+      {/* ─────────── CASH FLOW HERO (rediseño: sin cambio conceptual, mejor label) ─────────── */}
+      <div style={{ background: simT.cf >= 0 ? "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(34,197,94,0.02))" : "linear-gradient(135deg, rgba(239,68,68,0.10), rgba(239,68,68,0.02))", border: "1px solid " + (simT.cf >= 0 ? T.gn : T.rd) + "30", borderRadius: 16, padding: "22px 28px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
         <div>
-          <div style={{ fontSize: 12, color: T.txt3, fontWeight: 600, letterSpacing: 1 }}>{simT.cf >= 0 ? "💰 DISPONIBLE CADA MES" : "⚠️ DÉFICIT MENSUAL"}</div>
-          <div style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, letterSpacing: "-0.03em", marginTop: 4 }}>{fm(simT.cf)}<span style={{ fontSize: 14, fontWeight: 400, color: T.txt3 }}>/mes</span></div>
+          <div style={{ fontSize: 11, color: simT.cf >= 0 ? T.gn : T.rd, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>{simT.cf >= 0 ? "💰 Cash Flow · disponible para ahorrar / invertir" : "⚠️ Cash Flow negativo · déficit mensual"}</div>
+          <div style={{ fontSize: "clamp(2rem, 4.5vw, 3rem)", fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, letterSpacing: "-0.03em", marginTop: 6 }}>
+            {fm(simT.cf)}<span style={{ fontSize: 14, fontWeight: 400, color: T.txt3, marginLeft: 4 }}>/mes</span>
+          </div>
+          <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
+            Disponible <span style={{ color: T.txt2 }}>{fm(simT.disponibleCuenta || 0)}</span> − Egresos <span style={{ color: T.txt2 }}>{fm(simT.egresosTotales || 0)}</span>
+          </div>
         </div>
         <div style={{ display: "flex", gap: 24 }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 10, color: T.txt3 }}>AL AÑO</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd }}>{fm(simT.cf * 12)}</div>
+            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Al año</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, marginTop: 2 }}>{fm(simT.cf * 12)}</div>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 10, color: T.txt3 }}>AL DÍA</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: T.txt2 }}>{fm(Math.round(simT.cf / 30))}</div>
+            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Al día</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: T.txt2, marginTop: 2 }}>{fm(Math.round(simT.cf / 30))}</div>
+          </div>
+          <div style={{ textAlign: "center", borderLeft: `1px solid ${T.border}`, paddingLeft: 24 }}>
+            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Independencia</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: simT.ind >= 100 ? T.gn : "#eab308", marginTop: 2 }}>{pc(simT.ind)}</div>
           </div>
         </div>
       </div>
+      {/* fin bloque de KPIs Fase 2 */}
 
       {/* Sliders + Chart */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
