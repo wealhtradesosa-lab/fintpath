@@ -1008,30 +1008,57 @@ export default function FinPath(){
         .filter(([,items])=>items.length>0)
     );
     const ing=((u&&u.ingresos)||[]).filter(i=>i.sim!==false);
-    const gasCats=Object.entries(gas).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+(g.m||0),0)})).sort((a,b)=>b.total-a.total);
-    const totalGas=gasCats.reduce((s,c)=>s+c.total,0);
-    const totalIng=ing.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u&&u.trm||4200):1)),0);
+    // Separar categorías: aportes obligatorios ("Seguridad Social") vs gastos familiares
+    const gasCats=Object.entries(gas).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+(g.m||0),0),esAporte:cat==="Seguridad Social"})).sort((a,b)=>b.total-a.total);
+    const aportesObligatorios=gasCats.filter(c=>c.esAporte).reduce((s,c)=>s+c.total,0);
+    const gastosFamiliares=gasCats.filter(c=>!c.esAporte).reduce((s,c)=>s+c.total,0);
+    const totalGas=aportesObligatorios+gastosFamiliares;
+    const brutoTotal=ing.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u&&u.trm||4200):1)),0);
     const totalDeu=deu.reduce((s,d)=>s+(d.mt||0),0);
     const totalCuotas=deu.reduce((s,d)=>s+(d.pg||0),0);
     const totalPat=inv.reduce((s,i)=>s+(+i.va||0),0);
-    const nw=totalPat-totalDeu;const cf=totalIng-totalGas-totalCuotas;
-    const ind=(totalGas+totalCuotas)>0?((totalIng/(totalGas+totalCuotas))*100):0;
+    // Retención + impuesto neto vienen del motor cT ya calculado (t)
+    const retencionMensual=Math.round(t.retencionMensual||0);
+    const impuestoNeto=Math.round(t.impuestoNeto||0);
+    const disponibleCuenta=brutoTotal-retencionMensual;
+    const egresosTotales=aportesObligatorios+gastosFamiliares+totalCuotas+impuestoNeto;
+    const nw=totalPat-totalDeu;
+    const cf=disponibleCuenta-egresosTotales;
+    const ind=egresosTotales>0?((disponibleCuenta/egresosTotales)*100):0;
     const level=ind>=250?"Libertad Absoluta":ind>=150?"Libertad":ind>=100?"Independencia":ind>=82.5?"Vitalidad":ind>=65?"Seguridad":"Pre-Seguridad";
-    const fireNum=(totalGas+totalCuotas)*12*25;const firePct=fireNum>0?(nw/fireNum*100):0;
+    const fireNum=egresosTotales*12*25;const firePct=fireNum>0?(nw/fireNum*100):0;
     const dta=totalPat>0?(totalDeu/totalPat*100):0;
-    const runway=(totalGas+totalCuotas)>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija","Fondo de Inversión"].includes(i.tp||i.tipo)).reduce((s,i)=>s+(+i.va||0),0)/(totalGas+totalCuotas)):0;
+    const runway=egresosTotales>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija","Fondo de Inversión"].includes(i.tp||i.tipo)).reduce((s,i)=>s+(+i.va||0),0)/egresosTotales):0;
     const invRows=inv.map(i=>"<tr><td>"+(i.n||i.nombre||"")+"</td><td>"+(i.tp||i.tipo||"Otro")+"</td><td class=r>"+fm(+i.va||0)+"</td><td class=r "+((+i.va||0)>=(+i.vc||0)?"style=color:#16a34a":"style=color:#dc2626")+">"+fm((+i.va||0)-(+i.vc||0))+"</td></tr>").join("");
     const ingRows=ing.map(i=>"<tr><td>"+(i.nombre||"")+"</td><td>"+(i.categoria||"")+"</td><td class=r>"+fm((i.mensual||0)*(i.moneda==="USD"?(u&&u.trm||4200):1))+"</td></tr>").join("");
-    const gasRows=gasCats.map(g=>"<tr><td>"+g.cat+"</td><td class=r>"+fm(g.total)+"</td><td class=r>"+(totalIng>0?(g.total/totalIng*100).toFixed(1)+"%":"—")+"</td></tr>").join("");
+    const gasRows=gasCats.map(g=>"<tr><td>"+g.cat+(g.esAporte?" <span style='font-size:9px;color:#f59e0b'>(aporte)</span>":"")+"</td><td class=r>"+fm(g.total)+"</td><td class=r>"+(brutoTotal>0?(g.total/brutoTotal*100).toFixed(1)+"%":"—")+"</td></tr>").join("");
     const deuRows=deu.map(d=>"<tr><td>"+(d.n||"")+"</td><td class=r>"+fm(d.mt||0)+"</td><td class=r>"+fm(d.pg||0)+"</td><td class=r>"+(d.ts||0)+"%</td></tr>").join("");
+    // Bloque desglose family office (nuevo Fase 4)
+    const desgloseFlujo="<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0 18px'>"
+      +"<div style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px'>"
+        +"<div style='font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:8px'>💰 Ingresos Mensuales</div>"
+        +"<div style='display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px'><span style='color:#374151'>Bruto Total</span><span style='font-weight:500'>"+fm(brutoTotal)+"</span></div>"
+        +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:8px;padding-left:8px;border-left:2px solid #e5e7eb'><span style='color:#8b5cf6'>− Retención (recuperable)</span><span style='color:#8b5cf6'>−"+fm(retencionMensual)+"</span></div>"
+        +"<div style='display:flex;justify-content:space-between;font-size:13px;font-weight:800;padding-top:7px;border-top:1px solid #d1d5db;color:#16a34a'><span>= DISPONIBLE</span><span>"+fm(disponibleCuenta)+"</span></div>"
+      +"</div>"
+      +"<div style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px'>"
+        +"<div style='font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:8px'>💸 Egresos Mensuales</div>"
+        +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px'><span style='color:#f59e0b'>A. Aportes obligatorios</span><span style='color:#f59e0b'>"+fm(aportesObligatorios)+"</span></div>"
+        +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px'><span>B. Gastos familiares</span><span>"+fm(gastosFamiliares)+"</span></div>"
+        +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px'><span>C. Cuotas deudas</span><span>"+fm(totalCuotas)+"</span></div>"
+        +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:6px'><span style='color:#8b5cf6'>D. Impuesto neto</span><span style='color:#8b5cf6'>"+fm(impuestoNeto)+"</span></div>"
+        +"<div style='display:flex;justify-content:space-between;font-size:13px;font-weight:800;padding-top:7px;border-top:1px solid #d1d5db;color:#dc2626'><span>= EGRESOS TOTALES</span><span>"+fm(egresosTotales)+"</span></div>"
+      +"</div>"
+    +"</div>";
     const html="<!DOCTYPE html><html><head><title>Reporte FINPATHIA</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;color:#1a1a1a;padding:32px 40px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.6}h1{font-size:22px;font-weight:800}h2{font-size:15px;font-weight:700;margin:24px 0 8px;padding-bottom:4px;border-bottom:2px solid #22c55e}.hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #22c55e}.logo{font-size:18px;font-weight:800;color:#22c55e}.dt{font-size:11px;color:#888}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:10px 0}.k{background:#f8f8f8;border-radius:8px;padding:10px;border-left:3px solid #22c55e}.kr{border-left-color:#ef4444}.kl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px}.kv{font-size:18px;font-weight:700;margin-top:2px}.ks{font-size:9px;color:#888;margin-top:2px}table{width:100%;border-collapse:collapse;margin:8px 0;font-size:11px}th{text-align:left;padding:5px 8px;background:#f0f0f0;font-weight:600;font-size:9px;text-transform:uppercase;color:#666}td{padding:5px 8px;border-bottom:1px solid #eee}.r{text-align:right}.lb{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;text-align:center;margin:10px 0}.lt{font-size:18px;font-weight:700;color:#16a34a}.ft{margin-top:28px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#aaa;text-align:center}.ds{font-size:8px;color:#ccc;margin-top:16px;text-align:center;line-height:1.4}@media print{body{padding:20px}@page{size:letter;margin:12mm}}</style></head><body>"
     +"<div class=hd><div><div class=logo>FINPATHIA</div><h1>Reporte Financiero Personal</h1></div><div style=text-align:right><div class=dt>"+fecha+"</div><div class=dt>"+(u?.p?.name||"Usuario")+"</div></div></div>"
     +"<div class=lb><div style=font-size:11px;color:#666>NIVEL DE LIBERTAD FINANCIERA</div><div class=lt>"+level+"</div><div style=font-size:13px;color:#333;margin-top:4px>Índice: "+ind.toFixed(1)+"%</div></div>"
-    +"<div class=g4><div class=k><div class=kl>Patrimonio Neto</div><div class=kv>"+fm(nw)+"</div></div><div class=k><div class=kl>Ingresos/mes</div><div class=kv>"+fm(totalIng)+"</div></div><div class='k "+(cf<0?"kr":"")+"'><div class=kl>Cash Flow/mes</div><div class=kv style=color:"+(cf>=0?"#16a34a":"#dc2626")+">"+fm(cf)+"</div></div><div class=k><div class=kl>FIRE Progress</div><div class=kv>"+firePct.toFixed(0)+"%</div><div class=ks>Meta: "+fm(fireNum)+"</div></div></div>"
+    +desgloseFlujo
+    +"<div class=g4><div class=k><div class=kl>Patrimonio Neto</div><div class=kv>"+fm(nw)+"</div></div><div class=k><div class=kl>Disponible/mes</div><div class=kv>"+fm(disponibleCuenta)+"</div></div><div class='k "+(cf<0?"kr":"")+"'><div class=kl>Cash Flow/mes</div><div class=kv style=color:"+(cf>=0?"#16a34a":"#dc2626")+">"+fm(cf)+"</div></div><div class=k><div class=kl>FIRE Progress</div><div class=kv>"+firePct.toFixed(0)+"%</div><div class=ks>Meta: "+fm(fireNum)+"</div></div></div>"
     +"<h2>Patrimonio ("+inv.length+" activos)</h2><div class=g3><div class=k><div class=kl>Activos</div><div class=kv>"+fm(totalPat)+"</div></div><div class='k kr'><div class=kl>Deudas</div><div class=kv>"+fm(totalDeu)+"</div></div><div class=k><div class=kl>Neto</div><div class=kv>"+fm(nw)+"</div></div></div>"
     +"<table><thead><tr><th>Activo</th><th>Tipo</th><th class=r>Valor</th><th class=r>Ganancia</th></tr></thead><tbody>"+invRows+"</tbody></table>"
-    +"<h2>Ingresos ("+ing.length+" fuentes)</h2><table><thead><tr><th>Fuente</th><th>Categoría</th><th class=r>Monto/mes</th></tr></thead><tbody>"+ingRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td colspan=2>Total</td><td class=r>"+fm(totalIng)+"</td></tr></tbody></table>"
-    +"<h2>Gastos ("+gasCats.length+" categorías)</h2><table><thead><tr><th>Categoría</th><th class=r>Monto/mes</th><th class=r>% Ingreso</th></tr></thead><tbody>"+gasRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td>Total</td><td class=r>"+fm(totalGas)+"</td><td class=r>"+(totalIng>0?(totalGas/totalIng*100).toFixed(0)+"%":"—")+"</td></tr></tbody></table>"
+    +"<h2>Ingresos ("+ing.length+" fuentes)</h2><table><thead><tr><th>Fuente</th><th>Categoría</th><th class=r>Bruto/mes</th></tr></thead><tbody>"+ingRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td colspan=2>Total Bruto</td><td class=r>"+fm(brutoTotal)+"</td></tr></tbody></table>"
+    +"<h2>Gastos ("+gasCats.length+" categorías)</h2><table><thead><tr><th>Categoría</th><th class=r>Monto/mes</th><th class=r>% Bruto</th></tr></thead><tbody>"+gasRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td>Total</td><td class=r>"+fm(totalGas)+"</td><td class=r>"+(brutoTotal>0?(totalGas/brutoTotal*100).toFixed(0)+"%":"—")+"</td></tr></tbody></table>"
     +(deu.length>0?"<h2>Deudas ("+deu.length+")</h2><table><thead><tr><th>Deuda</th><th class=r>Saldo</th><th class=r>Cuota/mes</th><th class=r>Tasa</th></tr></thead><tbody>"+deuRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td>Total</td><td class=r>"+fm(totalDeu)+"</td><td class=r>"+fm(totalCuotas)+"</td><td></td></tr></tbody></table>":"")
     +"<h2>Indicadores</h2><div class=g3><div class=k><div class=kl>Independencia</div><div class=kv>"+ind.toFixed(1)+"%</div><div class=ks>Meta: 100%+</div></div><div class=k><div class=kl>Deuda/Activos</div><div class=kv>"+dta.toFixed(1)+"%</div><div class=ks>Ideal: &lt;30%</div></div><div class=k><div class=kl>Runway</div><div class=kv>"+runway+" meses</div><div class=ks>Sin ingresos</div></div></div>"
     +"<div class=ds>Este reporte es generado por FINPATHIA con fines informativos. No constituye asesoría financiera profesional.</div>"

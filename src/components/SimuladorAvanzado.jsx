@@ -601,23 +601,72 @@ td{padding:4px 6px;border-bottom:1px solid #f0f0f0}
 <div class="sub">${scenarioName} • ${fecha}</div>
 ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(/\n/g,"<br>")}</div>` : ""}
 
-<div class="grid4">
-  <div class="kpi"><div class="label">Ingreso neto</div><div class="val gn">$${Math.round(simT.ni).toLocaleString()}</div></div>
-  <div class="kpi"><div class="label">Egresos totales</div><div class="val rd">$${Math.round(simT.te).toLocaleString()}</div></div>
-  <div class="kpi"><div class="label">Cash flow</div><div class="val ${simT.cf>=0?"gn":"rd"}">$${Math.round(simT.cf).toLocaleString()}</div></div>
-  <div class="kpi"><div class="label">Independencia</div><div class="val ${simT.ind>=100?"gn":"or"}">${(simT.ind||0).toFixed(0)}%</div></div>
+<!-- Fase 4 PDF: bloque de desglose family office reemplaza los KPIs planos.
+     Muestra Bruto → Retención → Disponible del lado ingresos y las 4 líneas
+     del desglose de egresos. Es el bloque protagonista del PDF. -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0 20px">
+
+  <!-- Card Ingresos -->
+  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px">
+    <div style="font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💰 Ingresos Mensuales</div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+      <span style="color:#374151">Bruto Total <span style="color:#9ca3af;font-size:9px">(genera activos)</span></span>
+      <span style="font-weight:500">$${Math.round(simT.brutoTotal||0).toLocaleString()}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:10px;padding-left:8px;border-left:2px solid #e5e7eb">
+      <span style="color:#8b5cf6">− Retención <span style="color:#9ca3af;font-size:9px">(recuperable)</span></span>
+      <span style="color:#8b5cf6;font-weight:500">−$${Math.round(simT.retencionMensual||0).toLocaleString()}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
+      <span style="color:#16a34a">= DISPONIBLE</span>
+      <span style="color:#16a34a">$${Math.round(simT.disponibleCuenta||0).toLocaleString()}</span>
+    </div>
+  </div>
+
+  <!-- Card Egresos -->
+  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px">
+    <div style="font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💸 Egresos Mensuales</div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+      <span style="color:#f59e0b">A. Aportes obligatorios</span>
+      <span style="color:#f59e0b">$${Math.round(simT.aportesObligatorios||0).toLocaleString()}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+      <span style="color:#374151">B. Gastos familiares</span>
+      <span>$${Math.round(simT.gastosFamiliares||0).toLocaleString()}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+      <span style="color:#374151">C. Cuotas de deudas</span>
+      <span>$${Math.round(simT.cuotasDeudas||0).toLocaleString()}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px">
+      <span style="color:#8b5cf6">D. Impuesto neto</span>
+      <span style="color:#8b5cf6">$${Math.round(simT.impuestoNeto||0).toLocaleString()}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
+      <span style="color:#dc2626">= EGRESOS TOTALES</span>
+      <span style="color:#dc2626">$${Math.round(simT.egresosTotales||simT.te||0).toLocaleString()}</span>
+    </div>
+  </div>
 </div>
 
-<div class="grid3">
-  <div class="kpi"><div class="label">Nivel</div><div class="val bl">${niveles[nivel]} (${nivel+1}/5)</div></div>
-  <div class="kpi"><div class="label">Disponible/mes</div><div class="val gn">$${Math.round(simT.cf).toLocaleString()}</div></div>
-  <div class="kpi"><div class="label">Disponible/año</div><div class="val gn">$${Math.round(simT.cf*12).toLocaleString()}</div></div>
+<!-- Cash Flow protagonista -->
+<div style="background:${simT.cf>=0?'#f0fdf4':'#fef2f2'};border:2px solid ${simT.cf>=0?'#16a34a':'#dc2626'};border-radius:10px;padding:14px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+  <div>
+    <div style="font-size:10px;color:${simT.cf>=0?'#16a34a':'#dc2626'};font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${simT.cf>=0?'💰 CASH FLOW · Para ahorrar / invertir':'⚠️ CASH FLOW NEGATIVO'}</div>
+    <div style="font-size:26px;font-weight:800;color:${simT.cf>=0?'#16a34a':'#dc2626'};margin-top:4px">$${Math.round(simT.cf).toLocaleString()}<span style="font-size:11px;color:#9ca3af;font-weight:400">/mes</span></div>
+    <div style="font-size:10px;color:#6b7280;margin-top:3px">Disponible $${Math.round(simT.disponibleCuenta||0).toLocaleString()} − Egresos $${Math.round(simT.egresosTotales||simT.te||0).toLocaleString()}</div>
+  </div>
+  <div style="display:flex;gap:22px;text-align:center">
+    <div><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">AL AÑO</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#16a34a':'#dc2626'}">$${Math.round(simT.cf*12).toLocaleString()}</div></div>
+    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${simT.ind>=100?'#16a34a':'#eab308'}">${(simT.ind||0).toFixed(0)}%</div></div>
+    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">NIVEL</div><div style="font-size:13px;font-weight:700;color:#3b82f6">${niveles[nivel]} (${nivel+1}/5)</div></div>
+  </div>
 </div>
 
 <h2>💰 Ingresos Mensuales</h2>
 <table><thead><tr><th>Fuente</th><th>Categoría</th><th style="text-align:right">Monto</th><th>Detalle</th></tr></thead>
 <tbody>${ingRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #16a34a"><td colspan="2">TOTAL INGRESOS</td><td style="text-align:right;color:#16a34a">$${Math.round(simT.ni).toLocaleString()}</td><td></td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #16a34a"><td colspan="2">TOTAL BRUTO</td><td style="text-align:right;color:#16a34a">$${Math.round(simT.brutoTotal||simT.ni||0).toLocaleString()}</td><td></td></tr></tfoot>
 </table>
 
 <h2>💳 Gastos Familiares</h2>
@@ -671,22 +720,35 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 ["Fecha:", fecha],
                 ...(scenarioDesc ? [["Descripción:", scenarioDesc]] : []),
                 [],
-                ["═══ KPIs PRINCIPALES ═══"],
-                ["Ingreso neto mensual", Math.round(simT.ni)],
-                ["Egresos totales mensual", Math.round(simT.te)],
+                ["═══ INGRESOS (Bruto → Retención → Disponible) ═══"],
+                ["Bruto Total mensual", Math.round(simT.brutoTotal || 0)],
+                ["Bruto Total anual", Math.round((simT.brutoTotal || 0) * 12)],
+                ["Retención en la fuente mensual (recuperable)", Math.round(simT.retencionMensual || 0)],
+                ["Retención anual (crédito tributario)", Math.round((simT.retencionMensual || 0) * 12)],
+                ["DISPONIBLE EN CUENTA mensual", Math.round(simT.disponibleCuenta || 0)],
+                ["DISPONIBLE EN CUENTA anual", Math.round((simT.disponibleCuenta || 0) * 12)],
+                [],
+                ["═══ EGRESOS (desglose 4 líneas) ═══"],
+                ["A. Aportes obligatorios (pensión + salud)", Math.round(simT.aportesObligatorios || 0)],
+                ["B. Gastos familiares (vivienda, educación, etc.)", Math.round(simT.gastosFamiliares || 0)],
+                ["C. Cuotas de deudas mensuales", Math.round(simT.cuotasDeudas || 0)],
+                ["D. Impuesto neto (saldo tras retención)", Math.round(simT.impuestoNeto || 0)],
+                ["EGRESOS TOTALES", Math.round(simT.egresosTotales || simT.te || 0)],
+                [],
+                ["═══ CASH FLOW ═══"],
                 ["Cash flow mensual", Math.round(simT.cf)],
                 ["Cash flow anual", Math.round(simT.cf*12)],
+                ["Cash flow diario", Math.round(simT.cf/30)],
+                [],
+                ["═══ NIVEL DE LIBERTAD ═══"],
                 ["Índice de independencia (%)", Number((simT.ind||0).toFixed(2))],
                 ["Nivel de libertad", `${niveles[nivel]} (${nivel+1}/5)`],
-                [],
-                ["═══ ANÁLISIS ═══"],
                 ["Estado independencia", simT.ind>=100?"Alcanzada":"En construcción"],
                 ["Estado cash flow", simT.cf>=0?"Positivo":"Negativo"],
-                ["Disponible por día", Math.round(simT.cf/30)],
-                ["Falta para independencia (mensual)", Math.max(0, Math.round(simT.te - simT.ni))],
+                ["Falta para independencia (mensual)", Math.max(0, Math.round((simT.egresosTotales || simT.te) - (simT.disponibleCuenta || simT.ni)))],
               ];
               const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
-              wsResumen["!cols"] = [{wch:38},{wch:28}];
+              wsResumen["!cols"] = [{wch:48},{wch:22}];
               XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
 
               // ── HOJA 2: Ingresos ──
@@ -703,7 +765,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 ]);
               });
               ingresosData.push([]);
-              ingresosData.push(["TOTAL","",Math.round(simT.ni),"","","",Math.round(simT.ni*12)]);
+              ingresosData.push(["TOTAL BRUTO","",Math.round(simT.brutoTotal||simT.ni||0),"","","",Math.round((simT.brutoTotal||simT.ni||0)*12)]);
               const wsIng = XLSX.utils.aoa_to_sheet(ingresosData);
               wsIng["!cols"] = [{wch:30},{wch:20},{wch:16},{wch:8},{wch:18},{wch:12},{wch:16}];
               XLSX.utils.book_append_sheet(wb, wsIng, "Ingresos");
