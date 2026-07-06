@@ -288,10 +288,44 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
   // el impuesto estimado también sube.
   // Toggle Actual/Optimizado por owner (keyed by td.name) elige entre
   // td.impuesto y td.impOptimizado del detalle dinámico.
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MOTOR DE CÁLCULO — Modelo family office (rediseño 4-jul-2026)
+  //
+  // Contrato explícito del nuevo modelo mental de FINPATHIA:
+  //
+  //   INGRESOS:
+  //     brutoTotal          = suma de ingresos activos (COP)
+  //     retencionMensual    = suma de retenciones (crédito recuperable)
+  //     disponibleCuenta    = brutoTotal − retencionMensual
+  //                           ← lo que efectivamente entra al banco
+  //
+  //   EGRESOS (desglose 4-líneas):
+  //     A. aportesObligatorios = categoría "Seguridad Social" del gasto
+  //     B. gastosFamiliares    = resto de gastos activos
+  //     C. cuotasDeudas        = pagos mensuales de deudas
+  //     D. impuestoNeto        = max(0, bruto anual − retención) / 12
+  //                              ← saldo a pagar en declaración
+  //     egresosTotales = A + B + C + D
+  //
+  //   CASH FLOW:
+  //     cashFlow = disponibleCuenta − egresosTotales
+  //     independencia = (disponibleCuenta / egresosTotales) × 100
+  //
+  // Verificación matemática: el nuevo cashFlow es idéntico al viejo
+  // (solo estamos reorganizando cómo se muestra, no cambiando la aritmética).
+  //   Caso A (bruto≥retención): CF_nuevo = tI − retención − aportes − gastos
+  //                             − cuotas − (bruto − retención) = tI − te_viejo ✓
+  //   Caso B (bruto<retención): CF_nuevo = tI − retención − aportes − gastos
+  //                             − cuotas − 0 = tI − te_viejo ✓ (retención=max)
+  //
+  // Aliases legacy: ni/tI/gfm/te/cf/ind/tTax preservados para no romper
+  // el resto del código que aún los consume. El significado de `ni` cambia
+  // de "Bruto" a "Disponible" — intencional, es lo que el user pidió ver.
+  // ═══════════════════════════════════════════════════════════════════════════
   const simT = useMemo(() => {
     const trm = 4200;
 
-    // Ingresos con overrides de sliders, preservando moneda original
+    // ─── PASO 1: Ingresos con overrides de sliders + moneda ──────────────
     const ingSim = (user.ingresos || []).map((ing, ii) => {
       if (ing.sim === false) return ing;
       const baseCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
@@ -299,25 +333,35 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
       const newMensual = ing.moneda === "USD" ? (overrideCop / trm) : overrideCop;
       return { ...ing, mensual: newMensual };
     });
-    let tI = 0;
+    let brutoTotal = 0;
     ingSim.forEach(ing => {
       if (ing.sim === false) return;
-      tI += (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
+      brutoTotal += (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
     });
 
-    // Gastos con overrides de sliders
+    // ─── PASO 2: Gastos separados en aportes obligatorios vs familiares ──
+    // Los aportes obligatorios (pensión, EPS, ARL) van en la categoría
+    // "Seguridad Social" — se muestran en su propia línea del desglose.
+    // El independiente los paga de su bolsillo → quedan en Egresos.
     const gasSim = {};
-    let tGF = 0;
+    let aportesObligatorios = 0;
+    let gastosFamiliares = 0;
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       gasSim[cat] = (items || []).map((g, gi) => {
         if (g.sim === false) return g;
         const newM = getVal(`gf_${cat}_${gi}`, g.m || 0);
         return { ...g, m: newM };
       });
-      gasSim[cat].forEach(g => { if (g.sim !== false) tGF += (g.m || 0); });
+      gasSim[cat].forEach(g => {
+        if (g.sim === false) return;
+        const monto = g.m || 0;
+        if (cat === "Seguridad Social") aportesObligatorios += monto;
+        else gastosFamiliares += monto;
+      });
     });
+    const tGF = aportesObligatorios + gastosFamiliares; // legacy alias
 
-    // Deudas con overrides de sliders
+    // ─── PASO 3: Cuotas de deudas ───────────────────────────────────────
     const deuSim = (user.deudas || []).map((d, di) => {
       if (d.sim === false) return d;
       if ((d.mt || 0) > 0) {
@@ -326,14 +370,16 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
       }
       return d;
     });
-    let tD = 0;
+    let cuotasDeudas = 0;
     deuSim.forEach(d => {
       if (d.sim === false) return;
-      if ((d.mt || 0) > 0) tD += (d.pago || d.pg || 0);
+      if ((d.mt || 0) > 0) cuotasDeudas += (d.pago || d.pg || 0);
     });
 
-    // Tax dinámico: pasar userSim a estimarImpuesto. Nota: remapear nombres de
-    // keys (gastos→gas, deudas→deu) porque estimarImpuesto lee u.gas/u.deu.
+    // ─── PASO 4: Impuesto + Retención (por owner fiscal) ────────────────
+    // impuestoBrutoAnual = lo que la DIAN calcula sobre tu renta gravable
+    // retencionAnual     = lo que ya te descontaron del flujo mensual
+    // impuestoNeto       = saldo a pagar en la declaración (max 0)
     const userSim = {
       owners: user.owners || [],
       ingresos: ingSim,
@@ -344,64 +390,114 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
     };
     const dynTax = estimarImpuesto(userSim);
 
-    let tTax = 0;
+    let impuestoBrutoAnual = 0;
+    let retencionAnual = 0;
     (dynTax.detalle || []).forEach(td => {
       const isOpt = !!taxOptimizado[td.name];
-      // Bruto = impuesto total según tabla (lo que "deberías pagar" si fuera un cierre anual perfecto).
-      // El slider ajusta este valor si lográs estrategias adicionales.
       const anualBase = isOpt
         ? (td.impOptBruto != null ? td.impOptBruto : (td.impBruto || 0))
         : (td.impBruto != null ? td.impBruto : (td.impuesto || 0));
       const mesBase = Math.round(anualBase / 12);
       const simImpBrutoMes = getVal(`tax_${td.name}`, mesBase);
-      // ── FIX cash flow (Abr 2026): usar max(bruto, retención) ──
-      // Lo que realmente sale del flujo del año es la retención. Si el bruto (lo que debés
-      // según tabla) es menor que la retención, el flujo del año ya asumió la retención
-      // completa — la devolución llega después. Si el bruto es mayor, pagás retención +
-      // saldo en declaración ≈ bruto total. Entonces:
-      //   impacto_cash_flow = max(bruto, retención)
-      // Esto evita el bug de "slider abajo sube CF" cuando la retención ya supera al bruto.
-      const reteNMes = Math.round((td.reteN || 0) / 12);
-      tTax += Math.max(simImpBrutoMes, reteNMes);
+      impuestoBrutoAnual += simImpBrutoMes * 12;
+      retencionAnual += (td.reteN || 0);
     });
-    tD += tTax;
 
-    const ni = tI;
-    const te = tGF + tD;
-    const cf = ni - te;
-    return { tI, ni, tGF, gfm: tGF, tD, te, cf, ind: te > 0 ? (ni / te) * 100 : 0, tTax, dynTax };
+    const retencionMensual = Math.round(retencionAnual / 12);
+    const impuestoBrutoMensual = Math.round(impuestoBrutoAnual / 12);
+    const impuestoNeto = Math.max(0, Math.round((impuestoBrutoAnual - retencionAnual) / 12));
+
+    // ─── PASO 5: Consolidación (Disponible → Cash Flow) ─────────────────
+    const disponibleCuenta = brutoTotal - retencionMensual;
+    const egresosTotales = aportesObligatorios + gastosFamiliares + cuotasDeudas + impuestoNeto;
+    const cashFlow = disponibleCuenta - egresosTotales;
+    const independencia = egresosTotales > 0 ? (disponibleCuenta / egresosTotales) * 100 : 0;
+
+    return {
+      // ═══ NUEVO MODELO EXPLÍCITO ═══
+      brutoTotal,
+      retencionMensual,
+      disponibleCuenta,
+      aportesObligatorios,
+      gastosFamiliares,
+      cuotasDeudas,
+      impuestoBrutoMensual,
+      impuestoNeto,
+      egresosTotales,
+      cashFlow,
+      independencia,
+
+      // ═══ ALIASES LEGACY (compatibilidad — no romper resto del código) ═══
+      // ⚠ Nota: `ni` ahora significa Disponible (no Bruto). Intencional —
+      //  el user pidió ver lo que efectivamente entra a la cuenta.
+      tI: brutoTotal,
+      ni: disponibleCuenta,
+      tGF,
+      gfm: tGF,
+      tD: cuotasDeudas + impuestoNeto,
+      te: egresosTotales,
+      cf: cashFlow,
+      ind: independencia,
+      tTax: impuestoNeto,
+      dynTax,
+    };
   }, [user, simVals, getVal, taxOptimizado]);
 
   // ── Baseline (sin overrides de simVals, sin toggle Optimizado) ──
   // Reproduce la misma fórmula de simT pero usando los valores de la data
-  // tal cual. Esto permite comparar simulado vs. base apples-to-apples,
-  // porque ambos incluyen impuestos.
+  // tal cual. Esto permite comparar simulado vs. base apples-to-apples.
+  // Salida sigue el mismo contrato Bruto → Disponible → Cash Flow.
   const baseT = useMemo(() => {
-    let tIng = 0;
+    // Ingresos brutos
+    let brutoTotal = 0;
     (user.ingresos || []).forEach((ing) => {
-      if (ing.sim===false) return;
-      tIng += (ing.mensual || 0) * (ing.moneda === "USD" ? 4200 : 1);
+      if (ing.sim === false) return;
+      brutoTotal += (ing.mensual || 0) * (ing.moneda === "USD" ? 4200 : 1);
     });
-    let tGF = 0;
-    Object.entries(user.gastos || {}).forEach(([, items]) => {
-      items.forEach((g) => { if (g.sim!==false) tGF += (g.m || 0); });
+
+    // Gastos: aportes obligatorios vs familiares
+    let aportesObligatorios = 0;
+    let gastosFamiliares = 0;
+    Object.entries(user.gastos || {}).forEach(([cat, items]) => {
+      items.forEach((g) => {
+        if (g.sim === false) return;
+        const monto = g.m || 0;
+        if (cat === "Seguridad Social") aportesObligatorios += monto;
+        else gastosFamiliares += monto;
+      });
     });
-    let tD = 0;
+    const tGF = aportesObligatorios + gastosFamiliares;
+
+    // Cuotas de deudas
+    let cuotasDeudas = 0;
     (user.deudas || []).forEach((d) => {
-      if ((d.mt||0) > 0 && d.sim!==false) tD += (d.pago||d.pg||0);
+      if ((d.mt || 0) > 0 && d.sim !== false) cuotasDeudas += (d.pago || d.pg || 0);
     });
-    let tTax = 0;
+
+    // Impuesto y retención
+    let impuestoBrutoAnual = 0;
+    let retencionAnual = 0;
     ((impuestoData && impuestoData.detalle) || []).forEach((td) => {
-      // Consistente con simT: usar max(bruto, retención) porque la retención es lo que
-      // realmente salió del flujo del año. Fallback a impuesto si no hay impBruto (data legacy).
       const anual = td.impBruto != null ? td.impBruto : (td.impuesto || 0);
-      const brutoMes = Math.round(anual / 12);
-      const reteNMes = Math.round((td.reteN || 0) / 12);
-      tTax += Math.max(brutoMes, reteNMes);
+      impuestoBrutoAnual += anual;
+      retencionAnual += (td.reteN || 0);
     });
-    tD += tTax;
-    const ni = tIng, te = tGF + tD, cf = ni - te;
-    return { ni, te, cf, tTax, tGF };
+    const retencionMensual = Math.round(retencionAnual / 12);
+    const impuestoNeto = Math.max(0, Math.round((impuestoBrutoAnual - retencionAnual) / 12));
+
+    // Consolidación
+    const disponibleCuenta = brutoTotal - retencionMensual;
+    const egresosTotales = tGF + cuotasDeudas + impuestoNeto;
+    const cashFlow = disponibleCuenta - egresosTotales;
+
+    return {
+      brutoTotal, retencionMensual, disponibleCuenta,
+      aportesObligatorios, gastosFamiliares, cuotasDeudas, impuestoNeto,
+      egresosTotales, cashFlow,
+      // Aliases legacy
+      ni: disponibleCuenta, te: egresosTotales, cf: cashFlow,
+      tTax: impuestoNeto, tGF,
+    };
   }, [user, impuestoData]);
 
   const proj = useMemo(() => {

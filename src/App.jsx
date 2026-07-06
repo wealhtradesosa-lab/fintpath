@@ -307,7 +307,67 @@ const inferType=(i)=>{let tp=String(i.tp||i.tipo||i.type||"").trim();if(!tp||!is
 // ═══ ESTIMACIÓN TRIBUTARIA — importada desde src/lib/taxCO.js ═══
 // UVT, calcImpRenta y estimarImpuesto vienen del import al tope del archivo.
 
-const cT=(inv,ds,gf,ing)=>{let ab=0,ti=0,tg=0;(inv||[]).forEach(i=>{if(i.sim!==false)ab+=i.va});const ingT=(ing||[]).reduce((s,i)=>i.sim===false?s:s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);ti=ingT;const td=(ds||[]).reduce((s,d)=>d.sim===false?s:s+(d.mt||0),0),tc=(ds||[]).filter(d=>(d.mt||0)>0&&d.sim!==false).reduce((s,d)=>s+(d.pg||0),0),gfm=Object.values(gf||{}).flat().reduce((s,g)=>g.sim===false?s:s+(g.m||0),0),ni=ti-tg,te=gfm+tc,cf=ni-te;return{ab,td,nw:ab-td,ti,tg,ni,gfm,tc,te,cf,ind:te>0?(ni/te)*100:0,dta:ab>0?(td/ab)*100:0,ingT}};
+// ═══════════════════════════════════════════════════════════════════════════
+// cT — Motor de cálculo de totales del Dashboard (misma arquitectura que
+// simT del Simulador, refactor 4-jul-2026).
+//
+// Entrada:
+//   inv, ds, gf, ing → data del user (inv, deudas, gastos, ingresos)
+//   taxData          → resultado de estimarImpuesto(u), opcional. Si viene,
+//                      calcula retención + impuesto neto. Si no, quedan 0.
+//
+// Contrato de salida idéntico a simT del Simulador (consistencia total):
+//   brutoTotal, retencionMensual, disponibleCuenta,
+//   aportesObligatorios, gastosFamiliares, cuotasDeudas, impuestoNeto,
+//   egresosTotales, cashFlow, independencia,
+//   + aliases legacy: ni, ti, tg, gfm, tc, te, cf, ind, ab, td, nw, dta,
+//     ingT, tTax
+// ═══════════════════════════════════════════════════════════════════════════
+const cT=(inv,ds,gf,ing,taxData)=>{
+  let ab=0, aportesObligatorios=0, gastosFamiliares=0;
+  (inv||[]).forEach(i=>{if(i.sim!==false)ab+=i.va});
+  const brutoTotal=(ing||[]).reduce((s,i)=>i.sim===false?s:s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);
+  const td=(ds||[]).reduce((s,d)=>d.sim===false?s:s+(d.mt||0),0);
+  const cuotasDeudas=(ds||[]).filter(d=>(d.mt||0)>0&&d.sim!==false).reduce((s,d)=>s+(d.pg||0),0);
+  // Aportes obligatorios (categoría "Seguridad Social") separados de gastos familiares
+  Object.entries(gf||{}).forEach(([cat,items])=>{
+    (items||[]).forEach(g=>{
+      if(g.sim===false)return;
+      if(cat==="Seguridad Social") aportesObligatorios+=(g.m||0);
+      else gastosFamiliares+=(g.m||0);
+    });
+  });
+  const gfm=aportesObligatorios+gastosFamiliares;
+  // Impuesto + retención (opcional). Sin taxData → quedan en 0.
+  let impuestoBrutoAnual=0, retencionAnual=0;
+  if(taxData&&Array.isArray(taxData.detalle)){
+    taxData.detalle.forEach(tx=>{
+      impuestoBrutoAnual+=(tx.impBruto!=null?tx.impBruto:(tx.impuesto||0));
+      retencionAnual+=(tx.reteN||0);
+    });
+  }
+  const retencionMensual=Math.round(retencionAnual/12);
+  const impuestoBrutoMensual=Math.round(impuestoBrutoAnual/12);
+  const impuestoNeto=Math.max(0,Math.round((impuestoBrutoAnual-retencionAnual)/12));
+  // Consolidación (idéntico contrato al simT del Simulador)
+  const disponibleCuenta=brutoTotal-retencionMensual;
+  const egresosTotales=aportesObligatorios+gastosFamiliares+cuotasDeudas+impuestoNeto;
+  const cashFlow=disponibleCuenta-egresosTotales;
+  const independencia=egresosTotales>0?(disponibleCuenta/egresosTotales)*100:0;
+  return{
+    // ═══ Nuevo modelo explícito ═══
+    brutoTotal, retencionMensual, disponibleCuenta,
+    aportesObligatorios, gastosFamiliares, cuotasDeudas,
+    impuestoBrutoMensual, impuestoNeto,
+    egresosTotales, cashFlow, independencia,
+    // ═══ Legacy aliases (compatibilidad) ═══
+    ab, td, nw:ab-td,
+    ti:brutoTotal, tg:0, ni:disponibleCuenta,
+    gfm, tc:cuotasDeudas, te:egresosTotales, cf:cashFlow,
+    ind:independencia, dta:ab>0?(td/ab)*100:0, ingT:brutoTotal,
+    tTax:impuestoNeto,
+  };
+};
 
 const Cd=({children,s,...p})=><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",...s}} {...p}>{children}</div>;
 const St=({l,v,sub,cl})=><div style={{padding:"16px 20px"}}><div style={{fontSize:10,color:T.tx3,textTransform:"uppercase",letterSpacing:1,fontWeight:600,marginBottom:6}}>{l}</div><div style={{fontSize:24,fontWeight:700,color:cl||T.tx,letterSpacing:"-0.03em"}}>{v}</div>{sub&&<div style={{fontSize:12,color:T.tx3,marginTop:3}}>{sub}</div>}</div>;
@@ -1014,7 +1074,7 @@ export default function FinPath(){
   // Usar este en gates de features. plan==="pro" es solo para "soy plan Pro
   // exacto" (ej. mostrar 'Plan actual' en pricing card del plan Pro).
   const hasProAccess=plan==="pro"||plan==="pro_familiar"||plan==="advisor_pro";
-  const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos):{},[u]);
+  const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u)):{},[u]);
   const ib=useMemo(()=>{if(!u?.ibk?.length)return{tc:0,tv:0,pnl:0,pp:0,pos:[]};let tc=0,tv=0;const pos=u.ibk.map(p=>{const va=p.sh*p.pr,cbb=p.sh*p.cb,pnl=va-cbb,pp=cbb>0?((va/cbb)-1)*100:0,up=p.pr>0?((p.tg/p.pr)-1)*100:0;tc+=cbb;tv+=va;return{...p,va,cbb,pnl,pp,up}});return{tc,tv,pnl:tv-tc,pp:tc>0?((tv/tc)-1)*100:0,pos}},[u?.ibk]);
   const pen=useMemo(()=>{if(!u)return{};const p=u.pen||{},yrs=Math.max(0,(p.rAge||60)-(p.age||35)),mr=(p.ret||7)/100/12;let fv=+(p.cur||0);for(let m=0;m<yrs*12;m++)fv=fv*(1+mr)+(+(p.sv||0));const rfv=fv/Math.pow(1+(p.inf||3)/100,yrs),mo=rfv>0?rfv/360:0;const proj=[];let rv=+(p.cur||0);for(let y=0;y<=yrs;y++){proj.push({age:(p.age||35)+y,val:Math.round(rv)});for(let m=0;m<12&&y<yrs;m++)rv=rv*(1+mr)+(+(p.sv||0))}let ba=0;const bc=(p.btcC||56)/100,bp=p.btcP||50000;for(let y=1;y<=yrs;y++)for(let m=1;m<=12;m++)ba+=(+(p.sv||0))/(bp*Math.pow(1+bc,((y-1)*12+m)/12));const bfv=ba*bp*Math.pow(1+bc,yrs),bmo=(bfv*.04)/12;return{yrs,fv:Math.round(rfv),mo:Math.round(mo),ok:mo>=(p.des||6000),gap:Math.max(0,(p.des||6000)-mo),proj,ba,bfv,bmo:Math.round(bmo)}},[u?.pen]);
   const simT=useMemo(()=>{const im={actual:1,conservador:.8,optimista:1.3,crisis:.6},gm={actual:1,conservador:1.1,optimista:.85,crisis:1.05};const sni=t.ni*(im[simS]||1),sgf=t.gfm*(gm[simS]||1),ste=sgf+t.tc,scf=sni-ste;return{...t,ni:sni,gfm:sgf,te:ste,cf:scf,ind:ste>0?(sni/ste)*100:0}},[t,simS]);
