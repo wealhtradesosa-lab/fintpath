@@ -884,15 +884,23 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               )}
 
               <In l={(() => {
-                // Label dinámico según frecuencia + modoIngreso.
+                // Label del input MONTO simplificado (18-jul-2026 noche):
+                // Santiago: "deberia decir monto no monto mensual?" — tiene razón,
+                // el template + toggle ya explican el modo. El label solo dice "Monto".
+                // Excepciones:
+                //  - Salario/Honorarios: preserva label BRUTO (fiscal crítico)
+                //  - Modo avanzado con freq no-mensual: mantiene labelMontoSegunFrecuencia
                 const isSalarioLike = ["Salario","Honorarios"].includes(form.categoria);
                 if (isSalarioLike) return "💵 Monto BRUTO mensual (antes de descuentos)";
                 const freq = form.frecuencia || "mensual";
-                const emoji = { mensual: "📅", trimestral: "🗓️", semestral: "📆", anual: "🎯", unico: "💥" }[freq];
-                // Si eligió "Total del año" (modoIngreso=anual), el label lo refleja
-                if (modoIngreso === "anual") return `💵 ${emoji} Total del año`;
-                if (freq !== "mensual") return `💵 ${emoji} ${labelMontoSegunFrecuencia(freq)}`;
-                return `💵 ${emoji} Monto mensual`;
+                // Modo avanzado con freq no-mensual: mostrar label específico
+                const esAvanzado = templateElegido?.id === "avanzado";
+                if (esAvanzado && freq !== "mensual") {
+                  if (modoIngreso === "anual") return "💵 🎯 Total del año";
+                  return `💵 ${labelMontoSegunFrecuencia(freq)}`;
+                }
+                // Templates simples: solo "Monto" (el toggle explica el modo)
+                return "💵 Monto";
               })()} value={form.mensual} onChange={(v) => {
                 const nf = { mensual: v };
                 const m = Number(v) || 0;

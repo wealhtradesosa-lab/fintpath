@@ -896,10 +896,15 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   <div style={{gridColumn:"1/-1"}}>
                     <In
                       l={(() => {
+                        // Label del input MONTO simplificado (18-jul-2026 noche):
+                        // El template + toggle ya explican el modo. Label solo dice "Monto".
                         const freq = form.frecuencia || "mensual";
-                        if (modoIngreso === "anual") return "Total del año";
-                        if (freq === "mensual") return "Monto mensual";
-                        return labelMontoSegunFrecuencia(freq);
+                        const esAvanzado = templateElegido?.id === "avanzado";
+                        if (esAvanzado && freq !== "mensual") {
+                          if (modoIngreso === "anual") return "Total del año";
+                          return labelMontoSegunFrecuencia(freq);
+                        }
+                        return "Monto";
                       })()}
                       value={form.m}
                       onChange={(v) => setForm((p) => ({ ...p, m: v }))}
