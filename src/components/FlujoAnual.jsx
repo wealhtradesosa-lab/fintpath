@@ -22,7 +22,8 @@
 import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, Legend, Line, ComposedChart, ReferenceLine
+  CartesianGrid, Legend, Line, ComposedChart, ReferenceLine,
+  PieChart, Pie, Cell
 } from "recharts";
 import PageHeader from "./PageHeader";
 import { montoDelMes, MESES, getMesActual, montoPromedioMensual } from "../lib/flowHelpers.js";
@@ -173,6 +174,91 @@ export default function FlujoAnual({ user, trm = 4200 }) {
       saldoAcumulado,
     };
   }, [datosMensuales, año, añoDefault, mesActualHoy]);
+
+  // ─── Composición del año por categoría (18-jul-2026 noche) ──────────
+  // Santiago: "sería bueno ver una gráfica de cómo están compuestos los
+  // ingresos y los gastos en % y valor".
+  // Calcula el TOTAL anual por categoría para pintar 2 donut charts.
+  const composicion = useMemo(() => {
+    const trmR = trm || 4200;
+    const ingresos = user?.ingresos || [];
+    const gastos = user?.gas || user?.gastos || {};
+    const deudas = user?.deu || user?.deudas || [];
+
+    // Impuestos anualizados (mismo cálculo que en datosMensuales)
+    const taxData = estimarImpuesto(user);
+    let impuestoBrutoAnual = 0;
+    let retencionAnual = 0;
+    (taxData?.detalle || []).forEach(td => {
+      impuestoBrutoAnual += (td.impBruto != null ? td.impBruto : (td.impuesto || 0));
+      retencionAnual += (td.reteN || 0);
+    });
+    const impuestoNetoAnual = Math.max(0, impuestoBrutoAnual - retencionAnual);
+
+    // ─── INGRESOS por categoría ─────────────────────────────────
+    const ingresosPorCat = {};
+    ingresos.forEach(ing => {
+      if (ing.sim === false) return;
+      const cat = ing.categoria || "Otros";
+      // Sumar los 12 meses del año usando el motor (respeta variable, vigencia, etc)
+      const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trmR : 1);
+      let totalAño = 0;
+      for (let m = 1; m <= 12; m++) {
+        totalAño += montoDelMes({ ...ing, mensual: montoBase }, año, m);
+      }
+      if (totalAño > 0) ingresosPorCat[cat] = (ingresosPorCat[cat] || 0) + totalAño;
+    });
+
+    // ─── EGRESOS por categoría ────────────────────────────────
+    const egresosPorCat = {};
+    Object.entries(gastos).forEach(([cat, items]) => {
+      (items || []).forEach(g => {
+        if (g.sim === false) return;
+        let totalAño = 0;
+        for (let m = 1; m <= 12; m++) {
+          totalAño += montoDelMes(g, año, m);
+        }
+        if (totalAño > 0) egresosPorCat[cat] = (egresosPorCat[cat] || 0) + totalAño;
+      });
+    });
+
+    // Cuotas de deudas (agrupadas en una categoría)
+    const cuotasAnual = deudas
+      .filter(d => (d.mt || 0) > 0 && d.sim !== false)
+      .reduce((s, d) => s + (d.pg || d.pago || 0), 0) * 12;
+    if (cuotasAnual > 0) egresosPorCat["💳 Cuotas de deudas"] = cuotasAnual;
+
+    // Impuesto neto (después de retención) como categoría separada
+    if (impuestoNetoAnual > 0) egresosPorCat["📋 Impuesto de renta"] = impuestoNetoAnual;
+
+    // ─── Formato para PieChart ───────────────────────────────────
+    // Paleta de colores diferenciada por categoría (rotan si hay muchas)
+    const paletaIng = ["#22c55e", "#16a34a", "#4ade80", "#86efac", "#bbf7d0", "#059669", "#10b981", "#34d399"];
+    const paletaEgr = ["#ef4444", "#dc2626", "#f87171", "#fca5a5", "#fecaca", "#b91c1c", "#f97316", "#fb923c", "#fdba74"];
+
+    const totalIng = Object.values(ingresosPorCat).reduce((s, v) => s + v, 0);
+    const totalEgr = Object.values(egresosPorCat).reduce((s, v) => s + v, 0);
+
+    const dataIngresos = Object.entries(ingresosPorCat)
+      .sort((a, b) => b[1] - a[1]) // orden descendente por valor
+      .map(([name, value], i) => ({
+        name,
+        value,
+        pct: totalIng > 0 ? (value / totalIng) * 100 : 0,
+        color: paletaIng[i % paletaIng.length],
+      }));
+
+    const dataEgresos = Object.entries(egresosPorCat)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, value], i) => ({
+        name,
+        value,
+        pct: totalEgr > 0 ? (value / totalEgr) * 100 : 0,
+        color: paletaEgr[i % paletaEgr.length],
+      }));
+
+    return { dataIngresos, dataEgresos, totalIng, totalEgr };
+  }, [user, trm, año]);
 
   // ─── Custom tooltip del gráfico ────────────────────────────────────
   const CustomTooltip = ({ active, payload, label }) => {
@@ -344,6 +430,154 @@ export default function FlujoAnual({ user, trm = 4200 }) {
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* ═══ COMPOSICIÓN DEL AÑO — 2 DONUT CHARTS (18-jul-2026 noche) ═══
+          Santiago: "sería bueno ver cómo están compuestos los ingresos y
+          los gastos en % y valor". */}
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Composición del año {año}</div>
+          <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>De dónde vienen tus ingresos y a dónde van tus egresos, en % y valor absoluto.</div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          {/* ─── INGRESOS ─── */}
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}` }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.gn }}>💰 Ingresos</div>
+              <div style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace" }}>
+                Total: <span style={{ color: T.gn, fontWeight: 700 }}>${Math.round(composicion.totalIng).toLocaleString("es-CO")}</span>
+              </div>
+            </div>
+
+            {composicion.dataIngresos.length === 0 ? (
+              <div style={{ padding: 40, textAlign: "center", color: T.txt3, fontSize: 12 }}>
+                Aún no hay ingresos registrados
+              </div>
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={composicion.dataIngresos}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      labelLine={false}
+                      label={({ pct }) => pct >= 5 ? `${pct.toFixed(0)}%` : ""}
+                    >
+                      {composicion.dataIngresos.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} stroke={T.card} strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value, name, props) => [
+                        `$${Math.round(value).toLocaleString("es-CO")} (${props.payload.pct.toFixed(1)}%)`,
+                        name
+                      ]}
+                      contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "8px 12px", fontSize: 12 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+
+                {/* Leyenda con % y $ para cada categoría */}
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 5 }}>
+                  {composicion.dataIngresos.map((d, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 11 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, flex: 1 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }}></div>
+                        <span style={{ color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
+                        <span style={{ color: T.txt2, fontWeight: 600, fontFamily: "monospace" }}>{d.pct.toFixed(1)}%</span>
+                        <span style={{ color: T.txt3, fontFamily: "monospace", minWidth: 100, textAlign: "right" }}>${Math.round(d.value).toLocaleString("es-CO")}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ─── EGRESOS ─── */}
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}` }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.rd }}>💸 Egresos</div>
+              <div style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace" }}>
+                Total: <span style={{ color: T.rd, fontWeight: 700 }}>${Math.round(composicion.totalEgr).toLocaleString("es-CO")}</span>
+              </div>
+            </div>
+
+            {composicion.dataEgresos.length === 0 ? (
+              <div style={{ padding: 40, textAlign: "center", color: T.txt3, fontSize: 12 }}>
+                Aún no hay egresos registrados
+              </div>
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={composicion.dataEgresos}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      labelLine={false}
+                      label={({ pct }) => pct >= 5 ? `${pct.toFixed(0)}%` : ""}
+                    >
+                      {composicion.dataEgresos.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} stroke={T.card} strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value, name, props) => [
+                        `$${Math.round(value).toLocaleString("es-CO")} (${props.payload.pct.toFixed(1)}%)`,
+                        name
+                      ]}
+                      contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "8px 12px", fontSize: 12 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 5 }}>
+                  {composicion.dataEgresos.map((d, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 11 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, flex: 1 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }}></div>
+                        <span style={{ color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
+                        <span style={{ color: T.txt2, fontWeight: 600, fontFamily: "monospace" }}>{d.pct.toFixed(1)}%</span>
+                        <span style={{ color: T.txt3, fontFamily: "monospace", minWidth: 100, textAlign: "right" }}>${Math.round(d.value).toLocaleString("es-CO")}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Nota final: ratio ahorro */}
+        {composicion.totalIng > 0 && (
+          <div style={{ marginTop: 16, padding: "12px 14px", background: T.bg3, borderRadius: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 11, color: T.txt3 }}>
+              <span style={{ fontWeight: 700, color: T.txt2 }}>Excedente/Déficit del año:</span>
+              {" "}el {composicion.totalIng > 0 ? ((composicion.totalIng - composicion.totalEgr) / composicion.totalIng * 100).toFixed(1) : 0}% de tus ingresos queda libre después de todos los egresos.
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 800, fontFamily: "monospace", color: (composicion.totalIng - composicion.totalEgr) >= 0 ? T.gn : T.rd }}>
+              ${Math.round(composicion.totalIng - composicion.totalEgr).toLocaleString("es-CO")}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ═══ TABLA DE DETALLE POR MES ═══ */}
