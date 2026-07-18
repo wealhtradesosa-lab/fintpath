@@ -68,6 +68,29 @@ export const TEMPLATES = [
     color: "#a78bfa",
   },
   {
+    id: "variable-mensual",
+    emoji: "📊",
+    titulo: () => "Cambia mes a mes",
+    descripcion: (tipo) => tipo === "ingreso"
+      ? "Diferente monto cada mes (ej: comisiones, honorarios variables)"
+      : "Diferente monto cada mes (ej: gastos irregulares)",
+    ejemplo: (tipo) => tipo === "ingreso"
+      ? "Ej: $15M en ene-feb, $8M en mar-abr, $40M pico en may..."
+      : "Ej: gastos de viaje, servicios variables",
+    // Preset: 12 meses en 0 — el user los llena en la tabla
+    preset: {
+      frecuencia: "variable",
+      desdeMes: 1,
+      hastaMes: 12,
+      mesPago: 1,
+      montosMensuales: new Array(12).fill(0),
+    },
+    // Solo muestra la tabla mensual (nada del selector normal)
+    camposVisibles: ["tablaMensual"],
+    modoIngresoDefault: "porPago",
+    color: "#22d3ee",
+  },
+  {
     id: "avanzado",
     emoji: "⚙️",
     titulo: () => "Otras opciones",
@@ -80,27 +103,27 @@ export const TEMPLATES = [
   },
 ];
 
-// Detecta cuál template corresponde a un item existente basado en su
-// frecuencia y vigencia. Uso: al editar un ingreso/gasto, preseleccionar
-// el template correcto en lugar de mostrar todos los campos.
+// Detecta cuál template corresponde a un item existente al editarlo.
+// Devuelve el template que mejor calza con la frecuencia/vigencia del item.
+// Fallback: template "avanzado" que muestra todos los campos.
 export function detectarTemplate(item) {
   const freq = item?.frecuencia || "mensual";
-  const desdeMes = Number(item?.desdeMes) || 1;
-  const hastaMes = Number(item?.hastaMes) || 12;
-
+  if (freq === "variable") {
+    return TEMPLATES.find(t => t.id === "variable-mensual") || TEMPLATES[TEMPLATES.length - 1];
+  }
   if (freq === "mensual") {
-    // Mensual todo el año → template simple sin chips ni vigencia
-    if (desdeMes === 1 && hastaMes === 12) {
-      return TEMPLATES.find(t => t.id === "mensual-todo-año");
+    const desde = Number(item?.desdeMes) || 1;
+    const hasta = Number(item?.hastaMes) || 12;
+    if (desde === 1 && hasta === 12) {
+      return TEMPLATES.find(t => t.id === "mensual-todo-año") || TEMPLATES[0];
     }
-    // Mensual con vigencia limitada → template con Desde/Hasta
-    return TEMPLATES.find(t => t.id === "mensual-limitado");
+    return TEMPLATES.find(t => t.id === "mensual-limitado") || TEMPLATES[0];
   }
-  if (freq === "anual") {
-    return TEMPLATES.find(t => t.id === "anual");
+  if (freq === "anual" || freq === "unico") {
+    return TEMPLATES.find(t => t.id === "anual") || TEMPLATES[0];
   }
-  // Todo lo demás (trimestral, semestral, único) → template avanzado
-  return TEMPLATES.find(t => t.id === "avanzado");
+  // Trimestral, semestral, o cualquier otro caso → avanzado
+  return TEMPLATES.find(t => t.id === "avanzado") || TEMPLATES[TEMPLATES.length - 1];
 }
 
 export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T, onCancel }) {

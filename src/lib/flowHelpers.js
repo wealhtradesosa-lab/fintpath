@@ -37,6 +37,7 @@
 // ── Constantes ───────────────────────────────────────────────────────────
 export const FRECUENCIAS = [
   { v: "mensual",    l: "Mensual",    emoji: "📅", n: 12 },
+  { v: "variable",   l: "Variable",   emoji: "📊", n: 12 },
   { v: "trimestral", l: "Trimestral", emoji: "🗓️", n: 4 },
   { v: "semestral",  l: "Semestral",  emoji: "📆", n: 2 },
   { v: "anual",      l: "Anual",      emoji: "🎯", n: 1 },
@@ -88,12 +89,61 @@ export const mesesActivosDelAño = (item) => {
   return Math.max(0, hasta - desde + 1);
 };
 
+// Obtiene el array de 12 montos mensuales para frecuencia "variable".
+// Cada posición es el monto del mes correspondiente (índice 0 = enero, 11 = diciembre).
+// Ej: [15M, 15M, 8M, 8M, 40M, 15M, 15M, 40M, 8M, 8M, 15M, 15M] → variable
+// Retrocompat: si no existe, retorna array de 12 ceros.
+export const getMontosMensuales = (item) => {
+  if (Array.isArray(item?.montosMensuales) && item.montosMensuales.length === 12) {
+    return item.montosMensuales.map(v => Number(v) || 0);
+  }
+  return new Array(12).fill(0);
+};
+
+// Devuelve el promedio de los meses con valor > 0 (los "reales" cargados).
+// Uso: proyectar el valor esperado para meses futuros sin cargar.
+// Ej: [15M, 15M, 8M, 0, 0, 0, ...] → promedio de reales = (15+15+8)/3 = 12.67M
+export const promedioMesesReales = (montosMensuales) => {
+  const reales = montosMensuales.filter(m => m > 0);
+  if (reales.length === 0) return 0;
+  return reales.reduce((s, m) => s + m, 0) / reales.length;
+};
+
+// Determina si un mes es FUTURO respecto al mes actual del sistema.
+// Solo aplica cuando estamos analizando el año corriente. Para años pasados
+// (ej: 2025) todos los meses son pasados. Para años futuros (ej: 2027) todos
+// los meses son futuros.
+export const esMesFuturo = (año, mes) => {
+  const { año: añoActual, mes: mesActual } = getMesActual();
+  if (año > añoActual) return true;
+  if (año < añoActual) return false;
+  return mes > mesActual;
+};
+
 // Genera un label visual + color para mostrar la vigencia/frecuencia en la
 // tabla de items. Devuelve null si es el caso default (mensual todo el año).
 // Uso: en Ingresos/Gastos tabla, mostrar chip junto al nombre del item.
 export function labelVigenciaBadge(item) {
   const freq = getFrecuencia(item);
   const MESES_CORTOS = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+  if (freq === "variable") {
+    const montos = getMontosMensuales(item);
+    const reales = montos.filter(m => m > 0).length;
+    const { año: añoActual } = getMesActual();
+    const proyectados = montos.reduce((c, valor, idx) => {
+      if (valor === 0 && esMesFuturo(añoActual, idx + 1)) return c + 1;
+      return c;
+    }, 0);
+    return {
+      emoji: "📊",
+      label: "Variable",
+      sub: proyectados > 0
+        ? `${reales} real · ${proyectados} proy.`
+        : `${reales} ${reales === 1 ? "mes" : "meses"}`,
+      color: "#22d3ee",
+    };
+  }
 
   if (freq === "mensual") {
     const { desde, hasta } = getRangoMeses(item);
@@ -129,12 +179,26 @@ export function labelVigenciaBadge(item) {
 
 // Calcula el total anual del item (monto por período × frecuencia N).
 // Para mensual con vigencia: monto × meses activos.
+// Para variable: suma directa de los 12 meses.
 // Ej: Rapicredit $6.5M mensual jul-dic → devuelve $39M
 // Ej: seguro semestral $2.2M → devuelve $4.4M
+// Ej: variable [15M×2, 8M×2, 40M×2, ...] → suma total
 export function totalAnualItem(item) {
+  const freq = getFrecuencia(item);
+  if (freq === "variable") {
+    // Suma reales + proyección en meses futuros vacíos
+    const montos = getMontosMensuales(item);
+    const promProyeccion = promedioMesesReales(montos);
+    const { año: añoActual } = getMesActual();
+    return montos.reduce((s, valor, idx) => {
+      const mes = idx + 1;
+      if (valor > 0) return s + valor;
+      if (esMesFuturo(añoActual, mes)) return s + promProyeccion;
+      return s;
+    }, 0);
+  }
   const monto = Number(item.mensual ?? item.m ?? 0) || 0;
   if (monto === 0) return 0;
-  const freq = getFrecuencia(item);
   if (freq === "mensual") {
     const activos = mesesActivosDelAño(item);
     return monto * activos;
@@ -155,11 +219,26 @@ export const estaPagadoEnAño = (item, año) => {
  * Ej: impuesto anual $12M → devuelve $1M (12M/12 meses)
  * Ej: dividendo trimestral $3M → devuelve $1M (3M × 4 trimestres / 12 meses)
  * Ej: mensual $47M activo solo 6 meses → devuelve $23.5M (47M × 6 / 12)
+ * Ej: variable [15,15,8,8,40,15,15,40,8,8,15,15] → suma/12 = ~$15.67M
  */
 export function montoPromedioMensual(item) {
+  const freq = getFrecuencia(item);
+  // Variable: suma de los 12 meses (reales + proyectados en futuros) / 12
+  if (freq === "variable") {
+    const montos = getMontosMensuales(item);
+    const promProyeccion = promedioMesesReales(montos);
+    const { año: añoActual } = getMesActual();
+    // Iterar los 12 meses: usar valor real si existe, proyección si futuro sin valor
+    const total = montos.reduce((s, valor, idx) => {
+      const mes = idx + 1;
+      if (valor > 0) return s + valor;
+      if (esMesFuturo(añoActual, mes)) return s + promProyeccion;
+      return s;
+    }, 0);
+    return total / 12;
+  }
   const monto = getMonto(item);
   if (monto === 0) return 0;
-  const freq = getFrecuencia(item);
   // Para mensuales con rango limitado, el promedio se ajusta por meses activos
   if (freq === "mensual") {
     const activos = mesesActivosDelAño(item);
@@ -172,15 +251,26 @@ export function montoPromedioMensual(item) {
 /**
  * Devuelve el monto que pesa en un mes específico, considerando frecuencia,
  * mes de pago, rango de vigencia y estado (pagado/pendiente).
- * @param {Object} item - El ingreso/gasto/deuda
- * @param {number} año - Año calendario (ej: 2026)
- * @param {number} mes - Mes calendario (1-12)
- * @returns {number} Monto en ese mes específico
  */
 export function montoDelMes(item, año, mes) {
+  const freq = getFrecuencia(item);
+
+  // Variable: retornar valor del mes correspondiente.
+  // Si el mes es FUTURO y no tiene valor cargado (0), proyectar con el
+  // promedio de los meses reales (los que sí tienen valor > 0).
+  // Los meses PASADOS con valor 0 se mantienen en 0 (no hubo ingreso).
+  if (freq === "variable") {
+    const montos = getMontosMensuales(item);
+    const valor = montos[mes - 1] || 0;
+    if (valor > 0) return valor;
+    if (esMesFuturo(año, mes)) {
+      return promedioMesesReales(montos);
+    }
+    return 0;
+  }
+
   const monto = getMonto(item);
   if (monto === 0) return 0;
-  const freq = getFrecuencia(item);
 
   // Si ya está pagado en este año, no pesa en meses restantes
   // (excepto los mensuales, que siempre pesan cada mes)
@@ -190,8 +280,6 @@ export function montoDelMes(item, año, mes) {
   switch (freq) {
     case "mensual": {
       // Fase 4 flujo anual: respetar rango de vigencia [desdeMes, hastaMes]
-      // Default: enero-diciembre (todo el año). Si el mes está fuera del rango,
-      // el item no pesa (ej: Rapicredit inactivo antes de julio).
       const { desde, hasta } = getRangoMeses(item);
       if (mes < desde || mes > hasta) return 0;
       return monto;

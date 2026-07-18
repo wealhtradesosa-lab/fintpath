@@ -6,7 +6,8 @@ import PageHeader from "./PageHeader";
 import { exportGastosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
-import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem } from "../lib/flowHelpers.js";
+import TablaMensual from "./TablaMensual";
+import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 
@@ -269,7 +270,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
-  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   // UX flujo anual (18-jul-2026): modo de captura del monto.
   // 'porPago' = el user ingresa el monto de cada pago (semestre, trimestre, etc)
   // 'anual'   = el user ingresa el total anual, el sistema divide por N
@@ -357,10 +358,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         frecuencia,                 // nuevo campo
         mesPago: Number(form.mesPago) || 1,
         // Fase 4 flujo anual (18-jul-2026): persistir rango de vigencia.
-        // Solo se guarda si es distinto del default (enero-diciembre) para
-        // mantener limpio el item — el motor default respeta enero-diciembre.
         ...((Number(form.desdeMes) || 1) !== 1 && { desdeMes: Number(form.desdeMes) }),
         ...((Number(form.hastaMes) || 12) !== 12 && { hastaMes: Number(form.hastaMes) }),
+        // Fase Variable (18-jul-2026 noche): persistir montosMensuales solo si
+        // la frecuencia es variable — evita saturar items con arrays de ceros.
+        ...(frecuencia === "variable" && { montosMensuales: form.montosMensuales || new Array(12).fill(0) }),
         owner: form.owner || "",
         fiscalCode: form.fiscalCode || undefined,
         causalidad: form.causalidad || undefined,
@@ -393,7 +395,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     onUpdate(newGas);
     setShowForm(false);
     setEditKey(null);
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   };
 
   const openEdit = (item) => {
@@ -414,7 +416,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     const mDisplay = (frecuencia !== "mensual")
       ? item.m
       : (freqLegacy === "año" ? (item.m * 12) : item.m);
-    setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
+    setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
     // UX iter 4 (18-jul-2026 noche): detectar template correcto del item existente
     setTemplateElegido(detectarTemplate(item));
@@ -423,7 +425,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   };
 
   const openAdd = () => {
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
     setModoIngreso("porPago"); // default al crear
     setTemplateElegido(null); // resetear plantilla
     setEditKey(null);
@@ -815,6 +817,17 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
               {form.montoModo !== "tasa" ? (
                 <>
+                  {/* Fase Variable (18-jul-2026 noche): tabla mensual */}
+                  {mostrarCampo("tablaMensual") && (
+                    <div style={{gridColumn:"1/-1"}}>
+                      <TablaMensual
+                        values={form.montosMensuales}
+                        onChange={(nuevoArray) => setForm(p => ({ ...p, montosMensuales: nuevoArray, frecuencia: "variable" }))}
+                        tokens={T}
+                      />
+                    </div>
+                  )}
+
                   {/* UX iter 2 (18-jul-2026 tarde): toggle simple "El monto es"
                       para templates mensuales. Reformulación clara del modoIngreso:
                       "Mensual" = lo que sale cada mes / "Total del año" = suma anual. */}
@@ -893,6 +906,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     </div>
                   )}
 
+                  {/* Ocultar input MONTO cuando el template es variable (la tabla lo reemplaza) */}
+                  {!mostrarCampo("tablaMensual") && (
                   <div style={{gridColumn:"1/-1"}}>
                     <In
                       l={(() => {
@@ -912,6 +927,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       placeholder="0"
                     />
                   </div>
+                  )}
                   {/* UX iter 3 (18-jul-2026 noche): FrecuenciaSelector muestra
                       solo lo que el template pide — cero redundancia. */}
                   {(mostrarCampo("frecuencia") || mostrarCampo("vigencia") || mostrarCampo("mesPago")) && (

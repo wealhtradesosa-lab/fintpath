@@ -5,7 +5,8 @@ import PageHeader from "./PageHeader";
 import { exportIngresosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
-import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem } from "../lib/flowHelpers.js";
+import TablaMensual from "./TablaMensual";
+import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { obtenerInfoRetencion } from "../lib/retencionesTax.js";
@@ -145,6 +146,10 @@ const INITIAL_FORM = {
   // Ej: Rapicredit paga cada mes desde julio a diciembre → desdeMes=7, hastaMes=12
   desdeMes: 1,
   hastaMes: 12,
+  // Fase Variable (18-jul-2026 noche): array de 12 montos mensuales.
+  // Solo se usa cuando frecuencia === "variable". Cada posición corresponde
+  // a un mes (0=enero, 11=diciembre). Default: 12 ceros.
+  montosMensuales: new Array(12).fill(0),
 };
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
@@ -285,6 +290,14 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     //   - Frecuencia mensual (con o sin vigencia limitada): dividir por # meses activos
     // Para salarios y honorarios este flag no aplica (siempre bruto mensual).
     const frecuenciaFinal = form.frecuencia || "mensual";
+    // Fase Variable (18-jul-2026 noche): si el ingreso es variable, el
+    // `mensual` guardado es el PROMEDIO de los 12 meses (para retrocompat
+    // con lugares que usan item.mensual como métrica global).
+    if (frecuenciaFinal === "variable") {
+      const montos = Array.isArray(form.montosMensuales) ? form.montosMensuales : new Array(12).fill(0);
+      const total = montos.reduce((s, m) => s + (Number(m) || 0), 0);
+      mensualFinal = Math.round(total / 12);
+    }
     if (!isSalario && modoIngreso === "anual") {
       if (frecuenciaFinal !== "mensual") {
         const factor = factorDeFrecuencia(frecuenciaFinal);
@@ -465,6 +478,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       // Fase 4 flujo anual (18-jul-2026): preservar rango de vigencia
       desdeMes: Number(item.desdeMes) || 1,
       hastaMes: Number(item.hastaMes) || 12,
+      // Fase Variable (18-jul-2026 noche): preservar array de montos mensuales
+      montosMensuales: getMontosMensuales(item),
     });
     setEditId(item.id); setShowForm(true);
     // UX iter 4 (18-jul-2026 noche): detectar el template correcto según el
@@ -804,6 +819,18 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
 
+              {/* Fase Variable (18-jul-2026 noche): tabla de 12 meses cuando el
+                  template es "Cambia mes a mes". Reemplaza al input MONTO normal. */}
+              {mostrarCampo("tablaMensual") && (
+                <div style={{gridColumn:"1/-1"}}>
+                  <TablaMensual
+                    values={form.montosMensuales}
+                    onChange={(nuevoArray) => setForm(p => ({ ...p, montosMensuales: nuevoArray, frecuencia: "variable" }))}
+                    tokens={T}
+                  />
+                </div>
+              )}
+
               {/* UX iter 2 (18-jul-2026 tarde): toggle simple "El monto es"
                   para templates mensuales. Reformulación clara del modoIngreso:
                   "Mensual" = lo que llega cada mes / "Total del año" = suma anual.
@@ -883,6 +910,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 </div>
               )}
 
+              {/* Ocultar input MONTO cuando el template es variable (la tabla lo reemplaza) */}
+              {!mostrarCampo("tablaMensual") && (
               <In l={(() => {
                 // Label del input MONTO simplificado (18-jul-2026 noche):
                 // Santiago: "deberia decir monto no monto mensual?" — tiene razón,
@@ -930,6 +959,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 if (freq === "anual") return "¿Cuánto en total al año?";
                 return "¿Monto del pago único?";
               })()} />
+              )}
               {["Salario","Honorarios"].includes(form.categoria) && <div style={{gridColumn:"1/-1",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:8,padding:"10px 12px",marginTop:-4,marginBottom:4}}>
                 <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:3}}>ℹ️ Ingresá el monto BRUTO</div>
                 <div style={{fontSize:10,color:"#71717a",lineHeight:1.5}}>El monto que aparece en tu contrato o factura, <strong>antes</strong> de retención en la fuente y aportes obligatorios (salud+pensión). El sistema calcula automáticamente tu impuesto de renta aplicando la tabla progresiva de la DIAN 2026.</div>
