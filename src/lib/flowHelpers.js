@@ -62,6 +62,15 @@ export const getFrecuencia = (item) => item?.frecuencia || "mensual";
 // Obtiene el mes de pago con default enero
 export const getMesPago = (item) => Number(item?.mesPago) || 1;
 
+// Factor de conversión: cuántos pagos hay por año según la frecuencia.
+// Uso: si el user ingresa el TOTAL ANUAL, dividimos por este factor para
+// obtener el "monto por período" que espera el modelo interno.
+// Ej: frecuencia="semestral" → factor=2 → total anual / 2 = monto por semestre
+export const factorDeFrecuencia = (frecuencia) => {
+  const f = FRECUENCIAS.find(x => x.v === frecuencia);
+  return f?.n || 12;
+};
+
 // Verifica si un item está marcado como pagado para un año dado
 export const estaPagadoEnAño = (item, año) => {
   if (!item?.pagos) return false;

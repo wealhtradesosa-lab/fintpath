@@ -5,7 +5,7 @@ import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportGastosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
-import { togglePagado, getFrecuencia, estaPagadoEnAño } from "../lib/flowHelpers.js";
+import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 
@@ -269,6 +269,12 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
   const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+  // UX flujo anual (18-jul-2026): modo de captura del monto.
+  // 'porPago' = el user ingresa el monto de cada pago (semestre, trimestre, etc)
+  // 'anual'   = el user ingresa el total anual, el sistema divide por N
+  // No se persiste — solo controla la UI del input MONTO. form.m siempre
+  // guarda "monto por período" internamente (contrato del motor).
+  const [modoIngreso, setModoIngreso] = useState("porPago");
   const [selected, setSelected] = useState(new Set()); // "cat|idx"
 
   const gas = gastos || {};
@@ -313,9 +319,22 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       // FrecuenciaSelector, guardar m como el monto POR PERÍODO completo (no dividir).
       // Si es mensual, mantener comportamiento viejo (freq="año" divide por 12).
       const frecuencia = form.frecuencia || "mensual";
-      const mPorPeriodo = frecuencia !== "mensual"
-        ? (+form.m || 0)  // ya es el monto anual/trimestral/etc. completo
-        : (form.freq === "año" ? Math.round((+form.m || 0) / 12) : (+form.m || 0));
+      // UX flujo anual (18-jul-2026): si modoIngreso === 'anual', el user
+      // ingresó el TOTAL ANUAL. El motor espera "monto por período" así que
+      // dividimos por el factor (n=2 semestral, n=4 trimestral, etc).
+      // Si modoIngreso === 'porPago', el user ya ingresó el monto por período.
+      let mPorPeriodo;
+      if (frecuencia === "mensual") {
+        // Legacy retrocompat con freq="año"
+        mPorPeriodo = (form.freq === "año" ? Math.round((+form.m || 0) / 12) : (+form.m || 0));
+      } else if (modoIngreso === "anual") {
+        // User ingresó total anual → dividir por factor
+        const factor = factorDeFrecuencia(frecuencia);
+        mPorPeriodo = Math.round((+form.m || 0) / factor);
+      } else {
+        // modoIngreso === "porPago" → guardar tal cual
+        mPorPeriodo = (+form.m || 0);
+      }
       const base = {
         c: form.c || "",
         m: mPorPeriodo,
@@ -374,12 +393,14 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       ? item.m
       : (freqLegacy === "año" ? (item.m * 12) : item.m);
     setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
+    setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
     setEditKey(item.key);
     setShowForm(true);
   };
 
   const openAdd = () => {
     setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+    setModoIngreso("porPago"); // default al crear
     setEditKey(null);
     setShowForm(true);
   };
@@ -699,17 +720,76 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
               {form.montoModo !== "tasa" ? (
                 <>
+                  {/* UX flujo anual (18-jul-2026): toggle "Ingresá el monto como"
+                      solo aparece si frecuencia !== mensual (para mensual no
+                      hay conversión posible — el monto siempre es mensual).
+                      Permite al user elegir si conoce el monto por pago o total anual. */}
+                  {form.frecuencia !== "mensual" && (
+                    <div style={{gridColumn:"1/-1", marginBottom: 4}}>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+                        💵 ¿Cómo conocés el monto?
+                      </label>
+                      <div style={{ background: T.bg3, borderRadius: 10, padding: 5, display: "flex", gap: 5 }}>
+                        <button type="button"
+                          onClick={() => {
+                            // Si viene de 'anual', convertir el monto mostrado a por-pago
+                            if (modoIngreso === "anual") {
+                              const factor = factorDeFrecuencia(form.frecuencia);
+                              const nuevoM = Math.round((+form.m || 0) / factor);
+                              setForm(p => ({ ...p, m: String(nuevoM) }));
+                            }
+                            setModoIngreso("porPago");
+                          }}
+                          style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 11.5, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          Por pago<br/>
+                          <span style={{fontSize:9,opacity:0.7,fontWeight:500}}>(lo que sale cada vez)</span>
+                        </button>
+                        <button type="button"
+                          onClick={() => {
+                            // Si viene de 'porPago', convertir el monto mostrado a anual
+                            if (modoIngreso === "porPago") {
+                              const factor = factorDeFrecuencia(form.frecuencia);
+                              const nuevoM = Math.round((+form.m || 0) * factor);
+                              setForm(p => ({ ...p, m: String(nuevoM) }));
+                            }
+                            setModoIngreso("anual");
+                          }}
+                          style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 11.5, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          Total anual<br/>
+                          <span style={{fontSize:9,opacity:0.7,fontWeight:500}}>(gasto del año)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{gridColumn:"1/-1"}}>
-                    <In l={labelMontoSegunFrecuencia(form.frecuencia)} value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" />
+                    <In
+                      l={modoIngreso === "anual" ? "Monto anual total" : labelMontoSegunFrecuencia(form.frecuencia)}
+                      value={form.m}
+                      onChange={(v) => setForm((p) => ({ ...p, m: v }))}
+                      type="number"
+                      placeholder="0"
+                    />
                   </div>
-                  {/* Fase 2 (18-jul-2026): FrecuenciaSelector reemplaza el input viejo mes/año.
-                      Ahora soporta 5 frecuencias + mes de pago + explicación contextual. */}
+                  {/* FrecuenciaSelector recibe el monto POR PERÍODO para calcular previews.
+                      Si el user está en modo 'anual', convertimos antes de pasarlo. */}
                   <div style={{gridColumn:"1/-1"}}>
                     <FrecuenciaSelector
                       frecuencia={form.frecuencia}
                       mesPago={form.mesPago}
-                      onChange={(patch) => setForm(p => ({ ...p, ...patch }))}
-                      monto={form.m}
+                      onChange={(patch) => {
+                        // Si el user cambia la frecuencia estando en modo 'porPago',
+                        // el monto significa "por semestre" o "por trimestre" — cambia
+                        // su interpretación. Para mantener coherencia matemática, si
+                        // pasa de una frecuencia a otra, mejor limpiar el monto (opcional)
+                        // o dejarlo tal cual. Dejamos tal cual: el user reajusta.
+                        // Si el modo es 'anual', el monto siempre es el anual — invariante.
+                        setForm(p => ({ ...p, ...patch }));
+                      }}
+                      monto={modoIngreso === "anual"
+                        ? Math.round((+form.m || 0) / factorDeFrecuencia(form.frecuencia))
+                        : form.m
+                      }
                       tokens={T}
                     />
                   </div>
