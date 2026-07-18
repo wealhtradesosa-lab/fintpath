@@ -29,79 +29,74 @@
 //   }
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Templates disponibles — mismos para ingreso y gasto (solo cambia el copy)
+// Templates disponibles — SUPER SIMPLES (Santiago 18-jul-2026 iter 2):
+// "si simplemente uno pone el valor total o mensual y uno dice si el pago
+// es cada mes o solo unos meses". 3 opciones nada más + avanzado oculto.
 export const TEMPLATES = [
   {
     id: "mensual-todo-año",
     emoji: "💵",
-    titulo: (tipo) => tipo === "ingreso" ? "Salario / renta mensual" : "Gasto mensual",
-    descripcion: (tipo) => tipo === "ingreso" ? "Cada mes, todo el año (12 pagos)" : "Cada mes, todo el año",
-    ejemplo: (tipo) => tipo === "ingreso" ? "Ej: sueldo, arriendo, dividendo mensual" : "Ej: arriendo, servicios, gimnasio",
+    titulo: (tipo) => tipo === "ingreso" ? "Cada mes durante todo el año" : "Cada mes durante todo el año",
+    descripcion: () => "Se recibe/paga los 12 meses",
+    ejemplo: (tipo) => tipo === "ingreso" ? "Ej: sueldo, arriendo, dividendo mensual" : "Ej: arriendo, servicios, gimnasio, mercado",
     preset: { frecuencia: "mensual", desdeMes: 1, hastaMes: 12, mesPago: 1 },
-    camposVisibles: ["monto"], // solo pide el monto
+    // El toggle "Mensual/Total del año" también aplica acá
+    camposVisibles: ["monto", "modoIngresoSimple"],
     modoIngresoDefault: "porPago",
     color: "#22c55e",
   },
   {
     id: "mensual-limitado",
     emoji: "📅",
-    titulo: (tipo) => tipo === "ingreso" ? "Contrato / renta temporal" : "Gasto temporal",
-    descripcion: (tipo) => tipo === "ingreso" ? "Cada mes, solo durante algunos meses (ej: jul–dic)" : "Cada mes, solo durante algunos meses",
+    titulo: () => "Cada mes solo durante algunos meses",
+    descripcion: () => "Se recibe/paga solo un rango de meses (ej: jul–dic)",
     ejemplo: (tipo) => tipo === "ingreso" ? "Ej: Rapicredit jul–dic, contrato por proyecto" : "Ej: alquiler temporal, curso trimestral",
     preset: { frecuencia: "mensual", desdeMes: 7, hastaMes: 12, mesPago: 1 },
-    camposVisibles: ["monto", "vigencia"], // pide monto + desde/hasta
+    camposVisibles: ["monto", "modoIngresoSimple", "vigencia"],
     modoIngresoDefault: "porPago",
     color: "#3b82f6",
   },
   {
     id: "anual",
     emoji: "🎯",
-    titulo: (tipo) => tipo === "ingreso" ? "Prima / bono anual" : "Gasto anual",
-    descripcion: (tipo) => tipo === "ingreso" ? "1 pago al año" : "1 pago al año (impuestos, seguros)",
+    titulo: () => "Solo una vez al año",
+    descripcion: () => "1 pago único en un mes específico",
     ejemplo: (tipo) => tipo === "ingreso" ? "Ej: prima diciembre, bono anual, cesantías" : "Ej: impuesto vehículo, predial, seguro anual",
     preset: { frecuencia: "anual", desdeMes: 1, hastaMes: 12, mesPago: 6 },
-    camposVisibles: ["monto", "mesPago"], // pide monto + mes del pago
+    camposVisibles: ["monto", "mesPago"],
     modoIngresoDefault: "porPago",
     color: "#a78bfa",
   },
   {
-    id: "unico",
-    emoji: "💥",
-    titulo: (tipo) => tipo === "ingreso" ? "Pago único" : "Compra única",
-    descripcion: () => "Una sola vez este año, no se repite",
-    ejemplo: (tipo) => tipo === "ingreso" ? "Ej: venta puntual, herencia, indemnización" : "Ej: viaje, compra grande, mudanza",
-    preset: { frecuencia: "unico", desdeMes: 1, hastaMes: 12, mesPago: 6 },
-    camposVisibles: ["monto", "mesPago"],
-    modoIngresoDefault: "porPago",
-    color: "#f97316",
-  },
-  {
     id: "avanzado",
     emoji: "⚙️",
-    titulo: () => "Configuración avanzada",
-    descripcion: () => "Trimestral, semestral, o algo diferente",
-    ejemplo: () => "Todas las opciones disponibles",
+    titulo: () => "Otras opciones",
+    descripcion: () => "Trimestral, semestral, u otro caso especial",
+    ejemplo: () => "Ej: dividendos trimestrales, seguro semestral",
     preset: { frecuencia: "mensual", desdeMes: 1, hastaMes: 12, mesPago: 1 },
-    camposVisibles: ["monto", "frecuencia", "vigencia", "mesPago", "modoIngreso"], // TODO
+    camposVisibles: ["monto", "frecuencia", "vigencia", "mesPago", "modoIngreso"],
     modoIngresoDefault: "porPago",
     color: "#71717a",
   },
 ];
 
 export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T, onCancel }) {
+  const templatesPrincipales = TEMPLATES.filter(t => t.id !== "avanzado");
+  const templateAvanzado = TEMPLATES.find(t => t.id === "avanzado");
+
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, letterSpacing: "-0.02em", marginBottom: 4 }}>
-          ¿Qué tipo de {tipo} es?
+          ¿Cuándo se {tipo === "ingreso" ? "recibe" : "paga"}?
         </div>
         <div style={{ fontSize: 13, color: T.txt3, lineHeight: 1.5 }}>
-          Elegí uno y solo llenás lo esencial. Podés cambiarlo después.
+          Elegí una opción. Solo llenás lo esencial.
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
-        {TEMPLATES.map(tpl => (
+        {templatesPrincipales.map(tpl => (
           <button
             key={tpl.id}
             type="button"
@@ -149,8 +144,21 @@ export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T
         ))}
       </div>
 
+      {/* Link chiquito para casos avanzados */}
+      {templateAvanzado && (
+        <div style={{ marginTop: 14, textAlign: "center" }}>
+          <button
+            type="button"
+            onClick={() => onSelect(templateAvanzado)}
+            style={{ background: "transparent", border: "none", color: T.txt3, fontSize: 12, cursor: "pointer", padding: "6px 12px", textDecoration: "underline" }}
+          >
+            ⚙️ ¿Trimestral, semestral, u otro caso? Ver opciones avanzadas
+          </button>
+        </div>
+      )}
+
       {onCancel && (
-        <div style={{ marginTop: 12, textAlign: "center" }}>
+        <div style={{ marginTop: 8, textAlign: "center" }}>
           <button
             type="button"
             onClick={onCancel}

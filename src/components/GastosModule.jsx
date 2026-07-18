@@ -327,16 +327,22 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       // FrecuenciaSelector, guardar m como el monto POR PERÍODO completo (no dividir).
       // Si es mensual, mantener comportamiento viejo (freq="año" divide por 12).
       const frecuencia = form.frecuencia || "mensual";
-      // UX flujo anual (18-jul-2026): si modoIngreso === 'anual', el user
-      // ingresó el TOTAL ANUAL. El motor espera "monto por período" así que
-      // dividimos por el factor (n=2 semestral, n=4 trimestral, etc).
-      // Si modoIngreso === 'porPago', el user ya ingresó el monto por período.
+      // UX (18-jul-2026): si modoIngreso === 'anual', el user ingresó el TOTAL
+      // ANUAL. Convertir a "monto por período":
+      //   - Frecuencia NO mensual: dividir por factor
+      //   - Frecuencia mensual (con vigencia): dividir por # meses activos
       let mPorPeriodo;
       if (frecuencia === "mensual") {
-        // Legacy retrocompat con freq="año"
-        mPorPeriodo = (form.freq === "año" ? Math.round((+form.m || 0) / 12) : (+form.m || 0));
+        if (modoIngreso === "anual") {
+          // Dividir por meses activos (vigencia)
+          const activos = (Number(form.hastaMes) || 12) - (Number(form.desdeMes) || 1) + 1;
+          mPorPeriodo = Math.round((+form.m || 0) / Math.max(1, activos));
+        } else {
+          // Legacy retrocompat con freq="año" viejo
+          mPorPeriodo = (form.freq === "año" ? Math.round((+form.m || 0) / 12) : (+form.m || 0));
+        }
       } else if (modoIngreso === "anual") {
-        // User ingresó total anual → dividir por factor
+        // Frecuencia trimestral/semestral/anual con total anual → dividir por factor
         const factor = factorDeFrecuencia(frecuencia);
         mPorPeriodo = Math.round((+form.m || 0) / factor);
       } else {
@@ -770,7 +776,46 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
               {form.montoModo !== "tasa" ? (
                 <>
-                  {/* UX simplificación: toggle solo si template lo pide */}
+                  {/* UX iter 2 (18-jul-2026 tarde): toggle simple "El monto es"
+                      para templates mensuales. Reformulación clara del modoIngreso:
+                      "Mensual" = lo que sale cada mes / "Total del año" = suma anual. */}
+                  {mostrarCampo("modoIngresoSimple") && (
+                    <div style={{gridColumn:"1/-1", marginBottom: 4}}>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+                        💵 ¿El monto que vas a poner es...?
+                      </label>
+                      <div style={{ background: T.bg3, borderRadius: 10, padding: 5, display: "flex", gap: 5 }}>
+                        <button type="button"
+                          onClick={() => {
+                            if (modoIngreso === "anual") {
+                              const activos = (form.hastaMes || 12) - (form.desdeMes || 1) + 1;
+                              const nuevoM = Math.round((+form.m || 0) / activos);
+                              setForm(p => ({ ...p, m: String(nuevoM) }));
+                            }
+                            setModoIngreso("porPago");
+                          }}
+                          style={{ flex: 1, padding: "10px 12px", borderRadius: 7, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          💵 Mensual<br/>
+                          <span style={{fontSize:10,opacity:0.7,fontWeight:500}}>Lo que sale cada mes</span>
+                        </button>
+                        <button type="button"
+                          onClick={() => {
+                            if (modoIngreso === "porPago") {
+                              const activos = (form.hastaMes || 12) - (form.desdeMes || 1) + 1;
+                              const nuevoM = Math.round((+form.m || 0) * activos);
+                              setForm(p => ({ ...p, m: String(nuevoM) }));
+                            }
+                            setModoIngreso("anual");
+                          }}
+                          style={{ flex: 1, padding: "10px 12px", borderRadius: 7, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          📊 Total del año<br/>
+                          <span style={{fontSize:10,opacity:0.7,fontWeight:500}}>La suma anual</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Toggle avanzado (por pago vs anual) — solo para frecuencia distinta a mensual */}
                   {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && (
                     <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                       <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
@@ -811,7 +856,12 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
                   <div style={{gridColumn:"1/-1"}}>
                     <In
-                      l={modoIngreso === "anual" ? "Monto anual total" : labelMontoSegunFrecuencia(form.frecuencia)}
+                      l={(() => {
+                        const freq = form.frecuencia || "mensual";
+                        if (modoIngreso === "anual") return "Total del año";
+                        if (freq === "mensual") return "Monto mensual";
+                        return labelMontoSegunFrecuencia(freq);
+                      })()}
                       value={form.m}
                       onChange={(v) => setForm((p) => ({ ...p, m: v }))}
                       type="number"
