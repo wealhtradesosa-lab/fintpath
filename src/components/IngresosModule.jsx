@@ -4,6 +4,7 @@ import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportIngresosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
+import TemplateSelector from "./TemplateSelector";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -218,6 +219,17 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   // 'porPago' = user ingresa el monto de cada pago (semestre, trimestre, etc)
   // 'anual'   = user ingresa el total anual, sistema divide por N
   const [modoIngreso, setModoIngreso] = useState("porPago");
+  // UX simplificación: plantilla elegida.
+  const [templateElegido, setTemplateElegido] = useState(null);
+
+  // Helper: decide si un campo se muestra según el template elegido.
+  // Al editar (editId), siempre mostrar todos los campos (form completo).
+  // Al crear nuevo, respetar template.camposVisibles.
+  const mostrarCampo = (campo) => {
+    if (editId) return true;
+    if (!templateElegido) return false;
+    return templateElegido.camposVisibles.includes(campo);
+  };
   const [selected, setSelected] = useState(new Set());
   // Commit 11 Tarea 3: feedback visible para el usuario sobre lo que paso
   // con la auto-creacion de cesantias (creada / saltada / no aplica). El silencio
@@ -445,6 +457,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       hastaMes: Number(item.hastaMes) || 12,
     });
     setEditId(item.id); setShowForm(true);
+    // UX simplificación: al editar, mostrar el form completo (todos los campos visibles)
+    setTemplateElegido({ id: "avanzado", camposVisibles: ["monto", "frecuencia", "vigencia", "mesPago", "modoIngreso"] });
   };
 
   
@@ -492,7 +506,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             📊 Excel
           </button>
-          <button onClick={() => { setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setShowForm(true); }}
+          <button onClick={() => { setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             + Agregar
           </button>
@@ -597,7 +611,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:T.txt}}>Agrega tus ingresos mensuales</h3>
                       <p style={{fontSize:13,color:T.txt3,maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Registra todo lo que recibes cada mes: salario, arriendos, rendimientos, dividendos, freelance. <strong style={{color:T.txt2}}>No incluyas cuotas de créditos</strong> — esas van en Deudas.</p>
                       <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
-                        <button onClick={()=>setShowForm(true)} style={{background:T.green,color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar ingreso</button>
+                        <button onClick={()=>{setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setShowForm(true);}} style={{background:T.green,color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar ingreso</button>
                         {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>📥 Importar tabla Excel de ingresos</button>}
                       </div>
                       <div style={{background:T.bg3,borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
@@ -688,7 +702,40 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editId ? "Editar Ingreso" : "Agregar Ingreso"}</h3>
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+
+            {/* Si es un ingreso NUEVO y no se ha elegido plantilla, mostrar el selector */}
+            {!editId && !templateElegido ? (
+              <TemplateSelector
+                tipo="ingreso"
+                tokens={T}
+                onSelect={(tpl) => {
+                  // Aplicar el preset del template al form
+                  setForm(p => ({ ...p, ...tpl.preset }));
+                  setModoIngreso(tpl.modoIngresoDefault || "porPago");
+                  setTemplateElegido(tpl);
+                }}
+                onCancel={() => setShowForm(false)}
+              />
+            ) : (
+              <>
+                {/* Badge del template elegido + link para cambiar */}
+                {!editId && templateElegido && templateElegido.id !== "avanzado" && (
+                  <div style={{ background: T.bg3, borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <span style={{ fontSize: 20 }}>{templateElegido.emoji}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>Tipo elegido</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: T.txt, marginTop: 1 }}>{templateElegido.titulo("ingreso")}</div>
+                      </div>
+                    </div>
+                    <button type="button"
+                      onClick={() => { setTemplateElegido(null); setForm(INITIAL_FORM); }}
+                      style={{ background: "transparent", border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", color: T.txt3, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
+                      Cambiar
+                    </button>
+                  </div>
+                )}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* Photo scan option */}
               <div style={{gridColumn:"1/-1",background:"rgba(139,92,246,0.06)",border:"1px dashed rgba(139,92,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:4,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
                 {scanning ? <div style={{fontSize:12,color:"#a78bfa"}}>🔄 Leyendo documento...</div> : <>
@@ -698,10 +745,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
 
-              {/* UX flujo anual (18-jul-2026): toggle "¿Cómo conocés el monto?"
-                  Solo aparece cuando frecuencia !== mensual Y NO es Salario/Honorarios
-                  (donde el bruto mensual es fiscalmente crítico). */}
-              {form.frecuencia !== "mensual" && !["Salario","Honorarios"].includes(form.categoria) && (
+              {/* UX simplificación: toggle "¿Cómo conocés el monto?"
+                  Solo aparece si el template lo permite Y frecuencia !== mensual */}
+              {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && !["Salario","Honorarios"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                   <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
                     💵 ¿Cómo conocés el monto?
@@ -781,9 +827,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 <div style={{fontSize:10,color:"#71717a",lineHeight:1.5}}>El monto que aparece en tu contrato o factura, <strong>antes</strong> de retención en la fuente y aportes obligatorios (salud+pensión). El sistema calcula automáticamente tu impuesto de renta aplicando la tabla progresiva de la DIAN 2026.</div>
               </div>}
 
-              {/* Fase 2 (18-jul-2026): Frecuencia de pago para flujo anual.
-                  Útil para ingresos no-mensuales (dividendos trimestrales,
-                  primas semestrales, cesantías anuales, bonos únicos). */}
+              {/* UX simplificación (18-jul-2026 tarde): FrecuenciaSelector solo
+                  se muestra si el template lo requiere. Los templates simples
+                  (mensual todo año, anual con mes, único) ya tienen preconfigurado
+                  frecuencia+vigencia y no necesitan que el user la elija. */}
+              {(mostrarCampo("frecuencia") || mostrarCampo("vigencia") || mostrarCampo("mesPago")) && (
               <div style={{gridColumn:"1/-1"}}>
                 <FrecuenciaSelector
                   frecuencia={form.frecuencia}
@@ -795,6 +843,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   tokens={T}
                 />
               </div>
+              )}
 
               {/* Commit 4 Tarea 3: selector de tipo de vinculación. Solo aparece para Salario.
                   Define si auto-creamos cesantías al guardar (caso ordinario) o no (integral/no aplica).
@@ -1202,6 +1251,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
               <button onClick={handleSave} style={{ background: T.green, color: "#000", border: "none", padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 700 }}>{editId ? "Guardar" : "Agregar"}</button>
             </div>
+              </>
+            )}
           </div>
         </div>
       )}

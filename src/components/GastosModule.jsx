@@ -5,6 +5,7 @@ import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportGastosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
+import TemplateSelector from "./TemplateSelector";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -275,6 +276,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   // No se persiste — solo controla la UI del input MONTO. form.m siempre
   // guarda "monto por período" internamente (contrato del motor).
   const [modoIngreso, setModoIngreso] = useState("porPago");
+  // UX simplificación (18-jul-2026 tarde): plantilla elegida.
+  const [templateElegido, setTemplateElegido] = useState(null);
+  const mostrarCampo = (campo) => {
+    if (editKey) return true; // al editar, mostrar todo
+    if (!templateElegido) return false;
+    return templateElegido.camposVisibles.includes(campo);
+  };
   const [selected, setSelected] = useState(new Set()); // "cat|idx"
 
   const gas = gastos || {};
@@ -402,6 +410,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       : (freqLegacy === "año" ? (item.m * 12) : item.m);
     setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
+    setTemplateElegido({ id: "avanzado", camposVisibles: ["monto", "frecuencia", "vigencia", "mesPago", "modoIngreso"] });
     setEditKey(item.key);
     setShowForm(true);
   };
@@ -409,6 +418,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const openAdd = () => {
     setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
     setModoIngreso("porPago"); // default al crear
+    setTemplateElegido(null); // resetear plantilla
     setEditKey(null);
     setShowForm(true);
   };
@@ -641,7 +651,39 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editKey ? "Editar Gasto" : "Agregar Gasto"}</h3>
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+
+            {/* UX simplificación: mostrar TemplateSelector para gastos nuevos sin plantilla */}
+            {!editKey && !templateElegido ? (
+              <TemplateSelector
+                tipo="gasto"
+                tokens={T}
+                onSelect={(tpl) => {
+                  setForm(p => ({ ...p, ...tpl.preset }));
+                  setModoIngreso(tpl.modoIngresoDefault || "porPago");
+                  setTemplateElegido(tpl);
+                }}
+                onCancel={() => setShowForm(false)}
+              />
+            ) : (
+              <>
+                {/* Badge del template + link cambiar */}
+                {!editKey && templateElegido && templateElegido.id !== "avanzado" && (
+                  <div style={{ background: T.bg3, borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <span style={{ fontSize: 20 }}>{templateElegido.emoji}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>Tipo elegido</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: T.txt, marginTop: 1 }}>{templateElegido.titulo("gasto")}</div>
+                      </div>
+                    </div>
+                    <button type="button"
+                      onClick={() => { setTemplateElegido(null); setForm(p => ({ ...p, frecuencia: "mensual", desdeMes: 1, hastaMes: 12, mesPago: 1 })); }}
+                      style={{ background: "transparent", border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", color: T.txt3, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
+                      Cambiar
+                    </button>
+                  </div>
+                )}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* Photo scan option — Básico+ */}
               {plan==="free" ? (
                 <div style={{background:"rgba(234,179,8,0.06)",border:"1px dashed rgba(234,179,8,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>onUpgrade&&onUpgrade()}>
@@ -728,11 +770,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
               {form.montoModo !== "tasa" ? (
                 <>
-                  {/* UX flujo anual (18-jul-2026): toggle "Ingresá el monto como"
-                      solo aparece si frecuencia !== mensual (para mensual no
-                      hay conversión posible — el monto siempre es mensual).
-                      Permite al user elegir si conoce el monto por pago o total anual. */}
-                  {form.frecuencia !== "mensual" && (
+                  {/* UX simplificación: toggle solo si template lo pide */}
+                  {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && (
                     <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                       <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
                         💵 ¿Cómo conocés el monto?
@@ -779,8 +818,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       placeholder="0"
                     />
                   </div>
-                  {/* FrecuenciaSelector recibe el monto POR PERÍODO para calcular previews.
-                      Si el user está en modo 'anual', convertimos antes de pasarlo. */}
+                  {/* UX simplificación: FrecuenciaSelector solo si template lo pide */}
+                  {(mostrarCampo("frecuencia") || mostrarCampo("vigencia") || mostrarCampo("mesPago")) && (
                   <div style={{gridColumn:"1/-1"}}>
                     <FrecuenciaSelector
                       frecuencia={form.frecuencia}
@@ -797,6 +836,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       tokens={T}
                     />
                   </div>
+                  )}
                 </>
               ) : (
                 <div style={{ gridColumn: "1/-1", background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, padding: "12px 14px" }}>
@@ -1014,6 +1054,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
               <button onClick={handleSave} style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 700 }}>{editKey ? "Guardar" : "Agregar"}</button>
             </div>
+              </>
+            )}
           </div>
         </div>
       )}
