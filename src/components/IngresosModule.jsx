@@ -428,6 +428,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     setShowForm(false); setEditId(null);
     setForm(INITIAL_FORM);
     setModoIngreso("porPago");
+    setTemplateElegido(null); // reset para próxima creación
   };
   const handleEdit = (item) => {
     // Commit 1.5: migración silenciosa para salarios viejos sin item.aportes:
@@ -775,8 +776,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
 
-            {/* Si es un ingreso NUEVO y no se ha elegido plantilla, mostrar el selector */}
-            {!editId && !templateElegido ? (
+            {/* Mostrar selector cuando NO hay template elegido — aplica tanto
+                a items nuevos como a edición (click en "Cambiar" tipo). */}
+            {!templateElegido ? (
               <TemplateSelector
                 tipo="ingreso"
                 tokens={T}
@@ -803,7 +805,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       </div>
                     </div>
                     <button type="button"
-                      onClick={() => { setTemplateElegido(null); setForm(INITIAL_FORM); }}
+                      onClick={() => { setTemplateElegido(null); }}
                       style={{ background: "transparent", border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", color: T.txt3, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
                       Cambiar
                     </button>

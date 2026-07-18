@@ -395,6 +395,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     onUpdate(newGas);
     setShowForm(false);
     setEditKey(null);
+    setTemplateElegido(null); // reset para próxima creación
     setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   };
 
@@ -699,8 +700,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
 
-            {/* UX simplificación: mostrar TemplateSelector para gastos nuevos sin plantilla */}
-            {!editKey && !templateElegido ? (
+            {/* Mostrar selector cuando NO hay template elegido — aplica tanto
+                a items nuevos como a edición (click en "Cambiar" tipo). */}
+            {!templateElegido ? (
               <TemplateSelector
                 tipo="gasto"
                 tokens={T}
@@ -724,7 +726,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       </div>
                     </div>
                     <button type="button"
-                      onClick={() => { setTemplateElegido(null); setForm(p => ({ ...p, frecuencia: "mensual", desdeMes: 1, hastaMes: 12, mesPago: 1 })); }}
+                      onClick={() => { setTemplateElegido(null); }}
                       style={{ background: "transparent", border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", color: T.txt3, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
                       Cambiar
                     </button>
