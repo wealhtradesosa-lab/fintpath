@@ -45,6 +45,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import AssetsModuleUS from "./components/AssetsModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
+import { montoPromedioMensual } from "./lib/flowHelpers.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -326,15 +327,23 @@ const inferType=(i)=>{let tp=String(i.tp||i.tipo||i.type||"").trim();if(!tp||!is
 const cT=(inv,ds,gf,ing,taxData)=>{
   let ab=0, aportesObligatorios=0, gastosFamiliares=0;
   (inv||[]).forEach(i=>{if(i.sim!==false)ab+=i.va});
-  const brutoTotal=(ing||[]).reduce((s,i)=>i.sim===false?s:s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);
+  // NUEVO (18-jul-2026): usa promedio mensualizado según frecuencia.
+  // Items sin `frecuencia` se asumen "mensual" → comportamiento idéntico al anterior.
+  const brutoTotal=(ing||[]).reduce((s,i)=>{
+    if(i.sim===false) return s;
+    const montoBase=(i.mensual||0)*(i.moneda==="USD"?4200:1);
+    return s + montoPromedioMensual({...i, mensual: montoBase});
+  },0);
   const td=(ds||[]).reduce((s,d)=>d.sim===false?s:s+(d.mt||0),0);
   const cuotasDeudas=(ds||[]).filter(d=>(d.mt||0)>0&&d.sim!==false).reduce((s,d)=>s+(d.pg||0),0);
-  // Aportes obligatorios (categoría "Seguridad Social") separados de gastos familiares
+  // Aportes obligatorios (categoría "Seguridad Social") separados de gastos familiares.
+  // Usan promedio mensualizado según frecuencia (retrocompat: sin frecuencia = mensual).
   Object.entries(gf||{}).forEach(([cat,items])=>{
     (items||[]).forEach(g=>{
       if(g.sim===false)return;
-      if(cat==="Seguridad Social") aportesObligatorios+=(g.m||0);
-      else gastosFamiliares+=(g.m||0);
+      const monto=montoPromedioMensual(g);
+      if(cat==="Seguridad Social") aportesObligatorios+=monto;
+      else gastosFamiliares+=monto;
     });
   });
   const gfm=aportesObligatorios+gastosFamiliares;

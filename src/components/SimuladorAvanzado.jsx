@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
+import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
@@ -336,7 +337,11 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
     let brutoTotal = 0;
     ingSim.forEach(ing => {
       if (ing.sim === false) return;
-      brutoTotal += (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
+      // NUEVO (18-jul-2026): usa promedio mensualizado según frecuencia
+      // Ej: dividendo trimestral $3M → cuenta como $1M/mes en el promedio
+      // Retrocompat: ing sin `frecuencia` se asume "mensual" (idéntico al viejo)
+      const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
+      brutoTotal += montoPromedioMensual({ ...ing, mensual: montoBase });
     });
 
     // ─── PASO 2: Gastos separados en aportes obligatorios vs familiares ──
@@ -354,7 +359,9 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
       });
       gasSim[cat].forEach(g => {
         if (g.sim === false) return;
-        const monto = g.m || 0;
+        // NUEVO: promedio mensualizado según frecuencia
+        // Ej: impuesto anual $12M → cuenta como $1M/mes en el promedio
+        const monto = montoPromedioMensual(g);
         if (cat === "Seguridad Social") aportesObligatorios += monto;
         else gastosFamiliares += monto;
       });
