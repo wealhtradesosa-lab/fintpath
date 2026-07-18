@@ -3,6 +3,8 @@ import NumberInput from "./NumberInput";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportIngresosExcel } from "../lib/excelExport.js";
+import FrecuenciaSelector from "./FrecuenciaSelector";
+import { togglePagado, getFrecuencia, estaPagadoEnAño } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { obtenerInfoRetencion } from "../lib/retencionesTax.js";
@@ -134,6 +136,10 @@ const INITIAL_FORM = {
   //                        "0.05" → user override (5% custom)
   retencionAplica: true,
   retencionTasaCustom: "",
+  // NUEVO (18-jul-2026): Frecuencia y mes de pago para flujo anual.
+  // Default "mensual" mantiene comportamiento actual. Retrocompat total.
+  frecuencia: "mensual",
+  mesPago: 1,
 };
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
@@ -222,6 +228,14 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
   const toggleSelect = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((i) => i.id)));
+
+  // Fase 2 flujo anual (18-jul-2026): toggle pagado/pendiente por año.
+  const añoActual = new Date().getFullYear();
+  const togglePagoItem = (item) => {
+    if (!guardEdit(role)) return;
+    onUpdate(items.map(i => i.id === item.id ? togglePagado(i, añoActual) : i));
+  };
+
   const deleteSelected = () => {
     if (!guardEdit(role)) return;
     if (!selected.size || !confirm(`¿Eliminar ${selected.size} ingreso(s)?`)) return;
@@ -582,7 +596,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
                     </td>
                     <td style={{ padding: "10px 14px" }}>
-                      <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6}}>
+                      <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap"}}>
                         {warningsByItemId.has(item.id) && (() => {
                           const ws = warningsByItemId.get(item.id);
                           const hasError = ws.some(w => w.severity === "error");
@@ -595,6 +609,26 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           );
                         })()}
                         <span>{item.nombre}</span>
+                        {/* Fase 2 flujo anual: chip Pagado solo si frecuencia != mensual */}
+                        {getFrecuencia(item) !== "mensual" && (
+                          <span
+                            onClick={(e) => { e.stopPropagation(); togglePagoItem(item); }}
+                            title={estaPagadoEnAño(item, añoActual) ? `Ya recibido en ${añoActual} — click para desmarcar` : `Aún no recibido en ${añoActual} — click para marcar como recibido`}
+                            style={{
+                              fontSize: 9,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              padding: "2px 8px",
+                              borderRadius: 10,
+                              background: estaPagadoEnAño(item, añoActual) ? "rgba(34,197,94,0.15)" : "rgba(249,115,22,0.15)",
+                              color: estaPagadoEnAño(item, añoActual) ? "#22c55e" : "#f97316",
+                              letterSpacing: 0.3,
+                              userSelect: "none",
+                            }}
+                          >
+                            {estaPagadoEnAño(item, añoActual) ? `✅ Recibido ${añoActual}` : `⏳ Pendiente ${añoActual}`}
+                          </span>
+                        )}
                       </div>
                       {(()=>{
                         if(!item.owner || item.owner==="") return null;
@@ -664,6 +698,19 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:3}}>ℹ️ Ingresá el monto BRUTO</div>
                 <div style={{fontSize:10,color:"#71717a",lineHeight:1.5}}>El monto que aparece en tu contrato o factura, <strong>antes</strong> de retención en la fuente y aportes obligatorios (salud+pensión). El sistema calcula automáticamente tu impuesto de renta aplicando la tabla progresiva de la DIAN 2026.</div>
               </div>}
+
+              {/* Fase 2 (18-jul-2026): Frecuencia de pago para flujo anual.
+                  Útil para ingresos no-mensuales (dividendos trimestrales,
+                  primas semestrales, cesantías anuales, bonos únicos). */}
+              <div style={{gridColumn:"1/-1"}}>
+                <FrecuenciaSelector
+                  frecuencia={form.frecuencia}
+                  mesPago={form.mesPago}
+                  onChange={(patch) => setForm(p => ({ ...p, ...patch }))}
+                  monto={form.mensual}
+                  tokens={T}
+                />
+              </div>
 
               {/* Commit 4 Tarea 3: selector de tipo de vinculación. Solo aparece para Salario.
                   Define si auto-creamos cesantías al guardar (caso ordinario) o no (integral/no aplica).

@@ -4,6 +4,8 @@ import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportGastosExcel } from "../lib/excelExport.js";
+import FrecuenciaSelector from "./FrecuenciaSelector";
+import { togglePagado, getFrecuencia, estaPagadoEnAño } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 
@@ -266,7 +268,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
-  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   const [selected, setSelected] = useState(new Set()); // "cat|idx"
 
   const gas = gastos || {};
@@ -278,6 +280,18 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
   const toggleSel = (key) => setSelected((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
   const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((g) => g.key)));
+
+  // Fase 2 flujo anual (18-jul-2026): toggle pagado/pendiente por año.
+  // El user hace click en el chip "⏳ Pendiente" y pasa a "✅ Pagado".
+  // Se guarda en `item.pagos[año] = true` (persistente en Supabase).
+  const añoActual = new Date().getFullYear();
+  const togglePagoItem = (item) => {
+    if (!guardEdit(role)) return;
+    const newGas = { ...gas };
+    const itemsCat = newGas[item.cat] || [];
+    newGas[item.cat] = itemsCat.map((g, i) => i === item.idx ? togglePagado(g, añoActual) : g);
+    onUpdate(newGas);
+  };
 
   const deleteSelected = () => {
     if (!guardEdit(role)) return;
@@ -295,7 +309,24 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     if (!guardEdit(role)) return;
     const newGas = { ...gas };
     const buildItem = () => {
-      const base = { c: form.c || "", m: form.freq==="año"?Math.round((+form.m||0)/12):(+form.m||0), t: form.t || "f", freq: form.freq||"mes", owner: form.owner||"", fiscalCode: form.fiscalCode || undefined, causalidad: form.causalidad || undefined };
+      // NUEVO (18-jul-2026): si el user selecciona frecuencia !== mensual con el nuevo
+      // FrecuenciaSelector, guardar m como el monto POR PERÍODO completo (no dividir).
+      // Si es mensual, mantener comportamiento viejo (freq="año" divide por 12).
+      const frecuencia = form.frecuencia || "mensual";
+      const mPorPeriodo = frecuencia !== "mensual"
+        ? (+form.m || 0)  // ya es el monto anual/trimestral/etc. completo
+        : (form.freq === "año" ? Math.round((+form.m || 0) / 12) : (+form.m || 0));
+      const base = {
+        c: form.c || "",
+        m: mPorPeriodo,
+        t: form.t || "f",
+        freq: form.freq || "mes",  // legacy, mantenido por retrocompat
+        frecuencia,                 // nuevo campo
+        mesPago: Number(form.mesPago) || 1,
+        owner: form.owner || "",
+        fiscalCode: form.fiscalCode || undefined,
+        causalidad: form.causalidad || undefined,
+      };
       if (form.montoModo === "tasa") {
         base.montoModo = "tasa";
         base.capital = Number(form.capital) || 0;
@@ -324,17 +355,31 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     onUpdate(newGas);
     setShowForm(false);
     setEditKey(null);
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   };
 
   const openEdit = (item) => {
-    setForm({ cat: item.cat, c: item.c, m: item.freq==="año"?(item.m*12):item.m, t: item.t, freq: item.freq||"mes", owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
+    // NUEVO (18-jul-2026): preservar frecuencia y mesPago si existen.
+    // Retrocompat: items viejos con freq="año" mantienen su comportamiento
+    // (m ya está mensualizado, se multiplica × 12 para mostrar como anual
+    // en el input), pero se les asigna frecuencia="mensual" por default para
+    // evitar sumas dobles con el nuevo motor.
+    const freqLegacy = item.freq || "mes";
+    const frecuencia = item.frecuencia || "mensual";
+    const mesPago = Number(item.mesPago) || 1;
+    // Si tiene frecuencia nueva (anual/trimestral/etc), el m ya es el monto por período completo
+    // Si es viejo con freq=año, mostrar como × 12 (comportamiento heredado)
+    // Si es mensual (nuevo o viejo), mostrar tal cual
+    const mDisplay = (frecuencia !== "mensual")
+      ? item.m
+      : (freqLegacy === "año" ? (item.m * 12) : item.m);
+    setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setEditKey(item.key);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
     setEditKey(null);
     setShowForm(true);
   };
@@ -488,7 +533,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
                 </td>
                 <td style={{ padding: "10px 14px" }}>
-                  <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6}}>
+                  <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap"}}>
                     {warningsByItemKey.has(item.key) && (() => {
                       const ws = warningsByItemKey.get(item.key);
                       const hasError = ws.some(w => w.severity === "error");
@@ -501,6 +546,26 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       );
                     })()}
                     <span>{item.c || "—"}</span>
+                    {/* Fase 2 flujo anual: chip "Pagado" solo aparece si frecuencia != mensual */}
+                    {getFrecuencia(item) !== "mensual" && (
+                      <span
+                        onClick={(e) => { e.stopPropagation(); togglePagoItem(item); }}
+                        title={estaPagadoEnAño(item, añoActual) ? `Ya pagado en ${añoActual} — click para desmarcar` : `Aún no pagado en ${añoActual} — click para marcar como pagado`}
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          padding: "2px 8px",
+                          borderRadius: 10,
+                          background: estaPagadoEnAño(item, añoActual) ? "rgba(34,197,94,0.15)" : "rgba(249,115,22,0.15)",
+                          color: estaPagadoEnAño(item, añoActual) ? "#22c55e" : "#f97316",
+                          letterSpacing: 0.3,
+                          userSelect: "none",
+                        }}
+                      >
+                        {estaPagadoEnAño(item, añoActual) ? `✅ Pagado ${añoActual}` : `⏳ Pendiente ${añoActual}`}
+                      </span>
+                    )}
                   </div>
                   {(()=>{
                     if(!item.owner || item.owner==="") return null;
@@ -633,10 +698,22 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               </div>
 
               {form.montoModo !== "tasa" ? (
-                <div style={{display:"flex",gap:8,gridColumn:"1/-1"}}>
-                  <div style={{flex:1}}><In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" /></div>
-                  <div style={{flex:1}}><In l="Frecuencia" value={form.freq} onChange={(v) => setForm((p) => ({ ...p, freq: v }))} options={[{ v: "mes", l: "Mensual" }, { v: "año", l: "Anual" }]} /></div>
-                </div>
+                <>
+                  <div style={{gridColumn:"1/-1"}}>
+                    <In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" />
+                  </div>
+                  {/* Fase 2 (18-jul-2026): FrecuenciaSelector reemplaza el input viejo mes/año.
+                      Ahora soporta 5 frecuencias + mes de pago + explicación contextual. */}
+                  <div style={{gridColumn:"1/-1"}}>
+                    <FrecuenciaSelector
+                      frecuencia={form.frecuencia}
+                      mesPago={form.mesPago}
+                      onChange={(patch) => setForm(p => ({ ...p, ...patch }))}
+                      monto={form.m}
+                      tokens={T}
+                    />
+                  </div>
+                </>
               ) : (
                 <div style={{ gridColumn: "1/-1", background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, padding: "12px 14px" }}>
                   <div style={{ fontSize: 11, color: "#3b82f6", marginBottom: 8, fontWeight: 600 }}>📊 Cálculo automático: capital × tasa = monto mensual</div>
