@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
-import { montoPromedioMensual } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, montoDelMes, MESES, getMesActual } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
@@ -255,6 +255,10 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
   // exporta tanto al PDF como al Excel para poder compartir con contador o
   // socios de negocio con full contexto del planteo.
   const [simDescripcion, setSimDescripcion] = useState("");
+  // Fase 5 flujo anual (18-jul-2026): mes que el user está visualizando en el
+  // simulador. Default = mes actual del sistema. Le permite explorar qué
+  // pasa en meses futuros con picos de gastos (impuestos, colegios, primas).
+  const [mesVisualizado, setMesVisualizado] = useState(() => getMesActual().mes);
 
   const setVal = useCallback((key, val) => {
     setSimVals((prev) => ({ ...prev, [key]: val }));
@@ -449,6 +453,86 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
       dynTax,
     };
   }, [user, simVals, getVal, taxOptimizado]);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // FASE 5 (18-jul-2026): simTMes — motor del cash flow DEL MES visualizado.
+  //
+  // A diferencia de simT (que promedia todo en 12 meses), este motor calcula
+  // exactamente lo que pesa el mes seleccionado, considerando:
+  //   • Ingresos: mensuales siempre + no-mensuales solo si cae en este mes
+  //     (respetando estado pagado/pendiente por año)
+  //   • Aportes obligatorios: siempre pesan (son mensuales por diseño)
+  //   • Gastos familiares: mensuales siempre + no-mensuales solo si toca
+  //   • Cuotas deudas: siempre (mensuales por diseño)
+  //   • Impuesto neto y retención: siempre (anualizado ÷ 12, prorrateado)
+  //
+  // Reutiliza los overrides de sliders y toggles del simT (mismo estado).
+  // ═══════════════════════════════════════════════════════════════════════
+  const simTMes = useMemo(() => {
+    const trm = 4200;
+    const { año: añoActual } = getMesActual();
+    const mes = mesVisualizado;
+
+    // Ingresos del mes: aplicar overrides de sliders y frecuencia
+    const ingSim = (user.ingresos || []).map((ing, ii) => {
+      if (ing.sim === false) return ing;
+      const baseCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
+      const overrideCop = getVal(`ing_${ii}`, baseCop);
+      const newMensual = ing.moneda === "USD" ? (overrideCop / trm) : overrideCop;
+      return { ...ing, mensual: newMensual };
+    });
+    let brutoDelMes = 0;
+    ingSim.forEach(ing => {
+      if (ing.sim === false) return;
+      const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
+      brutoDelMes += montoDelMes({ ...ing, mensual: montoBase }, añoActual, mes);
+    });
+
+    // Gastos del mes: aportes obligatorios vs familiares
+    let aportesObligatoriosMes = 0;
+    let gastosFamiliaresMes = 0;
+    Object.entries(user.gastos || {}).forEach(([cat, items]) => {
+      const gasWithOverrides = (items || []).map((g, gi) => {
+        if (g.sim === false) return g;
+        const newM = getVal(`gf_${cat}_${gi}`, g.m || 0);
+        return { ...g, m: newM };
+      });
+      gasWithOverrides.forEach(g => {
+        if (g.sim === false) return;
+        const monto = montoDelMes(g, añoActual, mes);
+        if (cat === "Seguridad Social") aportesObligatoriosMes += monto;
+        else gastosFamiliaresMes += monto;
+      });
+    });
+
+    // Cuotas deudas: siempre mensuales por diseño (retrocompat con simT)
+    const cuotasDeudasMes = simT.cuotasDeudas || 0;
+
+    // Impuesto neto y retención: anualizado ÷ 12 (constantes cada mes)
+    const retencionMes = simT.retencionMensual || 0;
+    const impuestoNetoMes = simT.impuestoNeto || 0;
+
+    // Consolidación
+    const disponibleMes = brutoDelMes - retencionMes;
+    const egresosMes = aportesObligatoriosMes + gastosFamiliaresMes + cuotasDeudasMes + impuestoNetoMes;
+    const cashFlowMes = disponibleMes - egresosMes;
+
+    return {
+      mes,
+      añoActual,
+      brutoDelMes,
+      retencionMes,
+      disponibleMes,
+      aportesObligatoriosMes,
+      gastosFamiliaresMes,
+      cuotasDeudasMes,
+      impuestoNetoMes,
+      egresosMes,
+      cashFlowMes,
+      // Delta vs promedio (para mostrar en color)
+      deltaVsPromedio: cashFlowMes - (simT.cashFlow || 0),
+    };
+  }, [user, simVals, mesVisualizado, getVal, simT.cuotasDeudas, simT.retencionMensual, simT.impuestoNeto, simT.cashFlow]);
 
   // ── Baseline (sin overrides de simVals, sin toggle Optimizado) ──
   // Reproduce la misma fórmula de simT pero usando los valores de la data
@@ -958,33 +1042,89 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
         </div>
       </div>
 
-      {/* ─────────── CASH FLOW HERO (rediseño: sin cambio conceptual, mejor label) ─────────── */}
-      <div style={{ background: simT.cf >= 0 ? "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(34,197,94,0.02))" : "linear-gradient(135deg, rgba(239,68,68,0.10), rgba(239,68,68,0.02))", border: "1px solid " + (simT.cf >= 0 ? T.gn : T.rd) + "30", borderRadius: 16, padding: "22px 28px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
-        <div>
-          <div style={{ fontSize: 11, color: simT.cf >= 0 ? T.gn : T.rd, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>{simT.cf >= 0 ? "💰 Cash Flow · disponible para ahorrar / invertir" : "⚠️ Cash Flow negativo · déficit mensual"}</div>
-          <div style={{ fontSize: "clamp(2rem, 4.5vw, 3rem)", fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, letterSpacing: "-0.03em", marginTop: 6 }}>
-            {fm(simT.cf)}<span style={{ fontSize: 14, fontWeight: 400, color: T.txt3, marginLeft: 4 }}>/mes</span>
+      {/* ═══════════════════════════════════════════════════════════════════
+          FASE 5 (18-jul-2026): CASH FLOW HERO con vista dual promedio + mes.
+          Patrón Robinhood/Bloomberg: número grande = métrica estratégica
+          (promedio), subtítulo = contexto del mes actual con delta color.
+          Dropdown discreto arriba-derecha permite explorar cualquier mes.
+          ═══════════════════════════════════════════════════════════════════ */}
+      <div style={{ background: simT.cf >= 0 ? "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(34,197,94,0.02))" : "linear-gradient(135deg, rgba(239,68,68,0.10), rgba(239,68,68,0.02))", border: "1px solid " + (simT.cf >= 0 ? T.gn : T.rd) + "30", borderRadius: 16, padding: "22px 28px", marginBottom: 16 }}>
+        {/* Fila superior: label izquierda + dropdown mes derecha */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontSize: 11, color: simT.cf >= 0 ? T.gn : T.rd, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>
+            {simT.cf >= 0 ? "💰 Cash Flow · Promedio mensualizado" : "⚠️ Cash Flow · Déficit promedio"}
           </div>
-          <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
-            Disponible <span style={{ color: T.txt2 }}>{fm(simT.disponibleCuenta || 0)}</span> − Egresos <span style={{ color: T.txt2 }}>{fm(simT.egresosTotales || 0)}</span>
+          {/* Dropdown de mes para explorar (default = mes actual) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 10, color: T.txt3, letterSpacing: 0.5, textTransform: "uppercase" }}>Ver mes:</span>
+            <select
+              value={mesVisualizado}
+              onChange={(e) => setMesVisualizado(Number(e.target.value))}
+              style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 10px", color: T.txt, fontSize: 12, fontWeight: 600, outline: "none", cursor: "pointer" }}
+            >
+              {MESES.map(m => (
+                <option key={m.v} value={m.v}>
+                  {m.l} {simTMes.añoActual}{m.v === getMesActual().mes ? " (actual)" : ""}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 24 }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Al año</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, marginTop: 2 }}>{fm(simT.cf * 12)}</div>
+
+        {/* Cuerpo: 2 columnas — izquierda números principales, derecha metricas */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+          <div style={{ minWidth: 0, flex: "1 1 auto" }}>
+            {/* Número GRANDE del promedio (estratégico) */}
+            <div style={{ fontSize: "clamp(2rem, 4.5vw, 3rem)", fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, letterSpacing: "-0.03em", lineHeight: 1 }}>
+              {fm(simT.cf)}<span style={{ fontSize: 14, fontWeight: 400, color: T.txt3, marginLeft: 4 }}>/mes promedio</span>
+            </div>
+            {/* Subtítulo con mes actual + delta color */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12, color: T.txt3, fontWeight: 500 }}>
+                📅 {MESES.find(m => m.v === mesVisualizado)?.l} {simTMes.añoActual}:
+              </span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd }}>
+                {fm(simTMes.cashFlowMes)}
+              </span>
+              {/* Delta con color (verde si mes > promedio, naranja si mes < promedio) */}
+              {Math.abs(simTMes.deltaVsPromedio) > 100 && (
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: 10,
+                  background: simTMes.deltaVsPromedio >= 0 ? "rgba(34,197,94,0.15)" : "rgba(249,115,22,0.15)",
+                  color: simTMes.deltaVsPromedio >= 0 ? T.gn : "#f97316",
+                  letterSpacing: 0.3,
+                }}>
+                  {simTMes.deltaVsPromedio >= 0 ? "▲" : "▼"} {simTMes.deltaVsPromedio >= 0 ? "+" : ""}{fm(simTMes.deltaVsPromedio)} vs promedio
+                </span>
+              )}
+            </div>
+            {/* Micro-explicación de la fórmula del promedio */}
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>
+              Disponible <span style={{ color: T.txt2 }}>{fm(simT.disponibleCuenta || 0)}</span> − Egresos <span style={{ color: T.txt2 }}>{fm(simT.egresosTotales || 0)}</span>
+            </div>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Al día</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: T.txt2, marginTop: 2 }}>{fm(Math.round(simT.cf / 30))}</div>
-          </div>
-          <div style={{ textAlign: "center", borderLeft: `1px solid ${T.border}`, paddingLeft: 24 }}>
-            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Independencia</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: simT.ind >= 100 ? T.gn : "#eab308", marginTop: 2 }}>{pc(simT.ind)}</div>
+
+          {/* Columna derecha: métricas secundarias */}
+          <div style={{ display: "flex", gap: 24 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Al año</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, marginTop: 2 }}>{fm(simT.cf * 12)}</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Al día</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: T.txt2, marginTop: 2 }}>{fm(Math.round(simT.cf / 30))}</div>
+            </div>
+            <div style={{ textAlign: "center", borderLeft: `1px solid ${T.border}`, paddingLeft: 24 }}>
+              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Independencia</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: simT.ind >= 100 ? T.gn : "#eab308", marginTop: 2 }}>{pc(simT.ind)}</div>
+            </div>
           </div>
         </div>
       </div>
-      {/* fin bloque de KPIs Fase 2 */}
+      {/* fin bloque de KPIs Fase 5 */}
 
       {/* Sliders + Chart */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
