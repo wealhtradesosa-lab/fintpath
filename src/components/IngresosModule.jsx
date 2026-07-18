@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import { exportIngresosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import TemplateSelector from "./TemplateSelector";
-import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia } from "../lib/flowHelpers.js";
+import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { obtenerInfoRetencion } from "../lib/retencionesTax.js";
@@ -654,6 +654,31 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           );
                         })()}
                         <span>{item.nombre}</span>
+                        {/* Badge de vigencia/frecuencia (18-jul-2026): visible cuando NO es mensual todo el año */}
+                        {(() => {
+                          const badge = labelVigenciaBadge(item);
+                          if (!badge) return null;
+                          return (
+                            <span
+                              title={`${badge.label} — ${badge.sub}`}
+                              style={{
+                                fontSize: 9,
+                                fontWeight: 700,
+                                padding: "2px 8px",
+                                borderRadius: 10,
+                                background: badge.color + "20",
+                                color: badge.color,
+                                letterSpacing: 0.3,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 3,
+                              }}
+                            >
+                              {badge.emoji} {badge.label}
+                              <span style={{ opacity: 0.7, fontWeight: 500 }}>· {badge.sub}</span>
+                            </span>
+                          );
+                        })()}
                         {/* Fase 2 flujo anual: chip Pagado solo si frecuencia != mensual */}
                         {getFrecuencia(item) !== "mensual" && (
                           <span
@@ -685,7 +710,24 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     </td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: T.greenDim, color: T.green, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.categoria}</span></td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: (item.tipo === "fijo" ? T.blue : T.orange) + "15", color: item.tipo === "fijo" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.tipo}</span></td>
-                    <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{fm(item.moneda==="USD" ? (item.mensual||0)*(trm||4200) : (item.mensual||0))}{item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(item.mensual).toLocaleString()}</span>}</td>
+                    <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
+                      <div style={{ fontWeight: 700, color: T.green }}>
+                        {fm(item.moneda==="USD" ? (item.mensual||0)*(trm||4200) : (item.mensual||0))}
+                        {item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(item.mensual).toLocaleString()}</span>}
+                      </div>
+                      {/* Subtítulo con total anual solo si NO es mensual todo el año */}
+                      {(() => {
+                        const badge = labelVigenciaBadge(item);
+                        if (!badge) return null;
+                        const total = totalAnualItem(item);
+                        const totalCop = item.moneda === "USD" ? total * (trm || 4200) : total;
+                        return (
+                          <div style={{ fontSize: 9, color: T.txt3, fontWeight: 500, marginTop: 2 }}>
+                            {fm(totalCop)}/año
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString() + (item.tasa ? " • " + item.tasa + "%" : "") : item.fuente || "—"}</td>
                     <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
                       <button onClick={() => { if (!guardEdit(role)) return; const upd = items.map(x => x.id === item.id ? {...x, sim: !(item.sim!==false)} : x); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{item.sim===false?"⬜":"✅"}</button>

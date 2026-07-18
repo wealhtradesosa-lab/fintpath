@@ -88,6 +88,60 @@ export const mesesActivosDelAño = (item) => {
   return Math.max(0, hasta - desde + 1);
 };
 
+// Genera un label visual + color para mostrar la vigencia/frecuencia en la
+// tabla de items. Devuelve null si es el caso default (mensual todo el año).
+// Uso: en Ingresos/Gastos tabla, mostrar chip junto al nombre del item.
+export function labelVigenciaBadge(item) {
+  const freq = getFrecuencia(item);
+  const MESES_CORTOS = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+  if (freq === "mensual") {
+    const { desde, hasta } = getRangoMeses(item);
+    // Mensual todo el año: no mostrar chip (es el caso default)
+    if (desde === 1 && hasta === 12) return null;
+    // Mensual con vigencia limitada
+    const nMeses = hasta - desde + 1;
+    return {
+      emoji: "📅",
+      label: `${MESES_CORTOS[desde]}–${MESES_CORTOS[hasta]}`,
+      sub: `${nMeses} ${nMeses === 1 ? "mes" : "meses"}`,
+      color: "#3b82f6",
+    };
+  }
+
+  const mesPago = getMesPago(item);
+  const mesNombre = MESES_CORTOS[mesPago] || "Ene";
+
+  if (freq === "anual") {
+    return { emoji: "🎯", label: "Anual", sub: mesNombre, color: "#a78bfa" };
+  }
+  if (freq === "unico") {
+    return { emoji: "💥", label: "Único", sub: mesNombre, color: "#f97316" };
+  }
+  if (freq === "semestral") {
+    return { emoji: "📆", label: "Semestral", sub: `desde ${mesNombre}`, color: "#22d3ee" };
+  }
+  if (freq === "trimestral") {
+    return { emoji: "🗓️", label: "Trimestral", sub: `desde ${mesNombre}`, color: "#22d3ee" };
+  }
+  return null;
+}
+
+// Calcula el total anual del item (monto por período × frecuencia N).
+// Para mensual con vigencia: monto × meses activos.
+// Ej: Rapicredit $6.5M mensual jul-dic → devuelve $39M
+// Ej: seguro semestral $2.2M → devuelve $4.4M
+export function totalAnualItem(item) {
+  const monto = Number(item.mensual ?? item.m ?? 0) || 0;
+  if (monto === 0) return 0;
+  const freq = getFrecuencia(item);
+  if (freq === "mensual") {
+    const activos = mesesActivosDelAño(item);
+    return monto * activos;
+  }
+  return monto * (FRECUENCIAS.find(f => f.v === freq)?.n || 1);
+}
+
 // Verifica si un item está marcado como pagado para un año dado
 export const estaPagadoEnAño = (item, año) => {
   if (!item?.pagos) return false;
