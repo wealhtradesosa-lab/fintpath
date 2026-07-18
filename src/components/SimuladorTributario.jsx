@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import NumberInput from "./NumberInput";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO.js";
 import { adapterOwnerPlan } from "../lib/ownerPlanAdapter.js";

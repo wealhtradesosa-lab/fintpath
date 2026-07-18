@@ -16,6 +16,7 @@
  */
 
 import { useState, useMemo } from "react";
+import NumberInput from "./NumberInput";
 import { US } from "../lib/jurisdictions/US.js";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -151,8 +152,11 @@ const Field = ({l, value, onChange, type="text", options, placeholder}) => (
           style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}>
           {options.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
         </select>
-      : <input type={type} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-          style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}/>
+      : type === "number"
+        ? <NumberInput value={value??""} onChange={v=>onChange(v===""?"":String(v))} placeholder={placeholder}
+            style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}/>
+        : <input type={type} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+            style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}/>
     }
   </div>
 );

@@ -18,6 +18,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
+import SmartNumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
@@ -78,10 +79,9 @@ function NumberInput({ label, value, onChange, placeholder, hint }) {
   return (
     <div>
       {label && <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>}
-      <input
-        type="number"
+      <SmartNumberInput
         value={value ?? ""}
-        onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+        onChange={(v) => onChange(v === "" ? null : Number(v))}
         placeholder={placeholder}
         style={{
           width: "100%", background: T.bg2, border: "1px solid " + T.border,

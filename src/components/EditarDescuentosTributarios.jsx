@@ -15,6 +15,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState } from "react";
+import NumberInput from "./NumberInput";
 import { track } from "../lib/analytics.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
@@ -35,10 +36,9 @@ const Field = ({ label, articulo, value, onChange, hint, prevYear, prevYearLabel
       </label>
       {articulo && <span style={{ fontSize: 9, color: T.txt3, fontFamily: "monospace", whiteSpace: "nowrap" }}>{articulo}</span>}
     </div>
-    <input
-      type="number"
+    <NumberInput
       value={value || ""}
-      onChange={(e) => onChange(e.target.value === "" ? null : +e.target.value)}
+      onChange={(v) => onChange(v === "" ? null : +v)}
       placeholder="0"
       style={{
         width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt,

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
@@ -36,17 +37,23 @@ const Row = ({ l, v, color, bold, sub }) => (
     <span style={{ fontSize: 14, fontWeight: bold ? 700 : 600, color: color || T.txt, fontFamily: "monospace" }}>{v}</span>
   </div>
 );
-const In = ({ label, value, onChange, unit, min, max, step }) => (
-  <div style={{ marginBottom: 12 }}>
-    <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{label}</label>
-    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-      <input type="number" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)}
-        min={min} max={max} step={step || 1}
-        style={{ flex: 1, background: T.bg3, border: `1px solid ${T.border}`, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 14, fontWeight: 600, textAlign: "right", outline: "none" }} />
-      {unit && <span style={{ fontSize: 12, color: T.txt3, minWidth: 44 }}>{unit}</span>}
+const In = ({ label, value, onChange, unit, min, max, step }) => {
+  const isMonetary = unit === "COP" || unit === "$/mes" || unit === "$/año";
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{label}</label>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        {isMonetary
+          ? <NumberInput value={value} onChange={(v) => onChange(v === "" ? 0 : Number(v) || 0)}
+              style={{ flex: 1, background: T.bg3, border: `1px solid ${T.border}`, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 14, fontWeight: 600, textAlign: "right", outline: "none" }} />
+          : <input type="number" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)}
+              min={min} max={max} step={step || 1}
+              style={{ flex: 1, background: T.bg3, border: `1px solid ${T.border}`, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 14, fontWeight: 600, textAlign: "right", outline: "none" }} />}
+        {unit && <span style={{ fontSize: 12, color: T.txt3, minWidth: 44 }}>{unit}</span>}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ═══════════════════════════════════════════════════
    CÁLCULOS ACTUARIALES

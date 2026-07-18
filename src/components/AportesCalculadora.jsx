@@ -1,4 +1,5 @@
 import { useState } from "react";
+import NumberInput from "./NumberInput";
 import PageHeader from "./PageHeader.jsx";
 
 const T = {

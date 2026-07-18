@@ -14,6 +14,7 @@
  */
 
 import { useState, useMemo } from "react";
+import NumberInput from "./NumberInput";
 
 // ─── 2025 Constants ──────────────────────────────────────────────────────────
 const C = {
@@ -90,8 +91,11 @@ const Field = ({l, value, onChange, type="number", placeholder, hint, options}) 
           style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}>
           {options.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
         </select>
-      : <input type={type} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={placeholder||"0"}
-          style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}/>
+      : type === "number"
+        ? <NumberInput value={value??""} onChange={v=>onChange(v===""?"":String(v))} placeholder={placeholder||"0"}
+            style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}/>
+        : <input type={type} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={placeholder||"0"}
+            style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}/>
     }
     {hint && <div style={{fontSize:10,color:T.tx3,marginTop:3,lineHeight:1.5}}>{hint}</div>}
   </div>

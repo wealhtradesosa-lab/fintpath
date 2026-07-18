@@ -1,4 +1,5 @@
 import { useState } from "react";
+import NumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
@@ -196,11 +197,11 @@ export default function MetasModule({ metas, onUpdate, cashFlow, fmt}) {
               </div>
               <div>
                 <label style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Monto necesario</label>
-                <input type="number" value={form.monto} onChange={e => setForm(p => ({ ...p, monto: e.target.value }))} placeholder="500000000" style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                <NumberInput value={form.monto} onChange={v => setForm(p => ({ ...p, monto: v === "" ? "" : String(v) }))} placeholder="500000000" style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
               </div>
               <div>
                 <label style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Ya ahorrado</label>
-                <input type="number" value={form.ahorrado} onChange={e => setForm(p => ({ ...p, ahorrado: e.target.value }))} placeholder="100000000" style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                <NumberInput value={form.ahorrado} onChange={v => setForm(p => ({ ...p, ahorrado: v === "" ? "" : String(v) }))} placeholder="100000000" style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 14px", color: T.txt, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
               </div>
               <div>
                 <label style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Fecha meta</label>

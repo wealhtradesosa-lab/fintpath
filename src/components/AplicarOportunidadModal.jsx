@@ -22,6 +22,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
+import NumberInput from "./NumberInput";
 
 const C = {
   bg: "#0a0a0c",
@@ -362,10 +363,9 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
                     {inp.prefix}
                   </span>
                 )}
-                <input
-                  type="number"
+                <NumberInput
                   value={valores[inp.key] || ""}
-                  onChange={(e) => setValores(v => ({ ...v, [inp.key]: e.target.value }))}
+                  onChange={(v) => setValores(vs => ({ ...vs, [inp.key]: v === "" ? "" : String(v) }))}
                   placeholder="0"
                   style={{
                     ...inputStyle,

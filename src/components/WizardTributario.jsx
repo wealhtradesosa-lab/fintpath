@@ -17,6 +17,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo, useEffect } from "react";
+import NumberInput from "./NumberInput";
 import {
   getWizardSteps,
   mapearRespuestasAUser,
@@ -479,11 +480,9 @@ function NumberStep({ step, value, onChange, onSubmit }) {
           color: C.txt3,
           fontWeight: 700,
         }}>$</span>
-        <input
-          type="number"
-          inputMode="numeric"
+        <NumberInput
           value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(v) => onChange(v === "" ? "" : String(v))}
           onKeyDown={(e) => { if (e.key === "Enter" && Number(value) > 0) onSubmit(); }}
           placeholder={step.placeholder || "0"}
           autoFocus

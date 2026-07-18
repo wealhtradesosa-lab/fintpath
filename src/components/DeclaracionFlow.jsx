@@ -40,6 +40,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo, useEffect, useRef, Component } from "react";
+import NumberInput from "./NumberInput";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
@@ -1775,10 +1776,9 @@ function InputInline({ input, value, onChange }) {
       ) : input.type === "currency" ? (
         <div style={{ display: "flex", alignItems: "center", gap: 4, background: C.bg3, border: `1px solid ${C.border}`, borderRadius: 8, padding: "0 10px" }}>
           <span style={{ color: C.txt3, fontSize: 13 }}>$</span>
-          <input
-            type="number"
+          <NumberInput
             value={value || ""}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(v) => onChange(v === "" ? "" : String(v))}
             placeholder={input.placeholder}
             style={{ flex: 1, padding: "9px 0", background: "transparent", border: "none", color: C.txt, fontSize: 13, outline: "none" }}
           />

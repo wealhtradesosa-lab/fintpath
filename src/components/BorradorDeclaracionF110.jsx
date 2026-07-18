@@ -20,6 +20,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo, useEffect } from "react";
+import NumberInput from "./NumberInput";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
@@ -684,10 +685,9 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                   {/* Valor */}
                   {isEditing ? (
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      <input
-                        type="number"
+                      <NumberInput
                         value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
+                        onChange={(v) => setEditValue(v === "" ? "" : String(v))}
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleGuardarEdit();

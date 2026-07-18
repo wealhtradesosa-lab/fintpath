@@ -29,6 +29,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
+import NumberInput from "./NumberInput";
 
 const C = {
   bg: "#0a0a0c",
@@ -879,10 +880,9 @@ function InputInline({ input, value, onChange }) {
       ) : input.type === "currency" ? (
         <div style={{ display: "flex", alignItems: "center", gap: 6, background: C.bg3, border: `1px solid ${C.border}`, borderRadius: 8, padding: "0 12px" }}>
           <span style={{ color: C.txt3, fontSize: 13 }}>$</span>
-          <input
-            type="number"
+          <NumberInput
             value={value || ""}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(v) => onChange(v === "" ? "" : String(v))}
             placeholder={input.placeholder}
             style={{
               flex: 1,
