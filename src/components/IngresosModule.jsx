@@ -917,10 +917,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 <div style={{fontSize:10,color:"#71717a",lineHeight:1.5}}>El monto que aparece en tu contrato o factura, <strong>antes</strong> de retención en la fuente y aportes obligatorios (salud+pensión). El sistema calcula automáticamente tu impuesto de renta aplicando la tabla progresiva de la DIAN 2026.</div>
               </div>}
 
-              {/* UX simplificación (18-jul-2026 tarde): FrecuenciaSelector solo
-                  se muestra si el template lo requiere. Los templates simples
-                  (mensual todo año, anual con mes, único) ya tienen preconfigurado
-                  frecuencia+vigencia y no necesitan que el user la elija. */}
+              {/* UX iter 3 (18-jul-2026 noche): FrecuenciaSelector con props
+                  específicas según template. Elimina redundancia — si el user
+                  ya eligió "Cada mes durante todo el año", NO le mostramos
+                  chips de frecuencia otra vez. Solo lo esencial. */}
               {(mostrarCampo("frecuencia") || mostrarCampo("vigencia") || mostrarCampo("mesPago")) && (
               <div style={{gridColumn:"1/-1"}}>
                 <FrecuenciaSelector
@@ -931,6 +931,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   onChange={(patch) => setForm(p => ({ ...p, ...patch }))}
                   monto={form.mensual}
                   tokens={T}
+                  // Solo mostrar chips de frecuencia en modo AVANZADO
+                  mostrarChipsFrecuencia={mostrarCampo("frecuencia")}
+                  // Selector de mes: solo si el template lo pide (Anual, Único, Avanzado)
+                  mostrarSelectorMes={mostrarCampo("mesPago") || mostrarCampo("frecuencia")}
+                  // Vigencia: solo si el template lo pide (Mensual limitado, Avanzado)
+                  mostrarVigencia={mostrarCampo("vigencia")}
                 />
               </div>
               )}

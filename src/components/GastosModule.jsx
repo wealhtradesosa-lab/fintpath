@@ -906,7 +906,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       placeholder="0"
                     />
                   </div>
-                  {/* UX simplificación: FrecuenciaSelector solo si template lo pide */}
+                  {/* UX iter 3 (18-jul-2026 noche): FrecuenciaSelector muestra
+                      solo lo que el template pide — cero redundancia. */}
                   {(mostrarCampo("frecuencia") || mostrarCampo("vigencia") || mostrarCampo("mesPago")) && (
                   <div style={{gridColumn:"1/-1"}}>
                     <FrecuenciaSelector
@@ -922,6 +923,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         : form.m
                       }
                       tokens={T}
+                      mostrarChipsFrecuencia={mostrarCampo("frecuencia")}
+                      mostrarSelectorMes={mostrarCampo("mesPago") || mostrarCampo("frecuencia")}
+                      mostrarVigencia={mostrarCampo("vigencia")}
                     />
                   </div>
                   )}

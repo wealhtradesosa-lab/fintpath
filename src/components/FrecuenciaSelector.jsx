@@ -43,6 +43,12 @@ export default function FrecuenciaSelector({
   // Fase 4 flujo anual (18-jul-2026): rango de vigencia solo para mensuales
   desdeMes = 1,
   hastaMes = 12,
+  // UX iter 3 (18-jul-2026 noche): props que ocultan bloques redundantes.
+  // Cuando el user ya eligió un template simple, los chips de frecuencia son
+  // redundantes. Estos props permiten que el padre controle qué mostrar.
+  mostrarChipsFrecuencia = true,  // los 5 chips Mensual/Trimestral/etc
+  mostrarSelectorMes = true,      // dropdown "Mes de pago" (solo si freq!=mensual)
+  mostrarVigencia = true,         // toggle "Todo el año / Solo unos meses"
 }) {
   const freq = FRECUENCIAS.find(f => f.v === frecuencia) || FRECUENCIAS[0];
   const showMes = frecuencia !== "mensual";
@@ -63,42 +69,45 @@ export default function FrecuenciaSelector({
 
   return (
     <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-        📅 Frecuencia de pago
-      </label>
+      {/* Bloque de chips de frecuencia — oculto en templates simples */}
+      {mostrarChipsFrecuencia && (
+        <>
+          <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+            📅 Frecuencia de pago
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(88px, 1fr))", gap: 6, marginBottom: showMes ? 10 : 6 }}>
+            {FRECUENCIAS.map(f => {
+              const active = f.v === frecuencia;
+              return (
+                <button
+                  key={f.v}
+                  type="button"
+                  onClick={() => onChange({ frecuencia: f.v })}
+                  style={{
+                    background: active ? T.gn + "15" : T.bg3,
+                    border: `1px solid ${active ? T.gn : T.border}`,
+                    borderRadius: 8,
+                    padding: "8px 6px",
+                    color: active ? T.gn : T.txt2,
+                    fontSize: 11,
+                    fontWeight: active ? 700 : 500,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    textAlign: "center",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  <div style={{ fontSize: 15, marginBottom: 2 }}>{f.emoji}</div>
+                  {f.l}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
-      {/* Chips de frecuencia */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(88px, 1fr))", gap: 6, marginBottom: showMes ? 10 : 6 }}>
-        {FRECUENCIAS.map(f => {
-          const active = f.v === frecuencia;
-          return (
-            <button
-              key={f.v}
-              type="button"
-              onClick={() => onChange({ frecuencia: f.v })}
-              style={{
-                background: active ? T.gn + "15" : T.bg3,
-                border: `1px solid ${active ? T.gn : T.border}`,
-                borderRadius: 8,
-                padding: "8px 6px",
-                color: active ? T.gn : T.txt2,
-                fontSize: 11,
-                fontWeight: active ? 700 : 500,
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-                textAlign: "center",
-                lineHeight: 1.2,
-              }}
-            >
-              <div style={{ fontSize: 15, marginBottom: 2 }}>{f.emoji}</div>
-              {f.l}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Selector de mes (solo si no es mensual) */}
-      {showMes && (
+      {/* Selector de mes (solo si no es mensual y el padre lo permite) */}
+      {showMes && mostrarSelectorMes && (
         <div style={{ marginBottom: 6 }}>
           <label style={{ fontSize: 10, fontWeight: 500, color: T.txt3, display: "block", marginBottom: 4 }}>
             {frecuencia === "trimestral" ? "Primer mes de pago" : frecuencia === "semestral" ? "Primer mes de pago" : "Mes en que se paga"}
@@ -123,7 +132,8 @@ export default function FrecuenciaSelector({
           de vigencia + sistema respeta ambos.
           Default: enero-diciembre (todo el año) → comportamiento clásico.
           ═══════════════════════════════════════════════════════════════════ */}
-      {frecuencia === "mensual" && (
+      {/* Vigencia — solo para mensual y si el padre lo permite */}
+      {frecuencia === "mensual" && mostrarVigencia && (
         <div style={{ marginBottom: 8, marginTop: 4 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
             <label style={{ fontSize: 10, fontWeight: 500, color: T.txt3 }}>
