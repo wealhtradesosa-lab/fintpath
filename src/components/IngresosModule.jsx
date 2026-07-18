@@ -4,7 +4,7 @@ import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportIngresosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
-import TemplateSelector from "./TemplateSelector";
+import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -223,10 +223,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   const [templateElegido, setTemplateElegido] = useState(null);
 
   // Helper: decide si un campo se muestra según el template elegido.
-  // Al editar (editId), siempre mostrar todos los campos (form completo).
-  // Al crear nuevo, respetar template.camposVisibles.
+  // UX iter 4 (18-jul-2026 noche): al editar, respetar el template DETECTADO
+  // del item existente. Antes forzaba mostrar todo, causando redundancia con
+  // los chips de frecuencia. Ahora si es un ingreso mensual todo el año,
+  // NO se muestran los chips (no aporta valor). Si es un caso complejo
+  // (trimestral, semestral, único), el template detectado será "avanzado"
+  // y se mostrará todo.
   const mostrarCampo = (campo) => {
-    if (editId) return true;
     if (!templateElegido) return false;
     return templateElegido.camposVisibles.includes(campo);
   };
@@ -464,8 +467,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       hastaMes: Number(item.hastaMes) || 12,
     });
     setEditId(item.id); setShowForm(true);
-    // UX simplificación: al editar, mostrar el form completo (todos los campos visibles)
-    setTemplateElegido({ id: "avanzado", camposVisibles: ["monto", "frecuencia", "vigencia", "mesPago", "modoIngreso"] });
+    // UX iter 4 (18-jul-2026 noche): detectar el template correcto según el
+    // tipo del item existente. Antes forzaba modo "avanzado" que mostraba
+    // TODOS los chips redundantes. Ahora respeta el tipo original.
+    const tplDetectado = detectarTemplate(item);
+    setTemplateElegido(tplDetectado);
+    // Si es un salario/honorarios, mantener modo simple para no confundir
+    // (ellos siempre son mensuales, sin modoIngreso ni vigencia).
   };
 
   
@@ -768,7 +776,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             ) : (
               <>
                 {/* Badge del template elegido + link para cambiar */}
-                {!editId && templateElegido && templateElegido.id !== "avanzado" && (
+                {/* UX iter 4: badge del template visible también al editar
+                    (para que el user pueda cambiar el tipo si quiere). */}
+                {templateElegido && templateElegido.id !== "avanzado" && (
                   <div style={{ background: T.bg3, borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                       <span style={{ fontSize: 20 }}>{templateElegido.emoji}</span>

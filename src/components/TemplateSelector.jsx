@@ -80,6 +80,29 @@ export const TEMPLATES = [
   },
 ];
 
+// Detecta cuál template corresponde a un item existente basado en su
+// frecuencia y vigencia. Uso: al editar un ingreso/gasto, preseleccionar
+// el template correcto en lugar de mostrar todos los campos.
+export function detectarTemplate(item) {
+  const freq = item?.frecuencia || "mensual";
+  const desdeMes = Number(item?.desdeMes) || 1;
+  const hastaMes = Number(item?.hastaMes) || 12;
+
+  if (freq === "mensual") {
+    // Mensual todo el año → template simple sin chips ni vigencia
+    if (desdeMes === 1 && hastaMes === 12) {
+      return TEMPLATES.find(t => t.id === "mensual-todo-año");
+    }
+    // Mensual con vigencia limitada → template con Desde/Hasta
+    return TEMPLATES.find(t => t.id === "mensual-limitado");
+  }
+  if (freq === "anual") {
+    return TEMPLATES.find(t => t.id === "anual");
+  }
+  // Todo lo demás (trimestral, semestral, único) → template avanzado
+  return TEMPLATES.find(t => t.id === "avanzado");
+}
+
 export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T, onCancel }) {
   const templatesPrincipales = TEMPLATES.filter(t => t.id !== "avanzado");
   const templateAvanzado = TEMPLATES.find(t => t.id === "avanzado");

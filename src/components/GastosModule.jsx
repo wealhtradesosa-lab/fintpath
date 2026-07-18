@@ -5,7 +5,7 @@ import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportGastosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
-import TemplateSelector from "./TemplateSelector";
+import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -279,7 +279,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   // UX simplificación (18-jul-2026 tarde): plantilla elegida.
   const [templateElegido, setTemplateElegido] = useState(null);
   const mostrarCampo = (campo) => {
-    if (editKey) return true; // al editar, mostrar todo
+    // UX iter 4: respetar template detectado al editar (antes forzaba todo)
     if (!templateElegido) return false;
     return templateElegido.camposVisibles.includes(campo);
   };
@@ -416,7 +416,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       : (freqLegacy === "año" ? (item.m * 12) : item.m);
     setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
-    setTemplateElegido({ id: "avanzado", camposVisibles: ["monto", "frecuencia", "vigencia", "mesPago", "modoIngreso"] });
+    // UX iter 4 (18-jul-2026 noche): detectar template correcto del item existente
+    setTemplateElegido(detectarTemplate(item));
     setEditKey(item.key);
     setShowForm(true);
   };
@@ -711,7 +712,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             ) : (
               <>
                 {/* Badge del template + link cambiar */}
-                {!editKey && templateElegido && templateElegido.id !== "avanzado" && (
+                {templateElegido && templateElegido.id !== "avanzado" && (
                   <div style={{ background: T.bg3, borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                       <span style={{ fontSize: 20 }}>{templateElegido.emoji}</span>
