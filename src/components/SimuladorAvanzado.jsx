@@ -233,7 +233,7 @@ function FreedomBarLive({ ni, te, cf }) {
 // ═══════════════════════════════════════
 // MAIN SIMULATOR
 // ═══════════════════════════════════════
-export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
+export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onNavigate}) {
 
   const [simVals, setSimVals] = useState({});
   // Per-owner toggle: { "<ti>": true/false } keyed by tax detail index.
@@ -533,6 +533,40 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt}) {
       deltaVsPromedio: cashFlowMes - (simT.cashFlow || 0),
     };
   }, [user, simVals, mesVisualizado, getVal, simT.cuotasDeudas, simT.retencionMensual, simT.impuestoNeto, simT.cashFlow]);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Widget mini de flujo anual (Fase 3 - 18-jul-2026).
+  // Calcula cash flow por cada uno de los 12 meses del año actual usando
+  // el mismo motor que simTMes pero iterando 12 veces. Solo produce el
+  // resumen visual — el módulo /flujo tiene el detalle completo.
+  // ═══════════════════════════════════════════════════════════════════════
+  const cashFlowPorMes = useMemo(() => {
+    const trm = 4200;
+    const { año } = getMesActual();
+    return Array.from({ length: 12 }, (_, i) => {
+      const mes = i + 1;
+      let ingresosMes = 0;
+      (user.ingresos || []).forEach(ing => {
+        if (ing.sim === false) return;
+        const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
+        ingresosMes += montoDelMes({ ...ing, mensual: montoBase }, año, mes);
+      });
+      let aportesObl = 0, gastosFam = 0;
+      Object.entries(user.gastos || {}).forEach(([cat, items]) => {
+        (items || []).forEach(g => {
+          if (g.sim === false) return;
+          const monto = montoDelMes(g, año, mes);
+          if (cat === "Seguridad Social") aportesObl += monto;
+          else gastosFam += monto;
+        });
+      });
+      const cuotas = simT.cuotasDeudas || 0;
+      const retencion = simT.retencionMensual || 0;
+      const impNeto = simT.impuestoNeto || 0;
+      const cf = (ingresosMes - retencion) - (aportesObl + gastosFam + cuotas + impNeto);
+      return { mes, mesLabel: MESES.find(m => m.v === mes)?.l.slice(0, 3) || "", cashFlow: cf };
+    });
+  }, [user, simT.cuotasDeudas, simT.retencionMensual, simT.impuestoNeto]);
 
   // ── Baseline (sin overrides de simVals, sin toggle Optimizado) ──
   // Reproduce la misma fórmula de simT pero usando los valores de la data
@@ -941,6 +975,62 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
           );
         })}
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          Widget mini de Flujo Anual (Fase 3 - 18-jul-2026).
+          Muestra los 12 meses del año actual como micro-barras del cash flow
+          con la línea de promedio. Click en cualquier parte lleva al módulo
+          /flujo-anual completo con detalle mes a mes.
+          ═══════════════════════════════════════════════════════════════════ */}
+      {onNavigate && (() => {
+        const maxAbs = Math.max(...cashFlowPorMes.map(m => Math.abs(m.cashFlow)), 1);
+        const mesActualNum = getMesActual().mes;
+        return (
+          <div
+            onClick={() => onNavigate("flujo")}
+            style={{
+              background: T.card,
+              border: `1px solid ${T.border}`,
+              borderRadius: 14,
+              padding: "14px 18px",
+              marginBottom: 14,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gd + "60"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, textTransform: "uppercase" }}>📅 Cómo se comporta tu año</div>
+                <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>Cash flow mes a mes · picos y valles del año {getMesActual().año}</div>
+              </div>
+              <div style={{ fontSize: 11, color: T.gd, fontWeight: 700, whiteSpace: "nowrap" }}>Ver detalle completo →</div>
+            </div>
+            {/* Mini barras del cash flow por mes */}
+            <div style={{ display: "flex", alignItems: "flex-end", height: 60, gap: 4, marginTop: 8 }}>
+              {cashFlowPorMes.map((m) => {
+                const heightPct = (Math.abs(m.cashFlow) / maxAbs) * 100;
+                const positivo = m.cashFlow >= 0;
+                const esActual = m.mes === mesActualNum;
+                return (
+                  <div key={m.mes} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+                    <div style={{
+                      width: "100%",
+                      height: `${Math.max(heightPct, 2)}%`,
+                      background: positivo ? T.gn : T.rd,
+                      opacity: esActual ? 1 : 0.65,
+                      borderRadius: "3px 3px 0 0",
+                      border: esActual ? `1.5px solid ${T.gd}` : "none",
+                    }} title={`${m.mesLabel}: ${fm(m.cashFlow)}`} />
+                    <div style={{ fontSize: 9, color: esActual ? T.gd : T.txt3, marginTop: 3, fontWeight: esActual ? 700 : 500 }}>{m.mesLabel}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ═══════════════════════════════════════════════════════════════════
           FASE 2 (4-jul-2026): rediseño family office del bloque de KPIs.
