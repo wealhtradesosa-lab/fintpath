@@ -268,7 +268,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
-  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   // UX flujo anual (18-jul-2026): modo de captura del monto.
   // 'porPago' = el user ingresa el monto de cada pago (semestre, trimestre, etc)
   // 'anual'   = el user ingresa el total anual, el sistema divide por N
@@ -342,6 +342,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         freq: form.freq || "mes",  // legacy, mantenido por retrocompat
         frecuencia,                 // nuevo campo
         mesPago: Number(form.mesPago) || 1,
+        // Fase 4 flujo anual (18-jul-2026): persistir rango de vigencia.
+        // Solo se guarda si es distinto del default (enero-diciembre) para
+        // mantener limpio el item — el motor default respeta enero-diciembre.
+        ...((Number(form.desdeMes) || 1) !== 1 && { desdeMes: Number(form.desdeMes) }),
+        ...((Number(form.hastaMes) || 12) !== 12 && { hastaMes: Number(form.hastaMes) }),
         owner: form.owner || "",
         fiscalCode: form.fiscalCode || undefined,
         causalidad: form.causalidad || undefined,
@@ -374,7 +379,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     onUpdate(newGas);
     setShowForm(false);
     setEditKey(null);
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   };
 
   const openEdit = (item) => {
@@ -386,20 +391,23 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     const freqLegacy = item.freq || "mes";
     const frecuencia = item.frecuencia || "mensual";
     const mesPago = Number(item.mesPago) || 1;
+    // Fase 4 flujo anual (18-jul-2026): preservar rango de vigencia
+    const desdeMes = Number(item.desdeMes) || 1;
+    const hastaMes = Number(item.hastaMes) || 12;
     // Si tiene frecuencia nueva (anual/trimestral/etc), el m ya es el monto por período completo
     // Si es viejo con freq=año, mostrar como × 12 (comportamiento heredado)
     // Si es mensual (nuevo o viejo), mostrar tal cual
     const mDisplay = (frecuencia !== "mensual")
       ? item.m
       : (freqLegacy === "año" ? (item.m * 12) : item.m);
-    setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
+    setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
     setEditKey(item.key);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
     setModoIngreso("porPago"); // default al crear
     setEditKey(null);
     setShowForm(true);
@@ -777,13 +785,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     <FrecuenciaSelector
                       frecuencia={form.frecuencia}
                       mesPago={form.mesPago}
+                      desdeMes={form.desdeMes}
+                      hastaMes={form.hastaMes}
                       onChange={(patch) => {
-                        // Si el user cambia la frecuencia estando en modo 'porPago',
-                        // el monto significa "por semestre" o "por trimestre" — cambia
-                        // su interpretación. Para mantener coherencia matemática, si
-                        // pasa de una frecuencia a otra, mejor limpiar el monto (opcional)
-                        // o dejarlo tal cual. Dejamos tal cual: el user reajusta.
-                        // Si el modo es 'anual', el monto siempre es el anual — invariante.
                         setForm(p => ({ ...p, ...patch }));
                       }}
                       monto={modoIngreso === "anual"

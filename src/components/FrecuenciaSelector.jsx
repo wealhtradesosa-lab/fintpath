@@ -40,14 +40,24 @@ export default function FrecuenciaSelector({
   onChange,
   monto,
   tokens: T,
+  // Fase 4 flujo anual (18-jul-2026): rango de vigencia solo para mensuales
+  desdeMes = 1,
+  hastaMes = 12,
 }) {
   const freq = FRECUENCIAS.find(f => f.v === frecuencia) || FRECUENCIAS[0];
   const showMes = frecuencia !== "mensual";
 
   // Calcula el promedio mensualizado para mostrar en la explicación contextual
   const montoNum = Number(monto) || 0;
-  const promedioMes = montoNum > 0 ? Math.round((montoNum * freq.n) / 12) : 0;
+  // Para mensuales con rango, el promedio se ajusta por meses activos
+  const mesesActivos = frecuencia === "mensual" ? Math.max(0, (hastaMes - desdeMes + 1)) : 12;
+  const promedioMes = montoNum > 0
+    ? (frecuencia === "mensual"
+        ? Math.round((montoNum * mesesActivos) / 12)
+        : Math.round((montoNum * freq.n) / 12))
+    : 0;
   const mesNombre = MESES.find(m => m.v === Number(mesPago))?.l || "Enero";
+  const vigenciaLimitada = frecuencia === "mensual" && (desdeMes !== 1 || hastaMes !== 12);
 
   const fm = (n) => "$" + Math.round(n).toLocaleString("es-CO");
 
@@ -102,6 +112,82 @@ export default function FrecuenciaSelector({
               <option key={m.v} value={m.v}>{m.l}</option>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          VIGENCIA — solo para frecuencia MENSUAL (Fase 4 flujo anual 18-jul-2026).
+          Resuelve caso Santiago: "Rapicredit me paga cada mes desde julio hasta
+          diciembre pero no sé cómo poner el valor porque no interpreta que por
+          6 meses ese es el ingreso". Ahora sí: pone monto mensual + rango
+          de vigencia + sistema respeta ambos.
+          Default: enero-diciembre (todo el año) → comportamiento clásico.
+          ═══════════════════════════════════════════════════════════════════ */}
+      {frecuencia === "mensual" && (
+        <div style={{ marginBottom: 8, marginTop: 4 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <label style={{ fontSize: 10, fontWeight: 500, color: T.txt3 }}>
+              📆 ¿Se recibe/paga todo el año?
+            </label>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button type="button"
+                onClick={() => onChange({ desdeMes: 1, hastaMes: 12 })}
+                style={{ background: !vigenciaLimitada ? T.gn + "15" : "transparent", border: `1px solid ${!vigenciaLimitada ? T.gn : T.border}`, borderRadius: 6, padding: "3px 10px", color: !vigenciaLimitada ? T.gn : T.txt3, fontSize: 10, fontWeight: !vigenciaLimitada ? 700 : 500, cursor: "pointer" }}>
+                Todo el año
+              </button>
+              <button type="button"
+                onClick={() => onChange({ desdeMes: desdeMes === 1 && hastaMes === 12 ? 1 : desdeMes, hastaMes: desdeMes === 1 && hastaMes === 12 ? 6 : hastaMes })}
+                style={{ background: vigenciaLimitada ? T.gn + "15" : "transparent", border: `1px solid ${vigenciaLimitada ? T.gn : T.border}`, borderRadius: 6, padding: "3px 10px", color: vigenciaLimitada ? T.gn : T.txt3, fontSize: 10, fontWeight: vigenciaLimitada ? 700 : 500, cursor: "pointer" }}>
+                Solo unos meses
+              </button>
+            </div>
+          </div>
+          {vigenciaLimitada && (
+            <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 4 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 9, color: T.txt3, display: "block", marginBottom: 2 }}>Desde</label>
+                <select
+                  value={desdeMes}
+                  onChange={(e) => {
+                    const nuevo = Number(e.target.value);
+                    // Auto-ajustar hastaMes si el rango queda invertido
+                    const nuevoHasta = nuevo > hastaMes ? nuevo : hastaMes;
+                    onChange({ desdeMes: nuevo, hastaMes: nuevoHasta });
+                  }}
+                  style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 10px", color: T.txt, fontSize: 12, outline: "none" }}
+                >
+                  {MESES.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
+                </select>
+              </div>
+              <span style={{ color: T.txt3, fontSize: 10, marginTop: 14 }}>→</span>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 9, color: T.txt3, display: "block", marginBottom: 2 }}>Hasta</label>
+                <select
+                  value={hastaMes}
+                  onChange={(e) => onChange({ hastaMes: Number(e.target.value) })}
+                  style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 10px", color: T.txt, fontSize: 12, outline: "none" }}
+                >
+                  {MESES.filter(m => m.v >= desdeMes).map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Explicación contextual para mensual con vigencia LIMITADA */}
+      {frecuencia === "mensual" && vigenciaLimitada && (
+        <div style={{ fontSize: 11, color: T.txt3, background: T.bg3 + "80", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
+          <div style={{ marginBottom: 4 }}>
+            💡 <strong style={{ color: T.txt2 }}>{mesesActivos} {mesesActivos === 1 ? "mes" : "meses"} activos</strong>: {MESES.find(m => m.v === desdeMes)?.l} a {MESES.find(m => m.v === hastaMes)?.l}. El resto del año no pesa.
+          </div>
+          {montoNum > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
+              <span>Por mes: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
+              <span>Total período: <strong style={{ color: T.gn }}>{fm(montoNum * mesesActivos)}</strong></span>
+              <span>Promedio anual: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></span>
+            </div>
+          )}
         </div>
       )}
 

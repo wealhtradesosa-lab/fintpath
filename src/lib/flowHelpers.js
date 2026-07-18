@@ -71,6 +71,23 @@ export const factorDeFrecuencia = (frecuencia) => {
   return f?.n || 12;
 };
 
+// Rango de vigencia del item (Fase 4 flujo anual 18-jul-2026).
+// Solo aplica a frecuencia MENSUAL. Un ingreso o gasto puede estar activo
+// solo entre `desdeMes` y `hastaMes` (ej: Rapicredit paga de julio a
+// diciembre → desdeMes=7, hastaMes=12). Default: enero-diciembre (todo el año).
+export const getRangoMeses = (item) => ({
+  desde: Number(item?.desdeMes) || 1,
+  hasta: Number(item?.hastaMes) || 12,
+});
+
+// Cuenta cuántos meses del año este item está activo (util para promedio).
+export const mesesActivosDelAño = (item) => {
+  const freq = getFrecuencia(item);
+  if (freq !== "mensual") return null; // solo aplica a mensuales
+  const { desde, hasta } = getRangoMeses(item);
+  return Math.max(0, hasta - desde + 1);
+};
+
 // Verifica si un item está marcado como pagado para un año dado
 export const estaPagadoEnAño = (item, año) => {
   if (!item?.pagos) return false;
@@ -83,19 +100,24 @@ export const estaPagadoEnAño = (item, año) => {
  * Devuelve el monto promedio mensualizado del item.
  * Ej: impuesto anual $12M → devuelve $1M (12M/12 meses)
  * Ej: dividendo trimestral $3M → devuelve $1M (3M × 4 trimestres / 12 meses)
+ * Ej: mensual $47M activo solo 6 meses → devuelve $23.5M (47M × 6 / 12)
  */
 export function montoPromedioMensual(item) {
   const monto = getMonto(item);
   if (monto === 0) return 0;
   const freq = getFrecuencia(item);
+  // Para mensuales con rango limitado, el promedio se ajusta por meses activos
+  if (freq === "mensual") {
+    const activos = mesesActivosDelAño(item);
+    return (monto * activos) / 12;
+  }
   const factor = FRECUENCIAS.find(f => f.v === freq)?.n || 12;
-  // n=12 (mensual), n=4 (trimestral), n=2 (semestral), n=1 (anual/unico)
   return (monto * factor) / 12;
 }
 
 /**
  * Devuelve el monto que pesa en un mes específico, considerando frecuencia,
- * mes de pago y estado (pagado/pendiente).
+ * mes de pago, rango de vigencia y estado (pagado/pendiente).
  * @param {Object} item - El ingreso/gasto/deuda
  * @param {number} año - Año calendario (ej: 2026)
  * @param {number} mes - Mes calendario (1-12)
@@ -112,9 +134,14 @@ export function montoDelMes(item, año, mes) {
 
   const mesPago = getMesPago(item);
   switch (freq) {
-    case "mensual":
-      // Todos los meses pesan igual
+    case "mensual": {
+      // Fase 4 flujo anual: respetar rango de vigencia [desdeMes, hastaMes]
+      // Default: enero-diciembre (todo el año). Si el mes está fuera del rango,
+      // el item no pesa (ej: Rapicredit inactivo antes de julio).
+      const { desde, hasta } = getRangoMeses(item);
+      if (mes < desde || mes > hasta) return 0;
       return monto;
+    }
     case "anual":
     case "unico":
       // Solo pesa en el mes de pago

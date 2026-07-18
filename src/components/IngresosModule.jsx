@@ -140,6 +140,10 @@ const INITIAL_FORM = {
   // Default "mensual" mantiene comportamiento actual. Retrocompat total.
   frecuencia: "mensual",
   mesPago: 1,
+  // Fase 4 flujo anual (18-jul-2026): rango de vigencia (solo mensual).
+  // Ej: Rapicredit paga cada mes desde julio a diciembre → desdeMes=7, hastaMes=12
+  desdeMes: 1,
+  hastaMes: 12,
 };
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
@@ -433,6 +437,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       retencionTasaCustom: item.retencionConfig?.tasaCustom != null
         ? String(item.retencionConfig.tasaCustom * 100)  // 0.07 → "7"
         : "",
+      // Fase 2 flujo anual (18-jul-2026): preservar frecuencia y mes de pago
+      frecuencia: item.frecuencia || "mensual",
+      mesPago: Number(item.mesPago) || 1,
+      // Fase 4 flujo anual (18-jul-2026): preservar rango de vigencia
+      desdeMes: Number(item.desdeMes) || 1,
+      hastaMes: Number(item.hastaMes) || 12,
     });
     setEditId(item.id); setShowForm(true);
   };
@@ -778,6 +788,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 <FrecuenciaSelector
                   frecuencia={form.frecuencia}
                   mesPago={form.mesPago}
+                  desdeMes={form.desdeMes}
+                  hastaMes={form.hastaMes}
                   onChange={(patch) => setForm(p => ({ ...p, ...patch }))}
                   monto={form.mensual}
                   tokens={T}
