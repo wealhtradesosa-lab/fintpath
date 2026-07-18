@@ -19,6 +19,21 @@
 
 import { FRECUENCIAS, MESES } from "../lib/flowHelpers.js";
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Helper: label dinámico para el input MONTO según la frecuencia elegida.
+// Responde a la pregunta de Santiago (18-jul-2026): "no sé si poner el
+// valor por pago o el anual". Ahora el label DICE exactamente qué esperar.
+// ═══════════════════════════════════════════════════════════════════════════
+export function labelMontoSegunFrecuencia(frecuencia) {
+  switch (frecuencia) {
+    case "trimestral": return "Monto por trimestre";
+    case "semestral":  return "Monto por semestre";
+    case "anual":      return "Monto anual (1 pago)";
+    case "unico":      return "Monto del pago único";
+    default:           return "Monto mensual";
+  }
+}
+
 export default function FrecuenciaSelector({
   frecuencia = "mensual",
   mesPago = 1,
@@ -90,27 +105,61 @@ export default function FrecuenciaSelector({
         </div>
       )}
 
-      {/* Explicación contextual */}
-      <div style={{ fontSize: 11, color: T.txt3, background: T.bg3 + "50", padding: "8px 10px", borderRadius: 6, lineHeight: 1.5 }}>
-        {frecuencia === "mensual" && (
-          <>💡 Se paga <strong style={{ color: T.txt2 }}>los 12 meses del año</strong>.</>
-        )}
-        {frecuencia === "trimestral" && (
-          <>💡 4 pagos al año en {MESES.find(m=>m.v===Number(mesPago))?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+3)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+9)%12)+1)?.l}.
-            {montoNum > 0 && <> Promedio: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></>}</>
-        )}
-        {frecuencia === "semestral" && (
-          <>💡 2 pagos al año: {mesNombre} y {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}.
-            {montoNum > 0 && <> Promedio: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></>}</>
-        )}
-        {frecuencia === "anual" && (
-          <>💡 Un pago en <strong style={{ color: T.txt2 }}>{mesNombre}</strong>. El resto del año no pesa.
-            {montoNum > 0 && <> Promedio: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></>}</>
-        )}
-        {frecuencia === "unico" && (
-          <>💡 Pago único en <strong style={{ color: T.txt2 }}>{mesNombre}</strong>. No se repite.</>
-        )}
-      </div>
+      {/* ═══════════════════════════════════════════════════════════════════
+          Explicación con AMBOS números visibles (respondiendo pregunta
+          Santiago 18-jul-2026): "¿pongo el valor por pago o el anual?".
+          Ahora mostramos: monto por pago Y total anual Y promedio mensual.
+          Cero ambigüedad — el user ve la conversión completa siempre.
+          ═══════════════════════════════════════════════════════════════════ */}
+      {frecuencia !== "mensual" && (
+        <div style={{ fontSize: 11, color: T.txt3, background: T.bg3 + "80", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
+          {frecuencia === "trimestral" && (
+            <>
+              <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>4 pagos al año</strong> en {MESES.find(m=>m.v===Number(mesPago))?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+3)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+9)%12)+1)?.l}</div>
+              {montoNum > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
+                  <span>Por trimestre: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
+                  <span>Total año: <strong style={{ color: T.gn }}>{fm(montoNum * 4)}</strong></span>
+                  <span>Promedio: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></span>
+                </div>
+              )}
+            </>
+          )}
+          {frecuencia === "semestral" && (
+            <>
+              <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>2 pagos al año</strong>: {mesNombre} y {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}</div>
+              {montoNum > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
+                  <span>Por semestre: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
+                  <span>Total año: <strong style={{ color: T.gn }}>{fm(montoNum * 2)}</strong></span>
+                  <span>Promedio: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></span>
+                </div>
+              )}
+            </>
+          )}
+          {frecuencia === "anual" && (
+            <>
+              <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>1 pago al año</strong> en {mesNombre}. El resto del año no pesa.</div>
+              {montoNum > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
+                  <span>Pago anual: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
+                  <span>Promedio: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></span>
+                </div>
+              )}
+            </>
+          )}
+          {frecuencia === "unico" && (
+            <>
+              <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>Pago único</strong> en {mesNombre}. No se repite el próximo año.</div>
+              {montoNum > 0 && (
+                <div style={{ fontSize: 10, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
+                  Monto del pago: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

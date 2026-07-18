@@ -4,7 +4,7 @@ import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportGastosExcel } from "../lib/excelExport.js";
-import FrecuenciaSelector from "./FrecuenciaSelector";
+import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import { togglePagado, getFrecuencia, estaPagadoEnAño } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -700,7 +700,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               {form.montoModo !== "tasa" ? (
                 <>
                   <div style={{gridColumn:"1/-1"}}>
-                    <In l="Monto" value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" />
+                    <In l={labelMontoSegunFrecuencia(form.frecuencia)} value={form.m} onChange={(v) => setForm((p) => ({ ...p, m: v }))} type="number" placeholder="0" />
                   </div>
                   {/* Fase 2 (18-jul-2026): FrecuenciaSelector reemplaza el input viejo mes/año.
                       Ahora soporta 5 frecuencias + mes de pago + explicación contextual. */}

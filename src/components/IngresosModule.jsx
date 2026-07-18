@@ -3,7 +3,7 @@ import NumberInput from "./NumberInput";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportIngresosExcel } from "../lib/excelExport.js";
-import FrecuenciaSelector from "./FrecuenciaSelector";
+import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import { togglePagado, getFrecuencia, estaPagadoEnAño } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -673,7 +673,16 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 </>}
               </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
-              <In l={["Salario","Honorarios"].includes(form.categoria) ? "💵 Monto BRUTO mensual (antes de descuentos)" : "💵 Monto mensual"} value={form.mensual} onChange={(v) => {
+              <In l={(() => {
+                // Label dinámico según frecuencia (Fase 3.5 flujo anual):
+                // Si Salario/Honorarios, mantiene el label BRUTO (fiscal crítico).
+                // Si otro tipo de ingreso, usa el label según la frecuencia elegida.
+                const isSalarioLike = ["Salario","Honorarios"].includes(form.categoria);
+                if (isSalarioLike) return "💵 Monto BRUTO mensual (antes de descuentos)";
+                const freq = form.frecuencia || "mensual";
+                const emoji = { mensual: "📅", trimestral: "🗓️", semestral: "📆", anual: "🎯", unico: "💥" }[freq];
+                return `💵 ${emoji} ${labelMontoSegunFrecuencia(freq)}`;
+              })()} value={form.mensual} onChange={(v) => {
                 const nf = { mensual: v };
                 const m = Number(v) || 0;
                 const cap = Number(form.capital) || 0;
@@ -693,7 +702,15 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   if (!form.aporteSalud)   nf.aporteSalud   = String(Math.round(m * 0.04));
                 }
                 setForm(p => ({ ...p, ...nf }));
-              }} type="number" placeholder={["Salario","Honorarios"].includes(form.categoria) ? "Monto en contrato, antes de retención y aportes" : "¿Cuánto recibes al mes?"} />
+              }} type="number" placeholder={(() => {
+                if (["Salario","Honorarios"].includes(form.categoria)) return "Monto en contrato, antes de retención y aportes";
+                const freq = form.frecuencia || "mensual";
+                if (freq === "mensual") return "¿Cuánto recibes al mes?";
+                if (freq === "trimestral") return "¿Cuánto en cada trimestre?";
+                if (freq === "semestral") return "¿Cuánto en cada semestre?";
+                if (freq === "anual") return "¿Cuánto en total al año?";
+                return "¿Monto del pago único?";
+              })()} />
               {["Salario","Honorarios"].includes(form.categoria) && <div style={{gridColumn:"1/-1",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:8,padding:"10px 12px",marginTop:-4,marginBottom:4}}>
                 <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:3}}>ℹ️ Ingresá el monto BRUTO</div>
                 <div style={{fontSize:10,color:"#71717a",lineHeight:1.5}}>El monto que aparece en tu contrato o factura, <strong>antes</strong> de retención en la fuente y aportes obligatorios (salud+pensión). El sistema calcula automáticamente tu impuesto de renta aplicando la tabla progresiva de la DIAN 2026.</div>
