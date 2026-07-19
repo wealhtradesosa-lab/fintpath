@@ -51,7 +51,10 @@ export const TEMPLATES = [
     titulo: () => "Cada mes solo durante algunos meses",
     descripcion: () => "Se recibe/paga solo un rango de meses (ej: jul–dic)",
     ejemplo: (tipo) => tipo === "ingreso" ? "Ej: Rapicredit jul–dic, contrato por proyecto" : "Ej: alquiler temporal, curso trimestral",
-    preset: { frecuencia: "mensual", desdeMes: 7, hastaMes: 12, mesPago: 1 },
+    // Preset arranca ene-jun: la mayoría de rangos empiezan en enero
+    // (salario parcial, contrato). Así el user típico solo toca "Hasta"
+    // (18-jul-2026 noche, Santiago: elegir Desde primero lo sacaba).
+    preset: { frecuencia: "mensual", desdeMes: 1, hastaMes: 6, mesPago: 1 },
     camposVisibles: ["monto", "modoIngresoSimple", "vigencia"],
     modoIngresoDefault: "porPago",
     color: "#3b82f6",
