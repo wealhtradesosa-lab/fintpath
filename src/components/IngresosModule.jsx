@@ -862,6 +862,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     values={form.montosMensuales}
                     onChange={(nuevoArray) => setForm(p => ({ ...p, montosMensuales: nuevoArray, frecuencia: "variable" }))}
                     tokens={T}
+                    desdeMes={Number(form.desdeMes) || 1}
+                    hastaMes={Number(form.hastaMes) || 12}
                   />
                 </div>
               )}

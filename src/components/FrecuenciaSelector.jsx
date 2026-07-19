@@ -132,8 +132,8 @@ export default function FrecuenciaSelector({
           de vigencia + sistema respeta ambos.
           Default: enero-diciembre (todo el año) → comportamiento clásico.
           ═══════════════════════════════════════════════════════════════════ */}
-      {/* Vigencia — solo para mensual y si el padre lo permite */}
-      {frecuencia === "mensual" && mostrarVigencia && (
+      {/* Vigencia — para mensual Y variable (18-jul-2026 noche) */}
+      {(frecuencia === "mensual" || frecuencia === "variable") && mostrarVigencia && (
         <div style={{ marginBottom: 8, marginTop: 4 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
             <label style={{ fontSize: 10, fontWeight: 500, color: T.txt3 }}>

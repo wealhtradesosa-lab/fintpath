@@ -27,45 +27,70 @@ import { MESES, getMesActual, promedioMesesReales, esMesFuturo } from "../lib/fl
 
 const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
 
-export default function TablaMensual({ values = [], onChange, tokens: T }) {
+export default function TablaMensual({
+  values = [],
+  onChange,
+  tokens: T,
+  // UX ampliación (18-jul-2026 noche): soporte de vigencia limitada.
+  // Ej: variable-mensual con desdeMes=7, hastaMes=12 → solo Jul-Dic editables.
+  // Meses fuera del rango se muestran deshabilitados y se fuerzan a 0.
+  desdeMes = 1,
+  hastaMes = 12,
+}) {
   // Asegurar que siempre tenemos 12 posiciones
   const montos = Array.isArray(values) && values.length === 12
     ? values.map(v => Number(v) || 0)
     : new Array(12).fill(0);
 
-  // Proyección: promedio de meses reales (los que tienen valor > 0)
-  const proyeccion = promedioMesesReales(montos);
+  // Helper: ¿el mes M (1-12) está dentro del rango de vigencia?
+  const enVigencia = (m) => m >= desdeMes && m <= hastaMes;
+  const vigenciaLimitada = desdeMes !== 1 || hastaMes !== 12;
+  const nMesesEnRango = hastaMes - desdeMes + 1;
+
+  // Proyección: promedio de meses reales EN VIGENCIA (los que tienen valor > 0)
+  const montosEnVigencia = montos.filter((_, idx) => enVigencia(idx + 1));
+  const proyeccion = promedioMesesReales(montosEnVigencia);
   const { año: añoActual } = getMesActual();
 
-  // Contar tipos de meses
-  const reales = montos.filter(m => m > 0).length;
+  // Contar tipos de meses (solo en vigencia)
+  const reales = montos.filter((m, idx) => enVigencia(idx + 1) && m > 0).length;
   const proyectadosCount = montos.reduce((c, valor, idx) => {
-    if (valor === 0 && esMesFuturo(añoActual, idx + 1)) return c + 1;
+    const mes = idx + 1;
+    if (!enVigencia(mes)) return c;
+    if (valor === 0 && esMesFuturo(añoActual, mes)) return c + 1;
     return c;
   }, 0);
 
-  // Total: incluye reales cargados + proyección en meses futuros vacíos
+  // Total: incluye reales cargados + proyección en meses futuros vacíos (dentro de vigencia)
   const totalConProyeccion = montos.reduce((s, valor, idx) => {
     const mes = idx + 1;
+    if (!enVigencia(mes)) return s;
     if (valor > 0) return s + valor;
     if (esMesFuturo(añoActual, mes)) return s + proyeccion;
     return s;
   }, 0);
-  const promedioAnual = totalConProyeccion / 12;
+  const promedioAnual = totalConProyeccion / (vigenciaLimitada ? nMesesEnRango : 12);
 
   const actualizarMes = (idx, valor) => {
+    // Solo permite editar meses en vigencia
+    if (!enVigencia(idx + 1)) return;
     const nuevoArray = [...montos];
     nuevoArray[idx] = Number(valor) || 0;
     onChange(nuevoArray);
   };
 
   const aplicarATodos = () => {
-    const primerValor = montos[0];
+    // Copia el primer valor EN VIGENCIA a los otros meses en vigencia
+    const primerValor = montos[desdeMes - 1];
     if (primerValor === 0) return;
-    onChange(new Array(12).fill(primerValor));
+    const nuevoArray = montos.map((_, idx) =>
+      enVigencia(idx + 1) ? primerValor : 0
+    );
+    onChange(nuevoArray);
   };
 
   const limpiar = () => {
+    // Deja todo en 0 (respetando estructura de 12 meses)
     onChange(new Array(12).fill(0));
   };
 
@@ -115,14 +140,42 @@ export default function TablaMensual({ values = [], onChange, tokens: T }) {
         </div>
       )}
 
+      {/* Nota de vigencia limitada — si el rango no es 1-12 */}
+      {vigenciaLimitada && (
+        <div style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 11, color: "#3b82f6", lineHeight: 1.5 }}>
+          📅 <strong>Vigencia limitada:</strong> solo {nMesesEnRango} {nMesesEnRango === 1 ? "mes" : "meses"} activos ({MESES[desdeMes - 1].l}–{MESES[hastaMes - 1].l}). Los meses fuera del rango se muestran deshabilitados.
+        </div>
+      )}
+
       {/* Grid 4 columnas × 3 filas — visualmente organizado por trimestres */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 10 }}>
         {MESES.map((mes, idx) => {
+          const enR = enVigencia(mes.v);
           const valor = montos[idx];
-          const tieneValor = valor > 0;
+          const tieneValor = valor > 0 && enR;
           const esFuturo = esMesFuturo(añoActual, mes.v);
-          const esProyectado = !tieneValor && esFuturo && proyeccion > 0;
-          const valorMostrado = tieneValor ? valor : (esProyectado ? proyeccion : 0);
+          const esProyectado = enR && !tieneValor && esFuturo && proyeccion > 0;
+
+          // Fuera de vigencia: celda gris opaca, no editable, muestra 🚫
+          if (!enR) {
+            return (
+              <div key={mes.v} style={{
+                background: "rgba(255,255,255,0.02)",
+                border: `1px dashed ${T.border}`,
+                borderRadius: 8,
+                padding: "6px 8px",
+                opacity: 0.4,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                  <label style={{ fontSize: 9, fontWeight: 700, color: T.txt3, letterSpacing: 0.3, textTransform: "uppercase" }}>
+                    {mes.l.slice(0, 3)}
+                  </label>
+                  <span style={{ fontSize: 9, color: T.txt3 }} title="Fuera del rango de vigencia">🚫</span>
+                </div>
+                <div style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace", fontWeight: 500, padding: "2px 0" }}>—</div>
+              </div>
+            );
+          }
 
           return (
             <div key={mes.v} style={{
@@ -166,10 +219,13 @@ export default function TablaMensual({ values = [], onChange, tokens: T }) {
         })}
       </div>
 
-      {/* Resumen: total año + promedio + reales + proyectados */}
+      {/* Resumen: total + promedio + reales + proyectados */}
       <div style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>Total del año {proyectadosCount > 0 && <span style={{ color: "#22d3ee" }}>(c/ proyección)</span>}</div>
+          <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>
+            {vigenciaLimitada ? `Total (${nMesesEnRango} ${nMesesEnRango === 1 ? "mes" : "meses"})` : "Total del año"}
+            {proyectadosCount > 0 && <span style={{ color: "#22d3ee" }}> (c/ proyección)</span>}
+          </div>
           <div style={{ fontSize: 14, fontWeight: 800, color: totalConProyeccion > 0 ? "#22c55e" : T.txt3, fontFamily: "monospace", marginTop: 1 }}>{fm(totalConProyeccion)}</div>
         </div>
         <div>

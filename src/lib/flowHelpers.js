@@ -128,13 +128,32 @@ export function labelVigenciaBadge(item) {
   const MESES_CORTOS = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
   if (freq === "variable") {
+    const { desde, hasta } = getRangoMeses(item);
+    const vigenciaLimitada = desde !== 1 || hasta !== 12;
     const montos = getMontosMensuales(item);
-    const reales = montos.filter(m => m > 0).length;
+    // Meses reales EN vigencia
+    const reales = montos.filter((m, idx) => {
+      const mes = idx + 1;
+      return mes >= desde && mes <= hasta && m > 0;
+    }).length;
     const { año: añoActual } = getMesActual();
     const proyectados = montos.reduce((c, valor, idx) => {
-      if (valor === 0 && esMesFuturo(añoActual, idx + 1)) return c + 1;
+      const mes = idx + 1;
+      if (mes < desde || mes > hasta) return c;
+      if (valor === 0 && esMesFuturo(añoActual, mes)) return c + 1;
       return c;
     }, 0);
+    // Si tiene vigencia limitada, mostrar rango en el label
+    if (vigenciaLimitada) {
+      return {
+        emoji: "📊",
+        label: `Var. ${MESES_CORTOS[desde]}–${MESES_CORTOS[hasta]}`,
+        sub: proyectados > 0
+          ? `${reales} real · ${proyectados} proy.`
+          : `${reales} ${reales === 1 ? "mes" : "meses"}`,
+        color: "#22d3ee",
+      };
+    }
     return {
       emoji: "📊",
       label: "Variable",
@@ -186,12 +205,18 @@ export function labelVigenciaBadge(item) {
 export function totalAnualItem(item) {
   const freq = getFrecuencia(item);
   if (freq === "variable") {
-    // Suma reales + proyección en meses futuros vacíos
+    // Suma reales + proyección en meses futuros vacíos, dentro de vigencia
     const montos = getMontosMensuales(item);
-    const promProyeccion = promedioMesesReales(montos);
+    const { desde, hasta } = getRangoMeses(item);
+    const montosEnVigencia = montos.filter((_, idx) => {
+      const m = idx + 1;
+      return m >= desde && m <= hasta;
+    });
+    const promProyeccion = promedioMesesReales(montosEnVigencia);
     const { año: añoActual } = getMesActual();
     return montos.reduce((s, valor, idx) => {
       const mes = idx + 1;
+      if (mes < desde || mes > hasta) return s; // fuera de vigencia
       if (valor > 0) return s + valor;
       if (esMesFuturo(añoActual, mes)) return s + promProyeccion;
       return s;
@@ -223,19 +248,10 @@ export const estaPagadoEnAño = (item, año) => {
  */
 export function montoPromedioMensual(item) {
   const freq = getFrecuencia(item);
-  // Variable: suma de los 12 meses (reales + proyectados en futuros) / 12
+  // Variable: suma del total anual / 12 (o meses activos si vigencia limitada)
   if (freq === "variable") {
-    const montos = getMontosMensuales(item);
-    const promProyeccion = promedioMesesReales(montos);
-    const { año: añoActual } = getMesActual();
-    // Iterar los 12 meses: usar valor real si existe, proyección si futuro sin valor
-    const total = montos.reduce((s, valor, idx) => {
-      const mes = idx + 1;
-      if (valor > 0) return s + valor;
-      if (esMesFuturo(añoActual, mes)) return s + promProyeccion;
-      return s;
-    }, 0);
-    return total / 12;
+    // Reutilizamos totalAnualItem que ya considera vigencia
+    return totalAnualItem(item) / 12;
   }
   const monto = getMonto(item);
   if (monto === 0) return 0;
@@ -256,15 +272,23 @@ export function montoDelMes(item, año, mes) {
   const freq = getFrecuencia(item);
 
   // Variable: retornar valor del mes correspondiente.
-  // Si el mes es FUTURO y no tiene valor cargado (0), proyectar con el
-  // promedio de los meses reales (los que sí tienen valor > 0).
-  // Los meses PASADOS con valor 0 se mantienen en 0 (no hubo ingreso).
+  // Respeta vigencia limitada (18-jul-2026 noche): si el mes está fuera
+  // del rango [desdeMes, hastaMes], no aporta nada.
+  // Si el mes es FUTURO y está EN vigencia, proyectar con promedio.
   if (freq === "variable") {
+    const { desde, hasta } = getRangoMeses(item);
+    // Fuera del rango de vigencia: nada
+    if (mes < desde || mes > hasta) return 0;
     const montos = getMontosMensuales(item);
     const valor = montos[mes - 1] || 0;
     if (valor > 0) return valor;
     if (esMesFuturo(año, mes)) {
-      return promedioMesesReales(montos);
+      // Proyección solo con meses en vigencia
+      const montosEnVigencia = montos.filter((_, idx) => {
+        const m = idx + 1;
+        return m >= desde && m <= hasta;
+      });
+      return promedioMesesReales(montosEnVigencia);
     }
     return 0;
   }

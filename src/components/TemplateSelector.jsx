@@ -85,8 +85,9 @@ export const TEMPLATES = [
       mesPago: 1,
       montosMensuales: new Array(12).fill(0),
     },
-    // Solo muestra la tabla mensual (nada del selector normal)
-    camposVisibles: ["tablaMensual"],
+    // UX ampliación (18-jul-2026 noche): también soporta vigencia limitada.
+    // Ej: contrato temporal variable jul-dic con montos diferentes cada mes.
+    camposVisibles: ["tablaMensual", "vigencia"],
     modoIngresoDefault: "porPago",
     color: "#22d3ee",
   },
