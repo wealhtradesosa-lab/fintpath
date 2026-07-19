@@ -94,6 +94,20 @@ export default function TablaMensual({ values = [], onChange, tokens: T }) {
         </div>
       </div>
 
+      {/* UX FIX (18-jul-2026 noche): si el user acaba de cambiar a este
+          template y todos los meses tienen el mismo valor > 0, es porque
+          precargamos con el monto mensual actual. Se lo hacemos saber. */}
+      {(() => {
+        const cargados = montos.filter(m => m > 0);
+        const todosIguales = cargados.length === 12 && cargados.every(m => m === cargados[0]);
+        if (!todosIguales) return null;
+        return (
+          <div style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 11, color: "#22c55e", lineHeight: 1.5 }}>
+            ✅ <strong>Se importó tu monto</strong> ({fm(cargados[0])}/mes) en los 12 meses. Ajustá los que sean diferentes (ej: mayo con $40M, marzo con $8M).
+          </div>
+        );
+      })()}
+
       {/* Explicación de proyección — solo aparece si hay meses futuros a proyectar */}
       {proyectadosCount > 0 && proyeccion > 0 && (
         <div style={{ background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.2)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 11, color: "#22d3ee", lineHeight: 1.5 }}>

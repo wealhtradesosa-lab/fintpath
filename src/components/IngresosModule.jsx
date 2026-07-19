@@ -786,8 +786,38 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 tipo="ingreso"
                 tokens={T}
                 onSelect={(tpl) => {
-                  // Aplicar el preset del template al form
-                  setForm(p => ({ ...p, ...tpl.preset }));
+                  // UX FIX crítico (18-jul-2026 noche): al cambiar template,
+                  // NO perder datos que el user ya llenó. Casos especiales:
+                  //   • Al ir a "variable-mensual": pre-cargar la tabla con
+                  //     el monto mensual actual en los 12 meses (el user
+                  //     luego ajusta los que sean diferentes).
+                  //   • Al SALIR de "variable-mensual": derivar mensual como
+                  //     el PROMEDIO de los meses cargados (evita perder info).
+                  setForm(p => {
+                    const nuevoForm = { ...p, ...tpl.preset };
+
+                    // Caso especial 1: cambiar A "variable-mensual"
+                    if (tpl.id === "variable-mensual") {
+                      const montoActual = Number(p.mensual) || 0;
+                      if (montoActual > 0) {
+                        // Pre-llenar los 12 meses con el monto actual
+                        nuevoForm.montosMensuales = new Array(12).fill(montoActual);
+                      }
+                    }
+
+                    // Caso especial 2: salir DE "variable-mensual" a otro tipo
+                    if (p.frecuencia === "variable" && tpl.id !== "variable-mensual") {
+                      const montos = Array.isArray(p.montosMensuales) ? p.montosMensuales : [];
+                      const cargados = montos.filter(m => Number(m) > 0);
+                      if (cargados.length > 0) {
+                        // Derivar mensual como promedio de meses cargados
+                        const promedio = cargados.reduce((s, m) => s + Number(m), 0) / cargados.length;
+                        nuevoForm.mensual = String(Math.round(promedio));
+                      }
+                    }
+
+                    return nuevoForm;
+                  });
                   setModoIngreso(tpl.modoIngresoDefault || "porPago");
                   setTemplateElegido(tpl);
                 }}

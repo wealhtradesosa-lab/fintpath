@@ -707,7 +707,31 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 tipo="gasto"
                 tokens={T}
                 onSelect={(tpl) => {
-                  setForm(p => ({ ...p, ...tpl.preset }));
+                  // UX FIX crítico (18-jul-2026 noche): al cambiar template,
+                  // NO perder datos que el user ya llenó. Mismo patrón que Ingresos.
+                  setForm(p => {
+                    const nuevoForm = { ...p, ...tpl.preset };
+
+                    // Caso especial 1: cambiar A "variable-mensual"
+                    if (tpl.id === "variable-mensual") {
+                      const montoActual = Number(p.m) || 0;
+                      if (montoActual > 0) {
+                        nuevoForm.montosMensuales = new Array(12).fill(montoActual);
+                      }
+                    }
+
+                    // Caso especial 2: salir DE "variable-mensual" a otro tipo
+                    if (p.frecuencia === "variable" && tpl.id !== "variable-mensual") {
+                      const montos = Array.isArray(p.montosMensuales) ? p.montosMensuales : [];
+                      const cargados = montos.filter(m => Number(m) > 0);
+                      if (cargados.length > 0) {
+                        const promedio = cargados.reduce((s, m) => s + Number(m), 0) / cargados.length;
+                        nuevoForm.m = String(Math.round(promedio));
+                      }
+                    }
+
+                    return nuevoForm;
+                  });
                   setModoIngreso(tpl.modoIngresoDefault || "porPago");
                   setTemplateElegido(tpl);
                 }}
