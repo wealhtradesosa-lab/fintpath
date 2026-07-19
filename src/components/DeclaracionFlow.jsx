@@ -870,6 +870,19 @@ const AREAS_NATURAL = [
     pregunta: "¿Querés cargar las retenciones REALES que te aplicaron en lugar de la estimación automática?",
     explicacion: "Por defecto la app estima las retenciones según el tipo de ingreso (3.5% arriendos, 7% dividendos, etc.). Si tus pagadores te aplicaron un porcentaje distinto (autoretenciones, retención especial por arrendamientos comerciales, retenciones del exterior), cargá acá el monto real consolidado del año y reemplaza la estimación.",
     baseLegal: "Art. 365 ET",
+    // UX FIX (18-jul-2026 noche, Santiago): "apliqué retenciones y en vez de
+    // bajar subió". CORRECTO matemáticamente: esta palanca REEMPLAZA la
+    // estimación automática — si el real es MENOR que lo estimado, el saldo
+    // a pagar SUBE (y ese es el número verdadero para la DIAN). Es una
+    // palanca de PRECISIÓN, no de ahorro. Se lo avisamos ANTES de aplicar.
+    advertencia: (det, user, detSinPlan) => {
+      const reteAuto = Number(detSinPlan?.retefuenteNat) || 0;
+      const fmtCO = (n) => "$" + Math.round(n).toLocaleString("es-CO");
+      if (reteAuto > 0) {
+        return `ℹ️ Palanca de PRECISIÓN, no de ahorro. La app estima automáticamente ${fmtCO(reteAuto)}/año de retenciones según tus ingresos. Si cargás un monto MENOR que ese, tu saldo a pagar va a SUBIR — no es un error: estás corrigiendo el dato hacia tu realidad, y ese es el número correcto para la DIAN. Solo baja si te retuvieron MÁS de lo estimado.`;
+      }
+      return `ℹ️ Palanca de PRECISIÓN, no de ahorro: reemplaza la estimación automática con tu dato real. El saldo puede subir o bajar según cuánto te retuvieron realmente.`;
+    },
     estimarAhorro: (data, det) => {
       const monto = Number(data.retencionAnual) || 0;
       const reteAuto = Number(det?.retefuenteNat) || 0;
@@ -960,6 +973,13 @@ export default function DeclaracionFlow({
   const det = useMemo(() => {
     return estimacionConPlan?.detalle?.find(d => d.name === selectedOwner?.name);
   }, [estimacionConPlan, selectedOwner]);
+
+  // UX FIX (18-jul-2026 noche): detalle SIN plan de optimización — permite a
+  // las áreas comparar "antes vs después" (ej: retenciones automáticas
+  // originales vs manuales) para avisos honestos sobre el impacto real.
+  const detSinPlan = useMemo(() => {
+    return estimacion?.detalle?.find(d => d.name === selectedOwner?.name);
+  }, [estimacion, selectedOwner]);
 
   // Recomendaciones estratégicas (acciones futuras tipo contador estratega).
   // Sesión 1-may-2026: feedback Santiago. Pasamos `det` que SÍ incluye el
@@ -1267,6 +1287,7 @@ export default function DeclaracionFlow({
                   onNoAplica={() => noAplicaArea(area)}
                   onEditar={() => editarArea(area)}
                   det={det}
+                  detSinPlan={detSinPlan}
                   owner={selectedOwner}
                   user={user}
                 />
@@ -1491,7 +1512,7 @@ function MiniCard({ icono, label, valor, color, sub }) {
   );
 }
 
-function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, onNoAplica, onEditar, det, owner, user }) {
+function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, onNoAplica, onEditar, det, detSinPlan, owner, user }) {
   const [valores, setValores] = useState(() => {
     const init = {};
     (area.inputs || []).forEach(i => {
@@ -1528,8 +1549,8 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
   // y se pregunte por qué "no pasó nada".
   const advertenciaArea = useMemo(() => {
     if (!area.advertencia) return null;
-    return area.advertencia(det, user);
-  }, [area, det, user]);
+    return area.advertencia(det, user, detSinPlan);
+  }, [area, det, user, detSinPlan]);
 
   // Detector de datos preexistentes en el sistema.
   // Si el motor ya tiene info cargada (ej: gastos de salud en Egresos,
