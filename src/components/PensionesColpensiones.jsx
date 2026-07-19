@@ -428,7 +428,7 @@ export default function PensionesColpensiones({ trm }) {
                 {aniosFaltantes > 0 && <div style={{ borderTop: "1px solid " + T.border, marginTop: 12, paddingTop: 12 }}>
                   <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase" }}>Al jubilarte ({edad + aniosFaltantes} años)</div>
                   <div style={{ fontSize: 36, fontWeight: 800, color: T.green, letterSpacing: "-0.04em", marginTop: 4 }}>{fCOP(colpJub.pensionFinal)}</div>
-                  <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>Tasa: {pc(colpJub.tasaTotal)} • {colpJub.semanasTotales.toLocaleString()} semanas</div>
+                  <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>Tasa: {pc(colpJub.tasaTotal)} • {colpJub.semanasTotales.toLocaleString("es-CO")} semanas</div>
                 </div>}
                 <div style={{ fontSize: 14, color: T.txt3, marginTop: 8 }}>≈ {fUSD(colp.pensionFinal, trm)}</div>
                 <div style={{ fontSize: 13, color: T.txt2, marginTop: 8 }}>Tasa de reemplazo: <strong style={{ color: T.blue }}>{pc(colp.tasaTotal)}</strong></div>
@@ -503,7 +503,7 @@ export default function PensionesColpensiones({ trm }) {
                     const esTope = tasaT >= 80;
                     return (
                       <tr key={sem} style={{ background: esActual ? T.blue + "15" : esTope ? T.green + "08" : "transparent", borderBottom: "1px solid " + T.border }}>
-                        <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: esActual ? 800 : 600, color: esActual ? T.blue : T.txt }}>{sem.toLocaleString()}</td>
+                        <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: esActual ? 800 : 600, color: esActual ? T.blue : T.txt }}>{sem.toLocaleString("es-CO")}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", color: T.txt3 }}>{extras > 0 ? "+" + extras : "—"}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", color: T.green }}>{bloques}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", color: T.green, fontWeight: 600 }}>+{bonus.toFixed(1)}%</td>
@@ -529,8 +529,8 @@ export default function PensionesColpensiones({ trm }) {
                 <div style={{ background: T.bg3, borderRadius: 12, padding: 16, marginBottom: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 8 }}>📋 Tu situación actual</div>
                   <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
-                    Semanas cotizadas: <strong>{semanas.toLocaleString()}</strong><br/>
-                    Semanas al jubilarte: <strong>{colp.semanasTotales.toLocaleString()}</strong><br/>
+                    Semanas cotizadas: <strong>{semanas.toLocaleString("es-CO")}</strong><br/>
+                    Semanas al jubilarte: <strong>{colp.semanasTotales.toLocaleString("es-CO")}</strong><br/>
                     Semanas extras (sobre 1,300): <strong>{colp.semanasExtra}</strong><br/>
                     Bloques de 50: <strong>{Math.floor(colp.semanasExtra / 50)}</strong><br/>
                     Tasa actual: <strong style={{ color: T.blue }}>{pc(colp.tasaTotal)}</strong><br/>
@@ -563,7 +563,7 @@ export default function PensionesColpensiones({ trm }) {
                     return (
                       <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
                         Te falta: <strong style={{ color: T.orange }}>{pc(falta)}</strong> para llegar al 80%<br/>
-                        Necesitas: <strong>{bloquesNecesarios} bloques</strong> × 50 = <strong>{semanasNecesarias.toLocaleString()} semanas</strong><br/>
+                        Necesitas: <strong>{bloquesNecesarios} bloques</strong> × 50 = <strong>{semanasNecesarias.toLocaleString("es-CO")} semanas</strong><br/>
                         Equivale a: <strong>~{aniosNecesarios} años</strong> más cotizando<br/><br/>
                         Pensión al 80%: <strong style={{ color: T.green }}>{fCOP(pensionAl80)}/mes</strong><br/>
                         vs tu actual: {fCOP(colp.pensionFinal)}/mes<br/>
@@ -596,7 +596,7 @@ export default function PensionesColpensiones({ trm }) {
           <Cd style={{ padding: 24, marginTop: 16 }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📅 ¿Qué pasa si sigo cotizando X años más?</h3>
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>
-              Hoy tienes <strong style={{ color: T.blue }}>{semanas.toLocaleString()} semanas</strong>. Cada año sumas ~52 semanas. Mira cómo cambia tu pensión:
+              Hoy tienes <strong style={{ color: T.blue }}>{semanas.toLocaleString("es-CO")} semanas</strong>. Cada año sumas ~52 semanas. Mira cómo cambia tu pensión:
             </p>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -624,7 +624,7 @@ export default function PensionesColpensiones({ trm }) {
                             {esHoy ? "🔵 Paro hoy" : esJub ? "🏆 Hasta jubilación (" + a + "a)" : a + " año" + (a > 1 ? "s" : "") + " más"}
                           </td>
                           <td style={{ padding: "10px 8px", textAlign: "right" }}>{edad + a} años</td>
-                          <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{semFuturas.toLocaleString()}</td>
+                          <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{semFuturas.toLocaleString("es-CO")}</td>
                           <td style={{ padding: "10px 8px", textAlign: "right", color: sc.semanasExtra > 0 ? T.green : T.txt3 }}>{sc.semanasExtra > 0 ? "+" + sc.semanasExtra : "—"}</td>
                           <td style={{ padding: "10px 8px", textAlign: "right", color: T.green }}>{Math.floor(sc.semanasExtra / 50)}</td>
                           <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700, fontSize: 13, color: sc.tasaTotal >= 70 ? T.green : sc.tasaTotal >= 60 ? T.blue : T.orange }}>{pc(sc.tasaTotal)}</td>
@@ -641,7 +641,7 @@ export default function PensionesColpensiones({ trm }) {
               </table>
             </div>
             <div style={{ marginTop: 12, padding: 14, background: T.bg3, borderRadius: 10, fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
-              <strong style={{ color: T.green }}>📖 Cómo leer esta tabla:</strong> Si hoy tienes {semanas.toLocaleString()} semanas y pagas <strong>5 años más</strong>, acumulas {(semanas + 5 * 52).toLocaleString()} semanas.
+              <strong style={{ color: T.green }}>📖 Cómo leer esta tabla:</strong> Si hoy tienes {semanas.toLocaleString("es-CO")} semanas y pagas <strong>5 años más</strong>, acumulas {(semanas + 5 * 52).toLocaleString("es-CO")} semanas.
               {(() => {
                 const sc5 = calcColpensiones({ sexo, edad, semanasActuales: semanas + 5 * 52, ibcSM, ipc, edadJub });
                 const hoy2 = calcColpensiones({ sexo, edad, semanasActuales: semanas, ibcSM, ipc, edadJub });

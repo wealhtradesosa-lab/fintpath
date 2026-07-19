@@ -253,7 +253,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               freq: d.frecuencia === "año" ? "año" : "mes",
             }));
             setShowForm(true);
-            alert("✅ Factura leída" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.concepto || "") + ": $" + (d.monto || 0).toLocaleString() + " — " + (d.categoria || ""));
+            alert("✅ Factura leída" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.concepto || "") + ": $" + (d.monto || 0).toLocaleString("es-CO") + " — " + (d.categoria || ""));
           } else {
             alert("⚠️ No se pudo leer la imagen. Intenta con una foto más clara.");
           }
@@ -1013,7 +1013,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   {/* Commit E: warning si capital muy bajo (<$10K) */}
                   {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
                     <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 11, color: T.red, lineHeight: 1.5 }}>
-                      ⚠️ El capital es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString()}). ¿Faltan ceros? Si el valor es correcto, ignorá este aviso.
+                      ⚠️ El capital es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Si el valor es correcto, ignorá este aviso.
                     </div>
                   )}
                   {/* Commit E: validacion de tasa absurda */}

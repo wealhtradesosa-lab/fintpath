@@ -60,7 +60,7 @@ export const STRIPE_PRICE_IDS = {
 // Redondeo a centena para presentación limpia. Fallback TRM=4200 si no se cargó.
 export function usdToCop(usd, trm) {
   const cop = Math.round(usd * (trm || 4200) / 100) * 100;
-  return "≈ $" + cop.toLocaleString() + " COP";
+  return "≈ $" + cop.toLocaleString("es-CO") + " COP";
 }
 
 // ── Definición canónica: cada plan UNA sola vez ────────────────────────────

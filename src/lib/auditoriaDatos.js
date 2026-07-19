@@ -292,7 +292,7 @@ export function auditarDatos(user, options = {}) {
         severidad: "warning",
         categoria: "inconsistencias",
         titulo: "Posibles ingresos duplicados",
-        mensaje: `Detecté 2+ ingresos con mismo titular, mismo tipo (${fc}) y mismo monto ($${Number(mensual).toLocaleString()}). Puede ser duplicación accidental.`,
+        mensaje: `Detecté 2+ ingresos con mismo titular, mismo tipo (${fc}) y mismo monto ($${Number(mensual).toLocaleString("es-CO")}). Puede ser duplicación accidental.`,
         sugerencia: `Revisá la lista y eliminá duplicados si los hay.`,
         accion: { tipo: "info" },
       });

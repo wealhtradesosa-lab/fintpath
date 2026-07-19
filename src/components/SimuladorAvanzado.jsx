@@ -678,7 +678,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
               // del sistema (patrón DeudasModule:93 GastosModule:272 etc).
               const ingRows = (user.ingresos||[]).filter(i=>i.sim!==false).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).map(i => {
                 const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: $${(i.capital/1e6).toFixed(0)}M × ${i.tasa}%</span>` : "";
-                return `<tr><td>${i.nombre||""}</td><td style="color:#888">${i.categoria||""}</td><td style="text-align:right;font-weight:600;color:#16a34a">$${Math.round(i.mensual||0).toLocaleString()}</td><td>${cap}</td></tr>`;
+                return `<tr><td>${i.nombre||""}</td><td style="color:#888">${i.categoria||""}</td><td style="text-align:right;font-weight:600;color:#16a34a">$${Math.round(i.mensual||0).toLocaleString("es-CO")}</td><td>${cap}</td></tr>`;
               }).join("");
               
               // Build expense rows by category — filtra items apagados dentro
@@ -690,12 +690,12 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
               }).filter(g=>g.total>0).sort((a,b)=>b.total-a.total);
               const gasRows = gasCats.map(g => {
                 const detail = g.items.slice(0,3).map(i=>i.c).join(", ");
-                return `<tr><td>${g.cat}</td><td style="color:#888;font-size:10px">${detail}</td><td style="text-align:right;font-weight:600;color:#dc2626">$${Math.round(g.total).toLocaleString()}</td></tr>`;
+                return `<tr><td>${g.cat}</td><td style="color:#888;font-size:10px">${detail}</td><td style="text-align:right;font-weight:600;color:#dc2626">$${Math.round(g.total).toLocaleString("es-CO")}</td></tr>`;
               }).join("");
               
               // Build debt rows — filtra apagadas y las que no tienen saldo
               const deuRows = (user.deudas||[]).filter(d=>d.sim!==false && (d.mt||0)>0).map(d => 
-                `<tr><td>${d.n||d.nombre||""}</td><td style="text-align:right">$${Math.round(d.mt||0).toLocaleString()}</td><td style="text-align:right">$${Math.round(d.pg||0).toLocaleString()}/mes</td><td style="text-align:right">${d.ts||0}%</td></tr>`
+                `<tr><td>${d.n||d.nombre||""}</td><td style="text-align:right">$${Math.round(d.mt||0).toLocaleString("es-CO")}</td><td style="text-align:right">$${Math.round(d.pg||0).toLocaleString("es-CO")}/mes</td><td style="text-align:right">${d.ts||0}%</td></tr>`
               ).join("");
               
               const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>FINPATHIA — ${scenarioName}</title>
@@ -736,15 +736,15 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
     <div style="font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💰 Ingresos Mensuales</div>
     <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
       <span style="color:#374151">Bruto Total <span style="color:#9ca3af;font-size:9px">(genera activos)</span></span>
-      <span style="font-weight:500">$${Math.round(simT.brutoTotal||0).toLocaleString()}</span>
+      <span style="font-weight:500">$${Math.round(simT.brutoTotal||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:10px;padding-left:8px;border-left:2px solid #e5e7eb">
       <span style="color:#8b5cf6">− Retención <span style="color:#9ca3af;font-size:9px">(recuperable)</span></span>
-      <span style="color:#8b5cf6;font-weight:500">−$${Math.round(simT.retencionMensual||0).toLocaleString()}</span>
+      <span style="color:#8b5cf6;font-weight:500">−$${Math.round(simT.retencionMensual||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
       <span style="color:#16a34a">= DISPONIBLE</span>
-      <span style="color:#16a34a">$${Math.round(simT.disponibleCuenta||0).toLocaleString()}</span>
+      <span style="color:#16a34a">$${Math.round(simT.disponibleCuenta||0).toLocaleString("es-CO")}</span>
     </div>
   </div>
 
@@ -753,23 +753,23 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
     <div style="font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💸 Egresos Mensuales</div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
       <span style="color:#f59e0b">A. Aportes obligatorios</span>
-      <span style="color:#f59e0b">$${Math.round(simT.aportesObligatorios||0).toLocaleString()}</span>
+      <span style="color:#f59e0b">$${Math.round(simT.aportesObligatorios||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
       <span style="color:#374151">B. Gastos familiares</span>
-      <span>$${Math.round(simT.gastosFamiliares||0).toLocaleString()}</span>
+      <span>$${Math.round(simT.gastosFamiliares||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
       <span style="color:#374151">C. Cuotas de deudas</span>
-      <span>$${Math.round(simT.cuotasDeudas||0).toLocaleString()}</span>
+      <span>$${Math.round(simT.cuotasDeudas||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px">
       <span style="color:#8b5cf6">D. Impuesto neto</span>
-      <span style="color:#8b5cf6">$${Math.round(simT.impuestoNeto||0).toLocaleString()}</span>
+      <span style="color:#8b5cf6">$${Math.round(simT.impuestoNeto||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
       <span style="color:#dc2626">= EGRESOS TOTALES</span>
-      <span style="color:#dc2626">$${Math.round(simT.egresosTotales||simT.te||0).toLocaleString()}</span>
+      <span style="color:#dc2626">$${Math.round(simT.egresosTotales||simT.te||0).toLocaleString("es-CO")}</span>
     </div>
   </div>
 </div>
@@ -778,11 +778,11 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
 <div style="background:${simT.cf>=0?'#f0fdf4':'#fef2f2'};border:2px solid ${simT.cf>=0?'#16a34a':'#dc2626'};border-radius:10px;padding:14px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
   <div>
     <div style="font-size:10px;color:${simT.cf>=0?'#16a34a':'#dc2626'};font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${simT.cf>=0?'💰 CASH FLOW · Para ahorrar / invertir':'⚠️ CASH FLOW NEGATIVO'}</div>
-    <div style="font-size:26px;font-weight:800;color:${simT.cf>=0?'#16a34a':'#dc2626'};margin-top:4px">$${Math.round(simT.cf).toLocaleString()}<span style="font-size:11px;color:#9ca3af;font-weight:400">/mes</span></div>
-    <div style="font-size:10px;color:#6b7280;margin-top:3px">Disponible $${Math.round(simT.disponibleCuenta||0).toLocaleString()} − Egresos $${Math.round(simT.egresosTotales||simT.te||0).toLocaleString()}</div>
+    <div style="font-size:26px;font-weight:800;color:${simT.cf>=0?'#16a34a':'#dc2626'};margin-top:4px">$${Math.round(simT.cf).toLocaleString("es-CO")}<span style="font-size:11px;color:#9ca3af;font-weight:400">/mes</span></div>
+    <div style="font-size:10px;color:#6b7280;margin-top:3px">Disponible $${Math.round(simT.disponibleCuenta||0).toLocaleString("es-CO")} − Egresos $${Math.round(simT.egresosTotales||simT.te||0).toLocaleString("es-CO")}</div>
   </div>
   <div style="display:flex;gap:22px;text-align:center">
-    <div><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">AL AÑO</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#16a34a':'#dc2626'}">$${Math.round(simT.cf*12).toLocaleString()}</div></div>
+    <div><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">AL AÑO</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#16a34a':'#dc2626'}">$${Math.round(simT.cf*12).toLocaleString("es-CO")}</div></div>
     <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${simT.ind>=100?'#16a34a':'#eab308'}">${(simT.ind||0).toFixed(0)}%</div></div>
     <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">NIVEL</div><div style="font-size:13px;font-weight:700;color:#3b82f6">${niveles[nivel]} (${nivel+1}/5)</div></div>
   </div>
@@ -791,19 +791,19 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
 <h2>💰 Ingresos Mensuales</h2>
 <table><thead><tr><th>Fuente</th><th>Categoría</th><th style="text-align:right">Monto</th><th>Detalle</th></tr></thead>
 <tbody>${ingRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #16a34a"><td colspan="2">TOTAL BRUTO</td><td style="text-align:right;color:#16a34a">$${Math.round(simT.brutoTotal||simT.ni||0).toLocaleString()}</td><td></td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #16a34a"><td colspan="2">TOTAL BRUTO</td><td style="text-align:right;color:#16a34a">$${Math.round(simT.brutoTotal||simT.ni||0).toLocaleString("es-CO")}</td><td></td></tr></tfoot>
 </table>
 
 <h2>💳 Gastos Familiares</h2>
 <table><thead><tr><th>Categoría</th><th>Principales</th><th style="text-align:right">Total</th></tr></thead>
 <tbody>${gasRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td colspan="2">TOTAL GASTOS</td><td style="text-align:right;color:#dc2626">$${Math.round(simT.gfm).toLocaleString()}</td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td colspan="2">TOTAL GASTOS</td><td style="text-align:right;color:#dc2626">$${Math.round(simT.gfm).toLocaleString("es-CO")}</td></tr></tfoot>
 </table>
 
 ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
 <table><thead><tr><th>Deuda</th><th style="text-align:right">Saldo</th><th style="text-align:right">Cuota</th><th style="text-align:right">Tasa</th></tr></thead>
 <tbody>${deuRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td>TOTAL CUOTAS</td><td></td><td style="text-align:right;color:#dc2626">$${Math.round((user.deudas||[]).filter(d=>d.sim!==false && (d.mt||0)>0).reduce((s,d)=>s+(d.pg||0),0)).toLocaleString()}/mes</td><td></td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td>TOTAL CUOTAS</td><td></td><td style="text-align:right;color:#dc2626">$${Math.round((user.deudas||[]).filter(d=>d.sim!==false && (d.mt||0)>0).reduce((s,d)=>s+(d.pg||0),0)).toLocaleString("es-CO")}/mes</td><td></td></tr></tfoot>
 </table>` : ""}
 
 <h2>📊 Resumen</h2>
@@ -813,9 +813,9 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
     <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${(simT.ind||0).toFixed(0)}%</span><span>100%</span></div>
   </div>
   <div class="diag">
-    ${simT.ind>=100?"✅ Independencia financiera alcanzada":"⚠ Falta $"+Math.round(simT.te-simT.ni).toLocaleString()+"/mes"}<br>
-    ${simT.cf>=0?"✅ Cash flow positivo: $"+Math.round(simT.cf).toLocaleString()+"/mes":"❌ Cash flow negativo"}<br>
-    📅 Disponible al día: $${Math.round(simT.cf/30).toLocaleString()}
+    ${simT.ind>=100?"✅ Independencia financiera alcanzada":"⚠ Falta $"+Math.round(simT.te-simT.ni).toLocaleString("es-CO")+"/mes"}<br>
+    ${simT.cf>=0?"✅ Cash flow positivo: $"+Math.round(simT.cf).toLocaleString("es-CO")+"/mes":"❌ Cash flow negativo"}<br>
+    📅 Disponible al día: $${Math.round(simT.cf/30).toLocaleString("es-CO")}
   </div>
 </div>
 

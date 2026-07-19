@@ -204,7 +204,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               tasa: d.tasa ? String(d.tasa) : p.tasa,
             }));
             setShowForm(true);
-            alert("✅ Documento leído" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.nombre || "") + ": $" + (d.mensual || 0).toLocaleString() + " — " + (d.categoria || ""));
+            alert("✅ Documento leído" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.nombre || "") + ": $" + (d.mensual || 0).toLocaleString("es-CO") + " — " + (d.categoria || ""));
           } else {
             alert("⚠️ No se pudo leer la imagen. Intenta con una foto más clara.");
           }
@@ -740,7 +740,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                       <div style={{ fontWeight: 700, color: T.green }}>
                         {fm(item.moneda==="USD" ? (item.mensual||0)*(trm||4200) : (item.mensual||0))}
-                        {item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(item.mensual).toLocaleString()}</span>}
+                        {item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(item.mensual).toLocaleString("es-CO")}</span>}
                       </div>
                       {/* Subtítulo con total anual solo si NO es mensual todo el año */}
                       {(() => {
@@ -755,7 +755,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         );
                       })()}
                     </td>
-                    <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString() + (item.tasa ? " • " + item.tasa + "%" : "") : item.fuente || "—"}</td>
+                    <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString("es-CO") + (item.tasa ? " • " + item.tasa + "%" : "") : item.fuente || "—"}</td>
                     <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
                       <button onClick={() => { if (!guardEdit(role)) return; const upd = items.map(x => x.id === item.id ? {...x, sim: !(item.sim!==false)} : x); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{item.sim===false?"⬜":"✅"}</button>
                       <button onClick={() => handleEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
@@ -1308,13 +1308,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   }} options={[{ v: "anual", l: "📅 Anual (ej: 24% al año)" }, { v: "mensual", l: "📅 Mensual (ej: 1% al mes)" }]} />
                   {Number(form.capital) > 0 && Number(form.tasa) > 0 && Number(form.mensual) > 0 && (
                     <div style={{marginTop:4,padding:"10px 12px",background:"rgba(34,197,94,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.6}}>
-                      💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString()} × {form.tasa}% {form.tasaModo === "mensual" ? "mensual" : "anual"} = {"$" + Math.round(form.tasaModo === "mensual" ? Number(form.capital) * Number(form.tasa) / 100 : Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString()}/mes
+                      💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")} × {form.tasa}% {form.tasaModo === "mensual" ? "mensual" : "anual"} = {"$" + Math.round(form.tasaModo === "mensual" ? Number(form.capital) * Number(form.tasa) / 100 : Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString("es-CO")}/mes
                     </div>
                   )}
                   {/* Fix: warning si el capital guardado es sospechosamente bajo (<$10K) */}
                   {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
                     <div style={{marginTop:10,padding:"10px 12px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,fontSize:11,color:T.red,lineHeight:1.5}}>
-                      ⚠️ El capital invertido es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString()}). ¿Faltan ceros? Un capital típico de inversión es &gt;$100.000. Si el valor es correcto, ignorá este aviso.
+                      ⚠️ El capital invertido es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Un capital típico de inversión es &gt;$100.000. Si el valor es correcto, ignorá este aviso.
                     </div>
                   )}
                   {/* Commit E: validacion de tasa absurda (warning, no bloqueo) */}
@@ -1422,7 +1422,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           <div style={{ fontSize: 12, color: form.retencionAplica === false ? T.txt3 : "#22c55e", fontWeight: 600, marginTop: 4 }}>
                             {form.retencionAplica === false
                               ? "🚫 No se calculará retención para este ingreso."
-                              : `💰 Retención estimada: ${"$" + Math.round(retencionAnual).toLocaleString()}/año (${(tasaUsada * 100).toFixed(1)}% de ${"$" + Math.round(monto * 12).toLocaleString()})`}
+                              : `💰 Retención estimada: ${"$" + Math.round(retencionAnual).toLocaleString("es-CO")}/año (${(tasaUsada * 100).toFixed(1)}% de ${"$" + Math.round(monto * 12).toLocaleString("es-CO")})`}
                           </div>
                         )}
                         <div style={{ fontSize: 10, color: T.txt3, marginTop: 8, lineHeight: 1.4, fontStyle: "italic" }}>

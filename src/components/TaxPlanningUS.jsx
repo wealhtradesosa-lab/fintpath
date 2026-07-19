@@ -386,10 +386,10 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
         </div>
         {[
           B?.k401>0 && {p:"🔴 HIGH",c:T.rd,
-            a:`Max 401(k): contribute ${fm(C.K401/12)}/month ($${C.K401.toLocaleString()}/year)`,
+            a:`Max 401(k): contribute ${fm(C.K401/12)}/month ($${C.K401.toLocaleString("en-US")}/year)`,
             i:`Saves ~${fm(B.k401*(B.mRate||0.22))} in federal tax + grows tax-deferred`},
           B?.hsa>0&&inc.w2>0 && {p:"🔴 HIGH",c:T.rd,
-            a:`Open & max HSA: ${fm(C.HSA/12)}/month ($${C.HSA.toLocaleString()}/year)`,
+            a:`Open & max HSA: ${fm(C.HSA/12)}/month ($${C.HSA.toLocaleString("en-US")}/year)`,
             i:"Deductible + grows tax-free + tax-free for medical = triple tax win"},
           inc.se>0 && {p:"🟡 MED",c:T.or,
             a:"Track ALL business expenses (home office, mileage, software, equipment)",

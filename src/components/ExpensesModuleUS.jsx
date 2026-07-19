@@ -350,7 +350,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
             <Field l="Student Loan Interest (max $2,500)" value={form.studentLoanInterest}
               onChange={v=>sf("studentLoanInterest",v)}
-              hint={`IRC § 221. Phases out $${C.STUDENT_LOAN_PO_START.toLocaleString()}–$${C.STUDENT_LOAN_PO_END.toLocaleString()} AGI (single). Allowed: ${fm(aboveLine.studentLoan)}`} />
+              hint={`IRC § 221. Phases out $${C.STUDENT_LOAN_PO_START.toLocaleString("en-US")}–$${C.STUDENT_LOAN_PO_END.toLocaleString("en-US")} AGI (single). Allowed: ${fm(aboveLine.studentLoan)}`} />
             <Field l="Educator Expenses (max $300)" value={form.educatorExpenses}
               onChange={v=>sf("educatorExpenses",v)}
               hint="IRC § 62(a)(2)(D). K-12 teachers only. Classroom supplies, professional development." />
@@ -536,7 +536,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             <div style={{fontSize:12,fontWeight:700,color:T.or,marginBottom:12}}>Schedule C Deductions Summary</div>
             {schedC.bizExpenses > 0 && <DeductRow label="Business Expenses (monthly × 12)"   amount={schedC.bizExpenses*12} irc="§ 162" />}
             {schedC.homeOffice  > 0 && <DeductRow label="Home Office (simplified method)"    amount={schedC.homeOffice}    irc="§ 280A" />}
-            {schedC.mileage     > 0 && <DeductRow label={`Mileage (${form.businessMiles.toLocaleString()} mi × $0.70)`} amount={schedC.mileage} irc="§ 162" />}
+            {schedC.mileage     > 0 && <DeductRow label={`Mileage (${form.businessMiles.toLocaleString("en-US")} mi × $0.70)`} amount={schedC.mileage} irc="§ 162" />}
             {schedC.meals       > 0 && <DeductRow label="Business Meals (50% of total)"     amount={schedC.meals}         irc="§ 274(n)" />}
             {schedC.s179        > 0 && <DeductRow label="Section 179 Expensing"              amount={schedC.s179}          irc="§ 179" />}
             {schedC.profDev     > 0 && <DeductRow label="Professional Development"           amount={schedC.profDev}       irc="§ 162" />}

@@ -393,10 +393,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 <div style={{ gridColumn: "1/-1", background: T.greenDim, borderRadius: 10, padding: 14 }}>
                   <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Este activo generaría:</div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: T.green, marginTop: 4 }}>
-                    {"$" + Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12).toLocaleString() + "/mes"}
+                    {"$" + Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12).toLocaleString("es-CO") + "/mes"}
                   </div>
                   <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                    = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString() + "/año"} ({form.tasa}% de {"$" + Math.round(parseFloat(form.va)).toLocaleString()})
+                    = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString("es-CO") + "/año"} ({form.tasa}% de {"$" + Math.round(parseFloat(form.va)).toLocaleString("es-CO")})
                   </div>
                   <div style={{ fontSize: 11, color: T.blue, marginTop: 6, fontWeight: 600 }}>
                     👉 Agrega este ingreso en el módulo de Ingresos con categoría "Rendimiento"

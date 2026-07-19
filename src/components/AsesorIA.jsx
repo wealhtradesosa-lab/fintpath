@@ -22,7 +22,7 @@ const SUGGESTIONS = [
 function buildContext(user, totals) {
   const u = user || {};
   const t = totals || {};
-  const fm = n => "$" + Math.round(n || 0).toLocaleString();
+  const fm = n => "$" + Math.round(n || 0).toLocaleString("es-CO");
   const pc = n => (n || 0).toFixed(1) + "%";
 
   let ctx = `RESUMEN PATRIMONIAL:

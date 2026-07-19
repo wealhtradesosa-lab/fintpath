@@ -49,7 +49,7 @@ export default function PensionBTC({trm:pTrm}){
     <PageHeader
       label="Bitcoin"
       title="Proyección DCA"
-      subtitle={`Sistema pensional colombiano + DCA Bitcoin · BTC ${fU(pBTC)} · USD/COP $${trm.toLocaleString()}`}
+      subtitle={`Sistema pensional colombiano + DCA Bitcoin · BTC ${fU(pBTC)} · USD/COP $${trm.toLocaleString("es-CO")}`}
       rightSlot={<button onClick={()=>{document.body.setAttribute("data-date",new Date().toLocaleDateString("es-CO"));window.print()}} style={{background:T.orange,color:"#000",border:"none",padding:"10px 22px",borderRadius:100,cursor:"pointer",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>📄 Exportar PDF</button>}
     />
     <div style={{display:"flex",gap:4,marginBottom:24}}>{tabs.map(t=>{const a=tab===t.id;return<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"10px 20px",borderRadius:10,border:a?`1px solid ${T.orange}`:`1px solid ${T.border}`,background:a?T.orangeDim:"transparent",color:a?T.orange:T.txt3,cursor:"pointer",fontSize:14,fontWeight:a?700:500}}>{t.i} {t.l}</button>})}</div>

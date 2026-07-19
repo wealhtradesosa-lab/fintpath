@@ -66,7 +66,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               tp: d.tipo || p.tp,
             }));
             setShowForm(true);
-            alert("✅ Documento leído" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.nombre || "") + ": Saldo $" + (d.saldo || 0).toLocaleString() + " — Cuota $" + (d.cuota || 0).toLocaleString());
+            alert("✅ Documento leído" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.nombre || "") + ": Saldo $" + (d.saldo || 0).toLocaleString("es-CO") + " — Cuota $" + (d.cuota || 0).toLocaleString("es-CO"));
           } else {
             alert("⚠️ No se pudo leer la imagen. Intenta con una foto más clara.");
           }

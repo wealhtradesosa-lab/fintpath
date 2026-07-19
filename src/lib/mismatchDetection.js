@@ -70,7 +70,7 @@ function fmM(v) {
   if (Math.abs(m) >= 1000) return "$" + (m / 1000).toFixed(1) + "B";
   if (Math.abs(m) >= 1) return "$" + m.toFixed(0) + "M";
   if (Math.abs(m) >= 0.1) return "$" + m.toFixed(1) + "M";
-  return "$" + Math.round(Number(v) || 0).toLocaleString();
+  return "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 }
 
 /**

@@ -350,7 +350,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
                 <div style={{ fontSize: 11, color: T.txt3 }}>(antes de retenciones aplicadas)</div>
               </div>
               <div style={{ fontSize: 18, fontWeight: 700, color: T.red }}>
-                ${Math.round((detalleActual?.impBruto || 0) - (detalleActual?.descuentoICA || 0) - (detalleActual?.descuentosAplicados || 0)).toLocaleString()}
+                ${Math.round((detalleActual?.impBruto || 0) - (detalleActual?.descuentoICA || 0) - (detalleActual?.descuentosAplicados || 0)).toLocaleString("es-CO")}
               </div>
             </div>
             {detalleActual.retencionDesglose.detallePorIngreso.filter(d => d.anual > 0).map((d, i) => (
@@ -359,12 +359,12 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
                   <span style={{ color: T.txt2 }}>{d.nombre}</span>
                   <span style={{ marginLeft: 8, color: T.txt3, fontSize: 11 }}>· {(d.tasa * 100).toFixed(1)}%</span>
                 </div>
-                <div style={{ color: T.green, fontWeight: 600 }}>-${Math.round(d.anual).toLocaleString()}</div>
+                <div style={{ color: T.green, fontWeight: 600 }}>-${Math.round(d.anual).toLocaleString("es-CO")}</div>
               </div>
             ))}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 10, marginTop: 8, borderTop: "1px solid " + T.border, fontSize: 13 }}>
               <div style={{ color: T.txt, fontWeight: 700 }}>Total retención estimada</div>
-              <div style={{ color: T.green, fontWeight: 700 }}>-${Math.round(detalleActual.retencionDesglose.total).toLocaleString()}</div>
+              <div style={{ color: T.green, fontWeight: 700 }}>-${Math.round(detalleActual.retencionDesglose.total).toLocaleString("es-CO")}</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 12, paddingTop: 10, borderTop: "2px solid " + T.border }}>
               <div>
@@ -372,7 +372,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
                 <div style={{ fontSize: 11, color: T.txt3 }}>= Impuesto bruto − retenciones</div>
               </div>
               <div style={{ fontSize: 22, fontWeight: 800, color: T.blue }}>
-                ${Math.round(saldoActual).toLocaleString()}
+                ${Math.round(saldoActual).toLocaleString("es-CO")}
               </div>
             </div>
             <div style={{ fontSize: 10, color: T.txt3, marginTop: 12, fontStyle: "italic", lineHeight: 1.4 }}>

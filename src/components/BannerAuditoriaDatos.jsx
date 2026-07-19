@@ -385,7 +385,7 @@ function Hallazgo({ hallazgo, onAccion, onAbrirWizard, onIgnorar }) {
             <div style={{ marginBottom: 8, padding: "6px 10px", background: C.bg3, borderRadius: 6, fontSize: 11, color: C.txt2 }}>
               {hallazgo.items.slice(0, 3).map((it, i) => (
                 <div key={i} style={{ marginBottom: i < Math.min(hallazgo.items.length, 3) - 1 ? 2 : 0 }}>
-                  • {it.label}{it.mensual ? ` ($${Number(it.mensual).toLocaleString()}/mes)` : ""}{it.monto ? ` ($${Number(it.monto).toLocaleString()})` : ""}{it.valor ? ` ($${Number(it.valor).toLocaleString()})` : ""}
+                  • {it.label}{it.mensual ? ` ($${Number(it.mensual).toLocaleString("es-CO")}/mes)` : ""}{it.monto ? ` ($${Number(it.monto).toLocaleString("es-CO")})` : ""}{it.valor ? ` ($${Number(it.valor).toLocaleString("es-CO")})` : ""}
                 </div>
               ))}
               {hallazgo.items.length > 3 && (
@@ -435,7 +435,7 @@ function Hallazgo({ hallazgo, onAccion, onAbrirWizard, onIgnorar }) {
 
           {hallazgo.ahorroEstimado && (
             <div style={{ marginTop: 6, fontSize: 11, color: C.green, fontWeight: 600 }}>
-              💰 Ahorro potencial: hasta ${Number(hallazgo.ahorroEstimado).toLocaleString()}
+              💰 Ahorro potencial: hasta ${Number(hallazgo.ahorroEstimado).toLocaleString("es-CO")}
             </div>
           )}
         </div>

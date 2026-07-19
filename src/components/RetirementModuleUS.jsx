@@ -521,7 +521,7 @@ export default function RetirementModuleUS({ user = {} }) {
             <SectionCard>
               <div style={{fontSize:13,fontWeight:700,color:T.pr,marginBottom:12}}>🔄 Backdoor Roth IRA Strategy</div>
               <div style={{fontSize:12,color:T.tx2,lineHeight:1.8,marginBottom:12}}>
-                Your income (${(p.annualIncome||0).toLocaleString()}) exceeds the Roth IRA direct contribution limit (${C.ROTH_PHASEOUT_END.toLocaleString()}).
+                Your income (${(p.annualIncome||0).toLocaleString("en-US")}) exceeds the Roth IRA direct contribution limit (${C.ROTH_PHASEOUT_END.toLocaleString("en-US")}).
                 Use the <strong>Backdoor Roth</strong> — it's completely legal (IRS Notice 2014-54):
               </div>
               {[

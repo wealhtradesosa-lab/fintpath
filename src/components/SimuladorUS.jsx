@@ -502,7 +502,7 @@ export default function SimuladorUS({ user, totals }) {
             <XAxis dataKey="year" {...axisProps}/>
             <YAxis {...axisProps}
               tickFormatter={v=>v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${(v/1000).toFixed(0)}K`:`$${v}`}/>
-            <Tooltip content={<ChartTooltip formatter={v=>["$"+Math.round(v).toLocaleString(),"Net Worth"]}/>}/>
+            <Tooltip content={<ChartTooltip formatter={v=>["$"+Math.round(v).toLocaleString("en-US"),"Net Worth"]}/>}/>
             <Area type="monotone" dataKey="value"
               stroke={simT.cf>=0?CHART.green:CHART.red}
               fill={simT.cf>=0?"url(#gradGreen)":"url(#gradRed)"}

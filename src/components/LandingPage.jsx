@@ -180,7 +180,7 @@ export default function LandingPage({ onGetStarted }) {
             ))}
           </div>
           <p style={{ textAlign: "center", marginTop: 20, color: T.txt3, fontSize: 13 }}>🔒 Pagos seguros con Stripe • Cancela cuando quieras • Sin compromisos</p>
-          <p style={{ textAlign: "center", marginTop: 8, color: T.txt3, fontSize: 11 }}>🇨🇴 Conversión a TRM ≈ ${Math.round(trm).toLocaleString()} COP/USD · tu banco aplica su propia tasa al cargo en USD</p>
+          <p style={{ textAlign: "center", marginTop: 8, color: T.txt3, fontSize: 11 }}>🇨🇴 Conversión a TRM ≈ ${Math.round(trm).toLocaleString("es-CO")} COP/USD · tu banco aplica su propia tasa al cargo en USD</p>
 
         </Section>
       </div>
