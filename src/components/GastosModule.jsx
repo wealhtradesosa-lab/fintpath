@@ -1020,7 +1020,6 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const ownerType = ow ? ow.type : "natural";
                 setForm((p) => ({ ...p, owner: v, fiscalCode: defaultFiscalCode(ownerType, p.cat) }));
               }} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
-              <div style={{fontSize:10,color:"#71717a",marginTop:-8,marginBottom:8,padding:"0 4px"}}>Si asignas propietario, se incluirá en el cálculo de impuestos. Si no, se omite.</div>
               {(() => {
                 const ow = (owners || []).find(o => o.id === form.owner);
                 if (!ow || ow.type !== "juridica") return null;
