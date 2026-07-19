@@ -360,6 +360,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         // Fase 4 flujo anual (18-jul-2026): persistir rango de vigencia.
         ...((Number(form.desdeMes) || 1) !== 1 && { desdeMes: Number(form.desdeMes) }),
         ...((Number(form.hastaMes) || 12) !== 12 && { hastaMes: Number(form.hastaMes) }),
+        // UX FIX 2 (19-jul-2026): flag persistido del modo de vigencia
+        ...(form.vigenciaModo && { vigenciaModo: form.vigenciaModo }),
         // Fase Variable (18-jul-2026 noche): persistir montosMensuales solo si
         // la frecuencia es variable — evita saturar items con arrays de ceros.
         ...(frecuencia === "variable" && { montosMensuales: form.montosMensuales || new Array(12).fill(0) }),
@@ -417,7 +419,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     const mDisplay = (frecuencia !== "mensual")
       ? item.m
       : (freqLegacy === "año" ? (item.m * 12) : item.m);
-    setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
+    setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, vigenciaModo: item.vigenciaModo, montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
     // UX iter 4 (18-jul-2026 noche): detectar template correcto del item existente
     setTemplateElegido(detectarTemplate(item));
@@ -965,6 +967,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       mesPago={form.mesPago}
                       desdeMes={form.desdeMes}
                       hastaMes={form.hastaMes}
+                      vigenciaModo={form.vigenciaModo}
                       onChange={(patch) => {
                         setForm(p => ({ ...p, ...patch }));
                       }}

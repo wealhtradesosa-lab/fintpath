@@ -479,6 +479,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       // Fase 4 flujo anual (18-jul-2026): preservar rango de vigencia
       desdeMes: Number(item.desdeMes) || 1,
       hastaMes: Number(item.hastaMes) || 12,
+      // UX FIX 2 (19-jul-2026): flag persistido del modo de vigencia
+      vigenciaModo: item.vigenciaModo,
       // Fase Variable (18-jul-2026 noche): preservar array de montos mensuales
       montosMensuales: getMontosMensuales(item),
     });
@@ -1017,6 +1019,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   mesPago={form.mesPago}
                   desdeMes={form.desdeMes}
                   hastaMes={form.hastaMes}
+                  vigenciaModo={form.vigenciaModo}
                   onChange={(patch) => setForm(p => ({ ...p, ...patch }))}
                   monto={form.mensual}
                   tokens={T}

@@ -50,6 +50,10 @@ export default function FrecuenciaSelector({
   mostrarChipsFrecuencia = true,  // los 5 chips Mensual/Trimestral/etc
   mostrarSelectorMes = true,      // dropdown "Mes de pago" (solo si freq!=mensual)
   mostrarVigencia = true,         // toggle "Todo el año / Solo unos meses"
+  // UX FIX 2 (19-jul-2026): modo de vigencia PERSISTIDO en el item.
+  // Sin esto, guardar con rango transitorio 1-12 y reabrir mostraba
+  // "Todo el año" y el user debía reactivar "Solo unos meses" cada vez.
+  vigenciaModo = undefined,       // "limitada" | "todo" | undefined (inferir del rango)
 }) {
   const freq = FRECUENCIAS.find(f => f.v === frecuencia) || FRECUENCIAS[0];
   const showMes = frecuencia !== "mensual";
@@ -76,7 +80,14 @@ export default function FrecuenciaSelector({
   // selects jamás aparecían. Ahora ambos.
   const aplicaVigencia = frecuencia === "mensual" || frecuencia === "variable";
   const rangoLimitado = aplicaVigencia && (desdeMes !== 1 || hastaMes !== 12);
-  const [modoLimitado, setModoLimitado] = useState(rangoLimitado);
+  // Modo inicial: el flag persistido manda; si no existe, inferir del rango.
+  const [modoLimitado, setModoLimitado] = useState(
+    vigenciaModo ? vigenciaModo === "limitada" : rangoLimitado
+  );
+  // Sincronizar si el flag persistido llega/cambia desde afuera
+  useEffect(() => {
+    if (vigenciaModo) setModoLimitado(vigenciaModo === "limitada");
+  }, [vigenciaModo]);
   // Si el rango llega limitado desde afuera (editar item, cambiar template),
   // encender el modo. Nunca lo apagamos automáticamente.
   useEffect(() => {
@@ -160,13 +171,13 @@ export default function FrecuenciaSelector({
             </label>
             <div style={{ display: "flex", gap: 4 }}>
               <button type="button"
-                onClick={() => { setModoLimitado(false); onChange({ desdeMes: 1, hastaMes: 12 }); }}
-                style={{ background: !vigenciaLimitada ? T.gn + "15" : "transparent", border: `1px solid ${!vigenciaLimitada ? T.gn : T.border}`, borderRadius: 6, padding: "3px 10px", color: !vigenciaLimitada ? T.gn : T.txt3, fontSize: 10, fontWeight: !vigenciaLimitada ? 700 : 500, cursor: "pointer" }}>
+                onClick={() => { setModoLimitado(false); onChange({ desdeMes: 1, hastaMes: 12, vigenciaModo: "todo" }); }}
+                style={{ background: !vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${!vigenciaLimitada ? T.gn : (T.txt3 + "80")}`, borderRadius: 6, padding: "4px 12px", color: !vigenciaLimitada ? T.gn : T.txt2, fontSize: 10, fontWeight: !vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
                 Todo el año
               </button>
               <button type="button"
-                onClick={() => setModoLimitado(true)}
-                style={{ background: vigenciaLimitada ? T.gn + "15" : "transparent", border: `1px solid ${vigenciaLimitada ? T.gn : T.border}`, borderRadius: 6, padding: "3px 10px", color: vigenciaLimitada ? T.gn : T.txt3, fontSize: 10, fontWeight: vigenciaLimitada ? 700 : 500, cursor: "pointer" }}>
+                onClick={() => { setModoLimitado(true); onChange({ vigenciaModo: "limitada" }); }}
+                style={{ background: vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${vigenciaLimitada ? T.gn : (T.txt3 + "80")}`, borderRadius: 6, padding: "4px 12px", color: vigenciaLimitada ? T.gn : T.txt2, fontSize: 10, fontWeight: vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
                 Solo unos meses
               </button>
             </div>
@@ -181,7 +192,8 @@ export default function FrecuenciaSelector({
                     const nuevo = Number(e.target.value);
                     // Auto-ajustar hastaMes si el rango queda invertido
                     const nuevoHasta = nuevo > hastaMes ? nuevo : hastaMes;
-                    onChange({ desdeMes: nuevo, hastaMes: nuevoHasta });
+                    // vigenciaModo "limitada": tocar el mes ES elegir modo limitado
+                    onChange({ desdeMes: nuevo, hastaMes: nuevoHasta, vigenciaModo: "limitada" });
                   }}
                   style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 10px", color: T.txt, fontSize: 12, outline: "none" }}
                 >
@@ -193,7 +205,7 @@ export default function FrecuenciaSelector({
                 <label style={{ fontSize: 9, color: T.txt3, display: "block", marginBottom: 2 }}>Hasta</label>
                 <select
                   value={hastaMes}
-                  onChange={(e) => onChange({ hastaMes: Number(e.target.value) })}
+                  onChange={(e) => onChange({ hastaMes: Number(e.target.value), vigenciaModo: "limitada" })}
                   style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 10px", color: T.txt, fontSize: 12, outline: "none" }}
                 >
                   {MESES.filter(m => m.v >= desdeMes).map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
