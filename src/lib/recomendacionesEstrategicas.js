@@ -215,34 +215,10 @@ function recomendacionesNaturalNoLaboral(perfil) {
     });
   }
 
-  // ── REC 4: Adquirir vehículo / equipo bajo sociedad ────────────────────
-  // Solo si tiene sociedades en el grupo
-  const tieneJuridicas = (perfil.user?.owners || []).some(o => o.type === "juridica");
-  if (tieneJuridicas && saldoACargo > 8_000_000) {
-    recs.push({
-      id: "vehiculo_productivo_sociedad",
-      ejecutaEn: "sociedad",
-      icono: "🚗",
-      titulo: "Adquirir vehículo / equipo productivo bajo tu sociedad",
-      descripcion: "Comprar un activo productivo (vehículo, equipo, maquinaria) bajo tu sociedad (Lagoon u otra) genera triple beneficio: depreciación deducible (20% anual lineal), IVA descontable, y reduce dividendos distribuibles.",
-      accion: "Comprá una camioneta/vehículo productivo de ~$200M bajo Lagoon. Se usa para gestión de propiedades y reuniones de negocios.",
-      inversion: {
-        monto: 200_000_000,
-        descripcion: "$200M iniciales (puede ser financiado). El vehículo es activo de la empresa.",
-      },
-      ahorroAnual: {
-        monto: 51_000_000, // $40M depreciación × 35% + $38M IVA primer año dividido
-        calculoDetallado: "Año 1: depreciación $40M × 35% = $14M en Lagoon + IVA descontable $38M (Art. 258-1) = $52M total año 1. Recurrente $14M anuales por 5 años.",
-      },
-      roi: {
-        porcentaje: 26,
-        descripcion: "Recupera 26% del costo el primer año vía ahorros tributarios.",
-      },
-      baseLegal: "Arts. 128, 258-1 ET",
-      caveat: "El vehículo debe ser usado en la actividad productiva de la sociedad (no de lujo personal). Documentar uso en libros. Vehículos > $100M+ tienen seguimiento DIAN especial.",
-      prioridad: "media",
-    });
-  }
+  // NOTA (18-jul-2026 noche, Santiago): la REC "Adquirir vehículo bajo
+  // sociedad" se MOVIÓ a recomendacionesJuridica — "una cosa son las
+  // optimizaciones a Sosa, otras a Lagoon, no tienen por qué mezclarse".
+  // Cada owner ve solo las estrategias que ejecuta él mismo.
 
   return recs;
 }
@@ -344,6 +320,35 @@ function recomendacionesJuridica(perfil) {
       baseLegal: "Arts. 128, 258-1 ET",
       caveat: "Debe ser usado en la actividad productiva. Si después se arrenda a relacionado, la DIAN verifica precios de mercado (Art. 260-1 a 260-11 ET, precios de transferencia).",
       prioridad: "alta",
+    });
+  }
+
+  // REC 1b: Adquirir vehículo / equipo productivo (movida desde el flow de
+  // persona natural — 18-jul-2026 noche, Santiago: "una cosa son las
+  // optimizaciones a Sosa, otras a Lagoon, no tienen por qué mezclarse").
+  if (saldoACargo > 8_000_000) {
+    recs.push({
+      id: "vehiculo_productivo_sociedad",
+      ejecutaEn: "sociedad",
+      icono: "🚗",
+      titulo: "Adquirir vehículo / equipo productivo",
+      descripcion: "Comprar un activo productivo (vehículo, equipo, maquinaria) bajo la sociedad genera triple beneficio: depreciación deducible (20% anual lineal), IVA descontable, y reduce dividendos distribuibles.",
+      accion: "Comprá una camioneta/vehículo productivo de ~$200M a nombre de la sociedad. Se usa para gestión de propiedades y reuniones de negocios.",
+      inversion: {
+        monto: 200_000_000,
+        descripcion: "$200M iniciales (puede ser financiado). El vehículo es activo de la empresa.",
+      },
+      ahorroAnual: {
+        monto: 51_000_000, // $40M depreciación × 35% + $38M IVA primer año dividido
+        calculoDetallado: "Año 1: depreciación $40M × 35% = $14M + IVA descontable $38M (Art. 258-1) = $52M total año 1. Recurrente $14M anuales por 5 años.",
+      },
+      roi: {
+        porcentaje: 26,
+        descripcion: "Recupera 26% del costo el primer año vía ahorros tributarios.",
+      },
+      baseLegal: "Arts. 128, 258-1 ET",
+      caveat: "El vehículo debe ser usado en la actividad productiva de la sociedad (no de lujo personal). Documentar uso en libros. Vehículos > $100M+ tienen seguimiento DIAN especial.",
+      prioridad: "media",
     });
   }
 
@@ -451,6 +456,17 @@ export function generarRecomendacionesEstrategicas(user, owner, det) {
     default:
       recs = [];
   }
+
+  // FILTRO DE SEPARACIÓN (18-jul-2026 noche, Santiago): "una cosa son las
+  // optimizaciones a Sosa, otras a Lagoon, no tienen por qué mezclarse".
+  // Guardarraíl: cada owner solo ve estrategias que ÉL ejecuta.
+  //   - Owner natural  → solo ejecutaEn "personal" (o sin campo, legacy)
+  //   - Owner jurídica → solo ejecutaEn "sociedad" (o sin campo, legacy)
+  const esJuridica = owner?.type === "juridica";
+  recs = recs.filter(r => {
+    if (!r.ejecutaEn) return true; // legacy sin clasificar: no filtrar
+    return esJuridica ? r.ejecutaEn === "sociedad" : r.ejecutaEn === "personal";
+  });
 
   // Ordenar por prioridad (alta > media > baja) y luego por ahorro descendente
   const prioridad = { alta: 3, media: 2, baja: 1 };
