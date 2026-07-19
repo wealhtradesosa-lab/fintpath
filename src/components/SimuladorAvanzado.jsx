@@ -1142,11 +1142,11 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
         {/* Fila superior: label izquierda + dropdown mes derecha */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 11, color: simT.cf >= 0 ? T.gn : T.rd, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>
-            {simT.cf >= 0 ? "💰 Cash Flow · Promedio mensualizado" : "⚠️ Cash Flow · Déficit promedio"}
+            {simT.cf >= 0 ? "💰 Cash Flow · Promedio del año" : "⚠️ Cash Flow · Déficit promedio"}
           </div>
-          {/* Dropdown de mes para explorar (default = mes actual) */}
+          {/* Dropdown de mes para ver la REALIDAD de ese mes específico */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 10, color: T.txt3, letterSpacing: 0.5, textTransform: "uppercase" }}>Ver mes:</span>
+            <span style={{ fontSize: 10, color: T.txt3, letterSpacing: 0.5, textTransform: "uppercase" }}>📅 Ver mes real:</span>
             <select
               value={mesVisualizado}
               onChange={(e) => setMesVisualizado(Number(e.target.value))}
@@ -1168,12 +1168,13 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             <div style={{ fontSize: "clamp(2rem, 4.5vw, 3rem)", fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, letterSpacing: "-0.03em", lineHeight: 1 }}>
               {fm(simT.cf)}<span style={{ fontSize: 14, fontWeight: 400, color: T.txt3, marginLeft: 4 }}>/mes promedio</span>
             </div>
-            {/* Subtítulo con mes actual + delta color */}
+            {/* Subtítulo: LA REALIDAD del mes visualizado (usa montoDelMes que
+                respeta items pagados, vigencia, y variable mes a mes) */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
               <span style={{ fontSize: 12, color: T.txt3, fontWeight: 500 }}>
-                📅 {MESES.find(m => m.v === mesVisualizado)?.l} {simTMes.añoActual}:
+                📅 Realidad de {MESES.find(m => m.v === mesVisualizado)?.l}:
               </span>
-              <span style={{ fontSize: 16, fontWeight: 700, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd }}>
                 {fm(simTMes.cashFlowMes)}
               </span>
               {/* Delta con color (verde si mes > promedio, naranja si mes < promedio) */}
