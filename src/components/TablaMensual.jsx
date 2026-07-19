@@ -24,6 +24,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { MESES, getMesActual, promedioMesesReales, esMesFuturo } from "../lib/flowHelpers.js";
+import NumberInput from "./NumberInput";
 
 const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
 
@@ -197,11 +198,11 @@ export default function TablaMensual({
                 {tieneValor && <span style={{ fontSize: 9, color: "#22c55e" }}>✓</span>}
                 {esProyectado && <span style={{ fontSize: 9, color: "#22d3ee" }} title="Proyectado con promedio">~</span>}
               </div>
-              <input
-                type="number"
+              <NumberInput
                 value={valor || ""}
-                onChange={(e) => actualizarMes(idx, e.target.value)}
+                onChange={(nuevoValor) => actualizarMes(idx, nuevoValor)}
                 placeholder={esProyectado ? Math.round(proyeccion).toLocaleString("es-CO") : "0"}
+                allowDecimals={false}
                 style={{
                   width: "100%",
                   background: "transparent",
