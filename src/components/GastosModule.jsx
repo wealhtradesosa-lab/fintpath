@@ -621,7 +621,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       );
                     })()}
                     {/* Fase 2 flujo anual: chip "Pagado" solo aparece si frecuencia != mensual */}
-                    {getFrecuencia(item) !== "mensual" && (
+                    {getFrecuencia(item) !== "mensual" && getFrecuencia(item) !== "variable" && (
                       <span
                         onClick={(e) => { e.stopPropagation(); togglePagoItem(item); }}
                         title={estaPagadoEnAño(item, añoActual) ? `Ya pagado en ${añoActual} — click para desmarcar` : `Aún no pagado en ${añoActual} — click para marcar como pagado`}

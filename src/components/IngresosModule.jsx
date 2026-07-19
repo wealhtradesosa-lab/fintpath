@@ -706,8 +706,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                             </span>
                           );
                         })()}
-                        {/* Fase 2 flujo anual: chip Pagado solo si frecuencia != mensual */}
-                        {getFrecuencia(item) !== "mensual" && (
+                        {/* Chip Recibido/Pendiente: SOLO para pagos puntuales
+                            (anual, único, semestral, trimestral). Los mensuales
+                            son recurrentes y los VARIABLES se gestionan mes a
+                            mes en su tabla (18-jul-2026 noche, Santiago: el
+                            chip en variables confundía y no hacía nada). */}
+                        {getFrecuencia(item) !== "mensual" && getFrecuencia(item) !== "variable" && (
                           <span
                             onClick={(e) => { e.stopPropagation(); togglePagoItem(item); }}
                             title={estaPagadoEnAño(item, añoActual) ? `Ya recibido en ${añoActual} — click para desmarcar` : `Aún no recibido en ${añoActual} — click para marcar como recibido`}
