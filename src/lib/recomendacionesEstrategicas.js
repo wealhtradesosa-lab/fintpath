@@ -132,6 +132,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
     const ahorroAnual = Math.min(interesesAnualesEstimados * tasaMarg, saldoACargo);
     recs.push({
       id: "credito_hipotecario_vivienda",
+      ejecutaEn: "personal",
       icono: "🏠",
       titulo: "Crédito hipotecario sobre vivienda habitacional",
       descripcion: "Si comprás (o refinanciás) tu vivienda principal con un crédito hipotecario, los intereses anuales son deducibles hasta 1.200 UVT/año (~$62.8M).",
@@ -162,6 +163,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
     const ahorroAFC = Math.round(aporteAFCmax * tasaMarg);
     recs.push({
       id: "consultoria_laboral",
+      ejecutaEn: "personal",
       icono: "💼",
       titulo: "Generar renta laboral vía consultoría profesional",
       descripcion: "Hoy todos tus ingresos son por dividendos/arriendos. Eso te bloquea el acceso a las palancas más potentes: aportes a AFC/Pensión Voluntaria (deducibles 100%), dependientes, medicina prepagada deducible.",
@@ -190,6 +192,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
     const descuento = donacionSugerida * 0.25; // 25% del Art. 257
     recs.push({
       id: "donacion_esal",
+      ejecutaEn: "personal",
       icono: "❤️",
       titulo: "Donación a fundación / ESAL educativa o cultural",
       descripcion: "Las donaciones a entidades del Régimen Tributario Especial (RTE) generan un DESCUENTO directo del 25% sobre el monto donado. No es deducción (que reduce base) — es descuento peso a peso del impuesto.",
@@ -218,6 +221,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
   if (tieneJuridicas && saldoACargo > 8_000_000) {
     recs.push({
       id: "vehiculo_productivo_sociedad",
+      ejecutaEn: "sociedad",
       icono: "🚗",
       titulo: "Adquirir vehículo / equipo productivo bajo tu sociedad",
       descripcion: "Comprar un activo productivo (vehículo, equipo, maquinaria) bajo tu sociedad (Lagoon u otra) genera triple beneficio: depreciación deducible (20% anual lineal), IVA descontable, y reduce dividendos distribuibles.",
@@ -267,6 +271,7 @@ function recomendacionesNaturalLaboral(perfil) {
     const ahorroPV = Math.min(Math.round(aporteSugerido * tasaMarg), saldoACargo);
     recs.push({
       id: "aporte_pv_estrategico",
+      ejecutaEn: "personal",
       icono: "💼",
       titulo: "Aportar a Pensión Voluntaria",
       descripcion: "Aporte deducible al 100% (cap 25% del ingreso). La palanca más potente para empleados con salario alto.",
@@ -286,6 +291,7 @@ function recomendacionesNaturalLaboral(perfil) {
   // REC 2: Cuenta AFC para vivienda
   recs.push({
     id: "cuenta_afc",
+      ejecutaEn: "personal",
     icono: "🏠",
     titulo: "Cuenta AFC (Ahorro para Fomento de la Construcción)",
     descripcion: "Aporte deducible al 100% (cap conjunto con PV: 25% del ingreso). Solo para destinar a compra/mejora de vivienda o pago de hipoteca.",
@@ -318,6 +324,7 @@ function recomendacionesJuridica(perfil) {
     const ahorroAno1 = Math.round(depreciacionAnual * 0.35 + ivaDescontable);
     recs.push({
       id: "bodega_inmueble_productivo",
+      ejecutaEn: "sociedad",
       icono: "🏢",
       titulo: "Adquirir bodega / inmueble productivo",
       descripcion: "Comprar un activo fijo productivo genera triple beneficio: depreciación lineal (20 años), IVA descontable (Art. 258-1) y reduce utilidad distribuible. La estrategia clásica que recomiendan los contadores.",
@@ -347,6 +354,7 @@ function recomendacionesJuridica(perfil) {
     const ahorroFiscal = Math.round(deduccion * 0.35) + (inversion * 0.25);
     recs.push({
       id: "inversion_cti",
+      ejecutaEn: "sociedad",
       icono: "🔬",
       titulo: "Inversión en proyecto CT&I (Ciencia, Tecnología, Innovación)",
       descripcion: "La inversión en proyectos certificados por MinCiencias o Colciencias genera DEDUCCIÓN del 175% (es decir, gastás $100M y deducís $175M) más DESCUENTO directo del 25% del valor invertido. Es de los beneficios fiscales más potentes que existen.",
@@ -372,6 +380,7 @@ function recomendacionesJuridica(perfil) {
   // REC 3: Capacitación a empleados (175%)
   recs.push({
     id: "capacitacion_empleados",
+      ejecutaEn: "sociedad",
     icono: "🎓",
     titulo: "Capacitación certificada a empleados",
     descripcion: "Las inversiones en capacitación certificada (cursos, diplomados, posgrados) de tu equipo generan deducción del 175% del valor invertido (Art. 158-1 inc 2 ET).",
@@ -392,6 +401,7 @@ function recomendacionesJuridica(perfil) {
     const donacion = Math.min(saldoACargo * 0.3, 100_000_000);
     recs.push({
       id: "donacion_esal_juridica",
+      ejecutaEn: "sociedad",
       icono: "❤️",
       titulo: "Donación a fundación / ESAL desde la sociedad",
       descripcion: "Las donaciones de la sociedad a entidades del Régimen Tributario Especial generan DESCUENTO directo del 25% sobre el impuesto. Es la forma más eficiente de transformar parte del impuesto en impacto social.",

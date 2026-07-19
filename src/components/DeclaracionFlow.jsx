@@ -673,6 +673,29 @@ const AREAS_NATURAL = [
     pregunta: "¿Tenés gastos asociados a tus inmuebles arrendados (mantenimiento, predial, comisiones, intereses bancarios)?",
     explicacion: "Los gastos directamente asociados al arriendo se RESTAN del ingreso bruto. Esto incluye: depreciación (~10% del valor del inmueble), intereses del crédito hipotecario, comisiones a inmobiliarias, mantenimiento, predial, seguros, y cualquier gasto relacionado. Es la palanca más impactante para personas con rentas de arriendo.",
     baseLegal: "Art. 26 ET (renta líquida = ingreso − gastos)",
+    // UX FIX (18-jul-2026 noche, Santiago): advertencia contextual cuando el
+    // owner NO tiene ingresos de arriendo a su nombre. Santiago aplicó esta
+    // estrategia en Sosa (PN) pero sus arriendos están bajo Inversiones Lagoon
+    // → el motor no tenía contra qué restar → "no pasó nada". El motor está
+    // fiscalmente correcto; lo que faltaba era AVISARLE al user por qué.
+    advertencia: (det, user) => {
+      const ingNoLaboral = Number(det?.ingNoLaboral) || 0;
+      if (ingNoLaboral > 0) return null; // tiene arriendos, todo bien
+      // Encontrar el owner actual por nombre (det.name es el nombre del owner)
+      const ownerActual = (user?.owners || []).find(o => o.name === det?.name);
+      // Buscar si hay arriendos bajo OTROS owners (típicamente la SAS)
+      const arriendosOtrosOwners = (user?.ingresos || []).filter(i =>
+        /Arriendo/i.test(i.categoria || "") && i.owner && i.owner !== ownerActual?.id
+      );
+      const nombresOtros = [...new Set(arriendosOtrosOwners.map(i => {
+        const o = (user?.owners || []).find(ow => ow.id === i.owner);
+        return o?.name || "otra sociedad";
+      }))];
+      if (nombresOtros.length > 0) {
+        return `⚠️ Esta estrategia NO va a generar ahorro acá: no tenés ingresos de arriendo a tu nombre como persona natural. Tus arriendos están bajo ${nombresOtros.map(n => `🏢 ${n}`).join(" y ")}. Para deducir estos gastos: aplicá la estrategia en el flow de esa sociedad, o revisá el "Propietario fiscal" de tus ingresos de arriendo si en realidad son tuyos.`;
+      }
+      return `⚠️ Esta estrategia no va a generar ahorro: no tenés ingresos de arriendo registrados a tu nombre. Si tenés inmuebles arrendados, primero registrá el ingreso en 💰 Ingresos con categoría "Arrendamiento" y propietario fiscal correcto.`;
+    },
     estimarAhorro: (data, det) => {
       const monto = Number(data.gastosAnuales) || 0;
       // Tasa marginal aproximada en cédula general (28-33% típico)
@@ -1499,6 +1522,15 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
     return area.avisoEspecial(det);
   }, [area, det]);
 
+  // UX FIX (18-jul-2026 noche): advertencia contextual de aplicabilidad.
+  // Ej: "Costos asociados a arriendos" cuando el owner no tiene arriendos
+  // a su nombre (están bajo otra sociedad) → avisamos ANTES de que aplique
+  // y se pregunte por qué "no pasó nada".
+  const advertenciaArea = useMemo(() => {
+    if (!area.advertencia) return null;
+    return area.advertencia(det, user);
+  }, [area, det, user]);
+
   // Detector de datos preexistentes en el sistema.
   // Si el motor ya tiene info cargada (ej: gastos de salud en Egresos,
   // dependientes en fiscalProfile, etc.), evitamos preguntar de cero.
@@ -1659,6 +1691,24 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
                 {avisoEspecial.tipo === "warning" ? "⚠️ Atención: " : "ℹ️ Importante: "}
               </strong>
               {avisoEspecial.mensaje}
+            </div>
+          )}
+
+          {/* UX FIX (18-jul-2026 noche): advertencia de aplicabilidad — se
+              muestra cuando la estrategia NO va a generar ahorro para este
+              owner (ej: gastos arriendo sin arriendos a su nombre). */}
+          {advertenciaArea && (
+            <div style={{
+              padding: "10px 12px",
+              background: C.orangeBg,
+              border: `1px solid ${C.orange}50`,
+              borderRadius: 8,
+              marginBottom: 12,
+              fontSize: 12,
+              color: C.txt2,
+              lineHeight: 1.6,
+            }}>
+              {advertenciaArea}
             </div>
           )}
 

@@ -97,6 +97,19 @@ function RecomendacionCard({ rec, indice }) {
             }}>
               {prio.label}
             </span>
+            {/* UX FIX (18-jul-2026 noche): badge "Se ejecuta en" — clarifica
+                si la acción es personal o vía la sociedad. Evita la confusión
+                de Santiago sobre "compra de carro para persona natural". */}
+            {rec.ejecutaEn && (
+              <span style={{
+                fontSize: 10, padding: "2px 8px", borderRadius: 999,
+                background: rec.ejecutaEn === "sociedad" ? "rgba(168,85,247,0.15)" : "rgba(59,130,246,0.15)",
+                color: rec.ejecutaEn === "sociedad" ? "#a855f7" : "#3b82f6",
+                fontWeight: 700,
+              }}>
+                {rec.ejecutaEn === "sociedad" ? "🏢 Vía tu sociedad" : "👤 Acción personal"}
+              </span>
+            )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4, flexWrap: "wrap" }}>
             {ahorroMonto > 0 && (
