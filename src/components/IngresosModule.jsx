@@ -227,14 +227,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   // UX simplificación: plantilla elegida.
   const [templateElegido, setTemplateElegido] = useState(null);
 
-  // UX iter 5 (18-jul-2026 noche): accordions para agrupar campos técnicos.
-  // Santiago: "es como doble formulario de lo mismo" — el editor de Salarios
-  // se veía como 4 mini-formularios pegados. Ahora agrupamos:
-  //   • Aportes obligatorios → accordion, default abierto (aplica solo a Salarios)
-  //   • Clasificación tributaria → accordion, default cerrado (opcional)
-  const [aportesOpen, setAportesOpen] = useState(true);
-  const [tributariaOpen, setTributariaOpen] = useState(false);
-
   // Helper: decide si un campo se muestra según el template elegido.
   // UX iter 4 (18-jul-2026 noche): al editar, respetar el template DETECTADO
   // del item existente. Antes forzaba mostrar todo, causando redundancia con
@@ -499,8 +491,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     // UX iter 5 (18-jul-2026 noche): estado inicial de los accordions al editar:
     //   • Aportes: abierto para Salarios (donde suelen personalizar), cerrado para el resto
     //   • Tributaria: abierto si el user tiene propietario fiscal o categoría no-default
-    setAportesOpen(item.categoria === "Salario");
-    setTributariaOpen(!!item.owner || !!item.fiscalCode);
     // Si es un salario/honorarios, mantener modo simple para no confundir
     // (ellos siempre son mensuales, sin modoIngreso ni vigencia).
   };
@@ -550,7 +540,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             📊 Excel
           </button>
-          <button onClick={() => { setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setAportesOpen(true); setTributariaOpen(false); setShowForm(true); }}
+          <button onClick={() => { setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             + Agregar
           </button>
@@ -655,7 +645,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:T.txt}}>Agrega tus ingresos mensuales</h3>
                       <p style={{fontSize:13,color:T.txt3,maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Registra todo lo que recibes cada mes: salario, arriendos, rendimientos, dividendos, freelance. <strong style={{color:T.txt2}}>No incluyas cuotas de créditos</strong> — esas van en Deudas.</p>
                       <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
-                        <button onClick={()=>{setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setAportesOpen(true); setTributariaOpen(false); setShowForm(true);}} style={{background:T.green,color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar ingreso</button>
+                        <button onClick={()=>{setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setShowForm(true);}} style={{background:T.green,color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar ingreso</button>
                         {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>📥 Importar tabla Excel de ingresos</button>}
                       </div>
                       <div style={{background:T.bg3,borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
@@ -1050,25 +1040,15 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 </div>
               )}
 
-              {/* Commit 1.5 + Commit IBC: aportes obligatorios como accordion
-                  (UX iter 5 18-jul-2026 noche). Default abierto para Salarios
-                  para que el user vea que hay controles disponibles. */}
+              {/* UX Opción A (18-jul-2026 noche): Aportes obligatorios PLANOS
+                  y compactos. Sin accordion, sin explicación larga, todo visible. */}
               {form.categoria === "Salario" && (
-                <div style={{gridColumn:"1/-1",background:"rgba(168,85,247,0.04)",border:"1px solid rgba(168,85,247,0.2)",borderRadius:10,marginTop:4,marginBottom:4,overflow:"hidden"}}>
-                  {/* Header del accordion — clickeable */}
-                  <button type="button"
-                    onClick={() => setAportesOpen(v => !v)}
-                    style={{width:"100%",padding:"12px 16px",background:"transparent",border:"none",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",fontFamily:"inherit",textAlign:"left"}}>
-                    <div style={{fontSize:12,fontWeight:700,color:"#a855f7",display:"flex",alignItems:"center",gap:6}}>
-                      🛡️ Aportes obligatorios mensuales
-                    </div>
-                    <span style={{fontSize:10,color:"#a855f7",transition:"transform 0.15s",transform:aportesOpen?"rotate(90deg)":"rotate(0deg)"}}>▶</span>
-                  </button>
-                  {/* Contenido colapsable */}
-                  {aportesOpen && (
-                  <div style={{padding:"0 16px 14px 16px"}}>
-                  <div style={{fontSize:10,color:T.txt3,lineHeight:1.5,marginBottom:12}}>
-                    Por defecto se calculan en 4%+4% del bruto. Si cotizás sobre un IBC distinto (ej: 25 SMMLV para maximizar pensión), elegí "📊 # SMMLV" y el sistema aplica las tasas legales completas, incluyendo Fondo de Solidaridad Pensional (Art. 27 Ley 100).
+                <div style={{gridColumn:"1/-1",background:"rgba(168,85,247,0.04)",border:"1px solid rgba(168,85,247,0.2)",borderRadius:10,padding:"12px 14px",marginTop:4,marginBottom:4}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#a855f7",marginBottom:2,display:"flex",alignItems:"center",gap:6}}>
+                    🛡️ Aportes obligatorios · Pensión y Salud
+                  </div>
+                  <div style={{fontSize:10,color:T.txt3,lineHeight:1.4,marginBottom:10}}>
+                    Por defecto 4%+4% del bruto. Cambia a "# SMMLV" si cotizás sobre IBC distinto.
                   </div>
 
                   {/* Pensión: toggle + input */}
@@ -1199,8 +1179,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       </div>
                     );
                   })()}
-                  </div>
-                  )}
                 </div>
               )}
 
@@ -1209,21 +1187,14 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
               <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
 
-              {/* UX iter 5 (18-jul-2026 noche): Clasificación tributaria como accordion
-                  colapsable, default cerrado. Solo el user avanzado que quiere personalizar
-                  el propietario fiscal o la categoría DIAN necesita abrirlo. */}
-              <div style={{ gridColumn: "1/-1", marginTop: 4 }}>
-                <button type="button"
-                  onClick={() => setTributariaOpen(v => !v)}
-                  style={{width:"100%",padding:"12px 14px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:10,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",fontFamily:"inherit",textAlign:"left"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:T.txt2,display:"flex",alignItems:"center",gap:6}}>
-                    🧾 Clasificación tributaria <span style={{color:T.txt3,fontWeight:400,fontSize:11}}>(opcional)</span>
-                  </div>
-                  <span style={{fontSize:10,color:T.txt3,transition:"transform 0.15s",transform:tributariaOpen?"rotate(90deg)":"rotate(0deg)"}}>▶</span>
-                </button>
+              {/* UX Opción A (18-jul-2026 noche): Clasificación tributaria PLANA
+                  y compacta al pie. Sin accordion, separador discreto arriba,
+                  campos directos, sin explicación redundante. */}
+              <div style={{ gridColumn: "1/-1", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, marginTop: 6 }}>
+                <div style={{fontSize:11,fontWeight:600,color:T.txt3,marginBottom:8,letterSpacing:"0.03em"}}>
+                  🧾 Clasificación tributaria <span style={{color:T.txt3,fontWeight:400,opacity:0.7}}>(opcional)</span>
+                </div>
               </div>
-              {tributariaOpen && (
-              <>
               <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} /></div>
               <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => {
                 const nf = { ...p, categoria: v, fiscalCode: DEFAULT_FISCAL_CODE[v] || "NOL_OTROS" };
@@ -1235,7 +1206,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 }
                 return nf;
               })} options={CATS} /></div>
-              <div style={{fontSize:10,color:"#71717a",marginTop:-8,marginBottom:4,padding:"0 4px",gridColumn:"1/-1"}}>Si asignas propietario, este ingreso se incluirá en el cálculo de impuestos de esa persona o empresa.</div>
 
               {FISCAL_SUBOPTIONS[form.categoria] && (
                 <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
@@ -1431,8 +1401,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   </div>
                 );
               })()}
-              </>
-              )}
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
               <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
