@@ -17,6 +17,7 @@
 //   />
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { useState, useEffect } from "react";
 import { FRECUENCIAS, MESES } from "../lib/flowHelpers.js";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -63,7 +64,25 @@ export default function FrecuenciaSelector({
         : Math.round((montoNum * freq.n) / 12))
     : 0;
   const mesNombre = MESES.find(m => m.v === Number(mesPago))?.l || "Enero";
-  const vigenciaLimitada = frecuencia === "mensual" && (desdeMes !== 1 || hastaMes !== 12);
+
+  // ── VIGENCIA: modo vs rango (BUG FIX 18-jul-2026 noche, Santiago) ──
+  // ANTES: vigenciaLimitada se DERIVABA del rango (desde!==1 || hasta!==12).
+  // Bug real: user con salario ene-ago tocaba "Desde: Enero" primero → rango
+  // pasaba por 1-12 → el sistema interpretaba "todo el año" → colapsaba los
+  // selects y "lo sacaba". Imposible elegir enero como primer mes.
+  // AHORA: el MODO es estado propio (lo que el user eligió en el toggle) y
+  // no colapsa aunque el rango transite por 1-12.
+  // Bug fix 2: el check era solo frecuencia==="mensual" → en "variable" los
+  // selects jamás aparecían. Ahora ambos.
+  const aplicaVigencia = frecuencia === "mensual" || frecuencia === "variable";
+  const rangoLimitado = aplicaVigencia && (desdeMes !== 1 || hastaMes !== 12);
+  const [modoLimitado, setModoLimitado] = useState(rangoLimitado);
+  // Si el rango llega limitado desde afuera (editar item, cambiar template),
+  // encender el modo. Nunca lo apagamos automáticamente.
+  useEffect(() => {
+    if (rangoLimitado) setModoLimitado(true);
+  }, [rangoLimitado]);
+  const vigenciaLimitada = modoLimitado; // la UI usa el MODO, no el rango
 
   const fm = (n) => "$" + Math.round(n).toLocaleString("es-CO");
 
@@ -141,12 +160,12 @@ export default function FrecuenciaSelector({
             </label>
             <div style={{ display: "flex", gap: 4 }}>
               <button type="button"
-                onClick={() => onChange({ desdeMes: 1, hastaMes: 12 })}
+                onClick={() => { setModoLimitado(false); onChange({ desdeMes: 1, hastaMes: 12 }); }}
                 style={{ background: !vigenciaLimitada ? T.gn + "15" : "transparent", border: `1px solid ${!vigenciaLimitada ? T.gn : T.border}`, borderRadius: 6, padding: "3px 10px", color: !vigenciaLimitada ? T.gn : T.txt3, fontSize: 10, fontWeight: !vigenciaLimitada ? 700 : 500, cursor: "pointer" }}>
                 Todo el año
               </button>
               <button type="button"
-                onClick={() => onChange({ desdeMes: desdeMes === 1 && hastaMes === 12 ? 1 : desdeMes, hastaMes: desdeMes === 1 && hastaMes === 12 ? 6 : hastaMes })}
+                onClick={() => setModoLimitado(true)}
                 style={{ background: vigenciaLimitada ? T.gn + "15" : "transparent", border: `1px solid ${vigenciaLimitada ? T.gn : T.border}`, borderRadius: 6, padding: "3px 10px", color: vigenciaLimitada ? T.gn : T.txt3, fontSize: 10, fontWeight: vigenciaLimitada ? 700 : 500, cursor: "pointer" }}>
                 Solo unos meses
               </button>
@@ -186,7 +205,7 @@ export default function FrecuenciaSelector({
       )}
 
       {/* Explicación contextual para mensual con vigencia LIMITADA */}
-      {frecuencia === "mensual" && vigenciaLimitada && (
+      {frecuencia === "mensual" && rangoLimitado && (
         <div style={{ fontSize: 11, color: T.txt3, background: T.bg3 + "80", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
           <div style={{ marginBottom: 4 }}>
             💡 <strong style={{ color: T.txt2 }}>{mesesActivos} {mesesActivos === 1 ? "mes" : "meses"} activos</strong>: {MESES.find(m => m.v === desdeMes)?.l} a {MESES.find(m => m.v === hastaMes)?.l}. El resto del año no pesa.
