@@ -202,8 +202,16 @@ export function labelVigenciaBadge(item) {
 // Ej: Rapicredit $6.5M mensual jul-dic → devuelve $39M
 // Ej: seguro semestral $2.2M → devuelve $4.4M
 // Ej: variable [15M×2, 8M×2, 40M×2, ...] → suma total
+//
+// UX FIX (18-jul-2026 noche, Santiago): si un item NO mensual está pagado
+// en el año actual, retorna 0 — enfoque prospectivo, no aparece más en el año.
 export function totalAnualItem(item) {
   const freq = getFrecuencia(item);
+  const { año: añoActual } = getMesActual();
+  // FIX pagado: no-mensual (ni variable) pagado en año actual → 0
+  if (freq !== "mensual" && freq !== "variable" && estaPagadoEnAño(item, añoActual)) {
+    return 0;
+  }
   if (freq === "variable") {
     // Suma reales + proyección en meses futuros vacíos, dentro de vigencia
     const montos = getMontosMensuales(item);
@@ -213,7 +221,6 @@ export function totalAnualItem(item) {
       return m >= desde && m <= hasta;
     });
     const promProyeccion = promedioMesesReales(montosEnVigencia);
-    const { año: añoActual } = getMesActual();
     return montos.reduce((s, valor, idx) => {
       const mes = idx + 1;
       if (mes < desde || mes > hasta) return s; // fuera de vigencia
@@ -245,9 +252,19 @@ export const estaPagadoEnAño = (item, año) => {
  * Ej: dividendo trimestral $3M → devuelve $1M (3M × 4 trimestres / 12 meses)
  * Ej: mensual $47M activo solo 6 meses → devuelve $23.5M (47M × 6 / 12)
  * Ej: variable [15,15,8,8,40,15,15,40,8,8,15,15] → suma/12 = ~$15.67M
+ *
+ * UX FIX (18-jul-2026 noche, Santiago): si un item NO mensual ya está marcado
+ * como pagado/recibido en el año actual, retorna 0 — no debería seguir
+ * apareciendo como "gasto/ingreso recurrente" en el simulador prospectivo.
+ * Los mensuales siempre pesan (son recurrentes cada mes por naturaleza).
  */
 export function montoPromedioMensual(item) {
   const freq = getFrecuencia(item);
+  // FIX pagado: si es no-mensual y ya está pagado este año, no cuenta
+  const { año: añoActual } = getMesActual();
+  if (freq !== "mensual" && freq !== "variable" && estaPagadoEnAño(item, añoActual)) {
+    return 0;
+  }
   // Variable: suma del total anual / 12 (o meses activos si vigencia limitada)
   if (freq === "variable") {
     // Reutilizamos totalAnualItem que ya considera vigencia
