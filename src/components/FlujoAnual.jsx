@@ -441,10 +441,12 @@ export default function FlujoAnual({ user, trm = 4200 }) {
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>De dónde vienen tus ingresos y a dónde van tus egresos, en % y valor absoluto.</div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        {/* Layout responsive: 2 columnas cuando hay espacio (min 320px cada una),
+            1 columna cuando el ancho es angosto — evita corte de textos. */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
           {/* ─── INGRESOS ─── */}
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}`, flexWrap: "wrap", gap: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: T.gn }}>💰 Ingresos</div>
               <div style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace" }}>
                 Total: <span style={{ color: T.gn, fontWeight: 700 }}>${Math.round(composicion.totalIng).toLocaleString("es-CO")}</span>
@@ -485,17 +487,21 @@ export default function FlujoAnual({ user, trm = 4200 }) {
                   </PieChart>
                 </ResponsiveContainer>
 
-                {/* Leyenda con % y $ para cada categoría */}
-                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 5 }}>
+                {/* Leyenda mejorada (18-jul-2026 noche): nombre en línea propia
+                    con truncate, % y valor en línea inferior con espacio flexible.
+                    Evita el problema de textos cortados cuando el ancho es limitado. */}
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 7 }}>
                   {composicion.dataIngresos.map((d, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 11 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, flex: 1 }}>
+                    <div key={i} style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 11, paddingBottom: 5, borderBottom: i === composicion.dataIngresos.length - 1 ? "none" : `1px solid ${T.border}` }}>
+                      {/* Fila 1: cuadrado color + nombre (con truncate si es largo) */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                         <div style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }}></div>
-                        <span style={{ color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+                        <span title={d.name} style={{ color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{d.name}</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
-                        <span style={{ color: T.txt2, fontWeight: 600, fontFamily: "monospace" }}>{d.pct.toFixed(1)}%</span>
-                        <span style={{ color: T.txt3, fontFamily: "monospace", minWidth: 100, textAlign: "right" }}>${Math.round(d.value).toLocaleString("es-CO")}</span>
+                      {/* Fila 2: % + valor absoluto — siempre visibles */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingLeft: 16 }}>
+                        <span style={{ color: T.txt2, fontWeight: 700, fontFamily: "monospace" }}>{d.pct.toFixed(1)}%</span>
+                        <span style={{ color: T.txt3, fontFamily: "monospace", fontSize: 10 }}>${Math.round(d.value).toLocaleString("es-CO")}</span>
                       </div>
                     </div>
                   ))}
@@ -506,7 +512,7 @@ export default function FlujoAnual({ user, trm = 4200 }) {
 
           {/* ─── EGRESOS ─── */}
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}`, flexWrap: "wrap", gap: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: T.rd }}>💸 Egresos</div>
               <div style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace" }}>
                 Total: <span style={{ color: T.rd, fontWeight: 700 }}>${Math.round(composicion.totalEgr).toLocaleString("es-CO")}</span>
@@ -547,16 +553,18 @@ export default function FlujoAnual({ user, trm = 4200 }) {
                   </PieChart>
                 </ResponsiveContainer>
 
-                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 5 }}>
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 7 }}>
                   {composicion.dataEgresos.map((d, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 11 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, flex: 1 }}>
+                    <div key={i} style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 11, paddingBottom: 5, borderBottom: i === composicion.dataEgresos.length - 1 ? "none" : `1px solid ${T.border}` }}>
+                      {/* Fila 1: cuadrado color + nombre (con truncate si es largo) */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                         <div style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }}></div>
-                        <span style={{ color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+                        <span title={d.name} style={{ color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{d.name}</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
-                        <span style={{ color: T.txt2, fontWeight: 600, fontFamily: "monospace" }}>{d.pct.toFixed(1)}%</span>
-                        <span style={{ color: T.txt3, fontFamily: "monospace", minWidth: 100, textAlign: "right" }}>${Math.round(d.value).toLocaleString("es-CO")}</span>
+                      {/* Fila 2: % + valor absoluto */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingLeft: 16 }}>
+                        <span style={{ color: T.txt2, fontWeight: 700, fontFamily: "monospace" }}>{d.pct.toFixed(1)}%</span>
+                        <span style={{ color: T.txt3, fontFamily: "monospace", fontSize: 10 }}>${Math.round(d.value).toLocaleString("es-CO")}</span>
                       </div>
                     </div>
                   ))}
