@@ -445,7 +445,7 @@ export default function FlujoAnual({ user, trm = 4200 }) {
             1 columna cuando el ancho es angosto — evita corte de textos. */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
           {/* ─── INGRESOS ─── */}
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}`, flexWrap: "wrap", gap: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: T.gn }}>💰 Ingresos</div>
               <div style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace" }}>
@@ -471,7 +471,22 @@ export default function FlujoAnual({ user, trm = 4200 }) {
                       outerRadius={90}
                       paddingAngle={2}
                       labelLine={false}
-                      label={({ pct }) => pct >= 5 ? `${pct.toFixed(0)}%` : ""}
+                      // UX FIX (18-jul-2026 noche): labels DENTRO del arco —
+                      // los labels externos se cortaban con el borde del
+                      // contenedor (Santiago screenshot: "41%" y "26%" cortados).
+                      // Dentro del arco nunca se cortan. Solo slices >= 7%.
+                      label={({ cx, cy, midAngle, innerRadius, outerRadius, pct }) => {
+                        if (pct < 7) return null;
+                        const RADIAN = Math.PI / 180;
+                        const radius = innerRadius + (outerRadius - innerRadius) / 2;
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                        return (
+                          <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={800} style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
+                            {pct.toFixed(0)}%
+                          </text>
+                        );
+                      }}
                     >
                       {composicion.dataIngresos.map((entry, i) => (
                         <Cell key={i} fill={entry.color} stroke={T.card} strokeWidth={2} />
@@ -511,7 +526,7 @@ export default function FlujoAnual({ user, trm = 4200 }) {
           </div>
 
           {/* ─── EGRESOS ─── */}
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}`, flexWrap: "wrap", gap: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: T.rd }}>💸 Egresos</div>
               <div style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace" }}>
@@ -537,7 +552,18 @@ export default function FlujoAnual({ user, trm = 4200 }) {
                       outerRadius={90}
                       paddingAngle={2}
                       labelLine={false}
-                      label={({ pct }) => pct >= 5 ? `${pct.toFixed(0)}%` : ""}
+                      label={({ cx, cy, midAngle, innerRadius, outerRadius, pct }) => {
+                        if (pct < 7) return null;
+                        const RADIAN = Math.PI / 180;
+                        const radius = innerRadius + (outerRadius - innerRadius) / 2;
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                        return (
+                          <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={800} style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
+                            {pct.toFixed(0)}%
+                          </text>
+                        );
+                      }}
                     >
                       {composicion.dataEgresos.map((entry, i) => (
                         <Cell key={i} fill={entry.color} stroke={T.card} strokeWidth={2} />
