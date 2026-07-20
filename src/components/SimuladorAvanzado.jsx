@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
-import { montoPromedioMensual, montoDelMes, MESES, getMesActual } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
@@ -13,7 +13,7 @@ const T = {
   rd: "#ef4444", rdD: "rgba(239,68,68,0.08)",
   bl: "#3b82f6", pr: "#a78bfa", or: "#f97316", gd: "#eab308", cy: "#22d3ee",
 };
-const fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
+const fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 const pc = (n) => (n || 0).toFixed(1) + "%";
 const TT = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 };
 
@@ -1334,10 +1334,29 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       {grp.gas.map((g, gi) => {
                         if (g.sim === false) return null;
                         const key = g._gkey || ("gf_"+g.cat+"_"+gi);
+                        // UX FIX (20-jul-2026, Santiago): el slider mostraba solo
+                        // el monto por período sin frecuencia ni estado pagado —
+                        // un anual de $26M parecía mensual. Ahora el sub aclara:
+                        //   · frecuencia si no es mensual (🎯 anual, 📆 trimestral...)
+                        //   · el aporte REAL al promedio mensual del simulador
+                        //   · "✅ pagado, no cuenta" si ya se pagó este año
+                        const freqG = getFrecuencia(g);
+                        const { año: añoNow } = getMesActual();
+                        const pagadoYa = freqG !== "mensual" && freqG !== "variable" && estaPagadoEnAño(g, añoNow);
+                        const promG = montoPromedioMensual(g);
+                        let subG = g.cat;
+                        if (freqG === "variable") {
+                          subG = `${g.cat} · 📊 variable · ${fm(promG)}/mes prom.`;
+                        } else if (freqG !== "mensual") {
+                          const fLabel = FRECUENCIAS.find(f => f.v === freqG)?.l || freqG;
+                          subG = pagadoYa
+                            ? `${g.cat} · 🎯 ${fLabel} · ✅ pagado ${añoNow}, no cuenta`
+                            : `${g.cat} · 🎯 ${fLabel} · aporta ${fm(promG)}/mes`;
+                        }
                         return <Slider key={key} label={g.c||g.cat} value={getVal(key, g.m)} base={g.m}
-                          max={Math.max(g.m*3,500)} color={T.rd}
+                          max={Math.max(g.m*3,500)} color={pagadoYa ? T.txt3 : T.rd}
                           onChange={(v)=>setVal(key,v)}
-                          sub={g.cat} />;
+                          sub={subG} />;
                       })}
                     </>}
                     
