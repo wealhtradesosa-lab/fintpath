@@ -26,7 +26,7 @@ import {
   PieChart, Pie, Cell
 } from "recharts";
 import PageHeader from "./PageHeader";
-import { montoDelMes, MESES, getMesActual, montoPromedioMensual } from "../lib/flowHelpers.js";
+import { montoDelMes, MESES, getMesActual, montoPromedioMensual, getFrecuencia, estaPagadoEnAño, getMesPago, FRECUENCIAS, getMonto } from "../lib/flowHelpers.js";
 import { estimarImpuesto } from "../lib/taxCO";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
 
@@ -431,6 +431,76 @@ export default function FlujoAnual({ user, trm = 4200 }) {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* ═══ PRÓXIMOS PAGOS DEL AÑO (20-jul-2026, Santiago) ═══
+          "Esos pagos que son solo una vez al año como seguros o impuestos
+          sería genial que tuviesen una alerta de pago que uno sepa que se
+          vencen y se pagan tal día". Lista de items NO mensuales ordenada
+          por urgencia: vencidos → este mes → próximos → pagados al final. */}
+      {(() => {
+        const { mes: mesHoy, año: añoHoy } = getMesActual();
+        const pagosAnuales = [];
+        Object.entries(user.gastos || {}).forEach(([cat, items]) => {
+          (items || []).forEach(g => {
+            if (g.sim === false) return;
+            const freq = getFrecuencia(g);
+            if (freq === "mensual" || freq === "variable") return;
+            const pagado = estaPagadoEnAño(g, añoHoy);
+            const mp = getMesPago(g);
+            const monto = getMonto(g);
+            if (monto <= 0) return;
+            // Urgencia: 0=vencido, 1=este mes, 2=próximo mes, 3=futuro, 4=pagado
+            let urgencia = 3;
+            if (pagado) urgencia = 4;
+            else if (mp < mesHoy) urgencia = 0;
+            else if (mp === mesHoy) urgencia = 1;
+            else if (mp === mesHoy + 1) urgencia = 2;
+            pagosAnuales.push({ nombre: g.c || cat, cat, monto, mp, freq, pagado, urgencia });
+          });
+        });
+        if (pagosAnuales.length === 0) return null;
+        pagosAnuales.sort((a, b) => a.urgencia - b.urgencia || a.mp - b.mp || b.monto - a.monto);
+        const conf = {
+          0: { emoji: "🔴", label: "VENCIDO", color: "#ef4444", bg: "rgba(239,68,68,0.08)" },
+          1: { emoji: "🔔", label: "SE PAGA ESTE MES", color: "#f97316", bg: "rgba(249,115,22,0.08)" },
+          2: { emoji: "📅", label: "Próximo mes", color: "#eab308", bg: "rgba(234,179,8,0.06)" },
+          3: { emoji: "📅", label: "", color: T.txt3, bg: "transparent" },
+          4: { emoji: "✅", label: "Pagado", color: T.gn, bg: "transparent" },
+        };
+        const pendientes = pagosAnuales.filter(p => !p.pagado);
+        const totalPendiente = pendientes.reduce((s, p) => s + p.monto, 0);
+        return (
+          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>🔔 Próximos pagos del año</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Seguros, impuestos y pagos puntuales — marcá el chip Pagado en Egresos al cubrirlos.</div>
+              </div>
+              <div style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace" }}>
+                Pendiente: <span style={{ color: "#f97316", fontWeight: 700 }}>${Math.round(totalPendiente).toLocaleString("es-CO")}</span> · {pendientes.length} {pendientes.length === 1 ? "pago" : "pagos"}
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
+              {pagosAnuales.map((p, i) => {
+                const c = conf[p.urgencia];
+                const fLabel = FRECUENCIAS.find(f => f.v === p.freq)?.l || p.freq;
+                const mesL = MESES.find(m => m.v === p.mp)?.l || p.mp;
+                return (
+                  <div key={i} style={{ background: c.bg || T.bg3, border: `1px solid ${p.urgencia <= 1 ? c.color + "50" : T.border}`, borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, opacity: p.pagado ? 0.5 : 1, minWidth: 0 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: p.pagado ? "line-through" : "none" }} title={p.nombre}>{p.nombre}</div>
+                      <div style={{ fontSize: 10, color: c.color, fontWeight: p.urgencia <= 1 ? 700 : 500, marginTop: 2 }}>
+                        {c.emoji} {p.urgencia === 0 ? `${c.label} — era en ${mesL}` : p.urgencia === 4 ? `${c.label} ${añoHoy}` : (c.label ? `${c.label} (${mesL})` : `${fLabel} · ${mesL}`)}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: p.pagado ? T.txt3 : T.txt, fontFamily: "monospace", flexShrink: 0 }}>${Math.round(p.monto).toLocaleString("es-CO")}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ═══ COMPOSICIÓN DEL AÑO — 2 DONUT CHARTS (18-jul-2026 noche) ═══
           Santiago: "sería bueno ver cómo están compuestos los ingresos y

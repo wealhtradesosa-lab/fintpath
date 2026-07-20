@@ -55,7 +55,7 @@ export const MESES = [
 
 // Extrae el monto base del item, sin importar si es ingreso (mensual) o
 // gasto (m) — soporta ambas keys.
-const getMonto = (item) => Number(item.mensual ?? item.m ?? 0) || 0;
+export const getMonto = (item) => Number(item.mensual ?? item.m ?? 0) || 0;
 
 // Obtiene la frecuencia con default "mensual" (retrocompat con items viejos)
 export const getFrecuencia = (item) => item?.frecuencia || "mensual";
