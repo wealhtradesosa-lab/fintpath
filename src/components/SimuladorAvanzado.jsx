@@ -1162,15 +1162,18 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
           (promedio), subtítulo = contexto del mes actual con delta color.
           Dropdown discreto arriba-derecha permite explorar cualquier mes.
           ═══════════════════════════════════════════════════════════════════ */}
-      <div style={{ background: simT.cf >= 0 ? "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(34,197,94,0.02))" : "linear-gradient(135deg, rgba(239,68,68,0.10), rgba(239,68,68,0.02))", border: "1px solid " + (simT.cf >= 0 ? T.gn : T.rd) + "30", borderRadius: 16, padding: "22px 28px", marginBottom: 16 }}>
+      <div style={{ background: simTMes.cashFlowMes >= 0 ? "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(34,197,94,0.02))" : "linear-gradient(135deg, rgba(239,68,68,0.10), rgba(239,68,68,0.02))", border: "1px solid " + (simTMes.cashFlowMes >= 0 ? T.gn : T.rd) + "30", borderRadius: 16, padding: "22px 28px", marginBottom: 16 }}>
+        {/* JERARQUÍA INVERTIDA (20-jul-2026, Santiago): "el cash flow por
+            tanto cada mes es distinto" — el número protagonista es el del
+            MES elegido (la realidad); el promedio del año pasa a secundario. */}
         {/* Fila superior: label izquierda + dropdown mes derecha */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-          <div style={{ fontSize: 11, color: simT.cf >= 0 ? T.gn : T.rd, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>
-            {simT.cf >= 0 ? "💰 Cash Flow · Promedio del año" : "⚠️ Cash Flow · Déficit promedio"}
+          <div style={{ fontSize: 11, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>
+            {simTMes.cashFlowMes >= 0 ? "💰 Cash Flow de" : "⚠️ Cash Flow de"} {MESES.find(m => m.v === mesVisualizado)?.l} {simTMes.añoActual}
           </div>
-          {/* Dropdown de mes para ver la REALIDAD de ese mes específico */}
+          {/* Dropdown de mes — gobierna TODO el simulador */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 10, color: T.txt3, letterSpacing: 0.5, textTransform: "uppercase" }}>📅 Ver mes real:</span>
+            <span style={{ fontSize: 10, color: T.txt3, letterSpacing: 0.5, textTransform: "uppercase" }}>📅 Cambiar mes:</span>
             <select
               value={mesVisualizado}
               onChange={(e) => setMesVisualizado(Number(e.target.value))}
@@ -1188,20 +1191,18 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
         {/* Cuerpo: 2 columnas — izquierda números principales, derecha metricas */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
           <div style={{ minWidth: 0, flex: "1 1 auto" }}>
-            {/* Número GRANDE del promedio (estratégico) */}
-            <div style={{ fontSize: "clamp(2rem, 4.5vw, 3rem)", fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, letterSpacing: "-0.03em", lineHeight: 1 }}>
-              {fm(simT.cf)}<span style={{ fontSize: 14, fontWeight: 400, color: T.txt3, marginLeft: 4 }}>/mes promedio</span>
+            {/* Número GRANDE: el cash flow REAL del mes elegido */}
+            <div style={{ fontSize: "clamp(2rem, 4.5vw, 3rem)", fontWeight: 800, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd, letterSpacing: "-0.03em", lineHeight: 1 }}>
+              {fm(simTMes.cashFlowMes)}<span style={{ fontSize: 14, fontWeight: 400, color: T.txt3, marginLeft: 4 }}>este mes</span>
             </div>
-            {/* Subtítulo: LA REALIDAD del mes visualizado (usa montoDelMes que
-                respeta items pagados, vigencia, y variable mes a mes) */}
+            {/* Secundario: promedio del año + delta del mes vs promedio */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
               <span style={{ fontSize: 12, color: T.txt3, fontWeight: 500 }}>
-                📅 Realidad de {MESES.find(m => m.v === mesVisualizado)?.l}:
+                Promedio del año:
               </span>
-              <span style={{ fontSize: 18, fontWeight: 800, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd }}>
-                {fm(simTMes.cashFlowMes)}
+              <span style={{ fontSize: 14, fontWeight: 700, color: T.txt2 }}>
+                {fm(simT.cf)}/mes
               </span>
-              {/* Delta con color (verde si mes > promedio, naranja si mes < promedio) */}
               {Math.abs(simTMes.deltaVsPromedio) > 100 && (
                 <span style={{
                   fontSize: 11,
@@ -1212,13 +1213,13 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                   color: simTMes.deltaVsPromedio >= 0 ? T.gn : "#f97316",
                   letterSpacing: 0.3,
                 }}>
-                  {simTMes.deltaVsPromedio >= 0 ? "▲" : "▼"} {simTMes.deltaVsPromedio >= 0 ? "+" : ""}{fm(simTMes.deltaVsPromedio)} vs promedio
+                  {simTMes.deltaVsPromedio >= 0 ? "▲" : "▼"} este mes {simTMes.deltaVsPromedio >= 0 ? "+" : ""}{fm(simTMes.deltaVsPromedio)} vs promedio
                 </span>
               )}
             </div>
-            {/* Micro-explicación de la fórmula del promedio */}
+            {/* Micro-explicación con los números DEL MES */}
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>
-              Disponible <span style={{ color: T.txt2 }}>{fm(simT.disponibleCuenta || 0)}</span> − Egresos <span style={{ color: T.txt2 }}>{fm(simT.egresosTotales || 0)}</span>
+              Ingresos del mes <span style={{ color: T.txt2 }}>{fm(simTMes.disponibleMes || 0)}</span> − Egresos del mes <span style={{ color: T.txt2 }}>{fm(simTMes.egresosMes || 0)}</span>
             </div>
           </div>
 
