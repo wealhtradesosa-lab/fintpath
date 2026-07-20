@@ -15,6 +15,19 @@ const T = {
 };
 const fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 
+// Vigencia de deudas (20-jul-2026): ¿la cuota aplica en este mes?
+const cuotaDeudaEnMes = (d, mes) => {
+  const desde = Number(d?.desdeMes) || 1;
+  const hasta = Number(d?.hastaMes) || 12;
+  return mes >= desde && mes <= hasta;
+};
+// Fracción del año en que la deuda está activa (para el promedio prospectivo)
+const fraccionAñoDeuda = (d) => {
+  const desde = Number(d?.desdeMes) || 1;
+  const hasta = Number(d?.hastaMes) || 12;
+  return Math.max(0, hasta - desde + 1) / 12;
+};
+
 // Razón por la que un item vale $0 en un mes dado (mes-céntrico, 20-jul-2026)
 // LÍNEA DE TIEMPO (fix Santiago): el pago es un EVENTO que ocurre en mesPago.
 // Parado en un mes ANTERIOR, el pago aún no existía → "paga en X", no "pagado".
@@ -408,7 +421,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     let cuotasDeudas = 0;
     deuSim.forEach(d => {
       if (d.sim === false) return;
-      if ((d.mt || 0) > 0) cuotasDeudas += (d.pago || d.pg || 0);
+      if ((d.mt || 0) > 0) cuotasDeudas += (d.pago || d.pg || 0) * fraccionAñoDeuda(d);
     });
 
     // ─── PASO 4: Impuesto + Retención (por owner fiscal) ────────────────
@@ -530,7 +543,14 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     });
 
     // Cuotas deudas: siempre mensuales por diseño (retrocompat con simT)
-    const cuotasDeudasMes = simT.cuotasDeudas || 0;
+    // Cuotas del MES: solo deudas cuyo rango de vigencia incluye este mes
+    // (20-jul-2026, Santiago: "las deudas también pueden ser hasta X mes").
+    let cuotasDeudasMes = 0;
+    (user.deudas || []).forEach((d, di) => {
+      if (d.sim === false || (d.mt || 0) <= 0) return;
+      if (!cuotaDeudaEnMes(d, mes)) return;
+      cuotasDeudasMes += getVal(`debt_${di}`, d.pago || d.pg || 0);
+    });
 
     // Impuesto neto y retención: anualizado ÷ 12 (constantes cada mes)
     const retencionMes = simT.retencionMensual || 0;
@@ -625,13 +645,18 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
           else gastosFam += monto;
         });
       });
-      const cuotas = simT.cuotasDeudas || 0;
+      let cuotas = 0;
+      (user.deudas || []).forEach((d, di) => {
+        if (d.sim === false || (d.mt || 0) <= 0) return;
+        if (!cuotaDeudaEnMes(d, mes)) return;
+        cuotas += getVal(`debt_${di}`, d.pago || d.pg || 0);
+      });
       const retencion = simT.retencionMensual || 0;
       const impNeto = simT.impuestoNeto || 0;
       const cf = (ingresosMes - retencion) - (aportesObl + gastosFam + cuotas + impNeto);
       return { mes, mesLabel: MESES.find(m => m.v === mes)?.l.slice(0, 3) || "", cashFlow: cf };
     });
-  }, [user, simT.cuotasDeudas, simT.retencionMensual, simT.impuestoNeto]);
+  }, [user, getVal, simT.retencionMensual, simT.impuestoNeto]);
 
   // ── Baseline (sin overrides de simVals, sin toggle Optimizado) ──
   // Reproduce la misma fórmula de simT pero usando los valores de la data
@@ -1562,6 +1587,25 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         const saldo = d.mt||0;
                         const safeDebtIdx = idx >= 0 ? idx : "d"+gi+"_"+di;
                         const simCuota = getVal("debt_"+safeDebtIdx, cuota);
+                        // Vigencia de deuda (20-jul-2026): si la deuda no
+                        // aplica al mes visible → fila informativa sin slider
+                        if (!cuotaDeudaEnMes(d, mesVisualizado)) {
+                          const desdeD = Number(d.desdeMes) || 1;
+                          const hastaD = Number(d.hastaMes) || 12;
+                          const terminada = mesVisualizado > hastaD;
+                          const mesRefL = MESES.find(m => m.v === (terminada ? hastaD : desdeD))?.l || "";
+                          return (
+                            <div key={"d_"+idx} style={{ marginBottom: 6, background: terminada ? T.gn + "0A" : T.txt3 + "08", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + (terminada ? T.gn : T.txt3), display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: terminada ? 1 : 0.75 }}>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nombre||d.n||"Deuda"}</span>
+                              <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
+                                <span style={{ fontSize: 10, color: terminada ? T.gn : T.txt3, fontWeight: 700, background: terminada ? T.gn + "15" : "transparent", padding: terminada ? "2px 8px" : 0, borderRadius: 10 }}>
+                                  {terminada ? `✅ Terminada · última cuota ${mesRefL}` : `📅 empieza en ${mesRefL}`}
+                                </span>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: T.txt3, fontFamily: "monospace", textDecoration: terminada ? "line-through" : "none" }}>{fm(cuota)}/mes</span>
+                              </span>
+                            </div>
+                          );
+                        }
                         return (
                           <div key={"d_"+idx} style={{marginBottom:6}}>
                             <Slider label={d.nombre||d.n||""} value={simCuota} base={cuota}

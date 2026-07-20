@@ -5,6 +5,8 @@ import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportDeudasExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
+import FrecuenciaSelector from "./FrecuenciaSelector";
+import { MESES } from "../lib/flowHelpers.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -113,7 +115,13 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     // Commit 5 Tarea 3 (bugfix): persistir fiscalCode al guardar. Antes el campo
     // se omitía y el motor caía al default vía normalizer, ignorando la elección
     // del usuario en el sub-selector "¿Para qué usaste esta deuda?".
-    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, la: form.la || null, owner: form.owner || "" };
+    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, la: form.la || null, owner: form.owner || "",
+      // Vigencia de la deuda (20-jul-2026, Santiago): "las deudas también
+      // pueden ser hasta X mes" — cuotas solo pesan dentro del rango.
+      ...((Number(form.desdeMes) || 1) !== 1 && { desdeMes: Number(form.desdeMes) }),
+      ...((Number(form.hastaMes) || 12) !== 12 && { hastaMes: Number(form.hastaMes) }),
+      ...(form.vigenciaModo && { vigenciaModo: form.vigenciaModo }),
+    };
     if (editId) {
       onUpdate(items.map((i) => (i.id === editId ? { ...i, ...item } : i)));
     } else {
@@ -122,12 +130,12 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "" });
+    setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", desdeMes: 1, hastaMes: 12, vigenciaModo: undefined });
     setViviendaConfirmaciones({ esHabitacion: true, esTitular: true, noArrendado: true });
   };
 
   const openEdit = (d) => {
-    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, la: d.la || "", owner: d.owner || "" });
+    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, la: d.la || "", owner: d.owner || "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo });
     setEditId(d.id);
     setShowForm(true);
   };
@@ -150,7 +158,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             📊 Excel
           </button>
-          <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "" }); setShowForm(true); }}
+          <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", desdeMes: 1, hastaMes: 12, vigenciaModo: undefined }); setShowForm(true); }}
             style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
       />
@@ -269,6 +277,12 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                           >⚠️</span>
                         )}
                         <span>{d.n}</span>
+                        {/* Badge vigencia (20-jul-2026): deuda con rango limitado */}
+                        {((Number(d.desdeMes) || 1) !== 1 || (Number(d.hastaMes) || 12) !== 12) && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "#3b82f6", background: "rgba(59,130,246,0.12)", padding: "2px 8px", borderRadius: 10, marginLeft: 6 }}>
+                            📅 {MESES.find(m => m.v === (Number(d.desdeMes) || 1))?.l.slice(0,3)}–{MESES.find(m => m.v === (Number(d.hastaMes) || 12))?.l.slice(0,3)} · {(Number(d.hastaMes) || 12) - (Number(d.desdeMes) || 1) + 1} meses
+                          </span>
+                        )}
                       </div>
                       {(()=>{
                         if(!d.owner || d.owner==="") return null;
@@ -328,6 +342,23 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 const newPg=mt>0&&v?Math.round(mt*parseFloat(v)/100/12):"";
                 setForm((p) => ({ ...p, ts: v, pg: String(newPg) }));
               }} type="number" placeholder="Ej: 12" />
+              {/* Vigencia de la deuda (20-jul-2026): "¿se paga todo el año o
+                  hasta X mes?" — reusa el selector de Ingresos/Gastos. */}
+              <div style={{ gridColumn: "1/-1" }}>
+                <FrecuenciaSelector
+                  frecuencia="mensual"
+                  mesPago={1}
+                  desdeMes={Number(form.desdeMes) || 1}
+                  hastaMes={Number(form.hastaMes) || 12}
+                  vigenciaModo={form.vigenciaModo}
+                  monto={parseFloat(form.pg) || 0}
+                  onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
+                  tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "#fafafa", txt2: "#d4d4d8", txt3: "#71717a", bg3: "#27272a", border: "rgba(255,255,255,0.08)" }}
+                  mostrarChipsFrecuencia={false}
+                  mostrarSelectorMes={false}
+                  mostrarVigencia={true}
+                />
+              </div>
               {form.mt&&form.pg&&form.ts&&<div style={{gridColumn:"1/-1",fontSize:11,color:"#a1a1aa",background:"#1e1e24",borderRadius:8,padding:"8px 12px"}}>Saldo {fmt(+form.mt||0)} al {form.ts}% anual = cuota estimada {fmt(+form.pg||0)}/mes. Ingresa uno y el otro se calcula.</div>}
               <In l="Propietario fiscal" value={form.owner} onChange={(v) => {
                 // Al cambiar owner, re-sugerir fiscalCode si tipo no es compatible con owner nuevo
