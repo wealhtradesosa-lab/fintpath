@@ -1262,28 +1262,32 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>
               Ingresos del mes <span style={{ color: T.txt2 }}>{fm(simTMes.disponibleMes || 0)}</span> − Egresos del mes <span style={{ color: T.txt2 }}>{fm(simTMes.egresosMes || 0)}</span>
             </div>
-            {/* 💡 NOTA IMPORTANTE (20-jul-2026): qué afectó el cash flow del
-                mes — top drivers positivos y negativos vs el mes típico. */}
-            {(driversDelMes.positivos.length > 0 || driversDelMes.negativos.length > 0) && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 10 }}>
-                {driversDelMes.positivos.length > 0 && (
-                  <div style={{ fontSize: 11, color: T.gn, background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 8, padding: "6px 10px", lineHeight: 1.5 }}>
-                    <strong>▲ Impulsado por:</strong>{" "}
-                    {driversDelMes.positivos.map((d, i) => (
-                      <span key={i}>{i > 0 && " · "}{d.nombre} <span style={{ fontWeight: 700, fontFamily: "monospace" }}>+{fm(d.efecto)}</span>{d.tipo === "gasto" ? " (gasto que este mes no cae)" : ""}</span>
-                    ))}
-                  </div>
-                )}
-                {driversDelMes.negativos.length > 0 && (
-                  <div style={{ fontSize: 11, color: simTMes.cashFlowMes < 0 ? "#ef4444" : "#f97316", background: simTMes.cashFlowMes < 0 ? "rgba(239,68,68,0.08)" : "rgba(249,115,22,0.07)", border: `1px solid ${simTMes.cashFlowMes < 0 ? "rgba(239,68,68,0.3)" : "rgba(249,115,22,0.2)"}`, borderRadius: 8, padding: "6px 10px", lineHeight: 1.5 }}>
-                    <strong>{simTMes.cashFlowMes < 0 ? "⚠️ Déficit del mes causado por:" : "▼ Golpeado por:"}</strong>{" "}
-                    {driversDelMes.negativos.map((d, i) => (
-                      <span key={i}>{i > 0 && " · "}{d.nombre} <span style={{ fontWeight: 700, fontFamily: "monospace" }}>{fm(d.efecto)}</span>{d.tipo === "gasto" ? " (pago del mes)" : ""}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* 💡 EL ITEM MÁS IMPORTANTE del cambio del resultado (20-jul-2026,
+                Santiago: "cuál fue el item más importante en el cambio del
+                resultado"). UNA nota, UN protagonista — el mayor |efecto|.
+                Si hay un segundo relevante (≥50% del primero), va de cola. */}
+            {(() => {
+              const todos = [...driversDelMes.positivos, ...driversDelMes.negativos]
+                .sort((a, b) => Math.abs(b.efecto) - Math.abs(a.efecto));
+              if (todos.length === 0) return null;
+              const top = todos[0];
+              const segundo = todos[1] && Math.abs(todos[1].efecto) >= Math.abs(top.efecto) * 0.5 ? todos[1] : null;
+              const esPos = top.efecto > 0;
+              const color = esPos ? T.gn : (simTMes.cashFlowMes < 0 ? "#ef4444" : "#f97316");
+              const bg = esPos ? "rgba(34,197,94,0.07)" : (simTMes.cashFlowMes < 0 ? "rgba(239,68,68,0.08)" : "rgba(249,115,22,0.07)");
+              return (
+                <div style={{ fontSize: 11.5, color, background: bg, border: `1px solid ${color}35`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.5, marginTop: 10 }}>
+                  💡 <strong>Lo que más movió este mes:</strong>{" "}
+                  {top.nombre} <span style={{ fontWeight: 800, fontFamily: "monospace" }}>{top.efecto > 0 ? "+" : ""}{fm(top.efecto)}</span>
+                  {top.tipo === "gasto" && top.efecto < 0 ? " (pago del mes)" : ""}
+                  {segundo && (
+                    <span style={{ opacity: 0.75 }}>
+                      {" "}· seguido de {segundo.nombre} <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{segundo.efecto > 0 ? "+" : ""}{fm(segundo.efecto)}</span>
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Columna derecha: métricas secundarias */}
