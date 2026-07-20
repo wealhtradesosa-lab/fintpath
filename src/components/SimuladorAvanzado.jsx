@@ -594,8 +594,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     const relevantes = drivers.filter(d => Math.abs(d.efecto) >= umbral);
     relevantes.sort((a, b) => Math.abs(b.efecto) - Math.abs(a.efecto));
     return {
-      positivos: relevantes.filter(d => d.efecto > 0).slice(0, 2),
-      negativos: relevantes.filter(d => d.efecto < 0).slice(0, 2),
+      positivos: relevantes.filter(d => d.efecto > 0).slice(0, 3),
+      negativos: relevantes.filter(d => d.efecto < 0).slice(0, 3),
     };
   }, [user, mesVisualizado, simT.cashFlow]);
 
@@ -1270,30 +1270,31 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               const todos = [...driversDelMes.positivos, ...driversDelMes.negativos]
                 .sort((a, b) => Math.abs(b.efecto) - Math.abs(a.efecto));
               if (todos.length === 0) return null;
-              const top = todos[0];
-              // Acompañantes: hasta 2 más si son comparables (≥50% del top).
-              // Fix (20-jul-2026): Sosa y Echavarría empatados con −$11M cada
-              // uno — el corte en 2 ítems ocultaba a Echavarría. Empates y
-              // efectos comparables merecen aparecer juntos.
-              const acompanantes = todos.slice(1, 3).filter(d => Math.abs(d.efecto) >= Math.abs(top.efecto) * 0.5);
+              // TOP 3 (20-jul-2026, Santiago: "consideremos el 1, 2, 3 más
+              // importante") — los 3 mayores movimientos del mes, numerados.
+              const top3 = todos.slice(0, 3);
+              const top = top3[0];
               const esPos = top.efecto > 0;
               const color = esPos ? T.gn : (simTMes.cashFlowMes < 0 ? "#ef4444" : "#f97316");
               const bg = esPos ? "rgba(34,197,94,0.07)" : (simTMes.cashFlowMes < 0 ? "rgba(239,68,68,0.08)" : "rgba(249,115,22,0.07)");
+              const sufijo = (d) => {
+                if (d.tipo === "gasto" && d.efecto < 0) return " (pago del mes)";
+                if (d.tipo === "gasto" && d.efecto > 0) return " (gasto que no cae)";
+                if (d.tipo === "ingreso" && d.efecto < 0) return " (por debajo de su típico)";
+                if (d.tipo === "ingreso" && d.efecto > 0) return " (por encima de lo típico)";
+                return "";
+              };
               return (
-                <div style={{ fontSize: 11.5, color, background: bg, border: `1px solid ${color}35`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.5, marginTop: 10 }}>
+                <div style={{ fontSize: 11.5, color, background: bg, border: `1px solid ${color}35`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.6, marginTop: 10 }}>
                   💡 <strong>Lo que más movió este mes:</strong>{" "}
-                  {top.nombre} <span style={{ fontWeight: 800, fontFamily: "monospace" }}>{top.efecto > 0 ? "+" : ""}{fm(top.efecto)}</span>
-                  {top.tipo === "gasto" && top.efecto < 0 ? " (pago del mes)" : ""}
-                  {top.tipo === "gasto" && top.efecto > 0 ? " (gasto que este mes no cae)" : ""}
-                  {top.tipo === "ingreso" && top.efecto < 0 ? " (ingreso por debajo de su promedio este mes)" : ""}
-                  {top.tipo === "ingreso" && top.efecto > 0 ? " (ingreso por encima de lo típico)" : ""}
-                  {acompanantes.length > 0 && (
-                    <span style={{ opacity: 0.75 }}>
-                      {" "}· seguido de {acompanantes.map((s, i) => (
-                        <span key={i}>{i > 0 && " y "}{s.nombre} <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{s.efecto > 0 ? "+" : ""}{fm(s.efecto)}</span></span>
-                      ))}
+                  {top3.map((d, i) => (
+                    <span key={i} style={{ opacity: i === 0 ? 1 : 0.8 }}>
+                      {i > 0 && " · "}
+                      <strong>{i + 1}.</strong> {d.nombre}{" "}
+                      <span style={{ fontWeight: i === 0 ? 800 : 700, fontFamily: "monospace" }}>{d.efecto > 0 ? "+" : ""}{fm(d.efecto)}</span>
+                      {sufijo(d)}
                     </span>
-                  )}
+                  ))}
                 </div>
               );
             })()}
