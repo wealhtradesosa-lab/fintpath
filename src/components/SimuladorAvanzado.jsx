@@ -14,6 +14,25 @@ const T = {
   bl: "#3b82f6", pr: "#a78bfa", or: "#f97316", gd: "#eab308", cy: "#22d3ee",
 };
 const fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
+
+// Razón por la que un item vale $0 en un mes dado (mes-céntrico, 20-jul-2026)
+const razonMonto0 = (item, año, mes) => {
+  const freq = getFrecuencia(item);
+  const desde = Number(item?.desdeMes) || 1;
+  const hasta = Number(item?.hastaMes) || 12;
+  if ((freq === "mensual" || freq === "variable") && (mes < desde || mes > hasta)) return "🚫 fuera de vigencia";
+  if (freq !== "mensual" && freq !== "variable") {
+    if (estaPagadoEnAño(item, año)) return `✅ pagado ${año}`;
+    if (freq === "anual" || freq === "unico") {
+      const mp = Number(item?.mesPago) || 1;
+      if (mp !== mes) return `🎯 paga en ${MESES.find(m => m.v === mp)?.l || mp}`;
+    } else {
+      return "📆 no cae este mes";
+    }
+  }
+  if (freq === "variable") return "sin monto este mes";
+  return "";
+};
 const pc = (n) => (n || 0).toFixed(1) + "%";
 const TT = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 };
 
@@ -513,26 +532,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     const impuestoNetoMes = simT.impuestoNeto || 0;
 
     // ── Desglose por item (Opción A, 20-jul-2026): listas con el monto
-    // REAL de cada ingreso/gasto en el mes visualizado + razón cuando es $0
-    // (pagado, fuera de vigencia, cae en otro mes). Sentido común de Santiago:
-    // "el simulador se acomoda según el mes visible" — este panel lo hace.
-    const razonMonto0 = (item, año, mes) => {
-      const freq = getFrecuencia(item);
-      const desde = Number(item?.desdeMes) || 1;
-      const hasta = Number(item?.hastaMes) || 12;
-      if ((freq === "mensual" || freq === "variable") && (mes < desde || mes > hasta)) return "🚫 fuera de vigencia";
-      if (freq !== "mensual" && freq !== "variable") {
-        if (estaPagadoEnAño(item, año)) return `✅ pagado ${año}`;
-        if (freq === "anual" || freq === "unico") {
-          const mp = Number(item?.mesPago) || 1;
-          if (mp !== mes) return `🎯 paga en ${MESES.find(m => m.v === mp)?.l || mp}`;
-        } else {
-          return "📆 no cae este mes";
-        }
-      }
-      if (freq === "variable") return "sin monto este mes";
-      return "";
-    };
+    // REAL de cada ingreso/gasto en el mes visualizado + razón cuando es $0.
+    // razonMonto0 vive a nivel módulo (compartida con los sliders mes-céntricos).
 
     const detalleIngresos = [];
     ingSim.forEach(ing => {
@@ -1391,7 +1392,22 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                           ? Math.round((simRenta*12/simCap)*1000)/10
                           : baseTasa;
                         const rentDiff = simRenta - baseRenta;
-                        
+
+                        // ═══ Guard MES-CÉNTRICO (20-jul-2026): si el ingreso NO
+                        // aplica al mes visible (fuera de vigencia, ya recibido,
+                        // cae en otro mes) → fila informativa, sin slider.
+                        const { año: añoNowI } = getMesActual();
+                        const baseMesI = montoDelMes({ ...ing, mensual: baseRenta }, añoNowI, mesVisualizado);
+                        if (baseMesI === 0) {
+                          const razonI = razonMonto0(ing, añoNowI, mesVisualizado);
+                          return (
+                            <div key={"ing_"+safeIdx} style={{ marginBottom: 4, background: T.txt3 + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.6 }}>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 10, color: T.txt3 }}>{ing.categoria||""}</span></span>
+                              <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600, flexShrink: 0 }}>{razonI || "$0 este mes"}</span>
+                            </div>
+                          );
+                        }
+
                         return (
                           <div key={"ing_"+safeIdx} style={{marginBottom:10, background:"rgba(34,211,238,0.04)", borderRadius:10, padding:"10px 14px"}}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
@@ -1437,32 +1453,43 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       {grp.gas.map((g, gi) => {
                         if (g.sim === false) return null;
                         const key = g._gkey || ("gf_"+g.cat+"_"+gi);
-                        // UX FIX 2 (20-jul-2026, Santiago): el sub es SENSIBLE
-                        // AL MES visualizado — "si ese mes se pagó el seguro,
-                        // carga completo ese mes; el siguiente ya pagado → $0".
-                        // montoDelMes ya respeta mesPago, pagados, vigencia y
-                        // variable; acá solo lo mostramos por item.
+                        // ═══ SLIDERS MES-CÉNTRICOS (20-jul-2026, Santiago):
+                        // "los mismos sliders se ajustan según lo que aplica a
+                        // ese mes". El slider muestra el VALOR DEL MES visible;
+                        // moverlo aplica el ajuste PROPORCIONAL al item
+                        // estructural (coherente: reducir 20% acá = 20% en
+                        // todos los meses donde el item aplica).
                         const freqG = getFrecuencia(g);
                         const { año: añoNow } = getMesActual();
-                        const pagadoYa = freqG !== "mensual" && freqG !== "variable" && estaPagadoEnAño(g, añoNow);
-                        const promG = montoPromedioMensual(g);
-                        const enMesVis = montoDelMes(g, añoNow, mesVisualizado);
-                        const mesVisL = (MESES.find(m => m.v === mesVisualizado)?.l || "").slice(0, 3);
-                        const rangoLtd = (Number(g.desdeMes) || 1) !== 1 || (Number(g.hastaMes) || 12) !== 12;
-                        let subG = g.cat;
-                        if (freqG === "variable") {
-                          subG = `${g.cat} · 📊 Var · ${mesVisL}: ${fm(enMesVis)} · prom ${fm(promG)}/mes`;
-                        } else if (freqG !== "mensual") {
-                          const fLabel = FRECUENCIAS.find(f => f.v === freqG)?.l || freqG;
-                          subG = pagadoYa
-                            ? `${g.cat} · 🎯 ${fLabel} · ✅ pagado ${añoNow} · ${mesVisL}: $0`
-                            : `${g.cat} · 🎯 ${fLabel} · ${mesVisL}: ${fm(enMesVis)} · prom ${fm(promG)}/mes`;
-                        } else if (rangoLtd) {
-                          subG = `${g.cat} · 📅 vigencia · ${mesVisL}: ${fm(enMesVis)}`;
+                        const baseMesG = montoDelMes(g, añoNow, mesVisualizado);
+                        // No aplica este mes → fila informativa con la razón
+                        if (baseMesG === 0) {
+                          const razon = razonMonto0(g, añoNow, mesVisualizado);
+                          return (
+                            <div key={key} style={{ marginBottom: 4, background: T.txt3 + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.6 }}>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 10, color: T.txt3 }}>{g.cat}</span></span>
+                              <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600, flexShrink: 0 }}>{razon || "$0 este mes"}</span>
+                            </div>
+                          );
                         }
-                        return <Slider key={key} label={g.c||g.cat} value={getVal(key, g.m)} base={g.m}
-                          max={Math.max(g.m*3,500)} color={pagadoYa ? T.txt3 : T.rd}
-                          onChange={(v)=>setVal(key,v)}
+                        // Variable: su valor mensual se edita en la tabla de Egresos
+                        if (freqG === "variable") {
+                          return (
+                            <div key={key} style={{ marginBottom: 4, background: T.rd + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.rd, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 10, color: T.txt3 }}>📊 variable · se ajusta mes a mes en Egresos</span></span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: T.rd, flexShrink: 0 }}>{fm(baseMesG)}</span>
+                            </div>
+                          );
+                        }
+                        // Slider mes-céntrico: value = valor del mes con override aplicado
+                        const estructural = g.m || 0;
+                        const ratioActual = estructural > 0 ? (getVal(key, estructural) / estructural) : 1;
+                        const valorMesG = Math.round(baseMesG * ratioActual);
+                        const fLabel = freqG !== "mensual" ? (FRECUENCIAS.find(f => f.v === freqG)?.l || freqG) : null;
+                        const subG = fLabel ? `${g.cat} · 🎯 ${fLabel} — cae este mes` : g.cat;
+                        return <Slider key={key} label={g.c||g.cat} value={valorMesG} base={baseMesG}
+                          max={Math.max(baseMesG*3,500)} color={T.rd}
+                          onChange={(v)=>setVal(key, Math.round(estructural * (v / baseMesG)))}
                           sub={subG} />;
                       })}
                     </>}
