@@ -559,6 +559,47 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   }, [user, simVals, mesVisualizado, getVal, simT.cuotasDeudas, simT.retencionMensual, simT.impuestoNeto, simT.cashFlow]);
 
   // ═══════════════════════════════════════════════════════════════════════
+  // DRIVERS DEL MES (20-jul-2026, Santiago): "sería espectacular poder
+  // saber qué fue lo que más afectó positiva o negativamente el cash flow
+  // del mes elegido". Comparamos cada item contra su comportamiento TÍPICO
+  // (promedio mensualizado): la diferencia es su "efecto" sobre este mes.
+  //   · Ingreso anual que cae este mes → efecto POSITIVO grande
+  //   · Impuesto/seguro que se paga este mes → efecto NEGATIVO grande
+  //   · Variable con pico/valle → efecto según se aleje de su promedio
+  // ═══════════════════════════════════════════════════════════════════════
+  const driversDelMes = useMemo(() => {
+    const trm = 4200;
+    const { año: añoD } = getMesActual();
+    const mes = mesVisualizado;
+    const drivers = [];
+
+    // Ingresos: delta positivo = empuja el cash flow ARRIBA
+    (user.ingresos || []).forEach(ing => {
+      if (ing.sim === false) return;
+      const base = { ...ing, mensual: (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1) };
+      const delta = montoDelMes(base, añoD, mes) - montoPromedioMensual(base);
+      if (delta !== 0) drivers.push({ nombre: ing.nombre || ing.fuente || "Ingreso", efecto: delta, tipo: "ingreso" });
+    });
+    // Gastos: MÁS gasto que lo típico = empuja ABAJO (signo invertido)
+    Object.entries(user.gastos || {}).forEach(([cat, items]) => {
+      (items || []).forEach(g => {
+        if (g.sim === false) return;
+        const delta = montoDelMes(g, añoD, mes) - montoPromedioMensual(g);
+        if (delta !== 0) drivers.push({ nombre: g.c || cat, efecto: -delta, tipo: "gasto" });
+      });
+    });
+
+    // Umbral de relevancia: efectos chicos no son "nota importante"
+    const umbral = Math.max(500_000, Math.abs(simT.cashFlow || 0) * 0.03);
+    const relevantes = drivers.filter(d => Math.abs(d.efecto) >= umbral);
+    relevantes.sort((a, b) => Math.abs(b.efecto) - Math.abs(a.efecto));
+    return {
+      positivos: relevantes.filter(d => d.efecto > 0).slice(0, 2),
+      negativos: relevantes.filter(d => d.efecto < 0).slice(0, 2),
+    };
+  }, [user, mesVisualizado, simT.cashFlow]);
+
+  // ═══════════════════════════════════════════════════════════════════════
   // Widget mini de flujo anual (Fase 3 - 18-jul-2026).
   // Calcula cash flow por cada uno de los 12 meses del año actual usando
   // el mismo motor que simTMes pero iterando 12 veces. Solo produce el
@@ -1221,6 +1262,28 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>
               Ingresos del mes <span style={{ color: T.txt2 }}>{fm(simTMes.disponibleMes || 0)}</span> − Egresos del mes <span style={{ color: T.txt2 }}>{fm(simTMes.egresosMes || 0)}</span>
             </div>
+            {/* 💡 NOTA IMPORTANTE (20-jul-2026): qué afectó el cash flow del
+                mes — top drivers positivos y negativos vs el mes típico. */}
+            {(driversDelMes.positivos.length > 0 || driversDelMes.negativos.length > 0) && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 10 }}>
+                {driversDelMes.positivos.length > 0 && (
+                  <div style={{ fontSize: 11, color: T.gn, background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 8, padding: "6px 10px", lineHeight: 1.5 }}>
+                    <strong>▲ Impulsado por:</strong>{" "}
+                    {driversDelMes.positivos.map((d, i) => (
+                      <span key={i}>{i > 0 && " · "}{d.nombre} <span style={{ fontWeight: 700, fontFamily: "monospace" }}>+{fm(d.efecto)}</span>{d.tipo === "gasto" ? " (gasto que este mes no cae)" : ""}</span>
+                    ))}
+                  </div>
+                )}
+                {driversDelMes.negativos.length > 0 && (
+                  <div style={{ fontSize: 11, color: "#f97316", background: "rgba(249,115,22,0.07)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 8, padding: "6px 10px", lineHeight: 1.5 }}>
+                    <strong>▼ Golpeado por:</strong>{" "}
+                    {driversDelMes.negativos.map((d, i) => (
+                      <span key={i}>{i > 0 && " · "}{d.nombre} <span style={{ fontWeight: 700, fontFamily: "monospace" }}>{fm(d.efecto)}</span>{d.tipo === "gasto" ? " (pago del mes)" : ""}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Columna derecha: métricas secundarias */}
