@@ -368,6 +368,22 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               )}
               <In l="Valor Actual" value={form.va} onChange={(v) => setForm((p) => ({ ...p, va: v }))} type="number" placeholder="0" />
               <In l="Valor Compra" value={form.vc} onChange={(v) => setForm((p) => ({ ...p, vc: v }))} type="number" placeholder="0" />
+              {/* ALERTA ANTI-TYPO (20-jul-2026, Santiago): Puerto Madero quedó
+                  con valor $11.7M vs costo $4.5B → ganancia -$4.5B por ceros
+                  faltantes. Si el valor actual es <10% del costo, avisamos. */}
+              {(() => {
+                const vaN = Math.abs(parseFloat(form.va)) || 0;
+                const vcN = Math.abs(parseFloat(form.vc)) || 0;
+                if (vaN > 0 && vcN > 0 && vaN < vcN * 0.1) {
+                  const perdidaPct = ((1 - vaN / vcN) * 100).toFixed(0);
+                  return (
+                    <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.35)", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#f97316", lineHeight: 1.5 }}>
+                      ⚠️ <strong>Revisá los ceros:</strong> el valor actual (${vaN.toLocaleString("es-CO")}) es {perdidaPct}% menor que lo que costó (${vcN.toLocaleString("es-CO")}). Si es correcto, ignorá este aviso — pero si el activo vale ${(vaN/1e6).toFixed(1)} millones y costó ${(vcN/1e9).toFixed(1)} mil millones, probablemente faltan ceros en el valor actual.
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
                 <div style={{fontSize:11,fontWeight:700,color:T.txt2,marginBottom:10}}>💰 ¿Este activo genera ingreso?</div>
                 <div style={{display:"flex",gap:8}}>
