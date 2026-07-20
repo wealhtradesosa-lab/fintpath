@@ -1308,29 +1308,44 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                           : baseTasa;
                         const rentDiff = simRenta - baseRenta;
 
-                        // ═══ Guard MES-CÉNTRICO (20-jul-2026): si el ingreso NO
-                        // aplica al mes visible (fuera de vigencia, ya recibido,
-                        // cae en otro mes) → fila informativa, sin slider.
+                        // ═══ Guard MES-CÉNTRICO (20-jul-2026): fila informativa
+                        // profesional con valor y mes (mismo diseño que gastos).
                         const { año: añoNowI } = getMesActual();
                         const baseMesI = montoDelMes({ ...ing, mensual: baseRenta }, añoNowI, mesVisualizado);
-                        if (baseMesI === 0) {
-                          const razonI = razonMonto0(ing, añoNowI, mesVisualizado);
+                        const freqI = getFrecuencia(ing);
+                        const recibidoI = freqI !== "mensual" && freqI !== "variable" && estaPagadoEnAño(ing, añoNowI);
+                        const mesPagoI = Number(ing.mesPago) || 1;
+                        const mesPagoIL = MESES.find(m => m.v === mesPagoI)?.l || "";
+
+                        // Recibido (cualquier mes visible): check verde + mes + VALOR
+                        if (recibidoI) {
+                          const esSuMesI = mesVisualizado === mesPagoI;
                           return (
-                            <div key={"ing_"+safeIdx} style={{ marginBottom: 4, background: T.txt3 + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.6 }}>
-                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 10, color: T.txt3 }}>{ing.categoria||""}</span></span>
-                              <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600, flexShrink: 0 }}>{razonI || "$0 este mes"}</span>
+                            <div key={"ing_"+safeIdx} style={{ marginBottom: 4, background: T.gn + "0A", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.gn, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 12, color: T.txt2, fontWeight: 500, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 10, color: T.txt3 }}>{ing.categoria||""}</span></span>
+                              <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
+                                <span style={{ fontSize: 10, color: T.gn, fontWeight: 700, background: T.gn + "15", padding: "2px 8px", borderRadius: 10 }}>
+                                  ✅ Recibido{esSuMesI ? " este mes" : ` · ${mesPagoIL}`}
+                                </span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: esSuMesI ? T.txt : T.txt3, fontFamily: "monospace", textDecoration: esSuMesI ? "none" : "line-through" }}>{fm(baseRenta)}</span>
+                              </span>
                             </div>
                           );
                         }
 
-                        // Recibido Y cae este mes → mostrar el VALOR sin slider
-                        const freqI = getFrecuencia(ing);
-                        const recibidoI = freqI !== "mensual" && freqI !== "variable" && estaPagadoEnAño(ing, añoNowI);
-                        if (recibidoI && baseMesI > 0) {
+                        // Pendiente que no aplica este mes: razón + valor de referencia
+                        if (baseMesI === 0) {
+                          const razonI = razonMonto0(ing, añoNowI, mesVisualizado);
+                          const esVigenciaI = razonI.includes("vigencia");
                           return (
-                            <div key={"ing_"+safeIdx} style={{ marginBottom: 4, background: T.gn + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.gn, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 10, color: T.gn }}>✅ recibido este mes</span></span>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: T.txt2, flexShrink: 0 }}>{fm(baseMesI)}</span>
+                            <div key={"ing_"+safeIdx} style={{ marginBottom: 4, background: T.txt3 + "08", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.75 }}>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 10, color: T.txt3 }}>{ing.categoria||""}</span></span>
+                              <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
+                                <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>{razonI || "$0 este mes"}</span>
+                                {!esVigenciaI && baseRenta > 0 && (
+                                  <span style={{ fontSize: 11, fontWeight: 600, color: T.txt3, fontFamily: "monospace" }}>{fm(baseRenta)}</span>
+                                )}
+                              </span>
                             </div>
                           );
                         }
@@ -1389,24 +1404,46 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         const freqG = getFrecuencia(g);
                         const { año: añoNow } = getMesActual();
                         const baseMesG = montoDelMes(g, añoNow, mesVisualizado);
-                        // No aplica este mes → fila informativa con la razón
-                        if (baseMesG === 0) {
-                          const razon = razonMonto0(g, añoNow, mesVisualizado);
+                        const pagadoG = freqG !== "mensual" && freqG !== "variable" && estaPagadoEnAño(g, añoNow);
+                        const montoPeriodoG = g.m || 0;
+                        const mesPagoG = Number(g.mesPago) || 1;
+                        const mesPagoL = MESES.find(m => m.v === mesPagoG)?.l || "";
+
+                        // ── PAGADO (cualquier mes visible): diseño profesional
+                        // (20-jul-2026, Santiago: "no se ve casi, no pone el valor
+                        // ni cuándo se pagó"). Ahora: check verde visible + mes
+                        // del pago + VALOR siempre presente.
+                        if (pagadoG) {
+                          const esSuMes = mesVisualizado === mesPagoG;
                           return (
-                            <div key={key} style={{ marginBottom: 4, background: T.txt3 + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.6 }}>
-                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 10, color: T.txt3 }}>{g.cat}</span></span>
-                              <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600, flexShrink: 0 }}>{razon || "$0 este mes"}</span>
+                            <div key={key} style={{ marginBottom: 4, background: T.gn + "0A", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.gn, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 12, color: T.txt2, fontWeight: 500, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {g.c||g.cat} <span style={{ fontSize: 10, color: T.txt3 }}>{g.cat}</span>
+                              </span>
+                              <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
+                                <span style={{ fontSize: 10, color: T.gn, fontWeight: 700, background: T.gn + "15", padding: "2px 8px", borderRadius: 10 }}>
+                                  ✅ Pagado{esSuMes ? " este mes" : ` · ${mesPagoL}`}
+                                </span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: esSuMes ? T.txt : T.txt3, fontFamily: "monospace", textDecoration: esSuMes ? "none" : "line-through" }}>{fm(montoPeriodoG)}</span>
+                              </span>
                             </div>
                           );
                         }
-                        // Pagado Y cae este mes → mostrar el VALOR (la plata
-                        // salió este mes) pero sin slider (ya es historia).
-                        const pagadoG = freqG !== "mensual" && freqG !== "variable" && estaPagadoEnAño(g, añoNow);
-                        if (pagadoG && baseMesG > 0) {
+
+                        // ── No aplica este mes (pendiente que cae en otro mes,
+                        // fuera de vigencia): fila con razón + VALOR de referencia
+                        if (baseMesG === 0) {
+                          const razon = razonMonto0(g, añoNow, mesVisualizado);
+                          const esVigencia = razon.includes("vigencia");
                           return (
-                            <div key={key} style={{ marginBottom: 4, background: T.gn + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.gn, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 10, color: T.gn }}>✅ pagado este mes</span></span>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: T.txt2, flexShrink: 0 }}>{fm(baseMesG)}</span>
+                            <div key={key} style={{ marginBottom: 4, background: T.txt3 + "08", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.75 }}>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 10, color: T.txt3 }}>{g.cat}</span></span>
+                              <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
+                                <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>{razon || "$0 este mes"}</span>
+                                {!esVigencia && montoPeriodoG > 0 && (
+                                  <span style={{ fontSize: 11, fontWeight: 600, color: T.txt3, fontFamily: "monospace" }}>{fm(montoPeriodoG)}</span>
+                                )}
+                              </span>
                             </div>
                           );
                         }
