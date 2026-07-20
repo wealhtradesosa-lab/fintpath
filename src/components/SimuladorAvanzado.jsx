@@ -531,39 +531,6 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     const retencionMes = simT.retencionMensual || 0;
     const impuestoNetoMes = simT.impuestoNeto || 0;
 
-    // ── Desglose por item (Opción A, 20-jul-2026): listas con el monto
-    // REAL de cada ingreso/gasto en el mes visualizado + razón cuando es $0.
-    // razonMonto0 vive a nivel módulo (compartida con los sliders mes-céntricos).
-
-    const detalleIngresos = [];
-    ingSim.forEach(ing => {
-      if (ing.sim === false) return;
-      const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
-      const monto = montoDelMes({ ...ing, mensual: montoBase }, añoActual, mes);
-      detalleIngresos.push({
-        nombre: ing.nombre || ing.fuente || "Ingreso",
-        monto,
-        razon: monto === 0 ? razonMonto0(ing, añoActual, mes) : "",
-      });
-    });
-    detalleIngresos.sort((a, b) => b.monto - a.monto);
-
-    const detalleGastos = [];
-    Object.entries(user.gastos || {}).forEach(([cat, items]) => {
-      (items || []).forEach((g, gi) => {
-        if (g.sim === false) return;
-        const gOverride = { ...g, m: getVal(`gf_${cat}_${gi}`, g.m || 0) };
-        const monto = montoDelMes(gOverride, añoActual, mes);
-        detalleGastos.push({
-          nombre: g.c || cat,
-          cat,
-          monto,
-          razon: monto === 0 ? razonMonto0(g, añoActual, mes) : "",
-        });
-      });
-    });
-    detalleGastos.sort((a, b) => b.monto - a.monto);
-
     // Consolidación
     const disponibleMes = brutoDelMes - retencionMes;
     const egresosMes = aportesObligatoriosMes + gastosFamiliaresMes + cuotasDeudasMes + impuestoNetoMes;
@@ -581,8 +548,6 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       impuestoNetoMes,
       egresosMes,
       cashFlowMes,
-      detalleIngresos,
-      detalleGastos,
       // Delta vs promedio (para mostrar en color)
       deltaVsPromedio: cashFlowMes - (simT.cashFlow || 0),
     };
@@ -1270,56 +1235,6 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
         </div>
       </div>
       {/* fin bloque de KPIs Fase 5 */}
-
-      {/* ═══ PANEL DETALLE DEL MES (Opción A, 20-jul-2026) ═══
-          "El simulador se acomoda según el mes visible" — desglose real de
-          ingresos y gastos del mes elegido en el dropdown. Los sliders quedan
-          como palancas ESTRUCTURALES; este panel es la REALIDAD mensual. */}
-      <details style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "14px 18px", marginBottom: 16 }} open>
-        <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, color: T.txt, listStyle: "none", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-          <span>📅 Detalle real de {MESES.find(m => m.v === simTMes.mes)?.l} {simTMes.añoActual}</span>
-          <span style={{ fontSize: 12, fontWeight: 800, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd }}>
-            Cash flow del mes: {fm(simTMes.cashFlowMes)}
-          </span>
-        </summary>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginTop: 12 }}>
-          {/* Ingresos del mes */}
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: T.gn, marginBottom: 6, display: "flex", justifyContent: "space-between" }}>
-              <span>💰 INGRESOS DEL MES</span>
-              <span style={{ fontFamily: "monospace" }}>{fm(simTMes.brutoDelMes)}</span>
-            </div>
-            {(simTMes.detalleIngresos || []).map((it, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, padding: "3px 0", borderBottom: `1px solid ${T.border}40`, opacity: it.monto === 0 ? 0.55 : 1 }}>
-                <span style={{ color: T.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }} title={it.nombre}>{it.nombre}</span>
-                <span style={{ fontFamily: "monospace", color: it.monto > 0 ? T.txt : T.txt3, flexShrink: 0 }}>
-                  {it.monto > 0 ? fm(it.monto) : (it.razon || "$0")}
-                </span>
-              </div>
-            ))}
-          </div>
-          {/* Gastos del mes */}
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: T.rd, marginBottom: 6, display: "flex", justifyContent: "space-between" }}>
-              <span>💸 GASTOS DEL MES</span>
-              <span style={{ fontFamily: "monospace" }}>{fm(simTMes.aportesObligatoriosMes + simTMes.gastosFamiliaresMes)}</span>
-            </div>
-            {(simTMes.detalleGastos || []).map((it, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, padding: "3px 0", borderBottom: `1px solid ${T.border}40`, opacity: it.monto === 0 ? 0.55 : 1 }}>
-                <span style={{ color: T.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }} title={it.nombre}>{it.nombre}</span>
-                <span style={{ fontFamily: "monospace", color: it.monto > 0 ? T.txt : T.txt3, flexShrink: 0 }}>
-                  {it.monto > 0 ? fm(it.monto) : (it.razon || "$0")}
-                </span>
-              </div>
-            ))}
-            {/* Fijos del mes: deudas + impuestos + retención */}
-            <div style={{ marginTop: 8, paddingTop: 6, borderTop: `1px solid ${T.border}`, fontSize: 10, color: T.txt3, display: "flex", flexDirection: "column", gap: 2 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>💳 Cuotas de deudas</span><span style={{ fontFamily: "monospace" }}>{fm(simTMes.cuotasDeudasMes)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>🏛️ Impuestos + retención (÷12)</span><span style={{ fontFamily: "monospace" }}>{fm(simTMes.impuestoNetoMes + simTMes.retencionMes)}</span></div>
-            </div>
-          </div>
-        </div>
-      </details>
 
       {/* Sliders + Chart */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
