@@ -208,10 +208,9 @@ export function labelVigenciaBadge(item) {
 export function totalAnualItem(item) {
   const freq = getFrecuencia(item);
   const { año: añoActual } = getMesActual();
-  // FIX pagado: no-mensual (ni variable) pagado en año actual → 0
-  if (freq !== "mensual" && freq !== "variable" && estaPagadoEnAño(item, añoActual)) {
-    return 0;
-  }
+  // SEMÁNTICA PAGADO v2 (20-jul-2026): el total ANUAL incluye lo pagado —
+  // es plata que salió/entró este año (contable). Solo el promedio
+  // PROSPECTIVO (montoPromedioMensual) excluye pagados.
   if (freq === "variable") {
     // Suma reales + proyección en meses futuros vacíos, dentro de vigencia
     const montos = getMontosMensuales(item);
@@ -313,9 +312,11 @@ export function montoDelMes(item, año, mes) {
   const monto = getMonto(item);
   if (monto === 0) return 0;
 
-  // Si ya está pagado en este año, no pesa en meses restantes
-  // (excepto los mensuales, que siempre pesan cada mes)
-  if (freq !== "mensual" && estaPagadoEnAño(item, año)) return 0;
+  // SEMÁNTICA PAGADO v2 (20-jul-2026, Santiago): "pagué el plan en junio →
+  // en junio debe VERSE el gasto con su valor; es bueno ver el valor".
+  // El flag pagado ya NO borra el item de su mes natural — la realidad
+  // mensual (montoDelMes) muestra el pago donde ocurrió. Lo prospectivo
+  // (montoPromedioMensual, el hero del simulador) sí lo excluye.
 
   const mesPago = getMesPago(item);
   switch (freq) {

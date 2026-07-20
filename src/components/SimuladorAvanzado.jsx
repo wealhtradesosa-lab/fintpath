@@ -1323,6 +1323,18 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                           );
                         }
 
+                        // Recibido Y cae este mes → mostrar el VALOR sin slider
+                        const freqI = getFrecuencia(ing);
+                        const recibidoI = freqI !== "mensual" && freqI !== "variable" && estaPagadoEnAño(ing, añoNowI);
+                        if (recibidoI && baseMesI > 0) {
+                          return (
+                            <div key={"ing_"+safeIdx} style={{ marginBottom: 4, background: T.gn + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.gn, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 10, color: T.gn }}>✅ recibido este mes</span></span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: T.txt2, flexShrink: 0 }}>{fm(baseMesI)}</span>
+                            </div>
+                          );
+                        }
+
                         return (
                           <div key={"ing_"+safeIdx} style={{marginBottom:10, background:"rgba(34,211,238,0.04)", borderRadius:10, padding:"10px 14px"}}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
@@ -1384,6 +1396,17 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                             <div key={key} style={{ marginBottom: 4, background: T.txt3 + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.6 }}>
                               <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 10, color: T.txt3 }}>{g.cat}</span></span>
                               <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600, flexShrink: 0 }}>{razon || "$0 este mes"}</span>
+                            </div>
+                          );
+                        }
+                        // Pagado Y cae este mes → mostrar el VALOR (la plata
+                        // salió este mes) pero sin slider (ya es historia).
+                        const pagadoG = freqG !== "mensual" && freqG !== "variable" && estaPagadoEnAño(g, añoNow);
+                        if (pagadoG && baseMesG > 0) {
+                          return (
+                            <div key={key} style={{ marginBottom: 4, background: T.gn + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.gn, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 10, color: T.gn }}>✅ pagado este mes</span></span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: T.txt2, flexShrink: 0 }}>{fm(baseMesG)}</span>
                             </div>
                           );
                         }
