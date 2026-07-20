@@ -1798,6 +1798,7 @@ export default function FinPath(){
         {[
           {l:"Ingresos/mes",v:fm(t.ti),c:T.gn,i:"💰"},
           {l:"Gastos/mes",v:fm(t.gfm+t.tg),c:T.rd,i:"💳"},
+          {l:"Deudas/mes",v:fm(t.tc),c:"#f97316",i:"🏦"},
           {l:"Cash Flow",v:fm(t.cf)+"/mes",c:t.cf>=0?T.gn:T.rd,i:"📊"},
           {l:"Independencia",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2,i:t.ind>=100?"🏆":"📈"},
         ].map(k=><Cd key={k.l} s={{padding:"18px 20px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:10,color:T.tx3,textTransform:"uppercase",fontWeight:600,letterSpacing:1}}>{k.l}</div><div style={{fontSize:22,fontWeight:700,color:k.c,marginTop:6}}>{k.v}</div></div><div style={{fontSize:22}}>{k.i}</div></div></Cd>)}
