@@ -16,17 +16,22 @@ const T = {
 const fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 
 // Razón por la que un item vale $0 en un mes dado (mes-céntrico, 20-jul-2026)
+// LÍNEA DE TIEMPO (fix Santiago): el pago es un EVENTO que ocurre en mesPago.
+// Parado en un mes ANTERIOR, el pago aún no existía → "paga en X", no "pagado".
+// Parado DESPUÉS del mesPago → ahí sí "✅ pagado".
 const razonMonto0 = (item, año, mes) => {
   const freq = getFrecuencia(item);
   const desde = Number(item?.desdeMes) || 1;
   const hasta = Number(item?.hastaMes) || 12;
   if ((freq === "mensual" || freq === "variable") && (mes < desde || mes > hasta)) return "🚫 fuera de vigencia";
   if (freq !== "mensual" && freq !== "variable") {
-    if (estaPagadoEnAño(item, año)) return `✅ pagado ${año}`;
+    const mp = Number(item?.mesPago) || 1;
+    const pagado = estaPagadoEnAño(item, año);
     if (freq === "anual" || freq === "unico") {
-      const mp = Number(item?.mesPago) || 1;
-      if (mp !== mes) return `🎯 paga en ${MESES.find(m => m.v === mp)?.l || mp}`;
+      if (mes < mp) return `🎯 paga en ${MESES.find(m => m.v === mp)?.l || mp}`;
+      if (mes > mp) return pagado ? `✅ pagado ${año}` : `🎯 paga en ${MESES.find(m => m.v === mp)?.l || mp}`;
     } else {
+      if (pagado && mes > mp) return `✅ pagado ${año}`;
       return "📆 no cae este mes";
     }
   }
