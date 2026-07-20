@@ -1280,6 +1280,9 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                   💡 <strong>Lo que más movió este mes:</strong>{" "}
                   {top.nombre} <span style={{ fontWeight: 800, fontFamily: "monospace" }}>{top.efecto > 0 ? "+" : ""}{fm(top.efecto)}</span>
                   {top.tipo === "gasto" && top.efecto < 0 ? " (pago del mes)" : ""}
+                  {top.tipo === "gasto" && top.efecto > 0 ? " (gasto que este mes no cae)" : ""}
+                  {top.tipo === "ingreso" && top.efecto < 0 ? " (ingreso por debajo de su promedio este mes)" : ""}
+                  {top.tipo === "ingreso" && top.efecto > 0 ? " (ingreso por encima de lo típico)" : ""}
                   {segundo && (
                     <span style={{ opacity: 0.75 }}>
                       {" "}· seguido de {segundo.nombre} <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{segundo.efecto > 0 ? "+" : ""}{fm(segundo.efecto)}</span>
