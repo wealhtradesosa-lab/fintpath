@@ -1275,8 +1275,8 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                   </div>
                 )}
                 {driversDelMes.negativos.length > 0 && (
-                  <div style={{ fontSize: 11, color: "#f97316", background: "rgba(249,115,22,0.07)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 8, padding: "6px 10px", lineHeight: 1.5 }}>
-                    <strong>▼ Golpeado por:</strong>{" "}
+                  <div style={{ fontSize: 11, color: simTMes.cashFlowMes < 0 ? "#ef4444" : "#f97316", background: simTMes.cashFlowMes < 0 ? "rgba(239,68,68,0.08)" : "rgba(249,115,22,0.07)", border: `1px solid ${simTMes.cashFlowMes < 0 ? "rgba(239,68,68,0.3)" : "rgba(249,115,22,0.2)"}`, borderRadius: 8, padding: "6px 10px", lineHeight: 1.5 }}>
+                    <strong>{simTMes.cashFlowMes < 0 ? "⚠️ Déficit del mes causado por:" : "▼ Golpeado por:"}</strong>{" "}
                     {driversDelMes.negativos.map((d, i) => (
                       <span key={i}>{i > 0 && " · "}{d.nombre} <span style={{ fontWeight: 700, fontFamily: "monospace" }}>{fm(d.efecto)}</span>{d.tipo === "gasto" ? " (pago del mes)" : ""}</span>
                     ))}
