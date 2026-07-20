@@ -1334,24 +1334,28 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       {grp.gas.map((g, gi) => {
                         if (g.sim === false) return null;
                         const key = g._gkey || ("gf_"+g.cat+"_"+gi);
-                        // UX FIX (20-jul-2026, Santiago): el slider mostraba solo
-                        // el monto por período sin frecuencia ni estado pagado —
-                        // un anual de $26M parecía mensual. Ahora el sub aclara:
-                        //   · frecuencia si no es mensual (🎯 anual, 📆 trimestral...)
-                        //   · el aporte REAL al promedio mensual del simulador
-                        //   · "✅ pagado, no cuenta" si ya se pagó este año
+                        // UX FIX 2 (20-jul-2026, Santiago): el sub es SENSIBLE
+                        // AL MES visualizado — "si ese mes se pagó el seguro,
+                        // carga completo ese mes; el siguiente ya pagado → $0".
+                        // montoDelMes ya respeta mesPago, pagados, vigencia y
+                        // variable; acá solo lo mostramos por item.
                         const freqG = getFrecuencia(g);
                         const { año: añoNow } = getMesActual();
                         const pagadoYa = freqG !== "mensual" && freqG !== "variable" && estaPagadoEnAño(g, añoNow);
                         const promG = montoPromedioMensual(g);
+                        const enMesVis = montoDelMes(g, añoNow, mesVisualizado);
+                        const mesVisL = (MESES.find(m => m.v === mesVisualizado)?.l || "").slice(0, 3);
+                        const rangoLtd = (Number(g.desdeMes) || 1) !== 1 || (Number(g.hastaMes) || 12) !== 12;
                         let subG = g.cat;
                         if (freqG === "variable") {
-                          subG = `${g.cat} · 📊 variable · ${fm(promG)}/mes prom.`;
+                          subG = `${g.cat} · 📊 Var · ${mesVisL}: ${fm(enMesVis)} · prom ${fm(promG)}/mes`;
                         } else if (freqG !== "mensual") {
                           const fLabel = FRECUENCIAS.find(f => f.v === freqG)?.l || freqG;
                           subG = pagadoYa
-                            ? `${g.cat} · 🎯 ${fLabel} · ✅ pagado ${añoNow}, no cuenta`
-                            : `${g.cat} · 🎯 ${fLabel} · aporta ${fm(promG)}/mes`;
+                            ? `${g.cat} · 🎯 ${fLabel} · ✅ pagado ${añoNow} · ${mesVisL}: $0`
+                            : `${g.cat} · 🎯 ${fLabel} · ${mesVisL}: ${fm(enMesVis)} · prom ${fm(promG)}/mes`;
+                        } else if (rangoLtd) {
+                          subG = `${g.cat} · 📅 vigencia · ${mesVisL}: ${fm(enMesVis)}`;
                         }
                         return <Slider key={key} label={g.c||g.cat} value={getVal(key, g.m)} base={g.m}
                           max={Math.max(g.m*3,500)} color={pagadoYa ? T.txt3 : T.rd}
