@@ -129,6 +129,16 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     if (!guardEdit(role)) return;
     const va = Math.abs(parseFloat(form.va)) || 0;
     const tasa = parseFloat(form.tasa) || 0;
+    // ALERTA ANTI-TYPO (20-jul-2026, Santiago): Puerto Madero quedó guardado
+    // con $11.7M en vez de $11.7B → "ganancia" de −$4.5B. Si el valor actual
+    // implica una pérdida >90% vs el costo, casi siempre faltan ceros.
+    const vcCheck = Math.abs(parseFloat(form.vc)) || 0;
+    if (va > 0 && vcCheck > 0 && va < vcCheck * 0.1) {
+      const ok = window.confirm(
+        `⚠️ REVISÁ LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${(100 - (va / vcCheck) * 100).toFixed(0)}%. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usá el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
+      );
+      if (!ok) return;
+    }
     const ingresoCalc = tasa > 0 ? Math.round((va * tasa / 100) / 12) : 0;
     const updated = {
       n: String(form.nombre || "").trim(),
