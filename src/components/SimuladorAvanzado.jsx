@@ -1271,7 +1271,11 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 .sort((a, b) => Math.abs(b.efecto) - Math.abs(a.efecto));
               if (todos.length === 0) return null;
               const top = todos[0];
-              const segundo = todos[1] && Math.abs(todos[1].efecto) >= Math.abs(top.efecto) * 0.5 ? todos[1] : null;
+              // Acompañantes: hasta 2 más si son comparables (≥50% del top).
+              // Fix (20-jul-2026): Sosa y Echavarría empatados con −$11M cada
+              // uno — el corte en 2 ítems ocultaba a Echavarría. Empates y
+              // efectos comparables merecen aparecer juntos.
+              const acompanantes = todos.slice(1, 3).filter(d => Math.abs(d.efecto) >= Math.abs(top.efecto) * 0.5);
               const esPos = top.efecto > 0;
               const color = esPos ? T.gn : (simTMes.cashFlowMes < 0 ? "#ef4444" : "#f97316");
               const bg = esPos ? "rgba(34,197,94,0.07)" : (simTMes.cashFlowMes < 0 ? "rgba(239,68,68,0.08)" : "rgba(249,115,22,0.07)");
@@ -1283,9 +1287,11 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                   {top.tipo === "gasto" && top.efecto > 0 ? " (gasto que este mes no cae)" : ""}
                   {top.tipo === "ingreso" && top.efecto < 0 ? " (ingreso por debajo de su promedio este mes)" : ""}
                   {top.tipo === "ingreso" && top.efecto > 0 ? " (ingreso por encima de lo típico)" : ""}
-                  {segundo && (
+                  {acompanantes.length > 0 && (
                     <span style={{ opacity: 0.75 }}>
-                      {" "}· seguido de {segundo.nombre} <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{segundo.efecto > 0 ? "+" : ""}{fm(segundo.efecto)}</span>
+                      {" "}· seguido de {acompanantes.map((s, i) => (
+                        <span key={i}>{i > 0 && " y "}{s.nombre} <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{s.efecto > 0 ? "+" : ""}{fm(s.efecto)}</span></span>
+                      ))}
                     </span>
                   )}
                 </div>
