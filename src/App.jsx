@@ -2816,7 +2816,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
               <div style={{fontSize:10,color:T.tx3,letterSpacing:1,fontWeight:600}}>INDEPENDENCIA</div>
               <div style={{fontSize:24,fontWeight:800,color:t.ind>=100?T.gn:"#eab308",marginTop:4}}>{(t.ind).toFixed(0)}%</div>
-              <div style={{fontSize:10,color:T.tx3}}>FIRE: {fireProg.toFixed(0)}%</div>
+              <div style={{fontSize:9,color:T.tx3}}>flujo: ingresos vs gastos hoy</div>
+              <div style={{fontSize:10,color:T.tx3,marginTop:3}}>FIRE: {fireProg.toFixed(0)}% · capital para no trabajar</div>
             </div>
           </div>
 

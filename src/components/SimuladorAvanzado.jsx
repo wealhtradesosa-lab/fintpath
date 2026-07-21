@@ -1338,6 +1338,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             <div style={{ textAlign: "center", borderLeft: `1px solid ${T.border}`, paddingLeft: 24 }}>
               <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Independencia</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: simT.ind >= 100 ? T.gn : "#eab308", marginTop: 2 }}>{pc(simT.ind)}</div>
+              <div style={{ fontSize: 9, color: T.txt3, marginTop: 2 }}>ingresos vs gastos hoy</div>
             </div>
           </div>
         </div>
