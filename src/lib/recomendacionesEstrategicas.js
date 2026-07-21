@@ -55,14 +55,14 @@ function analizarPerfil(owner, det, user) {
   const divAnual = Number(det.divAnual) || 0;
 
   // Patrimonio (suma de inversiones del owner)
-  const oInv = (user?.inv || []).filter(i => i.owner === owner.id);
+  const oInv = (user?.inv || []).filter(i => i.owner === owner.id && i.sim !== false);
   const patrimonioAprox = oInv.reduce((s, i) => {
     const valor = Number(i.valor || i.va || i.cv) || 0;
     return s + (i.moneda === "USD" ? valor * (user?.trm || 4200) : valor);
   }, 0);
 
   // Deudas
-  const oDeu = (user?.deu || []).filter(d => d.owner === owner.id);
+  const oDeu = (user?.deu || []).filter(d => d.owner === owner.id && d.sim !== false);
   const deudasTotal = oDeu.reduce((s, d) => s + (Number(d.mt || d.saldo) || 0), 0);
 
   // Tipo de perfil
