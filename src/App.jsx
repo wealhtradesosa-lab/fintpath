@@ -1442,7 +1442,7 @@ export default function FinPath(){
     const ingActivo=activos.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);
     const pctPasivo=t.ni>0?(ingPasivo/t.ni*100):0;
     const runway=t.te>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i)=>s+(i.va||0),0)/t.te):0;
-    const fireNum=t.te*12*25;
+    const fireNum=t.gfm*12*25;
     const firePct=fireNum>0?(t.nw/fireNum*100):0;
     const reVal=inv.filter(i=>(i.tp||i.tipo)==="Real Estate").reduce((s,i)=>s+(i.va||0),0);
     const rePct=t.nw>0?(reVal/t.nw*100):0;
@@ -1920,7 +1920,7 @@ export default function FinPath(){
         const runway = t.te > 0 ? Math.round(liquidAssets / t.te) : 999;
         const burnRate = t.nw > 0 ? ((t.te * 12) / t.nw * 100) : 0;
         const savingsRate = t.ti > 0 ? (t.cf / t.ti * 100) : 0;
-        const fireNumber = t.te * 12 * 25;
+        const fireNumber = t.gfm * 12 * 25;
         const fireProgress = fireNumber > 0 ? Math.min((t.nw / fireNumber) * 100, 100) : 0;
         const debtService = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
         // Passive vs active income
@@ -2069,12 +2069,12 @@ export default function FinPath(){
                 const totalD = ((u&&u.deu)||[]).reduce((s,d) => s + (d.mt||0), 0);
                 hitos.push({name:"Libre de deudas",target:totalD,current:Math.max(0,totalD - t.td),icon:"📋"});
                 // Milestone 3: 50% independence
-                const half = t.te * 12 * 12.5;
+                const half = t.gfm * 12 * 12.5;
                 hitos.push({name:"50% independencia",target:half,current:t.nw,icon:"⚡"});
                 // Milestone 4: FIRE number
                 hitos.push({name:"FIRE number (25× gastos)",target:fireNumber,current:t.nw,icon:"🔥"});
                 // Milestone 5: Absolute freedom (2.5x gastos)
-                const absol = t.te * 12 * 62.5;
+                const absol = t.gfm * 12 * 62.5;
                 hitos.push({name:"Libertad absoluta (62.5× gastos)",target:absol,current:t.nw,icon:"👑"});
                 
                 return hitos.map((h,i) => {
@@ -2506,7 +2506,7 @@ export default function FinPath(){
           const passR = t.ti > 0 ? (passI / t.ti * 100) : 0;
           if (passR >= 80) alerts.push({type:"🟢",title:"Ingreso pasivo "+passR.toFixed(0)+"% — excelente",msg:"La mayoría de tu ingreso no depende de tu trabajo. Esto te da libertad y reduce riesgo. Mantén esta estructura.",cat:"Independencia"});
 
-          const fireN = t.te * 12 * 25;
+          const fireN = t.gfm * 12 * 25;
           const fireP = fireN > 0 ? (t.nw / fireN * 100) : 0;
           if (fireP >= 100) alerts.push({type:"🟢",title:"FIRE alcanzado — libertad financiera",msg:"Tu patrimonio supera tu FIRE number. Técnicamente puedes vivir de tus activos por 25+ años sin trabajar.",cat:"Libertad"});
           else if (fireP >= 70) { const aF=añosParaMeta(t.nw,fireN,Math.max(0,t.cf),0.05); alerts.push({type:"🟢",title:"FIRE al "+fireP.toFixed(0)+"% — muy cerca",msg:"Te falta "+fm(fireN - t.nw)+" para la independencia total. "+(aF!=null?"Proyectado a 5% real anual, llegas en ~"+(aF<1?"menos de 1":Math.round(aF*10)/10)+" años.":"Genera ahorro mensual positivo para proyectarlo."),cat:"Progreso"}); }
@@ -2779,7 +2779,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       const totalInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i)=>s+(i.vc||0),0);
       const totalVal=((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i)=>s+(i.va||0),0);
       const gainPct=totalInv>0?((totalVal/totalInv)-1)*100:0;
-      const fireN=t.te*12*25;
+      const fireN=t.gfm*12*25;
       const fireProg=fireN>0?Math.min((t.nw/fireN)*100,100):0;
       const fecha=new Date().toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
       return<div style={{maxWidth:800,margin:"0 auto"}}>
