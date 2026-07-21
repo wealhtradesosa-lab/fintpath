@@ -462,3 +462,9 @@ export function mesesLibreDeuda(deudas) {
   }
   return { meses: Math.ceil(maxMeses), algunaNoAmortiza };
 }
+
+// Valor de un activo en COP (convierte si moneda==="USD"). Los activos con
+// moneda ausente se asumen COP (retrocompat). Fixes 20-jul-2026 (Santiago):
+// los activos no tenían campo de moneda → USD se contaba como COP.
+export const vaCOP = (i, trm = 1) => (Number(i?.va) || 0) * (i?.moneda === "USD" ? trm : 1);
+export const vcCOP = (i, trm = 1) => (Number(i?.vc) || 0) * (i?.moneda === "USD" ? trm : 1);

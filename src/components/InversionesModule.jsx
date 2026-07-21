@@ -86,7 +86,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", owner: "" });
+  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", owner: "", moneda: "COP" });
   const [selected, setSelected] = useState(new Set());
 
   const items = inversiones || [];
@@ -114,13 +114,14 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       vc: String(getVC(inv) || ""),
       tasa: String(inv.tasa || ""),
       owner: inv.owner || "",
+      moneda: inv.moneda || "COP",
     });
     setEditId(inv.id);
     setShowForm(true);
   };
 
   const openAdd = () => {
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "", moneda: "COP" });
     setEditId(null);
     setShowForm(true);
   };
@@ -151,6 +152,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       tipo: form.tipo || "Other",
       va,
       vc: Math.abs(parseFloat(form.vc)) || 0,
+      moneda: form.moneda || "COP",
       tasa,
       fiscalCode: form.fiscalCode || undefined,
       pctTerreno: form.pctTerreno !== "" && form.pctTerreno != null ? Math.max(0, Math.min(100, parseFloat(form.pctTerreno))) : undefined,
@@ -169,7 +171,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "", moneda: "COP" });
   };
 
   // Set de IDs de inversiones sin propietario asignado, para badges en rows.
@@ -378,6 +380,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               )}
               <In l="Valor Actual" value={form.va} onChange={(v) => setForm((p) => ({ ...p, va: v }))} type="number" placeholder="0" />
               <In l="Valor Compra" value={form.vc} onChange={(v) => setForm((p) => ({ ...p, vc: v }))} type="number" placeholder="0" />
+              <In l="Moneda del valor" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
               {/* ALERTA ANTI-TYPO (20-jul-2026, Santiago): Puerto Madero quedó
                   con valor $11.7M vs costo $4.5B → ganancia -$4.5B por ceros
                   faltantes. Si el valor actual es <10% del costo, avisamos. */}
