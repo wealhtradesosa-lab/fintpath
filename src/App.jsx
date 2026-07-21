@@ -1026,7 +1026,7 @@ export default function FinPath(){
     const brutoTotal=ing.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u&&u.trm||4200):1)),0);
     const totalDeu=deu.reduce((s,d)=>s+(d.mt||0),0);
     const totalCuotas=deu.reduce((s,d)=>s+(d.pg||0),0);
-    const totalPat=inv.reduce((s,i)=>s+(+i.va||0),0);
+    const totalPat=inv.reduce((s,i)=>s+vaCOP(i,trm),0);
     // Retención + impuesto neto vienen del motor cT ya calculado (t)
     const retencionMensual=Math.round(t.retencionMensual||0);
     const impuestoNeto=Math.round(t.impuestoNeto||0);
@@ -1038,8 +1038,8 @@ export default function FinPath(){
     const level=ind>=250?"Libertad Absoluta":ind>=150?"Libertad":ind>=100?"Independencia":ind>=82.5?"Vitalidad":ind>=65?"Seguridad":"Pre-Seguridad";
     const fireNum=egresosTotales*12*25;const firePct=fireNum>0?(nw/fireNum*100):0;
     const dta=totalPat>0?(totalDeu/totalPat*100):0;
-    const runway=egresosTotales>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija","Fondo de Inversión"].includes(i.tp||i.tipo)).reduce((s,i)=>s+(+i.va||0),0)/egresosTotales):0;
-    const invRows=inv.map(i=>"<tr><td>"+(i.n||i.nombre||"")+"</td><td>"+(i.tp||i.tipo||"Otro")+"</td><td class=r>"+fmvaCOP(i,trm)+"</td><td class=r "+(vaCOP(i,trm)>=(+i.vc||0)?"style=color:#16a34a":"style=color:#dc2626")+">"+fm(vaCOP(i,trm)-(+i.vc||0))+"</td></tr>").join("");
+    const runway=egresosTotales>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija","Fondo de Inversión"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)/egresosTotales):0;
+    const invRows=inv.map(i=>"<tr><td>"+(i.n||i.nombre||"")+"</td><td>"+(i.tp||i.tipo||"Otro")+"</td><td class=r>"+fm(vaCOP(i,trm))+"</td><td class=r "+(vaCOP(i,trm)>=vcCOP(i,trm)?"style=color:#16a34a":"style=color:#dc2626")+">"+fm(vaCOP(i,trm)-vcCOP(i,trm))+"</td></tr>").join("");
     const ingRows=ing.map(i=>"<tr><td>"+(i.nombre||"")+"</td><td>"+(i.categoria||"")+"</td><td class=r>"+fm((i.mensual||0)*(i.moneda==="USD"?(u&&u.trm||4200):1))+"</td></tr>").join("");
     const gasRows=gasCats.map(g=>"<tr><td>"+g.cat+(g.esAporte?" <span style='font-size:9px;color:#f59e0b'>(aporte)</span>":"")+"</td><td class=r>"+fm(g.total)+"</td><td class=r>"+(brutoTotal>0?(g.total/brutoTotal*100).toFixed(1)+"%":"—")+"</td></tr>").join("");
     const deuRows=deu.map(d=>"<tr><td>"+(d.n||"")+"</td><td class=r>"+fm(d.mt||0)+"</td><td class=r>"+fm(d.pg||0)+"</td><td class=r>"+(d.ts||0)+"%</td></tr>").join("");
