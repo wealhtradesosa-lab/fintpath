@@ -1932,7 +1932,7 @@ export default function FinPath(){
         const yieldOnCost = totalInvested > 0 ? (ingresoInversionAnual(u&&u.ingresos, trm) / totalInvested * 100) : 0;
         // Concentration risk
         const maxAsset = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((max,i) => vaCOP(i,trm) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trm)} : max, {n:"",v:0});
-        const concRisk = t.ab > 0 ? (maxAsset.v / t.ab * 100) : 0;
+        const concRisk = (t.ab+ib.tv) > 0 ? (maxAsset.v / (t.ab+ib.tv) * 100) : 0;
 
         return (<>
           <Cd s={{padding:20,marginTop:14}}>
@@ -2103,7 +2103,7 @@ export default function FinPath(){
             <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
               <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>⚠️ CONCENTRACIÓN DE RIESGO — ¿Qué tan diversificado estás?</div>
               {(() => {
-                const assets = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => vaCOP(i,trm) > 0).map(i => ({name:i.n||i.nombre||"",value:vaCOP(i,trm),type:i.tp||i.tipo||"Otro"}));
+                const assets = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => vaCOP(i,trm) > 0).map(i => ({name:i.n||i.nombre||"",value:vaCOP(i,trm),type:i.tp||i.tipo||"Otro"})).concat(ib.tv>0?[{name:"Trading",value:ib.tv,type:"Acciones"}]:[]);
                 const totalA = assets.reduce((s,a) => s + a.value, 0);
                 if (totalA === 0) return <div style={{fontSize:11,color:T.tx3}}>Agrega activos en Patrimonio para ver el análisis.</div>;
                 const sorted = [...assets].sort((a,b) => b.value - a.value);
@@ -2324,7 +2324,7 @@ export default function FinPath(){
                 else if (debtSrv > 30) actions.push({pri:"🟡",text:"El " + debtSrv.toFixed(0) + "% de tu ingreso va a deudas. Busca reducirlo debajo del 30%.",cat:"Deuda"});
                 
                 const maxA = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((max,i) => vaCOP(i,trm) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trm)} : max, {n:"",v:0});
-                const concR = t.ab > 0 ? (maxA.v / t.ab * 100) : 0;
+                const concR = (t.ab+ib.tv) > 0 ? (maxA.v / (t.ab+ib.tv) * 100) : 0;
                 if (concR > 40) actions.push({pri:"🟡",text:maxA.n + " es " + concR.toFixed(0) + "% de tu patrimonio. Diversifica para reducir riesgo.",cat:"Riesgo"});
                 
                 if (t.cf < 0) actions.push({pri:"🔴",text:"Tu cash flow es negativo. Gastas más de lo que ganas. Revisa gastos o busca más ingresos.",cat:"Cash Flow"});
@@ -2466,9 +2466,9 @@ export default function FinPath(){
         <div style={{fontSize:13,fontWeight:700,color:"#eab308",marginBottom:12}}>🔔 Alertas del Asesor — Rebalanceo y Optimización</div>
         {(() => {
           const alerts = [];
-          const inv = (u&&u.inv)||[];
-          const ing = (u&&u.ingresos)||[];
-          const totalA = inv.reduce((s,i) => s + vaCOP(i,trm), 0);
+          const inv = ((u&&u.inv)||[]).filter(i=>i.sim!==false);
+          const ing = ((u&&u.ingresos)||[]).filter(i=>i.sim!==false);
+          const totalA = inv.reduce((s,i) => s + vaCOP(i,trm), 0) + ib.tv;
           
           // 1. Real estate concentration
           const reVal = inv.filter(i => ["Real Estate","Bodega","Lote","Local Comercial"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trm), 0);
