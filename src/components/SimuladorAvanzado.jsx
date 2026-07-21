@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
-import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, montoDelMes, montoTipicoMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
@@ -597,14 +597,14 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     (user.ingresos || []).forEach(ing => {
       if (ing.sim === false) return;
       const base = { ...ing, mensual: (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1) };
-      const delta = montoDelMes(base, añoD, mes) - montoPromedioMensual(base);
+      const delta = montoDelMes(base, añoD, mes) - montoTipicoMes(base, añoD, mes);
       if (delta !== 0) drivers.push({ nombre: ing.nombre || ing.fuente || "Ingreso", efecto: delta, tipo: "ingreso" });
     });
     // Gastos: MÁS gasto que lo típico = empuja ABAJO (signo invertido)
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       (items || []).forEach(g => {
         if (g.sim === false) return;
-        const delta = montoDelMes(g, añoD, mes) - montoPromedioMensual(g);
+        const delta = montoDelMes(g, añoD, mes) - montoTipicoMes(g, añoD, mes);
         if (delta !== 0) drivers.push({ nombre: g.c || cat, efecto: -delta, tipo: "gasto" });
       });
     });
