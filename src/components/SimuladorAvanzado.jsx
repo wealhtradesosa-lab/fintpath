@@ -313,7 +313,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
 
 
     (user.ingresos || []).forEach((ing, ii) => {
-      const base = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? 4200 : 1);
+      const base = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? (user?.trm || 4200) : 1);
       nv[`ing_${ii}`] = Math.round(base * f.i);
     });
     (user.deudas || []).forEach((d, di) => { if ((d.mt||0) > 0) nv[`debt_${di}`] = (d.pago||d.pg||0); });
@@ -365,7 +365,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // de "Bruto" a "Disponible" — intencional, es lo que el user pidió ver.
   // ═══════════════════════════════════════════════════════════════════════════
   const simT = useMemo(() => {
-    const trm = 4200;
+    const trm = user?.trm || 4200;
 
     // ─── PASO 1: Ingresos con overrides de sliders + moneda ──────────────
     const ingSim = (user.ingresos || []).map((ing, ii) => {
@@ -506,7 +506,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // Reutiliza los overrides de sliders y toggles del simT (mismo estado).
   // ═══════════════════════════════════════════════════════════════════════
   const simTMes = useMemo(() => {
-    const trm = 4200;
+    const trm = user?.trm || 4200;
     const { año: añoActual } = getMesActual();
     const mes = mesVisualizado;
 
@@ -588,7 +588,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   //   · Variable con pico/valle → efecto según se aleje de su promedio
   // ═══════════════════════════════════════════════════════════════════════
   const driversDelMes = useMemo(() => {
-    const trm = 4200;
+    const trm = user?.trm || 4200;
     const { año: añoD } = getMesActual();
     const mes = mesVisualizado;
     const drivers = [];
@@ -626,7 +626,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // resumen visual — el módulo /flujo tiene el detalle completo.
   // ═══════════════════════════════════════════════════════════════════════
   const cashFlowPorMes = useMemo(() => {
-    const trm = 4200;
+    const trm = user?.trm || 4200;
     const { año } = getMesActual();
     return Array.from({ length: 12 }, (_, i) => {
       const mes = i + 1;
@@ -667,7 +667,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     let brutoTotal = 0;
     (user.ingresos || []).forEach((ing) => {
       if (ing.sim === false) return;
-      brutoTotal += (ing.mensual || 0) * (ing.moneda === "USD" ? 4200 : 1);
+      brutoTotal += (ing.mensual || 0) * (ing.moneda === "USD" ? (user?.trm || 4200) : 1);
     });
 
     // Gastos: aportes obligatorios vs familiares
@@ -1395,7 +1395,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       {grp.ing.map((ing, ii) => {
                         if (ing.sim === false) return null;
                         const safeIdx = ing._idx != null ? ing._idx : ii;
-                        const baseRenta = (Number(ing.mensual)||0) * (ing.moneda==="USD"?4200:1);
+                        const baseRenta = (Number(ing.mensual)||0) * (ing.moneda==="USD"?(user?.trm||4200):1);
                         const baseCap = Number(ing.capital) || 0;
                         // FIX conceptual 25-may-2026 (reportado por Santiago):
                         // El capital invertido es un HECHO — ya está invertido y
