@@ -1565,10 +1565,10 @@ export default function FinPath(){
     const incByCat={};((u&&u.ingresos)||[]).filter(i=>i.sim!==false).forEach(i=>{incByCat[i.categoria||"Otro"]=(incByCat[i.categoria||"Otro"]||0)+(i.mensual||0)});
     const incPie=Object.entries(incByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     // Expense by category
-    const expByCat={};Object.entries((u&&u.gas)||{}).forEach(([cat,its])=>{expByCat[cat]=its.reduce((s,g)=>s+(g.m||0),0)});
+    const expByCat={};Object.entries((u&&u.gas)||{}).forEach(([cat,its])=>{expByCat[cat]=(its||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+(g.m||0),0)});
     const expPie=Object.entries(expByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     // Top income sources
-    const topInc=[...((u&&u.ingresos)||[])].sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,5);
+    const topInc=[...((u&&u.ingresos)||[]).filter(i=>i.sim!==false)].sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,5);
     // Health score (0-100)
     const healthScore=Math.min(100,Math.round(
       (t.ind>=100?30:t.ind*0.3) + // independence: 30 pts
@@ -2266,7 +2266,7 @@ export default function FinPath(){
 
             {/* FONDO EDUCACIÓN HIJOS */}
             {(() => {
-              const gastosEdu = Object.values((u&&u.gas)||{}).flat().filter(g => 
+              const gastosEdu = Object.values((u&&u.gas)||{}).flat().filter(g => g.sim!==false).filter(g => 
                 (g.c||"").toLowerCase().includes("colegio") || (g.c||"").toLowerCase().includes("universidad") || (g.c||"").toLowerCase().includes("educación")
               );
               const gastoEduMes = gastosEdu.reduce((s,g) => s + (g.m||0), 0);
