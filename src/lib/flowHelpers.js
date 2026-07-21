@@ -399,3 +399,31 @@ export function togglePagado(item, año) {
   if (!pagos[año]) delete pagos[año]; // limpia falsy para no acumular basura
   return { ...item, pagos };
 }
+
+// ── FIRE / proyección de patrimonio ──────────────────────────────────────
+// Años para alcanzar una meta de patrimonio con rendimiento real COMPUESTO
+// sobre el capital actual + aportes mensuales.
+//
+// CAUSA RAÍZ (20-jul-2026, Santiago): la proyección era lineal
+// (falta ÷ ahorro), ignoraba que el patrimonio ya invertido crece solo →
+// daba ~80 años cuando con compounding son ~10. Ahora usa valor futuro:
+//   FV(n) = P·(1+r)^n + A·((1+r)^n − 1)/r   →   se despeja n (meses).
+// retornoRealAnual: default 0.05 (5% real, coherente con la regla del 4%).
+// Devuelve AÑOS (number) o null si no se proyecta alcanzar de forma realista.
+export function añosParaMeta(actual, meta, aporteMensual, retornoRealAnual = 0.05) {
+  if (!(meta > 0)) return null;
+  if (actual >= meta) return 0;
+  const rm = retornoRealAnual / 12;
+  if (rm <= 0) {
+    if (aporteMensual <= 0) return null;
+    return (meta - actual) / (aporteMensual * 12);
+  }
+  const base = actual + aporteMensual / rm;
+  const num  = meta   + aporteMensual / rm;
+  if (base <= 0 || num <= 0) return null; // se está descapitalizando
+  const x = num / base;
+  if (x <= 1) return 0;
+  const n = Math.log(x) / Math.log(1 + rm);
+  if (!isFinite(n) || n <= 0) return null;
+  return n / 12;
+}

@@ -46,7 +46,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import AssetsModuleUS from "./components/AssetsModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
-import { montoPromedioMensual } from "./lib/flowHelpers.js";
+import { montoPromedioMensual, añosParaMeta } from "./lib/flowHelpers.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -1992,7 +1992,7 @@ export default function FinPath(){
                 <span>Meta: {fm(fireNumber)}</span>
               </div>
               {fireProgress<100&&<div style={{fontSize:10,color:T.tx3,marginTop:6}}>
-                Te falta: {fm(fireNumber - t.nw)}. {t.cf>0 ? "Al ritmo actual ("+fm(t.cf)+"/mes de ahorro), llegas en ~"+Math.ceil((fireNumber-t.nw)/(t.cf*12))+" años." : "Necesitas generar ahorro mensual positivo."}
+                Te falta: {fm(fireNumber - t.nw)}. {(()=>{const a=añosParaMeta(t.nw,fireNumber,Math.max(0,t.cf),0.05);return a==null?"Con tu ahorro actual no se proyecta alcanzarlo — genera ahorro mensual positivo.":"Proyectado a 5% real anual"+(t.cf>0?" ("+fm(t.cf)+"/mes de ahorro)":", solo con tu patrimonio actual")+", llegas en ~"+(a<1?"menos de 1":(Math.round(a*10)/10))+" años.";})()}
               </div>}
               {fireProgress>=100&&<div style={{fontSize:11,color:T.gn,fontWeight:700,marginTop:6}}>
                 🏆 ¡Ya superaste tu FIRE number! Técnicamente puedes dejar de trabajar y vivir de tu patrimonio por 25+ años.
@@ -2508,7 +2508,7 @@ export default function FinPath(){
           const fireN = t.te * 12 * 25;
           const fireP = fireN > 0 ? (t.nw / fireN * 100) : 0;
           if (fireP >= 100) alerts.push({type:"🟢",title:"FIRE alcanzado — libertad financiera",msg:"Tu patrimonio supera tu FIRE number. Técnicamente puedes vivir de tus activos por 25+ años sin trabajar.",cat:"Libertad"});
-          else if (fireP >= 70) alerts.push({type:"🟢",title:"FIRE al "+fireP.toFixed(0)+"% — muy cerca",msg:"Te falta "+fm(fireN - t.nw)+" para la independencia total. Al ritmo actual, "+( t.cf>0 ? "llegas en ~"+Math.ceil((fireN-t.nw)/(t.cf*12))+" años." : "necesitas generar ahorro."),cat:"Progreso"});
+          else if (fireP >= 70) { const aF=añosParaMeta(t.nw,fireN,Math.max(0,t.cf),0.05); alerts.push({type:"🟢",title:"FIRE al "+fireP.toFixed(0)+"% — muy cerca",msg:"Te falta "+fm(fireN - t.nw)+" para la independencia total. "+(aF!=null?"Proyectado a 5% real anual, llegas en ~"+(aF<1?"menos de 1":Math.round(aF*10)/10)+" años.":"Genera ahorro mensual positivo para proyectarlo."),cat:"Progreso"}); }
 
           if (alerts.length === 0) alerts.push({type:"🟢",title:"Sin alertas",msg:"Tu situación financiera está bien balanceada. Sigue monitoreando mensualmente.",cat:"General"});
 
