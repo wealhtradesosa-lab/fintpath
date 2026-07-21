@@ -46,7 +46,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import AssetsModuleUS from "./components/AssetsModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
-import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual } from "./lib/flowHelpers.js";
+import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual, mesesLibreDeuda } from "./lib/flowHelpers.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -2004,7 +2004,7 @@ export default function FinPath(){
               const deudas = ((u&&u.deu)||[]).map(d => ({...d, mt: d.mt||0, pg: d.pg||0, ts: d.ts||0})).filter(d => d.mt > 0 && d.pg > 0);
               const totalDeuda = deudas.reduce((s,d) => s + d.mt, 0);
               const totalCuota = deudas.reduce((s,d) => s + d.pg, 0);
-              const mesesLibre = totalCuota > 0 ? Math.ceil(totalDeuda / totalCuota) : 0;
+              const { meses: mesesLibre, algunaNoAmortiza } = mesesLibreDeuda(deudas);
               const aniosLibre = (mesesLibre / 12).toFixed(1);
               const fechaLibre = new Date();
               fechaLibre.setMonth(fechaLibre.getMonth() + mesesLibre);
@@ -2051,6 +2051,7 @@ export default function FinPath(){
                   <div style={{fontSize:10,color:T.tx3,marginTop:8}}>
                     Al quedar libre de deuda, tu cash flow sube <strong style={{color:T.gn}}>+{fm(totalCuota)}/mes</strong> ({fm(totalCuota*12)}/año) — ese dinero pasa directo a inversión o ahorro.
                   </div>
+                  {algunaNoAmortiza && <div style={{fontSize:10,color:T.rd,marginTop:6}}>⚠ Alguna cuota no alcanza a cubrir el interés — a ese ritmo esa deuda no se amortiza. Revisá la cuota o la tasa.</div>}
                 </div>
               );
             })()}

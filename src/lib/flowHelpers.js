@@ -441,3 +441,24 @@ export function ingresoInversionAnual(ingresos, trm = 1) {
     return s + montoPromedioMensual({ ...i, mensual: base }) * 12;
   }, 0);
 }
+
+// Meses hasta quedar libre de deuda con AMORTIZACIÓN real (considera interés).
+// CAUSA (20-jul-2026, Santiago): la fecha usaba saldo/cuota (0% interés) →
+// daba una fecha demasiado optimista. Ahora resuelve n por deuda:
+//   n = -ln(1 − r·B/P) / ln(1+r)   (r = tasa mensual, B = saldo, P = cuota)
+// Se queda libre cuando termina la deuda más larga → max(n_i).
+// Si una cuota no cubre el interés (P ≤ B·r), esa deuda no amortiza → aviso.
+export function mesesLibreDeuda(deudas) {
+  let maxMeses = 0, algunaNoAmortiza = false;
+  for (const d of (deudas || [])) {
+    const B = Number(d.mt) || 0, P = Number(d.pg) || 0;
+    if (B <= 0 || P <= 0) continue;
+    const r = (Number(d.ts) || 0) / 100 / 12;
+    let n;
+    if (r <= 0) { n = B / P; }
+    else if (P <= B * r) { algunaNoAmortiza = true; continue; }
+    else { n = -Math.log(1 - (r * B) / P) / Math.log(1 + r); }
+    if (n > maxMeses) maxMeses = n;
+  }
+  return { meses: Math.ceil(maxMeses), algunaNoAmortiza };
+}
