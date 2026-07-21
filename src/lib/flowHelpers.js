@@ -427,3 +427,17 @@ export function añosParaMeta(actual, meta, aporteMensual, retornoRealAnual = 0.
   if (!isFinite(n) || n <= 0) return null;
   return n / 12;
 }
+
+// Ingreso ANUAL proveniente solo de INVERSIÓN (arriendo, rendimiento,
+// dividendos, inversión) — NO salario/freelance. Convierte USD→COP y
+// anualiza según frecuencia. Uso: yield on cost real de los activos.
+// CAUSA (20-jul-2026, Santiago): yieldOnCost usaba el ingreso total (con
+// salario), inflando el "qué tan bien rentan tus activos".
+export function ingresoInversionAnual(ingresos, trm = 1) {
+  const cats = ["Arriendo", "Rendimiento", "Dividendos", "Inversión"];
+  return (ingresos || []).reduce((s, i) => {
+    if (i.sim === false || !cats.includes(i.categoria)) return s;
+    const base = (Number(i.mensual) || 0) * (i.moneda === "USD" ? trm : 1);
+    return s + montoPromedioMensual({ ...i, mensual: base }) * 12;
+  }, 0);
+}

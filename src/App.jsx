@@ -46,7 +46,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import AssetsModuleUS from "./components/AssetsModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
-import { montoPromedioMensual, añosParaMeta } from "./lib/flowHelpers.js";
+import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual } from "./lib/flowHelpers.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -1929,7 +1929,7 @@ export default function FinPath(){
         const passiveRatio = t.ti > 0 ? (passiveInc / t.ti * 100) : 0;
         // Yield on cost
         const totalInvested = ((u&&u.inv)||[]).reduce((s,i) => s + (i.vc||0), 0);
-        const yieldOnCost = totalInvested > 0 ? (t.ti * 12 / totalInvested * 100) : 0;
+        const yieldOnCost = totalInvested > 0 ? (ingresoInversionAnual(u&&u.ingresos, trm) / totalInvested * 100) : 0;
         // Concentration risk
         const maxAsset = ((u&&u.inv)||[]).reduce((max,i) => (i.va||0) > max.v ? {n:i.n||i.nombre||"",v:i.va||0} : max, {n:"",v:0});
         const concRisk = t.ab > 0 ? (maxAsset.v / t.ab * 100) : 0;
@@ -2176,7 +2176,7 @@ export default function FinPath(){
                 const totalValue = ((u&&u.inv)||[]).reduce((s,i) => s + (i.va||0), 0);
                 const gain = totalValue - totalInvested;
                 const gainPct = totalInvested > 0 ? ((totalValue / totalInvested) - 1) * 100 : 0;
-                const incomeYield = totalInvested > 0 ? (t.ti * 12 / totalInvested * 100) : 0;
+                const incomeYield = totalInvested > 0 ? (ingresoInversionAnual(u&&u.ingresos, trm) / totalInvested * 100) : 0;
                 const totalReturn = gainPct + incomeYield;
                 
                 const benchmarks = [
