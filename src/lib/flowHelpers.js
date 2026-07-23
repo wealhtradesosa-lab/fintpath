@@ -469,25 +469,3 @@ export function mesesLibreDeuda(deudas) {
 export const vaCOP = (i, trm = 1) => (Number(i?.va) || 0) * (i?.moneda === "USD" ? trm : 1);
 export const vcCOP = (i, trm = 1) => (Number(i?.vc) || 0) * (i?.moneda === "USD" ? trm : 1);
 
-// "Típico" de un item PARA UN MES dado — para el bloque "qué movió el mes".
-// CAUSA (20-jul-2026, Santiago): montoPromedioMensual anualiza /12, así un
-// ingreso mensual que corre medio año se veía "+50% sobre lo típico" en sus
-// meses activos, sin ser una anomalía. Ahora:
-//   · mensual → su propio monto en vigencia (estable ⇒ efecto 0, no es mover)
-//   · variable → promedio de sus meses reales (los picos sí muestran)
-//   · anual/semestral/trimestral/único → anualizado /12 (el pago que cae ESTE
-//     mes SÍ es un evento inusual y debe aparecer)
-export function montoTipicoMes(item, año, mes) {
-  const freq = getFrecuencia(item);
-  if (freq === "mensual") {
-    const { desde, hasta } = getRangoMeses(item);
-    return (mes >= desde && mes <= hasta) ? getMonto(item) : 0;
-  }
-  if (freq === "variable") {
-    const montos = getMontosMensuales(item);
-    const { desde, hasta } = getRangoMeses(item);
-    const enVig = montos.filter((_, idx) => { const m = idx + 1; return m >= desde && m <= hasta; });
-    return promedioMesesReales(enVig);
-  }
-  return montoPromedioMensual(item);
-}

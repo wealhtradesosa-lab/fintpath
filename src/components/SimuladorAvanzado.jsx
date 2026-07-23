@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
-import { montoPromedioMensual, montoDelMes, montoTipicoMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
@@ -597,15 +597,17 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     (user.ingresos || []).forEach(ing => {
       if (ing.sim === false) return;
       const base = { ...ing, mensual: (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1) };
-      const delta = montoDelMes(base, añoD, mes) - montoTipicoMes(base, añoD, mes);
-      if (delta !== 0) drivers.push({ nombre: ing.nombre || ing.fuente || "Ingreso", efecto: delta, tipo: "ingreso" });
+      const montoMes = montoDelMes(base, añoD, mes);
+      const delta = montoMes - montoPromedioMensual(base);
+      if (delta !== 0) drivers.push({ nombre: ing.nombre || ing.fuente || "Ingreso", efecto: delta, monto: montoMes, tipo: "ingreso" });
     });
     // Gastos: MÁS gasto que lo típico = empuja ABAJO (signo invertido)
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       (items || []).forEach(g => {
         if (g.sim === false) return;
-        const delta = montoDelMes(g, añoD, mes) - montoTipicoMes(g, añoD, mes);
-        if (delta !== 0) drivers.push({ nombre: g.c || cat, efecto: -delta, tipo: "gasto" });
+        const montoMesG = montoDelMes(g, añoD, mes);
+        const delta = montoMesG - montoPromedioMensual(g);
+        if (delta !== 0) drivers.push({ nombre: g.c || cat, efecto: -delta, monto: montoMesG, tipo: "gasto" });
       });
     });
 
@@ -1298,28 +1300,25 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               // TOP 3 (20-jul-2026, Santiago: "consideremos el 1, 2, 3 más
               // importante") — los 3 mayores movimientos del mes, numerados.
               const top3 = todos.slice(0, 3);
-              const top = top3[0];
-              const esPos = top.efecto > 0;
-              const color = esPos ? T.gn : (simTMes.cashFlowMes < 0 ? "#ef4444" : "#f97316");
-              const bg = esPos ? "rgba(34,197,94,0.07)" : (simTMes.cashFlowMes < 0 ? "rgba(239,68,68,0.08)" : "rgba(249,115,22,0.07)");
               const sufijo = (d) => {
-                if (d.tipo === "gasto" && d.efecto < 0) return " (pago del mes)";
-                if (d.tipo === "gasto" && d.efecto > 0) return " (gasto que no cae)";
-                if (d.tipo === "ingreso" && d.efecto < 0) return " (por debajo de su típico)";
-                if (d.tipo === "ingreso" && d.efecto > 0) return " (por encima de lo típico)";
-                return "";
+                if (d.tipo === "gasto") return d.efecto < 0 ? " (pago del mes)" : " (gasto que no cae este mes)";
+                return d.efecto > 0 ? " (más que un mes promedio)" : " (menos que un mes promedio)";
               };
               return (
-                <div style={{ fontSize: 11.5, color, background: bg, border: `1px solid ${color}35`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.6, marginTop: 10 }}>
-                  💡 <strong>Lo que más movió este mes:</strong>{" "}
-                  {top3.map((d, i) => (
-                    <span key={i} style={{ opacity: i === 0 ? 1 : 0.8 }}>
-                      {i > 0 && " · "}
-                      <strong>{i + 1}.</strong> {d.nombre}{" "}
-                      <span style={{ fontWeight: i === 0 ? 800 : 700, fontFamily: "monospace" }}>{d.efecto > 0 ? "+" : ""}{fm(d.efecto)}</span>
-                      {sufijo(d)}
-                    </span>
-                  ))}
+                <div style={{ fontSize: 11.5, color: T.txt2, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.bd}`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.7, marginTop: 10 }}>
+                  💡 <strong style={{ color: T.txt }}>Por qué este mes se movió</strong> <span style={{ opacity: 0.75 }}>(vs mes promedio):</span>{" "}
+                  {top3.map((d, i) => {
+                    const c = d.efecto > 0 ? T.gn : T.rd;
+                    return (
+                      <span key={i}>
+                        {i > 0 && " · "}
+                        <strong>{i + 1}.</strong> {d.nombre}{" "}
+                        <span style={{ fontFamily: "monospace", opacity: 0.8 }}>{fm(d.monto)}</span>{" "}
+                        <span style={{ color: c, fontWeight: 800, fontFamily: "monospace" }}>{d.efecto > 0 ? "+" : ""}{fm(d.efecto)}</span>
+                        <span style={{ color: c, opacity: 0.85 }}>{sufijo(d)}</span>
+                      </span>
+                    );
+                  })}
                 </div>
               );
             })()}
