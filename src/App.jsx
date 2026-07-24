@@ -325,6 +325,20 @@ const inferType=(i)=>{let tp=String(i.tp||i.tipo||i.type||"").trim();if(!tp||!is
 //   + aliases legacy: ni, ti, tg, gfm, tc, te, cf, ind, ab, td, nw, dta,
 //     ingT, tTax
 // ═══════════════════════════════════════════════════════════════════════════
+// Activación (23-jul-2026): ¿la cuenta está vacía? Se usa para volver a
+// ofrecer el tour de arranque a quien se registró, no cargó nada y volvió
+// después. Antes el tour SOLO se mostraba en el instante del signup: quien
+// cerraba la pestaña y volvía caía en un dashboard vacío, sin guía y sin
+// forma de recuperar el tour. Ese es el punto donde más gente abandona.
+const cuentaVacia = (d) => {
+  if (!d || d?.p?.demo) return false;
+  const nInv = (d.inv || []).length;
+  const nIng = (d.ingresos || []).length;
+  const nDeu = (d.deu || []).length;
+  const nGas = Object.values(d.gas || {}).reduce((s, its) => s + (its || []).length, 0);
+  return nInv + nIng + nDeu + nGas === 0;
+};
+
 const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
   let ab=0, aportesObligatorios=0, gastosFamiliares=0;
   (inv||[]).forEach(i=>{if(i.sim!==false)ab+=vaCOP(i,trm)*(i.moneda==="USD"?trm:1)});
@@ -822,8 +836,8 @@ export default function FinPath(){
             sL(data.user.id,accountIdRef.current),
             new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout cargando datos")),10000))
           ]);
-          if(d)setU(sanitize(d));
-          else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id)}
+          if(d){const __sd=sanitize(d);setU(__sd);if(cuentaVacia(__sd))setShowOnboarding(true);}
+          else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);setShowOnboarding(true)}
         }catch(loadErr){
           // Si falla la carga de datos: limpiamos el estado a medio-loguear para no
           // dejar al usuario atrapado con authUser seteado pero sin data (lo que
