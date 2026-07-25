@@ -2771,18 +2771,23 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 <div style={{fontSize:12,color:T.tx3,marginBottom:14,lineHeight:1.4,minHeight:32}}>{pl.tag}</div>
                 <div style={{marginBottom:4}}>
                   <div style={{display:"flex",alignItems:"baseline",gap:4,flexWrap:"wrap"}}>
-                    <span style={{fontSize:pl.comingSoon?22:36,fontWeight:800,color:pl.ac?T.gn:pl.comingSoon?T.tx3:T.tx}}>{pl.p[billingCycle]}</span>
-                    {pl.pr[billingCycle]&&<span style={{color:T.tx3,fontSize:14,fontWeight:600}}>{pl.pr[billingCycle]}</span>}
+                    <span style={{fontSize:pl.comingSoon?22:36,fontWeight:800,color:pl.ac?T.gn:pl.comingSoon?T.tx3:T.tx}}>{billingCycle==="anual"&&pl.pAnualTotal?pl.pAnualTotal:pl.p[billingCycle]}</span>
+                    {billingCycle==="anual"&&pl.pAnualTotal
+                      ?<span style={{color:T.tx3,fontSize:14,fontWeight:600}}>/año</span>
+                      :(pl.pr[billingCycle]&&<span style={{color:T.tx3,fontSize:14,fontWeight:600}}>{pl.pr[billingCycle]}</span>)}
                   </div>
                   {pl.pRef&&pl.pRef[billingCycle]&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>{pl.pRef[billingCycle]} · cobro en dólares</div>}
                 </div>
-                {/* 25-jul-2026 (Santiago): la tarjeta mostraba "$12 USD/mes" en
-                    modo anual y Stripe después cobraba el año entero de un tajo
-                    — el usuario llegaba al checkout esperando una cifra y veía
-                    otra 12 veces mayor. Ahora el total anual se dice ANTES. */}
+                {/* 25-jul-2026 (Santiago): "si uno elige un solo pago, que salga
+                    la cifra completa; si cambiamos las reglas o los valores,
+                    generamos rechazo".
+                    Antes la tarjeta anual mostraba "$12 USD/mes" en grande y
+                    Stripe cobraba $144 de una: la cifra prominente no era la que
+                    se cobraba. Ahora manda el monto real del cobro y la
+                    equivalencia mensual queda como referencia secundaria. */}
                 {billingCycle==="anual"&&pl.save&&<div style={{marginBottom:12}}>
                   <div style={{fontSize:12,color:T.gn,fontWeight:600}}>{pl.save} vs plan mensual</div>
-                  {pl.pAnualTotal&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>Se cobra {pl.pAnualTotal} una vez al año</div>}
+                  <div style={{fontSize:11,color:T.tx3,marginTop:2}}>Un solo pago · equivale a {pl.p.anual} USD/mes</div>
                 </div>}
                 {billingCycle==="mensual"&&pl.save&&<div style={{fontSize:12,color:T.tx3,marginBottom:12}}>{isUS?"or pay annually & save 25%":"o paga anual y ahorra 25%"}</div>}
                 {!pl.save&&<div style={{marginBottom:12}}/>}
