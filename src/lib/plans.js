@@ -215,7 +215,7 @@ const ADVISOR_PLAN_LANDING = {
 // billingCycle. Retorna lista con flags `cur` (plan actual), `ac` (más
 // popular), y precios listos para renderizar.
 // ═══════════════════════════════════════════════════════════════════════════
-export function getPlansForApp({ plan, isUS, trm, billingCycle }) {
+export function getPlansForApp({ plan, isUS, trm, billingCycle, trialActive = false, trialDays = 0 }) {
   const isCO = !isUS;
   return PLAN_BASE.map(b => {
     const isFree = b.isFree;
@@ -244,7 +244,14 @@ export function getPlansForApp({ plan, isUS, trm, billingCycle }) {
       users: b.usersDetail,
       f: features,
       no: b.notFeatures,
-      cur: plan === planNameToCanonical(b.name),
+      // 25-jul-2026: durante el TRIAL el plan resuelve a "pro", así que la
+      // tarjeta de Pro decía "Plan actual" — el usuario sentía que ya tenía
+      // todo resuelto y no había ningún camino a pagar. Cero urgencia justo
+      // en la ventana donde hay que convertir. Ahora, en trial, ningún plan
+      // se marca como actual: se marca como TRIAL, con los días restantes.
+      cur: !trialActive && plan === planNameToCanonical(b.name),
+      enTrial: trialActive && plan === planNameToCanonical(b.name),
+      trialDays,
       ac: !!b.accent,
     };
   });

@@ -1672,7 +1672,7 @@ export default function FinPath(){
           {!trialActive&&trialEnd&&plan==="free"&&!u?.p?.anonymous&&<div style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.12)",borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:18}}>😢</span>
-              <div><div style={{fontSize:13,fontWeight:700,color:T.rd}}>Tu trial Pro terminó</div><div style={{fontSize:11,color:T.tx3}}>Upgrade para recuperar el Asesor IA, Coaches y Simulador completo</div></div>
+              <div><div style={{fontSize:13,fontWeight:700,color:T.rd}}>Tu trial Pro terminó</div><div style={{fontSize:11,color:T.tx3}}>Perdiste el <strong>motor fiscal</strong> (renta, deducciones, planeación), el Asesor IA y los Coaches. Tus datos siguen intactos.</div></div>
             </div>
             <button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"8px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Upgrade ahora →</button>
           </div>}
@@ -2719,7 +2719,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // Familiar oculto en home + monedas distintas). Ahora ambos consumen
       // la misma definición. Cualquier cambio de precio/feature se hace
       // en plans.js únicamente.
-      const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle});
+      const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle,trialActive,trialDays});
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
           <h2 style={{fontSize:26,fontWeight:800,margin:"0 0 8px"}}>{isUS?"Choose your plan":"Elige tu plan"}</h2>
@@ -2793,7 +2793,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                       (isBlocked?"\n\n⚠️ Posible AdBlocker o extensión del browser bloqueando la conexión.\nProbá:\n• Desactivar adblocker para finpathia.com\n• Abrir en modo incógnito\n• Probar con otro browser":"\n\nVerificá tu conexión. Detalle del error en consola (F12 → Console).")
                     );
                   }
-                })()}}>{pl.cur?"Plan actual":"Comenzar"}</Bt>
+                })()}}>{pl.cur?"Plan actual":pl.enTrial?(pl.trialDays<=1?"Activar antes de que venza":`Activar — quedan ${pl.trialDays} días`):"Comenzar"}</Bt>
                 )}
               </div>
             </Cd>
