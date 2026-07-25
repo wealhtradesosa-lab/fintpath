@@ -349,8 +349,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                             <div style={{ fontSize: 9.5, color: T.txt3, marginTop: 2 }}>
                               termina en {Math.floor(cc.meses / 12)}a {cc.meses % 12}m
                               {cc.interesTotal > 0 && <> · <span title="Interés restante hasta pagarla toda">interés total {fm(cc.interesTotal)}</span></>}
-                              <div style={{ marginTop: 2 }} title={"De la cuota: " + fm(cc.interesMes) + " interés / " + fm(cc.capitalMes) + " capital"}>
-                                de la cuota, <strong style={{ color: cc.pctCapital < 25 ? T.red : cc.pctCapital < 50 ? T.orange : T.green }}>{Math.round(cc.pctCapital)}%</strong> baja deuda
+                              <div style={{ marginTop: 2 }}>
+                                cuota: <strong style={{ color: T.orange }}>{fm(cc.interesMes)}</strong> interés · <strong style={{ color: T.green }}>{fm(cc.capitalMes)}</strong> capital
+                                {" "}(<strong style={{ color: cc.pctCapital < 25 ? T.red : cc.pctCapital < 50 ? T.orange : T.green }}>{Math.round(cc.pctCapital)}%</strong> baja deuda)
                               </div>
                             </div>
                           ) : null}
@@ -479,10 +480,10 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 );
                 return (
                   <div style={{gridColumn:"1/-1",fontSize:11,color:"#a1a1aa",background:"#1e1e24",borderRadius:8,padding:"10px 12px"}}>
-                    <div style={{marginBottom:8}}>
-                      De tu cuota de <strong style={{color:"#fafafa"}}>{fmt(+form.pg||0)}</strong>:{" "}
-                      <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesMes))}</strong> son intereses ·{" "}
-                      <strong style={{color:"#22c55e"}}>{fmt(Math.round(cc.capitalMes))}</strong> abonan capital
+                    <div style={{display:"flex",flexWrap:"wrap",alignItems:"baseline",gap:"4px 14px",marginBottom:8}}>
+                      <span style={{color:"#fafafa",fontWeight:700,fontSize:12}}>Cuota mes {fmt(+form.pg||0)}</span>
+                      <span>Interés <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesMes))}</strong></span>
+                      <span>Capital <strong style={{color:"#22c55e"}}>{fmt(Math.round(cc.capitalMes))}</strong></span>
                     </div>
                     <div style={{display:"flex",height:8,borderRadius:99,overflow:"hidden",background:"#0f0f13",marginBottom:6}}>
                       <div style={{width:(100-cc.pctCapital)+"%",background:"#f59e0b"}} title="Intereses" />
