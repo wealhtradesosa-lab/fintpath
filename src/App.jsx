@@ -1618,12 +1618,21 @@ export default function FinPath(){
     // comentarios en el código: el usuario bajaba por diez bloques sin
     // señalización y todo pesaba igual. Esto la vuelve visible sin quitar
     // un solo gráfico ni indicador — que era la condición de Santiago.
-    const SecH=({n,t,s})=><div style={{display:"flex",alignItems:"baseline",gap:10,margin:"26px 0 14px",paddingBottom:10,borderBottom:"1px solid "+T.border}}>
-      <span style={{fontSize:11,fontWeight:800,color:T.gn,fontFamily:"monospace",letterSpacing:1}}>{String(n).padStart(2,"0")}</span>
-      <div style={{minWidth:0}}>
-        <div style={{fontSize:15,fontWeight:800,color:T.tx,letterSpacing:"-0.01em"}}>{t}</div>
-        <div style={{fontSize:11,color:T.tx3,marginTop:1}}>{s}</div>
+    const SecH=({n,t,s})=><div style={{margin:"40px 0 18px"}}>
+      {/* 25-jul-2026 (Santiago: "están muy pequeños, cuesta saber en qué etapa
+          estamos"). La primera versión usaba 15px, casi el mismo peso que los
+          títulos de tarjeta: no separaba nada. Un divisor de sección tiene que
+          leerse ANTES que el contenido que agrupa, o no cumple su función.
+          Ahora el número va grande y translúcido al costado —marca de etapa,
+          no dato— y el título al tamaño de un encabezado real. */}
+      <div style={{display:"flex",alignItems:"center",gap:14}}>
+        <span style={{fontSize:38,fontWeight:800,color:T.gn,opacity:0.22,fontFamily:"monospace",lineHeight:1,flexShrink:0}}>{String(n).padStart(2,"0")}</span>
+        <div style={{minWidth:0,flex:1}}>
+          <div style={{fontSize:mb?20:24,fontWeight:800,color:T.tx,letterSpacing:"-0.02em",lineHeight:1.15}}>{t}</div>
+          <div style={{fontSize:12.5,color:T.tx3,marginTop:3}}>{s}</div>
+        </div>
       </div>
+      <div style={{height:2,background:`linear-gradient(90deg, ${T.gn}55, transparent)`,borderRadius:2,marginTop:14}}/>
     </div>;
     if(isUS) return <DashboardUS u={u} t={t} ib={ib} pen={pen} setPg={setPg} generatePDF={generatePDF} mb={mb}/>;
     // Data prep
