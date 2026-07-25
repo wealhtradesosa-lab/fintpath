@@ -35,34 +35,41 @@ function deudaCaraVsAhorro(user, trm) {
   const invs = activos(user?.inv);
   if (!deudas.length || !invs.length) return null;
 
-  // Liquidez disponible: CDT, cuentas, fondos. No propiedades ni vehículos.
-  const LIQUIDOS = ["cdt", "efectivo", "cuenta", "fic", "fondo", "ahorro"];
-  const liquidos = invs.filter((i) => LIQUIDOS.some((t) => String(i.tipo || "").toLowerCase().includes(t)));
+  // 25-jul-2026 — Segunda corrección, con datos reales de Santiago a la vista.
+  //
+  // La versión anterior fallaba en dos direcciones opuestas:
+  //  · Contaba "Fondo de Inversión" como plata quieta. Sus fondos rinden 23%:
+  //    eso NO es dinero ocioso, es una inversión activa. Incluirlos subía el
+  //    rendimiento promedio a ~20% y hacía desaparecer el hallazgo.
+  //  · Ignoraba el tipo "Cash" (mi lista decía "efectivo", pero la app usa
+  //    "Cash"). Sus $180M en Cash al 0% —la plata que de verdad no rinde—
+  //    quedaban fuera del análisis.
+  // Resultado: el caso más claro del patrimonio no se detectaba.
+  //
+  // Modelo corregido: liquidez = dinero DISPONIBLE y sin comprometer (Cash,
+  // CDT, cuentas de ahorro). Un fondo, acciones o crypto son posiciones
+  // tomadas, no plata esperando destino.
+  const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro"];
+  const esLiquido = (i) => LIQUIDOS.some((t) => String(i.tipo || "").toLowerCase().includes(t));
+  const liquidos = invs.filter(esLiquido);
   const valorCOP = (i) => (i.moneda === "USD" ? num(i.va) * trm : num(i.va));
   const liquidez = liquidos.reduce((s, i) => s + valorCOP(i), 0);
   if (liquidez < 1_000_000) return null;
 
-  // 25-jul-2026 — El rendimiento sale de los datos del usuario, no de una
-  // constante. La primera versión asumía 9,5% E.A. ("referencia CDT Colombia"),
-  // un número que yo puse: exactamente lo que el producto promete no hacer.
-  // Ahora es el promedio PONDERADO por monto de la tasa que el usuario cargó
-  // en cada activo líquido. Si no cargó ninguna tasa, no hay con qué comparar
-  // y el hallazgo no se muestra — mejor callar que inventar el diferencial.
-  const conTasa = liquidos.filter((i) => num(i.tasa) > 0);
-  if (!conTasa.length) return null;
-  const baseConTasa = conTasa.reduce((s, i) => s + valorCOP(i), 0);
-  if (baseConTasa <= 0) return null;
-  const RENDIMIENTO_TIPICO = conTasa.reduce((s, i) => s + num(i.tasa) * valorCOP(i), 0) / baseConTasa;
+  // El rendimiento sale de los datos del usuario, no de una constante mía.
+  // Para efectivo, una tasa de 0 es un dato REAL y significativo —plata que
+  // no rinde—, no un dato faltante. Por eso acá 0 cuenta: era el error de la
+  // versión previa, que exigía tasa>0 y así descartaba justo el peor caso.
+  const baseLiq = liquidos.reduce((s, i) => s + valorCOP(i), 0);
+  const RENDIMIENTO_TIPICO = baseLiq > 0
+    ? liquidos.reduce((s, i) => s + num(i.tasa) * valorCOP(i), 0) / baseLiq
+    : 0;
 
   // Elegir por IMPACTO, no por tasa. Una tarjeta de $5M al 28% se ve más
   // "cara" que un crédito de $130M al 23%, pero abonar al segundo ahorra
-  // veinte veces más. Ordenar por tasa recomendaba lo irrelevante.
+  // veinte veces más.
   const cara = deudas
     .map((d) => {
-      // El campo de tasa en deudas es `ts` (16 usos en App.jsx, `form.ts` en
-      // DeudasModule). La primera versión leía `ta`, que está vacío en todos
-      // los registros: el hallazgo de deuda nunca se disparaba, aunque el
-      // usuario tuviera sus tasas correctamente cargadas.
       const saldo = num(d.mt), tasa = num(d.ts ?? d.ta);
       const dif = tasa - RENDIMIENTO_TIPICO;
       return {
@@ -84,7 +91,7 @@ function deudaCaraVsAhorro(user, trm) {
     titulo: `Tu ${cara.nombre} al ${cara.tasa.toFixed(2)}% cuesta más de lo que rinde tu ahorro`,
     detalle: `Tenés liquidez disponible mientras pagás una tasa del ${cara.tasa.toFixed(2)}% E.A. Abonar a capital rinde ${diferencial.toFixed(1)} puntos más que dejar la plata quieta.`,
     impactoAnual: impacto,
-    base: `Tasa del crédito (${cara.tasa.toFixed(2)}% E.A.) vs. rendimiento promedio de tus activos líquidos (${RENDIMIENTO_TIPICO.toFixed(2)}% E.A.), ponderado por monto`,
+    base: `Tasa del crédito (${cara.tasa.toFixed(2)}% E.A.) vs. rendimiento de tu efectivo y CDT (${RENDIMIENTO_TIPICO.toFixed(2)}% E.A.), ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.`,
     accion: { label: "Ver mis deudas", pagina: "deu" },
     tono: "oportunidad",
   };
