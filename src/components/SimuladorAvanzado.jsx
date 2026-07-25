@@ -1345,38 +1345,6 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
       </div>
       {/* fin bloque de KPIs Fase 5 */}
 
-      {/* Sankey del MES seleccionado (25-jul-2026). Vive acá y no en el
-          dashboard para que reaccione al selector de mes y a los toggles:
-          así deja de ser un póster y se vuelve herramienta de decisión. */}
-      {(() => {
-        const fuentes = (user.ingresos || [])
-          .filter((i) => i.sim !== false)
-          .map((i) => {
-            const base = (Number(i.mensual) || 0) * (i.moneda === "USD" ? trm : 1);
-            return { nombre: i.nombre || i.fuente || "Ingreso", valor: montoDelMes({ ...i, mensual: base }, simTMes.añoActual, simTMes.mes) };
-          });
-        const gastosCats = Object.entries(user.gastos || {})
-          .filter(([cat]) => cat !== "Seguridad Social")
-          .map(([cat, its]) => [cat, (its || []).filter((g) => g.sim !== false)
-            .reduce((s, g) => s + montoDelMes(g, simTMes.añoActual, simTMes.mes), 0)]);
-        return (
-          <div style={{ marginTop: 16 }}>
-            <SankeyFlujo
-              bruto={simTMes.brutoDelMes}
-              fuentes={fuentes}
-              retencion={simTMes.retencionMes}
-              impuesto={simTMes.impuestoNetoMes}
-              aportes={simTMes.aportesObligatoriosMes}
-              cuotas={simTMes.cuotasDeudasMes}
-              gastosCats={gastosCats}
-              cashFlow={simTMes.cashFlowMes}
-              subtitulo={`${(MESES.find((m) => m.v === simTMes.mes) || {}).l || ""} ${simTMes.añoActual}.`}
-              fmt={fmt}
-              T={{ card: T.card, border: T.border, tx: T.txt, tx2: T.txt2, tx3: T.txt3 }}
-            />
-          </div>
-        );
-      })()}
 
       {/* Sliders + Chart */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
@@ -1860,6 +1828,38 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
           </div>
         </div>
       </div>
+      {/* Sankey del MES seleccionado (25-jul-2026). Vive acá y no en el
+          dashboard para que reaccione al selector de mes y a los toggles:
+          así deja de ser un póster y se vuelve herramienta de decisión. */}
+      {(() => {
+        const fuentes = (user.ingresos || [])
+          .filter((i) => i.sim !== false)
+          .map((i) => {
+            const base = (Number(i.mensual) || 0) * (i.moneda === "USD" ? trm : 1);
+            return { nombre: i.nombre || i.fuente || "Ingreso", valor: montoDelMes({ ...i, mensual: base }, simTMes.añoActual, simTMes.mes) };
+          });
+        const gastosCats = Object.entries(user.gastos || {})
+          .filter(([cat]) => cat !== "Seguridad Social")
+          .map(([cat, its]) => [cat, (its || []).filter((g) => g.sim !== false)
+            .reduce((s, g) => s + montoDelMes(g, simTMes.añoActual, simTMes.mes), 0)]);
+        return (
+          <div style={{ marginTop: 16 }}>
+            <SankeyFlujo
+              bruto={simTMes.brutoDelMes}
+              fuentes={fuentes}
+              retencion={simTMes.retencionMes}
+              impuesto={simTMes.impuestoNetoMes}
+              aportes={simTMes.aportesObligatoriosMes}
+              cuotas={simTMes.cuotasDeudasMes}
+              gastosCats={gastosCats}
+              cashFlow={simTMes.cashFlowMes}
+              subtitulo={`${(MESES.find((m) => m.v === simTMes.mes) || {}).l || ""} ${simTMes.añoActual}.`}
+              fmt={fmt}
+              T={{ card: T.card, border: T.border, tx: T.txt, tx2: T.txt2, tx3: T.txt3 }}
+            />
+          </div>
+        );
+      })()}
     </div>
   );
 }
