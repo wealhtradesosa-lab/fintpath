@@ -355,7 +355,16 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
     return s + montoPromedioMensual({...i, mensual: montoBase});
   },0);
   const td=(ds||[]).reduce((s,d)=>d.sim===false?s:s+((d.mt||0)*(d.moneda==="USD"?trm:1)),0);
-  const cuotasDeudas=(ds||[]).filter(d=>(d.mt||0)>0&&d.sim!==false).reduce((s,d)=>s+((d.pg||0)*(d.moneda==="USD"?trm:1)),0);
+  // 25-jul-2026 (Santiago: "las deudas también pueden ser una vez al año,
+  // variables o fijas, pues uno hace abonos o la paga"). El formulario de
+  // deudas YA tiene selector de frecuencia y vigencia —guarda frecuencia,
+  // desdeMes, hastaMes— pero esta suma tomaba la cuota cruda y la cobraba los
+  // 12 meses, ignorando las dos cosas. El motor prometía algo que no cumplía.
+  // Caso real: tres de las deudas de Santiago tienen vigencia hasta octubre y
+  // se estaban cobrando todo el año — $18,7M anuales de más.
+  // getMonto lee `mensual`/`m`, así que se mapea `pg` como en el resto del motor.
+  const cuotasDeudas=(ds||[]).filter(d=>(d.mt||0)>0&&d.sim!==false)
+    .reduce((s,d)=>s+(montoPromedioMensual({...d, mensual:(d.pg||0)*(d.moneda==="USD"?trm:1)})),0);
   // Aportes obligatorios (categoría "Seguridad Social") separados de gastos familiares.
   // Usan promedio mensualizado según frecuencia (retrocompat: sin frecuencia = mensual).
   Object.entries(gf||{}).forEach(([cat,items])=>{
