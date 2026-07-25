@@ -26,13 +26,17 @@ export default function HallazgosProactivos({ hallazgos = [], fmt, T, onIr, onDe
       marginBottom: 16,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <span style={{ fontSize: 16 }}>💡</span>
+        {/* 25-jul-2026 (Santiago): "Lo que veo en tus números" era tibio y no
+            decía quién habla. "Tu family office" nombra al que analiza y usa
+            "tu" —no "nuestro"—: el asesor trabaja para el usuario, no es una
+            función de la que la empresa es dueña. */}
+        <span style={{ fontSize: 16 }}>🤖</span>
         <div style={{ fontSize: 14.5, fontWeight: 800, color: T.tx }}>
-          Lo que veo en tus números
+          Tu family office analizó tus números
         </div>
       </div>
       <div style={{ fontSize: 11, color: T.tx3, marginBottom: 14 }}>
-        Ordenado por lo que más pesa en plata
+        Lo que encontró, ordenado por impacto
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
