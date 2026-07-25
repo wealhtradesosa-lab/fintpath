@@ -77,7 +77,7 @@ Si no puedes leer algo, pon null. Montos en COP.`;
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-sonnet-4-5-20250929",
         max_tokens: 500,
         messages: [{
           role: "user",
