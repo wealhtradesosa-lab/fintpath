@@ -21,16 +21,29 @@ exports.handler = async (event) => {
 
 Extrae la siguiente información y responde SOLO con JSON válido, sin markdown ni backticks:
 {
-  "nombre": "nombre del crédito o entidad (ej. Tarjeta Visa Bancolombia, Hipoteca Davivienda)",
-  "saldo": número (saldo/capital pendiente TOTAL en COP, sin puntos ni comas),
+  "nombre": "nombre del crédito o entidad (ej. Tarjeta Visa Bancolombia, Crédito Consumo Sufi)",
+  "saldo": número (SALDO DE CAPITAL PENDIENTE en COP, sin puntos ni comas),
   "cuota": número (cuota o pago mensual en COP),
-  "tasa": número o null (tasa de interés EFECTIVA ANUAL en %. Si el documento da una tasa mensual, multiplícala por 12 aproximando o conviértela a efectiva anual; si solo hay mensual indícala como anual equivalente),
+  "tasa": número o null (ver reglas abajo),
   "tipo": "una de: loan, mortgage, credit_card, leasing, other",
   "confianza": "alta" o "media" o "baja"
 }
 
-IMPORTANTE sobre la tasa: en Colombia las tarjetas suelen mostrar tasa mensual (~2%) y efectiva anual (~26-30%). Devuelve SIEMPRE la EFECTIVA ANUAL. Si no estás seguro, pon confianza "media" o "baja".
-Si no puedes leer algo, pon null. El saldo es el total pendiente, no el pago mínimo. Montos en COP.`;
+REGLAS ESTRICTAS PARA LA TASA — NO CALCULES NADA:
+- Copiá TEXTUALMENTE el número de la tasa EFECTIVA ANUAL (E.A.) que aparece impreso en el documento. Es un valor a transcribir, NO a deducir.
+- PROHIBIDO calcular, multiplicar, anualizar o convertir tasas. Si el documento no imprime una tasa E.A., devolvé "tasa": null y "confianza": "baja". Es preferible null a un número deducido.
+- Si hay VARIAS tasas, usá SIEMPRE la tasa de interés corriente/remuneratoria. NUNCA uses la tasa de MORA (interés moratorio), aunque también diga E.A.
+- Ejemplo: si dice "Tasa de interés E.A. 22.99%" y "Tasa interés de mora E.A. 28.34%", la respuesta correcta es 22.99.
+- El separador decimal colombiano es la coma: "20,41%" significa 20.41.
+
+REGLAS PARA EL SALDO:
+- Usá el SALDO DE CAPITAL PENDIENTE (lo que aún se debe), NO el monto desembolsado/original del crédito ni el pago mínimo.
+- Ejemplo: si dice "Monto desembolsado $260.000.000" y "Saldo de capital pendiente $130.308.044", la respuesta correcta es 130308044.18.
+
+REGLAS PARA LA CUOTA:
+- Usá el valor del próximo pago / cuota mensual / pago mínimo del periodo actual.
+
+Si no podés leer un dato con certeza, poné null y bajá la confianza. Nunca inventes ni estimes. Montos en COP.`;
 
     const prompt = type === "ingreso"
       ? `Analiza esta imagen de un documento financiero colombiano (extracto, certificado, recibo de pago, etc.).
