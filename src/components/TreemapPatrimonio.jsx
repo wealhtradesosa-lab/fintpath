@@ -44,6 +44,33 @@ function repartir(items, x, y, w, h, salida = []) {
   return repartir(resto, x, y + alto, w, h - alto, salida);
 }
 
+
+/**
+ * Nombre que quepa en `ancho` px, degradando con criterio en vez de cortar a
+ * la mitad de una palabra.
+ * 25-jul-2026 (Santiago: "¿se puede poner las palabras reducidas pero que se
+ * entienda?"). El clipPath evita el desborde pero corta donde toque: se veía
+ * "SALARIO ECH". Ahora se prueba el nombre completo, después las primeras
+ * palabras que entren, y recién al final se recorta con puntos suspensivos.
+ */
+function nombreQueQuepa(nombre, ancho, px = 11.5) {
+  const CHAR = px * 0.58;              // ancho medio de carácter en sans bold
+  const max = Math.floor((ancho - 24) / CHAR);
+  if (max <= 2) return "";
+  if (nombre.length <= max) return nombre;
+
+  const palabras = String(nombre).split(/\s+/);
+  let acum = "";
+  for (const w of palabras) {
+    const cand = acum ? acum + " " + w : w;
+    if (cand.length > max) break;
+    acum = cand;
+  }
+  // Al menos una palabra entera entra: preferible a un corte arbitrario.
+  if (acum.length >= 3) return acum + (acum.length < nombre.length ? "…" : "");
+  return nombre.slice(0, Math.max(max - 1, 1)) + "…";
+}
+
 export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altura = 260, maxBloques = 7 }) {
   const items = (datos || []).filter((d) => d && d.value > 0).sort((a, b) => b.value - a.value);
   if (!items.length) return null;
@@ -90,10 +117,15 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
           // el más grande también tenga el número más grande. Refuerza la
           // lectura por área en vez de competir con ella.
           const menor = Math.min(b.w, b.h);
-          const tamPct = Math.max(13, Math.min(44, Math.round(menor * 0.34)));
-          const cabePct = b.w > 54 && b.h > 40;
-          const cabeNombre = b.w > 72 && b.h > 62;
-          const cabeMonto = b.w > 96 && b.h > 96;
+          const tamPct = Math.max(11, Math.min(44, Math.round(menor * 0.34)));
+          // Umbrales bajados (25-jul-2026): antes bloques de 40-70px quedaban
+          // completamente vacíos, sin siquiera el porcentaje. Un bloque mudo no
+          // aporta nada y parece un error de render. Ahora casi cualquier
+          // bloque muestra al menos su cifra, con el tamaño que admita.
+          const cabePct = b.w > 34 && b.h > 24;
+          const cabeNombre = b.w > 56 && b.h > 50;
+          const cabeMonto = b.w > 96 && b.h > 92;
+          const etiqueta = cabeNombre ? nombreQueQuepa(b.name, b.w) : "";
           return (
             <g key={b.name + i} clipPath={`url(#tm-clip-${i})`}>
               <rect
@@ -109,9 +141,9 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
                   {pct.toFixed(pct >= 10 ? 0 : 1)}%
                 </text>
               )}
-              {cabeNombre && (
+              {cabeNombre && etiqueta && (
                 <text x={b.x + 12} y={b.y + 14 + tamPct * 0.78 + 16} fill={T.tx} fontSize={11.5} fontWeight={700}>
-                  {b.name}
+                  {etiqueta}
                 </text>
               )}
               {cabeMonto && (
@@ -126,9 +158,9 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
       </svg>
 
       {/* Leyenda solo para lo que no cupo etiquetado */}
-      {bloques.some((b) => !(b.w > 72 && b.h > 62)) && (
+      {bloques.some((b) => !(b.w > 56 && b.h > 50)) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
-          {bloques.filter((b) => !(b.w > 72 && b.h > 62)).map((b, i) => {
+          {bloques.filter((b) => !(b.w > 56 && b.h > 50)).map((b, i) => {
             const idx = bloques.indexOf(b);
             return (
               <div key={b.name + i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: T.tx3 }}>
