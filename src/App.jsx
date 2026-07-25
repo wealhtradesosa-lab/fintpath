@@ -2002,6 +2002,24 @@ export default function FinPath(){
           {pie.length>0
             ?<TreemapPatrimonio datos={pie} total={totalPat} fmt={fm} T={T} paleta={T.ch} altura={mb?300:260}/>
             :<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>Agrega inversiones</div>}
+          {/* 25-jul-2026 (Santiago: "veo listado en gastos pero no en
+              patrimonio"). Al reemplazar la dona por el treemap me llevé
+              también su leyenda, mientras que ingresos y gastos conservaron
+              la lista debajo del gráfico. Quedaba inconsistente y, peor, se
+              perdía el detalle exacto: el treemap agrupa la cola en "Otros" y
+              sin lista esos activos desaparecían de la vista. */}
+          {pie.length>0&&<div style={{marginTop:14,borderTop:"1px solid "+T.border}}>
+            {pie.map((p,i)=><div key={p.name} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:i<pie.length-1?"1px solid "+T.border:"none",fontSize:12.5}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+                <div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length],flexShrink:0}}/>
+                <span style={{color:T.tx2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+                <span style={{fontWeight:700,fontFamily:"monospace",color:T.tx}}>{fm(p.value)}</span>
+                <span style={{color:T.tx3,fontSize:11,minWidth:34,textAlign:"right"}}>{totalPat>0?((p.value/totalPat)*100).toFixed(1)+"%":""}</span>
+              </div>
+            </div>)}
+          </div>}
         </Cd>
         {/* Top Ingresos */}
         <Cd s={{padding:0}}>
