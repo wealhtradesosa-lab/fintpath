@@ -77,7 +77,7 @@ Si no puedes leer algo, pon null. Montos en COP.`;
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5-20250929",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 500,
         messages: [{
           role: "user",
@@ -90,6 +90,14 @@ Si no puedes leer algo, pon null. Montos en COP.`;
     });
 
     const data = await r.json();
+
+    // Si la API respondió con error (PDF no soportado, tamaño, etc.), propagarlo
+    // en vez de tragárselo — antes el frontend siempre decía "no se pudo leer".
+    if (!r.ok || data.type === "error") {
+      const apiMsg = data?.error?.message || `API status ${r.status}`;
+      return { statusCode: 200, headers, body: JSON.stringify({ success: false, error: apiMsg }) };
+    }
+
     const text = (data.content || []).map(c => c.text || "").join("");
     const clean = text.replace(/```json|```/g, "").trim();
 
@@ -97,7 +105,7 @@ Si no puedes leer algo, pon null. Montos en COP.`;
       const parsed = JSON.parse(clean);
       return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: parsed }) };
     } catch {
-      return { statusCode: 200, headers, body: JSON.stringify({ success: false, raw: text, error: "No se pudo interpretar la imagen" }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ success: false, raw: text, error: "No se pudo interpretar el documento" }) };
     }
   } catch (err) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
