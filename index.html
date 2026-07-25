@@ -261,6 +261,24 @@
            signup_modal_opened · signup_completed
            checkout_started · checkout_completed
          ───────────────────────────────────────────────────────────────── -->
+    <!-- ─────────────────────────────────────────────────────────────────
+         Meta Pixel (Instagram/Facebook Ads) · instalado 25-jul-2026
+         Dataset "finpathia" ID 1637963763961269.
+         Sin esto, Meta solo podía optimizar por clics baratos: no sabía
+         quién se registraba, así que no podía buscar gente parecida a los
+         usuarios reales, ni permitía retargeting ni costo por registro.
+         Eventos custom desde la app (src/lib/analytics.js):
+           CompleteRegistration (signup) · InitiateCheckout (upgrade)
+         ───────────────────────────────────────────────────────────────── -->
+    <script>
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+      document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '1637963763961269');
+      fbq('track', 'PageView');
+    </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-51CV6PWRLT"></script>
     <script>
       window.dataLayer = window.dataLayer || [];

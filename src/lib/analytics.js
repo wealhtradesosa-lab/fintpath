@@ -132,6 +132,15 @@ export function trackSignup({ method = "email", userId } = {}) {
     campaign: promoCode === "PIONEROS2026" ? "pioneros_2026" : undefined,
   });
 
+  // Meta Pixel (25-jul-2026): este es EL evento por el que Meta debe optimizar
+  // la pauta de Instagram. Sin él solo puede buscar clics baratos.
+  if (typeof window !== "undefined" && window.fbq) {
+    window.fbq("track", "CompleteRegistration", {
+      content_name: promoCode ? "signup_promo" : "signup",
+      status: true,
+    });
+  }
+
   if (userId) identifyUser(userId);
 }
 
@@ -150,6 +159,15 @@ export function trackCheckoutStarted({ plan, billingCycle, priceId } = {}) {
     with_promo: !!promoCode,
     promo_code: promoCode || undefined,
   });
+
+  // Meta Pixel: permite medir cuántos de los registrados llegan a intentar pagar.
+  if (typeof window !== "undefined" && window.fbq) {
+    window.fbq("track", "InitiateCheckout", {
+      content_name: plan || "unknown",
+      currency: "USD",
+      value: billingCycle === "anual" ? 243 : 27,
+    });
+  }
 }
 
 /**
