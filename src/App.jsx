@@ -38,6 +38,7 @@ import PensionColombia from "./components/PensionColombia";
 import SimuladorAvanzado from "./components/SimuladorAvanzado";
 import AdminMetrics from "./components/AdminMetrics";
 import HallazgosProactivos from "./components/HallazgosProactivos";
+import TreemapPatrimonio from "./components/TreemapPatrimonio";
 import { generarHallazgos } from "./lib/hallazgos.js";
 import { generarRecomendaciones } from "./lib/recomendaciones.js";
 import DashboardUS from "./components/DashboardUS";
@@ -1971,26 +1972,19 @@ export default function FinPath(){
         </Cd>:null})()}
         {/* Patrimonio Distribution */}
         <Cd s={{padding:20}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Distribución Patrimonial</div>
-          {pie.length>0?<div style={{display:"flex",gap:16,alignItems:"center"}}>
-            <div style={{width:140,height:140,flexShrink:0}}>
-              <ResponsiveContainer width="100%" height={140}>
-                <PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={32} outerRadius={60} paddingAngle={3} stroke="none">{pie.map((_,i)=><Cell key={i} fill={CHART.series[i%CHART.series.length]}/>)}</Pie></PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div style={{flex:1,fontSize:11}}>
-              {pie.map((p,i)=><div key={p.name} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid "+T.border}}>
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <div style={{width:8,height:8,borderRadius:2,background:T.ch[i%T.ch.length],flexShrink:0}}/>
-                  <span style={{color:T.tx2}}>{p.name}</span>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontWeight:600,fontFamily:"monospace"}}>{fm(p.value)}</span>
-                  <span style={{color:T.tx3,fontSize:10,minWidth:30,textAlign:"right"}}>{totalPat>0?(p.value/totalPat*100).toFixed(0)+"%":"—"}</span>
-                </div>
-              </div>)}
-            </div>
-          </div>:<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>Agrega activos en Patrimonio</div>}
+          {/* Treemap (25-jul-2026). Antes: dona de 140px con leyenda de nueve
+              líneas. Para saber que el 68% está en Real Estate había que LEER
+              y comparar cifras — la concentración, que es EL dato de una
+              distribución patrimonial, quedaba escondida en una tabla.
+              Acá el bloque grande es grande porque hay más plata: mismo
+              principio que hace funcionar al Sankey, la geometría carga el
+              significado. Ninguna cifra se pierde: van dentro del bloque o en
+              la leyenda de lo que no cupo, y el tooltip da el detalle. */}
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:6}}>Distribución Patrimonial</div>
+          <div style={{fontSize:11,color:T.tx3,marginBottom:12}}>El tamaño de cada bloque es la plata que tenés ahí</div>
+          {pie.length>0
+            ?<TreemapPatrimonio datos={pie} total={totalPat} fmt={fm} T={T} altura={mb?300:260}/>
+            :<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>Agrega inversiones</div>}
         </Cd>
         {/* Top Ingresos */}
         <Cd s={{padding:0}}>
