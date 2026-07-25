@@ -1313,10 +1313,33 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                     return (
                       <span key={i}>
                         {i > 0 && " · "}
+                        {/* 25-jul-2026 (Santiago: "¿esto sí es un comentario
+                            acertado? que me considere en julio pensión de Ana
+                            cuando ni siquiera aplica"). El cálculo estaba bien
+                            —la pensión vale $0 en julio y por eso el mes rinde
+                            $3,4M más que el promedio— pero la redacción lo
+                            hacía parecer un cobro: se leía
+                            "PENSION ANA $0 +$3.447.094".
+                            Mostrar "$0" al lado de un "+" invita a leerlo como
+                            suma. Cuando el monto del mes es cero, ahora se dice
+                            explícitamente que no se paga y el número aparece
+                            como ahorro contra el promedio. */}
                         <strong>{i + 1}.</strong> {d.nombre}{" "}
-                        <span style={{ fontFamily: "monospace", opacity: 0.8 }}>{fm(d.monto)}</span>{" "}
-                        <span style={{ color: c, fontWeight: 800, fontFamily: "monospace" }}>{d.efecto > 0 ? "+" : ""}{fm(d.efecto)}</span>
-                        <span style={{ color: c, opacity: 0.85 }}>{sufijo(d)}</span>
+                        {d.monto !== 0 && (
+                          <span style={{ fontFamily: "monospace", opacity: 0.8 }}>{fm(d.monto)}{" "}</span>
+                        )}
+                        {d.monto === 0 && d.tipo === "gasto" ? (
+                          <>
+                            <span style={{ color: c, opacity: 0.85 }}>no se paga este mes: </span>
+                            <span style={{ color: c, fontWeight: 800, fontFamily: "monospace" }}>{fm(Math.abs(d.efecto))}</span>
+                            <span style={{ color: c, opacity: 0.85 }}> menos que un mes promedio</span>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ color: c, fontWeight: 800, fontFamily: "monospace" }}>{d.efecto > 0 ? "+" : ""}{fm(d.efecto)}</span>
+                            <span style={{ color: c, opacity: 0.85 }}>{sufijo(d)}</span>
+                          </>
+                        )}
                       </span>
                     );
                   })}
