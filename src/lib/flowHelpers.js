@@ -212,20 +212,16 @@ export function totalAnualItem(item) {
   // es plata que salió/entró este año (contable). Solo el promedio
   // PROSPECTIVO (montoPromedioMensual) excluye pagados.
   if (freq === "variable") {
-    // Suma reales + proyección en meses futuros vacíos, dentro de vigencia
+    // 25-jul-2026: suma SOLO lo cargado dentro de la vigencia. Antes sumaba
+    // además una proyección en los meses futuros vacíos, igual que montoDelMes.
+    // Si se quitaba allá y no acá, el total anual dejaba de cuadrar con la suma
+    // de los meses — dos cifras distintas para lo mismo.
     const montos = getMontosMensuales(item);
     const { desde, hasta } = getRangoMeses(item);
-    const montosEnVigencia = montos.filter((_, idx) => {
-      const m = idx + 1;
-      return m >= desde && m <= hasta;
-    });
-    const promProyeccion = promedioMesesReales(montosEnVigencia);
     return montos.reduce((s, valor, idx) => {
       const mes = idx + 1;
-      if (mes < desde || mes > hasta) return s; // fuera de vigencia
-      if (valor > 0) return s + valor;
-      if (esMesFuturo(añoActual, mes)) return s + promProyeccion;
-      return s;
+      if (mes < desde || mes > hasta) return s;
+      return s + (valor || 0);
     }, 0);
   }
   const monto = Number(item.mensual ?? item.m ?? 0) || 0;
@@ -287,26 +283,24 @@ export function montoPromedioMensual(item) {
 export function montoDelMes(item, año, mes) {
   const freq = getFrecuencia(item);
 
-  // Variable: retornar valor del mes correspondiente.
-  // Respeta vigencia limitada (18-jul-2026 noche): si el mes está fuera
-  // del rango [desdeMes, hastaMes], no aporta nada.
-  // Si el mes es FUTURO y está EN vigencia, proyectar con promedio.
+  // Variable: vale EXACTAMENTE lo cargado en ese mes. Fuera de la vigencia
+  // [desdeMes, hastaMes], nada.
+  //
+  // 25-jul-2026 — se ELIMINA la proyección de meses futuros vacíos.
+  // Antes, un mes futuro sin monto devolvía el promedio de los meses
+  // cargados: si alguien registraba $5M en febrero y $5M en agosto, el motor
+  // inventaba $5M en sep, oct, nov y dic. Problemas:
+  //   · escribía plata que el usuario nunca cargó, sin avisar ni marcarla
+  //   · inflaba el flujo de caja FUTURO — el error va hacia el lado peligroso
+  //   · contradecía la regla del producto: ningún valor sin respaldo en el dato
+  // Quien quiera proyectar comisiones variables puede cargar el estimado en
+  // esos meses: ahí el número es suyo, consciente y editable. La app avisa
+  // cuántos meses quedaron vacíos (ver mesesVaciosFuturos).
   if (freq === "variable") {
     const { desde, hasta } = getRangoMeses(item);
-    // Fuera del rango de vigencia: nada
     if (mes < desde || mes > hasta) return 0;
     const montos = getMontosMensuales(item);
-    const valor = montos[mes - 1] || 0;
-    if (valor > 0) return valor;
-    if (esMesFuturo(año, mes)) {
-      // Proyección solo con meses en vigencia
-      const montosEnVigencia = montos.filter((_, idx) => {
-        const m = idx + 1;
-        return m >= desde && m <= hasta;
-      });
-      return promedioMesesReales(montosEnVigencia);
-    }
-    return 0;
+    return montos[mes - 1] || 0;
   }
 
   const monto = getMonto(item);
@@ -537,4 +531,22 @@ export function promedioMesActivo(item) {
     if (v > 0 || esMesFuturo(año, mes)) n++;
   });
   return n > 0 ? totalAnualItem(item) / n : 0;
+}
+
+
+// Meses FUTUROS dentro de la vigencia que quedaron sin monto en un item
+// variable. Se usa para avisar al usuario: esos meses van como $0 en las
+// proyecciones (antes se rellenaban solos con un promedio inventado).
+export function mesesVaciosFuturos(item) {
+  if (getFrecuencia(item) !== "variable") return 0;
+  const { desde, hasta } = getRangoMeses(item);
+  const montos = getMontosMensuales(item);
+  const { año } = getMesActual();
+  let n = 0;
+  montos.forEach((v, idx) => {
+    const mes = idx + 1;
+    if (mes < desde || mes > hasta) return;
+    if ((v || 0) === 0 && esMesFuturo(año, mes)) n++;
+  });
+  return n;
 }

@@ -6,7 +6,7 @@ import { exportIngresosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
-import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo } from "../lib/flowHelpers.js";
+import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { obtenerInfoRetencion } from "../lib/retencionesTax.js";
@@ -757,10 +757,19 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         const badge = labelVigenciaBadge(item);
                         if (!badge) return null;
                         const total = totalAnualItem(item);
+                        const vacios = mesesVaciosFuturos(item);
                         const totalCop = item.moneda === "USD" ? total * (trm || 4200) : total;
                         return (
                           <div style={{ fontSize: 9, color: T.txt3, fontWeight: 500, marginTop: 2 }}>
                             {fm(totalCop)}/año
+                            {/* 25-jul-2026: antes el motor rellenaba solo los meses
+                                futuros vacíos con un promedio inventado. Ahora van
+                                en $0 — y se avisa, para que sea decisión y no sorpresa. */}
+                            {vacios > 0 && (
+                              <div style={{ color: "#eab308", marginTop: 1 }}>
+                                ⚠ {vacios} {vacios === 1 ? "mes sin monto va" : "meses sin monto van"} en $0
+                              </div>
+                            )}
                           </div>
                         );
                       })()}
