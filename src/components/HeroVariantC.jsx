@@ -238,15 +238,20 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
           opacity: mounted ? 1 : 0,
           color: T.txt,
         }}>
-          Inteligencia<br />
-          patrimonial<br />
+          {/* 25-jul-2026 — Texto de Santiago, alineado con el manifiesto.
+              El titular anterior ("Inteligencia patrimonial para tu familia")
+              describía el SISTEMA. Este nombra a quién le importa: patrimonio,
+              familia y futuro. El degradado queda en "Tu futuro", que es la
+              promesa, no la característica. */}
+          Tu patrimonio.<br />
+          Tu familia.<br />
           <span style={{
             background: `linear-gradient(135deg, ${T.green} 0%, ${T.blue} 100%)`,
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
           }}>
-            para tu familia.
+            Tu futuro.
           </span>
         </h1>
 
@@ -267,7 +272,7 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
             margin: 0,
             fontWeight: 400,
           }}>
-            Centraliza patrimonio, impuestos y proyecciones en un solo sistema. Recibe estrategias personalizadas como las de un family office — analizadas por IA experta en finanzas personales.
+            El Family Office con IA que centraliza toda tu información financiera para ayudarte a tomar mejores decisiones, proteger tu patrimonio y construir el bienestar financiero de tu familia.
           </p>
 
           <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
