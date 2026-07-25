@@ -1613,6 +1613,17 @@ export default function FinPath(){
   if(typeof document!=="undefined")document.title="FINPATHIA"+(secNames[pg]?" — "+secNames[pg]:"");
   const rp=()=>{if(!u)return null;switch(pg){
     case"dash":{
+    // Encabezado de sección (25-jul-2026). La jerarquía existía solo como
+    // comentarios en el código: el usuario bajaba por diez bloques sin
+    // señalización y todo pesaba igual. Esto la vuelve visible sin quitar
+    // un solo gráfico ni indicador — que era la condición de Santiago.
+    const SecH=({n,t,s})=><div style={{display:"flex",alignItems:"baseline",gap:10,margin:"26px 0 14px",paddingBottom:10,borderBottom:"1px solid "+T.border}}>
+      <span style={{fontSize:11,fontWeight:800,color:T.gn,fontFamily:"monospace",letterSpacing:1}}>{String(n).padStart(2,"0")}</span>
+      <div style={{minWidth:0}}>
+        <div style={{fontSize:15,fontWeight:800,color:T.tx,letterSpacing:"-0.01em"}}>{t}</div>
+        <div style={{fontSize:11,color:T.tx3,marginTop:1}}>{s}</div>
+      </div>
+    </div>;
     if(isUS) return <DashboardUS u={u} t={t} ib={ib} pen={pen} setPg={setPg} generatePDF={generatePDF} mb={mb}/>;
     // Data prep
     const fd=[{name:"Ingresos",a:t.ti},{name:"Gastos",a:-(t.gfm+t.tg)},{name:"Deudas",a:-t.tc},{name:"Neto",a:t.cf}];
@@ -1779,6 +1790,7 @@ export default function FinPath(){
       </div>;
       })()}
 
+      <SecH n={1} t="¿Dónde estoy?" s="Tu patrimonio hoy y qué dice tu family office"/>
       {/* ══════════ 1 · ¿DÓNDE ESTOY? ══════════
           Patrimonio neto y salud financiera. El número que resume todo. */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14,marginBottom:14}}>
@@ -1906,6 +1918,7 @@ export default function FinPath(){
       })()}
 
 
+      <SecH n={2} t="¿Cómo se mueve tu plata?" s="Lo que entra, lo que sale y lo que queda cada mes"/>
       {/* ══════════ 2 · ¿CÓMO SE MUEVE MI PLATA? ══════════
           Indicadores de flujo: entra, sale, queda. */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:14}}>
@@ -2012,6 +2025,7 @@ export default function FinPath(){
         </Cd>
       </div>
 
+      <SecH n={3} t="¿En qué está tu patrimonio?" s="Composición, liquidez real y evolución"/>
       {/* ══════════ 3 · ¿EN QUÉ ESTÁ MI PATRIMONIO? ══════════
           Composición: en qué está puesta la plata. */}
       {(() => {
@@ -2562,6 +2576,7 @@ export default function FinPath(){
         </Cd>;
       })()}
 
+      <SecH n={4} t="¿Hacia dónde vas?" s="Proyección, independencia financiera y alertas"/>
       {/* ══════════ 4 · ¿HACIA DÓNDE VOY? ══════════
           Proyección e independencia financiera. */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14}}>
