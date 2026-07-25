@@ -99,15 +99,23 @@ exports.handler = async (event) => {
       if (ra.ok) {
         const cuentas = await ra.json();
         cuentasLeidas = true;
-        pagos = cuentas.filter((a) => a && a.stripe_customer_id).length;
-        // Diagnóstico (25-jul-2026): si la columna no se llama así, "pagos"
-        // daría 0 aunque haya cobros reales. Exponemos las columnas y los
-        // planes presentes para poder auditarlo sin adivinar.
+        // 25-jul-2026 — 2ª corrección. La 1ª contaba stripe_customer_id, una
+        // columna que NO EXISTE en accounts (verificado: id, owner_user_id,
+        // plan, max_members, display_name, created_at, updated_at,
+        // managed_by_advisor_id, managed_tier, managed_at, subscription_status,
+        // grace_until). Daba 0 pasara lo que pasara.
+        // La verdad la marca el webhook en subscription_status: "active" o
+        // "trialing" = suscripción viva en Stripe. plan solo dice qué tiene
+        // asignado, y puede ponerse a mano (el caso de la cuenta de Santiago).
+        const vivas = cuentas.filter((a) => a && ["active", "trialing"].includes(a.subscription_status));
+        pagos = vivas.filter((a) => a.subscription_status === "active").length;
+        const enTrialStripe = vivas.filter((a) => a.subscription_status === "trialing").length;
+        const cuenta = (arr, campo) => arr.reduce((o, a) => { const k = a?.[campo] || "(sin dato)"; o[k] = (o[k] || 0) + 1; return o; }, {});
         diag = {
-          columnas: cuentas.length ? Object.keys(cuentas[0]) : [],
           filas: cuentas.length,
-          planes: [...new Set(cuentas.map((a) => a && a.plan).filter(Boolean))],
-          conStripeId: pagos,
+          porPlan: cuenta(cuentas, "plan"),
+          porEstadoSuscripcion: cuenta(cuentas, "subscription_status"),
+          enTrialStripe,
         };
       }
     } catch { /* si la tabla no existe o cambia, pagos queda en 0 y se avisa */ }
