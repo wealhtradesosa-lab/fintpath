@@ -101,6 +101,34 @@ export default function LandingPage({ onGetStarted }) {
         </div>
       </Section>
 
+      {/* ─── PROPÓSITO ───
+           25-jul-2026. Texto de Santiago. Va después de "Los 5 Niveles" (qué
+           hace el producto) y antes de privacidad (por qué confiar): primero
+           se muestra el qué, después el para qué, y recién ahí se pide
+           confianza. Sin métricas ni botón — es la única sección de la página
+           que no pide nada, y esa contención es parte del mensaje. */}
+      <Section style={{ padding: "80px 24px" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: T.gn, marginBottom: 14 }}>
+            Nuestro propósito
+          </div>
+          <h2 style={{ fontSize: "clamp(24px, 5vw, 34px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.25, marginBottom: 22 }}>
+            El bienestar financiero es un derecho,<br style={{ display: "block" }} /> no un privilegio
+          </h2>
+          <p style={{ fontSize: 16, lineHeight: 1.75, color: T.txt2, margin: "0 0 18px" }}>
+            Nuestra misión es poner al alcance de cada persona y cada familia la claridad,
+            el conocimiento y las herramientas necesarias para tomar mejores decisiones,
+            proteger su patrimonio y construir un futuro con tranquilidad.
+          </p>
+          <p style={{ fontSize: 16, lineHeight: 1.75, color: T.txt2, margin: 0 }}>
+            Actuamos con transparencia, independencia y un compromiso genuino de acompañar
+            a quienes confían en nosotros, porque entendemos que detrás de cada patrimonio
+            hay sueños, esfuerzo y una familia que merece prosperar.
+          </p>
+          <div style={{ width: 48, height: 3, background: T.gn, borderRadius: 99, margin: "30px auto 0", opacity: 0.65 }} />
+        </div>
+      </Section>
+
       {/* ─── TRUST ─── */}
       <Section style={{ padding: "80px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
