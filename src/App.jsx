@@ -1779,7 +1779,8 @@ export default function FinPath(){
       </div>;
       })()}
 
-      {/* ═══ ROW 1: Net Worth Hero + Health Score ═══ */}
+      {/* ══════════ 1 · ¿DÓNDE ESTOY? ══════════
+          Patrimonio neto y salud financiera. El número que resume todo. */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14,marginBottom:14}}>
         <div style={{
           background:"rgba(255,255,255,0.02)",
@@ -1836,7 +1837,7 @@ export default function FinPath(){
           el número, después la lectura del número. Antes iba sobre el
           patrimonio y el usuario leía conclusiones antes de ver el dato del
           que salen. */}
-      {/* ═══ ROW 1b: Wealth Percentile ═══ */}
+      {/* Posición en riqueza: le da escala al número anterior. */}
       {(() => {
         const nwUSD = trm > 0 ? t.nw / trm : t.nw / 4200;
         // Colombia thresholds (Credit Suisse/UBS 2024, adjusted)
@@ -1905,7 +1906,8 @@ export default function FinPath(){
       })()}
 
 
-      {/* ═══ ROW 2: 4 KPI Cards ═══ */}
+      {/* ══════════ 2 · ¿CÓMO SE MUEVE MI PLATA? ══════════
+          Indicadores de flujo: entra, sale, queda. */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:14}}>
         {[
           {l:"Ingresos/mes",v:fm(t.ti),c:T.gn,i:"💰"},
@@ -1916,7 +1918,7 @@ export default function FinPath(){
         ].map(k=><Cd key={k.l} s={{padding:"18px 20px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:10,color:T.tx3,textTransform:"uppercase",fontWeight:600,letterSpacing:1}}>{k.l}</div><div style={{fontSize:22,fontWeight:700,color:k.c,marginTop:6}}>{k.v}</div></div><div style={{fontSize:22}}>{k.i}</div></div></Cd>)}
       </div>
 
-      {/* ═══ ROW 3: Charts ═══ */}
+      {/* Flujo de caja mes a mes. */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginBottom:14}}>
         {/* Cash Flow Waterfall */}
         <Cd s={{padding:20}}>
@@ -1968,7 +1970,7 @@ export default function FinPath(){
         </Cd>
       </div>
 
-      {/* ═══ ROW 4: Income + Expenses breakdown ═══ */}
+      {/* De dónde entra y a dónde se va. */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginBottom:14,alignItems:"start"}}>
         {/* Top Ingresos */}
         <Cd s={{padding:0}}>
@@ -2003,37 +2005,8 @@ export default function FinPath(){
         </Cd>
       </div>
 
-      {/* ═══ ROW 5: Projection + Independence Meter ═══ */}
-      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14}}>
-        <Cd s={{padding:20}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Proyección Patrimonial (8% anual)</div>
-          <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={pj}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="yr" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/><Area type="monotone" dataKey="v" stroke={CHART.green} strokeWidth={2.5} fill="url(#gradGreen)"/></AreaChart>
-          </ResponsiveContainer>
-        </Cd>
-        {/* Independence Progress */}
-        <Cd s={{padding:"24px",display:"flex",flexDirection:"column",justifyContent:"center"}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>Independencia Financiera</div>
-          <div style={{position:"relative",height:14,background:T.bg3,borderRadius:7,overflow:"hidden",marginBottom:8}}>
-            <div style={{height:"100%",width:Math.min(t.ind,150)+"%",maxWidth:"100%",background:t.ind>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#ef4444,#eab308)",borderRadius:7,transition:"width 0.5s"}}/>
-          </div>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.tx3}}>
-            <span>0%</span><span style={{color:t.ind>=100?T.gn:T.tx2,fontWeight:700}}>{pc(t.ind)}</span><span>100%</span>
-          </div>
-          <div style={{marginTop:16,fontSize:12,color:T.tx2,lineHeight:1.6}}>
-            {t.ind>=100
-              ?<span style={{color:T.gn}}>🏆 ¡Tus ingresos cubren todos tus gastos y deudas!</span>
-              :t.ind>=60
-                ?<span>📈 Te falta {fm(t.te-t.ni)}/mes para cubrir todos tus gastos.</span>
-                :<span style={{color:T.rd}}>⚠ Tus gastos superan tus ingresos en {fm(t.te-t.ni)}/mes.</span>
-            }
-          </div>
-          {t.ind<100&&t.cf!==0&&<div style={{marginTop:8,fontSize:11,color:T.tx3}}>
-            Meta: necesitas {fm(t.te)}/mes de ingresos para ser independiente.
-          </div>}
-        </Cd>
-      </div>
-      {/* ═══ ROW 6: Family Office KPIs ═══ */}
+      {/* ══════════ 3 · ¿EN QUÉ ESTÁ MI PATRIMONIO? ══════════
+          Composición: en qué está puesta la plata. */}
       {(() => {
         const nwUSD = trm > 0 ? t.nw / trm : t.nw / 4200;
         // Liquid assets (cash + investments, not real estate)
@@ -2469,26 +2442,7 @@ export default function FinPath(){
             </div>
           </Cd>
 
-      {/* ═══ ROW 8b: Historial Patrimonio ═══ */}
-      {(()=>{
-        const snaps=JSON.parse(localStorage.getItem("fp3_snapshots")||"[]");
-        if(snaps.length<2)return null;
-        const sorted=snaps.sort((a,b)=>a.k.localeCompare(b.k));
-        const last=sorted[sorted.length-1];
-        const prev=sorted[sorted.length-2];
-        const change=last.nw-prev.nw;
-        const months=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-        const maxVal=Math.max(...sorted.map(s=>s.nw));
-        const minVal=Math.min(...sorted.map(s=>s.nw));
-        const range=maxVal-minVal||1;
-        return<Cd s={{padding:20,marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div><div style={{fontSize:13,fontWeight:700,color:T.bl}}>📈 Historial Patrimonio Neto</div><div style={{fontSize:11,color:T.tx3}}>{sorted.length} meses registrados</div></div><div style={{textAlign:"right"}}><div style={{fontSize:11,color:T.tx3}}>Último mes</div><div style={{fontSize:14,fontWeight:700,color:change>=0?T.gn:T.rd}}>{change>=0?"+":""}{fm(change)}</div></div></div>
-          <div style={{display:"flex",alignItems:"flex-end",gap:3,height:100}}>
-            {sorted.map((s,i)=>{const h=((s.nw-minVal)/range)*80+20;const m=parseInt(s.k.split("-")[1])-1;return<div key={s.k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}} title={months[m]+" "+s.k.split("-")[0]+": "+fm(s.nw)}><div style={{width:"100%",height:h,background:s.nw>=0?"linear-gradient(to top,"+T.gn+"40,"+T.gn+")":"linear-gradient(to top,"+T.rd+"40,"+T.rd+")",borderRadius:"4px 4px 0 0",minHeight:4,transition:"height 0.3s"}}/><div style={{fontSize:8,color:T.tx3}}>{months[m]}</div></div>})}
-          </div>
-        </Cd>;
-      })()}
-
-      {/* ═══ ROW 9: Liquidez Real + Costo de Vida ═══ */}
+      {/* Cuánto de eso es realmente disponible. */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginTop:14,alignItems:"start"}}>
         {/* LIQUIDEZ REAL */}
         <Cd s={{padding:20}}>
@@ -2582,7 +2536,58 @@ export default function FinPath(){
         </Cd>
       </div>
 
-      {/* ═══ ROW 10: Alertas Inteligentes ═══ */}
+      {/* Cómo evolucionó en el tiempo. */}
+      {(()=>{
+        const snaps=JSON.parse(localStorage.getItem("fp3_snapshots")||"[]");
+        if(snaps.length<2)return null;
+        const sorted=snaps.sort((a,b)=>a.k.localeCompare(b.k));
+        const last=sorted[sorted.length-1];
+        const prev=sorted[sorted.length-2];
+        const change=last.nw-prev.nw;
+        const months=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+        const maxVal=Math.max(...sorted.map(s=>s.nw));
+        const minVal=Math.min(...sorted.map(s=>s.nw));
+        const range=maxVal-minVal||1;
+        return<Cd s={{padding:20,marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div><div style={{fontSize:13,fontWeight:700,color:T.bl}}>📈 Historial Patrimonio Neto</div><div style={{fontSize:11,color:T.tx3}}>{sorted.length} meses registrados</div></div><div style={{textAlign:"right"}}><div style={{fontSize:11,color:T.tx3}}>Último mes</div><div style={{fontSize:14,fontWeight:700,color:change>=0?T.gn:T.rd}}>{change>=0?"+":""}{fm(change)}</div></div></div>
+          <div style={{display:"flex",alignItems:"flex-end",gap:3,height:100}}>
+            {sorted.map((s,i)=>{const h=((s.nw-minVal)/range)*80+20;const m=parseInt(s.k.split("-")[1])-1;return<div key={s.k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}} title={months[m]+" "+s.k.split("-")[0]+": "+fm(s.nw)}><div style={{width:"100%",height:h,background:s.nw>=0?"linear-gradient(to top,"+T.gn+"40,"+T.gn+")":"linear-gradient(to top,"+T.rd+"40,"+T.rd+")",borderRadius:"4px 4px 0 0",minHeight:4,transition:"height 0.3s"}}/><div style={{fontSize:8,color:T.tx3}}>{months[m]}</div></div>})}
+          </div>
+        </Cd>;
+      })()}
+
+      {/* ══════════ 4 · ¿HACIA DÓNDE VOY? ══════════
+          Proyección e independencia financiera. */}
+      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14}}>
+        <Cd s={{padding:20}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Proyección Patrimonial (8% anual)</div>
+          <ResponsiveContainer width="100%" height={180}>
+            <AreaChart data={pj}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="yr" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/><Area type="monotone" dataKey="v" stroke={CHART.green} strokeWidth={2.5} fill="url(#gradGreen)"/></AreaChart>
+          </ResponsiveContainer>
+        </Cd>
+        {/* Independence Progress */}
+        <Cd s={{padding:"24px",display:"flex",flexDirection:"column",justifyContent:"center"}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>Independencia Financiera</div>
+          <div style={{position:"relative",height:14,background:T.bg3,borderRadius:7,overflow:"hidden",marginBottom:8}}>
+            <div style={{height:"100%",width:Math.min(t.ind,150)+"%",maxWidth:"100%",background:t.ind>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#ef4444,#eab308)",borderRadius:7,transition:"width 0.5s"}}/>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.tx3}}>
+            <span>0%</span><span style={{color:t.ind>=100?T.gn:T.tx2,fontWeight:700}}>{pc(t.ind)}</span><span>100%</span>
+          </div>
+          <div style={{marginTop:16,fontSize:12,color:T.tx2,lineHeight:1.6}}>
+            {t.ind>=100
+              ?<span style={{color:T.gn}}>🏆 ¡Tus ingresos cubren todos tus gastos y deudas!</span>
+              :t.ind>=60
+                ?<span>📈 Te falta {fm(t.te-t.ni)}/mes para cubrir todos tus gastos.</span>
+                :<span style={{color:T.rd}}>⚠ Tus gastos superan tus ingresos en {fm(t.te-t.ni)}/mes.</span>
+            }
+          </div>
+          {t.ind<100&&t.cf!==0&&<div style={{marginTop:8,fontSize:11,color:T.tx3}}>
+            Meta: necesitas {fm(t.te)}/mes de ingresos para ser independiente.
+          </div>}
+        </Cd>
+      </div>
+      {/* Alertas de detalle. Cierra la página: son avisos puntuales, no el
+          diagnóstico principal — ese lo da el bloque del family office arriba. */}
       <Cd s={{padding:20,marginTop:14,background:"linear-gradient(135deg,rgba(239,68,68,0.03),rgba(234,179,8,0.02))"}}>
         <div style={{fontSize:13,fontWeight:700,color:"#eab308",marginBottom:12}}>🔔 Alertas del Asesor — Rebalanceo y Optimización</div>
         {(() => {
