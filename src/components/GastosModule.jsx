@@ -976,6 +976,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         ? Math.round((+form.m || 0) / factorDeFrecuencia(form.frecuencia))
                         : form.m
                       }
+                      montosMensuales={form.montosMensuales}
                       tokens={T}
                       mostrarChipsFrecuencia={mostrarCampo("frecuencia")}
                       mostrarSelectorMes={mostrarCampo("mesPago") || mostrarCampo("frecuencia")}

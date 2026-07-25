@@ -1035,6 +1035,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   vigenciaModo={form.vigenciaModo}
                   onChange={(patch) => setForm(p => ({ ...p, ...patch }))}
                   monto={form.mensual}
+                  montosMensuales={form.montosMensuales}
                   tokens={T}
                   // Solo mostrar chips de frecuencia en modo AVANZADO
                   mostrarChipsFrecuencia={mostrarCampo("frecuencia")}

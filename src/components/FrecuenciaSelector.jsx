@@ -35,6 +35,48 @@ export function labelMontoSegunFrecuencia(frecuencia) {
   }
 }
 
+/**
+ * Al cambiar el TIPO de frecuencia, mover los datos para que el ingreso siga
+ * valiendo lo mismo. Antes solo cambiaba la etiqueta: los datos quedaban donde
+ * estaban y el monto se perdía en silencio.
+ *
+ * Reportado por Santiago (25-jul-2026): "o que si uno lo cambia, se cambie".
+ * Es el origen del "$3.3M fantasma" de su K Orlando — un item.mensual viejo que
+ * sobrevivió al pasar a variable. Y desde que se quitó la proyección de meses
+ * futuros, pasar de mensual a variable hacía DESAPARECER el ingreso (todos los
+ * meses en $0).
+ *
+ *   mensual → variable : precarga cada mes de la vigencia con el monto fijo.
+ *   variable → mensual : usa el promedio de los meses cargados.
+ */
+export function migrarAlCambiar(nuevaFreq, { frecuencia, monto, montosMensuales, desdeMes = 1, hastaMes = 12 }) {
+  const patch = { frecuencia: nuevaFreq };
+  if (nuevaFreq === frecuencia) return patch;
+
+  const m = Number(monto) || 0;
+
+  if (nuevaFreq === "variable" && frecuencia !== "variable") {
+    const yaHay = Array.isArray(montosMensuales) && montosMensuales.some(v => (Number(v) || 0) > 0);
+    if (!yaHay && m > 0) {
+      patch.montosMensuales = Array.from({ length: 12 }, (_, i) => {
+        const mes = i + 1;
+        return (mes >= desdeMes && mes <= hastaMes) ? m : 0;
+      });
+    }
+    return patch;
+  }
+
+  if (frecuencia === "variable" && nuevaFreq !== "variable") {
+    const cargados = (montosMensuales || []).filter(v => (Number(v) || 0) > 0).map(Number);
+    if (cargados.length > 0 && m === 0) {
+      patch.mensual = Math.round(cargados.reduce((s, v) => s + v, 0) / cargados.length);
+    }
+    return patch;
+  }
+
+  return patch;
+}
+
 export default function FrecuenciaSelector({
   frecuencia = "mensual",
   mesPago = 1,
@@ -44,6 +86,8 @@ export default function FrecuenciaSelector({
   // Fase 4 flujo anual (18-jul-2026): rango de vigencia solo para mensuales
   desdeMes = 1,
   hastaMes = 12,
+  // 25-jul-2026: necesarios para MIGRAR los datos al cambiar de tipo.
+  montosMensuales = null,
   // UX iter 3 (18-jul-2026 noche): props que ocultan bloques redundantes.
   // Cuando el user ya eligió un template simple, los chips de frecuencia son
   // redundantes. Estos props permiten que el padre controle qué mostrar.
@@ -112,7 +156,7 @@ export default function FrecuenciaSelector({
                 <button
                   key={f.v}
                   type="button"
-                  onClick={() => onChange({ frecuencia: f.v })}
+                  onClick={() => onChange(migrarAlCambiar(f.v, { frecuencia, monto, montosMensuales, desdeMes, hastaMes }))}
                   style={{
                     background: active ? T.gn + "15" : T.bg3,
                     border: `1px solid ${active ? T.gn : T.border}`,
