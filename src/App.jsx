@@ -1919,7 +1919,18 @@ export default function FinPath(){
       </div>
 
       {/* Flujo de caja mes a mes. */}
-      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginBottom:14}}>
+      {/* Mampostería (25-jul-2026, Santiago: "si diagrama profesionalmente
+          estos espacios no quedan así"). Antes eran DOS grillas de 2 columnas
+          con 5 tarjetas de alturas muy distintas: la fila de gráficos tenía
+          TRES tarjetas, así que la tercera —Distribución Patrimonial— quedaba
+          sola ocupando medio ancho con el otro medio vacío. Y abajo, Ingresos
+          (5 líneas) contra Gastos (9) dejaba otro hueco.
+          Con columnas CSS las tarjetas fluyen y llenan el espacio: cero huecos.
+          El costo aceptado es el orden de lectura —baja por la columna
+          izquierda y sigue por la derecha—, irrelevante acá porque las cinco
+          tarjetas son pares entre sí. */}
+      <style>{`.fp-masonry > * { break-inside: avoid; page-break-inside: avoid; margin-bottom: 14px; display: block; }`}</style>
+      <div className="fp-masonry" style={{columnCount:mb?1:2,columnGap:14,marginBottom:14}}>
         {/* Cash Flow Waterfall */}
         <Cd s={{padding:20}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Flujo de Caja Mensual</div>
@@ -1968,10 +1979,6 @@ export default function FinPath(){
             </div>
           </div>:<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>Agrega activos en Patrimonio</div>}
         </Cd>
-      </div>
-
-      {/* De dónde entra y a dónde se va. */}
-      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginBottom:14,alignItems:"start"}}>
         {/* Top Ingresos */}
         <Cd s={{padding:0}}>
           <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+T.border}}>
