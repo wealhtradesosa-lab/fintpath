@@ -1836,31 +1836,6 @@ export default function FinPath(){
           el número, después la lectura del número. Antes iba sobre el
           patrimonio y el usuario leía conclusiones antes de ver el dato del
           que salen. */}
-      {/* ═══ EL ASESOR HABLA PRIMERO (25-jul-2026) ═══════════════════════════
-          Hasta hoy toda esta inteligencia existía pero vivía dentro de
-          secciones que había que ir a buscar. Acá aparece sin que la pidan,
-          ordenada por plata y con su respaldo. Si no hay nada que decir, el
-          componente no renderiza: el silencio es parte del diseño.
-          Envuelto en try/catch — un fallo del motor fiscal NO puede tumbar
-          el dashboard entero. */}
-      {(()=>{
-        try{
-          let recs=[];
-          try{ recs=generarRecomendaciones(u,estimarImpuesto(u))||[] }catch{ recs=[] }
-          const hs=generarHallazgos({
-            user:u,
-            recomendaciones:recs,
-            trm:u?.trm||4200,
-            patrimonioTotal:(t?.ab||0)+(ib?.tv||0),
-            totales:t,
-            descartados:hallazgosDescartados,
-            max:4,
-          });
-          return <HallazgosProactivos hallazgos={hs} T={T} onIr={(pg)=>setPg(pg)} onDescartar={descartarHallazgo}/>;
-        }catch(e){ return null }
-      })()}
-
-
       {/* ═══ ROW 1b: Wealth Percentile ═══ */}
       {(() => {
         const nwUSD = trm > 0 ? t.nw / trm : t.nw / 4200;
@@ -1904,6 +1879,31 @@ export default function FinPath(){
           </Cd>
         );
       })()}
+
+      {/* ═══ EL ASESOR HABLA PRIMERO (25-jul-2026) ═══════════════════════════
+          Hasta hoy toda esta inteligencia existía pero vivía dentro de
+          secciones que había que ir a buscar. Acá aparece sin que la pidan,
+          ordenada por plata y con su respaldo. Si no hay nada que decir, el
+          componente no renderiza: el silencio es parte del diseño.
+          Envuelto en try/catch — un fallo del motor fiscal NO puede tumbar
+          el dashboard entero. */}
+      {(()=>{
+        try{
+          let recs=[];
+          try{ recs=generarRecomendaciones(u,estimarImpuesto(u))||[] }catch{ recs=[] }
+          const hs=generarHallazgos({
+            user:u,
+            recomendaciones:recs,
+            trm:u?.trm||4200,
+            patrimonioTotal:(t?.ab||0)+(ib?.tv||0),
+            totales:t,
+            descartados:hallazgosDescartados,
+            max:4,
+          });
+          return <HallazgosProactivos hallazgos={hs} T={T} onIr={(pg)=>setPg(pg)} onDescartar={descartarHallazgo}/>;
+        }catch(e){ return null }
+      })()}
+
 
       {/* ═══ ROW 2: 4 KPI Cards ═══ */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:14}}>
