@@ -59,16 +59,33 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           const data = await res.json();
           if (data.success && data.data) {
             const d = data.data;
+            const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
+            const leido = { n: d.nombre || null, mt: num(d.saldo), pg: num(d.cuota), ts: num(d.tasa), tp: d.tipo || null };
             setForm(p => ({
               ...p,
-              n: d.nombre || p.n,
-              mt: d.saldo || p.mt,
-              pg: d.cuota || p.pg,
-              ts: d.tasa || p.ts,
-              tp: d.tipo || p.tp,
+              n: leido.n ?? p.n,
+              mt: leido.mt ?? p.mt,
+              pg: leido.pg ?? p.pg,
+              ts: leido.ts ?? p.ts,
+              tp: leido.tp ?? p.tp,
             }));
             setShowForm(true);
-            alert("✅ Documento leído" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.nombre || "") + ": Saldo $" + (d.saldo || 0).toLocaleString("es-CO") + " — Cuota $" + (d.cuota || 0).toLocaleString("es-CO"));
+            // Mostrar QUÉ se leyó y qué NO. Sin esto, los campos que la IA no
+            // pudo leer conservan el valor anterior y parece que los llenó el
+            // escaneo (reportado por Santiago: tasa vieja 40,6 que no estaba
+            // en el extracto).
+            const cop = (v) => "$" + Number(v).toLocaleString("es-CO");
+            const ok = [];
+            const falta = [];
+            leido.n  ? ok.push("Nombre: " + leido.n)        : falta.push("nombre");
+            leido.mt ? ok.push("Saldo: " + cop(leido.mt))   : falta.push("saldo");
+            leido.pg ? ok.push("Cuota: " + cop(leido.pg))   : falta.push("cuota");
+            leido.ts ? ok.push("Tasa: " + leido.ts + "% E.A.") : falta.push("tasa");
+            alert(
+              "✅ Documento leído" + (d.confianza === "alta" ? "" : " (confianza " + (d.confianza || "media") + " — revisá los datos)") +
+              "\n\n" + ok.join("\n") +
+              (falta.length ? "\n\n⚠️ No pude leer: " + falta.join(", ") + ".\nEsos campos conservan el valor que ya tenías — revisalos a mano." : "")
+            );
           } else {
             const det = data.error || data.errorMessage || "";
             const esTimeout = /timed out|timeout/i.test(det);
