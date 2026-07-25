@@ -1992,6 +1992,13 @@ export default function FinPath(){
             <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>💰 Ingresos por fuente</span>
             <span style={{fontSize:13,fontWeight:700,color:T.gn}}>{fm(t.ti)}/mes</span>
           </div>
+          {/* 25-jul-2026: mismo tratamiento que el patrimonio. La lista sola
+              obligaba a comparar cifras para ver el peso de cada fuente; el
+              treemap lo muestra por área. La lista queda debajo con el detalle
+              (categoría, capital, tasa), que el gráfico no puede dar. */}
+          {topInc.length>0&&<div style={{padding:"4px 20px 14px"}}>
+            <TreemapPatrimonio datos={topInc.map(x=>({name:x.nombre||"—",value:x.mensual||0}))} total={t.ti} fmt={fm} T={T} altura={mb?200:170} maxBloques={6}/>
+          </div>}
           {topInc.length>0?topInc.map((inc,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
             <div><div style={{fontSize:13,fontWeight:600}}>{inc.nombre||"—"}</div><div style={{fontSize:10,color:T.tx3}}>{inc.categoria}{inc.capital>0?" • Capital: "+fm(inc.capital):""}{inc.tasa?" • "+inc.tasa+"%":""}</div></div>
             <div style={{fontWeight:700,fontFamily:"monospace",color:T.gn}}>{fm(inc.mensual||0)}</div>
@@ -2008,6 +2015,9 @@ export default function FinPath(){
               generaba mucho ruido visual. Se muestran las 8 principales y el
               resto se agrupa en una línea: no se oculta plata, el total del
               encabezado sigue siendo el completo. */}
+          {expPie.length>0&&<div style={{padding:"4px 20px 14px"}}>
+            <TreemapPatrimonio datos={expPie} total={t.gfm} fmt={fm} T={T} altura={mb?200:200} maxBloques={6}/>
+          </div>}
           {expPie.length>0?expPie.slice(0,8).map((exp,i)=><div key={exp.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{exp.name}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontFamily:"monospace",color:T.rd}}>{fm(exp.value)}</span><span style={{fontSize:10,color:T.tx3}}>{t.gfm>0?pc((exp.value/t.gfm)*100):""}</span></div>

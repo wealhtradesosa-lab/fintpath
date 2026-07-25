@@ -44,7 +44,7 @@ function repartir(items, x, y, w, h, salida = []) {
   return repartir(resto, x, y + alto, w, h - alto, salida);
 }
 
-export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altura = 260 }) {
+export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altura = 260, maxBloques = 7 }) {
   const items = (datos || []).filter((d) => d && d.value > 0).sort((a, b) => b.value - a.value);
   if (!items.length) return null;
 
@@ -52,10 +52,15 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
   const suma = items.reduce((s, i) => s + i.value, 0);
   const base = total > 0 ? total : suma;
 
-  // Agrupar la cola larga: bloques bajo 1.5% son ilegibles y ensucian.
+  // Agrupar la cola larga. Dos criterios, porque uno solo no alcanza:
+  //  · por peso: bajo 1,5% el bloque es una tira ilegible;
+  //  · por cantidad: con 11 bloques en 700px de ancho, la mitad queda tan
+  //    fina que no admite etiqueta y termina toda en la leyenda — que era
+  //    exactamente el problema de la dona que este gráfico vino a reemplazar.
   const UMBRAL = suma * 0.015;
-  const visibles = items.filter((i) => i.value >= UMBRAL);
-  const cola = items.filter((i) => i.value < UMBRAL);
+  const porPeso = items.filter((i) => i.value >= UMBRAL);
+  const visibles = porPeso.slice(0, maxBloques);
+  const cola = [...porPeso.slice(maxBloques), ...items.filter((i) => i.value < UMBRAL)];
   const colaSuma = cola.reduce((s, i) => s + i.value, 0);
   const finales = colaSuma > 0
     ? [...visibles, { name: `Otros (${cola.length})`, value: colaSuma }]
