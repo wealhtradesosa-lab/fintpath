@@ -497,6 +497,12 @@ export function costoCredito(d) {
   const tsA = Number(d?.ts) || 0;
   const r = tasaMensualEq(tsA);
   const interesAnual = B * (tsA / 100);
+  // Desglose de la cuota del mes en curso: cuánto se va en intereses y cuánto
+  // abona capital. (24-jul-2026, Santiago: "¿cuánto es capital, cuánto interés?")
+  // Es la lectura que evita el error de leer la cuota entera como si fuera costo.
+  const interesMes = B * r;
+  const capitalMes = P > 0 ? Math.max(0, P - interesMes) : 0;
+  const pctCapital = P > 0 ? (capitalMes / P) * 100 : 0;
   let meses = null, interesTotal = null, noAmortiza = false;
   if (B > 0 && P > 0) {
     if (r <= 0) { meses = Math.ceil(B / P); interesTotal = 0; }
@@ -506,5 +512,5 @@ export function costoCredito(d) {
       interesTotal = Math.max(0, meses * P - B);
     }
   }
-  return { interesAnual, meses, interesTotal, noAmortiza };
+  return { interesAnual, meses, interesTotal, noAmortiza, interesMes, capitalMes, pctCapital };
 }

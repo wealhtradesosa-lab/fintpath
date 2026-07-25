@@ -346,6 +346,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                             <div style={{ fontSize: 9.5, color: T.txt3, marginTop: 2 }}>
                               termina en {Math.floor(cc.meses / 12)}a {cc.meses % 12}m
                               {cc.interesTotal > 0 && <> · <span title="Interés restante hasta pagarla toda">interés total {fm(cc.interesTotal)}</span></>}
+                              <div style={{ marginTop: 2 }} title={"De la cuota: " + fm(cc.interesMes) + " interés / " + fm(cc.capitalMes) + " capital"}>
+                                de la cuota, <strong style={{ color: cc.pctCapital < 25 ? T.red : cc.pctCapital < 50 ? T.orange : T.green }}>{Math.round(cc.pctCapital)}%</strong> baja deuda
+                              </div>
                             </div>
                           ) : null}
                         </td>
@@ -423,9 +426,24 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   </div>
                 );
                 return (
-                  <div style={{gridColumn:"1/-1",fontSize:11,color:"#a1a1aa",background:"#1e1e24",borderRadius:8,padding:"8px 12px"}}>
-                    Con esta cuota y tasa: se paga en <strong style={{color:"#fafafa"}}>{cc.meses!=null?Math.floor(cc.meses/12)+"a "+cc.meses%12+"m":"—"}</strong> · interés <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesAnual))}/año</strong>
-                    {cc.interesTotal>0&&<> · interés total restante <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesTotal))}</strong></>}
+                  <div style={{gridColumn:"1/-1",fontSize:11,color:"#a1a1aa",background:"#1e1e24",borderRadius:8,padding:"10px 12px"}}>
+                    <div style={{marginBottom:8}}>
+                      De tu cuota de <strong style={{color:"#fafafa"}}>{fmt(+form.pg||0)}</strong>:{" "}
+                      <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesMes))}</strong> son intereses ·{" "}
+                      <strong style={{color:"#22c55e"}}>{fmt(Math.round(cc.capitalMes))}</strong> abonan capital
+                    </div>
+                    <div style={{display:"flex",height:8,borderRadius:99,overflow:"hidden",background:"#0f0f13",marginBottom:6}}>
+                      <div style={{width:(100-cc.pctCapital)+"%",background:"#f59e0b"}} title="Intereses" />
+                      <div style={{width:cc.pctCapital+"%",background:"#22c55e"}} title="Abono a capital" />
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#71717a",marginBottom:8}}>
+                      <span>🔶 Interés {Math.round(100-cc.pctCapital)}% — se lo queda el banco</span>
+                      <span style={{color:"#4ade80"}}>🟩 Capital {Math.round(cc.pctCapital)}% — baja tu deuda</span>
+                    </div>
+                    <div style={{borderTop:"1px solid #2a2a32",paddingTop:6}}>
+                      Se paga en <strong style={{color:"#fafafa"}}>{cc.meses!=null?Math.floor(cc.meses/12)+"a "+cc.meses%12+"m":"—"}</strong> · interés <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesAnual))}/año</strong>
+                      {cc.interesTotal>0&&<> · interés total restante <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesTotal))}</strong></>}
+                    </div>
                   </div>
                 );
               })()}
