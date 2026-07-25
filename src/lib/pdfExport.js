@@ -20,8 +20,10 @@
 //   - Lo suficientemente claro para que cualquier contador lo entienda
 // ═══════════════════════════════════════════════════════════════════════════
 
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+// 25-jul-2026: jsPDF y jspdf-autotable se cargan bajo demanda.
+// Eran la mayor carga muerta del bundle principal (123 referencias): se
+// descargaban en CADA visita aunque el usuario nunca exportara un PDF.
+// Al hacerlas dinámicas, solo las baja quien realmente aprieta "Exportar".
 import { generarBorradorF110, SECCIONES_F110 } from "./borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "./borradorDeclaracionF210.js";
 
@@ -40,7 +42,12 @@ const fmDate = () => {
  * @param {object} estimacion - Output de estimarImpuesto(user)
  * @param {number} ano - Año gravable (default 2025)
  */
-export function exportarBorradorPDF(user, owner, estimacion, ano = 2025) {
+export async function exportarBorradorPDF(user, owner, estimacion, ano = 2025) {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+
   if (!owner) {
     alert("Seleccioná un owner fiscal antes de exportar.");
     return;

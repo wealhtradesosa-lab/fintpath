@@ -1,5 +1,8 @@
 import { useState, useRef } from "react";
-import * as XLSX from "xlsx";
+// 25-jul-2026: xlsx se carga bajo demanda. El import estático de esta línea
+// metía SheetJS (~500KB) en el bundle principal y anulaba el dynamic import
+// que excelExport.js ya hacía bien: bastaba un solo import estático en
+// cualquier archivo para que la librería viajara en la carga inicial.
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 /* ═══════════════════════════════════════════════════
@@ -72,7 +75,7 @@ IMPORTANTE: Los campos sh, cb, pr DEBEN ser números mayores que 0. Si ves valor
 };
 
 // Convert Excel workbook to readable text for AI
-function excelToText(workbook) {
+function excelToText(workbook, XLSX) {
   const parts = [];
   for (const name of workbook.SheetNames) {
     const ws = workbook.Sheets[name];
@@ -162,8 +165,9 @@ export default function CsvImport({ onImport, onClose }) {
     try {
       // 1. Read file
       const buffer = await file.arrayBuffer();
+      const XLSX = await import("xlsx");
       const wb = XLSX.read(new Uint8Array(buffer), { type: "array" });
-      const excelText = excelToText(wb);
+      const excelText = excelToText(wb, XLSX);
 
       // 2. Send to AI
       const mod = MODULES[module];

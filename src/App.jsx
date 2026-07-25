@@ -37,6 +37,9 @@ import MetasModule from "./components/MetasModule";
 import PensionColombia from "./components/PensionColombia";
 import SimuladorAvanzado from "./components/SimuladorAvanzado";
 import AdminMetrics from "./components/AdminMetrics";
+import HallazgosProactivos from "./components/HallazgosProactivos";
+import { generarHallazgos } from "./lib/hallazgos.js";
+import { generarRecomendaciones } from "./lib/recomendaciones.js";
 import DashboardUS from "./components/DashboardUS";
 import SimuladorUS from "./components/SimuladorUS";
 import AsesorIA from "./components/AsesorIA";
@@ -404,7 +407,17 @@ const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div sty
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 export default function FinPath(){
-  const[pagoEstado,setPagoEstado]=useState(null);const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("mensual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
+  const[pagoEstado,setPagoEstado]=useState(null);
+  // Hallazgos que el usuario marcó como "ya lo sé". Se guardan aparte de sus
+  // datos financieros: es preferencia de interfaz, no información patrimonial.
+  const[hallazgosDescartados,setHallazgosDescartados]=useState(()=>{
+    try{return JSON.parse(localStorage.getItem("fp3_hallazgos_descartados")||"[]")}catch{return []}
+  });
+  const descartarHallazgo=(id)=>setHallazgosDescartados(p=>{
+    const n=[...new Set([...p,id])];
+    try{localStorage.setItem("fp3_hallazgos_descartados",JSON.stringify(n))}catch{}
+    return n;
+  });const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("mensual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
   // State para menús desplegables del sidebar (sesión 1-may-2026 v3:
   // colapsar Vista familiar y Declaraciones anteriores bajo Impuestos
   // para no llenar el menú lateral). Por default abierto si la página
@@ -1714,6 +1727,29 @@ export default function FinPath(){
           <button onClick={generatePDF} style={{background:T.gn,color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📄 Reporte PDF</button>
         </div>
       </div>
+
+      {/* ═══ EL ASESOR HABLA PRIMERO (25-jul-2026) ═══════════════════════════
+          Hasta hoy toda esta inteligencia existía pero vivía dentro de
+          secciones que había que ir a buscar. Acá aparece sin que la pidan,
+          ordenada por plata y con su respaldo. Si no hay nada que decir, el
+          componente no renderiza: el silencio es parte del diseño.
+          Envuelto en try/catch — un fallo del motor fiscal NO puede tumbar
+          el dashboard entero. */}
+      {(()=>{
+        try{
+          let recs=[];
+          try{ recs=generarRecomendaciones(u,estimarImpuesto(u))||[] }catch{ recs=[] }
+          const hs=generarHallazgos({
+            user:u,
+            recomendaciones:recs,
+            trm:u?.trm||4200,
+            patrimonioTotal:(t?.ab||0)+(ib?.tv||0),
+            descartados:hallazgosDescartados,
+            max:3,
+          });
+          return <HallazgosProactivos hallazgos={hs} fmt={fm} T={T} onIr={(pg)=>setPg(pg)} onDescartar={descartarHallazgo}/>;
+        }catch(e){ return null }
+      })()}
 
       {(()=>{
         const hasIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>0;
