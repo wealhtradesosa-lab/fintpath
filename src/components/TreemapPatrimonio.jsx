@@ -71,15 +71,31 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", borderRadius: 10 }}>
+        <defs>
+          {/* 25-jul-2026 (Santiago: "algunos textos se salen"). Antes el
+              recorte se estimaba por ancho de carácter, y con nombres largos
+              o fuentes distintas la estimación fallaba y el texto desbordaba
+              el bloque. Un clipPath por bloque lo hace imposible: lo que no
+              cabe, no se dibuja. */}
+          {bloques.map((b, i) => (
+            <clipPath key={"c" + i} id={`tm-clip-${i}`}>
+              <rect x={b.x + 1.5} y={b.y + 1.5} width={Math.max(b.w - 3, 0)} height={Math.max(b.h - 3, 0)} rx={7} />
+            </clipPath>
+          ))}
+        </defs>
         {bloques.map((b, i) => {
           const pct = (b.value / base) * 100;
           const color = PALETA[i % PALETA.length];
-          // Solo se etiqueta lo que entra sin apretarse: un texto cortado
-          // ensucia más de lo que informa.
-          const cabeNombre = b.w > 76 && b.h > 34;
-          const cabeCifra = b.w > 76 && b.h > 52;
+          // El PORCENTAJE es el protagonista: se escala con el bloque para que
+          // el más grande también tenga el número más grande. Refuerza la
+          // lectura por área en vez de competir con ella.
+          const menor = Math.min(b.w, b.h);
+          const tamPct = Math.max(13, Math.min(44, Math.round(menor * 0.34)));
+          const cabePct = b.w > 54 && b.h > 40;
+          const cabeNombre = b.w > 72 && b.h > 62;
+          const cabeMonto = b.w > 96 && b.h > 96;
           return (
-            <g key={b.name + i}>
+            <g key={b.name + i} clipPath={`url(#tm-clip-${i})`}>
               <rect
                 x={b.x + 1.5} y={b.y + 1.5}
                 width={Math.max(b.w - 3, 0)} height={Math.max(b.h - 3, 0)}
@@ -87,22 +103,21 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
                 fill={color} fillOpacity={0.16}
                 stroke={color} strokeOpacity={0.55} strokeWidth={1.2}
               />
-              {cabeNombre && (
-                <text x={b.x + 12} y={b.y + 24} fill={T.tx} fontSize={12} fontWeight={700}>
-                  {b.name.length > Math.floor(b.w / 7.5) ? b.name.slice(0, Math.floor(b.w / 7.5) - 1) + "…" : b.name}
+              {cabePct && (
+                <text x={b.x + 12} y={b.y + 14 + tamPct * 0.78} fill={color}
+                      fontSize={tamPct} fontWeight={800} fontFamily="monospace">
+                  {pct.toFixed(pct >= 10 ? 0 : 1)}%
                 </text>
               )}
-              {cabeCifra && (
-                <>
-                  <text x={b.x + 12} y={b.y + 43} fill={color} fontSize={13} fontWeight={800} fontFamily="monospace">
-                    {pct.toFixed(pct >= 10 ? 0 : 1)}%
-                  </text>
-                  {b.h > 70 && (
-                    <text x={b.x + 12} y={b.y + 60} fill={T.tx3} fontSize={10.5} fontFamily="monospace">
-                      {fmt ? fmt(b.value) : b.value}
-                    </text>
-                  )}
-                </>
+              {cabeNombre && (
+                <text x={b.x + 12} y={b.y + 14 + tamPct * 0.78 + 16} fill={T.tx} fontSize={11.5} fontWeight={700}>
+                  {b.name}
+                </text>
+              )}
+              {cabeMonto && (
+                <text x={b.x + 12} y={b.y + 14 + tamPct * 0.78 + 32} fill={T.tx3} fontSize={10.5} fontFamily="monospace">
+                  {fmt ? fmt(b.value) : b.value}
+                </text>
               )}
               <title>{`${b.name} · ${fmt ? fmt(b.value) : b.value} · ${pct.toFixed(1)}%`}</title>
             </g>
@@ -111,9 +126,9 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
       </svg>
 
       {/* Leyenda solo para lo que no cupo etiquetado */}
-      {bloques.some((b) => !(b.w > 76 && b.h > 34)) && (
+      {bloques.some((b) => !(b.w > 72 && b.h > 62)) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
-          {bloques.filter((b) => !(b.w > 76 && b.h > 34)).map((b, i) => {
+          {bloques.filter((b) => !(b.w > 72 && b.h > 62)).map((b, i) => {
             const idx = bloques.indexOf(b);
             return (
               <div key={b.name + i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: T.tx3 }}>
