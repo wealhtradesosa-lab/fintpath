@@ -1728,30 +1728,6 @@ export default function FinPath(){
         </div>
       </div>
 
-      {/* ═══ EL ASESOR HABLA PRIMERO (25-jul-2026) ═══════════════════════════
-          Hasta hoy toda esta inteligencia existía pero vivía dentro de
-          secciones que había que ir a buscar. Acá aparece sin que la pidan,
-          ordenada por plata y con su respaldo. Si no hay nada que decir, el
-          componente no renderiza: el silencio es parte del diseño.
-          Envuelto en try/catch — un fallo del motor fiscal NO puede tumbar
-          el dashboard entero. */}
-      {(()=>{
-        try{
-          let recs=[];
-          try{ recs=generarRecomendaciones(u,estimarImpuesto(u))||[] }catch{ recs=[] }
-          const hs=generarHallazgos({
-            user:u,
-            recomendaciones:recs,
-            trm:u?.trm||4200,
-            patrimonioTotal:(t?.ab||0)+(ib?.tv||0),
-            totales:t,
-            descartados:hallazgosDescartados,
-            max:4,
-          });
-          return <HallazgosProactivos hallazgos={hs} fmt={fm} T={T} onIr={(pg)=>setPg(pg)} onDescartar={descartarHallazgo}/>;
-        }catch(e){ return null }
-      })()}
-
       {(()=>{
         const hasIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>0;
         const hasGas=Object.keys((u&&u.gas)||{}).length>0;
@@ -1854,6 +1830,36 @@ export default function FinPath(){
           <div style={{fontSize:10,color:CHART.txt3,marginTop:4,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>Salud Financiera</div>
         </div>
       </div>
+
+      {/* Ubicación (25-jul-2026, Santiago): "mejor el slot del patrimonio neto
+          de primero y debajo lo que ve el family office". Correcto — primero
+          el número, después la lectura del número. Antes iba sobre el
+          patrimonio y el usuario leía conclusiones antes de ver el dato del
+          que salen. */}
+      {/* ═══ EL ASESOR HABLA PRIMERO (25-jul-2026) ═══════════════════════════
+          Hasta hoy toda esta inteligencia existía pero vivía dentro de
+          secciones que había que ir a buscar. Acá aparece sin que la pidan,
+          ordenada por plata y con su respaldo. Si no hay nada que decir, el
+          componente no renderiza: el silencio es parte del diseño.
+          Envuelto en try/catch — un fallo del motor fiscal NO puede tumbar
+          el dashboard entero. */}
+      {(()=>{
+        try{
+          let recs=[];
+          try{ recs=generarRecomendaciones(u,estimarImpuesto(u))||[] }catch{ recs=[] }
+          const hs=generarHallazgos({
+            user:u,
+            recomendaciones:recs,
+            trm:u?.trm||4200,
+            patrimonioTotal:(t?.ab||0)+(ib?.tv||0),
+            totales:t,
+            descartados:hallazgosDescartados,
+            max:4,
+          });
+          return <HallazgosProactivos hallazgos={hs} fmt={fm} T={T} onIr={(pg)=>setPg(pg)} onDescartar={descartarHallazgo}/>;
+        }catch(e){ return null }
+      })()}
+
 
       {/* ═══ ROW 1b: Wealth Percentile ═══ */}
       {(() => {
