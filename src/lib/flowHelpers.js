@@ -442,6 +442,19 @@ export function ingresoInversionAnual(ingresos, trm = 1) {
   }, 0);
 }
 
+// Tasa efectiva MENSUAL equivalente a una tasa EFECTIVA ANUAL (E.A.).
+// En Colombia las tasas de crédito se cotizan E.A. (así las imprime el
+// extracto), y la equivalencia correcta es la raíz 12, NO dividir entre 12.
+// Verificado 24-jul-2026 contra extracto real (Sufi, saldo $130.308.044 al
+// 22,99% E.A.): interés cobrado $2.296.186/mes.
+//   EA/12       → 1,9158% → $2.496.485  (10% de más ❌)
+//   (1+EA)^1/12 → 1,7394% → $2.266.571  (coincide ✅)
+export const tasaMensualEq = (eaPct) => {
+  const ea = Number(eaPct) || 0;
+  if (ea <= 0) return 0;
+  return Math.pow(1 + ea / 100, 1 / 12) - 1;
+};
+
 // Meses hasta quedar libre de deuda con AMORTIZACIÓN real (considera interés).
 // CAUSA (20-jul-2026, Santiago): la fecha usaba saldo/cuota (0% interés) →
 // daba una fecha demasiado optimista. Ahora resuelve n por deuda:
@@ -453,7 +466,7 @@ export function mesesLibreDeuda(deudas) {
   for (const d of (deudas || [])) {
     const B = Number(d.mt) || 0, P = Number(d.pg) || 0;
     if (B <= 0 || P <= 0) continue;
-    const r = (Number(d.ts) || 0) / 100 / 12;
+    const r = tasaMensualEq(d.ts);
     let n;
     if (r <= 0) { n = B / P; }
     else if (P <= B * r) { algunaNoAmortiza = true; continue; }
@@ -482,7 +495,7 @@ export function costoCredito(d) {
   const B = Number(d?.mt) || 0;
   const P = Number(d?.pg) || 0;
   const tsA = Number(d?.ts) || 0;
-  const r = tsA / 100 / 12;
+  const r = tasaMensualEq(tsA);
   const interesAnual = B * (tsA / 100);
   let meses = null, interesTotal = null, noAmortiza = false;
   if (B > 0 && P > 0) {
