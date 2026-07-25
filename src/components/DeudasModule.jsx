@@ -6,6 +6,7 @@ import PageHeader from "./PageHeader";
 import { exportDeudasExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import FrecuenciaSelector from "./FrecuenciaSelector";
+import TablaMensual from "./TablaMensual";
 import { MESES, costoCredito } from "../lib/flowHelpers.js";
 
 const T = {
@@ -107,7 +108,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     input.click();
   };
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "" });
+  const [form, setForm] = useState({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", frecuencia: "mensual", montosMensuales: new Array(12).fill(0) });
   const [selected, setSelected] = useState(new Set());
   // Commit 5 Tarea 3: confirmaciones del Art. 119 ET cuando el usuario marca
   // una deuda como vivienda habitacional. Es solo UI — no se persiste al item
@@ -146,6 +147,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
       ...((Number(form.desdeMes) || 1) !== 1 && { desdeMes: Number(form.desdeMes) }),
       ...((Number(form.hastaMes) || 12) !== 12 && { hastaMes: Number(form.hastaMes) }),
       ...(form.vigenciaModo && { vigenciaModo: form.vigenciaModo }),
+      ...(form.frecuencia && form.frecuencia !== "mensual" && { frecuencia: form.frecuencia }),
+      ...(form.frecuencia === "variable" && { montosMensuales: form.montosMensuales }),
     };
     if (editId) {
       onUpdate(items.map((i) => (i.id === editId ? { ...i, ...item } : i)));
@@ -155,12 +158,12 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", desdeMes: 1, hastaMes: 12, vigenciaModo: undefined });
+    setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", frecuencia: "mensual", montosMensuales: new Array(12).fill(0), desdeMes: 1, hastaMes: 12, vigenciaModo: undefined });
     setViviendaConfirmaciones({ esHabitacion: true, esTitular: true, noArrendado: true });
   };
 
   const openEdit = (d) => {
-    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, la: d.la || "", owner: d.owner || "", capExt: "", intExt: "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo });
+    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, la: d.la || "", owner: d.owner || "", capExt: "", intExt: "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo , frecuencia: d.frecuencia || "mensual", montosMensuales: Array.isArray(d.montosMensuales) ? d.montosMensuales : new Array(12).fill(0)});
     setEditId(d.id);
     setShowForm(true);
   };
@@ -458,19 +461,38 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   hasta X mes?" — reusa el selector de Ingresos/Gastos. */}
               <div style={{ gridColumn: "1/-1" }}>
                 <FrecuenciaSelector
-                  frecuencia="mensual"
+                  frecuencia={form.frecuencia || "mensual"}
                   mesPago={1}
                   desdeMes={Number(form.desdeMes) || 1}
                   hastaMes={Number(form.hastaMes) || 12}
                   vigenciaModo={form.vigenciaModo}
                   monto={parseFloat(form.pg) || 0}
+                  montosMensuales={form.montosMensuales}
                   onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
                   tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "#fafafa", txt2: "#d4d4d8", txt3: "#71717a", bg3: "#27272a", border: "rgba(255,255,255,0.08)" }}
-                  mostrarChipsFrecuencia={false}
+                  mostrarChipsFrecuencia={true}
                   mostrarSelectorMes={false}
                   mostrarVigencia={true}
                 />
               </div>
+              {/* 25-jul-2026 (Santiago: "las deudas también pueden ser una vez
+                  al año, variables o fijas, pues uno hace abonos o la paga" ·
+                  "me gustó el abordaje de ingresos, uno puede cambiar los
+                  valores"). Ingresos y gastos tenían la grilla de 12 meses;
+                  deudas no. Se podía marcar una cuota como variable pero no
+                  había dónde cargar los abonos, así que la opción no servía
+                  para nada. Ahora es el mismo control en los tres módulos. */}
+              {form.frecuencia === "variable" && (
+                <div style={{ gridColumn: "1/-1" }}>
+                  <TablaMensual
+                    values={form.montosMensuales}
+                    onChange={(arr) => setForm(p => ({ ...p, montosMensuales: arr, frecuencia: "variable" }))}
+                    tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "#fafafa", txt2: "#d4d4d8", txt3: "#71717a", bg3: "#27272a", border: "#3f3f46" }}
+                    desdeMes={Number(form.desdeMes) || 1}
+                    hastaMes={Number(form.hastaMes) || 12}
+                  />
+                </div>
+              )}
               {form.mt&&form.pg&&form.ts&&(()=>{
                 const cc=costoCredito({mt:+form.mt||0,pg:+form.pg||0,ts:+form.ts||0});
                 if(cc.noAmortiza) return (
