@@ -24,6 +24,8 @@ Extrae la siguiente información y responde SOLO con JSON válido, sin markdown 
   "nombre": "nombre del crédito o entidad (ej. Tarjeta Visa Bancolombia, Crédito Consumo Sufi)",
   "saldo": número (SALDO DE CAPITAL PENDIENTE en COP, sin puntos ni comas),
   "cuota": número (cuota o pago mensual en COP),
+  "abonoCapital": número o null (renglón "abono a capital" del periodo, en COP),
+  "interesesMes": número o null (renglón "intereses corrientes" del periodo, en COP),
   "tasa": número o null (ver reglas abajo),
   "tipo": "una de: loan, mortgage, credit_card, leasing, other",
   "confianza": "alta" o "media" o "baja"
@@ -47,6 +49,7 @@ REGLAS PARA LA CUOTA — buscá la cuota HABITUAL, no un pago atípico:
 - Excluí del valor los SEGUROS y otros cobros: no reducen la deuda. Si el pago total los incluye, restalos.
 - Ejemplo: si el mes anterior muestra abono a capital $2.113.941,87 + intereses corrientes $2.296.185,93 + seguros $522.973 = pago total $4.933.100,80, y el próximo pago es $1.058.101,38 con abono a capital $0, la cuota correcta es 4410127.80 (capital + intereses, sin seguros).
 - Si usaste el periodo anterior por esta razón, poné "confianza": "media".
+- Devolvé ADEMÁS por separado, en "abonoCapital" e "interesesMes", los dos renglones tal cual aparecen impresos para ese mismo periodo (los que sumaste para armar la cuota). NO uses intereses de mora. Si el documento no los desglosa, poné null en ambos.
 
 Si no podés leer un dato con certeza, poné null y bajá la confianza. Nunca inventes ni estimes. Montos en COP.`;
 

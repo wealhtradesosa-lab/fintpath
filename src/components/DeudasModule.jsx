@@ -61,6 +61,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             const d = data.data;
             const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
             const leido = { n: d.nombre || null, mt: num(d.saldo), pg: num(d.cuota), ts: num(d.tasa), tp: d.tipo || null };
+            const cap = num(d.abonoCapital), int = num(d.interesesMes);
             setForm(p => ({
               ...p,
               n: leido.n ?? p.n,
@@ -68,6 +69,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               pg: leido.pg ?? p.pg,
               ts: leido.ts ?? p.ts,
               tp: leido.tp ?? p.tp,
+              capExt: cap != null ? String(cap) : (p.capExt || ""),
+              intExt: int != null ? String(int) : (p.intExt || ""),
             }));
             setShowForm(true);
             // Mostrar QUÉ se leyó y qué NO. Sin esto, los campos que la IA no
@@ -104,7 +107,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     input.click();
   };
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "" });
+  const [form, setForm] = useState({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "" });
   const [selected, setSelected] = useState(new Set());
   // Commit 5 Tarea 3: confirmaciones del Art. 119 ET cuando el usuario marca
   // una deuda como vivienda habitacional. Es solo UI — no se persiste al item
@@ -152,12 +155,12 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", desdeMes: 1, hastaMes: 12, vigenciaModo: undefined });
+    setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", desdeMes: 1, hastaMes: 12, vigenciaModo: undefined });
     setViviendaConfirmaciones({ esHabitacion: true, esTitular: true, noArrendado: true });
   };
 
   const openEdit = (d) => {
-    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, la: d.la || "", owner: d.owner || "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo });
+    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, la: d.la || "", owner: d.owner || "", capExt: "", intExt: "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo });
     setEditId(d.id);
     setShowForm(true);
   };
@@ -180,7 +183,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             📊 Excel
           </button>
-          <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", desdeMes: 1, hastaMes: 12, vigenciaModo: undefined }); setShowForm(true); }}
+          <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", desdeMes: 1, hastaMes: 12, vigenciaModo: undefined }); setShowForm(true); }}
             style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
       />
@@ -401,6 +404,55 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   verdad (plazo e interés), con amortización correcta. */}
               <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v }))} type="number" placeholder="0" />
               <In l="Tasa anual % (E.A.)" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="Ej: 22.99" />
+
+              {/* Desglose del extracto (24-jul-2026, pedido de Santiago: "el
+                  formulario debe agarrar interés y capital como en el extracto").
+                  Los extractos colombianos imprimen ambos renglones con nombre
+                  propio. Capturarlos elimina la ambigüedad de "cuál cuota"
+                  (próximo pago distorsionado por abonos vs cuota habitual) y
+                  permite VERIFICAR la tasa contra el interés realmente cobrado.
+                  La cuota se arma por SUMA (capital + interés), que es un dato,
+                  no una identidad inventada como el auto-cálculo anterior. */}
+              <div style={{ gridColumn: "1/-1", background: "#17171c", border: `1px dashed ${T.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.txt2, marginBottom: 2 }}>📄 Desglose del extracto <span style={{ fontWeight: 400, color: T.txt3 }}>(opcional)</span></div>
+                <div style={{ fontSize: 10, color: T.txt3, marginBottom: 10 }}>Copiá los dos renglones tal cual salen en tu extracto. Con eso se arma la cuota y se verifica la tasa.</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <In l="Abono a capital" value={form.capExt || ""} onChange={(v) => setForm((p) => {
+                    const n = { ...p, capExt: v };
+                    const c = parseFloat(v) || 0, i = parseFloat(p.intExt) || 0;
+                    if (c > 0 && i > 0) n.pg = String(Math.round(c + i));
+                    return n;
+                  })} type="number" placeholder="0" />
+                  <In l="Intereses del mes" value={form.intExt || ""} onChange={(v) => setForm((p) => {
+                    const n = { ...p, intExt: v };
+                    const i = parseFloat(v) || 0, c = parseFloat(p.capExt) || 0;
+                    if (c > 0 && i > 0) n.pg = String(Math.round(c + i));
+                    return n;
+                  })} type="number" placeholder="0" />
+                </div>
+                {(() => {
+                  const c = parseFloat(form.capExt) || 0, i = parseFloat(form.intExt) || 0, s = parseFloat(form.mt) || 0;
+                  if (!(c > 0 && i > 0)) return null;
+                  const previo = s + c; // el interés se cobra sobre el saldo ANTES del abono
+                  const eaImp = previo > 0 ? (Math.pow(1 + i / previo, 12) - 1) * 100 : 0;
+                  const tsForm = parseFloat(form.ts) || 0;
+                  const dif = tsForm > 0 ? Math.abs(eaImp - tsForm) : null;
+                  return (
+                    <div style={{ marginTop: 10, fontSize: 11, color: T.txt2 }}>
+                      Cuota = {fmt(c)} + {fmt(i)} = <strong style={{ color: "#fafafa" }}>{fmt(c + i)}/mes</strong>
+                      {previo > 0 && (
+                        <div style={{ marginTop: 6, fontSize: 10.5, color: dif == null ? T.txt3 : dif <= 1.5 ? "#4ade80" : "#fca5a5" }}>
+                          {dif == null
+                            ? <>Tasa implícita de este extracto: <strong>{eaImp.toFixed(2)}% E.A.</strong> — podés usarla arriba.</>
+                            : dif <= 1.5
+                              ? <>✅ Cuadra: el interés cobrado equivale a {eaImp.toFixed(2)}% E.A., consistente con el {tsForm}% que pusiste.</>
+                              : <>⚠️ No cuadra: el interés cobrado equivale a <strong>{eaImp.toFixed(2)}% E.A.</strong>, pero arriba pusiste {tsForm}%. Revisá la tasa o el saldo.</>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
               {/* Vigencia de la deuda (20-jul-2026): "¿se paga todo el año o
                   hasta X mes?" — reusa el selector de Ingresos/Gastos. */}
               <div style={{ gridColumn: "1/-1" }}>
