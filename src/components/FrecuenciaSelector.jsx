@@ -18,7 +18,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from "react";
-import { FRECUENCIAS, MESES } from "../lib/flowHelpers.js";
+import { FRECUENCIAS, FRECUENCIAS_VISIBLES, MESES } from "../lib/flowHelpers.js";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helper: label dinámico para el input MONTO según la frecuencia elegida.
@@ -150,7 +150,7 @@ export default function FrecuenciaSelector({
             📅 Frecuencia de pago
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(88px, 1fr))", gap: 6, marginBottom: showMes ? 10 : 6 }}>
-            {FRECUENCIAS.map(f => {
+            {FRECUENCIAS_VISIBLES.map(f => {
               const active = f.v === frecuencia;
               return (
                 <button

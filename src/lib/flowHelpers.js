@@ -35,14 +35,23 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ── Constantes ───────────────────────────────────────────────────────────
+// 25-jul-2026 (Santiago: "eso de trimestral y semestral quítelo, eso confunde,
+// además con las otras opciones uno puede moverse bien"). Verificado en la
+// base: CERO usuarios usaban trimestral, semestral o pago único.
+// `oculta: true` las saca de los selectores pero MANTIENE el cálculo: si algún
+// registro viejo las trae, sigue computando bien. Borrarlas del todo habría
+// hecho que esos ítems cayeran al default "mensual" y multiplicaran su valor.
 export const FRECUENCIAS = [
   { v: "mensual",    l: "Mensual",    emoji: "📅", n: 12 },
   { v: "variable",   l: "Variable",   emoji: "📊", n: 12 },
-  { v: "trimestral", l: "Trimestral", emoji: "🗓️", n: 4 },
-  { v: "semestral",  l: "Semestral",  emoji: "📆", n: 2 },
   { v: "anual",      l: "Anual",      emoji: "🎯", n: 1 },
-  { v: "unico",      l: "Pago único", emoji: "💥", n: 1 },
+  { v: "trimestral", l: "Trimestral", emoji: "🗓️", n: 4,  oculta: true },
+  { v: "semestral",  l: "Semestral",  emoji: "📆", n: 2,  oculta: true },
+  { v: "unico",      l: "Pago único", emoji: "💥", n: 1,  oculta: true },
 ];
+
+// Las que se ofrecen al usuario en los selectores.
+export const FRECUENCIAS_VISIBLES = FRECUENCIAS.filter(f => !f.oculta);
 
 export const MESES = [
   { v: 1,  l: "Enero" },     { v: 2,  l: "Febrero" },  { v: 3,  l: "Marzo" },
