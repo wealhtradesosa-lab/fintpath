@@ -1346,6 +1346,18 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
       {/* fin bloque de KPIs Fase 5 */}
 
 
+      {/* Layout de 2 columnas (25-jul-2026, Santiago: "no dejar tantos vacíos").
+          La columna de sliders es mucho más alta que la de resultados, así que
+          antes quedaba un hueco largo a la derecha. En vez de rellenarlo con
+          contenido, la columna derecha ACOMPAÑA el scroll: movés un slider de
+          deudas abajo y seguís viendo el gráfico y el Sankey cambiar. Se apaga
+          en móvil, donde el grid colapsa a una sola columna. */}
+      <style>{`
+        .fp-sim-right { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; max-height: calc(100vh - 96px); overflow-y: auto; overscroll-behavior: contain; }
+        .fp-sim-right::-webkit-scrollbar { width: 6px; }
+        .fp-sim-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 99px; }
+        @media (max-width: 900px) { .fp-sim-right { position: static; max-height: none; overflow: visible; } }
+      `}</style>
       {/* Sliders + Chart */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
         {/* LEFT: Sliders */}
@@ -1794,8 +1806,8 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
         </div>
 
         {/* RIGHT: Chart + Summary */}
-        <div>
-          <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 20, position: "sticky", top: 80 }}>
+        <div className="fp-sim-right">
+          <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 14 }}>Acumulación Cash Flow — 12 Meses</div>
             <ResponsiveContainer width="100%" height={250}>
               <AreaChart data={proj}>
@@ -1841,7 +1853,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               .map(([cat, its]) => [cat, (its || []).filter((g) => g.sim !== false)
                 .reduce((s, g) => s + montoDelMes(g, simTMes.añoActual, simTMes.mes), 0)]);
             return (
-              <div style={{ marginTop: 16 }}>
+              <div>
                 <SankeyFlujo
                   bruto={simTMes.brutoDelMes}
                   fuentes={fuentes}
