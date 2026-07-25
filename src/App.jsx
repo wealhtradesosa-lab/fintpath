@@ -1744,8 +1744,9 @@ export default function FinPath(){
             recomendaciones:recs,
             trm:u?.trm||4200,
             patrimonioTotal:(t?.ab||0)+(ib?.tv||0),
+            totales:t,
             descartados:hallazgosDescartados,
-            max:3,
+            max:4,
           });
           return <HallazgosProactivos hallazgos={hs} fmt={fm} T={T} onIr={(pg)=>setPg(pg)} onDescartar={descartarHallazgo}/>;
         }catch(e){ return null }

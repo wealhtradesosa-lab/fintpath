@@ -126,6 +126,78 @@ function concentracion(user, trm, patrimonioTotal) {
   };
 }
 
+
+/**
+ * Flujo de caja negativo. El hallazgo más urgente que puede existir: si sale
+ * más de lo que entra, cualquier otra optimización es secundaria.
+ */
+function flujoNegativo(t) {
+  const cf = num(t?.cashFlow);
+  if (cf >= 0) return null;
+  const deficit = Math.abs(cf);
+  if (deficit < 100_000) return null; // ruido de redondeo
+  return {
+    id: "flujo_negativo",
+    titulo: "Estás gastando más de lo que entra",
+    detalle: `Cada mes salen ${Math.round(deficit).toLocaleString("es-CO")} pesos más de los que ingresan. Si no viene de un ahorro previsto, el patrimonio se erosiona aunque los activos se vean bien.`,
+    impactoAnual: deficit * 12,
+    base: "Ingresos menos egresos totales del mes, según tus datos cargados",
+    accion: { label: "Ver egresos", pagina: "gas" },
+    tono: "riesgo",
+  };
+}
+
+/**
+ * Fondo de emergencia: cuántos meses aguanta el efectivo disponible.
+ * Umbral de 3 meses — convención de planeación financiera, no norma legal.
+ * Se declara como tal en `base`: es un criterio, no un artículo.
+ */
+function fondoEmergencia(user, t, trm) {
+  const egresos = num(t?.egresosTotales);
+  if (egresos <= 0) return null;
+
+  const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro"];
+  const liquidez = activos(user?.inv)
+    .filter((i) => LIQUIDOS.some((x) => String(i.tipo || "").toLowerCase().includes(x)))
+    .reduce((s, i) => s + (i.moneda === "USD" ? num(i.va) * trm : num(i.va)), 0);
+
+  const meses = liquidez / egresos;
+  if (meses >= 3) return null;
+
+  const faltante = egresos * 3 - liquidez;
+  return {
+    id: "fondo_emergencia",
+    titulo: meses < 1
+      ? "No tenés colchón para un mes sin ingresos"
+      : `Tu efectivo cubre ${meses.toFixed(1)} meses de gastos`,
+    detalle: `Con tus egresos actuales, el efectivo disponible alcanza para ${meses.toFixed(1)} meses. Para llegar a tres meses de respaldo faltarían ${Math.round(faltante).toLocaleString("es-CO")} pesos.`,
+    impactoAnual: 0,
+    base: "Efectivo y CDT sobre egresos mensuales. El umbral de 3 meses es una convención de planeación financiera, no una norma",
+    accion: { label: "Ver patrimonio", pagina: "inv" },
+    tono: "riesgo",
+  };
+}
+
+/**
+ * Carga de deuda sobre ingreso. Umbral 35% — convención de la banca para
+ * capacidad de endeudamiento, declarada como tal.
+ */
+function cargaDeuda(t) {
+  const cuotas = num(t?.cuotasDeudas), bruto = num(t?.brutoTotal);
+  if (bruto <= 0 || cuotas <= 0) return null;
+  const pct = (cuotas / bruto) * 100;
+  if (pct < 35) return null;
+  return {
+    id: "carga_deuda",
+    titulo: `Tus cuotas se llevan el ${pct.toFixed(0)}% de lo que ganás`,
+    detalle: "Por encima del 35% la mayoría de los bancos considera que no hay capacidad para más crédito, y el margen para imprevistos se vuelve muy estrecho.",
+    impactoAnual: 0,
+    base: "Cuotas de deudas sobre ingreso bruto. El umbral de 35% es el criterio habitual de la banca para capacidad de endeudamiento",
+    accion: { label: "Ver deudas", pagina: "deu" },
+    tono: "riesgo",
+  };
+}
+
 /**
  * Reúne todo, ordena por plata y devuelve lo más accionable.
  *
@@ -137,11 +209,14 @@ function concentracion(user, trm, patrimonioTotal) {
  * @param {string[]} p.descartados   ids que el usuario ya descartó
  * @param {number} p.max
  */
-export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patrimonioTotal = 0, descartados = [], max = 3 } = {}) {
+export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patrimonioTotal = 0, totales = null, descartados = [], max = 3 } = {}) {
   if (!user) return [];
 
   const propios = [
+    flujoNegativo(totales),
     deudaCaraVsAhorro(user, trm),
+    cargaDeuda(totales),
+    fondoEmergencia(user, totales, trm),
     concentracion(user, trm, patrimonioTotal),
   ].filter(Boolean);
 
