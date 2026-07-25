@@ -1646,7 +1646,15 @@ export default function FinPath(){
     const incByCat={};((u&&u.ingresos)||[]).filter(i=>i.sim!==false).forEach(i=>{incByCat[i.categoria||"Otro"]=(incByCat[i.categoria||"Otro"]||0)+(i.mensual||0)});
     const incPie=Object.entries(incByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     // Expense by category
-    const expByCat={};Object.entries((u&&u.gas)||{}).forEach(([cat,its])=>{expByCat[cat]=(its||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+(g.m||0),0)});
+    // 25-jul-2026 — BUG DE DATOS. Esta suma usaba `g.m` crudo, mientras que el
+    // total de la tarjeta (t.gfm) usa montoPromedioMensual(), que divide según
+    // la frecuencia. Un gasto ANUAL aparecía en la lista con su valor de año
+    // entero como si fuera mensual.
+    // Caso real de Santiago: "Seguros" es anual por $27,6M → se mostraba
+    // $30,8M/mes y encabezaba sus gastos con 44%. El valor mensual real es
+    // ~$5,4M. Estaba inflado 12 veces, y por eso los porcentajes de las
+    // categorías sumaban más de 200% contra un total que sí estaba bien.
+    const expByCat={};Object.entries((u&&u.gas)||{}).forEach(([cat,its])=>{expByCat[cat]=(its||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+montoPromedioMensual(g),0)});
     const expPie=Object.entries(expByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     // Top income sources
     const topInc=[...((u&&u.ingresos)||[]).filter(i=>i.sim!==false)].sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,5);
