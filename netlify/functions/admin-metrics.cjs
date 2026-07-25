@@ -93,13 +93,22 @@ exports.handler = async (event) => {
     // Contar ese campo inflaba "pagos" hasta casi el total de usuarios.
     // La única marca de pago real es la que deja el webhook de Stripe en la
     // tabla accounts: stripe_customer_id.
-    let pagos = 0, trials = 0, cuentasLeidas = false;
+    let pagos = 0, trials = 0, cuentasLeidas = false, diag = null;
     try {
       const ra = await fetch(`${URL}/rest/v1/accounts?select=*`, { headers: h });
       if (ra.ok) {
         const cuentas = await ra.json();
         cuentasLeidas = true;
         pagos = cuentas.filter((a) => a && a.stripe_customer_id).length;
+        // Diagnóstico (25-jul-2026): si la columna no se llama así, "pagos"
+        // daría 0 aunque haya cobros reales. Exponemos las columnas y los
+        // planes presentes para poder auditarlo sin adivinar.
+        diag = {
+          columnas: cuentas.length ? Object.keys(cuentas[0]) : [],
+          filas: cuentas.length,
+          planes: [...new Set(cuentas.map((a) => a && a.plan).filter(Boolean))],
+          conStripeId: pagos,
+        };
       }
     } catch { /* si la tabla no existe o cambia, pagos queda en 0 y se avisa */ }
     // Trials: tienen plan local "pro" pero ninguna marca de pago en Stripe.
@@ -127,6 +136,7 @@ exports.handler = async (event) => {
         pagos,
         trials,
         cuentasLeidas,
+        diag,
         tasaActivacion: total > 0 ? (activados / total) * 100 : 0,
         tasaPago: total > 0 ? (pagos / total) * 100 : 0,
         nuevos24h: nuevos(24),
