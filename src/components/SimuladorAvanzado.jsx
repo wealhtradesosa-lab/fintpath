@@ -1805,39 +1805,12 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
           </button>
         </div>
 
+        {/* Orden (25-jul-2026, Santiago): el Sankey va PRIMERO, arriba de la
+            acumulación de cash flow. Responde "¿por dónde se va mi plata?" de
+            un vistazo; la proyección a 12 meses es la consecuencia. Además es
+            el gráfico que mejor aprovecha el ancho de la columna. */}
         {/* RIGHT: Chart + Summary */}
         <div className="fp-sim-right">
-          <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 14 }}>Acumulación Cash Flow — 12 Meses</div>
-            <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={proj}>
-                <ChartGradients/>
-                <CartesianGrid {...gridProps} />
-                <XAxis dataKey="m" {...axisProps} />
-                <YAxis {...axisProps} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(0)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v}} />
-                <Tooltip content={<ChartTooltip formatter={(v) => fm(v)}/>} />
-                <Area type="monotone" dataKey="actual" stroke={CHART.txt3} fill="transparent" strokeDasharray="5 5" strokeWidth={1.5} name="Actual" />
-                <Area type="monotone" dataKey="simulado" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} name="Simulado" />
-                <Legend wrapperStyle={{fontSize:12,paddingTop:8}} iconType="circle"/>
-              </AreaChart>
-            </ResponsiveContainer>
-            <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <div style={{ background: T.bg2, padding: 12, borderRadius: 10, textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: T.txt3 }}>CF Actual</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: baseT.cf >= 0 ? T.gn : T.rd }}>{fm(baseT.cf)}</div>
-              </div>
-              <div style={{ background: simT.cf >= 0 ? T.gnD : T.rdD, padding: 12, borderRadius: 10, textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: T.txt3 }}>CF Simulado</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: simT.cf >= 0 ? T.gn : T.rd }}>{fm(simT.cf)}</div>
-              </div>
-              <div style={{ background: T.bg2, padding: 12, borderRadius: 10, textAlign: "center", gridColumn: "1/-1" }}>
-                <div style={{ fontSize: 10, color: T.txt3 }}>Impacto Anual</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: (simT.cf - baseT.cf) >= 0 ? T.gn : T.rd }}>
-                  {(simT.cf - baseT.cf) >= 0 ? "+" : ""}{fm((simT.cf - baseT.cf) * 12)}/año
-                </div>
-              </div>
-            </div>
-          </div>
           {/* Sankey del MES seleccionado (25-jul-2026). Vive acá y no en el
               dashboard para que reaccione al selector de mes y a los toggles:
               así deja de ser un póster y se vuelve herramienta de decisión. */}
@@ -1870,6 +1843,37 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               </div>
             );
           })()}
+          <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 14 }}>Acumulación Cash Flow — 12 Meses</div>
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={proj}>
+                <ChartGradients/>
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="m" {...axisProps} />
+                <YAxis {...axisProps} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(0)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v}} />
+                <Tooltip content={<ChartTooltip formatter={(v) => fm(v)}/>} />
+                <Area type="monotone" dataKey="actual" stroke={CHART.txt3} fill="transparent" strokeDasharray="5 5" strokeWidth={1.5} name="Actual" />
+                <Area type="monotone" dataKey="simulado" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} name="Simulado" />
+                <Legend wrapperStyle={{fontSize:12,paddingTop:8}} iconType="circle"/>
+              </AreaChart>
+            </ResponsiveContainer>
+            <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div style={{ background: T.bg2, padding: 12, borderRadius: 10, textAlign: "center" }}>
+                <div style={{ fontSize: 10, color: T.txt3 }}>CF Actual</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: baseT.cf >= 0 ? T.gn : T.rd }}>{fm(baseT.cf)}</div>
+              </div>
+              <div style={{ background: simT.cf >= 0 ? T.gnD : T.rdD, padding: 12, borderRadius: 10, textAlign: "center" }}>
+                <div style={{ fontSize: 10, color: T.txt3 }}>CF Simulado</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: simT.cf >= 0 ? T.gn : T.rd }}>{fm(simT.cf)}</div>
+              </div>
+              <div style={{ background: T.bg2, padding: 12, borderRadius: 10, textAlign: "center", gridColumn: "1/-1" }}>
+                <div style={{ fontSize: 10, color: T.txt3 }}>Impacto Anual</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: (simT.cf - baseT.cf) >= 0 ? T.gn : T.rd }}>
+                  {(simT.cf - baseT.cf) >= 0 ? "+" : ""}{fm((simT.cf - baseT.cf) * 12)}/año
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
