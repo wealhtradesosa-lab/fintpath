@@ -1856,7 +1856,7 @@ export default function FinPath(){
             descartados:hallazgosDescartados,
             max:4,
           });
-          return <HallazgosProactivos hallazgos={hs} fmt={fm} T={T} onIr={(pg)=>setPg(pg)} onDescartar={descartarHallazgo}/>;
+          return <HallazgosProactivos hallazgos={hs} T={T} onIr={(pg)=>setPg(pg)} onDescartar={descartarHallazgo}/>;
         }catch(e){ return null }
       })()}
 

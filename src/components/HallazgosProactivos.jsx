@@ -1,104 +1,119 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 /**
- * HallazgosProactivos — El asesor habla primero.
+ * HallazgosProactivos — Lo que ve tu family office, en tarjetas.
  *
- * Hasta hoy FINPATHIA mostraba números y el trabajo de interpretarlos era del
- * usuario. Este bloque invierte la carga: al abrir el dashboard, lo que el
- * motor encontró ya está dicho, ordenado por plata y con su respaldo.
+ * 25-jul-2026, rediseño pedido por Santiago: "más corto, más desde el dato en
+ * números, muy gráfico más que textos largos... y pueden ser varias cards, lo
+ * bueno y lo malo".
  *
- * Silencio deliberado: si no hay hallazgos, no renderiza nada. Un asesor que
- * habla todos los días aunque no pase nada se vuelve ruido y deja de leerse.
+ * La versión anterior eran párrafos numerados: había que LEER para entender.
+ * Ahora manda la cifra —lo primero que el ojo agarra— y el texto queda como
+ * apoyo. El detalle y el respaldo viven a un clic, para que la vista principal
+ * no acumule ruido.
+ *
+ * Silencio deliberado: sin hallazgos, no renderiza nada.
  */
-export default function HallazgosProactivos({ hallazgos = [], fmt, T, onIr, onDescartar }) {
-  const [abierto, setAbierto] = useState(null);
+export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar }) {
+  const [abierta, setAbierta] = useState(null);
 
-  if (!hallazgos.length) return null;
+  const alertas = hallazgos?.alertas || [];
+  const buenas = hallazgos?.buenas || [];
+  if (!alertas.length && !buenas.length) return null;
 
-  const colorTono = (t) => (t === "riesgo" ? "#eab308" : "#22c55e");
+  const COLOR = { oportunidad: "#22c55e", riesgo: "#eab308", bueno: "#3b82f6" };
+
+  const Tarjeta = ({ h, compacta }) => {
+    const c = COLOR[h.tono] || T.tx2;
+    const abierto = abierta === h.id;
+    return (
+      <div
+        onClick={() => setAbierta(abierto ? null : h.id)}
+        style={{
+          background: T.bg3,
+          border: `1px solid ${abierto ? c + "55" : T.border}`,
+          borderRadius: 12,
+          padding: compacta ? "12px 14px" : "14px 16px",
+          cursor: "pointer",
+          transition: "border-color .15s ease",
+          minWidth: 0,
+        }}
+      >
+        {/* La cifra manda: es lo primero que el ojo agarra */}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+          <span style={{ fontSize: compacta ? 24 : 30, fontWeight: 800, color: c, lineHeight: 1 }}>
+            {h.metrica ?? "\u2022"}
+          </span>
+          <span style={{ fontSize: 11, color: T.tx3, fontWeight: 600 }}>{h.unidad}</span>
+        </div>
+
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: T.tx, marginTop: 7, lineHeight: 1.3 }}>
+          {h.titulo}
+        </div>
+
+        {abierto && (
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
+            <div style={{ fontSize: 12, color: T.tx2, lineHeight: 1.55 }}>{h.detalle}</div>
+            <div style={{ fontSize: 10.5, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
+              <strong style={{ color: T.tx2 }}>De dónde sale:</strong> {h.base}
+            </div>
+            <div style={{ display: "flex", gap: 14, marginTop: 10, flexWrap: "wrap" }}>
+              {h.accion && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onIr && onIr(h.accion.pagina); }}
+                  style={{ background: "transparent", border: "none", padding: 0, color: c, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                >
+                  {h.accion.label} &rarr;
+                </button>
+              )}
+              {!h.bueno && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDescartar && onDescartar(h.id); }}
+                  style={{ background: "transparent", border: "none", padding: 0, color: T.tx3, fontSize: 12, cursor: "pointer" }}
+                >
+                  Ya lo s&eacute;
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div style={{
-      background: T.card,
-      border: `1px solid ${T.border}`,
-      borderRadius: 14,
-      padding: "16px 18px",
-      marginBottom: 16,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        {/* 25-jul-2026 (Santiago): "Lo que veo en tus números" era tibio y no
-            decía quién habla. "Tu family office" nombra al que analiza y usa
-            "tu" —no "nuestro"—: el asesor trabaja para el usuario, no es una
-            función de la que la empresa es dueña. */}
-        <span style={{ fontSize: 16 }}>🤖</span>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+        <span style={{ fontSize: 16 }}>&#129302;</span>
         <div style={{ fontSize: 14.5, fontWeight: 800, color: T.tx }}>
-          Tu family office analizó tus números
+          Tu family office analiz&oacute; tus n&uacute;meros
         </div>
       </div>
       <div style={{ fontSize: 11, color: T.tx3, marginBottom: 14 }}>
-        Lo que encontró, ordenado por impacto
+        Toc&aacute; cualquier tarjeta para ver el detalle
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {hallazgos.map((h, i) => {
-          const esta = abierto === h.id;
-          return (
-            <div key={h.id} style={{
-              background: T.bg3,
-              borderRadius: 10,
-              padding: "12px 14px",
-              borderLeft: `3px solid ${colorTono(h.tono)}`,
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.tx, lineHeight: 1.4 }}>
-                    {i + 1}. {h.titulo}
-                  </div>
-                  <div style={{ fontSize: 12, color: T.tx2, marginTop: 4, lineHeight: 1.55 }}>
-                    {h.detalle}
-                  </div>
+      {alertas.length > 0 && (
+        <>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.tx3, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>
+            Para mirar
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10, marginBottom: buenas.length ? 16 : 0 }}>
+            {alertas.map((h) => <Tarjeta key={h.id} h={h} />)}
+          </div>
+        </>
+      )}
 
-                  {h.impactoAnual > 0 && (
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: colorTono(h.tono), marginTop: 6 }}>
-                      {fmt(h.impactoAnual)} al año
-                    </div>
-                  )}
-
-                  {/* El respaldo: sin esto sería una opinión, no un hallazgo */}
-                  {esta && (
-                    <div style={{ fontSize: 11, color: T.tx3, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${T.border}`, lineHeight: 1.5 }}>
-                      <strong style={{ color: T.tx2 }}>De dónde sale:</strong> {h.base}
-                    </div>
-                  )}
-
-                  <div style={{ display: "flex", gap: 14, marginTop: 10, flexWrap: "wrap" }}>
-                    {h.accion && (
-                      <button onClick={() => onIr && onIr(h.accion.pagina)} style={{
-                        background: "transparent", border: "none", padding: 0,
-                        color: colorTono(h.tono), fontSize: 12, fontWeight: 700, cursor: "pointer",
-                      }}>
-                        {h.accion.label} →
-                      </button>
-                    )}
-                    <button onClick={() => setAbierto(esta ? null : h.id)} style={{
-                      background: "transparent", border: "none", padding: 0,
-                      color: T.tx3, fontSize: 12, cursor: "pointer",
-                    }}>
-                      {esta ? "Ocultar respaldo" : "¿De dónde sale?"}
-                    </button>
-                    <button onClick={() => onDescartar && onDescartar(h.id)} style={{
-                      background: "transparent", border: "none", padding: 0,
-                      color: T.tx3, fontSize: 12, cursor: "pointer",
-                    }}>
-                      Ya lo sé
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {buenas.length > 0 && (
+        <>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.tx3, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>
+            Vas bien ac&aacute;
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+            {buenas.map((h) => <Tarjeta key={h.id} h={h} compacta />)}
+          </div>
+        </>
+      )}
     </div>
   );
 }

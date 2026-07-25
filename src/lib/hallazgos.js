@@ -88,7 +88,9 @@ function deudaCaraVsAhorro(user, trm) {
 
   return {
     id: "deuda_cara_vs_ahorro",
-    titulo: `Tu ${cara.nombre} al ${cara.tasa.toFixed(2)}% cuesta más de lo que rinde tu ahorro`,
+    metrica: "$" + Math.round(impacto / 1e6) + "M",
+    unidad: "al año en juego",
+    titulo: `${cara.nombre} al ${cara.tasa.toFixed(1)}%`,
     detalle: `Tenés liquidez disponible mientras pagás una tasa del ${cara.tasa.toFixed(2)}% E.A. Abonar a capital rinde ${diferencial.toFixed(1)} puntos más que dejar la plata quieta.`,
     impactoAnual: impacto,
     base: `Tasa del crédito (${cara.tasa.toFixed(2)}% E.A.) vs. rendimiento de tu efectivo y CDT (${RENDIMIENTO_TIPICO.toFixed(2)}% E.A.), ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.`,
@@ -115,7 +117,9 @@ function concentracion(user, trm, patrimonioTotal) {
 
   return {
     id: "concentracion",
-    titulo: `${mayor.nombre} concentra el ${pct.toFixed(0)}% de tu patrimonio`,
+    metrica: pct.toFixed(0) + "%",
+    unidad: "en un solo activo",
+    titulo: mayor.nombre,
     detalle: "Un activo que pesa casi la mitad del total ata tu bienestar a un solo mercado. No es un error si es deliberado, pero conviene tenerlo presente al decidir el próximo movimiento.",
     // Sin cifra de ahorro: no es una oportunidad de plata sino de riesgo.
     impactoAnual: 0,
@@ -138,7 +142,9 @@ function flujoNegativo(t) {
   if (deficit < 100_000) return null; // ruido de redondeo
   return {
     id: "flujo_negativo",
-    titulo: "Estás gastando más de lo que entra",
+    metrica: "-" + Math.round(deficit / 1e6) + "M",
+    unidad: "por mes",
+    titulo: "Gastás más de lo que entra",
     detalle: `Cada mes salen ${Math.round(deficit).toLocaleString("es-CO")} pesos más de los que ingresan. Si no viene de un ahorro previsto, el patrimonio se erosiona aunque los activos se vean bien.`,
     impactoAnual: deficit * 12,
     base: "Ingresos menos egresos totales del mes, según tus datos cargados",
@@ -167,9 +173,9 @@ function fondoEmergencia(user, t, trm) {
   const faltante = egresos * 3 - liquidez;
   return {
     id: "fondo_emergencia",
-    titulo: meses < 1
-      ? "No tenés colchón para un mes sin ingresos"
-      : `Tu efectivo cubre ${meses.toFixed(1)} meses de gastos`,
+    metrica: meses.toFixed(1),
+    unidad: "meses de colchón",
+    titulo: meses < 1 ? "Sin colchón" : "Colchón corto",
     detalle: `Con tus egresos actuales, el efectivo disponible alcanza para ${meses.toFixed(1)} meses. Para llegar a tres meses de respaldo faltarían ${Math.round(faltante).toLocaleString("es-CO")} pesos.`,
     impactoAnual: 0,
     base: "Efectivo y CDT sobre egresos mensuales. El umbral de 3 meses es una convención de planeación financiera, no una norma",
@@ -189,12 +195,75 @@ function cargaDeuda(t) {
   if (pct < 35) return null;
   return {
     id: "carga_deuda",
-    titulo: `Tus cuotas se llevan el ${pct.toFixed(0)}% de lo que ganás`,
+    metrica: pct.toFixed(0) + "%",
+    unidad: "de tu ingreso",
+    titulo: "Cuotas muy altas",
     detalle: "Por encima del 35% la mayoría de los bancos considera que no hay capacidad para más crédito, y el margen para imprevistos se vuelve muy estrecho.",
     impactoAnual: 0,
     base: "Cuotas de deudas sobre ingreso bruto. El umbral de 35% es el criterio habitual de la banca para capacidad de endeudamiento",
     accion: { label: "Ver deudas", pagina: "deu" },
     tono: "riesgo",
+  };
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// LO QUE ESTÁ BIEN
+// 25-jul-2026 (Santiago): "pueden ser como varias cards, lo bueno lo malo".
+// Hasta acá el asesor solo señalaba problemas. Un family office real también
+// confirma lo que está sólido: le dice al cliente dónde NO tiene que
+// preocuparse. Sin eso el producto se siente como una lista de reproches.
+// ════════════════════════════════════════════════════════════════════════════
+
+function colchonSolido(user, t, trm) {
+  const egresos = num(t?.egresosTotales);
+  if (egresos <= 0) return null;
+  const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro"];
+  const liquidez = activos(user?.inv)
+    .filter((i) => LIQUIDOS.some((x) => String(i.tipo || "").toLowerCase().includes(x)))
+    .reduce((s, i) => s + (i.moneda === "USD" ? num(i.va) * trm : num(i.va)), 0);
+  const meses = liquidez / egresos;
+  if (meses < 6) return null;
+  return {
+    id: "colchon_solido", bueno: true, tono: "bueno",
+    metrica: meses >= 24 ? "24+" : meses.toFixed(0),
+    unidad: "meses",
+    titulo: "Colchón sólido",
+    detalle: "Tu efectivo cubre bien un período sin ingresos.",
+    base: "Efectivo y CDT sobre egresos mensuales",
+    impactoAnual: 0,
+  };
+}
+
+function flujoSano(t) {
+  const cf = num(t?.cashFlow), bruto = num(t?.brutoTotal);
+  if (cf <= 0 || bruto <= 0) return null;
+  const tasa = (cf / bruto) * 100;
+  if (tasa < 15) return null;
+  return {
+    id: "flujo_sano", bueno: true, tono: "bueno",
+    metrica: tasa.toFixed(0) + "%",
+    unidad: "de tu ingreso",
+    titulo: "Ahorrás cada mes",
+    detalle: `Te quedan ${Math.round(cf).toLocaleString("es-CO")} pesos libres al mes.`,
+    base: "Flujo de caja sobre ingreso bruto",
+    impactoAnual: 0,
+  };
+}
+
+function deudaControlada(t) {
+  const cuotas = num(t?.cuotasDeudas), bruto = num(t?.brutoTotal);
+  if (bruto <= 0 || cuotas <= 0) return null;
+  const pct = (cuotas / bruto) * 100;
+  if (pct >= 25) return null;
+  return {
+    id: "deuda_controlada", bueno: true, tono: "bueno",
+    metrica: pct.toFixed(0) + "%",
+    unidad: "de tu ingreso",
+    titulo: "Deuda bajo control",
+    detalle: "Tus cuotas dejan margen amplio para imprevistos.",
+    base: "Cuotas sobre ingreso bruto. Referencia habitual de la banca: hasta 35%",
+    impactoAnual: 0,
   };
 }
 
@@ -214,6 +283,9 @@ export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patri
 
   const propios = [
     flujoNegativo(totales),
+    flujoSano(totales),
+    colchonSolido(user, totales, trm),
+    deudaControlada(totales),
     deudaCaraVsAhorro(user, trm),
     cargaDeuda(totales),
     fondoEmergencia(user, totales, trm),
@@ -237,10 +309,13 @@ export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patri
       tono: "oportunidad",
     }));
 
-  return [...propios, ...fiscales]
-    .filter((h) => !descartados.includes(h.id))
-    // Orden por plata. Los de riesgo (impacto 0) quedan al final: importan,
-    // pero no compiten con una oportunidad concreta de ahorro.
-    .sort((a, b) => b.impactoAnual - a.impactoAnual)
-    .slice(0, max);
+  const todos = [...propios, ...fiscales].filter((h) => !descartados.includes(h.id));
+
+  // Se devuelven separados: la interfaz muestra primero lo que hay que mirar
+  // y después lo que está bien. Dentro de cada grupo manda la plata.
+  const porPlata = (a, b) => b.impactoAnual - a.impactoAnual;
+  return {
+    alertas: todos.filter((h) => !h.bueno).sort(porPlata).slice(0, max),
+    buenas: todos.filter((h) => h.bueno).slice(0, 3),
+  };
 }
