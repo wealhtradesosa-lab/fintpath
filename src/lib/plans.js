@@ -256,6 +256,10 @@ export function getPlansForApp({ plan, isUS, trm, billingCycle, trialActive = fa
       // opciones para hacer updates"). Jerarquía para que el botón diga si es
       // MEJORA o CAMBIO, en vez de un "Comenzar" idéntico en todas las
       // tarjetas — que no comunica nada a quien ya tiene plan.
+      // Total anual real (12 × precio mensual del plan anual). La tarjeta
+      // muestra el equivalente mensual, que es lo correcto para comparar,
+      // pero el usuario debe saber cuánto le cobran de una antes de ir a Stripe.
+      pAnualTotal: b.priceUSD?.anual ? `$${b.priceUSD.anual * 12} USD` : null,
       rank: PLAN_RANK[planNameToCanonical(b.name)] ?? 0,
       rankActual: PLAN_RANK[plan] ?? 0,
       enTrial: trialActive && plan === planNameToCanonical(b.name),
