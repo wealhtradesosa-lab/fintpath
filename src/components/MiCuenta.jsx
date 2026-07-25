@@ -65,7 +65,7 @@ const daysUntil = (d) => {
 export default function MiCuenta({
   supabase, accountId, role, displayName, plan, maxMembers,
   currentUserId, currentUserName, onChange, isLegacy, configContent, defaultTab,
-  subscriptionStatus, graceUntil,
+  subscriptionStatus, graceUntil, onUpgrade,
 }) {
   // Tabs disponibles según contexto
   const showMembersTab = !isLegacy && accountId;
@@ -334,8 +334,21 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             <>⭐ <strong style={{ color: T.txt }}>Plan Pro:</strong> hasta 3 personas con la misma información. Para familia chica o pareja + contador.</>
           ) : plan === "managed" ? (
             <>👤 <strong style={{ color: T.txt }}>Cuenta gestionada por asesor:</strong> tu asesor configuró este espacio.</>
+          ) : plan === "basico" ? (
+            <>👤 <strong style={{ color: T.txt }}>Plan Básico:</strong> 1 usuario por cuenta. Para compartir con familia o contador, subí a Pro Familiar.</>
           ) : (
-            <>👤 <strong style={{ color: T.txt }}>Plan Básico:</strong> 1 usuario por cuenta. Para compartir con familia o contador, sube a Pro Familiar.</>
+            // 25-jul-2026 (Santiago): esta rama decía "Plan Básico" para
+            // CUALQUIER plan que no fuera pro/pro_familiar/managed. Un usuario
+            // gratuito veía el badge "Plan free" y debajo "Plan Básico" —
+            // dos planes distintos en la misma tarjeta.
+            <>👤 <strong style={{ color: T.txt }}>Plan gratuito:</strong> 1 usuario por cuenta. Con Pro tenés el motor fiscal, el Asesor IA y los Coaches; con Pro Familiar, hasta 10 personas sobre los mismos datos.</>
+          )}
+          {onUpgrade && plan !== "pro_familiar" && (
+            <div style={{ marginTop: 10 }}>
+              <button onClick={onUpgrade} style={{ background: T.gn, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 12 }}>
+                Ver planes y mejorar →
+              </button>
+            </div>
           )}
         </div>
       </div>
