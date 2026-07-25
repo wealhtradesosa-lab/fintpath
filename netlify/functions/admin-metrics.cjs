@@ -99,23 +99,23 @@ exports.handler = async (event) => {
       if (ra.ok) {
         const cuentas = await ra.json();
         cuentasLeidas = true;
-        // 25-jul-2026 — 2ª corrección. La 1ª contaba stripe_customer_id, una
-        // columna que NO EXISTE en accounts (verificado: id, owner_user_id,
-        // plan, max_members, display_name, created_at, updated_at,
-        // managed_by_advisor_id, managed_tier, managed_at, subscription_status,
-        // grace_until). Daba 0 pasara lo que pasara.
-        // La verdad la marca el webhook en subscription_status: "active" o
-        // "trialing" = suscripción viva en Stripe. plan solo dice qué tiene
-        // asignado, y puede ponerse a mano (el caso de la cuenta de Santiago).
-        const vivas = cuentas.filter((a) => a && ["active", "trialing"].includes(a.subscription_status));
-        pagos = vivas.filter((a) => a.subscription_status === "active").length;
-        const enTrialStripe = vivas.filter((a) => a.subscription_status === "trialing").length;
-        const cuenta = (arr, campo) => arr.reduce((o, a) => { const k = a?.[campo] || "(sin dato)"; o[k] = (o[k] || 0) + 1; return o; }, {});
+        // 25-jul-2026 — 3ª y última iteración. Historial de errores, para que
+        // nadie repita el camino:
+        //   1ª: contó data.p.plan → daba 73 "pagos" (era el trial de todos).
+        //   2ª: contó stripe_customer_id → columna que NO existe: siempre 0.
+        //   3ª: contó subscription_status "active" → daba 85, pero 82 de esas
+        //       son plan "free": el campo arranca en "active" al crear la
+        //       cuenta, no lo escribe Stripe.
+        // CONCLUSIÓN: desde Supabase NO se puede saber quién paga. La verdad
+        // vive en Stripe y esta app no tiene acceso. Mostramos lo que SÍ es
+        // verificable (planes asignados) y mandamos a Stripe para los ingresos.
+        // Mejor un dato ausente y señalado que un número inventado.
+        const cuentaPor = (campo) => cuentas.reduce((o, a) => { const k = a?.[campo] || "(sin dato)"; o[k] = (o[k] || 0) + 1; return o; }, {});
+        pagos = null; // desconocido a propósito
         diag = {
           filas: cuentas.length,
-          porPlan: cuenta(cuentas, "plan"),
-          porEstadoSuscripcion: cuenta(cuentas, "subscription_status"),
-          enTrialStripe,
+          porPlan: cuentaPor("plan"),
+          conPlanPago: cuentas.filter((a) => a && ["pro", "pro_familiar", "basico"].includes(a.plan)).length,
         };
       }
     } catch { /* si la tabla no existe o cambia, pagos queda en 0 y se avisa */ }

@@ -60,7 +60,7 @@ export default function AdminMetrics({ email, fmt, T }) {
           { l: "USUARIOS", v: num(d.total), c: T.tx, s: "total histórico" },
           { l: "HOY (24H)", v: num(d.nuevos24h), c: d.nuevos24h > 0 ? "#22c55e" : T.tx3, s: "registros nuevos" },
           { l: "ÚLTIMOS 7 DÍAS", v: num(d.nuevos7d), c: d.nuevos7d > 0 ? "#22c55e" : T.tx3, s: "registros" },
-          { l: "PAGOS REALES", v: num(d.pagos), c: d.pagos > 0 ? "#22c55e" : T.tx3, s: d.cuentasLeidas ? "confirmados en Stripe" : "no se pudo leer Stripe" },
+          { l: "CON PLAN PAGO", v: num(d.diag?.conPlanPago), c: (d.diag?.conPlanPago || 0) > 0 ? "#22c55e" : T.tx3, s: "asignado — verificar en Stripe" },
         ].map((k) => (
           <div key={k.l} style={card}>
             <div style={{ fontSize: 9.5, color: T.tx3, letterSpacing: 1, fontWeight: 700 }}>{k.l}</div>
@@ -77,7 +77,7 @@ export default function AdminMetrics({ email, fmt, T }) {
           { l: "Se registran", v: d.total, base: d.total, c: "#3b82f6" },
           { l: "Cargan sus datos", v: d.activados, base: d.total, c: "#eab308", nota: "activación" },
           { l: "En trial (gratis 14 días)", v: d.trials ?? 0, base: d.total, c: "#a78bfa", nota: "no es plata" },
-          { l: "Pagan de verdad", v: d.pagos, base: d.total, c: "#22c55e", nota: "confirmado en Stripe" },
+          { l: "Con plan pago asignado", v: d.diag?.conPlanPago || 0, base: d.total, c: "#22c55e", nota: "no confirma ingreso" },
         ].map((p, i) => {
           const w = p.base > 0 ? (p.v / p.base) * 100 : 0;
           return (
@@ -93,7 +93,8 @@ export default function AdminMetrics({ email, fmt, T }) {
           );
         })}
         <div style={{ fontSize: 11, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
-          Ojo con el <strong>trial</strong>: al registrarse, la app le da a todos 14 días de Pro. Eso NO es una venta — solo cuenta como pago lo que Stripe confirma.
+          ⚠️ <strong>Los ingresos reales se confirman en Stripe</strong>, no acá: la base guarda el plan asignado, que también puede ponerse a mano. Para saber cuánto entró, mirá <em>dashboard.stripe.com → Payments</em>.
+          <br />Y ojo con el <strong>trial</strong>: al registrarse, la app le da a todos 14 días de Pro. Eso no es una venta.
           <br />La <strong>activación</strong> es el número que más manda hoy: quien se registra y no carga nada, no vuelve. Si es baja, el problema está en el arranque, no en el precio ni en la pauta.
         </div>
       </div>
