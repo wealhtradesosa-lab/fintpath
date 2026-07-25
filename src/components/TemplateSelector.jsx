@@ -98,7 +98,10 @@ export const TEMPLATES = [
     id: "avanzado",
     emoji: "⚙️",
     titulo: () => "Otras opciones",
-    descripcion: () => "Trimestral, semestral, u otro caso especial",
+    // 25-jul-2026: se quitaron trimestral y semestral de los selectores (nadie
+    // las usaba y confundían). El texto las seguía prometiendo, así que el
+    // enlace mandaba a un lugar donde ya no estaban.
+    descripcion: () => "Vigencia por meses, pagos ya realizados y otros ajustes",
     ejemplo: () => "Ej: dividendos trimestrales, seguro semestral",
     preset: { frecuencia: "mensual", desdeMes: 1, hastaMes: 12, mesPago: 1 },
     camposVisibles: ["monto", "frecuencia", "vigencia", "mesPago", "modoIngreso"],
@@ -126,7 +129,7 @@ export function detectarTemplate(item) {
   if (freq === "anual" || freq === "unico") {
     return TEMPLATES.find(t => t.id === "anual") || TEMPLATES[0];
   }
-  // Trimestral, semestral, o cualquier otro caso → avanzado
+  // Cualquier otro caso → avanzado
   return TEMPLATES.find(t => t.id === "avanzado") || TEMPLATES[TEMPLATES.length - 1];
 }
 
@@ -202,7 +205,7 @@ export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T
             onClick={() => onSelect(templateAvanzado)}
             style={{ background: "transparent", border: "none", color: T.txt3, fontSize: 12, cursor: "pointer", padding: "6px 12px", textDecoration: "underline" }}
           >
-            ⚙️ ¿Trimestral, semestral, u otro caso? Ver opciones avanzadas
+            ⚙️ ¿Otro caso? Ver opciones avanzadas
           </button>
         </div>
       )}
