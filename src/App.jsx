@@ -1969,7 +1969,7 @@ export default function FinPath(){
       </div>
 
       {/* ═══ ROW 4: Income + Expenses breakdown ═══ */}
-      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginBottom:14,alignItems:"start"}}>
         {/* Top Ingresos */}
         <Cd s={{padding:0}}>
           <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+T.border}}>
@@ -1987,10 +1987,19 @@ export default function FinPath(){
             <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>💳 Gastos por categoría</span>
             <span style={{fontSize:13,fontWeight:700,color:T.rd}}>{fm(t.gfm)}/mes</span>
           </div>
-          {expPie.length>0?expPie.map((exp,i)=><div key={exp.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
+          {/* 25-jul-2026 (Santiago: "estos huecos que desperdician espacio"):
+              14 categorías contra 5 fuentes de ingreso desbalanceaba la fila y
+              generaba mucho ruido visual. Se muestran las 8 principales y el
+              resto se agrupa en una línea: no se oculta plata, el total del
+              encabezado sigue siendo el completo. */}
+          {expPie.length>0?expPie.slice(0,8).map((exp,i)=><div key={exp.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{exp.name}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontFamily:"monospace",color:T.rd}}>{fm(exp.value)}</span><span style={{fontSize:10,color:T.tx3}}>{t.gfm>0?pc((exp.value/t.gfm)*100):""}</span></div>
           </div>):<div style={{padding:28,textAlign:"center",color:T.tx3,fontSize:13}}>Agrega gastos</div>}
+          {expPie.length>8&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",fontSize:12,color:T.tx3}}>
+            <span>+{expPie.length-8} categorías más</span>
+            <span style={{fontFamily:"monospace",fontWeight:600}}>{fm(expPie.slice(8).reduce((s,e)=>s+e.value,0))}</span>
+          </div>}
         </Cd>
       </div>
 
@@ -2480,7 +2489,7 @@ export default function FinPath(){
       })()}
 
       {/* ═══ ROW 9: Liquidez Real + Costo de Vida ═══ */}
-      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginTop:14}}>
+      <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginTop:14,alignItems:"start"}}>
         {/* LIQUIDEZ REAL */}
         <Cd s={{padding:20}}>
           <div style={{fontSize:13,fontWeight:700,color:T.bl,marginBottom:12}}>💧 Liquidez Real — ¿Cuánto puedes tener en efectivo?</div>
