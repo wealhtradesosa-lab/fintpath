@@ -16,7 +16,12 @@ import { useId } from "react";
  * cerca del cuadrado y por lo tanto comparables entre sí.
  */
 
-const PALETA = ["#22c55e", "#3b82f6", "#a78bfa", "#eab308", "#f97316", "#ec4899", "#14b8a6", "#8b5cf6", "#64748b"];
+// 25-jul-2026 (Santiago: "tenga unidad gráfica"). Estos son los colores de
+// respaldo. El dashboard le pasa su propia paleta (T.ch) para que un mismo
+// concepto tenga el MISMO color en el treemap y en la lista de abajo: antes
+// las dos paletas coincidían solo en los dos primeros colores, así que
+// "Vivienda" salía morada en el gráfico y naranja en la lista.
+const PALETA = ["#22c55e", "#3b82f6", "#f59e0b", "#a78bfa", "#ec4899", "#06b6d4", "#eab308", "#14b8a6", "#64748b"];
 
 /**
  * Reparte items en un rectángulo alternando cortes horizontales y verticales.
@@ -77,7 +82,7 @@ function nombreQueQuepa(nombre, ancho, px = 11.5) {
   return nombre.slice(0, Math.max(max - 1, 1)) + "…";
 }
 
-export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altura = 260, maxBloques = 7 }) {
+export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altura = 260, maxBloques = 7, paleta }) {
   // 25-jul-2026 — BUG CRÍTICO. Los clipPath usaban ids fijos ("tm-clip-0"...).
   // Con TRES treemaps en el dashboard (patrimonio, ingresos, gastos) los ids
   // se repetían en el DOM, y el navegador resuelve por el PRIMERO que
@@ -86,6 +91,7 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
   // fuera de su bloque y los huecos enormes. useId() da un prefijo único por
   // instancia y lo elimina de raíz.
   const uid = useId().replace(/:/g, "");
+  const COLORES = (paleta && paleta.length) ? paleta : PALETA;
   const items = (datos || []).filter((d) => d && d.value > 0).sort((a, b) => b.value - a.value);
   if (!items.length) return null;
 
@@ -126,7 +132,7 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
         </defs>
         {bloques.map((b, i) => {
           const pct = (b.value / base) * 100;
-          const color = PALETA[i % PALETA.length];
+          const color = COLORES[i % COLORES.length];
           // El PORCENTAJE es el protagonista: se escala con el bloque para que
           // el más grande también tenga el número más grande. Refuerza la
           // lectura por área en vez de competir con ella.
@@ -187,7 +193,7 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
             const idx = bloques.indexOf(b);
             return (
               <div key={b.name + i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: T.tx3 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: PALETA[idx % PALETA.length], display: "inline-block" }} />
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: COLORES[idx % COLORES.length], display: "inline-block" }} />
                 {b.name} · {((b.value / base) * 100).toFixed(1)}%
               </div>
             );

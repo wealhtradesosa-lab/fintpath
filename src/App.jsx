@@ -1992,7 +1992,7 @@ export default function FinPath(){
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:6}}>Distribución Patrimonial</div>
           <div style={{fontSize:11,color:T.tx3,marginBottom:12}}>El tamaño de cada bloque es la plata que tenés ahí</div>
           {pie.length>0
-            ?<TreemapPatrimonio datos={pie} total={totalPat} fmt={fm} T={T} altura={mb?300:260}/>
+            ?<TreemapPatrimonio datos={pie} total={totalPat} fmt={fm} T={T} paleta={T.ch} altura={mb?300:260}/>
             :<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>Agrega inversiones</div>}
         </Cd>
         {/* Top Ingresos */}
@@ -2006,10 +2006,15 @@ export default function FinPath(){
               treemap lo muestra por área. La lista queda debajo con el detalle
               (categoría, capital, tasa), que el gráfico no puede dar. */}
           {topInc.length>0&&<div style={{padding:"4px 20px 14px"}}>
-            <TreemapPatrimonio datos={topInc.map(x=>({name:x.nombre||"—",value:x.mensual||0}))} total={t.ti} fmt={fm} T={T} altura={mb?200:170} maxBloques={6}/>
+            <TreemapPatrimonio datos={topInc.map(x=>({name:x.nombre||"—",value:x.mensual||0}))} total={t.ti} fmt={fm} T={T} paleta={T.ch} altura={mb?200:170} maxBloques={6}/>
           </div>}
           {topInc.length>0?topInc.map((inc,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
-            <div><div style={{fontSize:13,fontWeight:600}}>{inc.nombre||"—"}</div><div style={{fontSize:10,color:T.tx3}}>{inc.categoria}{inc.capital>0?" • Capital: "+fm(inc.capital):""}{inc.tasa?" • "+inc.tasa+"%":""}</div></div>
+            <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+              {/* Punto de color: la lista de gastos ya lo tenía y la de
+                  ingresos no. Ata cada fila con su bloque del treemap. */}
+              <div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length],flexShrink:0}}/>
+              <div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600}}>{inc.nombre||"—"}</div><div style={{fontSize:10,color:T.tx3}}>{inc.categoria}{inc.capital>0?" • Capital: "+fm(inc.capital):""}{inc.tasa?" • "+inc.tasa+"%":""}</div></div>
+            </div>
             <div style={{fontWeight:700,fontFamily:"monospace",color:T.gn}}>{fm(inc.mensual||0)}</div>
           </div>):<div style={{padding:28,textAlign:"center",color:T.tx3,fontSize:13}}>Agrega ingresos</div>}
         </Cd>
@@ -2025,7 +2030,7 @@ export default function FinPath(){
               resto se agrupa en una línea: no se oculta plata, el total del
               encabezado sigue siendo el completo. */}
           {expPie.length>0&&<div style={{padding:"4px 20px 14px"}}>
-            <TreemapPatrimonio datos={expPie} total={t.gfm} fmt={fm} T={T} altura={mb?200:200} maxBloques={6}/>
+            <TreemapPatrimonio datos={expPie} total={t.gfm} fmt={fm} T={T} paleta={T.ch} altura={mb?200:200} maxBloques={6}/>
           </div>}
           {expPie.length>0?expPie.slice(0,8).map((exp,i)=><div key={exp.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{exp.name}</span></div>
