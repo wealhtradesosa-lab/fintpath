@@ -1669,12 +1669,34 @@ export default function FinPath(){
             {(trialDays<=5||u?.p?.anonymous)&&<button onClick={()=>{if(u?.p?.anonymous)logout();else setPg("price")}} style={{background:trialDays<=3?T.rd:T.gn,color:trialDays<=3?"#fff":"#000",border:"none",padding:"8px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>{u?.p?.anonymous?"Crear cuenta gratis →":"Mantener Pro →"}</button>}
           </div>}
           {!trialActive&&trialEnd&&plan==="free"&&u?.p?.anonymous&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}><div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}><span style={{fontSize:18,flexShrink:0}}>🔒</span><div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:T.bl}}>Crea tu cuenta para mantener Pro</div><div style={{fontSize:11,color:T.tx3}}>Tu información seguirá protegida. Tus datos se sincronizan en la nube con encriptación.</div></div></div><button onClick={()=>{logout()}} style={{background:T.bl,color:"#fff",border:"none",padding:"8px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>Crear cuenta →</button></div>}
-          {!trialActive&&trialEnd&&plan==="free"&&!u?.p?.anonymous&&<div style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.12)",borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:18}}>😢</span>
-              <div><div style={{fontSize:13,fontWeight:700,color:T.rd}}>Tu trial Pro terminó</div><div style={{fontSize:11,color:T.tx3}}>Perdiste el <strong>motor fiscal</strong> (renta, deducciones, planeación), el Asesor IA y los Coaches. Tus datos siguen intactos.</div></div>
+          {!trialActive&&trialEnd&&plan==="free"&&!u?.p?.anonymous&&<div style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.12)",borderRadius:12,padding:"14px 16px",marginTop:12,display:"flex",flexWrap:"wrap",gap:8}}>
+            {/* 25-jul-2026 — Aviso de fin de prueba. Aparece cuando el trial
+                venció y la cuenta quedó en gratuito. Era código muerto hasta
+                que se corrigió el bug del plan permanente (a4943d1).
+                Redacción sobria a pedido de Santiago: sin disculpas ni
+                explicaciones técnicas, que al usuario no le aportan. Sí se
+                mantiene "tus datos están intactos" — es lo primero que uno
+                teme cuando le cierran una puerta.
+                Las tres opciones a la vista para que elija, con Pro Familiar
+                destacado (único con trial de 14 días en Stripe: el usuario ve
+                $0 hoy, que pesa más que la diferencia de precio). */}
+            <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%"}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                <span style={{fontSize:18,flexShrink:0}}>🔒</span>
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:13.5,fontWeight:700,color:T.rd}}>Tu prueba gratuita del plan Pro terminó</div>
+                  <div style={{fontSize:11.5,color:T.tx3,marginTop:2,lineHeight:1.5}}>
+                    Para seguir usando el <strong>motor fiscal</strong>, el <strong>Asesor IA</strong> y los <strong>Coaches</strong>, activá tu plan.
+                    <br/>Tus datos están intactos y tu cuenta sigue activa en el plan gratuito.
+                  </div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"9px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Activar Pro Familiar — $27/mes</button>
+                <button onClick={()=>setPg("price")} style={{background:"transparent",color:T.gn,border:`1px solid ${T.gn}`,padding:"9px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Pro — $16/mes</button>
+                <button onClick={()=>setPg("price")} style={{background:"transparent",color:T.tx2,border:`1px solid ${T.border}`,padding:"9px 18px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:12}}>Básico — $8/mes</button>
+              </div>
             </div>
-            <button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"8px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Upgrade ahora →</button>
           </div>}
           <p style={{color:T.tx3,fontSize:13,margin:0}}>Resumen de tu situación financiera</p>
         </div>
