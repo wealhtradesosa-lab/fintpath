@@ -19,6 +19,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { normalizeFiscalData } from "./normalize.js";
+import { totalAnualItem } from "./flowHelpers.js";
 import {
   LAB_SALARIO, LAB_HONORARIOS_CON_EMPLEADOS, LAB_HONORARIOS_SIN_EMPLEADOS,
   // Commit 3 Tarea 3: cesantías y prima como rentas de trabajo (Art. 206 #4 ET)
@@ -132,7 +133,7 @@ export const estimarImpuesto = (u, options = {}) => {
     const oDeu = deu.filter(d => d.owner === ow.id);
     const trm = u.trm || 4200;
     const ingAnualJ = oIng.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
-    const gastosDeducJ = oGas.filter(g => g.fiscalCode !== GAS_JUR_NO_DEDUCIBLE).reduce((s, g) => s + (g.m || 0), 0) * 12;
+    const gastosDeducJ = oGas.filter(g => g.fiscalCode !== GAS_JUR_NO_DEDUCIBLE).reduce((s, g) => s + totalAnualItem(g), 0);
     const interesesJ = oDeu.reduce((s, d) => { const saldo = d.mt || 0; const tasa = (d.ts || d.tasa || 0) / 100; return s + saldo * tasa; }, 0);
     const gmf50J = ingAnualJ * 0.004 * 0.50;
     const utilidadJ = Math.max(0, ingAnualJ - gastosDeducJ - interesesJ - gmf50J);
@@ -183,15 +184,15 @@ export const estimarImpuesto = (u, options = {}) => {
       // no deducibles por el usuario (GAS_JUR_NO_DEDUCIBLE — usado cuando el
       // contribuyente confirma que el gasto no cumple causalidad Art. 107 ET).
       // Items legacy sin fiscalCode suman al 100% como antes (backwards compat).
-      const gastosDeducJ = oGas.filter(g => g.fiscalCode !== GAS_JUR_NO_DEDUCIBLE).reduce((s, g) => s + (g.m || 0), 0) * 12;
-      const gastosTotalJ = oGas.reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastosDeducJ = oGas.filter(g => g.fiscalCode !== GAS_JUR_NO_DEDUCIBLE).reduce((s, g) => s + totalAnualItem(g), 0);
+      const gastosTotalJ = oGas.reduce((s, g) => s + totalAnualItem(g), 0);
       const interesesJ = oDeu.reduce((s, d) => { const saldo = d.mt || 0; const tasa = (d.ts || d.tasa || 0) / 100; return s + saldo * tasa; }, 0);
       // DEPRECIACIÓN (Art. 128-141 ET): decisión deliberada del contribuyente, no automática.
       // Solo aplica a bienes usados en la actividad productora de renta, con vida útil fiscal
       // definida (2-3% construcción, 20% vehículos, etc.) y solo sobre el valor depreciable
       // (no terreno). El usuario la registra como gasto con categoría "Depreciación" en Egresos;
       // ya queda incluida en gastosDeducJ. Esta variable `deprec` es solo para display/desglose.
-      const deprec = oGas.filter(g => /Depreciación|Depreciacion|Depreciation/i.test(g.cat || "")).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const deprec = oGas.filter(g => /Depreciación|Depreciacion|Depreciation/i.test(g.cat || "")).reduce((s, g) => s + totalAnualItem(g), 0);
       const gmf50 = ingAnual * 0.004 * 0.50;
 
       // ── DEDUCCIONES AVANZADAS jurídica (palancas que un contador aplica) ──
@@ -265,7 +266,7 @@ export const estimarImpuesto = (u, options = {}) => {
       // Categoría "Impuesto" cubre predial, ICA, rodamiento, etc. "Predial" es
       // legacy — items viejos que aún no se migraron a "Impuesto". El motor
       // procesa ambos hasta que toda la base esté migrada.
-      const icaGas = oGas.filter(g => g.cat === "Impuesto" || g.cat === "Predial").reduce((s, g) => s + (g.m || 0), 0) * 12 * 0.30;
+      const icaGas = oGas.filter(g => g.cat === "Impuesto" || g.cat === "Predial").reduce((s, g) => s + totalAnualItem(g), 0) * 0.30;
       const descICA = (regimen === "ordinario" || regimen === "zona_franca") ? icaGas * 0.50 : 0;
 
       // ── CÁLCULO POR RÉGIMEN ──
@@ -594,7 +595,7 @@ export const estimarImpuesto = (u, options = {}) => {
         gastosHonorariosDesglose.vehiculosIgnorados = Math.max(0, vehiculosTodos.length - 1);
         gastosHonorariosDesglose.vehiculoIgnoradoMonto = vehiculosTodos
           .filter(g => g !== vehiculoUnico)
-          .reduce((s, g) => s + (g.m || 0), 0) * 12;
+          .reduce((s, g) => s + totalAnualItem(g), 0);
         for (const g of oGas) {
           // Commit 15: incluir IMP_VEHICULAR_PROFESIONAL en el filter de honorarios
           const esGastoHonorarios = GASTOS_HONORARIOS.includes(g.fiscalCode) || g.fiscalCode === IMP_VEHICULAR_PROFESIONAL;
@@ -670,16 +671,16 @@ export const estimarImpuesto = (u, options = {}) => {
       const topeDepUVT = conDiscapacidad ? 768 : 384;
       const deducDep = tieneDep ? Math.min(ingLaboral * 0.10, topeDepUVT * UVT) : 0;
 
-      const gastoSaludTradicional = oGas.filter(g => g.cat === "Salud").reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastoSaludTradicional = oGas.filter(g => g.cat === "Salud").reduce((s, g) => s + totalAnualItem(g), 0);
       // Bridge Commit 1.6: leer salud prepagada del shape nuevo (Egresos con categoría
       // "Aporte tributario" y fiscalCode AP_TRIB_SALUD_PREPAGADA). Entra al mismo tope
       // 16 UVT/mes (Art. 387 #2 ET). En 1.7 la categoría "Salud" se usará sólo para
       // gastos médicos genéricos (consultas, medicinas) y la salud prepagada vivirá
       // exclusivamente en "Aporte tributario".
-      const gastoSaludPrepagadaNueva = oGas.filter(g => g.fiscalCode === AP_TRIB_SALUD_PREPAGADA).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastoSaludPrepagadaNueva = oGas.filter(g => g.fiscalCode === AP_TRIB_SALUD_PREPAGADA).reduce((s, g) => s + totalAnualItem(g), 0);
       // Commit B2: seguros de salud y vida también entran al mismo tope (Art. 387 #2 ET).
       // Sumamos SEG_SALUD y SEG_VIDA al gastoSalud antes de aplicar el tope conjunto.
-      const gastoSegSaludVida = oGas.filter(g => g.fiscalCode === SEG_SALUD || g.fiscalCode === SEG_VIDA).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastoSegSaludVida = oGas.filter(g => g.fiscalCode === SEG_SALUD || g.fiscalCode === SEG_VIDA).reduce((s, g) => s + totalAnualItem(g), 0);
       const gastoSalud = gastoSaludTradicional + gastoSaludPrepagadaNueva + gastoSegSaludVida;
       const deducMedicina = Math.min(gastoSalud, 16 * UVT * 12);
 
@@ -709,8 +710,8 @@ export const estimarImpuesto = (u, options = {}) => {
       // Commit 1.7: después de la migración silenciosa, PV y AFC viven sólo en
       // Egresos (fiscalCode AP_TRIB_PV y AP_TRIB_AFC). El lector viejo
       // ow.aportes.pensionVoluntariaMensual ya no se usa acá.
-      const pvEgresoAnual  = oGas.filter(g => g.fiscalCode === AP_TRIB_PV).reduce((s, g) => s + (g.m || 0), 0) * 12;
-      const afcEgresoAnual = oGas.filter(g => g.fiscalCode === AP_TRIB_AFC).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const pvEgresoAnual  = oGas.filter(g => g.fiscalCode === AP_TRIB_PV).reduce((s, g) => s + totalAnualItem(g), 0);
+      const afcEgresoAnual = oGas.filter(g => g.fiscalCode === AP_TRIB_AFC).reduce((s, g) => s + totalAnualItem(g), 0);
       const pvManualBruto  = pvEgresoAnual + afcEgresoAnual;
       const pvManualAnual  = pvManualBruto > 0 ? Math.min(pvManualBruto, netoLaboral * 0.25, 2500 * UVT) : 0;
       // Commit 3 Tarea 3: cesantías exentas Art. 206 #4. Calcular la porción exenta
@@ -757,8 +758,8 @@ export const estimarImpuesto = (u, options = {}) => {
       // contaminar este bloque. Solo GAS_INMUEBLE_SEGUROS cuenta acá. Items
       // legacy con cat="Seguros" sin fiscalCode son tratados como SEG_GENERICO
       // (no deducibles, criterio conservador) y NO entran al gastosInmueble.
-      const gastosInmuebleBase = oGas.filter(g => ["Predial", "Impuesto", "Mantenimiento", "Vivienda", "Servicios"].includes(g.cat)).reduce((s, g) => s + (g.m || 0), 0) * 12;
-      const gastosInmuebleSeguros = oGas.filter(g => g.fiscalCode === GAS_INMUEBLE_SEGUROS).reduce((s, g) => s + (g.m || 0), 0) * 12;
+      const gastosInmuebleBase = oGas.filter(g => ["Predial", "Impuesto", "Mantenimiento", "Vivienda", "Servicios"].includes(g.cat)).reduce((s, g) => s + totalAnualItem(g), 0);
+      const gastosInmuebleSeguros = oGas.filter(g => g.fiscalCode === GAS_INMUEBLE_SEGUROS).reduce((s, g) => s + totalAnualItem(g), 0);
       // Plan de Optimización: namespace aislado. Solo cuando el caller pide
       // incluirPlanOptimizacion=true (típicamente DeclaracionFlow al calcular
       // el escenario optimizado). Default: lee 0 → no contamina simulador,
