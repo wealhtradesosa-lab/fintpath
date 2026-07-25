@@ -6,7 +6,7 @@ import { exportIngresosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
-import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales } from "../lib/flowHelpers.js";
+import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { obtenerInfoRetencion } from "../lib/retencionesTax.js";
@@ -746,8 +746,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     <td style={{ padding: "10px 14px" }}><span style={{ background: (item.tipo === "fijo" ? T.blue : T.orange) + "15", color: item.tipo === "fijo" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.tipo}</span></td>
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                       <div style={{ fontWeight: 700, color: T.green }}>
-                        {fm(item.moneda==="USD" ? (item.mensual||0)*(trm||4200) : (item.mensual||0))}
-                        {item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(item.mensual).toLocaleString("es-CO")}</span>}
+                        {/* 25-jul-2026: en variables usamos el promedio de meses
+                            ACTIVOS, no item.mensual (que el motor ignora para
+                            esa frecuencia y confundía la lectura). */}
+                        {fm(item.moneda==="USD" ? promedioMesActivo(item)*(trm||4200) : promedioMesActivo(item))}
+                        {item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(promedioMesActivo(item)).toLocaleString("es-CO")}</span>}
                       </div>
                       {/* Subtítulo con total anual solo si NO es mensual todo el año */}
                       {(() => {

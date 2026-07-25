@@ -514,3 +514,27 @@ export function costoCredito(d) {
   }
   return { interesAnual, meses, interesTotal, noAmortiza, interesMes, capitalMes, pctCapital };
 }
+
+// Monto que representa UN mes activo del item — para mostrar en las listas.
+// CAUSA (25-jul-2026, Santiago): en un ingreso de frecuencia VARIABLE la fila
+// mostraba item.mensual, un campo que el motor NO usa para variables (queda
+// del momento en que el item era mensual). Su "K Orlando a Rapicredit"
+// (Oct-Dic, $9.8M por mes) se veía como $3.3M/mes, un número que ningún
+// cálculo utiliza: "me genera esa duda".
+// Ahora: para variables devuelve el promedio de sus meses ACTIVOS (total del
+// año ÷ meses con monto o proyectados), que es lo que realmente entra cada
+// mes que corre. Para el resto, el monto de siempre.
+export function promedioMesActivo(item) {
+  const freq = getFrecuencia(item);
+  if (freq !== "variable") return Number(item?.mensual ?? item?.m ?? 0) || 0;
+  const montos = getMontosMensuales(item);
+  const { desde, hasta } = getRangoMeses(item);
+  const { año } = getMesActual();
+  let n = 0;
+  montos.forEach((v, idx) => {
+    const mes = idx + 1;
+    if (mes < desde || mes > hasta) return;
+    if (v > 0 || esMesFuturo(año, mes)) n++;
+  });
+  return n > 0 ? totalAnualItem(item) / n : 0;
+}

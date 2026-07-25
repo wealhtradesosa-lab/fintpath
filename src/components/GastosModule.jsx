@@ -7,7 +7,7 @@ import { exportGastosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
-import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales } from "../lib/flowHelpers.js";
+import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 
@@ -669,7 +669,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   <span style={{ background: (item.t === "f" ? T.blue : T.orange) + "15", color: item.t === "f" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.t === "f" ? "fijo" : "variable"}</span>
                 </td>
                 <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
-                  <div style={{ fontWeight: 700, color: T.red }}>{fm(item.m)}</div>
+                  <div style={{ fontWeight: 700, color: T.red }}>{fm(promedioMesActivo(item))}</div>
                   {/* Subtítulo con total anual solo si NO es mensual todo el año */}
                   {(() => {
                     const badge = labelVigenciaBadge(item);
