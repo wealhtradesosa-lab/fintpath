@@ -74,10 +74,10 @@ export default function SankeyFlujo({
 
   // ── Geometría
   const filas = Math.max(F.length, D.length);
-  const W = 900, H = Math.max(320, filas * 54 + 60);
-  const PAD = 14, NODO_W = 11;
-  const xF = 210, xHub = 430, xD = 640;
-  const disponible = H - PAD * (filas - 1) - 46;
+  const W = 700, H = Math.max(300, filas * 50 + 56);
+  const PAD = 12, NODO_W = 10;
+  const xF = 178, xHub = 348, xD = 504;
+  const disponible = H - PAD * (filas - 1) - 44;
   const alto = (v) => Math.max(3, (v / bruto) * disponible);
 
   let yF = 24;
@@ -98,7 +98,7 @@ export default function SankeyFlujo({
       </div>
 
       <div style={{ overflowX: "auto" }}>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", minWidth: 620, height: "auto" }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", minWidth: 380, height: "auto" }}>
           {nF.map((n, i) => {
             const d = CINTA(xF + NODO_W, n.y, xHub, anclaIn, n.h); anclaIn += n.h;
             return <path key={`lf${i}`} d={d} fill="#22c55e" opacity={hover === null || hover === `f${i}` ? 0.26 : 0.06}
@@ -113,30 +113,29 @@ export default function SankeyFlujo({
           {nF.map((n, i) => (
             <g key={`nf${i}`} onMouseEnter={() => setHover(`f${i}`)} onMouseLeave={() => setHover(null)}>
               <rect x={xF} y={n.y} width={NODO_W} height={n.h} rx={2} fill="#22c55e" />
-              <text x={xF - 10} y={n.y + n.h / 2 - 2} textAnchor="end" fontSize="12" fontWeight="600" fill={T.tx}>
-                {n.nombre.length > 26 ? n.nombre.slice(0, 25) + "…" : n.nombre}
+              <text x={xF - 9} y={n.y + n.h / 2 - 1} textAnchor="end" fontSize="14.5" fontWeight="600" fill={T.tx}>
+                {n.nombre.length > 18 ? n.nombre.slice(0, 17) + "…" : n.nombre}
               </text>
-              <text x={xF - 10} y={n.y + n.h / 2 + 12} textAnchor="end" fontSize="11" fontFamily="monospace" fill={T.tx3}>
+              <text x={xF - 9} y={n.y + n.h / 2 + 13} textAnchor="end" fontSize="12.5" fontFamily="monospace" fill={T.tx3}>
                 {fmt(Math.round(n.valor))}
               </text>
             </g>
           ))}
 
           <rect x={xHub} y={hubY} width={NODO_W} height={hubH} rx={2} fill={T.tx} opacity={0.85} />
-          <text x={xHub + NODO_W / 2} y={hubY - 9} textAnchor="middle" fontSize="10.5" fontWeight="700" fill={T.tx2}>INGRESO BRUTO</text>
-          <text x={xHub + NODO_W / 2} y={hubY + hubH + 18} textAnchor="middle" fontSize="12" fontWeight="800" fontFamily="monospace" fill={T.tx}>
+          <text x={xHub + NODO_W / 2} y={hubY - 9} textAnchor="middle" fontSize="12" fontWeight="700" fill={T.tx2}>INGRESO BRUTO</text>
+          <text x={xHub + NODO_W / 2} y={hubY + hubH + 19} textAnchor="middle" fontSize="14" fontWeight="800" fontFamily="monospace" fill={T.tx}>
             {fmt(Math.round(bruto))}
           </text>
 
           {nD.map((n, i) => (
             <g key={`nd${i}`} onMouseEnter={() => setHover(`d${i}`)} onMouseLeave={() => setHover(null)}>
               <rect x={xD} y={n.y} width={NODO_W} height={n.h} rx={2} fill={n.color} />
-              <text x={xD + NODO_W + 10} y={n.y + n.h / 2 - 2} fontSize="12" fontWeight="600" fill={T.tx}>
-                {n.nombre.length > 24 ? n.nombre.slice(0, 23) + "…" : n.nombre}
-                <tspan fill={T.tx3} fontWeight="400"> · {pct(n.valor)}%</tspan>
+              <text x={xD + NODO_W + 9} y={n.y + n.h / 2 - 1} fontSize="14.5" fontWeight="600" fill={T.tx}>
+                {n.nombre.length > 19 ? n.nombre.slice(0, 18) + "…" : n.nombre}
               </text>
-              <text x={xD + NODO_W + 10} y={n.y + n.h / 2 + 12} fontSize="11" fontFamily="monospace" fill={T.tx3}>
-                {fmt(Math.round(n.valor))}{n.nota ? ` · ${n.nota}` : ""}
+              <text x={xD + NODO_W + 9} y={n.y + n.h / 2 + 13} fontSize="12.5" fontFamily="monospace" fill={T.tx3}>
+                {fmt(Math.round(n.valor))} <tspan fill={T.tx2}>· {pct(n.valor)}%</tspan>
               </text>
             </g>
           ))}
