@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 /**
  * TreemapPatrimonio — La composición del patrimonio, donde el área ES la plata.
  *
@@ -72,6 +74,14 @@ function nombreQueQuepa(nombre, ancho, px = 11.5) {
 }
 
 export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altura = 260, maxBloques = 7 }) {
+  // 25-jul-2026 — BUG CRÍTICO. Los clipPath usaban ids fijos ("tm-clip-0"...).
+  // Con TRES treemaps en el dashboard (patrimonio, ingresos, gastos) los ids
+  // se repetían en el DOM, y el navegador resuelve por el PRIMERO que
+  // encuentra: los gráficos 2 y 3 quedaban recortados con la geometría del 1.
+  // De ahí los bloques cortados donde no correspondía, el texto flotando
+  // fuera de su bloque y los huecos enormes. useId() da un prefijo único por
+  // instancia y lo elimina de raíz.
+  const uid = useId().replace(/:/g, "");
   const items = (datos || []).filter((d) => d && d.value > 0).sort((a, b) => b.value - a.value);
   if (!items.length) return null;
 
@@ -105,7 +115,7 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
               el bloque. Un clipPath por bloque lo hace imposible: lo que no
               cabe, no se dibuja. */}
           {bloques.map((b, i) => (
-            <clipPath key={"c" + i} id={`tm-clip-${i}`}>
+            <clipPath key={"c" + i} id={`tm-${uid}-${i}`}>
               <rect x={b.x + 1.5} y={b.y + 1.5} width={Math.max(b.w - 3, 0)} height={Math.max(b.h - 3, 0)} rx={7} />
             </clipPath>
           ))}
@@ -127,7 +137,7 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
           const cabeMonto = b.w > 96 && b.h > 92;
           const etiqueta = cabeNombre ? nombreQueQuepa(b.name, b.w) : "";
           return (
-            <g key={b.name + i} clipPath={`url(#tm-clip-${i})`}>
+            <g key={b.name + i} clipPath={`url(#tm-${uid}-${i})`}>
               <rect
                 x={b.x + 1.5} y={b.y + 1.5}
                 width={Math.max(b.w - 3, 0)} height={Math.max(b.h - 3, 0)}
