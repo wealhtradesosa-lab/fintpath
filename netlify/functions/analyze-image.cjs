@@ -40,8 +40,13 @@ REGLAS PARA EL SALDO:
 - Usá el SALDO DE CAPITAL PENDIENTE (lo que aún se debe), NO el monto desembolsado/original del crédito ni el pago mínimo.
 - Ejemplo: si dice "Monto desembolsado $260.000.000" y "Saldo de capital pendiente $130.308.044", la respuesta correcta es 130308044.18.
 
-REGLAS PARA LA CUOTA:
-- Usá el valor del próximo pago / cuota mensual / pago mínimo del periodo actual.
+REGLAS PARA LA CUOTA — buscá la cuota HABITUAL, no un pago atípico:
+- La cuota que sirve es la RECURRENTE (capital + intereses), porque con ella se calcula en cuánto tiempo se paga la deuda.
+- CUIDADO: si el cliente hizo un abono extraordinario a capital, el "valor próximo pago" queda anormalmente bajo (a veces solo intereses). Señal de alerta: que ese próximo pago traiga "abono a capital" en $0, o que sea igual al renglón de intereses corrientes. En ese caso NO lo uses.
+- Cuando el próximo pago esté distorsionado así, usá la cuota del PERIODO ANTERIOR sumando abono a capital + intereses corrientes.
+- Excluí del valor los SEGUROS y otros cobros: no reducen la deuda. Si el pago total los incluye, restalos.
+- Ejemplo: si el mes anterior muestra abono a capital $2.113.941,87 + intereses corrientes $2.296.185,93 + seguros $522.973 = pago total $4.933.100,80, y el próximo pago es $1.058.101,38 con abono a capital $0, la cuota correcta es 4410127.80 (capital + intereses, sin seguros).
+- Si usaste el periodo anterior por esta razón, poné "confianza": "media".
 
 Si no podés leer un dato con certeza, poné null y bajá la confianza. Nunca inventes ni estimes. Montos en COP.`;
 
