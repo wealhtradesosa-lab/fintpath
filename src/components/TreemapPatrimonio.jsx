@@ -57,7 +57,11 @@ function repartir(items, x, y, w, h, salida = []) {
  */
 function nombreQueQuepa(nombre, ancho, px = 11.5) {
   const CHAR = px * 0.58;              // ancho medio de carácter en sans bold
-  const max = Math.floor((ancho - 24) / CHAR);
+  // Margen real: 9px a la izquierda (x del texto) + 9px de aire a la derecha.
+  // Antes se descontaban 24px, más de lo necesario, y por eso etiquetas que sí
+  // entraban se recortaban de más: "SALARIO SOSA" y "SALARIO ECHAVARRIA"
+  // caían ambas en "SALARIO…" — dos bloques distintos con el mismo rótulo.
+  const max = Math.floor((ancho - 18) / CHAR);
   if (max <= 2) return "";
   if (nombre.length <= max) return nombre;
 
@@ -127,15 +131,24 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
           // el más grande también tenga el número más grande. Refuerza la
           // lectura por área en vez de competir con ella.
           const menor = Math.min(b.w, b.h);
-          const tamPct = Math.max(11, Math.min(44, Math.round(menor * 0.34)));
+          const tamPct = Math.max(10, Math.min(44, Math.round(menor * 0.34)));
           // Umbrales bajados (25-jul-2026): antes bloques de 40-70px quedaban
           // completamente vacíos, sin siquiera el porcentaje. Un bloque mudo no
           // aporta nada y parece un error de render. Ahora casi cualquier
           // bloque muestra al menos su cifra, con el tamaño que admita.
-          const cabePct = b.w > 34 && b.h > 24;
-          const cabeNombre = b.w > 56 && b.h > 50;
-          const cabeMonto = b.w > 96 && b.h > 92;
-          const etiqueta = cabeNombre ? nombreQueQuepa(b.name, b.w) : "";
+          // 25-jul-2026 (Santiago: "pongamos los textos pequeños para que
+          // quepan en cada cuadrito pero que se lea"). Antes el nombre iba a
+          // 11,5px fijo: si no entraba a ese tamaño, el bloque se quedaba sin
+          // nombre aunque hubiera espacio para uno más chico. Ahora la fuente
+          // se adapta al bloque —entre 8 y 12px— y recién si a 8px tampoco
+          // entra se manda a la leyenda. 8px es el piso de legibilidad: por
+          // debajo se vuelve mancha y sería peor que no ponerlo.
+          const cabePct = b.w > 30 && b.h > 20;
+          const tamNombre = Math.max(8, Math.min(12, Math.round(Math.min(b.w / 9, b.h / 5.5))));
+          const cabeNombre = b.w > 42 && b.h > 34;
+          const etiqueta = cabeNombre ? nombreQueQuepa(b.name, b.w, tamNombre) : "";
+          const tamMonto = Math.max(8, Math.min(10.5, tamNombre - 1));
+          const cabeMonto = b.w > 74 && b.h > 72 && etiqueta;
           return (
             <g key={b.name + i} clipPath={`url(#tm-${uid}-${i})`}>
               <rect
@@ -146,18 +159,18 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
                 stroke={color} strokeOpacity={0.55} strokeWidth={1.2}
               />
               {cabePct && (
-                <text x={b.x + 12} y={b.y + 14 + tamPct * 0.78} fill={color}
+                <text x={b.x + 9} y={b.y + 12 + tamPct * 0.78} fill={color}
                       fontSize={tamPct} fontWeight={800} fontFamily="monospace">
                   {pct.toFixed(pct >= 10 ? 0 : 1)}%
                 </text>
               )}
               {cabeNombre && etiqueta && (
-                <text x={b.x + 12} y={b.y + 14 + tamPct * 0.78 + 16} fill={T.tx} fontSize={11.5} fontWeight={700}>
+                <text x={b.x + 9} y={b.y + 12 + tamPct * 0.78 + tamNombre + 2} fill={T.tx} fontSize={tamNombre} fontWeight={700}>
                   {etiqueta}
                 </text>
               )}
               {cabeMonto && (
-                <text x={b.x + 12} y={b.y + 14 + tamPct * 0.78 + 32} fill={T.tx3} fontSize={10.5} fontFamily="monospace">
+                <text x={b.x + 9} y={b.y + 12 + tamPct * 0.78 + tamNombre + tamMonto + 6} fill={T.tx3} fontSize={tamMonto} fontFamily="monospace">
                   {fmt ? fmt(b.value) : b.value}
                 </text>
               )}
@@ -168,9 +181,9 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
       </svg>
 
       {/* Leyenda solo para lo que no cupo etiquetado */}
-      {bloques.some((b) => !(b.w > 56 && b.h > 50)) && (
+      {bloques.some((b) => !(b.w > 42 && b.h > 34)) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
-          {bloques.filter((b) => !(b.w > 56 && b.h > 50)).map((b, i) => {
+          {bloques.filter((b) => !(b.w > 42 && b.h > 34)).map((b, i) => {
             const idx = bloques.indexOf(b);
             return (
               <div key={b.name + i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: T.tx3 }}>
