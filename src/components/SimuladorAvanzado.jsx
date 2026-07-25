@@ -779,7 +779,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
               // (por si todos los items estaban apagados).
               const gasCats = Object.entries(user.gastos||{}).map(([cat,items])=>{
                 const active = (items||[]).filter(g=>g.sim!==false);
-                return {cat,total:active.reduce((s,g)=>s+(g.m||0),0),items:active};
+                return {cat,total:active.reduce((s,g)=>s+montoPromedioMensual(g),0),items:active}; /* frecuencia: un gasto anual no es un gasto mensual (fix 25-jul-2026) */
               }).filter(g=>g.total>0).sort((a,b)=>b.total-a.total);
               const gasRows = gasCats.map(g => {
                 const detail = g.items.slice(0,3).map(i=>i.c).join(", ");

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import NumberInput from "./NumberInput";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
@@ -292,7 +293,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const allItems = [];
   cats.forEach(([cat, its]) => its.forEach((g, i) => allItems.push({ ...g, cat, idx: i, key: cat + "|" + i })));
   const activos = allItems.filter((g) => g.sim !== false);
-  const totalMes = activos.reduce((s, g) => s + (g.m || 0), 0);
+  const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g), 0);
 
   const toggleSel = (key) => setSelected((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
   const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((g) => g.key)));

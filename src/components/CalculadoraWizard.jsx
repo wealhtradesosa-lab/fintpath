@@ -19,6 +19,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useMemo, useState, useEffect } from "react";
+import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import { estimarImpuesto } from "../lib/taxCO.js";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { GRUPOS_SIMPLE } from "../lib/regimenSimple.js";
@@ -403,7 +404,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
     const arriendos = ownerIng.filter(i => i.categoria === "Arriendo").reduce((s, i) => s + (i.mensual || 0), 0);
     const rendimientos = ownerIng.filter(i => i.categoria === "Rendimientos").reduce((s, i) => s + (i.mensual || 0), 0);
     const dividendos = ownerIng.filter(i => i.categoria === "Dividendos").reduce((s, i) => s + (i.mensual || 0), 0);
-    const gastosActividad = ownerGas.filter(g => ["Oficina", "Servicios", "Tecnología", "Transporte"].includes(g.cat)).reduce((s, g) => s + (g.m || 0), 0);
+    const gastosActividad = ownerGas.filter(g => ["Oficina", "Servicios", "Tecnología", "Transporte"].includes(g.cat)).reduce((s, g) => s + montoPromedioMensual(g), 0);
     // Categorías de gastos del inmueble — ampliadas para evitar falso positivo
     // cuando el usuario registró el predial/mantenimiento bajo otro nombre.
     const categoriasInmueble = [
@@ -417,7 +418,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
       const nombre = (g.nombre || g.c || "").toLowerCase();
       return nombre.includes("predial") || nombre.includes("administra") ||
              nombre.includes("manteni") || nombre.includes("seguro");
-    }).reduce((s, g) => s + (g.m || 0), 0);
+    }).reduce((s, g) => s + montoPromedioMensual(g), 0);
     return { salario, honorarios, arriendos, rendimientos, dividendos, gastosActividad, gastosInmueble };
   }, [ownerIng, ownerGas]);
 

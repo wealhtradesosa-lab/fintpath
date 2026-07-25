@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
 import PageHeader from "./PageHeader.jsx";
 
@@ -59,8 +60,18 @@ function buildContext(user, totals) {
   if (Object.keys(gas).length > 0) {
     ctx += "\nGASTOS POR CATEGORÍA:\n";
     Object.entries(gas).forEach(([cat, items]) => {
-      const total = items.reduce((s, g) => s + (g.m || 0), 0);
-      ctx += `• ${cat}: ${fm(total)}/mes (${items.length} items)\n`;
+      // 25-jul-2026 — DOS BUGS EN UNA LÍNEA:
+      //  · sumaba `g.m` crudo y lo rotulaba "/mes". Un gasto ANUAL entraba al
+      //    contexto de la IA con su valor de año entero declarado como mensual
+      //    (caso real: Seguros anuales de $27,6M informados como $30,8M/mes).
+      //    El asesor razonaba y recomendaba sobre cifras infladas hasta 12x.
+      //  · no filtraba sim!==false, así que incluía ítems que el usuario había
+      //    apagado — contra la regla de que lo apagado no existe para ningún
+      //    cálculo, contexto ni análisis.
+      const activos = (items || []).filter(g => g.sim !== false);
+      if (!activos.length) return;
+      const total = activos.reduce((s, g) => s + montoPromedioMensual(g), 0);
+      ctx += `• ${cat}: ${fm(total)}/mes (${activos.length} items)\n`;
     });
   }
 
