@@ -22,7 +22,8 @@ const Stripe = require("stripe");
 
 // Trial period en días para Pro Familiar. Si querés cambiarlo (ej: 7 días),
 // modificá esta constante. Si querés desactivar trial, ponela en 0.
-const PRO_FAMILIAR_TRIAL_DAYS = 14;
+const TRIAL_DAYS = 14; // aplica a todos los planes desde 25-jul-2026
+const PRO_FAMILIAR_TRIAL_DAYS = TRIAL_DAYS; // compat: usado por isProFamiliarPrice y logs
 
 // Detecta si un priceId pertenece a Pro Familiar comparando contra las env vars.
 // Si las env vars no están seteadas (deploy nuevo), detecta por hardcoded
@@ -112,11 +113,14 @@ exports.handler = async (event) => {
       allow_promotion_codes: true,
     };
 
-    // Trial de 14 días solo para Pro Familiar (los otros planes son cobro
-    // directo, sin trial). Si el usuario ya tuvo trial antes con la misma
-    // tarjeta, Stripe lo detecta y NO da trial doble.
-    if (isProFamiliarPrice(priceId) && PRO_FAMILIAR_TRIAL_DAYS > 0) {
-      sessionParams.subscription_data.trial_period_days = PRO_FAMILIAR_TRIAL_DAYS;
+    // 25-jul-2026 — Trial de 14 días para TODOS los planes.
+    // Antes solo lo tenía Pro Familiar: quien compraba Pro o Básico pagaba
+    // desde el primer día, mientras toda la app le prometía "probalo gratis".
+    // Incoherente, y castigaba justo a quien elegía el plan más barato.
+    // Nota: si el usuario ya tuvo trial con la misma tarjeta, Stripe lo
+    // detecta y no otorga un segundo trial.
+    if (TRIAL_DAYS > 0) {
+      sessionParams.subscription_data.trial_period_days = TRIAL_DAYS;
       // Importante: si el trial expira sin método de pago válido, cancelamos
       // la subscription en lugar de cobrarle a la fuerza al usuario.
       sessionParams.subscription_data.trial_settings = {
