@@ -87,7 +87,23 @@ exports.handler = async (event) => {
     const desde = (h) => new Date(Date.now() - h * 3600000);
     const nuevos = (h) => usuarios.filter((u) => new Date(u.created_at) > desde(h)).length;
 
-    const pagos = Object.values(planDe).filter((p) => p === "pro_familiar" || p === "pro" || p === "basico").length;
+    // ── Pagos REALES (25-jul-2026 — corrección: Santiago vio "73 pagos" sin
+    // haber recibido un peso). Causa: al registrarse la app asigna
+    // nd.p.plan="pro" a TODO el mundo — es el trial de 14 días, no una venta.
+    // Contar ese campo inflaba "pagos" hasta casi el total de usuarios.
+    // La única marca de pago real es la que deja el webhook de Stripe en la
+    // tabla accounts: stripe_customer_id.
+    let pagos = 0, trials = 0, cuentasLeidas = false;
+    try {
+      const ra = await fetch(`${URL}/rest/v1/accounts?select=*`, { headers: h });
+      if (ra.ok) {
+        const cuentas = await ra.json();
+        cuentasLeidas = true;
+        pagos = cuentas.filter((a) => a && a.stripe_customer_id).length;
+      }
+    } catch { /* si la tabla no existe o cambia, pagos queda en 0 y se avisa */ }
+    // Trials: tienen plan local "pro" pero ninguna marca de pago en Stripe.
+    trials = Object.values(planDe).filter((p) => p === "pro" || p === "pro_familiar" || p === "basico").length;
 
     const ultimos = [...usuarios]
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -109,6 +125,8 @@ exports.handler = async (event) => {
         total,
         activados,
         pagos,
+        trials,
+        cuentasLeidas,
         tasaActivacion: total > 0 ? (activados / total) * 100 : 0,
         tasaPago: total > 0 ? (pagos / total) * 100 : 0,
         nuevos24h: nuevos(24),
