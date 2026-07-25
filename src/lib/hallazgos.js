@@ -147,7 +147,11 @@ export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patri
       detalle: r.descripcion,
       impactoAnual: num(r.ahorroAnualEstimado),
       base: r.base || "Estatuto Tributario",
-      accion: { label: "Ver estrategia", pagina: "taxopt" },
+      // 25-jul-2026: apuntaba a "taxopt", que es TaxOptimizerUS — el
+      // optimizador de Estados Unidos. Un usuario colombiano hacía clic en
+      // una recomendación del ET y aterrizaba en una pantalla que dice
+      // "próximamente". El destino correcto es "tax" (Impuestos).
+      accion: { label: "Ver impuestos", pagina: "tax" },
       tono: "oportunidad",
     }));
 
