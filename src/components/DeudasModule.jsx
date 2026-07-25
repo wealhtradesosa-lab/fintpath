@@ -41,8 +41,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   const scanImage = async () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*";
-    input.capture = "environment";
+    input.accept = "image/*,application/pdf";
     input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -70,7 +69,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             setShowForm(true);
             alert("✅ Documento leído" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.nombre || "") + ": Saldo $" + (d.saldo || 0).toLocaleString("es-CO") + " — Cuota $" + (d.cuota || 0).toLocaleString("es-CO"));
           } else {
-            alert("⚠️ No se pudo leer la imagen. Intenta con una foto más clara.");
+            alert("⚠️ No se pudo leer el documento. Si es una foto, probá con una más clara; si es un PDF, que no supere ~4 MB y no esté protegido con contraseña.");
           }
           setScanning(false);
         };

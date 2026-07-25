@@ -14,6 +14,24 @@ exports.handler = async (event) => {
     const { image, type, mediaType } = JSON.parse(event.body);
     if (!image) return { statusCode: 400, headers, body: JSON.stringify({ error: "No image provided" }) };
 
+    const mt = mediaType || "image/jpeg";
+    const esPDF = mt === "application/pdf" || mt.includes("pdf");
+
+    const promptDeuda = `Analiza este documento colombiano de una deuda o crédito (extracto de tarjeta de crédito, estado de cuenta de préstamo, plan de pagos de hipoteca, leasing, libranza, etc.).
+
+Extrae la siguiente información y responde SOLO con JSON válido, sin markdown ni backticks:
+{
+  "nombre": "nombre del crédito o entidad (ej. Tarjeta Visa Bancolombia, Hipoteca Davivienda)",
+  "saldo": número (saldo/capital pendiente TOTAL en COP, sin puntos ni comas),
+  "cuota": número (cuota o pago mensual en COP),
+  "tasa": número o null (tasa de interés EFECTIVA ANUAL en %. Si el documento da una tasa mensual, multiplícala por 12 aproximando o conviértela a efectiva anual; si solo hay mensual indícala como anual equivalente),
+  "tipo": "una de: loan, mortgage, credit_card, leasing, other",
+  "confianza": "alta" o "media" o "baja"
+}
+
+IMPORTANTE sobre la tasa: en Colombia las tarjetas suelen mostrar tasa mensual (~2%) y efectiva anual (~26-30%). Devuelve SIEMPRE la EFECTIVA ANUAL. Si no estás seguro, pon confianza "media" o "baja".
+Si no puedes leer algo, pon null. El saldo es el total pendiente, no el pago mínimo. Montos en COP.`;
+
     const prompt = type === "ingreso"
       ? `Analiza esta imagen de un documento financiero colombiano (extracto, certificado, recibo de pago, etc.).
 
@@ -29,6 +47,8 @@ Extrae la siguiente información y responde SOLO con JSON válido, sin markdown 
 }
 
 Si no puedes leer algo, pon null. Si el monto es anual divídelo entre 12. Montos en COP.`
+      : type === "deuda"
+      ? promptDeuda
       : `Analiza esta imagen de una factura, recibo o documento de gasto colombiano (servicios públicos, predial, seguro, cuenta de cobro, nómina, factura, etc.).
 
 Extrae la siguiente información y responde SOLO con JSON válido, sin markdown ni backticks:
@@ -44,6 +64,11 @@ Extrae la siguiente información y responde SOLO con JSON válido, sin markdown 
 Si el monto es bimestral divídelo entre 2, trimestral entre 3, semestral entre 6, anual entre 12.
 Si no puedes leer algo, pon null. Montos en COP.`;
 
+    // PDFs usan bloque "document"; imágenes usan bloque "image".
+    const fileBlock = esPDF
+      ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: image } }
+      : { type: "image", source: { type: "base64", media_type: mt, data: image } };
+
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -57,7 +82,7 @@ Si no puedes leer algo, pon null. Montos en COP.`;
         messages: [{
           role: "user",
           content: [
-            { type: "image", source: { type: "base64", media_type: mediaType || "image/jpeg", data: image } },
+            fileBlock,
             { type: "text", text: prompt }
           ]
         }]
