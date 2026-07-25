@@ -37,12 +37,22 @@ function deudaCaraVsAhorro(user, trm) {
 
   // Liquidez disponible: CDT, cuentas, fondos. No propiedades ni vehículos.
   const LIQUIDOS = ["cdt", "efectivo", "cuenta", "fic", "fondo", "ahorro"];
-  const liquidez = invs
-    .filter((i) => LIQUIDOS.some((t) => String(i.tipo || "").toLowerCase().includes(t)))
-    .reduce((s, i) => s + (i.moneda === "USD" ? num(i.va) * trm : num(i.va)), 0);
+  const liquidos = invs.filter((i) => LIQUIDOS.some((t) => String(i.tipo || "").toLowerCase().includes(t)));
+  const valorCOP = (i) => (i.moneda === "USD" ? num(i.va) * trm : num(i.va));
+  const liquidez = liquidos.reduce((s, i) => s + valorCOP(i), 0);
   if (liquidez < 1_000_000) return null;
 
-  const RENDIMIENTO_TIPICO = 9.5; // referencia CDT Colombia 2026
+  // 25-jul-2026 — El rendimiento sale de los datos del usuario, no de una
+  // constante. La primera versión asumía 9,5% E.A. ("referencia CDT Colombia"),
+  // un número que yo puse: exactamente lo que el producto promete no hacer.
+  // Ahora es el promedio PONDERADO por monto de la tasa que el usuario cargó
+  // en cada activo líquido. Si no cargó ninguna tasa, no hay con qué comparar
+  // y el hallazgo no se muestra — mejor callar que inventar el diferencial.
+  const conTasa = liquidos.filter((i) => num(i.tasa) > 0);
+  if (!conTasa.length) return null;
+  const baseConTasa = conTasa.reduce((s, i) => s + valorCOP(i), 0);
+  if (baseConTasa <= 0) return null;
+  const RENDIMIENTO_TIPICO = conTasa.reduce((s, i) => s + num(i.tasa) * valorCOP(i), 0) / baseConTasa;
 
   // Elegir por IMPACTO, no por tasa. Una tarjeta de $5M al 28% se ve más
   // "cara" que un crédito de $130M al 23%, pero abonar al segundo ahorra
@@ -70,7 +80,7 @@ function deudaCaraVsAhorro(user, trm) {
     titulo: `Tu ${cara.nombre} al ${cara.tasa.toFixed(2)}% cuesta más de lo que rinde tu ahorro`,
     detalle: `Tenés liquidez disponible mientras pagás una tasa del ${cara.tasa.toFixed(2)}% E.A. Abonar a capital rinde ${diferencial.toFixed(1)} puntos más que dejar la plata quieta.`,
     impactoAnual: impacto,
-    base: `Tasa del crédito (${cara.tasa.toFixed(2)}% E.A.) vs. rendimiento de referencia CDT (${RENDIMIENTO_TIPICO}% E.A.)`,
+    base: `Tasa del crédito (${cara.tasa.toFixed(2)}% E.A.) vs. rendimiento promedio de tus activos líquidos (${RENDIMIENTO_TIPICO.toFixed(2)}% E.A.), ponderado por monto`,
     accion: { label: "Ver mis deudas", pagina: "deu" },
     tono: "oportunidad",
   };
