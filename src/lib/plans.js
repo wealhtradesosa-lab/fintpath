@@ -215,6 +215,8 @@ const ADVISOR_PLAN_LANDING = {
 // billingCycle. Retorna lista con flags `cur` (plan actual), `ac` (más
 // popular), y precios listos para renderizar.
 // ═══════════════════════════════════════════════════════════════════════════
+const PLAN_RANK = { free: 0, basico: 1, pro: 2, pro_familiar: 3, advisor_pro: 3 };
+
 export function getPlansForApp({ plan, isUS, trm, billingCycle, trialActive = false, trialDays = 0 }) {
   const isCO = !isUS;
   return PLAN_BASE.map(b => {
@@ -250,6 +252,12 @@ export function getPlansForApp({ plan, isUS, trm, billingCycle, trialActive = fa
       // en la ventana donde hay que convertir. Ahora, en trial, ningún plan
       // se marca como actual: se marca como TRIAL, con los días restantes.
       cur: !trialActive && plan === planNameToCanonical(b.name),
+      // 25-jul-2026 (Santiago: "solo sale que uno está en plan básico y no veo
+      // opciones para hacer updates"). Jerarquía para que el botón diga si es
+      // MEJORA o CAMBIO, en vez de un "Comenzar" idéntico en todas las
+      // tarjetas — que no comunica nada a quien ya tiene plan.
+      rank: PLAN_RANK[planNameToCanonical(b.name)] ?? 0,
+      rankActual: PLAN_RANK[plan] ?? 0,
       enTrial: trialActive && plan === planNameToCanonical(b.name),
       trialDays,
       ac: !!b.accent,

@@ -2778,7 +2778,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 {pl.comingSoon?(
                   <Bt v="s" sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{window.location.href="mailto:soporte@finpathia.com?subject=Plan Pro Familiar — interesado&body=Hola, quiero entrar a la lista de espera del plan Pro Familiar para mi familia/equipo. Mi email: "+(u?.p?.email||"")}}>Únete a la lista de espera</Bt>
                 ):(
-                <Bt v={pl.ac?"p":pl.cur?"s":"p"} sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{if(!pl.cur)(async()=>{
+                <Bt v={pl.cur?"s":pl.rank>pl.rankActual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",opacity:(pl.cur||pl.rank===0)?0.55:1,cursor:(pl.cur||pl.rank===0)?"default":"pointer"}} onClick={()=>{if(!pl.cur&&pl.rank!==0)(async()=>{
                   try{
                     // PriceIds vienen de src/lib/plans.js (STRIPE_PRICE_IDS),
                     // source-of-truth única. Refactor item #9.
@@ -2815,7 +2815,18 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                       (isBlocked?"\n\n⚠️ Posible AdBlocker o extensión del browser bloqueando la conexión.\nProbá:\n• Desactivar adblocker para finpathia.com\n• Abrir en modo incógnito\n• Probar con otro browser":"\n\nVerificá tu conexión. Detalle del error en consola (F12 → Console).")
                     );
                   }
-                })()}}>{pl.cur?"Plan actual":pl.enTrial?(pl.trialDays<=1?"Activar antes de que venza":`Activar — quedan ${pl.trialDays} días`):"Comenzar"}</Bt>
+                })()}}>{
+                  // 25-jul-2026: el botón decía "Comenzar" en TODAS las tarjetas,
+                  // incluida Free — que no tiene precio, así que era un botón
+                  // muerto (el handler hace `if(!priceId)return`). Quien ya tenía
+                  // plan no distinguía qué era mejorar y qué era bajar.
+                  pl.cur ? "Tu plan actual"
+                  : pl.enTrial ? (pl.trialDays<=1?"Activar antes de que venza":`Activar — quedan ${pl.trialDays} días`)
+                  : pl.rank===0 ? "Se activa al cancelar tu plan"
+                  : pl.rankActual===0 ? "Comenzar"
+                  : pl.rank>pl.rankActual ? `Mejorar a ${pl.n}`
+                  : `Cambiar a ${pl.n}`
+                }</Bt>
                 )}
               </div>
             </Cd>
