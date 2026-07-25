@@ -59,7 +59,11 @@ function deudaCaraVsAhorro(user, trm) {
   // veinte veces más. Ordenar por tasa recomendaba lo irrelevante.
   const cara = deudas
     .map((d) => {
-      const saldo = num(d.mt), tasa = num(d.ta);
+      // El campo de tasa en deudas es `ts` (16 usos en App.jsx, `form.ts` en
+      // DeudasModule). La primera versión leía `ta`, que está vacío en todos
+      // los registros: el hallazgo de deuda nunca se disparaba, aunque el
+      // usuario tuviera sus tasas correctamente cargadas.
+      const saldo = num(d.mt), tasa = num(d.ts ?? d.ta);
       const dif = tasa - RENDIMIENTO_TIPICO;
       return {
         nombre: d.n || d.nombre || "Crédito",
