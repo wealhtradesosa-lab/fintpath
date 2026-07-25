@@ -69,8 +69,11 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             setShowForm(true);
             alert("✅ Documento leído" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.nombre || "") + ": Saldo $" + (d.saldo || 0).toLocaleString("es-CO") + " — Cuota $" + (d.cuota || 0).toLocaleString("es-CO"));
           } else {
-            const motivo = data.error ? "\n\nDetalle: " + data.error : "";
-            alert("⚠️ No se pudo leer el documento." + motivo + "\n\nSi es una foto, probá una más clara; si es un PDF, que no supere ~4 MB y no esté protegido con contraseña.");
+            const det = data.error || data.errorMessage || "";
+            const esTimeout = /timed out|timeout/i.test(det);
+            alert(esTimeout
+              ? "⏱️ El documento tardó demasiado en procesarse. Probá de nuevo, o subí una foto/captura de la página del extracto (pesa menos y se lee más rápido)."
+              : "⚠️ No se pudo leer el documento." + (det ? "\n\nDetalle: " + det : "") + "\n\nSi es una foto, probá una más clara; si es un PDF, que no supere ~4 MB y no esté protegido con contraseña.");
           }
           setScanning(false);
         };
