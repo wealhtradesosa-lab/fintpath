@@ -385,16 +385,19 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               <In l="Nombre" value={form.n} onChange={(v) => setForm((p) => ({ ...p, n: v }))} placeholder="Hipoteca casa" />
               <In l="Tipo" value={form.tp} onChange={(v) => setForm((p) => ({ ...p, tp: v }))} options={[{ v: "mortgage", l: "Hipoteca" }, { v: "loan", l: "Préstamo" }, { v: "personal", l: "Personal" }, { v: "credit_card", l: "Tarjeta" }]} />
               <In l="Saldo" value={form.mt} onChange={(v) => setForm((p) => ({ ...p, mt: v }))} type="number" placeholder="0" />
-              <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => {
-                const mt=parseFloat(form.mt)||0;
-                const newTs=mt>0&&v?((parseFloat(v)*12/mt)*100).toFixed(1):"";
-                setForm((p) => ({ ...p, pg: v, ts: newTs }));
-              }} type="number" placeholder="0" />
-              <In l="Tasa anual %" value={form.ts} onChange={(v) => {
-                const mt=parseFloat(form.mt)||0;
-                const newPg=mt>0&&v?Math.round(mt*parseFloat(v)/100/12):"";
-                setForm((p) => ({ ...p, ts: v, pg: String(newPg) }));
-              }} type="number" placeholder="Ej: 12" />
+              {/* 24-jul-2026 — CAUSA RAÍZ del "40,6%" y del "$2.486.712" que
+                  reportó Santiago: estos dos campos se auto-calculaban entre sí
+                  con cuota = saldo × tasa / 12 (y su inversa). Esa identidad
+                  solo vale para un crédito que paga SOLO intereses y nunca
+                  amortiza. En un crédito real es falsa en ambos sentidos:
+                  con cuota 4.408.755 y saldo 130.308.044 devolvía "tasa 40,6%",
+                  y al corregir la tasa a 22,99 pisaba la cuota con 2.486.712.
+                  Además pisaba lo que acababa de extraer el escaneo del extracto.
+                  Cuota y tasa son datos INDEPENDIENTES del extracto: se capturan,
+                  no se deducen. Abajo se muestra lo que sí se puede derivar de
+                  verdad (plazo e interés), con amortización correcta. */}
+              <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v }))} type="number" placeholder="0" />
+              <In l="Tasa anual % (E.A.)" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="Ej: 22.99" />
               {/* Vigencia de la deuda (20-jul-2026): "¿se paga todo el año o
                   hasta X mes?" — reusa el selector de Ingresos/Gastos. */}
               <div style={{ gridColumn: "1/-1" }}>
@@ -412,7 +415,20 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   mostrarVigencia={true}
                 />
               </div>
-              {form.mt&&form.pg&&form.ts&&<div style={{gridColumn:"1/-1",fontSize:11,color:"#a1a1aa",background:"#1e1e24",borderRadius:8,padding:"8px 12px"}}>Saldo {fmt(+form.mt||0)} al {form.ts}% anual = cuota estimada {fmt(+form.pg||0)}/mes. Ingresa uno y el otro se calcula.</div>}
+              {form.mt&&form.pg&&form.ts&&(()=>{
+                const cc=costoCredito({mt:+form.mt||0,pg:+form.pg||0,ts:+form.ts||0});
+                if(cc.noAmortiza) return (
+                  <div style={{gridColumn:"1/-1",fontSize:11,color:"#fca5a5",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.25)",borderRadius:8,padding:"8px 12px"}}>
+                    ⚠️ La cuota no alcanza a cubrir el interés mensual (~{fmt(Math.round((+form.mt||0)*(Math.pow(1+(+form.ts||0)/100,1/12)-1)))}). A este ritmo la deuda no baja. Revisá la cuota o la tasa.
+                  </div>
+                );
+                return (
+                  <div style={{gridColumn:"1/-1",fontSize:11,color:"#a1a1aa",background:"#1e1e24",borderRadius:8,padding:"8px 12px"}}>
+                    Con esta cuota y tasa: se paga en <strong style={{color:"#fafafa"}}>{cc.meses!=null?Math.floor(cc.meses/12)+"a "+cc.meses%12+"m":"—"}</strong> · interés <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesAnual))}/año</strong>
+                    {cc.interesTotal>0&&<> · interés total restante <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesTotal))}</strong></>}
+                  </div>
+                );
+              })()}
               <In l="Propietario fiscal" value={form.owner} onChange={(v) => {
                 // Al cambiar owner, re-sugerir fiscalCode si tipo no es compatible con owner nuevo
                 const newOwner = (owners || []).find(o => o.id === v);
