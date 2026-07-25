@@ -6,7 +6,7 @@ import PageHeader from "./PageHeader";
 import { exportDeudasExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import FrecuenciaSelector from "./FrecuenciaSelector";
-import { MESES } from "../lib/flowHelpers.js";
+import { MESES, costoCredito } from "../lib/flowHelpers.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -99,6 +99,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   const activos = items.filter((d) => d.sim !== false);
   const totalDeuda = activos.reduce((s, d) => s + (d.mt || 0), 0);
   const totalCuotas = activos.reduce((s, d) => s + (d.pg || 0), 0);
+  const totalInteresAnual = activos.reduce((s, d) => s + costoCredito(d).interesAnual, 0);
 
   const toggleSel = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
@@ -205,6 +206,21 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
       })()}
 
       {/* Banner explicando toggle sim (Commit 8.8) */}
+      />
+
+      {/* Gancho (23-jul-2026, idea Santiago): cuánto sangran los intereses al año.
+          Solo si hay deuda con tasa. Ver el número anual mueve más que el saldo. */}
+      {totalInteresAnual > 0 && (
+        <div style={{ marginBottom: 16, padding: "14px 16px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.22)", borderRadius: 12, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 22 }}>🔥</span>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 12, color: T.txt2 }}>Estás pagando en intereses, al ritmo de hoy</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: T.red, fontFamily: "monospace", lineHeight: 1.2 }}>{fm(totalInteresAnual)}<span style={{ fontSize: 13, color: T.txt3, fontWeight: 600 }}> /año</span></div>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>≈ {fm(Math.round(totalInteresAnual / 12))}/mes que se van solo en interés, sin bajar deuda. Pagar primero la de mayor tasa (avalancha) es lo que más ahorra.</div>
+          </div>
+        </div>
+      )}
+
       <SimToggleInfo total={items.length} activos={activos.length} moduloNombre="una deuda" />
 
       {/* KPIs */}
@@ -231,7 +247,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
                     style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
                 </th>
-                {["Deuda", "Tipo", "Saldo", "Cuota", "Tasa", "Activo", "On/Off", ""].map((h) => (
+                {["Deuda", "Tipo", "Saldo", "Cuota", "Tasa", "Interés/año", "Activo", "On/Off", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: ["Deuda", "Activo", ""].includes(h) ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr>
@@ -298,6 +314,22 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                     <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.red, fontFamily: "monospace" }}>{fm(d.mt)}</td>
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>{fm(d.pg)}</td>
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>{d.ts}%</td>
+                    {(() => {
+                      const cc = costoCredito(d);
+                      return (
+                        <td style={{ padding: "10px 14px", textAlign: "right" }}>
+                          <div style={{ fontWeight: 700, fontFamily: "monospace", color: T.orange }}>{fm(cc.interesAnual)}</div>
+                          {cc.noAmortiza ? (
+                            <div style={{ fontSize: 9.5, color: T.red, marginTop: 2 }}>⚠ la cuota no cubre el interés</div>
+                          ) : cc.meses != null ? (
+                            <div style={{ fontSize: 9.5, color: T.txt3, marginTop: 2 }}>
+                              termina en {Math.floor(cc.meses / 12)}a {cc.meses % 12}m
+                              {cc.interesTotal > 0 && <> · <span title="Interés restante hasta pagarla toda">interés total {fm(cc.interesTotal)}</span></>}
+                            </div>
+                          ) : null}
+                        </td>
+                      );
+                    })()}
                     <td style={{ padding: "10px 14px" }}>{lk ? <span style={{ background: T.blue + "15", color: T.blue, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{lk.n || lk.nombre || lk.name || "—"}</span> : <span style={{ color: T.txt3 }}>—</span>}</td>
                     <td style={{ padding: "10px 14px" }}>
                       <button onClick={() => { if (!guardEdit(role)) return; onUpdate(deudas.map(x => x.id===d.id ? {...x, sim: !(d.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={d.sim===false?"Mostrar":"Ocultar"}>{d.sim===false?"⬜":"✅"}</button>

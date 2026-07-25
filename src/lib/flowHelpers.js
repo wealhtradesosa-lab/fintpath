@@ -469,3 +469,29 @@ export function mesesLibreDeuda(deudas) {
 export const vaCOP = (i, trm = 1) => (Number(i?.va) || 0) * (i?.moneda === "USD" ? trm : 1);
 export const vcCOP = (i, trm = 1) => (Number(i?.vc) || 0) * (i?.moneda === "USD" ? trm : 1);
 
+
+// Métricas de costo por crédito (23-jul-2026, idea de Santiago). NO pide
+// campos nuevos: deriva todo de saldo (mt), cuota (pg) y tasa EA (ts).
+//   · interesAnual   = costo corriente al saldo de hoy (mt × ts). Es lo que
+//     "sangra" ese crédito al año — el número que motiva a actuar. Se rotula
+//     "al saldo actual" para no prometer exactitud de amortización.
+//   · meses          = cuándo se termina (misma amortización que mesesLibreDeuda).
+//   · interesTotal   = interés restante hasta el final (meses×cuota − saldo).
+//   · noAmortiza     = la cuota no cubre ni el interés → nunca se paga sola.
+export function costoCredito(d) {
+  const B = Number(d?.mt) || 0;
+  const P = Number(d?.pg) || 0;
+  const tsA = Number(d?.ts) || 0;
+  const r = tsA / 100 / 12;
+  const interesAnual = B * (tsA / 100);
+  let meses = null, interesTotal = null, noAmortiza = false;
+  if (B > 0 && P > 0) {
+    if (r <= 0) { meses = Math.ceil(B / P); interesTotal = 0; }
+    else if (P <= B * r) { noAmortiza = true; }
+    else {
+      meses = Math.ceil(-Math.log(1 - (r * B) / P) / Math.log(1 + r));
+      interesTotal = Math.max(0, meses * P - B);
+    }
+  }
+  return { interesAnual, meses, interesTotal, noAmortiza };
+}
