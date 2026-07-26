@@ -492,61 +492,65 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           impuesto: impuestoActual,
           tipo: "sim",
         });
-        const maxPat = Math.max(...puntos.map((p) => p.patrimonio), 1);
-        const maxImp = Math.max(...puntos.map((p) => p.impuesto), 1);
+        // maxPat/maxImp ya no se usan: el diseño de pasos no escala por máximo.
+
         return (
           <div style={{ marginBottom: 18 }}>
+            {/* 26-jul-2026 (Santiago: "esto se ve muy mal"). Antes eran barras
+                con altura = valor/máximo × 60px. Con un patrimonio actual de
+                $21.138M contra $100.000 y $0 de los años declarados, las dos
+                primeras barras caían al mínimo de 4px: dos rayitas y un bloque.
+                Ninguna barra puede representar cinco órdenes de magnitud.
+                Ahora se muestran como pasos con la cifra grande y la variación
+                entre años, que es lo que de verdad se quiere leer. */}
             <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
-              Timeline — {puntos.length} puntos
+              Tu evolución
             </div>
-            <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 10, padding: "16px 18px" }}>
-              {/* Patrimonio */}
-              <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 10, color: T.txt3, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Patrimonio líquido
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${puntos.length}, 1fr)`, gap: 8, alignItems: "flex-end", minHeight: 80 }}>
-                  {puntos.map((p, i) => {
-                    const h = (p.patrimonio / maxPat) * 60;
-                    const esSim = p.tipo === "sim";
-                    return (
-                      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                        <div style={{ fontSize: 10, color: esSim ? T.blue : T.txt2, fontFamily: "monospace", fontWeight: 600 }}>
-                          {fm(p.patrimonio).replace("$", "$").replace(/(\d{3})(?=\d{3}(?:\d{3})?$)/g, "$1")}
+            <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, padding: "16px 18px" }}>
+              {[
+                { titulo: "Patrimonio líquido", campo: "patrimonio", color: T.purple },
+                { titulo: "Impuesto", campo: "impuesto", color: T.red },
+              ].map((fila, fi) => (
+                <div key={fila.campo} style={{ marginBottom: fi === 0 ? 16 : 0 }}>
+                  <div style={{ fontSize: 10, color: T.txt3, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    {fila.titulo}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${puntos.length}, 1fr)`, gap: 10 }}>
+                    {puntos.map((p, i) => {
+                      const esSim = p.tipo === "sim";
+                      const valor = p[fila.campo];
+                      const previo = i > 0 ? puntos[i - 1][fila.campo] : null;
+                      // Variación solo si hay base contra la cual comparar. Un
+                      // salto desde cero no es "infinito por ciento": es
+                      // simplemente algo que antes no existía.
+                      const delta = previo !== null && previo > 0 ? ((valor - previo) / previo) * 100 : null;
+                      return (
+                        <div key={i} style={{
+                          background: esSim ? T.blue + "14" : "transparent",
+                          border: "1px solid " + (esSim ? T.blue + "44" : T.border),
+                          borderRadius: 10, padding: "10px 12px",
+                        }}>
+                          <div style={{ fontSize: 10, color: esSim ? T.blue : T.txt3, fontWeight: 700, fontFamily: "monospace", marginBottom: 4 }}>
+                            {p.ano}{esSim ? " · simulado" : ""}
+                          </div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: esSim ? T.blue : fila.color, fontFamily: "monospace", lineHeight: 1.2, wordBreak: "break-all" }}>
+                            {fm(valor)}
+                          </div>
+                          {delta !== null && (
+                            <div style={{ fontSize: 10, color: T.txt3, marginTop: 3 }}>
+                              {delta >= 0 ? "▲" : "▼"} {Math.abs(delta) >= 1000 ? "×" + Math.round(valor / previo) : Math.abs(delta).toFixed(0) + "%"} vs {puntos[i - 1].ano}
+                            </div>
+                          )}
+                          {previo === 0 && valor > 0 && (
+                            <div style={{ fontSize: 10, color: T.txt3, marginTop: 3 }}>sin base previa</div>
+                          )}
                         </div>
-                        <div style={{ width: "100%", maxWidth: 40, height: Math.max(h, 4), background: esSim ? T.blue : T.purple, borderRadius: 4, opacity: esSim ? 0.7 : 1 }} />
-                        <div style={{ fontSize: 10, color: esSim ? T.blue : T.txt3, fontWeight: 600, fontFamily: "monospace" }}>
-                          {p.ano}
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-              {/* Impuesto */}
-              <div>
-                <div style={{ fontSize: 10, color: T.txt3, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Impuesto
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${puntos.length}, 1fr)`, gap: 8, alignItems: "flex-end", minHeight: 80 }}>
-                  {puntos.map((p, i) => {
-                    const h = (p.impuesto / maxImp) * 60;
-                    const esSim = p.tipo === "sim";
-                    return (
-                      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                        <div style={{ fontSize: 10, color: esSim ? T.blue : T.txt2, fontFamily: "monospace", fontWeight: 600 }}>
-                          {fm(p.impuesto)}
-                        </div>
-                        <div style={{ width: "100%", maxWidth: 40, height: Math.max(h, 4), background: esSim ? T.blue : T.red, borderRadius: 4, opacity: esSim ? 0.7 : 1 }} />
-                        <div style={{ fontSize: 10, color: esSim ? T.blue : T.txt3, fontWeight: 600, fontFamily: "monospace" }}>
-                          {p.ano}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div style={{ fontSize: 9, color: T.txt3, marginTop: 12, fontStyle: "italic", textAlign: "center" }}>
+              ))}
+              <div style={{ fontSize: 9.5, color: T.txt3, marginTop: 12, fontStyle: "italic", textAlign: "center" }}>
                 Últimas {declaraciones.length} declaraciones + simulación del año en curso (en azul).
               </div>
             </div>
