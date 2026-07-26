@@ -5,6 +5,7 @@ import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportInversionesExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
+import { vaCOP } from "../lib/flowHelpers.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -41,7 +42,11 @@ const getType = (i) => {
   if (/green|puerto|orlando|miami|backswing|district/i.test(nm)) return "Real Estate";
   return "Otro";
 };
-const getVA = (i) => Number(i.va || i.valor_actual || i.valor || 0);
+// 26-jul-2026: getVA devolvía el valor CRUDO, sin convertir moneda. Un activo
+// cargado en USD se mostraba y se sumaba como si fueran pesos: el portafolio
+// de USD 33.266 aparecía como $33.266 COP junto a inmuebles de miles de
+// millones. La conversión ahora usa el mismo helper que el resto del motor.
+const getVA = (i) => vaCOP({ ...i, va: i.va ?? i.valor_actual ?? i.valor ?? 0 }, trm || 4200);
 const getVC = (i) => Number(i.vc || i.valor_compra || i.costo || 0);
 
 function calcMetrics(inv, deudas) {
@@ -79,7 +84,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user}) {
+export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user, trm}) {
   const fm = fmt || _fm;
   // Fase 3 commit 6: gating reader.
   const { role } = useRole();

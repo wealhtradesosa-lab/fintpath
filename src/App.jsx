@@ -356,7 +356,15 @@ const cuentaVacia = (d) => {
 
 const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
   let ab=0, aportesObligatorios=0, gastosFamiliares=0;
-  (inv||[]).forEach(i=>{if(i.sim!==false)ab+=vaCOP(i,trm)*(i.moneda==="USD"?trm:1)});
+  (inv||[]).forEach(i=>{if(i.sim!==false)ab+=vaCOP(i,trm)})
+  // 26-jul-2026 — DOBLE CONVERSIÓN DE MONEDA (Santiago: "puse el valor en
+  // dólares pero lo pone en el patrimonio en dólares cuando el resto están en
+  // pesos, hay una incongruencia").
+  // La línea era: ab += vaCOP(i,trm) * (i.moneda==="USD" ? trm : 1)
+  // Pero vaCOP YA multiplica por la TRM cuando la moneda es USD. Multiplicar
+  // otra vez elevaba el activo al cuadrado de la tasa: su portafolio de
+  // USD 33.266 entraba al patrimonio como $353.971.663.304 en vez de
+  // $108.513.692. Un activo en dólares inflaba el patrimonio ~3.262 veces.;
   // NUEVO (18-jul-2026): usa promedio mensualizado según frecuencia.
   // Items sin `frecuencia` se asumen "mensual" → comportamiento idéntico al anterior.
   const brutoTotal=(ing||[]).reduce((s,i)=>{
@@ -2839,7 +2847,7 @@ export default function FinPath(){
 
     </div>}
         
-case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="assets"/>:<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdate={v=>upd("inv",v)} fmt={fm} onImport={()=>setShowImport(true)} user={u}/>;
+case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="assets"/>:<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdate={v=>upd("inv",v)} fmt={fm} onImport={()=>setShowImport(true)} user={u} trm={trm||u?.trm||4200}/>;
     case"ing":return isUS?<IncomeModuleUS ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm}/>:<IngresosModule owners={u?.owners||[]} ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm} cur={cur} fmt={fm} onImport={()=>setShowImport(true)} user={u}/>;
     case"trd":return gated("trd","Básico",<div><PageHeader label="Inversiones US" title="Trading" subtitle="Posiciones, P/L, upside y objetivos por acción." rightSlot={<><Bt sz="s" onClick={async()=>{
               const tickers=((u&&u.ibk)||[]).map(p=>p.tk).filter(Boolean).join(",");
