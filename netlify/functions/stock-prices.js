@@ -40,7 +40,18 @@ export default async function handler(req) {
     const results = {};
     
     // Batch: fetch all at once using Yahoo quote endpoint
-    // 26-jul-2026 — POR QUÉ SE ELIMINÓ EL CAMINO v7.
+    // ⚠️ 26-jul-2026 — LIMITACIÓN CONFIRMADA, NO ES UN BUG DE ESTE CÓDIGO.
+    // Yahoo responde HTTP 429 a TODAS las peticiones desde las IP de Netlify
+    // (verificado en producción: AAPL:HTTP429, PLTR:HTTP429). Desde una IP
+    // residencial responde normal, así que es bloqueo de datacenter, no un
+    // problema de cabeceras ni de endpoint.
+    // Para que esto funcione hace falta una fuente con API key —Finnhub o
+    // Twelve Data tienen plan gratuito— o integrar IBKR, que además trae las
+    // posiciones reales y no solo los precios.
+    // Se deja el camino armado y con diagnóstico por ticker para que el día
+    // que se cambie la fuente sea solo reemplazar la URL.
+    //
+    // POR QUÉ SE ELIMINÓ EL CAMINO v7.
     // El código pedía primero /v7/finance/quote y, si fallaba, caía al v8 por
     // ticker. Pero Yahoo dejó de servir v7 sin cookie/crumb y responde
     // HTTP 200 CON EL CUERPO VACÍO. Como r.ok daba true, se entraba a
