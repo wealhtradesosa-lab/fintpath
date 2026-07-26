@@ -1,3 +1,11 @@
+// 26-jul-2026 — TRADING FUERA DEL MATERIAL COMERCIAL.
+// La sección se ocultó del menú (uso real: 2 de 86 cuentas) porque su valor
+// dependía de precios que nunca se actualizaron y de carga manual que se
+// desincroniza. Dejarla anunciada en los planes prometía algo que el usuario
+// ya no encuentra — y prometer de más en una página de precios es de los
+// errores más caros.
+// Si algún día se integra IBKR de verdad, vuelve al material y al menú.
+
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · plans.js — Source of truth ÚNICO del pricing
 //
@@ -91,8 +99,7 @@ export const PLAN_BASE = [
       "Simulador financiero",
       "Pensiones",
       "Ahorro BTC",
-      "Trading",
-      "Plan Tributario",
+        "Plan Tributario",
       "Asesor IA",
       "Coaches IA",
       "Lectura de facturas IA",
@@ -117,7 +124,6 @@ export const PLAN_BASE = [
         : "🏛️ Pensión Colombia: Colpensiones (RPM) + RAIS",
       isCO ? "💰 Aportes obligatorios (4%+4%) y voluntarios calculados" : null,
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "💹 Trading portfolio: acciones US + crypto",
       "📥 Importá Excel/CSV con IA",
       "📸 Lectura de facturas con IA",
     ].filter(Boolean),
@@ -141,7 +147,6 @@ export const PLAN_BASE = [
         ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
         : "🏛️ Pensión Colombia: Colpensiones + RAIS",
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "💹 Trading portfolio: acciones US + crypto",
       "🤖 Asesor IA que analiza tus números reales",
       "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
       isCO
@@ -172,7 +177,6 @@ export const PLAN_BASE = [
         ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
         : "🏛️ Pensión Colombia: Colpensiones + RAIS",
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "💹 Trading portfolio: acciones US + crypto",
       "🎯 Simulá escenarios para alcanzar tu libertad financiera",
       "🤖 Asesor IA que analiza el patrimonio consolidado",
       "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",

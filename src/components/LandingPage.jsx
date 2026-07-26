@@ -57,7 +57,12 @@ export default function LandingPage({ onGetStarted }) {
               { icon: "🏛️", title: "Pensiones Colombia", desc: "Cálculo actuarial real: Colpensiones (Ley 797/2003), Fondo Privado, comparador lado a lado.", color: T.cyan },
               { icon: "₿", title: "Ahorro con Bitcoin", desc: "Simulador DCA con CAGR, regla 4% de retiro, proyección año por año. Inspirado en @AndresFelArias.", color: T.orange },
               { icon: "🤖", title: "Asesor Financiero IA", desc: "Agente inteligente que analiza tu patrimonio real: simula escenarios, optimiza impuestos, identifica riesgos y te da recomendaciones con montos exactos.", color: T.gold },
-              { icon: "💹", title: "Portafolio de Trading", desc: "Posiciones, P/L, upside, targets por acción. Conecta tu broker favorito.", color: T.green },
+              // 26-jul-2026 — TARJETA DE TRADING REMOVIDA. Prometía "Conecta tu
+              // broker favorito", algo que la plataforma NUNCA hizo: las
+              // posiciones siempre fueron manuales. La sección además se ocultó
+              // del menú por uso mínimo (2 de 86 cuentas). Anunciar una
+              // integración inexistente en la portada es la peor clase de
+              // promesa: la primera que el usuario intenta y no encuentra.
               { icon: "💳", title: "Gastos & Deudas", desc: "Categorización inteligente, gastos fijos vs variables, deudas vinculadas a activos.", color: T.red },
               { icon: "🧾", title: "Planeación Tributaria", desc: "Estima impuestos por propietario fiscal. Clasificación DIAN automática y recomendaciones de optimización.", color: T.purple },
             ].map((f) => (
