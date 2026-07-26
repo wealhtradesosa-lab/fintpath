@@ -57,7 +57,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           const res = await fetch("/.netlify/functions/analyze-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: base64, type: "deuda", mediaType })
+            body: JSON.stringify({ image: base64, type: "deuda", mediaType, userId: user?.id })
           });
           const data = await res.json();
           if (data.success && data.data) {

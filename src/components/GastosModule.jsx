@@ -243,7 +243,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           const res = await fetch("/.netlify/functions/analyze-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: base64, type: "gasto", mediaType })
+            body: JSON.stringify({ image: base64, type: "gasto", mediaType, userId: user?.id })
           });
           const data = await res.json();
           if (data.success && data.data) {

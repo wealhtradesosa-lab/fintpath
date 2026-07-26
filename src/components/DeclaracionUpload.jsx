@@ -67,7 +67,7 @@ const RENGLON_LABELS_F110 = {
   saldoPagar: "Saldo a pagar",
 };
 
-export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpsell }) {
+export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpsell, user}) {
   // Fase 3 commit 8: gating reader. Mismo patrón que CsvImport — el flujo
   // de upload + parse no se gateamos (lectura/preview); guard solo en
   // handleConfirm donde se persiste a través de onSaveToOwner.
@@ -112,11 +112,11 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
       const r = await fetch("/api/parse-declaration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdf: base64, tipoHint }),
+        body: JSON.stringify({ pdf: base64, tipoHint, userId: user?.id }),
       });
       const j = await r.json();
       if (!r.ok || !j.success) {
-        setError(j.error || "No pudimos interpretar el PDF. Probá con un escaneo más claro.");
+        setError(j.mensaje || j.error || "No pudimos interpretar el PDF. Probá con un escaneo más claro.");
         setUploading(false);
         return;
       }

@@ -11,8 +11,30 @@ exports.handler = async (event) => {
     const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_API_KEY) return { statusCode: 500, headers, body: JSON.stringify({ error: "API key no configurada" }) };
 
-    const { image, type, mediaType } = JSON.parse(event.body);
+    const { image, type, mediaType, userId } = JSON.parse(event.body);
     if (!image) return { statusCode: 400, headers, body: JSON.stringify({ error: "No image provided" }) };
+
+    // ── 26-jul-2026 — ENDPOINT ABIERTO + SIN TOPE ──────────────────────────
+    // Esta función NO pedía identificación: cualquiera con la URL podía
+    // llamarla sin cuenta y consumir la clave de Anthropic de FINPATHIA. No
+    // había forma siquiera de saber a quién atribuirle el gasto.
+    // Ahora exige userId y descuenta de la cuota mensual del plan.
+    const { consumirCuota, mensajeCuota } = require("./_cuotaIA.cjs");
+    const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+    if (!userId) {
+      return { statusCode: 401, headers, body: JSON.stringify({
+        error: "sesion_requerida",
+        mensaje: "Iniciá sesión para usar la lectura con IA.",
+      }) };
+    }
+    if (SUPA_URL && SERVICE_KEY) {
+      const cuota = await consumirCuota({ url: SUPA_URL, serviceKey: SERVICE_KEY, userId });
+      if (!cuota.permitido) {
+        return { statusCode: 429, headers, body: JSON.stringify(mensajeCuota(cuota)) };
+      }
+    }
 
     const mt = mediaType || "image/jpeg";
     const esPDF = mt === "application/pdf" || mt.includes("pdf");

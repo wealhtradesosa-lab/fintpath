@@ -98,7 +98,7 @@ function DiffRow({ label, actual, declarado, fmt = fm }) {
   );
 }
 
-export default function DashboardFiscal({ u, owners, estimacion, warnings, onNavigate, onSaveDeclaracion, isPro, onUpsell, onGoToUpload, onMarkReviewed, onUnmarkReviewed }) {
+export default function DashboardFiscal({ u, owners, estimacion, warnings, onNavigate, onSaveDeclaracion, isPro, onUpsell, onGoToUpload, onMarkReviewed, onUnmarkReviewed, user}) {
   const [selectedOwnerId, setSelectedOwnerId] = useState(owners[0]?.id || "");
   // Commit 5.5: año seleccionado dentro del owner (null = la más reciente)
   const [selectedAno, setSelectedAno] = useState(null);
@@ -268,6 +268,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
             <button onClick={() => setShowUpload(false)} style={{ background: "transparent", border: "1px solid " + T.border, color: T.txt3, padding: "4px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Cerrar</button>
           </div>
           <DeclaracionUpload
+            user={user}
             owners={owners}
             isPro={isPro}
             onUpsell={onUpsell}

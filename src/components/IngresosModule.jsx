@@ -192,7 +192,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           const res = await fetch("/.netlify/functions/analyze-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: base64, type: "ingreso", mediaType })
+            body: JSON.stringify({ image: base64, type: "ingreso", mediaType, userId: user?.id })
           });
           const data = await res.json();
           if (data.success && data.data) {

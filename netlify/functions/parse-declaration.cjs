@@ -26,9 +26,29 @@ exports.handler = async (event) => {
       return { statusCode: 500, headers, body: JSON.stringify({ error: "API key no configurada" }) };
     }
 
-    const { pdf, tipoHint } = JSON.parse(event.body || "{}");
+    const { pdf, tipoHint, userId } = JSON.parse(event.body || "{}");
     if (!pdf) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "Falta el PDF en el body" }) };
+    }
+
+    // ── 26-jul-2026 — Mismo caso que analyze-image: endpoint abierto y sin
+    // tope. Leer una declaración es de las llamadas más caras (PDF completo),
+    // así que era el agujero con mayor costo por abuso.
+    const { consumirCuota, mensajeCuota } = require("./_cuotaIA.cjs");
+    const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+    if (!userId) {
+      return { statusCode: 401, headers, body: JSON.stringify({
+        error: "sesion_requerida",
+        mensaje: "Iniciá sesión para leer documentos con IA.",
+      }) };
+    }
+    if (SUPA_URL && SERVICE_KEY) {
+      const cuota = await consumirCuota({ url: SUPA_URL, serviceKey: SERVICE_KEY, userId });
+      if (!cuota.permitido) {
+        return { statusCode: 429, headers, body: JSON.stringify(mensajeCuota(cuota)) };
+      }
     }
 
     // Hard limit: Netlify functions permiten hasta 6MB de body. Un PDF base64 típico
