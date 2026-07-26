@@ -2851,7 +2851,7 @@ export default function FinPath(){
 
     </div>}
         
-case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="assets"/>:<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdate={v=>upd("inv",v)} fmt={fm} onImport={()=>setShowImport(true)} user={u} trm={trm||u?.trm||4200}/>;
+case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="assets"/>:<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdate={v=>upd("inv",v)} fmt={fm} onImport={()=>setShowImport(true)} user={u} trm={trm||u?.trm||4200} plan={plan} onUpgrade={()=>setPg("price")}/>;
     case"ing":return isUS?<IncomeModuleUS ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm}/>:<IngresosModule owners={u?.owners||[]} ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm} cur={cur} fmt={fm} onImport={()=>setShowImport(true)} user={u}/>;
     case"trd":return gated("trd","Básico",<div><PageHeader label="Inversiones US" title="Trading" subtitle="Posiciones, P/L, upside y objetivos por acción." rightSlot={<><Bt sz="s" onClick={async()=>{
               const tickers=((u&&u.ibk)||[]).map(p=>p.tk).filter(Boolean).join(",");

@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { separarPorLimite } from "../lib/limitePlan.js";
+import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import NumberInput from "./NumberInput";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
@@ -91,7 +93,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user, trm}) {
+export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user, trm, plan, onUpgrade}) {
   const fm = fmt || _fm;
   // Fase 3 commit 6: gating reader.
   const { role } = useRole();
@@ -103,6 +105,12 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
 
   const items = inversiones || [];
   const activos = items.filter((i) => i.sim !== false);
+  // 26-jul-2026 — Límite del plan gratuito (7 por sección).
+  // OJO: `activos` sigue completo, así que totalValor, rendimiento y todo lo
+  // que alimenta al dashboard incluye los bloqueados. El límite quita ACCESO
+  // al detalle, no falsea los números. Ver src/lib/limitePlan.js.
+  const { visibles: itemsVisibles, bloqueados, hayLimite } = separarPorLimite(items, plan);
+  const montoBloqueado = bloqueados.reduce((s, i) => s + getVA(i, trm), 0);
   const totalValor = activos.reduce((s, i) => s + getVA(i, trm), 0)
   // 26-jul-2026 (Santiago): mismo trío en los cuatro módulos de "Mi dinero" —
   // stock · flujo mensual · flujo anual — para que el ojo busque siempre en el
@@ -316,7 +324,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       </div>
                     </div>
                   </td></tr>
-              ) : items.map((inv) => {
+              ) : itemsVisibles.map((inv) => {
                 const m = calcMetrics(inv, deudas, trm);
                 const name = getName(inv);
                 const loc = getLoc(inv);
@@ -366,6 +374,21 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
             </tbody>
           </table>
         </div>
+        {/* 26-jul-2026: los bloqueados van DEBAJO de la tabla, con su monto
+            visible. Que se vea cuánto hay del otro lado del candado es
+            deliberado: un candado que no deja ver qué protege no motiva, y
+            además el usuario merece saber que sus totales incluyen algo que
+            no está viendo en detalle. */}
+        {hayLimite && (
+          <BloqueadosPorPlan
+            cantidad={bloqueados.length}
+            monto={montoBloqueado}
+            fmt={fm}
+            T={T}
+            onUpgrade={onUpgrade}
+            que="activos"
+          />
+        )}
       </div>
 
       {/* Form Modal */}
