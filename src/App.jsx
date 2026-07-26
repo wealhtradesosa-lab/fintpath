@@ -58,6 +58,7 @@ if (typeof window !== "undefined") {
 import PensionColombia from "./components/PensionColombia";
 import HallazgosProactivos from "./components/HallazgosProactivos";
 import TreemapPatrimonio from "./components/TreemapPatrimonio";
+import BarraComposicion from "./components/BarraComposicion";
 import AnoEnCurso from "./components/AnoEnCurso";
 import { generarHallazgos } from "./lib/hallazgos.js";
 import { generarRecomendaciones } from "./lib/recomendaciones.js";
@@ -2028,7 +2029,7 @@ export default function FinPath(){
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>Distribución Patrimonial</div>
           <div style={{fontSize:11,color:T.tx3,marginBottom:14}}>El tamaño de cada bloque es la plata que tenés ahí</div>
           {pie.length>0
-            ?<TreemapPatrimonio datos={pie} total={totalPat} fmt={fm} T={T} paleta={T.ch} altura={mb?300:260}/>
+            ?<BarraComposicion datos={pie} total={totalPat} paleta={T.ch} T={T} altura={44}/>
             :<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>Agrega inversiones</div>}
           {/* 25-jul-2026 (Santiago: "veo listado en gastos pero no en
               patrimonio"). Al reemplazar la dona por el treemap me llevé
@@ -2037,7 +2038,8 @@ export default function FinPath(){
               perdía el detalle exacto: el treemap agrupa la cola en "Otros" y
               sin lista esos activos desaparecían de la vista. */}
           {pie.length>0&&<div style={{marginTop:14,borderTop:"1px solid "+T.border}}>
-            {pie.map((p,i)=><div key={p.name} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:i<pie.length-1?"1px solid "+T.border:"none",fontSize:12.5}}>
+            {pie.map((p,i)=><div key={p.name} style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:i<pie.length-1?"1px solid "+T.border:"none",fontSize:12.5}}>
+              <div style={{position:"absolute",left:0,top:0,bottom:0,width:(totalPat>0?(p.value/totalPat)*100:0)+"%",background:T.ch[i%T.ch.length],opacity:0.10,pointerEvents:"none"}}/>
               <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
                 <div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length],flexShrink:0}}/>
                 <span style={{color:T.tx2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
@@ -2060,9 +2062,10 @@ export default function FinPath(){
               treemap lo muestra por área. La lista queda debajo con el detalle
               (categoría, capital, tasa), que el gráfico no puede dar. */}
           {topInc.length>0&&<div style={{padding:"4px 20px 14px"}}>
-            <TreemapPatrimonio datos={topInc.map(x=>({name:x.nombre||"—",value:x.mensual||0}))} total={t.ti} fmt={fm} T={T} paleta={T.ch} altura={mb?200:170} maxBloques={6}/>
+            <BarraComposicion datos={topInc.map(x=>({name:x.nombre||"—",value:x.mensual||0}))} total={t.ti} paleta={T.ch} T={T} altura={40}/>
           </div>}
-          {topInc.length>0?topInc.map((inc,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
+          {topInc.length>0?topInc.map((inc,i)=><div key={i} style={{position:"relative",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
+            <div style={{position:"absolute",left:0,top:0,bottom:0,width:(t.ti>0?((inc.mensual||0)/t.ti)*100:0)+"%",background:T.ch[i%T.ch.length],opacity:0.10,pointerEvents:"none"}}/>
             <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
               {/* Punto de color: la lista de gastos ya lo tenía y la de
                   ingresos no. Ata cada fila con su bloque del treemap. */}
@@ -2084,9 +2087,13 @@ export default function FinPath(){
               resto se agrupa en una línea: no se oculta plata, el total del
               encabezado sigue siendo el completo. */}
           {expPie.length>0&&<div style={{padding:"4px 20px 14px"}}>
-            <TreemapPatrimonio datos={expPie} total={t.gfm} fmt={fm} T={T} paleta={T.ch} altura={mb?200:200} maxBloques={6}/>
+            <BarraComposicion datos={expPie} total={t.gfm} paleta={T.ch} T={T} altura={40}/>
           </div>}
-          {expPie.length>0?expPie.slice(0,8).map((exp,i)=><div key={exp.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
+          {expPie.length>0?expPie.slice(0,8).map((exp,i)=><div key={exp.name} style={{position:"relative",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+T.border}}>
+            {/* 25-jul-2026: la proporción vive DENTRO de la fila. Antes el
+                gráfico estaba arriba y la lista abajo repetía los mismos datos;
+                ahora la lista ES el gráfico y no cuesta un pixel extra. */}
+            <div style={{position:"absolute",left:0,top:0,bottom:0,width:(t.gfm>0?(exp.value/t.gfm)*100:0)+"%",background:T.ch[i%T.ch.length],opacity:0.10,pointerEvents:"none"}}/>
             <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{exp.name}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontFamily:"monospace",color:T.rd}}>{fm(exp.value)}</span><span style={{fontSize:10,color:T.tx3}}>{t.gfm>0?pc((exp.value/t.gfm)*100):""}</span></div>
           </div>):<div style={{padding:28,textAlign:"center",color:T.tx3,fontSize:13}}>Agrega gastos</div>}
