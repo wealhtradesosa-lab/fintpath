@@ -150,7 +150,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     // Commit 5 Tarea 3 (bugfix): persistir fiscalCode al guardar. Antes el campo
     // se omitía y el motor caía al default vía normalizer, ignorando la elección
     // del usuario en el sub-selector "¿Para qué usaste esta deuda?".
-    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, la: form.la || null, owner: form.owner || "",
+    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, moneda: form.moneda || undefined, la: form.la || null, owner: form.owner || "",
       // Vigencia de la deuda (20-jul-2026, Santiago): "las deudas también
       // pueden ser hasta X mes" — cuotas solo pesan dentro del rango.
       // 25-jul-2026 (Santiago: "he modificado meses o todo el año y no guarda
@@ -424,6 +424,11 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   Cuota y tasa son datos INDEPENDIENTES del extracto: se capturan,
                   no se deducen. Abajo se muestra lo que sí se puede derivar de
                   verdad (plazo e interés), con amortización correcta. */}
+              {/* 26-jul-2026 (Santiago): "que pueda poner la inversión o gasto en la
+              moneda que quiera". Deudas ya se convertía en el motor —lee
+              d.moneda— pero el formulario nunca lo ofreció, así que el campo
+              existía y nadie podía llenarlo. */}
+              <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
               <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v }))} type="number" placeholder="0" />
               <In l="Tasa anual % (E.A.)" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="Ej: 22.99" />
 

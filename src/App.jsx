@@ -388,7 +388,11 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
   Object.entries(gf||{}).forEach(([cat,items])=>{
     (items||[]).forEach(g=>{
       if(g.sim===false)return;
-      const monto=montoPromedioMensual(g);
+      // 26-jul-2026 (Santiago): los gastos podían cargarse solo en pesos, pero
+      // el motor tampoco convertía si venía moneda. Ahora respeta el campo,
+      // igual que ya hacían patrimonio, ingresos y deudas. Sin `moneda` se
+      // asume COP, así que nada de lo ya cargado cambia.
+      const monto=montoPromedioMensual(g)*(g.moneda==="USD"?trm:1);
       if(cat==="Seguridad Social") aportesObligatorios+=monto;
       else gastosFamiliares+=monto;
     });
