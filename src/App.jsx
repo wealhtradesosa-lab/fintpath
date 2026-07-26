@@ -2158,6 +2158,21 @@ export default function FinPath(){
                 </div>
               ))}
             </div>
+            {/* Dos columnas (25-jul-2026, Santiago: "¿se podrá diagramar mejor
+                esta parte? tal vez aprovechando un diseño a dos columnas, no
+                tiene que quedar unas gráficas tan alargadas de líneas tan
+                largas"). Tenía razón: con 1600px de ancho, la etiqueta queda a
+                la izquierda y el valor a la derecha con medio metro de barra en
+                el medio — el ojo pierde la relación entre ambos.
+                Las tarjetas fluyen en dos columnas; las que YA tienen dos
+                columnas por dentro (fecha libre de deuda, concentración) se
+                marcan para ocupar el ancho completo, porque partirlas otra vez
+                las dejaría ilegibles. */}
+            <style>{`
+              .fp-fo2 > * { break-inside: avoid; margin-bottom: 12px; }
+              .fp-fo-ancho { column-span: all; }
+            `}</style>
+            <div className="fp-fo2" style={{columnCount:mb?1:2,columnGap:12}}>
             {/* FIRE Number */}
             <div style={{background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -2533,6 +2548,7 @@ export default function FinPath(){
                 ));
               })()}
             </div>
+            </div>
           </Cd>
 
       {/* Cuánto de eso es realmente disponible. */}
@@ -2609,7 +2625,7 @@ export default function FinPath(){
                     </div>
                   ))}
                 </div>
-                <div style={{background:T.bg3,borderRadius:8,padding:12,marginBottom:8}}>
+                <div className="fp-fo-ancho" style={{background:T.bg3,borderRadius:8,padding:12,marginBottom:8}}>
                   <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
                     💼 Tu ingreso por hora laboral: <strong style={{color:T.gn}}>{fm(Math.round(ingresoHora))}/hora</strong><br/>
                     ⚖️ Necesitas trabajar <strong style={{color:"#f97316"}}>{horasLibertad.toFixed(1)} horas</strong> por cada hora de gastos<br/>
@@ -2942,7 +2958,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 </div>}
                 {billingCycle==="mensual"&&pl.save&&<div style={{fontSize:12,color:T.tx3,marginBottom:12}}>{isUS?"or pay annually & save 25%":"o paga anual y ahorra 25%"}</div>}
                 {!pl.save&&<div style={{marginBottom:12}}/>}
-                <div style={{background:T.bg3,padding:"8px 12px",borderRadius:8,fontSize:11,color:T.tx2,marginBottom:14,fontWeight:600}}>👤 {pl.users}</div>
+                <div className="fp-fo-ancho" style={{background:T.bg3,padding:"8px 12px",borderRadius:8,fontSize:11,color:T.tx2,marginBottom:14,fontWeight:600}}>👤 {pl.users}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
                   {pl.f.map(f=><div key={f} style={{fontSize:12,color:T.tx2,lineHeight:1.5}}><span style={{color:T.gn,marginRight:6,fontWeight:700}}>✓</span>{f}</div>)}
                   {(pl.no||[]).map(f=><div key={f} style={{fontSize:12,color:T.tx3,lineHeight:1.5}}><span style={{color:T.tx3,marginRight:6}}>✗</span>{f}</div>)}
