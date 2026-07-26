@@ -144,11 +144,19 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, la: form.la || null, owner: form.owner || "",
       // Vigencia de la deuda (20-jul-2026, Santiago): "las deudas también
       // pueden ser hasta X mes" — cuotas solo pesan dentro del rango.
-      ...((Number(form.desdeMes) || 1) !== 1 && { desdeMes: Number(form.desdeMes) }),
-      ...((Number(form.hastaMes) || 12) !== 12 && { hastaMes: Number(form.hastaMes) }),
-      ...(form.vigenciaModo && { vigenciaModo: form.vigenciaModo }),
-      ...(form.frecuencia && form.frecuencia !== "mensual" && { frecuencia: form.frecuencia }),
-      ...(form.frecuencia === "variable" && { montosMensuales: form.montosMensuales }),
+      // 25-jul-2026 (Santiago: "he modificado meses o todo el año y no guarda
+      // el cambio"). BUG: estos campos se incluían con spread condicional, así
+      // que al volver al valor por defecto NO entraban en el objeto. Y como al
+      // editar se hace {...deudaVieja, ...item}, el valor anterior sobrevivía:
+      // una vez puesta una vigencia era IMPOSIBLE quitarla desde la interfaz.
+      // Ahora las claves van SIEMPRE. `undefined` las borra al serializar a
+      // JSON, así que el dato queda limpio igual que antes, pero el cambio a
+      // "todo el año" ahora sí pisa el valor viejo.
+      desdeMes: (Number(form.desdeMes) || 1) !== 1 ? Number(form.desdeMes) : undefined,
+      hastaMes: (Number(form.hastaMes) || 12) !== 12 ? Number(form.hastaMes) : undefined,
+      vigenciaModo: form.vigenciaModo || undefined,
+      frecuencia: (form.frecuencia && form.frecuencia !== "mensual") ? form.frecuencia : undefined,
+      montosMensuales: form.frecuencia === "variable" ? form.montosMensuales : undefined,
     };
     if (editId) {
       onUpdate(items.map((i) => (i.id === editId ? { ...i, ...item } : i)));

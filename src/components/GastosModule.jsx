@@ -360,13 +360,15 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         frecuencia,                 // nuevo campo
         mesPago: Number(form.mesPago) || 1,
         // Fase 4 flujo anual (18-jul-2026): persistir rango de vigencia.
-        ...((Number(form.desdeMes) || 1) !== 1 && { desdeMes: Number(form.desdeMes) }),
-        ...((Number(form.hastaMes) || 12) !== 12 && { hastaMes: Number(form.hastaMes) }),
-        // UX FIX 2 (19-jul-2026): flag persistido del modo de vigencia
-        ...(form.vigenciaModo && { vigenciaModo: form.vigenciaModo }),
-        // Fase Variable (18-jul-2026 noche): persistir montosMensuales solo si
-        // la frecuencia es variable — evita saturar items con arrays de ceros.
-        ...(frecuencia === "variable" && { montosMensuales: form.montosMensuales || new Array(12).fill(0) }),
+        // 25-jul-2026: mismo bug que en DeudasModule. Con spread condicional,
+        // volver al valor por defecto NO incluía la clave, y al editar se hace
+        // {...gastoViejo, ...item}: el valor anterior sobrevivía y la vigencia
+        // era imposible de quitar. Las claves van SIEMPRE; undefined las borra
+        // al serializar a JSON, así que el dato queda igual de limpio.
+        desdeMes: (Number(form.desdeMes) || 1) !== 1 ? Number(form.desdeMes) : undefined,
+        hastaMes: (Number(form.hastaMes) || 12) !== 12 ? Number(form.hastaMes) : undefined,
+        vigenciaModo: form.vigenciaModo || undefined,
+        montosMensuales: frecuencia === "variable" ? (form.montosMensuales || new Array(12).fill(0)) : undefined,
         owner: form.owner || "",
         fiscalCode: form.fiscalCode || undefined,
         causalidad: form.causalidad || undefined,
