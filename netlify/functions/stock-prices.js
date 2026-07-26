@@ -58,12 +58,12 @@ export default async function handler(req) {
       try {
         const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(tk)}?interval=1d&range=1d`;
         const cr = await fetch(chartUrl, { headers: { "User-Agent": UA } });
-        if (!cr.ok) { fallidos.push(tk); return; }
+        if (!cr.ok) { fallidos.push(tk + ":HTTP" + cr.status); return; }
         const texto = await cr.text();
-        if (!texto) { fallidos.push(tk); return; }   // 200 con cuerpo vacío
+        if (!texto) { fallidos.push(tk + ":vacio"); return; }
         const cd = JSON.parse(texto);
         const meta = cd?.chart?.result?.[0]?.meta;
-        if (!meta || !meta.regularMarketPrice) { fallidos.push(tk); return; }
+        if (!meta || !meta.regularMarketPrice) { fallidos.push(tk + ":sinDato"); return; }
         const previo = meta.previousClose || meta.chartPreviousClose || 0;
         results[tk] = {
           price: meta.regularMarketPrice,
@@ -74,8 +74,8 @@ export default async function handler(req) {
           marketState: meta.marketState || "",
           previousClose: previo,
         };
-      } catch {
-        fallidos.push(tk);
+      } catch (e) {
+        fallidos.push(tk + ":" + (e.message || "err").slice(0, 40));
       }
     }));
 
