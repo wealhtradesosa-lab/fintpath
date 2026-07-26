@@ -91,7 +91,14 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
 
   const items = inversiones || [];
   const activos = items.filter((i) => i.sim !== false);
-  const totalValor = activos.reduce((s, i) => s + getVA(i), 0);
+  const totalValor = activos.reduce((s, i) => s + getVA(i), 0)
+  // 26-jul-2026 (Santiago): mismo trío en los cuatro módulos de "Mi dinero" —
+  // stock · flujo mensual · flujo anual — para que el ojo busque siempre en el
+  // mismo lugar. Acá el flujo es lo que RINDE el patrimonio: se veía cuánto
+  // vale, no cuánto produce, que es la otra mitad del dato.
+  // Solo suma activos con tasa cargada: una propiedad sin rendimiento
+  // declarado no rinde 0%, simplemente no se sabe, y no se inventa.
+  const rendimientoAnual = activos.reduce((s, i) => s + getVA(i) * ((Number(i.tasa) || 0) / 100), 0);
 
   const toggleSel = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
@@ -246,6 +253,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
           { l: "Patrimonio Total", v: fm(totalValor), c: T.green },
+          { l: "Rinde al mes", v: rendimientoAnual > 0 ? fm(rendimientoAnual / 12) : "—", c: T.blue },
+          { l: "Rinde al año", v: rendimientoAnual > 0 ? fm(rendimientoAnual) : "—", c: T.purple },
           
           { l: "Activos", v: activos.length, c: T.txt },
         ].map((m) => (

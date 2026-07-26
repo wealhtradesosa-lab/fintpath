@@ -533,8 +533,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         {[
           { l: "Total Mensual", v: fm(totalMes), c: T.red },
           { l: "Total Anual", v: fm(totalMes * 12), c: T.orange },
-          { l: "Fijos", v: fm(activos.filter((g) => g.t === "f").reduce((s, g) => s + g.m, 0)), c: T.blue },
-          { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + g.m, 0)), c: T.orange },
+          { l: "Fijos", v: fm(activos.filter((g) => g.t === "f").reduce((s, g) => s + montoPromedioMensual(g), 0)), c: T.blue },
+          { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + montoPromedioMensual(g), 0)), c: T.orange },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
             <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
