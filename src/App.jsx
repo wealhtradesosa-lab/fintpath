@@ -1650,7 +1650,7 @@ export default function FinPath(){
           <div style={{fontSize:12.5,color:T.tx3,marginTop:3}}>{s}</div>
         </div>
       </div>
-      <div style={{height:2,background:`linear-gradient(90deg, ${T.gn}55, transparent)`,borderRadius:2,marginTop:14}}/>
+      <div style={{height:2,background:`linear-gradient(90deg, ${T.gn}55, transparent)`,borderRadius:3,marginTop:14}}/>
     </div>;
     if(isUS) return <DashboardUS u={u} t={t} ib={ib} pen={pen} setPg={setPg} generatePDF={generatePDF} mb={mb}/>;
     // Data prep
@@ -1700,7 +1700,7 @@ export default function FinPath(){
             title={(u?.p?.name&&u?.p?.name!=="Usuario"&&u?.p?.name!=="")?(u?.p?.name||"").split(" ")[0]:(u?.p?.email||"").split("@")[0]}
             subtitle="Tu patrimonio y salud financiera, de un vistazo."
           />
-          {((u?.p?.name)==="Usuario"||!(u?.p?.name))&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:10,padding:"10px 14px",marginTop:10,fontSize:12,color:T.bl,cursor:"pointer"}} onClick={()=>setPg("set")}>👤 Configura tu nombre en <strong>⚙️ Config</strong> para personalizar tu experiencia</div>}
+          {((u?.p?.name)==="Usuario"||!(u?.p?.name))&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"10px 14px",marginTop:10,fontSize:12,color:T.bl,cursor:"pointer"}} onClick={()=>setPg("set")}>👤 Configura tu nombre en <strong>⚙️ Config</strong> para personalizar tu experiencia</div>}
           {/* Banner Pro Familiar — muestra estado de trial o suscripción activa.
               Lógica:
                 - Si planAccount === "pro_familiar" Y trialActive (trial 14d Stripe
@@ -1711,7 +1711,7 @@ export default function FinPath(){
               días desde signup. Coincide con el trial 14d de Stripe que damos
               automáticamente. Si el user pasa los 14 días sin cancelar, Stripe
               empieza a cobrar y el banner cambia a "activo". */}
-          {planAccount==="pro_familiar"&&<div style={{background:trialActive?"linear-gradient(135deg,rgba(167,139,250,0.06),rgba(34,197,94,0.04))":"linear-gradient(135deg,rgba(167,139,250,0.06),rgba(59,130,246,0.04))",border:"1px solid rgba(167,139,250,0.15)",borderRadius:10,padding:"clamp(8px, 2vw, 12px) clamp(10px, 3vw, 16px)",marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+          {planAccount==="pro_familiar"&&<div style={{background:trialActive?"linear-gradient(135deg,rgba(167,139,250,0.06),rgba(34,197,94,0.04))":"linear-gradient(135deg,rgba(167,139,250,0.06),rgba(59,130,246,0.04))",border:"1px solid rgba(167,139,250,0.15)",borderRadius:12,padding:"clamp(8px, 2vw, 12px) clamp(10px, 3vw, 16px)",marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}>
               <span style={{fontSize:14,flexShrink:0}}>👨‍👩‍👧</span>
               <div style={{flex:1,minWidth:0}}>
@@ -1725,20 +1725,20 @@ export default function FinPath(){
                 </div>
               </div>
             </div>
-            <button onClick={()=>setPg("acc")} style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",border:"none",padding:"6px 12px",borderRadius:6,cursor:"pointer",fontWeight:600,fontSize:11,flexShrink:0}}>Mi Cuenta →</button>
+            <button onClick={()=>setPg("acc")} style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:11,flexShrink:0}}>Mi Cuenta →</button>
           </div>}
           {/* Banner Pro Trial — solo para users que NO compraron Pro Familiar.
               Mantiene el flow tradicional: signup → 14 días Pro free → upgrade
               al final del trial. */}
-          {trialActive&&planAccount!=="pro_familiar"&&<div style={{background:trialDays<=3?"rgba(239,68,68,0.06)":trialDays<=5?"rgba(234,179,8,0.06)":"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(59,130,246,0.05))",border:"1px solid "+(trialDays<=3?"rgba(239,68,68,0.15)":trialDays<=5?"rgba(234,179,8,0.15)":"rgba(34,197,94,0.15)"),borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+          {trialActive&&planAccount!=="pro_familiar"&&<div style={{background:trialDays<=3?"rgba(239,68,68,0.06)":trialDays<=5?"rgba(234,179,8,0.06)":"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(59,130,246,0.05))",border:"1px solid "+(trialDays<=3?"rgba(239,68,68,0.15)":trialDays<=5?"rgba(234,179,8,0.15)":"rgba(34,197,94,0.15)"),borderRadius:12,padding:"14px 18px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}>
               <span style={{fontSize:18,flexShrink:0}}>⭐</span>
               <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:T.gn}}>Plan Pro — Trial gratuito</div><div style={{fontSize:11,color:T.tx3}}>{trialDays<=1?"⚠️ ¡Tu acceso Pro se vence HOY! Crea tu cuenta para no perder tus datos.":trialDays<=3?"⏰ ¡Solo "+trialDays+" días! Después pierdes el Asesor IA y los Coaches.":trialDays<=5?"Tu trial Pro se vence en "+trialDays+" días — crea tu cuenta para mantener acceso":trialDays+" días de acceso Pro completo"}</div></div>
             </div>
-            {(trialDays<=5||u?.p?.anonymous)&&<button onClick={()=>{if(u?.p?.anonymous)logout();else setPg("price")}} style={{background:trialDays<=3?T.rd:T.gn,color:trialDays<=3?"#fff":"#000",border:"none",padding:"8px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>{u?.p?.anonymous?"Crear cuenta gratis →":"Mantener Pro →"}</button>}
+            {(trialDays<=5||u?.p?.anonymous)&&<button onClick={()=>{if(u?.p?.anonymous)logout();else setPg("price")}} style={{background:trialDays<=3?T.rd:T.gn,color:trialDays<=3?"#fff":"#000",border:"none",padding:"10px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>{u?.p?.anonymous?"Crear cuenta gratis →":"Mantener Pro →"}</button>}
           </div>}
-          {!trialActive&&trialEnd&&plan==="free"&&u?.p?.anonymous&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"12px 16px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}><div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}><span style={{fontSize:18,flexShrink:0}}>🔒</span><div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:T.bl}}>Crea tu cuenta para mantener Pro</div><div style={{fontSize:11,color:T.tx3}}>Tu información seguirá protegida. Tus datos se sincronizan en la nube con encriptación.</div></div></div><button onClick={()=>{logout()}} style={{background:T.bl,color:"#fff",border:"none",padding:"8px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>Crear cuenta →</button></div>}
-          {!trialActive&&trialEnd&&plan==="free"&&!u?.p?.anonymous&&<div style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.12)",borderRadius:12,padding:"14px 16px",marginTop:12,display:"flex",flexWrap:"wrap",gap:8}}>
+          {!trialActive&&trialEnd&&plan==="free"&&u?.p?.anonymous&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"14px 18px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}><div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}><span style={{fontSize:18,flexShrink:0}}>🔒</span><div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:T.bl}}>Crea tu cuenta para mantener Pro</div><div style={{fontSize:11,color:T.tx3}}>Tu información seguirá protegida. Tus datos se sincronizan en la nube con encriptación.</div></div></div><button onClick={()=>{logout()}} style={{background:T.bl,color:"#fff",border:"none",padding:"10px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>Crear cuenta →</button></div>}
+          {!trialActive&&trialEnd&&plan==="free"&&!u?.p?.anonymous&&<div style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.12)",borderRadius:12,padding:"14px 18px",marginTop:12,display:"flex",flexWrap:"wrap",gap:8}}>
             {/* 25-jul-2026 — Aviso de fin de prueba. Aparece cuando el trial
                 venció y la cuenta quedó en gratuito. Era código muerto hasta
                 que se corrigió el bug del plan permanente (a4943d1).
@@ -1761,17 +1761,17 @@ export default function FinPath(){
                 </div>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"9px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Activar Pro Familiar — $27/mes</button>
-                <button onClick={()=>setPg("price")} style={{background:"transparent",color:T.gn,border:`1px solid ${T.gn}`,padding:"9px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Pro — $16/mes</button>
-                <button onClick={()=>setPg("price")} style={{background:"transparent",color:T.tx2,border:`1px solid ${T.border}`,padding:"9px 18px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:12}}>Básico — $8/mes</button>
+                <button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Activar Pro Familiar — $27/mes</button>
+                <button onClick={()=>setPg("price")} style={{background:"transparent",color:T.gn,border:`1px solid ${T.gn}`,padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Pro — $16/mes</button>
+                <button onClick={()=>setPg("price")} style={{background:"transparent",color:T.tx2,border:`1px solid ${T.border}`,padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:12}}>Básico — $8/mes</button>
               </div>
             </div>
           </div>}
           <p style={{color:T.tx3,fontSize:13,margin:0}}>Resumen de tu situación financiera</p>
         </div>
         <div style={{display:"flex",gap:6,flexShrink:0,flexWrap:"wrap"}}>
-          <button onClick={()=>setPg("resumen")} style={{background:T.bl,color:"#fff",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📋 Resumen</button>
-          <button onClick={generatePDF} style={{background:T.gn,color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📄 Reporte PDF</button>
+          <button onClick={()=>setPg("resumen")} style={{background:T.bl,color:"#fff",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📋 Resumen</button>
+          <button onClick={generatePDF} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📄 Reporte PDF</button>
         </div>
       </div>
 
@@ -1790,8 +1790,8 @@ export default function FinPath(){
         const pct=Math.round((done/steps.length)*100);
         if(done>=steps.length)return null;
         return <div style={{marginBottom:24}}>
-        <div style={{background:"linear-gradient(135deg,rgba(34,197,94,.04),rgba(59,130,246,.03))",border:"1px solid rgba(34,197,94,.12)",borderRadius:20,padding:"32px 28px",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:T.bg3}}><div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#22c55e,#3b82f6)",borderRadius:2,transition:"width 0.5s"}}/></div>
+        <div style={{background:"linear-gradient(135deg,rgba(34,197,94,.04),rgba(59,130,246,.03))",border:"1px solid rgba(34,197,94,.12)",borderRadius:20,padding:"18px 20px",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:T.bg3}}><div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#22c55e,#3b82f6)",borderRadius:3,transition:"width 0.5s"}}/></div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,flexWrap:"wrap",gap:12}}>
             <div>
               <h3 style={{fontSize:22,fontWeight:800,margin:"0 0 6px",letterSpacing:"-0.02em"}}>Configura tu FINPATHIA</h3>
@@ -1803,9 +1803,9 @@ export default function FinPath(){
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
-            {steps.map((s,i)=><button key={s.id} onClick={()=>setPg(s.id)} style={{background:s.done?"rgba(34,197,94,0.06)":T.bg2,border:"1px solid "+(s.done?"rgba(34,197,94,0.2)":T.border),borderRadius:14,padding:"16px 18px",cursor:"pointer",textAlign:"left",color:T.tx,transition:"all 0.2s",opacity:s.done?.6:1}} onMouseOver={e=>{if(!s.done)e.currentTarget.style.borderColor="#22c55e"}} onMouseOut={e=>{if(!s.done)e.currentTarget.style.borderColor=T.border}}>
+            {steps.map((s,i)=><button key={s.id} onClick={()=>setPg(s.id)} style={{background:s.done?"rgba(34,197,94,0.06)":T.bg2,border:"1px solid "+(s.done?"rgba(34,197,94,0.2)":T.border),borderRadius:14,padding:"18px 18px",cursor:"pointer",textAlign:"left",color:T.tx,transition:"all 0.2s",opacity:s.done?.6:1}} onMouseOver={e=>{if(!s.done)e.currentTarget.style.borderColor="#22c55e"}} onMouseOut={e=>{if(!s.done)e.currentTarget.style.borderColor=T.border}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-                <div style={{width:36,height:36,borderRadius:10,background:s.done?"rgba(34,197,94,0.12)":T.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{s.done?"✅":s.icon}</div>
+                <div style={{width:36,height:36,borderRadius:12,background:s.done?"rgba(34,197,94,0.12)":T.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{s.done?"✅":s.icon}</div>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
                     <span style={{fontSize:10,color:s.done?T.gn:T.tx3,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Paso {i+1}</span>
@@ -1818,7 +1818,7 @@ export default function FinPath(){
               </div>
             </button>)}
           </div>
-          {done===0&&<div style={{marginTop:16,padding:"12px 16px",background:"rgba(59,130,246,0.06)",borderRadius:10,display:"flex",alignItems:"center",gap:10}}>
+          {done===0&&<div style={{marginTop:16,padding:"14px 18px",background:"rgba(59,130,246,0.06)",borderRadius:12,display:"flex",alignItems:"center",gap:10}}>
             <span style={{fontSize:18}}>🧠</span>
             <div style={{fontSize:12,color:T.tx2,lineHeight:1.5}}><strong>Tip:</strong> En cada sección encontrarás el botón <strong>📥 Importar</strong> para cargar Excel, o <strong>📸 Subir factura</strong> para tomar foto de un recibo o extracto. La IA lee y organiza los datos.</div>
           </div>}
@@ -1833,7 +1833,7 @@ export default function FinPath(){
         <div style={{
           background:"rgba(255,255,255,0.02)",
           border:`1px solid ${CHART.border}`,
-          borderRadius:16,
+          borderRadius:14,
           padding:0,
           position:"relative",
           overflow:"hidden",
@@ -1841,7 +1841,7 @@ export default function FinPath(){
         }}>
           {/* Accent line vertical */}
           <div style={{position:"absolute",left:0,top:24,bottom:24,width:2,background:CHART.green,borderRadius:"0 2px 2px 0"}}/>
-          <div style={{padding:"32px 28px"}}>
+          <div style={{padding:"18px 20px"}}>
             <div style={{fontSize:10,color:CHART.txt3,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase"}}>PATRIMONIO NETO</div>
             <div style={{fontFamily:CHART.fontDisplay,fontSize:"clamp(2.5rem,6vw,4rem)",fontWeight:800,letterSpacing:"-0.045em",marginTop:6,lineHeight:1.0,fontVariantNumeric:"tabular-nums",color:CHART.txt}}>{fm(t.nw)}</div>
             <div style={{display:"flex",gap:28,marginTop:24,flexWrap:"wrap"}}>
@@ -1854,7 +1854,7 @@ export default function FinPath(){
         <div style={{
           background:"rgba(255,255,255,0.02)",
           border:`1px solid ${CHART.border}`,
-          borderRadius:16,
+          borderRadius:14,
           padding:"28px",
           display:"flex",
           flexDirection:"column",
@@ -1898,24 +1898,24 @@ export default function FinPath(){
         const usPerc = nwUSD < 12000 ? 20 : nwUSD < 44000 ? 30 : nwUSD < 105000 ? 40 : nwUSD < 192700 ? 50 : nwUSD < 400000 ? 60 : nwUSD < 650000 ? 70 : nwUSD < 1060000 ? 80 : nwUSD < 1900000 ? 90 : nwUSD < 5000000 ? 95 : nwUSD < 11100000 ? 99 : 99.5;
         const usLabel = usPerc >= 99 ? "Top 1% en USA" : usPerc >= 95 ? "Top 5% en USA" : usPerc >= 90 ? "Top 10% en USA" : usPerc >= 80 ? "Top 20% en USA" : usPerc >= 50 ? "Top " + (100 - usPerc) + "% en USA" : "Percentil " + usPerc + " en USA";
         return (
-          <Cd s={{padding:"16px 24px",marginBottom:14,background:"linear-gradient(135deg,rgba(168,85,247,0.04),rgba(59,130,246,0.03))"}}>
+          <Cd s={{padding:"18px 20px",marginBottom:14,background:"linear-gradient(135deg,rgba(168,85,247,0.04),rgba(59,130,246,0.03))"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:16}}>
               <div>
                 <div style={{fontSize:11,color:T.tx3,fontWeight:600,letterSpacing:1}}>📍 TU POSICIÓN EN RIQUEZA</div>
                 <div style={{fontSize:13,color:T.tx2,marginTop:4}}>Con un patrimonio neto de <strong style={{color:T.gn}}>{fm(t.nw)}</strong> (≈ USD ${Math.round(nwUSD).toLocaleString("en-US")})</div>
               </div>
               <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-                <div style={{textAlign:"center",background:"rgba(168,85,247,0.08)",border:"1px solid rgba(168,85,247,0.15)",borderRadius:12,padding:"10px 16px",flex:1,minWidth:130}}>
+                <div style={{textAlign:"center",background:"rgba(168,85,247,0.08)",border:"1px solid rgba(168,85,247,0.15)",borderRadius:12,padding:"10px 18px",flex:1,minWidth:130}}>
                   <div style={{fontSize:10,color:"#a78bfa"}}>🇨🇴 COLOMBIA</div>
                   <div style={{fontSize:18,fontWeight:800,color:"#a78bfa",marginTop:2}}>{colLabel}</div>
                   <div style={{fontSize:10,color:T.tx3}}>Superas al {colPerc}%</div>
                 </div>
-                <div style={{textAlign:"center",background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:12,padding:"10px 16px",flex:1,minWidth:130}}>
+                <div style={{textAlign:"center",background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:12,padding:"10px 18px",flex:1,minWidth:130}}>
                   <div style={{fontSize:10,color:T.bl}}>🌍 GLOBAL</div>
                   <div style={{fontSize:18,fontWeight:800,color:T.bl,marginTop:2}}>{gloLabel}</div>
                   <div style={{fontSize:10,color:T.tx3}}>Superas al {gloPerc}%</div>
                 </div>
-                <div style={{textAlign:"center",background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:12,padding:"10px 16px",flex:1,minWidth:130}}>
+                <div style={{textAlign:"center",background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:12,padding:"10px 18px",flex:1,minWidth:130}}>
                   <div style={{fontSize:10,color:T.gn}}>🇺🇸 ESTADOS UNIDOS</div>
                   <div style={{fontSize:18,fontWeight:800,color:T.gn,marginTop:2}}>{usLabel}</div>
                   <div style={{fontSize:10,color:T.tx3}}>Superas al {usPerc}%</div>
@@ -1999,7 +1999,7 @@ export default function FinPath(){
         </Cd>
         {/* Tax Estimate */}
         {(()=>{const tx=estimarImpuesto(u);return tx.total>0?<Cd s={{padding:16}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:10}}>🧾 Impuestos (Anual)</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>🧾 Impuestos (Anual)</div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <span style={{fontSize:11,color:T.tx3}}>Total estimado</span>
             <span style={{fontSize:18,fontWeight:800,color:T.pr,fontFamily:"monospace"}}>{fm(tx.total)}/año</span>
@@ -2025,8 +2025,8 @@ export default function FinPath(){
               principio que hace funcionar al Sankey, la geometría carga el
               significado. Ninguna cifra se pierde: van dentro del bloque o en
               la leyenda de lo que no cupo, y el tooltip da el detalle. */}
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:6}}>Distribución Patrimonial</div>
-          <div style={{fontSize:11,color:T.tx3,marginBottom:12}}>El tamaño de cada bloque es la plata que tenés ahí</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>Distribución Patrimonial</div>
+          <div style={{fontSize:11,color:T.tx3,marginBottom:14}}>El tamaño de cada bloque es la plata que tenés ahí</div>
           {pie.length>0
             ?<TreemapPatrimonio datos={pie} total={totalPat} fmt={fm} T={T} paleta={T.ch} altura={mb?300:260}/>
             :<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>Agrega inversiones</div>}
@@ -2131,7 +2131,7 @@ export default function FinPath(){
                 {l:"Tasa de ahorro",v:pc(savingsRate),c:savingsRate>=20?T.gn:savingsRate>=10?"#eab308":T.rd,tip:"% del ingreso que ahorras. Ideal: >20%.",i:"💰"},
                 {l:"Debt service",v:pc(debtService),c:debtService<=30?T.gn:debtService<=50?"#eab308":T.rd,tip:"% del ingreso que va a pagar deudas. Ideal: <30%.",i:"📋"},
               ].map(k => (
-                <div key={k.l} style={{background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
+                <div key={k.l} style={{background:T.bg3,borderRadius:12,padding:"14px 18px"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <span style={{fontSize:10,color:T.tx3,fontWeight:600,textTransform:"uppercase"}}>{k.l}</span>
                     <span style={{fontSize:14}}>{k.i}</span>
@@ -2148,7 +2148,7 @@ export default function FinPath(){
                 {l:"Concentración",v:pc(concRisk),c:concRisk<=30?T.gn:concRisk<=50?"#eab308":T.rd,tip:concRisk>30?"⚠ "+maxAsset.n+" es "+pc(concRisk)+" de tu patrimonio":"Ningún activo supera el 30%. Bien diversificado.",i:"⚠️"},
                 {l:"FIRE progress",v:pc(fireProgress),c:fireProgress>=100?T.gn:fireProgress>=50?"#eab308":T.rd,tip:"Patrimonio ÷ (gastos×25 años). 100% = nunca más necesitas trabajar.",i:"🔥"},
               ].map(k => (
-                <div key={k.l} style={{background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
+                <div key={k.l} style={{background:T.bg3,borderRadius:12,padding:"14px 18px"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <span style={{fontSize:10,color:T.tx3,fontWeight:600,textTransform:"uppercase"}}>{k.l}</span>
                     <span style={{fontSize:14}}>{k.i}</span>
@@ -2185,8 +2185,8 @@ export default function FinPath(){
                   <div style={{fontSize:10,color:T.tx3}}>necesitas en total</div>
                 </div>
               </div>
-              <div style={{height:12,background:"rgba(255,255,255,0.05)",borderRadius:6,overflow:"hidden",marginBottom:6}}>
-                <div style={{height:"100%",width:Math.min(fireProgress,100)+"%",background:fireProgress>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#eab308,#f97316)",borderRadius:6,transition:"width 0.5s"}}/>
+              <div style={{height:12,background:"rgba(255,255,255,0.05)",borderRadius:8,overflow:"hidden",marginBottom:8}}>
+                <div style={{height:"100%",width:Math.min(fireProgress,100)+"%",background:fireProgress>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#eab308,#f97316)",borderRadius:8,transition:"width 0.5s"}}/>
               </div>
               <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:T.tx3}}>
                 <span>Tienes: {fm(t.nw)}</span>
@@ -2218,7 +2218,7 @@ export default function FinPath(){
               
               return (
                 <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
                     <div>
                       <div style={{fontSize:11,color:T.tx3,fontWeight:600}}>📋 FECHA LIBRE DE DEUDA</div>
                       <div style={{fontSize:10,color:T.tx3,marginTop:2}}>Al ritmo actual de pago de cuotas</div>
@@ -2230,8 +2230,8 @@ export default function FinPath(){
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
                     <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:12}}>
-                      <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:6}}>🏔️ Estrategia Avalancha (ahorra más intereses)</div>
-                      <div style={{fontSize:10,color:T.tx3,marginBottom:6}}>Paga primero la de mayor tasa de interés</div>
+                      <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>🏔️ Estrategia Avalancha (ahorra más intereses)</div>
+                      <div style={{fontSize:10,color:T.tx3,marginBottom:8}}>Paga primero la de mayor tasa de interés</div>
                       {avalancha.slice(0,4).map((d,i) => (
                         <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                           <span style={{color:i===0?T.rd:T.tx2}}>{i+1}. {d.n||d.nombre||"Deuda"}</span>
@@ -2240,8 +2240,8 @@ export default function FinPath(){
                       ))}
                     </div>
                     <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:12}}>
-                      <div style={{fontSize:11,fontWeight:700,color:"#eab308",marginBottom:6}}>⛄ Estrategia Bola de Nieve (motivación rápida)</div>
-                      <div style={{fontSize:10,color:T.tx3,marginBottom:6}}>Paga primero la más pequeña</div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#eab308",marginBottom:8}}>⛄ Estrategia Bola de Nieve (motivación rápida)</div>
+                      <div style={{fontSize:10,color:T.tx3,marginBottom:8}}>Paga primero la más pequeña</div>
                       {bolaNieve.slice(0,4).map((d,i) => (
                         <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                           <span style={{color:i===0?"#eab308":T.tx2}}>{i+1}. {d.n||d.nombre||"Deuda"}</span>
@@ -2283,10 +2283,10 @@ export default function FinPath(){
                   const prog = h.target > 0 ? Math.min((h.current / h.target) * 100, 100) : 0;
                   const done = prog >= 100;
                   return (
-                    <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
                       <span style={{fontSize:14,width:20}}>{h.icon}</span>
                       <div style={{flex:1}}>
-                        <div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:2}}>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:8}}>
                           <span style={{color:done?T.gn:T.tx2,fontWeight:done?700:400}}>{h.name}</span>
                           <span style={{color:done?T.gn:T.tx3}}>{done?"✅ Logrado":fm(h.target)}</span>
                         </div>
@@ -2303,7 +2303,7 @@ export default function FinPath(){
 
             {/* CONCENTRACIÓN DE RIESGO */}
             <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>⚠️ CONCENTRACIÓN DE RIESGO — ¿Qué tan diversificado estás?</div>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:14}}>⚠️ CONCENTRACIÓN DE RIESGO — ¿Qué tan diversificado estás?</div>
               {(() => {
                 const assets = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => vaCOP(i,trm) > 0).map(i => ({name:i.n||i.nombre||"",value:vaCOP(i,trm),type:i.tp||i.tipo||"Otro"})).concat(ib.tv>0?[{name:"Trading",value:ib.tv,type:"Acciones"}]:[]);
                 const totalA = assets.reduce((s,a) => s + a.value, 0);
@@ -2323,13 +2323,13 @@ export default function FinPath(){
                   <>
                     <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                       <div>
-                        <div style={{fontSize:11,fontWeight:700,color:T.tx2,marginBottom:6}}>Top 5 activos por valor</div>
+                        <div style={{fontSize:11,fontWeight:700,color:T.tx2,marginBottom:8}}>Top 5 activos por valor</div>
                         {top3.map((a,i) => {
                           const pct = (a.value / totalA * 100);
                           const risk = pct > 40;
                           return (
-                            <div key={i} style={{marginBottom:4}}>
-                              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:2}}>
+                            <div key={i} style={{marginBottom:8}}>
+                              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:8}}>
                                 <span style={{color:risk?T.rd:T.tx2}}>{risk?"⚠ ":""}{a.name}</span>
                                 <span style={{color:risk?T.rd:T.tx3,fontWeight:600}}>{pct.toFixed(1)}% — {fm(a.value)}</span>
                               </div>
@@ -2341,13 +2341,13 @@ export default function FinPath(){
                         })}
                       </div>
                       <div>
-                        <div style={{fontSize:11,fontWeight:700,color:T.tx2,marginBottom:6}}>Diversificación por tipo</div>
+                        <div style={{fontSize:11,fontWeight:700,color:T.tx2,marginBottom:8}}>Diversificación por tipo</div>
                         {typeArr.map(([type,val],i) => {
                           const pct = (val / totalA * 100);
                           return (
                             <div key={type} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"4px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                               <div style={{display:"flex",alignItems:"center",gap:6}}>
-                                <div style={{width:8,height:8,borderRadius:2,background:T.ch[i%T.ch.length]}}/>
+                                <div style={{width:8,height:8,borderRadius:3,background:T.ch[i%T.ch.length]}}/>
                                 <span style={{color:T.tx2}}>{type}</span>
                               </div>
                               <span style={{color:T.tx3,fontFamily:"monospace"}}>{pct.toFixed(1)}% ({fm(val)})</span>
@@ -2373,7 +2373,7 @@ export default function FinPath(){
 
             {/* BENCHMARK: ¿Cómo rinde tu patrimonio? */}
             <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>📊 BENCHMARK — ¿Cómo rinde tu patrimonio vs alternativas?</div>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:14}}>📊 BENCHMARK — ¿Cómo rinde tu patrimonio vs alternativas?</div>
               {(() => {
                 const totalInvested = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vcCOP(i,trm), 0);
                 const totalValue = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vaCOP(i,trm), 0);
@@ -2395,13 +2395,13 @@ export default function FinPath(){
                 return (
                   <>
                     {benchmarks.map((b,i) => (
-                      <div key={i} style={{marginBottom:6}}>
-                        <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:2}}>
+                      <div key={i} style={{marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:8}}>
                           <span style={{color:i<2?T.tx:T.tx2,fontWeight:i<2?700:400}}>{b.name}</span>
                           <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{b.pct.toFixed(1)}%</span>
                         </div>
-                        <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:4,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:Math.max((Math.abs(b.pct)/maxPct)*100,2)+"%",background:b.color,borderRadius:4,opacity:i<2?1:0.6}}/>
+                        <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:Math.max((Math.abs(b.pct)/maxPct)*100,2)+"%",background:b.color,borderRadius:3,opacity:i<2?1:0.6}}/>
                         </div>
                       </div>
                     ))}
@@ -2421,8 +2421,8 @@ export default function FinPath(){
 
             {/* PLANIFICACIÓN TRIBUTARIA — Usa estimarImpuesto() con propietarios + DIAN */}
             {(()=>{const tx=estimarImpuesto(u);if(tx.total<=0)return null;return<div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>🧾 IMPUESTOS ESTIMADOS — Colombia 2026 (UVT: $52,374)</div>
-              {tx.sinClasificar>0&&<div style={{background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:T.orange}}>⚠️ {tx.sinClasificar} ingreso(s) sin clasificación fiscal. Ve a <strong>💰 Ingresos</strong> y asigna propietario + clasificación DIAN para un cálculo más preciso.</div>}
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:14}}>🧾 IMPUESTOS ESTIMADOS — Colombia 2026 (UVT: $52,374)</div>
+              {tx.sinClasificar>0&&<div style={{background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:T.orange}}>⚠️ {tx.sinClasificar} ingreso(s) sin clasificación fiscal. Ve a <strong>💰 Ingresos</strong> y asigna propietario + clasificación DIAN para un cálculo más preciso.</div>}
               <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                 <div>
                   <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>Impuesto de renta por propietario</div>
@@ -2483,10 +2483,10 @@ export default function FinPath(){
               
               return (
                 <div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-                  <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:10}}>🎓 FONDO DE EDUCACIÓN — Proyección universitaria</div>
+                  <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:14}}>🎓 FONDO DE EDUCACIÓN — Proyección universitaria</div>
                   <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                     <div>
-                      <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:6}}>Gasto educativo actual</div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:8}}>Gasto educativo actual</div>
                       <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
                         Mensual en educación: <strong style={{color:"#a78bfa"}}>{fm(gastoEduMes)}</strong><br/>
                         Anual: <strong>{fm(gastoEduMes * 12)}</strong><br/>
@@ -2494,7 +2494,7 @@ export default function FinPath(){
                       </div>
                     </div>
                     <div>
-                      <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:6}}>Universidad (por hijo)</div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:8}}>Universidad (por hijo)</div>
                       <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
                         Semestre top Colombia: <strong>~{fm(costoUni)}</strong><br/>
                         5 años (10 semestres): <strong>{fm(totalUni)}</strong><br/>
@@ -2513,7 +2513,7 @@ export default function FinPath(){
 
             {/* ACCIONES RECOMENDADAS */}
             <div style={{marginTop:14,background:"linear-gradient(135deg,rgba(34,197,94,0.06),rgba(59,130,246,0.03))",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:11,color:T.gn,fontWeight:700,marginBottom:10}}>✅ ACCIONES RECOMENDADAS — Prioridades para tu situación</div>
+              <div style={{fontSize:11,color:T.gn,fontWeight:700,marginBottom:14}}>✅ ACCIONES RECOMENDADAS — Prioridades para tu situación</div>
               {(() => {
                 const actions = [];
                 // Check each area
@@ -2555,7 +2555,7 @@ export default function FinPath(){
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginTop:14,alignItems:"start"}}>
         {/* LIQUIDEZ REAL */}
         <Cd s={{padding:20}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.bl,marginBottom:12}}>💧 Liquidez Real — ¿Cuánto puedes tener en efectivo?</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.bl,marginBottom:14}}>💧 Liquidez Real — ¿Cuánto puedes tener en efectivo?</div>
           {(() => {
             const cats = {
               inmediata: {label:"Inmediata (48h)",types:["Cash","CDT","Renta Fija"],color:T.gn,icon:"⚡"},
@@ -2576,13 +2576,13 @@ export default function FinPath(){
                   const val = totals2[key];
                   const pct = grandTotal > 0 ? (val / grandTotal * 100) : 0;
                   return (
-                    <div key={key} style={{marginBottom:10}}>
+                    <div key={key} style={{marginBottom:14}}>
                       <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
                         <span style={{color:T.tx2}}>{cat.icon} {cat.label}</span>
                         <span style={{fontWeight:700,color:cat.color,fontFamily:"monospace"}}>{fm(val)} <span style={{fontWeight:400,fontSize:10}}>({pct.toFixed(0)}%)</span></span>
                       </div>
-                      <div style={{height:8,background:T.bg3,borderRadius:4,overflow:"hidden"}}>
-                        <div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:4}}/>
+                      <div style={{height:8,background:T.bg3,borderRadius:3,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3}}/>
                       </div>
                     </div>
                   );
@@ -2601,7 +2601,7 @@ export default function FinPath(){
 
         {/* COSTO DE VIDA */}
         <Cd s={{padding:20}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#f97316",marginBottom:12}}>⏱️ Tu Estilo de Vida en Números</div>
+          <div style={{fontSize:13,fontWeight:700,color:"#f97316",marginBottom:14}}>⏱️ Tu Estilo de Vida en Números</div>
           {(() => {
             const gastoMes = t.te || 0;
             const gastoDia = gastoMes / 30;
@@ -2612,14 +2612,14 @@ export default function FinPath(){
 
             return (
               <>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
                   {[
                     {l:"Por mes",v:fm(gastoMes),icon:"📅"},
                     {l:"Por día",v:fm(Math.round(gastoDia)),icon:"☀️"},
                     {l:"Por hora",v:fm(Math.round(gastoHora)),icon:"⏰"},
                     {l:"Por minuto",v:fm(Math.round(gastoMin)),icon:"⚡"},
                   ].map(k => (
-                    <div key={k.l} style={{background:T.bg3,borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+                    <div key={k.l} style={{background:T.bg3,borderRadius:8,padding:"10px 14px",textAlign:"center"}}>
                       <div style={{fontSize:10,color:T.tx3}}>{k.icon} {k.l}</div>
                       <div style={{fontSize:16,fontWeight:800,color:"#f97316",marginTop:2}}>{k.v}</div>
                     </div>
@@ -2657,7 +2657,7 @@ export default function FinPath(){
         const maxVal=Math.max(...sorted.map(s=>s.nw));
         const minVal=Math.min(...sorted.map(s=>s.nw));
         const range=maxVal-minVal||1;
-        return<Cd s={{padding:20,marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div><div style={{fontSize:13,fontWeight:700,color:T.bl}}>📈 Historial Patrimonio Neto</div><div style={{fontSize:11,color:T.tx3}}>{sorted.length} meses registrados</div></div><div style={{textAlign:"right"}}><div style={{fontSize:11,color:T.tx3}}>Último mes</div><div style={{fontSize:14,fontWeight:700,color:change>=0?T.gn:T.rd}}>{change>=0?"+":""}{fm(change)}</div></div></div>
+        return<Cd s={{padding:20,marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><div><div style={{fontSize:13,fontWeight:700,color:T.bl}}>📈 Historial Patrimonio Neto</div><div style={{fontSize:11,color:T.tx3}}>{sorted.length} meses registrados</div></div><div style={{textAlign:"right"}}><div style={{fontSize:11,color:T.tx3}}>Último mes</div><div style={{fontSize:14,fontWeight:700,color:change>=0?T.gn:T.rd}}>{change>=0?"+":""}{fm(change)}</div></div></div>
           <div style={{display:"flex",alignItems:"flex-end",gap:3,height:100}}>
             {sorted.map((s,i)=>{const h=((s.nw-minVal)/range)*80+20;const m=parseInt(s.k.split("-")[1])-1;return<div key={s.k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}} title={months[m]+" "+s.k.split("-")[0]+": "+fm(s.nw)}><div style={{width:"100%",height:h,background:s.nw>=0?"linear-gradient(to top,"+T.gn+"40,"+T.gn+")":"linear-gradient(to top,"+T.rd+"40,"+T.rd+")",borderRadius:"4px 4px 0 0",minHeight:4,transition:"height 0.3s"}}/><div style={{fontSize:8,color:T.tx3}}>{months[m]}</div></div>})}
           </div>
@@ -2676,9 +2676,9 @@ export default function FinPath(){
         </Cd>
         {/* Independence Progress */}
         <Cd s={{padding:"24px",display:"flex",flexDirection:"column",justifyContent:"center"}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>Independencia Financiera</div>
-          <div style={{position:"relative",height:14,background:T.bg3,borderRadius:7,overflow:"hidden",marginBottom:8}}>
-            <div style={{height:"100%",width:Math.min(t.ind,150)+"%",maxWidth:"100%",background:t.ind>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#ef4444,#eab308)",borderRadius:7,transition:"width 0.5s"}}/>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:24}}>Independencia Financiera</div>
+          <div style={{position:"relative",height:14,background:T.bg3,borderRadius:8,overflow:"hidden",marginBottom:8}}>
+            <div style={{height:"100%",width:Math.min(t.ind,150)+"%",maxWidth:"100%",background:t.ind>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#ef4444,#eab308)",borderRadius:8,transition:"width 0.5s"}}/>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.tx3}}>
             <span>0%</span><span style={{color:t.ind>=100?T.gn:T.tx2,fontWeight:700}}>{pc(t.ind)}</span><span>100%</span>
@@ -2699,7 +2699,7 @@ export default function FinPath(){
       {/* Alertas de detalle. Cierra la página: son avisos puntuales, no el
           diagnóstico principal — ese lo da el bloque del family office arriba. */}
       <Cd s={{padding:20,marginTop:14,background:"linear-gradient(135deg,rgba(239,68,68,0.03),rgba(234,179,8,0.02))"}}>
-        <div style={{fontSize:13,fontWeight:700,color:"#eab308",marginBottom:12}}>🔔 Alertas del Asesor — Rebalanceo y Optimización</div>
+        <div style={{fontSize:13,fontWeight:700,color:"#eab308",marginBottom:14}}>🔔 Alertas del Asesor — Rebalanceo y Optimización</div>
         {(() => {
           const alerts = [];
           const inv = ((u&&u.inv)||[]).filter(i=>i.sim!==false);
@@ -2752,12 +2752,12 @@ export default function FinPath(){
           return (
             <div style={{display:"grid",gap:8}}>
               {alerts.sort((a,b) => {const o={"🔴":0,"🟡":1,"🟢":2};return (o[a.type]||2)-(o[b.type]||2)}).map((a,i) => (
-                <div key={i} style={{display:"flex",gap:10,padding:12,background:a.type==="🔴"?"rgba(239,68,68,0.06)":a.type==="🟡"?"rgba(234,179,8,0.04)":"rgba(34,197,94,0.04)",border:"1px solid "+(a.type==="🔴"?"rgba(239,68,68,0.12)":a.type==="🟡"?"rgba(234,179,8,0.1)":"rgba(34,197,94,0.1)"),borderRadius:10}}>
+                <div key={i} style={{display:"flex",gap:10,padding:12,background:a.type==="🔴"?"rgba(239,68,68,0.06)":a.type==="🟡"?"rgba(234,179,8,0.04)":"rgba(34,197,94,0.04)",border:"1px solid "+(a.type==="🔴"?"rgba(239,68,68,0.12)":a.type==="🟡"?"rgba(234,179,8,0.1)":"rgba(34,197,94,0.1)"),borderRadius:12}}>
                   <span style={{fontSize:18,flexShrink:0,marginTop:2}}>{a.type}</span>
                   <div style={{flex:1}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <span style={{fontSize:12,fontWeight:700,color:a.type==="🔴"?T.rd:a.type==="🟡"?"#eab308":T.gn}}>{a.title}</span>
-                      <span style={{fontSize:9,color:T.tx3,background:T.bg3,padding:"2px 8px",borderRadius:4}}>{a.cat}</span>
+                      <span style={{fontSize:9,color:T.tx3,background:T.bg3,padding:"10px 14px",borderRadius:3}}>{a.cat}</span>
                     </div>
                     <div style={{fontSize:11,color:T.tx2,marginTop:4,lineHeight:1.6}}>{a.msg}</div>
                   </div>
