@@ -46,10 +46,17 @@ const getType = (i) => {
 // cargado en USD se mostraba y se sumaba como si fueran pesos: el portafolio
 // de USD 33.266 aparecía como $33.266 COP junto a inmuebles de miles de
 // millones. La conversión ahora usa el mismo helper que el resto del motor.
-const getVA = (i) => vaCOP({ ...i, va: i.va ?? i.valor_actual ?? i.valor ?? 0 }, trm || 4200);
+// 26-jul-2026 — CRASH EN PRODUCCIÓN. Al agregar la conversión de moneda,
+// getVA quedó usando `trm`, que es una PROP del componente — pero esta
+// función vive a nivel de módulo, fuera de él. En ejecución lanzaba
+// "trm is not defined" y la página de Patrimonio no cargaba.
+// El build no lo detecta: es un error de runtime, no de sintaxis.
+// Ahora la TRM se pasa como argumento, que es lo correcto para una función
+// que no está dentro del componente.
+const getVA = (i, trm) => vaCOP({ ...i, va: i.va ?? i.valor_actual ?? i.valor ?? 0 }, trm || 4200);
 const getVC = (i) => Number(i.vc || i.valor_compra || i.costo || 0);
 
-function calcMetrics(inv, deudas) {
+function calcMetrics(inv, deudas, trm) {
   let ig = 0, gs = 0;
   if (inv.unidades || inv.un) {
     (inv.unidades || inv.un || []).forEach((u) => {
@@ -60,7 +67,7 @@ function calcMetrics(inv, deudas) {
     (inv.ingresos || inv.ig || []).forEach((i) => { ig += i.m || 0; });
     (inv.gastos || inv.gs || []).forEach((g) => { gs += g.m || 0; });
   }
-  const va = getVA(inv), vc = getVC(inv);
+  const va = getVA(inv, trm), vc = getVC(inv);
   const noi = ig - gs;
   const linkedDebt = (deudas || []).filter((d) => (d.la || d.link) === inv.id);
   const debtTotal = linkedDebt.reduce((s, d) => s + (d.mt || d.monto || 0), 0);
@@ -96,14 +103,14 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
 
   const items = inversiones || [];
   const activos = items.filter((i) => i.sim !== false);
-  const totalValor = activos.reduce((s, i) => s + getVA(i), 0)
+  const totalValor = activos.reduce((s, i) => s + getVA(i, trm), 0)
   // 26-jul-2026 (Santiago): mismo trío en los cuatro módulos de "Mi dinero" —
   // stock · flujo mensual · flujo anual — para que el ojo busque siempre en el
   // mismo lugar. Acá el flujo es lo que RINDE el patrimonio: se veía cuánto
   // vale, no cuánto produce, que es la otra mitad del dato.
   // Solo suma activos con tasa cargada: una propiedad sin rendimiento
   // declarado no rinde 0%, simplemente no se sabe, y no se inventa.
-  const rendimientoAnual = activos.reduce((s, i) => s + getVA(i) * ((Number(i.tasa) || 0) / 100), 0);
+  const rendimientoAnual = activos.reduce((s, i) => s + getVA(i, trm) * ((Number(i.tasa) || 0) / 100), 0);
 
   const toggleSel = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
@@ -122,7 +129,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       tipo: String(getType(inv) || "Real Estate"),
       fiscalCode: inv.fiscalCode || "INV_INMUEBLE_HABITACIONAL",
       pctTerreno: inv.pctTerreno != null ? String(inv.pctTerreno) : "",
-      va: String(getVA(inv) || ""),
+      va: String(getVA(inv, trm) || ""),
       vc: String(getVC(inv) || ""),
       tasa: String(inv.tasa || ""),
       owner: inv.owner || "",
@@ -310,11 +317,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     </div>
                   </td></tr>
               ) : items.map((inv) => {
-                const m = calcMetrics(inv, deudas);
+                const m = calcMetrics(inv, deudas, trm);
                 const name = getName(inv);
                 const loc = getLoc(inv);
                 const tipo = getType(inv);
-                const va = getVA(inv);
+                const va = getVA(inv, trm);
                 return (
                   <tr key={inv.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(inv.id) ? T.greenDim : "transparent" }}>
                     <td style={{ padding: "10px 12px" }}>
