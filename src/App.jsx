@@ -39,6 +39,7 @@ import SimuladorAvanzado from "./components/SimuladorAvanzado";
 import AdminMetrics from "./components/AdminMetrics";
 import HallazgosProactivos from "./components/HallazgosProactivos";
 import TreemapPatrimonio from "./components/TreemapPatrimonio";
+import AnoEnCurso from "./components/AnoEnCurso";
 import { generarHallazgos } from "./lib/hallazgos.js";
 import { generarRecomendaciones } from "./lib/recomendaciones.js";
 import DashboardUS from "./components/DashboardUS";
@@ -1919,6 +1920,16 @@ export default function FinPath(){
           </Cd>
         );
       })()}
+
+      {/* Cómo va el año (25-jul-2026). El resto de la sección 1 es una foto
+          fija: cuánto tenés HOY. Esto agrega la trayectoria — de dónde venís
+          y hacia dónde va el año. Se calcula del flujo, no del histórico de
+          patrimonio, porque ese vive en localStorage y está vacío para
+          cualquier usuario nuevo. */}
+      {(()=>{ try{
+        const hoy=new Date();
+        return <AnoEnCurso user={u} trm={u?.trm||4200} fmt={fm} T={T} mesActual={hoy.getMonth()+1} año={hoy.getFullYear()}/>;
+      }catch(e){ return null } })()}
 
       {/* ═══ EL ASESOR HABLA PRIMERO (25-jul-2026) ═══════════════════════════
           Hasta hoy toda esta inteligencia existía pero vivía dentro de
