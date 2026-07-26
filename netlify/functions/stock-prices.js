@@ -75,7 +75,17 @@ export default async function handler(req) {
       const pendientes = [];
       await Promise.all(tickers.slice(0, 30).map(async (tk) => {
         try {
-          const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(tk)}&token=${FINNHUB}`);
+          // 26-jul-2026 — CRIPTO. Finnhub resuelve "BTC" a una ACCIÓN que se
+          // llama así, no a bitcoin: devolvía $28,37 y dejaba la posición de
+          // Santiago (0,071 BTC) valuada en $2 en vez de ~$4.600, con un P/L
+          // de -100%. Las cripto necesitan el símbolo del exchange.
+          const CRIPTO = { BTC:"BINANCE:BTCUSDT", ETH:"BINANCE:ETHUSDT", SOL:"BINANCE:SOLUSDT",
+                           ADA:"BINANCE:ADAUSDT", XRP:"BINANCE:XRPUSDT", DOGE:"BINANCE:DOGEUSDT",
+                           MATIC:"BINANCE:MATICUSDT", AVAX:"BINANCE:AVAXUSDT", DOT:"BINANCE:DOTUSDT" };
+          const esCripto = !!CRIPTO[tk];
+          const r = esCripto
+            ? await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(CRIPTO[tk])}&token=${FINNHUB}`)
+            : await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(tk)}&token=${FINNHUB}`);
           if (!r.ok) { pendientes.push(tk); return; }
           const q = await r.json();
           // c = current, pc = previous close. Si c viene en 0, Finnhub no
