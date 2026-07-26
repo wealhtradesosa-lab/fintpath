@@ -355,6 +355,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       const base = {
         c: form.c || "",
         m: mPorPeriodo,
+        // Sin `moneda` se asume COP, así que nada de lo ya cargado cambia.
+        moneda: form.moneda || undefined,
         t: form.t || "f",
         freq: form.freq || "mes",  // legacy, mantenido por retrocompat
         frecuencia,                 // nuevo campo
@@ -423,7 +425,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     const mDisplay = (frecuencia !== "mensual")
       ? item.m
       : (freqLegacy === "año" ? (item.m * 12) : item.m);
-    setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t, freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, vigenciaModo: item.vigenciaModo, montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
+    setForm({ cat: item.cat, c: item.c, m: mDisplay, t: item.t,
+      // 26-jul-2026: sin esto, editar un gasto cargado en USD lo devolvía a
+      // COP en silencio — el formulario arrancaba con el valor por defecto y
+      // al guardar pisaba la moneda original.
+      moneda: item.moneda || "COP", freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, vigenciaModo: item.vigenciaModo, montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
     // UX iter 4 (18-jul-2026 noche): detectar template correcto del item existente
     setTemplateElegido(detectarTemplate(item));
@@ -783,6 +789,15 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 setForm((p) => ({ ...p, cat: v, fiscalCode: defaultFiscalCode(ownerType, v) }));
               }} options={[{v:"Aporte tributario",l:"🛡️ Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Impuesto",l:"🏛️ Impuesto (predial, rodamiento, ICA, otros)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
+
+            {/* 26-jul-2026 (Santiago): "que pueda ingresarlo en la moneda que
+                tenga el valor". Gastos era el único de los cuatro módulos sin
+                selector. Ayer se agregó la conversión en el motor pero no el
+                campo, así que quedaba el mismo problema que tenía Deudas: el
+                código listo y nadie podía usarlo.
+                El valor se guarda en la moneda elegida; lo que se VE depende
+                del selector global de la barra superior. */}
+            <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
 
               {/* Commit 1.6: sub-selector para Aporte tributario (PV, AFC, Salud prepagada) */}
               {form.cat === "Aporte tributario" && (() => {
