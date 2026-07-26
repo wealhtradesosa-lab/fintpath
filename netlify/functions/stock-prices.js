@@ -22,51 +22,46 @@ export default async function handler(req) {
     const results = {};
     
     // Batch: fetch all at once using Yahoo quote endpoint
-    const symbols = tickers.join(",");
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}`;
-    
-    const r = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" }
-    });
-    
-    if (r.ok) {
-      const data = await r.json();
-      const quotes = data?.quoteResponse?.result || [];
-      for (const q of quotes) {
-        results[q.symbol] = {
-          price: q.regularMarketPrice || 0,
-          change: q.regularMarketChange || 0,
-          changePercent: q.regularMarketChangePercent || 0,
-          name: q.shortName || q.longName || "",
-          currency: q.currency || "USD",
-          marketState: q.marketState || "CLOSED",
-          previousClose: q.regularMarketPreviousClose || 0,
-        };
-      }
-    } else {
-      // Fallback: try individual fetches via chart API
-      for (const tk of tickers.slice(0, 20)) {
-        try {
-          const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(tk)}?interval=1d&range=1d`;
-          const cr = await fetch(chartUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
-          if (cr.ok) {
-            const cd = await cr.json();
-            const meta = cd?.chart?.result?.[0]?.meta;
-            if (meta) {
-              results[tk] = {
-                price: meta.regularMarketPrice || 0,
-                change: (meta.regularMarketPrice || 0) - (meta.previousClose || 0),
-                changePercent: meta.previousClose ? (((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100) : 0,
-                name: "",
-                currency: meta.currency || "USD",
-              };
-            }
-          }
-        } catch {}
-      }
-    }
+    // 26-jul-2026 — POR QUÉ SE ELIMINÓ EL CAMINO v7.
+    // El código pedía primero /v7/finance/quote y, si fallaba, caía al v8 por
+    // ticker. Pero Yahoo dejó de servir v7 sin cookie/crumb y responde
+    // HTTP 200 CON EL CUERPO VACÍO. Como r.ok daba true, se entraba a
+    // r.json(), que reventaba con "Unexpected end of JSON input" — y el
+    // respaldo del v8 NUNCA se ejecutaba, porque vivía en el else.
+    // Un fallo silencioso: la app mostraba "Error" y los precios quedaban
+    // congelados en lo último cargado a mano. En la cuenta de Santiago eso
+    // dejó el portafolio en $24.229 cuando vale unos $108 millones.
+    // El v8 (chart) sí responde de forma estable, así que ahora es el único
+    // camino, con manejo de error por ticker: si uno falla, los demás siguen.
+    const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    const fallidos = [];
 
-    return new Response(JSON.stringify({ prices: results, updated: new Date().toISOString() }), { headers: corsHeaders });
+    await Promise.all(tickers.slice(0, 30).map(async (tk) => {
+      try {
+        const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(tk)}?interval=1d&range=1d`;
+        const cr = await fetch(chartUrl, { headers: { "User-Agent": UA } });
+        if (!cr.ok) { fallidos.push(tk); return; }
+        const texto = await cr.text();
+        if (!texto) { fallidos.push(tk); return; }   // 200 con cuerpo vacío
+        const cd = JSON.parse(texto);
+        const meta = cd?.chart?.result?.[0]?.meta;
+        if (!meta || !meta.regularMarketPrice) { fallidos.push(tk); return; }
+        const previo = meta.previousClose || meta.chartPreviousClose || 0;
+        results[tk] = {
+          price: meta.regularMarketPrice,
+          change: meta.regularMarketPrice - previo,
+          changePercent: previo ? ((meta.regularMarketPrice - previo) / previo) * 100 : 0,
+          name: meta.longName || meta.shortName || "",
+          currency: meta.currency || "USD",
+          marketState: meta.marketState || "",
+          previousClose: previo,
+        };
+      } catch {
+        fallidos.push(tk);
+      }
+    }));
+
+    return new Response(JSON.stringify({ prices: results, fallidos, updated: new Date().toISOString() }), { headers: corsHeaders });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 200, headers: corsHeaders });
   }
