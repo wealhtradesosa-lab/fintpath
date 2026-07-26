@@ -62,6 +62,43 @@ export default async function handler(req) {
     // dejó el portafolio en $24.229 cuando vale unos $108 millones.
     // El v8 (chart) sí responde de forma estable, así que ahora es el único
     // camino, con manejo de error por ticker: si uno falla, los demás siguen.
+    // ═══ FUENTE 1: FINNHUB (26-jul-2026) ═══════════════════════════════
+    // Yahoo bloquea las IP de datacenter con HTTP 429, así que la fuente
+    // principal pasa a ser Finnhub, que sí acepta peticiones de servidor.
+    // Requiere clave gratuita en finnhub.io — se lee de la variable de
+    // entorno FINNHUB_API_KEY en Netlify. Si no está configurada, el código
+    // cae a Yahoo, que funciona desde IP residencial pero no en producción.
+    // Límite del plan gratuito: 60 llamadas por minuto, de sobra para un
+    // portafolio personal.
+    const FINNHUB = process.env.FINNHUB_API_KEY;
+    if (FINNHUB) {
+      const pendientes = [];
+      await Promise.all(tickers.slice(0, 30).map(async (tk) => {
+        try {
+          const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(tk)}&token=${FINNHUB}`);
+          if (!r.ok) { pendientes.push(tk); return; }
+          const q = await r.json();
+          // c = current, pc = previous close. Si c viene en 0, Finnhub no
+          // cotiza ese símbolo (típico en opciones y algunos ADR).
+          if (!q || !q.c) { pendientes.push(tk); return; }
+          results[tk] = {
+            price: q.c,
+            change: q.d || (q.c - (q.pc || 0)),
+            changePercent: q.dp || (q.pc ? ((q.c - q.pc) / q.pc) * 100 : 0),
+            name: "",
+            currency: "USD",
+            previousClose: q.pc || 0,
+          };
+        } catch { pendientes.push(tk); }
+      }));
+      return new Response(JSON.stringify({
+        prices: results,
+        fallidos: pendientes,
+        fuente: "finnhub",
+        updated: new Date().toISOString(),
+      }), { headers: corsHeaders });
+    }
+
     const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     const fallidos = [];
 
