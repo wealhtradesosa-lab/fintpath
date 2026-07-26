@@ -7,7 +7,7 @@ import { exportDeudasExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import FrecuenciaSelector from "./FrecuenciaSelector";
 import TablaMensual from "./TablaMensual";
-import { MESES, costoCredito } from "../lib/flowHelpers.js";
+import { MESES, costoCredito, montoPromedioMensual } from "../lib/flowHelpers.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -123,7 +123,16 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   const items = deudas || [];
   const activos = items.filter((d) => d.sim !== false);
   const totalDeuda = activos.reduce((s, d) => s + (d.mt || 0), 0);
-  const totalCuotas = activos.reduce((s, d) => s + (d.pg || 0), 0);
+  const totalCuotas = activos.reduce((s, d) => s + montoPromedioMensual({ ...d, mensual: d.pg || 0 }), 0)
+  // 26-jul-2026 (Santiago: "deudas: valor total, valor pago mensual y valor de
+  // intereses anuales"). Los intereses son EL costo real de la deuda y no se
+  // mostraban en ninguna parte del módulo: se veía el saldo y la cuota, pero
+  // no cuánto se paga por tener ese dinero prestado.
+  // Se calcula sobre el saldo con la tasa E.A. de cada crédito. Es el interés
+  // del PRIMER año: como el saldo baja con cada abono a capital, en años
+  // siguientes será menor. Se declara así en el pie para no dar por exacto un
+  // número que es una referencia.
+  const interesAnual = activos.reduce((s, d) => s + (d.mt || 0) * ((Number(d.ts) || 0) / 100), 0);
   const totalInteresAnual = activos.reduce((s, d) => s + costoCredito(d).interesAnual, 0);
 
   const toggleSel = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -264,6 +273,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           { l: "Deuda Total", v: fm(totalDeuda), c: T.red },
           { l: "Cuotas/mes", v: fm(totalCuotas), c: T.orange },
           { l: "Cuotas/año", v: fm(totalCuotas * 12), c: T.purple },
+          { l: "Intereses/año", v: interesAnual > 0 ? fm(interesAnual) : "—", c: "#ef4444" },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
             <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
