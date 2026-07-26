@@ -2102,6 +2102,42 @@ export default function FinPath(){
             <span style={{fontFamily:"monospace",fontWeight:600}}>{fm(expPie.slice(8).reduce((s,e)=>s+e.value,0))}</span>
           </div>}
         </Cd>
+
+        {/* 25-jul-2026 (Santiago: "no vemos deudas ahí, que también es
+            importante"). Omisión conceptual: la sección se llama "¿Cómo se
+            mueve tu plata?" y las cuotas —su tercera salida más grande— no
+            aparecían en el desglose. Estaban en el indicador de arriba y en la
+            sección de patrimonio, pero no acá, que es donde se compara qué
+            entra contra qué sale. */}
+        {(()=>{
+          const deudas=((u&&u.deu)||[])
+            .filter(d=>d.sim!==false&&(d.mt||0)>0)
+            .map(d=>({name:d.n||"Crédito",value:montoPromedioMensual({...d,mensual:(d.pg||0)*(d.moneda==="USD"?(trm||4200):1)}),tasa:d.ts||0,saldo:(d.mt||0)*(d.moneda==="USD"?(trm||4200):1)}))
+            .filter(d=>d.value>0)
+            .sort((a,b)=>b.value-a.value);
+          if(!deudas.length) return null;
+          const totalCuotas=deudas.reduce((s,d)=>s+d.value,0);
+          return <Cd s={{padding:0}}>
+            <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+T.border}}>
+              <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>🏦 Cuotas de deuda</span>
+              <span style={{fontSize:13,fontWeight:700,color:"#f97316"}}>{fm(totalCuotas)}/mes</span>
+            </div>
+            <div style={{padding:"4px 20px 14px"}}>
+              <BarraComposicion datos={deudas} total={totalCuotas} paleta={T.ch} T={T} altura={40}/>
+            </div>
+            {deudas.map((d,i)=><div key={d.name+i} style={{position:"relative",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:i<deudas.length-1?"1px solid "+T.border:"none"}}>
+              <div style={{position:"absolute",left:0,top:0,bottom:0,width:(totalCuotas>0?(d.value/totalCuotas)*100:0)+"%",background:T.ch[i%T.ch.length],opacity:0.10,pointerEvents:"none"}}/>
+              <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0,position:"relative"}}>
+                <div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length],flexShrink:0}}/>
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600}}>{d.name}</div>
+                  <div style={{fontSize:10,color:T.tx3}}>{d.tasa>0?d.tasa+"% E.A. · ":""}saldo {fm(d.saldo)}</div>
+                </div>
+              </div>
+              <div style={{fontWeight:700,fontFamily:"monospace",color:"#f97316",position:"relative"}}>{fm(d.value)}</div>
+            </div>)}
+          </Cd>;
+        })()}
       </div>
 
       <SecH n={3} t="¿En qué está tu patrimonio?" s="Composición, liquidez real y evolución"/>
