@@ -2,7 +2,7 @@ export default async function handler(req) {
   const corsHeaders = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type"
   };
 
@@ -11,8 +11,26 @@ export default async function handler(req) {
   }
 
   try {
-    const body = await req.json();
-    const tickers = body.tickers || [];
+    // 26-jul-2026 — LA CAUSA REAL DEL FALLO, y no era Yahoo.
+    // La función solo leía `await req.json()`, es decir esperaba un POST con
+    // cuerpo. Pero App.jsx la llama con GET y los tickers en la URL:
+    //   fetch("/api/stock-price?tickers=AAPL,PLTR")
+    // Sin cuerpo, req.json() lanza "Unexpected end of JSON input" — el error
+    // exacto que veía Santiago cada vez que apretaba "Actualizar precios".
+    // Quien llama y quien responde nunca estuvieron de acuerdo, así que el
+    // botón jamás funcionó desde que se escribió así.
+    // Ahora acepta las dos formas: query string (GET) y cuerpo (POST).
+    let tickers = [];
+    const url = new URL(req.url);
+    const qs = url.searchParams.get("tickers");
+    if (qs) {
+      tickers = qs.split(",").map((t) => t.trim().toUpperCase()).filter(Boolean);
+    } else {
+      try {
+        const body = await req.json();
+        tickers = (body.tickers || []).map((t) => String(t).trim().toUpperCase()).filter(Boolean);
+      } catch { tickers = []; }
+    }
     
     if (!tickers.length) {
       return new Response(JSON.stringify({ error: "No tickers" }), { headers: corsHeaders });
