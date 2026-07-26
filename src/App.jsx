@@ -1937,7 +1937,7 @@ export default function FinPath(){
           cualquier usuario nuevo. */}
       {(()=>{ try{
         const hoy=new Date();
-        return <AnoEnCurso user={u} trm={u?.trm||4200} fmt={fm} T={T} mesActual={hoy.getMonth()+1} año={hoy.getFullYear()}/>;
+        return <AnoEnCurso user={u} trm={u?.trm||4200} fmt={fm} T={T} mesActual={hoy.getMonth()+1} año={hoy.getFullYear()} totales={t}/>;
       }catch(e){ return null } })()}
 
       {/* ═══ EL ASESOR HABLA PRIMERO (25-jul-2026) ═══════════════════════════

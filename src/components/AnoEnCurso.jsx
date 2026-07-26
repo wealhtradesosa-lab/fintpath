@@ -1,5 +1,7 @@
 import { montoDelMes } from "../lib/flowHelpers.js";
 
+const num = (v) => Number(v) || 0;
+
 /**
  * AñoEnCurso — La trayectoria del año, no la foto del mes.
  *
@@ -17,7 +19,7 @@ import { montoDelMes } from "../lib/flowHelpers.js";
  * que el usuario tiene cargado, y se marcan visualmente distinto para que no
  * se confundan con hechos.
  */
-export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año }) {
+export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año, totales }) {
   if (!user) return null;
 
   const ing = (user.ingresos || []).filter((i) => i.sim !== false);
@@ -28,12 +30,29 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año 
 
   const enCOP = (v, moneda) => (moneda === "USD" ? v * trm : v);
 
+  // 26-jul-2026 (Santiago: "el dashboard me muestra verde los últimos meses y
+  // en el simulador esos mismos meses salen rojos"). Era un error mío: esta
+  // franja restaba solo gastos y cuotas, mientras que el motor —y por lo tanto
+  // el simulador— también resta RETENCIÓN EN LA FUENTE e IMPUESTO DE RENTA:
+  //   cashFlow = (bruto − retención) − (aportes + gastos + cuotas + impuesto)
+  // Faltando esos dos, la franja pintaba de verde meses que en realidad son
+  // rojos. Dos partes de la app diciendo cosas distintas del mismo mes es lo
+  // peor que puede pasar en una herramienta patrimonial.
+  const brutoRef = num(totales?.brutoTotal);
+  const retencionMes = num(totales?.retencionMensual);
+  const impuestoMes = num(totales?.impuestoNeto);
+
   const meses = [];
   for (let m = 1; m <= 12; m++) {
     const entra = ing.reduce((s, i) => s + enCOP(montoDelMes(i, año, m), i.moneda), 0);
     const gasta = gasCats.reduce((s, g) => s + montoDelMes(g, año, m), 0);
     const cuotas = deu.reduce((s, d) => s + enCOP(montoDelMes({ ...d, mensual: d.pg || 0 }, año, m), d.moneda), 0);
-    meses.push({ m, entra, sale: gasta + cuotas, neto: entra - gasta - cuotas });
+    // La retención sigue al ingreso del mes: si un mes entra menos, retienen
+    // menos. El impuesto de renta es una obligación anual, así que se reparte
+    // parejo — es el mismo criterio que usa el motor.
+    const retencion = brutoRef > 0 ? (entra / brutoRef) * retencionMes : 0;
+    const sale = gasta + cuotas + retencion + impuestoMes;
+    meses.push({ m, entra, sale, neto: entra - sale });
   }
 
   const transcurridos = meses.slice(0, mesActual);
@@ -100,7 +119,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año 
       </div>
 
       <div style={{ fontSize: 11, color: T.tx3, marginTop: 10, lineHeight: 1.5 }}>
-        Los meses que faltan son proyección con lo que tenés cargado hoy — se ven más tenues.
+        Incluye retención e impuesto, igual que el simulador. Los meses que faltan son proyección — se ven más tenues.
         Si el año cierra así, terminás con <strong style={{ color: netoAño >= 0 ? "#22c55e" : "#ef4444" }}>{fmt(netoAño)}</strong>.
       </div>
     </div>
