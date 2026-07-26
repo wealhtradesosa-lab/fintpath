@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { separarPorLimite } from "../lib/limitePlan.js";
+import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import NumberInput from "./NumberInput";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
@@ -32,7 +34,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fmt, onImport, user}) {
+export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fmt, onImport, user, plan, onUpgrade}) {
   const fm = fmt || _fm;
   // Fase 3 commit 6: gating reader.
   const { role } = useRole();
@@ -320,7 +322,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       </div>
                     </div>
                   </td></tr>
-              ) : items.map((d) => {
+              ) : separarPorLimite(items, plan).visibles.map((d) => {
                 const lk = d.la ? (inversiones || []).find((i) => i.id === d.la) : null;
                 return (
                   <tr key={d.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(d.id) ? T.redDim : "transparent" }}>
@@ -391,6 +393,15 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               })}
             </tbody>
           </table>
+        {/* 26-jul-2026 — Límite del plan gratuito (10 por sección).
+            Los bloqueados NO se excluyen de ningún total: se quita el acceso al
+            detalle, no se falsea el número. Ver src/lib/limitePlan.js. */}
+        {(() => {
+          const b = separarPorLimite(items, plan).bloqueados;
+          if (!b.length) return null;
+          return <BloqueadosPorPlan cantidad={b.length} monto={b.reduce((s,d)=>s+((d.mt)||0),0)}
+            fmt={fm} T={T} onUpgrade={onUpgrade} que="deudas" />;
+        })()}
         </div>
       </div>
 

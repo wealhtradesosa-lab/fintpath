@@ -2,7 +2,7 @@
  * limitePlan — Cuántos ítems puede VER en detalle cada plan.
  *
  * 26-jul-2026. Decisión de producto de Santiago: el plan gratuito permite
- * hasta 7 ítems por sección; de ahí en adelante quedan bloqueados.
+ * hasta 10 ítems por sección; de ahí en adelante quedan bloqueados.
  *
  * DECISIÓN DE DISEÑO IMPORTANTE — los ítems bloqueados SIGUEN CONTANDO en
  * todos los totales. La alternativa era ocultarlos del cálculo, pero en una
@@ -19,7 +19,10 @@
  * conserva; simplemente no puede abrir 9 de ellos hasta que mejore el plan.
  */
 
-export const LIMITE_FREE = 7;
+// 26-jul-2026: Santiago lo fijó en 10 (arrancó en 7). Impacto medido en la
+// base con ese número: de 75 cuentas gratuitas, solo 3 superan 10 activos y 1
+// supera 10 ingresos. Ninguna supera 10 deudas.
+export const LIMITE_FREE = 10;
 
 /** ¿Este plan tiene tope de ítems por sección? */
 export const tieneLimite = (plan) => !plan || plan === "free";

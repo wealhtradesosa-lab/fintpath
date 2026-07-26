@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { separarPorLimite } from "../lib/limitePlan.js";
+import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import NumberInput from "./NumberInput";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
@@ -163,7 +165,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user }) {
+export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user, plan, onUpgrade}) {
   const fm = fmt || _fm;
   // Fase 3 commit 5 — gating reader: si role==='reader', los handlers
   // de escritura abortan vía guardEdit() y emiten 'fp3-reader-blocked'.
@@ -664,7 +666,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       </div>
                     </div>
                   </td></tr>
-                ) : allItems.map((item) => (
+                ) : separarPorLimite(allItems, plan).visibles.map((item) => (
                   <tr key={item.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.id) ? T.greenDim : "transparent" }}>
                     <td style={{ padding: "10px 12px" }}>
                       <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)}
@@ -784,6 +786,15 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 ))}
               </tbody>
             </table>
+          {/* 26-jul-2026 — Límite del plan gratuito (10 por sección).
+              Los bloqueados NO se excluyen de ningún total: se quita el acceso al
+              detalle, no se falsea el número. Ver src/lib/limitePlan.js. */}
+          {(() => {
+            const b = separarPorLimite(allItems, plan).bloqueados;
+            if (!b.length) return null;
+            return <BloqueadosPorPlan cantidad={b.length} monto={b.reduce((s,i)=>s+((i.mensual)||0),0)}
+              fmt={fm} T={T} onUpgrade={onUpgrade} que="ingresos" />;
+          })()}
           </div>
         </div>
 

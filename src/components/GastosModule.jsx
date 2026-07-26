@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { separarPorLimite } from "../lib/limitePlan.js";
+import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import NumberInput from "./NumberInput";
 import { C } from "../lib/designTokens.js";
@@ -587,7 +589,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       </div>
                     </div>
                   </td></tr>
-            ) : allItems.map((item) => (
+            ) : separarPorLimite(allItems, plan).visibles.map((item) => (
               <tr key={item.key} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.key) ? T.redDim : "transparent" }}>
                 <td style={{ padding: "10px 12px" }}>
                   <input type="checkbox" checked={selected.has(item.key)} onChange={() => toggleSel(item.key)}
@@ -701,6 +703,15 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             ))}
           </tbody>
         </table></div>
+        {/* 26-jul-2026 — Límite del plan gratuito (10 por sección). Los
+            bloqueados siguen contando en todos los totales: se quita el acceso
+            al detalle, no se falsea el número. Ver src/lib/limitePlan.js. */}
+        {(() => {
+          const b = separarPorLimite(allItems, plan).bloqueados;
+          if (!b.length) return null;
+          return <BloqueadosPorPlan cantidad={b.length} monto={b.reduce((s,g)=>s+((g.m)||0),0)}
+            fmt={fm} T={T} onUpgrade={onUpgrade} que="gastos" />;
+        })()}
       </div>
 
       {/* Form Modal */}
