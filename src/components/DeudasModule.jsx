@@ -511,7 +511,25 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             </div>
             <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
               <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v, cuotaManual: true }))} type="number" placeholder="0" />
-              <In l="Tasa anual % (E.A.)" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="Ej: 22.99" />
+              <In l="Tasa anual % (E.A.)" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="Ej: 22,99" />
+            {/* 26-jul-2026 (Santiago cargó 13,7 y quedó 137 por el bug de la
+                coma, ya corregido). Una tasa de tres cifras casi siempre es un
+                decimal perdido, y el motor la daría por buena: con 137% E.A.
+                una hipoteca de $1.700M mostraría $126M de interés mensual en
+                vez de $18M. El dato es del usuario, así que no se corrige solo
+                —se avisa y se ofrece la lectura probable. */}
+            {Number(form.ts) >= 100 && (
+              <div style={{gridColumn:"1/-1",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.35)",borderRadius:10,padding:"11px 14px",marginBottom:12}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#ef4444",marginBottom:3}}>⚠️ Revisá esta tasa: {form.ts}% anual</div>
+                <div style={{fontSize:11,color:T.txt3,lineHeight:1.5,marginBottom:8}}>
+                  Es inusualmente alta. ¿Quisiste escribir {String(form.ts).slice(0,-1)},{String(form.ts).slice(-1)}%?
+                </div>
+                <button type="button" onClick={() => setForm(p => ({...p, ts: String(Number(form.ts) / 10)}))}
+                  style={{background:"#ef4444",color:"#fff",border:"none",padding:"6px 13px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
+                  Corregir a {Number(form.ts) / 10}%
+                </button>
+              </div>
+            )}
 
               {/* Desglose del extracto (24-jul-2026, pedido de Santiago: "el
                   formulario debe agarrar interés y capital como en el extracto").
