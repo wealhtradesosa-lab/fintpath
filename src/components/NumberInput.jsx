@@ -54,8 +54,26 @@ const parseNumber = (str) => {
     return isNaN(num) ? "" : Math.round(num * 1000000);
   }
 
-  // Parse normal: quitar puntos (miles) y convertir coma en punto (decimal)
-  const cleaned = trimmed.replace(/\./g, "").replace(",", ".");
+  // 26-jul-2026 (Santiago: "al ingresar tasas no me deja poner valores como
+  // 0,5%, lo mínimo que me deja es 1%").
+  // CAUSA: el parse quitaba TODOS los puntos por ser separador de miles en
+  // formato colombiano. Al escribir "0.5" —como se teclea naturalmente en un
+  // teclado numérico— quedaba "05" = 5. La tasa se multiplicaba por diez sin
+  // aviso: un 0,5% se guardaba como 5%.
+  // Con coma sí funcionaba, pero eso obliga a conocer una convención que la
+  // app nunca explicó, y en un campo de tasa el error pasa desapercibido.
+  //
+  // AHORA se distingue por la forma del texto:
+  //   · un solo punto con 1-2 dígitos detrás y nada más → es DECIMAL
+  //     ("0.5" → 0,5 · "22.99" → 22,99)
+  //   · el resto sigue tratándose como separador de miles
+  //     ("1.500" → 1500 · "39.500.000" → 39500000)
+  // Un separador de miles nunca deja 1 o 2 dígitos sueltos al final, así que
+  // la regla no rompe el caso de los montos.
+  const decimalConPunto = /^\d{1,3}\.\d{1,2}$/.test(trimmed);
+  const cleaned = decimalConPunto
+    ? trimmed
+    : trimmed.replace(/\./g, "").replace(",", ".");
   const num = parseFloat(cleaned);
   return isNaN(num) ? "" : num;
 };
