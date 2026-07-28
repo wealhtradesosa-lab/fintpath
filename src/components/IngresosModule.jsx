@@ -1,4 +1,5 @@
 import { useState } from "react";
+import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import NumberInput from "./NumberInput";
@@ -241,6 +242,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     if (!templateElegido) return false;
     return templateElegido.camposVisibles.includes(campo);
   };
+  const [busqueda, setBusqueda] = useState("");
   const [selected, setSelected] = useState(new Set());
   // Commit 11 Tarea 3: feedback visible para el usuario sobre lo que paso
   // con la auto-creacion de cesantias (creada / saltada / no aplica). El silencio
@@ -250,8 +252,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
   const items = ingresos || [];
   
-  const allItems = items;
-  const activos = allItems.filter((i) => i.sim !== false);
+  // 26-jul-2026 (Santiago): buscador por nombre y categoría.
+  // `activos` y los totales usan la lista COMPLETA: el buscador filtra lo que
+  // se ve, no lo que se calcula. Si al buscar cambiaran los totales, el
+  // usuario podría leer un total parcial como si fuera el suyo.
+  const allItems = filtrarPorTexto(items, busqueda, ["nombre", "tipo", "categoria"]);
+  const activos = items.filter((i) => i.sim !== false);
 
   const totalMes = activos.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
   const fijos = activos.filter((i) => i.tipo === "fijo").reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
@@ -632,6 +638,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
         {/* Table with checkboxes */}
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
+            <BuscadorLista valor={busqueda} onChange={setBusqueda} T={T}
+              total={items.length} filtrados={allItems.length} />
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead><tr>
                 <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${T.border}` }}>

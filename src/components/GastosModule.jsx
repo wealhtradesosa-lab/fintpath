@@ -1,4 +1,5 @@
 import { useState } from "react";
+import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import { montoPromedioMensual } from "../lib/flowHelpers.js";
@@ -288,13 +289,17 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     if (!templateElegido) return false;
     return templateElegido.camposVisibles.includes(campo);
   };
+  const [busqueda, setBusqueda] = useState("");
   const [selected, setSelected] = useState(new Set()); // "cat|idx"
 
   const gas = gastos || {};
   const cats = Object.entries(gas);
   const allItems = [];
   cats.forEach(([cat, its]) => its.forEach((g, i) => allItems.push({ ...g, cat, idx: i, key: cat + "|" + i })));
+  // 26-jul-2026: los totales usan la lista completa; el buscador filtra sólo
+  // lo que se ve. Ver BuscadorLista.jsx.
   const activos = allItems.filter((g) => g.sim !== false);
+  const itemsFiltrados = filtrarPorTexto(allItems, busqueda, ["c", "cat"]);
   const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g), 0);
 
   const toggleSel = (key) => setSelected((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
@@ -553,6 +558,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
       {/* Table with checkboxes */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+        <BuscadorLista valor={busqueda} onChange={setBusqueda} T={T}
+          total={allItems.length} filtrados={itemsFiltrados.length} />
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600 }}>
           <thead>
             <tr>
@@ -589,7 +596,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       </div>
                     </div>
                   </td></tr>
-            ) : separarPorLimite(allItems, plan).visibles.map((item) => (
+            ) : separarPorLimite(itemsFiltrados, plan).visibles.map((item) => (
               <tr key={item.key} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.key) ? T.redDim : "transparent" }}>
                 <td style={{ padding: "10px 12px" }}>
                   <input type="checkbox" checked={selected.has(item.key)} onChange={() => toggleSel(item.key)}
