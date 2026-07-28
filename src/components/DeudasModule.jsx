@@ -456,8 +456,19 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 Solo SUGIERE: si escribe una cuota propia (cuotaManual) no se
                 vuelve a tocar. Muchos préstamos entre personas pagan una cuota
                 distinta al interés puro. */}
-            {(form.tipoInteres === "simple") && Number(form.mt) > 0 && Number(form.ts) > 0 && (() => {
-              const interesMes = (Number(form.mt) * (Number(form.ts) / 100)) / 12;
+            {Number(form.mt) > 0 && Number(form.ts) > 0 && (() => {
+              // 26-jul-2026 — la ayuda aparecía SOLO con interés simple. Pero
+              // con tasa E.A. bancaria el interés del primer mes también se
+              // puede calcular, y es el dato que dice si la cuota alcanza a
+              // amortizar. Se muestra en ambos casos, con la fórmula que
+              // corresponde a cada uno:
+              //   simple    → tasa/12 (no hay capitalización)
+              //   compuesto → raíz doceava de la E.A.
+              const esSimple = form.tipoInteres === "simple";
+              const rMes = esSimple
+                ? (Number(form.ts) / 100) / 12
+                : Math.pow(1 + Number(form.ts) / 100, 1 / 12) - 1;
+              const interesMes = Number(form.mt) * rMes;
               const yaEsIgual = Math.abs(Number(form.pg || 0) - interesMes) < 1;
               return (
                 <div style={{gridColumn:"1/-1",background:"rgba(59,130,246,0.07)",border:"1px solid rgba(59,130,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:4}}>
@@ -465,14 +476,24 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                     💡 Interés mensual de este préstamo: <span style={{fontFamily:"monospace",color:T.green,fontWeight:800}}>{fm(Math.round(interesMes))}</span>
                   </div>
                   <div style={{fontSize:10.5,color:T.txt3,lineHeight:1.5,marginBottom:yaEsIgual?0:8}}>
-                    {fm(Number(form.mt))} × {form.ts}% ÷ 12. Si solo pagás intereses, esa es tu cuota.
+                    {esSimple
+                      ? <>{fm(Number(form.mt))} × {form.ts}% ÷ 12. Si solo pagás intereses, esa es tu cuota.</>
+                      : <>Interés del primer mes con tasa {form.ts}% E.A. Tu cuota debe superarlo para que la deuda baje.</>}
                   </div>
-                  {!yaEsIgual && (
-                    <button type="button" onClick={() => setForm(p => ({...p, pg: String(Math.round(interesMes))}))}
-                      style={{background:"#3b82f6",color:"#fff",border:"none",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
-                      Usar {fm(Math.round(interesMes))} como cuota
-                    </button>
-                  )}
+                  {!yaEsIgual && (esSimple ? (
+                      <button type="button" onClick={() => setForm(p => ({...p, pg: String(Math.round(interesMes))}))}
+                        style={{background:"#3b82f6",color:"#fff",border:"none",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
+                        Usar {fm(Math.round(interesMes))} como cuota
+                      </button>
+                    ) : (Number(form.pg) > 0 && Number(form.pg) <= interesMes && (
+                      // Aviso, no botón: en un crédito bancario no existe "la
+                      // cuota correcta" derivable del saldo y la tasa — depende
+                      // del plazo pactado. Lo que sí se puede afirmar es que
+                      // una cuota menor al interés nunca amortiza.
+                      <div style={{fontSize:11,color:"#ef4444",fontWeight:600}}>
+                        ⚠️ Esa cuota no cubre el interés: la deuda nunca baja.
+                      </div>
+                    )))}
                 </div>
               );
             })()}

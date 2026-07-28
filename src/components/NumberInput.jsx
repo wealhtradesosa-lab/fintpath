@@ -139,6 +139,22 @@ export default function NumberInput({
 
     // Si es shortcut K/M al final, esperar a blur para expandir. Mientras
     // tanto solo mostramos lo que el usuario escribió.
+    // 26-jul-2026 (Santiago: "no es capaz de poner tasa con decimal, intento
+    // poner 13,7 y no es capaz").
+    // CAUSA: al teclear la coma, "13," se parseaba a 13 y el campo se volvía a
+    // dibujar como "13" — la coma DESAPARECÍA antes de poder escribir el
+    // decimal. Era imposible llegar al 7.
+    // Mismo tratamiento que los atajos K/M: mientras el texto termina en
+    // separador decimal (o en separador + un dígito), se respeta lo tecleado y
+    // se avisa el valor parseado sin reformatear la pantalla.
+    const escribiendoDecimal = /[.,]\d?$/.test(rawInput);
+    if (escribiendoDecimal) {
+      setDisplayValue(rawInput);
+      const parsed = parseNumber(rawInput);
+      if (typeof parsed === "number") onChange(parsed);
+      return;
+    }
+
     const endsWithShortcut = allowShortcuts && /[kmKM]\s*$/.test(rawInput);
     if (endsWithShortcut) {
       setDisplayValue(rawInput);
