@@ -9,7 +9,7 @@ import { exportDeudasExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import FrecuenciaSelector from "./FrecuenciaSelector";
 import TablaMensual from "./TablaMensual";
-import { MESES, costoCredito, montoPromedioMensual } from "../lib/flowHelpers.js";
+import { MESES, costoCredito, montoPromedioMensual, cuotaFija, tasaDesdeCuota } from "../lib/flowHelpers.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -152,7 +152,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     // Commit 5 Tarea 3 (bugfix): persistir fiscalCode al guardar. Antes el campo
     // se omitía y el motor caía al default vía normalizer, ignorando la elección
     // del usuario en el sub-selector "¿Para qué usaste esta deuda?".
-    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, tipoInteres: form.tipoInteres || undefined, moneda: form.moneda || undefined, la: form.la || null, owner: form.owner || "",
+    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, tipoInteres: form.tipoInteres || undefined, plazoMeses: form.plazoMeses ? Number(form.plazoMeses) : undefined, moneda: form.moneda || undefined, la: form.la || null, owner: form.owner || "",
       // Vigencia de la deuda (20-jul-2026, Santiago): "las deudas también
       // pueden ser hasta X mes" — cuotas solo pesan dentro del rango.
       // 25-jul-2026 (Santiago: "he modificado meses o todo el año y no guarda
@@ -182,7 +182,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   };
 
   const openEdit = (d) => {
-    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, tipoInteres: d.tipoInteres || "compuesto", moneda: d.moneda || "COP", la: d.la || "", owner: d.owner || "", capExt: "", intExt: "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo , frecuencia: d.frecuencia || "mensual", montosMensuales: Array.isArray(d.montosMensuales) ? d.montosMensuales : new Array(12).fill(0)});
+    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, tipoInteres: d.tipoInteres || "compuesto", plazoMeses: d.plazoMeses || "", moneda: d.moneda || "COP", la: d.la || "", owner: d.owner || "", capExt: "", intExt: "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo , frecuencia: d.frecuencia || "mensual", montosMensuales: Array.isArray(d.montosMensuales) ? d.montosMensuales : new Array(12).fill(0)});
     setEditId(d.id);
     setShowForm(true);
   };
@@ -456,6 +456,51 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 Solo SUGIERE: si escribe una cuota propia (cuotaManual) no se
                 vuelve a tocar. Muchos préstamos entre personas pagan una cuota
                 distinta al interés puro. */}
+            {/* 26-jul-2026 (Santiago: "antes eran inteligentes estos
+                formularios" · "si uno cambia el valor del crédito pues que
+                cambie el valor de la cuota").
+                Vuelve el cálculo cruzado, pero con PLAZO. El autocálculo que se
+                eliminó el 23-jul usaba cuota = saldo × tasa / 12, identidad que
+                solo vale si la deuda nunca amortiza: con el Sufi devolvía 40,6%
+                en vez de 22,99%. Con saldo, tasa y plazo la cuota es exacta.
+                Sigue siendo BOTÓN y no autocompletado: la app propone, el
+                usuario decide. Esa fue la lección de aquel bug. */}
+            {(form.tipoInteres || "compuesto") !== "simple" && (
+              <div style={{gridColumn:"1/-1",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+                <div style={{fontSize:11.5,fontWeight:700,color:T.txt2,marginBottom:8}}>🧮 ¿No sabés la cuota o la tasa? Poné el plazo</div>
+                <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
+                  <div style={{flex:"1 1 130px"}}>
+                    <div style={{fontSize:10,color:T.txt3,marginBottom:4,fontWeight:600}}>PLAZO (MESES)</div>
+                    <NumberInput value={form.plazoMeses} onChange={(v)=>setForm(p=>({...p,plazoMeses:v===""?"":String(v)}))}
+                      placeholder="240" style={{width:"100%",background:T.bg2,border:`1px solid ${T.border}`,borderRadius:8,padding:"9px 11px",color:T.txt,fontSize:13}} />
+                  </div>
+                  {(() => {
+                    const B=Number(form.mt)||0, n=Number(form.plazoMeses)||0, ts=Number(form.ts)||0, pg=Number(form.pg)||0;
+                    if (B<=0 || n<=0) return <div style={{fontSize:11,color:T.txt3,flex:"2 1 200px"}}>Con el saldo y el plazo puedo calcular la cuota o la tasa.</div>;
+                    const acciones=[];
+                    if (ts>0) {
+                      const q=cuotaFija(B,ts,n);
+                      if (q) acciones.push(
+                        <button key="q" type="button" onClick={()=>setForm(p=>({...p,pg:String(Math.round(q))}))}
+                          style={{background:"#3b82f6",color:"#fff",border:"none",padding:"9px 13px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
+                          Cuota = {fm(Math.round(q))}
+                        </button>);
+                    }
+                    if (pg>0) {
+                      const t=tasaDesdeCuota(B,pg,n);
+                      if (t!==null && t>0) acciones.push(
+                        <button key="t" type="button" onClick={()=>setForm(p=>({...p,ts:String(Number(t.toFixed(2)))}))}
+                          style={{background:T.bg2,color:T.txt,border:`1px solid ${T.border}`,padding:"9px 13px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
+                          Tasa = {t.toFixed(2)}%
+                        </button>);
+                    }
+                    return acciones.length ? <div style={{display:"flex",gap:8,flexWrap:"wrap",flex:"2 1 200px"}}>{acciones}</div>
+                      : <div style={{fontSize:11,color:T.txt3,flex:"2 1 200px"}}>Cargá la tasa o la cuota y calculo la otra.</div>;
+                  })()}
+                </div>
+              </div>
+            )}
+
             {Number(form.mt) > 0 && Number(form.ts) > 0 && (() => {
               // 26-jul-2026 — la ayuda aparecía SOLO con interés simple. Pero
               // con tasa E.A. bancaria el interés del primer mes también se

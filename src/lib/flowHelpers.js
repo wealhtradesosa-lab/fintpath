@@ -579,3 +579,52 @@ export function mesesVaciosFuturos(item) {
   });
   return n;
 }
+
+/**
+ * cuotaFija — La cuota de un crédito con amortización (sistema francés).
+ *
+ * 26-jul-2026 (Santiago: "antes eran inteligentes estos formularios, uno ponía
+ * cuota y calculaba tasa o ponía tasa y calculaba cuota" · "si uno cambia el
+ * valor del crédito pues que cambie el valor de la cuota").
+ *
+ * POR QUÉ VUELVE, Y POR QUÉ CON PLAZO. El autocálculo anterior se eliminó el
+ * 23-jul (commit 3661ac2) porque usaba `cuota = saldo × tasa / 12`, identidad
+ * que solo vale si la cuota es SOLO intereses y la deuda nunca amortiza. Con
+ * los datos reales del Sufi devolvía "40,6%" en vez de 22,99%.
+ * La fórmula correcta necesita un tercer dato: el PLAZO. Con saldo, tasa y
+ * plazo la cuota es exacta y la relación deja de ser una adivinanza.
+ *
+ *   cuota = B · r / (1 − (1+r)^−n)     con r = tasa mensual equivalente
+ */
+export function cuotaFija(saldo, tasaEA, meses) {
+  const B = Number(saldo) || 0;
+  const n = Number(meses) || 0;
+  const tsA = Number(tasaEA) || 0;
+  if (B <= 0 || n <= 0) return null;
+  const r = tasaMensualEq(tsA);
+  if (r <= 0) return B / n;                    // sin interés: capital repartido
+  return (B * r) / (1 - Math.pow(1 + r, -n));
+}
+
+/**
+ * tasaDesdeCuota — La tasa E.A. implícita en saldo, cuota y plazo.
+ * Se resuelve por bisección porque no hay despeje algebraico de r.
+ * Devuelve null si la cuota no alcanza a amortizar en ese plazo — que es
+ * información honesta, no un error: significa que esos tres datos no pueden
+ * coexistir.
+ */
+export function tasaDesdeCuota(saldo, cuota, meses) {
+  const B = Number(saldo) || 0;
+  const P = Number(cuota) || 0;
+  const n = Number(meses) || 0;
+  if (B <= 0 || P <= 0 || n <= 0) return null;
+  if (P * n <= B) return 0;                    // paga menos que el capital
+  let lo = 0, hi = 3;                          // 0% a 300% E.A.
+  for (let i = 0; i < 80; i++) {
+    const mid = (lo + hi) / 2;
+    const r = Math.pow(1 + mid, 1 / 12) - 1;
+    const p = r <= 0 ? B / n : (B * r) / (1 - Math.pow(1 + r, -n));
+    if (p > P) hi = mid; else lo = mid;
+  }
+  return ((lo + hi) / 2) * 100;
+}
