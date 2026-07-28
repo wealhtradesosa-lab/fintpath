@@ -445,7 +445,38 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               no le dice nada a quien no es financiero — lo que sí reconoce es
               "me lo prestó un familiar". */}
             <div style={{gridColumn:"1/-1"}}>
-              <div style={{fontSize:11,color:T.txt3,marginBottom:6,fontWeight:600}}>¿Cómo se cobran los intereses?</div>
+              {/* 26-jul-2026 (Santiago: "está muy poco inteligente el formulario
+                de deuda de interés simple, si uno pone el valor del préstamo y
+                el % de tasa no pone solo el valor del interés").
+                Tiene razón, y el formulario de Egresos ya hacía exactamente
+                esto con "Capital × tasa". Acá el dato está —saldo y tasa— y la
+                cuota de un préstamo a interés simple ES saldo × tasa / 12.
+                Pedirle al usuario que haga esa cuenta a mano es pedirle que
+                repita lo que la app ya sabe.
+                Solo SUGIERE: si escribe una cuota propia (cuotaManual) no se
+                vuelve a tocar. Muchos préstamos entre personas pagan una cuota
+                distinta al interés puro. */}
+            {(form.tipoInteres === "simple") && Number(form.mt) > 0 && Number(form.ts) > 0 && (() => {
+              const interesMes = (Number(form.mt) * (Number(form.ts) / 100)) / 12;
+              const yaEsIgual = Math.abs(Number(form.pg || 0) - interesMes) < 1;
+              return (
+                <div style={{gridColumn:"1/-1",background:"rgba(59,130,246,0.07)",border:"1px solid rgba(59,130,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:4}}>
+                  <div style={{fontSize:12,color:T.txt2,fontWeight:600,marginBottom:4}}>
+                    💡 Interés mensual de este préstamo: <span style={{fontFamily:"monospace",color:T.green,fontWeight:800}}>{fm(Math.round(interesMes))}</span>
+                  </div>
+                  <div style={{fontSize:10.5,color:T.txt3,lineHeight:1.5,marginBottom:yaEsIgual?0:8}}>
+                    {fm(Number(form.mt))} × {form.ts}% ÷ 12. Si solo pagás intereses, esa es tu cuota.
+                  </div>
+                  {!yaEsIgual && (
+                    <button type="button" onClick={() => setForm(p => ({...p, pg: String(Math.round(interesMes))}))}
+                      style={{background:"#3b82f6",color:"#fff",border:"none",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
+                      Usar {fm(Math.round(interesMes))} como cuota
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+            <div style={{fontSize:11,color:T.txt3,marginBottom:6,fontWeight:600}}>¿Cómo se cobran los intereses?</div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {[{v:"compuesto",l:"Como un banco",d:"Interés sobre el saldo, que va bajando. Tasa E.A."},
                   {v:"simple",l:"Interés simple",d:"Siempre sobre el monto original. Préstamos entre personas."}].map(o=>
@@ -458,7 +489,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               </div>
             </div>
             <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
-              <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v }))} type="number" placeholder="0" />
+              <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v, cuotaManual: true }))} type="number" placeholder="0" />
               <In l="Tasa anual % (E.A.)" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="Ej: 22.99" />
 
               {/* Desglose del extracto (24-jul-2026, pedido de Santiago: "el
