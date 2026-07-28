@@ -498,7 +498,19 @@ export function costoCredito(d) {
   const B = Number(d?.mt) || 0;
   const P = Number(d?.pg) || 0;
   const tsA = Number(d?.ts) || 0;
-  const r = tasaMensualEq(tsA);
+  // 26-jul-2026 (Santiago: "si es un préstamo interés simple solo veo tres
+  // opciones"). El selector de tipo (hipoteca/préstamo/personal) NO cambiaba
+  // ningún cálculo: eran etiquetas. Lo que sí cambia las cuentas es el TIPO DE
+  // INTERÉS, y no había forma de decirlo.
+  //   · COMPUESTO (bancos): la tasa E.A. se convierte con raíz doceava y el
+  //     interés se calcula sobre el saldo que va bajando.
+  //   · SIMPLE (préstamos entre personas): el interés se calcula siempre sobre
+  //     el capital original, no sobre el saldo. La tasa mensual es tasa/12,
+  //     sin capitalización, porque no la hay.
+  // Sin `tipoInteres` se asume compuesto, que es lo que había: ninguna deuda
+  // ya cargada cambia de valor.
+  const esSimple = d?.tipoInteres === "simple";
+  const r = esSimple ? (tsA / 100) / 12 : tasaMensualEq(tsA);
   const interesAnual = B * (tsA / 100);
   // Desglose de la cuota del mes en curso: cuánto se va en intereses y cuánto
   // abona capital. (24-jul-2026, Santiago: "¿cuánto es capital, cuánto interés?")
@@ -510,6 +522,14 @@ export function costoCredito(d) {
   if (B > 0 && P > 0) {
     if (r <= 0) { meses = Math.ceil(B / P); interesTotal = 0; }
     else if (P <= B * r) { noAmortiza = true; }
+    else if (esSimple) {
+      // Interés simple: el interés mensual es constante (siempre sobre el
+      // capital original), así que cada cuota abona lo mismo a capital.
+      // No hay logaritmos: es una división.
+      const abonoMes = P - B * r;
+      meses = Math.ceil(B / abonoMes);
+      interesTotal = Math.max(0, meses * P - B);
+    }
     else {
       meses = Math.ceil(-Math.log(1 - (r * B) / P) / Math.log(1 + r));
       interesTotal = Math.max(0, meses * P - B);

@@ -152,7 +152,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     // Commit 5 Tarea 3 (bugfix): persistir fiscalCode al guardar. Antes el campo
     // se omitía y el motor caía al default vía normalizer, ignorando la elección
     // del usuario en el sub-selector "¿Para qué usaste esta deuda?".
-    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, moneda: form.moneda || undefined, la: form.la || null, owner: form.owner || "",
+    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, tipoInteres: form.tipoInteres || undefined, moneda: form.moneda || undefined, la: form.la || null, owner: form.owner || "",
       // Vigencia de la deuda (20-jul-2026, Santiago): "las deudas también
       // pueden ser hasta X mes" — cuotas solo pesan dentro del rango.
       // 25-jul-2026 (Santiago: "he modificado meses o todo el año y no guarda
@@ -182,7 +182,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   };
 
   const openEdit = (d) => {
-    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, moneda: d.moneda || "COP", la: d.la || "", owner: d.owner || "", capExt: "", intExt: "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo , frecuencia: d.frecuencia || "mensual", montosMensuales: Array.isArray(d.montosMensuales) ? d.montosMensuales : new Array(12).fill(0)});
+    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, tipoInteres: d.tipoInteres || "compuesto", moneda: d.moneda || "COP", la: d.la || "", owner: d.owner || "", capExt: "", intExt: "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo , frecuencia: d.frecuencia || "mensual", montosMensuales: Array.isArray(d.montosMensuales) ? d.montosMensuales : new Array(12).fill(0)});
     setEditId(d.id);
     setShowForm(true);
   };
@@ -439,7 +439,25 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               moneda que quiera". Deudas ya se convertía en el motor —lee
               d.moneda— pero el formulario nunca lo ofreció, así que el campo
               existía y nadie podía llenarlo. */}
-              <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
+              {/* 26-jul-2026 (Santiago): el tipo de interés SÍ cambia las cuentas, a
+              diferencia del selector hipoteca/préstamo/personal, que solo era una
+              etiqueta. Se describe en lenguaje llano porque "simple vs compuesto"
+              no le dice nada a quien no es financiero — lo que sí reconoce es
+              "me lo prestó un familiar". */}
+            <div style={{gridColumn:"1/-1"}}>
+              <div style={{fontSize:11,color:T.txt3,marginBottom:6,fontWeight:600}}>¿Cómo se cobran los intereses?</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {[{v:"compuesto",l:"Como un banco",d:"Interés sobre el saldo, que va bajando. Tasa E.A."},
+                  {v:"simple",l:"Interés simple",d:"Siempre sobre el monto original. Préstamos entre personas."}].map(o=>
+                  <button key={o.v} type="button" onClick={()=>setForm(p=>({...p,tipoInteres:o.v}))}
+                    style={{flex:"1 1 220px",textAlign:"left",background:(form.tipoInteres||"compuesto")===o.v?"rgba(34,197,94,0.10)":T.bg3,
+                      border:"1px solid "+((form.tipoInteres||"compuesto")===o.v?T.green:T.border),borderRadius:10,padding:"10px 12px",cursor:"pointer",color:T.txt}}>
+                    <div style={{fontSize:12.5,fontWeight:700}}>{o.l}</div>
+                    <div style={{fontSize:10.5,color:T.txt3,marginTop:2,lineHeight:1.4}}>{o.d}</div>
+                  </button>)}
+              </div>
+            </div>
+            <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
               <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v }))} type="number" placeholder="0" />
               <In l="Tasa anual % (E.A.)" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="Ej: 22.99" />
 
