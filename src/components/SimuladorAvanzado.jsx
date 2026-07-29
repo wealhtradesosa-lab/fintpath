@@ -1432,7 +1432,14 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       {grp.ing.map((ing, ii) => {
                         if (ing.sim === false) return null;
                         const safeIdx = ing._idx != null ? ing._idx : ii;
-                        const baseRenta = (Number(ing.mensual)||0) * (ing.moneda==="USD"?(user?.trm||4200):1);
+                        // 26-jul-2026 (Santiago: "estoy parado en dic donde ya ingresa rapicredit
+      // 55mm al mes y lo muestra como 39mm"). Esta lista usaba `ing.mensual`,
+      // el valor base fijo, ignorando la tabla de montos por mes Y el mes que
+      // el usuario tiene seleccionado arriba. El explicador de cash flow SÍ
+      // mostraba los $55.816.667 correctos de diciembre, así que la app se
+      // contradecía a sí misma en la misma pantalla.
+      // montoDelMes respeta frecuencia, vigencia y tabla mensual.
+      const baseRenta = montoDelMes(ing, new Date().getFullYear(), mesVisualizado) * (ing.moneda==="USD"?(user?.trm||4200):1);
                         const baseCap = Number(ing.capital) || 0;
                         // FIX conceptual 25-may-2026 (reportado por Santiago):
                         // El capital invertido es un HECHO — ya está invertido y
