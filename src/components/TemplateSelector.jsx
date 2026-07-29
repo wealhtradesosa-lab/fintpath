@@ -41,7 +41,15 @@ export const TEMPLATES = [
     ejemplo: (tipo) => tipo === "ingreso" ? "Ej: sueldo, arriendo, dividendo mensual" : "Ej: arriendo, servicios, gimnasio, mercado",
     preset: { frecuencia: "mensual", desdeMes: 1, hastaMes: 12, mesPago: 1 },
     // El toggle "Mensual/Total del año" también aplica acá
-    camposVisibles: ["monto", "modoIngresoSimple"],
+    // 26-jul-2026 (Santiago: "por qué el ingreso de bodega no puedo poner
+    // ingresos por unos meses como en otros ingresos").
+    // Esta plantilla —"cada mes durante todo el año"— no ofrecía vigencia,
+    // así que para acotar unos meses había que volver al selector y CAMBIAR DE
+    // TIPO, con el riesgo de perder lo ya configurado (capital × rentabilidad,
+    // clasificación DIAN). Ajustar un rango de meses no debería costar
+    // reelegir la plantilla.
+    // El default sigue siendo 1-12, así que quien no lo toque no ve diferencia.
+    camposVisibles: ["monto", "modoIngresoSimple", "vigencia"],
     modoIngresoDefault: "porPago",
     color: "#22c55e",
   },

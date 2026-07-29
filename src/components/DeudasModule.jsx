@@ -514,6 +514,12 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 ? (Number(form.ts) / 100) / 12
                 : Math.pow(1 + Number(form.ts) / 100, 1 / 12) - 1;
               const interesMes = Number(form.mt) * rMes;
+              // Autollenado SOLO si la cuota está en cero y es interés simple,
+              // donde cuota = interés es la lectura correcta por defecto.
+              if (esSimple && !Number(form.pg) && !form.cuotaManual && interesMes > 0) {
+                setTimeout(() => setForm(p => (!Number(p.pg) && !p.cuotaManual)
+                  ? { ...p, pg: String(Math.round(interesMes)) } : p), 0);
+              }
               const yaEsIgual = Math.abs(Number(form.pg || 0) - interesMes) < 1;
               return (
                 <div style={{gridColumn:"1/-1",background:"rgba(59,130,246,0.07)",border:"1px solid rgba(59,130,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:4}}>
@@ -525,6 +531,11 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       ? <>{fm(Number(form.mt))} × {form.ts}% ÷ 12. Si solo pagás intereses, esa es tu cuota.</>
                       : <>Interés del primer mes con tasa {form.ts}% E.A. Tu cuota debe superarlo para que la deuda baje.</>}
                   </div>
+                  {/* 26-jul-2026: si la cuota está VACÍA se llena sola —no hay
+                      nada que pisar, así que es ayuda pura. Con un valor ya
+                      escrito queda el botón: la lección del "40,6%" fue que la
+                      app no debe sobrescribir un dato del usuario, no que no
+                      deba ayudar. */}
                   {!yaEsIgual && (esSimple ? (
                       <button type="button" onClick={() => setForm(p => ({...p, pg: String(Math.round(interesMes))}))}
                         style={{background:"#3b82f6",color:"#fff",border:"none",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
