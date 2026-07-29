@@ -2,7 +2,7 @@ import { useState } from "react";
 import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
-import { montoPromedioMensual } from "../lib/flowHelpers.js";
+import { montoPromedioMensual , montoDelMes} from "../lib/flowHelpers.js";
 import NumberInput from "./NumberInput";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
@@ -300,7 +300,14 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   // lo que se ve. Ver BuscadorLista.jsx.
   const activos = allItems.filter((g) => g.sim !== false);
   const itemsFiltrados = filtrarPorTexto(allItems, busqueda, ["c", "cat"]);
-  const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g), 0);
+  const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g), 0)
+  // 26-jul-2026 — mismo caso que Ingresos: "Total Mensual" mostraba un PROMEDIO
+  // ANUAL. Un gasto que solo cae de oct a dic aparecía prorrateado, cuando lo
+  // que se quiere saber al abrir la sección es qué sale ESTE mes.
+  const _mesHoy = new Date().getMonth() + 1;
+  const _añoHoy = new Date().getFullYear();
+  const _MESES_L = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const totalEsteMes = activos.reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * (g.moneda === "USD" ? (trm || 4200) : 1), 0);
 
   const toggleSel = (key) => setSelected((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
   const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((g) => g.key)));
@@ -544,8 +551,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
-          { l: "Total Mensual", v: fm(totalMes), c: T.red },
-          { l: "Total Anual", v: fm(totalMes * 12), c: T.orange },
+          { l: `Sale en ${_MESES_L[_mesHoy - 1]}`, v: fm(totalEsteMes), c: T.red },
+          { l: "Promedio mensual del año", v: fm(totalMes), c: T.orange },
+          { l: "Total del año", v: fm(totalMes * 12), c: T.orange },
           { l: "Fijos", v: fm(activos.filter((g) => g.t === "f").reduce((s, g) => s + montoPromedioMensual(g), 0)), c: T.blue },
           { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + montoPromedioMensual(g), 0)), c: T.orange },
         ].map((m) => (

@@ -9,7 +9,7 @@ import { exportIngresosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
-import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual } from "../lib/flowHelpers.js";
+import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { obtenerInfoRetencion } from "../lib/retencionesTax.js";
@@ -266,6 +266,16 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   // correcto, así que las dos pantallas mostraban totales distintos del mismo
   // dato. Mismo criterio que el resto del motor: montoPromedioMensual.
   const totalMes = activos.reduce((s, i) => s + (montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
+  // 26-jul-2026 (Santiago: "si uno pone ingreso de octubre a dic, el ingreso
+  // mensual en esos meses no es promedio, es el valor completo, para uno ver la
+  // realidad de ese mes").
+  // Tenía razón en la lectura: el rótulo decía "Total Mensual" y mostraba un
+  // PROMEDIO ANUAL, lo que invita a leerlo como "lo que entra este mes". Son
+  // dos preguntas distintas y ahora se muestran las dos, cada una con su nombre.
+  const _mesHoy = new Date().getMonth() + 1;
+  const _añoHoy = new Date().getFullYear();
+  const totalEsteMes = activos.reduce((s, i) => s + (montoDelMes(i, _añoHoy, _mesHoy) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
+  const _MESES_L = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
   const fijos = activos.filter((i) => i.tipo === "fijo").reduce((s, i) => s + (montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
   const variables = totalMes - fijos;
 
@@ -632,7 +642,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 20 }}>
-        {[{ l: "Total Mensual", v: fm(totalMes), c: T.green }, { l: "Total Anual", v: fm(totalMes * 12), c: T.blue }, { l: "Fijos", v: fm(fijos), c: T.blue }, { l: "Variables", v: fm(variables), c: T.orange }].map((m) => (
+        {[{ l: `Entra en ${_MESES_L[_mesHoy - 1]}`, v: fm(totalEsteMes), c: T.green },
+          { l: "Promedio mensual del año", v: fm(totalMes), c: T.blue },
+          { l: "Total del año", v: fm(totalMes * 12), c: T.blue },
+          { l: "Fijos", v: fm(fijos), c: T.txt }].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
             <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: m.c, marginTop: 4 }}>{m.v}</div>
