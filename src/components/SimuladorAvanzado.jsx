@@ -667,10 +667,18 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // Salida sigue el mismo contrato Bruto → Disponible → Cash Flow.
   const baseT = useMemo(() => {
     // Ingresos brutos
+    // 26-jul-2026 — AUDITORÍA DE VARIABLES (pedido de Santiago tras el bug de
+    // RAPICREDIT en diciembre). Este baseline sumaba los valores CRUDOS de
+    // ingresos, gastos y deudas: ignoraba frecuencia, vigencia y tabla mensual.
+    // Un ingreso que solo entra de oct a dic contaba los 12 meses; un gasto
+    // anual contaba como mensual. Es el mismo error de frecuencia que se
+    // corrigió en el motor principal, sobreviviendo acá.
+    // Se usa montoPromedioMensual (no montoDelMes) porque el baseline es la
+    // referencia ANUAL contra la que se compara el mes simulado.
     let brutoTotal = 0;
     (user.ingresos || []).forEach((ing) => {
       if (ing.sim === false) return;
-      brutoTotal += (ing.mensual || 0) * (ing.moneda === "USD" ? (user?.trm || 4200) : 1);
+      brutoTotal += montoPromedioMensual(ing) * (ing.moneda === "USD" ? (user?.trm || 4200) : 1);
     });
 
     // Gastos: aportes obligatorios vs familiares
@@ -679,7 +687,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       items.forEach((g) => {
         if (g.sim === false) return;
-        const monto = g.m || 0;
+        const monto = montoPromedioMensual(g) * (g.moneda === "USD" ? (user?.trm || 4200) : 1);
         if (cat === "Seguridad Social") aportesObligatorios += monto;
         else gastosFamiliares += monto;
       });
@@ -689,7 +697,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // Cuotas de deudas
     let cuotasDeudas = 0;
     (user.deudas || []).forEach((d) => {
-      if ((d.mt || 0) > 0 && d.sim !== false) cuotasDeudas += (d.pago || d.pg || 0);
+      if ((d.mt || 0) > 0 && d.sim !== false) cuotasDeudas += montoPromedioMensual({ ...d, mensual: (d.pago || d.pg || 0) }) * (d.moneda === "USD" ? (user?.trm || 4200) : 1);
     });
 
     // Impuesto y retención
@@ -769,7 +777,10 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
               // useMemo simT línea 291 pero las tablas del cuerpo del PDF
               // NO. Ahora aplican el mismo filtro sim!==false que el resto
               // del sistema (patrón DeudasModule:93 GastosModule:272 etc).
-              const ingRows = (user.ingresos||[]).filter(i=>i.sim!==false).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).map(i => {
+              // 26-jul-2026 — auditoría: el reporte ordenaba y mostraba por `mensual`
+                // crudo, así que un ingreso de vigencia parcial se listaba con su
+                // valor pleno y quedaba mal ordenado frente a los demás.
+                const ingRows = (user.ingresos||[]).filter(i=>i.sim!==false).sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a)).map(i => {
                 const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: $${(i.capital/1e6).toFixed(0)}M × ${i.tasa}%</span>` : "";
                 return `<tr><td>${i.nombre||""}</td><td style="color:#888">${i.categoria||""}</td><td style="text-align:right;font-weight:600;color:#16a34a">$${Math.round(i.mensual||0).toLocaleString("es-CO")}</td><td>${cap}</td></tr>`;
               }).join("");
@@ -975,7 +986,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 ingresosData.push([
                   i.nombre || "",
                   i.categoria || "",
-                  Math.round(i.mensual || 0),
+                  Math.round(montoPromedioMensual(i)),   // 26-jul-2026: era `mensual` crudo, ignoraba frecuencia y vigencia
                   i.moneda || "COP",
                   i.capital || 0,
                   i.tasa || 0,

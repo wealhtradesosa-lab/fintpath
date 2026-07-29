@@ -259,8 +259,14 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   const allItems = filtrarPorTexto(items, busqueda, ["nombre", "tipo", "categoria"]);
   const activos = items.filter((i) => i.sim !== false);
 
-  const totalMes = activos.reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
-  const fijos = activos.filter((i) => i.tipo === "fijo").reduce((s, i) => s + ((i.mensual || 0) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
+  // 26-jul-2026 — AUDITORÍA DE VARIABLES. "Total mensual" y "Total anual" —los
+  // indicadores que se ven al abrir la sección— sumaban `mensual` CRUDO: un
+  // ingreso con vigencia oct-dic contaba su valor pleno los 12 meses, y uno
+  // con tabla variable ignoraba la tabla. El dashboard sí usaba el promedio
+  // correcto, así que las dos pantallas mostraban totales distintos del mismo
+  // dato. Mismo criterio que el resto del motor: montoPromedioMensual.
+  const totalMes = activos.reduce((s, i) => s + (montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
+  const fijos = activos.filter((i) => i.tipo === "fijo").reduce((s, i) => s + (montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
   const variables = totalMes - fijos;
 
   const toggleSelect = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
