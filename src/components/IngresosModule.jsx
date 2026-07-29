@@ -9,7 +9,7 @@ import { exportIngresosExcel } from "../lib/excelExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
-import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos } from "../lib/flowHelpers.js";
+import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { obtenerInfoRetencion } from "../lib/retencionesTax.js";
