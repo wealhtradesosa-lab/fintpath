@@ -122,7 +122,7 @@ export default function MiCuenta({
           supabase={supabase} accountId={accountId} role={role}
           displayName={displayName} plan={plan} maxMembers={maxMembers}
           currentUserId={currentUserId} currentUserName={currentUserName} onChange={onChange}
-          subscriptionStatus={subscriptionStatus} graceUntil={graceUntil}
+          subscriptionStatus={subscriptionStatus} graceUntil={graceUntil} onUpgrade={onUpgrade}
         />
       )}
       {activeTab === "config" && configContent && (
@@ -133,7 +133,7 @@ export default function MiCuenta({
 }
 
 // ═══ Tab Miembros ═══════════════════════════════════════════════════════
-function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, currentUserName, onChange, subscriptionStatus, graceUntil }) {
+function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, currentUserName, onChange, subscriptionStatus, graceUntil, onUpgrade }) {
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
