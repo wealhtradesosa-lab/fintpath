@@ -614,8 +614,23 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
 
     // Umbral de relevancia: efectos chicos no son "nota importante"
     const umbral = Math.max(500_000, Math.abs(simT.cashFlow || 0) * 0.03);
-    const relevantes = drivers.filter(d => Math.abs(d.efecto) >= umbral);
-    relevantes.sort((a, b) => Math.abs(b.efecto) - Math.abs(a.efecto));
+    let relevantes = drivers.filter(d => Math.abs(d.efecto) >= umbral);
+
+    // 26-jul-2026 (Santiago: "si algo no se paga en un mes no es un punto de
+    // los más relevantes para informar").
+    // Tenía razón. Un gasto que simplemente NO CAE no explica nada: no es una
+    // decisión ni un cambio, es una ausencia. Aparecía en el podio solo porque
+    // el orden era por valor absoluto y ese mes no había nada más grande —
+    // arriba tenía movimientos de $16,7M y $8,25M, contra sus $3,4M.
+    // Ahora los "no cae este mes" van al final: solo entran si no hay
+    // suficientes movimientos reales que contar. Un mes tranquilo sigue
+    // teniendo explicación; un mes movido no la desperdicia en una ausencia.
+    const esAusencia = (d) => d.tipo === "gasto" && d.monto === 0;
+    relevantes.sort((a, b) => {
+      const aA = esAusencia(a), bA = esAusencia(b);
+      if (aA !== bA) return aA ? 1 : -1;
+      return Math.abs(b.efecto) - Math.abs(a.efecto);
+    });
     return {
       positivos: relevantes.filter(d => d.efecto > 0).slice(0, 3),
       negativos: relevantes.filter(d => d.efecto < 0).slice(0, 3),
