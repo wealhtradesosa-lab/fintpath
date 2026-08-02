@@ -285,27 +285,7 @@ export default function PensionBTC({trm:pTrm}){
             </div>}
           </div>
 
-          <Sl label="💼 Tu salario mensual" value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={"Tu aporte MENSUAL a BTC: "+fC(apMes)+" (el 16% de tu salario, igual que se aporta a pensión)"}/>
-          {/* 26-jul-2026 (Santiago: "uno se confunde porque cree que está
-              aportando 43mm al mes y eso no es cierto, uno aporta una PARTE de
-              esos 43mm").
-              El slider muestra el SALARIO, y el aporte —16% de eso— vivía en
-              otra tarjeta, sin nada que los conectara. Dos cifras grandes en
-              pantallas contiguas, y la que más salta a la vista no es la que
-              sale del bolsillo. Ahora la resta se muestra completa y pegada al
-              control que la genera. */}
-          {modoAporte !== "libre" && frecAporte === "mensual" && (
-            <div style={{background:"rgba(247,147,26,0.07)",border:"1px solid rgba(247,147,26,0.25)",borderRadius:10,padding:"12px 14px",marginTop:-6,marginBottom:16}}>
-              <div style={{fontSize:11,color:T.txt3,marginBottom:6}}>De ese salario, a Bitcoin va el 16%:</div>
-              <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
-                <span style={{fontSize:20,fontWeight:800,color:T.orange,fontFamily:"monospace"}}>{fC(apMes)}</span>
-                <span style={{fontSize:12,color:T.txt3}}>al mes</span>
-              </div>
-              <div style={{fontSize:11,color:T.txt3,marginTop:6,lineHeight:1.6}}>
-                Salario {fC(salMes)} · aporte {fC(apMes)} · <strong style={{color:T.txt2}}>te quedan {fC(salMes - apMes)}</strong>
-              </div>
-            </div>
-          )}
+          <Sl label="💼 Tu salario mensual" value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={"→ De ahí aportás "+fC(apMes)+"/mes a BTC (el 16%) · te quedan "+fC(salMes-apMes)}/>
         <Sl label="⏰ ¿Cuántos años vas a ahorrar?" value={anios} onChange={setAnios} min={1} max={30} step={1} display={anios+" años"} color={T.green} sub={"En "+anios+" años habrás aportado "+fC(apMes*12*anios)+" en total ("+fC(apMes)+" x "+anios*12+" meses)"}/>
         <Sl label="📈 Crecimiento anual del Bitcoin (CAGR)" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)+" al año"} color={T.orange} sub="Es el % que sube Bitcoin cada año en promedio. Histórico: 69.8% • Conservador: 20-30% • Muy conservador: 10-15%"/>
         <Sl label="💰 Precio actual de 1 Bitcoin" value={pBTC} onChange={setPBTC} min={10000} max={200000} step={1000} display={fU(pBTC)} color={T.gold} sub={"= "+fC(pBTC*trm)+" COP"}/>
