@@ -289,7 +289,16 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           proporción que importa es del SALDO, no de la cuota: es lo que dice
           dónde está concentrado el pasivo. */}
       {(() => {
-        const NOM = { mortgage: "Hipoteca", loan: "Préstamo", personal: "Personal", tarjeta: "Tarjeta", card: "Tarjeta" };
+        // 26-jul-2026 (Santiago: "las deudas también puede clasificarlas por libre
+        // inversión, hipotecas, leasing o préstamos personales según el tipo").
+        // "Préstamo" no decía nada cuando las cuatro opciones eran préstamos, y
+        // "Personal" era ambiguo: podía leerse "para uso personal" o "me lo
+        // prestó una persona". Los nombres nuevos dicen QUIÉN prestó y bajo qué
+        // figura, que es lo único que este campo necesita distinguir.
+        // Los valores viejos se mantienen para no romper lo ya cargado.
+        const NOM = { mortgage: "Hipoteca", loan: "Libre inversión", vehiculo: "Vehículo",
+                      leasing: "Leasing", personal: "Préstamo personal",
+                      credit_card: "Tarjeta", tarjeta: "Tarjeta", card: "Tarjeta" };
         const grupos = {};
         (items || []).filter(d => d.sim !== false && (d.mt || 0) > 0).forEach(d => {
           const k = NOM[d.tp] || "Otro";
@@ -452,7 +461,14 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 </>}
               </div>
               <In l="Nombre" value={form.n} onChange={(v) => setForm((p) => ({ ...p, n: v }))} placeholder="Hipoteca casa" />
-              <In l="Tipo" value={form.tp} onChange={(v) => setForm((p) => ({ ...p, tp: v }))} options={[{ v: "mortgage", l: "Hipoteca" }, { v: "loan", l: "Préstamo" }, { v: "personal", l: "Personal" }, { v: "credit_card", l: "Tarjeta" }]} />
+              <In l="Tipo" value={form.tp} onChange={(v) => setForm((p) => ({ ...p, tp: v }))} options={[
+                { v: "mortgage", l: "🏠 Hipoteca — vivienda o inmueble" },
+                { v: "loan", l: "💳 Libre inversión — crédito de consumo" },
+                { v: "vehiculo", l: "🚗 Vehículo" },
+                { v: "leasing", l: "📄 Leasing" },
+                { v: "personal", l: "🤝 Préstamo personal — familiar, socio, conocido" },
+                { v: "credit_card", l: "💳 Tarjeta de crédito" },
+              ]} />
               <In l="Saldo" value={form.mt} onChange={(v) => setForm((p) => ({ ...p, mt: v }))} type="number" placeholder="0" />
               {/* 24-jul-2026 — CAUSA RAÍZ del "40,6%" y del "$2.486.712" que
                   reportó Santiago: estos dos campos se auto-calculaban entre sí
