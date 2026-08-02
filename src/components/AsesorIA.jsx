@@ -86,6 +86,38 @@ function buildContext(user, totals) {
   return ctx;
 }
 
+
+/**
+ * renderMD — Formato mínimo para las respuestas del asesor.
+ *
+ * 26-jul-2026. El modelo responde en markdown y se mostraba crudo:
+ *   "### 🏠 **VIVIENDA: $18.666.667/mes (29%)**"
+ * Se convierten solo encabezados, negritas y viñetas. No se trae una librería
+ * de markdown para esto: son tres patrones y el bundle ya pesa bastante.
+ */
+function renderMD(txt) {
+  const negritas = (s) => {
+    const partes = String(s).split(/\*\*(.+?)\*\*/g);
+    return partes.map((p, i) => (i % 2 ? <strong key={i}>{p}</strong> : p));
+  };
+  return String(txt || "").split("\n").map((linea, i) => {
+    const l = linea.trimEnd();
+    if (!l.trim()) return <div key={i} style={{ height: 8 }} />;
+    if (/^#{1,6}\s/.test(l)) {
+      return <div key={i} style={{ fontSize: 14, fontWeight: 800, margin: "14px 0 6px", color: "inherit" }}>
+        {negritas(l.replace(/^#{1,6}\s*/, ""))}
+      </div>;
+    }
+    if (/^[-*]\s/.test(l.trim())) {
+      return <div key={i} style={{ display: "flex", gap: 8, marginLeft: 4, marginBottom: 3 }}>
+        <span style={{ opacity: 0.45, flexShrink: 0 }}>·</span>
+        <span>{negritas(l.trim().replace(/^[-*]\s*/, ""))}</span>
+      </div>;
+    }
+    return <div key={i} style={{ marginBottom: 3 }}>{negritas(l)}</div>;
+  });
+}
+
 export default function AsesorIA({ user, totals, userId }) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
@@ -203,12 +235,16 @@ export default function AsesorIA({ user, totals, userId }) {
             <div key={i} style={{ display: "flex", gap: 10, marginBottom: 14, justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
               {m.role === "assistant" && <div style={{ width: 28, height: 28, borderRadius: "50%", background: T.gnD, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🤖</div>}
               <div style={{
-                maxWidth: "80%", padding: "12px 16px", borderRadius: m.role === "user" ? "14px 14px 0 14px" : "0 14px 14px 14px",
+                // 26-jul-2026 (Santiago: "la ventana del chat es muy angosta, le toca a uno mover el
+                // cursor para ver las respuestas"). El 80% sirve para la burbuja del USUARIO
+                // —marca que es suya—, pero castiga la del ASESOR, que devuelve análisis
+                // largos con listas y cifras: en pantalla ancha quedaba media pantalla vacía.
+                maxWidth: m.role === "user" ? "80%" : "100%", flex: m.role === "user" ? "0 1 auto" : "1 1 auto", padding: "12px 16px", borderRadius: m.role === "user" ? "14px 14px 0 14px" : "0 14px 14px 14px",
                 background: m.role === "user" ? T.bl + "20" : T.bg3,
                 border: "1px solid " + (m.role === "user" ? T.bl + "30" : T.border),
-                fontSize: 13, lineHeight: 1.7, color: T.txt, whiteSpace: "pre-wrap",
+                fontSize: 13, lineHeight: 1.7, color: T.txt, whiteSpace: m.role === "user" ? "pre-wrap" : "normal", wordBreak: "break-word",
               }}>
-                {m.content}
+                {m.role === "assistant" ? renderMD(m.content) : m.content}
               </div>
             </div>
           ))
