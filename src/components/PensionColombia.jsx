@@ -17,6 +17,12 @@ const Sl=({label,value,onChange,min,max,step,color,display,sub})=><div style={{m
 export default function PensionBTC({trm:pTrm}){
   const[tab,setTab]=useState("resumen");
   const[salSM,setSalSM]=useState(25);
+  // 26-jul-2026 — modos de aporte. Default = comportamiento anterior intacto.
+  const[modoAporte,setModoAporte]=useState("salario");   // salario | libre
+  const[frecAporte,setFrecAporte]=useState("mensual");   // mensual | anual | unico
+  const[montoLibre,setMontoLibre]=useState("");
+  const[montoAnual,setMontoAnual]=useState("");
+  const[montoUnico,setMontoUnico]=useState("");
   const[anios,setAnios]=useState(10);
   const[cagr,setCagr]=useState(55.8);
   const[tasaR,setTasaR]=useState(55);
@@ -26,16 +32,43 @@ export default function PensionBTC({trm:pTrm}){
   const trm=pTrm||4200;
   const salMes=salSM*SM;
   const apMes=salMes*0.16;
+  // 26-jul-2026 (Santiago: "cuando uno pone según el número de salarios, cuál
+  // es el valor que realmente está aportando cada mes, no se lee bien" · "que
+  // bueno para quienes quieren comprar una vez y dejarlo quieto 5 o 10 años").
+  // Dos límites del modelo original:
+  //  · el aporte SOLO se derivaba del 16% del salario mínimo — el usuario no
+  //    podía decir "quiero poner $500.000" ni ver en pesos lo que el slider de
+  //    salarios implicaba sin cruzar la vista a la otra tarjeta;
+  //  · SOLO existía el aporte mensual. Quien compra una vez y espera, o quien
+  //    aporta una vez al año, no tenía cómo proyectarlo.
+  const apMesEfectivo = modoAporte === "libre" ? (Number(montoLibre) || 0) : apMes;
   const empMes=salMes*0.04;
   const emrMes=salMes*0.12;
   const impMes=salMes*(impR/100);
 
   const btc=useMemo(()=>{
-    const cd=cagr/100,amU=apMes/trm;let ba=0;const yd=[];
-    for(let y=1;y<=anios;y++){for(let m=1;m<=12;m++){const mg=(y-1)*12+m;ba+=amU/(pBTC*Math.pow(1+cd,mg/12));}const pf=pBTC*Math.pow(1+cd,y);yd.push({anio:y,precioBTC:Math.round(pf),btcAcum:ba,valorUSD:Math.round(ba*pf)});}
-    const pf=pBTC*Math.pow(1+cd,anios),vf=ba*pf,rA=vf*(regla/100),rM=rA/12,rMC=rM*trm,ti=apMes*12*anios,ret=ti>0?((vf*trm-ti)/ti)*100:0;
+    const cd=cagr/100;let ba=0;const yd=[];
+    // FRECUENCIA DE APORTE (26-jul-2026). El precio del BTC crece cada mes, así
+    // que CUÁNDO se compra cambia cuánto BTC se acumula: comprar todo hoy rinde
+    // distinto a repartirlo en 120 cuotas. Por eso cada modo se simula en su
+    // propio momento del calendario y no como un promedio.
+    //   mensual → 12 compras al año
+    //   anual   → 1 compra en el mes 1 de cada año
+    //   unico   → 1 sola compra en el mes 0 (hoy), nada más
+    const precioEn = (mesGlobal) => pBTC * Math.pow(1 + cd, mesGlobal / 12);
+    if (frecAporte === "unico") {
+      ba += (Number(montoUnico) || 0) / trm / pBTC;   // compra a precio de hoy
+    }
+    for(let y=1;y<=anios;y++){
+      if (frecAporte === "mensual") {
+        const amU = apMesEfectivo / trm;
+        for(let m=1;m<=12;m++){ ba += amU / precioEn((y-1)*12+m); }
+      } else if (frecAporte === "anual") {
+        ba += ((Number(montoAnual) || 0) / trm) / precioEn((y-1)*12+1);
+      }const pf=pBTC*Math.pow(1+cd,y);yd.push({anio:y,precioBTC:Math.round(pf),btcAcum:ba,valorUSD:Math.round(ba*pf)});}
+    const pf=pBTC*Math.pow(1+cd,anios),vf=ba*pf,rA=vf*(regla/100),rM=rA/12,rMC=rM*trm,ti=(frecAporte==="mensual"?apMesEfectivo*12*anios:frecAporte==="anual"?(Number(montoAnual)||0)*anios:(Number(montoUnico)||0)),ret=ti>0?((vf*trm-ti)/ti)*100:0;
     return{ba,pf,vf,vfC:vf*trm,rM,rMC,ti,ret,yd};
-  },[salSM,anios,cagr,pBTC,trm,regla,apMes]);
+  },[salSM,anios,cagr,pBTC,trm,regla,apMes,apMesEfectivo,frecAporte,montoLibre,montoAnual,montoUnico,modoAporte]);
 
   const penMes=salMes*(tasaR/100);
   const penAI=penMes*12*0.19;
@@ -190,7 +223,68 @@ export default function PensionBTC({trm:pTrm}){
 
     {tab==="simulador"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
       <div><Cd style={{padding:24,marginBottom:16}}><div style={{fontSize:16,fontWeight:700,marginBottom:20}}>⚙️ Parámetros de Simulación</div>
-        <Sl label="💼 Tu salario mensual" value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={"Tu aporte MENSUAL a BTC: "+fC(apMes)+" (el 16% de tu salario, igual que se aporta a pensión)"}/>
+        {/* 26-jul-2026 — CÓMO APORTÁS. Antes solo existía "16% de N salarios
+              mínimos", y el valor en pesos vivía en la otra tarjeta: había que
+              cruzar la vista para saber cuánto era. Ahora el modo se elige acá
+              y el monto en pesos se lee al lado del control. */}
+          <div style={{marginBottom:18}}>
+            <div style={{fontSize:12,fontWeight:700,color:T.txt2,marginBottom:8}}>💵 ¿Cómo vas a aportar?</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+              {[{v:"mensual",l:"Cada mes"},{v:"anual",l:"Una vez al año"},{v:"unico",l:"Una sola vez"}].map(o=>
+                <button key={o.v} onClick={()=>setFrecAporte(o.v)}
+                  style={{flex:"1 1 110px",background:frecAporte===o.v?"rgba(247,147,26,0.15)":T.bg3,
+                    border:"1px solid "+(frecAporte===o.v?T.orange:T.border),borderRadius:10,padding:"10px 12px",
+                    cursor:"pointer",color:T.txt,fontWeight:700,fontSize:12.5}}>{o.l}</button>)}
+            </div>
+
+            {frecAporte==="mensual" && <>
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                {[{v:"salario",l:"% de mi salario"},{v:"libre",l:"Monto que yo elija"}].map(o=>
+                  <button key={o.v} onClick={()=>setModoAporte(o.v)}
+                    style={{flex:1,background:modoAporte===o.v?"rgba(59,130,246,0.12)":T.bg3,
+                      border:"1px solid "+(modoAporte===o.v?T.blue:T.border),borderRadius:8,padding:"7px 10px",
+                      cursor:"pointer",color:T.txt,fontWeight:600,fontSize:11.5}}>{o.l}</button>)}
+              </div>
+              {modoAporte==="libre" ? (
+                <div>
+                  <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE MENSUAL</div>
+                  <input value={montoLibre} onChange={e=>setMontoLibre(e.target.value.replace(/[^0-9]/g,""))}
+                    placeholder="500000" inputMode="numeric"
+                    style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
+                  {Number(montoLibre)>0 && <div style={{fontSize:11.5,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
+                    {fC(Number(montoLibre))}/mes · {fC(Number(montoLibre)*12*anios)} en {anios} años
+                  </div>}
+                </div>
+              ) : (
+                <div style={{background:T.bg3,borderRadius:8,padding:"10px 12px",fontSize:12,color:T.txt2}}>
+                  Aportás <strong style={{color:T.orange,fontFamily:"monospace"}}>{fC(apMes)}/mes</strong>
+                  <span style={{color:T.txt3}}> — el 16% de {salSM} {salSM===1?"salario mínimo":"salarios mínimos"}</span>
+                </div>
+              )}
+            </>}
+
+            {frecAporte==="anual" && <div>
+              <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE UNA VEZ AL AÑO</div>
+              <input value={montoAnual} onChange={e=>setMontoAnual(e.target.value.replace(/[^0-9]/g,""))}
+                placeholder="6000000" inputMode="numeric"
+                style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
+              {Number(montoAnual)>0 && <div style={{fontSize:11.5,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
+                {fC(Number(montoAnual))} al año · {fC(Number(montoAnual)*anios)} en {anios} años
+              </div>}
+            </div>}
+
+            {frecAporte==="unico" && <div>
+              <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>COMPRÁS HOY Y NO TOCÁS MÁS</div>
+              <input value={montoUnico} onChange={e=>setMontoUnico(e.target.value.replace(/[^0-9]/g,""))}
+                placeholder="20000000" inputMode="numeric"
+                style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
+              {Number(montoUnico)>0 && <div style={{fontSize:11.5,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
+                {fC(Number(montoUnico))} hoy · {(Number(montoUnico)/trm/pBTC).toFixed(6)} BTC a precio actual
+              </div>}
+            </div>}
+          </div>
+
+          <Sl label="💼 Tu salario mensual" value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={"Tu aporte MENSUAL a BTC: "+fC(apMes)+" (el 16% de tu salario, igual que se aporta a pensión)"}/>
         <Sl label="⏰ ¿Cuántos años vas a ahorrar?" value={anios} onChange={setAnios} min={1} max={30} step={1} display={anios+" años"} color={T.green} sub={"En "+anios+" años habrás aportado "+fC(apMes*12*anios)+" en total ("+fC(apMes)+" x "+anios*12+" meses)"}/>
         <Sl label="📈 Crecimiento anual del Bitcoin (CAGR)" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)+" al año"} color={T.orange} sub="Es el % que sube Bitcoin cada año en promedio. Histórico: 69.8% • Conservador: 20-30% • Muy conservador: 10-15%"/>
         <Sl label="💰 Precio actual de 1 Bitcoin" value={pBTC} onChange={setPBTC} min={10000} max={200000} step={1000} display={fU(pBTC)} color={T.gold} sub={"= "+fC(pBTC*trm)+" COP"}/>
@@ -198,7 +292,7 @@ export default function PensionBTC({trm:pTrm}){
         <Sl label={"📊 Tasa de reemplazo pensional"} value={tasaR} onChange={setTasaR} min={30} max={80} step={1} display={tasaR+"%"} color={T.blue} sub={"Es el % de tu salario que recibirías como pensión. En Colombia varía entre 55% y 80% según semanas cotizadas."}/>
       </Cd>
       <Cd glow={T.orange} style={{padding:24}}><div style={{fontSize:16,fontWeight:700,marginBottom:16}}>Tu Resultado después de {anios} años</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-        <div><div style={{fontSize:12,color:T.txt3}}>Aporte mensual</div><div style={{fontSize:22,fontWeight:800,marginTop:4}}>{fC(apMes)}/mes</div></div>
+        <div><div style={{fontSize:12,color:T.txt3}}>{frecAporte==="unico"?"Invertiste una vez":frecAporte==="anual"?"Aporte anual":"Aporte mensual"}</div><div style={{fontSize:22,fontWeight:800,marginTop:4}}>{frecAporte==="unico"?fC(Number(montoUnico)||0):frecAporte==="anual"?fC(Number(montoAnual)||0):fC(apMesEfectivo)+"/mes"}</div></div>
         <div><div style={{fontSize:12,color:T.txt3}}>Valor BTC</div><div style={{fontSize:22,fontWeight:800,color:T.green,marginTop:4}}>{fU(btc.vf)}</div></div>
         <div><div style={{fontSize:12,color:T.txt3}}>BTC Acumulado</div><div style={{fontSize:22,fontWeight:800,marginTop:4}}>{fB(btc.ba)}</div></div>
         <div><div style={{fontSize:12,color:T.txt3}}>Retorno total</div><div style={{fontSize:22,fontWeight:800,color:T.orange,marginTop:4}}>+{pc(btc.ret)}</div></div>
