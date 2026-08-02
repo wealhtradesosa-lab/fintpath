@@ -229,6 +229,10 @@ export default function PensionBTC({trm:pTrm}){
               cruzar la vista para saber cuánto era. Ahora el modo se elige acá
               y el monto en pesos se lee al lado del control. */}
           <div style={{marginBottom:18}}>
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>1 · TU APORTE</div>
+              <div style={{fontSize:11,color:T.txt3,marginTop:3}}>Cuánto y cada cuánto ponés</div>
+            </div>
             <div style={{fontSize:12,fontWeight:700,color:T.txt2,marginBottom:8}}>💵 ¿Cómo vas a aportar?</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
               {[{v:"mensual",l:"Cada mes"},{v:"anual",l:"Una vez al año"},{v:"unico",l:"Una sola vez"}].map(o=>
@@ -300,9 +304,21 @@ export default function PensionBTC({trm:pTrm}){
           <Sl label={(modoAporte!=="libre" && frecAporte==="mensual") ? "💼 Tu salario mensual" : "💼 Tu salario (para comparar con la pensión)"} value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={(modoAporte!=="libre" && frecAporte==="mensual")
             ? "→ De ahí aportás "+fC(apMes)+"/mes a BTC (el 16%) · te quedan "+fC(salMes-apMes)
             : "Solo se usa para calcular tu pensión tradicional y compararla con BTC"}/>
+          <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
+            <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>2 · TU HORIZONTE</div>
+            <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Cuánto tiempo dejás trabajar el dinero</div>
+          </div>
         <Sl label="⏰ ¿Cuántos años vas a ahorrar?" value={anios} onChange={setAnios} min={1} max={30} step={1} display={anios+" años"} color={T.green} sub={"En "+anios+" años habrás aportado "+fC(apMes*12*anios)+" en total ("+fC(apMes)+" x "+anios*12+" meses)"}/>
+          <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
+            <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>3 · SUPUESTOS DEL MERCADO</div>
+            <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Ajustalos si no coincidís con los valores por defecto</div>
+          </div>
         <Sl label="📈 Crecimiento anual del Bitcoin (CAGR)" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)+" al año"} color={T.orange} sub="Es el % que sube Bitcoin cada año en promedio. Histórico: 69.8% • Conservador: 20-30% • Muy conservador: 10-15%"/>
         <Sl label="💰 Precio actual de 1 Bitcoin" value={pBTC} onChange={setPBTC} min={10000} max={200000} step={1000} display={fU(pBTC)} color={T.gold} sub={"= "+fC(pBTC*trm)+" COP"}/>
+          <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
+            <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>4 · COMPARACIÓN CON LA PENSIÓN</div>
+            <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Contra qué se mide tu ahorro en Bitcoin</div>
+          </div>
       <Sl label={"🏦 ¿Cuánto retirar al año? (Regla del "+regla+"%)"} value={regla} onChange={setRegla} min={2} max={8} step={0.5} display={regla+"% anual"} color={T.orange} sub={"Si tienes $100M en BTC y retiras "+regla+"%, sacas $"+Math.round(100*regla/100)+"M al año ($"+ Math.round(100*regla/100/12*10)/10 +"M/mes). El resto sigue creciendo. A menor %, tu capital dura para siempre."}/>
         <Sl label={"📊 Tasa de reemplazo pensional"} value={tasaR} onChange={setTasaR} min={30} max={80} step={1} display={tasaR+"%"} color={T.blue} sub={"Es el % de tu salario que recibirías como pensión. En Colombia varía entre 55% y 80% según semanas cotizadas."}/>
       </Cd>
