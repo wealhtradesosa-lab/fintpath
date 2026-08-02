@@ -1016,6 +1016,29 @@ export default function FinPath(){
       {id:"d_ig5",nombre:"Rendimiento CDT",categoria:"Rendimiento",mensual:1150000,tipo:"fijo",fuente:"CDT Davivienda",owner:"own_1",moneda:"COP",capital:"120000000",tasa:"11.5"},
       {id:"d_ig6",nombre:"Rendimiento Rapicredit",categoria:"Rendimiento",mensual:8333000,tipo:"fijo",fuente:"Rapicredit",owner:"own_j1",moneda:"COP",capital:"500000000",tasa:"20"},
       {id:"d_ig7",nombre:"Freelance consultoría",categoria:"Honorarios",mensual:5000000,tipo:"variable",fuente:"Clientes",owner:"own_1",moneda:"COP"},
+      // 26-jul-2026 (Santiago: "podríamos cambiar el ejemplo de Pedro Pérez,
+      // ponerle más cosas para que se vea en detalle cómo funciona la
+      // plataforma, por ejemplo algunos ingresos variables o de unos meses,
+      // para que se vea cómo el flujo cambia por mes").
+      // Los 7 ingresos originales eran TODOS mensuales fijos, así que la demo
+      // mostraba un flujo plano — justo lo que la plataforma NO es. Estos 4
+      // agregan los casos que la diferencian:
+      {id:"d_ig8",nombre:"Prima de servicios",categoria:"Salario",mensual:9000000,tipo:"fijo",
+       frecuencia:"variable",fuente:"TechCorp",owner:"own_1",moneda:"COP",
+       // Junio y diciembre: el clásico colombiano. En el flujo se ven dos picos.
+       montosMensuales:[0,0,0,0,0,9000000,0,0,0,0,0,9000000]},
+      {id:"d_ig9",nombre:"Contrato proyecto Q4",categoria:"Honorarios",mensual:12000000,tipo:"variable",
+       fuente:"Cliente corporativo",owner:"own_1",moneda:"COP",desdeMes:10,hastaMes:12,
+       // Vigencia parcial: entra solo oct-dic. Su promedio anual es $3M, no $12M.
+      },
+      {id:"d_ig10",nombre:"Comisiones ventas",categoria:"Honorarios",mensual:0,tipo:"variable",
+       frecuencia:"variable",fuente:"Clientes",owner:"own_1",moneda:"COP",
+       // Mes a mes distinto: el caso que ninguna app de finanzas modela bien.
+       montosMensuales:[3200000,1800000,4500000,2100000,6800000,3400000,2900000,5100000,4200000,7500000,8900000,11000000]},
+      {id:"d_ig11",nombre:"Dividendos Inversiones Pérez",categoria:"Dividendos",mensual:24000000,tipo:"fijo",
+       frecuencia:"anual",mesPago:4,fuente:"Inversiones Pérez SAS",owner:"own_j1",moneda:"COP",
+       // Una vez al año, en abril. Promedio $2M/mes, pero abril salta.
+      },
     ];
     nd.deu=[
       {id:"d_d1",n:"Hipoteca Casa Tabio",tp:"mortgage",mt:480000000,pg:5200000,ts:12,owner:"own_1"},
@@ -1027,9 +1050,19 @@ export default function FinPath(){
       "Vivienda":[{c:"Administración casa",m:1800000,t:"f",owner:"own_1"},{c:"Arriendo oficina",m:3500000,t:"f",owner:"own_j1"},{c:"Predial casa",m:450000,t:"f",owner:"own_1"},{c:"Predial bodega",m:380000,t:"f",owner:"own_j1"}],
       "Alimentación":[{c:"Mercado familiar",m:2800000,t:"f",owner:"own_1"},{c:"Restaurantes",m:1200000,t:"v",owner:"own_1"}],
       "Transporte":[{c:"Gasolina",m:800000,t:"v",owner:"own_1"},{c:"SOAT + Seguros",m:350000,t:"f",owner:"own_1"},{c:"Transporte empresa",m:600000,t:"f",owner:"own_j1"}],
-      "Educación":[{c:"Colegio hijos",m:4500000,t:"f",owner:"own_1"},{c:"Cursos online",m:200000,t:"v",owner:"own_1"}],
+      "Educación":[{c:"Colegio hijos",m:4500000,t:"f",owner:"own_1",desdeMes:2,hastaMes:11},
+                   {c:"Matrícula anual",m:6500000,t:"f",owner:"own_1",frecuencia:"anual"},
+                   {c:"Cursos online",m:200000,t:"v",owner:"own_1"}],
       "Salud":[{c:"Medicina prepagada familiar",m:1800000,t:"f",owner:"own_1"},{c:"Farmacia",m:300000,t:"v",owner:"own_1"}],
-      "Seguros":[{c:"Seguro de vida",m:450000,t:"f",owner:"own_1"},{c:"Póliza todo riesgo propiedades",m:680000,t:"f",owner:"own_j1"}],
+      // 26-jul-2026 — los seguros suelen pagarse ANUALES, y así se ve la
+      // diferencia entre "$5.4M al año" y "$5.4M al mes": el error de
+      // frecuencia que costó varias sesiones detectar en producción.
+      "Seguros":[{c:"Seguro de vida",m:450000,t:"f",owner:"own_1"},
+                 {c:"Póliza todo riesgo propiedades",m:8160000,t:"f",owner:"own_j1",frecuencia:"anual"},
+                 {c:"Seguro vehículo (anual)",m:3200000,t:"f",owner:"own_1",frecuencia:"anual"}],
+      // Impuestos: el predial y la renta caen en meses puntuales, no todos los meses.
+      "Impuesto":[{c:"Predial (una vez al año)",m:4800000,t:"f",owner:"own_j1",frecuencia:"anual"},
+                  {c:"Renta persona natural",m:18000000,t:"f",owner:"own_1",frecuencia:"anual"}],
       "Servicios":[{c:"Servicios casa",m:850000,t:"f",owner:"own_1"},{c:"Internet y telefonía empresa",m:350000,t:"f",owner:"own_j1"}],
       "Seguridad Social":[{c:"Pensión + EPS + ARL",m:3200000,t:"f",owner:"own_1"}],
       "Entretenimiento":[{c:"Streaming y suscripciones",m:250000,t:"f",owner:"own_1"},{c:"Vacaciones (mensualizado)",m:2000000,t:"v",owner:"own_1"}],
