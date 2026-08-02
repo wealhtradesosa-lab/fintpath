@@ -326,7 +326,22 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           grupos[k] = (grupos[k] || 0) + (d.mt || 0) * (d.moneda === "USD" ? (trm || 4200) : 1);
         });
         const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
-        if (datos.length < 2) return null;
+        // 26-jul-2026 — ANTES: si había un solo tipo, la barra no aparecía y
+        // parecía que la función no existía. Santiago reportó tres veces que
+        // "deudas no está organizada" teniendo el código desplegado: sus
+        // deudas están todas cargadas con el mismo tp, así que se formaba un
+        // único grupo y no había nada que comparar.
+        // Una función que solo se ve si los datos están bien clasificados es
+        // invisible para quien no los clasificó. Ahora, en ese caso, se
+        // explica QUÉ FALTA en vez de no mostrar nada.
+        if (datos.length < 2) return (
+          <div style={{ marginBottom: 16, background: "rgba(249,115,22,0.07)", border: "1px dashed rgba(249,115,22,0.35)",
+                        borderRadius: 10, padding: "12px 14px", fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
+            🏷️ <strong>Asigná el tipo a cada deuda</strong> para ver cómo se reparte tu pasivo.
+            <span style={{ color: T.txt3 }}> Editá cada una y elegí Hipoteca, Libre inversión, Vehículo, Leasing,
+            Préstamo personal o Tarjeta. Con dos o más tipos aparece la barra de distribución.</span>
+          </div>
+        );
         const tot = datos.reduce((s, d) => s + d.value, 0);
         const PAL = ["#ef4444","#f97316","#a78bfa","#3b82f6","#ec4899","#06b6d4"];
         return (
