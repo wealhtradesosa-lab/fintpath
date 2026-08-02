@@ -3,6 +3,7 @@
  * Standalone — does NOT touch App.jsx dashboard logic
  */
 import { useMemo } from "react";
+import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
          ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
@@ -101,7 +102,13 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
   // Expenses by category
   const expByCat = {};
   Object.entries(gas).forEach(([cat,items])=>{
-    expByCat[cat]=(items||[]).reduce((s,g)=>s+(g.m||0),0);
+    // 02-ago-2026 (Santiago: "estos cambios que hemos hecho, ¿han aplicado
+    // también a la experiencia US?"). No: el dashboard US tenía el MISMO error
+    // de frecuencia que se corrigió en Colombia el 25-jul. Sumaba `g.m` crudo,
+    // así que un gasto anual se contaba como mensual —inflado 12x— y los
+    // apagados seguían entrando pese a la regla de sim:false.
+    expByCat[cat]=(items||[]).filter(g=>g.sim!==false)
+      .reduce((s,g)=>s+montoPromedioMensual(g),0);
   });
   const expPie = Object.entries(expByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
 
