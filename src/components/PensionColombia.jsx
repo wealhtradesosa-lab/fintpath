@@ -5,7 +5,13 @@ import PageHeader from "./PageHeader.jsx";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(255,255,255,0.06)",txt:"#fafafa",txt2:"#a1a1aa",txt3:"#71717a",green:"#22c55e",greenDim:"rgba(34,197,94,0.1)",red:"#ef4444",blue:"#3b82f6",orange:"#f97316",orangeDim:"rgba(249,115,22,0.1)",gold:"#eab308"};
 const SM=1750905; // SMMLV 2026 Decreto 1469
-const fC=v=>{if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+Math.round(v).toLocaleString("es-CO")};
+const fC=v=>{if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B COP";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M COP";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K COP";return"$"+Math.round(v).toLocaleString("es-CO")+" COP"};
+// 26-jul-2026 (Santiago: "a veces no sé si estoy ingresando valores en pesos o
+// en dólares porque la plataforma combina ambas monedas al tiempo").
+// El módulo SÍ mezcla, y con razón: el precio del BTC es un dato global en
+// USD, mientras aportes y pensión son colombianos en COP. El problema no es la
+// mezcla sino que ambos formatos empezaban con "$" y se confundían.
+// Ahora el peso lleva sufijo COP explícito y el dólar prefijo USD.
 const fU=v=>"USD $"+Math.round(v).toLocaleString("en-US");
 const fB=v=>v.toFixed(4)+" ₿";
 const pc=v=>(v||0).toFixed(1)+"%";
@@ -224,6 +230,18 @@ export default function PensionBTC({trm:pTrm}){
 
     {tab==="simulador"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
       <div><Cd style={{padding:24,marginBottom:16}}><div style={{fontSize:16,fontWeight:700,marginBottom:20}}>⚙️ Parámetros de Simulación</div>
+          {/* 26-jul-2026 (Santiago: "no sé si estoy ingresando valores en pesos
+              o en dólares porque la plataforma combina ambas monedas").
+              El módulo mezcla a propósito: el precio del BTC es un dato global
+              en USD y no tendría sentido pedirlo en pesos, mientras aportes y
+              pensión son colombianos. Lo que faltaba era DECIRLO — y que los
+              dos formatos no se parecieran tanto (ambos empezaban con "$").
+              La regla queda declarada arriba de todo, una sola vez. */}
+          <div style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:10,padding:"10px 13px",marginBottom:18,fontSize:11.5,color:T.txt3,lineHeight:1.6}}>
+            💱 <strong style={{color:T.txt2}}>Dos monedas, a propósito:</strong> lo que vos aportás va en <strong style={{color:T.txt2}}>pesos (COP)</strong>;
+            el precio del Bitcoin va en <strong style={{color:T.gold}}>dólares (USD)</strong>, que es como cotiza en el mundo.
+            Cada cifra lleva su moneda al lado. TRM usada: <strong style={{color:T.txt2}}>{fC(trm)}</strong> por dólar.
+          </div>
         {/* 26-jul-2026 — CÓMO APORTÁS. Antes solo existía "16% de N salarios
               mínimos", y el valor en pesos vivía en la otra tarjeta: había que
               cruzar la vista para saber cuánto era. Ahora el modo se elige acá
@@ -252,7 +270,7 @@ export default function PensionBTC({trm:pTrm}){
               </div>
               {modoAporte==="libre" ? (
                 <div>
-                  <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE MENSUAL</div>
+                  <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE MENSUAL (COP)</div>
                   <NumberInput value={montoLibre} onChange={v=>setMontoLibre(v===""?"":String(v))}
                 placeholder="500000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
@@ -269,7 +287,7 @@ export default function PensionBTC({trm:pTrm}){
             </>}
 
             {frecAporte==="anual" && <div>
-              <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE UNA VEZ AL AÑO</div>
+              <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE UNA VEZ AL AÑO (COP)</div>
               <NumberInput value={montoAnual} onChange={v=>setMontoAnual(v===""?"":String(v))}
                 placeholder="6000000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
@@ -279,7 +297,7 @@ export default function PensionBTC({trm:pTrm}){
             </div>}
 
             {frecAporte==="unico" && <div>
-              <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>COMPRÁS HOY Y NO TOCÁS MÁS</div>
+              <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>COMPRÁS HOY Y NO TOCÁS MÁS (COP)</div>
               <NumberInput value={montoUnico} onChange={v=>setMontoUnico(v===""?"":String(v))}
                 placeholder="20000000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
@@ -314,7 +332,7 @@ export default function PensionBTC({trm:pTrm}){
             <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Ajustalos si no coincidís con los valores por defecto</div>
           </div>
         <Sl label="📈 Crecimiento anual del Bitcoin (CAGR)" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)+" al año"} color={T.orange} sub="Es el % que sube Bitcoin cada año en promedio. Histórico: 69.8% • Conservador: 20-30% • Muy conservador: 10-15%"/>
-        <Sl label="💰 Precio actual de 1 Bitcoin" value={pBTC} onChange={setPBTC} min={10000} max={200000} step={1000} display={fU(pBTC)} color={T.gold} sub={"= "+fC(pBTC*trm)+" COP"}/>
+        <Sl label="💰 Precio actual de 1 Bitcoin (en dólares)" value={pBTC} onChange={setPBTC} min={10000} max={200000} step={1000} display={fU(pBTC)} color={T.gold} sub={"= "+fC(pBTC*trm)+" COP"}/>
           <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
             <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>4 · COMPARACIÓN CON LA PENSIÓN</div>
             <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Contra qué se mide tu ahorro en Bitcoin</div>
