@@ -30,7 +30,11 @@ export default function BarraComposicion({ datos = [], total = 0, paleta = [], T
         const color = COLORES[i % COLORES.length];
         // Solo se etiqueta lo que entra sin apretarse. El resto se identifica
         // por color contra la lista de abajo.
-        const cabe = pct >= 9;
+        // 26-jul-2026 (Santiago: "no se lee casi el texto, muy pequeño").
+        // Con el % más grande (13px) hace falta más espacio: por debajo de 12%
+        // el número queda apretado contra los bordes y se lee peor que si no
+        // estuviera. Esas franjas se identifican por color contra la leyenda.
+        const cabe = pct >= 12;
         return (
           <div
             key={d.name + i}
@@ -46,7 +50,7 @@ export default function BarraComposicion({ datos = [], total = 0, paleta = [], T
             }}
           >
             {cabe && (
-              <span style={{ fontSize: 11, fontWeight: 800, color: "#0a0a0a", fontFamily: "monospace" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#0a0a0a", fontFamily: "monospace" }}>
                 {pct.toFixed(0)}%
               </span>
             )}

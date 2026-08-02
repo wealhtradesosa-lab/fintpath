@@ -697,11 +697,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               const PAL = ["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308","#f97316"];
               return (
                 <div style={{ marginBottom: 16 }}>
-                  <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={38} />
+                  <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 8 }}>
                     {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
-                      <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.txt3 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: 2, background: PAL[i % PAL.length], flexShrink: 0 }} />
+                      <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, color: T.txt2 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
                         {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
                       </span>
                     ))}
