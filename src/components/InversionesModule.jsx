@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
+import BarraComposicion from "./BarraComposicion";
 import NumberInput from "./NumberInput";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
@@ -111,6 +112,26 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // al detalle, no falsea los números. Ver src/lib/limitePlan.js.
   const { visibles: itemsVisibles, bloqueados, hayLimite } = separarPorLimite(items, plan);
   const montoBloqueado = bloqueados.reduce((s, i) => s + getVA(i, trm), 0);
+  // 26-jul-2026 (Santiago: "lo mismo pasa con patrimonio, organícelo por
+  // tipologías"). Mismo patrón que Gastos, Ingresos y Deudas: marcadores
+  // {__cat} intercalados en los datos, que el render dibuja como encabezado.
+  // Acá el criterio es el TIPO DE ACTIVO y el subtotal es el VALOR: la
+  // pregunta en patrimonio es en qué está puesta la plata — la misma que
+  // responde la alerta de concentración del dashboard.
+  const conEncabezados = (lista) => {
+    const porTipo = {};
+    lista.forEach(i => { const k = getType(i) || "Sin tipo"; (porTipo[k] = porTipo[k] || []).push(i); });
+    const grupos = Object.entries(porTipo)
+      .map(([tipo, its]) => ({ tipo, items: its,
+        sub: its.filter(i => i.sim !== false).reduce((s, i) => s + getVA(i, trm), 0) }))
+      .sort((a, b) => b.sub - a.sub);
+    const tot = grupos.reduce((s, g) => s + g.sub, 0);
+    return grupos.flatMap(gr => [
+      { __cat: gr.tipo, __sub: gr.sub, __n: gr.items.length,
+        __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.tipo },
+      ...gr.items,
+    ]);
+  };
   const totalValor = activos.reduce((s, i) => s + getVA(i, trm), 0)
   // 26-jul-2026 (Santiago): mismo trío en los cuatro módulos de "Mi dinero" —
   // stock · flujo mensual · flujo anual — para que el ojo busque siempre en el
@@ -285,6 +306,33 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         ))}
       </div>
 
+      {/* 26-jul-2026 (Santiago): barra de composición por tipo de activo,
+          el mismo componente de las otras tres secciones. En patrimonio esta
+          lectura es especialmente útil: es la misma que alimenta la alerta de
+          concentración del dashboard, así que el usuario ve acá el porqué de
+          esa advertencia. */}
+      {(() => {
+        const grupos = {};
+        activos.forEach(i => { const k = getType(i) || "Sin tipo"; grupos[k] = (grupos[k] || 0) + getVA(i, trm); });
+        const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
+        if (datos.length < 2) return null;
+        const tot = datos.reduce((s, d) => s + d.value, 0);
+        const PAL = ["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308","#f97316"];
+        return (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, color: T.txt3, marginBottom: 6, fontWeight: 600 }}>EN QUÉ ESTÁ TU PATRIMONIO</div>
+            <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "7px 16px", marginTop: 8 }}>
+              {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
+                <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, color: T.txt2 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
+                  {d.name} <strong style={{ fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
       {/* Table */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
@@ -324,7 +372,22 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       </div>
                     </div>
                   </td></tr>
-              ) : itemsVisibles.map((inv) => {
+              ) : conEncabezados(itemsVisibles).map((inv) => {
+                if (inv.__cat) return (
+                  <tr key={inv.id} style={{ background: T.bg2 }}>
+                    <td colSpan={8} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
+                          {inv.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {inv.__n}</span>
+                        </span>
+                        <span style={{ fontSize: 12.5, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>
+                          {fm(inv.__sub)}
+                          <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{inv.__pct.toFixed(0)}%</span>
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
                 const m = calcMetrics(inv, deudas, trm);
                 const name = getName(inv);
                 const loc = getLoc(inv);
