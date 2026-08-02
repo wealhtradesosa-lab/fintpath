@@ -16,6 +16,8 @@
  */
 
 import { useState, useMemo } from "react";
+import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
+import BarraComposicion from "./BarraComposicion";
 import { totalAnualItem } from "../lib/flowHelpers.js";
 import NumberInput from "./NumberInput";
 import { US } from "../lib/jurisdictions/US.js";
@@ -302,6 +304,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm]         = useState(EMPTY);
   const [editing, setEditing]   = useState(null);
+  const [busqueda, setBusqueda] = useState("");
   const [expanded, setExpanded] = useState(null);
 
   const sf = (k, v) => setForm(p => ({...p, [k]: v}));
@@ -407,9 +410,72 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 }) {
         </div>
       ) : (
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-          {ingresos.map((src, idx) => {
+          {/* 02-ago-2026 — barra de composición por tipo fiscal, igual que en
+              la versión Colombia. Sobre el ingreso ANUAL, que es la unidad con
+              la que se razona el 1040. */}
+          {(() => {
+            const NOMB = { w2:"W-2 Empleo", "1099nec":"1099 Independiente", rental:"Arriendos",
+                           lt_gains:"Ganancias de capital", qual_div:"Dividendos calificados",
+                           interest:"Intereses", ss:"Social Security", other:"Otros" };
+            const g = {};
+            ingresos.filter(s => s.sim !== false).forEach(s => {
+              const k = NOMB[s.tipo] || "Otros"; g[k] = (g[k] || 0) + totalAnualItem(s);
+            });
+            const datos = Object.entries(g).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
+            if (datos.length < 2) return null;
+            const tot = datos.reduce((s, d) => s + d.value, 0);
+            const PAL = ["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"];
+            return (
+              <div style={{marginBottom:4}}>
+                <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
+                <div style={{display:"flex",flexWrap:"wrap",gap:"7px 16px",marginTop:8}}>
+                  {[...datos].sort((a,b)=>b.value-a.value).map((d,i)=>(
+                    <span key={d.name} style={{display:"flex",alignItems:"center",gap:7,fontSize:12.5,color:T.txt2}}>
+                      <span style={{width:10,height:10,borderRadius:3,background:PAL[i%PAL.length],flexShrink:0}}/>
+                      {d.name} <strong style={{fontFamily:"monospace"}}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+          <BuscadorLista valor={busqueda} onChange={setBusqueda} T={T}
+            total={ingresos.length} filtrados={filtrarPorTexto(ingresos, busqueda, ["nombre","fuente","tipo"]).length} />
+          {(() => {
+            // 02-ago-2026 (Santiago: "háganos las mejoras de US"). Se replican
+            // buscador, barra de composición y agrupamiento por tipología, que
+            // en Colombia ya estaban. Acá la lista son TARJETAS, no filas de
+            // tabla, así que el encabezado de grupo es un div y no un <tr>.
+            // Se agrupa por TIPO FISCAL (W-2, 1099, rental, dividendos…), que es
+            // lo que determina cómo tributa cada ingreso en el 1040.
+            const NOM = { w2:"W-2 Empleo", "1099nec":"1099 Independiente", rental:"Arriendos",
+                          lt_gains:"Ganancias de capital", qual_div:"Dividendos calificados",
+                          interest:"Intereses", ss:"Social Security", other:"Otros" };
+            const vis = filtrarPorTexto(ingresos, busqueda, ["nombre", "fuente", "tipo"]);
+            const porTipo = {};
+            vis.forEach(s => { const k = NOM[s.tipo] || "Otros"; (porTipo[k] = porTipo[k] || []).push(s); });
+            const grupos = Object.entries(porTipo)
+              .map(([tipo, its]) => ({ tipo, items: its,
+                sub: its.filter(s => s.sim !== false).reduce((a, s) => a + totalAnualItem(s), 0) }))
+              .sort((a, b) => b.sub - a.sub);
+            const tot = grupos.reduce((a, g) => a + g.sub, 0);
+            return grupos.flatMap(gr => [
+              <div key={"h-" + gr.tipo} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+                    gap:10,flexWrap:"wrap",padding:"9px 14px",background:T.bg3,borderRadius:8,marginTop:4}}>
+                <span style={{fontSize:12,fontWeight:800,color:T.txt2}}>
+                  {gr.tipo} <span style={{color:T.txt3,fontWeight:500}}>· {gr.items.length}</span>
+                </span>
+                <span style={{fontSize:12.5,fontWeight:800,color:T.green,fontFamily:"monospace"}}>
+                  {fmt(gr.sub)}/año
+                  <span style={{color:T.txt3,fontWeight:500,marginLeft:6}}>
+                    {tot > 0 ? ((gr.sub/tot)*100).toFixed(0) : 0}%
+                  </span>
+                </span>
+              </div>,
+              ...gr.items.map((src) => { const idx = ingresos.indexOf(src);
             const info   = typeInfo(src.tipo);
-            const annual = (src.mensual||0) * 12;
+            // 02-ago-2026: mismo error que el total — ignoraba frecuencia y vigencia.
+        const annual = totalAnualItem(src);
             const calc   = calcTaxForSource(src, totals.taxableAnnual);
             const open   = expanded === idx;
             return (
@@ -472,7 +538,9 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 }) {
                 )}
               </div>
             );
-          })}
+              }),
+            ]);
+          })()}
         </div>
       )}
 

@@ -21,6 +21,8 @@
  */
 
 import { useState, useMemo } from "react";
+import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
+import BarraComposicion from "./BarraComposicion";
 import NumberInput from "./NumberInput";
 import { US } from "../lib/jurisdictions/US.js";
 
@@ -338,6 +340,7 @@ const EMPTY_LIAB = {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdateAssets, onUpdateLiabs, initialTab = "assets" }) {
   const [tab,       setTab]       = useState(initialTab);
+  const [busqueda, setBusqueda] = useState("");
   const [showForm,  setShowForm]  = useState(null); // "asset" | "liab" | null
   const [form,      setForm]      = useState(EMPTY_ASSET);
   const [formL,     setFormL]     = useState(EMPTY_LIAB);
@@ -508,7 +511,72 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
               <button onClick={()=>{setForm(EMPTY_ASSET);setShowForm("asset")}} style={{background:T.gn,color:"#000",border:"none",padding:"12px 28px",borderRadius:10,cursor:"pointer",fontWeight:700}}>+ Add First Asset</button>
             </div>
           : <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {inversiones.map((asset,idx)=>{
+              {/* 02-ago-2026 — barra + buscador + agrupamiento, igual que la
+                  versión Colombia. Se agrupa por CATEGORÍA de activo, que es la
+                  lectura de concentración: en qué está puesta la plata. */}
+              {(() => {
+                const g = {};
+                inversiones.filter(a => a.sim !== false).forEach(a => {
+                  const k = (assetInfo(a.tp).cat || "other"); g[k] = (g[k] || 0) + (a.va || 0);
+                });
+                const datos = Object.entries(g).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
+                if (datos.length < 2) return null;
+                const tot = datos.reduce((s, d) => s + d.value, 0);
+                const PAL = ["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"];
+                return (
+                  <div style={{marginBottom:6}}>
+                    <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
+                    <div style={{display:"flex",flexWrap:"wrap",gap:"7px 16px",marginTop:8}}>
+                      {[...datos].sort((a,b)=>b.value-a.value).map((d,i)=>(
+                        <span key={d.name} style={{display:"flex",alignItems:"center",gap:7,fontSize:12.5,color:T.txt2}}>
+                          <span style={{width:10,height:10,borderRadius:3,background:PAL[i%PAL.length],flexShrink:0}}/>
+                          {d.name} <strong style={{fontFamily:"monospace"}}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+              <BuscadorLista valor={busqueda} onChange={setBusqueda} T={T}
+                total={inversiones.length}
+                filtrados={filtrarPorTexto(inversiones, busqueda, ["n","nombre","tp"]).length} />
+              {/* 02-ago-2026 — agrupamiento por CATEGORÍA DE ACTIVO, igual que
+                  en la versión Colombia. Acá la lista son tarjetas, así que el
+                  encabezado de grupo es un div y no una fila de tabla.
+                  El subtotal es el VALOR: la pregunta en patrimonio es en qué
+                  está puesta la plata. */}
+              {(() => {
+                const vis = filtrarPorTexto(inversiones, busqueda, ["n","nombre","tp"]);
+                const porCat = {};
+                vis.forEach(a => {
+                  // catLabel no existe en assetInfo: sin este mapa los
+                  // encabezados mostrarían los nombres técnicos ("real_estate").
+                  const CATS = { real_estate:"Real Estate", equity:"Stocks & Equity",
+                                 retirement:"Retirement Accounts", cash:"Cash & Savings",
+                                 crypto:"Crypto", business:"Business", other:"Other" };
+                  const k = CATS[assetInfo(a.tp).cat] || "Other";
+                  (porCat[k] = porCat[k] || []).push(a);
+                });
+                const grupos = Object.entries(porCat)
+                  .map(([cat, its]) => ({ cat, items: its,
+                    sub: its.filter(a => a.sim !== false).reduce((s, a) => s + (a.va || 0), 0) }))
+                  .sort((a, b) => b.sub - a.sub);
+                const tot = grupos.reduce((s, g) => s + g.sub, 0);
+                return grupos.flatMap(gr => [
+                  <div key={"h-" + gr.cat} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+                        gap:10,flexWrap:"wrap",padding:"9px 14px",background:T.bg3,borderRadius:8,marginTop:4}}>
+                    <span style={{fontSize:12,fontWeight:800,color:T.tx2}}>
+                      {gr.cat} <span style={{color:T.tx3,fontWeight:500}}>· {gr.items.length}</span>
+                    </span>
+                    <span style={{fontSize:12.5,fontWeight:800,color:T.gn,fontFamily:"monospace"}}>
+                      {fmt(gr.sub)}
+                      <span style={{color:T.tx3,fontWeight:500,marginLeft:6}}>
+                        {tot > 0 ? ((gr.sub/tot)*100).toFixed(0) : 0}%
+                      </span>
+                    </span>
+                  </div>,
+                  ...gr.items.map((asset)=>{
+                const idx = inversiones.indexOf(asset);
                 const info = assetInfo(asset.tp);
                 const gain = (asset.va||0)-(asset.vc||0);
                 const open = expanded===`a${idx}`;
@@ -544,7 +612,9 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                     )}
                   </div>
                 );
-              })}
+                  }),
+                ]);
+              })()}
             </div>
       )}
 
