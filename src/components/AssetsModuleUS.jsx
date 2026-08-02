@@ -356,6 +356,11 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
     const byCategory = {};
     let totalValue=0, totalBasis=0, totalGain=0, annualIncome=0, totalDeprec=0;
     inversiones.forEach(a => {
+      // 02-ago-2026 — sim:false no se respetaba acá: los activos apagados
+      // seguían sumando al patrimonio total, a las ganancias y a la
+      // depreciación. La regla es la misma en las dos jurisdicciones: lo
+      // apagado no existe para ningún cálculo.
+      if (a.sim === false) return;
       const info = assetInfo(a.tp);
       const va = a.va||0, vc = a.vc||0;
       totalValue  += va; totalBasis += vc;

@@ -16,6 +16,7 @@
  */
 
 import { useState, useMemo } from "react";
+import { totalAnualItem } from "../lib/flowHelpers.js";
 import NumberInput from "./NumberInput";
 import { US } from "../lib/jurisdictions/US.js";
 
@@ -311,7 +312,16 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 }) {
         investmentIncome = 0, w2Wages = 0, seIncome = 0;
 
     ingresos.forEach(src => {
-      const annual = (src.mensual || 0) * 12;
+      // 02-ago-2026 (Santiago: "debemos aplicar todas las mejoras de la
+      // experiencia Colombia que apliquen para USA, porque si no USA está con
+      // muchos errores que ya corregimos").
+      // Tenía razón: acá estaba el MISMO error de frecuencia de julio, y peor,
+      // porque este total alimenta el cálculo de impuestos federales:
+      //   · `mensual * 12` ignora frecuencia y vigencia — un ingreso que entra
+      //     solo de oct a dic se contaba los 12 meses;
+      //   · no filtraba sim:false, así que los apagados seguían tributando.
+      if (src.sim === false) return;
+      const annual = totalAnualItem(src);
       grossAnnual += annual;
 
       if (src.tipo === "w2")                { w2Wages += annual; taxableAnnual += Math.max(0, annual - (src.w2_401k||0)*12 - (src.w2_hsa||0)*12); }
