@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
@@ -248,9 +249,9 @@ export default function PensionBTC({trm:pTrm}){
               {modoAporte==="libre" ? (
                 <div>
                   <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE MENSUAL</div>
-                  <input value={montoLibre} onChange={e=>setMontoLibre(e.target.value.replace(/[^0-9]/g,""))}
-                    placeholder="500000" inputMode="numeric"
-                    style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
+                  <NumberInput value={montoLibre} onChange={v=>setMontoLibre(v===""?"":String(v))}
+                placeholder="500000"
+                style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
                   {Number(montoLibre)>0 && <div style={{fontSize:11.5,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
                     {fC(Number(montoLibre))}/mes · {fC(Number(montoLibre)*12*anios)} en {anios} años
                   </div>}
@@ -265,8 +266,8 @@ export default function PensionBTC({trm:pTrm}){
 
             {frecAporte==="anual" && <div>
               <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE UNA VEZ AL AÑO</div>
-              <input value={montoAnual} onChange={e=>setMontoAnual(e.target.value.replace(/[^0-9]/g,""))}
-                placeholder="6000000" inputMode="numeric"
+              <NumberInput value={montoAnual} onChange={v=>setMontoAnual(v===""?"":String(v))}
+                placeholder="6000000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
               {Number(montoAnual)>0 && <div style={{fontSize:11.5,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
                 {fC(Number(montoAnual))} al año · {fC(Number(montoAnual)*anios)} en {anios} años
@@ -275,8 +276,8 @@ export default function PensionBTC({trm:pTrm}){
 
             {frecAporte==="unico" && <div>
               <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>COMPRÁS HOY Y NO TOCÁS MÁS</div>
-              <input value={montoUnico} onChange={e=>setMontoUnico(e.target.value.replace(/[^0-9]/g,""))}
-                placeholder="20000000" inputMode="numeric"
+              <NumberInput value={montoUnico} onChange={v=>setMontoUnico(v===""?"":String(v))}
+                placeholder="20000000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
               {Number(montoUnico)>0 && <div style={{fontSize:11.5,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
                 {fC(Number(montoUnico))} hoy · {(Number(montoUnico)/trm/pBTC).toFixed(6)} BTC a precio actual
