@@ -300,6 +300,28 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   // lo que se ve. Ver BuscadorLista.jsx.
   const activos = allItems.filter((g) => g.sim !== false);
   const itemsFiltrados = filtrarPorTexto(allItems, busqueda, ["c", "cat"]);
+  // 26-jul-2026 (Santiago: "en los listados es muy difícil encontrar algún ítem
+  // porque hay muchos; qué bueno que organizara por tipologías y con
+  // subtotales"). Con 53 gastos en lista plana no se ve en qué se va la plata.
+  // Se arma una lista intercalada: {__cat} marca un encabezado de categoría con
+  // su subtotal, y detrás vienen sus ítems. Insertar los marcadores ACÁ —y no
+  // reestructurar el JSX de la tabla— evita tocar el árbol de filas, que tiene
+  // varios bloques anidados y es frágil.
+  // Orden por MONTO, no alfabético: lo que más pesa va primero.
+  const conEncabezados = (lista) => {
+    const porCat = {};
+    lista.forEach(it => { (porCat[it.cat] = porCat[it.cat] || []).push(it); });
+    const grupos = Object.entries(porCat)
+      .map(([cat, items]) => ({ cat, items,
+        sub: items.filter(g => g.sim !== false).reduce((s, g) => s + montoPromedioMensual(g), 0) }))
+      .sort((a, b) => b.sub - a.sub);
+    const tot = grupos.reduce((s, g) => s + g.sub, 0);
+    return grupos.flatMap(gr => [
+      { __cat: gr.cat, __sub: gr.sub, __n: gr.items.length,
+        __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, key: "__h_" + gr.cat },
+      ...gr.items,
+    ]);
+  };
   const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g), 0)
   // 26-jul-2026 — mismo caso que Ingresos: "Total Mensual" mostraba un PROMEDIO
   // ANUAL. Un gasto que solo cae de oct a dic aparecía prorrateado, cuando lo
@@ -604,7 +626,22 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       </div>
                     </div>
                   </td></tr>
-            ) : separarPorLimite(itemsFiltrados, plan).visibles.map((item) => (
+            ) : conEncabezados(separarPorLimite(itemsFiltrados, plan).visibles).map((item) => (
+                  item.__cat ? (
+                    <tr key={item.key} style={{ background: T.bg3 }}>
+                      <td colSpan={6} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
+                            {item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
+                          </span>
+                          <span style={{ fontSize: 12.5, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>
+                            {fm(item.__sub)}/mes
+                            <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{item.__pct.toFixed(0)}%</span>
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
               <tr key={item.key} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.key) ? T.redDim : "transparent" }}>
                 <td style={{ padding: "10px 12px" }}>
                   <input type="checkbox" checked={selected.has(item.key)} onChange={() => toggleSel(item.key)}
@@ -715,6 +752,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
                 </td>
               </tr>
+              )
             ))}
           </tbody>
         </table></div>
