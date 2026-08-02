@@ -285,7 +285,21 @@ export default function PensionBTC({trm:pTrm}){
             </div>}
           </div>
 
-          <Sl label="💼 Tu salario mensual" value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={"→ De ahí aportás "+fC(apMes)+"/mes a BTC (el 16%) · te quedan "+fC(salMes-apMes)}/>
+          {/* 26-jul-2026 (Santiago: "si elijo una vez al año o monto que yo elija,
+              según eso aparece o no el slider de salario, pues ambas variables no
+              van juntas; si elijo un pago único no se usa la de salario").
+              Tenía razón en la inconsistencia: con "Monto que yo elija" el slider
+              seguía diciendo "Tu aporte MENSUAL a BTC: $7.0M", contradiciendo el
+              campo de arriba.
+              PERO el salario NO se puede ocultar: también calcula la PENSIÓN
+              TRADICIONAL (penMes = salMes × tasa de reemplazo), que es la
+              comparación central de todo el módulo — sin él no hay contra qué
+              comparar el ahorro en BTC.
+              Solución: el slider se queda, pero cambia lo que dice según el modo.
+              Solo habla del aporte cuando el aporte SE DERIVA de él. */}
+          <Sl label={(modoAporte!=="libre" && frecAporte==="mensual") ? "💼 Tu salario mensual" : "💼 Tu salario (para comparar con la pensión)"} value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={(modoAporte!=="libre" && frecAporte==="mensual")
+            ? "→ De ahí aportás "+fC(apMes)+"/mes a BTC (el 16%) · te quedan "+fC(salMes-apMes)
+            : "Solo se usa para calcular tu pensión tradicional y compararla con BTC"}/>
         <Sl label="⏰ ¿Cuántos años vas a ahorrar?" value={anios} onChange={setAnios} min={1} max={30} step={1} display={anios+" años"} color={T.green} sub={"En "+anios+" años habrás aportado "+fC(apMes*12*anios)+" en total ("+fC(apMes)+" x "+anios*12+" meses)"}/>
         <Sl label="📈 Crecimiento anual del Bitcoin (CAGR)" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)+" al año"} color={T.orange} sub="Es el % que sube Bitcoin cada año en promedio. Histórico: 69.8% • Conservador: 20-30% • Muy conservador: 10-15%"/>
         <Sl label="💰 Precio actual de 1 Bitcoin" value={pBTC} onChange={setPBTC} min={10000} max={200000} step={1000} display={fU(pBTC)} color={T.gold} sub={"= "+fC(pBTC*trm)+" COP"}/>
