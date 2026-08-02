@@ -258,6 +258,30 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   // se ve, no lo que se calcula. Si al buscar cambiaran los totales, el
   // usuario podría leer un total parcial como si fuera el suyo.
   const allItems = filtrarPorTexto(items, busqueda, ["nombre", "tipo", "categoria"]);
+  // 26-jul-2026 (Santiago: "quedó muy bien organizado los gastos pero
+  // necesitamos también ordenar ingresos y deudas"). Mismo patrón que
+  // GastosModule: se intercalan marcadores {__cat} en la lista de datos y el
+  // render los dibuja como fila de encabezado, sin tocar el árbol de filas.
+  // Acá se agrupa por CATEGORÍA DIAN, que es como el motor fiscal piensa los
+  // ingresos y lo que determina cómo tributan.
+  const conEncabezados = (lista) => {
+    const porCat = {};
+    lista.forEach(it => {
+      const k = it.categoria || it.tipo || "Sin categoría";
+      (porCat[k] = porCat[k] || []).push(it);
+    });
+    const grupos = Object.entries(porCat)
+      .map(([cat, its]) => ({ cat, items: its,
+        sub: its.filter(i => i.sim !== false)
+               .reduce((s, i) => s + montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1), 0) }))
+      .sort((a, b) => b.sub - a.sub);
+    const tot = grupos.reduce((s, g) => s + g.sub, 0);
+    return grupos.flatMap(gr => [
+      { __cat: gr.cat, __sub: gr.sub, __n: gr.items.length,
+        __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.cat },
+      ...gr.items,
+    ]);
+  };
   const activos = items.filter((i) => i.sim !== false);
 
   // 26-jul-2026 — AUDITORÍA DE VARIABLES. "Total mensual" y "Total anual" —los
@@ -721,7 +745,22 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       </div>
                     </div>
                   </td></tr>
-                ) : separarPorLimite(allItems, plan).visibles.map((item) => (
+                ) : conEncabezados(separarPorLimite(allItems, plan).visibles).map((item) => (
+                  item.__cat ? (
+                    <tr key={item.id} style={{ background: T.bg3 }}>
+                      <td colSpan={8} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
+                            {item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
+                          </span>
+                          <span style={{ fontSize: 12.5, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>
+                            {fm(item.__sub)}/mes
+                            <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{item.__pct.toFixed(0)}%</span>
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
                   <tr key={item.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.id) ? T.greenDim : "transparent" }}>
                     <td style={{ padding: "10px 12px" }}>
                       <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)}
@@ -838,6 +877,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== item.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button></div>
                     </td>
                   </tr>
+                  )
                 ))}
               </tbody>
             </table>

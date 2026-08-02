@@ -125,6 +125,27 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
 
   const items = deudas || [];
   const activos = items.filter((d) => d.sim !== false);
+  // 26-jul-2026 (Santiago): mismo agrupamiento que Gastos e Ingresos. Acá el
+  // criterio es el TIPO de crédito y el subtotal es el SALDO, no la cuota:
+  // la pregunta en deudas es dónde está concentrado el pasivo.
+  const NOM_TP = { mortgage: "Hipoteca", loan: "Libre inversión", vehiculo: "Vehículo",
+                   leasing: "Leasing", personal: "Préstamo personal",
+                   credit_card: "Tarjeta", tarjeta: "Tarjeta", card: "Tarjeta" };
+  const conEncabezados = (lista) => {
+    const porTipo = {};
+    lista.forEach(d => { const k = NOM_TP[d.tp] || "Otro"; (porTipo[k] = porTipo[k] || []).push(d); });
+    const grupos = Object.entries(porTipo)
+      .map(([tipo, its]) => ({ tipo, items: its,
+        sub: its.filter(d => d.sim !== false)
+               .reduce((s, d) => s + (d.mt || 0) * (d.moneda === "USD" ? (trm || 4200) : 1), 0) }))
+      .sort((a, b) => b.sub - a.sub);
+    const tot = grupos.reduce((s, g) => s + g.sub, 0);
+    return grupos.flatMap(gr => [
+      { __cat: gr.tipo, __sub: gr.sub, __n: gr.items.length,
+        __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.tipo },
+      ...gr.items,
+    ]);
+  };
   const totalDeuda = activos.reduce((s, d) => s + (d.mt || 0), 0);
   const totalCuotas = activos.reduce((s, d) => s + montoPromedioMensual({ ...d, mensual: d.pg || 0 }), 0)
   // 26-jul-2026 (Santiago: "deudas: valor total, valor pago mensual y valor de
@@ -361,7 +382,22 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       </div>
                     </div>
                   </td></tr>
-              ) : separarPorLimite(items, plan).visibles.map((d) => {
+              ) : conEncabezados(separarPorLimite(items, plan).visibles).map((d) => {
+                  if (d.__cat) return (
+                    <tr key={d.id} style={{ background: T.bg3 }}>
+                      <td colSpan={10} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
+                            {d.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {d.__n}</span>
+                          </span>
+                          <span style={{ fontSize: 12.5, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>
+                            {fm(d.__sub)}
+                            <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{d.__pct.toFixed(0)}%</span>
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
                 const lk = d.la ? (inversiones || []).find((i) => i.id === d.la) : null;
                 return (
                   <tr key={d.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(d.id) ? T.redDim : "transparent" }}>
