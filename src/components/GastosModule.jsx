@@ -155,6 +155,28 @@ function fiscalSubOptions(ownerType, cat) {
         ],
       };
     }
+    // 26-jul-2026 (Santiago: "¿dónde iría un gasto de administración de
+    // propiedad?"). No había categoría para eso: "Vivienda / Arriendo oficina"
+    // mezclaba dónde vivís con los costos de los inmuebles que RENTÁS, que
+    // tienen tratamiento fiscal opuesto —unos deducen 100% contra la renta no
+    // laboral (Art. 107 ET) y otros no deducen nada—.
+    // El motor YA tenía los códigos (GAS_INMUEBLE_ADMINISTRACION, _PREDIAL,
+    // _MANTENIMIENTO, _SERVICIOS, _SEGUROS, _DEPRECIACION); lo que faltaba era
+    // una categoría en el formulario que los activara.
+    // "Inmueble arrendado" no pregunta si es personal: ya lo dice su nombre.
+    if (cat === "Inmueble arrendado") {
+      return {
+        question: "🏢 ¿Qué tipo de costo del inmueble es?",
+        help: "Todos se deducen 100% de la renta de arrendamiento (Art. 107 ET).",
+        options: [
+          { v: "GAS_INMUEBLE_ADMINISTRACION", l: "Administración / cuota de copropiedad" },
+          { v: "GAS_INMUEBLE_PREDIAL",        l: "Predial" },
+          { v: "GAS_INMUEBLE_MANTENIMIENTO",  l: "Mantenimiento y reparaciones" },
+          { v: "GAS_INMUEBLE_SERVICIOS",      l: "Servicios públicos del inmueble" },
+          { v: "GAS_INMUEBLE_SEGUROS",        l: "Seguros y pólizas del inmueble" },
+        ],
+      };
+    }
     // Gastos que pueden ser del inmueble arrendado o personales
     if (["Vivienda", "Mantenimiento", "Servicios", "Seguros", "Arrendamiento"].includes(cat)) {
       return {
@@ -880,7 +902,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const ow = (owners || []).find(o => o.id === form.owner);
                 const ownerType = ow ? ow.type : "natural";
                 setForm((p) => ({ ...p, cat: v, fiscalCode: defaultFiscalCode(ownerType, v) }));
-              }} options={[{v:"Aporte tributario",l:"🛡️ Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Impuesto",l:"🏛️ Impuesto (predial, rodamiento, ICA, otros)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
+              }} options={[{v:"Aporte tributario",l:"🛡️ Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Inmueble arrendado",l:"🏢 Costos de inmueble arrendado (admón, predial, mantenimiento)"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Impuesto",l:"🏛️ Impuesto (predial, rodamiento, ICA, otros)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
 
             {/* 26-jul-2026 (Santiago): "que pueda ingresarlo en la moneda que
