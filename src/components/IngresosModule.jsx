@@ -1,5 +1,6 @@
 import { useState } from "react";
 import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
+import BarraComposicion from "./BarraComposicion";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import NumberInput from "./NumberInput";
@@ -657,6 +658,33 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
         {/* Table with checkboxes */}
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
+            {/* 26-jul-2026 (Santiago): misma barra del dashboard, agrupando por
+                categoría DIAN — que es como el motor fiscal ya piensa los
+                ingresos, y lo que determina cómo tributan. */}
+            {(() => {
+              const grupos = {};
+              activos.forEach(i => {
+                const k = i.categoria || i.tipo || "Sin categoría";
+                grupos[k] = (grupos[k] || 0) + montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1);
+              });
+              const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
+              if (datos.length < 2) return null;
+              const tot = datos.reduce((s, d) => s + d.value, 0);
+              const PAL = ["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308","#f97316"];
+              return (
+                <div style={{ marginBottom: 16 }}>
+                  <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={38} />
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 8 }}>
+                    {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
+                      <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.txt3 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: 2, background: PAL[i % PAL.length], flexShrink: 0 }} />
+                        {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             <BuscadorLista valor={busqueda} onChange={setBusqueda} T={T}
               total={items.length} filtrados={allItems.length} />
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>

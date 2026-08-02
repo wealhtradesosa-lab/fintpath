@@ -9,6 +9,7 @@ import { exportDeudasExcel } from "../lib/excelExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import FrecuenciaSelector from "./FrecuenciaSelector";
 import TablaMensual from "./TablaMensual";
+import BarraComposicion from "./BarraComposicion";
 import { MESES, costoCredito, montoPromedioMensual, cuotaFija, tasaDesdeCuota } from "../lib/flowHelpers.js";
 
 const T = {
@@ -284,6 +285,35 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         ))}
       </div>
 
+      {/* 26-jul-2026 (Santiago): barra por tipo de crédito. En deudas la
+          proporción que importa es del SALDO, no de la cuota: es lo que dice
+          dónde está concentrado el pasivo. */}
+      {(() => {
+        const NOM = { mortgage: "Hipoteca", loan: "Préstamo", personal: "Personal", tarjeta: "Tarjeta", card: "Tarjeta" };
+        const grupos = {};
+        (items || []).filter(d => d.sim !== false && (d.mt || 0) > 0).forEach(d => {
+          const k = NOM[d.tp] || "Otro";
+          grupos[k] = (grupos[k] || 0) + (d.mt || 0) * (d.moneda === "USD" ? (trm || 4200) : 1);
+        });
+        const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
+        if (datos.length < 2) return null;
+        const tot = datos.reduce((s, d) => s + d.value, 0);
+        const PAL = ["#ef4444","#f97316","#a78bfa","#3b82f6","#ec4899","#06b6d4"];
+        return (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, color: T.txt3, marginBottom: 6, fontWeight: 600 }}>DÓNDE ESTÁ TU DEUDA</div>
+            <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={38} />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 8 }}>
+              {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
+                <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.txt3 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: PAL[i % PAL.length], flexShrink: 0 }} />
+                  {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
       {/* Table */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>

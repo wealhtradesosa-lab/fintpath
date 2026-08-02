@@ -1,5 +1,6 @@
 import { useState } from "react";
 import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
+import BarraComposicion from "./BarraComposicion";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import { montoPromedioMensual , montoDelMes} from "../lib/flowHelpers.js";
@@ -588,6 +589,34 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
       {/* Table with checkboxes */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+        {/* 26-jul-2026 (Santiago: "sería muy genial una barra o gráfico que
+            muestre por tipologías cómo están esos gastos o ingresos en cada
+            sección"). Se reutiliza BarraComposicion, el mismo componente del
+            dashboard: una sola lectura de proporción para toda la app en vez
+            de inventar un gráfico distinto por pantalla.
+            Usa la MISMA agrupación que la lista de abajo, así que lo que se ve
+            en la barra es exactamente lo que se lee en la tabla. */}
+        {(() => {
+          const grupos = {};
+          activos.forEach(g => { grupos[g.cat] = (grupos[g.cat] || 0) + montoPromedioMensual(g); });
+          const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
+          if (datos.length < 2) return null;   // con una sola categoría no dice nada
+          const tot = datos.reduce((s, d) => s + d.value, 0);
+          const PAL = ["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308","#f97316"];
+          return (
+            <div style={{ marginBottom: 16 }}>
+              <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={38} />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 8 }}>
+                {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
+                  <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.txt3 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: PAL[i % PAL.length], flexShrink: 0 }} />
+                    {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
         <BuscadorLista valor={busqueda} onChange={setBusqueda} T={T}
           total={allItems.length} filtrados={itemsFiltrados.length} />
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600 }}>
