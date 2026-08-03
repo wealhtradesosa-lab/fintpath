@@ -1,3 +1,4 @@
+import { t as textos } from "./hallazgosI18n.js";
 // ════════════════════════════════════════════════════════════════════════════
 // hallazgos.js — Lo que el asesor VE sin que se lo pregunten.
 //
@@ -30,7 +31,7 @@ const costoAnualDeuda = (saldo, tasaEA) => saldo * (tasaEA / 100);
  * quieta al 9% mientras se paga un crédito al 23% es perder la diferencia
  * todos los años, aunque las dos cifras se vean sanas por separado.
  */
-function deudaCaraVsAhorro(user, trm) {
+function deudaCaraVsAhorro(user, trm, L = textos("es")) {
   const deudas = activos(user?.deu);
   const invs = activos(user?.inv);
   if (!deudas.length || !invs.length) return null;
@@ -89,12 +90,12 @@ function deudaCaraVsAhorro(user, trm) {
   return {
     id: "deuda_cara_vs_ahorro",
     metrica: "$" + Math.round(impacto / 1e6) + "M",
-    unidad: "al año en juego",
-    titulo: `${cara.nombre} al ${cara.tasa.toFixed(1)}%`,
-    detalle: `Tenés liquidez disponible mientras pagás una tasa del ${cara.tasa.toFixed(2)}% E.A. Abonar a capital rinde ${diferencial.toFixed(1)} puntos más que dejar la plata quieta.`,
+    unidad: L.deudaCara.unidad,
+    titulo: L.deudaCara.titulo(cara.nombre, cara.tasa),
+    detalle: L.deudaCara.detalle(cara.tasa, diferencial, impacto),
     impactoAnual: impacto,
     base: `Tasa del crédito (${cara.tasa.toFixed(2)}% E.A.) vs. rendimiento de tu efectivo y CDT (${RENDIMIENTO_TIPICO.toFixed(2)}% E.A.), ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.`,
-    accion: { label: "Ver mis deudas", pagina: "deu" },
+    accion: { label: L.deudaCara.accion, pagina: "deu" },
     tono: "oportunidad",
   };
 }
@@ -103,7 +104,7 @@ function deudaCaraVsAhorro(user, trm) {
  * Concentración patrimonial: un solo activo pesando demasiado.
  * No es un error — puede ser deliberado — pero merece verse.
  */
-function concentracion(user, trm, patrimonioTotal) {
+function concentracion(user, trm, patrimonioTotal, L = textos("es")) {
   const invs = activos(user?.inv);
   if (invs.length < 2 || patrimonioTotal <= 0) return null;
 
@@ -118,9 +119,9 @@ function concentracion(user, trm, patrimonioTotal) {
   return {
     id: "concentracion",
     metrica: pct.toFixed(0) + "%",
-    unidad: "en un solo activo",
+    unidad: L.concentracion.unidad,
     titulo: mayor.nombre,
-    detalle: "Un activo que pesa casi la mitad del total ata tu bienestar a un solo mercado. No es un error si es deliberado, pero conviene tenerlo presente al decidir el próximo movimiento.",
+    detalle: L.concentracion.detalle,
     // Sin cifra de ahorro: no es una oportunidad de plata sino de riesgo.
     impactoAnual: 0,
     riesgo: true,
@@ -135,7 +136,7 @@ function concentracion(user, trm, patrimonioTotal) {
  * Flujo de caja negativo. El hallazgo más urgente que puede existir: si sale
  * más de lo que entra, cualquier otra optimización es secundaria.
  */
-function flujoNegativo(t) {
+function flujoNegativo(t, L = textos("es")) {
   const cf = num(t?.cashFlow);
   if (cf >= 0) return null;
   const deficit = Math.abs(cf);
@@ -144,11 +145,11 @@ function flujoNegativo(t) {
     id: "flujo_negativo",
     metrica: "-" + Math.round(deficit / 1e6) + "M",
     unidad: "por mes",
-    titulo: "Gastás más de lo que entra",
-    detalle: `Cada mes salen ${Math.round(deficit).toLocaleString("es-CO")} pesos más de los que ingresan. Si no viene de un ahorro previsto, el patrimonio se erosiona aunque los activos se vean bien.`,
+    titulo: L.flujoNegativo.titulo,
+    detalle: L.flujoNegativo.detalle(deficit),
     impactoAnual: deficit * 12,
-    base: "Ingresos menos egresos totales del mes, según tus datos cargados",
-    accion: { label: "Ver egresos", pagina: "gas" },
+    base: L.flujoNegativo.base,
+    accion: { label: L.flujoNegativo.accion, pagina: "gas" },
     tono: "riesgo",
   };
 }
@@ -158,7 +159,7 @@ function flujoNegativo(t) {
  * Umbral de 3 meses — convención de planeación financiera, no norma legal.
  * Se declara como tal en `base`: es un criterio, no un artículo.
  */
-function fondoEmergencia(user, t, trm) {
+function fondoEmergencia(user, t, trm, L = textos("es")) {
   const egresos = num(t?.egresosTotales);
   if (egresos <= 0) return null;
 
@@ -174,9 +175,9 @@ function fondoEmergencia(user, t, trm) {
   return {
     id: "fondo_emergencia",
     metrica: meses.toFixed(1),
-    unidad: "meses de colchón",
-    titulo: meses < 1 ? "Sin colchón" : "Colchón corto",
-    detalle: `Con tus egresos actuales, el efectivo disponible alcanza para ${meses.toFixed(1)} meses. Para llegar a tres meses de respaldo faltarían ${Math.round(faltante).toLocaleString("es-CO")} pesos.`,
+    unidad: L.fondoEmergencia.unidad,
+    titulo: L.fondoEmergencia.titulo(meses),
+    detalle: L.fondoEmergencia.detalle(meses, faltante),
     impactoAnual: 0,
     base: "Efectivo y CDT sobre egresos mensuales. El umbral de 3 meses es una convención de planeación financiera, no una norma",
     accion: { label: "Ver patrimonio", pagina: "inv" },
@@ -188,7 +189,7 @@ function fondoEmergencia(user, t, trm) {
  * Carga de deuda sobre ingreso. Umbral 35% — convención de la banca para
  * capacidad de endeudamiento, declarada como tal.
  */
-function cargaDeuda(t) {
+function cargaDeuda(t, L = textos("es")) {
   const cuotas = num(t?.cuotasDeudas), bruto = num(t?.brutoTotal);
   if (bruto <= 0 || cuotas <= 0) return null;
   const pct = (cuotas / bruto) * 100;
@@ -197,11 +198,11 @@ function cargaDeuda(t) {
     id: "carga_deuda",
     metrica: pct.toFixed(0) + "%",
     unidad: "de tu ingreso",
-    titulo: "Cuotas muy altas",
-    detalle: "Por encima del 35% la mayoría de los bancos considera que no hay capacidad para más crédito, y el margen para imprevistos se vuelve muy estrecho.",
+    titulo: L.cargaDeuda.titulo,
+    detalle: L.cargaDeuda.detalle,
     impactoAnual: 0,
     base: "Cuotas de deudas sobre ingreso bruto. El umbral de 35% es el criterio habitual de la banca para capacidad de endeudamiento",
-    accion: { label: "Ver deudas", pagina: "deu" },
+    accion: { label: L.cargaDeuda.accion, pagina: "deu" },
     tono: "riesgo",
   };
 }
@@ -215,7 +216,7 @@ function cargaDeuda(t) {
 // preocuparse. Sin eso el producto se siente como una lista de reproches.
 // ════════════════════════════════════════════════════════════════════════════
 
-function colchonSolido(user, t, trm) {
+function colchonSolido(user, t, trm, L = textos("es")) {
   const egresos = num(t?.egresosTotales);
   if (egresos <= 0) return null;
   const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro"];
@@ -228,14 +229,14 @@ function colchonSolido(user, t, trm) {
     id: "colchon_solido", bueno: true, tono: "bueno",
     metrica: meses >= 24 ? "24+" : meses.toFixed(0),
     unidad: "meses",
-    titulo: "Colchón sólido",
-    detalle: "Tu efectivo cubre bien un período sin ingresos.",
-    base: "Efectivo y CDT sobre egresos mensuales",
+    titulo: L.colchonSolido.titulo,
+    detalle: L.colchonSolido.detalle,
+    base: L.colchonSolido.base,
     impactoAnual: 0,
   };
 }
 
-function flujoSano(t) {
+function flujoSano(t, L = textos("es")) {
   const cf = num(t?.cashFlow), bruto = num(t?.brutoTotal);
   if (cf <= 0 || bruto <= 0) return null;
   const tasa = (cf / bruto) * 100;
@@ -244,14 +245,14 @@ function flujoSano(t) {
     id: "flujo_sano", bueno: true, tono: "bueno",
     metrica: tasa.toFixed(0) + "%",
     unidad: "de tu ingreso",
-    titulo: "Ahorrás cada mes",
-    detalle: `Te quedan ${Math.round(cf).toLocaleString("es-CO")} pesos libres al mes.`,
-    base: "Flujo de caja sobre ingreso bruto",
+    titulo: L.flujoSano.titulo,
+    detalle: L.flujoSano.detalle(cf),
+    base: L.flujoSano.base,
     impactoAnual: 0,
   };
 }
 
-function deudaControlada(t) {
+function deudaControlada(t, L = textos("es")) {
   const cuotas = num(t?.cuotasDeudas), bruto = num(t?.brutoTotal);
   if (bruto <= 0 || cuotas <= 0) return null;
   const pct = (cuotas / bruto) * 100;
@@ -260,9 +261,9 @@ function deudaControlada(t) {
     id: "deuda_controlada", bueno: true, tono: "bueno",
     metrica: pct.toFixed(0) + "%",
     unidad: "de tu ingreso",
-    titulo: "Deuda bajo control",
-    detalle: "Tus cuotas dejan margen amplio para imprevistos.",
-    base: "Cuotas sobre ingreso bruto. Referencia habitual de la banca: hasta 35%",
+    titulo: L.deudaControlada.titulo,
+    detalle: L.deudaControlada.detalle,
+    base: L.deudaControlada.base,
     impactoAnual: 0,
   };
 }
@@ -278,18 +279,20 @@ function deudaControlada(t) {
  * @param {string[]} p.descartados   ids que el usuario ya descartó
  * @param {number} p.max
  */
-export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patrimonioTotal = 0, baseNormativa = "Estatuto Tributario", totales = null, descartados = [], max = 3 } = {}) {
+export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patrimonioTotal = 0, baseNormativa = "Estatuto Tributario", idioma = "es", totales = null, descartados = [], max = 3 } = {}) {
+  // 02-ago-2026 — diccionario de textos según jurisdicción. Ver hallazgosI18n.js
+  const L = textos(idioma);
   if (!user) return [];
 
   const propios = [
-    flujoNegativo(totales),
-    flujoSano(totales),
-    colchonSolido(user, totales, trm),
-    deudaControlada(totales),
-    deudaCaraVsAhorro(user, trm),
-    cargaDeuda(totales),
-    fondoEmergencia(user, totales, trm),
-    concentracion(user, trm, patrimonioTotal),
+    flujoNegativo(totales, L),
+    flujoSano(totales, L),
+    colchonSolido(user, totales, trm, L),
+    deudaControlada(totales, L),
+    deudaCaraVsAhorro(user, trm, L),
+    cargaDeuda(totales, L),
+    fondoEmergencia(user, totales, trm, L),
+    concentracion(user, trm, patrimonioTotal, L),
   ].filter(Boolean);
 
   // Las recomendaciones fiscales ya vienen con cifra y artículo citado.
@@ -310,7 +313,7 @@ export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patri
       // optimizador de Estados Unidos. Un usuario colombiano hacía clic en
       // una recomendación del ET y aterrizaba en una pantalla que dice
       // "próximamente". El destino correcto es "tax" (Impuestos).
-      accion: { label: "Ver impuestos", pagina: "tax" },
+      accion: { label: L.verImpuestos, pagina: "tax" },
       tono: "oportunidad",
     }));
 

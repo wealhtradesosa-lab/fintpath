@@ -247,6 +247,31 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
           totales={{brutoTotal:t.ti, retencionMensual:0, impuestoNeto:0}} />;
       }catch(e){ return null } })()}
 
+      {/* 02-ago-2026 — asesor proactivo en US, ya con textos en inglés.
+          Los 8 detectores de hallazgos.js razonan sobre conceptos universales,
+          así que no hubo que reescribir lógica: solo separar los textos por
+          idioma en hallazgosI18n.js y pasar `idioma`.
+          Se perdió una vez al mover el Sankey al simulador; queda con
+          verificación de forma (alertas/buenas) para que un cambio de
+          estructura no lo deje mudo en silencio. */}
+      {(()=>{ try{
+        const hs = generarHallazgos({
+          user: u,
+          recomendaciones: [],
+          trm: 1,
+          patrimonioTotal: t.ab || 0,
+          baseNormativa: "IRS / Publication 17",
+          idioma: "en",
+          totales: t,
+          max: 4,
+        });
+        const lista = (hs?.alertas || []).concat(hs?.buenas || []);
+        if (!lista.length) return null;
+        return <div style={{marginBottom:14}}>
+          <HallazgosProactivos hallazgos={hs} T={T} onIr={(pg)=>setPg(pg)} />
+        </div>;
+      }catch(e){ return null } })()}
+
       {/* Financial Freedom Level */}
       <Card s={{padding:20,marginBottom:14}}>
         <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>
