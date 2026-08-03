@@ -641,6 +641,37 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
               <button onClick={()=>{setFormL(EMPTY_LIAB);setShowForm("liab")}} style={{background:T.gn,color:"#000",border:"none",padding:"12px 28px",borderRadius:10,cursor:"pointer",fontWeight:700}}>+ Add First Liability</button>
             </div>
           : <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {/* 03-ago-2026 (Santiago: "¿por qué no hay gráfico en los
+                  liabilities?"). Assets tenía barra de composición; Liabilities
+                  quedó como lista plana. Mismo tratamiento, midiendo sobre el
+                  SALDO: es lo que dice dónde está concentrado el pasivo. */}
+              {(() => {
+                const NOM = { mortgage:"Mortgage", heloc:"HELOC", student_loan:"Student Loans",
+                              investment_margin:"Margin Loan", business_loan:"Business Loan",
+                              auto:"Auto Loans", credit_card:"Credit Cards", other_debt:"Other Debt" };
+                const g = {};
+                deudas.filter(d=>d.sim!==false).forEach(d=>{
+                  const k = NOM[d.tp] || "Other Debt"; g[k] = (g[k]||0) + (d.mt||0);
+                });
+                const datos = Object.entries(g).map(([name,value])=>({name,value})).filter(d=>d.value>0);
+                if (datos.length < 2) return null;
+                const tot = datos.reduce((s,d)=>s+d.value,0);
+                const PAL = ["#ef4444","#f97316","#a78bfa","#3b82f6","#ec4899","#06b6d4","#eab308"];
+                return (
+                  <div style={{marginBottom:8}}>
+                    <div style={{fontSize:11,color:T.tx3,marginBottom:6,fontWeight:600}}>WHERE YOUR DEBT IS</div>
+                    <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
+                    <div style={{display:"flex",flexWrap:"wrap",gap:"7px 16px",marginTop:8}}>
+                      {[...datos].sort((a,b)=>b.value-a.value).map((d,i)=>(
+                        <span key={d.name} style={{display:"flex",alignItems:"center",gap:7,fontSize:12.5,color:T.tx2}}>
+                          <span style={{width:10,height:10,borderRadius:3,background:PAL[i%PAL.length],flexShrink:0}}/>
+                          {d.name} <strong style={{fontFamily:"monospace"}}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               {deudas.map((liab,idx)=>{
                 const info = liabInfo(liab.tp);
                 const open = expanded===`l${idx}`;
