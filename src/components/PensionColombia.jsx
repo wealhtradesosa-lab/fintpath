@@ -306,22 +306,6 @@ export default function PensionBTC({trm:pTrm}){
               </div>}
             </div>}
           </div>
-
-          {/* 26-jul-2026 (Santiago: "si elijo una vez al año o monto que yo elija,
-              según eso aparece o no el slider de salario, pues ambas variables no
-              van juntas; si elijo un pago único no se usa la de salario").
-              Tenía razón en la inconsistencia: con "Monto que yo elija" el slider
-              seguía diciendo "Tu aporte MENSUAL a BTC: $7.0M", contradiciendo el
-              campo de arriba.
-              PERO el salario NO se puede ocultar: también calcula la PENSIÓN
-              TRADICIONAL (penMes = salMes × tasa de reemplazo), que es la
-              comparación central de todo el módulo — sin él no hay contra qué
-              comparar el ahorro en BTC.
-              Solución: el slider se queda, pero cambia lo que dice según el modo.
-              Solo habla del aporte cuando el aporte SE DERIVA de él. */}
-          <Sl label={(modoAporte!=="libre" && frecAporte==="mensual") ? "💼 Tu salario mensual" : "💼 Tu salario (para comparar con la pensión)"} value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={(modoAporte!=="libre" && frecAporte==="mensual")
-            ? "→ De ahí aportás "+fC(apMes)+"/mes a BTC (el 16%) · te quedan "+fC(salMes-apMes)
-            : "Solo se usa para calcular tu pensión tradicional y compararla con BTC"}/>
           <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
             <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>2 · TU HORIZONTE</div>
             <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Cuánto tiempo dejás trabajar el dinero</div>
@@ -337,6 +321,16 @@ export default function PensionBTC({trm:pTrm}){
             <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>4 · COMPARACIÓN CON LA PENSIÓN</div>
             <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Contra qué se mide tu ahorro en Bitcoin</div>
           </div>
+          {/* 03-ago-2026 (Santiago: "si estoy aportando una vez, tal vez esa
+              opción debería desaparecer"). Tenía razón: el slider de salario
+              vivía en "1 · TU APORTE", pero cuando el aporte es un pago único o
+              un monto propio, el salario NO define el aporte — solo sirve para
+              calcular la pensión tradicional contra la que se compara.
+              No se puede ocultar (sin él no hay pensión con qué comparar), así
+              que se MUEVE a la sección 4, donde sí pertenece. En modo "% de mi
+              salario" el bloque 1 muestra el aporte igual, con su propio texto. */}
+
+                    <Sl label="💼 Tu salario mensual" value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={"Con este salario tu pensión sería "+fC(penMes)+"/mes. Es contra eso que se compara el ahorro en BTC."}/>
       <Sl label={"🏦 ¿Cuánto retirar al año? (Regla del "+regla+"%)"} value={regla} onChange={setRegla} min={2} max={8} step={0.5} display={regla+"% anual"} color={T.orange} sub={"Si tienes $100M en BTC y retiras "+regla+"%, sacas $"+Math.round(100*regla/100)+"M al año ($"+ Math.round(100*regla/100/12*10)/10 +"M/mes). El resto sigue creciendo. A menor %, tu capital dura para siempre."}/>
         <Sl label={"📊 Tasa de reemplazo pensional"} value={tasaR} onChange={setTasaR} min={30} max={80} step={1} display={tasaR+"%"} color={T.blue} sub={"Es el % de tu salario que recibirías como pensión. En Colombia varía entre 55% y 80% según semanas cotizadas."}/>
       </Cd>
