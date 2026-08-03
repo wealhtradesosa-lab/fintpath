@@ -66,6 +66,8 @@ export default function SankeyFlujo({
     impuesto: "Impuesto de renta",       impuestoNota: "saldo a pagar",
     aportes: "Aportes obligatorios",     aportesNota: "salud y pensión",
     cuotas: "Cuotas de deuda",           cuotasNota: "capital + interés",
+    titulo: "💧 ¿Por dónde se va tu plata?",
+    pie: (monto) => `El ancho de cada cinta es la plata: entran ${monto}.`,
     ...(labels || {}),
   };
   push(L.retencion, retencion, "#f97316", L.retencionNota);
@@ -103,13 +105,19 @@ export default function SankeyFlujo({
 
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: "16px 18px" }}>
-      <div style={{ fontSize: 14.5, fontWeight: 800, color: T.tx }}>💧 ¿Por dónde se va tu plata?</div>
+      {/* 03-ago-2026 (captura de Santiago en móvil): el título y el pie estaban
+          fijos en español, así que en la vista US salía "¿Por dónde se va tu
+          plata?" seguido de "Where your money goes". Ahora vienen en `labels`
+          como los demás rótulos. */}
+      <div style={{ fontSize: 14.5, fontWeight: 800, color: T.tx }}>{L.titulo}</div>
       <div style={{ fontSize: 11.5, color: T.tx3, marginTop: 2, marginBottom: 12 }}>
-        {subtitulo} El ancho de cada cinta es la plata: entran {fmt(Math.round(bruto))}.
+        {subtitulo} {L.pie(fmt(Math.round(bruto)))}
       </div>
 
       <div style={{ overflowX: "auto" }}>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", minWidth: 380, height: "auto" }}>
+        <svg viewBox={`0 0 ${W} ${H}`} // 03-ago-2026 — minWidth:380 desbordaba la página en pantallas de 375px.
+        // 300 entra en cualquier teléfono y el overflowX del padre resuelve el resto.
+        style={{ width: "100%", minWidth: 300, height: "auto" }}>
           {nF.map((n, i) => {
             const d = CINTA(xF + NODO_W, n.y, xHub, anclaIn, n.h); anclaIn += n.h;
             return <path key={`lf${i}`} d={d} fill="#22c55e" opacity={hover === null || hover === `f${i}` ? 0.26 : 0.06}

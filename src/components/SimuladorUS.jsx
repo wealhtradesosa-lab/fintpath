@@ -77,8 +77,11 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
   const diff = value - base;
   return (
     <div style={{marginBottom:4,background:color+"10",padding:"8px 12px",borderRadius:8,borderLeft:"3px solid "+color}}>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-        <span style={{fontSize:12,color:T.tx2,fontWeight:500}}>
+      {/* 03-ago-2026 (captura en móvil): sin flexWrap, un nombre largo como
+          "W-2 — VP Engineering" empujaba el monto contra el borde y quedaban
+          pegados. Ahora el monto baja de línea cuando no cabe. */}
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3,gap:8,flexWrap:"wrap",alignItems:"baseline"}}>
+        <span style={{fontSize:12,color:T.tx2,fontWeight:500,minWidth:0,flex:"1 1 auto"}}>
           {label} {sub && <span style={{fontSize:10,color:T.tx3}}>{sub}</span>}
         </span>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -376,7 +379,14 @@ export default function SimuladorUS({ user, totals }) {
       </div>
 
       {/* Sliders grid */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+      {/* 03-ago-2026 (Santiago: "el simulador no se ve bien en US en el cel").
+          Esta grilla forzaba DOS COLUMNAS siempre, incluso en 375px: cada
+          tarjeta quedaba en ~170px, y adentro van sliders con etiqueta y monto.
+          Ilegible.
+          auto-fit con minmax deja que el navegador decida: dos columnas cuando
+          hay espacio, una cuando no. Sin listeners de resize ni media queries
+          en JS — el CSS ya sabe hacer esto. */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))",gap:16,marginBottom:20}}>
 
         {/* Income sliders */}
         {ingresos.length > 0 && (
@@ -433,12 +443,14 @@ export default function SimuladorUS({ user, totals }) {
               cuotas={simT.tc||0}
               gastosCats={gastosCats}
               cashFlow={simT.cf||0}
-              subtitulo="Where your money goes, per month."
+              subtitulo="Per month."
               labels={{
                 retencion:"Federal withholding", retencionNota:"never hits your account",
                 impuesto:"Taxes", impuestoNota:"federal + FICA",
                 aportes:"Retirement contributions", aportesNota:"401(k), IRA",
                 cuotas:"Debt payments", cuotasNota:"principal + interest",
+                titulo:"💧 Where your money goes",
+                pie:(monto)=>`Each ribbon's width is the money: ${monto} coming in.`,
               }}
               fmt={fm}
               T={{card:T.card, border:T.border, tx:T.tx, tx2:T.tx2, tx3:T.tx3}}

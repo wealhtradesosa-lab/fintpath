@@ -1084,15 +1084,15 @@ export default function FinPath(){
       // Cambiar a CA o NY desde el selector muestra el impacto del state tax.
       nd.taxConfig={filingStatus:"single",state:"TX"};
       nd.ingresos=[
-        {id:"us_ig1",nombre:"W-2 — VP Engineering",categoria:"Salario",mensual:18500,tipo:"fijo",fuente:"Austin Tech Co.",owner:"own_1",moneda:"USD"},
+        {id:"us_ig1",nombre:"W-2 — VP Engineering",categoria:"Salary",mensual:18500,tipo:"fijo",fuente:"Austin Tech Co.",owner:"own_1",moneda:"USD"},
         // Bono anual en marzo: se ve el pico en el flujo del año.
-        {id:"us_ig2",nombre:"Annual Bonus",categoria:"Salario",mensual:65000,tipo:"variable",frecuencia:"anual",mesPago:3,fuente:"Austin Tech Co.",owner:"own_1",moneda:"USD"},
-        {id:"us_ig3",nombre:"Rental Income — Duplex",categoria:"Arriendo",mensual:3400,tipo:"fijo",fuente:"East Austin duplex",owner:"own_1",moneda:"USD"},
+        {id:"us_ig2",nombre:"Annual Bonus",categoria:"Salary",mensual:65000,tipo:"variable",frecuencia:"anual",mesPago:3,fuente:"Austin Tech Co.",owner:"own_1",moneda:"USD"},
+        {id:"us_ig3",nombre:"Rental Income — Duplex",categoria:"Rental",mensual:3400,tipo:"fijo",fuente:"East Austin duplex",owner:"own_1",moneda:"USD"},
         // Consultoría que varía mes a mes: el caso que ninguna app modela bien.
-        {id:"us_ig4",nombre:"1099-NEC — Consulting",categoria:"Honorarios",mensual:0,tipo:"variable",frecuencia:"variable",fuente:"Advisory clients",owner:"own_1",moneda:"USD",
+        {id:"us_ig4",nombre:"1099-NEC — Consulting",categoria:"Self-employed",mensual:0,tipo:"variable",frecuencia:"variable",fuente:"Advisory clients",owner:"own_1",moneda:"USD",
          montosMensuales:[4200,2800,6500,3100,8200,4400,3900,7100,5200,9500,11000,6800]},
-        {id:"us_ig5",nombre:"Dividends — Index Funds",categoria:"Dividendos",mensual:640,tipo:"variable",fuente:"Vanguard",owner:"own_1",moneda:"USD"},
-        {id:"us_ig6",nombre:"Interest — HYSA",categoria:"Rendimiento",mensual:305,tipo:"fijo",fuente:"Marcus HYSA",owner:"own_1",moneda:"USD"},
+        {id:"us_ig5",nombre:"Dividends — Index Funds",categoria:"Dividends",mensual:640,tipo:"variable",fuente:"Vanguard",owner:"own_1",moneda:"USD"},
+        {id:"us_ig6",nombre:"Interest — HYSA",categoria:"Interest",mensual:305,tipo:"fijo",fuente:"Marcus HYSA",owner:"own_1",moneda:"USD"},
       ];
       // 02-ago-2026 (Santiago: "para el modelo de USA ponga que el demo tenga
       // un capital mayor, al menos 2 MM USD"). El demo anterior sumaba $90.200
