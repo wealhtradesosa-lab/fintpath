@@ -278,7 +278,7 @@ function deudaControlada(t) {
  * @param {string[]} p.descartados   ids que el usuario ya descartó
  * @param {number} p.max
  */
-export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patrimonioTotal = 0, totales = null, descartados = [], max = 3 } = {}) {
+export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patrimonioTotal = 0, baseNormativa = "Estatuto Tributario", totales = null, descartados = [], max = 3 } = {}) {
   if (!user) return [];
 
   const propios = [
@@ -300,7 +300,12 @@ export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patri
       titulo: r.titulo,
       detalle: r.descripcion,
       impactoAnual: num(r.ahorroAnualEstimado),
-      base: r.base || "Estatuto Tributario",
+      // 02-ago-2026 — el único texto de este motor atado a Colombia. Los 8
+    // detectores razonan sobre conceptos universales (deuda cara vs ahorro,
+    // concentración, fondo de emergencia), así que sirven igual en US: solo
+    // había que no afirmar "Estatuto Tributario" en la jurisdicción
+    // equivocada.
+    base: r.base || baseNormativa,
       // 25-jul-2026: apuntaba a "taxopt", que es TaxOptimizerUS — el
       // optimizador de Estados Unidos. Un usuario colombiano hacía clic en
       // una recomendación del ET y aterrizaba en una pantalla que dice

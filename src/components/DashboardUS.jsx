@@ -5,6 +5,8 @@
 import { useMemo } from "react";
 import AnoEnCurso from "./AnoEnCurso";
 import SankeyFlujo from "./SankeyFlujo";
+import HallazgosProactivos from "./HallazgosProactivos";
+import { generarHallazgos } from "../lib/hallazgos.js";
 import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -279,6 +281,40 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
             />
           </div>
         );
+      }catch(e){ return null } })()}
+
+      {/* 02-ago-2026 — asesor proactivo en US. Los 8 detectores de
+          hallazgos.js razonan sobre conceptos UNIVERSALES —deuda cara contra
+          rendimiento del ahorro, concentración de patrimonio, fondo de
+          emergencia, carga de deuda— así que no hubo que reescribirlos.
+          Lo único atado a Colombia era la frase "Estatuto Tributario" al pie
+          de cada hallazgo; ahora se pasa por `baseNormativa`.
+          trm=1 porque en US los montos ya están en dólares. */}
+      {(()=>{ try{
+        const hs = generarHallazgos({
+          user: u,
+          recomendaciones: [],
+          trm: 1,
+          patrimonioTotal: t.ab || 0,
+          baseNormativa: "IRS / Publication 17",
+          totales: t,
+          max: 4,
+        });
+        // 02-ago-2026 — DESACTIVADO A PROPÓSITO, no es un olvido.
+        // Los 8 detectores sirven igual en US (razonan sobre conceptos
+        // universales), pero sus 14 textos están en español y con formato
+        // toLocaleString("es-CO") + la palabra "pesos" incrustada. Mostrarlos
+        // acá rompería la regla de que cada jurisdicción habla su idioma, y
+        // una traducción apurada dejaría "$1.500.000 pesos" en la vista
+        // americana — peor que no tenerlo.
+        // Para activarlo: traducir los strings de hallazgos.js con un mapa de
+        // idioma, igual que se hizo con `labels` en SankeyFlujo.
+        return null;
+        // eslint-disable-next-line no-unreachable
+        if (!hs || !hs.length) return null;
+        return <div style={{marginBottom:14}}>
+          <HallazgosProactivos hallazgos={hs} T={T} onIr={(pg)=>setPg(pg)} />
+        </div>;
       }catch(e){ return null } })()}
 
       {/* Financial Freedom Level */}
