@@ -48,6 +48,7 @@ function isStandalone() {
 }
 
 export default function PWAInstallPrompt() {
+  const [hayActualizacion, setHayActualizacion] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
@@ -84,10 +85,16 @@ export default function PWAInstallPrompt() {
       }
     };
 
+    // 02-ago-2026 (tras el "fmt is not defined" que vio Santiago con un chunk
+    // viejo). Antes acá se hacía window.location.reload() automático: si el
+    // usuario estaba cargando un gasto o escribiendo en un formulario, perdía
+    // lo que llevaba. Y si NO se recargaba, la pestaña quedaba pidiendo chunks
+    // de una versión que ya no existe — que es exactamente el error que vio.
+    // Ahora se avisa y decide el usuario.
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (reloadGuard) return;
       reloadGuard = true;
-      window.location.reload();
+      setHayActualizacion(true);
     });
 
     if (document.readyState === "complete") register();
@@ -158,6 +165,39 @@ export default function PWAInstallPrompt() {
     setShowBanner(false);
     setShowIOSModal(false);
   };
+
+  // ─── Hay versión nueva ──────────────────────────────────────────────────
+  // 02-ago-2026. Va ANTES del banner de instalación: si hay una versión nueva
+  // esperando, eso es más urgente que invitar a instalar la app. Una pestaña
+  // vieja pidiendo chunks que ya no existen produce pantallas rotas.
+  if (hayActualizacion) {
+    return (
+      <div style={{
+        position: "fixed", bottom: 16, left: 16, right: 16, maxWidth: 440,
+        margin: "0 auto", background: "#111113", border: "1px solid #22c55e",
+        borderRadius: 14, padding: "14px 16px", zIndex: 9999,
+        display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+      }}>
+        <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: "#fafafa" }}>
+            Hay una versión nueva
+          </div>
+          <div style={{ fontSize: 11.5, color: "#a1a1aa", marginTop: 2, lineHeight: 1.5 }}>
+            Recargá para verla. Tus datos están guardados.
+          </div>
+        </div>
+        <button onClick={() => window.location.reload()} style={{
+          background: "#22c55e", color: "#000", border: "none", padding: "9px 18px",
+          borderRadius: 9, cursor: "pointer", fontWeight: 700, fontSize: 12.5, flexShrink: 0,
+        }}>Recargar</button>
+        <button onClick={() => setHayActualizacion(false)} style={{
+          background: "transparent", color: "#71717a", border: "none",
+          cursor: "pointer", fontSize: 12, flexShrink: 0,
+        }}>Después</button>
+      </div>
+    );
+  }
 
   // ─── Banner principal (uno solo, simple, claro) ─────────────────────────
   if (showBanner && (deferredPrompt || isOnIOS)) {
