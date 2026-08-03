@@ -34,6 +34,7 @@ export default function SankeyFlujo({
   gastosCats = [],       // [[categoria, valor]]
   cashFlow = 0,
   subtitulo = "",
+  labels = null,
   fmt,
   T,
 }) {
@@ -57,10 +58,20 @@ export default function SankeyFlujo({
   // ── Destinos
   const D = [];
   const push = (nombre, valor, color, nota) => { if (valor > 0.5) D.push({ nombre, valor, color, nota }); };
-  push("Retención en la fuente", retencion, "#f97316", "no llega a tu cuenta");
-  push("Impuesto de renta", impuesto, "#ef4444", "saldo a pagar");
-  push("Aportes obligatorios", aportes, "#eab308", "salud y pensión");
-  push("Cuotas de deuda", cuotas, "#ec4899", "capital + interés");
+  // 02-ago-2026 — etiquetas por jurisdicción. El componente ya era genérico
+  // en su cálculo; solo estos cuatro rótulos estaban fijos en conceptos
+  // colombianos. Con `labels` el mismo Sankey sirve para US sin duplicar código.
+  const L = {
+    retencion: "Retención en la fuente", retencionNota: "no llega a tu cuenta",
+    impuesto: "Impuesto de renta",       impuestoNota: "saldo a pagar",
+    aportes: "Aportes obligatorios",     aportesNota: "salud y pensión",
+    cuotas: "Cuotas de deuda",           cuotasNota: "capital + interés",
+    ...(labels || {}),
+  };
+  push(L.retencion, retencion, "#f97316", L.retencionNota);
+  push(L.impuesto, impuesto, "#ef4444", L.impuestoNota);
+  push(L.aportes, aportes, "#eab308", L.aportesNota);
+  push(L.cuotas, cuotas, "#ec4899", L.cuotasNota);
 
   let cats = (gastosCats || []).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
   if (cats.length > 5) {
