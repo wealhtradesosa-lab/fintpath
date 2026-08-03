@@ -207,7 +207,15 @@ export default function PensionBTC({trm:pTrm}){
         </Cd>
         <Cd style={{padding:24}}>
           <div style={{fontSize:14,fontWeight:700,color:T.orange,marginBottom:12}}>🟠 Detalle Bitcoin</div>
-          <Rw l={modoAporte==="libre"?"Aporte mensual:":"Aporte mensual (16% del salario):"} v={fC(apMesEfectivo)+"/mes"} bold/>
+          {/* 03-ago-2026 (Santiago: "se contradice un solo aporte con una mensualidad
+              al tiempo"). Esta fila decía "Aporte mensual: $X/mes" SIEMPRE, incluso
+              con pago único o anual — contradiciendo el modo elegido arriba. */}
+          <Rw l={frecAporte==="unico" ? "Invertiste una sola vez:"
+                : frecAporte==="anual" ? "Aporte cada año:"
+                : modoAporte==="libre" ? "Aporte mensual:" : "Aporte mensual (16% del salario):"}
+              v={frecAporte==="unico" ? fC(Number(montoUnico)||0)
+                : frecAporte==="anual" ? fC(Number(montoAnual)||0)+"/año"
+                : fC(apMesEfectivo)+"/mes"} bold/>
           <Rw l={"Invertido en "+anios+" años:"} v={fC(btc.ti)}/>
           <Rw l="BTC acumulado:" v={fB(btc.ba)} color={T.orange} bold/>
           <Rw l="Valor de tu BTC (USD):" v={fU(btc.vf)} color={T.green} bold/>
@@ -411,7 +419,7 @@ export default function PensionBTC({trm:pTrm}){
 
     {tab==="analisis"&&<div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
-        <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>💸 Composición del Aporte Mensual</div><Rw l="Empleado (4%)" v={fC(empMes)} color={T.orange}/><Rw l="Empleador (12%)" v={fC(emrMes)} color={T.orange}/><Rw l={"Impuesto Renta ("+impR+"%)"} v={fC(impMes)} color={T.red}/><div style={{display:"flex",justifyContent:"space-between",padding:"14px 16px",background:T.bg3,borderRadius:10,marginTop:8}}><span style={{fontWeight:700}}>Total Mensual</span><span style={{fontSize:16,fontWeight:800,color:T.orange,fontFamily:"monospace"}}>{fC(apMes)}</span></div></Cd>
+        <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>💸 Tu aporte obligatorio a pensión (mensual)</div><Rw l="Empleado (4%)" v={fC(empMes)} color={T.orange}/><Rw l="Empleador (12%)" v={fC(emrMes)} color={T.orange}/><Rw l={"Impuesto Renta ("+impR+"%)"} v={fC(impMes)} color={T.red}/><div style={{display:"flex",justifyContent:"space-between",padding:"14px 16px",background:T.bg3,borderRadius:10,marginTop:8}}><span style={{fontWeight:700}}>Total Mensual</span><span style={{fontSize:16,fontWeight:800,color:T.orange,fontFamily:"monospace"}}>{fC(apMes)}</span></div></Cd>
         <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>⚠ Riesgos y Consideraciones</div>{[{i:"🟠",t:"Volatilidad BTC",d:"Drawdowns históricos de -80%. Requiere horizonte largo.",c:T.orange},{i:"🏛️",t:"Riesgo Pensional",d:"Reformas, cambios de reglas, inflación, insolvencia de fondos.",c:T.blue},{i:"✓",t:"Ventajas BTC",d:"Auto-custodia, heredable, escasez absoluta de 21M, sin intermediarios.",c:T.green}].map(r=><div key={r.t} style={{display:"flex",gap:12,padding:"12px 14px",background:T.bg3,borderRadius:12,marginBottom:8,border:`1px solid ${r.c}15`}}><span style={{fontSize:18,flexShrink:0}}>{r.i}</span><div><div style={{fontSize:14,fontWeight:700,marginBottom:2}}>{r.t}</div><div style={{fontSize:12,color:T.txt3,lineHeight:1.5}}>{r.d}</div></div></div>)}</Cd>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
