@@ -3,6 +3,7 @@
  * Standalone — does NOT touch App.jsx dashboard logic
  */
 import { useMemo } from "react";
+import AnoEnCurso from "./AnoEnCurso";
 import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -88,14 +89,19 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
 
   // Asset allocation
   const byType = {};
-  inv.forEach(i=>{const tp=i.tp||i.tipo||"Other";byType[tp]=(byType[tp]||0)+(i.va||0);});
+  // 02-ago-2026 — no filtraba sim:false: los activos apagados sumaban a la
+  // distribución del patrimonio.
+  inv.filter(i=>i.sim!==false).forEach(i=>{const tp=i.tp||i.tipo||"Other";byType[tp]=(byType[tp]||0)+(i.va||0);});
   const pie = Object.entries(byType).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
 
   // Income by category
   const incByCat = {};
-  ingresos.forEach(i=>{
+  // 02-ago-2026 — dos errores en una línea: sumaba `mensual` crudo (ignorando
+  // frecuencia y vigencia) y no filtraba los apagados. Mismo patrón que ya se
+  // corrigió en el resto del motor.
+  ingresos.filter(i=>i.sim!==false).forEach(i=>{
     const cat = i.categoria||"Other";
-    incByCat[cat]=(incByCat[cat]||0)+((i.mensual||0)*(i.moneda==="USD"?1:1/(u.trm||1)));
+    incByCat[cat]=(incByCat[cat]||0)+(montoPromedioMensual(i)*(i.moneda==="USD"?1:1/(u.trm||1)));
   });
   const incPie = Object.entries(incByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
 
@@ -223,6 +229,21 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
         <Kpi l="Cash Flow"     v={fm(t.cf)}  c={t.cf>=0?T.gn:T.rd} sub="/month"/>
         <Kpi l="Independence"  v={pct(t.ind)} c={t.ind>=100?T.gn:T.tx2} sub={t.ind>=100?"✅ Achieved!":"target 100%"}/>
       </div>
+
+      {/* 02-ago-2026 (Santiago: "no veo el gráfico de a dónde va el dinero ni
+          los dashboards nuevos" — estaba en la vista US, donde no existían).
+          Se reutiliza AnoEnCurso, el mismo componente de Colombia: calcula el
+          flujo del año desde los datos con montoDelMes, así que respeta
+          frecuencia y vigencia sin lógica adicional.
+          Envuelto en try/catch: si algún dato US tiene una forma que el
+          componente no espera, no debe tumbar todo el dashboard. */}
+      {(()=>{ try{
+        const hoy=new Date();
+        return <AnoEnCurso user={{...u, gas: u.gas||{}, deu: u.deu||[], ingresos: u.ingresos||[]}}
+          trm={1} fmt={fm} T={{...T, tx:T.tx, tx2:T.tx2, tx3:T.tx3, card:T.card, border:T.border}}
+          mesActual={hoy.getMonth()+1} año={hoy.getFullYear()}
+          totales={{brutoTotal:t.ti, retencionMensual:0, impuestoNeto:0}} />;
+      }catch(e){ return null } })()}
 
       {/* Financial Freedom Level */}
       <Card s={{padding:20,marginBottom:14}}>
