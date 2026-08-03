@@ -103,6 +103,7 @@ export default function BitcoinRetirementUS({ user }) {
   const [freq, setFreq]       = useState("monthly"); // monthly | annual | once
   const [once, setOnce]       = useState("");
   const [annual, setAnnual]   = useState("");
+  const [abiertas, setAbiertas] = useState([]);
 
   // ── Aportes ───────────────────────────────────────────────────────────────
   const yourContrib = Math.min(salary * (pct / 100), LIMITS.K401_LIMIT);
@@ -335,45 +336,73 @@ export default function BitcoinRetirementUS({ user }) {
             </Cd>
           </div>
 
-          {/* 03-ago-2026 — la valorización, visible. El precio de BTC crece al
-              CAGR elegido y eso ya estaba en el cálculo; sin esta tabla no había
-              cómo verlo, y el resultado final parecía salido de la nada. */}
+          {/* 03-ago-2026 (Santiago: "busque una solución más práctica,
+              desplegables por cada 10 años"). Una tabla de 40 filas es
+              incómoda y filtrar años saltea información. Se agrupa por décadas:
+              cada bloque muestra su resumen —precio al cierre, BTC acumulado,
+              valor— y se despliega para ver año por año.
+              La década final viene abierta: es la que interesa. */}
           {btc.serie && btc.serie.length > 0 && (
             <Cd style={{ padding: 20 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 4 }}>📈 Year by year</div>
               <div style={{ fontSize: 11, color: C.tx3, marginBottom: 12 }}>
                 Bitcoin price growing at {cagr}% a year — this is the assumption doing the heavy lifting.
               </div>
-              <div style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 300 }}>
-                  <thead>
-                    <tr>
-                      {["Year", "BTC price", "You hold", "Value", "Invested"].map((h) => (
-                        <th key={h} style={{ padding: "8px 10px", textAlign: h === "Year" ? "left" : "right",
-                              color: C.tx3, fontWeight: 600, fontSize: 10, textTransform: "uppercase",
-                              borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* 03-ago-2026 (Santiago: "por qué no muestra todos los
-                        años"). Antes filtraba a los 3 primeros, cada 5 y el
-                        último. Es SU proyección: si quiere ver los 40 años, los
-                        ve. El contenedor tiene scroll y la fila del año final va
-                        resaltada para no perderla. */}
-                    {btc.serie.map((r) => (
-                        <tr key={r.year} style={{ borderBottom: `1px solid ${C.border}`,
-                          background: r.year === years ? "rgba(247,147,26,0.07)" : "transparent" }}>
-                          <td style={{ padding: "8px 10px", fontWeight: 700, color: C.tx2 }}>{r.year}</td>
-                          <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", color: C.gold }}>{fUSD(r.price)}</td>
-                          <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", color: C.tx3 }}>{r.coins.toFixed(3)} ₿</td>
-                          <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", fontWeight: 700, color: C.or }}>{fUSD(r.value)}</td>
-                          <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", color: C.tx3 }}>{fUSD(r.invested)}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+              {(() => {
+                const decadas = [];
+                for (let i = 0; i < btc.serie.length; i += 10) decadas.push(btc.serie.slice(i, i + 10));
+                return decadas.map((bloque, di) => {
+                  const ultimo = bloque[bloque.length - 1];
+                  const abierta = abiertas.includes(di) || di === decadas.length - 1;
+                  return (
+                    <div key={di} style={{ marginBottom: 8 }}>
+                      <button onClick={() => setAbiertas((p) =>
+                          p.includes(di) ? p.filter((x) => x !== di) : [...p, di])}
+                        style={{ width: "100%", background: C.bg3, border: `1px solid ${C.border}`,
+                          borderRadius: 10, padding: "11px 14px", cursor: "pointer", color: C.tx,
+                          display: "flex", justifyContent: "space-between", alignItems: "center",
+                          gap: 10, flexWrap: "wrap", textAlign: "left" }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 700 }}>
+                          {abierta ? "▾" : "▸"} Years {bloque[0].year}–{ultimo.year}
+                        </span>
+                        <span style={{ fontSize: 12.5, fontWeight: 800, color: C.or, fontFamily: "monospace" }}>
+                          {fUSD(ultimo.value)}
+                          <span style={{ color: C.tx3, fontWeight: 500, marginLeft: 8 }}>
+                            {ultimo.coins.toFixed(3)} ₿
+                          </span>
+                        </span>
+                      </button>
+                      {abierta && (
+                        <div style={{ overflowX: "auto", marginTop: 4 }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 300 }}>
+                            <thead>
+                              <tr>
+                                {["Year", "BTC price", "You hold", "Value", "Invested"].map((h) => (
+                                  <th key={h} style={{ padding: "7px 10px", textAlign: h === "Year" ? "left" : "right",
+                                        color: C.tx3, fontWeight: 600, fontSize: 10, textTransform: "uppercase",
+                                        borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {bloque.map((r) => (
+                                <tr key={r.year} style={{ borderBottom: `1px solid ${C.border}`,
+                                      background: r.year === years ? "rgba(247,147,26,0.07)" : "transparent" }}>
+                                  <td style={{ padding: "7px 10px", fontWeight: 700, color: C.tx2 }}>{r.year}</td>
+                                  <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "monospace", color: C.gold }}>{fUSD(r.price)}</td>
+                                  <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "monospace", color: C.tx3 }}>{r.coins.toFixed(3)} ₿</td>
+                                  <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "monospace", fontWeight: 700, color: C.or }}>{fUSD(r.value)}</td>
+                                  <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "monospace", color: C.tx3 }}>{fUSD(r.invested)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </Cd>
           )}
 
