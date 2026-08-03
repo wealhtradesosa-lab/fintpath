@@ -344,7 +344,7 @@ export default function BitcoinRetirementUS({ user }) {
               <div style={{ fontSize: 11, color: C.tx3, marginBottom: 12 }}>
                 Bitcoin price growing at {cagr}% a year — this is the assumption doing the heavy lifting.
               </div>
-              <div style={{ overflowX: "auto" }}>
+              <div style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 300 }}>
                   <thead>
                     <tr>
@@ -356,12 +356,14 @@ export default function BitcoinRetirementUS({ user }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {btc.serie
-                      // Con 40 años la tabla sería ilegible: se muestran los
-                      // primeros, luego cada 5, y siempre el último.
-                      .filter((r, i) => i < 3 || r.year % 5 === 0 || r.year === years)
-                      .map((r) => (
-                        <tr key={r.year} style={{ borderBottom: `1px solid ${C.border}` }}>
+                    {/* 03-ago-2026 (Santiago: "por qué no muestra todos los
+                        años"). Antes filtraba a los 3 primeros, cada 5 y el
+                        último. Es SU proyección: si quiere ver los 40 años, los
+                        ve. El contenedor tiene scroll y la fila del año final va
+                        resaltada para no perderla. */}
+                    {btc.serie.map((r) => (
+                        <tr key={r.year} style={{ borderBottom: `1px solid ${C.border}`,
+                          background: r.year === years ? "rgba(247,147,26,0.07)" : "transparent" }}>
                           <td style={{ padding: "8px 10px", fontWeight: 700, color: C.tx2 }}>{r.year}</td>
                           <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", color: C.gold }}>{fUSD(r.price)}</td>
                           <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", color: C.tx3 }}>{r.coins.toFixed(3)} ₿</td>
