@@ -4,7 +4,6 @@
  */
 import { useMemo } from "react";
 import AnoEnCurso from "./AnoEnCurso";
-import SankeyFlujo from "./SankeyFlujo";
 import HallazgosProactivos from "./HallazgosProactivos";
 import { generarHallazgos } from "../lib/hallazgos.js";
 import { montoPromedioMensual } from "../lib/flowHelpers.js";
@@ -246,75 +245,6 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
           trm={1} fmt={fm} T={{...T, tx:T.tx, tx2:T.tx2, tx3:T.tx3, card:T.card, border:T.border}}
           mesActual={hoy.getMonth()+1} año={hoy.getFullYear()}
           totales={{brutoTotal:t.ti, retencionMensual:0, impuestoNeto:0}} />;
-      }catch(e){ return null } })()}
-
-      {/* 02-ago-2026 — Sankey en US. El componente ya era genérico en su
-          cálculo; solo tenía 4 rótulos fijos en conceptos colombianos, que
-          ahora se pasan por `labels`. Acá se usan los del 1040:
-          federal withholding, tax owed y FICA en vez de retención, renta y
-          aportes a seguridad social.
-          Los montos son MENSUALES para que el flujo se lea igual que los KPIs
-          de arriba, que también son /month. */}
-      {(()=>{ try{
-        if (!(t.ti > 0)) return null;
-        const fuentesUS = incPie.slice(0, 6).map(x => ({ nombre: x.name, valor: x.value }));
-        return (
-          <div style={{marginBottom:14}}>
-            <SankeyFlujo
-              bruto={t.ti}
-              fuentes={fuentesUS}
-              retencion={0}
-              impuesto={Math.max(0, (t.ti - t.te - t.cf))}
-              aportes={0}
-              cuotas={t.tc || 0}
-              gastosCats={expPie.map(x => [x.name, x.value])}
-              cashFlow={t.cf}
-              subtitulo="Where your money goes, per month."
-              labels={{
-                retencion: "Federal withholding", retencionNota: "never hits your account",
-                impuesto: "Taxes", impuestoNota: "federal + FICA",
-                aportes: "Retirement contributions", aportesNota: "401(k), IRA",
-                cuotas: "Debt payments", cuotasNota: "principal + interest",
-              }}
-              fmt={fm}
-              T={{ card: T.card, border: T.border, tx: T.tx, tx2: T.tx2, tx3: T.tx3 }}
-            />
-          </div>
-        );
-      }catch(e){ return null } })()}
-
-      {/* 02-ago-2026 — asesor proactivo en US. Los 8 detectores de
-          hallazgos.js razonan sobre conceptos UNIVERSALES —deuda cara contra
-          rendimiento del ahorro, concentración de patrimonio, fondo de
-          emergencia, carga de deuda— así que no hubo que reescribirlos.
-          Lo único atado a Colombia era la frase "Estatuto Tributario" al pie
-          de cada hallazgo; ahora se pasa por `baseNormativa`.
-          trm=1 porque en US los montos ya están en dólares. */}
-      {(()=>{ try{
-        const hs = generarHallazgos({
-          user: u,
-          recomendaciones: [],
-          trm: 1,
-          patrimonioTotal: t.ab || 0,
-          baseNormativa: "IRS / Publication 17",
-          totales: t,
-          max: 4,
-        });
-        // 02-ago-2026 — DESACTIVADO A PROPÓSITO, no es un olvido.
-        // Los 8 detectores sirven igual en US (razonan sobre conceptos
-        // universales), pero sus 14 textos están en español y con formato
-        // toLocaleString("es-CO") + la palabra "pesos" incrustada. Mostrarlos
-        // acá rompería la regla de que cada jurisdicción habla su idioma, y
-        // una traducción apurada dejaría "$1.500.000 pesos" en la vista
-        // americana — peor que no tenerlo.
-        // Para activarlo: traducir los strings de hallazgos.js con un mapa de
-        // idioma, igual que se hizo con `labels` en SankeyFlujo.
-        return null;
-        // eslint-disable-next-line no-unreachable
-        if (!hs || !hs.length) return null;
-        return <div style={{marginBottom:14}}>
-          <HallazgosProactivos hallazgos={hs} T={T} onIr={(pg)=>setPg(pg)} />
-        </div>;
       }catch(e){ return null } })()}
 
       {/* Financial Freedom Level */}
