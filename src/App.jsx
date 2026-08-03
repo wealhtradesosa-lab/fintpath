@@ -303,7 +303,14 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
     }
   }catch(e){console.error("[fp3] localStorage save ERROR:",e)}
 };
-const mkU=(n,e)=>({p:{name:n,email:e,plan:"free"},trm:4200,inv:[],deu:[],gas:{},ibk:[],ingresos:[],pen:{age:35,rAge:60,sv:2500,cur:120000,ret:7,inf:3,des:6000,btcC:56,btcP:50000},metas:[]});
+// 03-ago-2026 (Santiago: "dólar a 4.200 es un grave error para calcular").
+// Cada usuario se creaba con trm:4200 GRABADO en su perfil. Ese valor queda en
+// Supabase y es el que se lee después: la tasa real del Banco de la República
+// llegaba, pero el dato viejo ya estaba persistido y volvía a pisar todo en la
+// siguiente carga.
+// Ahora se crea SIN trm. El efecto de arranque la trae del Banco y esa es la
+// que se guarda. 4200 queda solo como respaldo si la fuente no responde.
+const mkU=(n,e)=>({p:{name:n,email:e,plan:"free"},inv:[],deu:[],gas:{},ibk:[],ingresos:[],pen:{age:35,rAge:60,sv:2500,cur:120000,ret:7,inf:3,des:6000,btcC:56,btcP:50000},metas:[]});
 
 const DI=[{id:"i1",n:"Apartamento Bogotá",ub:"Bogotá, Chapinero",tp:"Real Estate",vc:650000000,va:850000000,un:[{n:"Apto 301",ig:[{c:"Arriendo",m:4200000,t:"f"}],gs:[{c:"Admin",m:580000,t:"f"},{c:"Predial",m:220000,t:"f"}]}]},{id:"i2",n:"Casa Orlando",ub:"Orlando, FL",tp:"Real Estate",moneda:"USD",vc:280000,va:360000,un:[{n:"Casa principal",ig:[{c:"Airbnb",m:3200,t:"v"}],gs:[{c:"Property Tax",m:280,t:"f"},{c:"Insurance",m:180,t:"f"},{c:"HOA",m:150,t:"f"}]}]},{id:"i3",n:"Fondo Bancolombia",ub:"Colombia",tp:"Fondo de Inversión",vc:120000000,va:145000000,un:[]},{id:"i4",n:"CDT Davivienda",ub:"Colombia",tp:"CDT",vc:80000000,va:86000000,un:[]},{id:"i5",n:"Portafolio ETFs",ub:"USA",tp:"Acciones",moneda:"USD",vc:35000,va:48000,un:[]},{id:"i6",n:"Bitcoin",ub:"",tp:"Crypto",vc:15000000,va:22000000,un:[]}];
 const DD=[{id:"d1",n:"Hipoteca Apto Bogotá",tp:"Hipoteca",mt:380000000,ts:12,pg:4800000,pl:180,vi:"i1"},{id:"d2",n:"Crédito Vehículo",tp:"Libre inversión",mt:45000000,ts:18,pg:1200000,pl:36},{id:"d3",n:"Tarjeta Visa",tp:"Tarjeta",mt:8500000,ts:28,pg:850000,pl:12}];
