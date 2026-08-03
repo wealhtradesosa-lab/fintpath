@@ -471,7 +471,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                   {gr.tipo} <span style={{color:T.txt3,fontWeight:500}}>· {gr.items.length}</span>
                 </span>
                 <span style={{fontSize:12.5,fontWeight:800,color:T.green,fontFamily:"monospace"}}>
-                  {fmt(gr.sub)}/año
+                  {fm(gr.sub)}/año
                   <span style={{color:T.txt3,fontWeight:500,marginLeft:6}}>
                     {tot > 0 ? ((gr.sub/tot)*100).toFixed(0) : 0}%
                   </span>
@@ -555,7 +555,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
             if (!b.length) return null;
             return <BloqueadosPorPlan cantidad={b.length}
               monto={b.reduce((s,i)=>s+totalAnualItem(i),0)}
-              fmt={fmt} T={T}
+              fmt={fm} T={T}
               onUpgrade={onUpgrade} que="ingresos" />;
           })()}
         </div>

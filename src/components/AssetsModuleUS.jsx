@@ -574,7 +574,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                       {gr.cat} <span style={{color:T.tx3,fontWeight:500}}>· {gr.items.length}</span>
                     </span>
                     <span style={{fontSize:12.5,fontWeight:800,color:T.gn,fontFamily:"monospace"}}>
-                      {fmt(gr.sub)}
+                      {fm(gr.sub)}
                       <span style={{color:T.tx3,fontWeight:500,marginLeft:6}}>
                         {tot > 0 ? ((gr.sub/tot)*100).toFixed(0) : 0}%
                       </span>
@@ -627,7 +627,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                 if (!b.length) return null;
                 return <BloqueadosPorPlan cantidad={b.length}
                   monto={b.reduce((s,a)=>s+(a.va||0),0)}
-                  fmt={fmt} T={T} onUpgrade={onUpgrade} que="activos" />;
+                  fmt={fm} T={T} onUpgrade={onUpgrade} que="activos" />;
               })()}
             </div>
       )}
