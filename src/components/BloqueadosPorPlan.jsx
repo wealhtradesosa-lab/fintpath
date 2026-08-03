@@ -11,6 +11,10 @@
  */
 export default function BloqueadosPorPlan({ cantidad, monto, fmt, T, onUpgrade, que = "ítems" }) {
   if (!cantidad) return null;
+  // 02-ago-2026 — los módulos CO usan T.txt/txt2/txt3 y los US usan T.tx/tx2/tx3.
+  // Resolver acá los dos nombres evita que cada llamador tenga que mapear el
+  // tema a mano, que es donde se cuela el "undefined" en pantalla.
+  const c1 = T.txt || T.tx, c2 = T.txt2 || T.tx2, c3 = T.txt3 || T.tx3;
 
   return (
     <div style={{
@@ -28,11 +32,11 @@ export default function BloqueadosPorPlan({ cantidad, monto, fmt, T, onUpgrade, 
       <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
         <span style={{ fontSize: 20, flexShrink: 0 }}>🔒</span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: T.txt || T.tx }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: c1 }}>
             {cantidad} {cantidad === 1 ? que.replace(/s$/, "") : que} sin acceso en el plan gratuito
           </div>
-          <div style={{ fontSize: 11.5, color: T.txt3 || T.tx3, marginTop: 2, lineHeight: 1.5 }}>
-            {monto > 0 && <>Suman <strong style={{ color: T.txt2 || T.tx2 }}>{fmt(monto)}</strong> y <strong>sí están incluidos</strong> en tus totales. </>}
+          <div style={{ fontSize: 11.5, color: c3, marginTop: 2, lineHeight: 1.5 }}>
+            {monto > 0 && <>Suman <strong style={{ color: c2 }}>{fmt(monto)}</strong> y <strong>sí están incluidos</strong> en tus totales. </>}
             Para verlos y editarlos, mejorá tu plan.
           </div>
         </div>

@@ -17,6 +17,8 @@
 
 import { useState, useMemo } from "react";
 import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
+import { separarPorLimite } from "../lib/limitePlan.js";
+import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import BarraComposicion from "./BarraComposicion";
 import { totalAnualItem } from "../lib/flowHelpers.js";
 import NumberInput from "./NumberInput";
@@ -300,7 +302,7 @@ function AddlMedicare({ wages, magi }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────
-export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 }) {
+export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan, onUpgrade}) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm]         = useState(EMPTY);
   const [editing, setEditing]   = useState(null);
@@ -451,7 +453,10 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 }) {
             const NOM = { w2:"W-2 Empleo", "1099nec":"1099 Independiente", rental:"Arriendos",
                           lt_gains:"Ganancias de capital", qual_div:"Dividendos calificados",
                           interest:"Intereses", ss:"Social Security", other:"Otros" };
-            const vis = filtrarPorTexto(ingresos, busqueda, ["nombre", "fuente", "tipo"]);
+            // 02-ago-2026 — límite del plan gratuito, igual que en Colombia. Los
+            // bloqueados SIGUEN contando en los totales: se quita el acceso al
+            // detalle, no se falsea el número. Ver src/lib/limitePlan.js.
+            const vis = separarPorLimite(filtrarPorTexto(ingresos, busqueda, ["nombre", "fuente", "tipo"]), plan).visibles;
             const porTipo = {};
             vis.forEach(s => { const k = NOM[s.tipo] || "Otros"; (porTipo[k] = porTipo[k] || []).push(s); });
             const grupos = Object.entries(porTipo)
@@ -540,6 +545,18 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 }) {
             );
               }),
             ]);
+          })()}
+          {/* 02-ago-2026 — qué quedó del otro lado del candado. Que el monto
+              sea visible es deliberado: un candado que no deja ver qué protege
+              no motiva, y el usuario merece saber que sus totales incluyen algo
+              que no está viendo en detalle. */}
+          {(() => {
+            const b = separarPorLimite(filtrarPorTexto(ingresos, busqueda, ["nombre","fuente","tipo"]), plan).bloqueados;
+            if (!b.length) return null;
+            return <BloqueadosPorPlan cantidad={b.length}
+              monto={b.reduce((s,i)=>s+totalAnualItem(i),0)}
+              fmt={fmt} T={T}
+              onUpgrade={onUpgrade} que="ingresos" />;
           })()}
         </div>
       )}

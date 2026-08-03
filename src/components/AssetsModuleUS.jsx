@@ -22,6 +22,8 @@
 
 import { useState, useMemo } from "react";
 import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
+import { separarPorLimite } from "../lib/limitePlan.js";
+import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import BarraComposicion from "./BarraComposicion";
 import NumberInput from "./NumberInput";
 import { US } from "../lib/jurisdictions/US.js";
@@ -338,7 +340,7 @@ const EMPTY_LIAB = {
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdateAssets, onUpdateLiabs, initialTab = "assets" }) {
+export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdateAssets, onUpdateLiabs, initialTab = "assets" , plan, onUpgrade}) {
   const [tab,       setTab]       = useState(initialTab);
   const [busqueda, setBusqueda] = useState("");
   const [showForm,  setShowForm]  = useState(null); // "asset" | "liab" | null
@@ -546,7 +548,10 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                   El subtotal es el VALOR: la pregunta en patrimonio es en qué
                   está puesta la plata. */}
               {(() => {
-                const vis = filtrarPorTexto(inversiones, busqueda, ["n","nombre","tp"]);
+                // 02-ago-2026 — límite del plan gratuito. Los bloqueados siguen
+                // contando en el patrimonio total: se quita el acceso al
+                // detalle, no se falsea el número.
+                const vis = separarPorLimite(filtrarPorTexto(inversiones, busqueda, ["n","nombre","tp"]), plan).visibles;
                 const porCat = {};
                 vis.forEach(a => {
                   // catLabel no existe en assetInfo: sin este mapa los
@@ -614,6 +619,15 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                 );
                   }),
                 ]);
+              })()}
+              {/* 02-ago-2026 — activos sin acceso por el plan gratuito. Siguen
+                  contando en el patrimonio total. */}
+              {(() => {
+                const b = separarPorLimite(filtrarPorTexto(inversiones, busqueda, ["n","nombre","tp"]), plan).bloqueados;
+                if (!b.length) return null;
+                return <BloqueadosPorPlan cantidad={b.length}
+                  monto={b.reduce((s,a)=>s+(a.va||0),0)}
+                  fmt={fmt} T={T} onUpgrade={onUpgrade} que="activos" />;
               })()}
             </div>
       )}
