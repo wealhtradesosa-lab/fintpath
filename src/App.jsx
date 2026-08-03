@@ -1100,21 +1100,31 @@ export default function FinPath(){
       // sirve una herramienta de family office. Con $2,4M la concentración,
       // el FIRE number y la planeación fiscal empiezan a decir algo.
       nd.inv=[
-        {id:"us_a1",n:"Primary Residence — Austin TX",tp:"real_estate",vc:620000,va:840000,owner:"own_1"},
-        {id:"us_a2",n:"Rental Duplex — East Austin",tp:"rental_property",vc:310000,va:465000,owner:"own_1"},
+        // 03-ago-2026 (Santiago: "con el demo no veo que Alex tenga ni un activo,
+        // un carro, una casa"). Los tipos que le puse —"real_estate",
+        // "rental_property", "529"— NO EXISTEN en ASSET_TYPES del módulo US:
+        // los válidos son primary_home, rental_res y other_asset. Con un tipo
+        // desconocido el activo no se renderiza, así que la casa y el duplex
+        // estaban cargados pero invisibles.
+        {id:"us_a1",n:"Primary Residence — Austin TX",tp:"primary_home",vc:620000,va:840000,owner:"own_1"},
+        {id:"us_a2",n:"Rental Duplex — East Austin",tp:"rental_res",vc:310000,va:465000,owner:"own_1"},
         {id:"us_a3",n:"Traditional 401(k) — Fidelity",tp:"401k_trad",vc:290000,va:412000,owner:"own_1"},
         {id:"us_a4",n:"Roth IRA — Vanguard",tp:"roth_ira",vc:98000,va:154000,owner:"own_1"},
         {id:"us_a5",n:"Taxable Brokerage — VTI/VXUS",tp:"stocks_etf",vc:215000,va:318000,owner:"own_1",magi:410000},
         {id:"us_a6",n:"HSA — Fidelity (Invested)",tp:"hsa",vc:38000,va:52000,owner:"own_1"},
         {id:"us_a7",n:"Emergency Fund — HYSA",tp:"cash_equiv",vc:85000,va:85000,owner:"own_1",tasa:4.3},
         {id:"us_a8",n:"Bitcoin & ETH",tp:"crypto",vc:42000,va:71000,owner:"own_1"},
-        {id:"us_a9",n:"529 Plan — Kids College",tp:"529",vc:56000,va:68000,owner:"own_1"},
+        {id:"us_a9",n:"529 Plan — Kids College",tp:"other_asset",vc:56000,va:68000,owner:"own_1"},
+        // Faltaba el vehículo: hay un auto loan en las deudas pero ningún carro
+        // en los activos, así que el patrimonio quedaba descuadrado.
+        {id:"us_a10",n:"Tesla Model Y (2024)",tp:"other_asset",vc:52000,va:41000,owner:"own_1"},
       ];
       nd.deu=[
         {id:"us_d1",n:"Mortgage — Primary Residence",tp:"mortgage",mt:398000,pg:2850,ts:6.1,owner:"own_1"},
         {id:"us_d2",n:"Mortgage — Rental Duplex",tp:"mortgage",mt:212000,pg:1640,ts:7.3,owner:"own_1"},
         {id:"us_d3",n:"Student Loans — Navient",tp:"student_loan",mt:31000,pg:340,ts:6.5,owner:"own_1"},
-        {id:"us_d4",n:"Tesla Model Y — Auto Loan",tp:"vehiculo",mt:38000,pg:690,ts:7.4,owner:"own_1"},
+        // 03-ago-2026 — era tp:"vehiculo", el nombre de Colombia. En US el tipo es "auto".
+        {id:"us_d4",n:"Tesla Model Y — Auto Loan",tp:"auto",mt:38000,pg:690,ts:7.4,owner:"own_1"},
         // Tarjeta al 24,99% con $85K en HYSA al 4,3%: el asesor debería
         // detectar el diferencial y cuantificarlo.
         {id:"us_d5",n:"Chase Sapphire Credit Card",tp:"credit_card",mt:14800,pg:450,ts:24.99,owner:"own_1"},
