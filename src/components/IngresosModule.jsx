@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Disclaimer from "./Disclaimer";
 import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
 import BarraComposicion from "./BarraComposicion";
 import { separarPorLimite } from "../lib/limitePlan.js";
@@ -1570,6 +1571,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           </div>
         </div>
       )}
-    </div>
+    
+    <Disclaimer variante="general" idioma="es" T={T} compacto />
+  </div>
   );
 }

@@ -14,6 +14,7 @@
  */
 
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import NumberInput from "./NumberInput";
 
 // ─── 2025 Constants ──────────────────────────────────────────────────────────
@@ -831,6 +832,8 @@ export default function RetirementModuleUS({ user = {} }) {
         <strong>Disclaimer:</strong> Retirement projections use historical return assumptions and are not guaranteed. Tax rules, contribution limits, and SS benefits are subject to change.
         Roth conversion decisions should be reviewed annually with a CPA. Past performance does not guarantee future results. Consult a licensed CFP and CPA for personalized retirement planning.
       </div>
-    </div>
+    
+    <Disclaimer variante="proyeccion" idioma="en" T={T} compacto />
+  </div>
   );
 }

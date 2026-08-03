@@ -21,6 +21,7 @@
  */
 
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
@@ -846,6 +847,8 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
       <div style={{marginTop:16,padding:12,background:T.bg3,borderRadius:8,fontSize:10,color:T.tx3,lineHeight:1.6}}>
         <strong>Disclaimer:</strong> Tax analysis is for planning purposes. Cost basis calculations assume you provide accurate figures. § 1250 recapture, NIIT, and exclusion eligibility depend on individual circumstances. Consult a licensed CPA, CFP, or tax attorney before any sale, exchange, or major tax event.
       </div>
-    </div>
+    
+    <Disclaimer variante="general" idioma="en" T={T} compacto />
+  </div>
   );
 }

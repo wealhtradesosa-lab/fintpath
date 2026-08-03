@@ -16,6 +16,7 @@
  */
 
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
@@ -687,6 +688,8 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
           Consult a licensed CPA or EA for your official tax return. IRC references are provided for informational purposes.
         </div>
       )}
-    </div>
+    
+    <Disclaimer variante="fiscal" idioma="en" T={T} compacto />
+  </div>
   );
 }

@@ -3,6 +3,7 @@
  * Standalone — does NOT touch App.jsx dashboard logic
  */
 import { useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import AnoEnCurso from "./AnoEnCurso";
 import HallazgosProactivos from "./HallazgosProactivos";
 import { generarHallazgos } from "../lib/hallazgos.js";
@@ -473,6 +474,8 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
           ));
         })()}
       </Card>
-    </div>
+    
+    <Disclaimer variante="general" idioma="en" T={T} compacto />
+  </div>
   );
 }

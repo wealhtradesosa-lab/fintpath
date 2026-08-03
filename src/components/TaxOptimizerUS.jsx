@@ -27,6 +27,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useMemo, useState } from "react";
+import Disclaimer from "./Disclaimer";
 import { calculateStateTax, FEDERAL_BRACKETS_2025, STANDARD_DEDUCTION_2025 } from "../lib/jurisdictions/usStateTax.js";
 
 // 2025 limits (IRS Rev. Proc. 2024-40)
@@ -520,6 +521,8 @@ export default function TaxOptimizerUS({ user }) {
         Specific situations may have nuances (state law, ownership structures, prior-year carryovers) that change the analysis.
         For implementation of high-dollar strategies, consult a CPA or Enrolled Agent.
       </div>
-    </div>
+    
+    <Disclaimer variante="fiscal" idioma="en" T={T} compacto />
+  </div>
   );
 }

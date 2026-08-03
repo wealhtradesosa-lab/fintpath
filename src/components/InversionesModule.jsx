@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import BarraComposicion from "./BarraComposicion";
@@ -547,6 +548,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           </div>
         </div>
       )}
-    </div>
+    
+    <Disclaimer variante="general" idioma="es" T={T} compacto />
+  </div>
   );
 }

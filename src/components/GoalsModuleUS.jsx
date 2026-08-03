@@ -19,6 +19,7 @@
  */
 
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import NumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
@@ -685,6 +686,8 @@ export default function GoalsModuleUS({
           </div>
         </div>
       )}
-    </div>
+    
+    <Disclaimer variante="proyeccion" idioma="en" T={T} compacto />
+  </div>
   );
 }

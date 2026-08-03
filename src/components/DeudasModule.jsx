@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Disclaimer from "./Disclaimer";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import NumberInput from "./NumberInput";
@@ -902,6 +903,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           </div>
         </div>
       )}
-    </div>
+    
+    <Disclaimer variante="general" idioma="es" T={T} compacto />
+  </div>
   );
 }

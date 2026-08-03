@@ -10,6 +10,7 @@
  *   - Persistencia del setting en user.taxConfig
  */
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import { US } from "../lib/jurisdictions/US.js";
 import { US_STATE_TAX, calculateStateTax, getStateName, FILING_STATUS_LABELS, FEDERAL_BRACKETS_2025, STANDARD_DEDUCTION_2025 } from "../lib/jurisdictions/usStateTax.js";
 
@@ -435,6 +436,8 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
         <strong>Disclaimer:</strong> Estimates based on 2025 IRS single-filer rules. State taxes not included.
         Consult a licensed CPA or EA for your official return.
       </div>
-    </div>
+    
+    <Disclaimer variante="fiscal" idioma="en" T={T} compacto />
+  </div>
   );
 }

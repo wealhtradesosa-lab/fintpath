@@ -12,6 +12,7 @@
  */
 
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import NumberInput from "./NumberInput";
 
 // ─── 2025 Constants ─────────────────────────────────────────────────────────
@@ -663,6 +664,8 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
           </InfoBox>
         </div>
       )}
-    </div>
+    
+    <Disclaimer variante="fiscal" idioma="en" T={T} compacto />
+  </div>
   );
 }
