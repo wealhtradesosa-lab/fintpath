@@ -133,6 +133,12 @@ export default function BitcoinRetirementUS({ user }) {
       const amt = Number(once) || 0;
       coins += amt / pBTC; invested += amt;
     }
+    // 03-ago-2026 (Santiago: "no veo que tenga en cuenta la valorización del BTC
+    // en el tiempo como lo vemos en Colombia"). El cálculo SÍ la contemplaba
+    // —priceAt() hace crecer el precio mes a mes— pero no se MOSTRABA: solo se
+    // veía el resultado final. Sin la tabla año por año no hay forma de saber si
+    // el modelo asume valorización o no. Se guarda la serie, igual que Colombia.
+    const serie = [];
     for (let y = 1; y <= years; y++) {
       if (freq === "monthly") {
         // Se compara contra lo MISMO que iría al 401(k), incluido el match:
@@ -143,10 +149,12 @@ export default function BitcoinRetirementUS({ user }) {
         const amt = Number(annual) || 0;
         coins += amt / priceAt((y - 1) * 12 + 1); invested += amt;
       }
+      const py = pBTC * Math.pow(1 + g, y);
+      serie.push({ year: y, price: py, coins, value: coins * py, invested });
     }
     const finalPrice = pBTC * Math.pow(1 + g, years);
     const fv = coins * finalPrice;
-    return { coins, finalPrice, fv, invested, monthlyIncome: (fv * (swr / 100)) / 12 };
+    return { coins, finalPrice, fv, invested, serie, monthlyIncome: (fv * (swr / 100)) / 12 };
   }, [freq, once, annual, total401k, years, cagr, pBTC, swr]);
 
   // ── Social Security estimada ──────────────────────────────────────────────
@@ -326,6 +334,64 @@ export default function BitcoinRetirementUS({ user }) {
               </div>
             </Cd>
           </div>
+
+          {/* 03-ago-2026 — la valorización, visible. El precio de BTC crece al
+              CAGR elegido y eso ya estaba en el cálculo; sin esta tabla no había
+              cómo verlo, y el resultado final parecía salido de la nada. */}
+          {btc.serie && btc.serie.length > 0 && (
+            <Cd style={{ padding: 20 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 4 }}>📈 Year by year</div>
+              <div style={{ fontSize: 11, color: C.tx3, marginBottom: 12 }}>
+                Bitcoin price growing at {cagr}% a year — this is the assumption doing the heavy lifting.
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 300 }}>
+                  <thead>
+                    <tr>
+                      {["Year", "BTC price", "You hold", "Value", "Invested"].map((h) => (
+                        <th key={h} style={{ padding: "8px 10px", textAlign: h === "Year" ? "left" : "right",
+                              color: C.tx3, fontWeight: 600, fontSize: 10, textTransform: "uppercase",
+                              borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {btc.serie
+                      // Con 40 años la tabla sería ilegible: se muestran los
+                      // primeros, luego cada 5, y siempre el último.
+                      .filter((r, i) => i < 3 || r.year % 5 === 0 || r.year === years)
+                      .map((r) => (
+                        <tr key={r.year} style={{ borderBottom: `1px solid ${C.border}` }}>
+                          <td style={{ padding: "8px 10px", fontWeight: 700, color: C.tx2 }}>{r.year}</td>
+                          <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", color: C.gold }}>{fUSD(r.price)}</td>
+                          <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", color: C.tx3 }}>{r.coins.toFixed(3)} ₿</td>
+                          <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", fontWeight: 700, color: C.or }}>{fUSD(r.value)}</td>
+                          <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", color: C.tx3 }}>{fUSD(r.invested)}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </Cd>
+          )}
+
+          {/* Los supuestos, explícitos. Un modelo que no dice de dónde salen sus
+              números es una opinión con formato de cálculo. */}
+          <Cd style={{ padding: 20 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: C.tx2, marginBottom: 10 }}>📋 Model assumptions</div>
+            <Rw l="401(k) employee limit (2025):" v={fFull(LIMITS.K401_LIMIT)} />
+            <Rw l="401(k) assumed return:" v="7% real, after inflation" />
+            <Rw l="Bitcoin CAGR:" v={cagr + "% a year"} color={C.or} />
+            <Rw l="Bitcoin price today:" v={fFull(pBTC)} />
+            <Rw l={`Bitcoin price in ${years} years:`} v={fUSD(btc.finalPrice)} color={C.gold} />
+            <Rw l="Withdrawal rate:" v={swr + "% (Bengen 1994)"} />
+            <Rw l="Social Security:" v={`estimated from AIME brackets`} />
+            <div style={{ fontSize: 10.5, color: C.tx3, marginTop: 10, lineHeight: 1.5 }}>
+              The 7% for the 401(k) is a long-run market average. The Bitcoin CAGR is
+              whatever you set above — it is not a forecast, and it's the number that
+              decides the outcome.
+            </div>
+          </Cd>
 
           <Cd style={{ padding: 20, border: `1px solid ${C.rd}33` }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: C.rd, marginBottom: 10 }}>⚠️ What this model doesn't tell you</div>
