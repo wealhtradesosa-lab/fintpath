@@ -5,6 +5,7 @@
  * 5 levels: Security → Vitality → Independence → Freedom → Absolute
  */
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import SankeyFlujo from "./SankeyFlujo";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
@@ -565,6 +566,8 @@ export default function SimuladorUS({ user, totals }) {
           </AreaChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    
+    <Disclaimer variante="proyeccion" idioma="en" T={T} />
+  </div>
   );
 }

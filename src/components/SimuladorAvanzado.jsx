@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import Disclaimer from "./Disclaimer";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
@@ -1932,6 +1933,8 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
           </div>
         </div>
       </div>
-    </div>
+    
+    <Disclaimer variante="proyeccion" idioma="es" T={T} />
+  </div>
   );
 }

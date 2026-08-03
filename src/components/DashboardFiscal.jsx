@@ -15,6 +15,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { detectarMismatchTodos } from "../lib/mismatchDetection.js";
 import RecomendacionesFiscales from "./RecomendacionesFiscales";
@@ -565,6 +566,8 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
         ownerId={selectedOwnerId}
         onNavigate={onNavigate}
       />
-    </div>
+    
+    <Disclaimer variante="fiscal" idioma="es" T={T} />
+  </div>
   );
 }

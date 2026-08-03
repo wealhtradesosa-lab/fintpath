@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import Disclaimer from "./Disclaimer";
 import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
 import PageHeader from "./PageHeader.jsx";
@@ -286,7 +287,9 @@ export default function AsesorIA({ user, totals, userId }) {
       </div>
 
       <style>{`@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}`}</style>
-    </div>
+    
+      <Disclaimer variante="ia" idioma="es" T={T} />
+      </div>
   );
 }
 // build 1775391859

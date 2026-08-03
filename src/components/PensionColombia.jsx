@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
@@ -461,6 +462,11 @@ export default function PensionBTC({trm:pTrm}){
       </div>
     </div>}
 
-    <div style={{textAlign:"center",marginTop:32,padding:"16px 0",borderTop:`1px solid ${T.border}`}}><p style={{fontSize:12,color:T.txt3}}>⚠ Not financial advice • Simulador educativo • Resultados pasados no garantizan rendimientos futuros</p></div>
+    {/* 03-ago-2026 — el disclaimer anterior era una línea que mezclaba idiomas
+        ("Not financial advice • Simulador educativo") y no decía lo esencial:
+        que esto NO es asesoría y que Bitcoin es un activo de altísimo riesgo.
+        Reemplazado por el componente compartido, para que todos los módulos
+        digan lo mismo y se pueda ajustar en un solo lugar. */}
+    <Disclaimer variante="cripto" idioma="es" T={T} />
   </div>;
 }

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import Disclaimer from "./Disclaimer";
 
 /**
  * BitcoinRetirementUS — Bitcoin vs. 401(k), la versión americana.
@@ -440,6 +441,8 @@ export default function BitcoinRetirementUS({ user }) {
           </Cd>
         </div>
       </div>
-    </div>
+    
+    <Disclaimer variante="cripto" idioma="en" T={C} />
+  </div>
   );
 }
