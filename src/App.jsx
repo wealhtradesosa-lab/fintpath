@@ -1084,23 +1084,40 @@ export default function FinPath(){
       // Cambiar a CA o NY desde el selector muestra el impacto del state tax.
       nd.taxConfig={filingStatus:"single",state:"TX"};
       nd.ingresos=[
-        {id:"us_ig1",nombre:"W-2 — Austin Startup",categoria:"Salario",mensual:7500,tipo:"fijo",fuente:"Austin Startup Inc.",owner:"own_1",moneda:"USD"},
-        {id:"us_ig2",nombre:"1099-NEC — Freelance Dev",categoria:"Honorarios",mensual:1500,tipo:"variable",fuente:"Freelance clients",owner:"own_1",moneda:"USD"},
-        {id:"us_ig3",nombre:"Dividends — Index Funds",categoria:"Dividendos",mensual:55,tipo:"variable",fuente:"Vanguard",owner:"own_1",moneda:"USD"},
-        {id:"us_ig4",nombre:"Interest — HYSA",categoria:"Rendimiento",mensual:56,tipo:"fijo",fuente:"Marcus HYSA",owner:"own_1",moneda:"USD"},
+        {id:"us_ig1",nombre:"W-2 — VP Engineering",categoria:"Salario",mensual:18500,tipo:"fijo",fuente:"Austin Tech Co.",owner:"own_1",moneda:"USD"},
+        // Bono anual en marzo: se ve el pico en el flujo del año.
+        {id:"us_ig2",nombre:"Annual Bonus",categoria:"Salario",mensual:65000,tipo:"variable",frecuencia:"anual",mesPago:3,fuente:"Austin Tech Co.",owner:"own_1",moneda:"USD"},
+        {id:"us_ig3",nombre:"Rental Income — Duplex",categoria:"Arriendo",mensual:3400,tipo:"fijo",fuente:"East Austin duplex",owner:"own_1",moneda:"USD"},
+        // Consultoría que varía mes a mes: el caso que ninguna app modela bien.
+        {id:"us_ig4",nombre:"1099-NEC — Consulting",categoria:"Honorarios",mensual:0,tipo:"variable",frecuencia:"variable",fuente:"Advisory clients",owner:"own_1",moneda:"USD",
+         montosMensuales:[4200,2800,6500,3100,8200,4400,3900,7100,5200,9500,11000,6800]},
+        {id:"us_ig5",nombre:"Dividends — Index Funds",categoria:"Dividendos",mensual:640,tipo:"variable",fuente:"Vanguard",owner:"own_1",moneda:"USD"},
+        {id:"us_ig6",nombre:"Interest — HYSA",categoria:"Rendimiento",mensual:305,tipo:"fijo",fuente:"Marcus HYSA",owner:"own_1",moneda:"USD"},
       ];
+      // 02-ago-2026 (Santiago: "para el modelo de USA ponga que el demo tenga
+      // un capital mayor, al menos 2 MM USD"). El demo anterior sumaba $90.200
+      // de patrimonio: un perfil de primer trabajo, que no muestra para qué
+      // sirve una herramienta de family office. Con $2,4M la concentración,
+      // el FIRE number y la planeación fiscal empiezan a decir algo.
       nd.inv=[
-        {id:"us_a1",n:"Traditional 401(k) — Fidelity",tp:"401k_trad",vc:28000,va:42000,owner:"own_1"},
-        {id:"us_a2",n:"Roth IRA — Vanguard",tp:"roth_ira",vc:12000,va:15800,owner:"own_1"},
-        {id:"us_a3",n:"Taxable Brokerage — VTI",tp:"stocks_etf",vc:7000,va:8400,owner:"own_1",magi:110000},
-        {id:"us_a4",n:"HSA — Fidelity (Invested)",tp:"hsa",vc:4800,va:5200,owner:"own_1"},
-        {id:"us_a5",n:"Emergency Fund — HYSA",tp:"cash_equiv",vc:14000,va:14000,owner:"own_1"},
-        {id:"us_a6",n:"Bitcoin",tp:"crypto",vc:3200,va:4800,owner:"own_1"},
+        {id:"us_a1",n:"Primary Residence — Austin TX",tp:"real_estate",vc:620000,va:840000,owner:"own_1"},
+        {id:"us_a2",n:"Rental Duplex — East Austin",tp:"rental_property",vc:310000,va:465000,owner:"own_1"},
+        {id:"us_a3",n:"Traditional 401(k) — Fidelity",tp:"401k_trad",vc:290000,va:412000,owner:"own_1"},
+        {id:"us_a4",n:"Roth IRA — Vanguard",tp:"roth_ira",vc:98000,va:154000,owner:"own_1"},
+        {id:"us_a5",n:"Taxable Brokerage — VTI/VXUS",tp:"stocks_etf",vc:215000,va:318000,owner:"own_1",magi:410000},
+        {id:"us_a6",n:"HSA — Fidelity (Invested)",tp:"hsa",vc:38000,va:52000,owner:"own_1"},
+        {id:"us_a7",n:"Emergency Fund — HYSA",tp:"cash_equiv",vc:85000,va:85000,owner:"own_1",tasa:4.3},
+        {id:"us_a8",n:"Bitcoin & ETH",tp:"crypto",vc:42000,va:71000,owner:"own_1"},
+        {id:"us_a9",n:"529 Plan — Kids College",tp:"529",vc:56000,va:68000,owner:"own_1"},
       ];
       nd.deu=[
-        {id:"us_d1",n:"Student Loans — Navient",tp:"student_loan",mt:31000,pg:340,ts:6.5,owner:"own_1"},
-        {id:"us_d2",n:"Honda Accord — Auto Loan",tp:"auto",mt:16500,pg:390,ts:8.2,owner:"own_1"},
-        {id:"us_d3",n:"Chase Sapphire Credit Card",tp:"credit_card",mt:4800,pg:200,ts:24.99,owner:"own_1"},
+        {id:"us_d1",n:"Mortgage — Primary Residence",tp:"mortgage",mt:398000,pg:2850,ts:6.1,owner:"own_1"},
+        {id:"us_d2",n:"Mortgage — Rental Duplex",tp:"mortgage",mt:212000,pg:1640,ts:7.3,owner:"own_1"},
+        {id:"us_d3",n:"Student Loans — Navient",tp:"student_loan",mt:31000,pg:340,ts:6.5,owner:"own_1"},
+        {id:"us_d4",n:"Tesla Model Y — Auto Loan",tp:"vehiculo",mt:38000,pg:690,ts:7.4,owner:"own_1"},
+        // Tarjeta al 24,99% con $85K en HYSA al 4,3%: el asesor debería
+        // detectar el diferencial y cuantificarlo.
+        {id:"us_d5",n:"Chase Sapphire Credit Card",tp:"credit_card",mt:14800,pg:450,ts:24.99,owner:"own_1"},
       ];
       nd.gas={
         "Housing":[{c:"Rent — 1BR apartment",m:1850,t:"f",owner:"own_1"},{c:"Utilities & internet",m:180,t:"f",owner:"own_1"}],

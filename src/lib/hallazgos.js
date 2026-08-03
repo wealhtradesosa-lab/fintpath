@@ -51,11 +51,25 @@ function deudaCaraVsAhorro(user, trm, L = textos("es")) {
   // CDT, cuentas de ahorro). Un fondo, acciones o crypto son posiciones
   // tomadas, no plata esperando destino.
   const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro"];
-  const esLiquido = (i) => LIQUIDOS.some((t) => String(i.tipo || "").toLowerCase().includes(t));
+  // 02-ago-2026 — leía SOLO `i.tipo`, pero los activos de US guardan el tipo en
+  // `i.tp` (cash_equiv, hysa...). Resultado: el demo US con $85.000 en el fondo
+  // de emergencia mostraba "No safety net". Se leen ambos campos y se agregan
+  // los tipos americanos a la lista.
+  const esLiquido = (i) => LIQUIDOS.some((t) => String(i.tipo || i.tp || "").toLowerCase().includes(t));
   const liquidos = invs.filter(esLiquido);
   const valorCOP = (i) => (i.moneda === "USD" ? num(i.va) * trm : num(i.va));
   const liquidez = liquidos.reduce((s, i) => s + valorCOP(i), 0);
-  if (liquidez < 1_000_000) return null;
+  // 02-ago-2026 — este umbral era $1.000.000 COP, "ruido de redondeo" en pesos.
+  // En dólares equivale a un millón de USD: el demo con $85.000 en HYSA y una
+  // tarjeta al 24,99% nunca disparaba el hallazgo más útil de todos.
+  // Se escala por TRM: el criterio es el mismo (~USD 240) en ambas monedas.
+  // 02-ago-2026 — los umbrales de este archivo están pensados en PESOS. En la
+  // jurisdicción US los montos vienen en dólares (trm=1), así que hay que
+  // DIVIDIR por una TRM de referencia, no multiplicar: $1.000.000 COP ≈ USD 240.
+  // Sin esto, el demo US con $85.000 en HYSA y una tarjeta al 24,99% nunca
+  // disparaba el hallazgo más útil de todos.
+  const UMB = (cop) => (trm >= 100 ? cop : cop / 4200);
+  if (liquidez < UMB(1_000_000)) return null;
 
   // El rendimiento sale de los datos del usuario, no de una constante mía.
   // Para efectivo, una tasa de 0 es un dato REAL y significativo —plata que
@@ -85,7 +99,7 @@ function deudaCaraVsAhorro(user, trm, L = textos("es")) {
 
   const diferencial = cara.dif;
   const impacto = cara.impacto;
-  if (impacto < 500_000) return null;
+  if (impacto < UMB(500_000)) return null;
 
   return {
     id: "deuda_cara_vs_ahorro",
@@ -140,7 +154,10 @@ function flujoNegativo(t, L = textos("es")) {
   const cf = num(t?.cashFlow);
   if (cf >= 0) return null;
   const deficit = Math.abs(cf);
-  if (deficit < 100_000) return null; // ruido de redondeo
+  // 02-ago-2026 — mismo caso: en dólares 100.000 sería un déficit enorme. Se
+  // detecta la moneda por la magnitud del ingreso bruto.
+  const enUSD = num(t?.brutoTotal) > 0 && num(t?.brutoTotal) < 500_000;
+  if (deficit < (enUSD ? 100_000 / 4200 : 100_000)) return null; // ruido de redondeo
   return {
     id: "flujo_negativo",
     metrica: "-" + Math.round(deficit / 1e6) + "M",
@@ -165,7 +182,9 @@ function fondoEmergencia(user, t, trm, L = textos("es")) {
 
   const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro"];
   const liquidez = activos(user?.inv)
-    .filter((i) => LIQUIDOS.some((x) => String(i.tipo || "").toLowerCase().includes(x)))
+    // 02-ago-2026 — leía solo `i.tipo`; los activos US guardan el tipo en `i.tp`.
+    // El demo US con $85.000 en HYSA mostraba "No safety net".
+    .filter((i) => LIQUIDOS.some((x) => String(i.tipo || i.tp || "").toLowerCase().includes(x)))
     .reduce((s, i) => s + (i.moneda === "USD" ? num(i.va) * trm : num(i.va)), 0);
 
   const meses = liquidez / egresos;
@@ -221,7 +240,9 @@ function colchonSolido(user, t, trm, L = textos("es")) {
   if (egresos <= 0) return null;
   const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro"];
   const liquidez = activos(user?.inv)
-    .filter((i) => LIQUIDOS.some((x) => String(i.tipo || "").toLowerCase().includes(x)))
+    // 02-ago-2026 — leía solo `i.tipo`; los activos US guardan el tipo en `i.tp`.
+    // El demo US con $85.000 en HYSA mostraba "No safety net".
+    .filter((i) => LIQUIDOS.some((x) => String(i.tipo || i.tp || "").toLowerCase().includes(x)))
     .reduce((s, i) => s + (i.moneda === "USD" ? num(i.va) * trm : num(i.va)), 0);
   const meses = liquidez / egresos;
   if (meses < 6) return null;
