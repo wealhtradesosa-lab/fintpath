@@ -28,6 +28,11 @@ export default function PensionBTC({trm:pTrm}){
   const[modoAporte,setModoAporte]=useState("salario");   // salario | libre
   const[frecAporte,setFrecAporte]=useState("mensual");   // mensual | anual | unico
   const[montoLibre,setMontoLibre]=useState("");
+  // 03-ago-2026 (Santiago: "el porcentaje de mi salario no se deja poner").
+  // Estaba fijo en 0.16 — el 16% que se aporta a pensión en Colombia. Pero para
+  // AHORRAR en BTC uno puede querer poner más o menos que eso, y no había cómo.
+  // Default 16 para que la comparación con pensión siga siendo peras con peras.
+  const[pctAporte,setPctAporte]=useState(16);
   const[montoAnual,setMontoAnual]=useState("");
   const[montoUnico,setMontoUnico]=useState("");
   const[anios,setAnios]=useState(10);
@@ -38,7 +43,7 @@ export default function PensionBTC({trm:pTrm}){
   const[pBTC,setPBTC]=useState(68813);
   const trm=pTrm||4200;
   const salMes=salSM*SM;
-  const apMes=salMes*0.16;
+  const apMes=salMes*(pctAporte/100);
   // 26-jul-2026 (Santiago: "cuando uno pone según el número de salarios, cuál
   // es el valor que realmente está aportando cada mes, no se lee bien" · "que
   // bueno para quienes quieren comprar una vez y dejarlo quieto 5 o 10 años").
@@ -75,7 +80,7 @@ export default function PensionBTC({trm:pTrm}){
       }const pf=pBTC*Math.pow(1+cd,y);yd.push({anio:y,precioBTC:Math.round(pf),btcAcum:ba,valorUSD:Math.round(ba*pf)});}
     const pf=pBTC*Math.pow(1+cd,anios),vf=ba*pf,rA=vf*(regla/100),rM=rA/12,rMC=rM*trm,ti=(frecAporte==="mensual"?apMesEfectivo*12*anios:frecAporte==="anual"?(Number(montoAnual)||0)*anios:(Number(montoUnico)||0)),ret=ti>0?((vf*trm-ti)/ti)*100:0;
     return{ba,pf,vf,vfC:vf*trm,rM,rMC,ti,ret,yd};
-  },[salSM,anios,cagr,pBTC,trm,regla,apMes,apMesEfectivo,frecAporte,montoLibre,montoAnual,montoUnico,modoAporte]);
+  },[salSM,anios,cagr,pBTC,trm,regla,apMes,apMesEfectivo,frecAporte,montoLibre,montoAnual,montoUnico,modoAporte,pctAporte]);
 
   const penMes=salMes*(tasaR/100);
   const penAI=penMes*12*0.19;
@@ -212,7 +217,7 @@ export default function PensionBTC({trm:pTrm}){
               con pago único o anual — contradiciendo el modo elegido arriba. */}
           <Rw l={frecAporte==="unico" ? "Invertiste una sola vez:"
                 : frecAporte==="anual" ? "Aporte cada año:"
-                : modoAporte==="libre" ? "Aporte mensual:" : "Aporte mensual (16% del salario):"}
+                : modoAporte==="libre" ? "Aporte mensual:" : "Aporte mensual ("+pctAporte+"% del salario):"}
               v={frecAporte==="unico" ? fC(Number(montoUnico)||0)
                 : frecAporte==="anual" ? fC(Number(montoAnual)||0)+"/año"
                 : fC(apMesEfectivo)+"/mes"} bold/>
@@ -298,7 +303,17 @@ export default function PensionBTC({trm:pTrm}){
                     min={1} max={25} step={1}
                     display={salSM+" "+(salSM===1?"salario mínimo":"salarios mínimos")+" = "+fC(salMes)+"/mes"}
                     color={T.txt}
-                    sub={"→ De ahí aportás "+fC(apMes)+"/mes a BTC (el 16%) · te quedan "+fC(salMes-apMes)}/>
+                    sub={"Con este salario tu pensión sería "+fC(penMes)+"/mes"}/>
+                  {/* 03-ago-2026 — el % estaba fijo en 16 (lo que se aporta a
+                      pensión). Ahora se puede mover: el 16% queda como default
+                      para que la comparación arranque pareja, pero uno puede
+                      ahorrar más o menos que eso. */}
+                  <Sl label="📊 ¿Qué % de tu salario vas a ahorrar en BTC?" value={pctAporte}
+                    onChange={setPctAporte} min={1} max={50} step={1}
+                    display={pctAporte+"% = "+fC(apMes)+"/mes"} color={T.orange}
+                    sub={pctAporte===16
+                      ? "16% es lo mismo que aportás a pensión — así la comparación es pareja"
+                      : "Te quedan "+fC(salMes-apMes)+" del salario"}/>
                 </div>
               )}
             </>}
