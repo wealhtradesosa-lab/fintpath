@@ -286,6 +286,22 @@ exports.handler = async (event) => {
   try {
     const { to, template, vars = {} } = JSON.parse(event.body || "{}");
 
+    // ── 02-ago-2026 — ENDPOINT ABIERTO ────────────────────────────────────
+    // Esta función NO validaba quién la llama: cualquiera con la URL podía
+    // enviar correos DESDE finpathia.com a cualquier destinatario. Riesgo
+    // doble: consumo de la cuota de Resend y, peor, que el dominio termine
+    // marcado como spam por envíos que no salieron de la app.
+    // Es el mismo agujero que se cerró hoy en analyze-image y
+    // parse-declaration.
+    // Se valida el ORIGEN en vez de exigir sesión, porque el welcome email se
+    // dispara justo al registrarse, cuando todavía no hay token estable.
+    const origen = event.headers.origin || event.headers.referer || "";
+    const permitidos = ["https://finpathia.com", "https://www.finpathia.com", "http://localhost"];
+    if (origen && !permitidos.some(o => origen.startsWith(o))) {
+      return { statusCode: 403, headers: cors,
+        body: JSON.stringify({ ok: false, error: "origen_no_permitido" }) };
+    }
+
     if (!to || !template) {
       return { statusCode: 400, headers: cors, body: JSON.stringify({ ok: false, error: "Faltan params: to, template" }) };
     }
