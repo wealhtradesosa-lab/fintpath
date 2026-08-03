@@ -416,50 +416,7 @@ export default function SimuladorUS({ user, totals }) {
           </div>
         )}
 
-  {/* 03-ago-2026 (Santiago: "está ahí pero lo quiero debajo de income
-          sources"). Movido: el Sankey lee del ingreso, así que va DESPUÉS de
-          verlo desglosado y ANTES de los gastos — el mismo orden en que se lee
-          el flujo.
-          El componente ya era genérico: solo se le pasan las etiquetas del
-          1040 por `labels`.
-          Los montos salen de simT, así que el Sankey reacciona a los sliders
-          igual que el resto del simulador. */}
-      {!noData && (()=>{ try{
-        if (!(simT.ni > 0)) return null;
-        const fuentes = (user.ingresos||[]).filter(i=>i.sim!==false)
-          .map(i=>({nombre:i.nombre||i.fuente||"Income", valor:(i.mensual||0)}))
-          .filter(f=>f.valor>0).sort((a,b)=>b.valor-a.valor).slice(0,6);
-        const gastosCats = Object.entries(user.gastos||{})
-          .map(([cat,items])=>[cat,(items||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+(g.m||0),0)])
-          .filter(([,v])=>v>0);
-        return (
-          <div style={{marginBottom:16}}>
-            <SankeyFlujo
-              bruto={simT.ni}
-              fuentes={fuentes}
-              retencion={0}
-              impuesto={simT.taxes||0}
-              aportes={0}
-              cuotas={simT.tc||0}
-              gastosCats={gastosCats}
-              cashFlow={simT.cf||0}
-              subtitulo="Per month."
-              labels={{
-                retencion:"Federal withholding", retencionNota:"never hits your account",
-                impuesto:"Taxes", impuestoNota:"federal + FICA",
-                aportes:"Retirement contributions", aportesNota:"401(k), IRA",
-                cuotas:"Debt payments", cuotasNota:"principal + interest",
-                titulo:"💧 Where your money goes",
-                pie:(monto)=>`Each ribbon's width is the money: ${monto} coming in.`,
-              }}
-              fmt={fm}
-              T={{card:T.card, border:T.border, tx:T.tx, tx2:T.tx2, tx3:T.tx3}}
-            />
-          </div>
-        );
-      }catch(e){ return null } })()}
-
-      {/* Expense + Debt sliders */}
+  {/* Expense + Debt sliders */}
         <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:14,padding:18}}>
           <div style={{fontSize:13,fontWeight:700,color:T.rd,marginBottom:12}}>
             💳 Expenses & Debt Payments
@@ -540,6 +497,50 @@ export default function SimuladorUS({ user, totals }) {
           )}
         </div>
       </div>
+
+{/* 03-ago-2026 (Santiago: "ubicar el gráfico Sankey debajo de expenses y
+          arriba de 5 years net worth"). El Sankey resume el flujo COMPLETO
+          —entra, sale, queda— así que va después de haber visto ingresos y
+          gastos por separado, y antes de la proyección que parte de ese
+          remanente.
+          El componente ya era genérico: solo se le pasan las etiquetas del
+          1040 por `labels`.
+          Los montos salen de simT, así que el Sankey reacciona a los sliders
+          igual que el resto del simulador. */}
+      {!noData && (()=>{ try{
+        if (!(simT.ni > 0)) return null;
+        const fuentes = (user.ingresos||[]).filter(i=>i.sim!==false)
+          .map(i=>({nombre:i.nombre||i.fuente||"Income", valor:(i.mensual||0)}))
+          .filter(f=>f.valor>0).sort((a,b)=>b.valor-a.valor).slice(0,6);
+        const gastosCats = Object.entries(user.gastos||{})
+          .map(([cat,items])=>[cat,(items||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+(g.m||0),0)])
+          .filter(([,v])=>v>0);
+        return (
+          <div style={{marginBottom:16}}>
+            <SankeyFlujo
+              bruto={simT.ni}
+              fuentes={fuentes}
+              retencion={0}
+              impuesto={simT.taxes||0}
+              aportes={0}
+              cuotas={simT.tc||0}
+              gastosCats={gastosCats}
+              cashFlow={simT.cf||0}
+              subtitulo="Per month."
+              labels={{
+                retencion:"Federal withholding", retencionNota:"never hits your account",
+                impuesto:"Taxes", impuestoNota:"federal + FICA",
+                aportes:"Retirement contributions", aportesNota:"401(k), IRA",
+                cuotas:"Debt payments", cuotasNota:"principal + interest",
+                titulo:"💧 Where your money goes",
+                pie:(monto)=>`Each ribbon's width is the money: ${monto} coming in.`,
+              }}
+              fmt={fm}
+              T={{card:T.card, border:T.border, tx:T.tx, tx2:T.tx2, tx3:T.tx3}}
+            />
+          </div>
+        );
+      }catch(e){ return null } })()}
 
       {/* 5-year projection */}
       <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:14,padding:20}}>
