@@ -287,9 +287,18 @@ export default function PensionBTC({trm:pTrm}){
                   </div>}
                 </div>
               ) : (
-                <div style={{background:T.bg3,borderRadius:8,padding:"10px 12px",fontSize:12,color:T.txt2}}>
-                  Aportás <strong style={{color:T.orange,fontFamily:"monospace"}}>{fC(apMes)}/mes</strong>
-                  <span style={{color:T.txt3}}> — el 16% de {salSM} {salSM===1?"salario mínimo":"salarios mínimos"}</span>
+                <div>
+                  {/* 03-ago-2026 (Santiago: "cuando escojo cada mes no me deja
+                      escoger cuánto de mi salario, me quitó esa opción").
+                      Al mover el slider de salario a la sección 4 quedó fuera de
+                      alcance justo en el modo donde SÍ define el aporte. Vuelve
+                      acá, pero solo en "% de mi salario": es el único caso en que
+                      moverlo cambia cuánto se ahorra. */}
+                  <Sl label="💼 ¿Cuántos salarios mínimos ganás?" value={salSM} onChange={setSalSM}
+                    min={1} max={25} step={1}
+                    display={salSM+" "+(salSM===1?"salario mínimo":"salarios mínimos")+" = "+fC(salMes)+"/mes"}
+                    color={T.txt}
+                    sub={"→ De ahí aportás "+fC(apMes)+"/mes a BTC (el 16%) · te quedan "+fC(salMes-apMes)}/>
                 </div>
               )}
             </>}
@@ -338,7 +347,10 @@ export default function PensionBTC({trm:pTrm}){
               que se MUEVE a la sección 4, donde sí pertenece. En modo "% de mi
               salario" el bloque 1 muestra el aporte igual, con su propio texto. */}
 
-                    <Sl label="💼 Tu salario mensual" value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={"Con este salario tu pensión sería "+fC(penMes)+"/mes. Es contra eso que se compara el ahorro en BTC."}/>
+          {/* Solo cuando el aporte NO viene del salario: ahí este slider es
+              únicamente la referencia para calcular la pensión. En modo
+              "% de mi salario" ya está arriba, en la sección del aporte. */}
+          {!(modoAporte!=="libre" && frecAporte==="mensual") && <Sl label="💼 Tu salario mensual" value={salSM} onChange={setSalSM} min={1} max={25} step={1} display={salSM+" salarios mínimos mensuales = "+fC(salSM*SM)+"/mes"} color={T.txt} sub={"Con este salario tu pensión sería "+fC(penMes)+"/mes. Es contra eso que se compara el ahorro en BTC."}/>}
       <Sl label={"🏦 ¿Cuánto retirar al año? (Regla del "+regla+"%)"} value={regla} onChange={setRegla} min={2} max={8} step={0.5} display={regla+"% anual"} color={T.orange} sub={"Si tienes $100M en BTC y retiras "+regla+"%, sacas $"+Math.round(100*regla/100)+"M al año ($"+ Math.round(100*regla/100/12*10)/10 +"M/mes). El resto sigue creciendo. A menor %, tu capital dura para siempre."}/>
         <Sl label={"📊 Tasa de reemplazo pensional"} value={tasaR} onChange={setTasaR} min={30} max={80} step={1} display={tasaR+"%"} color={T.blue} sub={"Es el % de tu salario que recibirías como pensión. En Colombia varía entre 55% y 80% según semanas cotizadas."}/>
       </Cd>
