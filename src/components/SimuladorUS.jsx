@@ -331,45 +331,6 @@ export default function SimuladorUS({ user, totals }) {
         </div>
       )}
 
-      {/* 02-ago-2026 (Santiago: "esa gráfica de Sankey va es en el
-          simulador"). Correcto — en Colombia vive acá, no en el dashboard.
-          El componente ya era genérico: solo se le pasan las etiquetas del
-          1040 por `labels`.
-          Los montos salen de simT, así que el Sankey reacciona a los sliders
-          igual que el resto del simulador. */}
-      {!noData && (()=>{ try{
-        if (!(simT.ni > 0)) return null;
-        const fuentes = (user.ingresos||[]).filter(i=>i.sim!==false)
-          .map(i=>({nombre:i.nombre||i.fuente||"Income", valor:(i.mensual||0)}))
-          .filter(f=>f.valor>0).sort((a,b)=>b.valor-a.valor).slice(0,6);
-        const gastosCats = Object.entries(user.gastos||{})
-          .map(([cat,items])=>[cat,(items||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+(g.m||0),0)])
-          .filter(([,v])=>v>0);
-        return (
-          <div style={{marginBottom:16}}>
-            <SankeyFlujo
-              bruto={simT.ni}
-              fuentes={fuentes}
-              retencion={0}
-              impuesto={simT.taxes||0}
-              aportes={0}
-              cuotas={simT.tc||0}
-              gastosCats={gastosCats}
-              cashFlow={simT.cf||0}
-              subtitulo="Where your money goes, per month."
-              labels={{
-                retencion:"Federal withholding", retencionNota:"never hits your account",
-                impuesto:"Taxes", impuestoNota:"federal + FICA",
-                aportes:"Retirement contributions", aportesNota:"401(k), IRA",
-                cuotas:"Debt payments", cuotasNota:"principal + interest",
-              }}
-              fmt={fm}
-              T={{card:T.card, border:T.border, tx:T.tx, tx2:T.tx2, tx3:T.tx3}}
-            />
-          </div>
-        );
-      }catch(e){ return null } })()}
-
       {/* Scenario buttons */}
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
         {SCENARIOS.map(s=>(
@@ -445,7 +406,48 @@ export default function SimuladorUS({ user, totals }) {
           </div>
         )}
 
-        {/* Expense + Debt sliders */}
+  {/* 03-ago-2026 (Santiago: "está ahí pero lo quiero debajo de income
+          sources"). Movido: el Sankey lee del ingreso, así que va DESPUÉS de
+          verlo desglosado y ANTES de los gastos — el mismo orden en que se lee
+          el flujo.
+          El componente ya era genérico: solo se le pasan las etiquetas del
+          1040 por `labels`.
+          Los montos salen de simT, así que el Sankey reacciona a los sliders
+          igual que el resto del simulador. */}
+      {!noData && (()=>{ try{
+        if (!(simT.ni > 0)) return null;
+        const fuentes = (user.ingresos||[]).filter(i=>i.sim!==false)
+          .map(i=>({nombre:i.nombre||i.fuente||"Income", valor:(i.mensual||0)}))
+          .filter(f=>f.valor>0).sort((a,b)=>b.valor-a.valor).slice(0,6);
+        const gastosCats = Object.entries(user.gastos||{})
+          .map(([cat,items])=>[cat,(items||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+(g.m||0),0)])
+          .filter(([,v])=>v>0);
+        return (
+          <div style={{marginBottom:16}}>
+            <SankeyFlujo
+              bruto={simT.ni}
+              fuentes={fuentes}
+              retencion={0}
+              impuesto={simT.taxes||0}
+              aportes={0}
+              cuotas={simT.tc||0}
+              gastosCats={gastosCats}
+              cashFlow={simT.cf||0}
+              subtitulo="Where your money goes, per month."
+              labels={{
+                retencion:"Federal withholding", retencionNota:"never hits your account",
+                impuesto:"Taxes", impuestoNota:"federal + FICA",
+                aportes:"Retirement contributions", aportesNota:"401(k), IRA",
+                cuotas:"Debt payments", cuotasNota:"principal + interest",
+              }}
+              fmt={fm}
+              T={{card:T.card, border:T.border, tx:T.tx, tx2:T.tx2, tx3:T.tx3}}
+            />
+          </div>
+        );
+      }catch(e){ return null } })()}
+
+      {/* Expense + Debt sliders */}
         <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:14,padding:18}}>
           <div style={{fontSize:13,fontWeight:700,color:T.rd,marginBottom:12}}>
             💳 Expenses & Debt Payments
