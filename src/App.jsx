@@ -459,6 +459,30 @@ export default function FinPath(){
       setU(p => p ? { ...p, trm, trmSrc } : p);
     }
   }, [u]);
+
+  // 03-ago-2026 (Santiago: "cómo hacemos que siempre esté actualizado").
+  // La TRM se pedía UNA sola vez al cargar. Quien deja la pestaña abierta días
+  // —lo normal en una herramienta de trabajo— se quedaba con la tasa de ese
+  // momento.
+  // Ahora se refresca cada 6 horas y, sobre todo, al volver a la pestaña: si
+  // alguien la abrió el viernes y vuelve el lunes, la primera interacción ya
+  // trae la tasa vigente.
+  // El Banco de la República publica solo días hábiles, así que el fin de
+  // semana devuelve la del viernes — eso es correcto, no un dato viejo.
+  useEffect(() => {
+    let vivo = true;
+    const traer = async () => {
+      try {
+        const r = await fetch("/api/trm");
+        const j = await r.json();
+        if (vivo && j?.trm) setU(p => (p && p.trm !== j.trm) ? { ...p, trm: j.trm, trmSrc: j.source } : p);
+      } catch {}
+    };
+    const id = setInterval(traer, 6 * 60 * 60 * 1000);
+    const alVolver = () => { if (document.visibilityState === "visible") traer(); };
+    document.addEventListener("visibilitychange", alVolver);
+    return () => { vivo = false; clearInterval(id); document.removeEventListener("visibilitychange", alVolver); };
+  }, []);
   });const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("mensual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
   // State para menús desplegables del sidebar (sesión 1-may-2026 v3:
   // colapsar Vista familiar y Declaraciones anteriores bajo Impuestos

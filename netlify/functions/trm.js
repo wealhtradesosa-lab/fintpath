@@ -10,15 +10,30 @@ export default async function handler(req) {
     const data = await r.json();
     if (Array.isArray(data) && data.length > 0 && data[0].valor) {
       return new Response(JSON.stringify({ trm: parseFloat(data[0].valor), source: "Banco de la República", date: data[0].vigenciadesde }), {
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*",
+      // 03-ago-2026 — sin caché, cada carga de cada usuario golpeaba a
+      // datos.gov.co. La TRM cambia UNA vez al día hábil, así que una hora de
+      // caché en el CDN es de sobra, y stale-while-revalidate evita que alguien
+      // espere si el dato venció mientras se refresca en segundo plano.
+      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400" }
       });
     }
     return new Response(JSON.stringify({ trm: 4200, source: "default", date: today }), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*",
+      // 03-ago-2026 — sin caché, cada carga de cada usuario golpeaba a
+      // datos.gov.co. La TRM cambia UNA vez al día hábil, así que una hora de
+      // caché en el CDN es de sobra, y stale-while-revalidate evita que alguien
+      // espere si el dato venció mientras se refresca en segundo plano.
+      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400" }
     });
   } catch (err) {
     return new Response(JSON.stringify({ trm: 4200, source: "default", error: err.message }), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*",
+      // 03-ago-2026 — sin caché, cada carga de cada usuario golpeaba a
+      // datos.gov.co. La TRM cambia UNA vez al día hábil, así que una hora de
+      // caché en el CDN es de sobra, y stale-while-revalidate evita que alguien
+      // espere si el dato venció mientras se refresca en segundo plano.
+      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400" }
     });
   }
 }
