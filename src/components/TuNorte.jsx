@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { OBJETIVOS, VEHICULOS, diagnosticar } from "../lib/norte.js";
+import { OBJETIVOS, VEHICULOS, diagnosticar, proyectar } from "../lib/norte.js";
 import BarraComposicion from "./BarraComposicion";
 import Disclaimer from "./Disclaimer";
 
@@ -272,6 +272,70 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
           </div>
         </div>
       )}
+
+      {/* 03-ago-2026 (Santiago: "podrían estos escenarios de norte mostrar cómo
+          afectaría el crecimiento o pérdida de patrimonio en el horizonte de
+          tiempo elegido").
+          SE MUESTRAN TRES ESCENARIOS, no uno: proyectar a 10 años con un solo
+          número es una promesa disfrazada de cálculo. El adverso es el que
+          informa una decisión; el esperado solo entusiasma. */}
+      {objetivo && !diag.vacio && (() => {
+        const proy = proyectar({ total: diag.total, mix: diag.objetivo.mix, anios: horizonte });
+        const hoy = diag.total;
+        const esc = [
+          { k: "adverso",   es: "Si sale mal",   en: "If it goes badly",  col: "#ef4444", v: proy.adverso.final },
+          { k: "esperado",  es: "Escenario base", en: "Base case",         col: gn,        v: proy.esperado.final },
+          { k: "favorable", es: "Si sale bien",  en: "If it goes well",   col: "#3b82f6", v: proy.favorable.final },
+        ];
+        return (
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20, marginTop: 16 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: tx, marginBottom: 3 }}>
+              {isEN ? `Your wealth in ${horizonte} years` : `Tu patrimonio en ${horizonte} años`}
+            </div>
+            <div style={{ fontSize: 11.5, color: tx3, marginBottom: 16, lineHeight: 1.5 }}>
+              {isEN
+                ? `From ${fm(hoy)} today, with this goal's mix. Real returns, after inflation.`
+                : `Desde ${fm(hoy)} hoy, con la mezcla de este objetivo. Retornos reales, ya descontada la inflación.`}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 14 }}>
+              {esc.map((e) => {
+                const veces = hoy > 0 ? e.v / hoy : 0;
+                return (
+                  <div key={e.k} style={{ background: bg3, borderRadius: 12, padding: "14px 16px",
+                        borderTop: `3px solid ${e.col}` }}>
+                    <div style={{ fontSize: 10.5, color: tx3, fontWeight: 600, marginBottom: 5 }}>
+                      {isEN ? e.en : e.es}
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: e.col, fontFamily: "monospace" }}>
+                      {fm(e.v)}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: tx3, marginTop: 3 }}>
+                      {veces >= 1 ? `${veces.toFixed(1)}× ${isEN ? "your wealth today" : "tu patrimonio de hoy"}`
+                                  : `${((1 - veces) * 100).toFixed(0)}% ${isEN ? "less than today" : "menos que hoy"}`}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ padding: "11px 13px", background: "rgba(239,68,68,0.06)",
+                          border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10 }}>
+              <div style={{ fontSize: 11.5, color: tx2, lineHeight: 1.6 }}>
+                {isEN ? (
+                  <>Expected real return for this mix: <strong style={{ color: tx }}>{(proy.retornoEsperado * 100).toFixed(1)}% a year</strong>.
+                  The three numbers are one standard deviation apart — markets don't move in straight lines,
+                  and the bad scenario is as possible as the good one.</>
+                ) : (
+                  <>Retorno real esperado de esta mezcla: <strong style={{ color: tx }}>{(proy.retornoEsperado * 100).toFixed(1)}% anual</strong>.
+                  Los tres números están a una desviación estándar de distancia — los mercados no se mueven en línea recta,
+                  y el escenario malo es tan posible como el bueno.</>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 03-ago-2026 (Santiago: "si uno quiere el norte de crecer con algo de
           renta, cómo debería dividir las inversiones: X en real estate, X en

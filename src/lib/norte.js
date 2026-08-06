@@ -93,6 +93,60 @@ export const VEHICULOS = {
   ],
 };
 
+// 03-ago-2026 (Santiago: "podrían estos escenarios de norte mostrar cómo
+// afectaría el crecimiento o pérdida de patrimonio en el horizonte de tiempo
+// elegido").
+//
+// Retornos REALES (ya descontada inflación) por canasta, y su desviación
+// típica. Las fuentes son las de referencia estándar:
+//   · protección: renta fija e inmueble propio. Rinde poco por diseño — su
+//     función es no caer, no crecer.
+//   · mercado: ~7% real es el promedio largo del S&P 500 descontada inflación
+//     (Siegel, "Stocks for the Long Run"). La desviación es alta: 15-20%.
+//   · aspiración: no tiene retorno esperado honesto. Puede multiplicar o irse
+//     a cero. Se usa 12% con desviación 40% para reflejar que la dispersión
+//     es el punto, no el promedio.
+//
+// POR QUÉ SE MUESTRAN TRES ESCENARIOS Y NO UNO: proyectar a 10 años con un
+// solo número es una promesa disfrazada de cálculo. El escenario adverso es
+// el que informa una decisión; el esperado solo entusiasma.
+export const RETORNOS = {
+  proteccion: { esperado: 0.015, desv: 0.04 },
+  mercado:    { esperado: 0.07,  desv: 0.17 },
+  aspiracion: { esperado: 0.12,  desv: 0.40 },
+};
+
+/**
+ * Proyecta el patrimonio a N años bajo una distribución dada.
+ * Devuelve tres escenarios: adverso (−1 desviación), esperado y favorable
+ * (+1 desviación), aplicados sobre el retorno ponderado de la mezcla.
+ */
+export function proyectar({ total, mix, anios, aporteAnual = 0 }) {
+  const w = { proteccion: mix.proteccion / 100, mercado: mix.mercado / 100, aspiracion: mix.aspiracion / 100 };
+  const rEsperado = Object.keys(w).reduce((s, k) => s + w[k] * RETORNOS[k].esperado, 0);
+  // La desviación de la cartera no es la suma de las desviaciones: se asume
+  // correlación parcial. Usar la suma simple exageraría el rango.
+  const desv = Math.sqrt(Object.keys(w).reduce((s, k) => s + Math.pow(w[k] * RETORNOS[k].desv, 2), 0)) * 1.35;
+
+  const crecer = (r) => {
+    let v = total;
+    const serie = [];
+    for (let y = 1; y <= anios; y++) {
+      v = v * (1 + r) + aporteAnual;
+      serie.push({ anio: y, valor: v });
+    }
+    return { final: v, serie };
+  };
+
+  return {
+    retornoEsperado: rEsperado,
+    desviacion: desv,
+    adverso:   crecer(rEsperado - desv),
+    esperado:  crecer(rEsperado),
+    favorable: crecer(rEsperado + desv),
+  };
+}
+
 export const OBJETIVOS = {
   renta: {
     id: "renta",
