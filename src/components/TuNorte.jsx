@@ -236,9 +236,16 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
                     <span style={{ fontSize: 12.5, fontFamily: "monospace", color: tx }}>
                       {b.actual.toFixed(0)}%
                       <span style={{ color: tx3 }}> → {b.objetivo}%</span>
+                      {/* 03-ago-2026 (Santiago: "uno no sabe si debe sumar o restar
+                          esos números para saber qué le falta o qué sobra"). Un
+                          "+53" suelto no dice nada: el signo puede leerse al revés.
+                          Ahora va la palabra y el MONTO, que es lo accionable. */}
                       {Math.abs(b.puntos) >= 5 && (
-                        <span style={{ color: b.puntos > 0 ? "#f97316" : "#3b82f6", marginLeft: 8, fontWeight: 700 }}>
-                          {b.puntos > 0 ? "+" : ""}{b.puntos.toFixed(0)}
+                        <span style={{ color: b.puntos > 0 ? "#f97316" : "#3b82f6",
+                                       marginLeft: 8, fontWeight: 700, fontSize: 11.5 }}>
+                          {b.puntos > 0
+                            ? (isEN ? `${fm(Math.abs(b.monto))} too much` : `sobran ${fm(Math.abs(b.monto))}`)
+                            : (isEN ? `${fm(Math.abs(b.monto))} short`    : `faltan ${fm(Math.abs(b.monto))}`)}
                         </span>
                       )}
                     </span>
