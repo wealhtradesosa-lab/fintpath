@@ -89,7 +89,7 @@ export const VEHICULOS = {
   aspiracion: [
     { es: "Negocio propio", en: "Your own business", peso: 50 },
     { es: "Cripto", en: "Crypto", peso: 25 },
-    { es: "Posiciones concentradas", en: "Concentrated positions", peso: 25 },
+    { es: "Una sola apuesta grande", en: "One big bet", peso: 25 },
   ],
 };
 
@@ -146,6 +146,39 @@ export function proyectar({ total, mix, anios, aporteAnual = 0 }) {
     favorable: crecer(rEsperado + desv),
   };
 }
+
+// 03-ago-2026 (Santiago: "no entiendo estos términos protección, mercado,
+// aspiración... qué son eso de posiciones concentradas, eso no es claro").
+// Si el dueño del producto no entiende los nombres, un usuario menos. Los
+// términos vienen del paper de Chhabra y se conservan porque son los del
+// marco, pero cada uno necesita su explicación en lenguaje común y el retorno
+// que se le asume — sin eso la proyección sale de una caja negra.
+export const CANASTAS_EXPLICADAS = {
+  proteccion: {
+    es: { nombre: "Protección", corto: "Lo que te sostiene si todo sale mal",
+          largo: "Tu casa sin deuda, efectivo, CDT, renta fija. No crece mucho — esa no es su función. Su función es que nunca tengas que vender algo bueno en un mal momento.",
+          retorno: "1,5% anual sobre la inflación" },
+    en: { nombre: "Protection", corto: "What holds you up if everything goes wrong",
+          largo: "Your home with no mortgage, cash, CDs, fixed income. It doesn't grow much — that's not its job. Its job is that you never have to sell something good at a bad time.",
+          retorno: "1.5% a year above inflation" },
+  },
+  mercado: {
+    es: { nombre: "Mercado", corto: "Lo que crece parejo con la economía",
+          largo: "Fondos indexados, acciones diversificadas, inmuebles que se arriendan. Sube y baja con el mercado, pero en plazos largos crece de forma razonablemente predecible.",
+          retorno: "7% anual sobre la inflación" },
+    en: { nombre: "Market", corto: "What grows along with the economy",
+          largo: "Index funds, diversified stocks, rental property. It moves with the market, but over long horizons it grows fairly predictably.",
+          retorno: "7% a year above inflation" },
+  },
+  aspiracion: {
+    es: { nombre: "Aspiración", corto: "Lo que puede multiplicar — o irse a cero",
+          largo: "Tu negocio propio, cripto, una sola apuesta grande. Acá está el potencial de multiplicar el patrimonio, y también el de perderlo. Por eso nunca debería ser la mayoría.",
+          retorno: "12% anual promedio, pero con desviaciones enormes" },
+    en: { nombre: "Aspiration", corto: "What can multiply — or go to zero",
+          largo: "Your own business, crypto, one big bet. This is where wealth multiplies, and where it disappears. That's why it should never be the majority.",
+          retorno: "12% a year on average, with enormous swings" },
+  },
+};
 
 export const OBJETIVOS = {
   renta: {

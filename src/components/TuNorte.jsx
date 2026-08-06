@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { OBJETIVOS, VEHICULOS, diagnosticar, proyectar } from "../lib/norte.js";
+import { OBJETIVOS, VEHICULOS, CANASTAS_EXPLICADAS, diagnosticar, proyectar } from "../lib/norte.js";
 import BarraComposicion from "./BarraComposicion";
 import Disclaimer from "./Disclaimer";
 
@@ -82,6 +82,31 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
             ? "Where you're headed, and how far you are from it."
             : "Hacia dónde vas, y qué tan lejos estás."}
         </p>
+      </div>
+
+      {/* 03-ago-2026 (Santiago: "no entiendo estos términos protección, mercado,
+          aspiración"). Los nombres vienen del marco de Chhabra y se conservan,
+          pero sin explicarlos la sección entera es jerga. Va ARRIBA de todo:
+          hay que entender el vocabulario antes de elegir un objetivo. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
+                    gap: 10, marginBottom: 20 }}>
+        {["proteccion", "mercado", "aspiracion"].map((k) => {
+          const e = CANASTAS_EXPLICADAS[k][L];
+          return (
+            <div key={k} style={{ background: card, border: `1px solid ${border}`,
+                  borderRadius: 12, padding: "14px 16px", borderTop: `3px solid ${PAL_CANASTA[k]}` }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: tx, marginBottom: 3 }}>{e.nombre}</div>
+              <div style={{ fontSize: 11.5, color: PAL_CANASTA[k], fontWeight: 600, marginBottom: 7 }}>
+                {e.corto}
+              </div>
+              <div style={{ fontSize: 11, color: tx3, lineHeight: 1.6, marginBottom: 8 }}>{e.largo}</div>
+              <div style={{ fontSize: 10.5, color: tx2, fontFamily: "monospace",
+                            paddingTop: 7, borderTop: `1px solid ${border}` }}>
+                {isEN ? "Assumed: " : "Se asume: "}{e.retorno}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* ── Elegir objetivo ── */}
@@ -323,11 +348,11 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
                           border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10 }}>
               <div style={{ fontSize: 11.5, color: tx2, lineHeight: 1.6 }}>
                 {isEN ? (
-                  <>Expected real return for this mix: <strong style={{ color: tx }}>{(proy.retornoEsperado * 100).toFixed(1)}% a year</strong>.
+                  <><strong style={{ color: tx }}>How this is calculated:</strong> each bucket has a reference annual return — protection 1.5%, market 7%, aspiration 12%, all after inflation. Your mix averages <strong style={{ color: tx }}>{(proy.retornoEsperado * 100).toFixed(1)}% a year</strong>.
                   The three numbers are one standard deviation apart — markets don't move in straight lines,
                   and the bad scenario is as possible as the good one.</>
                 ) : (
-                  <>Retorno real esperado de esta mezcla: <strong style={{ color: tx }}>{(proy.retornoEsperado * 100).toFixed(1)}% anual</strong>.
+                  <><strong style={{ color: tx }}>Cómo se calcula:</strong> cada canasta tiene un retorno anual de referencia — protección 1,5%, mercado 7%, aspiración 12%, todos ya descontada la inflación. Tu mezcla promedia <strong style={{ color: tx }}>{(proy.retornoEsperado * 100).toFixed(1)}% anual</strong>.
                   Los tres números están a una desviación estándar de distancia — los mercados no se mueven en línea recta,
                   y el escenario malo es tan posible como el bueno.</>
                 )}
