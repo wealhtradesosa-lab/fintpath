@@ -194,8 +194,44 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
     });
   }
 
+  // 03-ago-2026 (Santiago: "casi que clasificar el patrimonio según ese nuevo
+  // norte e informar cuáles no cumplen").
+  // Se evalúa ACTIVO POR ACTIVO contra el objetivo. La decisión de diseño
+  // importante: NO se dice "vendé esto". Se dice qué canasta ocupa, si esa
+  // canasta está sobre o bajo el objetivo, y si el activo concentra demasiado.
+  // La diferencia entre un mapa y un chofer: recomendar operaciones concretas
+  // es asesoría de inversión, y ni la plataforma ni Santiago están registrados
+  // para darla.
+  const brechaDe = {};
+  brechas.forEach((b) => { brechaDe[b.canasta] = b.puntos; });
+
+  const evaluados = activos
+    .map((i) => {
+      const canasta = canastaDe(i);
+      const v = valor(i);
+      const peso = (v / total) * 100;
+      const exceso = brechaDe[canasta];   // >0: esa canasta sobra; <0: falta
+
+      let estado, razon;
+      if (peso >= 40) {
+        estado = "revisar";
+        razon = `Concentra el ${peso.toFixed(0)}% de tu patrimonio. Sea cual sea el objetivo, un solo activo con ese peso es tu mayor riesgo.`;
+      } else if (exceso >= 15) {
+        estado = "revisar";
+        razon = `Está en una canasta que tu objetivo pide reducir (${brechaDe[canasta] > 0 ? "+" : ""}${exceso.toFixed(0)} puntos sobre el objetivo).`;
+      } else if (exceso <= -15) {
+        estado = "aporta";
+        razon = `Está en la canasta que tu objetivo pide reforzar. Faltan ${Math.abs(exceso).toFixed(0)} puntos acá.`;
+      } else {
+        estado = "alineado";
+        razon = "Su canasta está en línea con lo que tu objetivo pide.";
+      }
+      return { nombre: i.n || i.nombre || "Activo", tipo: i.tp || i.tipo || "—", valor: v, peso, canasta, estado, razon };
+    })
+    .sort((a, b) => b.valor - a.valor);
+
   return {
     vacio: false, objetivo: obj, total, porCanasta, pct, brechas,
-    concentracion, activoMayor: mayor, cobertura, hallazgos, detalle,
+    concentracion, activoMayor: mayor, cobertura, hallazgos, detalle, evaluados,
   };
 }

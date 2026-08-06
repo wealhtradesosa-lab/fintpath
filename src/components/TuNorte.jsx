@@ -255,6 +255,57 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
         </div>
       )}
 
+      {/* 03-ago-2026 (Santiago: "casi que clasificar el patrimonio según ese
+          nuevo norte e informar cuáles no cumplen"). Elegir un objetivo y ver
+          dos barras no era un norte: faltaba el activo por activo.
+          Se muestra QUÉ canasta ocupa cada uno y si aporta al objetivo, pero
+          NO se dice "vendé esto": recomendar operaciones concretas es asesoría
+          de inversión. Es la diferencia entre un mapa y un chofer. */}
+      {objetivo && !diag.vacio && diag.evaluados?.length > 0 && (
+        <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20, marginTop: 16 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: tx, marginBottom: 3 }}>
+            {isEN ? "Your assets against your north" : "Tus activos frente a tu norte"}
+          </div>
+          <div style={{ fontSize: 11.5, color: tx3, marginBottom: 14, lineHeight: 1.5 }}>
+            {isEN
+              ? "Which ones move you toward your goal and which ones pull away. This is a map, not an instruction — decisions are yours and your advisor's."
+              : "Cuáles te acercan a tu objetivo y cuáles no. Esto es un mapa, no una instrucción: las decisiones son tuyas y de tu asesor."}
+          </div>
+
+          {["revisar", "aporta", "alineado"].map((est) => {
+            const grupo = diag.evaluados.filter((a) => a.estado === est);
+            if (!grupo.length) return null;
+            const cfg = {
+              revisar:  { ic: "⚠️", col: "#f97316", es: "Conviene revisar", en: "Worth reviewing" },
+              aporta:   { ic: "✅", col: gn,        es: "Aportan a tu norte", en: "Moving you forward" },
+              alineado: { ic: "·",  col: tx3,       es: "En línea", en: "On track" },
+            }[est];
+            return (
+              <div key={est} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: cfg.col,
+                              letterSpacing: "0.06em", marginBottom: 8 }}>
+                  {cfg.ic} {(isEN ? cfg.en : cfg.es).toUpperCase()} · {grupo.length}
+                </div>
+                {grupo.map((a, i) => (
+                  <div key={i} style={{ padding: "10px 12px", background: bg3, borderRadius: 9,
+                        marginBottom: 6, borderLeft: `3px solid ${cfg.col}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between",
+                          gap: 10, flexWrap: "wrap", alignItems: "baseline" }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: tx }}>{a.nombre}</span>
+                      <span style={{ fontSize: 12.5, fontFamily: "monospace", color: cfg.col, fontWeight: 700 }}>
+                        {fm(a.valor)}
+                        <span style={{ color: tx3, fontWeight: 500, marginLeft: 6 }}>{a.peso.toFixed(0)}%</span>
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11, color: tx3, marginTop: 4, lineHeight: 1.55 }}>{a.razon}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* 03-ago-2026 (Santiago: "poner algún crédito o texto que diga de quién
           es esta metodología, para darle peso"). Citar la fuente no es adorno:
           diferencia un marco reconocido de una regla inventada, y el usuario
