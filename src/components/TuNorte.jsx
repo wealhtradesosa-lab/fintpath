@@ -255,6 +255,43 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
         </div>
       )}
 
+      {/* 03-ago-2026 (Santiago: "poner algún crédito o texto que diga de quién
+          es esta metodología, para darle peso"). Citar la fuente no es adorno:
+          diferencia un marco reconocido de una regla inventada, y el usuario
+          puede ir a verificarlo. */}
+      <div style={{ marginTop: 18, padding: "13px 15px", borderRadius: 10,
+                    background: bg3, border: `1px solid ${border}` }}>
+        <div style={{ fontSize: 10.5, fontWeight: 700, color: tx3, letterSpacing: "0.06em", marginBottom: 5 }}>
+          {isEN ? "ABOUT THIS METHODOLOGY" : "SOBRE ESTA METODOLOGÍA"}
+        </div>
+        <div style={{ fontSize: 11.5, color: tx2, lineHeight: 1.65 }}>
+          {isEN ? (
+            <>
+              The three-bucket framework comes from <strong style={{ color: tx }}>Ashvin B. Chhabra</strong>,
+              former Chief Investment Officer at Merrill Lynch Wealth Management, in his
+              paper <em>"Beyond Markowitz: A Comprehensive Wealth Allocation Framework for
+              Individual Investors"</em> (Journal of Wealth Management, Vol. 7 No. 4, 2005),
+              later expanded in <em>The Aspirational Investor</em> (2015). His central
+              conclusion: <strong style={{ color: tx }}>risk allocation should precede asset
+              allocation</strong>. Wealth gets organized by purpose — personal, market and
+              aspirational risk — instead of optimizing one portfolio for volatility alone.
+            </>
+          ) : (
+            <>
+              El modelo de tres canastas es de <strong style={{ color: tx }}>Ashvin B. Chhabra</strong>,
+              ex Director de Inversiones de Merrill Lynch Wealth Management, en su paper
+              <em>"Beyond Markowitz: A Comprehensive Wealth Allocation Framework for
+              Individual Investors"</em> (Journal of Wealth Management, Vol. 7 N.º 4, 2005),
+              ampliado luego en el libro <em>The Aspirational Investor</em> (2015). Su
+              conclusión central: <strong style={{ color: tx }}>la asignación de riesgo debe
+              preceder a la de activos</strong>. El patrimonio se organiza por propósito
+              —riesgo personal, de mercado y aspiracional— en vez de optimizar un solo
+              portafolio por volatilidad.
+            </>
+          )}
+        </div>
+      </div>
+
       <Disclaimer variante="general" idioma={L} T={T} />
     </div>
   );
