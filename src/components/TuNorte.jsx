@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { OBJETIVOS, diagnosticar } from "../lib/norte.js";
+import { OBJETIVOS, VEHICULOS, diagnosticar } from "../lib/norte.js";
 import BarraComposicion from "./BarraComposicion";
 import Disclaimer from "./Disclaimer";
 
@@ -176,6 +176,24 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
               paleta={[PAL_CANASTA.proteccion, PAL_CANASTA.mercado, PAL_CANASTA.aspiracion]}
               T={{ ...T, tx: tx, tx2, tx3, card, border }} altura={44} />
 
+            {/* 03-ago-2026 (Santiago: "aquí no debería mostrar el cómo estoy y
+                a dónde debería ir? solo veo el actual"). Faltaba la barra del
+                OBJETIVO debajo de la actual: sin las dos juntas no se ve la
+                brecha, que es el punto de la sección. */}
+            <div style={{ fontSize: 11, color: tx3, margin: "14px 0 6px", fontWeight: 600 }}>
+              {isEN ? "WHERE YOU SHOULD BE" : "DÓNDE DEBERÍAS ESTAR"}
+            </div>
+            <div style={{ display: "flex", height: 44, borderRadius: 8, overflow: "hidden", gap: 2 }}>
+              {["proteccion", "mercado", "aspiracion"].map((c) => (
+                <div key={c} style={{ flex: diag.objetivo.mix[c], background: PAL_CANASTA[c],
+                      opacity: 0.55, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#0a0a0a", fontFamily: "monospace" }}>
+                    {diag.objetivo.mix[c]}%
+                  </span>
+                </div>
+              ))}
+            </div>
+
             <div style={{ marginTop: 14 }}>
               {["proteccion", "mercado", "aspiracion"].map((c) => {
                 const b = diag.brechas.find((x) => x.canasta === c);
@@ -251,6 +269,61 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
             {isEN
               ? "Add your assets to see how they compare against your goal."
               : "Cargá tu patrimonio para ver cómo se compara con tu objetivo."}
+          </div>
+        </div>
+      )}
+
+      {/* 03-ago-2026 (Santiago: "si uno quiere el norte de crecer con algo de
+          renta, cómo debería dividir las inversiones: X en real estate, X en
+          fondos, acciones"). Las canastas son abstractas; esto las baja a
+          vehículos concretos con el monto que le correspondería a cada uno.
+          Son referencias de COMPOSICIÓN —qué tipo de activo cumple cada
+          función— no recomendaciones de compra. */}
+      {objetivo && !diag.vacio && (
+        <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20, marginTop: 16 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: tx, marginBottom: 3 }}>
+            {isEN ? "How this goal splits your wealth" : "Cómo se reparte tu patrimonio con este norte"}
+          </div>
+          <div style={{ fontSize: 11.5, color: tx3, marginBottom: 14, lineHeight: 1.5 }}>
+            {isEN
+              ? `Reference composition for ${fm(diag.total)}. These are types of assets that serve each purpose — not specific recommendations.`
+              : `Composición de referencia para ${fm(diag.total)}. Son tipos de activo que cumplen cada función, no recomendaciones concretas.`}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
+            {["proteccion", "mercado", "aspiracion"].map((cn) => {
+              const montoCanasta = diag.total * (diag.objetivo.mix[cn] / 100);
+              const actual = diag.porCanasta[cn];
+              const dif = actual - montoCanasta;
+              return (
+                <div key={cn} style={{ background: bg3, borderRadius: 12, padding: "14px 16px",
+                      borderTop: `3px solid ${PAL_CANASTA[cn]}` }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: tx, marginBottom: 2 }}>
+                    {NOM_CANASTA[cn]} · {diag.objetivo.mix[cn]}%
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: PAL_CANASTA[cn],
+                                fontFamily: "monospace", marginBottom: 3 }}>
+                    {fm(montoCanasta)}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: tx3, marginBottom: 10 }}>
+                    {isEN ? "you have" : "tenés"} {fm(actual)}
+                    <span style={{ color: Math.abs(dif) < diag.total * 0.05 ? tx3 : (dif > 0 ? "#f97316" : "#3b82f6"),
+                                   fontWeight: 700, marginLeft: 5 }}>
+                      {dif > 0 ? "+" : ""}{fm(dif)}
+                    </span>
+                  </div>
+                  {VEHICULOS[cn].map((v, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8,
+                          flexWrap: "wrap", padding: "5px 0", fontSize: 11 }}>
+                      <span style={{ color: tx2, flex: "1 1 auto", minWidth: 0 }}>{v[L]}</span>
+                      <span style={{ color: tx3, fontFamily: "monospace", flexShrink: 0 }}>
+                        {fm(montoCanasta * (v.peso / 100))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

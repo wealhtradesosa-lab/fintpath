@@ -68,6 +68,31 @@ export function canastaDe(activo) {
 // Las proporciones vienen del rango que Chhabra y la práctica de family office
 // usan para cada mandato. No son leyes: son puntos de referencia contra los
 // cuales medir una desviación.
+// 03-ago-2026 (Santiago: "si uno quiere por ejemplo el norte de crecer con algo
+// de renta, cómo debería dividir las inversiones: X en real estate, X en
+// fondos, acciones, etc.").
+// Las canastas son abstractas y no dicen EN QUÉ invertir. Este mapa baja cada
+// canasta a los vehículos que la componen, con su peso relativo dentro de ella.
+// Son referencias de composición, no recomendaciones de compra: qué TIPO de
+// activo cumple cada función, no cuál comprar.
+export const VEHICULOS = {
+  proteccion: [
+    { es: "Inmueble propio (sin deuda)", en: "Primary residence (no debt)", peso: 45 },
+    { es: "Efectivo y cuentas de ahorro", en: "Cash and savings", peso: 25 },
+    { es: "CDT y renta fija", en: "CDs and fixed income", peso: 30 },
+  ],
+  mercado: [
+    { es: "Fondos indexados y ETFs", en: "Index funds and ETFs", peso: 50 },
+    { es: "Inmuebles de renta", en: "Rental property", peso: 30 },
+    { es: "Acciones diversificadas", en: "Diversified stocks", peso: 20 },
+  ],
+  aspiracion: [
+    { es: "Negocio propio", en: "Your own business", peso: 50 },
+    { es: "Cripto", en: "Crypto", peso: 25 },
+    { es: "Posiciones concentradas", en: "Concentrated positions", peso: 25 },
+  ],
+};
+
 export const OBJETIVOS = {
   renta: {
     id: "renta",
