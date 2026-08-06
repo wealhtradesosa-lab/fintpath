@@ -185,8 +185,12 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
               </div>
               {!editando && (
                 <button onClick={() => setEditando(true)}
-                  style={{ background: "transparent", border: `1px solid ${border}`, borderRadius: 8,
-                    padding: "6px 12px", cursor: "pointer", color: tx3, fontSize: 11.5 }}>
+                  // 03-ago-2026 (Santiago: "el botón cambiar de norte casi no se
+                  // ve, por qué no lo ponemos verde"). Estaba en gris tenue sobre
+                  // fondo oscuro: parecía deshabilitado. Es la acción principal de
+                  // esa tarjeta —cambiar de objetivo— así que debe verse como tal.
+                  style={{ background: "rgba(34,197,94,0.12)", border: `1px solid ${gn}`, borderRadius: 8,
+                    padding: "7px 14px", cursor: "pointer", color: gn, fontSize: 12, fontWeight: 700 }}>
                   {isEN ? "Change" : "Cambiar"}
                 </button>
               )}
