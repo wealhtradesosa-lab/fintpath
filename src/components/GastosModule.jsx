@@ -10,6 +10,7 @@ import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportGastosExcel } from "../lib/excelExport.js";
+import { exportGastosPDF } from "../lib/pdfSectionExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
@@ -543,6 +544,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             title="Descarga XLSX con detalle + resumen por categoría (Fijos vs Variables)"
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             📊 Excel
+          </button>
+          <button onClick={() => exportGastosPDF(gastos)}
+            title="Descarga PDF con fijos vs variables + desglose por categoria"
+            style={{ background: "#dc2626", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            📄 PDF
           </button>
           <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}

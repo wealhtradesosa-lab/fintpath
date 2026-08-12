@@ -7,6 +7,7 @@ import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportDeudasExcel } from "../lib/excelExport.js";
+import { exportDeudasPDF } from "../lib/pdfSectionExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import FrecuenciaSelector from "./FrecuenciaSelector";
 import TablaMensual from "./TablaMensual";
@@ -227,6 +228,11 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             title="Descarga XLSX con detalle de deudas + vinculación con activos"
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             📊 Excel
+          </button>
+          <button onClick={() => exportDeudasPDF(activos, inversiones, owners)}
+            title="Descarga PDF con saldos, tasas y orden sugerido de pago"
+            style={{ background: "#dc2626", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            📄 PDF
           </button>
           <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", desdeMes: 1, hastaMes: 12, vigenciaModo: undefined }); setShowForm(true); }}
             style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>

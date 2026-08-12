@@ -8,6 +8,7 @@ import NumberInput from "./NumberInput";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportIngresosExcel } from "../lib/excelExport.js";
+import { exportIngresosPDF } from "../lib/pdfSectionExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
@@ -592,6 +593,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             title="Descarga XLSX con detalle + resumen por categoría"
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             📊 Excel
+          </button>
+          <button onClick={() => exportIngresosPDF(activos, owners)}
+            title="Descarga PDF con resumen + detalle + desglose por categoria"
+            style={{ background: "#dc2626", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            📄 PDF
           </button>
           <button onClick={() => { setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>

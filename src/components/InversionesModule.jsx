@@ -8,6 +8,7 @@ import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
 import { exportInversionesExcel } from "../lib/excelExport.js";
+import { exportPatrimonioPDF } from "../lib/pdfSectionExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { vaCOP } from "../lib/flowHelpers.js";
 
@@ -242,6 +243,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
             title="Descarga XLSX con activos + resumen por tipo + resumen por propietario fiscal"
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             📊 Excel
+          </button>
+          <button onClick={() => exportPatrimonioPDF(activos, owners)}
+            title="Descarga PDF con valor, ganancia y concentracion por tipo"
+            style={{ background: "#dc2626", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            📄 PDF
           </button>
           <button onClick={openAdd} style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
