@@ -37,7 +37,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fmt, onImport, user, plan, onUpgrade}) {
+export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fmt, onImport, user, plan, onUpgrade, trm}) {
   const fm = fmt || _fm;
   // Fase 3 commit 6: gating reader.
   const { role } = useRole();
@@ -229,12 +229,12 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬆️ Subir Excel
           </button>}
-          <button onClick={() => exportDeudasExcel(activos, inversiones, owners)}
+          <button onClick={() => exportDeudasExcel(activos, inversiones, owners, trm)}
             title="Bajar Excel: detalle de deudas + vinculación con activos"
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬇️ Bajar Excel
           </button>
-          <button onClick={() => exportDeudasPDF(activos, inversiones, owners)}
+          <button onClick={() => exportDeudasPDF(activos, inversiones, owners, trm)}
             title="Bajar PDF: saldos, tasas y orden sugerido de pago"
             style={{ background: "#dc2626", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬇️ Bajar PDF

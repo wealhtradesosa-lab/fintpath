@@ -247,7 +247,7 @@ function defaultFiscalCode(ownerType, cat) {
   return "GAS_NAT_PERSONAL";
 }
 
-export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, ingresos, plan, onUpgrade, user}) {
+export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, ingresos, plan, onUpgrade, user, trm}) {
   // Fase 3 commit 6: gating reader. Mismo patrón que IngresosModule.
   const { role } = useRole();
   const [scanning, setScanning] = useState(false);
@@ -545,12 +545,12 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬆️ Subir Excel
           </button>}
-          <button onClick={() => exportGastosExcel(gastos)}
+          <button onClick={() => exportGastosExcel(gastos, trm)}
             title="Bajar Excel: detalle + resumen por categoría (Fijos vs Variables)"
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬇️ Bajar Excel
           </button>
-          <button onClick={() => exportGastosPDF(gastos)}
+          <button onClick={() => exportGastosPDF(gastos, trm)}
             title="Bajar PDF: fijos vs variables y desglose por categoría"
             style={{ background: "#dc2626", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬇️ Bajar PDF

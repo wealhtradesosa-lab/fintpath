@@ -594,12 +594,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬆️ Subir Excel
           </button>}
-          <button onClick={() => exportIngresosExcel(activos, owners)}
+          <button onClick={() => exportIngresosExcel(activos, owners, trm)}
             title="Bajar Excel: detalle + resumen por categoría"
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬇️ Bajar Excel
           </button>
-          <button onClick={() => exportIngresosPDF(activos, owners)}
+          <button onClick={() => exportIngresosPDF(activos, owners, trm)}
             title="Bajar PDF: resumen, detalle y desglose por categoría"
             style={{ background: "#dc2626", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬇️ Bajar PDF

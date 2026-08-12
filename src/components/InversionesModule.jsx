@@ -10,7 +10,7 @@ import PageHeader from "./PageHeader";
 import { exportInversionesExcel } from "../lib/excelExport.js";
 import { exportPatrimonioPDF } from "../lib/pdfSectionExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
-import { vaCOP } from "../lib/flowHelpers.js";
+import { vaCOP, vcCOP } from "../lib/flowHelpers.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -59,7 +59,22 @@ const getType = (i) => {
 // Ahora la TRM se pasa como argumento, que es lo correcto para una función
 // que no está dentro del componente.
 const getVA = (i, trm) => vaCOP({ ...i, va: i.va ?? i.valor_actual ?? i.valor ?? 0 }, trm || 4200);
-const getVC = (i) => Number(i.vc || i.valor_compra || i.costo || 0);
+// 12-ago-2026 (Santiago): "si uno pone valor en dólares lo pasa a pesos en
+// valor actual pero no en el de compra". Exacto: el 26-jul se arregló getVA
+// para convertir moneda y getVC quedó devolviendo el número crudo. En un
+// activo en USD el valor actual salía ×TRM y el de compra en dólares, así que
+// la ganancia era el disparate de restar dólares a pesos (un activo de
+// 460k→575k USD mostraba una "ganancia" de ~2.415 millones de pesos).
+const getVC = (i, trm) => vcCOP({ ...i, vc: i.vc ?? i.valor_compra ?? i.costo ?? 0 }, trm || 4200);
+
+// Valores SIN convertir, en la moneda en que el usuario los cargó. Son los
+// que van al formulario: el form tiene su propio selector de moneda, así que
+// prellenarlo con pesos convertidos y dejar el selector en USD hacía que al
+// guardar se escribiera el monto en pesos con moneda USD — y al volver a
+// abrirlo se multiplicaba por la TRM otra vez. Cada edición inflaba el activo
+// ~4.200×, de forma silenciosa y permanente.
+const getVArw = (i) => Number(i.va ?? i.valor_actual ?? i.valor ?? 0);
+const getVCrw = (i) => Number(i.vc ?? i.valor_compra ?? i.costo ?? 0);
 
 function calcMetrics(inv, deudas, trm) {
   let ig = 0, gs = 0;
@@ -72,7 +87,7 @@ function calcMetrics(inv, deudas, trm) {
     (inv.ingresos || inv.ig || []).forEach((i) => { ig += i.m || 0; });
     (inv.gastos || inv.gs || []).forEach((g) => { gs += g.m || 0; });
   }
-  const va = getVA(inv, trm), vc = getVC(inv);
+  const va = getVA(inv, trm), vc = getVC(inv, trm);
   const noi = ig - gs;
   const linkedDebt = (deudas || []).filter((d) => (d.la || d.link) === inv.id);
   const debtTotal = linkedDebt.reduce((s, d) => s + (d.mt || d.monto || 0), 0);
@@ -160,8 +175,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       tipo: String(getType(inv) || "Real Estate"),
       fiscalCode: inv.fiscalCode || "INV_INMUEBLE_HABITACIONAL",
       pctTerreno: inv.pctTerreno != null ? String(inv.pctTerreno) : "",
-      va: String(getVA(inv, trm) || ""),
-      vc: String(getVC(inv) || ""),
+      va: String(getVArw(inv) || ""),
+      vc: String(getVCrw(inv) || ""),
       tasa: String(inv.tasa || ""),
       owner: inv.owner || "",
       moneda: inv.moneda || "COP",
@@ -244,12 +259,12 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬆️ Subir Excel
           </button>}
-          <button onClick={() => exportInversionesExcel(activos, owners)}
+          <button onClick={() => exportInversionesExcel(activos, owners, trm)}
             title="Descarga XLSX con activos + resumen por tipo + resumen por propietario fiscal"
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬇️ Bajar Excel
           </button>
-          <button onClick={() => exportPatrimonioPDF(activos, owners)}
+          <button onClick={() => exportPatrimonioPDF(activos, owners, trm)}
             title="Bajar PDF: valor, ganancia y concentración por tipo"
             style={{ background: "#dc2626", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬇️ Bajar PDF
@@ -433,7 +448,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     </td>
                     <td style={{ padding: "12px 14px", fontSize: 11, color: T.txt3 }}>{tipo}</td>
                     <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700 }}>{fm(va)}</td>
-                    <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: (va-getVC(inv)) >= 0 ? T.green : T.red }}>{fm(va-getVC(inv))}</td>
+                    <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: (va-getVC(inv, trm)) >= 0 ? T.green : T.red }}>{fm(va-getVC(inv, trm))}</td>
                     <td style={{ padding: "12px 14px", textAlign: "right", color: m.debtTotal > 0 ? T.red : T.txt3 }}>{m.debtTotal>0?fm(m.debtTotal):"-"}</td>
                     <td style={{ padding: "12px 14px", textAlign: "center" }}>
                       <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{inv.sim===false?"⬜":"✅"}</button>

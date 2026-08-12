@@ -41,6 +41,15 @@ const fmDate = () =>
 const buildFilename = (modulo) =>
   `FINPATHIA_${modulo}_${new Date().toISOString().slice(0, 10)}.pdf`;
 
+// 12-ago-2026: los exportadores sumaban dólares y pesos en el mismo total.
+// Un activo cargado en USD entraba con su número crudo a un total en pesos,
+// así que el patrimonio exportado no coincidía con el de la pantalla y era
+// ~4.200 veces más chico en esa fila. Toda cifra que entra a una tabla o a un
+// total pasa ahora por esta conversión. La regla es la misma que usa el resto
+// de la app (flowHelpers): sin campo moneda se asume COP, por retrocompat.
+const aCOP = (monto, item, trm) =>
+  (Number(monto) || 0) * (item?.moneda === "USD" ? (trm || 4200) : 1);
+
 const ownerName = (ownerId, owners) => {
   if (!ownerId) return "";
   const o = (owners || []).find((x) => x.id === ownerId);
@@ -181,15 +190,15 @@ const NOTA = "Documento generado por FINPATHIA. Incluye únicamente los ítems a
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. PATRIMONIO
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportPatrimonioPDF(inversiones, owners) {
+export async function exportPatrimonioPDF(inversiones, owners, trm) {
   const items = (inversiones || []).filter((i) => i.sim !== false);
   if (items.length === 0) {
     alert("No hay activos activos para exportar. Prendé al menos uno con el toggle ✅.");
     return;
   }
 
-  const totalVa = items.reduce((s, i) => s + (+i.va || 0), 0);
-  const totalVc = items.reduce((s, i) => s + (+i.vc || 0), 0);
+  const totalVa = items.reduce((s, i) => s + aCOP(i.va, i, trm), 0);
+  const totalVc = items.reduce((s, i) => s + aCOP(i.vc, i, trm), 0);
   const gain = totalVa - totalVc;
   const gainPct = totalVc > 0 ? ((totalVa / totalVc) - 1) * 100 : 0;
 
@@ -213,10 +222,10 @@ export async function exportPatrimonioPDF(inversiones, owners) {
       head: [["Activo", "Tipo", "Propietario", "Valor compra", "Valor actual", "Ganancia", "%"]],
       body: items
         .slice()
-        .sort((a, b) => (+b.va || 0) - (+a.va || 0))
+        .sort((a, b) => aCOP(b.va, b, trm) - aCOP(a.va, a, trm))
         .map((i) => {
-          const vc = +i.vc || 0;
-          const va = +i.va || 0;
+          const vc = aCOP(i.vc, i, trm);
+          const va = aCOP(i.va, i, trm);
           const g = va - vc;
           return [
             i.nombre || i.n || "",
@@ -242,7 +251,7 @@ export async function exportPatrimonioPDF(inversiones, owners) {
       const tp = i.tp || i.tipo || "Otro";
       if (!porTipo[tp]) porTipo[tp] = { count: 0, va: 0 };
       porTipo[tp].count += 1;
-      porTipo[tp].va += +i.va || 0;
+      porTipo[tp].va += aCOP(i.va, i, trm);
     });
 
     autoTable(doc, {
@@ -265,14 +274,15 @@ export async function exportPatrimonioPDF(inversiones, owners) {
 // ═══════════════════════════════════════════════════════════════════════════
 // 2. INGRESOS
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportIngresosPDF(ingresos, owners) {
+export async function exportIngresosPDF(ingresos, owners, trm) {
   const items = (ingresos || []).filter((i) => i.sim !== false);
   if (items.length === 0) {
     alert("No hay ingresos activos para exportar. Prendé al menos uno con el toggle ✅.");
     return;
   }
 
-  const totalMes = items.reduce((s, i) => s + (i.mensual || 0), 0);
+  const mens = (i) => aCOP(i.mensual, i, trm);
+  const totalMes = items.reduce((s, i) => s + mens(i), 0);
 
   await build(buildFilename("Ingresos"), (doc, autoTable) => {
     let y = chrome(doc, { titulo: "Ingresos" });
@@ -289,14 +299,14 @@ export async function exportIngresosPDF(ingresos, owners) {
       head: [["Fuente", "Categoría DIAN", "Tipo", "Propietario", "Mensual", "Anual"]],
       body: items
         .slice()
-        .sort((a, b) => (b.mensual || 0) - (a.mensual || 0))
+        .sort((a, b) => mens(b) - mens(a))
         .map((i) => [
           i.nombre || "",
           i.categoria || "",
           i.tipo || "fijo",
           ownerName(i.ownerId, owners),
-          fm(i.mensual || 0),
-          fm((i.mensual || 0) * 12),
+          fm(mens(i)),
+          fm(mens(i) * 12),
         ]),
       foot: [["TOTAL", "", "", "", fm(totalMes), fm(totalMes * 12)]],
       columnStyles: { 4: { halign: "right" }, 5: { halign: "right" } },
@@ -307,7 +317,7 @@ export async function exportIngresosPDF(ingresos, owners) {
       const cat = i.categoria || "Sin categoría";
       if (!porCat[cat]) porCat[cat] = { count: 0, mensual: 0 };
       porCat[cat].count += 1;
-      porCat[cat].mensual += i.mensual || 0;
+      porCat[cat].mensual += mens(i);
     });
 
     autoTable(doc, {
@@ -334,7 +344,7 @@ export async function exportIngresosPDF(ingresos, owners) {
 // ═══════════════════════════════════════════════════════════════════════════
 // 3. GASTOS
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportGastosPDF(gastos) {
+export async function exportGastosPDF(gastos, trm) {
   // gastos llega como objeto { categoria: [items] }, igual que en Excel.
   const flat = [];
   Object.entries(gastos || {}).forEach(([cat, items]) => {
@@ -344,7 +354,7 @@ export async function exportGastosPDF(gastos) {
         flat.push({
           categoria: cat,
           concepto: g.c || "",
-          monto: g.m || 0,
+          monto: aCOP(g.m, g, trm),
           tipo: g.t === "f" ? "Fijo" : "Variable",
         });
       });
@@ -417,7 +427,7 @@ export async function exportGastosPDF(gastos) {
 // ═══════════════════════════════════════════════════════════════════════════
 // 4. DEUDAS
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportDeudasPDF(deudas, inversiones, owners) {
+export async function exportDeudasPDF(deudas, inversiones, owners, trm) {
   // Mismo filtro que el Excel: además de sim !== false, exige saldo > 0.
   // Una deuda saldada no es una deuda.
   const items = (deudas || []).filter((d) => d.sim !== false && (d.mt || 0) > 0);
@@ -432,12 +442,14 @@ export async function exportDeudasPDF(deudas, inversiones, owners) {
     return inv ? inv.nombre || inv.n || "" : "";
   };
 
-  const totalSaldo = items.reduce((s, d) => s + (d.mt || 0), 0);
-  const totalCuota = items.reduce((s, d) => s + (d.pg || 0), 0);
+  const saldo = (d) => aCOP(d.mt, d, trm);
+  const cuota = (d) => aCOP(d.pg, d, trm);
+  const totalSaldo = items.reduce((s, d) => s + saldo(d), 0);
+  const totalCuota = items.reduce((s, d) => s + cuota(d), 0);
   // Tasa promedio ponderada por saldo: el promedio simple miente cuando hay
   // una tarjeta chica al 30% junto a una hipoteca grande al 12%.
   const tasaPond = totalSaldo > 0
-    ? items.reduce((s, d) => s + (d.ts || 0) * (d.mt || 0), 0) / totalSaldo
+    ? items.reduce((s, d) => s + (d.ts || 0) * saldo(d), 0) / totalSaldo
     : 0;
 
   await build(buildFilename("Deudas"), (doc, autoTable) => {
@@ -456,15 +468,15 @@ export async function exportDeudasPDF(deudas, inversiones, owners) {
       head: [["Deuda", "Propietario", "Vinculada a", "Saldo", "Cuota mes", "Tasa", "Meses"]],
       body: items
         .slice()
-        .sort((a, b) => (b.mt || 0) - (a.mt || 0))
+        .sort((a, b) => saldo(b) - saldo(a))
         .map((d) => {
           const meses = d.meses || d.n_cuotas || 0;
           return [
             d.n || d.nombre || "",
             ownerName(d.ownerId, owners),
             invName(d.invId),
-            fm(d.mt || 0),
-            fm(d.pg || 0),
+            fm(saldo(d)),
+            fm(cuota(d)),
             pct(d.ts || 0),
             meses > 0 ? String(meses) : "—",
           ];
@@ -489,8 +501,8 @@ export async function exportDeudasPDF(deudas, inversiones, owners) {
         .map((d) => [
           d.n || d.nombre || "",
           pct(d.ts || 0),
-          fm(d.mt || 0),
-          fm(((d.ts || 0) / 100) * (d.mt || 0)),
+          fm(saldo(d)),
+          fm(((d.ts || 0) / 100) * saldo(d)),
         ]),
       columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
     });

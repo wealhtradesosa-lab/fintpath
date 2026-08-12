@@ -26,6 +26,13 @@ const buildFilename = (modulo) => {
   return `FINPATHIA_${modulo}_${date}.xlsx`;
 };
 
+// 12-ago-2026: mismo defecto que se corrigió en pdfSectionExport.js. Los
+// montos entraban crudos, así que un ítem cargado en USD se sumaba como si
+// fueran pesos y el total del Excel no coincidía con el de la pantalla.
+// Regla igual al resto de la app (flowHelpers): sin campo moneda se asume COP.
+const aCOP = (monto, item, trm) =>
+  (Number(monto) || 0) * (item?.moneda === "USD" ? (trm || 4200) : 1);
+
 // Helper: encontrar el nombre del owner por su ID
 const ownerName = (ownerId, owners) => {
   if (!ownerId) return "";
@@ -44,7 +51,7 @@ const writeWorkbook = async (buildFn, filename) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. INGRESOS
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportIngresosExcel(ingresos, owners) {
+export async function exportIngresosExcel(ingresos, owners, trm) {
   const items = (ingresos || []).filter((i) => i.sim !== false);
   if (items.length === 0) {
     alert("No hay ingresos activos para exportar. Prendé al menos uno con el toggle ✅.");
@@ -70,8 +77,8 @@ export async function exportIngresosExcel(ingresos, owners) {
           i.fuente || "",
           i.tipo || "fijo",
           i.moneda || "COP",
-          Math.round(i.mensual || 0),
-          Math.round((i.mensual || 0) * 12),
+          Math.round(aCOP(i.mensual, i, trm)),
+          Math.round(aCOP(i.mensual, i, trm) * 12),
           i.capital || 0,
           i.tasa || 0,
           ownerName(i.ownerId, owners),
@@ -81,7 +88,7 @@ export async function exportIngresosExcel(ingresos, owners) {
       });
 
     // Total
-    const totalMes = items.reduce((s, i) => s + (i.mensual || 0), 0);
+    const totalMes = items.reduce((s, i) => s + aCOP(i.mensual, i, trm), 0);
     rows.push([]);
     rows.push(["TOTAL", "", "", "", "", Math.round(totalMes), Math.round(totalMes * 12), "", "", "", "", ""]);
 
@@ -100,7 +107,7 @@ export async function exportIngresosExcel(ingresos, owners) {
       const cat = i.categoria || "Sin categoría";
       if (!porCat[cat]) porCat[cat] = { count: 0, mensual: 0 };
       porCat[cat].count += 1;
-      porCat[cat].mensual += i.mensual || 0;
+      porCat[cat].mensual += aCOP(i.mensual, i, trm);
     });
     const catRows = [["Categoría DIAN", "# Ingresos", "Total Mensual", "Total Anual", "% del Total"]];
     Object.entries(porCat)
@@ -126,12 +133,12 @@ export async function exportIngresosExcel(ingresos, owners) {
 // ═══════════════════════════════════════════════════════════════════════════
 // 2. GASTOS
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportGastosExcel(gastos) {
+export async function exportGastosExcel(gastos, trm) {
   // gastos es un objeto { categoria: [items] }
   const flat = [];
   Object.entries(gastos || {}).forEach(([cat, items]) => {
     (items || []).filter((g) => g.sim !== false).forEach((g) => {
-      flat.push({ categoria: cat, concepto: g.c || "", monto: g.m || 0, tipo: g.t === "f" ? "Fijo" : "Variable" });
+      flat.push({ categoria: cat, concepto: g.c || "", monto: aCOP(g.m, g, trm), tipo: g.t === "f" ? "Fijo" : "Variable" });
     });
   });
 
@@ -195,7 +202,7 @@ export async function exportGastosExcel(gastos) {
 // ═══════════════════════════════════════════════════════════════════════════
 // 3. DEUDAS
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportDeudasExcel(deudas, inversiones, owners) {
+export async function exportDeudasExcel(deudas, inversiones, owners, trm) {
   const items = (deudas || []).filter((d) => d.sim !== false && (d.mt || 0) > 0);
   if (items.length === 0) {
     alert("No hay deudas activas para exportar. Prendé al menos una con el toggle ✅.");
@@ -221,12 +228,14 @@ export async function exportDeudasExcel(deudas, inversiones, owners) {
       .sort((a, b) => (b.mt || 0) - (a.mt || 0))
       .forEach((d) => {
         const meses = d.meses || d.n_cuotas || 0;
-        const totalPagar = meses > 0 && d.pg ? Math.round(d.pg * meses) : d.mt;
+        const saldo = aCOP(d.mt, d, trm);
+        const cuota = aCOP(d.pg, d, trm);
+        const totalPagar = meses > 0 && cuota ? Math.round(cuota * meses) : saldo;
         rows.push([
           d.n || d.nombre || "",
-          Math.round(d.mt || 0),
-          Math.round(d.pg || 0),
-          Math.round((d.pg || 0) * 12),
+          Math.round(saldo),
+          Math.round(cuota),
+          Math.round(cuota * 12),
           d.ts || 0,
           meses,
           totalPagar,
@@ -236,8 +245,8 @@ export async function exportDeudasExcel(deudas, inversiones, owners) {
         ]);
       });
 
-    const totalSaldo = items.reduce((s, d) => s + (d.mt || 0), 0);
-    const totalCuota = items.reduce((s, d) => s + (d.pg || 0), 0);
+    const totalSaldo = items.reduce((s, d) => s + aCOP(d.mt, d, trm), 0);
+    const totalCuota = items.reduce((s, d) => s + aCOP(d.pg, d, trm), 0);
     rows.push([]);
     rows.push(["TOTAL", Math.round(totalSaldo), Math.round(totalCuota), Math.round(totalCuota * 12), "", "", "", "", "", ""]);
 
@@ -254,7 +263,7 @@ export async function exportDeudasExcel(deudas, inversiones, owners) {
 // ═══════════════════════════════════════════════════════════════════════════
 // 4. PATRIMONIO / INVERSIONES
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportInversionesExcel(inversiones, owners) {
+export async function exportInversionesExcel(inversiones, owners, trm) {
   const items = (inversiones || []).filter((i) => i.sim !== false);
   if (items.length === 0) {
     alert("No hay activos activos para exportar. Prendé al menos uno con el toggle ✅.");
@@ -270,12 +279,12 @@ export async function exportInversionesExcel(inversiones, owners) {
         "Propietario Fiscal", "Notas",
       ],
     ];
-    const totalVal = items.reduce((s, i) => s + (+i.va || 0), 0);
+    const totalVal = items.reduce((s, i) => s + aCOP(i.va, i, trm), 0);
     items
-      .sort((a, b) => (+b.va || 0) - (+a.va || 0))
+      .sort((a, b) => aCOP(b.va, b, trm) - aCOP(a.va, a, trm))
       .forEach((i) => {
-        const vc = +i.vc || 0;
-        const va = +i.va || 0;
+        const vc = aCOP(i.vc, i, trm);
+        const va = aCOP(i.va, i, trm);
         const gain = va - vc;
         const gainPct = vc > 0 ? Number((((va / vc) - 1) * 100).toFixed(2)) : 0;
         rows.push([
@@ -292,7 +301,7 @@ export async function exportInversionesExcel(inversiones, owners) {
         ]);
       });
 
-    const totalVc = items.reduce((s, i) => s + (+i.vc || 0), 0);
+    const totalVc = items.reduce((s, i) => s + aCOP(i.vc, i, trm), 0);
     const totalGain = totalVal - totalVc;
     const totalGainPct = totalVc > 0 ? Number((((totalVal / totalVc) - 1) * 100).toFixed(2)) : 0;
     rows.push([]);
@@ -312,8 +321,8 @@ export async function exportInversionesExcel(inversiones, owners) {
       const tp = i.tp || i.tipo || "Otro";
       if (!porTipo[tp]) porTipo[tp] = { count: 0, vc: 0, va: 0 };
       porTipo[tp].count += 1;
-      porTipo[tp].vc += +i.vc || 0;
-      porTipo[tp].va += +i.va || 0;
+      porTipo[tp].vc += aCOP(i.vc, i, trm);
+      porTipo[tp].va += aCOP(i.va, i, trm);
     });
     const tipoRows = [["Tipo", "# Activos", "Valor Compra", "Valor Actual", "Ganancia $", "% del Portafolio"]];
     Object.entries(porTipo)
@@ -342,8 +351,8 @@ export async function exportInversionesExcel(inversiones, owners) {
         const oName = ownerName(i.ownerId, owners) || "Sin asignar";
         if (!porOwner[oName]) porOwner[oName] = { count: 0, vc: 0, va: 0 };
         porOwner[oName].count += 1;
-        porOwner[oName].vc += +i.vc || 0;
-        porOwner[oName].va += +i.va || 0;
+        porOwner[oName].vc += aCOP(i.vc, i, trm);
+        porOwner[oName].va += aCOP(i.va, i, trm);
       });
       const ownerRows = [["Propietario Fiscal", "# Activos", "Valor Compra", "Valor Actual", "Ganancia $", "% del Portafolio"]];
       Object.entries(porOwner)
