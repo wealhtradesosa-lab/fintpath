@@ -34,7 +34,28 @@ export default function LandingPage({ onGetStarted }) {
 
   return (
     <div style={{ background: T.bg, color: T.txt, fontFamily: "'Inter', system-ui, sans-serif", minHeight: "100vh", overflowX: "hidden" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}
+
+/* ── Banner del home (12-ago-2026) ──────────────────────────────────────────
+   La imagen de dispositivos ocupa el ancho completo y el copy se superpone
+   sobre el espacio vacío de la izquierda. El degradado existe para que el
+   texto se lea: sin él, el fondo de la imagen compite con las letras.
+   En móvil el overlay no cabe, así que el copy baja debajo de la imagen. */
+.fp-showcase{position:relative;width:100%;line-height:0}
+.fp-showcase img{display:block;width:100%;height:auto}
+.fp-showcase-copy{position:absolute;inset:0;display:flex;align-items:center;padding:0 3vw;line-height:1.2;
+  background:linear-gradient(90deg,rgba(9,9,11,.94) 0%,rgba(9,9,11,.86) 16%,rgba(9,9,11,.5) 31%,rgba(9,9,11,0) 50%)}
+/* 26% y no más: el contenido de la imagen (tarjeta "¿A dónde va tu dinero?")
+   arranca en el 31% del ancho. Medido sobre el PNG, no estimado. */
+.fp-showcase-copy>div{max-width:26%}
+.fp-showcase-copy h2{font-size:clamp(17px,2.15vw,36px);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin:0 0 .55em}
+.fp-showcase-copy p{font-size:clamp(10px,1.05vw,17px);color:#a1a1aa;line-height:1.5;margin:0}
+@media (max-width:820px){
+  .fp-showcase-copy{position:static;inset:auto;display:block;background:none;padding:28px 24px 0}
+  .fp-showcase-copy>div{max-width:100%}
+  .fp-showcase-copy h2{font-size:26px}
+  .fp-showcase-copy p{font-size:15px}
+}`}</style>
 
       {/* ─── HERO ─── (Sesión 2-may-2026: Santiago eligió HeroVariantC
            inspirado en Optimus de v0.dev. Estilo editorial minimalista
@@ -43,23 +64,23 @@ export default function LandingPage({ onGetStarted }) {
       <HeroVariantC onGetStarted={onGetStarted} />
 
       {/* ─── FEATURES ─── */}
-      <div id="features" style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "80px 0" }}>
-        <img
-          src="/home-showcase.png"
-          alt="Vista de FINPATHIA: FIRE Number, Pensión + BTC, flujo de dinero, simulador de escenarios y bienestar financiero"
-          loading="lazy"
-          style={{
-            display: "block",
-            width: "100%",
-            height: "auto",
-            marginBottom: 64,
-          }}
-        />
-        <Section>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Todo lo que necesitas en un solo lugar</h2>
-            <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Diseñado por inversionistas, para inversionistas. Premium pero accesible.</p>
+      {/* Sin franja gris ni bordes: el fondo es el mismo negro de la imagen,
+          para que no se vea la costura entre la sección y el banner. */}
+      <div id="features" style={{ background: T.bg, padding: "0 0 80px" }}>
+        <div className="fp-showcase">
+          <img
+            src="/home-showcase.png"
+            alt="Vista de FINPATHIA: FIRE Number, Pensión + BTC, flujo de dinero, simulador de escenarios y bienestar financiero"
+            loading="lazy"
+          />
+          <div className="fp-showcase-copy">
+            <div>
+              <h2>Tu bienestar financiero empieza cuando tienes un norte claro</h2>
+              <p>Ve dónde estás hoy, a dónde vas y qué mover para llegar.</p>
+            </div>
           </div>
+        </div>
+        <Section style={{ paddingTop: 64 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
             {[
               { icon: "📊", title: "Dashboard Inteligente", desc: "Patrimonio neto, cash flow, salud financiera, top performers y proyección patrimonial. Todo de un vistazo.", color: T.green },
