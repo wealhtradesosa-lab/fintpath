@@ -41,18 +41,29 @@ export default function LandingPage({ onGetStarted }) {
    sobre el espacio vacío de la izquierda. El degradado existe para que el
    texto se lea: sin él, el fondo de la imagen compite con las letras.
    En móvil el overlay no cabe, así que el copy baja debajo de la imagen. */
-.fp-showcase{position:relative;width:100%;line-height:0}
+/* Tope de 1920px: sin él, en monitores anchos el contenido de la imagen se
+   aleja más rápido que el borde del hero y la columna de texto se estrangula
+   (a 2400px quedaba en 104px). Con el tope, imagen y hero quedan centrados
+   sobre la misma grilla y la alineación se sostiene a cualquier ancho. */
+.fp-showcase{position:relative;width:100%;max-width:1920px;margin:0 auto;line-height:0}
 .fp-showcase img{display:block;width:100%;height:auto}
-.fp-showcase-copy{position:absolute;inset:0;display:flex;align-items:center;padding:0 3vw;line-height:1.2;
+/* Alineación (12-ago-2026, Santiago): el titular arranca en la misma línea
+   vertical que el copy del hero. El hero centra un contenedor de 1280px con
+   32px de padding, así que el borde izquierdo es (ancho-1280)/2 + 32 y nunca
+   menos de 32. El borde derecho se corta en 29% porque el contenido de la
+   imagen (tarjeta "¿A dónde va tu dinero?") arranca en el 31%: medido sobre
+   el PNG columna por columna, no estimado. */
+.fp-showcase-copy{position:absolute;inset:0;display:flex;align-items:center;line-height:1.2;
+  padding-left:max(32px,calc((100% - 1280px)/2 + 32px));padding-right:71%;
   background:linear-gradient(90deg,rgba(9,9,11,.94) 0%,rgba(9,9,11,.86) 16%,rgba(9,9,11,.5) 31%,rgba(9,9,11,0) 50%)}
-/* 26% y no más: el contenido de la imagen (tarjeta "¿A dónde va tu dinero?")
-   arranca en el 31% del ancho. Medido sobre el PNG, no estimado. */
-.fp-showcase-copy>div{max-width:26%}
-.fp-showcase-copy h2{font-size:clamp(17px,2.15vw,36px);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin:0 0 .55em}
-.fp-showcase-copy p{font-size:clamp(10px,1.05vw,17px);color:#a1a1aa;line-height:1.5;margin:0}
+.fp-showcase-copy>div{width:100%}
+/* El tope de 30px evita que en pantallas anchas la tipografía crezca más
+   rápido que la columna disponible y quede una palabra por renglón. */
+.fp-showcase-copy h2{font-size:clamp(17px,2vw,30px);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin:0 0 .55em}
+.fp-showcase-copy p{font-size:clamp(10px,1vw,15px);color:#a1a1aa;line-height:1.5;margin:0}
 @media (max-width:820px){
   .fp-showcase-copy{position:static;inset:auto;display:block;background:none;padding:28px 24px 0}
-  .fp-showcase-copy>div{max-width:100%}
+  .fp-showcase-copy>div{width:auto}
   .fp-showcase-copy h2{font-size:26px}
   .fp-showcase-copy p{font-size:15px}
 }`}</style>
