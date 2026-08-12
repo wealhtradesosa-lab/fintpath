@@ -53,8 +53,8 @@ export default function LandingPage({ onGetStarted }) {
    menos de 32. El borde derecho se corta en 29% porque el contenido de la
    imagen (tarjeta "¿A dónde va tu dinero?") arranca en el 31%: medido sobre
    el PNG columna por columna, no estimado. */
-.fp-showcase-copy{position:absolute;inset:0;display:flex;align-items:center;line-height:1.2;
-  padding-left:max(32px,calc((100% - 1280px)/2 + 32px));padding-right:71%;
+.fp-showcase-copy{position:absolute;inset:0;display:flex;align-items:flex-start;line-height:1.2;
+  padding-left:max(32px,calc((100% - 1280px)/2 + 32px));padding-right:71%;padding-top:10%;
   background:linear-gradient(90deg,rgba(9,9,11,.94) 0%,rgba(9,9,11,.86) 16%,rgba(9,9,11,.5) 31%,rgba(9,9,11,0) 50%)}
 .fp-showcase-copy>div{width:100%}
 /* El tope de 30px evita que en pantallas anchas la tipografía crezca más
