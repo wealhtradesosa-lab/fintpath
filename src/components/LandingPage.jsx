@@ -44,22 +44,18 @@ export default function LandingPage({ onGetStarted }) {
 
       {/* ─── FEATURES ─── */}
       <div id="features" style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "80px 0" }}>
+        <img
+          src="/home-showcase.png"
+          alt="Vista de FINPATHIA: FIRE Number, Pensión + BTC, flujo de dinero, simulador de escenarios y bienestar financiero"
+          loading="lazy"
+          style={{
+            display: "block",
+            width: "100%",
+            height: "auto",
+            marginBottom: 64,
+          }}
+        />
         <Section>
-          <div style={{ marginBottom: 56 }}>
-            <img
-              src="/home-showcase.png"
-              alt="Vista de FINPATHIA: FIRE Number, Pensión + BTC, flujo de dinero, simulador de escenarios y bienestar financiero"
-              loading="lazy"
-              style={{
-                display: "block",
-                width: "100%",
-                height: "auto",
-                borderRadius: 20,
-                border: `1px solid ${T.border}`,
-                boxShadow: "0 24px 80px rgba(0,0,0,0.55)",
-              }}
-            />
-          </div>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Todo lo que necesitas en un solo lugar</h2>
             <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Diseñado por inversionistas, para inversionistas. Premium pero accesible.</p>
