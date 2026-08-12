@@ -540,15 +540,20 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               🗑️ Eliminar ({selected.size})
             </button>
           )}
+          {onImport && <button onClick={onImport}
+            title="Cargar gastos desde una tabla de Excel"
+            style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            ⬆️ Subir Excel
+          </button>}
           <button onClick={() => exportGastosExcel(gastos)}
-            title="Descarga XLSX con detalle + resumen por categoría (Fijos vs Variables)"
+            title="Bajar Excel: detalle + resumen por categoría (Fijos vs Variables)"
             style={{ background: "#059669", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-            📊 Excel
+            ⬇️ Bajar Excel
           </button>
           <button onClick={() => exportGastosPDF(gastos)}
-            title="Descarga PDF con fijos vs variables + desglose por categoria"
+            title="Bajar PDF: fijos vs variables y desglose por categoría"
             style={{ background: "#dc2626", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-            📄 PDF
+            ⬇️ Bajar PDF
           </button>
           <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
@@ -669,7 +674,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       <p style={{fontSize:13,color:"#71717a",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Vivienda, alimentación, transporte, educación, seguros, entretenimiento. <strong style={{color:"#a1a1aa"}}>Solo gastos — no incluyas cuotas de créditos ni hipotecas</strong>, esas van en la sección Deudas.</p>
                       <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
                         <button onClick={()=>setShowForm(true)} style={{background:"#22c55e",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar gasto</button>
-                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>📥 Importar tabla Excel de gastos</button>}
+                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>⬆️ Subir tabla Excel de gastos</button>}
                       </div>
                       <div style={{background:"#1e1e24",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
                         <div style={{fontSize:11,fontWeight:700,color:"#71717a",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Ejemplo de Excel para importar</div>
