@@ -532,6 +532,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 { v: "personal", l: "🤝 Préstamo personal — familiar, socio, conocido" },
                 { v: "credit_card", l: "💳 Tarjeta de crédito" },
               ]} />
+            <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
               <In l="Saldo" value={form.mt} onChange={(v) => setForm((p) => ({ ...p, mt: v }))} type="number" placeholder="0" />
               {/* 24-jul-2026 — CAUSA RAÍZ del "40,6%" y del "$2.486.712" que
                   reportó Santiago: estos dos campos se auto-calculaban entre sí
@@ -674,7 +675,6 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   </button>)}
               </div>
             </div>
-            <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
               <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v, cuotaManual: true }))} type="number" placeholder="0" />
               <In l="Tasa anual % (E.A.)" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="Ej: 22,99" />
             {/* 26-jul-2026 (Santiago cargó 13,7 y quedó 137 por el bug de la
