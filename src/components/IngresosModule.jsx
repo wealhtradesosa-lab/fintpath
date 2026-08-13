@@ -1231,6 +1231,96 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 return "¿Monto del pago único?";
               })()} />
               )}
+              {/* Fix 25-may-2026: el campo Capital invertido aparecía solo para
+                  Rendimiento/Dividendos/Arriendo/Inversión. Pero CDT (Intereses
+                  bancarios) y fondos FIC TAMBIÉN tienen capital invertido —
+                  Santiago no podía editarlo. Lista ampliada a las 6 categorías
+                  de inversión que generan renta sobre un capital. */}
+              {["Rendimiento","Dividendos","Arriendo","Inversión","Intereses bancarios","Utilidad FIC"].includes(form.categoria) && (
+                <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,color:T.txt3,marginBottom:10}}>📊 Con 2 de 3 valores se calcula el tercero automáticamente</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                    <In l="💼 Capital invertido" value={form.capital} onChange={(v) => {
+                      const nf = { capital: v };
+                      const cap = Number(v) || 0;
+                      const m = Number(form.mensual) || 0;
+                      const tas = Number(form.tasa) || 0;
+                      const tm = form.tasaModo || "anual";
+                      // Fix: si hay tasa, SIEMPRE recalcular mensual al cambiar capital.
+                      // Sin tasa pero con mensual, derivar tasa.
+                      if (cap > 0 && tas > 0) {
+                        nf.mensual = String(tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
+                      } else if (cap > 0 && m > 0 && tas === 0) {
+                        // derivar tasa: si modo mensual, m/cap*100; si anual, m*12/cap*100
+                        nf.tasa = String(tm === "anual" ? Math.round((m * 12 / cap) * 1000) / 10 : Math.round((m / cap) * 1000) / 10);
+                      }
+                      setForm(p => ({ ...p, ...nf }));
+                    }} type="number" placeholder="Valor del activo" />
+                    <In l={form.tasaModo === "mensual" ? "📈 % Rentabilidad mensual" : "📈 % Rentabilidad anual"} value={form.tasa} onChange={(v) => {
+                      const nf = { tasa: v };
+                      const tas = Number(v) || 0;
+                      const cap = Number(form.capital) || 0;
+                      const m = Number(form.mensual) || 0;
+                      const tm = form.tasaModo || "anual";
+                      if (tas > 0 && cap > 0) {
+                        nf.mensual = String(tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
+                      } else if (tas > 0 && m > 0 && cap === 0) {
+                        const capCalc = tm === "anual" ? Math.round((m * 12) / (tas / 100)) : Math.round(m / (tas / 100));
+                        if (capCalc >= 10_000) nf.capital = String(capCalc);
+                      } else if (tas === 0) {
+                        // Si limpia la tasa, dejar mensual y capital como estaban (no pisar).
+                      }
+                      setForm(p => ({ ...p, ...nf }));
+                    }} type="number" placeholder={form.tasaModo === "mensual" ? "Ej: 1" : "Ej: 24"} />
+                  </div>
+                  <In l="Periodicidad de la tasa" value={form.tasaModo || "anual"} onChange={(v) => {
+                    // Al cambiar la periodicidad, recalculamos mensual en base a la nueva interpretación
+                    const cap = Number(form.capital) || 0;
+                    const tas = Number(form.tasa) || 0;
+                    const nf = { tasaModo: v };
+                    if (cap > 0 && tas > 0) {
+                      nf.mensual = String(v === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
+                    }
+                    setForm(p => ({ ...p, ...nf }));
+                  }} options={[{ v: "anual", l: "📅 Anual (ej: 24% al año)" }, { v: "mensual", l: "📅 Mensual (ej: 1% al mes)" }]} />
+                  {Number(form.capital) > 0 && Number(form.tasa) > 0 && Number(form.mensual) > 0 && (
+                    <div style={{marginTop:4,padding:"10px 12px",background:"rgba(34,197,94,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.6}}>
+                      💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")} × {form.tasa}% {form.tasaModo === "mensual" ? "mensual" : "anual"} = {"$" + Math.round(form.tasaModo === "mensual" ? Number(form.capital) * Number(form.tasa) / 100 : Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString("es-CO")}/mes
+                    </div>
+                  )}
+                  {/* Fix: warning si el capital guardado es sospechosamente bajo (<$10K) */}
+                  {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
+                    <div style={{marginTop:10,padding:"10px 12px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,fontSize:11,color:T.red,lineHeight:1.5}}>
+                      ⚠️ El capital invertido es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Un capital típico de inversión es &gt;$100.000. Si el valor es correcto, ignorá este aviso.
+                    </div>
+                  )}
+                  {/* Commit E: validacion de tasa absurda (warning, no bloqueo) */}
+                  {(() => {
+                    const tas = Number(form.tasa) || 0;
+                    if (tas <= 0) return null;
+                    const tm = form.tasaModo || "anual";
+                    // Umbrales: anual > 100% o mensual > 10% = error probable (rojo)
+                    //          anual > 50%  o mensual > 5%  = revisar (naranja)
+                    const altoRojo = tm === "mensual" ? tas > 10 : tas > 100;
+                    const altoNaranja = tm === "mensual" ? tas > 5 : tas > 50;
+                    if (altoRojo) {
+                      return (
+                        <div style={{marginTop:10,padding:"10px 12px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,fontSize:11,color:T.red,lineHeight:1.5}}>
+                          ⚠️ Tasa muy alta: {tas}% {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambiá la periodicidad arriba si es el caso.
+                        </div>
+                      );
+                    }
+                    if (altoNaranja) {
+                      return (
+                        <div style={{marginTop:10,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.25)",borderRadius:8,fontSize:11,color:T.orange,lineHeight:1.5}}>
+                          🟠 Rentabilidad alta: {tas}% {tm}. Verificá que la periodicidad ({tm}) sea correcta. Rentabilidades de mercado típicas: 8-20% anual.
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
 
               {/* UX iter 5 (18-jul-2026 noche): eliminado el bloque azul redundante
                   "Ingresá el monto BRUTO" — el label del input ya dice "BRUTO mensual
@@ -1453,96 +1543,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 </div>
               )}
 
-              {/* Fix 25-may-2026: el campo Capital invertido aparecía solo para
-                  Rendimiento/Dividendos/Arriendo/Inversión. Pero CDT (Intereses
-                  bancarios) y fondos FIC TAMBIÉN tienen capital invertido —
-                  Santiago no podía editarlo. Lista ampliada a las 6 categorías
-                  de inversión que generan renta sobre un capital. */}
-              {["Rendimiento","Dividendos","Arriendo","Inversión","Intereses bancarios","Utilidad FIC"].includes(form.categoria) && (
-                <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
-                  <div style={{fontSize:11,color:T.txt3,marginBottom:10}}>📊 Con 2 de 3 valores se calcula el tercero automáticamente</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                    <In l="💼 Capital invertido" value={form.capital} onChange={(v) => {
-                      const nf = { capital: v };
-                      const cap = Number(v) || 0;
-                      const m = Number(form.mensual) || 0;
-                      const tas = Number(form.tasa) || 0;
-                      const tm = form.tasaModo || "anual";
-                      // Fix: si hay tasa, SIEMPRE recalcular mensual al cambiar capital.
-                      // Sin tasa pero con mensual, derivar tasa.
-                      if (cap > 0 && tas > 0) {
-                        nf.mensual = String(tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
-                      } else if (cap > 0 && m > 0 && tas === 0) {
-                        // derivar tasa: si modo mensual, m/cap*100; si anual, m*12/cap*100
-                        nf.tasa = String(tm === "anual" ? Math.round((m * 12 / cap) * 1000) / 10 : Math.round((m / cap) * 1000) / 10);
-                      }
-                      setForm(p => ({ ...p, ...nf }));
-                    }} type="number" placeholder="Valor del activo" />
-                    <In l={form.tasaModo === "mensual" ? "📈 % Rentabilidad mensual" : "📈 % Rentabilidad anual"} value={form.tasa} onChange={(v) => {
-                      const nf = { tasa: v };
-                      const tas = Number(v) || 0;
-                      const cap = Number(form.capital) || 0;
-                      const m = Number(form.mensual) || 0;
-                      const tm = form.tasaModo || "anual";
-                      if (tas > 0 && cap > 0) {
-                        nf.mensual = String(tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
-                      } else if (tas > 0 && m > 0 && cap === 0) {
-                        const capCalc = tm === "anual" ? Math.round((m * 12) / (tas / 100)) : Math.round(m / (tas / 100));
-                        if (capCalc >= 10_000) nf.capital = String(capCalc);
-                      } else if (tas === 0) {
-                        // Si limpia la tasa, dejar mensual y capital como estaban (no pisar).
-                      }
-                      setForm(p => ({ ...p, ...nf }));
-                    }} type="number" placeholder={form.tasaModo === "mensual" ? "Ej: 1" : "Ej: 24"} />
-                  </div>
-                  <In l="Periodicidad de la tasa" value={form.tasaModo || "anual"} onChange={(v) => {
-                    // Al cambiar la periodicidad, recalculamos mensual en base a la nueva interpretación
-                    const cap = Number(form.capital) || 0;
-                    const tas = Number(form.tasa) || 0;
-                    const nf = { tasaModo: v };
-                    if (cap > 0 && tas > 0) {
-                      nf.mensual = String(v === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
-                    }
-                    setForm(p => ({ ...p, ...nf }));
-                  }} options={[{ v: "anual", l: "📅 Anual (ej: 24% al año)" }, { v: "mensual", l: "📅 Mensual (ej: 1% al mes)" }]} />
-                  {Number(form.capital) > 0 && Number(form.tasa) > 0 && Number(form.mensual) > 0 && (
-                    <div style={{marginTop:4,padding:"10px 12px",background:"rgba(34,197,94,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.6}}>
-                      💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")} × {form.tasa}% {form.tasaModo === "mensual" ? "mensual" : "anual"} = {"$" + Math.round(form.tasaModo === "mensual" ? Number(form.capital) * Number(form.tasa) / 100 : Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString("es-CO")}/mes
-                    </div>
-                  )}
-                  {/* Fix: warning si el capital guardado es sospechosamente bajo (<$10K) */}
-                  {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
-                    <div style={{marginTop:10,padding:"10px 12px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,fontSize:11,color:T.red,lineHeight:1.5}}>
-                      ⚠️ El capital invertido es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Un capital típico de inversión es &gt;$100.000. Si el valor es correcto, ignorá este aviso.
-                    </div>
-                  )}
-                  {/* Commit E: validacion de tasa absurda (warning, no bloqueo) */}
-                  {(() => {
-                    const tas = Number(form.tasa) || 0;
-                    if (tas <= 0) return null;
-                    const tm = form.tasaModo || "anual";
-                    // Umbrales: anual > 100% o mensual > 10% = error probable (rojo)
-                    //          anual > 50%  o mensual > 5%  = revisar (naranja)
-                    const altoRojo = tm === "mensual" ? tas > 10 : tas > 100;
-                    const altoNaranja = tm === "mensual" ? tas > 5 : tas > 50;
-                    if (altoRojo) {
-                      return (
-                        <div style={{marginTop:10,padding:"10px 12px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,fontSize:11,color:T.red,lineHeight:1.5}}>
-                          ⚠️ Tasa muy alta: {tas}% {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambiá la periodicidad arriba si es el caso.
-                        </div>
-                      );
-                    }
-                    if (altoNaranja) {
-                      return (
-                        <div style={{marginTop:10,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.25)",borderRadius:8,fontSize:11,color:T.orange,lineHeight:1.5}}>
-                          🟠 Rentabilidad alta: {tas}% {tm}. Verificá que la periodicidad ({tm}) sea correcta. Rentabilidades de mercado típicas: 8-20% anual.
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-              )}
 
               {/* Sesión 28-abr-2026: Bloque de configuración de retención en
                   la fuente. Aparece SIEMPRE (excepto Salario que usa tabla
