@@ -991,6 +991,43 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
 
+              {/* UX Opción A (18-jul-2026 noche): Clasificación tributaria PLANA
+                  y compacta al pie. Sin accordion, separador discreto arriba,
+                  campos directos, sin explicación redundante. */}
+              <div style={{ gridColumn: "1/-1", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, marginTop: 6 }}>
+                <div style={{fontSize:11,fontWeight:600,color:T.txt3,marginBottom:8,letterSpacing:"0.03em"}}>
+                  🧾 Clasificación tributaria <span style={{color:T.txt3,fontWeight:400,opacity:0.7}}>(opcional)</span>
+                </div>
+              </div>
+              <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => {
+                const nf = { ...p, categoria: v, fiscalCode: DEFAULT_FISCAL_CODE[v] || "NOL_OTROS" };
+                // Commit 1.5: si cambia a Salario y ya hay bruto pero no aportes, prefill 4%+4%
+                const m = Number(p.mensual) || 0;
+                if (v === "Salario" && m > 0) {
+                  if (!p.aportePension) nf.aportePension = String(Math.round(m * 0.04));
+                  if (!p.aporteSalud)   nf.aporteSalud   = String(Math.round(m * 0.04));
+                }
+                return nf;
+              })} options={CATS} /></div>
+
+              {FISCAL_SUBOPTIONS[form.categoria] && (
+                <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>{FISCAL_SUBOPTIONS[form.categoria].question}</div>
+                  <select
+                    value={form.fiscalCode}
+                    onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
+                    style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer" }}
+                  >
+                    {FISCAL_SUBOPTIONS[form.categoria].options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                  </select>
+                  <div style={{ fontSize: 10, color: "#a1a1aa", marginTop: 6, lineHeight: 1.5 }}>{FISCAL_SUBOPTIONS[form.categoria].help}</div>
+                </div>
+              )}
+
+
+              <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} /></div>
+              <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
+
               {/* Fase Variable (18-jul-2026 noche): tabla de 12 meses cuando el
                   template es "Cambia mes a mes". Reemplaza al input MONTO normal. */}
               {mostrarCampo("tablaMensual") && (
@@ -1164,6 +1201,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 />
               </div>
               )}
+
+              <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
+              <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa, propiedad, fondo..." />
 
               {/* Commit 4 Tarea 3: selector de tipo de vinculación. Solo aparece para Salario.
                   Define si auto-creamos cesantías al guardar (caso ordinario) o no (integral/no aplica).
@@ -1352,46 +1392,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   })()}
                 </div>
               )}
-
-              <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa, propiedad, fondo..." />
-
-              <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
-              <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
-
-              {/* UX Opción A (18-jul-2026 noche): Clasificación tributaria PLANA
-                  y compacta al pie. Sin accordion, separador discreto arriba,
-                  campos directos, sin explicación redundante. */}
-              <div style={{ gridColumn: "1/-1", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, marginTop: 6 }}>
-                <div style={{fontSize:11,fontWeight:600,color:T.txt3,marginBottom:8,letterSpacing:"0.03em"}}>
-                  🧾 Clasificación tributaria <span style={{color:T.txt3,fontWeight:400,opacity:0.7}}>(opcional)</span>
-                </div>
-              </div>
-              <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} /></div>
-              <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => {
-                const nf = { ...p, categoria: v, fiscalCode: DEFAULT_FISCAL_CODE[v] || "NOL_OTROS" };
-                // Commit 1.5: si cambia a Salario y ya hay bruto pero no aportes, prefill 4%+4%
-                const m = Number(p.mensual) || 0;
-                if (v === "Salario" && m > 0) {
-                  if (!p.aportePension) nf.aportePension = String(Math.round(m * 0.04));
-                  if (!p.aporteSalud)   nf.aporteSalud   = String(Math.round(m * 0.04));
-                }
-                return nf;
-              })} options={CATS} /></div>
-
-              {FISCAL_SUBOPTIONS[form.categoria] && (
-                <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>{FISCAL_SUBOPTIONS[form.categoria].question}</div>
-                  <select
-                    value={form.fiscalCode}
-                    onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
-                    style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer" }}
-                  >
-                    {FISCAL_SUBOPTIONS[form.categoria].options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
-                  </select>
-                  <div style={{ fontSize: 10, color: "#a1a1aa", marginTop: 6, lineHeight: 1.5 }}>{FISCAL_SUBOPTIONS[form.categoria].help}</div>
-                </div>
-              )}
-
 
               {/* Fix 25-may-2026: el campo Capital invertido aparecía solo para
                   Rendimiento/Dividendos/Arriendo/Inversión. Pero CDT (Intereses
