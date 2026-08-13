@@ -10,7 +10,7 @@ import PageHeader from "./PageHeader";
 import { exportIngresosExcel } from "../lib/excelExport.js";
 import { exportIngresosPDF } from "../lib/pdfSectionExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
-import TemplateSelector, { detectarTemplate } from "./TemplateSelector";
+import { detectarTemplate, TEMPLATES } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
@@ -107,6 +107,71 @@ const FISCAL_SUBOPTIONS = {
 
 // Default fiscalCode por categoría para items nuevos (antes de que el usuario
 // aclare en el sub-select). Replica el comportamiento conservador del normalizer.
+// Plantilla con la que se entra al formulario desde el nuevo selector de
+// categoria. Es la unica cuyos camposVisibles incluyen "frecuencia": ahora que
+// el primer paso pregunta QUE es el ingreso y no cada cuanto, la frecuencia se
+// decide dentro del formulario y el selector tiene que estar visible.
+const TEMPLATE_COMPLETO =
+  TEMPLATES.find((t) => t.id === "avanzado") || TEMPLATES[TEMPLATES.length - 1];
+
+// Las 6 categorias que cubren la mayoria de los ingresos, al frente. El resto
+// queda detras de "Otros" para no abrir con doce opciones: la primera pantalla
+// tiene que dejar decidir rapido, no obligar a leer un catalogo.
+const CATS_DESTACADAS = ["Salario", "Arriendo", "Honorarios", "Dividendos", "Intereses bancarios", "Pensión"];
+
+function CategoriaSelector({ tokens: T, cats, onSelect, onCancel }) {
+  const [verTodas, setVerTodas] = useState(false);
+  const destacadas = cats.filter((c) => CATS_DESTACADAS.includes(c.v));
+  const resto = cats.filter((c) => !CATS_DESTACADAS.includes(c.v));
+  const visibles = verTodas ? [...destacadas, ...resto] : destacadas;
+
+  return (
+    <div>
+      <div style={{ fontSize: 13, color: T.txt2, marginBottom: 14, lineHeight: 1.5 }}>
+        ¿Qué tipo de ingreso vas a registrar? Según lo que elijas te pedimos
+        solo los datos que aplican.
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10 }}>
+        {visibles.map((c) => (
+          <button
+            key={c.v}
+            onClick={() => onSelect(c.v)}
+            style={{
+              background: T.bg3, border: "1px solid " + T.border, borderRadius: 12,
+              padding: "16px 14px", cursor: "pointer", textAlign: "left",
+              color: T.txt, fontSize: 14, fontWeight: 600, lineHeight: 1.35,
+            }}
+          >
+            {c.l}
+          </button>
+        ))}
+      </div>
+      {!verTodas && resto.length > 0 && (
+        <button
+          onClick={() => setVerTodas(true)}
+          style={{
+            marginTop: 12, background: "none", border: "none", color: T.txt3,
+            cursor: "pointer", fontSize: 13, textDecoration: "underline", padding: 0,
+          }}
+        >
+          Ver las {resto.length} categorías restantes
+        </button>
+      )}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+        <button
+          onClick={onCancel}
+          style={{
+            background: "none", border: "1px solid " + T.border, color: T.txt2,
+            padding: "10px 20px", borderRadius: 100, cursor: "pointer", fontWeight: 600, fontSize: 13,
+          }}
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const DEFAULT_FISCAL_CODE = {
   "Salario": "LAB_SALARIO",
   "Cesantías": "LAB_PRESTACIONES_CESANTIAS",
@@ -242,6 +307,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   // (trimestral, semestral, único), el template detectado será "avanzado"
   // y se mostrará todo.
   const mostrarCampo = (campo) => {
+    // 13-ago-2026: la tabla de 12 meses se alcanzaba SOLO eligiendo la
+    // plantilla "Cambia mes a mes" en el paso previo. Al reemplazar ese paso
+    // por el de categoría, la tabla quedaba inalcanzable. Ahora se activa
+    // desde el selector de frecuencia que ya vive dentro del formulario, que
+    // es donde el usuario espera encontrarla.
+    if (campo === "tablaMensual" && form.frecuencia === "variable") return true;
     if (!templateElegido) return false;
     return templateElegido.camposVisibles.includes(campo);
   };
@@ -915,48 +986,37 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editId ? "Editar Ingreso" : "Agregar Ingreso"}</h3>
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
-
-            {/* Mostrar selector cuando NO hay template elegido — aplica tanto
-                a items nuevos como a edición (click en "Cambiar" tipo). */}
+            {/* 13-ago-2026 (Santiago): "uno deberia poder elegir la categoria
+                para que de acuerdo a eso se muestre el respectivo formulario;
+                voy a registrar un arriendo y ya esta todo en modo salario".
+                El primer paso preguntaba por FRECUENCIA ("cada mes", "una vez
+                al ano") y el formulario arrancaba con categoria "Salario" fija
+                por defecto, asi que quien iba a cargar un arriendo entraba en
+                modo nomina sin haberlo pedido nunca. Ahora la primera pregunta
+                es QUE es el ingreso, que es la que gobierna el resto del
+                formulario. La frecuencia se elige adentro, donde corresponde. */}
             {!templateElegido ? (
-              <TemplateSelector
-                tipo="ingreso"
+              <CategoriaSelector
                 tokens={T}
-                onSelect={(tpl) => {
-                  // UX FIX crítico (18-jul-2026 noche): al cambiar template,
-                  // NO perder datos que el user ya llenó. Casos especiales:
-                  //   • Al ir a "variable-mensual": pre-cargar la tabla con
-                  //     el monto mensual actual en los 12 meses (el user
-                  //     luego ajusta los que sean diferentes).
-                  //   • Al SALIR de "variable-mensual": derivar mensual como
-                  //     el PROMEDIO de los meses cargados (evita perder info).
-                  setForm(p => {
-                    const nuevoForm = { ...p, ...tpl.preset };
-
-                    // Caso especial 1: cambiar A "variable-mensual"
-                    if (tpl.id === "variable-mensual") {
-                      const montoActual = Number(p.mensual) || 0;
-                      if (montoActual > 0) {
-                        // Pre-llenar los 12 meses con el monto actual
-                        nuevoForm.montosMensuales = new Array(12).fill(montoActual);
-                      }
+                cats={CATS}
+                onSelect={(catValue) => {
+                  setForm((p) => {
+                    const nf = { ...p, categoria: catValue,
+                      fiscalCode: DEFAULT_FISCAL_CODE[catValue] || "NOL_OTROS" };
+                    // Mismo prefill de aportes que ya hacia el selector de
+                    // Categoria DIAN del formulario, para no perder la ayuda.
+                    const m = Number(p.mensual) || 0;
+                    if (catValue === "Salario" && m > 0) {
+                      if (!p.aportePension) nf.aportePension = String(Math.round(m * 0.04));
+                      if (!p.aporteSalud)   nf.aporteSalud   = String(Math.round(m * 0.04));
                     }
-
-                    // Caso especial 2: salir DE "variable-mensual" a otro tipo
-                    if (p.frecuencia === "variable" && tpl.id !== "variable-mensual") {
-                      const montos = Array.isArray(p.montosMensuales) ? p.montosMensuales : [];
-                      const cargados = montos.filter(m => Number(m) > 0);
-                      if (cargados.length > 0) {
-                        // Derivar mensual como promedio de meses cargados
-                        const promedio = cargados.reduce((s, m) => s + Number(m), 0) / cargados.length;
-                        nuevoForm.mensual = String(Math.round(promedio));
-                      }
-                    }
-
-                    return nuevoForm;
+                    return nf;
                   });
-                  setModoIngreso(tpl.modoIngresoDefault || "porPago");
-                  setTemplateElegido(tpl);
+                  setModoIngreso("porPago");
+                  // Se entra con la plantilla mas completa: es la unica cuyos
+                  // camposVisibles incluyen el selector de frecuencia, que es
+                  // justamente lo que ahora se decide dentro del formulario.
+                  setTemplateElegido(TEMPLATE_COMPLETO);
                 }}
                 onCancel={() => setShowForm(false)}
               />
