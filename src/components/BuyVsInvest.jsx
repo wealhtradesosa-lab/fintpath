@@ -54,6 +54,14 @@ export default function BuyVsInvest() {
   const [valorizacionCasaAnual, setValorizacion] = useState(D.valorizacionCasaAnual);
   const [arriendoMensual, setArriendo] = useState(D.arriendoMensual);
   const [administracionMensual, setAdmin] = useState(D.administracionMensual);
+  // 15-ago-2026 (Santiago: "es importante poder considerar el predial, seguros").
+  // Ya estaban en el motor, pero fijos en el codigo y sin verse en pantalla: si
+  // el predial real del usuario es otro, el resultado mentia sin avisar.
+  const [predialAnualPct, setPredial] = useState(D.predialAnualPct);
+  const [seguroAnualPct, setSeguro] = useState(D.seguroAnualPct);
+  const [mantenimientoAnualPct, setMantenimiento] = useState(D.mantenimientoAnualPct);
+  const [gastosCompraPct, setGastosCompra] = useState(D.gastosCompraPct);
+  const [gastosVentaPct, setGastosVenta] = useState(D.gastosVentaPct);
   const [horizonteAnios, setHorizonte] = useState(D.horizonteAnios);
   const [activo, setActivo] = useState("sp500");
   const [cagrCustom, setCagrCustom] = useState(null);
@@ -76,6 +84,8 @@ export default function BuyVsInvest() {
     valorizacionCasaAnual,
     arriendoMensual: num(arriendoMensual),
     administracionMensual: num(administracionMensual),
+    predialAnualPct, seguroAnualPct, mantenimientoAnualPct,
+    gastosCompraPct, gastosVentaPct,
     horizonteAnios,
     rendimientoInversionAnual: rendimiento,
     exencionViviendaHabitacion: exencion,
@@ -84,11 +94,11 @@ export default function BuyVsInvest() {
   const r = useMemo(() => compararCompraVsInversion(params), [
     precioCasa, modoCompra, cuotaInicialPct, tasaHipotecaEA, plazoHipotecaAnios,
     valorizacionCasaAnual, arriendoMensual, administracionMensual, horizonteAnios,
-    rendimiento, exencion]);
+    rendimiento, exencion, predialAnualPct, seguroAnualPct, mantenimientoAnualPct, gastosCompraPct, gastosVentaPct]);
 
   const equilibrio = useMemo(() => valorizacionDeEquilibrio(params), [
     precioCasa, modoCompra, cuotaInicialPct, tasaHipotecaEA, plazoHipotecaAnios,
-    arriendoMensual, administracionMensual, horizonteAnios, rendimiento, exencion]);
+    arriendoMensual, administracionMensual, horizonteAnios, rendimiento, exencion, predialAnualPct, seguroAnualPct, mantenimientoAnualPct, gastosCompraPct, gastosVentaPct]);
 
   const ganaComprar = r.ganador === "comprar";
   const d = r.detalle;
@@ -201,6 +211,48 @@ export default function BuyVsInvest() {
           <Campo label="Administración mensual">
             <NumberInput value={administracionMensual} onChange={setAdmin} />
           </Campo>
+
+          {/* Costos de tener la casa. Van en % del avaluo y no en pesos fijos
+              porque suben con el avaluo: el predial de una casa que se
+              valorizo 6% al ano no es el mismo a 20 anos vista. Al lado se
+              muestra lo que representan HOY en pesos, que es como el usuario
+              los conoce y la unica forma de que pueda validarlos contra su
+              recibo. */}
+          <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 18, paddingTop: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: T.txt2, marginBottom: 12 }}>
+              Costos de tener la casa
+            </div>
+
+            <Campo label={`Predial: ${predialAnualPct}% al año · ${fmCorto(num(precioCasa) * predialAnualPct / 100)} hoy`}
+              ayuda="Se recalcula cada año sobre el avalúo, no sobre el precio de compra.">
+              <input type="range" min={0} max={3} step={0.05} value={predialAnualPct}
+                onChange={(e) => setPredial(+e.target.value)} style={{ width: "100%" }} />
+            </Campo>
+
+            <Campo label={`Seguro: ${seguroAnualPct}% al año · ${fmCorto(num(precioCasa) * seguroAnualPct / 100)} hoy`}
+              ayuda="Todo riesgo o el exigido por el banco mientras haya crédito.">
+              <input type="range" min={0} max={2} step={0.05} value={seguroAnualPct}
+                onChange={(e) => setSeguro(+e.target.value)} style={{ width: "100%" }} />
+            </Campo>
+
+            <Campo label={`Mantenimiento: ${mantenimientoAnualPct}% al año · ${fmCorto(num(precioCasa) * mantenimientoAnualPct / 100)} hoy`}
+              ayuda="Regla de oro: ~1% del valor al año. Techo, tuberías, pintura, lo que se rompe.">
+              <input type="range" min={0} max={3} step={0.1} value={mantenimientoAnualPct}
+                onChange={(e) => setMantenimiento(+e.target.value)} style={{ width: "100%" }} />
+            </Campo>
+
+            <Campo label={`Gastos de compra: ${gastosCompraPct}% · ${fmCorto(num(precioCasa) * gastosCompraPct / 100)}`}
+              ayuda="Notariado, registro, beneficencia. Se pagan una vez, al inicio.">
+              <input type="range" min={0} max={8} step={0.25} value={gastosCompraPct}
+                onChange={(e) => setGastosCompra(+e.target.value)} style={{ width: "100%" }} />
+            </Campo>
+
+            <Campo label={`Gastos de venta: ${gastosVentaPct}%`}
+              ayuda="Comisión inmobiliaria al vender, sobre el valor futuro.">
+              <input type="range" min={0} max={8} step={0.25} value={gastosVentaPct}
+                onChange={(e) => setGastosVenta(+e.target.value)} style={{ width: "100%" }} />
+            </Campo>
+          </div>
         </div>
 
         <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
