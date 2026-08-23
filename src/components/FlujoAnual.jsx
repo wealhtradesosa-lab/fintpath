@@ -694,7 +694,7 @@ export default function FlujoAnual({ user, trm = 4200 }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
               <tr style={{ background: T.bg3 }}>
-                {["Mes", "Ingresos", "Aportes", "Gastos fam.", "Cuotas", "Impuesto", "Egresos", "Cash Flow", "Saldo acum."].map((h, i) => (
+                {["Mes", "Ingresos", "Aportes", "Gastos fam.", "Cuotas créditos", "Impuesto", "Egresos", "Cash Flow", "Saldo acum."].map((h, i) => (
                   <th key={h} style={{ padding: "10px 12px", textAlign: i === 0 ? "left" : "right", color: T.txt3, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
