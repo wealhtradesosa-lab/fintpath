@@ -560,6 +560,54 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                       </span>
                     </div>
                     <div style={{ fontSize: 11, color: tx3, marginTop: 4, lineHeight: 1.55 }}>{a.razon}</div>
+
+                    {/* 30-ago-2026 (Santiago: "uno no ve en cada porcentaje que
+                        hay"). Esta lista mostraba los activos pero no a que
+                        canasta pertenecia cada uno, y la razon decia "esta en
+                        una canasta que tu objetivo pide reducir" sin decir
+                        CUAL. Con 16 activos, saber los nombres no alcanzaba
+                        para entender de que estaba hecho el 73%.
+                        La canasta se pone aca, en la lista que el usuario ya
+                        esta mirando, y se puede corregir en el mismo lugar. */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6,
+                          marginTop: 7, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 10, color: tx3 }}>
+                        {isEN ? "Basket:" : "Canasta:"}
+                      </span>
+                      {["proteccion", "mercado", "aspiracion"].map((dest) => {
+                        const esActual = dest === a.canasta;
+                        return (
+                          <button key={dest}
+                            onClick={() => onReclasificar && a.id && onReclasificar(a.id, esActual ? null : dest)}
+                            disabled={!onReclasificar || !a.id || esActual}
+                            title={esActual
+                              ? a.motivo
+                              : (isEN ? `Move to ${NOM_CANASTA[dest]}` : `Mover a ${NOM_CANASTA[dest]}`)}
+                            style={{
+                              fontSize: 10, padding: "3px 9px", borderRadius: 100,
+                              cursor: esActual || !onReclasificar ? "default" : "pointer",
+                              background: esActual ? PAL_CANASTA[dest] : "transparent",
+                              color: esActual ? "#fff" : tx3,
+                              border: `1px solid ${esActual ? PAL_CANASTA[dest] : border}`,
+                              fontWeight: esActual ? 700 : 500,
+                            }}>
+                            {NOM_CANASTA[dest]}
+                          </button>
+                        );
+                      })}
+                      {/* El aviso naranja marca donde la plataforma esta
+                          adivinando: es justo donde el usuario debe mirar. */}
+                      {a.inferido && (
+                        <span style={{ fontSize: 10, color: "#f97316" }}>
+                          {isEN ? "⚠️ we guessed this one" : "⚠️ lo asumimos nosotros"}
+                        </span>
+                      )}
+                      {a.manual && (
+                        <span style={{ fontSize: 10, color: gn }}>
+                          {isEN ? "✓ your call" : "✓ lo definiste vos"}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

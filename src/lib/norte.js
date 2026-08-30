@@ -361,7 +361,8 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
 
   const evaluados = activos
     .map((i) => {
-      const canasta = canastaDe(i);
+      const cl = clasificarActivo(i);
+      const canasta = cl.canasta;
       const v = valor(i);
       const peso = (v / total) * 100;
       const exceso = brechaDe[canasta];   // >0: esa canasta sobra; <0: falta
@@ -380,7 +381,7 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
         estado = "alineado";
         razon = "Su canasta está en línea con lo que tu objetivo pide.";
       }
-      return { nombre: i.n || i.nombre || "Activo", tipo: i.tp || i.tipo || "—", valor: v, peso, canasta, estado, razon };
+      return { id: i.id, motivo: cl.motivo, manual: cl.manual, inferido: !!cl.inferido, nombre: i.n || i.nombre || "Activo", tipo: i.tp || i.tipo || "—", valor: v, peso, canasta, estado, razon };
     })
     .sort((a, b) => b.valor - a.valor);
 
