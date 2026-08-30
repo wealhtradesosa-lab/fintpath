@@ -46,6 +46,12 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
   const [objetivo, setObjetivo] = useState(guardado?.objetivo || null);
   const [horizonte, setHorizonte] = useState(guardado?.horizonte || 10);
   const [editando, setEditando] = useState(!guardado);
+  // 25-ago-2026 (Santiago: "uno no sabe qué activo de uno está en qué").
+  // El motor ya devolvia diag.detalle con los activos de cada canasta, pero la
+  // pantalla nunca lo mostraba: se veia "45% / 35% / 20%" sin forma de saber
+  // de donde salia ni de verificarlo. Un porcentaje sin trazabilidad no es
+  // accionable -- no se puede corregir lo que no se sabe que esta adentro.
+  const [canastaAbierta, setCanastaAbierta] = useState(null);
 
   const diag = useMemo(() => diagnosticar({
     inversiones: user?.inv || [],
@@ -226,12 +232,22 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
             <div style={{ marginTop: 14 }}>
               {["proteccion", "mercado", "aspiracion"].map((c) => {
                 const b = diag.brechas.find((x) => x.canasta === c);
+                const items = (diag.detalle?.[c] || []).slice().sort((x, y) => y.valor - x.valor);
+                const abierta = canastaAbierta === c;
                 return (
-                  <div key={c} style={{ display: "flex", justifyContent: "space-between",
-                        gap: 10, flexWrap: "wrap", padding: "9px 0", borderBottom: `1px solid ${border}` }}>
+                  <div key={c} style={{ borderBottom: `1px solid ${border}` }}>
+                  <div onClick={() => setCanastaAbierta(abierta ? null : c)}
+                       style={{ display: "flex", justifyContent: "space-between",
+                        gap: 10, flexWrap: "wrap", padding: "9px 0", cursor: items.length ? "pointer" : "default" }}>
                     <span style={{ fontSize: 12.5, color: tx2, display: "flex", alignItems: "center", gap: 7 }}>
                       <span style={{ width: 9, height: 9, borderRadius: 3, background: PAL_CANASTA[c] }} />
                       {NOM_CANASTA[c]}
+                      {items.length > 0 && (
+                        <span style={{ fontSize: 11, color: tx3 }}>
+                          {abierta ? "▾" : "▸"} {items.length} {items.length === 1
+                            ? (isEN ? "asset" : "activo") : (isEN ? "assets" : "activos")}
+                        </span>
+                      )}
                     </span>
                     <span style={{ fontSize: 12.5, fontFamily: "monospace", color: tx }}>
                       {b.actual.toFixed(0)}%
@@ -249,6 +265,31 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
                         </span>
                       )}
                     </span>
+                  </div>
+
+                  {/* El detalle: que activo concreto esta en esta canasta y
+                      cuanto pesa. Sin esto el porcentaje es un dato que el
+                      usuario no puede ni verificar ni corregir. */}
+                  {abierta && (
+                    <div style={{ padding: "4px 0 12px 16px" }}>
+                      {items.length === 0 ? (
+                        <div style={{ fontSize: 11.5, color: tx3, fontStyle: "italic" }}>
+                          {isEN ? "No assets in this basket." : "No tenés activos en esta canasta."}
+                        </div>
+                      ) : items.map((it, idx) => (
+                        <div key={idx} style={{ display: "flex", justifyContent: "space-between",
+                              gap: 10, padding: "5px 0", fontSize: 12 }}>
+                          <span style={{ color: tx2 }}>{it.nombre}</span>
+                          <span style={{ fontFamily: "monospace", color: tx3 }}>
+                            {fm(it.valor)}
+                            <span style={{ marginLeft: 8, color: PAL_CANASTA[c] }}>
+                              {((it.valor / (diag.porCanasta.proteccion + diag.porCanasta.mercado + diag.porCanasta.aspiracion)) * 100).toFixed(1)}%
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   </div>
                 );
               })}
