@@ -3126,7 +3126,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // salarios mínimos, tasa de reemplazo, aporte obligatorio del 16%. Nada de
       // eso existe allá. Ahora cada jurisdicción tiene el suyo.
       case"norte":return gated("norte","Básico",<TuNorte user={u} totales={t} T={T} isEN={isEN}
-        onGuardar={(n)=>setU(p=>p?{...p,norte:n}:p)} />);
+        onGuardar={(n)=>setU(p=>p?{...p,norte:n}:p)}
+        onReclasificar={(id,canasta)=>upd("inv",((u&&u.inv)||[]).map(i=>i.id===id?{...i,canastaManual:canasta}:i))} />);
       case"btc":return gated("btc","Básico",isUS?<BitcoinRetirementUS user={u}/>:<PensionColombia trm={(u&&u.trm)||4200}/>);
       case"buyvsinvest":return gated("buyvsinvest","Básico",<BuyVsInvest/>);
     case"asesor":{const _aInv=((u&&u.inv)||[]).filter(i=>i.sim!==false),_aDeu=((u&&u.deu)||[]).filter(d=>d.sim!==false),_aIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false),_aGas={};Object.entries((u&&u.gas)||{}).forEach(([cat,items])=>{const fi=(items||[]).filter(g=>g.sim!==false);if(fi.length>0)_aGas[cat]=fi});return gated("asesor","Pro",<AsesorIA user={{inv:_aInv,gas:_aGas,deu:_aDeu,ingresos:_aIng}} totals={t} userId={authUser?.id}/>);}

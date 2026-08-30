@@ -32,7 +32,7 @@ const fm = (v) => {
   return "$" + n.toLocaleString("es-CO");
 };
 
-export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = false }) {
+export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onReclasificar, isEN = false }) {
   const L = isEN ? "en" : "es";
   const tx = T.txt || T.tx || "#fafafa";
   const tx2 = T.txt2 || T.tx2 || "#a1a1aa";
@@ -276,18 +276,56 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, isEN = 
                         <div style={{ fontSize: 11.5, color: tx3, fontStyle: "italic" }}>
                           {isEN ? "No assets in this basket." : "No tenés activos en esta canasta."}
                         </div>
-                      ) : items.map((it, idx) => (
-                        <div key={idx} style={{ display: "flex", justifyContent: "space-between",
-                              gap: 10, padding: "5px 0", fontSize: 12 }}>
-                          <span style={{ color: tx2 }}>{it.nombre}</span>
-                          <span style={{ fontFamily: "monospace", color: tx3 }}>
-                            {fm(it.valor)}
-                            <span style={{ marginLeft: 8, color: PAL_CANASTA[c] }}>
-                              {((it.valor / (diag.porCanasta.proteccion + diag.porCanasta.mercado + diag.porCanasta.aspiracion)) * 100).toFixed(1)}%
+                      ) : items.map((it, idx) => {
+                        const totalPat = diag.porCanasta.proteccion + diag.porCanasta.mercado + diag.porCanasta.aspiracion;
+                        return (
+                        <div key={it.id || idx} style={{ padding: "8px 0",
+                              borderBottom: idx < items.length - 1 ? `1px solid ${border}` : "none" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12 }}>
+                            <span style={{ color: tx2, fontWeight: 500 }}>{it.nombre}</span>
+                            <span style={{ fontFamily: "monospace", color: tx3, whiteSpace: "nowrap" }}>
+                              {fm(it.valor)}
+                              <span style={{ marginLeft: 8, color: PAL_CANASTA[c] }}>
+                                {totalPat > 0 ? ((it.valor / totalPat) * 100).toFixed(1) : "0.0"}%
+                              </span>
                             </span>
-                          </span>
+                          </div>
+
+                          {/* POR QUE quedo aca. Sin el criterio a la vista el
+                              usuario no puede juzgar si la clasificacion esta
+                              bien, y una mezcla mal clasificada se ve igual de
+                              creible que una correcta. */}
+                          <div style={{ fontSize: 10.5, color: it.inferido ? "#f97316" : tx3,
+                                marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span>{it.inferido ? "⚠️ " : ""}{it.motivo}</span>
+                            {it.manual && <span style={{ color: "#22c55e" }}>✓</span>}
+                          </div>
+
+                          {/* Reclasificar. El mapa de tipos es una heuristica
+                              sobre una etiqueta elegida para otra cosa: un
+                              "Real Estate" puede ser la casa donde vivis o un
+                              lote especulativo. Solo vos sabes cual. */}
+                          {onReclasificar && it.id && (
+                            <div style={{ display: "flex", gap: 5, marginTop: 6, flexWrap: "wrap" }}>
+                              {["proteccion", "mercado", "aspiracion"].map((dest) => (
+                                <button key={dest}
+                                  onClick={() => onReclasificar(it.id, dest === c ? null : dest)}
+                                  disabled={dest === c}
+                                  style={{
+                                    fontSize: 10, padding: "3px 9px", borderRadius: 100,
+                                    cursor: dest === c ? "default" : "pointer",
+                                    background: dest === c ? PAL_CANASTA[dest] : "transparent",
+                                    color: dest === c ? "#fff" : tx3,
+                                    border: `1px solid ${dest === c ? PAL_CANASTA[dest] : border}`,
+                                    fontWeight: dest === c ? 700 : 500,
+                                  }}>
+                                  {NOM_CANASTA[dest]}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      ))}
+                      );})}
                     </div>
                   )}
                   </div>

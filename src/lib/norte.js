@@ -51,17 +51,52 @@ const CANASTA_POR_TIPO = {
   "startup": "aspiracion", "trading": "aspiracion",
 };
 
-export function canastaDe(activo) {
-  const tipo = String(activo?.tp || activo?.tipo || "").toLowerCase().trim();
-  if (CANASTA_POR_TIPO[tipo]) return CANASTA_POR_TIPO[tipo];
-  // Coincidencia parcial: "Real Estate Orlando", "Fondo de Inversión XYZ"
+/**
+ * Clasifica un activo, y explica por qué.
+ * Devuelve { canasta, motivo, manual }.
+ *
+ * 30-ago-2026 (Santiago: "supongamos que la plataforma clasifica orlando como
+ * multiplicador y es realmente protección; que uno pueda clasificar"). Tiene
+ * razón, y no es un detalle: el mapa de tipos es una heurística sobre una
+ * etiqueta que el usuario eligió para otra cosa. Un "Real Estate" puede ser la
+ * casa donde vive (protección) o un lote especulativo en la periferia
+ * (aspiración), y el sistema no tiene cómo saberlo. Cuando el usuario lo
+ * corrige, su criterio manda: `canastaManual` gana sobre cualquier heurística.
+ */
+export function clasificarActivo(activo) {
+  const manual = activo?.canastaManual;
+  if (manual && ["proteccion", "mercado", "aspiracion"].includes(manual)) {
+    return { canasta: manual, motivo: "Lo clasificaste vos", manual: true };
+  }
+
+  const tipoRaw = String(activo?.tp || activo?.tipo || "").trim();
+  const tipo = tipoRaw.toLowerCase();
+
+  if (CANASTA_POR_TIPO[tipo]) {
+    return { canasta: CANASTA_POR_TIPO[tipo], motivo: `Por su tipo: ${tipoRaw}`, manual: false };
+  }
   for (const [k, v] of Object.entries(CANASTA_POR_TIPO)) {
-    if (tipo.includes(k)) return v;
+    if (tipo.includes(k)) {
+      return { canasta: v, motivo: `Su tipo "${tipoRaw}" contiene "${k}"`, manual: false };
+    }
   }
   // Sin clasificar va a protección: es el supuesto CONSERVADOR. Contar un
   // activo desconocido como aspiración inflaría artificialmente el riesgo
   // percibido y llevaría a recomendar movimientos innecesarios.
-  return "proteccion";
+  // Pero se avisa, porque es justo el caso donde la heurística puede errar y
+  // el usuario es el único que sabe la respuesta.
+  return {
+    canasta: "proteccion",
+    motivo: tipoRaw
+      ? `No reconocemos el tipo "${tipoRaw}" — asumimos protección`
+      : "Sin tipo definido — asumimos protección",
+    manual: false,
+    inferido: true,
+  };
+}
+
+export function canastaDe(activo) {
+  return clasificarActivo(activo).canasta;
 }
 
 // ─── Los cuatro objetivos ─────────────────────────────────────────────────
@@ -236,10 +271,17 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
   const porCanasta = { proteccion: 0, mercado: 0, aspiracion: 0 };
   const detalle = { proteccion: [], mercado: [], aspiracion: [] };
   activos.forEach((i) => {
-    const c = canastaDe(i);
+    const cl = clasificarActivo(i);
+    const c = cl.canasta;
     const v = valor(i);
     porCanasta[c] += v;
-    if (v > 0) detalle[c].push({ nombre: i.n || i.nombre || "Activo", valor: v });
+    // Se lleva el id y el motivo: sin id no se puede reclasificar, y sin
+    // motivo el usuario no tiene con qué juzgar si la clasificación está bien.
+    if (v > 0) detalle[c].push({
+      id: i.id, nombre: i.n || i.nombre || "Activo", valor: v,
+      tipo: i.tp || i.tipo || "", motivo: cl.motivo,
+      manual: cl.manual, inferido: !!cl.inferido,
+    });
   });
 
   const total = porCanasta.proteccion + porCanasta.mercado + porCanasta.aspiracion;
