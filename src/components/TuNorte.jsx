@@ -242,10 +242,20 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                     <span style={{ fontSize: 12.5, color: tx2, display: "flex", alignItems: "center", gap: 7 }}>
                       <span style={{ width: 9, height: 9, borderRadius: 3, background: PAL_CANASTA[c] }} />
                       {NOM_CANASTA[c]}
+                      {/* 30-ago-2026: Santiago no encontraba donde hacer clic.
+                          La flechita gris suelta no se leia como boton: sin
+                          fondo, sin borde y sin verbo, parecia decoracion.
+                          Ahora es una pastilla con el color de la canasta y
+                          dice que hace. */}
                       {items.length > 0 && (
-                        <span style={{ fontSize: 11, color: tx3 }}>
-                          {abierta ? "▾" : "▸"} {items.length} {items.length === 1
-                            ? (isEN ? "asset" : "activo") : (isEN ? "assets" : "activos")}
+                        <span style={{ fontSize: 10.5, fontWeight: 600,
+                              color: abierta ? "#fff" : PAL_CANASTA[c],
+                              background: abierta ? PAL_CANASTA[c] : `${PAL_CANASTA[c]}22`,
+                              border: `1px solid ${PAL_CANASTA[c]}55`,
+                              padding: "3px 9px", borderRadius: 100, whiteSpace: "nowrap" }}>
+                          {abierta
+                            ? (isEN ? "▾ Hide" : "▾ Ocultar")
+                            : (isEN ? `▸ See ${items.length} assets` : `▸ Ver mis ${items.length} activos`)}
                         </span>
                       )}
                     </span>
