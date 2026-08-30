@@ -274,6 +274,18 @@ function FreedomBarLive({ ni, te, cf }) {
 // ═══════════════════════════════════════
 export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onNavigate}) {
 
+  // 30-ago-2026 — CAUSA RAIZ de "algo salió mal" al abrir el simulador:
+  // ReferenceError: trm is not defined.
+  // El Sankey (línea ~1878) convertía ingresos en USD usando `trm`, pero esa
+  // variable solo existía DENTRO de cuatro useMemo distintos (líneas 370, 511,
+  // 593 y 648), cada uno con su propio `const trm = user?.trm || 4200`. En el
+  // JSX, fuera de esos bloques, `trm` no existe y el render entero reventaba.
+  // El bug es preexistente y no tenía relación con el cambio de expT que se
+  // revirtió el 25-ago buscando esta misma falla.
+  // Se declara una sola vez acá: los useMemo pueden seguir usando su copia
+  // local sin conflicto, y el JSX ya tiene de dónde leerla.
+  const trm = user?.trm || 4200;
+
   const [simVals, setSimVals] = useState({});
   // Per-owner toggle: { "<ti>": true/false } keyed by tax detail index.
   // A missing key means "Actual" (default) for that owner.
