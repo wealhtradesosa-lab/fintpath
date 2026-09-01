@@ -593,6 +593,50 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   }, [user, simVals, mesVisualizado, getVal, simT.cuotasDeudas, simT.retencionMensual, simT.impuestoNeto, simT.cashFlow]);
 
   // ═══════════════════════════════════════════════════════════════════════
+  // expT — LO QUE SE EXPORTA (rehecho 01-sep-2026)
+  //
+  // Santiago, 12-ago: "uno debería ver lo que está en el simulador, es decir
+  // el mes que se está revisando". La pantalla muestra simTMes (el mes
+  // seleccionado) pero el PDF y el Excel leían simT (el mes PROMEDIO). Con un
+  // pico de predial la diferencia era de trece veces: la pantalla decía
+  // $200.000 de cash flow y el documento exportado $2.700.000.
+  //
+  // Esto ya se había hecho el 12-ago y se revirtió el 25-ago buscando la causa
+  // de que el simulador no abriera. Esa hipótesis era equivocada: el culpable
+  // era un ReferenceError de `trm` en el Sankey, corregido aparte. Se rehace
+  // ahora sabiendo que este código nunca fue el problema.
+  //
+  // expT traduce el mes visualizado a las MISMAS claves que usa simT, para que
+  // los exports cambien su fuente de datos y no su estructura.
+  // Los ratios se RECALCULAN con las cifras del mes: la independencia de un mes
+  // con prima no es la del promedio, y copiarla sería mezclar dos periodos.
+  const expT = useMemo(() => {
+    const disponible = simTMes.disponibleMes || 0;
+    const egresos = simTMes.egresosMes || 0;
+    const indep = egresos > 0 ? (disponible / egresos) * 100 : 0;
+    return {
+      ...simT,
+      brutoTotal: simTMes.brutoDelMes || 0,
+      retencionMensual: simTMes.retencionMes || 0,
+      disponibleCuenta: disponible,
+      aportesObligatorios: simTMes.aportesObligatoriosMes || 0,
+      gastosFamiliares: simTMes.gastosFamiliaresMes || 0,
+      gfm: simTMes.gastosFamiliaresMes || 0,
+      cuotasDeudas: simTMes.cuotasDeudasMes || 0,
+      impuestoNeto: simTMes.impuestoNetoMes || 0,
+      egresosTotales: egresos,
+      te: egresos,
+      ni: disponible,
+      cf: simTMes.cashFlowMes || 0,
+      ind: indep,
+      independencia: indep,
+    };
+  }, [simT, simTMes]);
+
+  // Nombre del mes exportado, para rotular los documentos.
+  const mesLabel = (MESES.find((m) => m.v === mesVisualizado)?.l) || "";
+
+  // ═══════════════════════════════════════════════════════════════════════
   // DRIVERS DEL MES (20-jul-2026, Santiago): "sería espectacular poder
   // saber qué fue lo que más afectó positiva o negativamente el cash flow
   // del mes elegido". Comparamos cada item contra su comportamiento TÍPICO
@@ -868,15 +912,15 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
     <div style="font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💰 Ingresos Mensuales</div>
     <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
       <span style="color:#374151">Bruto Total <span style="color:#9ca3af;font-size:9px">(genera activos)</span></span>
-      <span style="font-weight:500">$${Math.round(simT.brutoTotal||0).toLocaleString("es-CO")}</span>
+      <span style="font-weight:500">$${Math.round(expT.brutoTotal||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:10px;padding-left:8px;border-left:2px solid #e5e7eb">
       <span style="color:#8b5cf6">− Retención <span style="color:#9ca3af;font-size:9px">(recuperable)</span></span>
-      <span style="color:#8b5cf6;font-weight:500">−$${Math.round(simT.retencionMensual||0).toLocaleString("es-CO")}</span>
+      <span style="color:#8b5cf6;font-weight:500">−$${Math.round(expT.retencionMensual||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
       <span style="color:#16a34a">= DISPONIBLE</span>
-      <span style="color:#16a34a">$${Math.round(simT.disponibleCuenta||0).toLocaleString("es-CO")}</span>
+      <span style="color:#16a34a">$${Math.round(expT.disponibleCuenta||0).toLocaleString("es-CO")}</span>
     </div>
   </div>
 
@@ -885,37 +929,37 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
     <div style="font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💸 Egresos Mensuales</div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
       <span style="color:#f59e0b">A. Aportes obligatorios</span>
-      <span style="color:#f59e0b">$${Math.round(simT.aportesObligatorios||0).toLocaleString("es-CO")}</span>
+      <span style="color:#f59e0b">$${Math.round(expT.aportesObligatorios||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
       <span style="color:#374151">B. Gastos familiares</span>
-      <span>$${Math.round(simT.gastosFamiliares||0).toLocaleString("es-CO")}</span>
+      <span>$${Math.round(expT.gastosFamiliares||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
       <span style="color:#374151">C. Cuotas de deudas</span>
-      <span>$${Math.round(simT.cuotasDeudas||0).toLocaleString("es-CO")}</span>
+      <span>$${Math.round(expT.cuotasDeudas||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px">
       <span style="color:#8b5cf6">D. Impuesto neto</span>
-      <span style="color:#8b5cf6">$${Math.round(simT.impuestoNeto||0).toLocaleString("es-CO")}</span>
+      <span style="color:#8b5cf6">$${Math.round(expT.impuestoNeto||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
       <span style="color:#dc2626">= EGRESOS TOTALES</span>
-      <span style="color:#dc2626">$${Math.round(simT.egresosTotales||simT.te||0).toLocaleString("es-CO")}</span>
+      <span style="color:#dc2626">$${Math.round(expT.egresosTotales||expT.te||0).toLocaleString("es-CO")}</span>
     </div>
   </div>
 </div>
 
 <!-- Cash Flow protagonista -->
-<div style="background:${simT.cf>=0?'#f0fdf4':'#fef2f2'};border:2px solid ${simT.cf>=0?'#16a34a':'#dc2626'};border-radius:10px;padding:14px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+<div style="background:${expT.cf>=0?'#f0fdf4':'#fef2f2'};border:2px solid ${expT.cf>=0?'#16a34a':'#dc2626'};border-radius:10px;padding:14px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
   <div>
-    <div style="font-size:10px;color:${simT.cf>=0?'#16a34a':'#dc2626'};font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${simT.cf>=0?'💰 CASH FLOW · Para ahorrar / invertir':'⚠️ CASH FLOW NEGATIVO'}</div>
-    <div style="font-size:26px;font-weight:800;color:${simT.cf>=0?'#16a34a':'#dc2626'};margin-top:4px">$${Math.round(simT.cf).toLocaleString("es-CO")}<span style="font-size:11px;color:#9ca3af;font-weight:400">/mes</span></div>
-    <div style="font-size:10px;color:#6b7280;margin-top:3px">Disponible $${Math.round(simT.disponibleCuenta||0).toLocaleString("es-CO")} − Egresos $${Math.round(simT.egresosTotales||simT.te||0).toLocaleString("es-CO")}</div>
+    <div style="font-size:10px;color:${expT.cf>=0?'#16a34a':'#dc2626'};font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${expT.cf>=0?'💰 CASH FLOW · Para ahorrar / invertir':'⚠️ CASH FLOW NEGATIVO'}</div>
+    <div style="font-size:26px;font-weight:800;color:${expT.cf>=0?'#16a34a':'#dc2626'};margin-top:4px">$${Math.round(expT.cf).toLocaleString("es-CO")}<span style="font-size:11px;color:#9ca3af;font-weight:400">/mes</span></div>
+    <div style="font-size:10px;color:#6b7280;margin-top:3px">Disponible $${Math.round(expT.disponibleCuenta||0).toLocaleString("es-CO")} − Egresos $${Math.round(expT.egresosTotales||expT.te||0).toLocaleString("es-CO")}</div>
   </div>
   <div style="display:flex;gap:22px;text-align:center">
-    <div><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">AL AÑO</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#16a34a':'#dc2626'}">$${Math.round(simT.cf*12).toLocaleString("es-CO")}</div></div>
-    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${simT.ind>=100?'#16a34a':'#eab308'}">${(simT.ind||0).toFixed(0)}%</div></div>
+    <div><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">AL AÑO (PROMEDIO)</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#16a34a':'#dc2626'}">$${Math.round(simT.cf*12).toLocaleString("es-CO")}</div></div>
+    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${expT.ind>=100?'#16a34a':'#eab308'}">${(expT.ind||0).toFixed(0)}%</div></div>
     <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">NIVEL</div><div style="font-size:13px;font-weight:700;color:#3b82f6">${niveles[nivel]} (${nivel+1}/5)</div></div>
   </div>
 </div>
@@ -923,13 +967,13 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
 <h2>💰 Ingresos Mensuales</h2>
 <table><thead><tr><th>Fuente</th><th>Categoría</th><th style="text-align:right">Monto</th><th>Detalle</th></tr></thead>
 <tbody>${ingRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #16a34a"><td colspan="2">TOTAL BRUTO</td><td style="text-align:right;color:#16a34a">$${Math.round(simT.brutoTotal||simT.ni||0).toLocaleString("es-CO")}</td><td></td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #16a34a"><td colspan="2">TOTAL BRUTO</td><td style="text-align:right;color:#16a34a">$${Math.round(expT.brutoTotal||expT.ni||0).toLocaleString("es-CO")}</td><td></td></tr></tfoot>
 </table>
 
 <h2>💳 Gastos Familiares</h2>
 <table><thead><tr><th>Categoría</th><th>Principales</th><th style="text-align:right">Total</th></tr></thead>
 <tbody>${gasRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td colspan="2">TOTAL GASTOS</td><td style="text-align:right;color:#dc2626">$${Math.round(simT.gfm).toLocaleString("es-CO")}</td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td colspan="2">TOTAL GASTOS</td><td style="text-align:right;color:#dc2626">$${Math.round(expT.gfm).toLocaleString("es-CO")}</td></tr></tfoot>
 </table>
 
 ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
@@ -941,13 +985,13 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
 <h2>📊 Resumen</h2>
 <div class="grid2">
   <div>
-    <div class="bar-container"><div class="bar-fill" style="width:${Math.min(simT.ind,100)}%;background:${simT.ind>=100?"#16a34a":"#eab308"}"></div></div>
-    <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${(simT.ind||0).toFixed(0)}%</span><span>100%</span></div>
+    <div class="bar-container"><div class="bar-fill" style="width:${Math.min(expT.ind,100)}%;background:${expT.ind>=100?"#16a34a":"#eab308"}"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${(expT.ind||0).toFixed(0)}%</span><span>100%</span></div>
   </div>
   <div class="diag">
-    ${simT.ind>=100?"✅ Independencia financiera alcanzada":"⚠ Falta $"+Math.round(simT.te-simT.ni).toLocaleString("es-CO")+"/mes"}<br>
-    ${simT.cf>=0?"✅ Cash flow positivo: $"+Math.round(simT.cf).toLocaleString("es-CO")+"/mes":"❌ Cash flow negativo"}<br>
-    📅 Disponible al día: $${Math.round(simT.cf/30).toLocaleString("es-CO")}
+    ${expT.ind>=100?"✅ Independencia financiera alcanzada":"⚠ Falta $"+Math.round(expT.te-expT.ni).toLocaleString("es-CO")+"/mes"}<br>
+    ${expT.cf>=0?"✅ Cash flow positivo: $"+Math.round(expT.cf).toLocaleString("es-CO")+"/mes":"❌ Cash flow negativo"}<br>
+    📅 Disponible al día: $${Math.round(expT.cf/30).toLocaleString("es-CO")}
   </div>
 </div>
 
@@ -965,7 +1009,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               const scenarioName = simName || "Simulacion";
               const scenarioDesc = simDescripcion || "";
               const niveles = ["Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
-              const nivel = simT.ind >= 250 ? 4 : simT.ind >= 150 ? 3 : simT.ind >= 100 ? 2 : simT.ind >= 75 ? 1 : 0;
+              const nivel = expT.ind >= 250 ? 4 : expT.ind >= 150 ? 3 : expT.ind >= 100 ? 2 : expT.ind >= 75 ? 1 : 0;
 
               const wb = XLSX.utils.book_new();
 
@@ -975,34 +1019,35 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 [],
                 ["Escenario:", scenarioName],
                 ["Fecha:", fecha],
+                ["Mes simulado:", mesLabel + " " + simTMes.añoActual],
                 ...(scenarioDesc ? [["Descripción:", scenarioDesc]] : []),
                 [],
                 ["═══ INGRESOS (Bruto → Retención → Disponible) ═══"],
-                ["Bruto Total mensual", Math.round(simT.brutoTotal || 0)],
-                ["Bruto Total anual", Math.round((simT.brutoTotal || 0) * 12)],
-                ["Retención en la fuente mensual (recuperable)", Math.round(simT.retencionMensual || 0)],
-                ["Retención anual (crédito tributario)", Math.round((simT.retencionMensual || 0) * 12)],
-                ["DISPONIBLE EN CUENTA mensual", Math.round(simT.disponibleCuenta || 0)],
-                ["DISPONIBLE EN CUENTA anual", Math.round((simT.disponibleCuenta || 0) * 12)],
+                [`Bruto Total — ${mesLabel}`, Math.round(expT.brutoTotal || 0)],
+                ["Bruto Total anual (promedio de los 12 meses)", Math.round((simT.brutoTotal || 0) * 12)],
+                ["Retención en la fuente mensual (recuperable)", Math.round(expT.retencionMensual || 0)],
+                ["Retención anual (crédito tributario, promedio 12 meses)", Math.round((simT.retencionMensual || 0) * 12)],
+                [`DISPONIBLE EN CUENTA — ${mesLabel}`, Math.round(expT.disponibleCuenta || 0)],
+                ["DISPONIBLE EN CUENTA anual (promedio de los 12 meses)", Math.round((simT.disponibleCuenta || 0) * 12)],
                 [],
                 ["═══ EGRESOS (desglose 4 líneas) ═══"],
-                ["A. Aportes obligatorios (pensión + salud)", Math.round(simT.aportesObligatorios || 0)],
-                ["B. Gastos familiares (vivienda, educación, etc.)", Math.round(simT.gastosFamiliares || 0)],
-                ["C. Cuotas de deudas mensuales", Math.round(simT.cuotasDeudas || 0)],
-                ["D. Impuesto neto (saldo tras retención)", Math.round(simT.impuestoNeto || 0)],
-                ["EGRESOS TOTALES", Math.round(simT.egresosTotales || simT.te || 0)],
+                ["A. Aportes obligatorios (pensión + salud)", Math.round(expT.aportesObligatorios || 0)],
+                ["B. Gastos familiares (vivienda, educación, etc.)", Math.round(expT.gastosFamiliares || 0)],
+                ["C. Cuotas de deudas mensuales", Math.round(expT.cuotasDeudas || 0)],
+                ["D. Impuesto neto (saldo tras retención)", Math.round(expT.impuestoNeto || 0)],
+                ["EGRESOS TOTALES", Math.round(expT.egresosTotales || expT.te || 0)],
                 [],
                 ["═══ CASH FLOW ═══"],
-                ["Cash flow mensual", Math.round(simT.cf)],
-                ["Cash flow anual", Math.round(simT.cf*12)],
-                ["Cash flow diario", Math.round(simT.cf/30)],
+                ["Cash flow mensual", Math.round(expT.cf)],
+                ["Cash flow anual (promedio de los 12 meses)", Math.round(simT.cf*12)],
+                ["Cash flow diario", Math.round(expT.cf/30)],
                 [],
                 ["═══ NIVEL DE LIBERTAD ═══"],
-                ["Índice de independencia (%)", Number((simT.ind||0).toFixed(2))],
+                ["Índice de independencia (%)", Number((expT.ind||0).toFixed(2))],
                 ["Nivel de libertad", `${niveles[nivel]} (${nivel+1}/5)`],
-                ["Estado independencia", simT.ind>=100?"Alcanzada":"En construcción"],
-                ["Estado cash flow", simT.cf>=0?"Positivo":"Negativo"],
-                ["Falta para independencia (mensual)", Math.max(0, Math.round((simT.egresosTotales || simT.te) - (simT.disponibleCuenta || simT.ni)))],
+                ["Estado independencia", expT.ind>=100?"Alcanzada":"En construcción"],
+                ["Estado cash flow", expT.cf>=0?"Positivo":"Negativo"],
+                ["Falta para independencia (mensual)", Math.max(0, Math.round((expT.egresosTotales || expT.te) - (expT.disponibleCuenta || expT.ni)))],
               ];
               const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
               wsResumen["!cols"] = [{wch:48},{wch:22}];
@@ -1022,7 +1067,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 ]);
               });
               ingresosData.push([]);
-              ingresosData.push(["TOTAL BRUTO","",Math.round(simT.brutoTotal||simT.ni||0),"","","",Math.round((simT.brutoTotal||simT.ni||0)*12)]);
+              ingresosData.push(["TOTAL BRUTO","",Math.round(expT.brutoTotal||expT.ni||0),"","","",Math.round((expT.brutoTotal||expT.ni||0)*12)]);
               const wsIng = XLSX.utils.aoa_to_sheet(ingresosData);
               wsIng["!cols"] = [{wch:30},{wch:20},{wch:16},{wch:8},{wch:18},{wch:12},{wch:16}];
               XLSX.utils.book_append_sheet(wb, wsIng, "Ingresos");
@@ -1035,7 +1080,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 });
               });
               gastosData.push([]);
-              gastosData.push(["TOTAL","",Math.round(simT.gfm),""]);
+              gastosData.push(["TOTAL","",Math.round(expT.gfm),""]);
               const wsGas = XLSX.utils.aoa_to_sheet(gastosData);
               wsGas["!cols"] = [{wch:24},{wch:32},{wch:16},{wch:12}];
               XLSX.utils.book_append_sheet(wb, wsGas, "Gastos");
