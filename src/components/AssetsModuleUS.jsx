@@ -29,6 +29,7 @@ import BarraComposicion from "./BarraComposicion";
 import NumberInput from "./NumberInput";
 import { US } from "../lib/jurisdictions/US.js";
 import { exportPatrimonioPDF, exportDeudasPDF } from "../lib/pdfSectionExport.js";
+import { exportInversionesExcel, exportDeudasExcel } from "../lib/excelExport.js";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const C = {
@@ -445,6 +446,16 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
             title="Download debts PDF with suggested payoff order"
             style={{background:"#dc2626",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
             📄 Debts PDF
+          </button>
+          <button onClick={()=>exportInversionesExcel(inversiones.filter(x=>x.sim!==false), [], 1, true)}
+            title="Download assets Excel"
+            style={{background:"#16a34a",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+            📊 Assets XLS
+          </button>
+          <button onClick={()=>exportDeudasExcel(deudas.filter(x=>x.sim!==false), inversiones, [], 1, true)}
+            title="Download debts Excel"
+            style={{background:"#16a34a",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+            📊 Debts XLS
           </button>
         </div>
       </div>

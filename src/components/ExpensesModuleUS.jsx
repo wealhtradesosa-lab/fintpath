@@ -15,6 +15,7 @@ import { useState, useMemo } from "react";
 import Disclaimer from "./Disclaimer";
 import NumberInput from "./NumberInput";
 import { exportGastosPDF } from "../lib/pdfSectionExport.js";
+import { exportGastosExcel } from "../lib/excelExport.js";
 
 // ─── 2025 Constants ─────────────────────────────────────────────────────────
 const C = {
@@ -284,6 +285,11 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
           title="Download expenses PDF with fixed vs variable and category breakdown"
           style={{marginTop:12,background:"#dc2626",color:"#fff",border:"none",padding:"9px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
           📄 PDF
+        </button>
+        <button onClick={()=>exportGastosExcel(gastos, 1, true)}
+          title="Download Excel with full expense detail"
+          style={{background:"#16a34a",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
+          📊 Excel
         </button>
       </div>
 

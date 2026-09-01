@@ -26,6 +26,53 @@ const buildFilename = (modulo) => {
   return `FINPATHIA_${modulo}_${date}.xlsx`;
 };
 
+// 01-sep-2026: modo inglés para los módulos US, igual criterio que en
+// pdfSectionExport.js. Un solo archivo con diccionario en vez de dos copias:
+// duplicar garantiza que las correcciones futuras se hagan en un lado y no en
+// el otro.
+const XL = {
+  es: {
+    fileIngresos: "Ingresos", fileGastos: "Gastos", fileDeudas: "Deudas",
+    fileInversiones: "Inversiones",
+    hIngresos: ["Fuente / Nombre", "Categoría DIAN", "Origen", "Tipo", "Moneda",
+      "Monto Mensual", "Monto Anual", "Capital Invertido", "Tasa Anual %",
+      "Propietario Fiscal", "Retención Auto %", "Notas"],
+    total: "TOTAL",
+    hGastos: ["Categoría", "Concepto", "Monto Mensual", "Monto Anual", "Tipo"],
+    hDeudas: ["Nombre", "Saldo Actual", "Cuota Mensual", "Cuota Anual", "Tasa % Anual",
+      "Meses Restantes", "Total a Pagar", "Vinculada a Activo", "Propietario Fiscal", "Notas"],
+    hInv: ["Nombre", "Tipo", "Ubicación", "Moneda", "Valor Compra", "Valor Actual",
+      "Ganancia $", "Ganancia %", "Propietario Fiscal", "Notas"],
+    fijo: "Fijo", variable: "Variable",
+    shCat: "Por Categoría", shTipo: "Por Tipo", shOwner: "Por Propietario", shActivos: "Activos",
+    hCatIng: ["Categoría DIAN", "# Ingresos", "Total Mensual", "Total Anual", "% del Total"],
+    hCatGas: ["Categoría", "# Ítems", "Fijos", "Variables", "Total Mensual", "Total Anual", "% del Total"],
+    hTipoInv: ["Tipo", "# Activos", "Valor Compra", "Valor Actual", "Ganancia $", "% del Portafolio"],
+    hOwnerInv: ["Propietario Fiscal", "# Activos", "Valor Compra", "Valor Actual", "Ganancia $", "% del Portafolio"],
+    sin: (q) => `No hay ${q} activos para exportar. Prendé al menos uno con el toggle ✅.`,
+  },
+  en: {
+    fileIngresos: "Income", fileGastos: "Expenses", fileDeudas: "Debts",
+    fileInversiones: "Assets",
+    hIngresos: ["Source / Name", "Category", "Origin", "Type", "Currency",
+      "Monthly Amount", "Annual Amount", "Invested Capital", "Annual Rate %",
+      "Tax Owner", "Auto Withholding %", "Notes"],
+    total: "TOTAL",
+    hGastos: ["Category", "Item", "Monthly Amount", "Annual Amount", "Type"],
+    hDeudas: ["Name", "Current Balance", "Monthly Payment", "Annual Payment", "Annual Rate %",
+      "Months Left", "Total to Pay", "Linked Asset", "Tax Owner", "Notes"],
+    hInv: ["Name", "Type", "Location", "Currency", "Cost Basis", "Current Value",
+      "Gain $", "Gain %", "Tax Owner", "Notes"],
+    fijo: "Fixed", variable: "Variable",
+    shCat: "By Category", shTipo: "By Type", shOwner: "By Owner", shActivos: "Assets",
+    hCatIng: ["Category", "# Items", "Monthly Total", "Annual Total", "% of Total"],
+    hCatGas: ["Category", "# Items", "Fixed", "Variable", "Monthly Total", "Annual Total", "% of Total"],
+    hTipoInv: ["Type", "# Assets", "Cost Basis", "Current Value", "Gain $", "% of Portfolio"],
+    hOwnerInv: ["Tax Owner", "# Assets", "Cost Basis", "Current Value", "Gain $", "% of Portfolio"],
+    sin: (q) => `No active ${q} to export. Turn at least one on with the toggle ✅.`,
+  },
+};
+
 // 12-ago-2026: mismo defecto que se corrigió en pdfSectionExport.js. Los
 // montos entraban crudos, así que un ítem cargado en USD se sumaba como si
 // fueran pesos y el total del Excel no coincidía con el de la pantalla.
@@ -51,10 +98,11 @@ const writeWorkbook = async (buildFn, filename) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. INGRESOS
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportIngresosExcel(ingresos, owners, trm) {
+export async function exportIngresosExcel(ingresos, owners, trm, en = false) {
+  const X = en ? XL.en : XL.es;
   const items = (ingresos || []).filter((i) => i.sim !== false);
   if (items.length === 0) {
-    alert("No hay ingresos activos para exportar. Prendé al menos uno con el toggle ✅.");
+    alert(X.sin(en ? "income items" : "ingresos"));
     return;
   }
 
@@ -62,10 +110,7 @@ export async function exportIngresosExcel(ingresos, owners, trm) {
     // ── Hoja 1: Detalle ─────────────────────────────────────────
     const rows = [
       [
-        "Fuente / Nombre", "Categoría DIAN", "Origen", "Tipo",
-        "Moneda", "Monto Mensual", "Monto Anual",
-        "Capital Invertido", "Tasa Anual %",
-        "Propietario Fiscal", "Retención Auto %", "Notas",
+        ...X.hIngresos,
       ],
     ];
     items
@@ -99,7 +144,7 @@ export async function exportIngresosExcel(ingresos, owners, trm) {
       { wch: 18 }, { wch: 12 },
       { wch: 22 }, { wch: 14 }, { wch: 30 },
     ];
-    XLSX.utils.book_append_sheet(wb, ws, "Ingresos");
+    XLSX.utils.book_append_sheet(wb, ws, X.fileIngresos);
 
     // ── Hoja 2: Resumen por Categoría ───────────────────────────
     const porCat = {};
@@ -109,7 +154,7 @@ export async function exportIngresosExcel(ingresos, owners, trm) {
       porCat[cat].count += 1;
       porCat[cat].mensual += aCOP(i.mensual, i, trm);
     });
-    const catRows = [["Categoría DIAN", "# Ingresos", "Total Mensual", "Total Anual", "% del Total"]];
+    const catRows = [X.hCatIng];
     Object.entries(porCat)
       .sort((a, b) => b[1].mensual - a[1].mensual)
       .forEach(([cat, d]) => {
@@ -126,30 +171,31 @@ export async function exportIngresosExcel(ingresos, owners, trm) {
 
     const wsCat = XLSX.utils.aoa_to_sheet(catRows);
     wsCat["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 16 }, { wch: 16 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, wsCat, "Por Categoría");
-  }, buildFilename("Ingresos"));
+    XLSX.utils.book_append_sheet(wb, wsCat, X.shCat);
+  }, buildFilename(X.fileIngresos));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 2. GASTOS
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportGastosExcel(gastos, trm) {
+export async function exportGastosExcel(gastos, trm, en = false) {
+  const X = en ? XL.en : XL.es;
   // gastos es un objeto { categoria: [items] }
   const flat = [];
   Object.entries(gastos || {}).forEach(([cat, items]) => {
     (items || []).filter((g) => g.sim !== false).forEach((g) => {
-      flat.push({ categoria: cat, concepto: g.c || "", monto: aCOP(g.m, g, trm), tipo: g.t === "f" ? "Fijo" : "Variable" });
+      flat.push({ categoria: cat, concepto: g.c || "", monto: aCOP(g.m, g, trm), tipo: g.t === "f" ? X.fijo : X.variable });
     });
   });
 
   if (flat.length === 0) {
-    alert("No hay gastos activos para exportar. Prendé al menos uno con el toggle ✅.");
+    alert(X.sin(en ? "expenses" : "gastos"));
     return;
   }
 
   await writeWorkbook((XLSX, wb) => {
     // ── Hoja 1: Detalle ─────────────────────────────────────────
-    const rows = [["Categoría", "Concepto", "Monto Mensual", "Monto Anual", "Tipo"]];
+    const rows = [X.hGastos];
     flat
       .sort((a, b) => b.monto - a.monto)
       .forEach((g) => {
@@ -162,17 +208,17 @@ export async function exportGastosExcel(gastos, trm) {
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws["!cols"] = [{ wch: 22 }, { wch: 32 }, { wch: 16 }, { wch: 16 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, ws, "Gastos");
+    XLSX.utils.book_append_sheet(wb, ws, X.fileGastos);
 
     // ── Hoja 2: Resumen por Categoría ───────────────────────────
     const porCat = {};
     flat.forEach((g) => {
       if (!porCat[g.categoria]) porCat[g.categoria] = { count: 0, fijos: 0, variables: 0 };
       porCat[g.categoria].count += 1;
-      if (g.tipo === "Fijo") porCat[g.categoria].fijos += g.monto;
+      if (g.tipo === X.fijo) porCat[g.categoria].fijos += g.monto;
       else porCat[g.categoria].variables += g.monto;
     });
-    const catRows = [["Categoría", "# Ítems", "Fijos", "Variables", "Total Mensual", "Total Anual", "% del Total"]];
+    const catRows = [X.hCatGas];
     Object.entries(porCat)
       .map(([cat, d]) => ({ cat, ...d, total: d.fijos + d.variables }))
       .sort((a, b) => b.total - a.total)
@@ -188,24 +234,25 @@ export async function exportGastosExcel(gastos, trm) {
         ]);
       });
 
-    const fijosTotal = flat.filter((g) => g.tipo === "Fijo").reduce((s, g) => s + g.monto, 0);
+    const fijosTotal = flat.filter((g) => g.tipo === X.fijo).reduce((s, g) => s + g.monto, 0);
     const varTotal = totalMes - fijosTotal;
     catRows.push([]);
     catRows.push(["TOTAL", flat.length, Math.round(fijosTotal), Math.round(varTotal), Math.round(totalMes), Math.round(totalMes * 12), 100]);
 
     const wsCat = XLSX.utils.aoa_to_sheet(catRows);
     wsCat["!cols"] = [{ wch: 22 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, wsCat, "Por Categoría");
-  }, buildFilename("Gastos"));
+    XLSX.utils.book_append_sheet(wb, wsCat, X.shCat);
+  }, buildFilename(X.fileGastos));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 3. DEUDAS
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportDeudasExcel(deudas, inversiones, owners, trm) {
+export async function exportDeudasExcel(deudas, inversiones, owners, trm, en = false) {
+  const X = en ? XL.en : XL.es;
   const items = (deudas || []).filter((d) => d.sim !== false && (d.mt || 0) > 0);
   if (items.length === 0) {
-    alert("No hay deudas activas para exportar. Prendé al menos una con el toggle ✅.");
+    alert(X.sin(en ? "debts" : "deudas"));
     return;
   }
 
@@ -219,9 +266,7 @@ export async function exportDeudasExcel(deudas, inversiones, owners, trm) {
   await writeWorkbook((XLSX, wb) => {
     const rows = [
       [
-        "Nombre", "Saldo Actual", "Cuota Mensual", "Cuota Anual",
-        "Tasa % Anual", "Meses Restantes", "Total a Pagar",
-        "Vinculada a Activo", "Propietario Fiscal", "Notas",
+        ...X.hDeudas,
       ],
     ];
     items
@@ -256,14 +301,15 @@ export async function exportDeudasExcel(deudas, inversiones, owners, trm) {
       { wch: 12 }, { wch: 12 }, { wch: 18 },
       { wch: 28 }, { wch: 22 }, { wch: 30 },
     ];
-    XLSX.utils.book_append_sheet(wb, ws, "Deudas");
-  }, buildFilename("Deudas"));
+    XLSX.utils.book_append_sheet(wb, ws, X.fileDeudas);
+  }, buildFilename(X.fileDeudas));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 4. PATRIMONIO / INVERSIONES
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportInversionesExcel(inversiones, owners, trm) {
+export async function exportInversionesExcel(inversiones, owners, trm, en = false) {
+  const X = en ? XL.en : XL.es;
   const items = (inversiones || []).filter((i) => i.sim !== false);
   if (items.length === 0) {
     alert("No hay activos activos para exportar. Prendé al menos uno con el toggle ✅.");
@@ -274,9 +320,7 @@ export async function exportInversionesExcel(inversiones, owners, trm) {
     // ── Hoja 1: Detalle de activos ──────────────────────────────
     const rows = [
       [
-        "Nombre", "Tipo", "Ubicación", "Moneda",
-        "Valor Compra", "Valor Actual", "Ganancia $", "Ganancia %",
-        "Propietario Fiscal", "Notas",
+        ...X.hInv,
       ],
     ];
     const totalVal = items.reduce((s, i) => s + aCOP(i.va, i, trm), 0);
@@ -313,7 +357,7 @@ export async function exportInversionesExcel(inversiones, owners, trm) {
       { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 },
       { wch: 22 }, { wch: 30 },
     ];
-    XLSX.utils.book_append_sheet(wb, ws, "Activos");
+    XLSX.utils.book_append_sheet(wb, ws, X.shActivos);
 
     // ── Hoja 2: Resumen por Tipo ────────────────────────────────
     const porTipo = {};
@@ -324,7 +368,7 @@ export async function exportInversionesExcel(inversiones, owners, trm) {
       porTipo[tp].vc += aCOP(i.vc, i, trm);
       porTipo[tp].va += aCOP(i.va, i, trm);
     });
-    const tipoRows = [["Tipo", "# Activos", "Valor Compra", "Valor Actual", "Ganancia $", "% del Portafolio"]];
+    const tipoRows = [X.hTipoInv];
     Object.entries(porTipo)
       .sort((a, b) => b[1].va - a[1].va)
       .forEach(([tp, d]) => {
@@ -342,7 +386,7 @@ export async function exportInversionesExcel(inversiones, owners, trm) {
 
     const wsTipo = XLSX.utils.aoa_to_sheet(tipoRows);
     wsTipo["!cols"] = [{ wch: 22 }, { wch: 12 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
-    XLSX.utils.book_append_sheet(wb, wsTipo, "Por Tipo");
+    XLSX.utils.book_append_sheet(wb, wsTipo, X.shTipo);
 
     // ── Hoja 3: Resumen por Propietario ─────────────────────────
     if (owners && owners.length > 0) {
@@ -354,7 +398,7 @@ export async function exportInversionesExcel(inversiones, owners, trm) {
         porOwner[oName].vc += aCOP(i.vc, i, trm);
         porOwner[oName].va += aCOP(i.va, i, trm);
       });
-      const ownerRows = [["Propietario Fiscal", "# Activos", "Valor Compra", "Valor Actual", "Ganancia $", "% del Portafolio"]];
+      const ownerRows = [X.hOwnerInv];
       Object.entries(porOwner)
         .sort((a, b) => b[1].va - a[1].va)
         .forEach(([oName, d]) => {
@@ -372,7 +416,7 @@ export async function exportInversionesExcel(inversiones, owners, trm) {
 
       const wsOwner = XLSX.utils.aoa_to_sheet(ownerRows);
       wsOwner["!cols"] = [{ wch: 24 }, { wch: 12 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
-      XLSX.utils.book_append_sheet(wb, wsOwner, "Por Propietario");
+      XLSX.utils.book_append_sheet(wb, wsOwner, X.shOwner);
     }
-  }, buildFilename("Patrimonio"));
+  }, buildFilename(X.fileInversiones));
 }

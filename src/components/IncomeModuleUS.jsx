@@ -25,6 +25,7 @@ import { totalAnualItem } from "../lib/flowHelpers.js";
 import NumberInput from "./NumberInput";
 import { US } from "../lib/jurisdictions/US.js";
 import { exportIngresosPDF } from "../lib/pdfSectionExport.js";
+import { exportIngresosExcel } from "../lib/excelExport.js";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -382,6 +383,11 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
           title="Download PDF with summary, detail and category breakdown"
           style={{background:"#dc2626",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
           📄 PDF
+        </button>
+        <button onClick={()=>exportIngresosExcel(ingresos.filter(x=>x.sim!==false), [], 1, true)}
+          title="Download Excel with full detail and category summary"
+          style={{background:"#16a34a",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
+          📊 Excel
         </button>
         <button onClick={openAdd} style={{background:`linear-gradient(135deg,${T.gn},#16a34a)`,color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
           + Add Income
