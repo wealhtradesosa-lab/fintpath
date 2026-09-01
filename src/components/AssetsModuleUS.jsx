@@ -28,6 +28,7 @@ import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import BarraComposicion from "./BarraComposicion";
 import NumberInput from "./NumberInput";
 import { US } from "../lib/jurisdictions/US.js";
+import { exportPatrimonioPDF, exportDeudasPDF } from "../lib/pdfSectionExport.js";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const C = {
@@ -432,6 +433,18 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
           <button onClick={()=>{setFormL(EMPTY_LIAB);setEditing(null);setShowForm("liab")}}
             style={{background:T.bg3,color:T.tx2,border:`1px solid ${T.border}`,padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
             + Add Liability
+          </button>
+          {/* 01-sep-2026: exports que la version US no tenia. Assets y
+              Liabilities van por separado porque son dos tablas distintas. */}
+          <button onClick={()=>exportPatrimonioPDF(inversiones.filter(x=>x.sim!==false), [], 1, true)}
+            title="Download net worth PDF"
+            style={{background:"#dc2626",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+            📄 Assets PDF
+          </button>
+          <button onClick={()=>exportDeudasPDF(deudas.filter(x=>x.sim!==false), inversiones, [], 1, true)}
+            title="Download debts PDF with suggested payoff order"
+            style={{background:"#dc2626",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+            📄 Debts PDF
           </button>
         </div>
       </div>

@@ -14,6 +14,7 @@
 import { useState, useMemo } from "react";
 import Disclaimer from "./Disclaimer";
 import NumberInput from "./NumberInput";
+import { exportGastosPDF } from "../lib/pdfSectionExport.js";
 
 // ─── 2025 Constants ─────────────────────────────────────────────────────────
 const C = {
@@ -278,6 +279,12 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
         <p style={{color:T.tx3,fontSize:12,margin:0}}>
           Schedule A · Schedule C · Above-the-line deductions · Tax Credits — Tax Year 2025
         </p>
+        {/* 01-sep-2026: export que la version US no tenia. */}
+        <button onClick={()=>exportGastosPDF(gastos, 1, true)}
+          title="Download expenses PDF with fixed vs variable and category breakdown"
+          style={{marginTop:12,background:"#dc2626",color:"#fff",border:"none",padding:"9px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+          📄 PDF
+        </button>
       </div>
 
       {/* AGI + Filing Status */}
