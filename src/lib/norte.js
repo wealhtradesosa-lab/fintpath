@@ -37,6 +37,17 @@ const CANASTA_POR_TIPO = {
   "hysa": "proteccion", "renta fija": "proteccion", "bonos": "proteccion",
   "primary_home": "proteccion", "real estate": "proteccion",
   "land": "proteccion", "other_asset": "proteccion",
+  // 01-sep-2026 (Santiago: "vehículo es un activo, un carro; creo yo por
+  // defecto es protección"). De las tres canastas es la que corresponde: un
+  // carro no se mueve con el mercado ni es una apuesta de multiplicación.
+  // Ver la nota sobre depreciación más abajo.
+  "vehiculo": "proteccion", "carro": "proteccion", "auto": "proteccion",
+  "moto": "proteccion", "vehicle": "proteccion",
+  // Los tipos realmente usados en la base se revisaron uno por uno
+  // (01-sep-2026). Faltaban estos tres, que caian en el aviso naranja sin
+  // motivo: "otro" es el default del formulario, asi que aparecia marcado como
+  // adivinado en cuentas que simplemente no eligieron tipo.
+  "otro": "proteccion", "income": "proteccion",
 
   // MERCADO
   "acciones": "mercado", "stocks_etf": "mercado", "etf": "mercado",
@@ -44,9 +55,13 @@ const CANASTA_POR_TIPO = {
   "401k_trad": "mercado", "roth_ira": "mercado", "hsa": "mercado",
   "rental_res": "mercado", "rental_com": "mercado",
   "local comercial": "mercado", "bodega": "mercado",
+  // "Investment" es el tipo generico de inversion financiera (17 usos en la
+  // base). Va a mercado: es la canasta que describe una inversion diversificada
+  // corriente, y es el supuesto intermedio entre asumir seguridad o apuesta.
+  "investment": "mercado",
 
   // ASPIRACIÓN
-  "crypto": "aspiracion", "bitcoin": "aspiracion", "btc": "aspiracion",
+  "crypto": "aspiracion", "cripto": "aspiracion", "bitcoin": "aspiracion", "btc": "aspiracion",
   "business": "aspiracion", "negocio": "aspiracion", "qsbs": "aspiracion",
   "startup": "aspiracion", "trading": "aspiracion",
 };
@@ -70,7 +85,11 @@ export function clasificarActivo(activo) {
   }
 
   const tipoRaw = String(activo?.tp || activo?.tipo || "").trim();
-  const tipo = tipoRaw.toLowerCase();
+  // Se quitan los acentos antes de buscar en el mapa. Esa era la causa de que
+  // "Vehículo" no coincidiera con ninguna clave y cayera en el aviso naranja:
+  // el mapa está escrito sin tildes y la comparación era literal. Afecta a
+  // cualquier tipo acentuado, no solo a este.
+  const tipo = tipoRaw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   if (CANASTA_POR_TIPO[tipo]) {
     return { canasta: CANASTA_POR_TIPO[tipo], motivo: `Por su tipo: ${tipoRaw}`, manual: false };
