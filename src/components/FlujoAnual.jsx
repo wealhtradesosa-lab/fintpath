@@ -48,7 +48,25 @@ const fmShort = (n) => {
   return "$" + Math.round(n || 0).toString();
 };
 
-export default function FlujoAnual({ user, trm = 4200 }) {
+export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
+  // 01-sep-2026: esta sección se le mostraba entera en español a los usuarios
+  // de Estados Unidos. Son 18 cadenas; se traducen con un diccionario local en
+  // vez de un sistema de i18n, que sería sobreingeniería para este tamaño.
+  const L = isEN ? {
+    titulo: "Annual Flow", ingresos: "Income", aportes: "Contributions",
+    gastosFam: "Household", cuotas: "Loan payments", impuesto: "Tax",
+    egresos: "Outflows", cashflow: "Cash Flow", saldo: "Cum. balance",
+    mes: "Month", alta: "High", baja: "Low", media: "Avg", otros: "Other",
+    pagado: "Paid", proximoMes: "Next month", seguridadSocial: "Payroll taxes",
+    sePagaEsteMes: "DUE THIS MONTH", vencido: "OVERDUE",
+  } : {
+    titulo: L.titulo, ingresos: L.ingresos, aportes: L.aportes,
+    gastosFam: L.gastosFam, cuotas: L.cuotas, impuesto: L.impuesto,
+    egresos: L.egresos, cashflow: "Cash Flow", saldo: L.saldo,
+    mes: "Mes", alta: L.alta, baja: L.baja, media: L.media, otros: L.otros,
+    pagado: L.pagado, proximoMes: L.proximoMes, seguridadSocial: L.seguridadSocial,
+    sePagaEsteMes: L.sePagaEsteMes, vencido: L.vencido,
+  };
   const { año: añoDefault, mes: mesActualHoy } = getMesActual();
   const [año, setAño] = useState(añoDefault);
 
@@ -94,7 +112,7 @@ export default function FlujoAnual({ user, trm = 4200 }) {
         (items || []).forEach(g => {
           if (g.sim === false) return;
           const monto = montoDelMes(g, año, mes);
-          if (cat === "Seguridad Social") aportesObligatorios += monto;
+          if (cat === L.seguridadSocial) aportesObligatorios += monto;
           else gastosFamiliares += monto;
         });
       });
@@ -164,7 +182,7 @@ export default function FlujoAnual({ user, trm = 4200 }) {
       mejorMes,
       peorMes,
       volatilidadPct,
-      volatilidadLabel: volatilidadPct < 0.15 ? "Baja" : volatilidadPct < 0.4 ? "Media" : "Alta",
+      volatilidadLabel: volatilidadPct < 0.15 ? L.baja : volatilidadPct < 0.4 ? L.media : L.alta,
       volatilidadColor: volatilidadPct < 0.15 ? T.gn : volatilidadPct < 0.4 ? T.gd : T.or,
       positivos,
       negativos,
@@ -199,7 +217,7 @@ export default function FlujoAnual({ user, trm = 4200 }) {
     const ingresosPorCat = {};
     ingresos.forEach(ing => {
       if (ing.sim === false) return;
-      const cat = ing.categoria || "Otros";
+      const cat = ing.categoria || L.otros;
       // Sumar los 12 meses del año usando el motor (respeta variable, vigencia, etc)
       const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trmR : 1);
       let totalAño = 0;
@@ -289,9 +307,9 @@ export default function FlujoAnual({ user, trm = 4200 }) {
   return (
     <div>
       <PageHeader
-        label="Flujo Anual"
-        title={`Cómo se comporta tu año ${año}`}
-        subtitle="Visualizá picos y valles de ingresos y egresos mes a mes. Planificá con datos reales."
+        label={L.titulo}
+        title={isEN ? `How your ${año} behaves` : `Cómo se comporta tu año ${año}`}
+        subtitle={isEN ? "See the peaks and valleys of your income and outflows month by month." : "Visualizá picos y valles de ingresos y egresos mes a mes. Planificá con datos reales."}
         rightSlot={
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <button onClick={() => setAño(año - 1)}
@@ -424,8 +442,8 @@ export default function FlujoAnual({ user, trm = 4200 }) {
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
               <ReferenceLine y={0} stroke={T.border} strokeDasharray="3 3" />
               <ReferenceLine y={highlights.promedio} stroke={T.txt3} strokeDasharray="2 6" label={{ value: `Cash Flow promedio ${fmShort(highlights.promedio)}`, position: "insideTopRight", fill: T.txt3, fontSize: 10 }} />
-              <Bar dataKey="ingresos" fill={T.gn} radius={[4, 4, 0, 0]} name="Ingresos" />
-              <Bar dataKey="egresos" fill={T.rd} radius={[4, 4, 0, 0]} name="Egresos" />
+              <Bar dataKey="ingresos" fill={T.gn} radius={[4, 4, 0, 0]} name={L.ingresos} />
+              <Bar dataKey="egresos" fill={T.rd} radius={[4, 4, 0, 0]} name={L.egresos} />
               <Line type="monotone" dataKey="cashFlow" stroke={T.gd} strokeWidth={2.5} dot={{ r: 4, fill: T.gd }} activeDot={{ r: 6 }} name="Cash Flow" />
             </ComposedChart>
           </ResponsiveContainer>
@@ -461,11 +479,11 @@ export default function FlujoAnual({ user, trm = 4200 }) {
         if (pagosAnuales.length === 0) return null;
         pagosAnuales.sort((a, b) => a.urgencia - b.urgencia || a.mp - b.mp || b.monto - a.monto);
         const conf = {
-          0: { emoji: "🔴", label: "VENCIDO", color: "#ef4444", bg: "rgba(239,68,68,0.08)" },
-          1: { emoji: "🔔", label: "SE PAGA ESTE MES", color: "#f97316", bg: "rgba(249,115,22,0.08)" },
-          2: { emoji: "📅", label: "Próximo mes", color: "#eab308", bg: "rgba(234,179,8,0.06)" },
+          0: { emoji: "🔴", label: L.vencido, color: "#ef4444", bg: "rgba(239,68,68,0.08)" },
+          1: { emoji: "🔔", label: L.sePagaEsteMes, color: "#f97316", bg: "rgba(249,115,22,0.08)" },
+          2: { emoji: "📅", label: L.proximoMes, color: "#eab308", bg: "rgba(234,179,8,0.06)" },
           3: { emoji: "📅", label: "", color: T.txt3, bg: "transparent" },
-          4: { emoji: "✅", label: "Pagado", color: T.gn, bg: "transparent" },
+          4: { emoji: "✅", label: L.pagado, color: T.gn, bg: "transparent" },
         };
         const pendientes = pagosAnuales.filter(p => !p.pagado);
         const totalPendiente = pendientes.reduce((s, p) => s + p.monto, 0);
@@ -694,7 +712,7 @@ export default function FlujoAnual({ user, trm = 4200 }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
               <tr style={{ background: T.bg3 }}>
-                {["Mes", "Ingresos", "Aportes", "Gastos fam.", "Cuotas créditos", "Impuesto", "Egresos", "Cash Flow", "Saldo acum."].map((h, i) => (
+                {[L.mes, L.ingresos, L.aportes, L.gastosFam, L.cuotas, L.impuesto, L.egresos, L.cashflow, L.saldo].map((h, i) => (
                   <th key={h} style={{ padding: "10px 12px", textAlign: i === 0 ? "left" : "right", color: T.txt3, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>

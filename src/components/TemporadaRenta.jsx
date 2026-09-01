@@ -67,6 +67,20 @@ const T = { bg2:"#141418", bg3:"#1e1e24", border:"rgba(255,255,255,0.08)",
 export default function TemporadaRenta({ onEmpezar }) {
   const [digitos, setDigitos] = useState("");
 
+  // 01-sep-2026 — Esta sección se le estaba mostrando a TODO visitante, incluido
+  // uno de Estados Unidos: el landing se renderiza antes del login, así que no
+  // existe todavía la jurisdicción de la cuenta. Alguien en Miami entraba y lo
+  // primero que veía era el calendario de la DIAN.
+  //
+  // El idioma del navegador es el único dato disponible antes de que la persona
+  // se registre. No es perfecto -- un colombiano con el navegador en inglés no
+  // va a ver esto -- pero el error en esa dirección solo esconde una sección,
+  // mientras que el error contrario le habla a alguien de un país que no es el
+  // suyo. Entre las dos equivocaciones posibles, se elige la barata.
+  const idioma = typeof navigator !== "undefined"
+    ? (navigator.language || "es").toLowerCase() : "es";
+  if (idioma.startsWith("en")) return null;
+
   const limpio = digitos.replace(/\D/g, "").slice(0, 2);
   const completo = limpio.length === 2;
   const fechaISO = completo ? CAL[limpio] : null;
