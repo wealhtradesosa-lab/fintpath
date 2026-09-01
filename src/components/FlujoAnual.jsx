@@ -60,12 +60,12 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     pagado: "Paid", proximoMes: "Next month", seguridadSocial: "Payroll taxes",
     sePagaEsteMes: "DUE THIS MONTH", vencido: "OVERDUE",
   } : {
-    titulo: L.titulo, ingresos: L.ingresos, aportes: L.aportes,
-    gastosFam: L.gastosFam, cuotas: L.cuotas, impuesto: L.impuesto,
-    egresos: L.egresos, cashflow: "Cash Flow", saldo: L.saldo,
-    mes: "Mes", alta: L.alta, baja: L.baja, media: L.media, otros: L.otros,
-    pagado: L.pagado, proximoMes: L.proximoMes, seguridadSocial: L.seguridadSocial,
-    sePagaEsteMes: L.sePagaEsteMes, vencido: L.vencido,
+    titulo: "Flujo Anual", ingresos: "Ingresos", aportes: "Aportes",
+    gastosFam: "Gastos fam.", cuotas: "Cuotas cr\u00e9ditos", impuesto: "Impuesto",
+    egresos: "Egresos", cashflow: "Cash Flow", saldo: "Saldo acum.",
+    mes: "Mes", alta: "Alta", baja: "Baja", media: "Media", otros: "Otros",
+    pagado: "Pagado", proximoMes: "Pr\u00f3ximo mes", seguridadSocial: "Seguridad Social",
+    sePagaEsteMes: "SE PAGA ESTE MES", vencido: "VENCIDO",
   };
   const { año: añoDefault, mes: mesActualHoy } = getMesActual();
   const [año, setAño] = useState(añoDefault);
