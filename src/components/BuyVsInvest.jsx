@@ -10,18 +10,20 @@ import NumberInput from "./NumberInput";
 import PageHeader from "./PageHeader.jsx";
 import Disclaimer from "./Disclaimer";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
-import { compararCompraVsInversion, valorizacionDeEquilibrio, BUY_VS_INVEST_DEFAULTS } from "../lib/buyVsInvest.js";
+import { compararCompraVsInversion, valorizacionDeEquilibrio, BUY_VS_INVEST_DEFAULTS, BUY_VS_INVEST_DEFAULTS_US, EXCLUSION_121 } from "../lib/buyVsInvest.js";
 
 const T = { bg:"#0c0c0f", bg2:"#141418", bg3:"#1e1e24", border:"rgba(255,255,255,0.06)",
   txt:"#fafafa", txt2:"#a1a1aa", txt3:"#71717a", green:"#22c55e", red:"#ef4444",
   blue:"#3b82f6", orange:"#f97316", gold:"#eab308" };
 
-const fm = (n) => "$" + Math.round(Number(n) || 0).toLocaleString("es-CO");
+let LOC = "es-CO";
+const fm = (n) => "$" + Math.round(Number(n) || 0).toLocaleString(LOC);
 const fmCorto = (n) => {
   const v = Number(n) || 0;
-  if (Math.abs(v) >= 1e9) return "$" + (v / 1e9).toFixed(1) + "MM";
-  if (Math.abs(v) >= 1e6) return "$" + Math.round(v / 1e6) + "M";
-  return "$" + Math.round(v).toLocaleString("es-CO");
+  if (Math.abs(v) >= 1e9) return "$" + (v / 1e9).toFixed(1) + (LOC === "en-US" ? "B" : "MM");
+  if (Math.abs(v) >= 1e6) return "$" + (LOC === "en-US" ? (v/1e6).toFixed(1) + "M" : Math.round(v / 1e6) + "M");
+  if (Math.abs(v) >= 1e3 && LOC === "en-US") return "$" + Math.round(v / 1e3) + "K";
+  return "$" + Math.round(v).toLocaleString(LOC);
 };
 
 // Rendimientos de referencia. El de BTC NO es el CAGR histórico de 55.8%: a 20
@@ -44,8 +46,12 @@ function Campo({ label, children, ayuda }) {
   );
 }
 
-export default function BuyVsInvest() {
-  const D = BUY_VS_INVEST_DEFAULTS;
+export default function BuyVsInvest({ isUS = false }) {
+  // 01-sep-2026: hasta hoy un usuario de US veia esta seccion con predial
+  // colombiano, ganancia ocasional del 15% y la exencion del Art. 311-1. No es
+  // que faltara: mostraba cifras equivocadas para su pais.
+  const D = isUS ? BUY_VS_INVEST_DEFAULTS_US : BUY_VS_INVEST_DEFAULTS;
+  const [estadoCivil, setEstadoCivil] = useState("single");
   const [precioCasa, setPrecioCasa] = useState(D.precioCasa);
   const [modoCompra, setModoCompra] = useState("hipoteca");
   const [cuotaInicialPct, setCuotaInicialPct] = useState(D.cuotaInicialPct);
@@ -68,6 +74,7 @@ export default function BuyVsInvest() {
   const [exencion, setExencion] = useState(false);
   const [verSupuestos, setVerSupuestos] = useState(false);
 
+  LOC = isUS ? "en-US" : "es-CO";
   const activoSel = ACTIVOS.find((a) => a.id === activo) || ACTIVOS[1];
   const rendimiento = cagrCustom == null ? activoSel.cagr : cagrCustom;
 
@@ -88,7 +95,11 @@ export default function BuyVsInvest() {
     gastosCompraPct, gastosVentaPct,
     horizonteAnios,
     rendimientoInversionAnual: rendimiento,
-    exencionViviendaHabitacion: exencion,
+    exencionViviendaHabitacion: isUS ? false : exencion,
+    // En US la exclusion es un TOPE por estado civil (§121), no un todo o nada.
+    exclusionGananciaVivienda: isUS && exencion ? EXCLUSION_121[estadoCivil] : 0,
+    gastosCompraPct, gastosVentaPct, predialAnualPct, seguroAnualPct,
+    mantenimientoAnualPct,
   };
 
   const r = useMemo(() => compararCompraVsInversion(params), [
@@ -112,9 +123,9 @@ export default function BuyVsInvest() {
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <PageHeader
-        label="Decisión"
-        title="Comprar o arrendar e invertir"
-        subtitle="La misma plata, dos caminos. Los dos escenarios desembolsan exactamente lo mismo cada mes."
+        label={isUS ? "Decision" : "Decisión"}
+        title={isUS ? "Buy or rent and invest" : "Comprar o arrendar e invertir"}
+        subtitle={isUS ? "Same money, two paths. Both scenarios spend exactly the same each month." : "La misma plata, dos caminos. Los dos escenarios desembolsan exactamente lo mismo cada mes."}
       />
 
       {/* ── RESULTADO ──────────────────────────────────────────────────────── */}
@@ -122,7 +133,7 @@ export default function BuyVsInvest() {
         padding: 24, marginBottom: 20 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
           <div>
-            <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.6px" }}>🏠 Comprar</div>
+            <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.6px" }}>{isUS ? "🏠 Buy" : "🏠 Comprar"}</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: ganaComprar ? T.green : T.txt, marginTop: 6 }}>
               {fm(r.patrimonioComprar)}
             </div>
@@ -165,15 +176,15 @@ export default function BuyVsInvest() {
       {/* ── ENTRADAS ───────────────────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 16, marginBottom: 20 }}>
         <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 16 }}>🏠 La casa</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 16 }}>{isUS ? "🏠 The home" : "🏠 La casa"}</div>
 
-          <Campo label="Precio de la casa">
+          <Campo label={isUS ? "Home price" : "Precio de la casa"}>
             <NumberInput value={precioCasa} onChange={setPrecioCasa} />
           </Campo>
 
-          <Campo label="¿Cómo la comprás?">
+          <Campo label={isUS ? "How do you buy it?" : "¿Cómo la comprás?"}>
             <div style={{ display: "flex", gap: 8 }}>
-              {[["hipoteca","Con crédito"],["contado","De contado"]].map(([v,l]) => (
+              {[["hipoteca",isUS?"Mortgage":"Con crédito"],["contado",isUS?"All cash":"De contado"]].map(([v,l]) => (
                 <button key={v} onClick={() => setModoCompra(v)}
                   style={{ flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer",
                     fontSize: 13, fontWeight: 600,
@@ -208,11 +219,11 @@ export default function BuyVsInvest() {
               onChange={(e) => setValorizacion(+e.target.value)} style={{ width: "100%" }} />
           </Campo>
 
-          <Campo label="Administración mensual">
+          <Campo label={isUS ? "HOA / month" : "Administración mensual"}>
             <NumberInput value={administracionMensual} onChange={setAdmin} />
           </Campo>
 
-          {/* Costos de tener la casa. Van en % del avaluo y no en pesos fijos
+          {/* {isUS ? "Cost of owning" : "Costos de tener la casa"}. Van en % del avaluo y no en pesos fijos
               porque suben con el avaluo: el predial de una casa que se
               valorizo 6% al ano no es el mismo a 20 anos vista. Al lado se
               muestra lo que representan HOY en pesos, que es como el usuario
@@ -223,31 +234,31 @@ export default function BuyVsInvest() {
               Costos de tener la casa
             </div>
 
-            <Campo label={`Predial: ${predialAnualPct}% al año · ${fmCorto(num(precioCasa) * predialAnualPct / 100)} hoy`}
+            <Campo label={`${isUS ? "Property tax" : "Predial"}: ${predialAnualPct}% al año · ${fmCorto(num(precioCasa) * predialAnualPct / 100)} hoy`}
               ayuda="Se recalcula cada año sobre el avalúo, no sobre el precio de compra.">
               <input type="range" min={0} max={3} step={0.05} value={predialAnualPct}
                 onChange={(e) => setPredial(+e.target.value)} style={{ width: "100%" }} />
             </Campo>
 
-            <Campo label={`Seguro: ${seguroAnualPct}% al año · ${fmCorto(num(precioCasa) * seguroAnualPct / 100)} hoy`}
+            <Campo label={`${isUS ? "Insurance" : "Seguro"}: ${seguroAnualPct}% al año · ${fmCorto(num(precioCasa) * seguroAnualPct / 100)} hoy`}
               ayuda="Todo riesgo o el exigido por el banco mientras haya crédito.">
               <input type="range" min={0} max={2} step={0.05} value={seguroAnualPct}
                 onChange={(e) => setSeguro(+e.target.value)} style={{ width: "100%" }} />
             </Campo>
 
-            <Campo label={`Mantenimiento: ${mantenimientoAnualPct}% al año · ${fmCorto(num(precioCasa) * mantenimientoAnualPct / 100)} hoy`}
+            <Campo label={`${isUS ? "Maintenance" : "Mantenimiento"}: ${mantenimientoAnualPct}% al año · ${fmCorto(num(precioCasa) * mantenimientoAnualPct / 100)} hoy`}
               ayuda="Regla de oro: ~1% del valor al año. Techo, tuberías, pintura, lo que se rompe.">
               <input type="range" min={0} max={3} step={0.1} value={mantenimientoAnualPct}
                 onChange={(e) => setMantenimiento(+e.target.value)} style={{ width: "100%" }} />
             </Campo>
 
-            <Campo label={`Gastos de compra: ${gastosCompraPct}% · ${fmCorto(num(precioCasa) * gastosCompraPct / 100)}`}
+            <Campo label={`${isUS ? "Closing costs" : "Gastos de compra"}: ${gastosCompraPct}% · ${fmCorto(num(precioCasa) * gastosCompraPct / 100)}`}
               ayuda="Notariado, registro, beneficencia. Se pagan una vez, al inicio.">
               <input type="range" min={0} max={8} step={0.25} value={gastosCompraPct}
                 onChange={(e) => setGastosCompra(+e.target.value)} style={{ width: "100%" }} />
             </Campo>
 
-            <Campo label={`Gastos de venta: ${gastosVentaPct}%`}
+            <Campo label={`${isUS ? "Selling costs (realtor)" : "Gastos de venta"}: ${gastosVentaPct}%`}
               ayuda="Comisión inmobiliaria al vender, sobre el valor futuro.">
               <input type="range" min={0} max={8} step={0.25} value={gastosVentaPct}
                 onChange={(e) => setGastosVenta(+e.target.value)} style={{ width: "100%" }} />
@@ -256,14 +267,14 @@ export default function BuyVsInvest() {
         </div>
 
         <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 16 }}>📈 Arrendar e invertir</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 16 }}>{isUS ? "📈 Rent and invest" : "📈 Arrendar e invertir"}</div>
 
-          <Campo label="Arriendo mensual de esa misma casa"
+          <Campo label={isUS ? "Monthly rent for that same home" : "Arriendo mensual de esa misma casa"}
             ayuda="Lo que pagarías por vivir ahí sin comprarla. Sube con el IPC cada año.">
             <NumberInput value={arriendoMensual} onChange={setArriendo} />
           </Campo>
 
-          <Campo label="¿Dónde invertís la diferencia?">
+          <Campo label={isUS ? "Where do you invest the difference?" : "¿Dónde invertís la diferencia?"}>
             <div style={{ display: "flex", gap: 8 }}>
               {ACTIVOS.map((a) => (
                 <button key={a.id} onClick={() => { setActivo(a.id); setCagrCustom(null); }}
@@ -289,8 +300,33 @@ export default function BuyVsInvest() {
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
             fontSize: 12, color: T.txt2, marginTop: 12 }}>
             <input type="checkbox" checked={exencion} onChange={(e) => setExencion(e.target.checked)} />
-            Es mi vivienda de habitación (exención Art. 311-1 ET)
+            {isUS
+              ? "Primary residence (IRC §121 exclusion)"
+              : "Es mi vivienda de habitación (exención Art. 311-1 ET)"}
           </label>
+
+          {/* La §121 excluye 250k si declaras soltero y 500k si casado en
+              conjunto. La diferencia entre las dos es de cientos de miles de
+              dolares en el resultado, asi que no se puede asumir una. */}
+          {isUS && exencion && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 11, color: T.txt3, marginBottom: 6 }}>Filing status</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[["single", "Single — $250K"], ["married", "Married joint — $500K"]].map(([v, l]) => (
+                  <button key={v} onClick={() => setEstadoCivil(v)}
+                    style={{ flex: 1, padding: "8px", borderRadius: 10, cursor: "pointer",
+                      fontSize: 12, fontWeight: 600,
+                      background: estadoCivil === v ? T.blue : T.bg3,
+                      color: estadoCivil === v ? "#fff" : T.txt2,
+                      border: `1px solid ${estadoCivil === v ? T.blue : T.border}` }}>{l}</button>
+                ))}
+              </div>
+              <div style={{ fontSize: 10.5, color: T.txt3, marginTop: 6, lineHeight: 1.45 }}>
+                §121 excludes the first {estadoCivil === "married" ? "$500,000" : "$250,000"} of
+                gain if it was your primary home 2 of the last 5 years. Anything above that is taxed.
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

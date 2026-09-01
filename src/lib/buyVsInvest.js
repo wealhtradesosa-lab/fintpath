@@ -73,7 +73,15 @@ const DEFAULTS = {
   rendimientoInversionAnual: 10, // CAGR del activo elegido
   impuestoGananciaInversionPct: 15,
   impuestoGananciaOcasionalPct: 15,
-  exencionViviendaHabitacion: false, // Art. 311-1 ET
+  exencionViviendaHabitacion: false, // Art. 311-1 ET (CO: todo o nada)
+  // 01-sep-2026 — US. La §121 del IRC NO es una exención total como el
+  // Art. 311-1 colombiano: es un TOPE sobre la ganancia. Se excluyen los
+  // primeros USD 250.000 (soltero) o 500.000 (casado declarando en conjunto)
+  // si fue vivienda principal 2 de los últimos 5 años. Lo que exceda ese tope
+  // sí paga. Por eso va como monto y no como booleano: modelarla como
+  // exención total regalaría el impuesto en las ganancias grandes, que es
+  // justo donde más pesa.
+  exclusionGananciaVivienda: 0,
 
   horizonteAnios: 20,
 };
@@ -173,9 +181,13 @@ export function compararCompraVsInversion(input = {}) {
   // ── Liquidación final ────────────────────────────────────────────────────
   const gastosVenta = valorCasa * (p.gastosVentaPct / 100);
   const utilidadCasa = Math.max(0, valorCasa - gastosVenta - p.precioCasa);
+  // Primero el tope (§121 en US), después la tasa. El orden importa: aplicar
+  // la tasa sobre la ganancia completa y luego restar el tope daría un número
+  // distinto y equivocado.
+  const gananciaGravable = Math.max(0, utilidadCasa - (p.exclusionGananciaVivienda || 0));
   const gananciaOcasional = p.exencionViviendaHabitacion
     ? 0
-    : utilidadCasa * (p.impuestoGananciaOcasionalPct / 100);
+    : gananciaGravable * (p.impuestoGananciaOcasionalPct / 100);
 
   const patrimonioComprar =
     valorCasa - Math.max(0, saldoCredito) - gastosVenta - gananciaOcasional;
@@ -201,6 +213,8 @@ export function compararCompraVsInversion(input = {}) {
       gastosCompra: Math.round(gastosCompra),
       gastosVenta: Math.round(gastosVenta),
       gananciaOcasional: Math.round(gananciaOcasional),
+      utilidadCasa: Math.round(utilidadCasa),
+      gananciaGravable: Math.round(gananciaGravable),
       arriendoPagado: Math.round(arriendoPagado),
       portafolioBruto: Math.round(portafolio),
       aportadoAlPortafolio: Math.round(Math.max(0, aportadoAlPortafolio)),
@@ -233,3 +247,45 @@ export function valorizacionDeEquilibrio(input = {}) {
 }
 
 export const BUY_VS_INVEST_DEFAULTS = DEFAULTS;
+
+/**
+ * Supuestos de referencia para Estados Unidos.
+ *
+ * Las diferencias que más mueven el resultado, y por qué:
+ *  · Comisión de venta 6%: en US la paga el vendedor y ronda 5-6%, el doble
+ *    que en Colombia. Sobre una casa que se valorizó 20 años, es mucha plata.
+ *  · Closing costs de compra ~2%, más bajos que el 3% colombiano.
+ *  · Property tax 1.1%: promedio nacional, pero varía muchísimo — de ~0.3% en
+ *    Hawái a ~2.2% en New Jersey. Es el campo que más conviene ajustar.
+ *  · Capital gains 15%: el tramo del medio (0/15/20% según ingreso).
+ *  · Apreciación 4% e hipoteca 6.5%, nominales de largo plazo.
+ *
+ * OMISIÓN CONOCIDA: no se modela la deducción de intereses hipotecarios. Solo
+ * aplica si el contribuyente detalla deducciones, y desde la TCJA de 2017 la
+ * mayoría toma la standard deduction, con lo cual no obtiene beneficio alguno.
+ * Asumirla para todos favorecería a comprar con un beneficio que muchos no
+ * reciben; es más honesto omitirla que fingir precisión.
+ */
+export const BUY_VS_INVEST_DEFAULTS_US = {
+  ...DEFAULTS,
+  precioCasa: 450000,
+  cuotaInicialPct: 20,
+  tasaHipotecaEA: 6.5,
+  valorizacionCasaAnual: 4,
+  arriendoMensual: 2400,
+  incrementoArriendoAnual: 3,
+  gastosCompraPct: 2,
+  gastosVentaPct: 6,
+  predialAnualPct: 1.1,
+  administracionMensual: 0,       // HOA: no todas las viviendas lo tienen
+  seguroAnualPct: 0.5,
+  mantenimientoAnualPct: 1,
+  rendimientoInversionAnual: 10,
+  impuestoGananciaInversionPct: 15,
+  impuestoGananciaOcasionalPct: 15,
+  exencionViviendaHabitacion: false,
+  exclusionGananciaVivienda: 0,   // se activa con el estado civil en la UI
+};
+
+// §121: montos de exclusión vigentes. No están indexados a inflación.
+export const EXCLUSION_121 = { single: 250000, married: 500000 };
