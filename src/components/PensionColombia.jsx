@@ -37,7 +37,15 @@ export default function PensionBTC({trm:pTrm}){
   const[montoAnual,setMontoAnual]=useState("");
   const[montoUnico,setMontoUnico]=useState("");
   const[anios,setAnios]=useState(10);
-  const[cagr,setCagr]=useState(55.8);
+  // 02-sep-2026 (Santiago: "puse un ahorro de 1MM al año por 20 años y sale una
+  // cosa nada que ver, 64 millones al mes"). El cálculo estaba bien: el default
+  // era 55.8%, el CAGR histórico del Bitcoin. Compuesto a 20 años implica un
+  // BTC de ~488 millones de dólares, con lo que el mercado valdría varias veces
+  // toda la riqueza del planeta. No es una proyección, es una imposibilidad
+  // aritmética -- y la app la presentaba como resultado, sin decir nada.
+  // El default baja a 20%, que sigue siendo una apuesta agresiva. El 55.8%
+  // queda disponible en el slider: se puede elegir, pero a conciencia.
+  const[cagr,setCagr]=useState(20);
   const[tasaR,setTasaR]=useState(55);
   const[impR,setImpR]=useState(19);
   const[regla,setRegla]=useState(4);
@@ -349,6 +357,40 @@ export default function PensionBTC({trm:pTrm}){
             <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Ajustalos si no coincidís con los valores por defecto</div>
           </div>
         <Sl label="📈 Crecimiento anual del Bitcoin (CAGR)" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)+" al año"} color={T.orange} sub="Es el % que sube Bitcoin cada año en promedio. Histórico: 69.8% • Conservador: 20-30% • Muy conservador: 10-15%"/>
+        {/* Advertencia de plausibilidad. No opina sobre si el Bitcoin subirá:
+            traduce el supuesto elegido a la capitalización de mercado que
+            implicaría, que es un hecho comprobable. Un BTC a X dólares por
+            ~19,9 millones de monedas da una cifra que el usuario puede
+            contrastar con la riqueza mundial (~450 billones de USD).
+            Aparece solo cuando el escenario ya no es defendible, para que no
+            se vuelva ruido que se aprende a ignorar. */}
+        {(() => {
+          const precioFinal = pBTC * Math.pow(1 + cagr / 100, anios);
+          const capImplicita = precioFinal * 19_900_000;      // USD
+          const RIQUEZA_MUNDIAL = 450e12;                      // USD, orden de magnitud
+          if (capImplicita < RIQUEZA_MUNDIAL * 0.25) return null;
+          const veces = capImplicita / RIQUEZA_MUNDIAL;
+          return (
+            <div style={{background:"rgba(249,115,22,0.10)",border:"1px solid rgba(249,115,22,0.35)",
+                 borderRadius:12,padding:14,marginTop:10,fontSize:12.5,lineHeight:1.6,color:T.txt2}}>
+              <strong style={{color:T.orange}}>⚠️ Este escenario no se sostiene.</strong>{" "}
+              Con {pc(cagr)} anual durante {anios} años, un Bitcoin valdría{" "}
+              <strong style={{color:T.txt}}>
+                US${Math.round(precioFinal).toLocaleString("es-CO")}
+              </strong>{" "}
+              y el mercado entero{" "}
+              <strong style={{color:T.txt}}>
+                {veces >= 1
+                  ? `${veces.toFixed(veces >= 10 ? 0 : 1)} veces toda la riqueza del planeta`
+                  : `${Math.round(veces * 100)}% de toda la riqueza del planeta`}
+              </strong>.
+              El interés compuesto no perdona: un rendimiento defendible para mirar
+              cinco años atrás se vuelve imposible proyectado a veinte. Bajá el
+              porcentaje o acortá el horizonte para que las cifras signifiquen algo.
+            </div>
+          );
+        })()}
+
         <Sl label="💰 Precio actual de 1 Bitcoin (en dólares)" value={pBTC} onChange={setPBTC} min={10000} max={200000} step={1000} display={fU(pBTC)} color={T.gold} sub={"= "+fC(pBTC*trm)+" COP"}/>
           <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
             <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>4 · COMPARACIÓN CON LA PENSIÓN</div>
@@ -457,7 +499,11 @@ export default function PensionBTC({trm:pTrm}){
           <div style={{fontSize:14,color:T.txt2}}>Invirtiendo <span style={{color:T.green,fontWeight:700}}>{fC(btc.ti)}</span> en BTC</div>
           <div style={{fontSize:36,fontWeight:800,color:T.orange,margin:"12px 0"}}>{mult.toFixed(1)}x más ingreso</div>
           <div style={{fontSize:14,color:T.txt2}}>{fC(btc.rMC)}/mes vs {fC(penMes)}/mes</div>
-          <div style={{fontSize:12,color:T.orange,marginTop:12}}>* Usando CAGR {pc(cagr)} (conservador vs 69.8% histórico)</div>
+          {/* Decia "conservador" aunque el usuario hubiera subido el slider a 80%.
+              El calificativo ahora depende del valor elegido, no es fijo. */}
+          <div style={{fontSize:12,color:T.orange,marginTop:12}}>
+            * Usando CAGR {pc(cagr)} ({cagr <= 25 ? "conservador" : cagr <= 40 ? "agresivo" : "muy por encima de lo sostenible"} frente al 69.8% histórico)
+          </div>
         </Cd>
       </div>
     </div>}
