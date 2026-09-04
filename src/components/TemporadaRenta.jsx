@@ -26,6 +26,7 @@
 //   Se dice lo que se sabe y no más.
 // ═══════════════════════════════════════════════════════════════════════════
 import { useState } from "react";
+import { track } from "../lib/analytics";
 
 // Calendario DIAN 2026 · personas naturales · año gravable 2025.
 // Clave = los dos últimos dígitos de la cédula (sin dígito de verificación).
@@ -81,6 +82,11 @@ export default function TemporadaRenta({ onEmpezar }) {
     ? (navigator.language || "es").toLowerCase() : "es";
   if (idioma.startsWith("en")) return null;
 
+  // 04-sep-2026 — La sección se publicó sin ninguna medición, así que no había
+  // forma de saber si alguien la usaba. Sin esto no se puede responder la
+  // pregunta que importa: ¿la gente que consulta su fecha termina registrándose?
+  const [yaMedido, setYaMedido] = useState(false);
+
   const limpio = digitos.replace(/\D/g, "").slice(0, 2);
   const completo = limpio.length === 2;
   const fechaISO = completo ? CAL[limpio] : null;
@@ -93,6 +99,19 @@ export default function TemporadaRenta({ onEmpezar }) {
     const f = new Date(fechaISO + "T23:59:59-05:00");
     dias = Math.ceil((f - new Date()) / 86400000);
     texto = `${f.getDate()} de ${MES[f.getMonth()]} de ${f.getFullYear()}`;
+  }
+
+  // Se mide UNA vez por sesión, cuando completa los dos dígitos. Si se midiera
+  // en cada tecla, un solo usuario generaría decenas de eventos y el número
+  // dejaría de significar personas.
+  if (completo && !yaMedido) {
+    setYaMedido(true);
+    try {
+      track("renta_fecha_consultada", {
+        vencido: vencioEnAgosto || (dias != null && dias < 0),
+        dias_restantes: dias == null ? null : Math.max(dias, -1),
+      });
+    } catch (e) { /* nunca romper la pantalla por un evento de analítica */ }
   }
 
   const color = vencioEnAgosto ? T.red
@@ -179,7 +198,10 @@ export default function TemporadaRenta({ onEmpezar }) {
               Tributario y te muestra cuáles estás dejando sobre la mesa.
             </div>
             <button
-              onClick={onEmpezar}
+              onClick={() => {
+                try { track("renta_cta_click", { dias_restantes: dias }); } catch (e) {}
+                onEmpezar && onEmpezar();
+              }}
               style={{ background: T.green, color: "#000", border: "none",
                 padding: "13px 26px", borderRadius: 100, cursor: "pointer",
                 fontWeight: 800, fontSize: 14 }}>

@@ -993,7 +993,26 @@ export default function FinPath(){
           body:JSON.stringify({email:aF.e,password:aF.p,name:aF.n||""})
         });
         const srd=await sr.json();
-        if(!sr.ok){const errMsg=srd.error||"Error creando cuenta";let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Probá iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intentá de nuevo o escribinos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verificá que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
+        if(!sr.ok){const errMsg=srd.error||"Error creando cuenta";
+        // 04-sep-2026 — Se medía cuando alguien ABRE el registro y cuando lo
+        // COMPLETA, pero nunca cuando falla. Con 16 caminos de error sin
+        // instrumentar, un mes con cero registros y un mes donde diez personas
+        // lo intentaron y todas chocaron con el mismo muro se ven idénticos en
+        // los informes. Ahora se distingue.
+        // Se manda una CATEGORÍA, no el mensaje crudo ni el correo: alcanza
+        // para saber qué está frenando a la gente sin meter datos personales
+        // en una herramienta de analítica.
+        try{
+          const _m=String(errMsg).toLowerCase();
+          const _motivo=_m.includes("already")||_m.includes("exists")?"email_ya_registrado"
+            :_m.includes("invalid email")?"email_invalido"
+            :_m.includes("password")||_m.includes("contraseña")?"password_rechazada"
+            :_m.includes("cuenta llena")||_m.includes("límite")?"limite_plan"
+            :_m.includes("fetch")||_m.includes("network")?"error_red"
+            :"otro";
+          track("signup_failed",{motivo:_motivo});
+        }catch(_e){}
+        let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Probá iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intentá de nuevo o escribinos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verificá que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);
