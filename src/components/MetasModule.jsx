@@ -1,6 +1,7 @@
 import { useState } from "react";
 import NumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
+import Disclaimer from "./Disclaimer.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -237,6 +238,7 @@ export default function MetasModule({ metas, onUpdate, cashFlow, fmt}) {
           </div>
         </div>
       )}
+      <Disclaimer variante="proyeccion" T={T} />
     </div>
   );
 }

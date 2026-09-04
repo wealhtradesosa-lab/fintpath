@@ -29,6 +29,7 @@ import PageHeader from "./PageHeader";
 import { montoDelMes, MESES, getMesActual, montoPromedioMensual, getFrecuencia, estaPagadoEnAño, getMesPago, FRECUENCIAS, getMonto } from "../lib/flowHelpers.js";
 import { estimarImpuesto } from "../lib/taxCO";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
+import Disclaimer from "./Disclaimer.jsx";
 
 const T = {
   bg: "#09090b", bg2: "#18181b", bg3: "#27272a", bg4: "#2a2a32",
@@ -741,6 +742,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           </table>
         </div>
       </div>
+      <Disclaimer variante="general" T={T} idioma={isEN ? "en" : "es"} />
     </div>
   );
 }

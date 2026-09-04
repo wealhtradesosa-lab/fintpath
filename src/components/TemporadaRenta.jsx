@@ -189,10 +189,20 @@ export default function TemporadaRenta({ onEmpezar }) {
         </div>
       )}
 
-      <div style={{ fontSize: 10.5, color: T.txt3, marginTop: 16, lineHeight: 1.5 }}>
-        Fechas del calendario tributario de la DIAN para personas naturales,
-        año gravable 2025. Para consultar tu caso contra los registros oficiales,
-        usá la herramienta de la DIAN en dian.gov.co.
+      {/* 04-sep-2026 — Aviso reforzado. Esta sección es la única que se le
+          muestra a gente SIN cuenta, y entrega dos cosas de peso legal: una
+          fecha de vencimiento y un monto de sanción. Alguien podría dejar de
+          declarar confiando en lo que acá diga. El aviso tiene que ser
+          explícito sobre quién responde por la decisión. */}
+      <div style={{ fontSize: 10.5, color: T.txt3, marginTop: 16, lineHeight: 1.6 }}>
+        <strong style={{ color: T.txt2 }}>Aviso.</strong> Fechas tomadas del calendario
+        tributario de la DIAN para personas naturales, año gravable 2025. Esta herramienta
+        es informativa y no constituye asesoría tributaria, contable ni legal. No verifica
+        tu situación particular: no sabe si estás obligado a declarar, ni bajo qué régimen,
+        ni qué otros plazos te aplican. Confirmá siempre tu fecha y tu obligación en{" "}
+        <a href="https://www.dian.gov.co" target="_blank" rel="noopener noreferrer"
+           style={{ color: T.green }}>dian.gov.co</a>{" "}
+        o con tu contador. La responsabilidad de presentar tu declaración a tiempo es tuya.
       </div>
     </div>
   );

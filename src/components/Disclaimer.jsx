@@ -26,7 +26,7 @@ const TEXTOS = {
   es: {
     general: {
       t: "Esto es un ejercicio de escenarios, no una asesoría",
-      p: "FINPATHIA es una herramienta de organización y simulación financiera. Los resultados que ves son cálculos sobre los datos que vos cargaste, bajo los supuestos que elegiste. No constituyen asesoría financiera, tributaria, contable ni legal, ni una recomendación de compra o venta de ningún activo. Antes de tomar decisiones, consultá con un profesional habilitado que conozca tu situación completa.",
+      p: "FINPATHIA es una herramienta de organización y simulación financiera. Los resultados que ves son cálculos sobre los datos que vos cargaste, bajo los supuestos que elegiste. No constituyen asesoría financiera, tributaria, contable ni legal, ni una recomendación de compra o venta de ningún activo. Antes de tomar decisiones, consultá con un profesional habilitado que conozca tu situación completa. FINPATHIA no audita ni verifica los datos que cargás: si un dato de entrada está mal, el resultado también lo estará. Cada persona es responsable de las decisiones que toma y de sus resultados; esta herramienta es un insumo para pensar, no un consejo a seguir.",
     },
     fiscal: {
       t: "Estimación, no declaración",
@@ -48,7 +48,7 @@ const TEXTOS = {
   en: {
     general: {
       t: "This is a scenario exercise, not advice",
-      p: "FINPATHIA is a financial organization and simulation tool. The results you see are calculations based on the data you entered and the assumptions you chose. They do not constitute financial, tax, accounting or legal advice, nor a recommendation to buy or sell any asset. Consult a licensed professional who knows your full situation before making decisions.",
+      p: "FINPATHIA is a financial organization and simulation tool. The results you see are calculations based on the data you entered and the assumptions you chose. They do not constitute financial, tax, accounting or legal advice, nor a recommendation to buy or sell any asset. Consult a licensed professional who knows your full situation before making decisions. FINPATHIA does not audit or verify the data you enter: if an input is wrong, the output will be wrong too. Each person is responsible for their own decisions and their outcomes; this tool is an input for thinking, not advice to follow.",
     },
     fiscal: {
       t: "An estimate, not a filing",

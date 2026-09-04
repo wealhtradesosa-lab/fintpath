@@ -3,6 +3,7 @@ import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
+import Disclaimer from "./Disclaimer.jsx";
 
 /* ═══════════════════════════════════════════════════
    MÓDULO PENSIONES COLOMBIA — Cálculo Actuarial
@@ -862,6 +863,7 @@ export default function PensionesColpensiones({ trm }) {
       <div style={{ textAlign: "center", marginTop: 24, padding: "12px 0", borderTop: `1px solid ${T.border}` }}>
         <p style={{ fontSize: 11, color: T.txt3 }}>⚠️ Simulador educativo • Los cálculos son aproximados • Consulta un asesor pensional certificado • Ley 100/1993 • Ley 797/2003</p>
       </div>
+      <Disclaimer variante="proyeccion" T={T} />
     </div>
   );
 }
