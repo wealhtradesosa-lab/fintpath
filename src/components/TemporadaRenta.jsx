@@ -185,12 +185,13 @@ export default function TemporadaRenta({ onEmpezar }) {
 
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.6, marginBottom: 12 }}>
-              Saber la fecha es lo fácil. La pregunta que cuesta plata es otra:{" "}
+              Saber la fecha es lo fácil. Finpathia es tu mapa de patrimonio:
+              pensión, inversiones e impuestos en un solo lugar.{" "}
               <strong style={{ color: T.txt }}>
-                ¿estás usando las deducciones a las que tenés derecho?
+                La declaración es un módulo, no el producto.
               </strong>{" "}
-              FINPATHIA calcula tu declaración con las palancas del Estatuto
-              Tributario y te muestra cuáles estás dejando sobre la mesa.
+              En impuestos ves qué palancas del Estatuto Tributario estás
+              dejando sobre la mesa.
             </div>
             <button
               onClick={() => {
@@ -207,7 +208,7 @@ export default function TemporadaRenta({ onEmpezar }) {
               style={{ background: T.green, color: "#000", border: "none",
                 padding: "13px 26px", borderRadius: 100, cursor: "pointer",
                 fontWeight: 800, fontSize: 14 }}>
-              Calcular mi declaración gratis
+              Crear mi cuenta en Finpathia
             </button>
           </div>
         </div>
