@@ -1417,7 +1417,7 @@ export default function FinPath(){
     if(pathname==="/privacidad"||pathname==="/privacidad/"){
       return<LandingPrivacidad/>;
     }
-    return<><LandingPage onGetStarted={()=>{track("signup_modal_opened",{from:"home"});setShowAuth(true)}}/><PWAInstallPrompt/></>;
+    return<><LandingPage onGetStarted={(meta)=>{const from=meta?.source||"home";sAM("signup");track("signup_modal_opened",{from,...(meta?.dias_restantes!=null?{dias_restantes:meta.dias_restantes}:{})});setShowAuth(true)}}/><PWAInstallPrompt/></>;
   }
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
