@@ -143,7 +143,7 @@ export default function TemporadaRenta({ onEmpezar }) {
         style={{ width: 130, fontSize: 30, fontWeight: 800, textAlign: "center",
           padding: "12px 0", borderRadius: 12, background: T.bg3,
           border: `2px solid ${completo ? color : T.border}`, color: T.txt,
-          letterSpacing: "4px", outline: "none" }}>
+          letterSpacing: "4px", outline: "none" }}
       />
 
       {completo && (
