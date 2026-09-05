@@ -321,14 +321,17 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
 
       {/* Bloque 1: KPIs */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
-          Indicadores clave
+        <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+          Indicadores clave (estimación)
+        </div>
+        <div style={{ fontSize: 10, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
+          Estimación orientativa (borrador). Impuesto a cargo ≠ saldo a pagar: las retenciones suelen bajar lo que transferís en mayo. No es la liquidación oficial ni asesoría tributaria.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
           <KPICard label="Patrimonio líquido" actual={patrimonioLiquidoActual} declarado={patrimonioLiquidoDeclarado} accent={T.purple} />
-          <KPICard label="Impuesto calculado" actual={impuestoActual} declarado={impuestoDeclarado} accent={T.red} />
-          <KPICard label="Tasa efectiva" actual={tasaEfectivaActual} declarado={tasaEfectivaDeclarada} fmt={pc} accent={T.orange} />
-          <KPICard label="Saldo a pagar" actual={saldoActual} declarado={saldoDeclarado} accent={T.blue} />
+          <KPICard label="Impuesto estimado a cargo" actual={impuestoActual} declarado={impuestoDeclarado} accent={T.red} />
+          <KPICard label="Tasa efectiva estimada" actual={tasaEfectivaActual} declarado={tasaEfectivaDeclarada} fmt={pc} accent={T.orange} />
+          <KPICard label="Saldo estimado a pagar" actual={saldoActual} declarado={saldoDeclarado} accent={T.blue} />
         </div>
       </div>
 
@@ -370,18 +373,18 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 12, paddingTop: 10, borderTop: "2px solid " + T.border }}>
               <div>
-                <div style={{ fontSize: 13, color: T.txt, fontWeight: 700, marginBottom: 2 }}>Saldo a pagar (mayo)</div>
-                <div style={{ fontSize: 11, color: T.txt3 }}>= Impuesto bruto − retenciones</div>
+                <div style={{ fontSize: 13, color: T.txt, fontWeight: 700, marginBottom: 2 }}>Saldo estimado a pagar (mayo)</div>
+                <div style={{ fontSize: 11, color: T.txt3 }}>= Impuesto a cargo − retenciones estimadas</div>
               </div>
               <div style={{ fontSize: 22, fontWeight: 800, color: T.blue }}>
                 ${Math.round(saldoActual).toLocaleString("es-CO")}
               </div>
             </div>
             <div style={{ fontSize: 10, color: T.txt3, marginTop: 12, fontStyle: "italic", lineHeight: 1.4 }}>
-              ℹ️ Las retenciones son lo que el banco/inquilino te descuentan automáticamente durante el año.
-              Cuando declarás en mayo, ese monto ya fue pagado. El "saldo a pagar" es lo que efectivamente
-              transferís en mayo después del cálculo final. Podés ajustar tasas o desactivar retención por
-              ingreso desde el módulo Ingresos.
+              ℹ️ Impuesto estimado a cargo (antes de retenciones). Tu saldo a pagar suele ser menor.
+              Las retenciones son lo que el banco/inquilino te descuentan durante el año; en mayo ese monto
+              ya fue pagado. Esta cifra es un borrador: el saldo real puede cambiar por exentas, deducciones,
+              topes en UVT y ajustes de tu contador. Presentá la declaración solo en canales oficiales DIAN.
             </div>
           </div>
         </div>
