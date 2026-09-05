@@ -73,14 +73,9 @@ export default function TemporadaRenta({ onEmpezar }) {
   // existe todavía la jurisdicción de la cuenta. Alguien en Miami entraba y lo
   // primero que veía era el calendario de la DIAN.
   //
-  // El idioma del navegador es el único dato disponible antes de que la persona
-  // se registre. No es perfecto -- un colombiano con el navegador en inglés no
-  // va a ver esto -- pero el error en esa dirección solo esconde una sección,
-  // mientras que el error contrario le habla a alguien de un país que no es el
-  // suyo. Entre las dos equivocaciones posibles, se elige la barata.
-  const idioma = typeof navigator !== "undefined"
-    ? (navigator.language || "es").toLowerCase() : "es";
-  if (idioma.startsWith("en")) return null;
+  // 05-sep-2026 — Ya no ocultamos por navigator.language (en-US escondía
+  // la temporada DIAN a hispanohablantes con browser en inglés). La sección
+  // es CO/DIAN; el copy está en español en la landing principal.
 
   // 04-sep-2026 — La sección se publicó sin ninguna medición, así que no había
   // forma de saber si alguien la usaba. Sin esto no se puede responder la
