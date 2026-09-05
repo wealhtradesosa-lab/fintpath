@@ -1284,7 +1284,7 @@ export default function FinPath(){
         +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px'><span style='color:#f59e0b'>A. Aportes obligatorios</span><span style='color:#f59e0b'>"+fm(aportesObligatorios)+"</span></div>"
         +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px'><span>B. Gastos familiares</span><span>"+fm(gastosFamiliares)+"</span></div>"
         +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px'><span>C. Cuotas deudas</span><span>"+fm(totalCuotas)+"</span></div>"
-        +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:6px'><span style='color:#8b5cf6'>D. Impuesto neto</span><span style='color:#8b5cf6'>"+fm(impuestoNeto)+"</span></div>"
+        +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:6px'><span style='color:#8b5cf6'>D. Impuesto neto estimado</span><span style='color:#8b5cf6'>"+fm(impuestoNeto)+"</span></div>"
         +"<div style='display:flex;justify-content:space-between;font-size:13px;font-weight:800;padding-top:7px;border-top:1px solid #d1d5db;color:#dc2626'><span>= EGRESOS TOTALES</span><span>"+fm(egresosTotales)+"</span></div>"
       +"</div>"
     +"</div>";
@@ -2640,11 +2640,12 @@ export default function FinPath(){
 
             {/* PLANIFICACIÓN TRIBUTARIA — Usa estimarImpuesto() con propietarios + DIAN */}
             {(()=>{const tx=estimarImpuesto(u);if(tx.total<=0)return null;return<div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:14}}>🧾 IMPUESTOS ESTIMADOS — Colombia 2026 (UVT: $52,374)</div>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:6}}>🧾 IMPUESTOS ESTIMADOS — Colombia · UVT $52.374 (AG 2025 / presentación 2026)</div>
+              <div style={{fontSize:10,color:T.tx3,marginBottom:14,lineHeight:1.5}}>Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria.</div>
               {tx.sinClasificar>0&&<div style={{background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:T.orange}}>⚠️ {tx.sinClasificar} ingreso(s) sin clasificación fiscal. Ve a <strong>💰 Ingresos</strong> y asigna propietario + clasificación DIAN para un cálculo más preciso.</div>}
               <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                 <div>
-                  <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>Impuesto de renta por propietario</div>
+                  <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>Impuesto estimado a cargo por propietario</div>
                   {tx.detalle.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                     <div>
                       <div style={{fontSize:12,fontWeight:600,color:T.tx2}}>{d.type==="juridica"?"🏢":"👤"} {d.name}</div>
@@ -2656,10 +2657,21 @@ export default function FinPath(){
                     </div>
                   </div>)}
                   <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",fontWeight:700,fontSize:13,borderTop:"2px solid "+T.border,marginTop:4}}>
-                    <span style={{color:T.tx}}>Total renta estimada</span>
+                    <span style={{color:T.tx}}>Impuesto estimado a cargo</span>
                     <span style={{color:T.rd}}>{fm(tx.total)}/año</span>
                   </div>
                   <div style={{fontSize:11,color:T.tx2,marginTop:4}}>Equivale a: <strong style={{color:T.rd}}>{fm(tx.mes)}/mes</strong></div>
+                  {(()=>{const rete=tx.detalle.reduce((s,d)=>s+(d.reteN||0),0);const saldo=Math.max(0,tx.total-rete);return<>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",marginTop:4}}>
+                      <span style={{color:T.tx2}}>Retenciones estimadas</span>
+                      <span style={{fontFamily:"monospace",color:T.gn}}>{fm(rete)}/año</span>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:12,fontWeight:700,padding:"6px 0"}}>
+                      <span style={{color:T.tx}}>Saldo estimado a pagar</span>
+                      <span style={{fontFamily:"monospace",color:T.pr}}>{fm(saldo)}/año</span>
+                    </div>
+                    <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Impuesto estimado a cargo (antes de retenciones). Tu saldo a pagar suele ser menor.</div>
+                  </>})()}
                 </div>
                 <div>
                   <div style={{fontSize:11,fontWeight:700,color:T.pr,marginBottom:8}}>Resumen fiscal</div>
@@ -2668,7 +2680,7 @@ export default function FinPath(){
                     <span style={{fontFamily:"monospace",color:T.tx2}}>{fm(tx.detalle.reduce((s,d)=>s+d.ingreso,0))}/año</span>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                    <span style={{color:T.tx2}}>Impuestos totales</span>
+                    <span style={{color:T.tx2}}>Impuesto estimado a cargo</span>
                     <span style={{fontFamily:"monospace",color:T.rd}}>{fm(tx.total)}/año</span>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
@@ -2680,7 +2692,7 @@ export default function FinPath(){
                     <span style={{fontFamily:"monospace",color:T.gn}}>{fm(tx.detalle.reduce((s,d)=>s+d.ingreso,0)-tx.total)}/año</span>
                   </div>
                   <button onClick={()=>setPg("tax")} style={{width:"100%",marginTop:12,padding:"10px",background:T.bg,border:"1px solid "+T.border,borderRadius:8,color:T.pr,cursor:"pointer",fontSize:12,fontWeight:600}}>📊 Ver detalle completo y optimizar → 🧾 Impuestos</button>
-                  <div style={{fontSize:9,color:T.tx3,marginTop:8,lineHeight:1.5}}>Estimación basada en ingresos y gastos clasificados por propietario. Los gastos deducibles se aplican según normativa DIAN. Consulta tu contador para declaración oficial.</div>
+                  <div style={{fontSize:9,color:T.tx3,marginTop:8,lineHeight:1.5}}>Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria. Finpathia no presta asesoría tributaria ni jurídica. Esta cifra es un borrador con base en los datos que ingresaste. El saldo real puede cambiar por retenciones, rentas exentas, deducciones, topes en UVT y ajustes de tu contador. Presenta tu declaración solo en los canales oficiales de la DIAN.</div>
                 </div>
               </div>
             </div>})()}
@@ -3355,7 +3367,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 {l:"A. Aportes obligatorios",v:t.aportesObligatorios||0,c:"#f59e0b"},
                 {l:"B. Gastos familiares",v:t.gastosFamiliares||0,c:T.tx2},
                 {l:"C. Cuotas de deudas",v:t.cuotasDeudas||0,c:T.tx2},
-                {l:"D. Impuesto neto",v:t.impuestoNeto||0,c:"#a78bfa"},
+                {l:"D. Impuesto neto estimado (post-retención)",v:t.impuestoNeto||0,c:"#a78bfa"},
               ].map((r,i)=>(
                 <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:5,opacity:r.v>0?1:0.5}}>
                   <span style={{color:r.c}}>{r.l}</span>
