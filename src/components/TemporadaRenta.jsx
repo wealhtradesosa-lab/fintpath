@@ -143,7 +143,7 @@ export default function TemporadaRenta({ onEmpezar }) {
         style={{ width: 130, fontSize: 30, fontWeight: 800, textAlign: "center",
           padding: "12px 0", borderRadius: 12, background: T.bg3,
           border: `2px solid ${completo ? color : T.border}`, color: T.txt,
-          letterSpacing: "4px", outline: "none" }}
+          letterSpacing: "4px", outline: "none" }}>
       />
 
       {completo && (
@@ -194,8 +194,15 @@ export default function TemporadaRenta({ onEmpezar }) {
             </div>
             <button
               onClick={() => {
-                try { track("renta_cta_click", { dias_restantes: dias }); } catch (e) {}
-                onEmpezar && onEmpezar();
+                try {
+                  track("renta_cta_click", { dias_restantes: dias });
+                  sessionStorage.setItem("fp3_signup_intent", JSON.stringify({
+                    source: "renta",
+                    intent: "declaracion",
+                    dias_restantes: dias == null ? null : dias,
+                  }));
+                } catch (e) { /* nunca romper la pantalla por analítica */ }
+                onEmpezar && onEmpezar({ source: "renta", dias_restantes: dias });
               }}
               style={{ background: T.green, color: "#000", border: "none",
                 padding: "13px 26px", borderRadius: 100, cursor: "pointer",
