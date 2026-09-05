@@ -199,8 +199,18 @@ export default function TemporadaRenta({ onEmpezar }) {
             </div>
             <button
               onClick={() => {
-                try { track("renta_cta_click", { dias_restantes: dias }); } catch (e) {}
-                onEmpezar && onEmpezar();
+                // 05-sep-2026 — Persistimos intención (sin dígitos de cédula) para
+                // atribuir signup_completed a este embudo, y pasamos source al
+                // padre para que abra el modal en modo signup (como /pioneros).
+                try {
+                  track("renta_cta_click", { dias_restantes: dias });
+                  sessionStorage.setItem("fp3_signup_intent", JSON.stringify({
+                    source: "renta",
+                    intent: "declaracion",
+                    dias_restantes: dias == null ? null : dias,
+                  }));
+                } catch (e) { /* nunca romper la pantalla por analítica */ }
+                onEmpezar && onEmpezar({ source: "renta", dias_restantes: dias });
               }}
               style={{ background: T.green, color: "#000", border: "none",
                 padding: "13px 26px", borderRadius: 100, cursor: "pointer",
