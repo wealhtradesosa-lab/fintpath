@@ -1167,9 +1167,9 @@ export default function DeclaracionFlow({
         }}>
           <div style={{ fontSize: 12, color: C.txt2, marginBottom: 6 }}>
             {saldoActual > 0 ? (
-              <>{isJuridica ? `Lo que tendría que pagar ${ownerName}` : "Lo que te tocaría pagar"}:</>
+              <>{isJuridica ? `Saldo estimado a pagar · ${ownerName}` : "Saldo estimado a pagar"}:</>
             ) : (
-              <span style={{ color: C.green }}>✅ {isJuridica ? `${ownerName} no debería pagar nada` : "No te tocaría pagar nada"} · las retenciones cubren todo</span>
+              <span style={{ color: C.green }}>✅ {isJuridica ? `Saldo estimado ~$0 · ${ownerName}` : "Saldo estimado ~$0"} · las retenciones cubrirían el a cargo</span>
             )}
           </div>
           <div style={{
@@ -1178,8 +1178,10 @@ export default function DeclaracionFlow({
           }}>
             {fm(Math.max(0, saldoActual))}
           </div>
-          <div style={{ fontSize: 11, color: C.txt3, marginTop: 8 }}>
-            Estimación según los datos cargados a hoy. Tu contador es quien firma.
+          <div style={{ fontSize: 11, color: C.txt3, marginTop: 8, lineHeight: 1.5 }}>
+            Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria.
+            Impuesto a cargo puede ser mayor que lo que transferís tras retenciones. Tu contador es quien firma;
+            presentá la declaración solo en canales oficiales de la DIAN.
           </div>
         </div>
 
@@ -1193,7 +1195,7 @@ export default function DeclaracionFlow({
           />
           <MiniCard
             icono="🧾"
-            label="Impuesto que toca"
+            label="Impuesto estimado a cargo"
             valor={fmShort(impuestoBruto)}
             color={C.orange}
             sub={ingresoAnual > 0 ? `${(impuestoBruto / ingresoAnual * 100).toFixed(1)}% efectiva` : ""}
