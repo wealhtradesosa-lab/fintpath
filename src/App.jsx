@@ -1529,8 +1529,8 @@ export default function FinPath(){
         <span style={{color:T.gn}}>✓</span> Exporta o borra todo en cualquier momento
       </div>
       <div style={{fontSize:28,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:24}}>FINPATHIA</div>
-      <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Inicia sesión":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"🎁 Acceso Pioneros":"Crea tu cuenta gratis"}</h2>
-      <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Accede a tu patrimonio":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"14 días de prueba + 3 meses gratis del Plan Pro":"14 días de acceso Pro incluidos"}</p>
+      <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Inicia sesión":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"🎁 Acceso Pioneros":(()=>{try{const i=JSON.parse(sessionStorage.getItem("fp3_signup_intent")||"null");return i&&i.source==="renta"?"Calculá tu declaración":null}catch{return null}})()||"Crea tu cuenta gratis"}</h2>
+      <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Accede a tu patrimonio":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"14 días de prueba + 3 meses gratis del Plan Pro":(()=>{try{const i=JSON.parse(sessionStorage.getItem("fp3_signup_intent")||"null");return i&&i.source==="renta"?"Creá tu cuenta y calculá tu declaración con las palancas del ET. 14 días Pro incluidos.":null}catch{return null}})()||"14 días de acceso Pro incluidos"}</p>
       <div style={{display:"flex",flexDirection:"column",gap:16,marginBottom:24}}>
         {aM==="login"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
           <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>Ingresar como</label>
