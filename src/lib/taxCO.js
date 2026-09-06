@@ -79,6 +79,11 @@ export function uvtForYear(ag = DEFAULT_AG) {
 /** UVT default temporada (AG 2025 = $49.799). Preferí uvtForYear(ag) si conocés el AG. */
 export const UVT = uvtForYear(DEFAULT_AG);
 
+/** Art. 206 #10 ET — renta exenta 25% laboral, tope ANUAL (no mensual) en UVT. */
+export const TOPE_EXENTA25_UVT = 790;
+/** Art. 336 ET — tope absoluto de rentas exentas + deducciones en UVT (además del 40%). */
+export const TOPE_ART336_UVT = 1340;
+
 // ─── ART. 206 #4 ET: CESANTÍAS Y INTERESES SOBRE CESANTÍAS EXENTOS ────────
 // Las cesantías y sus intereses son RENTA EXENTA con tope variable según el
 // salario mensual promedio del último semestre del trabajador:
@@ -440,7 +445,7 @@ export const estimarImpuesto = (u, options = {}) => {
         // FIX abr 2026: impBruto ahora descuenta ICA (descuento permanente legal).
         // impOptBruto adicionalmente descuenta los descuentos opcionales cargados.
         // Diferencia = descuentos opcionales = ahorro real declarado por el usuario.
-        impBruto: impBrutoSinOpt, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
+        impBruto: impBrutoSinOpt, impuestoACargo: impBrutoSinOpt, saldoAPagar: impActual, saldoACargo: impActual, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
         ahorroOptimo: impActual - impOptimoJ,
         tasa: ingAnual > 0 ? (impActual / ingAnual * 100) : 0,
         tasaBruta: ingAnual > 0 ? (impBruto / ingAnual * 100) : 0,
@@ -736,10 +741,17 @@ export const estimarImpuesto = (u, options = {}) => {
 
       const totalDeducciones = deducDep + deducMedicina + deducVivienda + gmfDeducible;
 
+      // Art. 206 #10 ET: 25% de la base laboral (neto − deducciones Art.387/etc.),
+      // tope 790 UVT **por año gravable** (NO por mes). UVT vía uvtForYear(ag).
+      // options.omitirExenta25: solo para tests de regresión (F3).
       const baseExenta = Math.max(0, netoLaboral - totalDeducciones);
-      const exenta25 = Math.min(baseExenta * 0.25, 790 * uvt);
+      const exenta25Bruta = Math.min(baseExenta * 0.25, TOPE_EXENTA25_UVT * uvt);
+      const exenta25 = options.omitirExenta25 ? 0 : exenta25Bruta;
 
-      const lim40 = netoLaboral * 0.40;
+      // Art. 336 ET: rentas exentas + deducciones ≤ min(40% del neto de la cédula, 1340 UVT).
+      const lim40Pct = netoLaboral * 0.40;
+      const lim1340 = TOPE_ART336_UVT * uvt;
+      const lim40 = Math.min(lim40Pct, lim1340);
       // Pensión voluntaria + AFC (Art. 126-1 y 126-4 ET): renta exenta bajo el cap
       // compartido de 2500 uvt / 25% neto laboral.
       //
@@ -755,10 +767,10 @@ export const estimarImpuesto = (u, options = {}) => {
       // si solo hay cesantías sueltas, asumir 100% exento como caso de liquidación).
       const salarioMensualProxy = salAnual > 0 ? salAnual / 12 : 0;
       const cesantiasExentas = cesantiasExentasArt206_4(cesantiasAnual, salarioMensualProxy, uvt);
-      // El cap 40% del Art. 336 #3 incluye TODAS las rentas exentas y deducciones
-      // imputables, incluso las del Art. 206 #4. Por eso sumamos cesantiasExentas
-      // dentro del Math.min(..., lim40).
-      const benefLaboral = Math.min(exenta25 + totalDeducciones + pvManualAnual + cesantiasExentas, lim40);
+      // Art. 336: el bag (exenta 25% + deducciones + PV/AFC + cesantías Art.206 #4)
+      // no puede superar lim40 = min(40% neto, 1340 UVT). Nunca sumar sin tope.
+      const benefLaboralSinTope = exenta25 + totalDeducciones + pvManualAnual + cesantiasExentas;
+      const benefLaboral = Math.min(benefLaboralSinTope, lim40);
 
       const rentaLiqTrabajo = Math.max(0, netoLaboral - benefLaboral);
 
@@ -841,7 +853,11 @@ export const estimarImpuesto = (u, options = {}) => {
       const rentaOptGeneral = rentaOptTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
       const impOpt = calcImpRentaAg(rentaOptGeneral / uvt) + impDiv + impPension;
 
-      // ── RETENCIÓN EN LA FUENTE ──
+      // ── RETENCIÓN EN LA FUENTE + ANTICIPOS ──
+      // Estimación automática (aprox. Art. 383/392/395/401). Luego overrides:
+      //   1) descuentosTributarios.retencionesEsperadasAnual (dato real / contador)
+      //   2) planOptimizacion.retencionesManualesAnio (solo con incluirPlanOptimizacion)
+      // Anticipos de renta (Art. 807) también reducen el saldo a pagar.
       let reteN = 0;
       oIng.forEach(i => {
         const m = (i.mensual || 0) * (i.moneda === "USD" ? trm : 1) * 12;
@@ -851,11 +867,21 @@ export const estimarImpuesto = (u, options = {}) => {
         else if (fc === NOL_ARRIENDO_INMUEBLE) reteN += m * 0.035;
         else if (fc === CAP_RENDIMIENTO_GENERICO || fc === DIV_ART49_GRAVADOS || fc === CAP_INTERESES_BANCARIOS || fc === CAP_VENTA_ACTIVOS) reteN += m * 0.07;
       });
-      // Retenciones manuales: solo desde Plan de Optimización (con flag).
+      const reteEstimadaAuto = reteN;
+      const reteOverrideGlobal = Number(ow.descuentosTributarios?.retencionesEsperadasAnual);
+      if (reteOverrideGlobal > 0 && !Number.isNaN(reteOverrideGlobal)) {
+        reteN = reteOverrideGlobal;
+      }
       const reteManual = Number(planOpt.retencionesManualesAnio);
       if (reteManual > 0 && !Number.isNaN(reteManual)) {
         reteN = reteManual;
       }
+      const anticiposRenta = Math.max(
+        0,
+        Number(ow.descuentosTributarios?.anticiposRentaAnual) || 0,
+        Number(planOpt.anticiposRentaAnual) || 0
+      );
+      const pagosPrevios = reteN + anticiposRenta;
 
       // ── RÉGIMEN PARA PERSONA NATURAL ──
       const regimenN = ow.regimen || "ordinario";
@@ -878,9 +904,11 @@ export const estimarImpuesto = (u, options = {}) => {
         impOptNat = impBrutoNat;
       } else {
         // Ordinario (Cédula General)
+        // Pipeline: Art.241 (a cargo) → (−) retenciones/anticipos → saldo a pagar.
+        // Nunca reportar solo a cargo como si fuera saldo.
         impBrutoNat = imp;
-        impActualNat = Math.max(0, imp - reteN);
-        impOptNat = Math.max(0, impOpt - reteN);
+        impActualNat = Math.max(0, imp - pagosPrevios);
+        impOptNat = Math.max(0, impOpt - pagosPrevios);
         regimenNotaN = "Régimen Ordinario — Cédula General (tabla Art. 241 ET con deducciones).";
       }
       // Descuento Art. 254 ET (impuestos exterior): solo desde Plan.
@@ -1003,17 +1031,28 @@ export const estimarImpuesto = (u, options = {}) => {
         pctUsado: lim40 > 0 ? (benefLaboral / lim40 * 100) : 0,
         rentaSin: rentaLiqGeneral, rentaCon: rentaOptGeneral,
         retefuenteNat: reteN,
-        lim40, benAplic: benefLaboral,
+        reteEstimadaAuto,
+        anticiposRenta,
+        pagosPrevios,
+        lim40, lim40Pct, lim1340,
+        tope336: lim40,
+        topeExenta25UVT: TOPE_EXENTA25_UVT,
+        topeArt336UVT: TOPE_ART336_UVT,
+        benefLaboralSinTope,
+        benAplic: benefLaboral,
         baseGravable: rentaLiqGeneral,
         // Desglose de rendimientos + componente inflacionario (Art. 38-39 ET)
         interesesBancAnual, utilidadFICAnual, rendimientoGenAnual, inversionAnual,
         componenteInflacExcluido, pctComponenteInflac: pctComponenteInflac * 100,
         rentaLiqCapital,
-        // impuesto/impOptimizado = SALDO (después de restar retención). Legacy, usado por el cash flow.
+        // impuesto/impOptimizado = SALDO a pagar (después de retenciones/anticipos).
         impuesto: impActualNat,
+        saldoAPagar: impActualNat,
+        saldoACargo: impActualNat, // alias legacy DeclaracionFlow (= post-rete)
         impSinOpt: impActualNat, impOptimizado: impOptNat,
-        // impBruto/impOptBruto = TOTAL por tabla progresiva o régimen (antes de retención).
+        // impBruto = IMPUESTO A CARGO (tabla Art.241 / régimen) ANTES de retenciones.
         impBruto: impBrutoNat,
+        impuestoACargo: impBrutoNat,
         impOptBruto: regimenN === "simple" ? impBrutoNat : impOpt,
         ahorroOptimo: ahorroNat,
         tasa: ingAnual > 0 ? (impActualNat / ingAnual * 100) : 0,
