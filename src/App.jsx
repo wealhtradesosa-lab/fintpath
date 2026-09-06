@@ -2646,22 +2646,22 @@ export default function FinPath(){
               <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                 <div>
                   <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>Impuesto estimado a cargo por propietario</div>
-                  {tx.detalle.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                  {tx.detalle.map((d,i)=>{const aCargo=d.impuestoACargo??d.impBruto??d.impuesto??0;return<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                     <div>
                       <div style={{fontSize:12,fontWeight:600,color:T.tx2}}>{d.type==="juridica"?"🏢":"👤"} {d.name}</div>
                       <div style={{fontSize:10,color:T.tx3}}>{d.type==="juridica"?"Tarifa 35%":"Tabla Art. 241 ET"} • Ingreso: {fm(d.ingreso)}/año</div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:13,fontWeight:700,color:T.rd,fontFamily:"monospace"}}>{fm(d.impuesto)}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:T.rd,fontFamily:"monospace"}}>{fm(aCargo)}</div>
                       <div style={{fontSize:10,color:T.tx3}}>Tasa: {d.tasa.toFixed(1)}%</div>
                     </div>
-                  </div>)}
+                  </div>})}
+                  {(()=>{const aCargo=tx.detalle.reduce((s,d)=>s+(d.impuestoACargo??d.impBruto??0),0);const rete=tx.detalle.reduce((s,d)=>s+(d.reteN||0),0);const saldo=tx.detalle.reduce((s,d)=>s+(d.saldoAPagar??d.impuesto??0),0);return<>
                   <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",fontWeight:700,fontSize:13,borderTop:"2px solid "+T.border,marginTop:4}}>
                     <span style={{color:T.tx}}>Impuesto estimado a cargo</span>
-                    <span style={{color:T.rd}}>{fm(tx.total)}/año</span>
+                    <span style={{color:T.rd}}>{fm(aCargo)}/año</span>
                   </div>
-                  <div style={{fontSize:11,color:T.tx2,marginTop:4}}>Equivale a: <strong style={{color:T.rd}}>{fm(tx.mes)}/mes</strong></div>
-                  {(()=>{const rete=tx.detalle.reduce((s,d)=>s+(d.reteN||0),0);const saldo=Math.max(0,tx.total-rete);return<>
+                  <div style={{fontSize:11,color:T.tx2,marginTop:4}}>Equivale a: <strong style={{color:T.rd}}>{fm(aCargo/12)}/mes</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",marginTop:4}}>
                       <span style={{color:T.tx2}}>Retenciones estimadas</span>
                       <span style={{fontFamily:"monospace",color:T.gn}}>{fm(rete)}/año</span>
@@ -2670,7 +2670,7 @@ export default function FinPath(){
                       <span style={{color:T.tx}}>Saldo estimado a pagar</span>
                       <span style={{fontFamily:"monospace",color:T.pr}}>{fm(saldo)}/año</span>
                     </div>
-                    <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Impuesto estimado a cargo (antes de retenciones). Tu saldo a pagar suele ser menor.</div>
+                    <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Impuesto estimado a cargo (antes de retenciones). Tu saldo a pagar suele ser menor — el motor ya resta retenciones/anticipos; no volver a restar del total post-rete.</div>
                   </>})()}
                 </div>
                 <div>

@@ -1,0 +1,28 @@
+{
+  "ag": 2025,
+  "uvt": 49799,
+  "pipeline": "bruto → (−) no constitutivos → deducciones → 25% Art.206 (tope 790 UVT/año) → tope Art.336 min(40% neto, 1340 UVT) → Art.241 → (−) retenciones/anticipos → saldo",
+  "topes": {
+    "art206_uvt_anual": 790,
+    "art206_cop_2025": 39341210,
+    "art336_uvt": 1340,
+    "art336_cop_2025": 66730660
+  },
+  "fixtures": {
+    "F1": {
+      "desc": "Persona natural sintética salario+retenciones contador; saldo ≈ 0",
+      "netoLaboralApprox": 120000000,
+      "retencionesEsperadasAnual": 12000000,
+      "expect": { "saldoAPagar": 0, "impuestoACargo_gt": 0, "exenta25_gt": 0 }
+    },
+    "F2": {
+      "desc": "High labor + dependientes + prepagada + PV/AFC; tope 1340 UVT bindea",
+      "expect": { "benAplic_eq": "min(suma, 40% neto, 1340*UVT)", "binding": "1340 UVT" }
+    },
+    "F3": {
+      "desc": "Mismo F1 con omitirExenta25 → a cargo sube vs F1",
+      "expect": { "aCargoSin206_gt_aCargoCon206": true }
+    }
+  },
+  "run": "node tests/art206_336_retenciones.test.mjs"
+}
