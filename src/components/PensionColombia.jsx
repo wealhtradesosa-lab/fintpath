@@ -37,15 +37,10 @@ export default function PensionBTC({trm:pTrm}){
   const[montoAnual,setMontoAnual]=useState("");
   const[montoUnico,setMontoUnico]=useState("");
   const[anios,setAnios]=useState(10);
-  // 02-sep-2026 (Santiago: "puse un ahorro de 1MM al año por 20 años y sale una
-  // cosa nada que ver, 64 millones al mes"). El cálculo estaba bien: el default
-  // era 55.8%, el CAGR histórico del Bitcoin. Compuesto a 20 años implica un
-  // BTC de ~488 millones de dólares, con lo que el mercado valdría varias veces
-  // toda la riqueza del planeta. No es una proyección, es una imposibilidad
-  // aritmética -- y la app la presentaba como resultado, sin decir nada.
-  // El default baja a 20%, que sigue siendo una apuesta agresiva. El 55.8%
-  // queda disponible en el slider: se puede elegir, pero a conciencia.
-  const[cagr,setCagr]=useState(20);
+  // 02-sep-2026 / 05-sep-2026 (Finanzas): el histórico (~55–70%) no es un default
+  // defendible a 10–20 años (implica capitalizaciones absurdas). Default
+  // conservador ≤10%. El slider sigue permitiendo escenarios agresivos a conciencia.
+  const[cagr,setCagr]=useState(10);
   const[tasaR,setTasaR]=useState(55);
   const[impR,setImpR]=useState(19);
   const[regla,setRegla]=useState(4);
@@ -151,16 +146,26 @@ export default function PensionBTC({trm:pTrm}){
           <div style={{fontSize:12,color:T.txt3,marginTop:12,borderTop:"1px solid "+T.border,paddingTop:10}}>
             En {anios} años recibes: {fC(btcTotal)}<br/>
             <span style={{color:T.green}}>✓ Tu capital de {fU(btc.vf)} se hereda.</span>
+            <div style={{marginTop:8,color:T.txt3,lineHeight:1.5}}>
+              Estrés: −50% → <strong style={{color:T.orange}}>{fC(btc.rMC*0.5)}/mes</strong>
+              {" · "}−70% → <strong style={{color:T.red}}>{fC(btc.rMC*0.3)}/mes</strong>
+            </div>
           </div>
         </Cd>
       </div>
 
-      {/* MULTIPLICADOR */}
+      {/* MULTIPLICADOR / COMPARACIÓN ILUSTRATIVA */}
       <Cd glow={T.green} style={{padding:28,textAlign:"center",marginBottom:20}}>
-        <div style={{fontSize:14,color:T.txt2}}>Con Bitcoin recibirías cada mes</div>
-        <div style={{fontSize:64,fontWeight:800,color:T.green,lineHeight:1}}>{mult.toFixed(1)}x</div>
-        <div style={{fontSize:15,color:T.txt2,marginTop:4}}>más que con pensión tradicional</div>
-        <div style={{fontSize:13,color:T.txt3,marginTop:12}}>{fC(btc.rMC)}/mes con BTC vs {fC(penMes)}/mes con pensión</div>
+        <div style={{fontSize:14,color:T.txt2}}>Comparación ilustrativa bajo estos supuestos</div>
+        <div style={{fontSize:48,fontWeight:800,color:T.green,lineHeight:1}}>{mult.toFixed(1)}×</div>
+        <div style={{fontSize:15,color:T.txt2,marginTop:4}}>retiro BTC simulado vs mesada pensional (no es un rendimiento garantizado)</div>
+        <div style={{fontSize:13,color:T.txt3,marginTop:12}}>{fC(btc.rMC)}/mes simulado con BTC vs {fC(penMes)}/mes pensión</div>
+        <div style={{marginTop:16,padding:"12px 14px",background:T.bg3,borderRadius:12,border:"1px solid "+T.border,textAlign:"left"}}>
+          <div style={{fontSize:12,fontWeight:700,color:T.orange,marginBottom:8}}>Estrés sobre el portafolio/ingreso proyectado</div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:T.txt2,marginBottom:6}}><span>Si el valor cae −50%</span><strong style={{color:T.orange,fontFamily:"monospace"}}>{fC(btc.rMC*0.5)}/mes</strong></div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:T.txt2}}><span>Si el valor cae −70%</span><strong style={{color:T.red,fontFamily:"monospace"}}>{fC(btc.rMC*0.3)}/mes</strong></div>
+          <div style={{fontSize:11,color:T.txt3,marginTop:8}}>Mismo % de retiro anual sobre un portafolio 50%/70% menor. BTC ha tenido drawdowns de ese orden.</div>
+        </div>
       </Cd>
 
       {/* EXPLICACIÓN PASO A PASO */}
@@ -183,7 +188,7 @@ export default function PensionBTC({trm:pTrm}){
             <strong style={{color:T.green}}>5. Tu capital se preserva:</strong> El otro <strong>{100-regla}%</strong> queda invertido (<strong style={{color:T.green}}>{fU(btc.vf*(1-regla/100))}</strong>). Este capital sigue creciendo y al fallecer se <strong>hereda a tu familia</strong>.
           </div>
           <div style={{background:T.orange+"10",borderRadius:12,padding:16,border:"1px solid "+T.orange+"20"}}>
-            <strong style={{color:T.orange}}>Comparación:</strong> Con pensión recibes {fC(penMes)}/mes pero al morir se pierde todo. Con Bitcoin recibes <strong style={{color:T.green}}>{fC(btc.rMC)}/mes</strong> ({mult.toFixed(1)}x más) y dejas {fU(btc.vf*(1-regla/100))} a tus hijos.
+            <strong style={{color:T.orange}}>Comparación:</strong> Con pensión recibes {fC(penMes)}/mes pero al morir se pierde todo. Con Bitcoin recibes <strong style={{color:T.green}}>{fC(btc.rMC)}/mes</strong> (ratio ilustrativo {mult.toFixed(1)}× bajo estos supuestos; no garantizado) y dejas {fU(btc.vf*(1-regla/100))} a tus hijos.
           </div>
         </div>
       </Cd>
@@ -356,7 +361,7 @@ export default function PensionBTC({trm:pTrm}){
             <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>3 · SUPUESTOS DEL MERCADO</div>
             <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Ajustalos si no coincidís con los valores por defecto</div>
           </div>
-        <Sl label="📈 Crecimiento anual del Bitcoin (CAGR)" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)+" al año"} color={T.orange} sub="Es el % que sube Bitcoin cada año en promedio. Histórico: 69.8% • Conservador: 20-30% • Muy conservador: 10-15%"/>
+        <Sl label="📈 Crecimiento anual del Bitcoin (CAGR)" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)+" al año"} color={T.orange} sub="Supuesto de simulación, no un tip. Histórico ≠ default (hist. ~55–70%). Conservador / default Finanzas: ≤10%. Escenarios agresivos: solo a conciencia."/>
         {/* Advertencia de plausibilidad. No opina sobre si el Bitcoin subirá:
             traduce el supuesto elegido a la capitalización de mercado que
             implicaría, que es un hecho comprobable. Un BTC a X dólares por
@@ -424,7 +429,7 @@ export default function PensionBTC({trm:pTrm}){
       </div>
       <div style={{background:T.bg3,borderRadius:10,padding:14,marginTop:8}}>
         <div style={{fontSize:13,fontWeight:700,color:T.orange,marginBottom:4}}>Tu ingreso mensual en retiro: {fC(btc.rMC)}</div>
-        <div style={{fontSize:12,color:T.txt3}}>Esto es {mult.toFixed(1)}x más de lo que recibirías con pensión tradicional ({fC(penMes)}/mes)</div>
+        <div style={{fontSize:12,color:T.txt3}}>Ratio ilustrativo {mult.toFixed(1)}× vs pensión ({fC(penMes)}/mes) — simulación, no tip ni garantía. Estrés −50%: {fC(btc.rMC*0.5)}/mes · −70%: {fC(btc.rMC*0.3)}/mes</div>
       </div>
     </Cd></div>
       <Cd style={{padding:24}}><div style={{fontSize:16,fontWeight:700,marginBottom:16}}>📊 Proyección Año por Año</div><div style={{maxHeight:500,overflowY:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr>{["Año","Precio BTC","BTC","Valor USD"].map(h=><th key={h} style={{padding:"10px 12px",textAlign:h==="Año"?"left":"right",color:T.txt3,fontWeight:600,fontSize:11,textTransform:"uppercase",borderBottom:`1px solid ${T.border}`,position:"sticky",top:0,background:T.card}}>{h}</th>)}</tr></thead>
@@ -473,16 +478,16 @@ export default function PensionBTC({trm:pTrm}){
 
       {/* RESUMEN NUMÉRICO */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}}>
-        <MC l="BTC te da vs Pensión" v={mult.toFixed(1)+"x más"} color={T.green}/>
+        <MC l="Ratio ilustrativo vs pensión" v={mult.toFixed(1)+"×"} color={T.green} sub="bajo supuestos; no garantizado"/>
         <MC l={"Tu BTC en "+anios+" años (USD)"} v={fU(btc.vf)} color={T.orange}/>
         <MC l="BTC acumulados" v={fB(btc.ba)} color={T.orange}/>
         <MC l="Capital heredable (USD)" v={fU(btc.vf*(1-regla/100))} color={T.green}/>
       </div>
       <Cd glow={T.green} style={{padding:40,textAlign:"center",background:"linear-gradient(135deg,rgba(34,197,94,0.05),rgba(34,197,94,0.02))"}}>
-        <div style={{fontSize:16,color:T.txt2}}>Cada mes con Bitcoin recibirías</div>
-        <div style={{fontSize:72,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{mult.toFixed(1)}x</div>
-        <div style={{fontSize:16,color:T.txt2}}>más que con la pensión tradicional</div>
-        <div style={{fontSize:14,color:T.txt3,marginTop:8}}>Y el capital es 100% heredable</div>
+        <div style={{fontSize:16,color:T.txt2}}>Ratio ilustrativo (simulación, no garantía)</div>
+        <div style={{fontSize:56,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{mult.toFixed(1)}×</div>
+        <div style={{fontSize:16,color:T.txt2}}>retiro BTC simulado vs mesada pensional</div>
+        <div style={{fontSize:14,color:T.txt3,marginTop:8}}>Capital modelado como heredable · Estrés −50%: {fC(btc.rMC*0.5)}/mes · −70%: {fC(btc.rMC*0.3)}/mes</div>
       </Cd>
       <Cd style={{padding:24,marginTop:20}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Crecimiento Portafolio BTC</div><ResponsiveContainer width="100%" height={250}><AreaChart data={btc.yd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="anio" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>"$"+(v/1e6).toFixed(1)+"M"}/><Tooltip content={<ChartTooltip formatter={v=>fU(v)}/>}/><Area type="monotone" dataKey="valorUSD" stroke={CHART.orange} fill="url(#gradOrange)" strokeWidth={2.5}/></AreaChart></ResponsiveContainer></Cd>
     </div>}
@@ -497,12 +502,12 @@ export default function PensionBTC({trm:pTrm}){
         <Cd glow={T.orange} style={{padding:28,display:"flex",flexDirection:"column",justifyContent:"center",textAlign:"center",background:"linear-gradient(135deg,rgba(249,115,22,0.05),rgba(249,115,22,0.02))"}}>
           <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>🎯 Conclusión</div>
           <div style={{fontSize:14,color:T.txt2}}>Invirtiendo <span style={{color:T.green,fontWeight:700}}>{fC(btc.ti)}</span> en BTC</div>
-          <div style={{fontSize:36,fontWeight:800,color:T.orange,margin:"12px 0"}}>{mult.toFixed(1)}x más ingreso</div>
+          <div style={{fontSize:36,fontWeight:800,color:T.orange,margin:"12px 0"}}>{mult.toFixed(1)}× ratio ilustrativo</div>
           <div style={{fontSize:14,color:T.txt2}}>{fC(btc.rMC)}/mes vs {fC(penMes)}/mes</div>
           {/* Decia "conservador" aunque el usuario hubiera subido el slider a 80%.
               El calificativo ahora depende del valor elegido, no es fijo. */}
           <div style={{fontSize:12,color:T.orange,marginTop:12}}>
-            * Usando CAGR {pc(cagr)} ({cagr <= 25 ? "conservador" : cagr <= 40 ? "agresivo" : "muy por encima de lo sostenible"} frente al 69.8% histórico)
+            * Usando CAGR {pc(cagr)} ({cagr <= 10 ? "conservador (alineado a Finanzas)" : cagr <= 25 ? "moderado" : cagr <= 40 ? "agresivo" : "muy por encima de lo sostenible"}; histórico ≠ default)
           </div>
         </Cd>
       </div>

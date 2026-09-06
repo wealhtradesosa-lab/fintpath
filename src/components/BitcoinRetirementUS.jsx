@@ -98,7 +98,7 @@ export default function BitcoinRetirementUS({ user }) {
   const [matchCap, setMatchCap] = useState(6);      // hasta N% del salario
   const [years, setYears]     = useState(20);
   const [age, setAge]         = useState(35);
-  const [cagr, setCagr]       = useState(25);
+  const [cagr, setCagr]       = useState(20);
   const [pBTC, setPBTC]       = useState(95000);
   const [swr, setSwr]         = useState(LIMITS.SWR);
   const [freq, setFreq]       = useState("monthly"); // monthly | annual | once
@@ -292,7 +292,11 @@ export default function BitcoinRetirementUS({ user }) {
                 <div style={{ fontSize: 26, fontWeight: 800, color: C.or, marginTop: 6, fontFamily: "monospace" }}>
                   {fUSD(btc.monthlyIncome)}
                 </div>
-                <div style={{ fontSize: 11, color: C.tx3, marginTop: 2 }}>per month</div>
+                <div style={{ fontSize: 11, color: C.tx3, marginTop: 2 }}>per month (base case)</div>
+                <div style={{ fontSize: 11, color: C.tx3, marginTop: 8, lineHeight: 1.5 }}>
+                  Stress -50%: <strong style={{ color: C.or }}>{fUSD(btc.monthlyIncome * 0.5)}/mo</strong>
+                  {" · "}-70%: <strong style={{ color: C.rd }}>{fUSD(btc.monthlyIncome * 0.3)}/mo</strong>
+                </div>
               </div>
             </div>
 
@@ -302,7 +306,7 @@ export default function BitcoinRetirementUS({ user }) {
                   {mult >= 1 ? mult.toFixed(1) + "×" : (1 / mult).toFixed(1) + "×"}
                 </div>
                 <div style={{ fontSize: 12.5, color: C.tx2, marginTop: 4 }}>
-                  {mult >= 1 ? "more with Bitcoin" : "more with the traditional plan"}
+                  {mult >= 1 ? "illustrative ratio vs traditional (not a tip)" : "illustrative ratio vs Bitcoin (not a tip)"}
                 </div>
               </div>
             )}
@@ -332,7 +336,7 @@ export default function BitcoinRetirementUS({ user }) {
               <Rw l={`Income at ${swr}%:`} v={fFull(btc.monthlyIncome) + "/mo"} />
               <div style={{ fontSize: 10.5, color: C.tx3, marginTop: 10, lineHeight: 1.5 }}>
                 No employer match, no tax deferral, and far higher volatility.
-                Bitcoin has dropped over 70% multiple times.
+                Bitcoin has dropped over 70% multiple times. Stress rows above apply -50%/-70% to the projected portfolio income.
               </div>
             </Cd>
           </div>
@@ -431,7 +435,7 @@ export default function BitcoinRetirementUS({ user }) {
               "The employer match is an immediate, guaranteed return. Bitcoin has no equivalent.",
               "401(k) contributions reduce your taxable income today; buying Bitcoin doesn't.",
               "Bitcoin gains are taxed as capital gains when sold. 401(k) withdrawals are ordinary income.",
-              "A 25% CAGR sustained for decades is an assumption, not a forecast.",
+              "A 20% CAGR (this screen's default) sustained for decades is an assumption, not a forecast.",
               "Bitcoin has fallen more than 70% several times. A 401(k) index fund hasn't.",
             ].map((t, i) => (
               <div key={i} style={{ display: "flex", gap: 8, marginBottom: 7, fontSize: 11.5, color: C.tx2, lineHeight: 1.5 }}>

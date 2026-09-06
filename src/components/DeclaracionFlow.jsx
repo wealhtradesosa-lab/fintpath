@@ -48,7 +48,7 @@ import { auditarDatos } from "../lib/auditoriaDatos.js";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import { generarRecomendacionesEstrategicas } from "../lib/recomendacionesEstrategicas.js";
 import RecomendacionesEstrategicas from "./RecomendacionesEstrategicas.jsx";
-import { estimarImpuesto, UVT } from "../lib/taxCO.js";
+import { estimarImpuesto, UVT, uvtForYear, DEFAULT_AG } from "../lib/taxCO.js";
 import PageHeader from "./PageHeader.jsx";
 
 const C = {
@@ -1101,7 +1101,7 @@ export default function DeclaracionFlow({
       <PageHeader
         label="Impuestos"
         title="Declaración de renta"
-        subtitle="Borrador, optimización y formulario final · F-110 / F-210"
+        subtitle={`Borrador, optimización y formulario final · F-110 / F-210 · AG ${DEFAULT_AG} · UVT $${uvtForYear(DEFAULT_AG).toLocaleString("es-CO")}`}
       />
 
       {/* ───────────────────── SELECTOR DE OWNER (compacto, top) ───────────────────── */}
@@ -2076,6 +2076,7 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
           </div>
           <div style={{ fontSize: 11, color: C.txt3, marginTop: 2 }}>
             Cada renglón con valor según los datos cargados — para que tu contador valide
+            {" · "}AG {ano || DEFAULT_AG} · UVT ${uvtForYear(ano || DEFAULT_AG).toLocaleString("es-CO")}
           </div>
         </div>
         <span style={{ fontSize: 14, color: C.txt3, transform: expandido ? "rotate(90deg)" : "none", transition: "transform 0.2s" }}>

@@ -24,6 +24,7 @@ import ReporteFiscalPrint from "./ReporteFiscalPrint";
 import DeclaracionUpload from "./DeclaracionUpload";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
 import PageHeader from "./PageHeader.jsx";
+import { uvtForYear, DEFAULT_AG } from "../lib/taxCO.js";
 
 import { C } from "../lib/designTokens.js";
 
@@ -219,7 +220,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
       <PageHeader
         label="Declaraciones"
         title="Histórico fiscal"
-        subtitle="Lo declarado vs tu situación actual, con alertas accionables."
+        subtitle={`Lo declarado vs tu situación actual · AG ${DEFAULT_AG} · UVT $${uvtForYear(DEFAULT_AG).toLocaleString("es-CO")}`}
       />
       {/* Selector de owner: al lado del header pero como toolbar separada */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
@@ -325,7 +326,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           Indicadores clave (estimación)
         </div>
         <div style={{ fontSize: 10, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
-          Estimación orientativa (borrador). Impuesto a cargo ≠ saldo a pagar: las retenciones suelen bajar lo que transferís en mayo. No es la liquidación oficial ni asesoría tributaria.
+          {`Estimación orientativa (borrador · AG ${DEFAULT_AG} · UVT $${uvtForYear(DEFAULT_AG).toLocaleString("es-CO")}). Impuesto a cargo ≠ saldo a pagar: las retenciones suelen bajar lo que transferís en mayo. No es la liquidación oficial ni asesoría tributaria.`}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
           <KPICard label="Patrimonio líquido" actual={patrimonioLiquidoActual} declarado={patrimonioLiquidoDeclarado} accent={T.purple} />
