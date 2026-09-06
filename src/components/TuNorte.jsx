@@ -535,7 +535,22 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
           </div>
 
           {["revisar", "aporta", "alineado"].map((est) => {
-            const grupo = diag.evaluados.filter((a) => a.estado === est);
+            // 05-sep-2026 (Santiago: "no se organizan los activos"). La lista
+            // agrupaba SOLO por estado, así que "En línea" quedaba como una
+            // pila de 15 activos sin estructura. Cada fila mostraba su chip de
+            // canasta, pero mezclados no se podía leer nada: la página entera
+            // habla de canastas y la lista no permitía ver qué hay dentro de
+            // cada una. Ahora se ordena por canasta y luego por valor, y se
+            // inserta un separador cuando cambia la canasta.
+            const ORD = { proteccion: 0, mercado: 1, aspiracion: 2 };
+            const grupo = diag.evaluados
+              .filter((a) => a.estado === est)
+              .slice()
+              .sort((x, y) => {
+                const cx = ORD[x.canasta] ?? 9, cy = ORD[y.canasta] ?? 9;
+                if (cx !== cy) return cx - cy;
+                return (y.valor || 0) - (x.valor || 0);   // dentro de la canasta, el más grande primero
+              });
             if (!grupo.length) return null;
             const cfg = {
               revisar:  { ic: "⚠️", col: "#f97316", es: "Conviene revisar", en: "Worth reviewing" },
@@ -548,7 +563,23 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                               letterSpacing: "0.06em", marginBottom: 8 }}>
                   {cfg.ic} {(isEN ? cfg.en : cfg.es).toUpperCase()} · {grupo.length}
                 </div>
-                {grupo.map((a, i) => (
+                {grupo.map((a, i) => {
+                  // Separador cuando arranca una canasta distinta. Solo se
+                  // muestra si el grupo tiene más de una, para no poner una
+                  // etiqueta encima de un único activo.
+                  const hayVarias = new Set(grupo.map((g) => g.canasta)).size > 1;
+                  const nuevaCanasta = hayVarias && (i === 0 || grupo[i - 1].canasta !== a.canasta);
+                  return (
+                  <div key={i}>
+                  {nuevaCanasta && (
+                    <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.05em",
+                          color: PAL_CANASTA[a.canasta] || tx3, marginTop: i === 0 ? 0 : 10,
+                          marginBottom: 5, textTransform: "uppercase", opacity: 0.85 }}>
+                      {(NOM_CANASTA[a.canasta] || a.canasta)} ·{" "}
+                      {grupo.filter((g) => g.canasta === a.canasta).length}
+                    </div>
+                  )}
+                  {(
                   <div key={i} style={{ padding: "10px 12px", background: bg3, borderRadius: 9,
                         marginBottom: 6, borderLeft: `3px solid ${cfg.col}` }}>
                     <div style={{ display: "flex", justifyContent: "space-between",
@@ -609,7 +640,10 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                       )}
                     </div>
                   </div>
-                ))}
+                  )}
+                  </div>
+                  );
+                })}
               </div>
             );
           })}
