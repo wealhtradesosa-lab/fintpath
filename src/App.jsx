@@ -60,6 +60,8 @@ if (typeof window !== "undefined") {
 import PensionColombia from "./components/PensionColombia";
 import BuyVsInvest from "./components/BuyVsInvest";
 import HallazgosProactivos from "./components/HallazgosProactivos";
+import ContrarianHomeCard from "./components/ContrarianHomeCard";
+import { getTopContrarianAlert, hasContrarianHomeData } from "./lib/contrarianHome.js";
 import TreemapPatrimonio from "./components/TreemapPatrimonio";
 import BarraComposicion from "./components/BarraComposicion";
 import AnoEnCurso from "./components/AnoEnCurso";
@@ -2140,6 +2142,24 @@ export default function FinPath(){
         }catch(e){ return null }
       })()}
 
+      {/* Contrarian en home — 1 error prioritario + 1 CTA (PR feat dashboard).
+          Misma lógica determinística que getCoach("contrarian"); no toca Asesor IA. */}
+      {hasContrarianHomeData(u) && (()=>{
+        try{
+          const alert=getTopContrarianAlert(u,t,trm||u?.trm);
+          if(!alert)return <ContrarianHomeCard muted T={T}/>;
+          return <ContrarianHomeCard alert={alert} T={T} onCta={()=>{
+            if(alert.advId){
+              const a=ADV.find(x=>x.id===alert.advId)||ADV.find(x=>x.id==="contrarian");
+              if(a)sAdv(a);
+            }else if(alert.ctaPage==="coach"){
+              const a=ADV.find(x=>x.id==="contrarian");
+              if(a)sAdv(a);
+            }
+            setPg(alert.ctaPage||"coach");
+          }}/>;
+        }catch(e){return null}
+      })()}
 
       <SecH n={2} t="¿Cómo se mueve tu plata?" s="Lo que entra, lo que sale y lo que queda cada mes"/>
       {/* ══════════ 2 · ¿CÓMO SE MUEVE MI PLATA? ══════════
