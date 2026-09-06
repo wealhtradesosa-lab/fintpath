@@ -18,6 +18,8 @@
 //   Decreto 0359/2020 + Resolución DIAN 0066/2024 (formulario F-210 vigente)
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { uvtForYear } from "./taxCO.js";
+
 /**
  * Genera el borrador F-210 para un owner persona natural.
  *
@@ -34,6 +36,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
   if (!det) return null;
 
   const trm = user.trm || 4200;
+  const uvt = uvtForYear(ano);
 
   // Lectura de overrides persistidos
   const overrides = user?.borradorDeclaracion?.[owner.id]?.[ano] || {};
@@ -145,9 +148,9 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
     { seccion: "deducciones", numero: 42, concepto: "GMF deducible (50%)", valor: v(42, gmfDeducible), auto: gmfDeducible, tipo: "editable", fuente: "Cálculo automático 50% del 4x1000",
       tip: "🏦 El 4x1000 que te cobra el banco es deducible al 50%. Cálculo automático sobre tus ingresos." },
     { seccion: "deducciones", numero: 43, concepto: "Total deducciones limitadas (40% / 1340 UVT)", tipo: "formula", destacado: true,
-      calc: (vals) => Math.min((vals[38] || 0) + (vals[39] || 0) + (vals[40] || 0) + (vals[41] || 0) + (vals[42] || 0), Math.min((vals[37] || 0) * 0.40, 1340 * 49799)) },
+      calc: (vals) => Math.min((vals[38] || 0) + (vals[39] || 0) + (vals[40] || 0) + (vals[41] || 0) + (vals[42] || 0), Math.min((vals[37] || 0) * 0.40, 1340 * uvt)) },
     { seccion: "deducciones", numero: 44, concepto: "Renta exenta 25% laboral", valor: v(44, exenta25), auto: exenta25, tipo: "editable", fuente: "Cálculo automático Art. 206-10", articulo: "Art. 206-10 ET",
-      tip: "✨ Sólo aplica si tenés salarios. 25% de tus ingresos laborales netos quedan exentos, hasta 790 UVT/año (~$41M)." },
+      tip: "✨ Sólo aplica si tenés salarios. 25% de tus ingresos laborales netos quedan exentos, hasta 790 UVT/año." },
 
     // ── CÉDULA DE CAPITAL ─────────────────────────────────────────────────
     { seccion: "capital", numero: 50, concepto: "Intereses y rendimientos financieros", valor: v(50, interesesBanc + rendGenerico), auto: interesesBanc + rendGenerico, tipo: "editable", fuente: "Ingresos CDT, cuentas de ahorro, papeles",
