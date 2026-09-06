@@ -249,7 +249,13 @@ export default function PensionesColpensiones({ trm }) {
         rightSlot={<button onClick={() => { document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO")); window.print(); }} style={{ background: T.blue, color: "#fff", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>📄 Exportar PDF</button>}
       />
 
-      {/* ═══ PERFIL ═══ */}
+            <div style={{ padding: "10px 14px", marginBottom: 16, borderRadius: 10, background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.35)", color: T.txt2, fontSize: 13, lineHeight: 1.5 }}>
+        <strong style={{ color: T.gold }}>Simulación Ley 100 (legado).</strong>{" "}
+        Esta pantalla modela Colpensiones/RAIS bajo Ley 100/1993 y normas relacionadas.
+        La reforma de pilares (Ley 2381) aún no está modelada aquí.
+      </div>
+
+{/* ═══ PERFIL ═══ */}
       <Cd style={{ padding: 24, marginBottom: 20 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 4px" }}>Tu información</h3>
         <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Datos básicos para calcular tu pensión estimada</p>
