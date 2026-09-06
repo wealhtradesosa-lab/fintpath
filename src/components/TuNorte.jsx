@@ -534,58 +534,75 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
               : "Cuáles te acercan a tu objetivo y cuáles no. Esto es un mapa, no una instrucción: las decisiones son tuyas y de tu asesor."}
           </div>
 
-          {["revisar", "aporta", "alineado"].map((est) => {
-            // 05-sep-2026 (Santiago: "no se organizan los activos"). La lista
-            // agrupaba SOLO por estado, así que "En línea" quedaba como una
-            // pila de 15 activos sin estructura. Cada fila mostraba su chip de
-            // canasta, pero mezclados no se podía leer nada: la página entera
-            // habla de canastas y la lista no permitía ver qué hay dentro de
-            // cada una. Ahora se ordena por canasta y luego por valor, y se
-            // inserta un separador cuando cambia la canasta.
-            const ORD = { proteccion: 0, mercado: 1, aspiracion: 2 };
+          {/* 05-sep-2026 (Santiago: "organizar por canastas"). Antes el eje
+              principal de la lista era el ESTADO (conviene revisar / aportan /
+              en línea) y la canasta iba adentro. Quedaba al revés de lo que la
+              página enseña: el modelo de Chhabra ordena el patrimonio por
+              PROPÓSITO, y las tres canastas son la tesis de todo el módulo.
+              Ahora la canasta es el grupo principal y el estado queda como
+              marca de cada fila (el borde de color y el ícono), que es donde
+              tiene sentido: es un atributo del activo, no una categoría de
+              patrimonio. */}
+          {["proteccion", "mercado", "aspiracion"].map((can) => {
+            const ORD_EST = { revisar: 0, aporta: 1, alineado: 2 };
             const grupo = diag.evaluados
-              .filter((a) => a.estado === est)
+              .filter((a) => a.canasta === can)
               .slice()
               .sort((x, y) => {
-                const cx = ORD[x.canasta] ?? 9, cy = ORD[y.canasta] ?? 9;
-                if (cx !== cy) return cx - cy;
-                return (y.valor || 0) - (x.valor || 0);   // dentro de la canasta, el más grande primero
+                // Lo que conviene revisar primero, después por valor: dentro de
+                // una canasta lo urgente importa más que el tamaño.
+                const ex = ORD_EST[x.estado] ?? 9, ey = ORD_EST[y.estado] ?? 9;
+                if (ex !== ey) return ex - ey;
+                return (y.valor || 0) - (x.valor || 0);
               });
             if (!grupo.length) return null;
-            const cfg = {
-              revisar:  { ic: "⚠️", col: "#f97316", es: "Conviene revisar", en: "Worth reviewing" },
-              aporta:   { ic: "✅", col: gn,        es: "Aportan a tu norte", en: "Moving you forward" },
-              alineado: { ic: "·",  col: tx3,       es: "En línea", en: "On track" },
-            }[est];
+            const totalCanasta = grupo.reduce((t, a) => t + (a.valor || 0), 0);
+            const pesoCanasta = grupo.reduce((t, a) => t + (a.peso || 0), 0);
+            const colCan = PAL_CANASTA[can] || tx3;
             return (
-              <div key={est} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 10.5, fontWeight: 800, color: cfg.col,
-                              letterSpacing: "0.06em", marginBottom: 8 }}>
-                  {cfg.ic} {(isEN ? cfg.en : cfg.es).toUpperCase()} · {grupo.length}
+              <div key={can} style={{ marginBottom: 18 }}>
+                {/* Cabecera de canasta: nombre, cuántos activos y cuánto pesa.
+                    El peso es lo que conecta esta lista con los porcentajes de
+                    arriba -- antes había que creerle al gráfico sin poder ver
+                    de qué estaba hecho. */}
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8,
+                      flexWrap: "wrap", marginBottom: 8, paddingBottom: 6,
+                      borderBottom: `1px solid ${border}` }}>
+                  <span style={{ fontSize: 11.5, fontWeight: 800, color: colCan,
+                        letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                    {NOM_CANASTA[can] || can}
+                  </span>
+                  <span style={{ fontSize: 10.5, color: tx3 }}>
+                    {grupo.length} {isEN ? (grupo.length === 1 ? "asset" : "assets") : (grupo.length === 1 ? "activo" : "activos")}
+                  </span>
+                  <span style={{ marginLeft: "auto", fontSize: 11.5, fontFamily: "monospace",
+                        fontWeight: 700, color: colCan }}>
+                    {fm(totalCanasta)}
+                    <span style={{ color: tx3, fontWeight: 500, marginLeft: 6 }}>
+                      {pesoCanasta.toFixed(0)}%
+                    </span>
+                  </span>
                 </div>
                 {grupo.map((a, i) => {
                   // Separador cuando arranca una canasta distinta. Solo se
                   // muestra si el grupo tiene más de una, para no poner una
                   // etiqueta encima de un único activo.
-                  const hayVarias = new Set(grupo.map((g) => g.canasta)).size > 1;
-                  const nuevaCanasta = hayVarias && (i === 0 || grupo[i - 1].canasta !== a.canasta);
+                  // El estado ahora es una marca de la fila, no un grupo: el
+                  // borde de color y un ícono cuando conviene mirarla.
+                  const EST = {
+                    revisar:  { ic: "⚠️", col: "#f97316" },
+                    aporta:   { ic: "✅", col: gn },
+                    alineado: { ic: "",   col: border },
+                  }[a.estado] || { ic: "", col: border };
                   return (
-                  <div key={i}>
-                  {nuevaCanasta && (
-                    <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.05em",
-                          color: PAL_CANASTA[a.canasta] || tx3, marginTop: i === 0 ? 0 : 10,
-                          marginBottom: 5, textTransform: "uppercase", opacity: 0.85 }}>
-                      {(NOM_CANASTA[a.canasta] || a.canasta)} ·{" "}
-                      {grupo.filter((g) => g.canasta === a.canasta).length}
-                    </div>
-                  )}
-                  {(
                   <div key={i} style={{ padding: "10px 12px", background: bg3, borderRadius: 9,
-                        marginBottom: 6, borderLeft: `3px solid ${cfg.col}` }}>
+                        marginBottom: 6, borderLeft: `3px solid ${EST.col}` }}>
                     <div style={{ display: "flex", justifyContent: "space-between",
                           gap: 10, flexWrap: "wrap", alignItems: "baseline" }}>
-                      <span style={{ fontSize: 12.5, fontWeight: 700, color: tx }}>{a.nombre}</span>
-                      <span style={{ fontSize: 12.5, fontFamily: "monospace", color: cfg.col, fontWeight: 700 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: tx }}>
+                        {EST.ic && <span style={{ marginRight: 5 }}>{EST.ic}</span>}{a.nombre}
+                      </span>
+                      <span style={{ fontSize: 12.5, fontFamily: "monospace", color: EST.col === border ? tx2 : EST.col, fontWeight: 700 }}>
                         {fm(a.valor)}
                         <span style={{ color: tx3, fontWeight: 500, marginLeft: 6 }}>{a.peso.toFixed(0)}%</span>
                       </span>
@@ -639,8 +656,6 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                         </span>
                       )}
                     </div>
-                  </div>
-                  )}
                   </div>
                   );
                 })}
