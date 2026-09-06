@@ -39,7 +39,7 @@ export const TABLA_ART_241 = [
 
 // Calcula el impuesto de renta persona natural aplicando la tabla progresiva.
 // @param {number} uvtBase - Base gravable dividida por el UVT del año
-// @param {number} UVT - Valor del UVT del año (ej: 52374 para 2026)
+// @param {number} UVT - Valor del UVT del año (ej: 49799 para AG 2025)
 // @returns {number} Impuesto en pesos
 export const calcImpRenta = (uvtBase, UVT) => {
   for (let i = TABLA_ART_241.length - 1; i >= 0; i--) {

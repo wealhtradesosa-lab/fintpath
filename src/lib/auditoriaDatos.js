@@ -29,7 +29,7 @@
 //   hallazgos.errores.forEach(h => mostrarBanner(h));
 // ═══════════════════════════════════════════════════════════════════════════
 
-const UVT_2026 = 52374;
+const UVT_2026 = 49799; // AG 2025 default ($49.799) — ver UVT_BY_AG / uvtForYear en taxCO.js
 const SMMLV_2026 = 1750905;
 
 /**

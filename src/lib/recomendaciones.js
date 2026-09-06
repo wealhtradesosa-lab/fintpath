@@ -29,7 +29,7 @@
 
 import { GRUPOS_SIMPLE, TOPE_SIMPLE_UVT, calcularImpuestoSimple } from "./regimenSimple.js";
 
-const UVT = 52_374; // 2026
+const UVT = 49799; // AG 2025 default ($49.799) — ver UVT_BY_AG / uvtForYear en taxCO.js
 
 /**
  * Genera recomendaciones para cada owner del user basadas en la estimación

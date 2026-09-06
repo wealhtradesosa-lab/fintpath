@@ -106,7 +106,7 @@ export const EXCLUSIONES_SIMPLE = [
 /**
  * @param {number} ingresoAnual - ingresos brutos anuales en COP.
  * @param {string} grupoKey - clave en GRUPOS_SIMPLE.
- * @param {number} uvt - valor UVT del año (ej: 52374 para 2026).
+ * @param {number} uvt - valor UVT del año (ej: 49799 para AG 2025; 52374 para AG 2026).
  * @returns {{ impuesto: number, tarifaEfectiva: number, desglose: Array<{hasta:number, tarifa:number, aporte:number}> }}
  */
 export function calcularImpuestoSimple(ingresoAnual, grupoKey, uvt) {

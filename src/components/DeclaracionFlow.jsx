@@ -48,7 +48,7 @@ import { auditarDatos } from "../lib/auditoriaDatos.js";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import { generarRecomendacionesEstrategicas } from "../lib/recomendacionesEstrategicas.js";
 import RecomendacionesEstrategicas from "./RecomendacionesEstrategicas.jsx";
-import { estimarImpuesto } from "../lib/taxCO.js";
+import { estimarImpuesto, UVT } from "../lib/taxCO.js";
 import PageHeader from "./PageHeader.jsx";
 
 const C = {
@@ -70,8 +70,6 @@ const C = {
   red: "#f87171",
   redBg: "rgba(248,113,113,0.10)",
 };
-
-const UVT = 52374;
 
 function fm(n) {
   if (!n && n !== 0) return "$0";
@@ -371,7 +369,7 @@ const AREAS_NATURAL = [
     icono: "🏥",
     titulo: "Medicina prepagada o seguro de salud",
     pregunta: "¿Pagás Colsanitas, Sura, Medplus u otra medicina prepagada?",
-    explicacion: "El gasto en medicina prepagada es deducible hasta 16 UVT/mes (~$838K/mes en 2026).",
+    explicacion: "El gasto en medicina prepagada es deducible hasta 16 UVT/mes (tope 16 UVT/mes).",
     baseLegal: "Art. 387 #2 ET",
     estimarAhorro: (data, det) => {
       const mensual = Number(data.gastoMensual) || 0;
@@ -587,7 +585,7 @@ const AREAS_NATURAL = [
     icono: "🏠",
     titulo: "Intereses de vivienda habitacional",
     pregunta: "¿Pagás cuotas de un crédito hipotecario sobre tu vivienda principal?",
-    explicacion: "Los intereses de hipoteca de tu vivienda son deducibles hasta 1.200 UVT/año (~$62.8M en 2026).",
+    explicacion: "Los intereses de hipoteca de tu vivienda son deducibles hasta 1.200 UVT/año (tope 1.200 UVT/año).",
     baseLegal: "Art. 119 ET",
     estimarAhorro: (data, det) => {
       const intereses = Number(data.interesesAnuales) || 0;
@@ -761,8 +759,7 @@ const AREAS_NATURAL = [
       const divAnual = Number(det?.divAnual) || 0;
       const aplicable = Math.min(monto, divAnual);
       // Conservador: solo asumimos ahorro si excede los 300 UVT exentos
-      const UVT_LOCAL = 52374;
-      const yaExentos = Math.min(divAnual, 300 * UVT_LOCAL);
+      const yaExentos = Math.min(divAnual, 300 * UVT);
       const partGravable = Math.max(0, divAnual - yaExentos);
       const reduccionGravable = Math.min(aplicable, partGravable);
       const saldoActual = Number(det?.impuesto) || 0;

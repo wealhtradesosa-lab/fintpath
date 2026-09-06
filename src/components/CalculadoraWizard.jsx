@@ -20,7 +20,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { montoPromedioMensual } from "../lib/flowHelpers.js";
-import { estimarImpuesto } from "../lib/taxCO.js";
+import { estimarImpuesto, UVT } from "../lib/taxCO.js";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { GRUPOS_SIMPLE } from "../lib/regimenSimple.js";
 // Commit 21 Tarea 3: detector de palancas del Optimizador V2 para mostrar
@@ -42,7 +42,6 @@ const T = {
 // F: re-export del sistema tipográfico central. Igual que antes pero unificado.
 const F = F_CENTRAL;
 
-const UVT = 52_374;
 const fm = (v) => {
   const n = Number(v) || 0;
   if (Math.abs(n) >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
@@ -646,7 +645,7 @@ const REGIMENES_JURIDICA = [
     id: "simple",
     label: "Régimen Simple (RST)",
     tarifa: "1.2% – 8%",
-    descripcion: "Régimen simplificado para empresas con ingresos < 100.000 UVT/año (~$5.240M). Sustituye renta + ICA + INC en una sola tarifa.",
+    descripcion: "Régimen simplificado para empresas con ingresos < 100.000 UVT/año (~100.000 UVT). Sustituye renta + ICA + INC en una sola tarifa.",
     art: "Arts. 903-916 ET",
   },
   {
@@ -687,7 +686,7 @@ const REGIMENES_NATURAL = [
     id: "simple",
     label: "Régimen Simple (RST)",
     tarifa: "1.2% – 8.3%",
-    descripcion: "Régimen simplificado para profesionales independientes y comerciantes con ingresos < 100.000 UVT/año (~$5.240M). Sustituye renta + ICA + INC. NO permite las deducciones del régimen ordinario.",
+    descripcion: "Régimen simplificado para profesionales independientes y comerciantes con ingresos < 100.000 UVT/año (~100.000 UVT). Sustituye renta + ICA + INC. NO permite las deducciones del régimen ordinario.",
     art: "Arts. 903-916 ET",
   },
 ];
@@ -1171,7 +1170,6 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
 //   - Renta exenta 25%: máximo 790 UVT/año
 //   - Dependientes: 10% ingreso, máximo 384 UVT/año
 function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
-  const UVT_2026 = 52374;
   const det = useMemo(() => {
     const e = estimarImpuesto(user);
     return (e?.detalle || []).find((d) => d.name === selectedOwner?.name);
@@ -1180,10 +1178,10 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
   if (!det) return null;
 
   // Camino 1.5: montos máximos teóricos por deducción (para mostrar el tamaño del beneficio).
-  const MAX_DEP = Math.round(384 * UVT_2026);                      // $20.1M (10% lab, máx 384 UVT)
-  const MAX_MEDICINA = Math.round(16 * UVT_2026 * 12);             // $10.05M (16 UVT/mes)
-  const MAX_VIVIENDA = Math.round(1200 * UVT_2026);                // $62.85M (1.200 UVT/año)
-  const MAX_PV_AFC = Math.round(3800 * UVT_2026);                  // $199.02M conjunto
+  const MAX_DEP = Math.round(384 * UVT);                      // $20.1M (10% lab, máx 384 UVT)
+  const MAX_MEDICINA = Math.round(16 * UVT * 12);             // $10.05M (16 UVT/mes)
+  const MAX_VIVIENDA = Math.round(1200 * UVT);                // $62.85M (1.200 UVT/año)
+  const MAX_PV_AFC = Math.round(3800 * UVT);                  // $199.02M conjunto
 
   // Helper: ejecutar scroll suave a un id dentro del Paso 3 (mismo wizard step).
   const scrollTo = (id) => {
@@ -1215,7 +1213,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "💊",
       label: "Medicina prepagada / salud / vida",
       art: "Art. 387 #2 ET",
-      topeMensual: `Tope: 16 UVT/mes (~$${Math.round(16 * UVT_2026 / 1000)}k/mes, $${(MAX_MEDICINA / 1_000_000).toFixed(1)}M/año)`,
+      topeMensual: `Tope: 16 UVT/mes (~$${Math.round(16 * UVT / 1000)}k/mes, $${(MAX_MEDICINA / 1_000_000).toFixed(1)}M/año)`,
       valor: det.deducMedicina || 0,
       montoMaximoTexto: `Hasta $${(MAX_MEDICINA / 1_000_000).toFixed(1)}M/año combinando medicina prepagada + seguros de salud + seguros de vida. Tope conjunto 16 UVT/mes.`,
       ctaTexto: "→ Cargar en Egresos",
