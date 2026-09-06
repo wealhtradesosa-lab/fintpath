@@ -1,13 +1,12 @@
 import { useState, useMemo } from "react";
 import NumberInput from "./NumberInput";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
-import { estimarImpuesto } from "../lib/taxCO.js";
+import { estimarImpuesto, UVT } from "../lib/taxCO.js";
 import { adapterOwnerPlan } from "../lib/ownerPlanAdapter.js";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { calcImpRenta as calcImpRentaCore } from "../lib/tablaArt241.js";
 import { track } from "../lib/analytics.js";
 
-const UVT = 52374;
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24", bg4: "#252530",
   border: "rgba(255,255,255,0.06)", txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",

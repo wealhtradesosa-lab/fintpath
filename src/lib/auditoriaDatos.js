@@ -29,9 +29,6 @@
 //   hallazgos.errores.forEach(h => mostrarBanner(h));
 // ═══════════════════════════════════════════════════════════════════════════
 
-const UVT_2026 = 52374;
-const SMMLV_2026 = 1750905;
-
 /**
  * Audita los datos del user y devuelve hallazgos categorizados.
  *

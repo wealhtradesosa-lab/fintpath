@@ -25,7 +25,7 @@ const GLOSARIO = {
     termino: "UVT",
     nombreCompleto: "Unidad de Valor Tributario",
     explicacion: "Es como una 'moneda fiscal' que la DIAN actualiza cada año para evitar usar pesos directamente en las leyes. Se usa para definir topes de deducción, sanciones, etc.",
-    ejemplo: "1 UVT en 2026 = $52.374. Si una ley dice 'tope 1.200 UVT', son ~$62.8 millones.",
+    ejemplo: "1 UVT en AG 2025 = $49.799 (AG 2026 = $52.374). Si una ley dice 'tope 1.200 UVT', son ~$59.8 millones en AG 2025.",
   },
   smmlv: {
     termino: "SMMLV",

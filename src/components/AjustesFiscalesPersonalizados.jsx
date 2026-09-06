@@ -20,6 +20,7 @@
 import { useState, useMemo } from "react";
 import SmartNumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
+import { UVT } from "../lib/taxCO.js";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -28,7 +29,6 @@ const T = {
   green: "#22c55e", red: "#ef4444", orange: "#f97316", blue: "#3b82f6", purple: "#a78bfa",
 };
 
-const UVT = 52_374; // 2026
 const fm = (v) => {
   const n = Number(v) || 0;
   if (Math.abs(n) >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";

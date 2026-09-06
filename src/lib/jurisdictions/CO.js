@@ -1,9 +1,9 @@
 // ============================================================
 // RegPack Colombia — DIAN / Colpensiones / AFP
-// Constantes fiscales 2026
+// Constantes fiscales (UVT = AG 2025 temporada DIAN)
 // ============================================================
 
-const UVT = 52374;      // COP
+const UVT = 49799;      // COP — AG 2025 default; ver UVT_BY_AG en taxCO.js
 const SMMLV = 1750905;  // COP
 
 // Tabla de tarifas de renta (Art. 241 ET) en UVT

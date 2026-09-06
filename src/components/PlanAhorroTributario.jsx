@@ -30,6 +30,7 @@
 
 import { useState, useMemo } from "react";
 import NumberInput from "./NumberInput";
+import { UVT } from "../lib/taxCO.js";
 
 const C = {
   bg: "#0a0a0c",
@@ -50,8 +51,6 @@ const C = {
   red: "#f87171",
   redBg: "rgba(248,113,113,0.10)",
 };
-
-const UVT = 52374;
 
 function fm(n) {
   if (!n && n !== 0) return "$0";
@@ -308,7 +307,7 @@ const AREAS_NATURAL = [
     icono: "🏥",
     titulo: "Medicina prepagada o seguro de salud",
     pregunta: "¿Pagás Colsanitas, Sura, Medplus u otra medicina prepagada / seguro de salud?",
-    explicacion: "El gasto en medicina prepagada es deducible hasta 16 UVT/mes (~$838K/mes en 2026). Solo necesitás cargar cuánto pagás cada mes.",
+    explicacion: "El gasto en medicina prepagada es deducible hasta 16 UVT/mes (tope 16 UVT/mes). Solo necesitás cargar cuánto pagás cada mes.",
     baseLegal: "Art. 387 #2 ET",
     estimarAhorro: (data, det) => {
       const mensual = Number(data.gastoMensual) || 0;
@@ -410,7 +409,7 @@ const AREAS_NATURAL = [
     icono: "🏠",
     titulo: "Intereses de vivienda habitacional",
     pregunta: "¿Pagás cuotas de un crédito hipotecario sobre tu vivienda principal?",
-    explicacion: "Los intereses de tu hipoteca de VIVIENDA HABITACIONAL son deducibles hasta 1.200 UVT/año (~$62.8M en 2026). Es deducción directa sobre tu base gravable.",
+    explicacion: "Los intereses de tu hipoteca de VIVIENDA HABITACIONAL son deducibles hasta 1.200 UVT/año (tope 1.200 UVT/año). Es deducción directa sobre tu base gravable.",
     baseLegal: "Art. 119 ET",
     estimarAhorro: (data, det) => {
       const interesesAnuales = Number(data.interesesAnuales) || 0;
