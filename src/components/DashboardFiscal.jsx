@@ -260,6 +260,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
         results={mismatchResults}
         onMarkReviewed={onMarkReviewed}
         onUnmark={onUnmarkReviewed}
+        onNavigate={onNavigate}
       />
 
       {/* Commit 8.3: upload inline cuando toggle está abierto */}

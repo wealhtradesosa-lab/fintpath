@@ -41,7 +41,7 @@ function fmM(v) {
   return "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 }
 
-export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onUnmark }) {
+export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onUnmark, onNavigate }) {
   const [expanded, setExpanded] = useState({});
   const [showRevisados, setShowRevisados] = useState(false);
 
@@ -171,6 +171,40 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                       <span>🔢 Calculado: <strong style={{ color: colors.txt }}>{fmM(mm.calculado)}</strong></span>
                       <span>📊 Diferencia: <strong style={{ color: mm.severidad === "warning" ? colors.warningText : colors.infoText }}>{(mm.diferenciaPct * 100).toFixed(0)}%</strong></span>
                     </div>
+                    {/* 05-sep-2026 (Santiago: "seria ideal darle la posibilidad
+                        de editar esos mismatch"). Hasta hoy la unica accion era
+                        marcar la diferencia como revisada: reconocerla, no
+                        resolverla. Y la causa mas comun es que falte cargar algo
+                        en la plataforma.
+                        El boton NO escribe un numero de relleno para cuadrar la
+                        cifra: eso ensuciaria los datos reales con un ajuste
+                        inventado y romperia todo lo que se calcula despues.
+                        Lleva al modulo correcto con el faltante ya calculado,
+                        para que el usuario cargue el ingreso o el gasto que de
+                        verdad existe. */}
+                    {(() => {
+                      const DESTINO = {
+                        "Ingresos brutos":   { pagina: "ing", que: "ingreso" },
+                        "Gastos deducibles": { pagina: "gas", que: "gasto" },
+                      }[mm.campo];
+                      if (!DESTINO || !onNavigate) return null;
+                      const falta = (mm.declarado || 0) - (mm.calculado || 0);
+                      if (Math.abs(falta) < 1) return null;
+                      const sobra = falta < 0;
+                      return (
+                        <button
+                          onClick={() => onNavigate(DESTINO.pagina)}
+                          style={{ marginTop: 8, padding: "7px 12px", borderRadius: 8,
+                            border: `1px solid ${colors.warningText || colors.txt}`,
+                            background: "transparent", color: colors.warningText || colors.txt,
+                            fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>
+                          {sobra
+                            ? `Revisar mis ${DESTINO.que}s — tenés ${fmM(Math.abs(falta))} de más →`
+                            : `Cargar el ${DESTINO.que} que falta — ${fmM(falta)} →`}
+                        </button>
+                      );
+                    })()}
+
                     {mm.explicaciones.map((ex, j) => (
                       <div key={j} style={{ fontSize: 11, color: colors.tx3, marginTop: 4, fontStyle: "italic" }}>
                         💡 {ex}
