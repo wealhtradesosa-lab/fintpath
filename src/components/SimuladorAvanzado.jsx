@@ -414,7 +414,6 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       });
       gasSim[cat].forEach(g => {
         if (g.sim === false) return;
-        if (fueraDeVigencia(g, mes)) return;   // mismo criterio para gastos
         // NUEVO: promedio mensualizado según frecuencia
         // Ej: impuesto anual $12M → cuenta como $1M/mes en el promedio
         const monto = montoPromedioMensual(g);
@@ -685,6 +684,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       (items || []).forEach(g => {
         if (g.sim === false) return;
+        if (fueraDeVigencia(g, mes)) return;   // no empezó todavía, o ya terminó
         const montoMesG = montoDelMes(g, añoD, mes);
         const delta = montoMesG - montoPromedioMensual(g);
         if (delta !== 0) drivers.push({ nombre: g.c || cat, efecto: -delta, monto: montoMesG, tipo: "gasto" });
