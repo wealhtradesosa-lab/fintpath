@@ -3,7 +3,7 @@ import Disclaimer from "./Disclaimer";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
-import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS, getRangoMeses } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
@@ -414,6 +414,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       });
       gasSim[cat].forEach(g => {
         if (g.sim === false) return;
+        if (fueraDeVigencia(g, mes)) return;   // mismo criterio para gastos
         // NUEVO: promedio mensualizado según frecuencia
         // Ej: impuesto anual $12M → cuenta como $1M/mes en el promedio
         const monto = montoPromedioMensual(g);
@@ -651,9 +652,30 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     const mes = mesVisualizado;
     const drivers = [];
 
+    // 05-sep-2026 (Santiago: "en mayo no había renta de Frank y me dice que
+    // tuve menos 9mm en ingresos Frank; si Frank apenas empieza en octubre
+    // esto no debería pasar").
+    //
+    // El caso real: RENTA LAKE VILLA FRANK son $39.000.000 vigentes de octubre
+    // a diciembre. El promedio anual reparte eso entre 12 meses = $9.750.000.
+    // En mayo el monto real es 0, así que la resta contra el promedio daba
+    // -$9,75M y el análisis lo reportaba como algo que "afectó a mayo en
+    // negativo".
+    //
+    // Es un error conceptual, no de cálculo: un ingreso que todavía no empieza
+    // no le quitó plata a mayo. Simplemente no existía. Esta lista responde
+    // "qué movió ESTE mes respecto a lo típico", y un concepto fuera de su
+    // vigencia no movió nada -- no es un faltante, es una ausencia esperada.
+    // Mostrarlo además hace desconfiar de toda la lista.
+    const fueraDeVigencia = (item, mes) => {
+      const { desde, hasta } = getRangoMeses(item);
+      return mes < desde || mes > hasta;
+    };
+
     // Ingresos: delta positivo = empuja el cash flow ARRIBA
     (user.ingresos || []).forEach(ing => {
       if (ing.sim === false) return;
+      if (fueraDeVigencia(ing, mes)) return;   // no empezó todavía, o ya terminó
       const base = { ...ing, mensual: (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1) };
       const montoMes = montoDelMes(base, añoD, mes);
       const delta = montoMes - montoPromedioMensual(base);
