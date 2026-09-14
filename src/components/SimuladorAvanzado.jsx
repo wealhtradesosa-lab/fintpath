@@ -2068,11 +2068,11 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               Plata que te queda en el año, sumando mes a mes
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, marginBottom: 10, lineHeight: 1.55 }}>
-              Cada punto es el total acumulado hasta ese mes: lo que te sobró menos lo
-              que te faltó. Si va por debajo de cero, es plata que tuviste que sacar de
-              otro lado.{" "}
-              <span style={{ color: T.txt2 }}>Gris</span> = acumulado real de enero a hoy.{" "}
-              <span style={{ color: CHART.green }}>Verde</span> = acumulado con el escenario, de hoy a diciembre.
+              La línea va <strong style={{ color: T.txt2 }}>sumando</strong>: enero, más
+              febrero, más marzo… hasta diciembre. Por eso el punto de diciembre es el
+              total del año entero, no lo de ese mes.{" "}
+              <span style={{ color: T.txt2 }}>Gris</span> = lo que ya pasó.{" "}
+              <span style={{ color: CHART.green }}>Verde</span> = lo que viene según el escenario.
             </div>
             {(() => {
               // El cierre del año es la cifra que la gráfica responde. Estaba
@@ -2107,7 +2107,18 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 <CartesianGrid {...gridProps} />
                 <XAxis dataKey="m" {...axisProps} />
                 <YAxis {...axisProps} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(0)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v}} />
-                <Tooltip content={<ChartTooltip formatter={(v) => fm(v)}/>} />
+                {/* 14-sep-2026 — Tercera pasada sobre lo mismo (Santiago:
+                    "por eso explique mejor"). El encabezado del tooltip decía
+                    solo "DIC", y al lado una cifra: se lee como el dato DE
+                    diciembre. Ahora el encabezado dice el periodo completo que
+                    ese punto representa -- "ENERO → DIC" -- que es lo que hace
+                    evidente que viene sumado desde el principio del año. */}
+                <Tooltip content={<ChartTooltip
+                  formatter={(v) => fm(v)}
+                  labelFormatter={(l) => (String(l).toUpperCase() === "ENE"
+                    ? "SOLO ENERO"
+                    : `ENERO → ${String(l).toUpperCase()}  (sumado)`)}
+                />} />
                 {/* Lo ya transcurrido va sólido y en gris: es un hecho, no una
                     proyección. El escenario va verde. connectNulls={false} es
                     lo que mantiene cada serie en su tramo del año. */}
