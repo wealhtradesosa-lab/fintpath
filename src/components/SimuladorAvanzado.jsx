@@ -2058,7 +2058,45 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             );
           })()}
           <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 14 }}>Acumulación Cash Flow — 12 Meses</div>
+            {/* 14-sep-2026 (Santiago: "ese valor que muestra esa gráfica qué es,
+                -101MM es lo que perdería acumulado en el año? No entiendo, ponemos
+                valores y no se hace alusión a qué son").
+                Tenía razón: el título decía "Acumulación Cash Flow" y el eje Y
+                mostraba millones sin decir de qué. Un número grande y negativo sin
+                unidad ni signo explicado no se puede interpretar. */}
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2 }}>
+              Plata que te queda en el año, sumando mes a mes
+            </div>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, marginBottom: 10, lineHeight: 1.55 }}>
+              Cada punto es el total acumulado hasta ese mes: lo que te sobró menos lo
+              que te faltó. Si va por debajo de cero, es plata que tuviste que sacar de
+              otro lado.{" "}
+              <span style={{ color: T.txt2 }}>Gris</span> = lo real de enero a hoy.{" "}
+              <span style={{ color: CHART.green }}>Verde</span> = el escenario de hoy a diciembre.
+            </div>
+            {(() => {
+              // El cierre del año es la cifra que la gráfica responde. Estaba
+              // solo como último punto de la línea, sin decirse en ninguna parte.
+              const cierre = proj.length ? (proj[proj.length - 1].simulado ?? proj[proj.length - 1].real) : 0;
+              if (cierre == null) return null;
+              const neg = cierre < 0;
+              return (
+                <div style={{ fontSize: 12, color: T.txt2, marginBottom: 12,
+                      padding: "8px 11px", borderRadius: 9,
+                      background: neg ? "rgba(239,68,68,0.10)" : "rgba(34,197,94,0.10)",
+                      border: `1px solid ${neg ? "rgba(239,68,68,0.28)" : "rgba(34,197,94,0.28)"}` }}>
+                  Al cerrar diciembre:{" "}
+                  <strong style={{ color: neg ? T.rd : T.gn }}>
+                    {neg ? "−" : "+"}${Math.abs(Math.round(cierre)).toLocaleString("es-CO")}
+                  </strong>{" "}
+                  <span style={{ color: T.txt3 }}>
+                    {neg
+                      ? "— con este escenario el año cierra en rojo: gastás más de lo que entra."
+                      : "— eso es lo que te queda libre en todo el año."}
+                  </span>
+                </div>
+              );
+            })()}
             <ResponsiveContainer width="100%" height={250}>
               <AreaChart data={proj}>
                 <ChartGradients/>
