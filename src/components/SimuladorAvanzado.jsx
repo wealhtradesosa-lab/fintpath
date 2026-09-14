@@ -821,13 +821,75 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     };
   }, [user, impuestoData]);
 
+  // ── 14-sep-2026 · Gráfica del año: lo real + el escenario ────────────────
+  // Santiago: "es una sola gráfica, se puede mostrar el actual de lo que va del
+  // año presente más el nuevo escenario".
+  //
+  // Lo que había era una recta: `actual: baseT.cf * i`. El cash flow
+  // multiplicado por el número de mes, o sea una línea perfecta cuya única
+  // información -- la pendiente -- ya estaba en las tarjetas de abajo. Y
+  // asumía que todos los meses son iguales, que es justo lo que los datos de
+  // Santiago desmienten: mayo da -$10,7M por picos de gastos y otros meses son
+  // positivos. La recta no solo no informaba: desinformaba.
+  //
+  // Ahora una sola línea acumulada: de enero al mes actual con los montos
+  // REALES mes a mes, y del mes actual a diciembre con el escenario simulado.
+  // El quiebre entre las dos series es "hoy".
+  const cfDelMes = useCallback((mes, conOverrides) => {
+    const trm = user?.trm || 4200;
+    const { año: añoActual } = getMesActual();
+    const vg = (clave, base) => (conOverrides ? getVal(clave, base) : base);
+
+    let bruto = 0;
+    (user?.ingresos || []).forEach((ing, ii) => {
+      if (ing.sim === false) return;
+      const baseCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
+      bruto += montoDelMes({ ...ing, mensual: vg(`ing_${ii}`, baseCop) }, añoActual, mes);
+    });
+
+    let aportes = 0, gastosFam = 0;
+    Object.entries(user?.gastos || {}).forEach(([cat, items]) => {
+      (items || []).forEach((g, gi) => {
+        if (g.sim === false) return;
+        const monto = montoDelMes({ ...g, m: vg(`gf_${cat}_${gi}`, g.m || 0) }, añoActual, mes);
+        if (cat === "Seguridad Social") aportes += monto; else gastosFam += monto;
+      });
+    });
+
+    let cuotas = 0;
+    (user?.deudas || []).forEach((d, di) => {
+      if (d.sim === false || (d.mt || 0) <= 0) return;
+      if (!cuotaDeudaEnMes(d, mes)) return;
+      cuotas += vg(`debt_${di}`, d.pago || d.pg || 0);
+    });
+
+    // Retención e impuesto son anualizados ÷ 12, igual que en simTMes.
+    const t = conOverrides ? simT : baseT;
+    const retencion = t.retencionMensual || 0;
+    const impuesto = t.impuestoNeto || 0;
+    return (bruto - retencion) - (aportes + gastosFam + cuotas + impuesto);
+  }, [user, simT, baseT, getVal]);
+
   const proj = useMemo(() => {
-    return Array.from({ length: 13 }, (_, i) => ({
-      m: "M" + i,
-      actual: baseT.cf * i,
-      simulado: simT.cf * i,
-    }));
-  }, [baseT, simT]);
+    const { mes: mesHoy } = getMesActual();
+    const filas = [];
+    let accReal = 0, accSim = 0;
+    for (let m = 1; m <= 12; m++) {
+      const real = cfDelMes(m, false);
+      const sim = cfDelMes(m, true);
+      // Hasta el mes actual mandan los datos reales; después, el escenario.
+      if (m <= mesHoy) { accReal += real; accSim = accReal; }
+      else { accSim += sim; }
+      filas.push({
+        m: MESES.find((x) => x.v === m)?.l?.slice(0, 3) || String(m),
+        // La serie real corta en el mes actual; la simulada arranca ahí mismo
+        // para que las dos líneas se toquen y se lea como una sola.
+        real: m <= mesHoy ? accReal : null,
+        simulado: m >= mesHoy ? accSim : null,
+      });
+    }
+    return filas;
+  }, [cfDelMes]);
 
   const scs = [
     { id: "actual", i: "📋", l: "Actual", d: "Valores reales", c: T.bl },
@@ -2004,8 +2066,11 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 <XAxis dataKey="m" {...axisProps} />
                 <YAxis {...axisProps} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(0)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v}} />
                 <Tooltip content={<ChartTooltip formatter={(v) => fm(v)}/>} />
-                <Area type="monotone" dataKey="actual" stroke={CHART.txt3} fill="transparent" strokeDasharray="5 5" strokeWidth={1.5} name="Actual" />
-                <Area type="monotone" dataKey="simulado" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} name="Simulado" />
+                {/* Lo ya transcurrido va sólido y en gris: es un hecho, no una
+                    proyección. El escenario va verde. connectNulls={false} es
+                    lo que mantiene cada serie en su tramo del año. */}
+                <Area type="monotone" dataKey="real" stroke={CHART.txt2 || CHART.txt3} fill="transparent" strokeWidth={2} name="Real (año en curso)" connectNulls={false} dot={false} />
+                <Area type="monotone" dataKey="simulado" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} name="Escenario" connectNulls={false} dot={false} />
                 <Legend wrapperStyle={{fontSize:12,paddingTop:8}} iconType="circle"/>
               </AreaChart>
             </ResponsiveContainer>
