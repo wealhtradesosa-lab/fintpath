@@ -137,9 +137,36 @@ export default function ProyeccionPatrimonio({
         >
           Si sostengo este cash flow, ¿el patrimonio a 3 / 5 / 10 años crece o se come?
         </div>
-        <div style={{ fontSize: 11, color: T.txt3 || "#71717a", marginTop: 4, lineHeight: 1.45 }}>
-          Proyección sobre el CF anual neto del simulador (ingresos − egresos − debt service).
-          El impuesto en ese CF es <strong style={{ color: T.txt2 || "#a1a1aa" }}>saldo a pagar</strong> (post-rete), nunca impuesto a cargo.
+        {/* 14-sep-2026 — El texto anterior era jerga: "CF anual neto",
+            "debt service", "post-rete", "impuesto a cargo". Describía la
+            implementación, no lo que el usuario está viendo. Se reemplaza por
+            los tres supuestos que de verdad mueven el resultado, en el orden en
+            que uno los necesita entender. */}
+        <div style={{ fontSize: 11, color: T.txt3 || "#71717a", marginTop: 6, lineHeight: 1.6 }}>
+          Cada año pasan tres cosas con tu patrimonio, y la proyección las suma:
+        </div>
+        <div style={{ fontSize: 11, color: T.txt3 || "#71717a", marginTop: 6, lineHeight: 1.6 }}>
+          <div style={{ marginBottom: 3 }}>
+            <strong style={{ color: T.txt2 || "#a1a1aa" }}>1. Se valoriza.</strong>{" "}
+            Lo que ya tenés sube el porcentaje que definas abajo.
+          </div>
+          <div style={{ marginBottom: 3 }}>
+            <strong style={{ color: T.txt2 || "#a1a1aa" }}>2. Le entra tu cash flow.</strong>{" "}
+            Lo que te sobra cada año (ingresos menos gastos, cuotas e impuestos) se suma al montón.
+          </div>
+          <div>
+            <strong style={{ color: T.txt2 || "#a1a1aa" }}>3. La inflación le resta valor.</strong>{" "}
+            Por eso cada tarjeta muestra dos cifras: la nominal, que es el número
+            que vas a ver; y la <strong style={{ color: T.txt2 || "#a1a1aa" }}>real</strong>,
+            que es lo que esa plata compra en dinero de hoy. La real es la que importa.
+          </div>
+        </div>
+        <div style={{ fontSize: 10.5, color: T.txt3 || "#71717a", marginTop: 8, lineHeight: 1.5,
+             paddingTop: 8, borderTop: `1px solid ${T.border || "rgba(255,255,255,0.08)"}` }}>
+          <strong style={{ color: T.txt2 || "#a1a1aa" }}>Crece</strong> significa que a ese
+          plazo tenés más de lo que tenés hoy, ya descontada la inflación.{" "}
+          <strong style={{ color: T.txt2 || "#a1a1aa" }}>Se come</strong> significa que tu
+          cash flow no alcanza a compensar lo que la inflación te quita.
         </div>
       </div>
 
