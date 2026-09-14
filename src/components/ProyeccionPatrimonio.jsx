@@ -194,15 +194,26 @@ export default function ProyeccionPatrimonio({
           </div>
         </div>
         <div>
-          <div style={labelStyle}>Retorno del excedente %</div>
+          <div style={labelStyle}>Valorización anual del patrimonio %</div>
           <input
             type="number"
             step="0.1"
             value={retornoPct}
             onChange={(e) => setRetornoPct(e.target.value)}
             style={inputStyle}
-            aria-label="Retorno del excedente anual"
+            aria-label="Valorización anual del patrimonio"
           />
+          {/* 14-sep-2026 (Santiago: "eso de retorno del excedente no lo
+              entiendo bien, ¿es retorno de la plata que me queda de cash
+              flow?"). No: el motor hace activos × (1 + r) + cfAnual, o sea
+              aplica r sobre TODO el patrimonio, no sobre el excedente. La
+              etiqueta decía una cosa y el cálculo hacía otra. Si el propio
+              autor de la plataforma duda, un usuario no tiene ninguna
+              posibilidad. Se renombra al comportamiento real y se explica. */}
+          <div style={{ fontSize: 9, color: T.txt3 || "#71717a", marginTop: 3, lineHeight: 1.45 }}>
+            Cuánto se valoriza al año TODO tu patrimonio (inmuebles, inversiones,
+            vehículos), no solo lo que te sobra del cash flow.
+          </div>
         </div>
         <div>
           <div style={labelStyle}>Inflación %</div>
@@ -461,14 +472,14 @@ export default function ProyeccionPatrimonio({
         <div>
           CF anual usado: <strong style={{ color: T.txt2 }}>{fm(cfAnual)}</strong>
           {cfOverride == null ? " (del simulador)" : " (override)"}
-          {" · "}Retorno excedente {Number(retornoPct) || 0}%
+          {" · "}Valorización patrimonio {Number(retornoPct) || 0}%
           {" · "}Inflación {Number(inflacionPct) || 0}%
         </div>
         <div>
           Amortización de capital estimada: {fm(amortAnual)}/año (reduce pasivo; no se resta del CF).
         </div>
         <div style={{ marginTop: 4 }}>
-          Fórmula: activos crecen a retorno del excedente + CF anual reinvertido; deudas bajan por
+          Fórmula: activos × (1 + valorización) + CF anual reinvertido; deudas bajan por
           amortización estimada. Veredicto “crece / se come” usa patrimonio <em>real</em> (deflactado).
         </div>
       </div>

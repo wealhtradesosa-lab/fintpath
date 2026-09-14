@@ -16,7 +16,13 @@
 //     ese impuesto es saldo a pagar (post-rete), NUNCA impuesto a cargo —
 //     el simulador ya lo calcula así vía estimarImpuesto aliases
 //     (saldoAPagar / impuestoNeto).
-//   · r = retorno del excedente (editable; default conservador).
+//   · r = valorización anual de TODO el patrimonio (editable).
+//     OJO con el nombre histórico: la clave sigue siendo `retornoExcedente`
+//     por retrocompatibilidad, pero NO es el retorno del excedente de caja.
+//     La línea `activos = baseActivos * (1 + r) + cfAnual` aplica r sobre el
+//     total de activos. Santiago lo señaló el 14-sep-2026 al no entender la
+//     etiqueta en la UI; ahí se renombró a "Valorización anual del patrimonio",
+//     que es lo que de verdad hace.
 //   · amortización ≈ porción de capital de las cuotas (costoCredito.capitalMes×12),
 //     topeada al saldo. No se resta del patrimonio: bajar el pasivo LO SUBE.
 //     Se modela explícitamente en el lado deudas.
@@ -30,7 +36,7 @@ import { vaCOP, costoCredito } from "./flowHelpers.js";
 /** Defaults conservadores (Colombia, nominales). Editables en UI. */
 export const DEFAULTS_PROYECCION = {
   inflacionAnual: 0.04,       // 4%
-  retornoExcedente: 0.06,     // 6% nominal sobre activos / excedente reinvertido
+  retornoExcedente: 0.06,     // 6% nominal sobre el TOTAL de activos (ver nota arriba)
   horizontes: [3, 5, 10],
 };
 
