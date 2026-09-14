@@ -2071,8 +2071,8 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               Cada punto es el total acumulado hasta ese mes: lo que te sobró menos lo
               que te faltó. Si va por debajo de cero, es plata que tuviste que sacar de
               otro lado.{" "}
-              <span style={{ color: T.txt2 }}>Gris</span> = lo real de enero a hoy.{" "}
-              <span style={{ color: CHART.green }}>Verde</span> = el escenario de hoy a diciembre.
+              <span style={{ color: T.txt2 }}>Gris</span> = acumulado real de enero a hoy.{" "}
+              <span style={{ color: CHART.green }}>Verde</span> = acumulado con el escenario, de hoy a diciembre.
             </div>
             {(() => {
               // El cierre del año es la cifra que la gráfica responde. Estaba
@@ -2085,14 +2085,18 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       padding: "8px 11px", borderRadius: 9,
                       background: neg ? "rgba(239,68,68,0.10)" : "rgba(34,197,94,0.10)",
                       border: `1px solid ${neg ? "rgba(239,68,68,0.28)" : "rgba(34,197,94,0.28)"}` }}>
-                  Al cerrar diciembre:{" "}
+                  Sumando los 12 meses del año:{" "}
                   <strong style={{ color: neg ? T.rd : T.gn }}>
                     {neg ? "−" : "+"}${Math.abs(Math.round(cierre)).toLocaleString("es-CO")}
                   </strong>{" "}
                   <span style={{ color: T.txt3 }}>
+                    {/* 14-sep-2026 (Santiago: "termino el año con 127mm a favor
+                        o en dic con 127mm? no se comprende ese valor"). Decía
+                        "Al cerrar diciembre", que se lee como el dato DE
+                        diciembre. Es el acumulado de los doce meses. */}
                     {neg
-                      ? "— con este escenario el año cierra en rojo: gastás más de lo que entra."
-                      : "— eso es lo que te queda libre en todo el año."}
+                      ? "— es el total del año, no de diciembre. Con este escenario el año cierra en rojo: sale más plata de la que entra."
+                      : "— es el total del año, no de diciembre. Eso es lo que te queda libre sumando los 12 meses."}
                   </span>
                 </div>
               );
@@ -2107,8 +2111,8 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 {/* Lo ya transcurrido va sólido y en gris: es un hecho, no una
                     proyección. El escenario va verde. connectNulls={false} es
                     lo que mantiene cada serie en su tramo del año. */}
-                <Area type="monotone" dataKey="real" stroke={CHART.txt2 || CHART.txt3} fill="transparent" strokeWidth={2} name="Real (año en curso)" connectNulls={false} dot={false} />
-                <Area type="monotone" dataKey="simulado" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} name="Escenario" connectNulls={false} dot={false} />
+                <Area type="monotone" dataKey="real" stroke={CHART.txt2 || CHART.txt3} fill="transparent" strokeWidth={2} name="Acumulado real" connectNulls={false} dot={false} />
+                <Area type="monotone" dataKey="simulado" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} name="Acumulado con escenario" connectNulls={false} dot={false} />
                 <Legend wrapperStyle={{fontSize:12,paddingTop:8}} iconType="circle"/>
               </AreaChart>
             </ResponsiveContainer>
