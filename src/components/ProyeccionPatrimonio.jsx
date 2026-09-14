@@ -218,6 +218,55 @@ export default function ProyeccionPatrimonio({
       </div>
 
       {/* Veredictos 3 / 5 / 10 */}
+      {/* 14-sep-2026 (Santiago: "lo que quiero es darle la posibilidad al
+          usuario de que proyecte, que mire presente, futuro 3, 5, 10 años, si
+          aumenta cash flow, eso es todo").
+          La pieza ya estaba -- override de CF y tarjetas a 3/5/10 años -- pero
+          para usarla había que ESCRIBIR una cifra anual a mano. Nadie calcula
+          mentalmente "mi CF más 25%" y lo teclea; el resultado era que la
+          función existía y no se tocaba.
+          Estos botones responden la pregunta tal como se la hace uno: ¿y si
+          aumento el cash flow? Un clic y las tres tarjetas se recalculan. */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ ...labelStyle, marginBottom: 6 }}>¿Y si aumento mi cash flow?</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {[
+            { l: "Como hoy", f: 1 },
+            { l: "+10%", f: 1.1 },
+            { l: "+25%", f: 1.25 },
+            { l: "+50%", f: 1.5 },
+            { l: "El doble", f: 2 },
+          ].map(({ l, f }) => {
+            const valor = Math.round(cfAnualDefault * f);
+            // "Como hoy" se marca activo cuando no hay override, que es el
+            // estado inicial: así el grupo siempre refleja lo que se está viendo.
+            const activo = f === 1
+              ? cfOverride == null
+              : cfOverride != null &&
+                Math.abs(Number(String(cfOverride).replace(/[^0-9.-]/g, "")) - valor) < 2;
+            return (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setCfOverride(f === 1 ? null : String(valor))}
+                style={{
+                  padding: "7px 13px", borderRadius: 999, cursor: "pointer",
+                  fontSize: 11.5, fontWeight: 700,
+                  background: activo ? (T.green || "#22c55e") : "transparent",
+                  color: activo ? "#0a0a0a" : (T.txt2 || "#a1a1aa"),
+                  border: `1px solid ${activo ? (T.green || "#22c55e") : (T.border || "rgba(255,255,255,0.12)")}`,
+                }}>
+                {l}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 9.5, color: T.txt3 || "#71717a", marginTop: 6 }}>
+          Sobre tu CF simulado de {fm(cfAnualDefault)} al año. Podés escribir una
+          cifra exacta abajo si preferís.
+        </div>
+      </div>
+
       <div
         style={{
           display: "grid",
