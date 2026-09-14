@@ -3,6 +3,7 @@ import Disclaimer from "./Disclaimer";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
+import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS, getRangoMeses } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
@@ -2010,6 +2011,15 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               </div>
             </div>
           </div>
+          <ProyeccionPatrimonio
+            user={user}
+            cfMensualSimulado={simT.cf}
+            patrimonioNeto={totals?.nw}
+            activos={totals?.ab}
+            deudasTotales={totals?.td}
+            fmt={fm}
+            T={T}
+          />
         </div>
       </div>
     
