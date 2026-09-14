@@ -292,8 +292,11 @@ export default function ProyeccionPatrimonio({
       </div>
 
       {/* Chart */}
+      {/* El título dice ahora la unidad del eje X. Sin eso, dos gráficas de
+          área verdes seguidas parecen la misma: la de arriba va mes a mes
+          dentro de un año, esta va año a año. */}
       <div style={{ fontSize: 11, fontWeight: 600, color: T.txt2 || "#a1a1aa", marginBottom: 8 }}>
-        Patrimonio proyectado
+        Patrimonio proyectado <span style={{ fontWeight: 400, color: T.txt3 || "#71717a" }}>· año a año</span>
       </div>
       <ResponsiveContainer width="100%" height={220}>
         <AreaChart data={chartData}>
@@ -311,11 +314,19 @@ export default function ProyeccionPatrimonio({
           />
           <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} />} />
           <ReferenceLine y={snap.patrimonioNeto} stroke={CHART.txt3} strokeDasharray="4 4" />
+          {/* 14-sep-2026 (Santiago: "se ven dos graficas como repetidas").
+              Esta gráfica y la de cash flow del simulador quedaron con el MISMO
+              verde, la misma forma de área y la misma clave de eje, una encima
+              de la otra. Muestran cosas distintas -- arriba cash flow mes a mes,
+              acá patrimonio año a año -- pero el ojo las leía como la misma
+              repetida, y eso hace dudar de si la pantalla está mal.
+              Se pasa a azul, que en el resto de la app es el color de
+              patrimonio. El verde queda para flujo. */}
           <Area
             type="monotone"
             dataKey="patrimonio"
-            stroke={CHART.green}
-            fill="url(#gradGreen)"
+            stroke={CHART.blue}
+            fill="url(#gradBlue)"
             strokeWidth={2.5}
             name="Nominal"
           />
