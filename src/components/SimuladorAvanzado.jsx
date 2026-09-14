@@ -1307,12 +1307,12 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       background: T.bg3, borderRadius: 11,
                       border: `1px solid ${T.border}` }}>
                   <div style={{ fontSize: 10, color: T.txt3, marginBottom: 7 }}>
-                    De enero a {mesNom.toLowerCase()} (lo que ya pasó):
+                    Ejecutado enero–{mesNom.toLowerCase()}
                   </div>
                   <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-                    <Celda etiqueta="Ha entrado" valor={entra} color={T.gn} />
-                    <Celda etiqueta="Ha salido" valor={sale} color={T.rd} />
-                    <Celda etiqueta="Ha quedado" valor={queda} color={queda >= 0 ? T.gn : T.rd} />
+                    <Celda etiqueta="Ingresos" valor={entra} color={T.gn} />
+                    <Celda etiqueta="Egresos" valor={sale} color={T.rd} />
+                    <Celda etiqueta="Flujo neto" valor={queda} color={queda >= 0 ? T.gn : T.rd} />
                   </div>
                 </div>
               );
@@ -2114,14 +2114,12 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 mostraba millones sin decir de qué. Un número grande y negativo sin
                 unidad ni signo explicado no se puede interpretar. */}
             <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2 }}>
-              Plata que te queda en el año, sumando mes a mes
+              Flujo de caja acumulado del año
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, marginBottom: 10, lineHeight: 1.55 }}>
-              La línea va <strong style={{ color: T.txt2 }}>sumando</strong>: enero, más
-              febrero, más marzo… hasta diciembre. Por eso el punto de diciembre es el
-              total del año entero, no lo de ese mes.{" "}
-              <span style={{ color: T.txt2 }}>Gris</span> = lo que ya pasó.{" "}
-              <span style={{ color: CHART.green }}>Verde</span> = lo que viene según el escenario.
+              Cada punto es el acumulado desde enero hasta ese mes.{" "}
+              <span style={{ color: T.txt2 }}>Gris</span>: ejecutado.{" "}
+              <span style={{ color: CHART.green }}>Verde</span>: proyección del escenario.
             </div>
             {(() => {
               // El cierre del año es la cifra que la gráfica responde. Estaba
@@ -2134,18 +2132,14 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                       padding: "8px 11px", borderRadius: 9,
                       background: neg ? "rgba(239,68,68,0.10)" : "rgba(34,197,94,0.10)",
                       border: `1px solid ${neg ? "rgba(239,68,68,0.28)" : "rgba(34,197,94,0.28)"}` }}>
-                  Sumando los 12 meses del año:{" "}
+                  Acumulado a diciembre:{" "}
                   <strong style={{ color: neg ? T.rd : T.gn }}>
                     {neg ? "−" : "+"}${Math.abs(Math.round(cierre)).toLocaleString("es-CO")}
                   </strong>{" "}
                   <span style={{ color: T.txt3 }}>
-                    {/* 14-sep-2026 (Santiago: "termino el año con 127mm a favor
-                        o en dic con 127mm? no se comprende ese valor"). Decía
-                        "Al cerrar diciembre", que se lee como el dato DE
-                        diciembre. Es el acumulado de los doce meses. */}
                     {neg
-                      ? "— es el total del año, no de diciembre. Con este escenario el año cierra en rojo: sale más plata de la que entra."
-                      : "— es el total del año, no de diciembre. Eso es lo que te queda libre sumando los 12 meses."}
+                      ? "· proyección del año completo"
+                      : "· proyección del año completo"}
                   </span>
                 </div>
               );
@@ -2164,15 +2158,13 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                     evidente que viene sumado desde el principio del año. */}
                 <Tooltip content={<ChartTooltip
                   formatter={(v) => fm(v)}
-                  labelFormatter={(l) => (String(l).toUpperCase() === "ENE"
-                    ? "SOLO ENERO"
-                    : `ENERO → ${String(l).toUpperCase()}  (sumado)`)}
+                  labelFormatter={(l) => `ACUMULADO ENE–${String(l).toUpperCase()}`}
                 />} />
                 {/* Lo ya transcurrido va sólido y en gris: es un hecho, no una
                     proyección. El escenario va verde. connectNulls={false} es
                     lo que mantiene cada serie en su tramo del año. */}
-                <Area type="monotone" dataKey="real" stroke={CHART.txt2 || CHART.txt3} fill="transparent" strokeWidth={2} name="Acumulado real" connectNulls={false} dot={false} />
-                <Area type="monotone" dataKey="simulado" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} name="Acumulado con escenario" connectNulls={false} dot={false} />
+                <Area type="monotone" dataKey="real" stroke={CHART.txt2 || CHART.txt3} fill="transparent" strokeWidth={2} name="Ejecutado" connectNulls={false} dot={false} />
+                <Area type="monotone" dataKey="simulado" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} name="Proyectado" connectNulls={false} dot={false} />
                 <Legend wrapperStyle={{fontSize:12,paddingTop:8}} iconType="circle"/>
               </AreaChart>
             </ResponsiveContainer>

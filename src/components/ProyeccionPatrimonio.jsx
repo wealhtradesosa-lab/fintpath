@@ -143,30 +143,30 @@ export default function ProyeccionPatrimonio({
             los tres supuestos que de verdad mueven el resultado, en el orden en
             que uno los necesita entender. */}
         <div style={{ fontSize: 11, color: T.txt3 || "#71717a", marginTop: 6, lineHeight: 1.6 }}>
-          Cada año pasan tres cosas con tu patrimonio, y la proyección las suma:
+          La proyección combina tres factores por año:
         </div>
         <div style={{ fontSize: 11, color: T.txt3 || "#71717a", marginTop: 6, lineHeight: 1.6 }}>
           <div style={{ marginBottom: 3 }}>
             <strong style={{ color: T.txt2 || "#a1a1aa" }}>1. Se valoriza.</strong>{" "}
-            Lo que ya tenés sube el porcentaje que definas abajo.
+            El patrimonio actual crece al porcentaje anual que definas abajo.
           </div>
           <div style={{ marginBottom: 3 }}>
-            <strong style={{ color: T.txt2 || "#a1a1aa" }}>2. Le entra tu cash flow.</strong>{" "}
-            Lo que te sobra cada año (ingresos menos gastos, cuotas e impuestos) se suma al montón.
+            <strong style={{ color: T.txt2 || "#a1a1aa" }}>2. Se suma el flujo de caja.</strong>{" "}
+            El excedente anual (ingresos menos gastos, cuotas e impuestos) se incorpora al patrimonio.
           </div>
           <div>
-            <strong style={{ color: T.txt2 || "#a1a1aa" }}>3. La inflación le resta valor.</strong>{" "}
-            Por eso cada tarjeta muestra dos cifras: la nominal, que es el número
-            que vas a ver; y la <strong style={{ color: T.txt2 || "#a1a1aa" }}>real</strong>,
-            que es lo que esa plata compra en dinero de hoy. La real es la que importa.
+            <strong style={{ color: T.txt2 || "#a1a1aa" }}>3. La inflación reduce su valor.</strong>{" "}
+            De ahí las dos cifras por horizonte: la nominal y la{" "}
+            <strong style={{ color: T.txt2 || "#a1a1aa" }}>real</strong>, expresada
+            en poder adquisitivo de hoy. La real es la relevante para decidir.
           </div>
         </div>
         <div style={{ fontSize: 10.5, color: T.txt3 || "#71717a", marginTop: 8, lineHeight: 1.5,
              paddingTop: 8, borderTop: `1px solid ${T.border || "rgba(255,255,255,0.08)"}` }}>
-          <strong style={{ color: T.txt2 || "#a1a1aa" }}>Crece</strong> significa que a ese
-          plazo tenés más de lo que tenés hoy, ya descontada la inflación.{" "}
-          <strong style={{ color: T.txt2 || "#a1a1aa" }}>Se come</strong> significa que tu
-          cash flow no alcanza a compensar lo que la inflación te quita.
+          <strong style={{ color: T.txt2 || "#a1a1aa" }}>Crece</strong>: el patrimonio real
+          a ese horizonte supera el actual.{" "}
+          <strong style={{ color: T.txt2 || "#a1a1aa" }}>Se come</strong>: el flujo de caja
+          no compensa la pérdida por inflación.
         </div>
       </div>
 
@@ -238,8 +238,8 @@ export default function ProyeccionPatrimonio({
               autor de la plataforma duda, un usuario no tiene ninguna
               posibilidad. Se renombra al comportamiento real y se explica. */}
           <div style={{ fontSize: 9, color: T.txt3 || "#71717a", marginTop: 3, lineHeight: 1.45 }}>
-            Cuánto se valoriza al año TODO tu patrimonio (inmuebles, inversiones,
-            vehículos), no solo lo que te sobra del cash flow.
+            Se aplica sobre el total del patrimonio (inmuebles, inversiones,
+            vehículos), no sobre el excedente de caja.
           </div>
         </div>
         <div>
@@ -266,14 +266,14 @@ export default function ProyeccionPatrimonio({
           Estos botones responden la pregunta tal como se la hace uno: ¿y si
           aumento el cash flow? Un clic y las tres tarjetas se recalculan. */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ ...labelStyle, marginBottom: 6 }}>¿Y si aumento mi cash flow?</div>
+        <div style={{ ...labelStyle, marginBottom: 6 }}>Escenarios de flujo de caja</div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {[
-            { l: "Como hoy", f: 1 },
+            { l: "Actual", f: 1 },
             { l: "+10%", f: 1.1 },
             { l: "+25%", f: 1.25 },
             { l: "+50%", f: 1.5 },
-            { l: "El doble", f: 2 },
+            { l: "+100%", f: 2 },
           ].map(({ l, f }) => {
             const valor = Math.round(cfAnualDefault * f);
             // "Como hoy" se marca activo cuando no hay override, que es el
@@ -300,8 +300,8 @@ export default function ProyeccionPatrimonio({
           })}
         </div>
         <div style={{ fontSize: 9.5, color: T.txt3 || "#71717a", marginTop: 6 }}>
-          Sobre tu CF simulado de {fm(cfAnualDefault)} al año. Podés escribir una
-          cifra exacta abajo si preferís.
+          Calculado sobre el flujo de caja simulado de {fm(cfAnualDefault)} anuales.
+          También podés ingresar una cifra exacta abajo.
         </div>
       </div>
 
