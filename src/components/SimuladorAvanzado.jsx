@@ -1483,10 +1483,22 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
           deudas abajo y seguís viendo el gráfico y el Sankey cambiar. Se apaga
           en móvil, donde el grid colapsa a una sola columna. */}
       <style>{`
-        .fp-sim-right { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; max-height: calc(100vh - 96px); overflow-y: auto; overscroll-behavior: contain; }
-        .fp-sim-right::-webkit-scrollbar { width: 6px; }
-        .fp-sim-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 99px; }
-        @media (max-width: 900px) { .fp-sim-right { position: static; max-height: none; overflow: visible; } }
+        /* 14-sep-2026 (Santiago: "no me gusta que se oculte al hacer scroll").
+           Esta columna era sticky con max-height de la pantalla y scroll PROPIO.
+           Funcionaba cuando tenía pocas tarjetas, pero al agregarse la
+           proyección de patrimonio el contenido pasó a ser más alto que la
+           pantalla, y lo que sobraba quedaba cortado dentro de un scroll
+           interno que casi nadie descubre -- en la captura los montos de
+           3/5/10 años quedaban partidos por la mitad.
+           Dos scrolls anidados es además una trampa de usabilidad: la rueda del
+           mouse mueve uno u otro según dónde esté el puntero.
+           Ahora la columna fluye con la página. Se mantiene sticky SOLO si
+           entra completa en la pantalla; si no entra, se comporta como una
+           columna normal y se lee entera bajando la página. */
+        .fp-sim-right { display: flex; flex-direction: column; gap: 16px; }
+        @media (min-height: 900px) and (min-width: 901px) {
+          .fp-sim-right { position: sticky; top: 80px; }
+        }
       `}</style>
       {/* Sliders + Chart */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
