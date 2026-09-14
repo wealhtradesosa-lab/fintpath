@@ -752,7 +752,12 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       const retencion = simT.retencionMensual || 0;
       const impNeto = simT.impuestoNeto || 0;
       const cf = (ingresosMes - retencion) - (aportesObl + gastosFam + cuotas + impNeto);
-      return { mes, mesLabel: MESES.find(m => m.v === mes)?.l.slice(0, 3) || "", cashFlow: cf };
+      // 14-sep-2026 (Santiago: "es super bueno ver cuánto ha ingresado total
+      // en el año, cuánto ha salido y cuánto ha quedado"). El cálculo ya tenía
+      // las dos patas; solo devolvía el neto y se perdían.
+      const entra = ingresosMes;
+      const sale = retencion + aportesObl + gastosFam + cuotas + impNeto;
+      return { mes, mesLabel: MESES.find(m => m.v === mes)?.l.slice(0, 3) || "", cashFlow: cf, entra, sale };
     });
   }, [user, getVal, simT.retencionMensual, simT.impuestoNeto]);
 
@@ -1269,6 +1274,50 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               </div>
               <div style={{ fontSize: 11, color: T.gd, fontWeight: 700, whiteSpace: "nowrap" }}>Ver detalle completo →</div>
             </div>
+            {/* 14-sep-2026 (Santiago: "aquí es súper bueno ver cuánto ha
+                ingresado total en el año, cuánto ha salido y cuánto ha quedado,
+                como se ve en el dashboard de la página inicial").
+                Las barras mostraban la FORMA del año pero ningún total: se veía
+                que marzo fue rojo y octubre verde, y no cuánta plata es eso.
+                El cálculo ya tenía las dos patas separadas y solo devolvía el
+                neto.
+                Se corta en el mes actual a propósito: "ha ingresado" es lo que
+                YA pasó. Mezclar meses futuros daría un total que suena a hecho
+                y todavía es una proyección -- el mismo error que ya nos costó
+                tres vueltas con el acumulado. */}
+            {(() => {
+              const { mes: mesHoy } = getMesActual();
+              const hasta = cashFlowPorMes.filter((m) => m.mes <= mesHoy);
+              const entra = hasta.reduce((t, m) => t + (m.entra || 0), 0);
+              const sale = hasta.reduce((t, m) => t + (m.sale || 0), 0);
+              const queda = entra - sale;
+              const mesNom = MESES.find((x) => x.v === mesHoy)?.l || "";
+              const Celda = ({ etiqueta, valor, color }) => (
+                <div style={{ flex: "1 1 130px", minWidth: 0 }}>
+                  <div style={{ fontSize: 9.5, color: T.txt3, letterSpacing: 0.4,
+                        textTransform: "uppercase", fontWeight: 700 }}>{etiqueta}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color, marginTop: 2,
+                        fontFamily: "monospace" }}>
+                    {(valor < 0 ? "−$" : "$") + Math.abs(Math.round(valor)).toLocaleString("es-CO")}
+                  </div>
+                </div>
+              );
+              return (
+                <div style={{ marginTop: 10, marginBottom: 4, padding: "11px 13px",
+                      background: T.bg3, borderRadius: 11,
+                      border: `1px solid ${T.border}` }}>
+                  <div style={{ fontSize: 10, color: T.txt3, marginBottom: 7 }}>
+                    De enero a {mesNom.toLowerCase()} (lo que ya pasó):
+                  </div>
+                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                    <Celda etiqueta="Ha entrado" valor={entra} color={T.gn} />
+                    <Celda etiqueta="Ha salido" valor={sale} color={T.rd} />
+                    <Celda etiqueta="Ha quedado" valor={queda} color={queda >= 0 ? T.gn : T.rd} />
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Mini barras del cash flow por mes */}
             <div style={{ display: "flex", alignItems: "flex-end", height: 60, gap: 4, marginTop: 8 }}>
               {cashFlowPorMes.map((m) => {
