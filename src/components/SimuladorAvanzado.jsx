@@ -1492,13 +1492,16 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
            3/5/10 años quedaban partidos por la mitad.
            Dos scrolls anidados es además una trampa de usabilidad: la rueda del
            mouse mueve uno u otro según dónde esté el puntero.
-           Ahora la columna fluye con la página. Se mantiene sticky SOLO si
-           entra completa en la pantalla; si no entra, se comporta como una
-           columna normal y se lee entera bajando la página. */
+           Primer intento: se conservó el sticky para ventanas altas. Quedó
+           corto, y Santiago lo dijo enseguida ("para que ese scroll uno baje y
+           vea hasta el final"). El sticky tiene el mismo defecto por otra vía:
+           si el bloque es más alto que la ventana, queda clavado arriba y su
+           parte de abajo NO se alcanza nunca, por más que uno baje la página.
+           Y la altura del contenido no se puede consultar desde CSS, así que no
+           hay media query que lo resuelva.
+           Se elimina el sticky. La columna es una columna normal: uno baja y
+           ve hasta el final. */
         .fp-sim-right { display: flex; flex-direction: column; gap: 16px; }
-        @media (min-height: 900px) and (min-width: 901px) {
-          .fp-sim-right { position: sticky; top: 80px; }
-        }
       `}</style>
       {/* Sliders + Chart */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
