@@ -26,6 +26,7 @@
  * retornos. Calcula una brecha entre dónde estás y dónde dijiste que querés
  * estar. La decisión es del usuario y su asesor.
  */
+import { claseDeActivo } from "./taxonomiaActivos.js";
 
 // ─── Clasificación de activos en canastas ─────────────────────────────────
 // Se mapea por tipo. Las claves cubren Colombia y US porque cada jurisdicción
@@ -91,13 +92,29 @@ export function clasificarActivo(activo) {
   // cualquier tipo acentuado, no solo a este.
   const tipo = tipoRaw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  if (CANASTA_POR_TIPO[tipo]) {
-    return { canasta: CANASTA_POR_TIPO[tipo], motivo: `Por su tipo: ${tipoRaw}`, manual: false };
+  // 14-sep-2026 — La canasta se deriva de la CLASE del activo, no del tipo
+  // suelto. El mapa plano anterior asignaba canasta tipo por tipo y eso derivó
+  // en contradicciones: "Real Estate" caía en protección mientras "Local
+  // Comercial" y "Bodega" caían en mercado, siendo los tres inmuebles.
+  // Con la clase de por medio esa incoherencia no puede volver a ocurrir:
+  // todo lo que sea inmueble hereda la canasta del inmueble.
+  const cl = claseDeActivo(tipoRaw);
+  if (cl.exacto) {
+    return {
+      canasta: cl.canasta,
+      motivo: `${cl.label}: ${cl.nota}`,
+      manual: false,
+      clase: cl.clase,
+    };
   }
-  for (const [k, v] of Object.entries(CANASTA_POR_TIPO)) {
-    if (tipo.includes(k)) {
-      return { canasta: v, motivo: `Su tipo "${tipoRaw}" contiene "${k}"`, manual: false };
-    }
+  if (cl.coincidencia) {
+    return {
+      canasta: cl.canasta,
+      motivo: `Lo tomamos como ${cl.label.toLowerCase()} por su tipo "${tipoRaw}"`,
+      manual: false,
+      inferido: true,
+      clase: cl.clase,
+    };
   }
   // Sin clasificar va a protección: es el supuesto CONSERVADOR. Contar un
   // activo desconocido como aspiración inflaría artificialmente el riesgo
