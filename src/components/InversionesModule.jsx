@@ -118,7 +118,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user, trm, plan, onUpgrade}) {
+export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user, trm, plan, onUpgrade, onCrearIngreso}) {
   // ── 14-sep-2026 · Rentabilidad por activo ────────────────────────────────
   // Primer uso del vínculo ingreso → activo. Antes un activo era solo un valor
   // de compra y uno actual: la plataforma no sabía si producía algo. Con el
@@ -595,9 +595,55 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
                     = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString("es-CO") + "/año"} ({form.tasa}% de {"$" + Math.round(parseFloat(form.va)).toLocaleString("es-CO")})
                   </div>
-                  <div style={{ fontSize: 11, color: T.blue, marginTop: 6, fontWeight: 600 }}>
-                    👉 Agrega este ingreso en el módulo de Ingresos con categoría "Rendimiento"
-                  </div>
+                  {/* 14-sep-2026 (Santiago: "un activo dije que también
+                      rentaba, me dijo que sí lo añadía como rendimiento y no lo
+                      añadió"). Tenía razón. El bloque mostraba la cifra, decía
+                      "este activo generaría $X/mes" y después pedía ir a
+                      cargarlo a mano en otro módulo. Ese texto se leía como
+                      confirmación, no como instrucción -- y el módulo no tenía
+                      forma de crear el ingreso: solo recibía onUpdate para
+                      activos.
+                      Ahora lo crea de verdad, y queda vinculado al activo por
+                      activoId, que es lo que permite calcular su rendimiento. */}
+                  {onCrearIngreso ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const mensual = Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12);
+                        if (!(mensual > 0)) return;
+                        const nombreActivo = form.nombre || form.n || "activo";
+                        onCrearIngreso({
+                          id: `ing_${Date.now()}`,
+                          nombre: `Rendimiento — ${nombreActivo}`,
+                          categoria: "Rentas de capital",
+                          fiscalCode: "CAP_RENDIMIENTO_GENERICO",
+                          mensual,
+                          tipo: "fijo",
+                          frecuencia: "mensual",
+                          // Hereda la moneda del activo: un activo en dólares
+                          // genera renta en dólares, y guardarla como pesos
+                          // multiplicaría el error por la TRM.
+                          moneda: form.moneda || "COP",
+                          owner: form.owner || "",
+                          // El vínculo es el punto: sin él la renta existiría
+                          // suelta y el activo seguiría figurando improductivo.
+                          // El id del activo vive en editId, no en el form
+                          // (openEdit lo guarda aparte).
+                          activoId: editId || "",
+                          sim: true,
+                        });
+                        alert(`Ingreso creado: Rendimiento — ${nombreActivo}. Queda vinculado a este activo y podés ajustarlo en el módulo de Ingresos.`);
+                      }}
+                      style={{ marginTop: 8, padding: "8px 14px", borderRadius: 9,
+                        background: T.green, color: "#0a0a0a", border: "none",
+                        cursor: "pointer", fontSize: 12, fontWeight: 800 }}>
+                      + Registrar este rendimiento como ingreso
+                    </button>
+                  ) : (
+                    <div style={{ fontSize: 11, color: T.blue, marginTop: 6, fontWeight: 600 }}>
+                      👉 Agregá este ingreso en el módulo de Ingresos con categoría "Rendimiento"
+                    </div>
+                  )}
                 </div>
               )}
             </div>
