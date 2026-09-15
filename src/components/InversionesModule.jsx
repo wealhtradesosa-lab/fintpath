@@ -600,8 +600,62 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   }} type="number" placeholder="Ej: 12" /></div>
                 </div>
                 <div style={{fontSize:10,color:T.txt3,marginTop:6}}>Ingresa uno y el otro se calcula automáticamente. Si no genera ingreso, déjalos vacíos.</div>
-                <div style={{marginTop:10}}><In l="Gastos mensuales del activo ($)" value={form.gastosMes} onChange={(v) => setForm((p) => ({ ...p, gastosMes: v }))} type="number" placeholder="Admin, predial, seguros, mantenimiento..." /></div>
-                <div style={{fontSize:10,color:T.txt3,marginTop:4}}>Gastos asociados a este activo: administración, predial, seguros, mantenimiento. NOI = Ingreso - Gastos.</div>
+                {/* 14-sep-2026 (Santiago: "poner en una sola casilla todos los
+                    gastos que tiene esa propiedad es poco práctico").
+                    Tenía razón, y los datos lo confirman: de 187 activos
+                    cargados, UNO solo usaba este campo. Nadie puede meter
+                    predial, administración, seguros y mantenimiento en una
+                    casilla y después acordarse de qué se compone el número, ni
+                    actualizar uno sin recalcular a mano los otros.
+                    Los gastos ahora se cargan uno por uno en su sección y se
+                    vinculan al activo. Acá solo se muestra el resultado. */}
+                <div style={{ marginTop: 10, padding: "11px 13px", borderRadius: 10,
+                      background: T.bg3, border: "1px solid " + T.border }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3,
+                        letterSpacing: 0.3, textTransform: "uppercase", marginBottom: 6 }}>
+                    Gastos de este activo
+                  </div>
+                  {(() => {
+                    const anual = (typeof gastoPorActivo !== "undefined" && editId)
+                      ? (gastoPorActivo[editId] || 0) : 0;
+                    // El valor viejo del campo único se sigue mostrando si
+                    // existe: es dato real del usuario y borrarlo de la vista
+                    // sin avisar sería peor que la duplicación que corregimos.
+                    const legacy = Number(form.gastosMes) || 0;
+                    if (!anual && !legacy) {
+                      return (
+                        <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.55 }}>
+                          Sin gastos vinculados. Cargalos en <strong style={{ color: T.txt2 }}>Gastos</strong>{" "}
+                          y elegí este activo en “Activo al que pertenece”: predial,
+                          administración, seguros y mantenimiento como registros
+                          separados, cada uno con su propia vigencia.
+                        </div>
+                      );
+                    }
+                    return (
+                      <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
+                        {anual > 0 && (
+                          <div>
+                            Vinculados desde Gastos:{" "}
+                            <strong style={{ color: T.txt }}>
+                              ${Math.round(anual / 12).toLocaleString("es-CO")}/mes
+                            </strong>{" "}
+                            <span style={{ color: T.txt3 }}>
+                              (${Math.round(anual).toLocaleString("es-CO")} al año)
+                            </span>
+                          </div>
+                        )}
+                        {legacy > 0 && (
+                          <div style={{ marginTop: 5, fontSize: 11, color: "#f97316" }}>
+                            Además hay ${legacy.toLocaleString("es-CO")}/mes cargados en el
+                            campo antiguo. Conviene pasarlos a Gastos como registros
+                            separados para saber de qué se componen.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
               {false && <div style={{ gridColumn: "1/-1", background: T.blue + "10", borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 12, color: T.blue }}>💡 Si este activo genera renta mensual (arriendo, dividendos, rendimientos), ponla en el módulo de <strong>Ingresos</strong>. Aquí solo va el valor del activo.</div>
