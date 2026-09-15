@@ -587,6 +587,40 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               })()}
               <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
                 <div style={{fontSize:11,fontWeight:700,color:T.txt2,marginBottom:10}}>💰 ¿Este activo genera ingreso?</div>
+
+                {/* 14-sep-2026 — A diferencia del campo único de gastos, que se
+                    retiró porque lo usaba 1 de 187 activos, estos campos SÍ se
+                    usan: 50 de 187 tienen % de rendimiento. Así que no se
+                    quitan.
+                    Lo que faltaba era distinguir la ESTIMACIÓN del ingreso
+                    REGISTRADO. Escribir aquí un rendimiento no crea un ingreso
+                    — eso fue justamente lo que confundió a Santiago ("me dijo
+                    que sí lo añadía y no lo añadió"). Ahora el bloque muestra
+                    primero lo que de verdad está registrado y vinculado, y deja
+                    los campos como lo que son: una calculadora. */}
+                {(() => {
+                  const anual = (typeof rentaPorActivo !== "undefined" && editId)
+                    ? (rentaPorActivo[editId] || 0) : 0;
+                  if (!anual) return null;
+                  return (
+                    <div style={{ marginBottom: 10, padding: "9px 11px", borderRadius: 9,
+                          background: T.greenDim || "rgba(34,197,94,0.10)",
+                          border: "1px solid rgba(34,197,94,0.28)" }}>
+                      <div style={{ fontSize: 11.5, color: T.txt2, lineHeight: 1.55 }}>
+                        Ingresos ya registrados para este activo:{" "}
+                        <strong style={{ color: T.green }}>
+                          ${Math.round(anual / 12).toLocaleString("es-CO")}/mes
+                        </strong>{" "}
+                        <span style={{ color: T.txt3 }}>
+                          (${Math.round(anual).toLocaleString("es-CO")} al año)
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 10, color: T.txt3, marginTop: 3 }}>
+                        Es lo que cuenta para tu flujo de caja y tu rentabilidad.
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div style={{display:"flex",gap:8}}>
                   <div style={{flex:1}}><In l="Renta mensual ($)" value={form.renta} onChange={(v) => {
                     const va=parseFloat(form.va)||0;
@@ -599,7 +633,12 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     setForm((p) => ({ ...p, tasa: v, renta: String(newRenta) }));
                   }} type="number" placeholder="Ej: 12" /></div>
                 </div>
-                <div style={{fontSize:10,color:T.txt3,marginTop:6}}>Ingresa uno y el otro se calcula automáticamente. Si no genera ingreso, déjalos vacíos.</div>
+                <div style={{fontSize:10,color:T.txt3,marginTop:6,lineHeight:1.5}}>
+                  Estimación: escribí uno y el otro se calcula solo. Estos campos
+                  NO crean el ingreso — sirven para dimensionarlo. Para que cuente
+                  en tu flujo, registralo con el botón de abajo o desde la sección
+                  de Ingresos.
+                </div>
                 {/* 14-sep-2026 (Santiago: "poner en una sola casilla todos los
                     gastos que tiene esa propiedad es poco práctico").
                     Tenía razón, y los datos lo confirman: de 187 activos
@@ -660,7 +699,12 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               {false && <div style={{ gridColumn: "1/-1", background: T.blue + "10", borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 12, color: T.blue }}>💡 Si este activo genera renta mensual (arriendo, dividendos, rendimientos), ponla en el módulo de <strong>Ingresos</strong>. Aquí solo va el valor del activo.</div>
               </div>}
-              {form.tasa && parseFloat(form.tasa) > 0 && parseFloat(form.va) > 0 && (
+              {/* 14-sep-2026 — Antes el bloque solo aparecía si había % de
+                  rendimiento. Quien escribía la renta mensual directamente (8
+                  activos en la base) no veía nada y se quedaba sin forma de
+                  registrarla. Ahora basta con cualquiera de los dos: los campos
+                  están enlazados, así que escribir uno completa el otro. */}
+              {((parseFloat(form.tasa) > 0 && parseFloat(form.va) > 0) || parseFloat(form.renta) > 0) && (
                 <div style={{ gridColumn: "1/-1", background: T.greenDim, borderRadius: 10, padding: 14 }}>
                   <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Este activo generaría:</div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: T.green, marginTop: 4 }}>
@@ -683,7 +727,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     <button
                       type="button"
                       onClick={() => {
-                        const mensual = Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12);
+                        // Si el usuario escribió la renta, esa manda: es un
+                        // dato suyo, no una derivación del porcentaje.
+                        const mensual = parseFloat(form.renta) > 0
+                          ? Math.round(parseFloat(form.renta))
+                          : Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12);
                         if (!(mensual > 0)) return;
                         const nombreActivo = form.nombre || form.n || "activo";
                         onCrearIngreso({
