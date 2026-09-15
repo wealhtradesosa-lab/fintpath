@@ -10,7 +10,8 @@ import {
   ReferenceLine,
 } from "recharts";
 import Disclaimer from "./Disclaimer";
-import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
+import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx"
+import { claseDeActivo, CLASES } from "../lib/taxonomiaActivos.js";;
 import {
   DEFAULTS_PROYECCION,
   estimarAmortizacionAnual,
@@ -68,6 +69,48 @@ export default function ProyeccionPatrimonio({
       }),
     [user, patrimonioNeto, activos, deudasTotales]
   );
+
+  // ── 14-sep-2026 · Valorización derivada de la composición real ───────────
+  // Hasta hoy el campo traía 6% fijo para todo el mundo, y ese 6% se aplicaba
+  // por igual a un apartamento, a un CDT y a un carro. El VOLVO de Santiago,
+  // $190 millones, crecía 6% anual en la proyección cuando un vehículo se
+  // deprecia. Con un patrimonio suficientemente cargado de activos que pierden
+  // valor, el modelo entero se vuelve optimista sin que nadie lo note.
+  //
+  // Ahora el default sale de la mezcla real del usuario: cada activo aporta la
+  // valorización de SU clase, ponderada por cuánto pesa en el patrimonio.
+  //
+  // LIMITACIÓN CONOCIDA, y conviene decirla: es un promedio ponderado con los
+  // pesos de HOY. En la realidad los pesos se mueven — el carro que se deprecia
+  // pesa cada año menos, así que su arrastre disminuye. Proyectar activo por
+  // activo a lo largo del tiempo sería más exacto y requiere reescribir el
+  // motor. Este promedio ya corrige el error grande (tratar todo igual) sin
+  // pretender una precisión que no tiene.
+  const mezcla = useMemo(() => {
+    const TRM = user?.trm || 4200;
+    const inv = (user?.inv || []).filter((a) => a && a.sim !== false);
+    let total = 0;
+    const porClase = {};
+    inv.forEach((a) => {
+      const bruto = Number(a.va ?? a.valor_actual ?? a.valor ?? 0) || 0;
+      const v = a.moneda === "USD" ? bruto * TRM : bruto;
+      if (v <= 0) return;
+      const cl = claseDeActivo(a.tp || a.tipo);
+      porClase[cl.clase] = (porClase[cl.clase] || 0) + v;
+      total += v;
+    });
+    if (!total) return null;
+    let tasa = 0;
+    const detalle = Object.entries(porClase)
+      .map(([clase, valor]) => {
+        const peso = valor / total;
+        const r = (CLASES[clase]?.valorizacionRealAnual ?? 0);
+        tasa += peso * r;
+        return { clase, label: CLASES[clase]?.label || clase, peso, valor, r };
+      })
+      .sort((x, y) => y.valor - x.valor);
+    return { total, detalle, tasaReal: tasa };
+  }, [user]);
 
   const amortAnual = useMemo(
     () => estimarAmortizacionAnual(user?.deudas || [], snap.trm),
@@ -241,6 +284,50 @@ export default function ProyeccionPatrimonio({
             Se aplica sobre el total del patrimonio (inmuebles, inversiones,
             vehículos), no sobre el excedente de caja.
           </div>
+
+          {/* 14-sep-2026 — Sugerencia derivada de la composición real.
+              Se OFRECE, no se impone: cambiar el default en silencio movería
+              cifras que el usuario ya vio y comparó. Que el número salga de sus
+              propios activos es información; sustituirlo sin avisar sería otra
+              suposición, solo que mejor disfrazada. */}
+          {mezcla && (() => {
+            // El campo está en términos NOMINALES y la tabla de clases está en
+            // REALES. La conversión es compuesta, no una suma.
+            const nominal = ((1 + mezcla.tasaReal) * (1 + (Number(inflacionPct) || 0) / 100) - 1) * 100;
+            const actual = Number(retornoPct) || 0;
+            const igual = Math.abs(nominal - actual) < 0.15;
+            return (
+              <div style={{ marginTop: 8, padding: "9px 11px", borderRadius: 9,
+                    background: T.bg2 || "#18181b",
+                    border: `1px solid ${T.border || "rgba(255,255,255,0.08)"}` }}>
+                <div style={{ fontSize: 10.5, color: T.txt3 || "#71717a", lineHeight: 1.5 }}>
+                  Según la composición de tu patrimonio, la valorización esperada es{" "}
+                  <strong style={{ color: T.txt2 || "#a1a1aa" }}>{nominal.toFixed(1)}%</strong>{" "}
+                  nominal ({(mezcla.tasaReal * 100).toFixed(1)}% real).
+                </div>
+                <div style={{ fontSize: 10, color: T.txt3 || "#71717a", marginTop: 5, lineHeight: 1.6 }}>
+                  {mezcla.detalle.map((d) => (
+                    <span key={d.clase} style={{ marginRight: 10, whiteSpace: "nowrap" }}>
+                      {d.label} {(d.peso * 100).toFixed(0)}%
+                      <span style={{ color: d.r < 0 ? "#ef4444" : T.txt3, marginLeft: 3 }}>
+                        ({d.r > 0 ? "+" : ""}{(d.r * 100).toFixed(0)}%)
+                      </span>
+                    </span>
+                  ))}
+                </div>
+                {!igual && (
+                  <button type="button"
+                    onClick={() => setRetornoPct(String(nominal.toFixed(1)))}
+                    style={{ marginTop: 7, padding: "5px 10px", borderRadius: 7,
+                      background: "transparent", cursor: "pointer", fontSize: 10.5, fontWeight: 700,
+                      color: T.green || "#22c55e",
+                      border: `1px solid ${T.green || "#22c55e"}` }}>
+                    Usar {nominal.toFixed(1)}%
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
         <div>
           <div style={labelStyle}>Inflación %</div>
