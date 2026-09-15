@@ -192,6 +192,15 @@ const INITIAL_FORM = {
   nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO",
   mensual: "", tipo: "fijo", fuente: "",
   capital: "", tasa: "", tasaModo: "anual", moneda: "COP", owner: "",
+  // 14-sep-2026 — Vínculo ingreso → activo.
+  // Hasta hoy la plataforma tenía 160 ingresos y 0 ligados a un activo. En los
+  // datos reales de Santiago conviven el activo "orlando" y el ingreso
+  // "K ORLANDO", o "Puerto madero" y "LAKE VILLA PUERTO MADERO & DOME", sin
+  // que nada los relacione. Eso deja al modelo sin poder responder preguntas
+  // básicas de patrimonio: qué rinde cada activo, cuáles no producen nada, y
+  // qué ingreso desaparece si uno se vende.
+  // Es opcional: un salario no viene de ningún activo.
+  activoId: "",
   // Commit 1.5: aportes obligatorios (sólo aplican a Salario)
   aportePension: "", aporteSalud: "",
   // Commit IBC: modo y # SMMLV (alternativa al valor en pesos)
@@ -1059,6 +1068,42 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   🧾 Clasificación tributaria <span style={{color:T.txt3,fontWeight:400,opacity:0.7}}>(opcional)</span>
                 </div>
               </div>
+
+              {/* 14-sep-2026 — Origen patrimonial del ingreso.
+                  Solo se ofrece si el usuario tiene activos cargados: sin
+                  activos el selector sería una pregunta sin respuestas
+                  posibles. Y es opcional a propósito -- un salario no proviene
+                  de ningún activo, y forzar el vínculo produciría datos falsos
+                  peores que la ausencia del dato. */}
+              {((user?.inv || []).length > 0) && (
+                <div style={{ gridColumn: "1/-1" }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3,
+                        display: "block", marginBottom: 5 }}>
+                    Activo que genera este ingreso
+                    <span style={{ fontWeight: 400, opacity: 0.7 }}> · opcional</span>
+                  </label>
+                  <select
+                    value={form.activoId || ""}
+                    onChange={(e) => setForm((p) => ({ ...p, activoId: e.target.value }))}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 10,
+                      background: T.bg3, color: T.txt,
+                      border: "1px solid " + T.border, fontSize: 13 }}>
+                    <option value="">No proviene de un activo (salario, honorarios…)</option>
+                    {(user?.inv || [])
+                      .filter((a) => a && (a.id || a.n))
+                      .map((a, idx) => (
+                        <option key={a.id || idx} value={a.id || String(idx)}>
+                          {a.n || a.nombre || "Activo sin nombre"}
+                          {a.tp ? ` — ${a.tp}` : ""}
+                        </option>
+                      ))}
+                  </select>
+                  <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.45 }}>
+                    Permite calcular la rentabilidad de cada activo e identificar
+                    los que no generan ingreso.
+                  </div>
+                </div>
+              )}
               <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => {
                 const nf = { ...p, categoria: v, fiscalCode: DEFAULT_FISCAL_CODE[v] || "NOL_OTROS" };
                 // Commit 1.5: si cambia a Salario y ya hay bruto pero no aportes, prefill 4%+4%

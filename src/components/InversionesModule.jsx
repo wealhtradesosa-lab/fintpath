@@ -76,8 +76,15 @@ const getVC = (i, trm) => vcCOP({ ...i, vc: i.vc ?? i.valor_compra ?? i.costo ??
 const getVArw = (i) => Number(i.va ?? i.valor_actual ?? i.valor ?? 0);
 const getVCrw = (i) => Number(i.vc ?? i.valor_compra ?? i.costo ?? 0);
 
-function calcMetrics(inv, deudas, trm) {
-  let ig = 0, gs = 0;
+// 14-sep-2026 — `rentaVinculadaMes` es el ingreso que llega desde la LISTA
+// GLOBAL de ingresos vía activoId, en pesos y ya mensualizado.
+// Hallazgo del día: la plataforma tenía DOS representaciones del mismo hecho
+// -- ingreso anidado dentro del activo (15 activos lo usan) e ingreso en la
+// lista global (160 registros) -- sin relación entre ellas. En vez de sumar
+// una tercera, el vínculo nuevo alimenta este mismo cálculo: cap rate y
+// cash-on-cash ya existían y se quedaban cortos porque solo veían una mitad.
+function calcMetrics(inv, deudas, trm, rentaVinculadaMes = 0) {
+  let ig = rentaVinculadaMes, gs = 0;
   if (inv.unidades || inv.un) {
     (inv.unidades || inv.un || []).forEach((u) => {
       (u.ingresos || u.ig || []).forEach((i) => { ig += i.m || 0; });
@@ -112,6 +119,31 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
   );
 
 export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user, trm, plan, onUpgrade}) {
+  // ── 14-sep-2026 · Rentabilidad por activo ────────────────────────────────
+  // Primer uso del vínculo ingreso → activo. Antes un activo era solo un valor
+  // de compra y uno actual: la plataforma no sabía si producía algo. Con el
+  // vínculo se puede calcular el yield -- ingreso anual sobre valor actual --
+  // y, más importante, señalar los activos que no generan ningún ingreso.
+  // Un activo improductivo no es necesariamente un error (una casa de recreo,
+  // un lote en valorización), pero el usuario debería verlo y decidirlo, no
+  // ignorarlo por omisión del modelo.
+  const rentaPorActivo = useMemo(() => {
+    const mapa = {};
+    const TRM = trm || 4200;
+    (user?.ingresos || []).forEach((ing) => {
+      const id = ing?.activoId;
+      if (!id || ing.sim === false) return;
+      const mensualCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? TRM : 1);
+      // Se cuentan los meses de vigencia: un arriendo de 3 meses no rinde igual
+      // que uno de 12, y anualizar el mensual los igualaría en falso.
+      const desde = Number(ing.desdeMes) || 1;
+      const hasta = Number(ing.hastaMes) || 12;
+      const meses = Math.max(0, Math.min(12, hasta) - Math.max(1, desde) + 1);
+      mapa[id] = (mapa[id] || 0) + mensualCop * meses;
+    });
+    return mapa;
+  }, [user, trm]);
+
   const fm = fmt || _fm;
   // Fase 3 commit 6: gating reader.
   const { role } = useRole();
@@ -415,7 +447,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     </td>
                   </tr>
                 );
-                const m = calcMetrics(inv, deudas, trm);
+                // La renta vinculada viene anualizada; calcMetrics trabaja en
+                // mensual (multiplica por 12 para el cap rate), así que se divide.
+                const m = calcMetrics(inv, deudas, trm, (rentaPorActivo[inv.id] || 0) / 12);
                 const name = getName(inv);
                 const loc = getLoc(inv);
                 const tipo = getType(inv);
