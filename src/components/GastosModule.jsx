@@ -300,7 +300,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const fm = fmt || _fm;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
-  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+  const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), activoId: "", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   // UX flujo anual (18-jul-2026): modo de captura del monto.
   // 'porPago' = el user ingresa el monto de cada pago (semestre, trimestre, etc)
   // 'anual'   = el user ingresa el total anual, el sistema divide por N
@@ -416,6 +416,16 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       const base = {
         c: form.c || "",
         m: mPorPeriodo,
+        // 14-sep-2026 (Santiago: "ese tema de los gastos en un activo mejor
+        // déjemoslo para la sección de gastos, que ahí al crearse se pueda
+        // decir a qué activo pertenecen"). Es el simétrico del vínculo del
+        // ingreso, y por el mismo motivo: el gasto es un hecho propio que
+        // PERTENECE a un activo, no una propiedad del activo. Tenerlo adentro
+        // duplicaba la representación -- el predial de un inmueble podía vivir
+        // en dos lugares que no se hablaban.
+        // undefined cuando está vacío para no ensuciar los gastos que no
+        // corresponden a ningún activo, que son la mayoría.
+        activoId: form.activoId || undefined,
         // Sin `moneda` se asume COP, así que nada de lo ya cargado cambia.
         moneda: form.moneda || undefined,
         t: form.t || "f",
@@ -465,7 +475,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     setShowForm(false);
     setEditKey(null);
     setTemplateElegido(null); // reset para próxima creación
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), activoId: "", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   };
 
   const openEdit = (item) => {
@@ -490,7 +500,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       // 26-jul-2026: sin esto, editar un gasto cargado en USD lo devolvía a
       // COP en silencio — el formulario arrancaba con el valor por defecto y
       // al guardar pisaba la moneda original.
-      moneda: item.moneda || "COP", freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, vigenciaModo: item.vigenciaModo, montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
+      activoId: item.activoId || "", moneda: item.moneda || "COP", freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, vigenciaModo: item.vigenciaModo, montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
     // UX iter 4 (18-jul-2026 noche): detectar template correcto del item existente
     setTemplateElegido(detectarTemplate(item));
@@ -499,7 +509,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   };
 
   const openAdd = () => {
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), activoId: "", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
     setModoIngreso("porPago"); // default al crear
     setTemplateElegido(null); // resetear plantilla
     setEditKey(null);
@@ -916,6 +926,37 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 setForm((p) => ({ ...p, cat: v, fiscalCode: defaultFiscalCode(ownerType, v) }));
               }} options={[{v:"Aporte tributario",l:"🛡️ Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Inmueble arrendado",l:"🏢 Costos de inmueble arrendado (admón, predial, mantenimiento)"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Impuesto",l:"🏛️ Impuesto (predial, rodamiento, ICA, otros)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
+
+              {/* Vínculo al activo. Solo se ofrece si hay activos cargados:
+                  sin activos sería una pregunta sin respuestas posibles.
+                  Opcional a propósito -- el mercado o el colegio no pertenecen
+                  a ningún activo, y forzar el vínculo produciría datos falsos. */}
+              {((user?.inv || []).length > 0) && (
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3,
+                        display: "block", marginBottom: 5 }}>
+                    Activo al que pertenece
+                    <span style={{ fontWeight: 400, opacity: 0.7 }}> · opcional</span>
+                  </label>
+                  <select
+                    value={form.activoId || ""}
+                    onChange={(e) => setForm((p) => ({ ...p, activoId: e.target.value }))}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 10,
+                      background: T.bg3, color: T.txt,
+                      border: "1px solid " + T.border, fontSize: 13 }}>
+                    <option value="">Gasto general (no pertenece a un activo)</option>
+                    {(user?.inv || []).filter((a) => a && (a.id || a.n)).map((a, idx) => (
+                      <option key={a.id || idx} value={a.id || String(idx)}>
+                        {a.n || a.nombre || "Activo sin nombre"}{a.tp ? ` — ${a.tp}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.45 }}>
+                    Predial, administración, seguros o mantenimiento del activo.
+                    Se descuentan de su rentabilidad.
+                  </div>
+                </div>
+              )}
 
             {/* 26-jul-2026 (Santiago): "que pueda ingresarlo en la moneda que
                 tenga el valor". Gastos era el único de los cuatro módulos sin

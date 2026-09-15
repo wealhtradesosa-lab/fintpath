@@ -83,8 +83,8 @@ const getVCrw = (i) => Number(i.vc ?? i.valor_compra ?? i.costo ?? 0);
 // lista global (160 registros) -- sin relación entre ellas. En vez de sumar
 // una tercera, el vínculo nuevo alimenta este mismo cálculo: cap rate y
 // cash-on-cash ya existían y se quedaban cortos porque solo veían una mitad.
-function calcMetrics(inv, deudas, trm, rentaVinculadaMes = 0) {
-  let ig = rentaVinculadaMes, gs = 0;
+function calcMetrics(inv, deudas, trm, rentaVinculadaMes = 0, gastoVinculadoMes = 0) {
+  let ig = rentaVinculadaMes, gs = gastoVinculadoMes;
   if (inv.unidades || inv.un) {
     (inv.unidades || inv.un || []).forEach((u) => {
       (u.ingresos || u.ig || []).forEach((i) => { ig += i.m || 0; });
@@ -140,6 +140,26 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       const hasta = Number(ing.hastaMes) || 12;
       const meses = Math.max(0, Math.min(12, hasta) - Math.max(1, desde) + 1);
       mapa[id] = (mapa[id] || 0) + mensualCop * meses;
+    });
+    return mapa;
+  }, [user, trm]);
+
+  // 14-sep-2026 — Simétrico del anterior: gastos que el usuario marcó como
+  // pertenecientes a un activo. Sin esto el cap rate quedaría bruto (renta sin
+  // descontar predial, administración ni seguros) y sobreestimaría todo.
+  const gastoPorActivo = useMemo(() => {
+    const mapa = {};
+    const TRM = trm || 4200;
+    Object.values(user?.gastos || {}).forEach((items) => {
+      (items || []).forEach((g) => {
+        const id = g?.activoId;
+        if (!id || g.sim === false) return;
+        const mensualCop = (Number(g.m) || 0) * (g.moneda === "USD" ? TRM : 1);
+        const desde = Number(g.desdeMes) || 1;
+        const hasta = Number(g.hastaMes) || 12;
+        const meses = Math.max(0, Math.min(12, hasta) - Math.max(1, desde) + 1);
+        mapa[id] = (mapa[id] || 0) + mensualCop * meses;
+      });
     });
     return mapa;
   }, [user, trm]);
@@ -449,7 +469,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 );
                 // La renta vinculada viene anualizada; calcMetrics trabaja en
                 // mensual (multiplica por 12 para el cap rate), así que se divide.
-                const m = calcMetrics(inv, deudas, trm, (rentaPorActivo[inv.id] || 0) / 12);
+                const m = calcMetrics(inv, deudas, trm, (rentaPorActivo[inv.id] || 0) / 12, (gastoPorActivo[inv.id] || 0) / 12);
                 const name = getName(inv);
                 const loc = getLoc(inv);
                 const tipo = getType(inv);
