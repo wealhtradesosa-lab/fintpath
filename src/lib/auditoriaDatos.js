@@ -37,6 +37,17 @@
  * @returns {object} { errores, advertencias, oportunidadesData, faltantes, ignorados, total }
  */
 export function auditarDatos(user, options = {}) {
+  // 14-sep-2026 — Cuarto punto de la revisión ontológica: la moneda era un
+  // atributo suelto y cada consumidor decidía si convertía. Auditando los 81
+  // puntos del código que convierten a mano aparecieron tres que NO lo hacían,
+  // los tres en este archivo y los tres comparando contra topes de la DIAN
+  // expresados en pesos.
+  // El efecto: un honorario de USD 2.000 mensuales son ~$100 millones al año y
+  // la auditoría lo leía como $24.000, así que nunca disparaba la advertencia
+  // de retención. Un falso negativo silencioso en la parte fiscal, que es
+  // justo donde menos se puede fallar.
+  const aCOP = (item) =>
+    (Number(item?.mensual) || 0) * (item?.moneda === "USD" ? (Number(user?.trm) || 4200) : 1);
   if (!user) return vacio();
 
   const dismissed = new Set(options.dismissed || user.auditDismissed || []);
@@ -230,7 +241,7 @@ export function auditarDatos(user, options = {}) {
     const honor = activos.ingresos.filter(i =>
       i.owner === o.id && (i.fiscalCode === "LAB_HONORARIOS_CON_EMPLEADOS" || i.fiscalCode === "LAB_HONORARIOS_SIN_EMPLEADOS")
     );
-    const totalHonorAnual = honor.reduce((s, i) => s + (Number(i.mensual) || 0) * 12, 0);
+    const totalHonorAnual = honor.reduce((s, i) => s + aCOP(i) * 12, 0);
     if (totalHonorAnual > 40_000_000 && !honor.some(i => i.retencion > 0 || i.tieneRetencion)) {
       advertencias.push({
         id: `honor_sin_reten_${o.id}`,
@@ -277,7 +288,9 @@ export function auditarDatos(user, options = {}) {
   // Items duplicados (mismo owner + mismo fiscalCode + mismo monto exacto)
   const ingPorClave = {};
   activos.ingresos.forEach(i => {
-    const k = `${i.owner}_${i.fiscalCode}_${Math.round(Number(i.mensual) || 0)}`;
+    // La clave de duplicados normaliza a pesos: sin eso, el mismo ingreso
+    // cargado una vez en USD y otra en COP no se detecta como repetido.
+    const k = `${i.owner}_${i.fiscalCode}_${Math.round(aCOP(i))}`;
     ingPorClave[k] = (ingPorClave[k] || 0) + 1;
   });
   Object.entries(ingPorClave)
@@ -324,7 +337,7 @@ export function auditarDatos(user, options = {}) {
     const honor = activos.ingresos.filter(i =>
       i.owner === o.id && (i.fiscalCode === "LAB_HONORARIOS_CON_EMPLEADOS" || i.fiscalCode === "LAB_HONORARIOS_SIN_EMPLEADOS")
     );
-    const totalHonor = honor.reduce((s, i) => s + (Number(i.mensual) || 0) * 12, 0);
+    const totalHonor = honor.reduce((s, i) => s + aCOP(i) * 12, 0);
     const tieneCostos = ["Oficina", "Transporte", "Materiales", "Equipos"].some(cat =>
       (activos.gastos[cat] || []).some(g => g.owner === o.id)
     );

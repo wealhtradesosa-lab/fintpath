@@ -485,6 +485,29 @@ export function mesesLibreDeuda(deudas) {
 export const vaCOP = (i, trm = 1) => (Number(i?.va) || 0) * (i?.moneda === "USD" ? trm : 1);
 export const vcCOP = (i, trm = 1) => (Number(i?.vc) || 0) * (i?.moneda === "USD" ? trm : 1);
 
+/**
+ * 14-sep-2026 — Conversión genérica de cualquier campo monetario.
+ *
+ * Existían vaCOP y vcCOP, atados a los campos `va` y `vc` de un activo. Todo
+ * lo demás — el `mensual` de un ingreso, el `m` de un gasto, el `pg` de una
+ * cuota — se convertía a mano, repitiendo `x.moneda === "USD" ? trm : 1` en 81
+ * lugares del código. Cada repetición es una oportunidad de olvidarse, y al
+ * auditarlas aparecieron tres que efectivamente se habían olvidado, las tres
+ * comparando contra topes de la DIAN en pesos.
+ *
+ * La moneda debería ser parte inseparable del monto, no un atributo que cada
+ * consumidor decide si mirar. Migrar el modelo a un par {valor, moneda} toca
+ * datos de usuarios reales; esto es el paso intermedio honesto: un único lugar
+ * donde ocurre la conversión, para que los sitios nuevos no tengan excusa para
+ * hacerlo a mano.
+ *
+ *   montoCOP(ingreso, "mensual", trm)
+ *   montoCOP(gasto, "m", trm)
+ *   montoCOP(deuda, "pg", trm)
+ */
+export const montoCOP = (item, campo = "mensual", trm = 1) =>
+  (Number(item?.[campo]) || 0) * (item?.moneda === "USD" ? (Number(trm) || 1) : 1);
+
 
 // Métricas de costo por crédito (23-jul-2026, idea de Santiago). NO pide
 // campos nuevos: deriva todo de saldo (mt), cuota (pg) y tasa EA (ts).
