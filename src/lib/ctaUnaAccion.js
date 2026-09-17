@@ -8,8 +8,9 @@
  *  1) CF ≤ 0 → no aumentar gasto / estabilizar CF
  *  2) Deuda con saldo y mayor tasa → abono extra $X
  *  3) Meta con gap de fondeo → apartar $Z
- *  4) Fiscal si quedan UVT bajo tope Art.336 y CF cubre (borrador, no tip)
- *  5) CF+ → aporte a reserva / Tu Norte
+ *  4) CF+ → aporte a reserva / Tu Norte
+ *  5) Fiscal SOLO si UVT restantes Art.336 + CF cubre + saldo a pagar > 0
+ *     (borrador; no tip; no toca taxCO.js)
  */
 
 /** @param {number} n */
@@ -198,8 +199,29 @@ export function elegirUnaAccion(input = {}) {
     }
   }
 
-  // 4) Fiscal — solo si quedan UVT bajo tope 336 y CF cubre un aporte
-  if (fiscal.uvtRestantes > 0 && fiscal.espacioCop > 0 && cf > 0) {
+  // 4) CF+ → reserva / Tu Norte (antes que fiscal)
+  const zReserva = Math.round(cf * 0.3); // 30% dentro del rango 20–50%
+  if (zReserva > 0) {
+    return {
+      id: "reserva_norte",
+      path: "reserva",
+      frase: `Apartá ${fmtCop(zReserva)} a reserva / Tu Norte`,
+      monto: zReserva,
+      porQue:
+        "Sin deuda cara ni meta con gap: el excedente del período fortalece reserva o el norte patrimonial.",
+      chip: "Fondeado con tu CF",
+      detalle: { cfMensual: cf, pct: 0.3 },
+    };
+  }
+
+  // 5) Fiscal — SOLO si UVT restantes Art.336 + CF cubre + saldo a pagar > 0
+  //    Copy borrador; NO toca taxCO.js
+  if (
+    fiscal.uvtRestantes > 0 &&
+    fiscal.espacioCop > 0 &&
+    fiscal.saldoAPagar > 0 &&
+    cf > 0
+  ) {
     const aporte = Math.max(
       0,
       Math.min(fiscal.espacioCop, Math.round(cf * 0.5), Math.round(cf))
@@ -212,17 +234,14 @@ export function elegirUnaAccion(input = {}) {
         frase: `Te quedan ~${fiscal.uvtRestantes} UVT del tope Art. 336; un AFC/PV de ${fmtCop(aporte)} baja el saldo a pagar ~${fmtCop(ahorro)}`,
         monto: aporte,
         porQue:
-          fiscal.saldoAPagar > 0
-            ? `Saldo a pagar estimado ${fmtCop(fiscal.saldoAPagar)} (borrador; no es tip ni liquidación DIAN).`
-            : "Hay espacio UVT bajo el tope 336; el número es borrador del motor, no asesoría.",
+          `Saldo a pagar estimado ${fmtCop(fiscal.saldoAPagar)} (borrador; no es tip ni liquidación DIAN).`,
         chip: "Fondeado con tu CF · estimación",
         detalle: { ...fiscal, aporte, ahorroEstimado: ahorro, cfMensual: cf },
       };
     }
   }
 
-  // 5) CF+ → reserva / Tu Norte
-  const zReserva = Math.round(cf * 0.3); // 30% dentro del rango 20–50%
+  // Fallback: reserva aunque el monto redondee a 0
   return {
     id: "reserva_norte",
     path: "reserva",
