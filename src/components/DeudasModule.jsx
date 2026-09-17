@@ -517,14 +517,38 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                         <button
                           onClick={() => {
                             if (!guardEdit(role)) return;
-                            const mes = new Date().getMonth() + 1;
+                            const mesHoy = new Date().getMonth() + 1;
                             const cuota = Number(d.pg || d.pago || 0);
-                            if (!confirm(`¿Marcar "${d.n || "esta deuda"}" como pagada?\n\nSe conserva el histórico del año y deja de descontarse desde ${MESES_NOM[mes - 1]} en adelante.`)) return;
+                            // 15-sep-2026 (Santiago: "uno debería poner que quedó
+                            // en cero o hasta el mes que se pagó?"). La primera
+                            // versión asumía que el mes en curso ya no se pagaba
+                            // (hastaMes = mes - 1). Es la suposición equivocada
+                            // para el caso más común: uno paga la última cuota y
+                            // con esa queda saldado, así que ese mes SÍ cuenta.
+                            // Ninguna de las dos se puede deducir del dato, así
+                            // que se pregunta. Un mes de cuota mal contado
+                            // desplaza el flujo de todo el año.
+                            const resp = prompt(
+                              `¿Cuál fue el ÚLTIMO mes que pagaste cuota de "${d.n || "esta deuda"}"?\n\n` +
+                              MESES_NOM.map((m, i) => `${i + 1} = ${m}`).join("   ") +
+                              `\n\nEse mes y los anteriores siguen contando en tu flujo; desde el siguiente deja de descontarse.`,
+                              String(mesHoy)
+                            );
+                            if (resp === null) return;
+                            const ultimoMes = Math.min(12, Math.max(1, parseInt(resp, 10) || mesHoy));
                             onUpdate(deudas.map(x => x.id === d.id
-                              ? { ...x, pagada: true, pagadaMes: mes, pagadaEl: new Date().toISOString().slice(0, 10), hastaMes: Math.max(1, mes - 1), mt: 0 }
+                              ? { ...x, pagada: true, pagadaMes: ultimoMes, pagadaEl: new Date().toISOString().slice(0, 10), hastaMes: ultimoMes, mt: 0 }
                               : x));
                             if (cuota > 0) {
-                              alert(`Deuda saldada. Liberaste $${Math.round(cuota).toLocaleString("es-CO")} al mes de flujo — $${Math.round(cuota * 12).toLocaleString("es-CO")} al año.`);
+                              const mesesRestantes = 12 - ultimoMes;
+                              alert(
+                                `Deuda saldada en ${MESES_NOM[ultimoMes - 1]}.\n\n` +
+                                `Liberás $${Math.round(cuota).toLocaleString("es-CO")} al mes.\n` +
+                                (mesesRestantes > 0
+                                  ? `Quedan ${mesesRestantes} ${mesesRestantes === 1 ? "mes" : "meses"} del año sin esa cuota: $${Math.round(cuota * mesesRestantes).toLocaleString("es-CO")}.`
+                                  : `El año ya estaba cubierto; el alivio se ve completo el año entrante.`) +
+                                `\nEn un año completo son $${Math.round(cuota * 12).toLocaleString("es-CO")}.`
+                              );
                             }
                           }}
                           title="La terminé de pagar"
