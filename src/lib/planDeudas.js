@@ -345,11 +345,28 @@ export function fraseTradeOff({
   const verB =
     trade.escenarioB.veredicto === "crece" ? "Crece" : "Se come";
   const pct = Math.round((Number(trade.retornoExcedente) || 0.06) * 1000) / 10;
+  // 16-sep-2026 (Santiago: "esto no se entiende, confuso, mal redactado, poco
+  // claro"). El texto anterior era una sola linea con cinco cifras, dos
+  // escenarios, dos veredictos, una referencia interna al "supuesto #19" y un
+  // disclaimer, separados por puntos medios. Nombraba un supuesto por su numero
+  // de ficha interna, que al usuario no le dice nada, y dejaba implicito lo
+  // unico que importa: cual de los dos caminos deja mas patrimonio.
+  //
+  // Ahora se estructura como la decision que es -- dos opciones comparables --
+  // y se cierra con la diferencia calculada, que es la respuesta.
+  const difA = num(trade.escenarioA.patrimonio3a) - num(trade.escenarioB.patrimonio3a);
+  const gana = difA >= 0 ? "pagar las deudas" : "dejarlo invertido";
+  const dif = fm(Math.abs(difA));
+
   return (
-    `Con ${fm(x)}/mes a deudas: cero en ${labelMeses} · patrimonio a 3a: ${fm(trade.escenarioA.patrimonio3a)} (${verA}). ` +
-    `Si ese extra queda en el patrimonio con el supuesto #19 (valorización ${pct}% anual, pre-impuestos): ` +
-    `patrimonio a 3a: ${fm(trade.escenarioB.patrimonio3a)} (${verB}) · deudas siguen en ${fm(trade.escenarioB.deudasRestantes3a)}. ` +
-    `No es consejo de inversión; mismo supuesto de valorización que la proyección #19.`
+    `Si destinás ${fm(x)} al mes a pagar deudas: quedás en cero en ${labelMeses}, ` +
+    `y a 3 años tu patrimonio sería ${fm(trade.escenarioA.patrimonio3a)}.\n` +
+    `Si en cambio dejás esa plata invertida: a 3 años tu patrimonio sería ` +
+    `${fm(trade.escenarioB.patrimonio3a)}, pero seguirías debiendo ` +
+    `${fm(trade.escenarioB.deudasRestantes3a)}.\n` +
+    `A 3 años conviene ${gana}, por una diferencia de ${dif}. ` +
+    `Supone que lo invertido se valoriza ${pct}% anual, antes de impuestos. ` +
+    `Es una comparación, no una recomendación de inversión.`
   );
 }
 

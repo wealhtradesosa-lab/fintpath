@@ -105,8 +105,9 @@ export default function PlanDeudasACero({
             Orden + meses + trade-off vs patrimonio
           </div>
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, maxWidth: 520 }}>
-            Extra desde CF post-cuotas (misma fuente #19 / t.cf). Trade-off a 3 años con el
-            supuesto de valorización #19 (pre-impuestos) — no es consejo de inversión.
+            El monto extra sale de tu flujo de caja disponible, ya descontadas las
+            cuotas que pagás hoy. La comparación a 3 años asume una valorización
+            antes de impuestos; es una comparación, no una recomendación de inversión.
           </div>
         </div>
 
@@ -410,9 +411,12 @@ export default function PlanDeudasACero({
                 marginBottom: 6,
               }}
             >
-              Trade-off a 3 años (supuesto #19)
+              ¿Pagar deudas o invertir? Comparación a 3 años
             </div>
-            <div style={{ fontSize: 13, color: T.txt, lineHeight: 1.55 }}>
+            {/* whiteSpace: "pre-line" respeta los saltos de línea del texto.
+                Sin esto las tres frases se pegan en un bloque corrido, que es
+                justo lo que hacía ilegible la versión anterior. */}
+            <div style={{ fontSize: 13, color: T.txt, lineHeight: 1.65, whiteSpace: "pre-line" }}>
               {plan.fraseTrade}
             </div>
             {plan.trade && (
@@ -425,7 +429,7 @@ export default function PlanDeudasACero({
                 }}
               >
                 <MiniCard
-                  label="A · atacar deuda"
+                  label="Si pagás deudas"
                   value={fm(plan.trade.escenarioA.patrimonio3a)}
                   sub={
                     plan.trade.escenarioA.veredicto === "crece" ? "Crece" : "Se come"
@@ -435,7 +439,7 @@ export default function PlanDeudasACero({
                   }
                 />
                 <MiniCard
-                  label="B · extra en patrimonio (#19)"
+                  label="Si lo dejás invertido"
                   value={fm(plan.trade.escenarioB.patrimonio3a)}
                   sub={
                     (plan.trade.escenarioB.veredicto === "crece"
@@ -491,11 +495,11 @@ export default function PlanDeudasACero({
               <div style={{ marginTop: 4 }}>
                 <strong style={{ color: T.txt2 }}>Simulación:</strong> cuota mínima en
                 todas; 100% del extra a la #1 hasta cero. Interés mensual ≈ tasa/12
-                (espíritu costoCredito). Cap 600 meses → “&gt;50 años” si no converge.
+                Si con el aporte actual la deuda no llega a cero, se muestra “&gt;50 años”.
               </div>
               <div style={{ marginTop: 4 }}>
-                <strong style={{ color: T.txt2 }}>Trade-off B:</strong> mismo supuesto
-                de valorización que proyección #19 (
+                <strong style={{ color: T.txt2 }}>Escenario invertir:</strong> usa la
+                misma valorización que la proyección de patrimonio (
                 {Math.round((plan.trade?.retornoExcedente || 0.06) * 1000) / 10}% anual,
                 pre-impuestos). No incluye supuestos fiscales.
               </div>
