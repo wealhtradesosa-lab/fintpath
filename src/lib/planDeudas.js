@@ -224,10 +224,14 @@ export function simularPlanACero(deudasOrdenadas = [], extraMensual = 0) {
   } else {
     const y = Math.floor(meses / 12);
     const m = meses % 12;
+    // 16-sep-2026 (Santiago: "3a es que 3 años?"). Si hay que preguntarlo, la
+    // abreviatura no está ahorrando nada. "2a 8m" se lee rápido solo si ya
+    // sabés qué significa; escrito completo no necesita traducción.
+    const añosTxt = `${y} ${y === 1 ? "año" : "años"}`;
     labelMeses =
       m === 0
-        ? `${meses} meses (${y}a)`
-        : `${meses} meses (${y}a ${m}m)`;
+        ? `${meses} meses (${añosTxt})`
+        : `${meses} meses (${añosTxt} y ${m} ${m === 1 ? "mes" : "meses"})`;
   }
 
   return {

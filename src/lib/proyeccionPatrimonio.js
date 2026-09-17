@@ -171,7 +171,11 @@ export function proyectarPatrimonio(input = {}) {
     const deflactor = Math.pow(1 + infl, y);
     serie.push({
       año: y,
-      label: `+${y}a`,
+      // 16-sep-2026 — En un eje de gráfica la abreviatura se justifica por
+      // espacio, pero la primera marca lleva la unidad para que no haya que
+      // adivinarla: "+1 año", "+2a", "+3a"... Con una sola referencia explícita
+      // el resto se interpreta solo.
+      label: y === 1 ? "+1 año" : `+${y}a`,
       activos: Math.round(activos),
       deudas: Math.round(deudas),
       patrimonio: Math.round(patrimonio),
