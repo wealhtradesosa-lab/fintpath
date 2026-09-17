@@ -5,6 +5,7 @@ import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import NumberInput from "./NumberInput";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
+import PlanDeudasACero from "./PlanDeudasACero";
 import PageHeader from "./PageHeader";
 import { exportDeudasExcel } from "../lib/excelExport.js";
 import { exportDeudasPDF } from "../lib/pdfSectionExport.js";
@@ -37,7 +38,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fmt, onImport, user, plan, onUpgrade, trm}) {
+export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fmt, onImport, user, plan, onUpgrade, trm, cashFlow = 0, onExtraADeudasChange }) {
   const MESES_NOM = ["enero","febrero","marzo","abril","mayo","junio","julio",
     "agosto","septiembre","octubre","noviembre","diciembre"];
 
@@ -290,8 +291,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         );
       })()}
 
-      {/* Banner explicando toggle sim (Commit 8.8) */}
-      />
+      {/* Banner explicando toggle sim (Commit 8.8) — SimToggleInfo más abajo */}
 
       {/* Gancho (23-jul-2026, idea Santiago): cuánto sangran los intereses al año.
           Solo si hay deuda con tasa. Ver el número anual mueve más que el saldo. */}
@@ -322,6 +322,15 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           </div>
         ))}
       </div>
+
+      <PlanDeudasACero
+        deudas={deudas}
+        user={user}
+        trm={trm || user?.trm || 4200}
+        cashFlow={cashFlow}
+        fmt={fm}
+        onExtraADeudasChange={onExtraADeudasChange}
+      />
 
       {/* 26-jul-2026 (Santiago): barra por tipo de crédito. En deudas la
           proporción que importa es del SALDO, no de la cuota: es lo que dice

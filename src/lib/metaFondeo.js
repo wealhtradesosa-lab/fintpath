@@ -4,7 +4,7 @@
  * Solo cálculo. No toca taxCO / simulador / #19 / FlujoAnual.
  * CF mensual llega ya neto (post-cuotas) desde App t.cf / simT.cf / FlujoAnual.
  *
- * P0.3 hook: extraADeudas = 0 en V1 → cfDisponibleMetas = cf − 0.
+ * P0.3 hook: extraADeudas resta del CF disponible para metas.
  */
 
 /** @param {unknown} n */
@@ -55,7 +55,7 @@ export function mesesHastaFecha(fechaMeta, hoy = new Date()) {
 
 /**
  * CF disponible para metas = CF post-cuotas − extra a deudas.
- * V1 (P0.2): extraADeudas = 0 (P0.3 lo llenará).
+ * extraADeudas viene de Plan a cero (P0.3) vía App.
  */
 export function cfDisponibleMetas(cfMensual, extraADeudas = 0) {
   return num(cfMensual) - num(extraADeudas);
@@ -272,4 +272,4 @@ export const EMPTY_STATE_COPY =
   "Creá una meta con monto y fecha para ver si el CF la fondea.";
 
 export const FUENTE_CF_DEFAULT =
-  "CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas = 0 (P0.3 pendiente).";
+  "CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado del CF cuando Plan a cero (P0.3) está activo.";

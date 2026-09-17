@@ -510,7 +510,7 @@ export default function FinPath(){
   // Sesión 4-may-2026: tour de bienvenida — se activa cuando un user nuevo
   // entra recién signup. Dura ~60 segundos y lo guía a su primer momento de
   // valor (importar Excel, demo, o cargar manualmente). Ver OnboardingTour.jsx.
-  const[showOnboarding,setShowOnboarding]=useState(false);
+  const[showOnboarding,setShowOnboarding]=useState(false);const[extraADeudas,setExtraADeudas]=useState(0);
   const[recoveryEmail,setRecoveryEmail]=useState("");
   // ═══ MULTI-USUARIO STATE (Fase 2 commit 1) ═══
   // useAccount detecta la cuenta activa del usuario y su rol. Si la migración
@@ -3041,7 +3041,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 </div>}
               </div></div><div style={{display:"flex",gap:12,justifyContent:"flex-end"}}><Bt v="s" onClick={()=>setMd(null)}>Cancelar</Bt><Bt onClick={()=>{add("ibk",{tk:f.tk||"",n:f.n||"",sh:+f.sh||0,cb:+f.cb||0,pr:+f.pr||0,tg:+f.tg||0,mult:+f.mult||1});setMd(null);sF({})}}>Agregar</Bt></div></Md></div>);
         case"gas":return isUS?<ExpensesModuleUS gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} agi={t.ti*12}/>:<GastosModule trm={trm||u?.trm||4200} owners={u?.owners||[]} ingresos={u?.ingresos||[]} gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} fmt={fm} onImport={()=>setShowImport(true)} plan={plan} onUpgrade={()=>setPg("price")} user={u} user={authUser}/>;
-        case"deu":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="liabilities"/>:<DeudasModule trm={trm||u?.trm||4200} owners={u?.owners||[]} deudas={(u&&u.deu)||[]} inversiones={(u&&u.inv)||[]} onUpdate={v=>upd("deu",v)} fmt={fm} onImport={()=>setShowImport(true)} user={u} plan={plan} onUpgrade={()=>setPg("price")} user={authUser}/>;
+        case"deu":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="liabilities"/>:<DeudasModule trm={trm||u?.trm||4200} owners={u?.owners||[]} deudas={(u&&u.deu)||[]} inversiones={(u&&u.inv)||[]} onUpdate={v=>upd("deu",v)} fmt={fm} onImport={()=>setShowImport(true)} user={u} plan={plan} onUpgrade={()=>setPg("price")} user={authUser} cashFlow={t.cf} onExtraADeudasChange={setExtraADeudas}/>;
     case"met":return isUS
       ?<GoalsModuleUS
           goals={(u&&u.metas)||[]}
@@ -3053,7 +3053,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           currentAge={u?.pen?.age||35}
           retirementBalance={(u?.inv||[]).filter(i=>["Fondo de Inversión","CDT","Acciones"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)}
         />
-      :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trm||u?.trm||4200} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas = 0 (P0.3)."} onNavigateNorte={()=>setPg("norte")}/>;
+      :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trm||u?.trm||4200} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado si Plan a cero (P0.3) está activo."} onNavigateNorte={()=>setPg("norte")} extraADeudas={extraADeudas}/>;
     case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} user={{inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
     case"flujo":return <FlujoAnual user={u} trm={u?.trm||4200} isEN={isEN}/>;
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
