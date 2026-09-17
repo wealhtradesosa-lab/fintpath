@@ -323,15 +323,6 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         ))}
       </div>
 
-      <PlanDeudasACero
-        deudas={deudas}
-        user={user}
-        trm={trm || user?.trm || 4200}
-        cashFlow={cashFlow}
-        fmt={fm}
-        onExtraADeudasChange={onExtraADeudasChange}
-      />
-
       {/* 26-jul-2026 (Santiago): barra por tipo de crédito. En deudas la
           proporción que importa es del SALDO, no de la cuota: es lo que dice
           dónde está concentrado el pasivo. */}
@@ -597,6 +588,20 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         })()}
         </div>
       </div>
+
+      {/* 16-sep-2026 (Santiago: "plan a cero debería estar debajo de las
+          deudas"). Estaba arriba del todo, antes incluso de la lista. Eso
+          invierte el orden en que uno piensa: primero se mira qué se debe y
+          después qué hacer al respecto. Un plan de pago mostrado antes de las
+          deudas es una respuesta sin pregunta. */}
+      <PlanDeudasACero
+        deudas={deudas}
+        user={user}
+        trm={trm || user?.trm || 4200}
+        cashFlow={cashFlow}
+        fmt={fm}
+        onExtraADeudasChange={onExtraADeudasChange}
+      />
 
       {/* Form */}
       {showForm && (
