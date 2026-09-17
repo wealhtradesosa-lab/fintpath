@@ -4,6 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
+import CtaUnaAccion from "./CtaUnaAccion";
 import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS, getRangoMeses } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
@@ -2191,6 +2192,14 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             patrimonioNeto={totals?.nw}
             activos={totals?.ab}
             deudasTotales={totals?.td}
+            fmt={fm}
+            T={T}
+          />
+          <CtaUnaAccion
+            user={user}
+            cfMensualSimulado={simT.cf}
+            egresosMensuales={simT.egresosTotales ?? simT.te}
+            impuestoData={impuestoData}
             fmt={fm}
             T={T}
           />
