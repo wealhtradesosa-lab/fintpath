@@ -55,6 +55,7 @@ export default function MetasModule({
   norte = null,
   cfFuenteLabel = FUENTE_CF_DEFAULT,
   onNavigateNorte,
+  extraADeudas = 0,
 }) {
   const fm = fmt || _fm;
   const { role } = useRole();
@@ -75,8 +76,7 @@ export default function MetasModule({
       : Number(cfOverride);
   const cfIsOverride = cfOverride != null && cfOverride !== "";
 
-  // P0.3 hook: extra a deudas = 0
-  const extraADeudas = 0;
+  // P0.3 hook: extra a deudas llega desde Plan a cero (App state)
 
   const norteLabel = useMemo(() => {
     const id = norte?.objetivo;
@@ -268,7 +268,7 @@ export default function MetasModule({
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
               {cfIsOverride ? "Override local" : "Del simulador / flujo"} · extra a
-              deudas = $0 (P0.3)
+              deudas restadas del CF (P0.3)
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -920,7 +920,7 @@ export default function MetasModule({
             </div>
             <div>
               <strong style={{ color: T.txt }}>Extra a deudas:</strong> $0 (hook
-              P0.3; no resta del CF en V1)
+              P0.3; resta del CF si Plan a cero está activo)
             </div>
             <div style={{ marginTop: 6, color: T.txt3 }}>
               No es consejo de inversión ni de crédito. Los trade-offs solo
