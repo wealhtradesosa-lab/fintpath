@@ -522,6 +522,17 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                           y deja de restar hacia adelante. Borrarla haría que la
                           plataforma dijera que tuvo más plata disponible en
                           meses donde realmente estaba pagando. */}
+                      {/* 16-sep-2026 (Santiago, viendo la lista: "el botón
+                          pagada no es cuando ya se pagó todo?"). Estaba en lo
+                          cierto al confundirse: el botón se dibujaba como un
+                          chip verde con ✓ y la palabra "Pagada", que es
+                          exactamente el lenguaje visual de un ESTADO. Aparecía
+                          en todas las deudas activas, así que la lista entera
+                          parecía saldada.
+                          Ahora dice "Marcar pagada" -- un verbo, no un estado --
+                          y usa estilo neutro de acción. El verde con ✓ queda
+                          reservado para el chip que sí indica estado, junto al
+                          nombre de la deuda. */}
                       {d.pagada !== true && (d.sim !== false) && (
                         <button
                           onClick={() => {
@@ -560,10 +571,11 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                               );
                             }
                           }}
-                          title="La terminé de pagar"
-                          style={{ background: T.greenDim || "rgba(34,197,94,0.15)", border: "none",
+                          title="Marcar como pagada: ya la terminé de pagar"
+                          style={{ background: T.bg3, border: "1px solid " + T.border,
                             padding: "5px 8px", borderRadius: 6, cursor: "pointer",
-                            color: T.green, fontSize: 11, fontWeight: 700 }}>✓ Pagada</button>
+                            color: T.txt2, fontSize: 11, fontWeight: 600,
+                            whiteSpace: "nowrap" }}>Marcar pagada</button>
                       )}
                       <button onClick={() => openEdit(d)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
                       <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== d.id)); }}
