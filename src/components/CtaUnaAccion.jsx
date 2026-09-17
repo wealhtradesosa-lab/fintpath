@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { elegirUnaAccion } from "../lib/ctaUnaAccion.js";
+import { elegirUnaAccion, MESES_COLCHON_OBJETIVO } from "../lib/ctaUnaAccion.js";
 
 /**
  * Card P0.1 — una acción fondeada, debajo de ProyeccionPatrimonio (#19).
@@ -7,12 +7,14 @@ import { elegirUnaAccion } from "../lib/ctaUnaAccion.js";
  *
  * Props:
  *  - cfMensualSimulado: simT.cf
- *  - user: { deudas, metas }
+ *  - egresosMensuales: simT.egresosTotales / te (opcional; si falta, heuristic gastos)
+ *  - user: { deudas, metas, inv, gastos|gas, bank? }
  *  - impuestoData: estimarImpuesto(u) — solo lectura fiscal (UVT / saldo a pagar)
  *  - fmt, T
  */
 export default function CtaUnaAccion({
   cfMensualSimulado = 0,
+  egresosMensuales,
   user,
   impuestoData,
   fmt,
@@ -27,11 +29,23 @@ export default function CtaUnaAccion({
     () =>
       elegirUnaAccion({
         cfMensual: cfMensualSimulado,
+        egresosMensuales,
         deudas: user?.deudas || [],
         metas: user?.metas || [],
+        user,
         impuestoData,
       }),
-    [cfMensualSimulado, user?.deudas, user?.metas, impuestoData]
+    [
+      cfMensualSimulado,
+      egresosMensuales,
+      user,
+      user?.deudas,
+      user?.metas,
+      user?.inv,
+      user?.gastos,
+      user?.gas,
+      impuestoData,
+    ]
   );
 
   const isRojo = accion.path === "cf_rojo";
@@ -189,15 +203,20 @@ export default function CtaUnaAccion({
             /mes.
           </div>
           <div style={{ marginTop: 4 }}>
-            Prioridad: CF≤0 → deuda cara → meta con gap → espacio UVT Art.336
-            (si aplica) → reserva / Tu Norte. Una sola acción; sin rachas ni
-            hábitos.
+            Prioridad: CF≤0 → deuda cara → meta con gap → colchón corto
+            (&lt;~{MESES_COLCHON_OBJETIVO} meses de egresos, o sin datos) →
+            espacio UVT Art.336 (si aplica) → norte / inversión. Una sola
+            acción; sin rachas ni hábitos.
           </div>
           {accion.path === "fiscal" && accion.detalle && (
             <div style={{ marginTop: 4 }}>
               UVT restantes (espacio PV/AFC): ~{accion.detalle.uvtRestantes}.
-              Saldo a pagar estimado: {fm(accion.detalle.saldoAPagar)}. Cifras
-              del motor existente (borrador); no tip.
+              Saldo a pagar estimado: {fm(accion.detalle.saldoAPagar)}.
+              Colchón: ~
+              {accion.detalle.colchon?.meses === Infinity
+                ? "∞"
+                : accion.detalle.colchon?.meses ?? "—"}{" "}
+              meses. Cifras del motor existente (borrador); no tip.
             </div>
           )}
           {accion.path === "deuda" && accion.detalle && (
@@ -212,9 +231,20 @@ export default function CtaUnaAccion({
               período, topeado al gap.
             </div>
           )}
-          {accion.path === "reserva" && (
+          {accion.path === "reserva" && accion.detalle?.colchon && (
             <div style={{ marginTop: 4 }}>
-              Aporte = 30% del CF mensual (rango guía 20–50%).
+              Colchón líquido estimado: {fm(accion.detalle.colchon.liquidos)} ≈{" "}
+              {accion.detalle.colchon.sinDatos
+                ? "sin datos (asumido corto)"
+                : `~${accion.detalle.colchon.meses} meses`}{" "}
+              de egresos (meta ~{MESES_COLCHON_OBJETIVO}). Aporte = 30% del CF.
+            </div>
+          )}
+          {accion.path === "norte" && (
+            <div style={{ marginTop: 4 }}>
+              Colchón ≥{MESES_COLCHON_OBJETIVO} meses y sin path fiscal
+              prioritario. Aporte = 30% del CF a norte / inversión (no reserva
+              ciega).
             </div>
           )}
         </div>
