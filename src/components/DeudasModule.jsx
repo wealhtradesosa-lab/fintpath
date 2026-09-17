@@ -38,6 +38,9 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
   );
 
 export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fmt, onImport, user, plan, onUpgrade, trm}) {
+  const MESES_NOM = ["enero","febrero","marzo","abril","mayo","junio","julio",
+    "agosto","septiembre","octubre","noviembre","diciembre"];
+
   const fm = fmt || _fm;
   // Fase 3 commit 6: gating reader.
   const { role } = useRole();
@@ -126,7 +129,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   });
 
   const items = deudas || [];
-  const activos = items.filter((d) => d.sim !== false);
+  // Una deuda pagada no es una deuda: sale de los totales igual que una
+  // apagada, pero conserva su registro y su histórico del año.
+  const activos = items.filter((d) => d.sim !== false && d.pagada !== true);
   // 26-jul-2026 (Santiago): mismo agrupamiento que Gastos e Ingresos. Acá el
   // criterio es el TIPO de crédito y el subtotal es el SALDO, no la cuota:
   // la pregunta en deudas es dónde está concentrado el pasivo.
@@ -441,7 +446,15 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                             style={{ fontSize: 13, cursor: "pointer", color: "#ef4444", flexShrink: 0 }}
                           >⚠️</span>
                         )}
-                        <span>{d.n}</span>
+                        <span style={d.pagada ? { textDecoration: "line-through", opacity: 0.65 } : undefined}>{d.n}</span>
+                        {d.pagada && (
+                          <span title={d.pagadaEl ? `Saldada el ${d.pagadaEl}` : "Saldada"}
+                            style={{ marginLeft: 7, background: "rgba(34,197,94,0.15)", color: T.green,
+                              fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 999,
+                              whiteSpace: "nowrap" }}>
+                            ✓ PAGADA{d.pagadaMes ? ` · ${MESES_NOM[d.pagadaMes - 1]}` : ""}
+                          </span>
+                        )}
                         {/* Badge vigencia (20-jul-2026): deuda con rango limitado */}
                         {((Number(d.desdeMes) || 1) !== 1 || (Number(d.hastaMes) || 12) !== 12) && (
                           <span style={{ fontSize: 10, fontWeight: 700, color: "#3b82f6", background: "rgba(59,130,246,0.12)", padding: "2px 8px", borderRadius: 10, marginLeft: 6 }}>
@@ -486,6 +499,39 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                     <td style={{ padding: "10px 14px" }}>{lk ? <span style={{ background: T.blue + "15", color: T.blue, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{lk.n || lk.nombre || lk.name || "—"}</span> : <span style={{ color: T.txt3 }}>—</span>}</td>
                     <td style={{ padding: "10px 14px" }}>
                       <button onClick={() => { if (!guardEdit(role)) return; onUpdate(deudas.map(x => x.id===d.id ? {...x, sim: !(d.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={d.sim===false?"Mostrar":"Ocultar"}>{d.sim===false?"⬜":"✅"}</button>
+                      {/* 15-sep-2026 (Santiago: "ya pagué una deuda que era un
+                          crédito de Bancolombia, ¿debería borrarla o que quede
+                          ahí para uno ver el año cómo quedó?" y después "no
+                          queda muy claro qué hacer cuando se paga un crédito").
+                          El modelo solo ofrecía apagar el toggle o borrar, y
+                          ninguna de las dos dice "la pagué". Son tres estados
+                          distintos: activa, PAGADA -- que es historia y buena
+                          noticia -- y borrada, que es un error de captura.
+                          Al marcarla pagada se cierra la vigencia en el mes
+                          actual, así el histórico del año se conserva (las
+                          cuotas que sí pagó siguen contando de enero a ese mes)
+                          y deja de restar hacia adelante. Borrarla haría que la
+                          plataforma dijera que tuvo más plata disponible en
+                          meses donde realmente estaba pagando. */}
+                      {d.pagada !== true && (d.sim !== false) && (
+                        <button
+                          onClick={() => {
+                            if (!guardEdit(role)) return;
+                            const mes = new Date().getMonth() + 1;
+                            const cuota = Number(d.pg || d.pago || 0);
+                            if (!confirm(`¿Marcar "${d.n || "esta deuda"}" como pagada?\n\nSe conserva el histórico del año y deja de descontarse desde ${MESES_NOM[mes - 1]} en adelante.`)) return;
+                            onUpdate(deudas.map(x => x.id === d.id
+                              ? { ...x, pagada: true, pagadaMes: mes, pagadaEl: new Date().toISOString().slice(0, 10), hastaMes: Math.max(1, mes - 1), mt: 0 }
+                              : x));
+                            if (cuota > 0) {
+                              alert(`Deuda saldada. Liberaste $${Math.round(cuota).toLocaleString("es-CO")} al mes de flujo — $${Math.round(cuota * 12).toLocaleString("es-CO")} al año.`);
+                            }
+                          }}
+                          title="La terminé de pagar"
+                          style={{ background: T.greenDim || "rgba(34,197,94,0.15)", border: "none",
+                            padding: "5px 8px", borderRadius: 6, cursor: "pointer",
+                            color: T.green, fontSize: 11, fontWeight: 700 }}>✓ Pagada</button>
+                      )}
                       <button onClick={() => openEdit(d)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
                       <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== d.id)); }}
                         style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
