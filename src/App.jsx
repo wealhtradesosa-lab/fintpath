@@ -1467,6 +1467,8 @@ export default function FinPath(){
           </p>
           <p style={{fontSize:12,color:T.tx3,textAlign:"center",marginBottom:20,lineHeight:1.6}}>
             Revisá tu bandeja de entrada y la carpeta de spam. El link expira en 1 hora. Cuando lo abras vas a volver acá para crear tu nueva contraseña.
+            {" "}<strong>Abrilo en este mismo navegador</strong>, en la misma pestaña o una nueva; si lo abrís en otro dispositivo no va a funcionar.
+            ¿No funciona? Escribinos a soporte@finpathia.com.
           </p>
           <button onClick={()=>{setShowRecoveryRequest(false);setResetSent(false)}} style={{width:"100%",background:T.bg3,color:T.tx,border:`1px solid ${T.border}`,padding:"12px 20px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>
             Cerrar
