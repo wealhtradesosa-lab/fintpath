@@ -878,19 +878,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                             >⚠️</span>
                           );
                         })()}
-                        <span style={item.sim === false ? { opacity: 0.6 } : undefined}>{item.nombre}</span>
-                        {/* Distingue de un vistazo las dos razones de apagado.
-                            Un escenario es una hipótesis viva; algo terminado es
-                            historia. Verlas iguales fue justo el problema. */}
-                        {item.sim === false && (
-                          <span style={{ marginLeft: 7, fontSize: 9.5, fontWeight: 800,
-                                padding: "2px 7px", borderRadius: 999, whiteSpace: "nowrap",
-                                background: item.motivoOff === "terminado"
-                                  ? "rgba(161,161,170,0.15)" : "rgba(59,130,246,0.15)",
-                                color: item.motivoOff === "terminado" ? T.txt3 : "#3b82f6" }}>
-                            {item.motivoOff === "terminado" ? "TERMINADO" : "ESCENARIO"}
-                          </span>
-                        )}
+                        <span>{item.nombre}</span>
                         {/* Badge de vigencia/frecuencia (18-jul-2026): visible cuando NO es mensual todo el año */}
                         {(() => {
                           const badge = labelVigenciaBadge(item);
@@ -983,40 +971,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     </td>
                     <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString("es-CO") + (item.tasa ? " • " + item.tasa + "%" : "") : item.fuente || "—"}</td>
                     <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
-                      <button onClick={() => {
-                        if (!guardEdit(role)) return;
-                        const estabaActivo = item.sim !== false;
-                        // 18-sep-2026 (Santiago: "yo los apagué porque son para
-                        // simular escenarios"). El toggle servía para dos cosas
-                        // opuestas: "esto ya no existe" y "esto es una hipótesis
-                        // que estoy evaluando". La plataforma las trataba igual
-                        // -- fuera de todos los cálculos -- y no quedaba registro
-                        // de cuál era cuál.
-                        // El costo es real: al revisar sus datos había
-                        // $138 millones mensuales apagados y no había forma de
-                        // saber si era intencional o un accidente. Hubo que
-                        // preguntarle. Dentro de tres meses él tampoco se
-                        // acordaría.
-                        // Al apagar se pregunta el motivo; al prender se limpia.
-                        let motivo = item.motivoOff;
-                        if (estabaActivo) {
-                          const r = prompt(
-                            `¿Por qué apagás "${item.nombre || "este ingreso"}"?\n\n` +
-                            `1 = Es un escenario que estoy evaluando (todavía no pasa)\n` +
-                            `2 = Ya no existe / terminó\n\n` +
-                            `Queda anotado para que dentro de unos meses sepas por qué lo apagaste.`,
-                            "1"
-                          );
-                          if (r === null) return;
-                          motivo = String(r).trim() === "2" ? "terminado" : "escenario";
-                        } else {
-                          motivo = undefined;
-                        }
-                        const upd = items.map(x => x.id === item.id
-                          ? {...x, sim: !estabaActivo, motivoOff: motivo}
-                          : x);
-                        onUpdate(upd);
-                      }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Incluir en los cálculos":"Sacar de los cálculos"}>{item.sim===false?"⬜":"✅"}</button>
+                      <button onClick={() => { if (!guardEdit(role)) return; const upd = items.map(x => x.id === item.id ? {...x, sim: !(item.sim!==false)} : x); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{item.sim===false?"⬜":"✅"}</button>
                       <button onClick={() => handleEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
                       <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== item.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button></div>
                     </td>
