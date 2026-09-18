@@ -579,6 +579,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       : (isSalario && mensualNum > 0) ? String(Math.round(mensualNum * 0.04))
       : "";
     setForm({
+      // 17-sep-2026 — Sin esta línea, editar un ingreso BORRABA su vínculo al
+      // activo. openEdit reconstruye el form campo por campo y al guardar se
+      // hace {...form}, así que cualquier campo que no se cargue acá se pierde
+      // en silencio. Es el mismo patrón que ya había causado el bug de julio
+      // donde editar un gasto en USD lo devolvía a COP.
+      // En GastosModule sí lo cubrí al implementarlo; acá se me pasó.
+      activoId: item.activoId || "",
       nombre: item.nombre,
       categoria: item.categoria,
       fiscalCode: item.fiscalCode || DEFAULT_FISCAL_CODE[item.categoria] || "NOL_OTROS",
