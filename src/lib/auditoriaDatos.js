@@ -101,6 +101,41 @@ export function auditarDatos(user, options = {}) {
       });
     }
 
+    // 18-sep-2026 — Vigencia de deuda aritméticamente imposible.
+    // Caso que lo motiva: Santiago tenía tres deudas marcadas como si
+    // terminaran antes de diciembre — una hipoteca de $1.100 millones con
+    // vigencia hasta octubre, cuyas cuotas acumuladas del año suman $127
+    // millones. Es imposible que se salde, pero la plataforma lo aceptaba y
+    // dejaba de descontar $48,6 millones del flujo de octubre a diciembre,
+    // inflando el cierre del año.
+    // Nadie revisa un campo de vigencia; el error solo se nota si alguien
+    // compara saldo contra cuotas a mano. Esto lo hace por él.
+    const vigenciaImposible = (activos.deudas || []).filter((d) => {
+      const hasta = Number(d.hastaMes) || 12;
+      if (hasta >= 12) return false;                   // llega a fin de año: nada que revisar
+      if (d.pagada === true || d.sim === false) return false;
+      const saldo = Number(d.mt) || 0;
+      const cuota = Number(d.pg || d.pago) || 0;
+      if (saldo <= 0 || cuota <= 0) return false;
+      const desde = Number(d.desdeMes) || 1;
+      const cuotasDelAño = cuota * Math.max(0, hasta - desde + 1);
+      // Umbral deliberadamente laxo: se avisa solo cuando las cuotas no
+      // alcanzan ni la mitad del saldo. Así no molesta a quien planea un abono
+      // final para cancelar, que es un caso legítimo.
+      return cuotasDelAño < saldo * 0.5;
+    });
+    if (vigenciaImposible.length > 0) {
+      advertencias.push({
+        id: "vigencia_deuda_imposible",
+        severidad: "warning",
+        categoria: "coherencia",
+        titulo: `${vigenciaImposible.length} deuda${vigenciaImposible.length > 1 ? "s" : ""} con fecha de fin que no cuadra`,
+        mensaje: `Están marcadas para terminar antes de diciembre, pero las cuotas del año no alcanzan a cubrir el saldo. Mientras tanto, los meses posteriores a esa fecha no descuentan la cuota y tu flujo de caja aparece mejor de lo que es.`,
+        sugerencia: `Si el crédito sigue el año entrante, cambiá su vigencia a diciembre. Si lo vas a cancelar con un abono, dejalo así.`,
+        items: vigenciaImposible.map((d) => ({ id: d.id, label: d.n || d.nombre || "Deuda", monto: d.mt })),
+      });
+    }
+
     // Deudas sin owner válido
     const deuHuerfanas = activos.deudas.filter(d => !d.owner || !ownerIds.has(d.owner));
     if (deuHuerfanas.length > 0) {
