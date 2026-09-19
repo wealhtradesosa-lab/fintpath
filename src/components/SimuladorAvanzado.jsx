@@ -2118,7 +2118,10 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               Flujo de caja acumulado del año
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, marginBottom: 10, lineHeight: 1.55 }}>
-              Cada punto es el acumulado desde enero hasta ese mes.{" "}
+              Cada punto es el acumulado desde enero hasta ese mes, con los montos
+              reales de cada uno. Por eso puede no coincidir con el promedio
+              mensual de las tarjetas de abajo: un año con ingresos concentrados
+              en unos meses tiene un promedio distinto a lo que se acumula mes a mes.{" "}
               <span style={{ color: T.txt2 }}>Gris</span>: ejecutado.{" "}
               <span style={{ color: CHART.green }}>Verde</span>: proyección del escenario.
             </div>
@@ -2171,12 +2174,29 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             </ResponsiveContainer>
             <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <div style={{ background: T.bg2, padding: 12, borderRadius: 10, textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: T.txt3 }}>CF Actual</div>
+                {/* 19-sep-2026 (Santiago: "de dónde salen estos números, no me
+                    coinciden con otros de otra parte"). Tenía razón y la
+                    contradicción era evidente en pantalla: la tarjeta decía
+                    +$15.754.311 al mes mientras la gráfica, treinta píxeles
+                    arriba, mostraba -$44.933.553 acumulados a julio. Siete meses
+                    a +15,7M dan +110M, no -44M.
+                    Las dos cifras son correctas y miden cosas distintas: la
+                    tarjeta es el PROMEDIO de los doce meses -- que incluye los
+                    ingresos grandes del último trimestre, como la renta que
+                    arranca en octubre -- y la gráfica son los meses REALES ya
+                    transcurridos. Sin decir cuál es cuál, parecen un error. */}
+                <div style={{ fontSize: 10, color: T.txt3 }}>CF Actual · promedio del año</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: baseT.cf >= 0 ? T.gn : T.rd }}>{fm(baseT.cf)}</div>
+                <div style={{ fontSize: 9, color: T.txt3, marginTop: 3, lineHeight: 1.35 }}>
+                  Promedio de los 12 meses, no lo de este mes
+                </div>
               </div>
               <div style={{ background: simT.cf >= 0 ? T.gnD : T.rdD, padding: 12, borderRadius: 10, textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: T.txt3 }}>CF Simulado</div>
+                <div style={{ fontSize: 10, color: T.txt3 }}>CF Simulado · promedio del año</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: simT.cf >= 0 ? T.gn : T.rd }}>{fm(simT.cf)}</div>
+                <div style={{ fontSize: 9, color: T.txt3, marginTop: 3, lineHeight: 1.35 }}>
+                  Con los cambios del simulador
+                </div>
               </div>
               <div style={{ background: T.bg2, padding: 12, borderRadius: 10, textAlign: "center", gridColumn: "1/-1" }}>
                 <div style={{ fontSize: 10, color: T.txt3 }}>Impacto Anual</div>
