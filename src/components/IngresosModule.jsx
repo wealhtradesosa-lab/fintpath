@@ -957,6 +957,27 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         return (
                           <div style={{ fontSize: 9, color: T.txt3, fontWeight: 500, marginTop: 2 }}>
                             {fm(totalCop)}/año
+                            {/* 20-sep-2026 (Santiago: "cuando prendo o apago un item
+                                en ingresos no cambia el valor de lo que ingresaría en
+                                el mes de sept"). No era un bug: el ítem que probaba
+                                tenía vigencia Oct-Dic, así que septiembre no podía
+                                cambiar.
+                                El problema es que el monto mensual se muestra igual de
+                                grande para todos, así que un ingreso que NO entra este
+                                mes parece que sí. La etiqueta de vigencia estaba, pero
+                                obliga a hacer la cuenta mental de si el mes en curso
+                                cae dentro del rango.
+                                Ahora se dice directo. */}
+                            {(() => {
+                              const desde = Number(item.desdeMes) || 1;
+                              const hasta = Number(item.hastaMes) || 12;
+                              if (_mesHoy >= desde && _mesHoy <= hasta) return null;
+                              return (
+                                <span style={{ color: "#f97316", marginLeft: 6 }}>
+                                  · no entra en {_MESES_L[_mesHoy - 1]}
+                                </span>
+                              );
+                            })()}
                             {/* 25-jul-2026: antes el motor rellenaba solo los meses
                                 futuros vacíos con un promedio inventado. Ahora van
                                 en $0 — y se avisa, para que sea decisión y no sorpresa. */}
