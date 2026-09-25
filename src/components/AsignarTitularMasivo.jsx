@@ -28,6 +28,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
+import { promedioMesActivo, totalAnualItem } from "../lib/flowHelpers.js";
 
 const C = {
   bg: "#0a0a0c",
@@ -113,8 +114,10 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
           id: g.id,
           label: categoriaGasto,
           infoExtra: infoItem(g, tipo),
-          monto: g.m,
-          montoLabel: g.m ? fm(g.m) + "/mes · " + fm(g.m * 12) + "/año" : "",
+          // 25-sep-2026 — en gastos variables `m` queda residual: el valor real
+          // vive en montosMensuales. Se muestra el promedio y el total del año.
+          monto: promedioMesActivo(g),
+          montoLabel: totalAnualItem(g) ? fm(promedioMesActivo(g)) + "/mes · " + fm(totalAnualItem(g)) + "/año" : "",
           owner: g.owner,
         }));
       }

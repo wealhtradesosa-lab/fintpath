@@ -45,6 +45,7 @@ import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.
 import { generarBorradorF210, SECCIONES_F210 } from "../lib/borradorDeclaracionF210.js";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { auditarDatos } from "../lib/auditoriaDatos.js";
+import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
 import { generarRecomendacionesEstrategicas } from "../lib/recomendacionesEstrategicas.js";
 import RecomendacionesEstrategicas from "./RecomendacionesEstrategicas.jsx";
@@ -393,7 +394,7 @@ const AREAS_NATURAL = [
           g.fiscalCode === "SEG_SALUD" ||
           g.fiscalCode === "SEG_VIDA"
         ));
-        const totalMensual = gasSalud.reduce((s, g) => s + (Number(g.m) || 0), 0);
+        const totalMensual = gasSalud.reduce((s, g) => s + montoPromedioMensual(g), 0);
         if (totalMensual > 0) {
           return { tiene: true, descripcion: `Ya cargaste $${totalMensual.toLocaleString("es-CO")}/mes de salud en Egresos` };
         }
@@ -502,7 +503,7 @@ const AREAS_NATURAL = [
         g.owner === owner.id &&
         (g.fiscalCode === "AP_TRIB_PENSION_VOL" || g.fiscalCode === "AP_TRIB_AFC" || g.fiscalCode === "AP_TRIB_PV")
       );
-      const totalMensual = aportes.reduce((s, g) => s + (Number(g.m) || 0), 0);
+      const totalMensual = aportes.reduce((s, g) => s + montoPromedioMensual(g), 0);
       if (totalMensual > 0) {
         return { tiene: true, descripcion: `Ya aportás $${totalMensual.toLocaleString("es-CO")}/mes a PV/AFC` };
       }

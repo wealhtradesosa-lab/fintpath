@@ -10,7 +10,7 @@ import PageHeader from "./PageHeader";
 import { exportInversionesExcel } from "../lib/excelExport.js";
 import { exportPatrimonioPDF } from "../lib/pdfSectionExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
-import { vaCOP, vcCOP } from "../lib/flowHelpers.js";
+import { vaCOP, vcCOP, totalAnualItem } from "../lib/flowHelpers.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -133,13 +133,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     (user?.ingresos || []).forEach((ing) => {
       const id = ing?.activoId;
       if (!id || ing.sim === false) return;
-      const mensualCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? TRM : 1);
       // Se cuentan los meses de vigencia: un arriendo de 3 meses no rinde igual
       // que uno de 12, y anualizar el mensual los igualaría en falso.
-      const desde = Number(ing.desdeMes) || 1;
-      const hasta = Number(ing.hastaMes) || 12;
-      const meses = Math.max(0, Math.min(12, hasta) - Math.max(1, desde) + 1);
-      mapa[id] = (mapa[id] || 0) + mensualCop * meses;
+      // 25-sep-2026 — totalAnualItem ya hace esa cuenta y además maneja los
+      // ingresos variables, donde `mensual` queda residual.
+      mapa[id] = (mapa[id] || 0) + totalAnualItem(ing) * (ing.moneda === "USD" ? TRM : 1);
     });
     return mapa;
   }, [user, trm]);
@@ -154,11 +152,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       (items || []).forEach((g) => {
         const id = g?.activoId;
         if (!id || g.sim === false) return;
-        const mensualCop = (Number(g.m) || 0) * (g.moneda === "USD" ? TRM : 1);
-        const desde = Number(g.desdeMes) || 1;
-        const hasta = Number(g.hastaMes) || 12;
-        const meses = Math.max(0, Math.min(12, hasta) - Math.max(1, desde) + 1);
-        mapa[id] = (mapa[id] || 0) + mensualCop * meses;
+        // 25-sep-2026 — totalAnualItem respeta frecuencia y vigencia. Leer `m`
+        // crudo sobreestimaba los gastos variables (su valor real vive en
+        // montosMensuales) y hundía el cap rate del activo vinculado.
+        mapa[id] = (mapa[id] || 0) + totalAnualItem(g) * (g.moneda === "USD" ? TRM : 1);
       });
     });
     return mapa;

@@ -26,6 +26,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useRef, useEffect } from "react";
+import { montoPromedioMensual } from "../lib/flowHelpers.js";
 
 // Paleta consistente con AgenteTributarioBienvenida (alto contraste)
 const C = {
@@ -104,7 +105,9 @@ function buildTaxContext(user, estimacion, selectedOwner) {
     ctx += `\nGASTOS (mensuales):\n`;
     cats.forEach((cat) => {
       const items = gas[cat].filter((g) => g.owner === selectedOwner.id && g.sim !== false);
-      const total = items.reduce((s, g) => s + (Number(g.m) || 0), 0);
+      // 25-sep-2026 — en gastos variables `m` queda residual; el promedio real
+      // sale de montosMensuales. Antes el agente citaba cifras infladas.
+      const total = items.reduce((s, g) => s + montoPromedioMensual(g), 0);
       ctx += `• ${cat}: ${fm(total)}/mes\n`;
     });
   }

@@ -5,6 +5,7 @@
  * 5 levels: Security → Vitality → Independence → Freedom → Absolute
  */
 import { useState, useMemo } from "react";
+import { montoPromedioMensual } from "../lib/flowHelpers.js";
 import Disclaimer from "./Disclaimer";
 import SankeyFlujo from "./SankeyFlujo";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -514,7 +515,7 @@ export default function SimuladorUS({ user, totals }) {
           .map(i=>({nombre:i.nombre||i.fuente||"Income", valor:(i.mensual||0)}))
           .filter(f=>f.valor>0).sort((a,b)=>b.valor-a.valor).slice(0,6);
         const gastosCats = Object.entries(user.gastos||{})
-          .map(([cat,items])=>[cat,(items||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+(g.m||0),0)])
+          .map(([cat,items])=>[cat,(items||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+montoPromedioMensual(g),0)])
           .filter(([,v])=>v>0);
         return (
           <div style={{marginBottom:16}}>

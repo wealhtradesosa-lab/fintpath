@@ -18,6 +18,8 @@
 /** Meses de egresos que definen colchón “suficiente”. */
 export const MESES_COLCHON_OBJETIVO = 6;
 
+import { montoPromedioMensual } from "./flowHelpers.js";
+
 /** @param {number} n */
 function num(n) {
   const v = Number(n);
@@ -199,8 +201,8 @@ export function estimateLiquidos(user = {}) {
 /**
  * Heurística de egresos mensuales para colchón:
  *  1) Preferir egresosMensuales del sim CF (input.egresosMensuales / simT.te).
- *  2) Si no: sumar gastos (g.m) de user.gastos|gas + cuotas deudas (pg/pago).
- * No reimplementa frecuencia/vigencia de flowHelpers — promedio simple de UI.
+ *  2) Si no: sumar gastos de user.gastos|gas + cuotas deudas (pg/pago).
+ * Usa montoPromedioMensual de flowHelpers para respetar frecuencia y vigencia.
  */
 export function estimateEgresosMensuales(input = {}) {
   const fromSim = num(
@@ -214,7 +216,9 @@ export function estimateEgresosMensuales(input = {}) {
   for (const items of Object.values(gastos || {})) {
     for (const g of items || []) {
       if (!g || g.sim === false) continue;
-      sum += num(g.m ?? g.monto ?? g.amount);
+      // 25-sep-2026 — `m` es residual en gastos variables (el motor usa
+      // montosMensuales). Leerlo crudo inflaba el colchón exigido.
+      sum += montoPromedioMensual(g) || num(g.monto ?? g.amount);
     }
   }
   for (const d of user.deudas || user.deu || []) {

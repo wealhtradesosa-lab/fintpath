@@ -36,6 +36,13 @@
  * @returns {Array} renglones [{numero, concepto, valor, tipo, fuente, articulo, calc?, destacado?, seccion?}]
  *                  donde tipo es 'editable' (user puede tocar) o 'formula' (recalcula)
  */
+// 25-sep-2026 (Santiago: "vi que me estaban calculando 45 mm al mes de gasto de
+// BROOKFORT; cuando lo corregí no noté mucho cambio"). El motor de flujo ignora
+// el campo `m` en los gastos de frecuencia VARIABLE —usa `montosMensuales`—,
+// pero este borrador lo multiplicaba por 12. Un gasto variable de $35M al año
+// entraba al F-110 como $589M. `totalAnualItem` respeta frecuencia y vigencia.
+import { totalAnualItem } from "./flowHelpers.js";
+
 export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
   if (!owner || owner.type !== "juridica") return null;
 
@@ -110,7 +117,7 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
     .filter(g => ["Servicios", "Nómina", "Mantenimiento", "Seguros", "Educación",
                    "Transporte", "Representación", "Comunicaciones", "Suscripciones",
                    "Impuesto", "Predial"].includes(g.cat))
-    .reduce((s, g) => s + (Number(g.m) || 0) * 12, 0);
+    .reduce((s, g) => s + totalAnualItem(g), 0);
 
   // Renglón 65: gastos financieros (intereses deudas)
   const gastosFinancieros = oDeu.reduce((s, d) => {
@@ -124,7 +131,7 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
     .filter(g => !["Servicios", "Nómina", "Mantenimiento", "Seguros", "Educación",
                     "Transporte", "Representación", "Comunicaciones", "Suscripciones",
                     "Impuesto", "Predial"].includes(g.cat))
-    .reduce((s, g) => s + (Number(g.m) || 0) * 12, 0);
+    .reduce((s, g) => s + totalAnualItem(g), 0);
 
   // ── Retenciones desde el módulo central ─────────────────────────────────
   const retencionAuto = det?.retencionDesglose?.total || det?.retefuenteCalc || 0;

@@ -835,7 +835,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         {(() => {
           const b = separarPorLimite(allItems, plan).bloqueados;
           if (!b.length) return null;
-          return <BloqueadosPorPlan cantidad={b.length} monto={b.reduce((s,g)=>s+((g.m)||0),0)}
+          return <BloqueadosPorPlan cantidad={b.length} monto={b.reduce((s,g)=>s+promedioMesActivo(g),0)}
             fmt={fm} T={T} onUpgrade={onUpgrade} que="gastos" />;
         })()}
       </div>
