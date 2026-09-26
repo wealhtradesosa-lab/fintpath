@@ -382,7 +382,7 @@ export default function LandingPrivacidad() {
                 <strong style={{ color: T.txt }}>Eliminar tu cuenta:</strong> Mi Cuenta → "Eliminar mi cuenta"
               </li>
               <li>
-                <strong style={{ color: T.txt }}>Gestionar tu suscripción:</strong> Mi Cuenta → "Gestionar suscripción" (Stripe Customer Portal)
+                <strong style={{ color: T.txt }}>Gestionar tu suscripción:</strong> Mi Cuenta → "Gestionar / cancelar suscripción" (Stripe Customer Portal)
               </li>
             </ul>
           </SubSection>

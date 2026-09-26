@@ -308,7 +308,7 @@ export default function LandingTerminos() {
           <SubSection title="5.4 Cancelación">
             <p>
               Podés cancelar tu suscripción en cualquier momento desde la sección{" "}
-              <strong style={{ color: T.txt }}>"Mi Cuenta → Gestionar suscripción"</strong>. Tu acceso continuará hasta el final del período
+              <strong style={{ color: T.txt }}>"Mi Cuenta → Gestionar / cancelar suscripción"</strong>. Tu acceso continuará hasta el final del período
               ya pagado. <strong style={{ color: T.txt }}>No hay permanencia ni penalización por cancelar.</strong>
             </p>
           </SubSection>
