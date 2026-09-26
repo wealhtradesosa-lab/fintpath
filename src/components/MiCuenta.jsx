@@ -65,7 +65,7 @@ const daysUntil = (d) => {
 export default function MiCuenta({
   supabase, accountId, role, displayName, plan, maxMembers,
   currentUserId, currentUserName, onChange, isLegacy, configContent, defaultTab,
-  subscriptionStatus, graceUntil, onUpgrade, estadoPlan,
+  subscriptionStatus, graceUntil, onUpgrade, estadoPlan, puedeGestionar,
 }) {
   // Tabs disponibles según contexto
   const showMembersTab = !isLegacy && accountId;
@@ -116,6 +116,16 @@ export default function MiCuenta({
         )}
       </div>
 
+      {/* 26-sep-2026 — Estado del plan + portal de Stripe, SIEMPRE visible.
+          Antes el plan y el botón "Gestionar suscripción" vivían solo en la
+          pestaña Miembros, que no existe para cuentas individuales: quien
+          pagaba Pro o Básico no tenía cómo cancelar por su cuenta, y la
+          tarjeta mostraba el plan de la tabla accounts ("Plan gratuito")
+          aunque el menú dijera "Pro". */}
+      {estadoPlan && (
+        <SuscripcionCard supabase={supabase} estadoPlan={estadoPlan} puedeGestionar={puedeGestionar} onUpgrade={onUpgrade} />
+      )}
+
       {/* Contenido según tab activa */}
       {activeTab === "miembros" && showMembersTab && (
         <MiembrosTab
@@ -128,6 +138,97 @@ export default function MiCuenta({
       )}
       {activeTab === "config" && configContent && (
         <div>{configContent}</div>
+      )}
+    </div>
+  );
+}
+
+// ═══ Tarjeta de suscripción ═════════════════════════════════════════════
+// Muestra el estado del plan (fuente única: src/lib/planEstado.js) y abre el
+// Customer Portal de Stripe para cancelar, cambiar de plan, actualizar la
+// tarjeta o descargar facturas. El endpoint valida el token de Supabase.
+function SuscripcionCard({ supabase, estadoPlan, puedeGestionar, onUpgrade }) {
+  const [abriendo, setAbriendo] = useState(false);
+  const [aviso, setAviso] = useState(null);
+
+  const abrirPortal = async () => {
+    if (abriendo) return;
+    setAviso(null);
+    setAbriendo(true);
+    try {
+      let token = null;
+      try {
+        const { data } = await supabase.auth.getSession();
+        token = data?.session?.access_token || null;
+        if (!token) {
+          const r = await supabase.auth.refreshSession();
+          token = r?.data?.session?.access_token || null;
+        }
+      } catch { /* sin sesión */ }
+      if (!token) {
+        setAviso("No pudimos confirmar tu sesión. Recarga la página e intenta de nuevo.");
+        return;
+      }
+      const res = await fetch("/.netlify/functions/stripe-customer-portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ returnUrl: window.location.href }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      if (data.error === "no_stripe_customer") {
+        setAviso("No encontramos una suscripción de Stripe asociada a tu cuenta. Si acabas de pagar, espera unos minutos. Si el problema sigue, escríbenos a soporte@finpathia.com.");
+      } else if (data.error === "portal_not_configured") {
+        setAviso("El portal de pagos aún no está disponible. Escríbenos a soporte@finpathia.com y cancelamos o cambiamos tu plan por ti.");
+      } else {
+        setAviso("No pudimos abrir el portal de pagos. Intenta de nuevo en unos segundos o escríbenos a soporte@finpathia.com.");
+      }
+    } catch {
+      setAviso("No pudimos abrir el portal de pagos. Revisa tu conexión e intenta de nuevo.");
+    } finally {
+      setAbriendo(false);
+    }
+  };
+
+  return (
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600, marginBottom: 6 }}>Tu plan</div>
+          <span style={{ background: estadoPlan.clave === "free" ? T.bg3 : T.greenB, color: estadoPlan.clave === "free" ? T.txt2 : T.green, padding: "4px 12px", borderRadius: 99, fontSize: 13, fontWeight: 700 }}>
+            {estadoPlan.etiqueta}
+          </span>
+          {estadoPlan.enPrueba && estadoPlan.finPrueba && (
+            <div style={{ fontSize: 12, color: T.txt2, marginTop: 8, lineHeight: 1.5 }}>
+              Tu prueba Pro termina el {fmtDate(estadoPlan.finPrueba)}. Después sigues en Gratis, sin cobros, a menos que agregues tarjeta.
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {puedeGestionar && (
+            <button
+              onClick={abrirPortal}
+              disabled={abriendo}
+              title="Cancelar, cambiar de plan, actualizar tarjeta o ver facturas"
+              style={{ background: T.bg3, color: T.txt, border: `1px solid ${T.border}`, padding: "10px 16px", borderRadius: 10, cursor: abriendo ? "default" : "pointer", fontWeight: 600, fontSize: 12, opacity: abriendo ? 0.6 : 1 }}
+            >
+              {abriendo ? "Abriendo…" : "⚙️ Gestionar / cancelar suscripción"}
+            </button>
+          )}
+          {!estadoPlan.pago && onUpgrade && (
+            <button onClick={onUpgrade} style={{ background: T.green, color: "#000", border: "none", padding: "10px 16px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12 }}>
+              Ver planes →
+            </button>
+          )}
+        </div>
+      </div>
+      {aviso && (
+        <div role="alert" style={{ marginTop: 12, padding: "10px 12px", background: T.amberB, border: `1px solid ${T.amber}`, borderRadius: 10, fontSize: 12, color: T.amber, lineHeight: 1.5 }}>
+          {aviso}
+        </div>
       )}
     </div>
   );
@@ -265,49 +366,9 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                   Cuenta llena · sube de plan para invitar más
                 </div>
               )}
-              {/* Botón Gestionar suscripción — para todos los planes pagos (incluido Básico).
-                  El portal de Stripe muestra qué se puede hacer según el estado de la cuenta:
-                  si está en trial muestra "Cancel anyway", si pagó muestra cambio de plan, etc.
-                  Sesión 4-may-2026: ampliamos de solo pro/pro_familiar a también basico para
-                  que no haya users pagos sin acceso a su portal. */}
-              {(plan === "pro_familiar" || plan === "pro" || plan === "basico") && (
-                <button
-                  onClick={async () => {
-                    try {
-                      const res = await fetch("/.netlify/functions/stripe-customer-portal", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          userId: currentUserId,
-                          returnUrl: window.location.href,
-                        }),
-                      });
-                      const data = await res.json();
-                      if (!res.ok) {
-                        if (data.error === "no_stripe_customer") {
-                          alert("No tienes una suscripción de Stripe asociada todavía. Si acabas de pagar, espera unos minutos. Si tu plan es anterior a Stripe, escríbenos a soporte@finpathia.com.");
-                        } else if (data.error === "portal_not_configured") {
-                          alert("El portal de Stripe no está configurado todavía. Soporte ya fue notificado.");
-                        } else {
-                          alert("Error abriendo portal: " + (data.message || data.error || "desconocido"));
-                        }
-                        return;
-                      }
-                      window.location.href = data.url;
-                    } catch (e) {
-                      alert("Error de red abriendo portal: " + e.message);
-                    }
-                  }}
-                  style={{
-                    background: T.bg3, color: T.txt, border: `1px solid ${T.border}`,
-                    padding: "10px 16px", borderRadius: 10, cursor: "pointer",
-                    fontWeight: 600, fontSize: 12,
-                  }}
-                  title="Cancelar, cambiar plan, ver facturas"
-                >
-                  ⚙️ Gestionar suscripción
-                </button>
-              )}
+              {/* El botón "Gestionar / cancelar suscripción" se movió a
+                  SuscripcionCard (arriba de las pestañas) el 26-sep-2026 para
+                  que también lo vean las cuentas individuales. */}
             </div>
           )}
         </div>
@@ -328,7 +389,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             Sigues teniendo acceso completo hasta el {new Date(graceUntil).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}.
             Después, tu cuenta vuelve al plan Free.{" "}
             {isAdmin && (
-              <span>Si fue un error, click en "⚙️ Gestionar suscripción" arriba para reactivar.</span>
+              <span>Si fue un error, toca "⚙️ Gestionar / cancelar suscripción" arriba para reactivarla.</span>
             )}
           </div>
         )}

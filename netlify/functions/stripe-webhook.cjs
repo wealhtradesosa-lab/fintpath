@@ -39,8 +39,24 @@
 const Stripe = require("stripe");
 
 // ── Mapeo priceId → plan name ─────────────────────────────────────────────
+// 26-sep-2026 — Respaldo con los priceIds LIVE que usa el frontend
+// (src/lib/plans.js → STRIPE_PRICE_IDS). Antes el mapa salía SOLO de las env
+// vars STRIPE_PRICE_*: si faltaba una (p. ej. STRIPE_PRICE_PRO_MENSUAL), el
+// webhook respondía 200 "unknown_price" y el plan NUNCA se activaba, aunque
+// Stripe ya hubiera cobrado. Stripe no reintenta un 200, así que el fallo era
+// silencioso. Las env vars siguen teniendo prioridad (y permiten precios de
+// test); estos ids solo cubren el caso de variable ausente.
+const PRICE_FALLBACK_LIVE = {
+  "price_1TIGRWKEnhNr9wQd2oEgNin9": "basico",       // Básico mensual
+  "price_1TIGRWKEnhNr9wQdJTMTGfYa": "basico",       // Básico anual
+  "price_1TIGRXKEnhNr9wQdC8eKj2xS": "pro",          // Pro mensual
+  "price_1TIGRYKEnhNr9wQd7QTFxT6z": "pro",          // Pro anual
+  "price_1TRC9mKEnhNr9wQdQr9gsRot": "pro_familiar", // Pro Familiar mensual
+  "price_1TRCCaKEnhNr9wQdpWlaXP0r": "pro_familiar", // Pro Familiar anual
+};
+
 function buildPriceMap() {
-  const map = {};
+  const map = { ...PRICE_FALLBACK_LIVE };
   const add = (envVar, plan) => {
     const id = process.env[envVar];
     if (id) map[id] = plan;
@@ -140,8 +156,8 @@ exports.handler = async (event) => {
 
   // 2. Construir mapeo priceId → plan
   const priceMap = buildPriceMap();
-  if (Object.keys(priceMap).length === 0) {
-    console.warn("[stripe-webhook] priceMap vacío — ninguna env var STRIPE_PRICE_* configurada");
+  if (Object.keys(priceMap).length === Object.keys(PRICE_FALLBACK_LIVE).length) {
+    console.warn("[stripe-webhook] sin env vars STRIPE_PRICE_* — usando solo los priceIds Live de respaldo");
   }
 
   // 3. Manejar eventos

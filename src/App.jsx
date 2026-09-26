@@ -84,7 +84,7 @@ import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy } from "./lib/migrations";
 import { getPlansForApp, STRIPE_PRICE_IDS } from "./lib/plans.js";
-import { estadoPlan } from "./lib/planEstado.js";
+import { estadoPlan, fechaPrimerCobro, formatearFecha } from "./lib/planEstado.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
@@ -227,6 +227,15 @@ const E2E={
   }
 };
 let _svT=null;
+// 26-sep-2026 — Pausa del guardado remoto al volver de Stripe.
+// El webhook activa el plan escribiendo user_data.data.p.plan en Supabase,
+// pero el autoguardado sube el blob `data` COMPLETO. Al volver del pago, la
+// app ya tenía cargado p.plan="free" y a los 2 s (p. ej. tras actualizar la
+// TRM) lo volvía a subir: si el webhook había llegado en ese intervalo, su
+// "pro" quedaba pisado y el usuario pagaba sin ver el plan. Mientras se
+// confirma el pago solo se guarda en localStorage; al terminar se recarga la
+// página y se leen los datos frescos del servidor.
+let _pausaGuardadoRemoto=false;
 const takeSnapshot=(d)=>{
   try{
     const snaps=JSON.parse(localStorage.getItem("fp3_snapshots")||"[]");
@@ -257,6 +266,7 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
         try{const ev=new CustomEvent("fp3-reader-blocked");window.dispatchEvent(ev)}catch{}
         return;
       }
+      if(_pausaGuardadoRemoto)return;
       clearTimeout(_svT);
       _svT=setTimeout(async()=>{
         // Commit 12 Tarea 3 (BUG REPORTADO: 'no quedan guardados'): el catch
@@ -721,6 +731,25 @@ export default function FinPath(){
       window.history.replaceState({},'',window.location.pathname);
     } else if(successFlag==='true'||(successFlag==='1'&&sessionId&&sessionId!=='{CHECKOUT_SESSION_ID}')){
       setPagoEstado({tipo:"procesando",titulo:"Confirmando tu pago…",msg:"Un momento, estamos activando tu plan."});
+      _pausaGuardadoRemoto=true;clearTimeout(_svT);
+      // Espera a que el webhook deje el plan escrito en Supabase (hasta ~24 s)
+      // antes de recargar. Antes se recargaba a ciegas a los 2,5–4 s y, si el
+      // webhook tardaba, el usuario volvía a ver su plan anterior.
+      // "antes" = el plan que la app tenía cargado (localStorage), para que un
+      // cambio Básico → Pro no se dé por activo antes de tiempo.
+      const esperarPlanActivo=async(userId)=>{
+        let antes="free";
+        try{antes=JSON.parse(localStorage.getItem(SK)||"{}")?.p?.plan||"free"}catch{}
+        for(let i=0;i<12;i++){
+          try{
+            const{data:fila}=await supabase.from("user_data").select("plan,pp:data->p->>plan").eq("id",userId).maybeSingle();
+            const pl=fila?.pp||fila?.plan;
+            if(pl&&pl!=="free"&&pl!==antes)return true;
+          }catch{}
+          await new Promise(r=>setTimeout(r,2000));
+        }
+        return antes!=="free";
+      };
       try{
         const userId=(await supabase.auth.getUser()).data?.user?.id;
         if(userId&&sessionId&&sessionId!=='{CHECKOUT_SESSION_ID}'){
@@ -728,20 +757,27 @@ export default function FinPath(){
             method:'POST',headers:{'Content-Type':'application/json'},
             body:JSON.stringify({userId,sessionId}),
           });
-          const data=await r.json();
+          const data=await r.json().catch(()=>({}));
           if(data.ok){
             setPagoEstado({tipo:"exito",titulo:"¡Listo! Tu plan está activo",msg:"Gracias por confiar en FINPATHIA. Ya tienes acceso completo."});
             setTimeout(()=>window.location.reload(),2500);
           }else{
             // Pro/Básico: la activación la hace el webhook, no esta función.
-            // No es un error del usuario — su pago SÍ se registró.
-            setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. La activación puede tardar unos segundos; si no ves el cambio, recarga la página."});
-            setTimeout(()=>window.location.reload(),4000);
+            const activo=await esperarPlanActivo(userId);
+            if(activo){
+              setPagoEstado({tipo:"exito",titulo:"¡Listo! Tu plan está activo",msg:"Gracias por confiar en FINPATHIA. Ya tienes acceso completo."});
+              setTimeout(()=>window.location.reload(),1500);
+            }else{
+              _pausaGuardadoRemoto=false;
+              setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. La activación está tardando más de lo normal; recarga la página en un minuto. Si no ves el cambio, escríbenos a soporte@finpathia.com."});
+            }
           }
         }else{
+          _pausaGuardadoRemoto=false;
           setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. Si no ves el cambio en unos segundos, recarga la página."});
         }
       }catch(e){
+        _pausaGuardadoRemoto=false;
         setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. Si no ves el cambio, escríbenos a soporte@finpathia.com y lo revisamos."});
       }
       window.history.replaceState({},'',window.location.pathname);
@@ -3317,6 +3353,12 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             ))}
           </div>
         </div>
+        {/* 26-sep-2026 — Claridad de cobro. Durante la prueba, quien toca
+            "Activar" no sabía si le cobraban ya o si perdía los días que le
+            quedaban. El servidor alinea el trial de Stripe con el fin de la
+            prueba de la app (stripe-checkout.cjs → calcularTrialStripe) y
+            aquí se muestra ESA misma fecha. */}
+        {estado.enPrueba&&!estado.pago&&(()=>{const f=fechaPrimerCobro(trialEnd);return f?<div role="note" style={{maxWidth:1200,margin:"0 auto 16px",padding:"14px 18px",background:T.gnB,border:"1px solid rgba(34,197,94,0.25)",borderRadius:12,fontSize:13,color:T.tx,lineHeight:1.6}}>✅ Tu prueba ya está activa. Si agregas tarjeta, el primer cobro es el <strong>{formatearFecha(f)}</strong>; puedes cancelar antes.</div>:null})()}
         {checkoutError&&<div role="alert" style={{maxWidth:1200,margin:"0 auto 16px",padding:"14px 18px",background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
           <div style={{fontSize:13,color:T.tx,flex:"1 1 220px",minWidth:0}}>{checkoutError.msg}</div>
           <div style={{display:"flex",gap:8,flexShrink:0}}>
@@ -3779,7 +3821,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               </div>
               <Bt v="s" onClick={()=>{const inp=document.createElement("input");inp.type="file";inp.accept=".json";inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);localStorage.setItem(SK,JSON.stringify(d));setU(sanitize(d));alert("✅ Datos importados correctamente. Recarga la página.")}catch{alert("Error: archivo no válido")}};r.readAsText(f)};inp.click()}} st={{justifyContent:"center"}}>📤 Importar Datos (JSON)</Bt>
               <Bt v="d" onClick={()=>{if(confirm("⚠️ ¿Borrar TODOS tus datos financieros? Esta acción no se puede deshacer. Tus inversiones, gastos, ingresos y deudas se perderán."))setU(mkU(u?.p?.name||"Usuario",u?.p?.email||""))}} st={{justifyContent:"center"}}>Borrar Datos</Bt></div></Cd></div>;
-    return <MiCuenta onUpgrade={()=>setPg("price")} supabase={supabase} accountId={accountId} role={role} displayName={displayName} plan={planAccount} maxMembers={maxMembers} currentUserId={authUser?.id} currentUserName={u?.p?.name||authUser?.user_metadata?.name||authUser?.email?.split("@")[0]||"El administrador"} onChange={refreshAccount} isLegacy={isLegacy} configContent={cuentaConfig} defaultTab={pg==="set"?"config":undefined} subscriptionStatus={subscriptionStatus} graceUntil={graceUntil} estadoPlan={estado}/>;}
+    return <MiCuenta onUpgrade={()=>setPg("price")} supabase={supabase} accountId={accountId} role={role} displayName={displayName} plan={planAccount} maxMembers={maxMembers} currentUserId={authUser?.id} currentUserName={u?.p?.name||authUser?.user_metadata?.name||authUser?.email?.split("@")[0]||"El administrador"} onChange={refreshAccount} isLegacy={isLegacy} configContent={cuentaConfig} defaultTab={pg==="set"?"config":undefined} subscriptionStatus={subscriptionStatus} graceUntil={graceUntil} estadoPlan={estado} puedeGestionar={estado.pago&&!isAdmin}/>;}
     default:return<div style={{padding:56,textAlign:"center",color:T.tx3}}>Próximamente</div>}};
 
   return <RoleProvider value={{role,isLegacy,accountId}}><div style={{background:T.bg,minHeight:"100vh",display:"flex",fontFamily:"'Inter',system-ui",color:T.tx}}>
