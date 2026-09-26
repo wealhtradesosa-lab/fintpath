@@ -214,10 +214,9 @@ export default function LandingSeguridad({ onBack = () => {} }) {
             fontSize: 18, color: T.txt2, lineHeight: 1.6,
             maxWidth: 640, margin: "0 auto",
           }}>
-            FINPATHIA está construido sobre la misma infraestructura que usan
-            empresas como Stripe, Notion y Linear. Tu información financiera está
-            protegida con el mismo estándar que los bancos digitales más serios
-            del mundo.
+            FINPATHIA funciona sobre proveedores reconocidos (Supabase, Stripe,
+            Netlify) y todo viaja por conexión segura (HTTPS/TLS). No vendemos
+            tus datos.
           </p>
         </div>
 
@@ -249,26 +248,26 @@ export default function LandingSeguridad({ onBack = () => {} }) {
             <SecurityCard
               icon={IconDatabase}
               title="Base de datos"
-              badge="SOC 2 Type II"
-              description="Hospedada en Supabase + AWS, con acceso aislado por usuario gracias a Row Level Security (RLS). Tu información está físicamente separada de la del resto — ni nuestros desarrolladores pueden ver tus datos sin tu autorización."
+              badge="Supabase"
+              description="Tu cuenta y tus datos se guardan en Supabase, y la app se conecta a ella siempre por conexión segura (HTTPS/TLS)."
             />
             <SecurityCard
               icon={IconKey}
               title="Tu contraseña"
-              badge="Encriptada con bcrypt"
-              description="Nunca se guarda en texto plano. Se cifra con bcrypt (estándar de la industria) antes de almacenarse. Ni siquiera nosotros podemos leerla — si la olvidás, la única forma es resetearla."
+              badge="Hash bcrypt"
+              description="Nunca se guarda en texto plano: Supabase Auth la guarda como hash bcrypt (estándar de la industria). Nadie puede leerla — si la olvidas, la única forma es crear una nueva."
             />
             <SecurityCard
               icon={IconLock}
               title="Conexión segura"
-              badge="TLS 1.3 + HTTPS"
-              description="Toda la comunicación entre tu navegador y FINPATHIA viaja cifrada con TLS 1.3, el mismo protocolo que usan los bancos digitales. Imposible interceptar lo que enviás o recibís."
+              badge="HTTPS (TLS)"
+              description="Toda la comunicación entre tu navegador y FINPATHIA viaja cifrada por HTTPS (TLS), así nadie en el camino puede leer lo que envías o recibes."
             />
             <SecurityCard
               icon={IconShield}
               title="Infraestructura"
               badge="Netlify + AWS"
-              description="Hospedado en Netlify (red global con protección DDoS) sobre infraestructura AWS. Disponibilidad del 99.99% y backups automáticos diarios de tu información."
+              description="Hospedado en Netlify, sobre infraestructura AWS."
             />
           </div>
         </section>
@@ -291,12 +290,11 @@ export default function LandingSeguridad({ onBack = () => {} }) {
           </h2>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
-            <PolicyLine type="yes" text="Tu información se usa únicamente para que veas tu propio análisis financiero." />
+            <PolicyLine type="yes" text="Tus cifras financieras se usan para mostrarte tu propio análisis financiero." />
             <PolicyLine type="yes" text="Podés exportar todos tus datos en cualquier momento, en formato Excel." />
             <PolicyLine type="yes" text="Podés eliminar tu cuenta y todos tus datos cuando quieras, sin condiciones." />
-            <PolicyLine type="yes" text="Cumplimos con la Ley 1581 de 2012 (protección de datos personales en Colombia)." />
             <PolicyLine type="no" text="No vendemos tus datos a terceros. Nunca. No es nuestro modelo de negocio." />
-            <PolicyLine type="no" text="No compartimos tu información con anunciantes ni redes sociales." />
+            <PolicyLine type="no" text="Los proveedores que reciben datos, y para qué, están en la Política de privacidad." />
             <PolicyLine type="no" text="No tenemos acceso a tus cuentas bancarias — FINPATHIA es planeación, no movés plata por acá." />
             <PolicyLine type="no" text="No usamos tus datos para entrenar modelos de IA de terceros." />
           </div>

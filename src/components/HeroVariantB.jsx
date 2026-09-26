@@ -243,7 +243,7 @@ export default function HeroVariantB({ onGetStarted = () => {} }) {
           fontSize: 13, color: T.txt3,
           opacity: mounted ? 1 : 0,
         }}>
-          Sin tarjeta · Datos cifrados · Cancelas cuando quieras
+          Sin tarjeta · Conexión segura · Cancelas cuando quieras
         </p>
 
         {/* TARJETAS FLOTANTES — micro-features ─────────────────────────── */}

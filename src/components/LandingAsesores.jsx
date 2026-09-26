@@ -178,7 +178,7 @@ export default function LandingAsesores({ onGetStarted }) {
     },
     {
       q: "¿Qué tan segura es la información de mis clientes?",
-      a: "Infraestructura Supabase con cifrado en reposo y en tránsito. Row Level Security a nivel de base de datos garantiza que cada asesor solo ve los clientes que le corresponden. End-to-end encryption disponible con AES-256. Cumplimos estándares SOC 2.",
+      a: "Infraestructura Supabase con conexión segura (HTTPS/TLS). No vendemos los datos de tus clientes.",
     },
   ];
 
@@ -268,7 +268,7 @@ export default function LandingAsesores({ onGetStarted }) {
               { icon: "🧾", title: "Plan tributario Colombia", desc: "Impuesto de renta por vehículo (persona natural, SAS) con UVT actualizado. Muestra a tu cliente cuánto puede optimizar.", color: T.purple },
               { icon: "📈", title: "Benchmarks globales reales", desc: "Top 1% Colombia, Top 5% mundial, Top 20% US. Datos que diferencian tu asesoría de la competencia.", color: T.cyan },
               { icon: "📄", title: "Reportes PDF profesionales", desc: "Genera reportes ejecutivos listos para enviar al cliente. Diseño premium que justifica tus honorarios.", color: T.orange },
-              { icon: "🔒", title: "Seguridad institucional", desc: "Cifrado en reposo y en tránsito. RLS a nivel de base de datos. End-to-end encryption disponible.", color: T.gold },
+              { icon: "🔒", title: "Seguridad institucional", desc: "Conexión segura (HTTPS/TLS). No vendemos los datos de tus clientes.", color: T.gold },
               { icon: "🔗", title: "Invitaciones seguras", desc: "Generas un link, tu cliente crea su cuenta y queda vinculado a tu workspace automáticamente.", color: T.green },
               { icon: "🤖", title: "Asesor Financiero IA", desc: "Agente inteligente que analiza el patrimonio de cada cliente, simula escenarios y sugiere recomendaciones.", color: T.red },
               { icon: "🌎", title: "Colombia + Estados Unidos", desc: "Soporte nativo para clientes con patrimonio cross-border. Módulos fiscales por jurisdicción.", color: T.blue },

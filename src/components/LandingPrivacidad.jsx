@@ -205,7 +205,7 @@ export default function LandingPrivacidad() {
               <li>Documentos que subas (Excel, facturas, comprobantes para procesamiento)</li>
             </ul>
             <p style={{ marginTop: 12, color: T.amber, fontSize: 13 }}>
-              ⚠️ Estos datos son <strong>sensibles</strong>. Los protegemos con encriptación AES-256 en tránsito y en reposo.
+              ⚠️ Estos datos son <strong>sensibles</strong>. Viajan por conexión segura (HTTPS/TLS). No vendemos tus datos.
             </p>
           </SubSection>
 
@@ -261,9 +261,8 @@ export default function LandingPrivacidad() {
               color: T.txt2,
             }}
           >
-            <strong style={{ color: T.txt }}>Lo que NO hacemos:</strong> NO vendemos tus datos a terceros. NO los compartimos con anunciantes
-            o redes sociales. NO usamos tus datos financieros para entrenar modelos de inteligencia artificial.
-            NO te perfilamos para marketing externo.
+            <strong style={{ color: T.txt }}>Lo que NO hacemos:</strong> NO vendemos tus datos. NO usamos tus datos financieros para entrenar modelos de
+            inteligencia artificial.
           </p>
         </Section>
 
@@ -294,19 +293,20 @@ export default function LandingPrivacidad() {
           </p>
         </Section>
 
-        <Section number="5." title="Con quién compartimos tus datos (encargados)">
+        <Section number="5." title="Con quién compartimos tus datos y para qué">
           <p>
-            Solo compartimos información con proveedores que nos ayudan a operar la plataforma. Cada uno
-            firma cláusulas contractuales para proteger tus datos:
+            <strong style={{ color: T.txt }}>No vendemos tus datos.</strong> Para que FINPATHIA funcione, estos proveedores reciben lo
+            necesario para su tarea:
           </p>
           <div style={{ marginTop: 16 }}>
             {[
-              { name: "Stripe (USA)", role: "Procesamiento de pagos", cert: "PCI-DSS Nivel 1" },
-              { name: "Supabase (USA)", role: "Base de datos y autenticación", cert: "SOC 2 Type II" },
-              { name: "Netlify / AWS (USA)", role: "Hosting de la aplicación", cert: "ISO 27001, SOC 2" },
-              { name: "Anthropic (USA)", role: "Inteligencia artificial (Asesor IA)", cert: "SOC 2 Type II — sin uso para entrenamiento" },
-              { name: "Resend (USA)", role: "Envío de emails transaccionales", cert: "SOC 2" },
-              { name: "Google (USA)", role: "Analytics anonimizados (Google Analytics 4)", cert: "ISO 27001, IP anonimizada" },
+              { name: "Stripe", role: "cobros y suscripciones. FINPATHIA no ve ni guarda tu tarjeta." },
+              { name: "Supabase", role: "guarda tu cuenta y tus datos." },
+              { name: "Resend", role: "envía los correos de la cuenta y de soporte." },
+              { name: "Anthropic", role: "recibe un resumen de tus datos, o el documento que subes, solo si usas las funciones de IA (Asesor IA, coaches, lectura de declaraciones, extractos o archivos)." },
+              { name: "Netlify", role: "hospeda la app." },
+              { name: "Finnhub y Yahoo Finance", role: "reciben solo los símbolos (tickers) de tus inversiones para consultar precios, sin tu nombre ni tu email." },
+              { name: "Google (Analytics y Ads) y Meta (Pixel)", role: "miden visitas y el uso del sitio y de la app (páginas y acciones, como registrarte o iniciar un pago)." },
             ].map((p, i) => (
               <div
                 key={i}
@@ -316,25 +316,19 @@ export default function LandingPrivacidad() {
                   border: `1px solid ${T.border}`,
                   borderRadius: 10,
                   marginBottom: 8,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 8,
                 }}
               >
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>{p.name}</div>
-                  <div style={{ fontSize: 12, color: T.txt2 }}>{p.role}</div>
-                </div>
-                <div style={{ fontSize: 11, color: T.txt3, alignSelf: "center" }}>{p.cert}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: T.txt2 }}>{p.role}</div>
               </div>
             ))}
           </div>
           <p style={{ marginTop: 16, fontSize: 13 }}>
-            Algunos proveedores procesan datos en territorio de Estados Unidos. Esto se considera{" "}
-            <strong style={{ color: T.txt }}>transferencia internacional</strong>. Solo trabajamos con proveedores que demuestren niveles
-            de protección equivalentes o superiores a los exigidos por la Ley 1581 colombiana
-            (Decreto 1377/2013, Art. 26).
+            Algunos de estos proveedores procesan datos en Estados Unidos.
+          </p>
+          <p style={{ marginTop: 8, fontSize: 13 }}>
+            Para ver, corregir o borrar tus datos, escríbenos a{" "}
+            <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a>.
           </p>
         </Section>
 
@@ -429,8 +423,7 @@ export default function LandingPrivacidad() {
         <Section number="9." title="Cómo protegemos tus datos">
           <p>Aplicamos medidas técnicas y organizativas razonables:</p>
           <ul style={{ marginTop: 12, paddingLeft: 20 }}>
-            <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Encriptación TLS 1.3</strong> para todos los datos en tránsito.</li>
-            <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Encriptación AES-256</strong> para datos sensibles en reposo.</li>
+            <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Conexión segura (HTTPS/TLS)</strong> para todos los datos en tránsito.</li>
             <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Hash bcrypt</strong> para contraseñas (nunca almacenadas en texto plano).</li>
             <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Acceso mínimo necesario</strong>: solo personal autorizado accede a sistemas con tus datos.</li>
             <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Auditoría de accesos</strong>: registramos quién accede a qué.</li>
@@ -455,13 +448,10 @@ export default function LandingPrivacidad() {
               recargas innecesarias. Sin estas, la plataforma no funciona.
             </li>
             <li>
-              <strong style={{ color: T.txt }}>Analytics anonimizados:</strong> Google Analytics 4 con IP anonimizada para entender uso agregado de
-              la plataforma. Podés bloquearlas con extensiones tipo Privacy Badger.
+              <strong style={{ color: T.txt }}>Medición y anuncios:</strong> Google Analytics, Google Ads y Meta Pixel
+              miden visitas y el uso del sitio y de la app. Puedes bloquearlos con extensiones como Privacy Badger.
             </li>
           </ul>
-          <p style={{ marginTop: 12 }}>
-            <strong style={{ color: T.txt }}>NO usamos cookies de publicidad ni tracking de terceros</strong> para perfilamiento comercial.
-          </p>
         </Section>
 
         <Section number="11." title="Datos de menores de edad">

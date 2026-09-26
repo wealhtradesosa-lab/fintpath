@@ -1,6 +1,11 @@
 {
   "redirects": [
     {
+      "source": "/privacidad.html",
+      "destination": "/privacidad",
+      "permanent": true
+    },
+    {
       "source": "/",
       "destination": "https://finpathia.com/",
       "permanent": false
