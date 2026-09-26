@@ -132,3 +132,22 @@ export function estadoPlan({ isAdmin = false, bloqueado = false, planGuardado, p
 
   return { ...base, clave: "free", etiqueta: "Gratis", enPrueba: false, pago: false };
 }
+
+// Planes pagos que el webhook escribe FUERA del blob cifrado (columna plan y,
+// si existe, data.p.plan).
+export const PLANES_PAGOS = ["basico", "pro", "pro_familiar", "advisor_pro"];
+
+// "Empezar de cero" en una cuenta con datos cifrados sin desbloquear: qué plan
+// y fin de prueba conservar. Orden: columna user_data.plan → data.p.plan
+// legible fuera del blob. trialEnd: el legible fuera del blob o, si no hay,
+// created_at + días de prueba (misma regla que estadoPlan). Nunca se crea una
+// prueba nueva (no se alarga) y nunca se baja a "free" un plan pago conocido.
+export function planParaReinicio({ planColumna, pFuera, creadoEn, email } = {}) {
+  const fuera = pFuera && typeof pFuera === "object" ? pFuera : {};
+  const plan = [planColumna, fuera.plan].find((x) => PLANES_PAGOS.includes(x)) || "free";
+  const teFuera = finPruebaMs(fuera.trialEnd) != null ? fuera.trialEnd : null;
+  const fin = teFuera ? null : finPruebaDesdeRegistro(creadoEn, email);
+  const trialEnd = teFuera || (fin != null ? new Date(fin).toISOString() : null);
+  return { plan, trialEnd };
+}
+

@@ -2,7 +2,7 @@
 // planEstado — estado de plan que se MUESTRA (menú, Planes, Mi cuenta, Config)
 // Ejecutar: node tests/planEstado.test.mjs
 // ═════════════════════════════════════════════════════════════════════════
-import { estadoPlan, nuevoFinPrueba, finPruebaEfectiva, diasRestantes, diasDePrueba } from "../src/lib/planEstado.js";
+import { estadoPlan, nuevoFinPrueba, finPruebaEfectiva, diasRestantes, diasDePrueba, planParaReinicio } from "../src/lib/planEstado.js";
 
 const DIA = 86400000;
 const assert = (cond, msg) => { if (!cond) throw new Error("FAIL: " + msg); console.log("  ✓", msg); };
@@ -75,3 +75,22 @@ console.log("Datos cifrados sin desbloquear (bloqueado)");
   assert(free.clave === "bloqueado", "'free' por defecto no cuenta como evidencia");
 }
 console.log("OK bloqueado");
+
+console.log("Empezar de cero (bloqueado): conserva el plan, nunca baja a free");
+{
+  const creadoEn = new Date(ahora - 3 * DIA).toISOString();
+  let r = planParaReinicio({ planColumna: "pro", pFuera: { plan: "free" }, creadoEn, email: "a@x.com" });
+  assert(r.plan === "pro", "gana la columna plan pagada sobre data.p fuera del blob");
+  r = planParaReinicio({ planColumna: "free", pFuera: { plan: "pro_familiar" }, creadoEn });
+  assert(r.plan === "pro_familiar", "columna free + data.p pago fuera del blob → pago");
+  r = planParaReinicio({ planColumna: null, pFuera: {}, creadoEn, email: "a@x.com" });
+  assert(r.plan === "free" && Date.parse(r.trialEnd) === Date.parse(creadoEn) + 14 * DIA, "sin plan pago: trialEnd = created_at + 14 d (no se alarga la prueba)");
+  const e = estadoPlan({ planGuardado: r.plan, trialEnd: r.trialEnd, ahora });
+  assert(e.clave === "pro" && e.enPrueba && e.diasPrueba === 11, "tras reiniciar sigue en prueba Pro (11 días), no Gratis");
+  r = planParaReinicio({ planColumna: null, pFuera: { trialEnd: "2026-10-01" }, creadoEn });
+  assert(r.trialEnd === "2026-10-01", "conserva el trialEnd legible fuera del blob tal cual");
+  r = planParaReinicio({ planColumna: "basico", pFuera: {}, creadoEn: null });
+  const e2 = estadoPlan({ planGuardado: r.plan, trialEnd: r.trialEnd, ahora });
+  assert(e2.pago && e2.clave === "basico", "cuenta Básico sigue Básico");
+}
+console.log("OK planEstado");

@@ -84,7 +84,7 @@ import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy } from "./lib/migrations";
 import { getPlansForApp, STRIPE_PRICE_IDS } from "./lib/plans.js";
-import { estadoPlan, diasDePrueba, nuevoFinPrueba, finPruebaEfectiva, finPruebaDesdeRegistro, diasRestantes } from "./lib/planEstado.js";
+import { estadoPlan, diasDePrueba, nuevoFinPrueba, finPruebaEfectiva, finPruebaDesdeRegistro, diasRestantes, planParaReinicio } from "./lib/planEstado.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
@@ -525,9 +525,12 @@ export default function FinPath(){
   // Password recovery flow: detectar link de recovery y pedir nueva contraseña
   const[showResetPassword,setShowResetPassword]=useState(false);
   const[resetNewPassword,setResetNewPassword]=useState("");
-  // true solo si la fila de user_data del usuario que está reseteando tiene
-  // un blob cifrado (_encrypted): esos datos no se abren con la nueva clave.
-  const[resetConCifrado,setResetConCifrado]=useState(false);
+  // ¿La fila de user_data del usuario que está reseteando tiene un blob cifrado
+  // (_encrypted)? Esos datos no se abren con la nueva clave.
+  //   "revisando" → botón deshabilitado hasta saberlo
+  //   "si" | "error" → se muestra el aviso (si falla la consulta, por las dudas)
+  //   "no" → sin aviso
+  const[resetCifrado,setResetCifrado]=useState("revisando");
   const[resetLoading,setResetLoading]=useState(false);
   const[resetError,setResetError]=useState("");
   const[resetSent,setResetSent]=useState(false);
@@ -644,16 +647,20 @@ export default function FinPath(){
         setShowResetPassword(true);
         setResetError("");
         setResetNewPassword("");
-        setResetConCifrado(false);
+        setResetCifrado("revisando");
         // El link de recuperación abre una sesión: ya se puede leer la propia
-        // fila (RLS) y avisar ANTES de cambiar la contraseña si hay datos
-        // cifrados. Antes del login no es posible (anon no lee user_data).
+        // fila y avisar ANTES de cambiar la contraseña si hay datos cifrados.
+        // Antes del login no es posible (anon no lee user_data).
         const uid=session?.user?.id;
-        if(uid){
-          supabase.from("user_data").select("enc:data->_encrypted").eq("id",uid).maybeSingle()
-            .then(({data:fila,error})=>{if(!error&&fila&&fila.enc)setResetConCifrado(true)})
-            .catch(()=>{});
-        }
+        if(!uid){setResetCifrado("error");return}
+        let resuelto=false;
+        const fin=(v)=>{if(!resuelto){resuelto=true;setResetCifrado(v)}};
+        // Si la consulta se cuelga, no dejar el botón bloqueado para siempre:
+        // a los 8 s se habilita mostrando el aviso (fail-safe).
+        setTimeout(()=>fin("error"),8000);
+        Promise.resolve(supabase.from("user_data").select("enc:data->_encrypted").eq("id",uid).maybeSingle())
+          .then(({data:fila,error})=>fin(error?"error":(fila&&fila.enc)?"si":"no"))
+          .catch(()=>fin("error"));
       }
     });
     return()=>subscription?.unsubscribe();
@@ -909,9 +916,25 @@ export default function FinPath(){
   const empezarDeCeroBloqueado=async()=>{
     if(!bloqueo||confirmaBorrado.trim().toUpperCase()!=="BORRAR")return;
     const uid=bloqueo.uid;
+    // Releer la columna plan justo antes de escribir. Si no se puede leer, NO
+    // se borra nada: no queremos arriesgar dejar en "free" una cuenta paga.
+    let planColumna=null;
+    try{
+      if(isSupabaseConfigured&&supabase){
+        const{data:fila,error}=await supabase.from("user_data").select("plan").eq("id",uid).maybeSingle();
+        if(error)throw error;
+        if(fila&&typeof fila.plan==="string")planColumna=fila.plan;
+      }
+    }catch{
+      showToast("No pudimos confirmar tu plan. No borramos nada; intenta de nuevo o escríbenos a soporte@finpathia.com.");
+      return;
+    }
+    const pFuera=bloqueo.pFuera||{};
+    const{plan,trialEnd}=planParaReinicio({planColumna:planColumna||bloqueo.planGuardado,pFuera,creadoEn:authUser?.created_at,email:authUser?.email});
     const nd=mkU(authUser?.user_metadata?.name||"Usuario",authUser?.email||"");
-    nd.p.plan=bloqueo.planGuardado||"free";
-    if(bloqueo.trialEnd)nd.p.trialEnd=bloqueo.trialEnd;
+    // Se conserva lo legible fuera del blob (ids de Stripe, etc.) y el plan.
+    nd.p={...nd.p,...pFuera,name:nd.p.name,email:nd.p.email,plan};
+    if(trialEnd)nd.p.trialEnd=trialEnd;else delete nd.p.trialEnd;
     _bloqueoCifrado=null;
     setBloqueo(null);setOlvidoPin(false);setConfirmaBorrado("");setClaveDesbloqueo("");
     setU(nd);setPg("dash");
@@ -928,8 +951,9 @@ export default function FinPath(){
         if(!error&&fila&&typeof fila.plan==="string")planColumna=fila.plan;
       }
     }catch{/* sin columna plan: seguimos con lo que haya */}
-    const pago=[pFuera.plan,planColumna].find(x=>PLANES_PAGOS_FUERA.has(x));
-    setBloqueo({uid,planGuardado:pago||null,trialEnd:typeof pFuera.trialEnd==="string"?pFuera.trialEnd:null});
+    // Orden: columna plan (la escribe el webhook) → data.p.plan fuera del blob.
+    const pago=[planColumna,pFuera.plan].find(x=>PLANES_PAGOS_FUERA.has(x));
+    setBloqueo({uid,pFuera,planGuardado:pago||null,trialEnd:typeof pFuera.trialEnd==="string"?pFuera.trialEnd:null});
   };
   const desbloquearDatos=async()=>{
     if(!bloqueo||!claveDesbloqueo)return;
@@ -1640,7 +1664,7 @@ export default function FinPath(){
           <button type="button" onClick={()=>setOlvidoPin(true)} style={{marginTop:14,background:"none",border:"none",color:T.bl,cursor:"pointer",fontSize:13,fontWeight:600}}>¿Olvidaste tu contraseña?</button>
         </>:<div data-testid="olvido-pin" style={{textAlign:"left",background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:16,fontSize:13,lineHeight:1.55}}>
           <div style={{fontWeight:700,marginBottom:8}}>Si olvidaste tu contraseña</div>
-          <p style={{margin:"0 0 8px"}}>Tus datos financieros están cifrados con la contraseña con la que entras a Finpathia. <strong>Sin esa contraseña no se pueden recuperar</strong>: ni FINPATHIA ni soporte pueden abrirlos, y crear una contraseña nueva tampoco los abre.</p>
+          <p style={{margin:"0 0 8px"}}>Tus datos financieros están cifrados con la contraseña con la que entras a Finpathia. <strong>Solo se pueden abrir con tu contraseña actual (o una anterior que los haya cifrado)</strong>: ni FINPATHIA ni soporte pueden abrirlos, y crear una contraseña nueva tampoco los abre.</p>
           <p style={{margin:"0 0 8px"}}><strong>Tu plan y tus pagos no se pierden.</strong> Están guardados en tu cuenta y en Stripe, no dentro de los datos cifrados.</p>
           <p style={{margin:"0 0 12px"}}>Si recuerdas una contraseña anterior, pruébala aquí. Si necesitas ayuda, escríbenos a <a href="mailto:soporte@finpathia.com" style={{color:T.bl}}>soporte@finpathia.com</a>.</p>
           <div style={{borderTop:"1px solid "+T.border,paddingTop:12}}>
@@ -1774,8 +1798,13 @@ export default function FinPath(){
           style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 14px",color:T.tx,fontSize:14,outline:"none",marginBottom:12}}
         />
         {resetError&&<div style={{color:T.rd,fontSize:12,marginBottom:12,padding:"8px 12px",background:T.rdB,borderRadius:8}}>{resetError}</div>}
+        {resetCifrado==="revisando"&&<div data-testid="reset-revisando" style={{fontSize:12,color:T.tx3,marginBottom:12}}>Revisando tu cuenta…</div>}
+        {(resetCifrado==="si"||resetCifrado==="error")&&<div role="alert" data-testid="aviso-reset-cifrado" style={{marginBottom:12,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,fontSize:12,color:T.tx2,lineHeight:1.5}}>
+          ⚠️ {resetCifrado==="error"?"No pudimos comprobar si tus datos financieros están cifrados. Si lo están, ten en cuenta esto antes de cambiarla: ":"Antes de cambiarla: tus datos financieros están cifrados. "}con una contraseña nueva no se podrán abrir; solo se pueden abrir con tu contraseña actual (o una anterior que los haya cifrado). Tu plan y tus pagos se conservan. Si recuerdas tu contraseña actual, mejor no la cambies. ¿Dudas? Escríbenos a soporte@finpathia.com.
+        </div>}
         <button
           onClick={async()=>{
+            if(resetCifrado==="revisando")return;
             if(resetNewPassword.length<8){setResetError("La contraseña debe tener al menos 8 caracteres");return}
             setResetLoading(true);setResetError("");
             try{
@@ -1793,14 +1822,12 @@ export default function FinPath(){
             }catch(e){setResetError("No pudimos actualizar: "+e.message)}
             finally{setResetLoading(false)}
           }}
-          disabled={resetLoading}
-          style={{width:"100%",background:resetLoading?T.tx3:T.gn,color:"#000",border:"none",padding:"12px 20px",borderRadius:10,cursor:resetLoading?"wait":"pointer",fontWeight:700,fontSize:14}}
+          disabled={resetLoading||resetCifrado==="revisando"}
+          style={{width:"100%",background:(resetLoading||resetCifrado==="revisando")?T.tx3:T.gn,color:"#000",border:"none",padding:"12px 20px",borderRadius:10,cursor:resetLoading?"wait":resetCifrado==="revisando"?"not-allowed":"pointer",fontWeight:700,fontSize:14}}
         >
-          {resetLoading?"Actualizando...":"Actualizar contraseña"}
+          {resetLoading?"Actualizando...":resetCifrado==="revisando"?"Revisando tu cuenta…":"Actualizar contraseña"}
         </button>
-        {resetConCifrado&&<div role="alert" data-testid="aviso-reset-cifrado" style={{marginTop:16,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,fontSize:12,color:T.tx2,lineHeight:1.5}}>
-          ⚠️ Antes de cambiarla: tus datos financieros están cifrados con tu contraseña actual. Con una contraseña nueva no se podrán abrir y no hay forma de recuperarlos. Tu plan y tus pagos se conservan. Si recuerdas tu contraseña actual, mejor no la cambies. ¿Dudas? Escríbenos a soporte@finpathia.com.
-        </div>}
+        
       </div>
     </div>}
     <div style={{width:"100%",maxWidth:420,padding:"clamp(24px, 6vw, 40px) clamp(20px, 5vw, 32px)"}}>
