@@ -65,7 +65,7 @@ const daysUntil = (d) => {
 export default function MiCuenta({
   supabase, accountId, role, displayName, plan, maxMembers,
   currentUserId, currentUserName, onChange, isLegacy, configContent, defaultTab,
-  subscriptionStatus, graceUntil, onUpgrade,
+  subscriptionStatus, graceUntil, onUpgrade, estadoPlan,
 }) {
   // Tabs disponibles según contexto
   const showMembersTab = !isLegacy && accountId;
@@ -123,6 +123,7 @@ export default function MiCuenta({
           displayName={displayName} plan={plan} maxMembers={maxMembers}
           currentUserId={currentUserId} currentUserName={currentUserName} onChange={onChange}
           subscriptionStatus={subscriptionStatus} graceUntil={graceUntil} onUpgrade={onUpgrade}
+          estadoPlan={estadoPlan}
         />
       )}
       {activeTab === "config" && configContent && (
@@ -133,7 +134,7 @@ export default function MiCuenta({
 }
 
 // ═══ Tab Miembros ═══════════════════════════════════════════════════════
-function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, currentUserName, onChange, subscriptionStatus, graceUntil, onUpgrade }) {
+function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, currentUserName, onChange, subscriptionStatus, graceUntil, onUpgrade, estadoPlan }) {
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -142,6 +143,12 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
   const [inviteResult, setInviteResult] = useState(null);
 
   const isAdmin = role === "admin";
+  // 26-sep-2026 — `plan` viene de la tabla accounts y no sabe de la prueba de
+  // la app: una cuenta en prueba Pro veía aquí "Plan free" / "Plan gratuito"
+  // mientras el menú decía Pro. Para lo que se MUESTRA se usa el mismo estado
+  // que el resto de la app (src/lib/planEstado.js). "managed" solo existe en
+  // accounts, así que se respeta tal cual. Límites de miembros: sin cambios.
+  const planVista = plan === "managed" ? "managed" : (estadoPlan?.clave || plan);
   const totalUsed = members.length + invitations.length;
   const slotsLeft = Math.max(0, (maxMembers || 1) - totalUsed);
 
@@ -228,7 +235,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             </h3>
             <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
               <span style={{ background: T.blueB, color: T.blue, padding: "3px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600 }}>
-                Plan {PLAN_LABELS[plan] || plan}
+                {estadoPlan ? estadoPlan.etiqueta : `Plan ${PLAN_LABELS[plan] || plan}`}
               </span>
               <span style={{ color: T.txt2, fontSize: 13 }}>
                 {totalUsed} de {maxMembers || 1} miembros
@@ -328,22 +335,24 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
 
         {/* Explicación del modelo */}
         <div style={{ marginTop: 16, padding: "12px 14px", background: T.bg3, borderRadius: 10, fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
-          {plan === "pro_familiar" ? (
+          {estadoPlan?.enPrueba && !estadoPlan?.pago ? (
+            <>⭐ <strong style={{ color: T.txt }}>Prueba Pro activa:</strong> tienes las funciones Pro{estadoPlan.finPrueba ? ` hasta el ${fmtDate(estadoPlan.finPrueba)}` : ""}. Para compartir la cuenta con más personas necesitas un plan de pago.</>
+          ) : planVista === "pro_familiar" ? (
             <>👨‍👩‍👧 <strong style={{ color: T.txt }}>Plan Pro Familiar:</strong> hasta 10 personas pueden ver y trabajar con los mismos datos. Útil para familia + contador.</>
-          ) : plan === "pro" ? (
+          ) : planVista === "pro" ? (
             <>⭐ <strong style={{ color: T.txt }}>Plan Pro:</strong> hasta 3 personas con la misma información. Para familia chica o pareja + contador.</>
-          ) : plan === "managed" ? (
+          ) : planVista === "managed" ? (
             <>👤 <strong style={{ color: T.txt }}>Cuenta gestionada por asesor:</strong> tu asesor configuró este espacio.</>
-          ) : plan === "basico" ? (
-            <>👤 <strong style={{ color: T.txt }}>Plan Básico:</strong> 1 usuario por cuenta. Para compartir con familia o contador, subí a Pro Familiar.</>
+          ) : planVista === "basico" ? (
+            <>👤 <strong style={{ color: T.txt }}>Plan Básico:</strong> 1 usuario por cuenta. Para compartir con familia o contador, sube a Pro Familiar.</>
           ) : (
             // 25-jul-2026 (Santiago): esta rama decía "Plan Básico" para
             // CUALQUIER plan que no fuera pro/pro_familiar/managed. Un usuario
             // gratuito veía el badge "Plan free" y debajo "Plan Básico" —
             // dos planes distintos en la misma tarjeta.
-            <>👤 <strong style={{ color: T.txt }}>Plan gratuito:</strong> 1 usuario por cuenta. Con Pro tenés el motor fiscal, el Asesor IA y los Coaches; con Pro Familiar, hasta 10 personas sobre los mismos datos.</>
+            <>👤 <strong style={{ color: T.txt }}>Plan gratuito:</strong> 1 usuario por cuenta. Con Pro tienes el motor fiscal, el Asesor IA y los Coaches; con Pro Familiar, hasta 10 personas sobre los mismos datos.</>
           )}
-          {onUpgrade && plan !== "pro_familiar" && (
+          {onUpgrade && !estadoPlan?.pago && planVista !== "pro_familiar" && (
             <div style={{ marginTop: 10 }}>
               <button onClick={onUpgrade} style={{ background: T.gn, color: "#000", border: "none", padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 12 }}>
                 Ver planes y mejorar →
