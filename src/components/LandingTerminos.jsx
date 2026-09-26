@@ -378,7 +378,7 @@ export default function LandingTerminos() {
               estimativas.
             </li>
             <li style={{ marginBottom: 8 }}>
-              No garantizamos disponibilidad ininterrumpida (apuntamos a 99.5% uptime) ni ausencia
+              No garantizamos disponibilidad ininterrumpida ni ausencia
               total de errores.
             </li>
             <li>

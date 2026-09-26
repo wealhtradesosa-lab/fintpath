@@ -189,13 +189,13 @@ export default function LandingPage({ onGetStarted }) {
       <Section style={{ padding: "80px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <h2 style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>Tu privacidad es nuestra prioridad</h2>
-          <p style={{ fontSize: 15, color: T.txt2, maxWidth: 480, margin: "0 auto" }}>Construido con los más altos estándares de seguridad financiera</p>
+          <p style={{ fontSize: 15, color: T.txt2, maxWidth: 480, margin: "0 auto" }}>Construido con prácticas de seguridad estándar: HTTPS y pagos con Stripe</p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, maxWidth: 900, margin: "0 auto" }}>
           {[
             { i: "🔐", t: "Conexión segura", d: "Tus datos viajan por conexión segura (HTTPS/TLS). No vendemos tus datos." },
             { i: "👤", t: "Sin registro obligatorio", d: "Usa la plataforma completa sin crear cuenta. Tus datos se guardan solo en tu navegador." },
-            { i: "🚫", t: "No vendemos datos", d: "Cero publicidad, cero tracking financiero, cero venta de información." },
+            { i: "🚫", t: "No vendemos datos", d: "Sin anuncios dentro de la app y sin venta de tu información." },
             { i: "✊", t: "Tú mandas", d: "Exporta, borra o lleva tus datos cuando quieras. Sin contratos." },
           ].map((item) => (
             <div key={item.t} style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 16, padding: "28px 16px", textAlign: "center" }}>

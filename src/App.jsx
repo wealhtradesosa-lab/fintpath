@@ -1526,7 +1526,7 @@ export default function FinPath(){
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
       <div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"12px 16px",marginBottom:20,fontSize:12,color:T.tx3,lineHeight:2}}>
         <span style={{color:T.gn}}>✓</span> <strong style={{color:T.tx2}}>Conexión segura (HTTPS)</strong> · tus datos viajan cifrados<br/>
-                <span style={{color:T.gn}}>✓</span> No vendemos tus datos. Cero publicidad<br/>
+                <span style={{color:T.gn}}>✓</span> No vendemos tus datos. Sin anuncios dentro de la app<br/>
         <span style={{color:T.gn}}>✓</span> Exporta o borra todo en cualquier momento
       </div>
       <div style={{fontSize:28,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:20}}>FINPATHIA</div>
