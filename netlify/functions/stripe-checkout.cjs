@@ -112,7 +112,7 @@ exports.handler = async (event) => {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: "email requerido — completá tu perfil antes de suscribirte",
+          error: "email requerido — completa tu perfil antes de suscribirte",
         }),
       };
     }

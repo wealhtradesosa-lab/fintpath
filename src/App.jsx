@@ -713,7 +713,11 @@ export default function FinPath(){
     // Después de entregar una tarjeta, el silencio destruye la confianza.
     const cancelado=params.get('canceled');
     if(cancelado==='true'){
-      setPagoEstado({tipo:"cancelado",titulo:"No se completó el pago",msg:"No te cobramos nada y tu plan sigue igual. Podés intentarlo cuando quieras."});
+      // 26-sep-2026 — tuteo + "Reintentar": se recupera el plan y ciclo que
+      // eligió antes de ir a Stripe (abrirCheckout los guarda en sessionStorage).
+      let reintento=null;
+      try{reintento=JSON.parse(sessionStorage.getItem("fp3_checkout_ultimo")||"null")}catch{}
+      setPagoEstado({tipo:"cancelado",titulo:"No se completó el pago",msg:"No te cobramos nada y tu plan sigue igual. Puedes intentarlo de nuevo cuando quieras.",reintento:reintento&&reintento.n?reintento:null});
       window.history.replaceState({},'',window.location.pathname);
     } else if(successFlag==='true'||(successFlag==='1'&&sessionId&&sessionId!=='{CHECKOUT_SESSION_ID}')){
       setPagoEstado({tipo:"procesando",titulo:"Confirmando tu pago…",msg:"Un momento, estamos activando tu plan."});
@@ -726,19 +730,19 @@ export default function FinPath(){
           });
           const data=await r.json();
           if(data.ok){
-            setPagoEstado({tipo:"exito",titulo:"¡Listo! Tu plan está activo",msg:"Gracias por confiar en FINPATHIA. Ya tenés acceso completo."});
+            setPagoEstado({tipo:"exito",titulo:"¡Listo! Tu plan está activo",msg:"Gracias por confiar en FINPATHIA. Ya tienes acceso completo."});
             setTimeout(()=>window.location.reload(),2500);
           }else{
             // Pro/Básico: la activación la hace el webhook, no esta función.
             // No es un error del usuario — su pago SÍ se registró.
-            setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. La activación puede tardar unos segundos; si no ves el cambio, recargá la página."});
+            setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. La activación puede tardar unos segundos; si no ves el cambio, recarga la página."});
             setTimeout(()=>window.location.reload(),4000);
           }
         }else{
-          setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. Si no ves el cambio en unos segundos, recargá la página."});
+          setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. Si no ves el cambio en unos segundos, recarga la página."});
         }
       }catch(e){
-        setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. Si no ves el cambio, escribinos a soporte@finpathia.com y lo revisamos."});
+        setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. Si no ves el cambio, escríbenos a soporte@finpathia.com y lo revisamos."});
       }
       window.history.replaceState({},'',window.location.pathname);
     }
@@ -919,9 +923,9 @@ export default function FinPath(){
       // Lista de passwords débiles más comunes (top 20 en breaches conocidos).
       // Si el user intenta uno de estos, lo rechazamos con mensaje claro.
       const weakList=["12345678","password","qwerty12","11111111","00000000","abcdefgh","87654321","password1","password2","contrasena","password123","qwertyuiop","asdfghjkl","zxcvbnm123","12345abc","abc12345"];
-      if(weakList.includes(aF.p.toLowerCase())){setAuthError("Esa contraseña es muy común. Elegí algo único — por ejemplo una frase corta con números.");return}
+      if(weakList.includes(aF.p.toLowerCase())){setAuthError("Esa contraseña es muy común. Elige algo único — por ejemplo una frase corta con números.");return}
       // Anti-patrón: solo numéros (ej: "12345678" o "11223344")
-      if(/^\d+$/.test(aF.p)){setAuthError("La contraseña no puede ser solo números. Agregá letras o símbolos.");return}
+      if(/^\d+$/.test(aF.p)){setAuthError("La contraseña no puede ser solo números. Agrega letras o símbolos.");return}
     }else{
       // En login solo validamos largo mínimo para evitar requests vacíos.
       if(aF.p.length<6){setAuthError("La contraseña debe tener mínimo 6 caracteres");return}
@@ -967,7 +971,7 @@ export default function FinPath(){
           setAuthUser(null);
           try{await supabase.auth.signOut({scope:"local"})}catch{}
           localStorage.removeItem("fp3_enc_key");
-          setAuthError("No se pudo cargar tus datos: "+loadErr.message+". Volvé a intentar.");
+          setAuthError("No se pudo cargar tus datos: "+loadErr.message+". Vuelve a intentarlo.");
           setAuthLoading(false);
           return;
         }
@@ -1022,7 +1026,7 @@ export default function FinPath(){
             :"otro";
           track("signup_failed",{motivo:_motivo});
         }catch(_e){}
-        let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Probá iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intentá de nuevo o escribinos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verificá que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
+        let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Prueba iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intenta de nuevo o escríbenos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verifica que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=cuentaNueva(aF.n||"Usuario",aF.e,aF.country);setU(nd);await sS(nd,data.user.id);
@@ -1413,10 +1417,11 @@ export default function FinPath(){
     }
     return null;
   };
-  const abrirCheckout=async(pl)=>{
+  const abrirCheckout=async(pl,cicloForzado)=>{
     if(!pl||checkoutCargando)return;
+    const ciclo=cicloForzado||billingCycle;
     // PriceIds vienen de src/lib/plans.js (STRIPE_PRICE_IDS), source-of-truth única.
-    const priceId=STRIPE_PRICE_IDS[pl.n]?.[billingCycle];
+    const priceId=STRIPE_PRICE_IDS[pl.n]?.[ciclo];
     if(!priceId)return;
     setCheckoutError(null);
     setCheckoutCargando(pl.n);
@@ -1429,7 +1434,7 @@ export default function FinPath(){
       }
       const userEmail=sesion.user.email||u?.p?.email||authUser?.email||"";
       if(!userEmail){alert("Necesitamos tu email para procesar el pago. Complétalo en Configuración → Datos personales y vuelve a intentar.");return;}
-      trackCheckoutStarted({ plan: pl.n, billingCycle, priceId });
+      trackCheckoutStarted({ plan: pl.n, billingCycle: ciclo, priceId });
       const pedir=(token)=>fetch("/api/stripe-checkout",{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
@@ -1452,7 +1457,7 @@ export default function FinPath(){
         return;
       }
       const d=await r.json().catch(()=>({}));
-      if(d.url){window.location.href=d.url;return;}
+      if(d.url){try{sessionStorage.setItem("fp3_checkout_ultimo",JSON.stringify({n:pl.n,ciclo}))}catch{}window.location.href=d.url;return;}
       console.error("[checkout] respuesta sin url:",d);
       setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO+" Si el problema sigue, escríbenos a soporte@finpathia.com."});
     }catch(e){
@@ -1590,9 +1595,9 @@ export default function FinPath(){
             Email enviado a <span style={{color:T.gn}}>{recoveryEmail}</span>
           </p>
           <p style={{fontSize:12,color:T.tx3,textAlign:"center",marginBottom:20,lineHeight:1.6}}>
-            Revisá tu bandeja de entrada y la carpeta de spam. El link expira en 1 hora. Cuando lo abras vas a volver acá para crear tu nueva contraseña.
+            Revisa tu bandeja de entrada y la carpeta de spam. El link expira en 1 hora. Cuando lo abras vas a volver acá para crear tu nueva contraseña.
             {" "}<strong>Abrilo en este mismo navegador</strong>, en la misma pestaña o una nueva; si lo abrís en otro dispositivo no va a funcionar.
-            ¿No funciona? Escribinos a soporte@finpathia.com.
+            ¿No funciona? Escríbenos a soporte@finpathia.com.
           </p>
           <button onClick={()=>{setShowRecoveryRequest(false);setResetSent(false)}} style={{width:"100%",background:T.bg3,color:T.tx,border:`1px solid ${T.border}`,padding:"12px 20px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>
             Cerrar
@@ -1631,7 +1636,7 @@ export default function FinPath(){
               localStorage.removeItem("fp3_enc_key");
               setShowResetPassword(false);
               setResetNewPassword("");
-              setAuthError("✅ Contraseña actualizada. Iniciá sesión con la nueva.");
+              setAuthError("✅ Contraseña actualizada. Inicia sesión con la nueva.");
               sAM("login");
             }catch(e){setResetError("No pudimos actualizar: "+e.message)}
             finally{setResetLoading(false)}
@@ -2058,7 +2063,7 @@ export default function FinPath(){
                 <div style={{minWidth:0}}>
                   <div style={{fontSize:13.5,fontWeight:700,color:T.rd}}>Tu prueba gratuita del plan Pro terminó</div>
                   <div style={{fontSize:11.5,color:T.tx3,marginTop:2,lineHeight:1.5}}>
-                    Para seguir usando el <strong>motor fiscal</strong>, el <strong>Asesor IA</strong> y los <strong>Coaches</strong>, activá tu plan.
+                    Para seguir usando el <strong>motor fiscal</strong>, el <strong>Asesor IA</strong> y los <strong>Coaches</strong>, activa tu plan.
                     <br/>Tus datos están intactos y tu cuenta sigue activa en el plan gratuito.
                   </div>
                 </div>
@@ -3381,7 +3386,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           💬 ¿Preguntas? Escríbenos a soporte@finpathia.com
         </div>
         <div style={{marginTop:32,padding:"20px 24px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:14,textAlign:"center"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#3b82f6",marginBottom:4}}>💼 ¿Sos asesor financiero o contador?</div>
+          <div style={{fontSize:13,fontWeight:700,color:"#3b82f6",marginBottom:4}}>💼 ¿Eres asesor financiero o contador?</div>
           <div style={{fontSize:12,color:T.tx3,marginBottom:10}}>Tenemos planes para gestionar hasta 40+ clientes con workspace dedicado, white-label y soporte prioritario.</div>
           <a href="/asesores" style={{display:"inline-block",background:"transparent",border:"1px solid #3b82f6",color:"#3b82f6",padding:"8px 18px",borderRadius:8,fontSize:12,fontWeight:600,textDecoration:"none"}}>Ver planes para asesores →</a>
         </div>
@@ -3665,21 +3670,21 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                         <div style={{fontSize:10,color:T.tx3,marginBottom:10,lineHeight:1.4}}>Estos datos afectan la clasificación por cédula de tus honorarios y tu elegibilidad para depreciar activos (Art. 206 #10 y 128 ET).</div>
                       </div>
                       <div>
-                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Tenés 2+ empleados contratados ≥83% del año? (Art. 206 #10)</label>
+                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Tienes 2+ empleados contratados ≥83% del año? (Art. 206 #10)</label>
                         <select defaultValue={ow.regimenHonorarios||"no_aplica"} id={"own_regh_"+ow.id} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:12,outline:"none",cursor:"pointer"}}>
                           <option value="no_aplica">No aplica — no tengo honorarios</option>
                           <option value="sin_empleados">Sin 2+ empleados — honorarios tributan sin exenta 25%</option>
                           <option value="con_empleados">Con 2+ empleados ≥83% del año — aplica exenta 25%</option>
                         </select>
-                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si tus honorarios califican (Art. 206 #10), podés descontar la renta exenta del 25%. Afecta el impuesto en tus ingresos por honorarios.</div>
+                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si tus honorarios califican (Art. 206 #10), puedes descontar la renta exenta del 25%. Afecta el impuesto en tus ingresos por honorarios.</div>
                       </div>
                       <div>
-                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Obligado o voluntariamente llevás contabilidad? (Art. 38-39, 128 ET)</label>
+                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Obligado o voluntariamente llevas contabilidad? (Art. 38-39, 128 ET)</label>
                         <select defaultValue={ow.llevaContabilidad?"si":"no"} id={"own_contab_"+ow.id} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:12,outline:"none",cursor:"pointer"}}>
                           <option value="no">No (default para persona natural común)</option>
                           <option value="si">Sí (empresario, RUT con contabilidad)</option>
                         </select>
-                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si llevás contabilidad, podés depreciar activos (Art. 128 ET), pero pierdes el componente inflacionario de rendimientos (Art. 38-39 ET). La mayoría de las personas naturales NO llevan contabilidad.</div>
+                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si llevas contabilidad, puedes depreciar activos (Art. 128 ET), pero pierdes el componente inflacionario de rendimientos (Art. 38-39 ET). La mayoría de las personas naturales NO llevan contabilidad.</div>
                       </div>
                       <div style={{marginTop:6,paddingTop:10,borderTop:"1px dashed "+T.border}}>
                         <div style={{fontSize:10,fontWeight:700,color:T.or||T.bl,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>⚙️ Ajustes fiscales avanzados (opcional)</div>
@@ -3841,6 +3846,7 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:14,fontWeight:700,color:pagoEstado.tipo==="exito"?"#4ade80":pagoEstado.tipo==="cancelado"?"#eab308":"#60a5fa"}}>{pagoEstado.titulo}</div>
           <div style={{fontSize:12,color:"#cbd5e1",marginTop:3,lineHeight:1.5}}>{pagoEstado.msg}</div>
+          {pagoEstado.tipo==="cancelado"&&<button onClick={()=>{const r=pagoEstado.reintento;setPagoEstado(null);setPg("price");if(r&&r.n&&authUser){if(r.ciclo)setBillingCycle(r.ciclo);abrirCheckout({n:r.n},r.ciclo)}}} disabled={!!checkoutCargando} style={{marginTop:10,background:"#eab308",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>{checkoutCargando?"Abriendo pago…":"Reintentar"}</button>}
         </div>
         {pagoEstado.tipo!=="procesando"&&<button onClick={()=>setPagoEstado(null)} style={{background:"transparent",border:"none",color:"#64748b",cursor:"pointer",fontSize:18,lineHeight:1,padding:0,flexShrink:0}}>×</button>}
       </div>

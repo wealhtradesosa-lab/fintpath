@@ -78,7 +78,7 @@ export function usdToCop(usd, trm) {
 export const PLAN_BASE = [
   {
     name: "Free",
-    tag: "Empezá a ordenar tu vida financiera",
+    tag: "Empieza a ordenar tu vida financiera",
     priceUSD: { mensual: 0, anual: 0 },
     users: "1 usuario",
     usersDetail: "1 usuario",
@@ -91,7 +91,7 @@ export const PLAN_BASE = [
     features: [
       "👤 1 usuario",
       "📊 Dashboard con resumen de tu patrimonio",
-      "💰 Registrá ingresos, gastos y deudas",
+      "💰 Registra ingresos, gastos y deudas",
       "📈 Hasta 3 inversiones y 1 meta financiera",
       "🔒 Encriptación E2E de tus datos",
     ],
@@ -118,13 +118,13 @@ export const PLAN_BASE = [
       "👤 1 usuario · sin límites en inversiones ni metas",
       "📊 Dashboard con resumen patrimonial",
       "💰 Ingresos, gastos y deudas ilimitados",
-      "🖥️ Simulador financiero con palancas (cambiá ingresos/gastos y simulá)",
+      "🖥️ Simulador financiero con palancas (cambia ingresos/gastos y simula)",
       isUS
         ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
         : "🏛️ Pensión Colombia: Colpensiones (RPM) + RAIS",
       isCO ? "💰 Aportes obligatorios (4%+4%) y voluntarios calculados" : null,
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "📥 Importá Excel/CSV con IA",
+      "📥 Importa Excel/CSV con IA",
       "📸 Lectura de facturas con IA",
     ].filter(Boolean),
     notFeatures: ["Asesor IA", "5 Coaches IA", "Plan Tributario completo", "Multi-usuario"],
@@ -152,7 +152,7 @@ export const PLAN_BASE = [
       isCO
         ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
         : "🧾 Tax Planning US (federal + state, deductions, optimization)",
-      "📥 Importá Excel/CSV y leé facturas con IA",
+      "📥 Importa Excel/CSV y lee facturas con IA",
       "📈 Resumen ejecutivo del patrimonio en PDF",
       "🚀 Soporte prioritario por email",
     ],
@@ -177,13 +177,13 @@ export const PLAN_BASE = [
         ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
         : "🏛️ Pensión Colombia: Colpensiones + RAIS",
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "🎯 Simulá escenarios para alcanzar tu libertad financiera",
+      "🎯 Simula escenarios para alcanzar tu libertad financiera",
       "🤖 Asesor IA que analiza el patrimonio consolidado",
       "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
       isCO
         ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
         : "🧾 Tax Planning US (federal + state, deductions, optimization)",
-      "📥 Importá Excel/CSV y leé facturas con IA",
+      "📥 Importa Excel/CSV y lee facturas con IA",
       "📈 Reporte ejecutivo del patrimonio en PDF",
       "🚀 Soporte prioritario con respuesta en 24h",
     ],

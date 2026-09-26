@@ -1086,11 +1086,10 @@ export default function DeclaracionFlow({
       <div style={{ padding: "40px 28px", textAlign: "center" }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🧾</div>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: C.txt, marginBottom: 8 }}>
-          Empezá tu declaración
+          Empieza tu declaración
         </h1>
         <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.5, maxWidth: 440, margin: "0 auto" }}>
-          Aún no cargaste personas fiscales. Andá a "Mi cuenta" y agregá una persona natural o
-          jurídica para empezar.
+          Aún no tienes personas fiscales. Crea una para ver tu borrador.
         </p>
       </div>
     );

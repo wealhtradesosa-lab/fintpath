@@ -285,7 +285,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                       const data = await res.json();
                       if (!res.ok) {
                         if (data.error === "no_stripe_customer") {
-                          alert("No tenés una suscripción de Stripe asociada todavía. Si pagaste recién, esperá unos minutos. Si tu plan es legacy (sin Stripe), contactá soporte.");
+                          alert("No tienes una suscripción de Stripe asociada todavía. Si acabas de pagar, espera unos minutos. Si tu plan es anterior a Stripe, escríbenos a soporte@finpathia.com.");
                         } else if (data.error === "portal_not_configured") {
                           alert("El portal de Stripe no está configurado todavía. Soporte ya fue notificado.");
                         } else {
@@ -325,7 +325,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             lineHeight: 1.6,
           }}>
             <strong>⚠️ Tu plan {PLAN_LABELS[plan] || plan} fue cancelado.</strong>{" "}
-            Seguís teniendo acceso completo hasta el {new Date(graceUntil).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}.
+            Sigues teniendo acceso completo hasta el {new Date(graceUntil).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}.
             Después, tu cuenta vuelve al plan Free.{" "}
             {isAdmin && (
               <span>Si fue un error, click en "⚙️ Gestionar suscripción" arriba para reactivar.</span>
@@ -397,7 +397,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
               Invitaciones pendientes ({invitations.length})
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
-              Estas personas todavía no aceptaron. Podés copiarles el link o revocar la invitación.
+              Estas personas todavía no aceptaron. Puedes copiarles el link o revocar la invitación.
             </div>
           </div>
           <div>
@@ -659,7 +659,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
               background: "rgba(16,185,129,0.08)", border: `1px solid rgba(16,185,129,0.25)`,
               borderRadius: 10, padding: "8px 12px", fontSize: 12, color: T.green, marginBottom: 12,
             }}>
-              ✓ Email enviado · igualmente podés copiar el link como respaldo
+              ✓ Email enviado · igualmente puedes copiar el link como respaldo
             </div>
           )}
           {emailStatus === "fallback" && (
@@ -667,7 +667,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
               background: "rgba(234,179,8,0.08)", border: `1px solid rgba(234,179,8,0.25)`,
               borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#eab308", marginBottom: 12,
             }}>
-              ℹ️ Email automático no disponible · copiá el link y mandalo manualmente
+              ℹ️ Email automático no disponible · copia el link y envíalo manualmente
             </div>
           )}
           <div style={{
