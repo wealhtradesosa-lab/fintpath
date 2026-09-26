@@ -20,7 +20,8 @@
 --     · data->p->plan → se conserva el anterior ('free' si no había).
 --     · data->p->trialEnd → si ya existía se conserva; si no, se acepta la
 --       primera vez (cuentaNueva() lo escribe al registrarse) con tope
---       created_at + 30 días; si viene inválido o mayor, created_at + 14 días
+--       created_at + 14 días (30 SOLO para los emails invitados, misma lista
+--       que planEstado.js); si viene inválido o mayor, se fija en ese tope
 --       (ISO exacto, igual que la app). Acepta "YYYY-MM-DD" o ISO completo.
 --   service_role (webhook, RPCs update_user_plan_after_stripe /
 --   handle_subscription_* / activate_pro_familiar, funciones Netlify, crons)
@@ -47,6 +48,8 @@ declare
   v_default_te text;
   v_old_p  jsonb;
   v_new_te text;
+  v_email  text;
+  v_dias   int;
 begin
   v_role := coalesce(nullif(v_claims, '')::jsonb ->> 'role', auth.role(), '');
 
@@ -55,10 +58,13 @@ begin
     return new;
   end if;
 
-  select u.created_at into v_created from auth.users u where u.id = new.id;
+  select u.created_at, lower(trim(u.email)) into v_created, v_email from auth.users u where u.id = new.id;
+  -- Prueba de 30 días SOLO para invitados. MISMA lista que INVITADOS_30D en
+  -- src/lib/planEstado.js y netlify/functions/stripe-checkout.cjs.
+  v_dias := case when v_email in ('andres.isaza@grupogiesas.com', 'renatomaestri76@hotmail.com') then 30 else 14 end;
   -- Mismo instante que la app (planEstado.js) y stripe-checkout: created_at +
-  -- 14 días exactos, ISO en UTC.
-  v_default_te := to_char((coalesce(v_created, now()) + interval '14 days') at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+  -- 14 (o 30) días exactos, ISO en UTC.
+  v_default_te := to_char((coalesce(v_created, now()) + make_interval(days => v_dias)) at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 
   if tg_op = 'UPDATE' then
     new.plan := old.plan;
@@ -86,7 +92,9 @@ begin
     begin
       if v_new_te is null
          or v_new_te !~ '^\d{4}-\d{2}-\d{2}'
-         or v_new_te::timestamptz > coalesce(v_created, now()) + interval '30 days' then
+         -- 1 h de margen: cuentaNueva() calcula "ahora + 14 días" en el
+         -- navegador unos segundos después de created_at.
+         or v_new_te::timestamptz > coalesce(v_created, now()) + make_interval(days => v_dias) + interval '1 hour' then
         new.data := jsonb_set(new.data, '{p,trialEnd}', to_jsonb(v_default_te), true);
       end if;
     exception when others then
