@@ -20,7 +20,8 @@
 --     · data->p->plan → se conserva el anterior ('free' si no había).
 --     · data->p->trialEnd → si ya existía se conserva; si no, se acepta la
 --       primera vez (cuentaNueva() lo escribe al registrarse) con tope
---       created_at + 30 días; si viene inválido o mayor, created_at + 14 días.
+--       created_at + 30 días; si viene inválido o mayor, created_at + 14 días
+--       (ISO exacto, igual que la app). Acepta "YYYY-MM-DD" o ISO completo.
 --   service_role (webhook, RPCs update_user_plan_after_stripe /
 --   handle_subscription_* / activate_pro_familiar, funciones Netlify, crons)
 --   y el SQL Editor (sin JWT) NO se ven afectados.
@@ -55,7 +56,9 @@ begin
   end if;
 
   select u.created_at into v_created from auth.users u where u.id = new.id;
-  v_default_te := to_char(((coalesce(v_created, now()) + interval '14 days') at time zone 'utc')::date, 'YYYY-MM-DD');
+  -- Mismo instante que la app (planEstado.js) y stripe-checkout: created_at +
+  -- 14 días exactos, ISO en UTC.
+  v_default_te := to_char((coalesce(v_created, now()) + interval '14 days') at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 
   if tg_op = 'UPDATE' then
     new.plan := old.plan;
@@ -83,7 +86,7 @@ begin
     begin
       if v_new_te is null
          or v_new_te !~ '^\d{4}-\d{2}-\d{2}'
-         or left(v_new_te, 10)::date > ((coalesce(v_created, now()) + interval '30 days') at time zone 'utc')::date then
+         or v_new_te::timestamptz > coalesce(v_created, now()) + interval '30 days' then
         new.data := jsonb_set(new.data, '{p,trialEnd}', to_jsonb(v_default_te), true);
       end if;
     exception when others then

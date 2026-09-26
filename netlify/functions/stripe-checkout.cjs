@@ -48,26 +48,29 @@ function isProFamiliarPrice(priceId) {
 const { usuarioDesdeToken, resolverCustomer, suscripcionVigente } = require("./_stripeUsuario.cjs");
 
 const DIA_MS = 86400000;
-// Invitados con prueba de 30 días. MISMA lista que INVITADOS / getTrialDays
-// en src/App.jsx (cuentaNueva). Si cambias una, cambia la otra.
+// Invitados con prueba de 30 días. MISMA lista que INVITADOS_30D en
+// src/lib/planEstado.js (cuentaNueva). Si cambias una, cambia la otra.
 const INVITADOS_30D = ["andres.isaza@grupogiesas.com", "renatomaestri76@hotmail.com"];
 
 // 26-sep-2026 — Fin de la prueba calculado EN EL SERVIDOR.
 // user_data.data.p.trialEnd lo escribe el navegador: no se puede confiar en
 // él (bastaba con editarlo para tener meses de trial en Stripe). El tope es
-// created_at del usuario (Supabase Auth) + 14 días (30 para invitados), con
-// la misma regla que cuentaNueva(): la prueba vence a las 00:00 UTC del día
-// resultante. El valor del cliente solo se usa si es MENOR que el tope (así
-// coincide con la fecha que ve el usuario en la app).
+// created_at del usuario (Supabase Auth) + 14 días EXACTOS (30 para
+// invitados). Antes se truncaba a las 00:00 UTC y Stripe mostraba "13 días
+// gratis" mientras la app decía 14. Ahora es el mismo instante que la app
+// (planEstado.js → nuevoFinPrueba / finPruebaDesdeRegistro) y los dos cuentan
+// días con ceil. El valor del cliente solo se usa si es MENOR que el tope
+// (cuentas viejas con "YYYY-MM-DD": así coincide con lo que ve la app).
 function topePruebaServidor(user) {
   const creado = Date.parse(user && user.created_at);
   if (!Number.isFinite(creado)) return null;
   const email = String((user && user.email) || "").trim().toLowerCase();
   const dias = INVITADOS_30D.includes(email) ? 30 : 14;
-  return Math.floor((creado + dias * DIA_MS) / DIA_MS) * DIA_MS;
+  return creado + dias * DIA_MS;
 }
 
-// trialEnd guardado por la app ("YYYY-MM-DD"), solo como valor a la baja.
+// trialEnd guardado por la app, solo como valor a la baja. Formatos:
+// "YYYY-MM-DD" (cuentas viejas, vence 00:00 UTC) o ISO completo (nuevas).
 async function trialEndCliente(userId) {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -81,7 +84,7 @@ async function trialEndCliente(userId) {
     const rows = await r.json();
     const te = Array.isArray(rows) && rows[0] ? rows[0].te : null;
     if (!te || !/^\d{4}-\d{2}-\d{2}/.test(te)) return null;
-    const ms = Date.parse(te.slice(0, 10) + "T00:00:00Z");
+    const ms = te.length === 10 ? Date.parse(te + "T00:00:00Z") : Date.parse(te);
     return Number.isFinite(ms) ? ms : null;
   } catch (e) {
     console.warn("[stripe-checkout] no pude leer trialEnd:", e.message);
