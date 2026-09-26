@@ -84,7 +84,7 @@ import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy } from "./lib/migrations";
 import { getPlansForApp, STRIPE_PRICE_IDS } from "./lib/plans.js";
-import { estadoPlan } from "./lib/planEstado.js";
+import { estadoPlan, diasDePrueba, nuevoFinPrueba, finPruebaEfectiva, finPruebaDesdeRegistro, diasRestantes } from "./lib/planEstado.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
@@ -1332,8 +1332,8 @@ export default function FinPath(){
   //   4. Si error → evento 'fp3-save-error' → toast '⚠️ Error guardando'
   const upd=(k,v)=>{showToast("💾 Guardando…");setU(p=>p?{...p,[k]:v}:p);};
   const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";
-  const INVITADOS=["andres.isaza@grupogiesas.com","renatomaestri76@hotmail.com"];
-  const getTrialDays=(email)=>INVITADOS.includes(email)?30:14;
+  // Lista de invitados (30 días) y días de prueba: src/lib/planEstado.js.
+  const getTrialDays=(email)=>diasDePrueba(email);
   // 26-sep-2026 — Única fábrica de cuentas NUEVAS. El registro promete
   // "14 días de acceso Pro incluidos", pero había un camino (sin Supabase
   // configurado, p. ej. el deploy de Vercel) que creaba la cuenta con mkU()
@@ -1344,13 +1344,33 @@ export default function FinPath(){
   const cuentaNueva=(nombre,email,pais)=>{
     const nd=mkU(nombre||"Usuario",email||"");
     nd.p.plan="free";
-    nd.p.trialEnd=new Date(Date.now()+getTrialDays(email)*86400000).toISOString().split("T")[0];
+    // Instante exacto (registro + 14/30 días), no "YYYY-MM-DD": el día
+    // truncado a 00:00 UTC hacía que Stripe dijera 13 días y la app 14.
+    nd.p.trialEnd=nuevoFinPrueba(email);
     nd.jurisdiction=pais||"CO";
     return nd;
   };
-  const trialEnd=u?.p?.trialEnd;
-  const trialActive=trialEnd&&new Date(trialEnd)>=new Date();
-  const trialDays=trialEnd?Math.max(0,Math.ceil((new Date(trialEnd)-new Date())/(86400000))):0;
+  // 26-sep-2026 (regresión QA: cuenta nueva aparecía como Gratis). La fila
+  // de user_data la crea el trigger handle_new_user con p.plan="free" y SIN
+  // trialEnd; si la app la recargaba antes del primer guardado (o en el
+  // primer login), la prueba desaparecía. Ahora, si falta p.trialEnd, el fin
+  // de la prueba se deriva de la fecha de registro de Supabase Auth
+  // (created_at + 14/30 días, el mismo tope que usa stripe-checkout). Una
+  // cuenta vieja da una fecha pasada: no hay prueba retroactiva.
+  const esCuentaSintetica=!!(u?.p?.anonymous||u?.p?.demo);
+  const creadoEn=esCuentaSintetica?null:authUser?.created_at;
+  const emailCuenta=authUser?.email||u?.p?.email;
+  const finPrueba=finPruebaEfectiva({trialEnd:u?.p?.trialEnd,creadoEn,email:emailCuenta});
+  const trialEnd=u?.p?.trialEnd||(finPrueba!=null?new Date(finPrueba).toISOString():null);
+  const trialActive=finPrueba!=null&&finPrueba>=Date.now();
+  const trialDays=diasRestantes(finPrueba);
+  // Si faltaba p.trialEnd y la prueba sigue vigente, se guarda (lo usan el
+  // correo de fin de prueba y el checkout). Solo cuentas reales y recientes.
+  useEffect(()=>{
+    if(!u||u.p?.trialEnd||esCuentaSintetica||!authUser?.created_at)return;
+    const f=finPruebaDesdeRegistro(authUser.created_at,emailCuenta);
+    if(f!=null&&f>Date.now())setU(p=>p&&p.p&&!p.p.trialEnd?{...p,p:{...p.p,trialEnd:new Date(f).toISOString()}}:p);
+  },[u?.p?.trialEnd,authUser?.created_at]);
   // Resolución del plan: prioridad
   //   1. isAdmin → "pro" (acceso total para admins de Anthropic/staff)
   //   2. trialActive → "pro" (durante trial 14d, mismo acceso que pro)
@@ -1371,7 +1391,7 @@ export default function FinPath(){
   // El menú lateral, Configuración y Mi cuenta leen este objeto; antes cada
   // uno derivaba el plan por su lado y se contradecían ("Pro ⭐ Trial" vs
   // "Plan gratuito"). El gating sigue usando `plan`/`hasProAccess`.
-  const estado=estadoPlan({isAdmin,planGuardado:u?.p?.plan,planAccount,trialEnd});
+  const estado=estadoPlan({isAdmin,planGuardado:u?.p?.plan,planAccount,trialEnd:u?.p?.trialEnd,creadoEn,email:emailCuenta});
 
   // ═══ CHECKOUT STRIPE ═══════════════════════════════════════════════════
   // 26-sep-2026 (P0). Con una cuenta recién creada, "Comenzar" en Pro decía
@@ -3306,7 +3326,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // Familiar oculto en home + monedas distintas). Ahora ambos consumen
       // la misma definición. Cualquier cambio de precio/feature se hace
       // en plans.js únicamente.
-      const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle,trialActive,trialDays});
+      const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle,trialActive:estado.enPrueba&&!estado.pago,trialDays:estado.diasPrueba});
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
           <h2 style={{fontSize:26,fontWeight:800,margin:"0 0 8px"}}>{isUS?"Choose your plan":"Elige tu plan"}</h2>
@@ -3825,7 +3845,7 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
                 if(mb)sSb(false);
               }} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:highlight?600:400,marginBottom:1,background:highlight?T.gnB:"transparent",color:highlight?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span><span style={{flex:1,textAlign:"left"}}>{n.l}</span><span style={{fontSize:10,color:T.tx3,transform:expanded?"rotate(90deg)":"none",transition:"transform 0.15s"}}>▸</span></button>;
             }
-            const a=pg===n.id;return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span>{n.l}{n.id==="price"&&plan==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:8}}><div style={{width:28,height:28,borderRadius:99,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{(u?.p?.name||"U").charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u?.p?.name||"Usuario"}</div><div style={{fontSize:10,color:T.tx3}}>{estado.etiqueta}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",marginBottom:6,fontSize:10,color:T.tx3}}><span>🔒</span> Datos encriptados y privados</div><button onClick={()=>window.open("https://wa.me/?text=🏦 Encontré esta plataforma para gestionar tu patrimonio con inteligencia artificial.%0A%0APones tus inversiones, ingresos, gastos y deudas → te dice en qué nivel de libertad financiera estás, simula escenarios y un asesor IA analiza tus números reales.%0A%0A14 días gratis del plan completo, sin tarjeta.%0A%0A👉 https://finpathia.com","_blank")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.2)",color:"#25d366",cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12,marginBottom:6}}>💬 Compartir por WhatsApp</button><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:T.bg3,border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12}}>🚪 Cerrar sesión</button></div></aside>}
+            const a=pg===n.id;return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span>{n.l}{n.id==="price"&&estado.clave==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:8}}><div style={{width:28,height:28,borderRadius:99,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{(u?.p?.name||"U").charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u?.p?.name||"Usuario"}</div><div style={{fontSize:10,color:T.tx3}}>{estado.etiqueta}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",marginBottom:6,fontSize:10,color:T.tx3}}><span>🔒</span> Datos encriptados y privados</div><button onClick={()=>window.open("https://wa.me/?text=🏦 Encontré esta plataforma para gestionar tu patrimonio con inteligencia artificial.%0A%0APones tus inversiones, ingresos, gastos y deudas → te dice en qué nivel de libertad financiera estás, simula escenarios y un asesor IA analiza tus números reales.%0A%0A14 días gratis del plan completo, sin tarjeta.%0A%0A👉 https://finpathia.com","_blank")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.2)",color:"#25d366",cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12,marginBottom:6}}>💬 Compartir por WhatsApp</button><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:T.bg3,border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12}}>🚪 Cerrar sesión</button></div></aside>}
     {mb&&sb&&<div onClick={()=>sSb(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99}}/>}
     <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{isAdvisor&&viewMode==="client"&&currentClient&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(167,139,250,0.14))",borderBottom:"2px solid rgba(59,130,246,0.4)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#bfdbfe",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>👁</span><span><strong style={{color:"#fff"}}>Viendo como asesor:</strong> {currentClient.name||currentClient.email} <span style={{opacity:0.7}}>({currentClient.email})</span></span></span><button onClick={returnToAdvisorWorkspace} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>← Volver a mis clientes</button></div>}{isAdvisor&&viewMode==="personal"&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(167,139,250,0.10))",borderBottom:"1px solid rgba(59,130,246,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#93c5fd",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📊</span><span>Modo personal — gestionas tu propio patrimonio.</span></span><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setViewMode("workspace");setCurrentClientId(null)}} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>👥 Ir a mis clientes</button></div></div>}{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(249,115,22,0.1),rgba(234,179,8,0.08))",borderBottom:"1px solid rgba(249,115,22,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:10,flexWrap:"wrap"}}><span style={{color:T.orange}}>📊 Estos son <strong>datos de ejemplo</strong>, no los tuyos{authUser?" — tu cuenta sigue vacía":""}.</span>{authUser?<button onClick={()=>{if(!confirm("Se borran los datos de ejemplo y arrancás con tu cuenta en blanco. ¿Seguimos?"))return;setU(mkU(u?.p?.name||"Usuario",u?.p?.email||""));setPg("dash");showToast("✨ Listo — ahora cargá tus datos reales")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Empezar con mis datos →</button>:<button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Crear cuenta para guardar →</button>}</div>}{!isLegacy&&role==="reader"&&viewMode!=="client"&&<RoleBanner accountName={displayName}/>}<header style={{height:52,padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:6}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} title="Abrir menú" style={{background:"none",border:"none",color:T.tx2,cursor:"pointer",fontSize:20,padding:"4px 8px"}}>☰</button>}{!sb&&!mb&&<span style={{fontSize:14,fontWeight:800,color:T.gn,marginLeft:4}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"nowrap",minWidth:0}}>{!isLegacy&&memberships&&memberships.length>1&&viewMode!=="client"&&<AccountSwitcher memberships={memberships} activeAccountId={accountId} onSwitch={handleAccountSwitch}/>}{!mb&&<button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4}}>📥 Importar Excel</button>}<Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#22c55e",border:"none",color:"#fff",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11}}
                   // 03-ago-2026 — la TRM real llega del Banco de la República

@@ -56,10 +56,12 @@ exports.handler = async (event) => {
     const targetDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     const targetIso = targetDate.toISOString().split("T")[0];
 
-    // user_data.data es JSONB con shape { p: { trialEnd: "YYYY-MM-DD", trialEndingEmailSent: "ISO" } }
-    // PostgREST permite filtrar por path JSONB usando data->p->>trialEnd=eq.X
-    // Buscamos users con trialEnd == target Y que NO tengan trialEndingEmailSent
-    const queryUrl = `${supabaseUrl}/rest/v1/user_data?data->p->>trialEnd=eq.${targetIso}&data->p->>trialEndingEmailSent=is.null&select=id,email,data`;
+    // user_data.data es JSONB con shape { p: { trialEnd, trialEndingEmailSent: "ISO" } }
+    // trialEnd es "YYYY-MM-DD" (cuentas viejas) o un ISO completo
+    // "YYYY-MM-DDTHH:MM:SS.sssZ" (cuentas desde 26-sep-2026). El filtro
+    // like "YYYY-MM-DD*" cubre los dos formatos.
+    // Buscamos users con trialEnd en el día target Y sin trialEndingEmailSent
+    const queryUrl = `${supabaseUrl}/rest/v1/user_data?data->p->>trialEnd=like.${targetIso}*&data->p->>trialEndingEmailSent=is.null&select=id,email,data`;
     const supaRes = await fetch(queryUrl, {
       headers: {
         "apikey": supabaseKey,

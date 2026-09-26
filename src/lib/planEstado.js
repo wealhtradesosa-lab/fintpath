@@ -9,10 +9,16 @@
 // No cambia el gating: App.jsx sigue calculando `plan`/`hasProAccess` igual.
 // Este módulo solo decide QUÉ SE MUESTRA, con las mismas reglas.
 //
-// Reglas de la prueba (idénticas a App.jsx):
-//   · p.trialEnd = "YYYY-MM-DD"; la prueba vale mientras new Date(trialEnd)
-//     >= ahora, o sea hasta las 00:00 UTC de ese día.
-//   · días restantes = ceil((fin - ahora) / 1 día).
+// Reglas de la prueba (App.jsx, Planes, Mi cuenta y el servidor usan ESTAS):
+//   · Cuentas nuevas: p.trialEnd = instante exacto (ISO) = registro + 14 días
+//     (30 para invitados). Mismo instante que usa stripe-checkout como tope,
+//     así la app y Stripe cuentan los mismos días.
+//   · Cuentas viejas: p.trialEnd = "YYYY-MM-DD" (vale hasta las 00:00 UTC).
+//   · Sin p.trialEnd (fila creada por el trigger handle_new_user con plan
+//     "free", o datos recargados antes del primer guardado): se deriva de la
+//     fecha de registro. Una cuenta vieja da una fecha pasada → sin prueba
+//     retroactiva.
+//   · días restantes = ceil((fin - ahora) / 1 día), igual que Stripe.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const DIA_MS = 86400000;
@@ -21,6 +27,35 @@ const DIA_MS = 86400000;
 // netlify/functions/stripe-checkout.cjs (calcularTrialStripe). Si cambias
 // una, cambia la otra.
 export const MIN_TRIAL_MS = 48 * 3600 * 1000 + 10 * 60 * 1000;
+
+// Invitados con prueba de 30 días. MISMA lista que INVITADOS_30D en
+// netlify/functions/stripe-checkout.cjs.
+export const INVITADOS_30D = ["andres.isaza@grupogiesas.com", "renatomaestri76@hotmail.com"];
+export function diasDePrueba(email) {
+  return INVITADOS_30D.includes(String(email || "").trim().toLowerCase()) ? 30 : 14;
+}
+
+// Fin de prueba para una cuenta que se crea AHORA: instante exacto, ISO.
+export function nuevoFinPrueba(email, ahora = Date.now()) {
+  return new Date(ahora + diasDePrueba(email) * DIA_MS).toISOString();
+}
+
+// Fin de prueba derivado de la fecha de registro (auth.users.created_at).
+export function finPruebaDesdeRegistro(creadoEn, email) {
+  const c = typeof creadoEn === "string" ? Date.parse(creadoEn) : NaN;
+  return Number.isFinite(c) ? c + diasDePrueba(email) * DIA_MS : null;
+}
+
+// Fin de prueba que vale: el guardado; si no hay, el derivado del registro.
+export function finPruebaEfectiva({ trialEnd, creadoEn, email } = {}) {
+  const guardado = finPruebaMs(trialEnd);
+  return guardado != null ? guardado : finPruebaDesdeRegistro(creadoEn, email);
+}
+
+export function diasRestantes(finMs, ahora = Date.now()) {
+  if (finMs == null || finMs < ahora) return 0;
+  return Math.max(1, Math.ceil((finMs - ahora) / DIA_MS));
+}
 
 export function finPruebaMs(trialEnd) {
   if (!trialEnd || typeof trialEnd !== "string") return null;
@@ -54,10 +89,10 @@ const PAGOS = new Set(["basico", "pro", "pro_familiar", "advisor_pro"]);
  *   pago: boolean,         // tiene un plan de pago registrado (no prueba)
  * }}
  */
-export function estadoPlan({ isAdmin = false, planGuardado, planAccount, trialEnd, ahora = Date.now() }) {
-  const fin = finPruebaMs(trialEnd);
+export function estadoPlan({ isAdmin = false, planGuardado, planAccount, trialEnd, creadoEn, email, ahora = Date.now() }) {
+  const fin = finPruebaEfectiva({ trialEnd, creadoEn, email });
   const pruebaVigente = fin != null && fin >= ahora;
-  const diasPrueba = pruebaVigente ? Math.max(1, Math.ceil((fin - ahora) / DIA_MS)) : 0;
+  const diasPrueba = diasRestantes(fin, ahora);
   const quedan = diasPrueba === 1 ? "queda 1 día" : `quedan ${diasPrueba} días`;
   const base = { diasPrueba, finPrueba: fin != null ? new Date(fin) : null };
 
@@ -70,13 +105,20 @@ export function estadoPlan({ isAdmin = false, planGuardado, planAccount, trialEn
     };
   }
 
+  // La prueba vigente gana sobre "free" y "basico" (igual que el gating de
+  // App.jsx: trialActive → "pro"). Solo un Pro/Pro Familiar/Asesor ya pagado
+  // se muestra como tal durante la prueba.
   const guardado = planGuardado || "free";
-  if (PAGOS.has(guardado)) {
+  if (PAGOS.has(guardado) && guardado !== "basico") {
     return { ...base, clave: guardado, etiqueta: ETIQUETAS[guardado] || guardado, enPrueba: false, pago: true };
   }
 
   if (pruebaVigente) {
     return { ...base, clave: "pro", etiqueta: `Pro · prueba — ${quedan}`, enPrueba: true, pago: false };
+  }
+
+  if (guardado === "basico") {
+    return { ...base, clave: "basico", etiqueta: ETIQUETAS.basico, enPrueba: false, pago: true };
   }
 
   return { ...base, clave: "free", etiqueta: "Gratis", enPrueba: false, pago: false };
