@@ -66,7 +66,7 @@ const XL = {
       ["1. NO ES ASESORÍA. Las cifras no constituyen asesoría financiera, tributaria, contable ni legal, ni una"],
       ["   recomendación de comprar o vender ningún activo."],
       ["2. NO REEMPLAZA A UN PROFESIONAL. Antes de tomar cualquier decisión o de presentar información ante una"],
-      ["   autoridad fiscal, verificá cada cifra con un contador o asesor habilitado que conozca tu situación completa."],
+      ["   autoridad fiscal, verifica cada cifra con un contador o asesor habilitado que conozca tu situación completa."],
       ["3. LOS DATOS SON DEL USUARIO. FINPATHIA no audita ni verifica lo que se carga. Si un dato de entrada está"],
       ["   mal, el resultado también lo estará."],
       ["4. LAS PROYECCIONES NO SON PRONÓSTICOS. Rentabilidades pasadas no garantizan rentabilidades futuras."],
@@ -79,7 +79,7 @@ const XL = {
     hCatGas: ["Categoría", "# Ítems", "Fijos", "Variables", "Total Mensual", "Total Anual", "% del Total"],
     hTipoInv: ["Tipo", "# Activos", "Valor Compra", "Valor Actual", "Ganancia $", "% del Portafolio"],
     hOwnerInv: ["Propietario Fiscal", "# Activos", "Valor Compra", "Valor Actual", "Ganancia $", "% del Portafolio"],
-    sin: (q) => `No hay ${q} activos para exportar. Prendé al menos uno con el toggle ✅.`,
+    sin: (q) => `No hay ${q} activos para exportar. Prende al menos uno con el toggle ✅.`,
   },
   en: {
     fileIngresos: "Income", fileGastos: "Expenses", fileDeudas: "Debts",
@@ -363,7 +363,7 @@ export async function exportInversionesExcel(inversiones, owners, trm, en = fals
   const X = en ? XL.en : XL.es;
   const items = (inversiones || []).filter((i) => i.sim !== false);
   if (items.length === 0) {
-    alert("No hay activos activos para exportar. Prendé al menos uno con el toggle ✅.");
+    alert("No hay activos activos para exportar. Prende al menos uno con el toggle ✅.");
     return;
   }
 

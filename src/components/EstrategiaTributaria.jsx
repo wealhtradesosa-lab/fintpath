@@ -30,7 +30,7 @@
 // FILOSOFÍA DE LENGUAJE:
 //   - "Tu situación tributaria" en vez de "Auditor IA"
 //   - "Te toca pagar" en vez de "Saldo a cargo"
-//   - "Te ahorrás" en vez de "Beneficio fiscal"
+//   - "Te ahorras" en vez de "Beneficio fiscal"
 //   - "Resolver" en vez de "Auditoría de datos"
 //   - "Ver el detalle técnico" en vez de "Modo experto F-110"
 // ═══════════════════════════════════════════════════════════════════════════
@@ -109,7 +109,7 @@ export default function EstrategiaTributaria({
     [allOwners, selectedOwnerId]
   );
   const isJuridica = selectedOwner?.type === "juridica";
-  const ownerName = selectedOwner?.name || "vos";
+  const ownerName = selectedOwner?.name || "tú";
 
   // ── Datos del motor ─────────────────────────────────────────────────
   const det = useMemo(() => {
@@ -452,7 +452,7 @@ function OportunidadCard({ opo, index, onAplicar }) {
         </div>
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <div style={{ fontSize: 11, color: C.txt3 }}>Te ahorrás</div>
+        <div style={{ fontSize: 11, color: C.txt3 }}>Te ahorras</div>
         <div style={{ fontSize: 17, fontWeight: 800, color: C.green, lineHeight: 1 }}>
           {fmShort(ahorro)}
         </div>

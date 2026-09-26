@@ -95,7 +95,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             leido.pg ? ok.push("Cuota: " + cop(leido.pg))   : falta.push("cuota");
             leido.ts ? ok.push("Tasa: " + leido.ts + "% E.A.") : falta.push("tasa");
             alert(
-              "✅ Documento leído" + (d.confianza === "alta" ? "" : " (confianza " + (d.confianza || "media") + " — revisá los datos)") +
+              "✅ Documento leído" + (d.confianza === "alta" ? "" : " (confianza " + (d.confianza || "media") + " — revisa los datos)") +
               "\n\n" + ok.join("\n") +
               (falta.length ? "\n\n⚠️ No pude leer: " + falta.join(", ") + ".\nEsos campos conservan el valor que ya tenías — revisalos a mano." : "")
             );
@@ -103,8 +103,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             const det = data.error || data.errorMessage || "";
             const esTimeout = /timed out|timeout/i.test(det);
             alert(esTimeout
-              ? "⏱️ El documento tardó demasiado en procesarse. Probá de nuevo, o subí una foto/captura de la página del extracto (pesa menos y se lee más rápido)."
-              : "⚠️ No se pudo leer el documento." + (det ? "\n\nDetalle: " + det : "") + "\n\nSi es una foto, probá una más clara; si es un PDF, que no supere ~4 MB y no esté protegido con contraseña.");
+              ? "⏱️ El documento tardó demasiado en procesarse. Prueba de nuevo, o sube una foto/captura de la página del extracto (pesa menos y se lee más rápido)."
+              : "⚠️ No se pudo leer el documento." + (det ? "\n\nDetalle: " + det : "") + "\n\nSi es una foto, prueba una más clara; si es un PDF, que no supere ~4 MB y no esté protegido con contraseña.");
           }
           setScanning(false);
         };
@@ -354,8 +354,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         if (datos.length < 2) return (
           <div style={{ marginBottom: 16, background: "rgba(249,115,22,0.07)", border: "1px dashed rgba(249,115,22,0.35)",
                         borderRadius: 10, padding: "12px 14px", fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
-            🏷️ <strong>Asigná el tipo a cada deuda</strong> para ver cómo se reparte tu pasivo.
-            <span style={{ color: T.txt3 }}> Editá cada una y elegí Hipoteca, Libre inversión, Vehículo, Leasing,
+            🏷️ <strong>Asigna el tipo a cada deuda</strong> para ver cómo se reparte tu pasivo.
+            <span style={{ color: T.txt3 }}> Edita cada una y elige Hipoteca, Libre inversión, Vehículo, Leasing,
             Préstamo personal o Tarjeta. Con dos o más tipos aparece la barra de distribución.</span>
           </div>
         );
@@ -554,7 +554,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                               const mesesRestantes = 12 - ultimoMes;
                               alert(
                                 `Deuda saldada en ${MESES_NOM[ultimoMes - 1]}.\n\n` +
-                                `Liberás $${Math.round(cuota).toLocaleString("es-CO")} al mes.\n` +
+                                `Liberas $${Math.round(cuota).toLocaleString("es-CO")} al mes.\n` +
                                 (mesesRestantes > 0
                                   ? `Quedan ${mesesRestantes} ${mesesRestantes === 1 ? "mes" : "meses"} del año sin esa cuota: $${Math.round(cuota * mesesRestantes).toLocaleString("es-CO")}.`
                                   : `El año ya estaba cubierto; el alivio se ve completo el año entrante.`) +
@@ -673,7 +673,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 usuario decide. Esa fue la lección de aquel bug. */}
             {(form.tipoInteres || "compuesto") !== "simple" && (
               <div style={{gridColumn:"1/-1",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
-                <div style={{fontSize:11.5,fontWeight:700,color:T.txt2,marginBottom:8}}>🧮 ¿No sabés la cuota o la tasa? Poné el plazo</div>
+                <div style={{fontSize:11.5,fontWeight:700,color:T.txt2,marginBottom:8}}>🧮 ¿No sabes la cuota o la tasa? Pon el plazo</div>
                 <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
                   <div style={{flex:"1 1 130px"}}>
                     <div style={{fontSize:10,color:T.txt3,marginBottom:4,fontWeight:600}}>PLAZO (MESES)</div>
@@ -701,7 +701,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                         </button>);
                     }
                     return acciones.length ? <div style={{display:"flex",gap:8,flexWrap:"wrap",flex:"2 1 200px"}}>{acciones}</div>
-                      : <div style={{fontSize:11,color:T.txt3,flex:"2 1 200px"}}>Cargá la tasa o la cuota y calculo la otra.</div>;
+                      : <div style={{fontSize:11,color:T.txt3,flex:"2 1 200px"}}>Carga la tasa o la cuota y calculo la otra.</div>;
                   })()}
                 </div>
               </div>
@@ -734,7 +734,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   </div>
                   <div style={{fontSize:10.5,color:T.txt3,lineHeight:1.5,marginBottom:yaEsIgual?0:8}}>
                     {esSimple
-                      ? <>{fm(Number(form.mt))} × {form.ts}% ÷ 12. Si solo pagás intereses, esa es tu cuota.</>
+                      ? <>{fm(Number(form.mt))} × {form.ts}% ÷ 12. Si solo pagas intereses, esa es tu cuota.</>
                       : <>Interés del primer mes con tasa {form.ts}% E.A. Tu cuota debe superarlo para que la deuda baje.</>}
                   </div>
                   {/* 26-jul-2026: si la cuota está VACÍA se llena sola —no hay
@@ -781,7 +781,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 —se avisa y se ofrece la lectura probable. */}
             {Number(form.ts) >= 100 && (
               <div style={{gridColumn:"1/-1",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.35)",borderRadius:10,padding:"11px 14px",marginBottom:12}}>
-                <div style={{fontSize:12,fontWeight:700,color:"#ef4444",marginBottom:3}}>⚠️ Revisá esta tasa: {form.ts}% anual</div>
+                <div style={{fontSize:12,fontWeight:700,color:"#ef4444",marginBottom:3}}>⚠️ Revisa esta tasa: {form.ts}% anual</div>
                 <div style={{fontSize:11,color:T.txt3,lineHeight:1.5,marginBottom:8}}>
                   Es inusualmente alta. ¿Quisiste escribir {String(form.ts).slice(0,-1)},{String(form.ts).slice(-1)}%?
                 </div>
@@ -802,7 +802,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   no una identidad inventada como el auto-cálculo anterior. */}
               <div style={{ gridColumn: "1/-1", background: "#17171c", border: `1px dashed ${T.border}`, borderRadius: 10, padding: "12px 14px" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.txt2, marginBottom: 2 }}>📄 Desglose del extracto <span style={{ fontWeight: 400, color: T.txt3 }}>(opcional)</span></div>
-                <div style={{ fontSize: 10, color: T.txt3, marginBottom: 10 }}>Copiá los dos renglones tal cual salen en tu extracto. Con eso se arma la cuota y se verifica la tasa.</div>
+                <div style={{ fontSize: 10, color: T.txt3, marginBottom: 10 }}>Copia los dos renglones tal cual salen en tu extracto. Con eso se arma la cuota y se verifica la tasa.</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <In l="Abono a capital" value={form.capExt || ""} onChange={(v) => setForm((p) => {
                     const n = { ...p, capExt: v };
@@ -830,10 +830,10 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       {previo > 0 && (
                         <div style={{ marginTop: 6, fontSize: 10.5, color: dif == null ? T.txt3 : dif <= 1.5 ? "#4ade80" : "#fca5a5" }}>
                           {dif == null
-                            ? <>Tasa implícita de este extracto: <strong>{eaImp.toFixed(2)}% E.A.</strong> — podés usarla arriba.</>
+                            ? <>Tasa implícita de este extracto: <strong>{eaImp.toFixed(2)}% E.A.</strong> — puedes usarla arriba.</>
                             : dif <= 1.5
                               ? <>✅ Cuadra: el interés cobrado equivale a {eaImp.toFixed(2)}% E.A., consistente con el {tsForm}% que pusiste.</>
-                              : <>⚠️ No cuadra: el interés cobrado equivale a <strong>{eaImp.toFixed(2)}% E.A.</strong>, pero arriba pusiste {tsForm}%. Revisá la tasa o el saldo.</>}
+                              : <>⚠️ No cuadra: el interés cobrado equivale a <strong>{eaImp.toFixed(2)}% E.A.</strong>, pero arriba pusiste {tsForm}%. Revisa la tasa o el saldo.</>}
                         </div>
                       )}
                     </div>
@@ -880,7 +880,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 const cc=costoCredito({mt:+form.mt||0,pg:+form.pg||0,ts:+form.ts||0});
                 if(cc.noAmortiza) return (
                   <div style={{gridColumn:"1/-1",fontSize:11,color:"#fca5a5",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.25)",borderRadius:8,padding:"8px 12px"}}>
-                    ⚠️ La cuota no alcanza a cubrir el interés mensual (~{fmt(Math.round((+form.mt||0)*(Math.pow(1+(+form.ts||0)/100,1/12)-1)))}). A este ritmo la deuda no baja. Revisá la cuota o la tasa.
+                    ⚠️ La cuota no alcanza a cubrir el interés mensual (~{fmt(Math.round((+form.mt||0)*(Math.pow(1+(+form.ts||0)/100,1/12)-1)))}). A este ritmo la deuda no baja. Revisa la cuota o la tasa.
                   </div>
                 );
                 return (
@@ -953,10 +953,10 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       return (
                         <div style={{ marginTop: 12, padding: "12px 14px", background: alertBg, border: `1.5px solid ${alertBorder}`, borderRadius: 8 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: alertColor, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                            🛡️ Confirmá los 3 requisitos del Art. 119 ET
+                            🛡️ Confirma los 3 requisitos del Art. 119 ET
                           </div>
                           <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.5, marginBottom: 10 }}>
-                            Los intereses solo son deducibles (hasta 1.200 UVT/año) si TODAS estas condiciones se cumplen. Si alguna falla, los intereses NO son deducibles como vivienda — reclasificá según corresponda.
+                            Los intereses solo son deducibles (hasta 1.200 UVT/año) si TODAS estas condiciones se cumplen. Si alguna falla, los intereses NO son deducibles como vivienda — reclasifica según corresponda.
                           </div>
                           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 11, color: T.txt2 }}>
@@ -976,7 +976,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                             <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 6 }}>
                               <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", marginBottom: 6 }}>⚠️ El Art. 119 ET NO aplica</div>
                               <div style={{ fontSize: 10, color: T.txt2, lineHeight: 1.5, marginBottom: 8 }}>
-                                Sin las 3 condiciones, los intereses no son deducibles como vivienda. Reclasificá:
+                                Sin las 3 condiciones, los intereses no son deducibles como vivienda. Reclasifica:
                               </div>
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                                 <button type="button" onClick={() => { setForm(p => ({ ...p, fiscalCode: "DEU_NAT_INVERSION" })); setViviendaConfirmaciones({ esHabitacion: true, esTitular: true, noArrendado: true }); }}
@@ -992,7 +992,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                           )}
                           {todasOk && (
                             <div style={{ marginTop: 10, fontSize: 10, color: "#22c55e", fontStyle: "italic", lineHeight: 1.4 }}>
-                              ✅ Cumplís el Art. 119 ET. Los intereses serán deducibles hasta 1.200 UVT/año.
+                              ✅ Cumples el Art. 119 ET. Los intereses serán deducibles hasta 1.200 UVT/año.
                             </div>
                           )}
                         </div>

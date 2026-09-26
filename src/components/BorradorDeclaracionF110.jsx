@@ -16,7 +16,7 @@
 //   - Cero ambigüedad: cada renglón muestra su número DIAN oficial
 //   - Trazabilidad: hover muestra de dónde viene el valor automático
 //   - Override visible: cuando el user/contador edita, se ve un badge "✏️"
-//   - Reset disponible: siempre podés volver al valor automático
+//   - Reset disponible: siempre puedes volver al valor automático
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo, useEffect } from "react";
@@ -180,7 +180,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
     // Antes (BUG): siempre forzaba al primer owner natural, ignorando la
     // selección del user. Resultado: si el user seleccionaba Lagoon (jurídica)
     // y abría el wizard, le hacía preguntas de persona natural ('¿cómo te
-    // pagaron?', '¿tenés dependientes?') aplicadas a una SAS — absurdo.
+    // pagaron?', '¿tienes dependientes?') aplicadas a una SAS — absurdo.
 
     let ownerIdParaWizard = selectedOwnerId;
 
@@ -249,8 +249,8 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           </h3>
           <p style={{ fontSize: 15, color: T.txt2, lineHeight: 1.6, maxWidth: 520, margin: "0 auto 24px" }}>
             Te voy a hacer unas <strong style={{ color: T.txt }}>preguntas simples</strong> sobre
-            tu año (5-10 minutos). No necesitás saber nada de impuestos: te explico cada cosa
-            en el camino. Al final tenés un borrador para validar con tu contador.
+            tu año (5-10 minutos). No necesitas saber nada de impuestos: te explico cada cosa
+            en el camino. Al final tienes un borrador para validar con tu contador.
           </p>
           <button
             onClick={() => setWizardAbierto(true)}
@@ -268,7 +268,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
             🪄 Empezar paso a paso
           </button>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 16 }}>
-            Si preferís cargar datos manualmente, andá a Configuración → Owners fiscales.
+            Si prefieres cargar datos manualmente, ve a Configuración → Owners fiscales.
           </div>
         </div>
       </div>
@@ -429,8 +429,8 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         </div>
         <p style={{ fontSize: 15, color: T.txt, lineHeight: 1.6, marginTop: 0, marginBottom: 0 }}>
           Acá te ayudamos a <strong>entender y preparar tu declaración de renta</strong>. Tomamos los datos que
-          ya cargaste, te explicamos en lenguaje simple cada parte, y al final tenés un borrador que{" "}
-          <strong>tu contador puede revisar y ajustar</strong>. No tenés que ser experto: el agente te
+          ya cargaste, te explicamos en lenguaje simple cada parte, y al final tienes un borrador que{" "}
+          <strong>tu contador puede revisar y ajustar</strong>. No tienes que ser experto: el agente te
           orienta en cada paso.
         </p>
       </div>
@@ -516,13 +516,13 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
             por separado:
           </div>
           <ul style={{ margin: "12px 0 0 0", paddingLeft: 22, color: T.txt, fontSize: 14, lineHeight: 1.8 }}>
-            <li><strong>💼 Lo que ganaste con tu trabajo:</strong> sueldo, honorarios. Acá podés descontar cosas como medicina, vivienda, dependientes.</li>
+            <li><strong>💼 Lo que ganaste con tu trabajo:</strong> sueldo, honorarios. Acá puedes descontar cosas como medicina, vivienda, dependientes.</li>
             <li><strong>📈 Lo que ganaste con tu plata:</strong> intereses de CDT o cuentas. La ley te exime ~50% por inflación (es bastante).</li>
-            <li><strong>🏠 Arriendos que cobraste:</strong> si tenés inmuebles arrendados.</li>
-            <li><strong>📊 Dividendos:</strong> si te pagó plata una empresa donde sos socio.</li>
+            <li><strong>🏠 Arriendos que cobraste:</strong> si tienes inmuebles arrendados.</li>
+            <li><strong>📊 Dividendos:</strong> si te pagó plata una empresa donde eres socio.</li>
           </ul>
           <div style={{ marginTop: 14, padding: "10px 14px", background: T.bg3, borderRadius: 8, fontSize: 13, color: T.txt, lineHeight: 1.5 }}>
-            💡 <strong>Tip:</strong> tocá el botón <span style={{ background: T.purple, padding: "2px 7px", borderRadius: 4, color: "#fff", fontWeight: 700, fontSize: 11 }}>💡</span> de cualquier fila para que te explique
+            💡 <strong>Tip:</strong> toca el botón <span style={{ background: T.purple, padding: "2px 7px", borderRadius: 4, color: "#fff", fontWeight: 700, fontSize: 11 }}>💡</span> de cualquier fila para que te explique
             qué significa cada cosa, cuánto te conviene y por qué.
           </div>
         </div>
@@ -832,14 +832,14 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
   // Tasa efectiva
   const tasaEfectiva = ingresoTotal > 0 ? (impuestoTotal / ingresoTotal * 100) : 0;
 
-  const nombreOwner = owner?.name || (isJuridica ? "tu sociedad" : "vos");
+  const nombreOwner = owner?.name || (isJuridica ? "tu sociedad" : "ti");
 
   return (
     <div>
       {/* Selector de owner — pero más amigable */}
       <div style={{ marginBottom: 24 }}>
         <label style={{ display: "block", fontSize: 13, color: T.txt2, fontWeight: 600, marginBottom: 8 }}>
-          ¿De quién querés ver la declaración?
+          ¿De quién quieres ver la declaración?
         </label>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <select
@@ -875,7 +875,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
           {isJuridica ? "🏢" : "👤"} Resumen para {nombreOwner} · Año {ano}
         </div>
         <div style={{ fontSize: 16, color: T.txt, marginBottom: 6, fontWeight: 500 }}>
-          Lo que tendrías que pagar {isJuridica ? "tu empresa" : "vos"} en mayo:
+          Lo que tendrías que pagar {isJuridica ? "tu empresa" : "tú"} en mayo:
         </div>
         <div style={{ fontSize: 48, fontWeight: 800, color: T.txt, lineHeight: 1.1, marginBottom: 12, fontFamily: "monospace" }}>
           {fm(saldoFinal)}
@@ -886,7 +886,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
             Si todo lo que ingresaste es correcto, este es el valor que tu contador validaría antes de presentar
             la declaración.</>
           ) : (
-            <>Según los datos que cargaste, no te tocaría pagar nada en mayo. Aún así, validá esto con tu
+            <>Según los datos que cargaste, no te tocaría pagar nada en mayo. Aún así, valida esto con tu
             contador antes de presentar la declaración.</>
           )}
         </div>
@@ -933,7 +933,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
       {/* Acciones siguientes */}
       <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px" }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: T.txt, marginBottom: 14 }}>
-          ¿Qué querés hacer ahora?
+          ¿Qué quieres hacer ahora?
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
           <button
@@ -1008,7 +1008,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
               Compartir con mi contador
             </div>
             <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
-              Descargá un PDF con el resumen + detalle del formulario {isJuridica ? "F-110" : "F-210"} para enviar a tu contador.
+              Descarga un PDF con el resumen + detalle del formulario {isJuridica ? "F-110" : "F-210"} para enviar a tu contador.
             </div>
           </button>
         </div>
@@ -1065,7 +1065,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
                       )}
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontSize: 11, color: T.txt3 }}>Te ahorrás</div>
+                      <div style={{ fontSize: 11, color: T.txt3 }}>Te ahorras</div>
                       <div style={{ fontSize: 17, fontWeight: 800, color: "#22c55e", lineHeight: 1 }}>
                         {"$" + Math.round(ahorro).toLocaleString("es-CO")}
                       </div>
@@ -1114,9 +1114,9 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
 
       {/* Mensaje final tranquilizador */}
       <div style={{ marginTop: 20, padding: "16px 20px", background: "rgba(34,197,94,0.06)", border: `1px solid rgba(34,197,94,0.20)`, borderRadius: 10, fontSize: 14, color: T.txt, lineHeight: 1.6 }}>
-        💬 <strong>¿Tenés dudas?</strong> El número de arriba es solo una estimación. Tu contador es quien
+        💬 <strong>¿Tienes dudas?</strong> El número de arriba es solo una estimación. Tu contador es quien
         firma y presenta la declaración a DIAN. Si nunca declaraste, no te preocupes: con este resumen y la
-        ayuda de un contador, lo manejás tranquilo.
+        ayuda de un contador, lo manejas tranquilo.
       </div>
     </div>
   );

@@ -205,7 +205,7 @@ export function normalizeFiscalData(user) {
           ...ctx,
           code: "HONORARIOS_SIN_REGIMEN_DECLARADO",
           message: `Honorarios de "${owner.name}" no indican si tiene 2+ empleados — afecta exenta 25% (Art. 206 #10)`,
-          accionSugerida: "Editá el owner y seleccioná 'con empleados' o 'sin empleados'",
+          accionSugerida: "Edita el owner y selecciona 'con empleados' o 'sin empleados'",
           articuloET: "Art. 206 #10",
         }));
       }
@@ -213,7 +213,7 @@ export function normalizeFiscalData(user) {
         warnings.push(mkInfo({
           ...ctx,
           code: "ARRIENDO_INFERIDO_INMUEBLE",
-          message: "Asumí que es arriendo de inmueble. Si es arriendo de equipos/muebles, cambiá el código fiscal",
+          message: "Asumí que es arriendo de inmueble. Si es arriendo de equipos/muebles, cambia el código fiscal",
           articuloET: "—",
         }));
       }
@@ -223,7 +223,7 @@ export function normalizeFiscalData(user) {
           code: "DIVIDENDOS_INFERIDOS_GRAVADOS",
           message: owner && owner.type === "juridica"
             ? "Asumí dividendos inter-societarios (Art. 48, no gravados)"
-            : "Asumí dividendos Art. 49 parte gravada. Si son de sociedad extranjera o no gravados, ajustá",
+            : "Asumí dividendos Art. 49 parte gravada. Si son de sociedad extranjera o no gravados, ajusta",
           articuloET: "Art. 48 / 49 / 242",
         }));
       }
@@ -253,8 +253,8 @@ export function normalizeFiscalData(user) {
             itemOwnerName: owner ? owner.name : null,
             fiscalCodeSugerido: fiscalCode,
             code: "GASTO_JURIDICA_CAUSALIDAD_AMBIGUA",
-            message: `Gasto "${cat}" en persona jurídica se asumió deducible. Art. 107 ET exige causalidad con actividad productora de renta — revisá con contador`,
-            accionSugerida: "Aprobá si es operativo/capacitación, o editá y marcá como no deducible si es personal",
+            message: `Gasto "${cat}" en persona jurídica se asumió deducible. Art. 107 ET exige causalidad con actividad productora de renta — revisa con contador`,
+            accionSugerida: "Aprueba si es operativo/capacitación, o edita y marca como no deducible si es personal",
             articuloET: "Art. 107",
           }));
         }
@@ -282,7 +282,7 @@ export function normalizeFiscalData(user) {
       itemType: "ingreso",
       code: "INGRESO_SIN_PROPIETARIO",
       message: `${sinOwner.length} ingreso(s) sin propietario asignado — no se incluyen en el cálculo`,
-      accionSugerida: "Asigná propietario en el módulo de Ingresos",
+      accionSugerida: "Asigna propietario en el módulo de Ingresos",
     }));
   }
 
@@ -311,7 +311,7 @@ export function normalizeFiscalData(user) {
       ownerName: ow.name,
       code: "DESCUENTOS_AÑO_ANTERIOR_NO_CAPTURADOS",
       message: `${ow.name} tuvo ~$${Math.round(tuvoDescuentos / 1e6)}M en descuentos tributarios en ${da.anoGravable} y este año solo $${Math.round(totalActual / 1e6)}M`,
-      accionSugerida: "Si la empresa sigue teniendo las mismas actividades (ICA, donaciones, CTI), los descuentos se siguen aplicando. Capturá los valores actuales en el perfil del owner.",
+      accionSugerida: "Si la empresa sigue teniendo las mismas actividades (ICA, donaciones, CTI), los descuentos se siguen aplicando. Captura los valores actuales en el perfil del owner.",
     });
   });
 
@@ -338,7 +338,7 @@ export function normalizeFiscalData(user) {
       ownerName: ow.name,
       code: "APORTES_VOLUNTARIOS_NO_CAPTURADOS",
       message: `${ow.name} declaró ~$${Math.round(tuvoPVAFC / 1e6)}M en pensión voluntaria + AFC en ${da.anoGravable} pero no hay aportes capturados este año`,
-      accionSugerida: "Si seguís aportando a PV/AFC, capturalos en el perfil del owner. Son deducibles dentro del tope 40%/1340 UVT — olvidarlos puede costar varios millones en impuesto.",
+      accionSugerida: "Si sigues aportando a PV/AFC, capturalos en el perfil del owner. Son deducibles dentro del tope 40%/1340 UVT — olvidarlos puede costar varios millones en impuesto.",
     });
   });
 

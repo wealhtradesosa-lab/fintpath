@@ -88,7 +88,7 @@ export default function MetasModule({
   const handleSave = () => {
     if (!guardEdit(role)) return;
     if (!(Number(form.monto) > 0)) {
-      alert("Indicá un monto objetivo.");
+      alert("Indica un monto objetivo.");
       return;
     }
     const item = {
@@ -802,7 +802,7 @@ export default function MetasModule({
                                     }}
                                   >
                                     Meta marcada para posponer — sin cambio de
-                                    números. Priorizá otra con el mismo CF.
+                                    números. Prioriza otra con el mismo CF.
                                   </div>
                                 )}
                                 {active &&
@@ -842,7 +842,7 @@ export default function MetasModule({
                                       }}
                                     >
                                       Recálculo: con +{fm(t.recalculo.recorteMensual)}
-                                      /mes de CF llegás en {t.recalculo.meses}{" "}
+                                      /mes de CF llegas en {t.recalculo.meses}{" "}
                                       meses.
                                     </div>
                                   )}

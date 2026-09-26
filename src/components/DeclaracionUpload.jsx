@@ -86,11 +86,11 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
     const f = e.target.files?.[0];
     if (!f) return;
     if (f.type !== "application/pdf") {
-      setError("Por favor subí un archivo PDF.");
+      setError("Por favor sube un archivo PDF.");
       return;
     }
     if (f.size > 5 * 1024 * 1024) {
-      setError("El archivo excede 5MB. Para archivos grandes, escaneá a menor resolución.");
+      setError("El archivo excede 5MB. Para archivos grandes, escanea a menor resolución.");
       return;
     }
     setError("");
@@ -100,8 +100,8 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
 
   const handleParse = async () => {
     if (!isPro) { onUpsell?.(); return; }
-    if (!file) { setError("Elegí un archivo primero."); return; }
-    if (!selectedOwnerId) { setError("Elegí a qué propietario fiscal corresponde esta declaración."); return; }
+    if (!file) { setError("Elige un archivo primero."); return; }
+    if (!selectedOwnerId) { setError("Elige a qué propietario fiscal corresponde esta declaración."); return; }
 
     setUploading(true);
     setError("");
@@ -116,14 +116,14 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
       });
       const j = await r.json();
       if (!r.ok || !j.success) {
-        setError(j.mensaje || j.error || "No pudimos interpretar el PDF. Probá con un escaneo más claro.");
+        setError(j.mensaje || j.error || "No pudimos interpretar el PDF. Prueba con un escaneo más claro.");
         setUploading(false);
         return;
       }
       setParsed(j.data);
       setEditedRenglones({ ...j.data.renglones });
     } catch (e) {
-      setError("Error de red: " + (e.message || "intentá de nuevo"));
+      setError("Error de red: " + (e.message || "intenta de nuevo"));
     } finally {
       setUploading(false);
     }
@@ -149,13 +149,13 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
     if (!yaExisteMismoAno && existentes.length >= 3) {
       const masVieja = [...existentes].sort((a, b) => (Number(a?.anoGravable) || 0) - (Number(b?.anoGravable) || 0))[0];
       const ok = window.confirm(
-        `Ya tenés 3 declaraciones guardadas para ${selectedOwner.name}. Se descartará la más vieja (año ${masVieja?.anoGravable || "?"}) para guardar esta nueva (año ${ano}).\n\n¿Continuar?`
+        `Ya tienes 3 declaraciones guardadas para ${selectedOwner.name}. Se descartará la más vieja (año ${masVieja?.anoGravable || "?"}) para guardar esta nueva (año ${ano}).\n\n¿Continuar?`
       );
       if (!ok) return;
     }
     if (yaExisteMismoAno) {
       const ok = window.confirm(
-        `Ya tenés una declaración cargada del año ${ano} para ${selectedOwner.name}. Se reemplazará por la nueva.\n\n¿Continuar?`
+        `Ya tienes una declaración cargada del año ${ano} para ${selectedOwner.name}. Se reemplazará por la nueva.\n\n¿Continuar?`
       );
       if (!ok) return;
     }
@@ -191,7 +191,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
           📋 Declaración oficial DIAN
         </div>
         <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.6 }}>
-          Subí el PDF de tu declaración de renta presentada en la DIAN. La IA extrae los renglones principales
+          Sube el PDF de tu declaración de renta presentada en la DIAN. La IA extrae los renglones principales
           y los guarda en el perfil del propietario fiscal, para que el sistema detecte automáticamente si te
           estás olvidando de aportes o descuentos que sí capturaste el año pasado.
         </div>
@@ -202,7 +202,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
         <div style={{ padding: 16, background: "rgba(168,139,250,0.08)", border: "1px solid rgba(168,139,250,0.3)", borderRadius: 12, marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: T.purple, marginBottom: 4 }}>🔒 Feature del plan Pro</div>
           <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, marginBottom: 10 }}>
-            La extracción automática de declaraciones requiere el plan Pro. Con el plan gratuito podés capturar
+            La extracción automática de declaraciones requiere el plan Pro. Con el plan gratuito puedes capturar
             manualmente los renglones desde el perfil del owner.
           </div>
           <button onClick={onUpsell} style={{ padding: "8px 14px", background: T.purple, border: "none", borderRadius: 8, color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
@@ -250,7 +250,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
       {/* Paso 2: subir PDF */}
       <div style={{ background: T.bg2, borderRadius: 12, padding: 16, border: "1px solid " + T.border, marginBottom: 14 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-          2. Subí el PDF de la declaración
+          2. Sube el PDF de la declaración
         </div>
         <input
           ref={fileInputRef}
@@ -292,7 +292,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                3. Verificá los datos extraídos
+                3. Verifica los datos extraídos
               </div>
               <div style={{ fontSize: 13, color: T.txt, marginTop: 4, fontWeight: 600 }}>
                 Formulario {parsed.tipo} · Año gravable {parsed.anoGravable || "?"} · Confianza{" "}
@@ -305,7 +305,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
 
           {parsed.confianza === "baja" && (
             <div style={{ padding: 10, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, marginBottom: 10, fontSize: 11, color: T.txt2 }}>
-              ⚠️ La IA marcó la lectura como <strong>baja confianza</strong>. Revisá cada campo y corregí los que no coincidan con tu declaración antes de guardar.
+              ⚠️ La IA marcó la lectura como <strong>baja confianza</strong>. Revisa cada campo y corrige los que no coincidan con tu declaración antes de guardar.
             </div>
           )}
 

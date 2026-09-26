@@ -152,7 +152,7 @@ export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T
           ¿Cuándo se {tipo === "ingreso" ? "recibe" : "paga"}?
         </div>
         <div style={{ fontSize: 13, color: T.txt3, lineHeight: 1.5 }}>
-          Elegí una opción. Solo llenás lo esencial.
+          Elige una opción. Solo llenas lo esencial.
         </div>
       </div>
 

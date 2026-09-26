@@ -129,7 +129,7 @@ export default function TablaMensual({
         if (!todosIguales) return null;
         return (
           <div style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 11, color: "#22c55e", lineHeight: 1.5 }}>
-            ✅ <strong>Se importó tu monto</strong> ({fm(cargados[0])}/mes) en los 12 meses. Ajustá los que sean diferentes (ej: mayo con $40M, marzo con $8M).
+            ✅ <strong>Se importó tu monto</strong> ({fm(cargados[0])}/mes) en los 12 meses. Ajusta los que sean diferentes (ej: mayo con $40M, marzo con $8M).
           </div>
         );
       })()}

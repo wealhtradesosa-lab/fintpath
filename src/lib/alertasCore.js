@@ -72,7 +72,7 @@ export function calcPatronesAnomalos(ctx) {
       patrones.push({
         severity: "critical",
         label: "Retenciones inconsistentes con ingresos",
-        sugerencia: `Los ingresos subieron ${deltaIng.toFixed(0)}% pero las retenciones bajaron ${Math.abs(deltaRet).toFixed(0)}%. Normalmente más ingresos = más retenciones. Verificá que tengas TODOS los certificados de retención del año — es muy común olvidar alguno, especialmente si cambiaste de pagador.`,
+        sugerencia: `Los ingresos subieron ${deltaIng.toFixed(0)}% pero las retenciones bajaron ${Math.abs(deltaRet).toFixed(0)}%. Normalmente más ingresos = más retenciones. Verifica que tengas TODOS los certificados de retención del año — es muy común olvidar alguno, especialmente si cambiaste de pagador.`,
       });
     }
   }
@@ -85,7 +85,7 @@ export function calcPatronesAnomalos(ctx) {
       patrones.push({
         severity: "warning",
         label: "Impuesto sube más de lo esperado",
-        sugerencia: `El impuesto subió ${deltaImp.toFixed(0)}% pero los ingresos solo ${deltaIng > 0 ? "+" : ""}${deltaIng.toFixed(0)}%. Revisá si te faltaron deducciones del año pasado: intereses de vivienda, dependientes, medicina prepagada, aportes a pensión voluntaria o AFC. Cada uno vale hasta varios millones en impuesto.`,
+        sugerencia: `El impuesto subió ${deltaImp.toFixed(0)}% pero los ingresos solo ${deltaIng > 0 ? "+" : ""}${deltaIng.toFixed(0)}%. Revisa si te faltaron deducciones del año pasado: intereses de vivienda, dependientes, medicina prepagada, aportes a pensión voluntaria o AFC. Cada uno vale hasta varios millones en impuesto.`,
       });
     }
   }
@@ -95,7 +95,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "warning",
       label: "Intereses de vivienda: desaparecieron",
-      sugerencia: `El año anterior dedujiste $${Math.round(p.interesesVivienda).toLocaleString("es-CO")} en intereses de crédito de vivienda y este año está en cero. ¿Pagaste totalmente el crédito, lo transferiste, o se te olvidó cargar? Si el crédito sigue activo, solicitá el certificado al banco.`,
+      sugerencia: `El año anterior dedujiste $${Math.round(p.interesesVivienda).toLocaleString("es-CO")} en intereses de crédito de vivienda y este año está en cero. ¿Pagaste totalmente el crédito, lo transferiste, o se te olvidó cargar? Si el crédito sigue activo, solicita el certificado al banco.`,
     });
   }
 
@@ -113,7 +113,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "critical",
       label: "Sin retenciones con ingresos altos",
-      sugerencia: `Ingresos declarados de $${Math.round(a.ingresos / 1e6)}M pero retenciones en cero. El año pasado declaraste $${Math.round(p.retenciones).toLocaleString("es-CO")} en retenciones. Si sos empleado o prestás servicios profesionales, casi seguro te están practicando retención — revisá que no se te olvidó ningún certificado.`,
+      sugerencia: `Ingresos declarados de $${Math.round(a.ingresos / 1e6)}M pero retenciones en cero. El año pasado declaraste $${Math.round(p.retenciones).toLocaleString("es-CO")} en retenciones. Si eres empleado o prestas servicios profesionales, casi seguro te están practicando retención — revisa que no se te olvidó ningún certificado.`,
     });
   }
 
@@ -122,7 +122,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "warning",
       label: "Dividendos: ausentes este año",
-      sugerencia: `El año pasado declaraste $${Math.round(p.dividendos).toLocaleString("es-CO")} en dividendos y este año no hay. Si seguís siendo socio de esa empresa, pediles el certificado de distribuciones del año. Los dividendos son uno de los valores más fáciles de omitir porque no los pagás de tu bolsillo.`,
+      sugerencia: `El año pasado declaraste $${Math.round(p.dividendos).toLocaleString("es-CO")} en dividendos y este año no hay. Si sigues siendo socio de esa empresa, pediles el certificado de distribuciones del año. Los dividendos son uno de los valores más fáciles de omitir porque no los pagas de tu bolsillo.`,
     });
   }
 
@@ -131,7 +131,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "warning",
       label: "Exenta 25% laboral: desapareció",
-      sugerencia: `El año anterior te aplicaste $${Math.round(p.exenta25).toLocaleString("es-CO")} por la exenta 25% del Art. 206 #10 ET (25% del neto laboral) y este año está en cero, aunque seguís teniendo salarios. Verificá el Paso 3 del F-210 — esta exenta es automática si tenés ingresos laborales y rara vez debería faltar.`,
+      sugerencia: `El año anterior te aplicaste $${Math.round(p.exenta25).toLocaleString("es-CO")} por la exenta 25% del Art. 206 #10 ET (25% del neto laboral) y este año está en cero, aunque sigues teniendo salarios. Verifica el Paso 3 del F-210 — esta exenta es automática si tienes ingresos laborales y rara vez debería faltar.`,
     });
   }
 
@@ -140,7 +140,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "warning",
       label: "Aportes a pensión voluntaria / AFC: desaparecieron",
-      sugerencia: `El año anterior aportaste $${Math.round(p.pvAFC).toLocaleString("es-CO")} entre pensión voluntaria y AFC (ambos son deducibles). Si seguís haciendo esos aportes, cargalos en el Paso 3 — pueden valer varios millones en impuesto. Si dejaste de aportar voluntariamente, ignorá esta alerta.`,
+      sugerencia: `El año anterior aportaste $${Math.round(p.pvAFC).toLocaleString("es-CO")} entre pensión voluntaria y AFC (ambos son deducibles). Si sigues haciendo esos aportes, cargalos en el Paso 3 — pueden valer varios millones en impuesto. Si dejaste de aportar voluntariamente, ignora esta alerta.`,
     });
   }
 
@@ -149,7 +149,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "warning",
       label: "Medicina prepagada: desapareció",
-      sugerencia: `El año anterior dedujiste $${Math.round(p.saludPrepagada).toLocaleString("es-CO")} en medicina prepagada (Art. 387 ET). Si seguís con tu plan de salud prepagada o pólizas, el comprobante anual está deducible hasta 192 UVT. Revisá tu recibo anual.`,
+      sugerencia: `El año anterior dedujiste $${Math.round(p.saludPrepagada).toLocaleString("es-CO")} en medicina prepagada (Art. 387 ET). Si sigues con tu plan de salud prepagada o pólizas, el comprobante anual está deducible hasta 192 UVT. Revisa tu recibo anual.`,
     });
   }
 
@@ -158,7 +158,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "warning",
       label: "GMF 4×1000 deducible: desapareció",
-      sugerencia: `El año anterior dedujiste $${Math.round(p.gmf).toLocaleString("es-CO")} del GMF (Art. 115 ET). El 50% del gravamen a los movimientos financieros es deducible. Si tus cuentas bancarias siguen activas, se calculó automáticamente — verificá la casilla 78.`,
+      sugerencia: `El año anterior dedujiste $${Math.round(p.gmf).toLocaleString("es-CO")} del GMF (Art. 115 ET). El 50% del gravamen a los movimientos financieros es deducible. Si tus cuentas bancarias siguen activas, se calculó automáticamente — verifica la casilla 78.`,
     });
   }
 
@@ -167,7 +167,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "warning",
       label: "Descuento por donaciones: desapareció",
-      sugerencia: `El año anterior usaste $${Math.round(p.descDonaciones).toLocaleString("es-CO")} de descuento por donaciones (Art. 257 ET, 25% del donado). Si seguís donando a las mismas ESAL, pedí el certificado anual de donaciones — el descuento se aplica directo del impuesto, no de la base.`,
+      sugerencia: `El año anterior usaste $${Math.round(p.descDonaciones).toLocaleString("es-CO")} de descuento por donaciones (Art. 257 ET, 25% del donado). Si sigues donando a las mismas ESAL, pide el certificado anual de donaciones — el descuento se aplica directo del impuesto, no de la base.`,
     });
   }
 
@@ -176,7 +176,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "critical",
       label: "Ganancias ocasionales sin impuesto",
-      sugerencia: `Declaraste $${Math.round(a.gananciasOcasionales).toLocaleString("es-CO")} en ganancias ocasionales pero el impuesto GO está en cero. La tarifa es 15% fija (Art. 314 ET). Revisá si aplicaste las exenciones correctas (venta vivienda principal tiene tope de 7.500 UVT exento, herencias hasta 3.250 UVT) o si te falta calcular el impuesto.`,
+      sugerencia: `Declaraste $${Math.round(a.gananciasOcasionales).toLocaleString("es-CO")} en ganancias ocasionales pero el impuesto GO está en cero. La tarifa es 15% fija (Art. 314 ET). Revisa si aplicaste las exenciones correctas (venta vivienda principal tiene tope de 7.500 UVT exento, herencias hasta 3.250 UVT) o si te falta calcular el impuesto.`,
     });
   }
 
@@ -185,7 +185,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "warning",
       label: "Descuento ICA: desapareció",
-      sugerencia: `El año anterior usaste $${Math.round(p.descICA).toLocaleString("es-CO")} de descuento por el 50% del ICA pagado (Art. 115 ET). Si tu empresa siguió operando y pagando ICA, este descuento se sigue aplicando — verificá las casillas 88-90 del F-110.`,
+      sugerencia: `El año anterior usaste $${Math.round(p.descICA).toLocaleString("es-CO")} de descuento por el 50% del ICA pagado (Art. 115 ET). Si tu empresa siguió operando y pagando ICA, este descuento se sigue aplicando — verifica las casillas 88-90 del F-110.`,
     });
   }
 
@@ -235,7 +235,7 @@ export function calcPatronesTendencia({ serie, actual }) {
       patrones.push({
         severity,
         label: `${label}: rompe la tendencia histórica`,
-        sugerencia: `Los últimos ${serie.length} años (${serie[0].anoGravable}–${serie[serie.length-1].anoGravable}) tu ${label.toLowerCase()} venía ${direccionHist === "estable" ? "estable" : direccionHist + " ~" + Math.abs(pendiente).toFixed(0) + "%/año"} y este año ${direccionActual} ${Math.abs(deltaObservado).toFixed(0)}%. Es un cambio de ${Math.abs(desvio).toFixed(0)} puntos vs lo esperado${articulo ? ` (${articulo})` : ""}. Si es correcto, OK. Si no, revisá la captura.`,
+        sugerencia: `Los últimos ${serie.length} años (${serie[0].anoGravable}–${serie[serie.length-1].anoGravable}) tu ${label.toLowerCase()} venía ${direccionHist === "estable" ? "estable" : direccionHist + " ~" + Math.abs(pendiente).toFixed(0) + "%/año"} y este año ${direccionActual} ${Math.abs(deltaObservado).toFixed(0)}%. Es un cambio de ${Math.abs(desvio).toFixed(0)} puntos vs lo esperado${articulo ? ` (${articulo})` : ""}. Si es correcto, OK. Si no, revisa la captura.`,
       });
     }
   };

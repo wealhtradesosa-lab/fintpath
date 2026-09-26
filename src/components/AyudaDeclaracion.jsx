@@ -24,7 +24,7 @@ const FAQ = [
           <div style={{ padding: "10px 12px", background: "rgba(59,130,246,0.08)", borderLeft: "3px solid " + T.blue, borderRadius: 6 }}>
             <div style={{ color: T.blue, fontWeight: 700, fontSize: 12 }}>🎯 Simulador rápido (Plan Tributario)</div>
             <div style={{ color: T.txt2, fontSize: 11, marginTop: 4, lineHeight: 1.5 }}>
-              <strong>Para qué:</strong> saber cuánto vas a pagar de impuesto si seguís así. Sirve para planear: decidir si hacer aportes a pensión voluntaria, reinvertir utilidades, comprar vivienda, etc.<br/>
+              <strong>Para qué:</strong> saber cuánto vas a pagar de impuesto si sigues así. Sirve para planear: decidir si hacer aportes a pensión voluntaria, reinvertir utilidades, comprar vivienda, etc.<br/>
               <strong>Dato de entrada:</strong> tus ingresos, gastos, deudas e inversiones registrados en los módulos del día a día.<br/>
               <strong>Resultado:</strong> estimado automático.
             </div>
@@ -41,7 +41,7 @@ const FAQ = [
             <div style={{ color: T.cyan, fontWeight: 700, fontSize: 12 }}>📥 Importador año anterior</div>
             <div style={{ color: T.txt2, fontSize: 11, marginTop: 4, lineHeight: 1.5 }}>
               <strong>Para qué:</strong> cargar lo que <em>ya declaraste</em> el año pasado, para usarlo como referencia comparativa al preparar el año en curso.<br/>
-              <strong>Dato de entrada:</strong> tu declaración 2023/2024 (del portal DIAN). Capturás ~20 renglones principales, no todos.<br/>
+              <strong>Dato de entrada:</strong> tu declaración 2023/2024 (del portal DIAN). Capturas ~20 renglones principales, no todos.<br/>
               <strong>Resultado:</strong> al abrir el Wizard, cada casilla muestra "📥 Año 2024: $X" para comparar. También habilita las alertas cruzadas año a año (retenciones que bajaron, deducciones que desaparecieron, etc).
             </div>
           </div>
@@ -71,7 +71,7 @@ const FAQ = [
         <p>Hoy el Wizard y el Plan Tributario son <strong>herramientas independientes</strong>:</p>
         <ul style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 11, lineHeight: 1.7 }}>
           <li>El Plan Tributario calcula desde ingresos/gastos/deudas/inversiones</li>
-          <li>El Wizard captura renglones que pueden diferir (ej: podés capturar un ingreso en el Wizard que no está en el módulo Ingresos)</li>
+          <li>El Wizard captura renglones que pueden diferir (ej: puedes capturar un ingreso en el Wizard que no está en el módulo Ingresos)</li>
         </ul>
         <p style={{ marginTop: 8 }}>Lo ideal: que ambos converjan al mismo número. Si ves una diferencia grande, es probable que falten gastos o deducciones en los módulos del día a día (que sí están en el Wizard). Una futura versión permitirá que el Wizard "oficial" sobreescriba el Plan Tributario.</p>
       </>
@@ -83,12 +83,12 @@ const FAQ = [
       <>
         <p>Orden recomendado:</p>
         <ol style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 11, lineHeight: 1.7 }}>
-          <li><strong>Registrá tus ingresos, gastos, deudas e inversiones</strong> en los módulos principales (día a día).</li>
-          <li><strong>Asigná dueño</strong> (owner) a cada item si tenés varias personas/empresas.</li>
-          <li><strong>Importá tu declaración del año anterior</strong> en la tarjeta del owner — esto habilita comparaciones automáticas.</li>
-          <li><strong>Abrí el Plan Tributario</strong> y revisá los warnings de la "Revisión Fiscal" — arreglá cada uno.</li>
-          <li><strong>Capturá descuentos tributarios y aportes manuales</strong> (botones ⭐ y 🏥) para refinar el cálculo.</li>
-          <li><strong>Completá el Wizard F-210 / F-110</strong> cuando estés listo para preparar la declaración oficial.</li>
+          <li><strong>Registra tus ingresos, gastos, deudas e inversiones</strong> en los módulos principales (día a día).</li>
+          <li><strong>Asigna dueño</strong> (owner) a cada item si tienes varias personas/empresas.</li>
+          <li><strong>Importa tu declaración del año anterior</strong> en la tarjeta del owner — esto habilita comparaciones automáticas.</li>
+          <li><strong>Abre el Plan Tributario</strong> y revisa los warnings de la "Revisión Fiscal" — arregla cada uno.</li>
+          <li><strong>Captura descuentos tributarios y aportes manuales</strong> (botones ⭐ y 🏥) para refinar el cálculo.</li>
+          <li><strong>Completa el Wizard F-210 / F-110</strong> cuando estés listo para preparar la declaración oficial.</li>
         </ol>
       </>
     ),
@@ -115,7 +115,7 @@ const FAQ = [
         <ul style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 11, lineHeight: 1.7 }}>
           <li><strong>⛔ Errores</strong> — algo que rompe el cálculo (ej: ingreso sin dueño asignado).</li>
           <li><strong>⚠️ Warnings</strong> — posibles pérdidas de dinero (ej: descuentos no capturados vs año pasado).</li>
-          <li><strong>ℹ️ Info</strong> — el sistema infirió una clasificación, confirmá o editá (ej: "asumí que este arriendo es de inmueble").</li>
+          <li><strong>ℹ️ Info</strong> — el sistema infirió una clasificación, confirma o edita (ej: "asumí que este arriendo es de inmueble").</li>
         </ul>
         <p style={{ marginTop: 8 }}>Cada alerta tiene botones "✓ Aprobar" (confirma la clasificación sugerida) y "✏️ [Módulo]" (llevarte al lugar donde editar). Los warnings que se repiten (ej: 3 arriendos iguales) se agrupan en una sola fila con detalle expandible.</p>
       </>
@@ -183,7 +183,7 @@ export default function AyudaDeclaracion({ onClose }) {
       </div>
 
       <div style={{ marginTop: 24, padding: 14, background: T.bg3, borderRadius: 10, fontSize: 11, color: T.txt3, textAlign: "center", lineHeight: 1.6 }}>
-        ¿Tenés una pregunta que no está acá? Escribí a <strong style={{ color: T.cyan }}>soporte@finpathia.com</strong> y te respondemos.
+        ¿Tienes una pregunta que no está acá? Escribe a <strong style={{ color: T.cyan }}>soporte@finpathia.com</strong> y te respondemos.
       </div>
     </div>
   );

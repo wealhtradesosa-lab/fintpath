@@ -130,7 +130,7 @@ const CATEGORIAS = [
     titulo: "Formularios DIAN",
     icono: "📄",
     color: C.blue,
-    descripcion: "Los formatos oficiales que usás para declarar.",
+    descripcion: "Los formatos oficiales que usas para declarar.",
     keys: ["f110", "f210"],
   },
   {
@@ -231,7 +231,7 @@ export default function GlosarioPage({ onClose }) {
           type="text"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscá un término... (ej: UVT, retención, dependientes, ICA)"
+          placeholder="Busca un término... (ej: UVT, retención, dependientes, ICA)"
           style={{
             flex: 1,
             background: "transparent",
@@ -295,7 +295,7 @@ export default function GlosarioPage({ onClose }) {
           color: C.txt2,
         }}>
           {totalFiltrados === 0 ? (
-            <span>No encontré nada para <strong style={{ color: C.txt }}>"{busqueda}"</strong>. Probá con otra palabra clave.</span>
+            <span>No encontré nada para <strong style={{ color: C.txt }}>"{busqueda}"</strong>. Prueba con otra palabra clave.</span>
           ) : (
             <span>
               {totalFiltrados} {totalFiltrados === 1 ? "término encontrado" : "términos encontrados"} para <strong style={{ color: C.txt }}>"{busqueda}"</strong>
@@ -326,7 +326,7 @@ export default function GlosarioPage({ onClose }) {
       }}>
         <div style={{ fontSize: 13, color: C.txt2, lineHeight: 1.6, maxWidth: 600, margin: "0 auto" }}>
           <strong style={{ color: C.txt }}>¿Falta algún término?</strong> El glosario crece según lo que pidan los users.
-          Si encontraste una palabra que no entendés mientras usás la app, escribinos y la agregamos.
+          Si encontraste una palabra que no entiendes mientras usas la app, escríbenos y la agregamos.
         </div>
         <div style={{ marginTop: 12, fontSize: 11, color: C.txt3 }}>
           Las definiciones reflejan el Estatuto Tributario vigente en 2026 y la jurisprudencia DIAN actual.

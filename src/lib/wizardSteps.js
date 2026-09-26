@@ -41,7 +41,7 @@ export const WIZARD_NATURAL = [
     type: "intro",
     question: "Hola 👋 vamos a entender tus impuestos juntos",
     helpText: "Te voy a hacer preguntas simples sobre tu vida del año pasado. " +
-              "Tomá un café, esto va a tomar entre 5 y 10 minutos. Podés volver atrás en cualquier momento.",
+              "Toma un café, esto va a tomar entre 5 y 10 minutos. Puedes volver atrás en cualquier momento.",
     section: "intro",
   },
 
@@ -51,7 +51,7 @@ export const WIZARD_NATURAL = [
     section: "trabajo",
     type: "single_select",
     question: "¿Cómo te pagaron tu trabajo en 2025?",
-    helpText: "Esto define qué deducciones podés usar. Si combinaste varios, elegí el principal.",
+    helpText: "Esto define qué deducciones puedes usar. Si combinaste varios, elige el principal.",
     options: [
       { value: "empleado", label: "Trabajé como empleado con contrato", emoji: "💼" },
       { value: "independiente", label: "Soy independiente y facturo por honorarios", emoji: "🧑‍💻" },
@@ -65,7 +65,7 @@ export const WIZARD_NATURAL = [
     section: "trabajo",
     type: "number",
     question: "¿Cuánto te pagaban al mes (en bruto, antes de descuentos)?",
-    helpText: "Acá va el salario completo, antes de que te descuenten pensión, salud o impuestos. Si variaba, poné un promedio.",
+    helpText: "Acá va el salario completo, antes de que te descuenten pensión, salud o impuestos. Si variaba, pon un promedio.",
     placeholder: "Ej: 5000000",
     suffix: "/ mes",
     shouldShow: (a) => ["empleado", "ambos"].includes(a.tipoTrabajo),
@@ -75,7 +75,7 @@ export const WIZARD_NATURAL = [
     section: "trabajo",
     type: "number",
     question: "¿Cuánto facturaste por honorarios el año pasado?",
-    helpText: "El total facturado durante todo 2025. Si no tenés el dato exacto, poné un aproximado.",
+    helpText: "El total facturado durante todo 2025. Si no tienes el dato exacto, pon un aproximado.",
     placeholder: "Ej: 80000000",
     suffix: "anual",
     shouldShow: (a) => ["independiente", "ambos"].includes(a.tipoTrabajo),
@@ -110,7 +110,7 @@ export const WIZARD_NATURAL = [
     id: "tieneDependientes",
     section: "familia",
     type: "yes_no",
-    question: "¿Tenés personas que dependen económicamente de vos?",
+    question: "¿Tienes personas que dependen económicamente de ti?",
     helpText: "Hijos menores de 23 años, padres jubilados, cónyuge sin ingresos. Esto te da una deducción importante.",
     options: [
       { value: "si", label: "Sí, tengo dependientes", emoji: "👨‍👩‍👧" },
@@ -122,7 +122,7 @@ export const WIZARD_NATURAL = [
     id: "cantidadDependientes",
     section: "familia",
     type: "number",
-    question: "¿Cuántos dependientes tenés a tu cargo?",
+    question: "¿Cuántos dependientes tienes a tu cargo?",
     helpText: "Hijos menores de 23, padres jubilados, cónyuge sin ingresos.",
     placeholder: "Ej: 2",
     suffix: "personas",
@@ -132,7 +132,7 @@ export const WIZARD_NATURAL = [
     id: "pagaMedicinaPrepagada",
     section: "familia",
     type: "yes_no",
-    question: "¿Pagás medicina prepagada o seguros de salud privados?",
+    question: "¿Pagas medicina prepagada o seguros de salud privados?",
     helpText: "Sura, Colsanitas, Coomeva, Compensar prepagada, seguros de salud o vida. Es deducible.",
     options: [
       { value: "si", label: "Sí, pago medicina prepagada o seguros", emoji: "🏥" },
@@ -144,8 +144,8 @@ export const WIZARD_NATURAL = [
     id: "medicinaMensual",
     section: "familia",
     type: "number",
-    question: "¿Cuánto pagás al mes de medicina prepagada o seguros de salud?",
-    helpText: "Si tenés varios, sumalos todos. Hay un tope mensual de ~$840K (16 UVT).",
+    question: "¿Cuánto pagas al mes de medicina prepagada o seguros de salud?",
+    helpText: "Si tienes varios, sumalos todos. Hay un tope mensual de ~$840K (16 UVT).",
     placeholder: "Ej: 600000",
     suffix: "/ mes",
     shouldShow: (a) => a.pagaMedicinaPrepagada === "si",
@@ -154,8 +154,8 @@ export const WIZARD_NATURAL = [
     id: "tieneViviendaCredito",
     section: "familia",
     type: "yes_no",
-    question: "¿Tenés crédito hipotecario por tu vivienda donde vivís?",
-    helpText: "Solo aplica donde vivís (vivienda habitual). Casas de descanso o segunda vivienda NO. Los intereses pagados son deducibles.",
+    question: "¿Tienes crédito hipotecario por tu vivienda donde vives?",
+    helpText: "Solo aplica donde vives (vivienda habitual). Casas de descanso o segunda vivienda NO. Los intereses pagados son deducibles.",
     options: [
       { value: "si", label: "Sí, pago crédito hipotecario", emoji: "🏠" },
       { value: "no", label: "No tengo crédito hipotecario", emoji: "❌" },
@@ -178,7 +178,7 @@ export const WIZARD_NATURAL = [
     id: "tieneAportesPV",
     section: "ahorros",
     type: "yes_no",
-    question: "¿Aportás a fondo de pensión voluntaria o cuenta AFC?",
+    question: "¿Aportas a fondo de pensión voluntaria o cuenta AFC?",
     helpText: "Esta es LA palanca más poderosa para reducir impuestos legalmente. Cada $1 aportado puede ahorrarte hasta $0.39 de impuesto.",
     options: [
       { value: "si", label: "Sí, aporto a PV o AFC", emoji: "💎" },
@@ -190,7 +190,7 @@ export const WIZARD_NATURAL = [
     id: "aportesPVMensual",
     section: "ahorros",
     type: "number",
-    question: "¿Cuánto aportás al mes a PV o AFC?",
+    question: "¿Cuánto aportas al mes a PV o AFC?",
     helpText: "El total combinado. Tope: 30% del ingreso para AFC + 25% para PV (con cap de 1340 UVT/año).",
     placeholder: "Ej: 1000000",
     suffix: "/ mes",
@@ -200,7 +200,7 @@ export const WIZARD_NATURAL = [
     id: "tieneCDTOAhorros",
     section: "ahorros",
     type: "yes_no",
-    question: "¿Tenés CDT, cuentas que generan intereses, o fondos de inversión?",
+    question: "¿Tienes CDT, cuentas que generan intereses, o fondos de inversión?",
     helpText: "Los rendimientos generan impuesto, pero el componente inflacionario (~50%) se excluye automáticamente. Sumamos esto al cálculo.",
     options: [
       { value: "si", label: "Sí, tengo CDT, ahorros o fondos", emoji: "📈" },
@@ -212,7 +212,7 @@ export const WIZARD_NATURAL = [
     section: "ahorros",
     type: "number",
     question: "¿Cuántos intereses o rendimientos te generaron en total el año pasado?",
-    helpText: "Suma intereses de CDT + rendimientos de fondos + intereses de cuentas. Si no tenés el dato exacto, los bancos lo certifican en marzo.",
+    helpText: "Suma intereses de CDT + rendimientos de fondos + intereses de cuentas. Si no tienes el dato exacto, los bancos lo certifican en marzo.",
     placeholder: "Ej: 10000000",
     suffix: "anual",
     shouldShow: (a) => a.tieneCDTOAhorros === "si",
@@ -224,7 +224,7 @@ export const WIZARD_NATURAL = [
     section: "otros",
     type: "yes_no",
     question: "¿Te pagan arriendo por algún inmueble tuyo?",
-    helpText: "Apartamentos, locales, bodegas, casas que alquilás. Tributa como cédula 'No Laboral'.",
+    helpText: "Apartamentos, locales, bodegas, casas que alquilas. Tributa como cédula 'No Laboral'.",
     options: [
       { value: "si", label: "Sí, recibo arriendos", emoji: "🏘️" },
       { value: "no", label: "No recibo arriendos", emoji: "❌" },
@@ -234,7 +234,7 @@ export const WIZARD_NATURAL = [
     id: "arriendosMensual",
     section: "otros",
     type: "number",
-    question: "¿Cuánto recibís de arriendos al mes (suma todos)?",
+    question: "¿Cuánto recibes de arriendos al mes (suma todos)?",
     helpText: "El total mensual antes de retenciones. Si tu inquilino es persona jurídica, te retienen 3.5%.",
     placeholder: "Ej: 3000000",
     suffix: "/ mes",
@@ -304,7 +304,7 @@ export const WIZARD_JURIDICA = [
     helpText:
       "Es CRÍTICO acertar esto: define la tarifa del impuesto. Régimen Ordinario paga 35% sobre " +
       "la renta líquida; Régimen Simple paga entre 1.2% y 14% sobre ingresos brutos según " +
-      "actividad económica. Si no estás seguro, mirá la última declaración o preguntá al contador.",
+      "actividad económica. Si no estás seguro, mira la última declaración o pregunta al contador.",
     type: "single_select",
     options: [
       { value: "ordinario", label: "Régimen Ordinario (35% sobre utilidad)", emoji: "🏢" },
@@ -320,7 +320,7 @@ export const WIZARD_JURIDICA = [
     question: "¿A qué se dedica principalmente la sociedad?",
     helpText:
       "Esto define la tarifa de ICA municipal y, si está en Régimen Simple, la tarifa de ese impuesto. " +
-      "Elegí la opción más cercana a la actividad PRINCIPAL (la que genera más ingresos).",
+      "Elige la opción más cercana a la actividad PRINCIPAL (la que genera más ingresos).",
     type: "single_select",
     options: [
       { value: "comercio_minorista", label: "Comercio al por menor / tiendas", emoji: "🛍️" },
@@ -370,7 +370,7 @@ export const WIZARD_JURIDICA = [
     id: "ingresosNoOpAnual",
     section: "ingresos",
     question: "¿Cuánto sumaron esos ingresos no operacionales en el año?",
-    helpText: "Sumá intereses + dividendos + alquileres + otras ganancias del año.",
+    helpText: "Suma intereses + dividendos + alquileres + otras ganancias del año.",
     type: "number",
     placeholder: "Ej: 50.000.000",
     suffix: "$ al año",
@@ -385,7 +385,7 @@ export const WIZARD_JURIDICA = [
     helpText:
       "Son los costos DIRECTOS de generar los ingresos: compra de mercancía vendida, materias primas, " +
       "mano de obra directa, fletes, etc. Si es una empresa de servicios profesionales, suele ser bajo o cero. " +
-      "Si vendés productos, suele ser entre 40% y 70% de las ventas.",
+      "Si vendes productos, suele ser entre 40% y 70% de las ventas.",
     type: "number",
     placeholder: "Ej: 350.000.000",
     suffix: "$ al año",
@@ -422,7 +422,7 @@ export const WIZARD_JURIDICA = [
     id: "interesesPagadosAnual",
     section: "costos",
     question: "¿Cuánto pagó la sociedad de INTERESES durante el año?",
-    helpText: "Solo intereses (no el capital). Pedí el certificado al banco si no estás seguro.",
+    helpText: "Solo intereses (no el capital). Pide el certificado al banco si no estás seguro.",
     type: "number",
     placeholder: "Ej: 25.000.000",
     suffix: "$ al año",
@@ -436,7 +436,7 @@ export const WIZARD_JURIDICA = [
     question: "¿Cuánto pagó de ICA (Impuesto de Industria y Comercio) en el año?",
     helpText:
       "El ICA es un impuesto municipal sobre los ingresos. Se paga bimestral o anualmente según el municipio. " +
-      "Es 100% deducible del impuesto de renta (Régimen Ordinario). Si no lo sabés con exactitud, dame un " +
+      "Es 100% deducible del impuesto de renta (Régimen Ordinario). Si no lo sabes con exactitud, dame un " +
       "estimado: típicamente entre 0.4% y 1.4% de los ingresos.",
     type: "number",
     placeholder: "Ej: 5.000.000",
@@ -452,7 +452,7 @@ export const WIZARD_JURIDICA = [
     helpText:
       "Patrimonio bruto = TODO lo que tiene la empresa al cierre del año: efectivo en bancos, cuentas " +
       "por cobrar, inventarios, propiedades, vehículos, equipos, inversiones, intangibles. ANTES de restar " +
-      "deudas. Si tenés balance contable, está en la línea 'Total Activos'.",
+      "deudas. Si tienes balance contable, está en la línea 'Total Activos'.",
     type: "number",
     placeholder: "Ej: 1.200.000.000",
     suffix: "$ al cierre",
@@ -473,7 +473,7 @@ export const WIZARD_JURIDICA = [
     id: "pasivosTotales",
     section: "patrimonio",
     question: "¿Cuánto suman los pasivos totales al 31 de diciembre?",
-    helpText: "Sumá todas las deudas: bancos, proveedores, socios, impuestos por pagar, etc.",
+    helpText: "Suma todas las deudas: bancos, proveedores, socios, impuestos por pagar, etc.",
     type: "number",
     placeholder: "Ej: 300.000.000",
     suffix: "$ al cierre",
@@ -487,7 +487,7 @@ export const WIZARD_JURIDICA = [
     question: "¿Le practicaron retención en la fuente durante el año?",
     helpText:
       "Tus clientes (cuando son agentes retenedores) le retienen un porcentaje a cada factura. Esa retención " +
-      "ya pagaste, se cruza contra el impuesto al final. Si no estás seguro, revisá los certificados de " +
+      "ya pagaste, se cruza contra el impuesto al final. Si no estás seguro, revisa los certificados de " +
       "retención que envían los clientes.",
     type: "yes_no",
     options: [
@@ -499,7 +499,7 @@ export const WIZARD_JURIDICA = [
     id: "retencionesAnual",
     section: "retenciones",
     question: "¿Cuánto suman las retenciones que le practicaron en el año?",
-    helpText: "Sumá los valores de los certificados de retención que recibiste de clientes.",
+    helpText: "Suma los valores de los certificados de retención que recibiste de clientes.",
     type: "number",
     placeholder: "Ej: 28.000.000",
     suffix: "$ al año",
@@ -511,7 +511,7 @@ export const WIZARD_JURIDICA = [
     question: "¿Pagó anticipo de renta del año pasado al hacer la declaración?",
     helpText:
       "El anticipo es un pago adelantado que la DIAN obliga a hacer junto con la declaración anterior. " +
-      "Está en el F-110 de hace dos años, en la sección de liquidación. Si no aplica, poné 0.",
+      "Está en el F-110 de hace dos años, en la sección de liquidación. Si no aplica, pon 0.",
     type: "number",
     placeholder: "Ej: 12.000.000  (o 0 si no aplica)",
     suffix: "$",
@@ -991,7 +991,7 @@ export function posicionPasoVisible(currentIndex, answers, steps = WIZARD_NATURA
 // user actual y devuelve un objeto answers con los valores que ya tiene.
 //
 // Cada respuesta precargada se marca con _precargado: true para que el UI
-// pueda mostrar "Ya tengo cargado X — ¿confirmás?" en lugar de "?".
+// pueda mostrar "Ya tengo cargado X — ¿confirmas?" en lugar de "?".
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
