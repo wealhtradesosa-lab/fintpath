@@ -246,10 +246,10 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
             </span>
           </div>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.2 }}>
-            Hablá con tu contador IA
+            Habla con tu contador IA
           </h2>
           <p style={{ fontSize: 13, color: C.txt2, marginTop: 6, lineHeight: 1.5 }}>
-            Conoce todos tus datos fiscales. Hacé preguntas en lenguaje natural y te
+            Conoce todos tus datos fiscales. Haz preguntas en lenguaje natural y te
             responde con análisis específico para tu caso.
           </p>
         </div>
@@ -306,7 +306,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
           <div style={{ textAlign: "center", padding: "40px 20px" }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🤖</div>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: C.txt, marginBottom: 8 }}>
-              ¿Sobre qué querés que te asesore?
+              ¿Sobre qué quieres que te asesore?
             </h3>
             <p style={{ fontSize: 13, color: C.txt2, marginBottom: 24, maxWidth: 480, margin: "0 auto 24px" }}>
               Soy tu contador tributario IA. Conozco todos los datos que cargaste
@@ -403,7 +403,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Escribí tu pregunta… (Enter para enviar, Shift+Enter para nueva línea)"
+          placeholder="Escribe tu pregunta… (Enter para enviar, Shift+Enter para nueva línea)"
           rows={2}
           disabled={loading}
           style={{

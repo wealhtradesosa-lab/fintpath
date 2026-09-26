@@ -77,7 +77,7 @@ function recomendacionesNatural(user, ow, det) {
   const pvAportaHoy = pvAportadaHoyAnual(user, ow.id);
   // Saldo a cargo actual: si es 0 (retenciones cubren todo o tarifa cero),
   // no podemos prometer ahorros. Cap aplicado a TODAS las palancas de
-  // deducción a continuación. Sin esto, el user veía "ahorrá $20M" pero al
+  // deducción a continuación. Sin esto, el user veía "ahorra $20M" pero al
   // aplicar la palanca el saldo seguía $0 — promesa rota.
   const saldoACargoActual = Number(det.saldoACargo ?? det.impuesto ?? 0);
   if (espacio > 1_000_000 && tasaMarginalAprox > 0) {
@@ -95,8 +95,8 @@ function recomendacionesNatural(user, ow, det) {
           ? "Aumentar aporte a Pensión Voluntaria / AFC"
           : "Empezar a aportar a Pensión Voluntaria o AFC",
         descripcion: pvAportaHoy > 0
-          ? `Ya aportás ${fm(pvAportaHoy)}/año a PV/AFC. Tenés margen legal para aportar ${fm(aporteSugeridoMensual)}/mes adicionales sin pasarte del cap.`
-          : `No tenés aportes a PV/AFC registrados. Son 100% deducibles de la base gravable bajo el cap 25%/2500 UVT.`,
+          ? `Ya aportas ${fm(pvAportaHoy)}/año a PV/AFC. Tienes margen legal para aportar ${fm(aporteSugeridoMensual)}/mes adicionales sin pasarte del cap.`
+          : `No tienes aportes a PV/AFC registrados. Son 100% deducibles de la base gravable bajo el cap 25%/2500 UVT.`,
         aporteSugeridoMensual,
         ahorroAnualEstimado: ahorro,
         ahorroBrutoTeorico: ahorroBruto,
@@ -135,7 +135,7 @@ function recomendacionesNatural(user, ow, det) {
         ownerId: ow.id,
         ownerName: ow.name,
         titulo: "Intereses de vivienda no están siendo deducidos",
-        descripcion: `Tenés ${fm(interesesAnualesEstimados)}/año en intereses de deuda hipotecaria de vivienda habitacional, pero el motor no los está contando. Verificá que la deuda esté marcada con fiscalCode correcto en el módulo Deudas.`,
+        descripcion: `Tienes ${fm(interesesAnualesEstimados)}/año en intereses de deuda hipotecaria de vivienda habitacional, pero el motor no los está contando. Verifica que la deuda esté marcada con fiscalCode correcto en el módulo Deudas.`,
         ahorroAnualEstimado: ahorro,
         cta: { label: "Revisar deuda en Deudas", page: "deu" },
         base: "Art. 119 ET",
@@ -160,7 +160,7 @@ function recomendacionesNatural(user, ow, det) {
     // CRÍTICO: el ahorro estimado debe estar acotado al impuesto REAL
     // a cargo. Si el user ya paga $0 (porque retenciones cubren todo o
     // está en el primer rango con tarifa 0%), no podemos prometerle un
-    // ahorro de $X. Sin este capping, mostrábamos "ahorrá $20M" cuando
+    // ahorro de $X. Sin este capping, mostrábamos "ahorra $20M" cuando
     // el impuesto era $0 y el user agregaba dependientes y NO veía nada.
     const ahorroBruto = Math.round(deducMax * tasaMarginalAprox / 100);
     const saldoACargoActual = Number(det.saldoACargo ?? det.impuesto ?? 0);
@@ -172,8 +172,8 @@ function recomendacionesNatural(user, ow, det) {
         severity: severityByAhorro(ahorro),
         ownerId: ow.id,
         ownerName: ow.name,
-        titulo: "¿Tenés cónyuge, hijos o padres dependientes?",
-        descripcion: `Con tu salario podés deducir hasta ${fm(deducMax)}/año por dependientes (10% del ingreso bruto, tope 32 UVT/mes). Aplica a cónyuge, hijos menores, hijos hasta 25 años estudiando, o padres/hermanos con discapacidad.`,
+        titulo: "¿Tienes cónyuge, hijos o padres dependientes?",
+        descripcion: `Con tu salario puedes deducir hasta ${fm(deducMax)}/año por dependientes (10% del ingreso bruto, tope 32 UVT/mes). Aplica a cónyuge, hijos menores, hijos hasta 25 años estudiando, o padres/hermanos con discapacidad.`,
         ahorroAnualEstimado: ahorro,
         ahorroBrutoTeorico: ahorroBruto, // Para mostrar potencial vs real
         cta: { label: "Marcar dependientes ahora", action: "aplicar_dependientes" },
@@ -208,8 +208,8 @@ function recomendacionesNatural(user, ow, det) {
         severity: "medium",
         ownerId: ow.id,
         ownerName: ow.name,
-        titulo: "Si pagás medicina prepagada, es deducible",
-        descripcion: `No tenés salud prepagada registrada. Si pagás Colsanitas, Sura, Medplus u otra, es deducible hasta ${fm(topeAnual)}/año (16 UVT/mes).`,
+        titulo: "Si pagas medicina prepagada, es deducible",
+        descripcion: `No tienes salud prepagada registrada. Si pagas Colsanitas, Sura, Medplus u otra, es deducible hasta ${fm(topeAnual)}/año (16 UVT/mes).`,
         ahorroAnualEstimado: ahorro,
         ahorroBrutoTeorico: ahorroBruto,
         cta: { label: "Aplicar ahora", action: "aplicar_salud" },
@@ -280,15 +280,15 @@ function recomendacionesJuridica(user, ow, det) {
         severity: "medium",
         ownerId: ow.id,
         ownerName: ow.name,
-        titulo: `Podría aplicar al Régimen SIMPLE — configurá el grupo de actividad`,
-        descripcion: `${ow.name} tiene ingresos de ${fm(ingAnual)}, por debajo del tope legal de ${fm(limiteSimple)} para SIMPLE. Para calcular si conviene el cambio, necesitamos saber a qué grupo de actividad pertenece (Art. 908 ET). Configurá el grupo en el perfil del owner.`,
+        titulo: `Podría aplicar al Régimen SIMPLE — configura el grupo de actividad`,
+        descripcion: `${ow.name} tiene ingresos de ${fm(ingAnual)}, por debajo del tope legal de ${fm(limiteSimple)} para SIMPLE. Para calcular si conviene el cambio, necesitamos saber a qué grupo de actividad pertenece (Art. 908 ET). Configura el grupo en el perfil del owner.`,
         ahorroAnualEstimado: 0,
         cta: { label: "Configurar grupo SIMPLE en perfil", page: "set" },
         base: "Arts. 905, 908 ET",
         supuestos: [
           `Tarifa SIMPLE varía entre 1,2% y 13,7% según grupo de actividad.`,
           `Sin saber el grupo, no podemos estimar el impuesto con precisión.`,
-          `Consultá a tu contador para identificar el grupo correcto según CIIU.`,
+          `Consulta a tu contador para identificar el grupo correcto según CIIU.`,
         ],
       });
     } else {
@@ -306,7 +306,7 @@ function recomendacionesJuridica(user, ow, det) {
             ownerId: ow.id,
             ownerName: ow.name,
             titulo: `Evaluar cambio a Régimen Simple (RST)`,
-            descripcion: `${ow.name} pagaría aproximadamente ${fm(impSimpleReal)}/año bajo SIMPLE (grupo: ${grupoInfo.label}, tarifa efectiva ${(tarifaEfectiva * 100).toFixed(2)}%), vs ${fm(impBruto)}/año bajo ordinario. SIMPLE también sustituye el ICA y avisos, lo que puede ampliar el ahorro real si hoy pagás ICA alto.`,
+            descripcion: `${ow.name} pagaría aproximadamente ${fm(impSimpleReal)}/año bajo SIMPLE (grupo: ${grupoInfo.label}, tarifa efectiva ${(tarifaEfectiva * 100).toFixed(2)}%), vs ${fm(impBruto)}/año bajo ordinario. SIMPLE también sustituye el ICA y avisos, lo que puede ampliar el ahorro real si hoy pagas ICA alto.`,
             ahorroAnualEstimado: Math.round(diferencia),
             cta: { label: "Cambiar régimen en perfil del owner", page: "set" },
             base: "Arts. 903-916 ET (tarifas Art. 908)",
@@ -316,7 +316,7 @@ function recomendacionesJuridica(user, ow, det) {
               `Comparación entre impuesto de renta ordinario vs SIMPLE; no incluye posible ahorro adicional por ICA absorbido (ampliaría el beneficio).`,
               `SIMPLE exige anticipos bimestrales (6 pagos/año) — afecta flujo de caja.`,
               `Cambio de régimen se formaliza en MUISCA hasta último día hábil de febrero.`,
-              `Verificá con tu contador que no caés en exclusiones del Art. 906 ET (financiera, minera, combustibles, etc.).`,
+              `Verifica con tu contador que no caes en exclusiones del Art. 906 ET (financiera, minera, combustibles, etc.).`,
             ],
           });
         } else if (diferencia < -1_000_000) {
@@ -355,7 +355,7 @@ function recomendacionesJuridica(user, ow, det) {
       ownerId: ow.id,
       ownerName: ow.name,
       titulo: `⚠️ ${ow.name} podría haber superado el tope de 100.000 UVT en SIMPLE`,
-      descripcion: `Los ingresos anuales estimados son ${fm(ingAnual)}, por encima del tope legal de ${fm(limiteSimple)}. Si se supera el tope, el régimen SIMPLE deja de aplicar y debe pasarse a ordinario. Verificá con tu contador.`,
+      descripcion: `Los ingresos anuales estimados son ${fm(ingAnual)}, por encima del tope legal de ${fm(limiteSimple)}. Si se supera el tope, el régimen SIMPLE deja de aplicar y debe pasarse a ordinario. Verifica con tu contador.`,
       ahorroAnualEstimado: 0,
       cta: { label: "Revisar régimen en perfil del owner", page: "set" },
       base: "Art. 905 ET",
@@ -423,7 +423,7 @@ function recomendacionesJuridica(user, ow, det) {
         ownerId: ow.id,
         ownerName: ow.name,
         titulo: "Provisión de cartera (Art. 145 ET) no capturada",
-        descripcion: `Si ${ow.name} tiene cuentas por cobrar con +90 días de vencimiento, podés provisionar hasta el 33% de esa cartera vencida (cap. global 5% del total). Ahorro estimado: ${fm(ahorroEstimado)}/año asumiendo cartera B2B típica. Pedile a tu contador el cálculo exacto al cierre del ejercicio y cargalo en Descuentos Tributarios.`,
+        descripcion: `Si ${ow.name} tiene cuentas por cobrar con +90 días de vencimiento, puedes provisionar hasta el 33% de esa cartera vencida (cap. global 5% del total). Ahorro estimado: ${fm(ahorroEstimado)}/año asumiendo cartera B2B típica. Pedile a tu contador el cálculo exacto al cierre del ejercicio y cárgalo en Descuentos Tributarios.`,
         ahorroAnualEstimado: ahorroEstimado,
         cta: { label: "Configurar en Descuentos Tributarios", page: "set" },
         base: "Art. 145 ET",
@@ -456,7 +456,7 @@ function recomendacionesJuridica(user, ow, det) {
         severity: severityByAhorro(ahorroDeduccion),
         ownerId: ow.id,
         ownerName: ow.name,
-        titulo: "Tenés descuento CT&I cargado pero NO la deducción 175%",
+        titulo: "Tienes descuento CT&I cargado pero NO la deducción 175%",
         descripcion: `Cargaste ${fm(descCTI)} de descuento CT&I (25% sobre la inversión). El Art. 158-1 ET además te permite DEDUCIR el 175% de la inversión (acumulable con el descuento). Si invertiste ~${fm(inversionImplicita)} en innovación, el 75% adicional (${fm(inversionImplicita * 0.75)}) reduce tu base gravable. Ahorro adicional estimado: ${fm(ahorroDeduccion)}/año.`,
         ahorroAnualEstimado: ahorroDeduccion,
         cta: { label: "Cargar inversión CT&I en Descuentos Tributarios", page: "set" },
@@ -473,7 +473,7 @@ function recomendacionesJuridica(user, ow, det) {
   // ═════════════ PALANCA 4: Salarios a personas con discapacidad (Ley 361/97) ═════════════
   //
   // Sin forma automática de detectarlo desde los datos (el motor no sabe si
-  // tenés empleados con discapacidad). Sugerimos como "info" si tiene nómina
+  // tienes empleados con discapacidad). Sugerimos como "info" si tiene nómina
   // significativa y NO ha cargado el campo, para que evalúe.
   const tieneDeducDiscap = Number(ow.descuentosTributarios?.salariosDiscapacidadAnual) > 0;
   const gastosNomina = Object.values(user.gas || {}).flat()
@@ -486,13 +486,13 @@ function recomendacionesJuridica(user, ow, det) {
       severity: "info",
       ownerId: ow.id,
       ownerName: ow.name,
-      titulo: "¿Empleás personas con discapacidad ≥25%? Deducción del 200% (Ley 361/97)",
-      descripcion: `${ow.name} tiene nómina anual de ${fm(gastosNomina)}. Si alguno de los empleados tiene certificación de discapacidad ≥25% emitida por la Junta Médica, el salario + prestaciones se deducen al 200% (el 100% ya está como gasto + 100% adicional). Sin tope. Cargalo en Descuentos Tributarios si aplica.`,
+      titulo: "¿Empleas personas con discapacidad ≥25%? Deducción del 200% (Ley 361/97)",
+      descripcion: `${ow.name} tiene nómina anual de ${fm(gastosNomina)}. Si alguno de los empleados tiene certificación de discapacidad ≥25% emitida por la Junta Médica, el salario + prestaciones se deducen al 200% (el 100% ya está como gasto + 100% adicional). Sin tope. Cárgalo en Descuentos Tributarios si aplica.`,
       ahorroAnualEstimado: 0, // No estimamos sin saber si tiene empleados con discapacidad
       cta: { label: "Configurar en Descuentos Tributarios", page: "set" },
       base: "Ley 361/97 Art. 31",
       supuestos: [
-        `Solo aplica si efectivamente tenés empleados con discapacidad certificada ≥25%.`,
+        `Solo aplica si efectivamente tienes empleados con discapacidad certificada ≥25%.`,
         `Requiere certificación de Junta Médica del régimen contributivo o subsidiado.`,
         `El 100% adicional sobre el salario × tarifa marginal del régimen ≈ ahorro real.`,
       ],
@@ -512,8 +512,8 @@ function recomendacionesJuridica(user, ow, det) {
       severity: "info",
       ownerId: ow.id,
       ownerName: ow.name,
-      titulo: "¿Pagás bonificaciones extralegales? Deducibles 100% (Art. 107 ET)",
-      descripcion: `${ow.name} tiene nómina anual de ${fm(gastosNomina)}. Si pagaste bonificaciones NO constitutivas de salario (bonos de productividad, fin de año, gratificaciones), son deducibles al 100% si cumplen causalidad + necesidad + proporcionalidad. NO se incluyen en parafiscales (ventaja fiscal extra). Cargá el monto anual en Descuentos Tributarios.`,
+      titulo: "¿Pagas bonificaciones extralegales? Deducibles 100% (Art. 107 ET)",
+      descripcion: `${ow.name} tiene nómina anual de ${fm(gastosNomina)}. Si pagaste bonificaciones NO constitutivas de salario (bonos de productividad, fin de año, gratificaciones), son deducibles al 100% si cumplen causalidad + necesidad + proporcionalidad. NO se incluyen en parafiscales (ventaja fiscal extra). Carga el monto anual en Descuentos Tributarios.`,
       ahorroAnualEstimado: 0,
       cta: { label: "Configurar en Descuentos Tributarios", page: "set" },
       base: "Art. 107 ET",
@@ -544,7 +544,7 @@ function recomendacionesJuridica(user, ow, det) {
       ownerId: ow.id,
       ownerName: ow.name,
       titulo: "Capacitación de empleados: deducción 175% (Art. 158-1 inciso 2)",
-      descripcion: `${ow.name} tiene ${fm(gastosEducacion)} en gastos de capacitación / educación pero NO está cargado en el campo de capacitación 175%. Si esa capacitación está certificada por SENA, CFF o institución calificada, podés deducir el 75% ADICIONAL (sobre el 100% ya cargado en gasto). Ahorro estimado: ${fm(ahorroEstimado)}/año.`,
+      descripcion: `${ow.name} tiene ${fm(gastosEducacion)} en gastos de capacitación / educación pero NO está cargado en el campo de capacitación 175%. Si esa capacitación está certificada por SENA, CFF o institución calificada, puedes deducir el 75% ADICIONAL (sobre el 100% ya cargado en gasto). Ahorro estimado: ${fm(ahorroEstimado)}/año.`,
       ahorroAnualEstimado: ahorroEstimado,
       cta: { label: "Cargar en Descuentos Tributarios", page: "set" },
       base: "Art. 158-1 inciso 2 ET",
@@ -575,13 +575,13 @@ function recomendacionesJuridica(user, ow, det) {
       ownerId: ow.id,
       ownerName: ow.name,
       titulo: "IVA en compra de maquinaria / equipo: descuento 100% (Art. 258-2)",
-      descripcion: `${ow.name} tiene ${fm(inversionesActivos)} en inversiones de bienes de capital. El IVA pagado (~${fm(ivaEstimado)} si es 19%) se descuenta 100% del impuesto sobre la renta del año en que adquiriste el activo. Sujeto al tope global del 25%. Cargá el IVA exacto pagado.`,
+      descripcion: `${ow.name} tiene ${fm(inversionesActivos)} en inversiones de bienes de capital. El IVA pagado (~${fm(ivaEstimado)} si es 19%) se descuenta 100% del impuesto sobre la renta del año en que adquiriste el activo. Sujeto al tope global del 25%. Carga el IVA exacto pagado.`,
       ahorroAnualEstimado: ivaEstimado,
       cta: { label: "Cargar en Descuentos Tributarios", page: "set" },
       base: "Art. 258-2 ET",
       supuestos: [
         `Solo aplica a bienes de capital usados en actividad productiva.`,
-        `Cargá el IVA REAL pagado (puede ser distinto al 19% estimado).`,
+        `Carga el IVA REAL pagado (puede ser distinto al 19% estimado).`,
         `El descuento es del impuesto bruto (no de la base gravable).`,
         `Sujeto al tope global del 25% del Art. 259 ET.`,
         `También aplica a construcciones e instalaciones para producción primaria.`,
@@ -620,17 +620,17 @@ function recomendacionesJuridica(user, ow, det) {
       ownerId: ow.id,
       ownerName: ow.name,
       titulo: "Depreciación de inmuebles arrendados (Art. 128-141 ET)",
-      descripcion: `${ow.name} tiene ${inmueblesArrendados.length} inmueble(s) arrendado(s) con costo fiscal total ${fm(totalCostoFiscal)}. Si la sociedad es la dueña jurídica (escritura a nombre de ${ow.name}, no del socio personal), podés depreciar la construcción (~75% del costo) en 45 años. Estimación: ${fm(depreciacionEstimada)}/año → ahorro fiscal ~${fm(ahorroEstimado)}. CONFIRMÁ con tu contador antes de cargar — él conoce la depreciación acumulada de años anteriores.`,
+      descripcion: `${ow.name} tiene ${inmueblesArrendados.length} inmueble(s) arrendado(s) con costo fiscal total ${fm(totalCostoFiscal)}. Si la sociedad es la dueña jurídica (escritura a nombre de ${ow.name}, no del socio personal), puedes depreciar la construcción (~75% del costo) en 45 años. Estimación: ${fm(depreciacionEstimada)}/año → ahorro fiscal ~${fm(ahorroEstimado)}. CONFIRMÁ con tu contador antes de cargar — él conoce la depreciación acumulada de años anteriores.`,
       ahorroAnualEstimado: ahorroEstimado,
       cta: { label: "Cargar en Descuentos Tributarios", page: "set" },
       base: "Art. 128-141 ET · Decreto 2235/2017 Art. 137",
       supuestos: [
         `IMPORTANTE: solo aplica si la sociedad es DUEÑA JURÍDICA del inmueble (escritura a su nombre).`,
         `Si los inmuebles están a nombre del socio persona natural, la depreciación NO aplica a la sociedad.`,
-        `% construcción asumido: 75% (terreno 25%). El % real puede variar — verificá con tu contador.`,
+        `% construcción asumido: 75% (terreno 25%). El % real puede variar — verifica con tu contador.`,
         `Vida útil fiscal: 45 años para edificios, locales, bodegas (Decreto 2235/2017).`,
         `Depreciación acumulada de años anteriores REDUCE la base depreciable disponible.`,
-        `Si tu contador ya viene depreciando, cargá el monto que él calculó (no la estimación).`,
+        `Si tu contador ya viene depreciando, carga el monto que él calculó (no la estimación).`,
       ],
     });
   }

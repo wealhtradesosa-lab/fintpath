@@ -110,7 +110,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
     { seccion: "patrimonio", numero: 29, concepto: "Total patrimonio bruto", tipo: "formula", destacado: true,
       calc: (vals) => (vals[291] || 0) + (vals[292] || 0) + (vals[293] || 0) + (vals[294] || 0) },
     { seccion: "patrimonio", numero: 291, concepto: "Efectivo y equivalentes", valor: v(291, efectivo), auto: efectivo, tipo: "editable", fuente: "Inversiones tipo cuenta bancaria",
-      tip: "Acá va el saldo de tus cuentas de ahorro, corriente y similares al 31 de diciembre. Si tenés CDT abierto, no va acá (va abajo en inversiones)." },
+      tip: "Acá va el saldo de tus cuentas de ahorro, corriente y similares al 31 de diciembre. Si tienes CDT abierto, no va acá (va abajo en inversiones)." },
     { seccion: "patrimonio", numero: 292, concepto: "Inversiones financieras (CDT, fondos, acciones)", valor: v(292, inversionesFinancieras), auto: inversionesFinancieras, tipo: "editable", fuente: "Inversiones CDT/equity/fondos",
       tip: "CDT, fondos de inversión colectiva, acciones bursátiles. Para activos en USD usar TRM del 31-dic." },
     { seccion: "patrimonio", numero: 293, concepto: "Bienes inmuebles y vehículos", valor: v(293, propiedades), auto: propiedades, tipo: "editable", fuente: "Inversiones tipo Real Estate (valor de compra)",
@@ -124,23 +124,23 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
 
     // ── CÉDULA GENERAL: RENTAS DE TRABAJO ────────────────────────────────
     { seccion: "trabajo", numero: 32, concepto: "Salarios y demás rentas laborales", valor: v(32, salAnual), auto: salAnual, tipo: "editable", fuente: "Ingresos tipo Salario (anual)",
-      tip: "💼 Tu salario bruto anual + bonificaciones + cesantías + prima. Si te pagan en USD, convertí a TRM promedio del año." },
+      tip: "💼 Tu salario bruto anual + bonificaciones + cesantías + prima. Si te pagan en USD, convierte a TRM promedio del año." },
     { seccion: "trabajo", numero: 33, concepto: "Honorarios y servicios", valor: v(33, honAnual), auto: honAnual, tipo: "editable", fuente: "Ingresos tipo Honorarios",
       tip: "💼 Lo facturado por servicios profesionales independientes. Acá NO van los gastos descontados (eso va en otra línea)." },
     { seccion: "trabajo", numero: 34, concepto: "Total ingresos brutos rentas de trabajo", tipo: "formula",
       calc: (vals) => (vals[32] || 0) + (vals[33] || 0) },
     { seccion: "trabajo", numero: 35, concepto: "Aportes obligatorios pensión + salud (INCRNGO)", valor: v(35, totalNoConst), auto: totalNoConst, tipo: "editable", fuente: "Aportes 4%+4% + SS independiente", articulo: "Art. 56 ET",
-      tip: "🏦 Los aportes obligatorios de pensión (4%) y salud (4%) NO son ingreso gravable. Si sos independiente, los aportes a SS también." },
+      tip: "🏦 Los aportes obligatorios de pensión (4%) y salud (4%) NO son ingreso gravable. Si eres independiente, los aportes a SS también." },
     { seccion: "trabajo", numero: 36, concepto: "Costos y gastos procedentes (honorarios)", valor: v(36, det.gastosHonorariosDed || 0), auto: det.gastosHonorariosDed || 0, tipo: "editable", fuente: "Gastos de actividad de honorarios", articulo: "Art. 107 ET",
-      tip: "💵 Si sos independiente con costos reales (oficina, servicios, transporte), podés deducirlos hasta cierto tope. ⚠️ Cuidado: la DIAN audita esto si el % es muy alto." },
+      tip: "💵 Si eres independiente con costos reales (oficina, servicios, transporte), puedes deducirlos hasta cierto tope. ⚠️ Cuidado: la DIAN audita esto si el % es muy alto." },
     { seccion: "trabajo", numero: 37, concepto: "Renta líquida rentas de trabajo", tipo: "formula",
       calc: (vals) => Math.max(0, (vals[34] || 0) - (vals[35] || 0) - (vals[36] || 0)) },
 
     // ── DEDUCCIONES Y RENTAS EXENTAS ─────────────────────────────────────
     { seccion: "deducciones", numero: 38, concepto: "Deducción por dependientes", valor: v(38, deducDep), auto: deducDep, tipo: "editable", fuente: "Configurado en perfil del owner", articulo: "Art. 387 ET",
-      tip: "👨‍👩‍👧 Si tenés hijos menores de 23 años, padres dependientes o cónyuge sin ingresos: 10% del salario hasta tope 384 UVT/año (768 UVT si hay discapacidad). Cargá esto en el perfil del owner." },
+      tip: "👨‍👩‍👧 Si tienes hijos menores de 23 años, padres dependientes o cónyuge sin ingresos: 10% del salario hasta tope 384 UVT/año (768 UVT si hay discapacidad). Carga esto en el perfil del owner." },
     { seccion: "deducciones", numero: 39, concepto: "Deducción intereses vivienda", valor: v(39, deducVivienda), auto: deducVivienda, tipo: "editable", fuente: "Intereses sobre deuda hipotecaria habitual", articulo: "Art. 119 ET",
-      tip: "🏠 Intereses pagados en préstamo de vivienda HABITUAL (donde vivís). Tope: 1200 UVT/año. ⚠️ Tu casa de descanso o segunda vivienda NO aplica." },
+      tip: "🏠 Intereses pagados en préstamo de vivienda HABITUAL (donde vives). Tope: 1200 UVT/año. ⚠️ Tu casa de descanso o segunda vivienda NO aplica." },
     { seccion: "deducciones", numero: 40, concepto: "Medicina prepagada + seguros salud + médicos", valor: v(40, deducMedicina), auto: deducMedicina, tipo: "editable", fuente: "Gastos categoría Salud + AP_TRIB_SALUD_PREPAGADA", articulo: "Art. 387 ET",
       tip: "🏥 Tope conjunto 16 UVT/mes (~$10M/año). Incluye: medicina prepagada, seguros de salud, seguros de vida, gastos médicos no cubiertos por POS." },
     { seccion: "deducciones", numero: 41, concepto: "Aportes voluntarios pensión + AFC", valor: v(41, pensionVol + afc), auto: pensionVol + afc, tipo: "editable", fuente: "Aportes a fondos de pensión voluntaria + AFC", articulo: "Art. 126-1 y 126-4 ET",
@@ -150,7 +150,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
     { seccion: "deducciones", numero: 43, concepto: `Total deducciones limitadas (40% / 1340 UVT · $${uvt.toLocaleString("es-CO")} AG ${ano})`, tipo: "formula", destacado: true,
       calc: (vals) => Math.min((vals[38] || 0) + (vals[39] || 0) + (vals[40] || 0) + (vals[41] || 0) + (vals[42] || 0), Math.min((vals[37] || 0) * 0.40, 1340 * uvt)) },
     { seccion: "deducciones", numero: 44, concepto: "Renta exenta 25% laboral", valor: v(44, exenta25), auto: exenta25, tipo: "editable", fuente: "Cálculo automático Art. 206-10", articulo: "Art. 206-10 ET",
-      tip: "✨ Sólo aplica si tenés salarios. 25% de tus ingresos laborales netos quedan exentos, hasta 790 UVT/año." },
+      tip: "✨ Sólo aplica si tienes salarios. 25% de tus ingresos laborales netos quedan exentos, hasta 790 UVT/año." },
 
     // ── CÉDULA DE CAPITAL ─────────────────────────────────────────────────
     { seccion: "capital", numero: 50, concepto: "Intereses y rendimientos financieros", valor: v(50, interesesBanc + rendGenerico), auto: interesesBanc + rendGenerico, tipo: "editable", fuente: "Ingresos CDT, cuentas de ahorro, papeles",
@@ -172,7 +172,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
 
     // ── CÉDULA DE DIVIDENDOS ─────────────────────────────────────────────
     { seccion: "dividendos", numero: 70, concepto: "Dividendos automáticos (sociedades cargadas)", valor: v(70, dividendosAuto), auto: dividendosAuto, tipo: "editable", fuente: "Cálculo automático desde sociedades cargadas",
-      tip: "📊 Si tenés sociedades (SAS) cargadas en FINPATHIA, el motor calcula los dividendos que te corresponden automáticamente." },
+      tip: "📊 Si tienes sociedades (SAS) cargadas en FINPATHIA, el motor calcula los dividendos que te corresponden automáticamente." },
     { seccion: "dividendos", numero: 71, concepto: "Dividendos manuales", valor: v(71, dividendosManual), auto: dividendosManual, tipo: "editable", fuente: "Ingresos tipo dividendos manuales",
       tip: "Dividendos recibidos de sociedades NO cargadas en FINPATHIA. Tarifa progresiva o 19% según sea no constitutivo o gravado." },
     { seccion: "dividendos", numero: 72, concepto: "Renta líquida cédula dividendos", tipo: "formula",
@@ -202,7 +202,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
     { seccion: "liquidacion", numero: 110, concepto: "Saldo a pagar / saldo a favor", tipo: "formula", destacado: true,
       calc: (vals) => (vals[91] || 0) - (vals[100] || 0) - (vals[101] || 0) - (vals[102] || 0) + (vals[103] || 0) },
     { seccion: "liquidacion", numero: 112, concepto: "Sanciones", valor: v(112, 0), auto: 0, tipo: "editable", fuente: "Manual",
-      tip: "Si presentás extemporáneo o hay corrección, acá van las sanciones calculadas." },
+      tip: "Si presentas extemporáneo o hay corrección, acá van las sanciones calculadas." },
     { seccion: "liquidacion", numero: 113, concepto: "TOTAL SALDO A PAGAR", tipo: "formula", destacado: true,
       calc: (vals) => Math.max(0, (vals[110] || 0)) + (vals[112] || 0) },
   ];

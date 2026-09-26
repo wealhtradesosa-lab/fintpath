@@ -310,7 +310,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       <PageHeader
         label={L.titulo}
         title={isEN ? `How your ${año} behaves` : `Cómo se comporta tu año ${año}`}
-        subtitle={isEN ? "See the peaks and valleys of your income and outflows month by month." : "Visualizá picos y valles de ingresos y egresos mes a mes. Planificá con datos reales."}
+        subtitle={isEN ? "See the peaks and valleys of your income and outflows month by month." : "Visualiza picos y valles de ingresos y egresos mes a mes. Planifica con datos reales."}
         rightSlot={
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <button onClick={() => setAño(año - 1)}
@@ -493,7 +493,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>🔔 Próximos pagos del año</div>
-                <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Seguros, impuestos y pagos puntuales — marcá el chip Pagado en Egresos al cubrirlos.</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Seguros, impuestos y pagos puntuales — marca el chip Pagado en Egresos al cubrirlos.</div>
               </div>
               <div style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace" }}>
                 Pendiente: <span style={{ color: "#f97316", fontWeight: 700 }}>${Math.round(totalPendiente).toLocaleString("es-CO")}</span> · {pendientes.length} {pendientes.length === 1 ? "pago" : "pagos"}

@@ -152,14 +152,14 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
 
   const handleAplicar = () => {
     if (!user) return;
-    if (seleccionados.size === 0) { alert("Seleccioná al menos un item."); return; }
+    if (seleccionados.size === 0) { alert("Selecciona al menos un item."); return; }
     const idSet = seleccionados;
     let newUser = JSON.parse(JSON.stringify(user));
 
     if (modo === "asignar") {
       let targetOwnerId = ownerDestinoId;
       if (crearNuevo) {
-        if (!nuevoName.trim()) { alert("Poné un nombre para el nuevo titular fiscal."); return; }
+        if (!nuevoName.trim()) { alert("Pon un nombre para el nuevo titular fiscal."); return; }
         const nuevoId = "own_" + Date.now();
         newUser.owners = [...(newUser.owners || []), {
           id: nuevoId,
@@ -170,7 +170,7 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
         }];
         targetOwnerId = nuevoId;
       }
-      if (!targetOwnerId) { alert("Seleccioná a quién asignar los items."); return; }
+      if (!targetOwnerId) { alert("Selecciona a quién asignar los items."); return; }
       aplicarCambioBatch(newUser, tipo, categoriaGasto, idSet, (it) => ({ ...it, owner: targetOwnerId }));
     }
     else if (modo === "exterior") {
@@ -231,7 +231,7 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
               {itemsAfectados.length} {itemsAfectados.length === 1 ? tipoLabel.sing : tipoLabel.plur} sin titular fiscal
             </div>
             <h2 style={{ fontSize: 17, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.3 }}>
-              ¿Qué querés hacer con {itemsAfectados.length === 1 ? "este " + tipoLabel.sing : "estos " + tipoLabel.plur}?
+              ¿Qué quieres hacer con {itemsAfectados.length === 1 ? "este " + tipoLabel.sing : "estos " + tipoLabel.plur}?
             </h2>
           </div>
           <button onClick={onClose} style={closeBtn} aria-label="Cerrar">✕</button>
@@ -257,7 +257,7 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Seleccioná los items
+              Selecciona los items
               {seleccionados.size > 0 && <span style={{ color: C.green, marginLeft: 6 }}>· {seleccionados.size} de {itemsAfectados.length}</span>}
               {totalMonto > 0 && <span style={{ color: C.green, marginLeft: 6 }}>· Total {fm(totalMonto)}</span>}
             </div>
@@ -416,7 +416,7 @@ function ContenidoAsignar({ owners, ownerDestinoId, setOwnerDestinoId, crearNuev
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
             {owners.length === 0 ? (
               <div style={{ padding: "12px 14px", background: C.bg3, borderRadius: 8, fontSize: 13, color: C.txt3 }}>
-                No tenés personas fiscales cargadas. Creá una abajo.
+                No tienes personas fiscales cargadas. Crea una abajo.
               </div>
             ) : (
               owners.map(o => (
@@ -522,7 +522,7 @@ function ContenidoExterior({ jurisdiccion, setJurisdiccion, tipoLabel }) {
           ⚠ Recordatorio fiscal
         </div>
         <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5 }}>
-          Si sos residente fiscal colombiano (&gt;183 días en el país), Colombia te grava por <strong>renta mundial</strong> con descuento por impuestos pagados afuera (Art. 254 ET). Marcar como exterior es válido si NO sos residente fiscal o si vas a manejar el cruce con tu contador. <strong>No exime de declarar.</strong>
+          Si eres residente fiscal colombiano (&gt;183 días en el país), Colombia te grava por <strong>renta mundial</strong> con descuento por impuestos pagados afuera (Art. 254 ET). Marcar como exterior es válido si NO eres residente fiscal o si vas a manejar el cruce con tu contador. <strong>No exime de declarar.</strong>
         </div>
       </div>
     </div>
@@ -539,7 +539,7 @@ function ContenidoEliminar({ tipoLabel }) {
         🗑️ Eliminar definitivamente
       </div>
       <div style={{ fontSize: 13, color: C.txt2, lineHeight: 1.55, marginBottom: 8 }}>
-        Usá esto si los {tipoLabel.plur} de arriba son:
+        Usa esto si los {tipoLabel.plur} de arriba son:
       </div>
       <ul style={{ margin: 0, paddingLeft: 22, color: C.txt2, fontSize: 12, lineHeight: 1.7 }}>
         <li><strong style={{ color: C.txt }}>Duplicados</strong> de items que ya están bien cargados con otro monto</li>

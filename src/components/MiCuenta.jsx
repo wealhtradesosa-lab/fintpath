@@ -452,7 +452,7 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: T.txt, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
           <span>{member.display_name || member.email.split("@")[0]}</span>
-          {isMe && <span style={{ fontSize: 10, color: T.txt3, fontWeight: 400 }}>(vos)</span>}
+          {isMe && <span style={{ fontSize: 10, color: T.txt3, fontWeight: 400 }}>(tú)</span>}
           {isOwner && <span style={{ background: T.greenB, color: T.green, padding: "1px 6px", borderRadius: 99, fontSize: 9, fontWeight: 700 }}>OWNER</span>}
         </div>
         <div style={{ fontSize: 11, color: T.txt3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -748,7 +748,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
               currentValue={memberRole}
               onChange={setMemberRole}
               title="Administrador"
-              description="Puede agregar y editar ingresos, gastos, deudas e inversiones, igual que vos."
+              description="Puede agregar y editar ingresos, gastos, deudas e inversiones, igual que tú."
             />
           </div>
         </div>

@@ -94,12 +94,12 @@ const AREAS_JURIDICA = [
     icono: "📋",
     titulo: "Cartera por cobrar vencida",
     pregunta: "¿Tu sociedad tiene clientes que le deben dinero hace más de 90 días?",
-    explicacion: "Si tenés cuentas por cobrar a clientes que llevan más de 90 días sin pagar, podés deducir hasta el 33% como provisión. Es plata que entra al cálculo como gasto y baja tu impuesto.",
+    explicacion: "Si tienes cuentas por cobrar a clientes que llevan más de 90 días sin pagar, puedes deducir hasta el 33% como provisión. Es plata que entra al cálculo como gasto y baja tu impuesto.",
     baseLegal: "Art. 145 ET",
     estimarAhorro: (data) => Math.round((Number(data.monto) || 0) * 0.33 * 0.35),
     inputs: [{
       key: "monto",
-      label: "¿Cuánta cartera tenés vencida (más de 90 días)?",
+      label: "¿Cuánta cartera tienes vencida (más de 90 días)?",
       type: "currency",
       placeholder: "Ej: 50.000.000",
       helpText: "Solo cartera con más de 90 días sin pagar.",
@@ -187,7 +187,7 @@ const AREAS_JURIDICA = [
       label: "¿Cuánto pagaste de ICA en total?",
       type: "currency",
       placeholder: "Ej: 8.000.000",
-      helpText: "Sumá pagos bimestrales o anuales de ICA + Reteica + Avisos y Tableros.",
+      helpText: "Suma pagos bimestrales o anuales de ICA + Reteica + Avisos y Tableros.",
     }],
     aplicar: (user, ownerId, data) => {
       const monto = Number(data.monto) || 0;
@@ -221,7 +221,7 @@ const AREAS_JURIDICA = [
     icono: "📉",
     titulo: "Pérdidas fiscales acumuladas",
     pregunta: "¿Tu sociedad tuvo pérdidas en algún año entre 2017 y 2024?",
-    explicacion: "Las pérdidas fiscales declaradas se compensan contra utilidades futuras hasta 12 años. Si las tenés, bajan tu base gravable este año.",
+    explicacion: "Las pérdidas fiscales declaradas se compensan contra utilidades futuras hasta 12 años. Si las tienes, bajan tu base gravable este año.",
     baseLegal: "Art. 147 ET",
     estimarAhorro: (data) => Math.round((Number(data.monto) || 0) * 0.35),
     inputs: [{
@@ -229,7 +229,7 @@ const AREAS_JURIDICA = [
       label: "¿Cuánto acumulado en pérdidas pendientes?",
       type: "currency",
       placeholder: "Ej: 30.000.000",
-      helpText: "Si no estás seguro, pedile el dato a tu contador o revisá tu declaración del año pasado renglón 73.",
+      helpText: "Si no estás seguro, pedile el dato a tu contador o revisa tu declaración del año pasado renglón 73.",
     }],
     aplicar: (user, ownerId, data) => {
       const monto = Number(data.monto) || 0;
@@ -304,9 +304,9 @@ const AREAS_NATURAL = [
   {
     id: "dependientes",
     icono: "👨‍👩‍👧",
-    titulo: "Personas que dependen de vos",
-    pregunta: "¿Tenés cónyuge sin ingresos, hijos menores de 23 o padres dependientes?",
-    explicacion: "Si mantenés económicamente a alguien, podés deducir el 10% de tu salario (tope ~$20M/año).",
+    titulo: "Personas que dependen de ti",
+    pregunta: "¿Tienes cónyuge sin ingresos, hijos menores de 23 o padres dependientes?",
+    explicacion: "Si mantienes económicamente a alguien, puedes deducir el 10% de tu salario (tope ~$20M/año).",
     baseLegal: "Art. 387 parr 2 ET",
     estimarAhorro: (data, det) => {
       const cantidad = Number(data.cantidad) || 0;
@@ -339,7 +339,7 @@ const AREAS_NATURAL = [
     }),
     inputs: [{
       key: "cantidad",
-      label: "¿Cuántas personas dependen de vos?",
+      label: "¿Cuántas personas dependen de ti?",
       type: "number",
       placeholder: "Ej: 2",
       helpText: "Cónyuge sin ingresos, hijos menores, hijos con discapacidad, padres dependientes.",
@@ -369,7 +369,7 @@ const AREAS_NATURAL = [
     id: "salud",
     icono: "🏥",
     titulo: "Medicina prepagada o seguro de salud",
-    pregunta: "¿Pagás Colsanitas, Sura, Medplus u otra medicina prepagada?",
+    pregunta: "¿Pagas Colsanitas, Sura, Medplus u otra medicina prepagada?",
     explicacion: "El gasto en medicina prepagada es deducible hasta 16 UVT/mes (tope 16 UVT/mes).",
     baseLegal: "Art. 387 #2 ET",
     estimarAhorro: (data, det) => {
@@ -417,10 +417,10 @@ const AREAS_NATURAL = [
     },
     inputs: [{
       key: "gastoMensual",
-      label: "¿Cuánto pagás cada mes?",
+      label: "¿Cuánto pagas cada mes?",
       type: "currency",
       placeholder: "Ej: 600.000",
-      helpText: "Si tenés varios seguros, sumalos. El motor topa al máximo legal.",
+      helpText: "Si tienes varios seguros, sumalos. El motor topa al máximo legal.",
     }],
     aplicar: (user, ownerId, data) => {
       const mensual = Number(data.gastoMensual) || 0;
@@ -466,7 +466,7 @@ const AREAS_NATURAL = [
     id: "pv_afc",
     icono: "💼",
     titulo: "Aportes a Pensión Voluntaria o AFC",
-    pregunta: "¿Aportás (o querés empezar a aportar) a PV o AFC?",
+    pregunta: "¿Aportas (o quieres empezar a aportar) a PV o AFC?",
     explicacion: "Estos aportes son 100% deducibles (cap 25% del ingreso, máx 2.500 UVT/año). La palanca más potente para salarios altos.",
     baseLegal: "Arts. 126-1 y 126-4 ET",
     estimarAhorro: (data, det) => {
@@ -505,7 +505,7 @@ const AREAS_NATURAL = [
       );
       const totalMensual = aportes.reduce((s, g) => s + montoPromedioMensual(g), 0);
       if (totalMensual > 0) {
-        return { tiene: true, descripcion: `Ya aportás $${totalMensual.toLocaleString("es-CO")}/mes a PV/AFC` };
+        return { tiene: true, descripcion: `Ya aportas $${totalMensual.toLocaleString("es-CO")}/mes a PV/AFC` };
       }
       return { tiene: false };
     },
@@ -585,7 +585,7 @@ const AREAS_NATURAL = [
     id: "vivienda",
     icono: "🏠",
     titulo: "Intereses de vivienda habitacional",
-    pregunta: "¿Pagás cuotas de un crédito hipotecario sobre tu vivienda principal?",
+    pregunta: "¿Pagas cuotas de un crédito hipotecario sobre tu vivienda principal?",
     explicacion: "Los intereses de hipoteca de tu vivienda son deducibles hasta 1.200 UVT/año (tope 1.200 UVT/año).",
     baseLegal: "Art. 119 ET",
     estimarAhorro: (data, det) => {
@@ -669,7 +669,7 @@ const AREAS_NATURAL = [
     id: "costos_arriendo",
     icono: "🔧",
     titulo: "Costos asociados a tus arriendos",
-    pregunta: "¿Tenés gastos asociados a tus inmuebles arrendados (mantenimiento, predial, comisiones, intereses bancarios)?",
+    pregunta: "¿Tienes gastos asociados a tus inmuebles arrendados (mantenimiento, predial, comisiones, intereses bancarios)?",
     explicacion: "Los gastos directamente asociados al arriendo se RESTAN del ingreso bruto. Esto incluye: depreciación (~10% del valor del inmueble), intereses del crédito hipotecario, comisiones a inmobiliarias, mantenimiento, predial, seguros, y cualquier gasto relacionado. Es la palanca más impactante para personas con rentas de arriendo.",
     baseLegal: "Art. 26 ET (renta líquida = ingreso − gastos)",
     // UX FIX (18-jul-2026 noche, Santiago): advertencia contextual cuando el
@@ -691,9 +691,9 @@ const AREAS_NATURAL = [
         return o?.name || "otra sociedad";
       }))];
       if (nombresOtros.length > 0) {
-        return `⚠️ Esta estrategia NO va a generar ahorro acá: no tenés ingresos de arriendo a tu nombre como persona natural. Tus arriendos están bajo ${nombresOtros.map(n => `🏢 ${n}`).join(" y ")}. Para deducir estos gastos: aplicá la estrategia en el flow de esa sociedad, o revisá el "Propietario fiscal" de tus ingresos de arriendo si en realidad son tuyos.`;
+        return `⚠️ Esta estrategia NO va a generar ahorro acá: no tienes ingresos de arriendo a tu nombre como persona natural. Tus arriendos están bajo ${nombresOtros.map(n => `🏢 ${n}`).join(" y ")}. Para deducir estos gastos: aplica la estrategia en el flow de esa sociedad, o revisa el "Propietario fiscal" de tus ingresos de arriendo si en realidad son tuyos.`;
       }
-      return `⚠️ Esta estrategia no va a generar ahorro: no tenés ingresos de arriendo registrados a tu nombre. Si tenés inmuebles arrendados, primero registrá el ingreso en 💰 Ingresos con categoría "Arrendamiento" y propietario fiscal correcto.`;
+      return `⚠️ Esta estrategia no va a generar ahorro: no tienes ingresos de arriendo registrados a tu nombre. Si tienes inmuebles arrendados, primero registra el ingreso en 💰 Ingresos con categoría "Arrendamiento" y propietario fiscal correcto.`;
     },
     estimarAhorro: (data, det) => {
       const monto = Number(data.gastosAnuales) || 0;
@@ -711,7 +711,7 @@ const AREAS_NATURAL = [
       label: "¿Cuánto suman tus gastos anuales asociados a los arriendos?",
       type: "currency",
       placeholder: "Ej: 80.000.000",
-      helpText: "Sumá depreciación + intereses + mantenimiento + predial + comisiones + seguros. Típicamente 25-40% del arriendo bruto. Si no estás seguro, pedile el monto a tu contador o revisá tu declaración del año pasado.",
+      helpText: "Suma depreciación + intereses + mantenimiento + predial + comisiones + seguros. Típicamente 25-40% del arriendo bruto. Si no estás seguro, pedile el monto a tu contador o revisa tu declaración del año pasado.",
     }],
     aplicar: (user, ownerId, data) => {
       const monto = Number(data.gastosAnuales) || 0;
@@ -772,7 +772,7 @@ const AREAS_NATURAL = [
       label: "¿Cuánto de tus dividendos viene de utilidades ya gravadas en la sociedad?",
       type: "currency",
       placeholder: "Ej: 20.000.000",
-      helpText: "Tu certificado de dividendos lo separa: 'distribuible no gravado' vs 'distribuible gravado'. Si no lo tenés, pedíselo al revisor fiscal de la sociedad. Si toda la utilidad distribuida ya pagó renta como sociedad, todo es no gravado.",
+      helpText: "Tu certificado de dividendos lo separa: 'distribuible no gravado' vs 'distribuible gravado'. Si no lo tienes, pedíselo al revisor fiscal de la sociedad. Si toda la utilidad distribuida ya pagó renta como sociedad, todo es no gravado.",
     }],
     aplicar: (user, ownerId, data) => {
       const monto = Number(data.montoNoGravado) || 0;
@@ -811,8 +811,8 @@ const AREAS_NATURAL = [
     id: "impuestos_exterior",
     icono: "🌍",
     titulo: "Impuestos pagados en el exterior",
-    pregunta: "¿Pagaste impuestos en otro país sobre ingresos que también declarás en Colombia (ej: arriendos en USA, dividendos extranjeros)?",
-    explicacion: "Si una propiedad o inversión está en otro país y allá ya pagás impuesto, podés DESCONTAR ese impuesto del impuesto colombiano peso a peso (Art. 254 ET). El descuento está topado al impuesto que pagarías en Colombia sobre ese mismo ingreso. Es típico para personas con propiedades en USA bajo LLC personal.",
+    pregunta: "¿Pagaste impuestos en otro país sobre ingresos que también declaras en Colombia (ej: arriendos en USA, dividendos extranjeros)?",
+    explicacion: "Si una propiedad o inversión está en otro país y allá ya pagas impuesto, puedes DESCONTAR ese impuesto del impuesto colombiano peso a peso (Art. 254 ET). El descuento está topado al impuesto que pagarías en Colombia sobre ese mismo ingreso. Es típico para personas con propiedades en USA bajo LLC personal.",
     baseLegal: "Art. 254 ET",
     estimarAhorro: (data, det) => {
       const monto = Number(data.montoPagado) || 0;
@@ -826,7 +826,7 @@ const AREAS_NATURAL = [
       label: "¿Cuánto pagaste en impuestos en el exterior durante el año?",
       type: "currency",
       placeholder: "Ej: 25.000.000",
-      helpText: "Convertí a pesos colombianos a la TRM del cierre del año. Para USA: federal income tax + state income tax. Necesitás certificación o la declaración del país extranjero como respaldo. Pedíselo a tu contador internacional.",
+      helpText: "Convierte a pesos colombianos a la TRM del cierre del año. Para USA: federal income tax + state income tax. Necesitas certificación o la declaración del país extranjero como respaldo. Pedíselo a tu contador internacional.",
     }],
     aplicar: (user, ownerId, data) => {
       const monto = Number(data.montoPagado) || 0;
@@ -865,8 +865,8 @@ const AREAS_NATURAL = [
     id: "retenciones_reales",
     icono: "🧾",
     titulo: "Retenciones reales del año (avanzado, opcional)",
-    pregunta: "¿Querés cargar las retenciones REALES que te aplicaron en lugar de la estimación automática?",
-    explicacion: "Por defecto la app estima las retenciones según el tipo de ingreso (3.5% arriendos, 7% dividendos, etc.). Si tus pagadores te aplicaron un porcentaje distinto (autoretenciones, retención especial por arrendamientos comerciales, retenciones del exterior), cargá acá el monto real consolidado del año y reemplaza la estimación.",
+    pregunta: "¿Quieres cargar las retenciones REALES que te aplicaron en lugar de la estimación automática?",
+    explicacion: "Por defecto la app estima las retenciones según el tipo de ingreso (3.5% arriendos, 7% dividendos, etc.). Si tus pagadores te aplicaron un porcentaje distinto (autoretenciones, retención especial por arrendamientos comerciales, retenciones del exterior), carga acá el monto real consolidado del año y reemplaza la estimación.",
     baseLegal: "Art. 365 ET",
     // UX FIX (18-jul-2026 noche, Santiago): "apliqué retenciones y en vez de
     // bajar subió". CORRECTO matemáticamente: esta palanca REEMPLAZA la
@@ -877,7 +877,7 @@ const AREAS_NATURAL = [
       const reteAuto = Number(detSinPlan?.retefuenteNat) || 0;
       const fmtCO = (n) => "$" + Math.round(n).toLocaleString("es-CO");
       if (reteAuto > 0) {
-        return `ℹ️ Palanca de PRECISIÓN, no de ahorro. La app estima automáticamente ${fmtCO(reteAuto)}/año de retenciones según tus ingresos. Si cargás un monto MENOR que ese, tu saldo a pagar va a SUBIR — no es un error: estás corrigiendo el dato hacia tu realidad, y ese es el número correcto para la DIAN. Solo baja si te retuvieron MÁS de lo estimado.`;
+        return `ℹ️ Palanca de PRECISIÓN, no de ahorro. La app estima automáticamente ${fmtCO(reteAuto)}/año de retenciones según tus ingresos. Si cargas un monto MENOR que ese, tu saldo a pagar va a SUBIR — no es un error: estás corrigiendo el dato hacia tu realidad, y ese es el número correcto para la DIAN. Solo baja si te retuvieron MÁS de lo estimado.`;
       }
       return `ℹ️ Palanca de PRECISIÓN, no de ahorro: reemplaza la estimación automática con tu dato real. El saldo puede subir o bajar según cuánto te retuvieron realmente.`;
     },
@@ -896,7 +896,7 @@ const AREAS_NATURAL = [
       label: "¿Cuánto te retuvieron en total durante el año?",
       type: "currency",
       placeholder: "Ej: 35.000.000",
-      helpText: "Sumá los montos de TODOS tus certificados de retención del año (renta y/o IVA si aplica). Cada pagador (arrendatario, banco, agente retenedor) debe haberte enviado un certificado anual.",
+      helpText: "Suma los montos de TODOS tus certificados de retención del año (renta y/o IVA si aplica). Cada pagador (arrendatario, banco, agente retenedor) debe haberte enviado un certificado anual.",
     }],
     aplicar: (user, ownerId, data) => {
       const monto = Number(data.retencionAnual) || 0;
@@ -951,7 +951,7 @@ export default function DeclaracionFlow({
     [allOwners, selectedOwnerId]
   );
   const isJuridica = selectedOwner?.type === "juridica";
-  const ownerName = selectedOwner?.name || "vos";
+  const ownerName = selectedOwner?.name || "tú";
 
   // Areas según owner
   const areas = isJuridica ? AREAS_JURIDICA : AREAS_NATURAL;
@@ -1177,8 +1177,8 @@ export default function DeclaracionFlow({
           </div>
           <div style={{ fontSize: 11, color: C.txt3, marginTop: 8, lineHeight: 1.5 }}>
             Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria.
-            Impuesto a cargo puede ser mayor que lo que transferís tras retenciones. Tu contador es quien firma;
-            presentá la declaración solo en canales oficiales de la DIAN.
+            Impuesto a cargo puede ser mayor que lo que transfieres tras retenciones. Tu contador es quien firma;
+            presenta la declaración solo en canales oficiales de la DIAN.
           </div>
         </div>
 

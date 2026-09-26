@@ -237,7 +237,7 @@ export default function AcceptInvite({ token, onComplete }) {
           <p style={{ fontSize: 14, color: T.txt2, marginBottom: 20, lineHeight: 1.6 }}>
             {isFamily ? (
               <>
-                Ya tenés acceso a <strong style={{ color: T.txt }}>{invitation?.account_name}</strong>
+                Ya tienes acceso a <strong style={{ color: T.txt }}>{invitation?.account_name}</strong>
                 {invitation?.role === "reader" ? " como solo lectura" : " como administrador"}.
                 Redirigiendo...
               </>
@@ -280,7 +280,7 @@ export default function AcceptInvite({ token, onComplete }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13, lineHeight: 1.5 }}>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.green }}>1</div>
-                  <div style={{ color: T.txt2 }}>Acá abajo creás <strong style={{ color: T.txt }}>tu usuario y contraseña</strong> personales (gratis, sin elegir plan).</div>
+                  <div style={{ color: T.txt2 }}>Acá abajo creas <strong style={{ color: T.txt }}>tu usuario y contraseña</strong> personales (gratis, sin elegir plan).</div>
                 </div>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.green }}>2</div>
@@ -288,7 +288,7 @@ export default function AcceptInvite({ token, onComplete }) {
                 </div>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.green }}>3</div>
-                  <div style={{ color: T.txt2 }}>Entrás al dashboard y <strong style={{ color: T.txt }}>ves los datos compartidos</strong>.</div>
+                  <div style={{ color: T.txt2 }}>Entras al dashboard y <strong style={{ color: T.txt }}>ves los datos compartidos</strong>.</div>
                 </div>
               </div>
             </div>
@@ -307,7 +307,7 @@ export default function AcceptInvite({ token, onComplete }) {
 
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6, letterSpacing: "-0.02em" }}>
           {invitation?.type === "family"
-            ? (mode === "signup" ? "Creá tu usuario y contraseña" : "Iniciá sesión con tu usuario")
+            ? (mode === "signup" ? "Crea tu usuario y contraseña" : "Inicia sesión con tu usuario")
             : (mode === "signup" ? "Crea tu cuenta" : "Inicia sesión")}
         </h1>
         <p style={{ fontSize: 13, color: T.txt3, marginBottom: 20, lineHeight: 1.5 }}>
@@ -346,7 +346,7 @@ export default function AcceptInvite({ token, onComplete }) {
             />
             {invitation?.email_invited && form.email.trim().toLowerCase() !== invitation.email_invited.toLowerCase() && (
               <div style={{ fontSize: 11, color: "#fbbf24", marginTop: 6, padding: "8px 10px", background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 6, lineHeight: 1.4 }}>
-                ⚠️ La invitación se envió a <strong>{invitation.email_invited}</strong>. Tenés que usar ese mismo email — si usás otro, no vamos a poder vincularte.
+                ⚠️ La invitación se envió a <strong>{invitation.email_invited}</strong>. Tienes que usar ese mismo email — si usas otro, no vamos a poder vincularte.
               </div>
             )}
           </div>
@@ -365,7 +365,7 @@ export default function AcceptInvite({ token, onComplete }) {
             />
             {invitation?.type === "family" && mode === "signup" && (
               <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>
-                Es nueva, vos la elegís. La vas a necesitar cada vez que entres.
+                Es nueva, tú la eliges. La vas a necesitar cada vez que entres.
               </div>
             )}
           </div>
@@ -404,16 +404,16 @@ export default function AcceptInvite({ token, onComplete }) {
         <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: T.txt3 }}>
           {mode === "signup" ? (
             <>
-              ¿Ya tenés cuenta de Finpathia con este email?{" "}
+              ¿Ya tienes cuenta de Finpathia con este email?{" "}
               <button onClick={() => { setMode("login"); setError(""); }} style={{ background: "none", border: "none", color: T.blue, cursor: "pointer", fontWeight: 600, fontSize: 13, padding: 0 }}>
-                Iniciá sesión
+                Inicia sesión
               </button>
             </>
           ) : (
             <>
               ¿Es la primera vez?{" "}
               <button onClick={() => { setMode("signup"); setError(""); }} style={{ background: "none", border: "none", color: T.blue, cursor: "pointer", fontWeight: 600, fontSize: 13, padding: 0 }}>
-                Creá tu acceso
+                Crea tu acceso
               </button>
             </>
           )}

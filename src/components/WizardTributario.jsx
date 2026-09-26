@@ -53,7 +53,7 @@ const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 
 export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, onClose, onCambiarOwner }) {
   const owner = (user?.owners || []).find(o => o.id === selectedOwnerId);
-  const ownerName = owner?.name || "vos";
+  const ownerName = owner?.name || "tú";
   const ownerType = owner?.type || "natural";
 
   // ─── Bifurcación crítica: elegir el wizard correcto según tipo de owner.
@@ -296,7 +296,7 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
             <span style={{ fontSize: 16, flexShrink: 0 }}>✓</span>
             <div style={{ flex: 1, fontSize: 13, color: C.txt2, lineHeight: 1.5 }}>
               <strong style={{ color: C.green }}>Ya tengo este dato cargado.</strong>{" "}
-              Confirmá si está bien o ajustá el valor si cambió.
+              Confirma si está bien o ajusta el valor si cambió.
             </div>
           </div>
         )}
@@ -358,16 +358,16 @@ function IntroStep({ step, ownerName, cantidadPrecargados = 0, ownerType = "natu
         {tieneDatos ? (
           isJur
             ? <>Hola, vamos con la declaración de <span style={{ color: C.purple }}>{ownerName}</span> — ya tengo {cantidadPrecargados} datos cargados</>
-            : <>Hola {ownerName !== "vos" ? ownerName : ""} 👋 ya tengo {cantidadPrecargados} datos tuyos cargados</>
+            : <>Hola {ownerName !== "tú" ? ownerName : ""} 👋 ya tengo {cantidadPrecargados} datos tuyos cargados</>
         ) : (
           isJur
             ? <>Vamos a preparar la declaración de renta de <span style={{ color: C.purple }}>{ownerName}</span></>
-            : <>Hola {ownerName !== "vos" ? ownerName : ""} 👋 vamos a entender tus impuestos juntos</>
+            : <>Hola {ownerName !== "tú" ? ownerName : ""} 👋 vamos a entender tus impuestos juntos</>
         )}
       </h2>
       <p style={{ fontSize: 15, color: C.txt2, lineHeight: 1.6, textAlign: "center", margin: "0 auto", maxWidth: 540 }}>
         {tieneDatos
-          ? `Detecté que ya cargaste varios datos ${isJur ? "de la sociedad" : "en la plataforma"}. Vamos a confirmarlos rápido y completar lo que falte. Si algo cambió, lo ajustás en el camino.`
+          ? `Detecté que ya cargaste varios datos ${isJur ? "de la sociedad" : "en la plataforma"}. Vamos a confirmarlos rápido y completar lo que falte. Si algo cambió, lo ajustas en el camino.`
           : step.helpText}
       </p>
       {isJur && (
@@ -383,13 +383,13 @@ function IntroStep({ step, ownerName, cantidadPrecargados = 0, ownerType = "natu
       )}
       <div style={{ marginTop: 16, padding: "16px 20px", background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 10 }}>
         <div style={{ fontSize: 13, color: C.green, fontWeight: 700, marginBottom: 6 }}>
-          {tieneDatos ? "✨ Cómo va a ir esto:" : "✨ Lo que voy a hacer por vos:"}
+          {tieneDatos ? "✨ Cómo va a ir esto:" : "✨ Lo que voy a hacer por ti:"}
         </div>
         <ul style={{ margin: 0, paddingLeft: 20, color: C.txt2, fontSize: 13, lineHeight: 1.7 }}>
           {tieneDatos ? (
             <>
               <li>Los pasos con datos ya cargados muestran <strong style={{ color: C.green }}>✓ Ya tengo este dato</strong></li>
-              <li>Solo confirmás (o ajustás si cambió)</li>
+              <li>Solo confirmas (o ajustas si cambió)</li>
               <li>Los datos que falten te los pregunto normalmente</li>
               <li>Al final se actualiza tu cuenta con la nueva información</li>
             </>
@@ -398,14 +398,14 @@ function IntroStep({ step, ownerName, cantidadPrecargados = 0, ownerType = "natu
               <li>Te hago preguntas profesionales, una por vez</li>
               <li>Cada concepto contable explicado en lenguaje claro</li>
               <li>Detecto automáticamente palancas de optimización (régimen, donaciones, etc)</li>
-              <li>Al final tenés un borrador F-110 para tu contador</li>
+              <li>Al final tienes un borrador F-110 para tu contador</li>
             </>
           ) : (
             <>
               <li>Te hago preguntas simples, una por vez</li>
               <li>Traduzco los términos técnicos a lenguaje humano</li>
               <li>Detecto automáticamente formas de ahorrar impuestos</li>
-              <li>Al final tenés un borrador para mostrarle a tu contador</li>
+              <li>Al final tienes un borrador para mostrarle a tu contador</li>
             </>
           )}
         </ul>
@@ -602,12 +602,12 @@ function ReviewStep({ answers, ownerType, onEdit }) {
         {ownerType === "juridica" ? "Revisemos los datos de la sociedad" : "Revisemos lo que me contaste"}
       </h2>
       <p style={{ fontSize: 13, color: C.txt2, textAlign: "center", margin: "0 0 24px 0" }}>
-        Si algo está mal, podés editarlo antes de calcular tu impuesto
+        Si algo está mal, puedes editarlo antes de calcular tu impuesto
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {items.length === 0 && (
           <div style={{ textAlign: "center", color: C.txt3, padding: 20 }}>
-            No respondiste preguntas con datos. Volvé atrás y completá al menos una.
+            No respondiste preguntas con datos. Vuelve atrás y completa al menos una.
           </div>
         )}
         {items.map((item) => (
@@ -677,7 +677,7 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
       <div style={{ textAlign: "center", marginBottom: 28 }}>
         <div style={{ fontSize: 56, marginBottom: 12 }}>🎉</div>
         <h1 style={{ fontSize: 28, fontWeight: 800, color: C.txt, margin: "0 0 8px 0" }}>
-          Listo, {ownerName !== "vos" ? ownerName : "ya"} terminamos
+          Listo, {ownerName !== "tú" ? ownerName : "ya"} terminamos
         </h1>
         <p style={{ fontSize: 15, color: C.txt2, margin: 0 }}>
           Acá está tu cálculo de impuestos para 2025
@@ -709,12 +709,12 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
           {saldoFinal > 0 ? (
             <>Esto es <strong style={{ color: C.txt }}>{tasaEfectiva.toFixed(1)}%</strong> de
               tus ingresos totales del año. {tasaEfectiva < 5
-                ? "Pagás muy poco efectivo — tu situación está optimizada."
+                ? "Pagas muy poco efectivo — tu situación está optimizada."
                 : tasaEfectiva < 15
                   ? "Es un nivel típico para alguien con tu perfil."
                   : "Es relativamente alto — vale la pena explorar palancas legales."}</>
           ) : (
-            <>No tenés saldo a pagar este año. Tus retenciones cubren el impuesto.</>
+            <>No tienes saldo a pagar este año. Tus retenciones cubren el impuesto.</>
           )}
         </div>
       </div>
@@ -758,7 +758,7 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
         marginBottom: 24,
       }}>
         <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.6 }}>
-          <strong style={{ color: C.orange }}>Recordá:</strong> este es un cálculo estimado con
+          <strong style={{ color: C.orange }}>Recuerda:</strong> este es un cálculo estimado con
           base en lo que me contaste. Antes de presentar a la DIAN, validalo siempre con tu
           contador. FINPATHIA es una herramienta de apoyo, no reemplaza la asesoría profesional.
         </div>

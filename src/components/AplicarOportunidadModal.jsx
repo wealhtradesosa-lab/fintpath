@@ -63,7 +63,7 @@ const CODIGOS_APLICABLES = {
         prefix: "$",
         suffix: "/mes",
         sugeridoFrom: (rec) => rec.aporteSugeridoMensual,
-        helpText: "Lo que vas a aportar cada mes. Podés ajustar el monto.",
+        helpText: "Lo que vas a aportar cada mes. Puedes ajustar el monto.",
       },
       {
         key: "tipoCuenta",
@@ -96,7 +96,7 @@ const CODIGOS_APLICABLES = {
 
   DEPENDIENTES_NO_DECLARADOS: {
     title: "Declarar dependientes económicos",
-    descripcion: "Si tenés cónyuge sin ingresos, hijos menores de 23 años, padres mayores que dependen económicamente de vos, o hijos mayores con discapacidad, podés deducir el 10% de tu salario (con tope 32 UVT/mes ≈ $20M/año).",
+    descripcion: "Si tienes cónyuge sin ingresos, hijos menores de 23 años, padres mayores que dependen económicamente de ti, o hijos mayores con discapacidad, puedes deducir el 10% de tu salario (con tope 32 UVT/mes ≈ $20M/año).",
     inputs: [
       {
         key: "cantidad",
@@ -105,7 +105,7 @@ const CODIGOS_APLICABLES = {
         prefix: "",
         suffix: " personas",
         defaultValue: 1,
-        helpText: "El número de personas que dependen económicamente de vos.",
+        helpText: "El número de personas que dependen económicamente de ti.",
       },
       {
         key: "conDiscapacidad",
@@ -141,7 +141,7 @@ const CODIGOS_APLICABLES = {
 
   SALUD_PREPAGADA_NO_REGISTRADA: {
     title: "Cargar gasto mensual de medicina prepagada / seguro de salud",
-    descripcion: "El gasto en medicina prepagada o seguro de salud es deducible hasta 16 UVT/mes (~$838K/mes en 2026). Cargá el monto que pagás cada mes.",
+    descripcion: "El gasto en medicina prepagada o seguro de salud es deducible hasta 16 UVT/mes (~$838K/mes en 2026). Carga el monto que pagas cada mes.",
     inputs: [
       {
         key: "gastoMensual",
@@ -149,7 +149,7 @@ const CODIGOS_APLICABLES = {
         type: "number",
         prefix: "$",
         suffix: "/mes",
-        helpText: "Lo que pagás cada mes a la prepagada o seguro de salud.",
+        helpText: "Lo que pagas cada mes a la prepagada o seguro de salud.",
       },
     ],
     apply: (user, ownerId, vals) => {
@@ -230,7 +230,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
       setExito(true);
     } catch (err) {
       console.error("Error aplicando oportunidad:", err);
-      alert("Hubo un error aplicando la oportunidad. Probá manualmente desde Configuración.");
+      alert("Hubo un error aplicando la oportunidad. Prueba manualmente desde Configuración.");
     } finally {
       setAplicando(false);
     }

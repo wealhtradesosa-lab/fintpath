@@ -20,7 +20,7 @@
 // FILOSOFÍA:
 //   - Threshold conservador: <5% silencio, 5-20% info, >20% warning
 //   - Solo campos críticos (ingresos, patrimonio, gastos, impuesto)
-//   - Mensaje claro sin acusar a nadie ("verificá con tu contador")
+//   - Mensaje claro sin acusar a nadie ("verifica con tu contador")
 //   - Posibilidad de "marcar como revisado" (persistencia en user.fiscalReviewed)
 //
 // EJEMPLO REAL (Inversiones Lagoon 2024):
@@ -29,7 +29,7 @@
 //   Mismatch:        100% (extremo)
 //   Severidad:       warning
 //   Mensaje:         "Tu declaración 2024 reportó $0 ingresos pero el motor
-//                     calcula $1,044M. Hablá con tu contador: ¿esos ingresos
+//                     calcula $1,044M. Habla con tu contador: ¿esos ingresos
 //                     pertenecen fiscalmente a esta sociedad?"
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -98,8 +98,8 @@ function detectarMismatchJuridica(owner, decRenglones, detalleMotor) {
       mensaje: `Tu declaración ${ano} reportó ${fmM(ingDeclarado)} en ingresos brutos. El motor calcula ${fmM(ingCalculado)} desde los datos cargados. Diferencia: ${fmM(ingDiffAbs)} (${(ingDiff * 100).toFixed(0)}%).`,
       explicaciones: [
         ingDeclarado === 0
-          ? "Tu declaración reportó CERO ingresos para esta sociedad pero hay ingresos cargados. Esto puede indicar que: (a) los ingresos pertenecen a otra entidad (vos personal, otra sociedad); (b) el contador no los reportó pero debió hacerlo; (c) los ingresos son posteriores al año declarado."
-          : "Verificá con tu contador si: (a) algún ingreso está duplicado o asignado al owner equivocado; (b) hay ingresos diferidos o anticipados que no entran en este año fiscal.",
+          ? "Tu declaración reportó CERO ingresos para esta sociedad pero hay ingresos cargados. Esto puede indicar que: (a) los ingresos pertenecen a otra entidad (tú personal, otra sociedad); (b) el contador no los reportó pero debió hacerlo; (c) los ingresos son posteriores al año declarado."
+          : "Verifica con tu contador si: (a) algún ingreso está duplicado o asignado al owner equivocado; (b) hay ingresos diferidos o anticipados que no entran en este año fiscal.",
       ],
     });
   }
@@ -126,7 +126,7 @@ function detectarMismatchJuridica(owner, decRenglones, detalleMotor) {
         severidad: gastosSeveridad,
         mensaje: `Tu declaración ${ano} reportó ${fmM(gastosDeclarado)} en costos/gastos deducibles. El motor calcula ${fmM(gastosCalculado)}. Diferencia: ${fmM(gastosDiffAbs)} (${(gastosDiff * 100).toFixed(0)}%).`,
         explicaciones: [
-          "Verificá con tu contador: (a) si hay gastos legítimos no cargados en FINPATHIA (asesorías, gastos bancarios, depreciación, provisiones); (b) si hay gastos cargados que el contador no aceptó como deducibles (causalidad Art. 107).",
+          "Verifica con tu contador: (a) si hay gastos legítimos no cargados en FINPATHIA (asesorías, gastos bancarios, depreciación, provisiones); (b) si hay gastos cargados que el contador no aceptó como deducibles (causalidad Art. 107).",
         ],
       });
     }
@@ -207,7 +207,7 @@ function detectarMismatchNatural(owner, decRenglones, detalleMotor) {
         severidad: impSeveridad,
         mensaje: `Tu declaración ${ano} reportó ${fmM(impDeclarado)} de impuesto. El motor calcula ${fmM(impCalculado)}. Diferencia: ${fmM(impDiffAbs)} (${(impDiff * 100).toFixed(0)}%).`,
         explicaciones: [
-          "Verificá con tu contador: (a) deducciones aplicadas (medicina, dependientes, intereses vivienda, AFC); (b) rentas exentas declaradas; (c) ingresos no constitutivos de renta.",
+          "Verifica con tu contador: (a) deducciones aplicadas (medicina, dependientes, intereses vivienda, AFC); (b) rentas exentas declaradas; (c) ingresos no constitutivos de renta.",
         ],
       });
     }

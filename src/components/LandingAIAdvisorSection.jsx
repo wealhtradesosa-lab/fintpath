@@ -146,7 +146,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
             {[
               {
                 title: "Analiza tu patrimonio real",
-                desc: "Lee tus ingresos, gastos, deudas, propiedades. No genérico — específico a vos.",
+                desc: "Lee tus ingresos, gastos, deudas, propiedades. No genérico — específico a ti.",
                 icon: "📊",
                 color: T.green,
               },
