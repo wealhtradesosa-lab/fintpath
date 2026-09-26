@@ -6,7 +6,7 @@
 // Esta es la diferencia entre una calculadora de impuestos y un contador real:
 //
 //   CALCULADORA: "si gastaste $80M, te ahorraste $25M"        (reactivo)
-//   CONTADOR:    "comprá bodega de $500M, ahorrás $103M"       (proactivo)
+//   CONTADOR:    "compra bodega de $500M, ahorras $103M"       (proactivo)
 //
 // Este motor analiza el perfil completo del owner (tipo de ingresos, saldo a
 // cargo, patrimonio, sociedades) y genera 3-7 recomendaciones específicas con
@@ -19,7 +19,7 @@
 //     o evasión.
 //   - El monto sugerido siempre es coherente con la capacidad del user
 //     (no recomendamos comprar bodega de $1B a alguien con $50M de ingresos).
-//   - Cada recomendación incluye caveat con "consultá con tu contador"
+//   - Cada recomendación incluye caveat con "consulta con tu contador"
 //     porque la implementación real requiere asesoría profesional.
 //
 // ESTRUCTURA DE UNA RECOMENDACIÓN:
@@ -33,7 +33,7 @@
 //     ahorroAnual: { monto, calculoDetallado },
 //     roi: { porcentaje, descripcion },
 //     baseLegal: "Arts. 119, 128 ET",
-//     caveat: "consultá con tu contador antes de implementar",
+//     caveat: "consulta con tu contador antes de implementar",
 //     prioridad: "alta" | "media" | "baja",
 //   }
 // ═══════════════════════════════════════════════════════════════════════════
@@ -135,11 +135,11 @@ function recomendacionesNaturalNoLaboral(perfil) {
       ejecutaEn: "personal",
       icono: "🏠",
       titulo: "Crédito hipotecario sobre vivienda habitacional",
-      descripcion: "Si comprás (o refinanciás) tu vivienda principal con un crédito hipotecario, los intereses anuales son deducibles hasta 1.200 UVT/año (~$62.8M).",
-      accion: `Sacá un crédito de ~$500M al 12% para tu vivienda principal. Los intereses del primer año son ~$60M, todos deducibles.`,
+      descripcion: "Si compras (o refinancias) tu vivienda principal con un crédito hipotecario, los intereses anuales son deducibles hasta 1.200 UVT/año (~$62.8M).",
+      accion: `Saca un crédito de ~$500M al 12% para tu vivienda principal. Los intereses del primer año son ~$60M, todos deducibles.`,
       inversion: {
         monto: 0,
-        descripcion: "Cero costo si refinanciás existente. Si comprás nueva, requiere cuota inicial (~30% típico).",
+        descripcion: "Cero costo si refinancias existente. Si compras nueva, requiere cuota inicial (~30% típico).",
       },
       ahorroAnual: {
         monto: ahorroAnual,
@@ -150,7 +150,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
         descripcion: "Plus: la vivienda se aprecia ~5-8% anual + protección de patrimonio.",
       },
       baseLegal: "Art. 119 ET",
-      caveat: "Solo aplica a UNA vivienda habitacional principal. La propiedad debe estar a tu nombre. Si ya tenés crédito vivienda no aplica esto, sino la palanca 'Intereses vivienda' del paso anterior.",
+      caveat: "Solo aplica a UNA vivienda habitacional principal. La propiedad debe estar a tu nombre. Si ya tienes crédito vivienda no aplica esto, sino la palanca 'Intereses vivienda' del paso anterior.",
       prioridad: "alta",
     });
   }
@@ -178,7 +178,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
       },
       roi: {
         porcentaje: 30,
-        descripcion: "Doble beneficio: la sociedad deduce el gasto (35%) y vos accedés a deducciones laborales personales.",
+        descripcion: "Doble beneficio: la sociedad deduce el gasto (35%) y tú accedes a deducciones laborales personales.",
       },
       baseLegal: "Arts. 126-1, 126-4, 387 ET",
       caveat: "Debe ser una consultoría real con servicios documentados. La sociedad debe registrar la facturación como gasto operacional y aplicar retenciones del 11%. Estructura legítima ampliamente usada.",
@@ -259,7 +259,7 @@ function recomendacionesNaturalLaboral(perfil) {
       ahorroAnual: { monto: ahorroPV, calculoDetallado: `${aporteSugerido.toLocaleString("es-CO")} × ${(tasaMarg * 100).toFixed(0)}%` },
       roi: { porcentaje: tasaMarg * 100, descripcion: "ROI inmediato + capital crece a tu nombre." },
       baseLegal: "Art. 126-1 ET",
-      caveat: "Si retirás antes de 10 años o sin cumplir requisitos de pensión, perdés el beneficio fiscal y pagás retención.",
+      caveat: "Si retiras antes de 10 años o sin cumplir requisitos de pensión, pierdes el beneficio fiscal y pagas retención.",
       prioridad: "alta",
     });
   }
@@ -271,12 +271,12 @@ function recomendacionesNaturalLaboral(perfil) {
     icono: "🏠",
     titulo: "Cuenta AFC (Ahorro para Fomento de la Construcción)",
     descripcion: "Aporte deducible al 100% (cap conjunto con PV: 25% del ingreso). Solo para destinar a compra/mejora de vivienda o pago de hipoteca.",
-    accion: "Abrí una cuenta AFC en cualquier banco (Bancolombia, Davivienda, etc.) y aportá hasta el cap legal.",
+    accion: "Abre una cuenta AFC en cualquier banco (Bancolombia, Davivienda, etc.) y aporta hasta el cap legal.",
     inversion: { monto: 0, descripcion: "Cero costo de apertura. El monto aportado queda en tu cuenta." },
-    ahorroAnual: { monto: Math.min(Math.round(60_000_000 * tasaMarg), saldoACargo), calculoDetallado: "Si aportás $5M/mes ($60M/año) a AFC: deducible 100%" },
+    ahorroAnual: { monto: Math.min(Math.round(60_000_000 * tasaMarg), saldoACargo), calculoDetallado: "Si aportas $5M/mes ($60M/año) a AFC: deducible 100%" },
     roi: { porcentaje: tasaMarg * 100, descripcion: "ROI inmediato + el saldo se puede usar para vivienda." },
     baseLegal: "Art. 126-4 ET",
-    caveat: "Solo retirable para vivienda. Si retirás para otra cosa, pagás retención del 7-15%.",
+    caveat: "Solo retirable para vivienda. Si retiras para otra cosa, pagas retención del 7-15%.",
     prioridad: "alta",
   });
 
@@ -315,7 +315,7 @@ function recomendacionesJuridica(perfil) {
       },
       roi: {
         porcentaje: Math.round(ahorroAno1 / inversion * 100),
-        descripcion: `Recuperás ~${Math.round(ahorroAno1 / inversion * 100)}% el primer año vía ahorros + el inmueble se aprecia + puede generar arriendos.`,
+        descripcion: `Recuperas ~${Math.round(ahorroAno1 / inversion * 100)}% el primer año vía ahorros + el inmueble se aprecia + puede generar arriendos.`,
       },
       baseLegal: "Arts. 128, 258-1 ET",
       caveat: "Debe ser usado en la actividad productiva. Si después se arrenda a relacionado, la DIAN verifica precios de mercado (Art. 260-1 a 260-11 ET, precios de transferencia).",
@@ -333,7 +333,7 @@ function recomendacionesJuridica(perfil) {
       icono: "🚗",
       titulo: "Adquirir vehículo / equipo productivo",
       descripcion: "Comprar un activo productivo (vehículo, equipo, maquinaria) bajo la sociedad genera triple beneficio: depreciación deducible (20% anual lineal), IVA descontable, y reduce dividendos distribuibles.",
-      accion: "Comprá una camioneta/vehículo productivo de ~$200M a nombre de la sociedad. Se usa para gestión de propiedades y reuniones de negocios.",
+      accion: "Compra una camioneta/vehículo productivo de ~$200M a nombre de la sociedad. Se usa para gestión de propiedades y reuniones de negocios.",
       inversion: {
         monto: 200_000_000,
         descripcion: "$200M iniciales (puede ser financiado). El vehículo es activo de la empresa.",
@@ -362,7 +362,7 @@ function recomendacionesJuridica(perfil) {
       ejecutaEn: "sociedad",
       icono: "🔬",
       titulo: "Inversión en proyecto CT&I (Ciencia, Tecnología, Innovación)",
-      descripcion: "La inversión en proyectos certificados por MinCiencias o Colciencias genera DEDUCCIÓN del 175% (es decir, gastás $100M y deducís $175M) más DESCUENTO directo del 25% del valor invertido. Es de los beneficios fiscales más potentes que existen.",
+      descripcion: "La inversión en proyectos certificados por MinCiencias o Colciencias genera DEDUCCIÓN del 175% (es decir, gastas $100M y deduces $175M) más DESCUENTO directo del 25% del valor invertido. Es de los beneficios fiscales más potentes que existen.",
       accion: `Invertir ~$${inversion.toLocaleString("es-CO")} en un proyecto de I+D+i certificado (desarrollo de software, automatización, mejoras de procesos).`,
       inversion: {
         monto: inversion,
@@ -374,7 +374,7 @@ function recomendacionesJuridica(perfil) {
       },
       roi: {
         porcentaje: Math.round(ahorroFiscal / inversion * 100),
-        descripcion: `Recuperás ~${Math.round(ahorroFiscal / inversion * 100)}% del proyecto vía ahorros fiscales + obtenés tecnología propia.`,
+        descripcion: `Recuperas ~${Math.round(ahorroFiscal / inversion * 100)}% del proyecto vía ahorros fiscales + obtienes tecnología propia.`,
       },
       baseLegal: "Art. 158-1 ET",
       caveat: "Requiere certificación previa de MinCiencias. El proyecto debe ser GENUINAMENTE de I+D (no actividades operativas comunes). Hay un cupo anual nacional, conviene aplicar temprano.",

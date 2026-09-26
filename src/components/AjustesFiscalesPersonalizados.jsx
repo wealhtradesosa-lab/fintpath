@@ -199,7 +199,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
           ⚙️ Ajustes fiscales personalizados {totalActivos > 0 && <span style={{ color: T.green }}>({totalActivos} activos)</span>}
         </div>
         <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
-          Un contador senior te haría estas preguntas para optimizar tu impuesto legalmente. Contestá solo las que apliquen a vos — el resto quedan vacías y no afectan el cálculo.
+          Un contador senior te haría estas preguntas para optimizar tu impuesto legalmente. Contesta solo las que apliquen a ti — el resto quedan vacías y no afectan el cálculo.
         </div>
       </div>
 
@@ -225,7 +225,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
               value={profile.dependientes?.cantidad}
               onChange={(v) => updateProfile({ dependientes: { ...profile.dependientes, cantidad: v } })}
               placeholder="Ej: 2"
-              hint="Número total de personas que dependen económicamente de vos."
+              hint="Número total de personas que dependen económicamente de ti."
             />
             <div style={{ marginTop: 10 }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 11, color: T.txt2 }}>
@@ -242,7 +242,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
           {/* Commit B: Vivienda con copropietarios responsables (Art. 119 ET) */}
           <SwitchRow
             label="Mi crédito de vivienda es compartido con otros responsables"
-            descripcion="Si la hipoteca está a tu nombre con tu pareja, hermano, etc., solo podés deducir el % proporcional a tu responsabilidad legal. Si la deuda es 100% tuya, dejá esto desactivado."
+            descripcion="Si la hipoteca está a tu nombre con tu pareja, hermano, etc., solo puedes deducir el % proporcional a tu responsabilidad legal. Si la deuda es 100% tuya, deja esto desactivado."
             baseLegal="Art. 119 ET — proporcionalidad"
             impactoTexto={profile.viviendaResponsablesPct != null && profile.viviendaResponsablesPct < 100
               ? `Deduzco solo el ${profile.viviendaResponsablesPct}% de los intereses pagados`
@@ -258,11 +258,11 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
                 updateProfile({ viviendaResponsablesPct: pct });
               }}
               placeholder="Ej: 50"
-              hint="Si la deuda es compartida 50/50 con tu pareja, escribí 50. Si es 100% tuya, dejá este toggle apagado."
+              hint="Si la deuda es compartida 50/50 con tu pareja, escribe 50. Si es 100% tuya, deja este toggle apagado."
             />
             <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.20)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
               <strong style={{ color: T.txt }}>⚖️ Por qué importa:</strong> el Art. 119 ET permite
-              deducir intereses solo en proporción a tu responsabilidad legal. Si declarás 100% sin
+              deducir intereses solo en proporción a tu responsabilidad legal. Si declaras 100% sin
               serlo, la DIAN puede cuestionar la deducción.
             </div>
           </SwitchRow>
@@ -270,7 +270,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
           {/* 3: Auxilio alimentación */}
           <SwitchRow
             label="Mi empleador me paga auxilio de alimentación"
-            descripcion="Exento hasta 41 UVT mensuales. Si recibís vales, bonos o pagos específicos para alimentación."
+            descripcion="Exento hasta 41 UVT mensuales. Si recibes vales, bonos o pagos específicos para alimentación."
             baseLegal="Art. 387-1 ET"
             impactoTexto={profile.auxilios?.alimentacion ? `Exento hasta ${fm(41 * UVT)}/mes` : ""}
             value={!!profile.auxilios?.alimentacion}
@@ -305,16 +305,16 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
         <Collapsible
           icono="🏢"
           titulo="Soy socio de una empresa"
-          descripcion="Si sos accionista o dueño de una jurídica, los dividendos se calculan automáticamente"
+          descripcion="Si eres accionista o dueño de una jurídica, los dividendos se calculan automáticamente"
           total={socios.length}
         >
           <div style={{ marginBottom: 12, padding: "10px 12px", background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 8, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
-            ℹ️ Si sos socio de una empresa que tenés cargada como owner jurídica, declará tu participación. El motor calculará automáticamente los dividendos que te corresponden y los aplicará a tu impuesto (Art. 49 #3 + Art. 242 ET) — sin que tengas que cargarlos manualmente como ingreso.
+            ℹ️ Si eres socio de una empresa que tienes cargada como owner jurídica, declara tu participación. El motor calculará automáticamente los dividendos que te corresponden y los aplicará a tu impuesto (Art. 49 #3 + Art. 242 ET) — sin que tengas que cargarlos manualmente como ingreso.
           </div>
 
           {juridicasDisponibles.length === 0 ? (
             <div style={{ padding: "12px 14px", background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 8, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
-              ⚠️ No tenés owners jurídicos cargados todavía. Primero creá la empresa como owner jurídica desde la pantalla principal de la calculadora; después podés vincular tu participación acá.
+              ⚠️ No tienes owners jurídicos cargados todavía. Primero crea la empresa como owner jurídica desde la pantalla principal de la calculadora; después puedes vincular tu participación acá.
             </div>
           ) : (
             <>
@@ -372,7 +372,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
                         defaultValue=""
                         style={{ flex: 1, minWidth: 120, padding: "6px 8px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 6, color: T.txt, fontSize: 11 }}
                       >
-                        <option value="">— Elegí la empresa —</option>
+                        <option value="">— Elige la empresa —</option>
                         {disponibles.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
                       </select>
                       <button
@@ -389,7 +389,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
                       </button>
                     </div>
                     <div style={{ marginTop: 6, fontSize: 9, color: T.txt3, fontStyle: "italic" }}>
-                      Por defecto se asigna 100%. Ajustá el porcentaje después según tu participación real.
+                      Por defecto se asigna 100%. Ajusta el porcentaje después según tu participación real.
                     </div>
                   </div>
                 );
@@ -466,7 +466,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
         <Collapsible
           icono="⚖️"
           titulo="Estatus del contribuyente"
-          descripcion="Cómo tributás cambia según tu situación como persona"
+          descripcion="Cómo tributas cambia según tu situación como persona"
           cantActivos={(profile.obligadoContabilidad ? 1 : 0) + (profile.honorariosConPersonal ? 1 : 0)}
           total={2}
         >
@@ -483,7 +483,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
           {/* 9: Honorarios con personal */}
           <SwitchRow
             label="Mis honorarios requieren contratar personal"
-            descripcion="Si tenés 2 o más empleados contratados por 90+ días para ejercer tu actividad, se amplían las deducciones permitidas."
+            descripcion="Si tienes 2 o más empleados contratados por 90+ días para ejercer tu actividad, se amplían las deducciones permitidas."
             baseLegal="Art. 336 ET (régimen CON vs SIN empleados)"
             impactoTexto="Permite deducir costos y gastos de la actividad (Art. 107 ET) más amplios"
             value={!!profile.honorariosConPersonal}
@@ -515,7 +515,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
               value={profile.donaciones?.monto}
               onChange={(v) => updateProfile({ donaciones: { ...profile.donaciones, monto: v } })}
               placeholder="$"
-              hint="Asegurate que la ESAL esté en el régimen tributario especial y te dé certificado de donación."
+              hint="Asegúrate que la ESAL esté en el régimen tributario especial y te dé certificado de donación."
             />
           </SwitchRow>
 

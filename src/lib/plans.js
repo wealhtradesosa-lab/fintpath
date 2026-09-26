@@ -140,12 +140,12 @@ export const PLAN_BASE = [
     tag: "Como tener un asesor financiero personal",
     priceUSD: { mensual: 16, anual: 12 },
     users: "Hasta 3 usuarios",
-    usersDetail: "Hasta 3 usuarios (vos + pareja + contador)",
+    usersDetail: "Hasta 3 usuarios (tú + pareja + contador)",
     maxMembers: 3,
     accent: true, // MÁS POPULAR badge
     save: "Ahorra 25%",
     features: ({ isCO, isUS }) => [
-      "👥 Hasta 3 usuarios (vos + pareja + contador)",
+      "👥 Hasta 3 usuarios (tú + pareja + contador)",
       "📊 Dashboard con resumen patrimonial",
       "💰 Ingresos, gastos y deudas ilimitados",
       "🖥️ Simulador financiero con palancas",

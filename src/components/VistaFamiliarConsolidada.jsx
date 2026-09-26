@@ -77,7 +77,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
   // Sesión 1-may-2026 (feedback Santiago): "qué gracia tiene decir que
   // hay 3 advertencias si uno no sabe cuáles son". Sin esto el banner
   // solo informa el count y obliga al user a entrar a cada owner para
-  // descubrir qué pasa, pero ese mismo owner es donde decimos "Entrá a
+  // descubrir qué pasa, pero ese mismo owner es donde decimos "Entra a
   // cada miembro debajo para resolverlos" — no útil sin contexto.
   const [advertenciasAbiertas, setAdvertenciasAbiertas] = useState(false);
 
@@ -178,7 +178,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
           Vista Familiar Consolidada
         </h3>
         <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.6, maxWidth: 520, margin: "0 auto" }}>
-          No tenés personas fiscales cargadas todavía. Empezá agregando una persona natural
+          No tienes personas fiscales cargadas todavía. Empieza agregando una persona natural
           o jurídica desde el wizard del Auditor IA.
         </p>
       </div>
@@ -203,8 +203,8 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
             💡 Pro Familiar te permite mucho más
           </div>
           <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.6, margin: 0 }}>
-            Solo tenés <strong style={{ color: C.txt }}>{único.owner.name}</strong> cargado. La Vista Familiar Consolidada brilla
-            cuando tenés varios titulares fiscales: tu cónyuge, sociedades familiares (SAS, holdings),
+            Solo tienes <strong style={{ color: C.txt }}>{único.owner.name}</strong> cargado. La Vista Familiar Consolidada brilla
+            cuando tienes varios titulares fiscales: tu cónyuge, sociedades familiares (SAS, holdings),
             hijos mayores. Vas a poder ver el patrimonio total del grupo, optimizar impuestos a nivel
             familiar y detectar dobles cargas u oportunidades cruzadas.
           </p>
@@ -289,7 +289,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
                 {fm(consolidado.ahorroPotencialTotal)} / año
               </div>
               <div style={{ fontSize: 11, color: C.txt3, marginTop: 2 }}>
-                Sumando palancas legales de todos los miembros del grupo. Mirá las tarjetas debajo para detalles por persona.
+                Sumando palancas legales de todos los miembros del grupo. Mira las tarjetas debajo para detalles por persona.
               </div>
             </div>
           </div>
@@ -328,7 +328,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
                 {consolidado.advertenciasTotal > 0 && (
                   <span><strong style={{ color: C.orange }}>{consolidado.advertenciasTotal} {consolidado.advertenciasTotal === 1 ? "advertencia" : "advertencias"}</strong> · </span>
                 )}
-                <span>{advertenciasAbiertas ? "Tocá para ocultar el detalle." : "Tocá para ver el detalle."}</span>
+                <span>{advertenciasAbiertas ? "Toca para ocultar el detalle." : "Toca para ver el detalle."}</span>
               </span>
               <span style={{
                 fontSize: 12, color: C.txt3,

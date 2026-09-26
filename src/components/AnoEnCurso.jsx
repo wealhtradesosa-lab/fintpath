@@ -79,7 +79,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
         <div>
           <div style={{ fontSize: 14.5, fontWeight: 800, color: T.tx }}>Cómo va {año}</div>
           <div style={{ fontSize: 11, color: T.tx3, marginTop: 1 }}>
-            Llevás {mesActual} {mesActual === 1 ? "mes" : "meses"} del año
+            Llevas {mesActual} {mesActual === 1 ? "mes" : "meses"} del año
           </div>
         </div>
         <div style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
@@ -120,7 +120,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
 
       <div style={{ fontSize: 11, color: T.tx3, marginTop: 10, lineHeight: 1.5 }}>
         Incluye retención e impuesto, igual que el simulador. Los meses que faltan son proyección — se ven más tenues.
-        Si el año cierra así, terminás con <strong style={{ color: netoAño >= 0 ? "#22c55e" : "#ef4444" }}>{fmt(netoAño)}</strong>.
+        Si el año cierra así, terminas con <strong style={{ color: netoAño >= 0 ? "#22c55e" : "#ef4444" }}>{fmt(netoAño)}</strong>.
       </div>
     </div>
   );

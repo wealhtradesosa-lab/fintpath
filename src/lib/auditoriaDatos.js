@@ -94,8 +94,8 @@ export function auditarDatos(user, options = {}) {
         severidad: "error",
         categoria: "huerfanos",
         titulo: `${ingHuerfanos.length} ingreso${ingHuerfanos.length > 1 ? "s" : ""} sin titular fiscal`,
-        mensaje: `Tenés ingresos cargados que no están asociados a ninguna persona fiscal. Esto causa que NO entren en el cálculo del impuesto.`,
-        sugerencia: `Asigná cada ingreso a una persona natural o jurídica.`,
+        mensaje: `Tienes ingresos cargados que no están asociados a ninguna persona fiscal. Esto causa que NO entren en el cálculo del impuesto.`,
+        sugerencia: `Asigna cada ingreso a una persona natural o jurídica.`,
         items: ingHuerfanos.map(i => ({ id: i.id, label: i.categoria || i.fiscalCode, mensual: i.mensual })),
         accion: { tipo: "asignar_owner_ingresos", ids: ingHuerfanos.map(i => i.id) },
       });
@@ -131,7 +131,7 @@ export function auditarDatos(user, options = {}) {
         categoria: "coherencia",
         titulo: `${vigenciaImposible.length} deuda${vigenciaImposible.length > 1 ? "s" : ""} con fecha de fin que no cuadra`,
         mensaje: `Están marcadas para terminar antes de diciembre, pero las cuotas del año no alcanzan a cubrir el saldo. Mientras tanto, los meses posteriores a esa fecha no descuentan la cuota y tu flujo de caja aparece mejor de lo que es.`,
-        sugerencia: `Si el crédito sigue el año entrante, cambiá su vigencia a diciembre. Si lo vas a cancelar con un abono, dejalo así.`,
+        sugerencia: `Si el crédito sigue el año entrante, cambia su vigencia a diciembre. Si lo vas a cancelar con un abono, dejalo así.`,
         items: vigenciaImposible.map((d) => ({ id: d.id, label: d.n || d.nombre || "Deuda", monto: d.mt })),
       });
     }
@@ -175,7 +175,7 @@ export function auditarDatos(user, options = {}) {
           severidad: "warning",
           categoria: "huerfanos",
           titulo: `${huerfanos.length} gasto${huerfanos.length > 1 ? "s" : ""} de ${cat} sin titular`,
-          mensaje: `Tenés gastos de ${cat} que no están asociados a ninguna persona. NO se aplican como deducción.`,
+          mensaje: `Tienes gastos de ${cat} que no están asociados a ninguna persona. NO se aplican como deducción.`,
           sugerencia: `Asignalos a la persona que los paga.`,
           items: huerfanos.map(g => ({ id: g.id, label: cat, mensual: g.m })),
           accion: { tipo: "asignar_owner_gastos", categoria: cat, ids: huerfanos.map(g => g.id) },
@@ -194,9 +194,9 @@ export function auditarDatos(user, options = {}) {
       id: "sin_owners",
       severidad: "error",
       categoria: "faltantes",
-      titulo: "No tenés ninguna persona fiscal cargada",
-      mensaje: "Para calcular impuestos necesitás al menos una persona natural o jurídica. Sin esto, no podemos hacer nada.",
-      sugerencia: "Empezá con el wizard paso a paso o agregá una persona desde Configuración.",
+      titulo: "No tienes ninguna persona fiscal cargada",
+      mensaje: "Para calcular impuestos necesitas al menos una persona natural o jurídica. Sin esto, no podemos hacer nada.",
+      sugerencia: "Empieza con el wizard paso a paso o agrega una persona desde Configuración.",
       accion: { tipo: "abrir_wizard" },
     });
   }
@@ -209,9 +209,9 @@ export function auditarDatos(user, options = {}) {
         id: `falta_dependientes_${o.id}`,
         severidad: "info",
         categoria: "faltantes",
-        titulo: `${o.name}: no sé si tenés dependientes`,
-        mensaje: `Esta deducción puede ahorrar entre $1M y $8M al año. No la tenés cargada.`,
-        sugerencia: `En el wizard te pregunto, o agregalo en Configuración → Owners.`,
+        titulo: `${o.name}: no sé si tienes dependientes`,
+        mensaje: `Esta deducción puede ahorrar entre $1M y $8M al año. No la tienes cargada.`,
+        sugerencia: `En el wizard te pregunto, o agrégalo en Configuración → Owners.`,
         accion: { tipo: "abrir_wizard" },
       });
     }
@@ -226,7 +226,7 @@ export function auditarDatos(user, options = {}) {
         categoria: "faltantes",
         titulo: `${o.name}: falta especificar régimen tributario`,
         mensaje: `No sabemos si está en Régimen Ordinario (35%), SIMPLE (1.2-14%) o especial. La diferencia de impuesto puede ser MASIVA.`,
-        sugerencia: `Agregá el régimen en Configuración → Owners.`,
+        sugerencia: `Agrega el régimen en Configuración → Owners.`,
         accion: { tipo: "editar_owner", ownerId: o.id, campo: "regimen" },
       });
     }
@@ -237,7 +237,7 @@ export function auditarDatos(user, options = {}) {
         categoria: "faltantes",
         titulo: `${o.name}: sin código CIIU/actividad económica`,
         mensaje: `El código CIIU define la tarifa de ICA y la calificación para Régimen Simple.`,
-        sugerencia: `Agregalo en Configuración → Owners.`,
+        sugerencia: `Agrégalo en Configuración → Owners.`,
         accion: { tipo: "editar_owner", ownerId: o.id, campo: "actividadEconomica" },
       });
     }
@@ -264,7 +264,7 @@ export function auditarDatos(user, options = {}) {
           categoria: "inconsistencias",
           titulo: `${o.name}: salario cargado pero no veo aportes obligatorios`,
           mensaje: `Como empleado formal típicamente te descuentan 4% pensión + 4% salud. Si tu empleador lo hace, deberías cargarlo (es deducible).`,
-          sugerencia: `Si tu empleador descuenta automáticamente, agregalo en gastos categoría "Aporte tributario".`,
+          sugerencia: `Si tu empleador descuenta automáticamente, agrégalo en gastos categoría "Aporte tributario".`,
           accion: { tipo: "abrir_wizard" },
         });
       }
@@ -283,8 +283,8 @@ export function auditarDatos(user, options = {}) {
         severidad: "warning",
         categoria: "inconsistencias",
         titulo: `${o.name}: honorarios altos sin retención registrada`,
-        mensaje: `Facturás más de $40M al año en honorarios. Si tus clientes son personas jurídicas, te retienen 10-11% directo. Si no estás registrando esa retención, vas a sobreestimar tu saldo a pagar.`,
-        sugerencia: `Verificá los certificados de retención de tus clientes y registralos.`,
+        mensaje: `Facturas más de $40M al año en honorarios. Si tus clientes son personas jurídicas, te retienen 10-11% directo. Si no estás registrando esa retención, vas a sobreestimar tu saldo a pagar.`,
+        sugerencia: `Verifica los certificados de retención de tus clientes y registralos.`,
         accion: { tipo: "info" },
       });
     }
@@ -299,8 +299,8 @@ export function auditarDatos(user, options = {}) {
         severidad: "warning",
         categoria: "inconsistencias",
         titulo: `Deuda "${d.nombre || d.fiscalCode}" sin tasa de interés`,
-        mensaje: `No tiene tasa registrada. NO podemos calcular cuánto pagás de intereses ni cuánto es deducible.`,
-        sugerencia: `Agregá la tasa anual desde el detalle de la deuda.`,
+        mensaje: `No tiene tasa registrada. NO podemos calcular cuánto pagas de intereses ni cuánto es deducible.`,
+        sugerencia: `Agrega la tasa anual desde el detalle de la deuda.`,
         accion: { tipo: "editar_deuda", id: d.id, campo: "ts" },
       });
     }
@@ -314,8 +314,8 @@ export function auditarDatos(user, options = {}) {
       severidad: "error",
       categoria: "inconsistencias",
       titulo: "Hay items en USD pero no hay TRM",
-      mensaje: "Tenés ingresos, deudas o inversiones en dólares pero la TRM no está cargada. NO podemos convertir a pesos para calcular impuesto.",
-      sugerencia: "La TRM se actualiza automáticamente. Si falta, tocá refrescar.",
+      mensaje: "Tienes ingresos, deudas o inversiones en dólares pero la TRM no está cargada. NO podemos convertir a pesos para calcular impuesto.",
+      sugerencia: "La TRM se actualiza automáticamente. Si falta, toca refrescar.",
       accion: { tipo: "info" },
     });
   }
@@ -338,7 +338,7 @@ export function auditarDatos(user, options = {}) {
         categoria: "inconsistencias",
         titulo: "Posibles ingresos duplicados",
         mensaje: `Detecté 2+ ingresos con mismo titular, mismo tipo (${fc}) y mismo monto ($${Number(mensual).toLocaleString("es-CO")}). Puede ser duplicación accidental.`,
-        sugerencia: `Revisá la lista y eliminá duplicados si los hay.`,
+        sugerencia: `Revisa la lista y elimina duplicados si los hay.`,
         accion: { tipo: "info" },
       });
     });
@@ -359,9 +359,9 @@ export function auditarDatos(user, options = {}) {
       id: "gmf_no_cargado",
       severidad: "info",
       categoria: "oportunidades_data",
-      titulo: "Probablemente pagás GMF pero no lo cargaste",
-      mensaje: `El 4×1000 (GMF) que te cobra el banco es deducible al 50% en tu declaración. Si movés plata por bancos, lo pagás aunque no te des cuenta.`,
-      sugerencia: `Agregá el total anual de GMF en gastos. Lo encontrás en el extracto bancario.`,
+      titulo: "Probablemente pagas GMF pero no lo cargaste",
+      mensaje: `El 4×1000 (GMF) que te cobra el banco es deducible al 50% en tu declaración. Si mueves plata por bancos, lo pagas aunque no te des cuenta.`,
+      sugerencia: `Agrega el total anual de GMF en gastos. Lo encuentras en el extracto bancario.`,
       ahorroEstimado: 200_000, // $50K x 4 cuentas típicas
       accion: { tipo: "agregar_gasto", categoria: "GMF" },
     });
@@ -381,9 +381,9 @@ export function auditarDatos(user, options = {}) {
         id: `honor_sin_costos_${o.id}`,
         severidad: "info",
         categoria: "oportunidades_data",
-        titulo: `${o.name}: facturás como independiente pero no veo costos`,
-        mensaje: `Como persona natural independiente podés deducir gastos de tu actividad: oficina, internet, transporte, materiales, etc.`,
-        sugerencia: `Cargá tus gastos de la actividad. Cada $1M deducido te ahorra $200K-$390K de impuesto.`,
+        titulo: `${o.name}: facturas como independiente pero no veo costos`,
+        mensaje: `Como persona natural independiente puedes deducir gastos de tu actividad: oficina, internet, transporte, materiales, etc.`,
+        sugerencia: `Carga tus gastos de la actividad. Cada $1M deducido te ahorra $200K-$390K de impuesto.`,
         accion: { tipo: "agregar_gasto", categoria: "Oficina" },
       });
     }
