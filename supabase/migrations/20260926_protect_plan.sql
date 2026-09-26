@@ -1,8 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- FINPATHIA · 20260926_protect_plan.sql
 --
--- ⚠️  BORRADOR — NO APLICADO. Lo tiene que correr el dueño en Supabase
---     (SQL Editor del proyecto de producción). Revisar antes de ejecutar.
+-- ✅  APLICADO en prod 2026-09-26 15:16 COT
+--     (proyecto de producción pdwrgpskzvrjkqozfbvl, migración 20260926_protect_plan).
 --
 -- PROBLEMA
 --   La RLS de user_data deja que el usuario actualice SU fila completa. El
