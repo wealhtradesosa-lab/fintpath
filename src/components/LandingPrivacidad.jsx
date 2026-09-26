@@ -306,7 +306,7 @@ export default function LandingPrivacidad() {
               { name: "Anthropic", role: "recibe un resumen de tus datos, o el documento que subes, solo si usas las funciones de IA (Asesor IA, coaches, lectura de declaraciones, extractos o archivos)." },
               { name: "Netlify", role: "hospeda la app." },
               { name: "Finnhub y Yahoo Finance", role: "reciben solo los símbolos (tickers) de tus inversiones para consultar precios, sin tu nombre ni tu email." },
-              { name: "Google (Analytics y Ads), Meta (Pixel) y Vercel (Web Analytics)", role: "miden visitas y el uso del sitio y de la app (páginas y acciones, como registrarte o iniciar un pago)." },
+              { name: "Google (Analytics y Ads) y Meta (Pixel)", role: "miden visitas y el uso del sitio y de la app (páginas y acciones, como registrarte o iniciar un pago)." },
             ].map((p, i) => (
               <div
                 key={i}
@@ -448,7 +448,7 @@ export default function LandingPrivacidad() {
               recargas innecesarias. Sin estas, la plataforma no funciona.
             </li>
             <li>
-              <strong style={{ color: T.txt }}>Medición y anuncios:</strong> Google Analytics, Google Ads, Meta Pixel y Vercel Web Analytics
+              <strong style={{ color: T.txt }}>Medición y anuncios:</strong> Google Analytics, Google Ads y Meta Pixel
               miden visitas y el uso del sitio y de la app. Puedes bloquearlos con extensiones como Privacy Badger.
             </li>
           </ul>
