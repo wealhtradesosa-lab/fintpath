@@ -1,6 +1,11 @@
 {
   "redirects": [
     {
+      "source": "/",
+      "destination": "https://finpathia.com/",
+      "permanent": false
+    },
+    {
       "source": "/:path*",
       "destination": "https://finpathia.com/:path*",
       "permanent": false
