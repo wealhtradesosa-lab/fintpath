@@ -6,13 +6,13 @@
 // Renderiza cards de estrategias FUTURAS — la diferencia clave con las áreas
 // del Plan de Optimización (que capturan lo que el user YA TIENE):
 //
-//   PLAN DE OPTIMIZACIÓN: "¿tenés gastos arriendo? cargalos" → ahorro hoy
-//   RECOMENDACIONES:      "comprá bodega $500M, ahorrarás $103M/año" → mañana
+//   PLAN DE OPTIMIZACIÓN: "¿tienes gastos arriendo? cargalos" → ahorro hoy
+//   RECOMENDACIONES:      "compra bodega $500M, ahorrarás $103M/año" → mañana
 //
 // FILOSOFÍA UI:
 //   - No hay botón "Aplicar" — son sugerencias para tu contador
 //   - Cada card muestra inversión, ahorro, ROI, base legal
-//   - Caveat siempre visible (ningún consejo sin "consultá con tu contador")
+//   - Caveat siempre visible (ningún consejo sin "consulta con tu contador")
 //   - Prioridad alta destaca en verde
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -251,11 +251,11 @@ export default function RecomendacionesEstrategicas({ recomendaciones }) {
         borderRadius: 10,
       }}>
         <div style={{ fontSize: 12, color: C.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
-          💡 Estrategias del contador para vos
+          💡 Estrategias del contador para ti
         </div>
         <div style={{ fontSize: 14, color: C.txt2, lineHeight: 1.5, marginBottom: 8 }}>
-          Estas son <strong style={{ color: C.txt }}>acciones futuras</strong> que podés considerar para reducir tu impuesto.
-          A diferencia de las palancas anteriores (que aprovechan lo que ya tenés),
+          Estas son <strong style={{ color: C.txt }}>acciones futuras</strong> que puedes considerar para reducir tu impuesto.
+          A diferencia de las palancas anteriores (que aprovechan lo que ya tienes),
           estas son <strong style={{ color: C.txt }}>movimientos estratégicos</strong> que un contador
           experto recomendaría para tu perfil.
         </div>

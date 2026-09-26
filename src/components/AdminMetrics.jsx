@@ -42,7 +42,7 @@ export default function AdminMetrics({ email, fmt, T }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 800, color: T.tx }}>📈 Cómo va el negocio</div>
-          <div style={{ fontSize: 11, color: T.tx3 }}>Solo vos ves esto · actualizado {fecha(d.generado)}</div>
+          <div style={{ fontSize: 11, color: T.tx3 }}>Solo tú ves esto · actualizado {fecha(d.generado)}</div>
         </div>
         <button onClick={cargar} style={{ background: T.bg3, border: `1px solid ${T.border}`, color: T.tx2, padding: "7px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12 }}>↻ Actualizar</button>
       </div>
@@ -50,7 +50,7 @@ export default function AdminMetrics({ email, fmt, T }) {
       {/* Alerta si el registro se detuvo — el síntoma que costó 3 semanas detectar */}
       {diasSin !== null && diasSin >= 3 && (
         <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: 12, padding: "12px 14px", fontSize: 12.5, color: "#fca5a5" }}>
-          ⚠️ <strong>Hace {diasSin} días que no se registra nadie.</strong> Si estás pautando, revisá que el registro funcione antes de seguir gastando.
+          ⚠️ <strong>Hace {diasSin} días que no se registra nadie.</strong> Si estás pautando, revisa que el registro funcione antes de seguir gastando.
         </div>
       )}
 
@@ -93,7 +93,7 @@ export default function AdminMetrics({ email, fmt, T }) {
           );
         })}
         <div style={{ fontSize: 11, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
-          ⚠️ <strong>Los ingresos reales se confirman en Stripe</strong>, no acá: la base guarda el plan asignado, que también puede ponerse a mano. Para saber cuánto entró, mirá <em>dashboard.stripe.com → Payments</em>.
+          ⚠️ <strong>Los ingresos reales se confirman en Stripe</strong>, no acá: la base guarda el plan asignado, que también puede ponerse a mano. Para saber cuánto entró, mira <em>dashboard.stripe.com → Payments</em>.
           <br />Y ojo con el <strong>trial</strong>: al registrarse, la app le da a todos 14 días de Pro. Eso no es una venta.
           <br />La <strong>activación</strong> es el número que más manda hoy: quien se registra y no carga nada, no vuelve. Si es baja, el problema está en el arranque, no en el precio ni en la pauta.
         </div>

@@ -322,7 +322,7 @@ export default function OnboardingTour({
               }}
             >
               FINPATHIA es tu <strong style={{ color: T.txt }}>family office personal</strong> — el lugar donde
-              centralizás tu patrimonio, planeás tus impuestos y consultás con un asesor IA que ve
+              centralizas tu patrimonio, planeas tus impuestos y consultas con un asesor IA que ve
               tus números reales.
             </p>
 
@@ -335,7 +335,7 @@ export default function OnboardingTour({
               }}
             >
               En los próximos 60 segundos vas a estar viendo tu primera proyección.<br />
-              Solo necesitamos saber por dónde querés empezar.
+              Solo necesitamos saber por dónde quieres empezar.
             </p>
 
             <button
@@ -380,7 +380,7 @@ export default function OnboardingTour({
                 ¿Por dónde empezamos?
               </h2>
               <p style={{ fontSize: 14, color: T.txt2, margin: 0, lineHeight: 1.5 }}>
-                Elegí lo que mejor se ajuste a vos. Podés cambiar en cualquier momento.
+                Elige lo que mejor se ajuste a ti. Puedes cambiar en cualquier momento.
               </p>
             </div>
 
@@ -396,7 +396,7 @@ export default function OnboardingTour({
                 icon={IconUpload}
                 iconColor={T.blue}
                 title="Importar mi Excel"
-                description="Si ya manejás tu plata en una hoja de cálculo, importala en 1 click. Nuestra IA detecta inversiones, ingresos y gastos automáticamente."
+                description="Si ya manejas tu plata en una hoja de cálculo, importala en 1 click. Nuestra IA detecta inversiones, ingresos y gastos automáticamente."
                 onClick={() => handleSelect("import")}
                 recommended
               />
@@ -404,14 +404,14 @@ export default function OnboardingTour({
                 icon={IconChart}
                 iconColor={T.green}
                 title="Explorar con datos de ejemplo"
-                description="Cargá un patrimonio ficticio para entender qué hace FINPATHIA antes de meter tus datos reales. Lo borrás cuando quieras."
+                description="Carga un patrimonio ficticio para entender qué hace FINPATHIA antes de meter tus datos reales. Lo borras cuando quieras."
                 onClick={() => handleSelect("demo")}
               />
               <PathCard
                 icon={IconEdit}
                 iconColor={T.purple}
                 title="Empezar de cero"
-                description="Cargá tus inversiones, ingresos y gastos manualmente, paso a paso. Ideal si querés total control desde el primer dato."
+                description="Carga tus inversiones, ingresos y gastos manualmente, paso a paso. Ideal si quieres total control desde el primer dato."
                 onClick={() => handleSelect("manual")}
               />
             </div>

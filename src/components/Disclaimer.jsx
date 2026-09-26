@@ -26,11 +26,11 @@ const TEXTOS = {
   es: {
     general: {
       t: "Esto es un ejercicio de escenarios, no una asesoría",
-      p: "FINPATHIA es una herramienta de organización y simulación financiera. Los resultados que ves son cálculos sobre los datos que vos cargaste, bajo los supuestos que elegiste. No constituyen asesoría financiera, tributaria, contable ni legal, ni una recomendación de compra o venta de ningún activo. Antes de tomar decisiones, consultá con un profesional habilitado que conozca tu situación completa. FINPATHIA no audita ni verifica los datos que cargás: si un dato de entrada está mal, el resultado también lo estará. Cada persona es responsable de las decisiones que toma y de sus resultados; esta herramienta es un insumo para pensar, no un consejo a seguir.",
+      p: "FINPATHIA es una herramienta de organización y simulación financiera. Los resultados que ves son cálculos sobre los datos que tú cargaste, bajo los supuestos que elegiste. No constituyen asesoría financiera, tributaria, contable ni legal, ni una recomendación de compra o venta de ningún activo. Antes de tomar decisiones, consulta con un profesional habilitado que conozca tu situación completa. FINPATHIA no audita ni verifica los datos que cargas: si un dato de entrada está mal, el resultado también lo estará. Cada persona es responsable de las decisiones que toma y de sus resultados; esta herramienta es un insumo para pensar, no un consejo a seguir.",
     },
     fiscal: {
       t: "Estimación, no declaración",
-      p: "Este cálculo es una estimación basada en la normativa vigente y en los datos que cargaste. No reemplaza la liquidación de un contador ni constituye asesoría tributaria. La responsabilidad de tu declaración es tuya y de tu contador: verificá cada cifra con un profesional antes de presentarla ante la autoridad fiscal.",
+      p: "Este cálculo es una estimación basada en la normativa vigente y en los datos que cargaste. No reemplaza la liquidación de un contador ni constituye asesoría tributaria. La responsabilidad de tu declaración es tuya y de tu contador: verifica cada cifra con un profesional antes de presentarla ante la autoridad fiscal.",
     },
     proyeccion: {
       t: "Una proyección no es un pronóstico",
@@ -38,7 +38,7 @@ const TEXTOS = {
     },
     cripto: {
       t: "Bitcoin es un activo de altísimo riesgo",
-      p: "Bitcoin ha caído más del 70% en varias ocasiones y puede volver a hacerlo. Esta comparación usa una tasa de crecimiento que vos elegiste: no es una predicción ni una recomendación de invertir. No inviertas dinero que no puedas permitirte perder, y considerá el tratamiento fiscal de las ganancias en tu jurisdicción.",
+      p: "Bitcoin ha caído más del 70% en varias ocasiones y puede volver a hacerlo. Esta comparación usa una tasa de crecimiento que tú elegiste: no es una predicción ni una recomendación de invertir. No inviertas dinero que no puedas permitirte perder, y considera el tratamiento fiscal de las ganancias en tu jurisdicción.",
     },
     ia: {
       t: "Generado por IA — verificalo",

@@ -265,7 +265,7 @@ export default function PensionBTC({trm:pTrm}){
               dos formatos no se parecieran tanto (ambos empezaban con "$").
               La regla queda declarada arriba de todo, una sola vez. */}
           <div style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:10,padding:"10px 13px",marginBottom:18,fontSize:11.5,color:T.txt3,lineHeight:1.6}}>
-            💱 <strong style={{color:T.txt2}}>Dos monedas, a propósito:</strong> lo que vos aportás va en <strong style={{color:T.txt2}}>pesos (COP)</strong>;
+            💱 <strong style={{color:T.txt2}}>Dos monedas, a propósito:</strong> lo que tú aportas va en <strong style={{color:T.txt2}}>pesos (COP)</strong>;
             el precio del Bitcoin va en <strong style={{color:T.gold}}>dólares (USD)</strong>, que es como cotiza en el mundo.
             Cada cifra lleva su moneda al lado. TRM usada: <strong style={{color:T.txt2}}>{fC(trm)}</strong> por dólar.
           </div>
@@ -276,7 +276,7 @@ export default function PensionBTC({trm:pTrm}){
           <div style={{marginBottom:18}}>
             <div style={{marginBottom:10}}>
               <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>1 · TU APORTE</div>
-              <div style={{fontSize:11,color:T.txt3,marginTop:3}}>Cuánto y cada cuánto ponés</div>
+              <div style={{fontSize:11,color:T.txt3,marginTop:3}}>Cuánto y cada cuánto pones</div>
             </div>
             <div style={{fontSize:12,fontWeight:700,color:T.txt2,marginBottom:8}}>💵 ¿Cómo vas a aportar?</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
@@ -313,7 +313,7 @@ export default function PensionBTC({trm:pTrm}){
                       alcance justo en el modo donde SÍ define el aporte. Vuelve
                       acá, pero solo en "% de mi salario": es el único caso en que
                       moverlo cambia cuánto se ahorra. */}
-                  <Sl label="💼 ¿Cuántos salarios mínimos ganás?" value={salSM} onChange={setSalSM}
+                  <Sl label="💼 ¿Cuántos salarios mínimos ganas?" value={salSM} onChange={setSalSM}
                     min={1} max={25} step={1}
                     display={salSM+" "+(salSM===1?"salario mínimo":"salarios mínimos")+" = "+fC(salMes)+"/mes"}
                     color={T.txt}
@@ -326,7 +326,7 @@ export default function PensionBTC({trm:pTrm}){
                     onChange={setPctAporte} min={1} max={50} step={1}
                     display={pctAporte+"% = "+fC(apMes)+"/mes"} color={T.orange}
                     sub={pctAporte===16
-                      ? "16% es lo mismo que aportás a pensión — así la comparación es pareja"
+                      ? "16% es lo mismo que aportas a pensión — así la comparación es pareja"
                       : "Te quedan "+fC(salMes-apMes)+" del salario"}/>
                 </div>
               )}
@@ -354,12 +354,12 @@ export default function PensionBTC({trm:pTrm}){
           </div>
           <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
             <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>2 · TU HORIZONTE</div>
-            <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Cuánto tiempo dejás trabajar el dinero</div>
+            <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Cuánto tiempo dejas trabajar el dinero</div>
           </div>
         <Sl label="⏰ ¿Cuántos años vas a ahorrar?" value={anios} onChange={setAnios} min={1} max={30} step={1} display={anios+" años"} color={T.green} sub={"En "+anios+" años habrás aportado "+fC(apMes*12*anios)+" en total ("+fC(apMes)+" x "+anios*12+" meses)"}/>
           <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
             <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>3 · SUPUESTOS DEL MERCADO</div>
-            <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Ajustalos si no coincidís con los valores por defecto</div>
+            <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Ajustalos si no coincides con los valores por defecto</div>
           </div>
         <Sl label="📈 Crecimiento anual del Bitcoin (CAGR)" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)+" al año"} color={T.orange} sub="Supuesto de simulación, no un tip. Histórico ≠ default (hist. ~55–70%). Conservador / default Finanzas: ≤10%. Escenarios agresivos: solo a conciencia."/>
         {/* Advertencia de plausibilidad. No opina sobre si el Bitcoin subirá:
@@ -390,8 +390,8 @@ export default function PensionBTC({trm:pTrm}){
                   : `${Math.round(veces * 100)}% de toda la riqueza del planeta`}
               </strong>.
               El interés compuesto no perdona: un rendimiento defendible para mirar
-              cinco años atrás se vuelve imposible proyectado a veinte. Bajá el
-              porcentaje o acortá el horizonte para que las cifras signifiquen algo.
+              cinco años atrás se vuelve imposible proyectado a veinte. Baja el
+              porcentaje o acorta el horizonte para que las cifras signifiquen algo.
             </div>
           );
         })()}

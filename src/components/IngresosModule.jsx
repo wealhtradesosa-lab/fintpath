@@ -70,15 +70,15 @@ const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Cesantías",l:"💵 C
 // aquí, el fiscalCode se deriva automáticamente vía normalize.js (no pregunta).
 const FISCAL_SUBOPTIONS = {
   "Honorarios": {
-    question: "🧾 ¿Tenés 2+ empleados contratados ≥ 83% del año? (Art. 206 #10 ET)",
-    help: "Define si aplica renta exenta 25%. Consultá con tu contador si tenés duda.",
+    question: "🧾 ¿Tienes 2+ empleados contratados ≥ 83% del año? (Art. 206 #10 ET)",
+    help: "Define si aplica renta exenta 25%. Consulta con tu contador si tienes duda.",
     options: [
       { v: "LAB_HONORARIOS_SIN_EMPLEADOS", l: "No — tributo como cédula de trabajo SIN exenta 25%" },
       { v: "LAB_HONORARIOS_CON_EMPLEADOS", l: "Sí — aplico renta exenta 25% (Art. 206 #10)" },
     ],
   },
   "Arriendo": {
-    question: "🏠 ¿Qué arrendás?",
+    question: "🏠 ¿Qué arriendas?",
     help: "Inmueble (casa, bodega, local) va a cédula NO laboral con gastos deducibles. Mueble (equipos, maquinaria) va a cédula de capital.",
     options: [
       { v: "NOL_ARRIENDO_INMUEBLE", l: "Inmueble (casa, bodega, local, oficina)" },
@@ -540,7 +540,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           // Feedback visible: explicar por que NO se creo (evita confusion del usuario)
           setCesantiasNotif({
             tipo: "saltada",
-            mensaje: `ℹ️ No se creó cesantía nueva: el owner ya tiene una cargada. Si querés actualizar el monto, editá manualmente el item de cesantías existente.`
+            mensaje: `ℹ️ No se creó cesantía nueva: el owner ya tiene una cargada. Si quieres actualizar el monto, edita manualmente el item de cesantías existente.`
           });
         }
       } else if (isSalario && form.tipoVinculacion === "integral") {
@@ -551,7 +551,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       } else if (isSalario && form.tipoVinculacion === "no_aplica") {
         setCesantiasNotif({
           tipo: "saltada",
-          mensaje: `ℹ️ Sin cesantías: este caso no genera prestaciones laborales. Recordá que si tu vinculación cambia, podés agregar cesantías manualmente como ingreso aparte.`
+          mensaje: `ℹ️ Sin cesantías: este caso no genera prestaciones laborales. Recuerda que si tu vinculación cambia, puedes agregar cesantías manualmente como ingreso aparte.`
         });
       }
     }
@@ -652,7 +652,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     severity: "error",
     code: "INGRESO_SIN_PROPIETARIO",
     message: "Ingreso sin propietario asignado — no se incluye en el cálculo de Impuestos",
-    accionSugerida: "Asigná un propietario",
+    accionSugerida: "Asigna un propietario",
   }));
   const fiscalWarnings = [..._sinOwnerWarnings, ..._itemWarnings];
   const ingresoItemsById = Object.fromEntries((ingresos || []).map(i => [i.id, i]));
@@ -1221,7 +1221,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && !["Salario","Honorarios"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                   <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-                    💵 ¿Cómo conocés el monto?
+                    💵 ¿Cómo conoces el monto?
                   </label>
                   <div style={{ background: T.bg3, borderRadius: 10, padding: 5, display: "flex", gap: 5 }}>
                     <button type="button"
@@ -1364,7 +1364,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   {/* Fix: warning si el capital guardado es sospechosamente bajo (<$10K) */}
                   {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
                     <div style={{marginTop:10,padding:"10px 12px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,fontSize:11,color:T.red,lineHeight:1.5}}>
-                      ⚠️ El capital invertido es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Un capital típico de inversión es &gt;$100.000. Si el valor es correcto, ignorá este aviso.
+                      ⚠️ El capital invertido es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Un capital típico de inversión es &gt;$100.000. Si el valor es correcto, ignora este aviso.
                     </div>
                   )}
                   {/* Commit E: validacion de tasa absurda (warning, no bloqueo) */}
@@ -1379,14 +1379,14 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     if (altoRojo) {
                       return (
                         <div style={{marginTop:10,padding:"10px 12px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,fontSize:11,color:T.red,lineHeight:1.5}}>
-                          ⚠️ Tasa muy alta: {tas}% {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambiá la periodicidad arriba si es el caso.
+                          ⚠️ Tasa muy alta: {tas}% {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
                         </div>
                       );
                     }
                     if (altoNaranja) {
                       return (
                         <div style={{marginTop:10,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.25)",borderRadius:8,fontSize:11,color:T.orange,lineHeight:1.5}}>
-                          🟠 Rentabilidad alta: {tas}% {tm}. Verificá que la periodicidad ({tm}) sea correcta. Rentabilidades de mercado típicas: 8-20% anual.
+                          🟠 Rentabilidad alta: {tas}% {tm}. Verifica que la periodicidad ({tm}) sea correcta. Rentabilidades de mercado típicas: 8-20% anual.
                         </div>
                       );
                     }
@@ -1396,7 +1396,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               )}
 
               {/* UX iter 5 (18-jul-2026 noche): eliminado el bloque azul redundante
-                  "Ingresá el monto BRUTO" — el label del input ya dice "BRUTO mensual
+                  "Ingresa el monto BRUTO" — el label del input ya dice "BRUTO mensual
                   (antes de descuentos)". Repetirlo era innecesario. */}
 
               {/* UX iter 3 (18-jul-2026 noche): FrecuenciaSelector con props
@@ -1467,7 +1467,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     const cesAnual = mens * 1.12;
                     return (
                       <div style={{marginTop:10,padding:"8px 10px",background:T.bg2,borderRadius:6,fontSize:10,color:T.txt2,lineHeight:1.5}}>
-                        Al guardar se creará: <strong style={{color:"#22c55e"}}>"Cesantías + intereses (estimadas)"</strong> = {fm(Math.round(mens * 1.12 / 12))}/mes (≈ {fm(Math.round(cesAnual))}/año, equivalente a 1.12 sueldos). Podés modificar o eliminar el item después.
+                        Al guardar se creará: <strong style={{color:"#22c55e"}}>"Cesantías + intereses (estimadas)"</strong> = {fm(Math.round(mens * 1.12 / 12))}/mes (≈ {fm(Math.round(cesAnual))}/año, equivalente a 1.12 sueldos). Puedes modificar o eliminar el item después.
                       </div>
                     );
                   })()}
@@ -1482,7 +1482,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     🛡️ Aportes obligatorios · Pensión y Salud
                   </div>
                   <div style={{fontSize:10,color:T.txt3,lineHeight:1.4,marginBottom:10}}>
-                    Por defecto 4%+4% del bruto. Cambia a "# SMMLV" si cotizás sobre IBC distinto.
+                    Por defecto 4%+4% del bruto. Cambia a "# SMMLV" si cotizas sobre IBC distinto.
                   </div>
 
                   {/* Pensión: toggle + input */}
@@ -1529,7 +1529,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           const supera = n > TOPE_IBC_SMMLV;
                           return (
                             <div style={{marginTop:6,padding:"8px 10px",background:supera?"rgba(239,68,68,0.06)":"rgba(168,85,247,0.06)",borderRadius:6,fontSize:10,color:supera?T.red:T.txt2,lineHeight:1.5}}>
-                              {supera ? <strong>⚠️ Excede tope IBC (25 SMMLV — Art. 18 Ley 100). El sistema lo cuenta como ingresaste pero verificá que sea correcto.</strong> : <>
+                              {supera ? <strong>⚠️ Excede tope IBC (25 SMMLV — Art. 18 Ley 100). El sistema lo cuenta como ingresaste pero verifica que sea correcto.</strong> : <>
                                 {n} SMMLV × {fm(SMMLV_2026)} = IBC <strong>{fm(ibc)}</strong>/mes<br/>
                                 Aporte: 4% {fs > 0 && `+ ${(fs*100).toFixed(1)}% (Fondo Solidaridad)`} = <strong style={{color:"#a855f7"}}>{fm(valor)}</strong>/mes
                               </>}
@@ -1698,7 +1698,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           </div>
                         )}
                         <div style={{ fontSize: 10, color: T.txt3, marginTop: 8, lineHeight: 1.4, fontStyle: "italic" }}>
-                          ℹ️ Marcá "No aplicar" si quien te paga NO retiene (ej: inquilino persona natural no declarante). Usá tasa custom si tu certificado de retención muestra una tasa distinta.
+                          ℹ️ Marca "No aplicar" si quien te paga NO retiene (ej: inquilino persona natural no declarante). Usa tasa custom si tu certificado de retención muestra una tasa distinta.
                         </div>
                       </>
                     )}

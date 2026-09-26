@@ -250,7 +250,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     const vcCheck = Math.abs(parseFloat(form.vc)) || 0;
     if (va > 0 && vcCheck > 0 && va < vcCheck * 0.1) {
       const ok = window.confirm(
-        `⚠️ REVISÁ LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${(100 - (va / vcCheck) * 100).toFixed(0)}%. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usá el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
+        `⚠️ REVISÁ LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${(100 - (va / vcCheck) * 100).toFixed(0)}%. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usa el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
       );
       if (!ok) return;
     }
@@ -549,7 +549,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["Real Estate", "Fondo de Inversión", "CDT", "Acciones", "Crypto", "Bodega", "Lote", "Vehículo", "Local Comercial", "Renta Fija", "Negocio", "Cash", "Otro"]} />
               {["Real Estate", "Bodega", "Lote", "Local Comercial"].includes(form.tipo) && (
                 <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>🏠 ¿Cómo usás este inmueble? (define si depreciación aplica)</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>🏠 ¿Cómo usas este inmueble? (define si depreciación aplica)</div>
                   <select value={form.fiscalCode || "INV_INMUEBLE_HABITACIONAL"} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                     style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer", marginBottom: 10 }}>
                     <option value="INV_INMUEBLE_HABITACIONAL">Habitacional — donde vivo (no se deprecia)</option>
@@ -576,7 +576,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   const perdidaPct = ((1 - vaN / vcN) * 100).toFixed(0);
                   return (
                     <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.35)", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#f97316", lineHeight: 1.5 }}>
-                      ⚠️ <strong>Revisá los ceros:</strong> el valor actual (${vaN.toLocaleString("es-CO")}) es {perdidaPct}% menor que lo que costó (${vcN.toLocaleString("es-CO")}). Si es correcto, ignorá este aviso — pero si el activo vale ${(vaN/1e6).toFixed(1)} millones y costó ${(vcN/1e9).toFixed(1)} mil millones, probablemente faltan ceros en el valor actual.
+                      ⚠️ <strong>Revisa los ceros:</strong> el valor actual (${vaN.toLocaleString("es-CO")}) es {perdidaPct}% menor que lo que costó (${vcN.toLocaleString("es-CO")}). Si es correcto, ignora este aviso — pero si el activo vale ${(vaN/1e6).toFixed(1)} millones y costó ${(vcN/1e9).toFixed(1)} mil millones, probablemente faltan ceros en el valor actual.
                     </div>
                   );
                 }
@@ -631,7 +631,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   }} type="number" placeholder="Ej: 12" /></div>
                 </div>
                 <div style={{fontSize:10,color:T.txt3,marginTop:6,lineHeight:1.5}}>
-                  Estimación: escribí uno y el otro se calcula solo. Estos campos
+                  Estimación: escribe uno y el otro se calcula solo. Estos campos
                   NO crean el ingreso — sirven para dimensionarlo. Para que cuente
                   en tu flujo, registralo con el botón de abajo o desde la sección
                   de Ingresos.
@@ -662,7 +662,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       return (
                         <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.55 }}>
                           Sin gastos vinculados. Cargalos en <strong style={{ color: T.txt2 }}>Gastos</strong>{" "}
-                          y elegí este activo en “Activo al que pertenece”: predial,
+                          y elige este activo en “Activo al que pertenece”: predial,
                           administración, seguros y mantenimiento como registros
                           separados, cada uno con su propia vigencia.
                         </div>
@@ -751,7 +751,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                           activoId: editId || "",
                           sim: true,
                         });
-                        alert(`Ingreso creado: Rendimiento — ${nombreActivo}. Queda vinculado a este activo y podés ajustarlo en el módulo de Ingresos.`);
+                        alert(`Ingreso creado: Rendimiento — ${nombreActivo}. Queda vinculado a este activo y puedes ajustarlo en el módulo de Ingresos.`);
                       }}
                       style={{ marginTop: 8, padding: "8px 14px", borderRadius: 9,
                         background: T.green, color: "#0a0a0a", border: "none",
@@ -760,7 +760,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     </button>
                   ) : (
                     <div style={{ fontSize: 11, color: T.blue, marginTop: 6, fontWeight: 600 }}>
-                      👉 Agregá este ingreso en el módulo de Ingresos con categoría "Rendimiento"
+                      👉 Agrega este ingreso en el módulo de Ingresos con categoría "Rendimiento"
                     </div>
                   )}
                 </div>

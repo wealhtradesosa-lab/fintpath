@@ -190,7 +190,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
         <div style={{ fontSize: 42, marginBottom: 12 }}>🏛️</div>
         <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, marginBottom: 6 }}>Sin propietarios fiscales</div>
         <div style={{ fontSize: 13, color: T.txt2, marginBottom: 16, lineHeight: 1.6 }}>
-          Agregá al menos un propietario fiscal (persona natural o jurídica) para ver el dashboard.
+          Agrega al menos un propietario fiscal (persona natural o jurídica) para ver el dashboard.
         </div>
         <button onClick={() => onNavigate?.("set")} style={{ padding: "10px 20px", background: T.blue, border: "none", borderRadius: 8, color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
           Ir a Configuración →
@@ -313,7 +313,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
         <div style={{ padding: "14px 16px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, marginBottom: 14 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📋 Sin declaración cargada</div>
           <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5, marginBottom: 10 }}>
-            Subí la declaración {selectedOwner?.type === "juridica" ? "F-110" : "F-210"} de {selectedOwner?.name} para ver comparaciones año-a-año y detectar deducciones perdidas automáticamente.
+            Sube la declaración {selectedOwner?.type === "juridica" ? "F-110" : "F-210"} de {selectedOwner?.name} para ver comparaciones año-a-año y detectar deducciones perdidas automáticamente.
           </div>
           <button onClick={() => { if (onGoToUpload) { onGoToUpload(); } else { setShowUpload(true); } }} style={{ padding: "8px 14px", background: T.blue, border: "none", borderRadius: 8, color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             Subir declaración →
@@ -327,7 +327,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           Indicadores clave (estimación)
         </div>
         <div style={{ fontSize: 10, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
-          {`Estimación orientativa (borrador · AG ${DEFAULT_AG} · UVT $${uvtForYear(DEFAULT_AG).toLocaleString("es-CO")}). Impuesto a cargo ≠ saldo a pagar: las retenciones suelen bajar lo que transferís en mayo. No es la liquidación oficial ni asesoría tributaria.`}
+          {`Estimación orientativa (borrador · AG ${DEFAULT_AG} · UVT $${uvtForYear(DEFAULT_AG).toLocaleString("es-CO")}). Impuesto a cargo ≠ saldo a pagar: las retenciones suelen bajar lo que transfieres en mayo. No es la liquidación oficial ni asesoría tributaria.`}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
           <KPICard label="Patrimonio líquido" actual={patrimonioLiquidoActual} declarado={patrimonioLiquidoDeclarado} accent={T.purple} />
@@ -386,7 +386,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
               ℹ️ Impuesto estimado a cargo (antes de retenciones). Tu saldo a pagar suele ser menor.
               Las retenciones son lo que el banco/inquilino te descuentan durante el año; en mayo ese monto
               ya fue pagado. Esta cifra es un borrador: el saldo real puede cambiar por exentas, deducciones,
-              topes en UVT y ajustes de tu contador. Presentá la declaración solo en canales oficiales DIAN.
+              topes en UVT y ajustes de tu contador. Presenta la declaración solo en canales oficiales DIAN.
             </div>
           </div>
         </div>

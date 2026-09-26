@@ -71,7 +71,7 @@ export const RETENCIONES_DEFAULT = {
     aplicaJur: true,
     aplicaNat: true,
     descripcion: "Arrendamiento de inmuebles. Solo retiene si el inquilino es persona jurídica o agente retenedor declarante.",
-    advertencia: "Si tu inquilino es persona natural NO declarante, NO retiene. Usá el toggle 'No aplica' para este ingreso.",
+    advertencia: "Si tu inquilino es persona natural NO declarante, NO retiene. Usa el toggle 'No aplica' para este ingreso.",
   },
   NOL_ARRIENDO_BIENES_MUEBLES: {
     tasa: 0.04,

@@ -23,7 +23,7 @@
  * volatilidad y cumplir funciones opuestas en un patrimonio.
  *
  * Lo que este motor NO hace: recomendar activos concretos ni prometer
- * retornos. Calcula una brecha entre dónde estás y dónde dijiste que querés
+ * retornos. Calcula una brecha entre dónde estás y dónde dijiste que quieres
  * estar. La decisión es del usuario y su asesor.
  */
 import { claseDeActivo } from "./taxonomiaActivos.js";
@@ -82,7 +82,7 @@ const CANASTA_POR_TIPO = {
 export function clasificarActivo(activo) {
   const manual = activo?.canastaManual;
   if (manual && ["proteccion", "mercado", "aspiracion"].includes(manual)) {
-    return { canasta: manual, motivo: "Lo clasificaste vos", manual: true };
+    return { canasta: manual, motivo: "Lo clasificaste tú", manual: true };
   }
 
   const tipoRaw = String(activo?.tp || activo?.tipo || "").trim();
@@ -367,7 +367,7 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
       hallazgos.push({
         tono: b.puntos > 0 ? "atencion" : "oportunidad",
         titulo: b.puntos > 0
-          ? `Tenés más en ${nombres[b.canasta]} de lo que tu objetivo pide`
+          ? `Tienes más en ${nombres[b.canasta]} de lo que tu objetivo pide`
           : `Te falta exposición a ${nombres[b.canasta]}`,
         detalle: `${b.actual.toFixed(0)}% actual contra ${b.objetivo}% objetivo — una diferencia de ${Math.abs(b.puntos).toFixed(0)} puntos.`,
       });
@@ -380,14 +380,14 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
         : `Tu ingreso pasivo cubre el ${cobertura.toFixed(0)}% de tus egresos`,
       detalle: cobertura >= 100
         ? "Alcanzaste la independencia por flujo. El trabajo ahora es sostenerla."
-        : "Ese porcentaje es el que define si podés dejar de depender del salario.",
+        : "Ese porcentaje es el que define si puedes dejar de depender del salario.",
     });
   }
 
   // 03-ago-2026 (Santiago: "casi que clasificar el patrimonio según ese nuevo
   // norte e informar cuáles no cumplen").
   // Se evalúa ACTIVO POR ACTIVO contra el objetivo. La decisión de diseño
-  // importante: NO se dice "vendé esto". Se dice qué canasta ocupa, si esa
+  // importante: NO se dice "vende esto". Se dice qué canasta ocupa, si esa
   // canasta está sobre o bajo el objetivo, y si el activo concentra demasiado.
   // La diferencia entre un mapa y un chofer: recomendar operaciones concretas
   // es asesoría de inversión, y ni la plataforma ni Santiago están registrados

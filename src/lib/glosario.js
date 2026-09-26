@@ -37,7 +37,7 @@ const GLOSARIO = {
     termino: "TRM",
     nombreCompleto: "Tasa Representativa del Mercado",
     explicacion: "Es la tasa oficial de cambio del dólar a pesos colombianos que publica el Banco de la República cada día.",
-    ejemplo: "Para declarar ingresos en USD, usás la TRM oficial de cada día (o promedio del año, según el caso).",
+    ejemplo: "Para declarar ingresos en USD, usas la TRM oficial de cada día (o promedio del año, según el caso).",
   },
 
   // ── TIPOS DE INGRESO Y CÉDULAS ──────────────────────────────────────────
@@ -51,7 +51,7 @@ const GLOSARIO = {
     termino: "Cédula General",
     nombreCompleto: "Cédula General de la persona natural",
     explicacion: "Es donde van tus ingresos por trabajo: salarios, honorarios, comisiones. Tiene las deducciones más generosas.",
-    ejemplo: "Si trabajás como empleado o freelancer, tus ingresos van acá.",
+    ejemplo: "Si trabajas como empleado o freelancer, tus ingresos van acá.",
   },
   cedulaCapital: {
     termino: "Cédula de capital",
@@ -61,16 +61,16 @@ const GLOSARIO = {
   cedulaNoLaboral: {
     termino: "Cédula no laboral",
     explicacion: "Acá van ingresos como arriendos, regalías, indemnizaciones. No son trabajo ni capital puro.",
-    ejemplo: "Si alquilás un apartamento, la plata del arriendo va a esta cédula.",
+    ejemplo: "Si alquilas un apartamento, la plata del arriendo va a esta cédula.",
   },
   cedulaDividendos: {
     termino: "Cédula de dividendos",
-    explicacion: "Acá van los dividendos que recibís de sociedades (SAS, Ltda). Tienen tarifa especial (7.5% típicamente).",
+    explicacion: "Acá van los dividendos que recibes de sociedades (SAS, Ltda). Tienen tarifa especial (7.5% típicamente).",
   },
   gananciaOcasional: {
     termino: "Ganancia ocasional",
-    explicacion: "Es plata que ganás de forma esporádica: vender una propiedad después de 2+ años, herencias, premios, lotería. Tributa al 15% (más bajo que renta normal).",
-    ejemplo: "Si vendés tu casa con utilidad después de tenerla más de 2 años, esa utilidad va acá.",
+    explicacion: "Es plata que ganas de forma esporádica: vender una propiedad después de 2+ años, herencias, premios, lotería. Tributa al 15% (más bajo que renta normal).",
+    ejemplo: "Si vendes tu casa con utilidad después de tenerla más de 2 años, esa utilidad va acá.",
   },
 
   // ── DEDUCCIONES Y EXENCIONES ────────────────────────────────────────────
@@ -105,30 +105,30 @@ const GLOSARIO = {
   afc: {
     termino: "AFC",
     nombreCompleto: "Ahorro al Fomento de la Construcción",
-    explicacion: "Es una cuenta de ahorro especial para comprar vivienda. La plata que ahorrás ahí es renta exenta (no paga impuesto).",
-    ejemplo: "Si aportás $1M al mes a tu cuenta AFC, esos $12M al año reducen tu impuesto.",
+    explicacion: "Es una cuenta de ahorro especial para comprar vivienda. La plata que ahorras ahí es renta exenta (no paga impuesto).",
+    ejemplo: "Si aportas $1M al mes a tu cuenta AFC, esos $12M al año reducen tu impuesto.",
   },
   pensionVoluntaria: {
     termino: "Pensión Voluntaria",
     nombreCompleto: "Aportes voluntarios al fondo de pensión",
     explicacion: "Aportes EXTRA (más allá del 4% obligatorio) a tu fondo de pensión. Son renta exenta y reducen tu impuesto significativamente.",
-    ejemplo: "Es la palanca más poderosa para reducir impuesto: por cada $1 que aportás, ahorrás hasta $0.39 de impuesto.",
+    ejemplo: "Es la palanca más poderosa para reducir impuesto: por cada $1 que aportas, ahorras hasta $0.39 de impuesto.",
   },
   dependientes: {
     termino: "Deducción por dependientes",
-    explicacion: "Si tenés hijos menores de 23 años, padres mayores que dependen de vos, o cónyuge sin ingresos, podés deducir el 10% de tu salario (hasta cierto tope).",
-    ejemplo: "Con dependientes podés ahorrar entre $1M-$8M de impuesto al año.",
+    explicacion: "Si tienes hijos menores de 23 años, padres mayores que dependen de ti, o cónyuge sin ingresos, puedes deducir el 10% de tu salario (hasta cierto tope).",
+    ejemplo: "Con dependientes puedes ahorrar entre $1M-$8M de impuesto al año.",
   },
 
   // ── IMPUESTOS Y TARIFAS ─────────────────────────────────────────────────
   retencion: {
     termino: "Retención en la fuente",
     explicacion: "Es plata que el banco, tu empleador o tu inquilino le entrega directo a la DIAN ANTES de pagarte. Ya pagaste parte de tu impuesto sin darte cuenta.",
-    ejemplo: "Si te pagan salario, te retienen una parte cada mes. En la declaración anual, esa retención reduce lo que tenés que pagar al final.",
+    ejemplo: "Si te pagan salario, te retienen una parte cada mes. En la declaración anual, esa retención reduce lo que tienes que pagar al final.",
   },
   autoretencion: {
     termino: "Autorretención",
-    explicacion: "Cuando vos mismo retenés una parte de tus ingresos y la pagás directo a la DIAN. Aplica para ciertas sociedades.",
+    explicacion: "Cuando tú mismo retienes una parte de tus ingresos y la pagas directo a la DIAN. Aplica para ciertas sociedades.",
   },
   anticipo: {
     termino: "Anticipo de renta",
@@ -137,18 +137,18 @@ const GLOSARIO = {
   saldoAFavor: {
     termino: "Saldo a favor",
     explicacion: "Cuando las retenciones que ya pagaste durante el año son MAYORES al impuesto que te tocaba. La DIAN te debe la diferencia.",
-    ejemplo: "Podés pedirla de regreso o aplicarla al año siguiente.",
+    ejemplo: "Puedes pedirla de regreso o aplicarla al año siguiente.",
   },
   tasaEfectiva: {
     termino: "Tasa efectiva",
-    explicacion: "Es el porcentaje real de tus ingresos que terminás pagando como impuesto. Diferente de la tarifa máxima.",
-    ejemplo: "Si ganás $100M y pagás $15M de impuesto, tu tasa efectiva es 15%.",
+    explicacion: "Es el porcentaje real de tus ingresos que terminas pagando como impuesto. Diferente de la tarifa máxima.",
+    ejemplo: "Si ganas $100M y pagas $15M de impuesto, tu tasa efectiva es 15%.",
   },
   gmf: {
     termino: "GMF",
     nombreCompleto: "Gravamen a los Movimientos Financieros (4x1000)",
-    explicacion: "Es el 0.4% que el banco te cobra cuando hacés ciertas transacciones (sacar plata, transferir, pagar). El 50% es deducible.",
-    ejemplo: "Si gastaste $1M en GMF durante el año, podés deducir $500.000 de tu renta.",
+    explicacion: "Es el 0.4% que el banco te cobra cuando haces ciertas transacciones (sacar plata, transferir, pagar). El 50% es deducible.",
+    ejemplo: "Si gastaste $1M en GMF durante el año, puedes deducir $500.000 de tu renta.",
   },
   ica: {
     termino: "ICA",
@@ -159,12 +159,12 @@ const GLOSARIO = {
   // ── ESTRUCTURAS Y RÉGIMENES ─────────────────────────────────────────────
   personaNatural: {
     termino: "Persona natural",
-    explicacion: "Sos vos como individuo. Tu cédula es tu 'NIT' personal. Declarás según tu salario, ahorros, propiedades, etc.",
+    explicacion: "Eres tú como individuo. Tu cédula es tu 'NIT' personal. Declaras según tu salario, ahorros, propiedades, etc.",
   },
   personaJuridica: {
     termino: "Persona jurídica",
     explicacion: "Es una sociedad (SAS, Ltda, etc.) que paga impuestos por separado de sus dueños. Tiene su propio NIT.",
-    ejemplo: "Si tenés una SAS, esa empresa declara renta aparte de tu declaración personal.",
+    ejemplo: "Si tienes una SAS, esa empresa declara renta aparte de tu declaración personal.",
   },
   regimenOrdinario: {
     termino: "Régimen ordinario",
@@ -200,12 +200,12 @@ const GLOSARIO = {
   // ── PATRIMONIO ──────────────────────────────────────────────────────────
   patrimonioBruto: {
     termino: "Patrimonio bruto",
-    explicacion: "Es la suma de TODO lo que tenés: efectivo, ahorros, inversiones, propiedades, vehículos. Sin restar deudas.",
+    explicacion: "Es la suma de TODO lo que tienes: efectivo, ahorros, inversiones, propiedades, vehículos. Sin restar deudas.",
   },
   patrimonioLiquido: {
     termino: "Patrimonio líquido",
     explicacion: "Es tu patrimonio bruto MENOS tus deudas. Lo que realmente vale tu situación financiera.",
-    ejemplo: "Si tenés $500M en activos y debés $200M, tu patrimonio líquido es $300M.",
+    ejemplo: "Si tienes $500M en activos y debes $200M, tu patrimonio líquido es $300M.",
   },
   pasivos: {
     termino: "Pasivos",

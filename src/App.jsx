@@ -84,6 +84,7 @@ import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy } from "./lib/migrations";
 import { getPlansForApp, STRIPE_PRICE_IDS } from "./lib/plans.js";
+import { estadoPlan, diasDePrueba, nuevoFinPrueba, finPruebaEfectiva, finPruebaDesdeRegistro, diasRestantes } from "./lib/planEstado.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
@@ -634,7 +635,15 @@ export default function FinPath(){
     // retry silencioso), la app cargaba para siempre con 'Cargando tu patrimonio...'.
     // Con este timeout de 8s, la app sigue cargando como unauthenticated y se
     // recupera cuando la sesión llegue (si alguna vez llega).
-    const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error("auth timeout")),8000));
+    // 26-sep-2026 — el timer quedaba vivo SIEMPRE: aunque getSession
+    // respondiera en 50ms (o si Supabase ni siquiera estaba configurado, como
+    // en el deploy de Vercel), a los 8s la promesa se rechazaba sin nadie
+    // escuchando y la consola mostraba "auth timeout" como si la sesión se
+    // hubiera caído. Ahora el timer se limpia al terminar la carga y la
+    // rechazo tardía queda absorbida.
+    let _authTimer=null;
+    const timeout=new Promise((_,rej)=>{_authTimer=setTimeout(()=>rej(new Error("auth timeout")),8000)});
+    timeout.catch(()=>{});
     try{
       if(isSupabaseConfigured&&supabase){
         const{data:{session}}=await Promise.race([supabase.auth.getSession(),timeout]);
@@ -672,6 +681,7 @@ export default function FinPath(){
     }catch(e){
       if(typeof console!=="undefined")console.warn("[load] session fetch failed/timeout, continuando sin auth:",e);
     }
+    clearTimeout(_authTimer);
     setLd(false);
     // 03-ago-2026 (Santiago: "necesito que el dólar esté en tiempo real a tasa
     // de hoy"). /api/trm ya traía el dato del Banco de la República ($3.144
@@ -703,7 +713,11 @@ export default function FinPath(){
     // Después de entregar una tarjeta, el silencio destruye la confianza.
     const cancelado=params.get('canceled');
     if(cancelado==='true'){
-      setPagoEstado({tipo:"cancelado",titulo:"No se completó el pago",msg:"No te cobramos nada y tu plan sigue igual. Podés intentarlo cuando quieras."});
+      // 26-sep-2026 — tuteo + "Reintentar": se recupera el plan y ciclo que
+      // eligió antes de ir a Stripe (abrirCheckout los guarda en sessionStorage).
+      let reintento=null;
+      try{reintento=JSON.parse(sessionStorage.getItem("fp3_checkout_ultimo")||"null")}catch{}
+      setPagoEstado({tipo:"cancelado",titulo:"No se completó el pago",msg:"No te cobramos nada y tu plan sigue igual. Puedes intentarlo de nuevo cuando quieras.",reintento:reintento&&reintento.n?reintento:null});
       window.history.replaceState({},'',window.location.pathname);
     } else if(successFlag==='true'||(successFlag==='1'&&sessionId&&sessionId!=='{CHECKOUT_SESSION_ID}')){
       setPagoEstado({tipo:"procesando",titulo:"Confirmando tu pago…",msg:"Un momento, estamos activando tu plan."});
@@ -716,19 +730,19 @@ export default function FinPath(){
           });
           const data=await r.json();
           if(data.ok){
-            setPagoEstado({tipo:"exito",titulo:"¡Listo! Tu plan está activo",msg:"Gracias por confiar en FINPATHIA. Ya tenés acceso completo."});
+            setPagoEstado({tipo:"exito",titulo:"¡Listo! Tu plan está activo",msg:"Gracias por confiar en FINPATHIA. Ya tienes acceso completo."});
             setTimeout(()=>window.location.reload(),2500);
           }else{
             // Pro/Básico: la activación la hace el webhook, no esta función.
             // No es un error del usuario — su pago SÍ se registró.
-            setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. La activación puede tardar unos segundos; si no ves el cambio, recargá la página."});
+            setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. La activación puede tardar unos segundos; si no ves el cambio, recarga la página."});
             setTimeout(()=>window.location.reload(),4000);
           }
         }else{
-          setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. Si no ves el cambio en unos segundos, recargá la página."});
+          setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. Si no ves el cambio en unos segundos, recarga la página."});
         }
       }catch(e){
-        setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. Si no ves el cambio, escribinos a soporte@finpathia.com y lo revisamos."});
+        setPagoEstado({tipo:"exito",titulo:"Pago recibido",msg:"Tu suscripción quedó registrada. Si no ves el cambio, escríbenos a soporte@finpathia.com y lo revisamos."});
       }
       window.history.replaceState({},'',window.location.pathname);
     }
@@ -904,14 +918,14 @@ export default function FinPath(){
     if(aM==="signup"){
       // Sesión 4-may-2026: validar aceptación de Términos y Privacidad.
       // Sin esto, los términos no son legalmente vinculantes en Colombia.
-      if(!aF.acceptTerms){setAuthError("Debés aceptar los Términos y Condiciones y la Política de Privacidad para crear tu cuenta.");return}
+      if(!aF.acceptTerms){setAuthError("Debes aceptar los Términos y Condiciones y la Política de Privacidad para crear tu cuenta.");return}
       if(aF.p.length<8){setAuthError("La contraseña debe tener mínimo 8 caracteres");return}
       // Lista de passwords débiles más comunes (top 20 en breaches conocidos).
       // Si el user intenta uno de estos, lo rechazamos con mensaje claro.
       const weakList=["12345678","password","qwerty12","11111111","00000000","abcdefgh","87654321","password1","password2","contrasena","password123","qwertyuiop","asdfghjkl","zxcvbnm123","12345abc","abc12345"];
-      if(weakList.includes(aF.p.toLowerCase())){setAuthError("Esa contraseña es muy común. Elegí algo único — por ejemplo una frase corta con números.");return}
+      if(weakList.includes(aF.p.toLowerCase())){setAuthError("Esa contraseña es muy común. Elige algo único — por ejemplo una frase corta con números.");return}
       // Anti-patrón: solo numéros (ej: "12345678" o "11223344")
-      if(/^\d+$/.test(aF.p)){setAuthError("La contraseña no puede ser solo números. Agregá letras o símbolos.");return}
+      if(/^\d+$/.test(aF.p)){setAuthError("La contraseña no puede ser solo números. Agrega letras o símbolos.");return}
     }else{
       // En login solo validamos largo mínimo para evitar requests vacíos.
       if(aF.p.length<6){setAuthError("La contraseña debe tener mínimo 6 caracteres");return}
@@ -949,7 +963,7 @@ export default function FinPath(){
             new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout cargando datos")),10000))
           ]);
           if(d){const __sd=sanitize(d);setU(__sd);setPg("dash");if(cuentaVacia(__sd))setShowOnboarding(true);}
-          else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);setShowOnboarding(true)}
+          else{const nd=cuentaNueva(aF.n||"Usuario",aF.e,aF.country);setU(nd);await sS(nd,data.user.id);setShowOnboarding(true)}
         }catch(loadErr){
           // Si falla la carga de datos: limpiamos el estado a medio-loguear para no
           // dejar al usuario atrapado con authUser seteado pero sin data (lo que
@@ -957,7 +971,7 @@ export default function FinPath(){
           setAuthUser(null);
           try{await supabase.auth.signOut({scope:"local"})}catch{}
           localStorage.removeItem("fp3_enc_key");
-          setAuthError("No se pudo cargar tus datos: "+loadErr.message+". Volvé a intentar.");
+          setAuthError("No se pudo cargar tus datos: "+loadErr.message+". Vuelve a intentarlo.");
           setAuthLoading(false);
           return;
         }
@@ -988,11 +1002,11 @@ export default function FinPath(){
           setViewMode("personal");
         }
       }else{
-        const sr=await fetch("/.netlify/functions/auth-signup",{
+        const sr=await fetch("/api/auth-signup",{
           method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({email:aF.e,password:aF.p,name:aF.n||""})
         });
-        const srd=await sr.json();
+        const srd=await sr.json().catch(()=>({error:"Error creando cuenta (HTTP "+sr.status+")"}));
         if(!sr.ok){const errMsg=srd.error||"Error creando cuenta";
         // 04-sep-2026 — Se medía cuando alguien ABRE el registro y cuando lo
         // COMPLETA, pero nunca cuando falla. Con 16 caminos de error sin
@@ -1012,10 +1026,10 @@ export default function FinPath(){
             :"otro";
           track("signup_failed",{motivo:_motivo});
         }catch(_e){}
-        let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Probá iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intentá de nuevo o escribinos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verificá que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
+        let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Prueba iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intenta de nuevo o escríbenos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verifica que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);
+        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=cuentaNueva(aF.n||"Usuario",aF.e,aF.country);setU(nd);await sS(nd,data.user.id);
         // Sesión 4-may-2026: tracking GA4 — signup completed con metadata
         // de promo (Pioneros) y user_id para atribución cross-device.
         trackSignup({ method: "email", userId: data.user.id });
@@ -1044,7 +1058,7 @@ export default function FinPath(){
         // Conversión Google Ads (legacy — pre-existente)
         window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});
       }
-    }else{setU(mkU(aF.n||"Usuario",aF.e))}
+    }else{setU(cuentaNueva(aF.n||"Usuario",aF.e,aF.country))}
     }catch(e){setAuthError("Error: "+e.message)}
     setAuthLoading(false);
   };
@@ -1318,11 +1332,45 @@ export default function FinPath(){
   //   4. Si error → evento 'fp3-save-error' → toast '⚠️ Error guardando'
   const upd=(k,v)=>{showToast("💾 Guardando…");setU(p=>p?{...p,[k]:v}:p);};
   const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";
-  const INVITADOS=["andres.isaza@grupogiesas.com","renatomaestri76@hotmail.com"];
-  const getTrialDays=(email)=>INVITADOS.includes(email)?30:14;
-  const trialEnd=u?.p?.trialEnd;
-  const trialActive=trialEnd&&new Date(trialEnd)>=new Date();
-  const trialDays=trialEnd?Math.max(0,Math.ceil((new Date(trialEnd)-new Date())/(86400000))):0;
+  // Lista de invitados (30 días) y días de prueba: src/lib/planEstado.js.
+  const getTrialDays=(email)=>diasDePrueba(email);
+  // 26-sep-2026 — Única fábrica de cuentas NUEVAS. El registro promete
+  // "14 días de acceso Pro incluidos", pero había un camino (sin Supabase
+  // configurado, p. ej. el deploy de Vercel) que creaba la cuenta con mkU()
+  // pelado: plan free y SIN trialEnd → módulos Pro bloqueados desde el día 1.
+  // El trial vive en p.trialEnd y el gating ya lo respeta (trialActive → pro);
+  // al vencer, plan vuelve solo a p.plan ("free"). Solo se llama al CREAR una
+  // cuenta: las cuentas Free existentes no se tocan (sin trial retroactivo).
+  const cuentaNueva=(nombre,email,pais)=>{
+    const nd=mkU(nombre||"Usuario",email||"");
+    nd.p.plan="free";
+    // Instante exacto (registro + 14/30 días), no "YYYY-MM-DD": el día
+    // truncado a 00:00 UTC hacía que Stripe dijera 13 días y la app 14.
+    nd.p.trialEnd=nuevoFinPrueba(email);
+    nd.jurisdiction=pais||"CO";
+    return nd;
+  };
+  // 26-sep-2026 (regresión QA: cuenta nueva aparecía como Gratis). La fila
+  // de user_data la crea el trigger handle_new_user con p.plan="free" y SIN
+  // trialEnd; si la app la recargaba antes del primer guardado (o en el
+  // primer login), la prueba desaparecía. Ahora, si falta p.trialEnd, el fin
+  // de la prueba se deriva de la fecha de registro de Supabase Auth
+  // (created_at + 14/30 días, el mismo tope que usa stripe-checkout). Una
+  // cuenta vieja da una fecha pasada: no hay prueba retroactiva.
+  const esCuentaSintetica=!!(u?.p?.anonymous||u?.p?.demo);
+  const creadoEn=esCuentaSintetica?null:authUser?.created_at;
+  const emailCuenta=authUser?.email||u?.p?.email;
+  const finPrueba=finPruebaEfectiva({trialEnd:u?.p?.trialEnd,creadoEn,email:emailCuenta});
+  const trialEnd=u?.p?.trialEnd||(finPrueba!=null?new Date(finPrueba).toISOString():null);
+  const trialActive=finPrueba!=null&&finPrueba>=Date.now();
+  const trialDays=diasRestantes(finPrueba);
+  // Si faltaba p.trialEnd y la prueba sigue vigente, se guarda (lo usan el
+  // correo de fin de prueba y el checkout). Solo cuentas reales y recientes.
+  useEffect(()=>{
+    if(!u||u.p?.trialEnd||esCuentaSintetica||!authUser?.created_at)return;
+    const f=finPruebaDesdeRegistro(authUser.created_at,emailCuenta);
+    if(f!=null&&f>Date.now())setU(p=>p&&p.p&&!p.p.trialEnd?{...p,p:{...p.p,trialEnd:new Date(f).toISOString()}}:p);
+  },[u?.p?.trialEnd,authUser?.created_at]);
   // Resolución del plan: prioridad
   //   1. isAdmin → "pro" (acceso total para admins de Anthropic/staff)
   //   2. trialActive → "pro" (durante trial 14d, mismo acceso que pro)
@@ -1339,6 +1387,107 @@ export default function FinPath(){
   // Usar este en gates de features. plan==="pro" es solo para "soy plan Pro
   // exacto" (ej. mostrar 'Plan actual' en pricing card del plan Pro).
   const hasProAccess=plan==="pro"||plan==="pro_familiar"||plan==="advisor_pro";
+  // 26-sep-2026 — Estado de plan PARA MOSTRAR, fuente única (src/lib/planEstado.js).
+  // El menú lateral, Configuración y Mi cuenta leen este objeto; antes cada
+  // uno derivaba el plan por su lado y se contradecían ("Pro ⭐ Trial" vs
+  // "Plan gratuito"). El gating sigue usando `plan`/`hasProAccess`.
+  const estado=estadoPlan({isAdmin,planGuardado:u?.p?.plan,planAccount,trialEnd:u?.p?.trialEnd,creadoEn,email:emailCuenta});
+
+  // ═══ CHECKOUT STRIPE ═══════════════════════════════════════════════════
+  // 26-sep-2026 (P0). Con una cuenta recién creada, "Comenzar" en Pro decía
+  // "Sesión no detectada. Haz logout/login…" y no abría Stripe. El botón
+  // dependía SOLO del estado React authUser: si no estaba (carga de sesión
+  // lenta, recarga de la página, o Supabase sin configurar), se cortaba ahí.
+  // Además el endpoint no recibía ningún token: confiaba en el userId que
+  // mandaba el navegador.
+  // Ahora: se le pide la sesión a Supabase en el momento del clic, con
+  // reintentos silenciosos (getSession → refreshSession → esperar el evento
+  // de auth), y se manda el access_token al endpoint, que lo valida y saca
+  // de ahí el userId/email. Si aun así no hay sesión, mensaje en tuteo con
+  // botón Reintentar. Nunca se le pide al usuario cerrar sesión.
+  const[checkoutCargando,setCheckoutCargando]=useState(null);
+  const[checkoutError,setCheckoutError]=useState(null);
+  const MSG_CHECKOUT_REINTENTO="No pudimos abrir el pago. Intenta de nuevo en unos segundos.";
+  const obtenerSesionCheckout=async()=>{
+    if(!isSupabaseConfigured||!supabase)return null;
+    const esperar=(ms,v=null)=>new Promise(r=>setTimeout(()=>r(v),ms));
+    const valida=s=>(s&&s.access_token&&s.user&&(!s.expires_at||s.expires_at*1000>Date.now()+30000))?s:null;
+    for(let intento=0;intento<3;intento++){
+      try{
+        const r1=await Promise.race([supabase.auth.getSession(),esperar(4000,{data:{session:null}})]);
+        let s=valida(r1?.data?.session);
+        if(!s){
+          const r2=await Promise.race([supabase.auth.refreshSession(),esperar(4000,{data:{session:null}})]);
+          s=valida(r2?.data?.session);
+        }
+        if(!s){
+          // Justo después del registro la sesión puede estar escribiéndose:
+          // esperamos el evento de auth (SIGNED_IN / TOKEN_REFRESHED).
+          s=await new Promise(res=>{
+            let listo=false,sub=null;
+            const fin=v=>{if(listo)return;listo=true;try{sub?.unsubscribe()}catch{}res(v)};
+            const{data}=supabase.auth.onAuthStateChange((_ev,ss)=>{const v=valida(ss);if(v)fin(v)});
+            sub=data?.subscription;
+            setTimeout(()=>fin(null),1500+intento*1000);
+          });
+        }
+        if(s)return s;
+      }catch(e){console.warn("[checkout] intento de sesión "+(intento+1)+" falló:",e)}
+      await esperar(600*(intento+1));
+    }
+    return null;
+  };
+  const abrirCheckout=async(pl,cicloForzado)=>{
+    if(!pl||checkoutCargando)return;
+    const ciclo=cicloForzado||billingCycle;
+    // PriceIds vienen de src/lib/plans.js (STRIPE_PRICE_IDS), source-of-truth única.
+    const priceId=STRIPE_PRICE_IDS[pl.n]?.[ciclo];
+    if(!priceId)return;
+    setCheckoutError(null);
+    setCheckoutCargando(pl.n);
+    try{
+      let sesion=await obtenerSesionCheckout();
+      if(!sesion){
+        console.warn("[checkout] sin sesión de Supabase tras reintentos");
+        setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO});
+        return;
+      }
+      const userEmail=sesion.user.email||u?.p?.email||authUser?.email||"";
+      if(!userEmail){alert("Necesitamos tu email para procesar el pago. Complétalo en Configuración → Datos personales y vuelve a intentar.");return;}
+      trackCheckoutStarted({ plan: pl.n, billingCycle: ciclo, priceId });
+      const pedir=(token)=>fetch("/api/stripe-checkout",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+        body:JSON.stringify({priceId,email:userEmail,userId:sesion.user.id,promotionCode:sessionStorage.getItem("fp3_promo_code")||"",successUrl:window.location.origin+"/?success=1&session_id={CHECKOUT_SESSION_ID}",cancelUrl:window.location.origin+"/?canceled=true"})
+      });
+      let r=await pedir(sesion.access_token);
+      if(r.status===401){
+        // Token vencido o rechazado: refrescamos una vez y reintentamos en silencio.
+        try{const rr=await supabase.auth.refreshSession();if(rr?.data?.session?.access_token){sesion=rr.data.session;r=await pedir(sesion.access_token)}}catch{}
+      }
+      if(r.status===401){
+        console.error("[checkout] token rechazado por el servidor");
+        setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO});
+        return;
+      }
+      if(!r.ok){
+        const txt=await r.text().catch(()=>"(no body)");
+        console.error("[checkout] HTTP",r.status,txt);
+        setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO+" Si el problema sigue, escríbenos a soporte@finpathia.com."});
+        return;
+      }
+      const d=await r.json().catch(()=>({}));
+      if(d.url){try{sessionStorage.setItem("fp3_checkout_ultimo",JSON.stringify({n:pl.n,ciclo}))}catch{}window.location.href=d.url;return;}
+      console.error("[checkout] respuesta sin url:",d);
+      setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO+" Si el problema sigue, escríbenos a soporte@finpathia.com."});
+    }catch(e){
+      console.error("[checkout] fetch failed:",e);
+      const isBlocked=e.message&&/blocked|aborted|failed|network|cors/i.test(e.message);
+      setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO+(isBlocked?" Si usas un bloqueador de anuncios, desactívalo para finpathia.com o prueba en modo incógnito.":"")});
+    }finally{
+      setCheckoutCargando(null);
+    }
+  };
   const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200):{},[u]);
   const ib=useMemo(()=>{if(!u?.ibk?.length)return{tc:0,tv:0,pnl:0,pp:0,pos:[]};let tc=0,tv=0;const pos=u.ibk.map(p=>{
     // 26-jul-2026 (Santiago: "¿y si la persona tiene opciones qué hace?").
@@ -1429,7 +1578,7 @@ export default function FinPath(){
         <h2 style={{fontSize:20,fontWeight:800,textAlign:"center",marginBottom:8,color:T.tx}}>Recuperar contraseña</h2>
         {!resetSent?<>
           <p style={{fontSize:13,color:T.tx3,textAlign:"center",marginBottom:20,lineHeight:1.5}}>
-            Escribí tu email y te enviaremos un link para crear una contraseña nueva.
+            Escribe tu email y te enviaremos un link para crear una contraseña nueva.
           </p>
           <input
             type="email"
@@ -1444,7 +1593,7 @@ export default function FinPath(){
           <button
             id="btn-send-recovery"
             onClick={async()=>{
-              if(!recoveryEmail||!recoveryEmail.includes("@")){setResetError("Escribí un email válido");return}
+              if(!recoveryEmail||!recoveryEmail.includes("@")){setResetError("Escribe un email válido");return}
               setResetLoading(true);setResetError("");
               try{
                 const{error}=await supabase.auth.resetPasswordForEmail(recoveryEmail,{
@@ -1466,9 +1615,9 @@ export default function FinPath(){
             Email enviado a <span style={{color:T.gn}}>{recoveryEmail}</span>
           </p>
           <p style={{fontSize:12,color:T.tx3,textAlign:"center",marginBottom:20,lineHeight:1.6}}>
-            Revisá tu bandeja de entrada y la carpeta de spam. El link expira en 1 hora. Cuando lo abras vas a volver acá para crear tu nueva contraseña.
-            {" "}<strong>Abrilo en este mismo navegador</strong>, en la misma pestaña o una nueva; si lo abrís en otro dispositivo no va a funcionar.
-            ¿No funciona? Escribinos a soporte@finpathia.com.
+            Revisa tu bandeja de entrada y la carpeta de spam. El link expira en 1 hora. Cuando lo abras vas a volver acá para crear tu nueva contraseña.
+            {" "}<strong>Abrilo en este mismo navegador</strong>, en la misma pestaña o una nueva; si lo abres en otro dispositivo no va a funcionar.
+            ¿No funciona? Escríbenos a soporte@finpathia.com.
           </p>
           <button onClick={()=>{setShowRecoveryRequest(false);setResetSent(false)}} style={{width:"100%",background:T.bg3,color:T.tx,border:`1px solid ${T.border}`,padding:"12px 20px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>
             Cerrar
@@ -1482,7 +1631,7 @@ export default function FinPath(){
         <div style={{fontSize:32,marginBottom:8,textAlign:"center"}}>🔐</div>
         <h2 style={{fontSize:20,fontWeight:800,textAlign:"center",marginBottom:8,color:T.tx}}>Nueva contraseña</h2>
         <p style={{fontSize:13,color:T.tx3,textAlign:"center",marginBottom:24,lineHeight:1.5}}>
-          Ingresá tu nueva contraseña. Debe tener al menos 8 caracteres.
+          Ingresa tu nueva contraseña. Debe tener al menos 8 caracteres.
         </p>
         <input
           type="password"
@@ -1507,7 +1656,7 @@ export default function FinPath(){
               localStorage.removeItem("fp3_enc_key");
               setShowResetPassword(false);
               setResetNewPassword("");
-              setAuthError("✅ Contraseña actualizada. Iniciá sesión con la nueva.");
+              setAuthError("✅ Contraseña actualizada. Inicia sesión con la nueva.");
               sAM("login");
             }catch(e){setResetError("No pudimos actualizar: "+e.message)}
             finally{setResetLoading(false)}
@@ -1934,7 +2083,7 @@ export default function FinPath(){
                 <div style={{minWidth:0}}>
                   <div style={{fontSize:13.5,fontWeight:700,color:T.rd}}>Tu prueba gratuita del plan Pro terminó</div>
                   <div style={{fontSize:11.5,color:T.tx3,marginTop:2,lineHeight:1.5}}>
-                    Para seguir usando el <strong>motor fiscal</strong>, el <strong>Asesor IA</strong> y los <strong>Coaches</strong>, activá tu plan.
+                    Para seguir usando el <strong>motor fiscal</strong>, el <strong>Asesor IA</strong> y los <strong>Coaches</strong>, activa tu plan.
                     <br/>Tus datos están intactos y tu cuenta sigue activa en el plan gratuito.
                   </div>
                 </div>
@@ -2109,7 +2258,7 @@ export default function FinPath(){
       })()}
 
       {/* Cómo va el año (25-jul-2026). El resto de la sección 1 es una foto
-          fija: cuánto tenés HOY. Esto agrega la trayectoria — de dónde venís
+          fija: cuánto tienes HOY. Esto agrega la trayectoria — de dónde vienes
           y hacia dónde va el año. Se calcula del flujo, no del histórico de
           patrimonio, porque ese vive en localStorage y está vacío para
           cualquier usuario nuevo. */}
@@ -2205,7 +2354,7 @@ export default function FinPath(){
               significado. Ninguna cifra se pierde: van dentro del bloque o en
               la leyenda de lo que no cupo, y el tooltip da el detalle. */}
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>Distribución Patrimonial</div>
-          <div style={{fontSize:11,color:T.tx3,marginBottom:14}}>El tamaño de cada bloque es la plata que tenés ahí</div>
+          <div style={{fontSize:11,color:T.tx3,marginBottom:14}}>El tamaño de cada bloque es la plata que tienes ahí</div>
           {pie.length>0
             ?<BarraComposicion datos={pie} total={totalPat} paleta={T.ch} T={T} altura={44}/>
             :<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>Agrega inversiones</div>}
@@ -2474,7 +2623,7 @@ export default function FinPath(){
                   <div style={{fontSize:10,color:T.tx3,marginTop:8}}>
                     Al quedar libre de deuda, tu cash flow sube <strong style={{color:T.gn}}>+{fm(totalCuota)}/mes</strong> ({fm(totalCuota*12)}/año) — ese dinero pasa directo a inversión o ahorro.
                   </div>
-                  {algunaNoAmortiza && <div style={{fontSize:10,color:T.rd,marginTop:6}}>⚠ Alguna cuota no alcanza a cubrir el interés — a ese ritmo esa deuda no se amortiza. Revisá la cuota o la tasa.</div>}
+                  {algunaNoAmortiza && <div style={{fontSize:10,color:T.rd,marginTop:6}}>⚠ Alguna cuota no alcanza a cubrir el interés — a ese ritmo esa deuda no se amortiza. Revisa la cuota o la tasa.</div>}
                 </div>
               );
             })()}
@@ -3177,7 +3326,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // Familiar oculto en home + monedas distintas). Ahora ambos consumen
       // la misma definición. Cualquier cambio de precio/feature se hace
       // en plans.js únicamente.
-      const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle,trialActive,trialDays});
+      const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle,trialActive:estado.enPrueba&&!estado.pago,trialDays:estado.diasPrueba});
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
           <h2 style={{fontSize:26,fontWeight:800,margin:"0 0 8px"}}>{isUS?"Choose your plan":"Elige tu plan"}</h2>
@@ -3188,6 +3337,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             ))}
           </div>
         </div>
+        {checkoutError&&<div role="alert" style={{maxWidth:1200,margin:"0 auto 16px",padding:"14px 18px",background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+          <div style={{fontSize:13,color:T.tx,flex:"1 1 220px",minWidth:0}}>{checkoutError.msg}</div>
+          <div style={{display:"flex",gap:8,flexShrink:0}}>
+            <button onClick={()=>abrirCheckout(checkoutError.pl)} disabled={!!checkoutCargando} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:13}}>{checkoutCargando?"Reintentando…":"Reintentar"}</button>
+            <button onClick={()=>setCheckoutError(null)} aria-label="Cerrar" style={{background:"transparent",color:T.tx3,border:"1px solid "+T.border,padding:"10px 12px",borderRadius:8,cursor:"pointer",fontSize:13}}>✕</button>
+          </div>
+        </div>}
         <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(240px, 1fr))",gap:16,maxWidth:1200,margin:"0 auto"}}>
           {plans.map(pl=>(
             <Cd key={pl.n} s={{border:pl.ac?"2px solid "+T.gn:pl.comingSoon?"1px dashed "+T.border:"1px solid "+T.border,position:"relative",opacity:pl.comingSoon?0.95:1}}>
@@ -3226,44 +3382,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 {pl.comingSoon?(
                   <Bt v="s" sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{window.location.href="mailto:soporte@finpathia.com?subject=Plan Pro Familiar — interesado&body=Hola, quiero entrar a la lista de espera del plan Pro Familiar para mi familia/equipo. Mi email: "+(u?.p?.email||"")}}>Únete a la lista de espera</Bt>
                 ):(
-                <Bt v={pl.cur?"s":pl.rank>pl.rankActual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",opacity:(pl.cur||pl.rank===0)?0.55:1,cursor:(pl.cur||pl.rank===0)?"default":"pointer"}} onClick={()=>{if(!pl.cur&&pl.rank!==0)(async()=>{
-                  try{
-                    // PriceIds vienen de src/lib/plans.js (STRIPE_PRICE_IDS),
-                    // source-of-truth única. Refactor item #9.
-                    const priceId=STRIPE_PRICE_IDS[pl.n]?.[billingCycle];
-                    if(!priceId)return;
-                    // Email fallback: u?.p?.email puede no estar cargado para users
-                    // recién signup. authUser.email SIEMPRE está si hay sesión.
-                    const userEmail=u?.p?.email||authUser?.email||"";
-                    const userIdReal=authUser?.id||"";
-                    if(!userEmail){alert("Necesitamos tu email para procesar el pago. Completá tu perfil primero (Configuración → Datos personales) y volvé a intentar.");return;}
-                    if(!userIdReal){alert("Sesión no detectada. Hacé logout/login y volvé a intentar.");return;}
-                    // Sesión 4-may-2026: tracking GA4 — checkout iniciado
-                    // con metadata de plan, ciclo y promo (Pioneros).
-                    trackCheckoutStarted({ plan: pl.n, billingCycle, priceId });
-                    const r=await fetch("/.netlify/functions/stripe-checkout",{
-                      method:"POST",
-                      headers:{"Content-Type":"application/json"},
-                      body:JSON.stringify({priceId,email:userEmail,userId:userIdReal,promotionCode:sessionStorage.getItem("fp3_promo_code")||"",successUrl:window.location.origin+"/?success=1&session_id={CHECKOUT_SESSION_ID}",cancelUrl:window.location.origin+"/?canceled=true"})
-                    });
-                    if(!r.ok){
-                      const txt=await r.text().catch(()=>"(no body)");
-                      console.error("[checkout] HTTP",r.status,txt);
-                      alert("Error de Stripe (HTTP "+r.status+"):\n"+txt.slice(0,200)+"\n\nRevisá la consola del browser (F12) o contactá soporte@finpathia.com.");
-                      return;
-                    }
-                    const d=await r.json();
-                    if(d.url)window.location.href=d.url;
-                    else alert("Error de Stripe: "+(d.error||"No se pudo crear la sesión")+". Si el problema persiste, escribinos a soporte@finpathia.com");
-                  }catch(e){
-                    console.error("[checkout] fetch failed:",e);
-                    const isBlocked=e.message&&/blocked|aborted|failed|network|cors/i.test(e.message);
-                    alert(
-                      "Error conectando con Stripe: "+e.message+
-                      (isBlocked?"\n\n⚠️ Posible AdBlocker o extensión del browser bloqueando la conexión.\nProbá:\n• Desactivar adblocker para finpathia.com\n• Abrir en modo incógnito\n• Probar con otro browser":"\n\nVerificá tu conexión. Detalle del error en consola (F12 → Console).")
-                    );
-                  }
-                })()}}>{
+                <Bt v={pl.cur?"s":pl.rank>pl.rankActual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",opacity:(pl.cur||pl.rank===0)?0.55:1,cursor:(pl.cur||pl.rank===0)?"default":"pointer"}} dis={checkoutCargando===pl.n} onClick={()=>{if(!pl.cur&&pl.rank!==0)abrirCheckout(pl)}}>{
+                  checkoutCargando===pl.n ? "Abriendo pago…" :
                   // 25-jul-2026: el botón decía "Comenzar" en TODAS las tarjetas,
                   // incluida Free — que no tiene precio, así que era un botón
                   // muerto (el handler hace `if(!priceId)return`). Quien ya tenía
@@ -3286,7 +3406,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           💬 ¿Preguntas? Escríbenos a soporte@finpathia.com
         </div>
         <div style={{marginTop:32,padding:"20px 24px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:14,textAlign:"center"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#3b82f6",marginBottom:4}}>💼 ¿Sos asesor financiero o contador?</div>
+          <div style={{fontSize:13,fontWeight:700,color:"#3b82f6",marginBottom:4}}>💼 ¿Eres asesor financiero o contador?</div>
           <div style={{fontSize:12,color:T.tx3,marginBottom:10}}>Tenemos planes para gestionar hasta 40+ clientes con workspace dedicado, white-label y soporte prioritario.</div>
           <a href="/asesores" style={{display:"inline-block",background:"transparent",border:"1px solid #3b82f6",color:"#3b82f6",padding:"8px 18px",borderRadius:8,fontSize:12,fontWeight:600,textDecoration:"none"}}>Ver planes para asesores →</a>
         </div>
@@ -3475,7 +3595,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       </div>}
     case"cuenta":
     case"set":{
-    const cuentaConfig=<div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:20}}><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Perfil</h3><div style={{display:"flex",flexDirection:"column",gap:14}}><In l="Nombre" value={u?.p?.name||""} onChange={v=>setU(p=>({...p,p:{...p.p,name:v}}))}/><In l="Email" value={u?.p?.email||""} onChange={v=>setU(p=>({...p,p:{...p.p,email:v}}))}/><In l="TRM (Tasa de cambio USD→COP)" value={(u&&u.trm)} onChange={v=>setU(p=>({...p,trm:+v||4200}))} type="number"/>{(u?.jurisdiction||"CO")==="CO"&&<div><label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6}}>Componente inflacionario (% exento rendimientos)</label><input type="number" step="0.01" value={u?.componenteInflacionarioPct!=null?u.componenteInflacionarioPct:50.88} onChange={e=>{const v=+e.target.value;if(!isNaN(v)&&v>=0&&v<=100)setU(p=>({...p,componenteInflacionarioPct:v}))}} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none"}}/><div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Art. 38-39 ET · Decreto 0771/2025: <strong>50,88%</strong> para año gravable 2024. Parte de intereses bancarios/CDT/FIC que NO constituye renta para persona natural no obligada a llevar contabilidad. Actualizable cuando la DIAN publique el decreto del próximo año.</div></div>}<div><label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6}}>Jurisdicción fiscal</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{[{code:"CO",flag:"🇨🇴",name:"Colombia"},{code:"US",flag:"🇺🇸",name:"United States"}].map(c=>{const sel=(u?.jurisdiction||"CO")===c.code;return<button key={c.code} type="button" onClick={()=>{if((u?.jurisdiction||"CO")===c.code)return;if(!confirm(`¿Cambiar jurisdicción fiscal a ${c.name}?\n\nEsto cambia las reglas fiscales, el módulo de pensiones (Colpensiones+RAIS vs 401k) y la planeación tributaria. Tus datos se conservan — solo cambia cómo se calculan y presentan.`))return;setU(p=>({...p,jurisdiction:c.code}));showToast(`✓ Jurisdicción cambiada a ${c.name}`)}} style={{padding:"10px 12px",borderRadius:8,border:"1px solid "+(sel?T.gn:T.border),background:sel?T.gnB:T.bg2,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,color:sel?T.gn:T.tx2,fontWeight:sel?700:400,fontSize:12}}><span style={{fontSize:16}}>{c.flag}</span>{c.name}</button>})}</div><div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Define el módulo de pensiones, plan tributario y moneda por default.</div></div></div></Cd><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Datos</h3><div style={{display:"flex",flexDirection:"column",gap:10}}><div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan:</strong> {plan} {!hasProAccess&&<span onClick={()=>setPg("price")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}> → Upgrade</span>}</div>{isAdmin&&<div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan manual:</strong> <select value={(u?.p?.plan)||"free"} onChange={e=>setU(p=>({...p,p:{...p.p,plan:e.target.value}}))} style={{background:T.bg2,border:"1px solid "+T.border,color:T.tx,padding:"4px 8px",borderRadius:6,marginLeft:8}}><option value="free">Free</option><option value="basico">Básico</option><option value="pro">Pro</option><option value="pro_familiar">Pro Familiar</option></select></div>}<Bt v="s" onClick={()=>{if(((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0||Object.keys((u&&u.gas)||{}).length>0){if(!confirm("⚠️ Esto reemplazará tus datos actuales con datos de ejemplo. ¿Continuar?"))return}demo()}} st={{justifyContent:"center"}}>Cargar datos demo</Bt><Bt v="s" onClick={()=>{const d=localStorage.getItem(SK);if(!d)return alert("No hay datos");const b=new Blob([d],{type:"application/json"});const u2=URL.createObjectURL(b);const a=document.createElement("a");a.href=u2;a.download="finpathia-backup-"+new Date().toISOString().split("T")[0]+".json";a.click()}} st={{justifyContent:"center"}}>📥 Exportar Datos (JSON)</Bt>
+    const cuentaConfig=<div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:20}}><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Perfil</h3><div style={{display:"flex",flexDirection:"column",gap:14}}><In l="Nombre" value={u?.p?.name||""} onChange={v=>setU(p=>({...p,p:{...p.p,name:v}}))}/><In l="Email" value={u?.p?.email||""} onChange={v=>setU(p=>({...p,p:{...p.p,email:v}}))}/><In l="TRM (Tasa de cambio USD→COP)" value={(u&&u.trm)} onChange={v=>setU(p=>({...p,trm:+v||4200}))} type="number"/>{(u?.jurisdiction||"CO")==="CO"&&<div><label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6}}>Componente inflacionario (% exento rendimientos)</label><input type="number" step="0.01" value={u?.componenteInflacionarioPct!=null?u.componenteInflacionarioPct:50.88} onChange={e=>{const v=+e.target.value;if(!isNaN(v)&&v>=0&&v<=100)setU(p=>({...p,componenteInflacionarioPct:v}))}} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none"}}/><div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Art. 38-39 ET · Decreto 0771/2025: <strong>50,88%</strong> para año gravable 2024. Parte de intereses bancarios/CDT/FIC que NO constituye renta para persona natural no obligada a llevar contabilidad. Actualizable cuando la DIAN publique el decreto del próximo año.</div></div>}<div><label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6}}>Jurisdicción fiscal</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{[{code:"CO",flag:"🇨🇴",name:"Colombia"},{code:"US",flag:"🇺🇸",name:"United States"}].map(c=>{const sel=(u?.jurisdiction||"CO")===c.code;return<button key={c.code} type="button" onClick={()=>{if((u?.jurisdiction||"CO")===c.code)return;if(!confirm(`¿Cambiar jurisdicción fiscal a ${c.name}?\n\nEsto cambia las reglas fiscales, el módulo de pensiones (Colpensiones+RAIS vs 401k) y la planeación tributaria. Tus datos se conservan — solo cambia cómo se calculan y presentan.`))return;setU(p=>({...p,jurisdiction:c.code}));showToast(`✓ Jurisdicción cambiada a ${c.name}`)}} style={{padding:"10px 12px",borderRadius:8,border:"1px solid "+(sel?T.gn:T.border),background:sel?T.gnB:T.bg2,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,color:sel?T.gn:T.tx2,fontWeight:sel?700:400,fontSize:12}}><span style={{fontSize:16}}>{c.flag}</span>{c.name}</button>})}</div><div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Define el módulo de pensiones, plan tributario y moneda por default.</div></div></div></Cd><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Datos</h3><div style={{display:"flex",flexDirection:"column",gap:10}}><div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan:</strong> {estado.etiqueta} {!hasProAccess&&<span onClick={()=>setPg("price")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}> → Upgrade</span>}</div>{isAdmin&&<div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan manual:</strong> <select value={(u?.p?.plan)||"free"} onChange={e=>setU(p=>({...p,p:{...p.p,plan:e.target.value}}))} style={{background:T.bg2,border:"1px solid "+T.border,color:T.tx,padding:"4px 8px",borderRadius:6,marginLeft:8}}><option value="free">Free</option><option value="basico">Básico</option><option value="pro">Pro</option><option value="pro_familiar">Pro Familiar</option></select></div>}<Bt v="s" onClick={()=>{if(((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0||Object.keys((u&&u.gas)||{}).length>0){if(!confirm("⚠️ Esto reemplazará tus datos actuales con datos de ejemplo. ¿Continuar?"))return}demo()}} st={{justifyContent:"center"}}>Cargar datos demo</Bt><Bt v="s" onClick={()=>{const d=localStorage.getItem(SK);if(!d)return alert("No hay datos");const b=new Blob([d],{type:"application/json"});const u2=URL.createObjectURL(b);const a=document.createElement("a");a.href=u2;a.download="finpathia-backup-"+new Date().toISOString().split("T")[0]+".json";a.click()}} st={{justifyContent:"center"}}>📥 Exportar Datos (JSON)</Bt>
               <Bt v="s" onClick={()=>{try{const backups=JSON.parse(localStorage.getItem("fp3_backups")||"[]");if(!backups.length){alert("No hay backups disponibles");return}const last=backups[backups.length-1];const d=JSON.parse(last.data);if(confirm("¿Restaurar backup del "+new Date(last.date).toLocaleDateString("es-CO")+"? Esto reemplazará tus datos actuales.")){setU(sanitize(d));showToast("✅ Backup restaurado")}}catch{alert("Error restaurando backup")}}} st={{justifyContent:"center"}}>🔄 Restaurar último backup</Bt>
               <div style={{marginTop:12,padding:12,background:T.bg3,borderRadius:10}}>
                 <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>🧾 Planeación Tributaria</div>
@@ -3503,7 +3623,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     <div style={{marginBottom:12,padding:"12px 14px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.2)",borderRadius:10}}>
                       <div style={{fontSize:11,fontWeight:700,color:T.or||"#f97316",marginBottom:6}}>🔧 Clasificación fiscal pendiente</div>
                       <div style={{fontSize:10,color:T.tx2,lineHeight:1.6,marginBottom:secciones.length>0?10:0}}>
-                        {totalPend > 0 ? <>Hay <strong>{totalPend} item(s)</strong> sin clasificación fiscal explícita. El motor está usando inferencia automática, pero podés revisar y confirmar item por item directamente en cada sección para mayor precisión.</> : "Hay items con advertencias fiscales."}
+                        {totalPend > 0 ? <>Hay <strong>{totalPend} item(s)</strong> sin clasificación fiscal explícita. El motor está usando inferencia automática, pero puedes revisar y confirmar item por item directamente en cada sección para mayor precisión.</> : "Hay items con advertencias fiscales."}
                         {(errs > 0 || warnCount > 0) && <div style={{marginTop:4}}>{errs > 0 && <span style={{color:T.rd}}>• <strong>{errs} error(es)</strong> </span>}{warnCount > 0 && <span>• {warnCount} advertencia(s)</span>}</div>}
                       </div>
                       {secciones.length > 0 && (
@@ -3540,7 +3660,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                       <select defaultValue={ow.regimen||"ordinario"} id={"own_reg_"+ow.id} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:12,outline:"none",cursor:"pointer"}}>
                         {regs.map(r=><option key={r.v} value={r.v}>{r.l}</option>)}
                       </select>
-                      <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>El régimen determina la tarifa aplicable. Si no estás seguro, consultá con tu contador.</div>
+                      <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>El régimen determina la tarifa aplicable. Si no estás seguro, consulta con tu contador.</div>
                     </div>
                     {ow.type==="juridica"&&<>
                       <div style={{marginTop:6,paddingTop:10,borderTop:"1px dashed "+T.border}}>
@@ -3570,21 +3690,21 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                         <div style={{fontSize:10,color:T.tx3,marginBottom:10,lineHeight:1.4}}>Estos datos afectan la clasificación por cédula de tus honorarios y tu elegibilidad para depreciar activos (Art. 206 #10 y 128 ET).</div>
                       </div>
                       <div>
-                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Tenés 2+ empleados contratados ≥83% del año? (Art. 206 #10)</label>
+                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Tienes 2+ empleados contratados ≥83% del año? (Art. 206 #10)</label>
                         <select defaultValue={ow.regimenHonorarios||"no_aplica"} id={"own_regh_"+ow.id} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:12,outline:"none",cursor:"pointer"}}>
                           <option value="no_aplica">No aplica — no tengo honorarios</option>
                           <option value="sin_empleados">Sin 2+ empleados — honorarios tributan sin exenta 25%</option>
                           <option value="con_empleados">Con 2+ empleados ≥83% del año — aplica exenta 25%</option>
                         </select>
-                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si tus honorarios califican (Art. 206 #10), podés descontar la renta exenta del 25%. Afecta el impuesto en tus ingresos por honorarios.</div>
+                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si tus honorarios califican (Art. 206 #10), puedes descontar la renta exenta del 25%. Afecta el impuesto en tus ingresos por honorarios.</div>
                       </div>
                       <div>
-                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Obligado o voluntariamente llevás contabilidad? (Art. 38-39, 128 ET)</label>
+                        <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:0.5,display:"block",marginBottom:4}}>¿Obligado o voluntariamente llevas contabilidad? (Art. 38-39, 128 ET)</label>
                         <select defaultValue={ow.llevaContabilidad?"si":"no"} id={"own_contab_"+ow.id} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"8px 10px",borderRadius:6,fontSize:12,outline:"none",cursor:"pointer"}}>
                           <option value="no">No (default para persona natural común)</option>
                           <option value="si">Sí (empresario, RUT con contabilidad)</option>
                         </select>
-                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si llevás contabilidad, podés depreciar activos (Art. 128 ET), pero pierdes el componente inflacionario de rendimientos (Art. 38-39 ET). La mayoría de las personas naturales NO llevan contabilidad.</div>
+                        <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.4}}>Si llevas contabilidad, puedes depreciar activos (Art. 128 ET), pero pierdes el componente inflacionario de rendimientos (Art. 38-39 ET). La mayoría de las personas naturales NO llevan contabilidad.</div>
                       </div>
                       <div style={{marginTop:6,paddingTop:10,borderTop:"1px dashed "+T.border}}>
                         <div style={{fontSize:10,fontWeight:700,color:T.or||T.bl,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>⚙️ Ajustes fiscales avanzados (opcional)</div>
@@ -3679,7 +3799,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               </div>
               <Bt v="s" onClick={()=>{const inp=document.createElement("input");inp.type="file";inp.accept=".json";inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);localStorage.setItem(SK,JSON.stringify(d));setU(sanitize(d));alert("✅ Datos importados correctamente. Recarga la página.")}catch{alert("Error: archivo no válido")}};r.readAsText(f)};inp.click()}} st={{justifyContent:"center"}}>📤 Importar Datos (JSON)</Bt>
               <Bt v="d" onClick={()=>{if(confirm("⚠️ ¿Borrar TODOS tus datos financieros? Esta acción no se puede deshacer. Tus inversiones, gastos, ingresos y deudas se perderán."))setU(mkU(u?.p?.name||"Usuario",u?.p?.email||""))}} st={{justifyContent:"center"}}>Borrar Datos</Bt></div></Cd></div>;
-    return <MiCuenta onUpgrade={()=>setPg("price")} supabase={supabase} accountId={accountId} role={role} displayName={displayName} plan={planAccount} maxMembers={maxMembers} currentUserId={authUser?.id} currentUserName={u?.p?.name||authUser?.user_metadata?.name||authUser?.email?.split("@")[0]||"El administrador"} onChange={refreshAccount} isLegacy={isLegacy} configContent={cuentaConfig} defaultTab={pg==="set"?"config":undefined} subscriptionStatus={subscriptionStatus} graceUntil={graceUntil}/>;}
+    return <MiCuenta onUpgrade={()=>setPg("price")} supabase={supabase} accountId={accountId} role={role} displayName={displayName} plan={planAccount} maxMembers={maxMembers} currentUserId={authUser?.id} currentUserName={u?.p?.name||authUser?.user_metadata?.name||authUser?.email?.split("@")[0]||"El administrador"} onChange={refreshAccount} isLegacy={isLegacy} configContent={cuentaConfig} defaultTab={pg==="set"?"config":undefined} subscriptionStatus={subscriptionStatus} graceUntil={graceUntil} estadoPlan={estado}/>;}
     default:return<div style={{padding:56,textAlign:"center",color:T.tx3}}>Próximamente</div>}};
 
   return <RoleProvider value={{role,isLegacy,accountId}}><div style={{background:T.bg,minHeight:"100vh",display:"flex",fontFamily:"'Inter',system-ui",color:T.tx}}>
@@ -3725,9 +3845,9 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
                 if(mb)sSb(false);
               }} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:highlight?600:400,marginBottom:1,background:highlight?T.gnB:"transparent",color:highlight?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span><span style={{flex:1,textAlign:"left"}}>{n.l}</span><span style={{fontSize:10,color:T.tx3,transform:expanded?"rotate(90deg)":"none",transition:"transform 0.15s"}}>▸</span></button>;
             }
-            const a=pg===n.id;return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span>{n.l}{n.id==="price"&&plan==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:8}}><div style={{width:28,height:28,borderRadius:99,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{(u?.p?.name||"U").charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u?.p?.name||"Usuario"}</div><div style={{fontSize:10,color:T.tx3}}>{plan==="free"?"Free":plan==="basico"?"Básico ⚡":plan==="pro_familiar"?"Pro Familiar 👨‍👩‍👧":trialActive?"Pro ⭐ Trial":"Pro ⭐"}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",marginBottom:6,fontSize:10,color:T.tx3}}><span>🔒</span> Datos encriptados y privados</div><button onClick={()=>window.open("https://wa.me/?text=🏦 Encontré esta plataforma para gestionar tu patrimonio con inteligencia artificial.%0A%0APones tus inversiones, ingresos, gastos y deudas → te dice en qué nivel de libertad financiera estás, simula escenarios y un asesor IA analiza tus números reales.%0A%0A14 días gratis del plan completo, sin tarjeta.%0A%0A👉 https://finpathia.com","_blank")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.2)",color:"#25d366",cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12,marginBottom:6}}>💬 Compartir por WhatsApp</button><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:T.bg3,border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12}}>🚪 Cerrar sesión</button></div></aside>}
+            const a=pg===n.id;return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span>{n.l}{n.id==="price"&&estado.clave==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:8}}><div style={{width:28,height:28,borderRadius:99,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{(u?.p?.name||"U").charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u?.p?.name||"Usuario"}</div><div style={{fontSize:10,color:T.tx3}}>{estado.etiqueta}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",marginBottom:6,fontSize:10,color:T.tx3}}><span>🔒</span> Datos encriptados y privados</div><button onClick={()=>window.open("https://wa.me/?text=🏦 Encontré esta plataforma para gestionar tu patrimonio con inteligencia artificial.%0A%0APones tus inversiones, ingresos, gastos y deudas → te dice en qué nivel de libertad financiera estás, simula escenarios y un asesor IA analiza tus números reales.%0A%0A14 días gratis del plan completo, sin tarjeta.%0A%0A👉 https://finpathia.com","_blank")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.2)",color:"#25d366",cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12,marginBottom:6}}>💬 Compartir por WhatsApp</button><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:T.bg3,border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12}}>🚪 Cerrar sesión</button></div></aside>}
     {mb&&sb&&<div onClick={()=>sSb(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99}}/>}
-    <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{isAdvisor&&viewMode==="client"&&currentClient&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(167,139,250,0.14))",borderBottom:"2px solid rgba(59,130,246,0.4)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#bfdbfe",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>👁</span><span><strong style={{color:"#fff"}}>Viendo como asesor:</strong> {currentClient.name||currentClient.email} <span style={{opacity:0.7}}>({currentClient.email})</span></span></span><button onClick={returnToAdvisorWorkspace} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>← Volver a mis clientes</button></div>}{isAdvisor&&viewMode==="personal"&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(167,139,250,0.10))",borderBottom:"1px solid rgba(59,130,246,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#93c5fd",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📊</span><span>Modo personal — gestionas tu propio patrimonio.</span></span><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setViewMode("workspace");setCurrentClientId(null)}} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>👥 Ir a mis clientes</button></div></div>}{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(249,115,22,0.1),rgba(234,179,8,0.08))",borderBottom:"1px solid rgba(249,115,22,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:10,flexWrap:"wrap"}}><span style={{color:T.orange}}>📊 Estos son <strong>datos de ejemplo</strong>, no los tuyos{authUser?" — tu cuenta sigue vacía":""}.</span>{authUser?<button onClick={()=>{if(!confirm("Se borran los datos de ejemplo y arrancás con tu cuenta en blanco. ¿Seguimos?"))return;setU(mkU(u?.p?.name||"Usuario",u?.p?.email||""));setPg("dash");showToast("✨ Listo — ahora cargá tus datos reales")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Empezar con mis datos →</button>:<button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Crear cuenta para guardar →</button>}</div>}{!isLegacy&&role==="reader"&&viewMode!=="client"&&<RoleBanner accountName={displayName}/>}<header style={{height:52,padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:6}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} title="Abrir menú" style={{background:"none",border:"none",color:T.tx2,cursor:"pointer",fontSize:20,padding:"4px 8px"}}>☰</button>}{!sb&&!mb&&<span style={{fontSize:14,fontWeight:800,color:T.gn,marginLeft:4}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"nowrap",minWidth:0}}>{!isLegacy&&memberships&&memberships.length>1&&viewMode!=="client"&&<AccountSwitcher memberships={memberships} activeAccountId={accountId} onSwitch={handleAccountSwitch}/>}{!mb&&<button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4}}>📥 Importar Excel</button>}<Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#22c55e",border:"none",color:"#fff",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11}}
+    <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{isAdvisor&&viewMode==="client"&&currentClient&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(167,139,250,0.14))",borderBottom:"2px solid rgba(59,130,246,0.4)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#bfdbfe",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>👁</span><span><strong style={{color:"#fff"}}>Viendo como asesor:</strong> {currentClient.name||currentClient.email} <span style={{opacity:0.7}}>({currentClient.email})</span></span></span><button onClick={returnToAdvisorWorkspace} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>← Volver a mis clientes</button></div>}{isAdvisor&&viewMode==="personal"&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(167,139,250,0.10))",borderBottom:"1px solid rgba(59,130,246,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#93c5fd",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📊</span><span>Modo personal — gestionas tu propio patrimonio.</span></span><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setViewMode("workspace");setCurrentClientId(null)}} style={{background:"linear-gradient(135deg,#3b82f6,#a78bfa)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>👥 Ir a mis clientes</button></div></div>}{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(249,115,22,0.1),rgba(234,179,8,0.08))",borderBottom:"1px solid rgba(249,115,22,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:10,flexWrap:"wrap"}}><span style={{color:T.orange}}>📊 Estos son <strong>datos de ejemplo</strong>, no los tuyos{authUser?" — tu cuenta sigue vacía":""}.</span>{authUser?<button onClick={()=>{if(!confirm("Se borran los datos de ejemplo y arrancas con tu cuenta en blanco. ¿Seguimos?"))return;setU(mkU(u?.p?.name||"Usuario",u?.p?.email||""));setPg("dash");showToast("✨ Listo — ahora carga tus datos reales")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Empezar con mis datos →</button>:<button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>Crear cuenta para guardar →</button>}</div>}{!isLegacy&&role==="reader"&&viewMode!=="client"&&<RoleBanner accountName={displayName}/>}<header style={{height:52,padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:6}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} title="Abrir menú" style={{background:"none",border:"none",color:T.tx2,cursor:"pointer",fontSize:20,padding:"4px 8px"}}>☰</button>}{!sb&&!mb&&<span style={{fontSize:14,fontWeight:800,color:T.gn,marginLeft:4}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"nowrap",minWidth:0}}>{!isLegacy&&memberships&&memberships.length>1&&viewMode!=="client"&&<AccountSwitcher memberships={memberships} activeAccountId={accountId} onSwitch={handleAccountSwitch}/>}{!mb&&<button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4}}>📥 Importar Excel</button>}<Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#22c55e",border:"none",color:"#fff",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11}}
                   // 03-ago-2026 — la TRM real llega del Banco de la República
                   // pero nunca se mostraba: no había forma de saber con qué tasa
                   // se estaba convirtiendo. Ahora va en el title del botón.
@@ -3740,12 +3860,13 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
       <Suspense fallback={<div style={{padding:40,textAlign:"center",color:T.tx3,fontSize:13}}>Cargando…</div>}>
         {rp()}
       </Suspense>
-      </div>{showImport&&<Suspense fallback={null}><CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/></Suspense>}<PWAInstallPrompt/>{showOnboarding&&<OnboardingTour open={showOnboarding} userName={u?.p?.name||authUser?.user_metadata?.name||""} isPioneros={sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"} onSelectDemo={()=>{setShowOnboarding(false);setPg("dash");(u?.jurisdiction==="US"?demoUS:demo)();showToast("📊 Datos de ejemplo cargados — explorá tranquilo")}} onSelectImport={()=>{setShowOnboarding(false);setShowImport(true)}} onSelectManual={()=>{setShowOnboarding(false);setPg("ing");showToast("✨ Paso 1 de 4 — registrá lo que entra cada mes")}} onClose={()=>setShowOnboarding(false)}/>}{pagoEstado&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,display:"flex",justifyContent:"center",padding:"14px 12px",pointerEvents:"none"}}>
+      </div>{showImport&&<Suspense fallback={null}><CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/></Suspense>}<PWAInstallPrompt/>{showOnboarding&&<OnboardingTour open={showOnboarding} userName={u?.p?.name||authUser?.user_metadata?.name||""} isPioneros={sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"} onSelectDemo={()=>{setShowOnboarding(false);setPg("dash");(u?.jurisdiction==="US"?demoUS:demo)();showToast("📊 Datos de ejemplo cargados — explora tranquilo")}} onSelectImport={()=>{setShowOnboarding(false);setShowImport(true)}} onSelectManual={()=>{setShowOnboarding(false);setPg("ing");showToast("✨ Paso 1 de 4 — registra lo que entra cada mes")}} onClose={()=>setShowOnboarding(false)}/>}{pagoEstado&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,display:"flex",justifyContent:"center",padding:"14px 12px",pointerEvents:"none"}}>
       <div style={{pointerEvents:"auto",maxWidth:520,width:"100%",background:pagoEstado.tipo==="exito"?"#0f2a1a":pagoEstado.tipo==="cancelado"?"#2a2416":"#12203a",border:"1px solid "+(pagoEstado.tipo==="exito"?"rgba(34,197,94,0.4)":pagoEstado.tipo==="cancelado"?"rgba(234,179,8,0.35)":"rgba(59,130,246,0.35)"),borderRadius:12,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",boxShadow:"0 8px 28px rgba(0,0,0,0.45)"}}>
         <span style={{fontSize:20,flexShrink:0}}>{pagoEstado.tipo==="exito"?"✅":pagoEstado.tipo==="cancelado"?"↩️":"⏳"}</span>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:14,fontWeight:700,color:pagoEstado.tipo==="exito"?"#4ade80":pagoEstado.tipo==="cancelado"?"#eab308":"#60a5fa"}}>{pagoEstado.titulo}</div>
           <div style={{fontSize:12,color:"#cbd5e1",marginTop:3,lineHeight:1.5}}>{pagoEstado.msg}</div>
+          {pagoEstado.tipo==="cancelado"&&<button onClick={()=>{const r=pagoEstado.reintento;setPagoEstado(null);setPg("price");if(r&&r.n&&authUser){if(r.ciclo)setBillingCycle(r.ciclo);abrirCheckout({n:r.n},r.ciclo)}}} disabled={!!checkoutCargando} style={{marginTop:10,background:"#eab308",color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>{checkoutCargando?"Abriendo pago…":"Reintentar"}</button>}
         </div>
         {pagoEstado.tipo!=="procesando"&&<button onClick={()=>setPagoEstado(null)} style={{background:"transparent",border:"none",color:"#64748b",cursor:"pointer",fontSize:18,lineHeight:1,padding:0,flexShrink:0}}>×</button>}
       </div>

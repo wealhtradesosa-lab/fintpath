@@ -6,7 +6,7 @@
  *
  * Que el MONTO sea visible es deliberado: un candado que no deja ver qué
  * protege no motiva. Saber que hay $6.400M bloqueados es mucho más persuasivo
- * que un "mejorá tu plan" genérico, y además es honesto — el usuario merece
+ * que un "mejora tu plan" genérico, y además es honesto — el usuario merece
  * saber que sus totales incluyen algo que no está viendo en detalle.
  */
 export default function BloqueadosPorPlan({ cantidad, monto, fmt, T, onUpgrade, que = "ítems" }) {
@@ -37,7 +37,7 @@ export default function BloqueadosPorPlan({ cantidad, monto, fmt, T, onUpgrade, 
           </div>
           <div style={{ fontSize: 11.5, color: c3, marginTop: 2, lineHeight: 1.5 }}>
             {monto > 0 && <>Suman <strong style={{ color: c2 }}>{fmt(monto)}</strong> y <strong>sí están incluidos</strong> en tus totales. </>}
-            Para verlos y editarlos, mejorá tu plan.
+            Para verlos y editarlos, mejora tu plan.
           </div>
         </div>
       </div>

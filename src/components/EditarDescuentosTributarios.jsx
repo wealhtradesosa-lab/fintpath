@@ -132,7 +132,7 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
 
       <div style={{ padding: 14, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, marginBottom: 16, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
         <div style={{ fontWeight: 700, color: T.orange, marginBottom: 4 }}>⚠️ Tope del 25% (Art. 259 ET)</div>
-        El total aplicado no puede reducir el impuesto a menos del 75% del bruto (solo aplica a régimen ordinario y zona franca). El motor calcula esto automáticamente — capturá el monto TOTAL que te corresponde y el sistema aplica el tope.
+        El total aplicado no puede reducir el impuesto a menos del 75% del bruto (solo aplica a régimen ordinario y zona franca). El motor calcula esto automáticamente — captura el monto TOTAL que te corresponde y el sistema aplica el tope.
       </div>
 
       {/* ── DEDUCCIONES AVANZADAS (reducen la base gravable, sin tope) ── */}
@@ -185,7 +185,7 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
           articulo="Art. 128-141 ET"
           value={d.depreciacionInmueblesAnual}
           onChange={(v) => upd("depreciacionInmueblesAnual", v)}
-          hint="Depreciación anual de inmuebles propios usados para producir renta (típicamente arrendados). Vida útil fiscal 45 años (Decreto 2235/2017). Solo se deprecia la construcción (no terreno). Estimación rápida: valor de compra × 75% / 45. IMPORTANTE: tu contador calcula el monto correcto considerando depreciación acumulada de años anteriores. Cargá el monto que él te indique."
+          hint="Depreciación anual de inmuebles propios usados para producir renta (típicamente arrendados). Vida útil fiscal 45 años (Decreto 2235/2017). Solo se deprecia la construcción (no terreno). Estimación rápida: valor de compra × 75% / 45. IMPORTANTE: tu contador calcula el monto correcto considerando depreciación acumulada de años anteriores. Carga el monto que él te indique."
         />
         {totalImpactoDeducciones > 0 && (
           <div style={{ padding: "10px 12px", background: "rgba(167,139,250,0.08)", border: "1px solid " + T.purple, borderRadius: 8, marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -266,7 +266,7 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
       </div>
 
       <div style={{ marginTop: 20, padding: 12, background: T.bg3, borderRadius: 10, fontSize: 10, color: T.txt3, textAlign: "center", lineHeight: 1.6 }}>
-        Estos descuentos se aplican al impuesto de renta de <strong>{owner?.name}</strong> calculado por el motor, respetando el tope del 25% (Art. 259 ET). Podés editarlos en cualquier momento.
+        Estos descuentos se aplican al impuesto de renta de <strong>{owner?.name}</strong> calculado por el motor, respetando el tope del 25% (Art. 259 ET). Puedes editarlos en cualquier momento.
       </div>
     </div>
   );
