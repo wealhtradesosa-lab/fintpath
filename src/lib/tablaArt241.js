@@ -21,7 +21,8 @@
 //   d: límite inferior del rango (exclusive; UVT > d)
 //   h: límite superior (inclusive; UVT ≤ h)
 //   t: tarifa marginal del rango (en %)
-//   b: constante acumulada en UVT del impuesto hasta el comienzo del rango
+//   b: constante en UVT del impuesto hasta el comienzo del rango, tal como
+//      la publica el Art. 241 ET (116, 788, 2296, 5901, 10352 UVT)
 //
 // El impuesto se calcula como:
 //   impuesto = (b + (uvtBase - d) * t / 100) * UVT_año
@@ -30,11 +31,11 @@
 export const TABLA_ART_241 = [
   { d: 0,     h: 1090,     t: 0,  b: 0 },
   { d: 1090,  h: 1700,     t: 19, b: 0 },
-  { d: 1700,  h: 4100,     t: 28, b: 115.86 },
-  { d: 4100,  h: 8670,     t: 33, b: 787.86 },
-  { d: 8670,  h: 18970,    t: 35, b: 2295.96 },
-  { d: 18970, h: 31000,    t: 37, b: 5900.96 },
-  { d: 31000, h: Infinity, t: 39, b: 10352.96 },
+  { d: 1700,  h: 4100,     t: 28, b: 116 },
+  { d: 4100,  h: 8670,     t: 33, b: 788 },
+  { d: 8670,  h: 18970,    t: 35, b: 2296 },
+  { d: 18970, h: 31000,    t: 37, b: 5901 },
+  { d: 31000, h: Infinity, t: 39, b: 10352 },
 ];
 
 // Calcula el impuesto de renta persona natural aplicando la tabla progresiva.

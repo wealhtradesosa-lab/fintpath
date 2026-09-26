@@ -80,8 +80,11 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
   const gmfDeducible = det.gmfDeducible || 0;
   const totalDeducciones = det.totalDeducciones || 0;
   const exenta25 = det.exenta25 || 0;
-  const pensionVol = det.pensionVol || 0;
-  const afc = det.afc || 0;
+  // Renglón 41: solo aportes REALES a PV + AFC (Egresos AP_TRIB_PV/AP_TRIB_AFC,
+  // ya topados por el motor). det.pensionVol/det.afc son la SUGERENCIA de
+  // optimización (llenan el espacio del tope Art. 336) y no deben entrar a la
+  // renta líquida del borrador: el renglón 90 (det.impBruto) se calcula sin ellos.
+  const pvAfcReal = det.aportesDesglose?.pensionVoluntariaManualAnual || 0;
 
   // Patrimonio (mismo cálculo que F-110)
   const oInv = (user.inv || []).filter(i => i.owner === owner.id && i.sim !== false && !i.excluirDeclaracion);
@@ -143,12 +146,13 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
       tip: "🏠 Intereses pagados en préstamo de vivienda HABITUAL (donde vivís). Tope: 1200 UVT/año. ⚠️ Tu casa de descanso o segunda vivienda NO aplica." },
     { seccion: "deducciones", numero: 40, concepto: "Medicina prepagada + seguros salud + médicos", valor: v(40, deducMedicina), auto: deducMedicina, tipo: "editable", fuente: "Gastos categoría Salud + AP_TRIB_SALUD_PREPAGADA", articulo: "Art. 387 ET",
       tip: "🏥 Tope conjunto 16 UVT/mes (~$10M/año). Incluye: medicina prepagada, seguros de salud, seguros de vida, gastos médicos no cubiertos por POS." },
-    { seccion: "deducciones", numero: 41, concepto: "Aportes voluntarios pensión + AFC", valor: v(41, pensionVol + afc), auto: pensionVol + afc, tipo: "editable", fuente: "Aportes a fondos de pensión voluntaria + AFC", articulo: "Art. 126-1 y 126-4 ET",
+    { seccion: "deducciones", numero: 41, concepto: "Aportes voluntarios pensión + AFC", valor: v(41, pvAfcReal), auto: pvAfcReal, tipo: "editable", fuente: "Aportes reales a pensión voluntaria + AFC (Egresos)", articulo: "Art. 126-1 y 126-4 ET",
       tip: `💎 LA PALANCA MÁS PODEROSA. Hasta 30% del ingreso laboral (3800 UVT) para AFC + 25% (2500 UVT) para PV. Combinado caben hasta 1340 UVT ($${uvt.toLocaleString("es-CO")} UVT · AG ${ano}). Cada $1 aportado ahorra hasta $0.39 de impuesto.` },
     { seccion: "deducciones", numero: 42, concepto: "GMF deducible (50%)", valor: v(42, gmfDeducible), auto: gmfDeducible, tipo: "editable", fuente: "Cálculo automático 50% del 4x1000",
       tip: "🏦 El 4x1000 que te cobra el banco es deducible al 50%. Cálculo automático sobre tus ingresos." },
     { seccion: "deducciones", numero: 43, concepto: `Total deducciones limitadas (40% / 1340 UVT · $${uvt.toLocaleString("es-CO")} AG ${ano})`, tipo: "formula", destacado: true,
-      calc: (vals) => Math.min((vals[38] || 0) + (vals[39] || 0) + (vals[40] || 0) + (vals[41] || 0) + (vals[42] || 0), Math.min((vals[37] || 0) * 0.40, 1340 * uvt)) },
+      // Art. 336 ET: deducciones + rentas exentas (renglón 44) comparten el tope 40% / 1340 UVT.
+      calc: (vals) => Math.min((vals[38] || 0) + (vals[39] || 0) + (vals[40] || 0) + (vals[41] || 0) + (vals[42] || 0), Math.max(0, Math.min((vals[37] || 0) * 0.40, 1340 * uvt) - (vals[44] || 0))) },
     { seccion: "deducciones", numero: 44, concepto: "Renta exenta 25% laboral", valor: v(44, exenta25), auto: exenta25, tipo: "editable", fuente: "Cálculo automático Art. 206-10", articulo: "Art. 206-10 ET",
       tip: "✨ Sólo aplica si tenés salarios. 25% de tus ingresos laborales netos quedan exentos, hasta 790 UVT/año." },
 
