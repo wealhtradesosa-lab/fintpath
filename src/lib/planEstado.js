@@ -89,7 +89,12 @@ const PAGOS = new Set(["basico", "pro", "pro_familiar", "advisor_pro"]);
  *   pago: boolean,         // tiene un plan de pago registrado (no prueba)
  * }}
  */
-export function estadoPlan({ isAdmin = false, planGuardado, planAccount, trialEnd, creadoEn, email, ahora = Date.now() }) {
+// bloqueado: los datos del usuario están cifrados y este dispositivo no los
+// abrió. planGuardado/trialEnd vienen entonces de lo legible SIN la clave
+// (columna user_data.plan, data.p fuera del blob). Sin evidencia de plan pago
+// ni de prueba, se devuelve clave "bloqueado": NUNCA "free"/"Gratis", porque
+// eso sería el valor por defecto de datos que no se pudieron leer.
+export function estadoPlan({ isAdmin = false, bloqueado = false, planGuardado, planAccount, trialEnd, creadoEn, email, ahora = Date.now() }) {
   const fin = finPruebaEfectiva({ trialEnd, creadoEn, email });
   const pruebaVigente = fin != null && fin >= ahora;
   const diasPrueba = diasRestantes(fin, ahora);
@@ -119,6 +124,10 @@ export function estadoPlan({ isAdmin = false, planGuardado, planAccount, trialEn
 
   if (guardado === "basico") {
     return { ...base, clave: "basico", etiqueta: ETIQUETAS.basico, enPrueba: false, pago: true };
+  }
+
+  if (bloqueado) {
+    return { ...base, clave: "bloqueado", etiqueta: "Tu plan se muestra al ingresar tu PIN", enPrueba: false, pago: false, bloqueado: true };
   }
 
   return { ...base, clave: "free", etiqueta: "Gratis", enPrueba: false, pago: false };

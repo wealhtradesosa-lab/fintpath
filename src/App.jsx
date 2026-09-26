@@ -93,6 +93,17 @@ const T={bg:"#09090b",bg2:"#18181b",bg3:"#27272a",card:"#111113",border:"rgba(25
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>(n||0).toFixed(1)+"%";
 const SK="fp3";
+// ═══ DATOS CIFRADOS SIN DESBLOQUEAR ═══════════════════════════════════════
+// 26-sep-2026 (ticket "pagué y en el celular me sale Gratis"). Si user_data.data
+// es un blob cifrado ({_encrypted, payload}) y este dispositivo no tiene la
+// clave (fp3_enc_key) o la clave no lo abre, sL devolvía null y la app:
+//   · en el login creaba una cuenta NUEVA y la guardaba ENCIMA del blob;
+//   · en la recarga se quedaba sin datos y mostraba el plan por defecto.
+// Ahora sL deja constancia aquí del bloqueo (con lo legible fuera del blob) y
+// sS NO escribe en Supabase para ese usuario mientras siga bloqueado.
+let _bloqueoCifrado=null; // { uid, pFuera } | null
+const bloqueoCifradoDe=(uid)=>(_bloqueoCifrado&&_bloqueoCifrado.uid===uid)?_bloqueoCifrado:null;
+const PLANES_PAGOS_FUERA=new Set(["basico","pro","pro_familiar","advisor_pro"]);
 const sL=async(uid,accountId)=>{
   try{
     if(isSupabaseConfigured&&uid){
@@ -106,9 +117,17 @@ const sL=async(uid,accountId)=>{
       if(!error&&data?.data){
         let sd=data.data;
         if(sd._encrypted&&sd.payload){
+          const pFuera=sd.p&&typeof sd.p==="object"?sd.p:null;
           const encKey=localStorage.getItem("fp3_enc_key");
-          if(encKey){try{sd=await E2E.decrypt(sd.payload,encKey,uid)}catch{return null}}
-          else{return null}
+          let dec=null;
+          if(encKey){try{dec=await E2E.decrypt(sd.payload,encKey,uid)}catch{dec=null}}
+          if(!dec||typeof dec!=="object"){_bloqueoCifrado={uid,pFuera};return null}
+          _bloqueoCifrado=null;
+          // El webhook escribe el plan FUERA del blob (columna plan y, si
+          // existe, data.p.plan). Si lo de afuera es un plan pago, gana sobre
+          // el plan viejo que quedó dentro del blob.
+          if(pFuera&&PLANES_PAGOS_FUERA.has(pFuera.plan)){dec.p={...(dec.p||{}),plan:pFuera.plan}}
+          sd=dec;
         }
         sd=sanitize(sd);
         if(data.jurisdiction)sd.jurisdiction=data.jurisdiction;
@@ -244,6 +263,9 @@ const takeSnapshot=(d)=>{
 };
 const sS=async(d,uid,accountId,isLegacy,role)=>{
   try{
+    // Datos cifrados sin desbloquear: nunca pisar el blob (ni el plan) con
+    // datos por defecto. Ni Supabase ni la caché local.
+    if(uid&&bloqueoCifradoDe(uid))return;
     localStorage.setItem(SK,JSON.stringify(d));
     takeSnapshot(d);
     if(isSupabaseConfigured&&uid){
@@ -559,7 +581,7 @@ export default function FinPath(){
     // Switch real: recargar user_data con el nuevo accountId
     const uid=authUser.id;
     (async()=>{
-      try{const d=await sL(uid,accountId);if(d)setU(sanitize(d))}
+      try{const d=await sL(uid,accountId);if(d)setU(sanitize(d));else if(bloqueoCifradoDe(uid))await marcarBloqueo(uid)}
       catch(e){console.warn("[fp3] reload tras switch falló:",e)}
     })();
   },[accountId,accountLoading]);
@@ -655,6 +677,7 @@ export default function FinPath(){
             // Subsecuentemente, los saves usan los refs actualizados.
             const d=await Promise.race([sL(session.user.id,accountIdRef.current),timeout]);
             if(d)setU(sanitize(d));
+            else if(bloqueoCifradoDe(session.user.id))await marcarBloqueo(session.user.id);
           }catch(e){if(typeof console!=="undefined")console.warn("[load] data load timeout:",e)}
           // ═══ Check if user is an advisor ═══
           try{
@@ -857,6 +880,58 @@ export default function FinPath(){
   // Si supabase.signOut falla (común cuando el token ya expiró del lado
   // servidor), limpiamos igual lo local para que el usuario nunca quede
   // atrapado en un estado "medio-logueado".
+  // Estado de "datos cifrados sin desbloquear" (ver _bloqueoCifrado arriba).
+  // { uid, planGuardado, trialEnd } con lo legible SIN la clave: data.p fuera
+  // del blob y la columna user_data.plan (la escribe el webhook de Stripe).
+  const[bloqueo,setBloqueo]=useState(null);
+  const[claveDesbloqueo,setClaveDesbloqueo]=useState("");
+  const[errorDesbloqueo,setErrorDesbloqueo]=useState("");
+  const[desbloqueando,setDesbloqueando]=useState(false);
+  const[olvidoPin,setOlvidoPin]=useState(false);
+  const[confirmaBorrado,setConfirmaBorrado]=useState("");
+  // "¿Olvidaste tu PIN?" → empezar de cero. Los datos cifrados NO se pueden
+  // recuperar sin la clave (AES-GCM con clave derivada por PBKDF2 de la
+  // contraseña; no hay copia de la clave en el servidor). Solo se reemplaza
+  // el blob tras escribir BORRAR. El plan pago no vive en el blob: se conserva.
+  const empezarDeCeroBloqueado=async()=>{
+    if(!bloqueo||confirmaBorrado.trim().toUpperCase()!=="BORRAR")return;
+    const uid=bloqueo.uid;
+    const nd=mkU(authUser?.user_metadata?.name||"Usuario",authUser?.email||"");
+    nd.p.plan=bloqueo.planGuardado||"free";
+    if(bloqueo.trialEnd)nd.p.trialEnd=bloqueo.trialEnd;
+    _bloqueoCifrado=null;
+    setBloqueo(null);setOlvidoPin(false);setConfirmaBorrado("");setClaveDesbloqueo("");
+    setU(nd);setPg("dash");
+    await sS(nd,uid,accountIdRef.current,isLegacyRef.current,roleRef.current);
+    showToast("Listo. Empezaste de cero y tu plan sigue igual.");
+  };
+  const marcarBloqueo=async(uid)=>{
+    const b=bloqueoCifradoDe(uid);
+    const pFuera=(b&&b.pFuera)||{};
+    let planColumna=null;
+    try{
+      if(isSupabaseConfigured&&supabase){
+        const{data:fila,error}=await supabase.from("user_data").select("plan").eq("id",uid).maybeSingle();
+        if(!error&&fila&&typeof fila.plan==="string")planColumna=fila.plan;
+      }
+    }catch{/* sin columna plan: seguimos con lo que haya */}
+    const pago=[pFuera.plan,planColumna].find(x=>PLANES_PAGOS_FUERA.has(x));
+    setBloqueo({uid,planGuardado:pago||null,trialEnd:typeof pFuera.trialEnd==="string"?pFuera.trialEnd:null});
+  };
+  const desbloquearDatos=async()=>{
+    if(!bloqueo||!claveDesbloqueo)return;
+    setDesbloqueando(true);setErrorDesbloqueo("");
+    const anterior=localStorage.getItem("fp3_enc_key");
+    localStorage.setItem("fp3_enc_key",claveDesbloqueo);
+    let d=null;
+    try{d=await sL(bloqueo.uid,accountIdRef.current)}catch{d=null}
+    if(d){setClaveDesbloqueo("");setBloqueo(null);setU(sanitize(d));setPg("dash")}
+    else{
+      if(anterior)localStorage.setItem("fp3_enc_key",anterior);else localStorage.removeItem("fp3_enc_key");
+      setErrorDesbloqueo("Ese PIN no abre tus datos. Prueba con la contraseña que usabas cuando guardaste tus datos.");
+    }
+    setDesbloqueando(false);
+  };
   const logout=async()=>{
     // 1) Supabase signOut en BACKGROUND (no esperamos respuesta del servidor).
     // signOut({scope:"local"}) limpia el storage localmente sin hacer request
@@ -894,6 +969,8 @@ export default function FinPath(){
     setSwitchingClient(false);
     setShowAuth(false);
     setPg("dash");
+    _bloqueoCifrado=null;
+    setBloqueo(null);setOlvidoPin(false);setConfirmaBorrado("");setClaveDesbloqueo("");setErrorDesbloqueo("");
     // setU(null) al FINAL para que el useEffect de auto-save no dispare con authUser aún seteado
     _setU(null);
   };
@@ -963,6 +1040,7 @@ export default function FinPath(){
             new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout cargando datos")),10000))
           ]);
           if(d){const __sd=sanitize(d);setU(__sd);setPg("dash");if(cuentaVacia(__sd))setShowOnboarding(true);}
+          else if(bloqueoCifradoDe(data.user.id)){await marcarBloqueo(data.user.id)}
           else{const nd=cuentaNueva(aF.n||"Usuario",aF.e,aF.country);setU(nd);await sS(nd,data.user.id);setShowOnboarding(true)}
         }catch(loadErr){
           // Si falla la carga de datos: limpiamos el estado a medio-loguear para no
@@ -1523,6 +1601,47 @@ export default function FinPath(){
       const token=inviteMatch[1];
       return<AcceptInvite token={token} onComplete={()=>{window.location.href="/"}}/>;
     }
+  }
+
+  // ═══ DATOS CIFRADOS SIN DESBLOQUEAR ═══
+  // Nada de "Gratis", badge PRO ni módulos bloqueados por un plan por defecto:
+  // la app entera queda detrás de esta pantalla hasta que el PIN abra el blob.
+  // El plan que se muestra sale de lo legible sin la clave (planEstado con
+  // bloqueado:true nunca devuelve "free").
+  if(authUser&&bloqueo&&!u){
+    const eb=estadoPlan({isAdmin,bloqueado:true,planGuardado:bloqueo.planGuardado,planAccount,trialEnd:bloqueo.trialEnd,creadoEn:authUser?.created_at,email:authUser?.email});
+    const okBorrar=confirmaBorrado.trim().toUpperCase()==="BORRAR";
+    return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx,padding:20}}>
+      <div role="dialog" aria-labelledby="fp-bloqueo-titulo" style={{width:"100%",maxWidth:400,textAlign:"center"}}>
+        <div style={{fontSize:40,marginBottom:12}}>🔐</div>
+        <div style={{fontSize:20,fontWeight:800,color:T.gn,marginBottom:8}}>FINPATHIA</div>
+        <div id="fp-bloqueo-titulo" style={{fontSize:15,fontWeight:600,lineHeight:1.5,marginBottom:10}}>Ingresa tu PIN para ver tus datos y tu plan en este dispositivo.</div>
+        <div style={{fontSize:12,color:T.tx3,lineHeight:1.5,marginBottom:16}}>Tus datos están cifrados y este dispositivo todavía no tiene tu PIN. Es la contraseña con la que protegiste tus datos.</div>
+        <div data-testid="plan-bloqueado" style={{display:"inline-block",fontSize:12,fontWeight:700,color:eb.clave==="bloqueado"?T.tx3:T.gn,background:eb.clave==="bloqueado"?T.bg3:T.gnB,padding:"4px 12px",borderRadius:99,marginBottom:16}}>{eb.clave==="bloqueado"?eb.etiqueta:"Tu plan: "+eb.etiqueta}</div>
+        {!olvidoPin?<>
+          <form onSubmit={e=>{e.preventDefault();desbloquearDatos()}}>
+            <input type="password" autoFocus autoComplete="current-password" aria-label="PIN" placeholder="Tu PIN" value={claveDesbloqueo} onChange={e=>{setClaveDesbloqueo(e.target.value);setErrorDesbloqueo("")}} style={{width:"100%",boxSizing:"border-box",background:T.bg3,border:"1px solid "+T.border,color:T.tx,padding:"12px 14px",borderRadius:10,fontSize:15,outline:"none",marginBottom:10}}/>
+            {errorDesbloqueo&&<div role="alert" style={{fontSize:12,color:T.rd,marginBottom:10,lineHeight:1.4}}>{errorDesbloqueo}</div>}
+            <button type="submit" disabled={desbloqueando||!claveDesbloqueo} style={{width:"100%",background:T.gn,color:"#000",border:"none",padding:"12px",borderRadius:10,cursor:desbloqueando||!claveDesbloqueo?"default":"pointer",opacity:desbloqueando||!claveDesbloqueo?0.6:1,fontWeight:700,fontSize:14}}>{desbloqueando?"Abriendo…":"Ver mis datos"}</button>
+          </form>
+          <button type="button" onClick={()=>setOlvidoPin(true)} style={{marginTop:14,background:"none",border:"none",color:T.bl,cursor:"pointer",fontSize:13,fontWeight:600}}>¿Olvidaste tu PIN?</button>
+        </>:<div data-testid="olvido-pin" style={{textAlign:"left",background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:16,fontSize:13,lineHeight:1.55}}>
+          <div style={{fontWeight:700,marginBottom:8}}>Si olvidaste tu PIN</div>
+          <p style={{margin:"0 0 8px"}}>Tus datos financieros están cifrados con tu PIN, y solo tú lo tienes. <strong>Sin él no se pueden recuperar</strong>: ni FINPATHIA ni soporte pueden abrirlos.</p>
+          <p style={{margin:"0 0 8px"}}><strong>Tu plan y tus pagos no se pierden.</strong> Están guardados en tu cuenta y en Stripe, no dentro de los datos cifrados.</p>
+          <p style={{margin:"0 0 12px"}}>Si recuerdas una contraseña anterior, pruébala como PIN. Si necesitas ayuda, escríbenos a <a href="mailto:soporte@finpathia.com" style={{color:T.bl}}>soporte@finpathia.com</a>.</p>
+          <div style={{borderTop:"1px solid "+T.border,paddingTop:12}}>
+            <div style={{fontWeight:600,marginBottom:6}}>Empezar de cero</div>
+            <div style={{fontSize:12,color:T.tx3,marginBottom:8}}>Borra para siempre tus datos cifrados (inversiones, ingresos, gastos y deudas) y deja tu cuenta vacía, con el mismo plan. No se puede deshacer. Para confirmar, escribe BORRAR.</div>
+            <input aria-label="Escribe BORRAR para confirmar" value={confirmaBorrado} onChange={e=>setConfirmaBorrado(e.target.value)} placeholder="BORRAR" style={{width:"100%",boxSizing:"border-box",background:T.bg3,border:"1px solid "+T.border,color:T.tx,padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",marginBottom:8}}/>
+            <button type="button" disabled={!okBorrar} onClick={empezarDeCeroBloqueado} style={{width:"100%",background:okBorrar?T.rd:T.bg3,color:okBorrar?"#fff":T.tx3,border:"none",padding:"10px",borderRadius:8,cursor:okBorrar?"pointer":"default",fontWeight:700,fontSize:13}}>Borrar mis datos cifrados y empezar de cero</button>
+          </div>
+          <button type="button" onClick={()=>{setOlvidoPin(false);setConfirmaBorrado("")}} style={{marginTop:12,background:"none",border:"none",color:T.bl,cursor:"pointer",fontSize:13,fontWeight:600,padding:0}}>← Volver a ingresar mi PIN</button>
+        </div>}
+        <div style={{fontSize:11,color:T.tx3,marginTop:16,lineHeight:1.5}}>¿Necesitas ayuda? Escríbenos a soporte@finpathia.com.</div>
+        <button onClick={logout} style={{marginTop:10,background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:12,textDecoration:"underline"}}>Cerrar sesión</button>
+      </div>
+    </div>;
   }
 
   if(!u&&!showAuth){

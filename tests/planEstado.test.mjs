@@ -55,3 +55,22 @@ console.log("Helpers");
   assert(finPruebaEfectiva({ trialEnd: "basura" }) === null, "trialEnd inválido y sin created_at → null");
 }
 console.log("OK planEstado");
+
+console.log("Datos cifrados sin desbloquear (bloqueado)");
+{
+  const vieja = "2025-01-01T00:00:00Z";
+  const b = estadoPlan({ bloqueado: true, planGuardado: null, creadoEn: vieja, ahora });
+  assert(b.clave === "bloqueado" && b.bloqueado, "sin evidencia → 'bloqueado'");
+  assert(b.clave !== "free" && !/Gratis/.test(b.etiqueta), "nunca 'free' ni 'Gratis': " + b.etiqueta);
+  const pagado = estadoPlan({ bloqueado: true, planGuardado: "pro", creadoEn: vieja, ahora });
+  assert(pagado.clave === "pro" && pagado.pago && pagado.etiqueta === "Pro", "columna plan=pro → Pro");
+  const basico = estadoPlan({ bloqueado: true, planGuardado: "basico", creadoEn: vieja, ahora });
+  assert(basico.etiqueta === "Básico", "columna plan=basico → Básico");
+  const fam = estadoPlan({ bloqueado: true, planAccount: "pro_familiar", creadoEn: vieja, ahora });
+  assert(fam.clave === "pro_familiar", "accounts pro_familiar → Pro Familiar");
+  const reciente = estadoPlan({ bloqueado: true, creadoEn: new Date(ahora - DIA).toISOString(), ahora });
+  assert(reciente.enPrueba && reciente.diasPrueba === 13, "cuenta reciente → prueba derivada de created_at");
+  const free = estadoPlan({ bloqueado: true, planGuardado: "free", creadoEn: vieja, ahora });
+  assert(free.clave === "bloqueado", "'free' por defecto no cuenta como evidencia");
+}
+console.log("OK bloqueado");
