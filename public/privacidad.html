@@ -14,21 +14,21 @@
 
 <div class="highlight">
 <p style="font-weight:700;color:#22c55e;margin-bottom:8px">Resumen: Tu información financiera es tuya y de nadie más.</p>
-<p style="margin:0">No vendemos datos. No mostramos publicidad. No compartimos información con terceros. Tus datos se guardan en tu navegador y están protegidos con encriptación.</p>
+<p style="margin:0">No vendemos datos. No mostramos publicidad. Tus datos se guardan en tu navegador y, si creas una cuenta, en Supabase con acceso restringido a tu cuenta. Viajan por conexión segura (HTTPS).</p>
 </div>
 
 <h2>1. Qué datos recopilamos</h2>
 <p>FINPATHIA recopila únicamente los datos que tú ingresas voluntariamente: inversiones, ingresos, gastos, deudas y metas financieras. Si creas una cuenta, también almacenamos tu email y nombre.</p>
-<p>En Modo Privado (sin cuenta), tus datos se guardan exclusivamente en el almacenamiento local de tu navegador (localStorage) y nunca se envían a ningún servidor.</p>
+<p>En Modo Privado (sin cuenta), tus datos se guardan exclusivamente en el almacenamiento local de tu navegador (localStorage). Solo salen de él si usas funciones de IA (ver punto 4).</p>
 
 <h2>2. Cómo protegemos tus datos</h2>
-<p>Los datos se transmiten con encriptación TLS/SSL. Si creas una cuenta, tus datos se almacenan en Supabase con Row Level Security (RLS), lo que significa que solo tu sesión autenticada puede acceder a ellos. Ni siquiera nuestro equipo puede ver tus datos financieros.</p>
+<p>Los datos se transmiten por conexión segura (HTTPS/TLS). Si creas una cuenta, tus datos se almacenan en Supabase con Row Level Security (RLS): desde la app, cada sesión autenticada solo puede leer los datos de su propia cuenta.</p>
 
 <h2>3. Qué NO hacemos</h2>
 <p>No vendemos, alquilamos ni compartimos tu información personal o financiera con terceros. No mostramos publicidad basada en tus datos. No rastreamos tu comportamiento financiero. No utilizamos tus datos para entrenar modelos de inteligencia artificial.</p>
 
 <h2>4. Asesor IA</h2>
-<p>Cuando usas el Asesor IA, un resumen de tus datos financieros (totales, no detalle de cada transacción) se envía a la API de Anthropic para generar recomendaciones. Anthropic no almacena estos datos ni los usa para entrenamiento. La transmisión es encriptada.</p>
+<p>Cuando usas el Asesor IA, un resumen de tus datos financieros (totales, no detalle de cada transacción) se envía a la API de Anthropic para generar recomendaciones. Anthropic no almacena estos datos ni los usa para entrenamiento. El envío va por conexión segura (HTTPS).</p>
 
 <h2>5. Tus derechos</h2>
 <p>Puedes exportar todos tus datos en cualquier momento (Configuración → Exportar JSON). Puedes borrar todos tus datos permanentemente (Configuración → Borrar Datos). Puedes cerrar tu cuenta y toda tu información se elimina.</p>

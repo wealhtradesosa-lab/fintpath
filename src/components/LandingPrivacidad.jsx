@@ -205,7 +205,7 @@ export default function LandingPrivacidad() {
               <li>Documentos que subas (Excel, facturas, comprobantes para procesamiento)</li>
             </ul>
             <p style={{ marginTop: 12, color: T.amber, fontSize: 13 }}>
-              ⚠️ Estos datos son <strong>sensibles</strong>. Los protegemos con encriptación AES-256 en tránsito y en reposo.
+              ⚠️ Estos datos son <strong>sensibles</strong>. Viajan por conexión segura (HTTPS/TLS) y se guardan con acceso restringido a tu cuenta.
             </p>
           </SubSection>
 
@@ -429,8 +429,8 @@ export default function LandingPrivacidad() {
         <Section number="9." title="Cómo protegemos tus datos">
           <p>Aplicamos medidas técnicas y organizativas razonables:</p>
           <ul style={{ marginTop: 12, paddingLeft: 20 }}>
-            <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Encriptación TLS 1.3</strong> para todos los datos en tránsito.</li>
-            <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Encriptación AES-256</strong> para datos sensibles en reposo.</li>
+            <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Conexión segura (HTTPS/TLS)</strong> para todos los datos en tránsito.</li>
+            <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Row Level Security (RLS)</strong> en la base de datos: desde la app, cada cuenta solo lee sus propios datos.</li>
             <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Hash bcrypt</strong> para contraseñas (nunca almacenadas en texto plano).</li>
             <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Acceso mínimo necesario</strong>: solo personal autorizado accede a sistemas con tus datos.</li>
             <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Auditoría de accesos</strong>: registramos quién accede a qué.</li>

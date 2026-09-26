@@ -249,20 +249,20 @@ export default function LandingSeguridad({ onBack = () => {} }) {
             <SecurityCard
               icon={IconDatabase}
               title="Base de datos"
-              badge="SOC 2 Type II"
-              description="Hospedada en Supabase + AWS, con acceso aislado por usuario gracias a Row Level Security (RLS). Tu información está físicamente separada de la del resto — ni nuestros desarrolladores pueden ver tus datos sin tu autorización."
+              badge="Row Level Security"
+              description="Hospedada en Supabase (AWS), con acceso aislado por cuenta gracias a Row Level Security (RLS): desde la app, cada cuenta solo puede leer sus propios datos."
             />
             <SecurityCard
               icon={IconKey}
               title="Tu contraseña"
-              badge="Encriptada con bcrypt"
-              description="Nunca se guarda en texto plano. Se cifra con bcrypt (estándar de la industria) antes de almacenarse. Ni siquiera nosotros podemos leerla — si la olvidás, la única forma es resetearla."
+              badge="Hash bcrypt"
+              description="Nunca se guarda en texto plano: Supabase Auth la guarda como hash bcrypt (estándar de la industria). Nadie puede leerla — si la olvidas, la única forma es crear una nueva."
             />
             <SecurityCard
               icon={IconLock}
               title="Conexión segura"
-              badge="TLS 1.3 + HTTPS"
-              description="Toda la comunicación entre tu navegador y FINPATHIA viaja cifrada con TLS 1.3, el mismo protocolo que usan los bancos digitales. Imposible interceptar lo que enviás o recibís."
+              badge="HTTPS (TLS)"
+              description="Toda la comunicación entre tu navegador y FINPATHIA viaja cifrada por HTTPS (TLS), así nadie en el camino puede leer lo que envías o recibes."
             />
             <SecurityCard
               icon={IconShield}
