@@ -180,7 +180,7 @@ function SuscripcionCard({ supabase, estadoPlan, puedeGestionar, onUpgrade }) {
         return;
       }
       if (data.error === "no_stripe_customer") {
-        setAviso("No encontramos una suscripción de Stripe asociada a tu cuenta. Si acabas de pagar, espera unos minutos. Si el problema sigue, escríbenos a soporte@finpathia.com.");
+        setAviso("No pudimos abrir tu suscripción. Escríbenos a soporte@finpathia.com y la cancelamos por ti el mismo día.");
       } else if (data.error === "portal_not_configured") {
         setAviso("El portal de pagos aún no está disponible. Escríbenos a soporte@finpathia.com y cancelamos o cambiamos tu plan por ti.");
       } else {
