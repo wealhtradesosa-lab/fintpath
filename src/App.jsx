@@ -1486,6 +1486,13 @@ export default function FinPath(){
         setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO});
         return;
       }
+      if(r.status===409){
+        // 26-sep-2026 — Ya tiene una suscripción vigente: no se crea otra
+        // (evita cobro doble). Se le manda al portal desde Mi cuenta.
+        const d409=await r.json().catch(()=>({}));
+        setCheckoutError({pl,msg:d409.message||"Ya tienes una suscripción activa. Para cambiar de plan o cancelarla, usa «Gestionar / cancelar suscripción» en Mi cuenta.",irACuenta:true});
+        return;
+      }
       if(!r.ok){
         const txt=await r.text().catch(()=>"(no body)");
         console.error("[checkout] HTTP",r.status,txt);
@@ -3362,7 +3369,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         {checkoutError&&<div role="alert" style={{maxWidth:1200,margin:"0 auto 16px",padding:"14px 18px",background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
           <div style={{fontSize:13,color:T.tx,flex:"1 1 220px",minWidth:0}}>{checkoutError.msg}</div>
           <div style={{display:"flex",gap:8,flexShrink:0}}>
-            <button onClick={()=>abrirCheckout(checkoutError.pl)} disabled={!!checkoutCargando} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:13}}>{checkoutCargando?"Reintentando…":"Reintentar"}</button>
+            {checkoutError.irACuenta?<button onClick={()=>{setCheckoutError(null);setPg("cuenta")}} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:13}}>Ir a Mi cuenta</button>:<button onClick={()=>abrirCheckout(checkoutError.pl)} disabled={!!checkoutCargando} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:13}}>{checkoutCargando?"Reintentando…":"Reintentar"}</button>}
             <button onClick={()=>setCheckoutError(null)} aria-label="Cerrar" style={{background:"transparent",color:T.tx3,border:"1px solid "+T.border,padding:"10px 12px",borderRadius:8,cursor:"pointer",fontSize:13}}>✕</button>
           </div>
         </div>}

@@ -41,61 +41,57 @@ function isProFamiliarPrice(priceId) {
   return false;
 }
 
-// 26-sep-2026 (P0) — Validación del token de Supabase.
-// Antes el endpoint confiaba en el userId que mandaba el navegador y lo
-// escribía en metadata.userId, que el webhook usa para activar el plan:
-// cualquiera podía crear un checkout a nombre de otro usuario. Ahora el
-// frontend manda "Authorization: Bearer <access_token>" y aquí se valida
-// contra Supabase Auth (GET /auth/v1/user). userId y email salen del token.
-async function usuarioDesdeToken(event) {
-  const h = event.headers || {};
-  const auth = h.authorization || h.Authorization || "";
-  const m = /^Bearer\s+(.+)$/i.exec(auth.trim());
-  if (!m) return { error: "Falta el token de sesión", status: 401 };
-  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
-    || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return { error: "Supabase no configurado en el servidor", status: 500 };
-  try {
-    const r = await fetch(`${url}/auth/v1/user`, {
-      headers: { apikey: key, Authorization: `Bearer ${m[1]}` },
-    });
-    if (!r.ok) return { error: "Sesión inválida o vencida", status: 401 };
-    const user = await r.json();
-    if (!user || !user.id) return { error: "Sesión inválida o vencida", status: 401 };
-    return { user, token: m[1] };
-  } catch (e) {
-    return { error: "No se pudo validar la sesión: " + e.message, status: 502 };
-  }
+// 26-sep-2026 (P0) — El usuario sale del token de Supabase (Authorization:
+// Bearer), validado contra /auth/v1/user. Antes el endpoint confiaba en el
+// userId del navegador y cualquiera podía crear un checkout a nombre de otro.
+// Helpers compartidos con stripe-customer-portal en _stripeUsuario.cjs.
+const { usuarioDesdeToken, resolverCustomer, suscripcionVigente } = require("./_stripeUsuario.cjs");
+
+const DIA_MS = 86400000;
+// Invitados con prueba de 30 días. MISMA lista que INVITADOS / getTrialDays
+// en src/App.jsx (cuentaNueva). Si cambias una, cambia la otra.
+const INVITADOS_30D = ["andres.isaza@grupogiesas.com", "renatomaestri76@hotmail.com"];
+
+// 26-sep-2026 — Fin de la prueba calculado EN EL SERVIDOR.
+// user_data.data.p.trialEnd lo escribe el navegador: no se puede confiar en
+// él (bastaba con editarlo para tener meses de trial en Stripe). El tope es
+// created_at del usuario (Supabase Auth) + 14 días (30 para invitados), con
+// la misma regla que cuentaNueva(): la prueba vence a las 00:00 UTC del día
+// resultante. El valor del cliente solo se usa si es MENOR que el tope (así
+// coincide con la fecha que ve el usuario en la app).
+function topePruebaServidor(user) {
+  const creado = Date.parse(user && user.created_at);
+  if (!Number.isFinite(creado)) return null;
+  const email = String((user && user.email) || "").trim().toLowerCase();
+  const dias = INVITADOS_30D.includes(email) ? 30 : 14;
+  return Math.floor((creado + dias * DIA_MS) / DIA_MS) * DIA_MS;
 }
 
-// 26-sep-2026 — Fin de la prueba Pro de la app (user_data.data.p.trialEnd,
-// "YYYY-MM-DD"; la app la da por vencida a las 00:00 UTC de ese día).
-// Devuelve { ms } con el instante de fin, o { ms: null } si no se pudo leer
-// (fila inexistente, datos cifrados, error de red). Nunca lanza.
-async function finPruebaEnApp(userId, token) {
+// trialEnd guardado por la app ("YYYY-MM-DD"), solo como valor a la baja.
+async function trialEndCliente(userId) {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const service = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const anon = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-  if (!url || !userId || (!service && !(anon && token))) return { ms: null };
-  const h = service
-    ? { apikey: service, Authorization: `Bearer ${service}` }
-    : { apikey: anon, Authorization: `Bearer ${token}` };
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key || !userId) return null;
   try {
     const r = await fetch(
       `${url}/rest/v1/user_data?id=eq.${encodeURIComponent(userId)}&select=te:data->p->>trialEnd`,
-      { headers: h }
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } }
     );
-    if (!r.ok) return { ms: null };
+    if (!r.ok) return null;
     const rows = await r.json();
     const te = Array.isArray(rows) && rows[0] ? rows[0].te : null;
-    if (!te || !/^\d{4}-\d{2}-\d{2}/.test(te)) return { ms: null };
+    if (!te || !/^\d{4}-\d{2}-\d{2}/.test(te)) return null;
     const ms = Date.parse(te.slice(0, 10) + "T00:00:00Z");
-    return Number.isFinite(ms) ? { ms } : { ms: null };
+    return Number.isFinite(ms) ? ms : null;
   } catch (e) {
     console.warn("[stripe-checkout] no pude leer trialEnd:", e.message);
-    return { ms: null };
+    return null;
   }
+}
+
+function finPrueba(topeServidor, valorCliente) {
+  if (topeServidor == null) return null;
+  return valorCliente != null ? Math.min(valorCliente, topeServidor) : topeServidor;
 }
 
 // Stripe Checkout exige trial_end al menos 48 h en el futuro. Margen de 10 min
@@ -103,13 +99,10 @@ async function finPruebaEnApp(userId, token) {
 const MIN_TRIAL_MS = 48 * 3600 * 1000 + 10 * 60 * 1000;
 // MISMA regla que usa el frontend (src/lib/planEstado.js → fechaPrimerCobro)
 // para mostrar "el primer cobro es el {fecha}". Si cambias una, cambia la otra.
-function calcularTrialStripe(prueba, ahora) {
-  if (!prueba || prueba.ms == null) {
-    return TRIAL_DAYS > 0 ? { trial_period_days: TRIAL_DAYS, origen: "sin_dato" } : { origen: "sin_dato" };
-  }
-  if (prueba.ms <= ahora) return { origen: "prueba_vencida" };
-  const fin = Math.max(prueba.ms, ahora + MIN_TRIAL_MS);
-  return { trial_end: Math.ceil(fin / 1000), origen: "prueba_app" };
+function calcularTrialStripe(finMs, ahora) {
+  if (finMs == null) return { origen: "sin_created_at" }; // nunca "14 días desde hoy"
+  if (finMs <= ahora) return { origen: "prueba_vencida" };
+  return { trial_end: Math.ceil(Math.max(finMs, ahora + MIN_TRIAL_MS) / 1000), origen: "prueba_app" };
 }
 
 exports.handler = async (event) => {
@@ -167,13 +160,42 @@ exports.handler = async (event) => {
       };
     }
 
-    // Construcción de la session. Trial period solo para Pro Familiar.
+    // 26-sep-2026 — Customer ligado al usuario por metadata.userId.
+    // El portal (stripe-customer-portal) solo encuentra al customer por IDs que
+    // pone el servidor, así que el customer se crea AQUÍ con metadata.userId
+    // (antes lo creaba Checkout a partir del email, sin metadata).
+    // Si el usuario ya tiene una suscripción vigente (active/trialing/
+    // past_due/unpaid), NO se crea otra: se le manda al portal para cambiar de
+    // plan o cancelar. Evita cobros dobles.
+    const resuelto = await resolverCustomer(stripe, userId);
+    const vigente = await suscripcionVigente(stripe, resuelto.id);
+    if (vigente) {
+      console.log(`[stripe-checkout] user=${userId} ya tiene suscripción ${vigente.id} (${vigente.status}); se manda al portal`);
+      return {
+        statusCode: 409,
+        headers,
+        body: JSON.stringify({
+          error: "ya_suscrito",
+          portal: true,
+          message: "Ya tienes una suscripción activa. Para cambiar de plan o cancelarla, usa «Gestionar / cancelar suscripción» en Mi cuenta.",
+        }),
+      };
+    }
+    // Solo se reutiliza un customer con evidencia de ser de este usuario.
+    let customerId = resuelto.verificado ? resuelto.id : null;
+    if (!customerId) {
+      const nuevo = await stripe.customers.create({ email: cleanEmail, metadata: { userId } });
+      customerId = nuevo.id;
+    }
+
     // metadata.userId es CRÍTICO — el webhook lo usa para identificar al
-    // usuario y crear la account correcta.
+    // usuario y activar el plan. client_reference_id lo usa el portal como
+    // respaldo para encontrar al customer.
     const sessionParams = {
       mode: "subscription",
       payment_method_types: ["card"],
-      customer_email: cleanEmail,
+      customer: customerId,
+      client_reference_id: userId,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl || "https://finpathia.com/?success=true",
       cancel_url: cancelUrl || "https://finpathia.com/?canceled=true",
@@ -200,19 +222,16 @@ exports.handler = async (event) => {
     // terminaba la prueba. Además, quien ya había agotado su prueba recibía
     // otros 14 días gratis. (Ojo: Stripe NO detecta "misma tarjeta, segundo
     // trial"; eso que decía el comentario anterior no es cierto.)
-    // Ahora:
-    //   · prueba vigente en la app → trial_end = fin de esa prueba
-    //     (mínimo 48 h, que es lo que exige Stripe Checkout)
-    //   · prueba ya vencida        → sin trial: se cobra al confirmar
-    //   · no se pudo leer la fecha → 14 días, como antes (no bloquea el pago)
-    const prueba = await finPruebaEnApp(userId, sesion.token);
-    const trial = calcularTrialStripe(prueba, Date.now());
+    // Ahora (fin de prueba = min(trialEnd de la app, created_at + 14/30 días)):
+    //   · prueba vigente → trial_end = fin de la prueba (mínimo 48 h, que es
+    //     lo que exige Stripe Checkout)
+    //   · prueba vencida → sin trial: se cobra al confirmar
+    //   · el trialEnd de la app no se pudo leer → se usa created_at + 14/30
+    //     días. Nunca "14 días desde hoy".
+    const finMs = finPrueba(topePruebaServidor(sesion.user), await trialEndCliente(userId));
+    const trial = calcularTrialStripe(finMs, Date.now());
     if (trial.trial_end) {
       sessionParams.subscription_data.trial_end = trial.trial_end;
-    } else if (trial.trial_period_days) {
-      sessionParams.subscription_data.trial_period_days = trial.trial_period_days;
-    }
-    if (trial.trial_end || trial.trial_period_days) {
       // Si el trial expira sin método de pago válido, cancelamos la
       // suscripción en lugar de cobrar a la fuerza. La tarjeta se pide al
       // entrar a Checkout (comportamiento por defecto).
@@ -220,7 +239,7 @@ exports.handler = async (event) => {
         end_behavior: { missing_payment_method: "cancel" },
       };
     }
-    console.log(`[stripe-checkout] trial · origen=${trial.origen} trial_end=${trial.trial_end || "-"} days=${trial.trial_period_days || "-"}`);
+    console.log(`[stripe-checkout] trial · origen=${trial.origen} trial_end=${trial.trial_end || "-"}`);
 
     // ─────────────────────────────────────────────────────────────────────
     // Sesión 2-may-2026: campaña Pioneros 2026
