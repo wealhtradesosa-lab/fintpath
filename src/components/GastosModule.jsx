@@ -118,7 +118,7 @@ function reglaItem(item, owners) {
   }
   if (fc && REGLA_POR_FISCAL_CODE[fc]) return REGLA_POR_FISCAL_CODE[fc];
   // Fallback final: solo cuando no hay forma de derivar
-  return { txt: "— sin clasificar", color: "#71717a", help: "Edita este item y elegí la clasificación fiscal correspondiente" };
+  return { txt: "— sin clasificar", color: "#71717a", help: "Edita este item y elige la clasificación fiscal correspondiente" };
 }
 
 // Sub-opciones de fiscalCode según (owner type, categoría). Si la combinación
@@ -159,7 +159,7 @@ function fiscalSubOptions(ownerType, cat) {
     }
     // 26-jul-2026 (Santiago: "¿dónde iría un gasto de administración de
     // propiedad?"). No había categoría para eso: "Vivienda / Arriendo oficina"
-    // mezclaba dónde vivís con los costos de los inmuebles que RENTÁS, que
+    // mezclaba dónde vives con los costos de los inmuebles que RENTÁS, que
     // tienen tratamiento fiscal opuesto —unos deducen 100% contra la renta no
     // laboral (Art. 107 ET) y otros no deducen nada—.
     // El motor YA tenía los códigos (GAS_INMUEBLE_ADMINISTRACION, _PREDIAL,
@@ -183,7 +183,7 @@ function fiscalSubOptions(ownerType, cat) {
     if (["Vivienda", "Mantenimiento", "Servicios", "Seguros", "Arrendamiento"].includes(cat)) {
       return {
         question: "🏠 ¿Es del inmueble arrendado o de tu vivienda personal?",
-        help: "Si es del inmueble que arrendás a terceros, se deduce 100% de la renta no laboral (Art. 107 ET). Si es personal, no deduce.",
+        help: "Si es del inmueble que arriendas a terceros, se deduce 100% de la renta no laboral (Art. 107 ET). Si es personal, no deduce.",
         options: [
           { v: "GAS_NAT_PERSONAL", l: "Personal — mi vivienda (no deducible)" },
           { v: cat === "Mantenimiento" ? "GAS_INMUEBLE_MANTENIMIENTO"
@@ -980,7 +980,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     </select>
                     <div style={{fontSize:10,color:"#a1a1aa",marginTop:8,lineHeight:1.5}}>{opts.help}</div>
                     <div style={{fontSize:10,color:"#71717a",marginTop:6,lineHeight:1.5,fontStyle:"italic"}}>
-                      ℹ️ Esta categoría sólo reduce impuestos si la asignás a un propietario fiscal de tipo <strong>persona natural</strong> con ingresos laborales.
+                      ℹ️ Esta categoría sólo reduce impuestos si la asignas a un propietario fiscal de tipo <strong>persona natural</strong> con ingresos laborales.
                     </div>
                   </div>
                 );
@@ -994,7 +994,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const opts = [
                   { v: "SEG_SALUD", l: "🏥 Seguro de salud — deducible (Art. 387 #2)" },
                   { v: "SEG_VIDA", l: "❤️ Seguro de vida — deducible (Art. 387 #2)" },
-                  { v: "GAS_INMUEBLE_SEGUROS", l: "🏘️ Seguro del inmueble arrendado — deducible si tenés arriendos" },
+                  { v: "GAS_INMUEBLE_SEGUROS", l: "🏘️ Seguro del inmueble arrendado — deducible si tienes arriendos" },
                   { v: "SEG_VEHICULO", l: "🚗 Seguro de vehículo — NO deducible (persona natural)" },
                   { v: "SEG_HOGAR", l: "🏠 Seguro de hogar — NO deducible (persona natural)" },
                   { v: "SEG_GENERICO", l: "❓ Otro / Sin clasificar — NO deducible por defecto" },
@@ -1005,7 +1005,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   ? "Solo se deduce si el owner tiene ingresos por arriendo de inmueble. Cae al 100% sobre la renta no laboral."
                   : currentFC === "SEG_VEHICULO" || currentFC === "SEG_HOGAR"
                   ? "Para persona natural NO es deducible. Sólo en jurídica con causalidad probada (Art. 107 ET)."
-                  : "Default conservador. Si tenés un seguro deducible, especificá el tipo correcto.";
+                  : "Default conservador. Si tienes un seguro deducible, especifica el tipo correcto.";
                 return (
                   <div style={{gridColumn:"1/-1",background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4}}>
                     <div style={{fontSize:11,fontWeight:700,color:"#22c55e",marginBottom:8}}>🛡️ ¿Qué tipo de seguro es?</div>
@@ -1088,7 +1088,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && (
                     <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                       <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-                        💵 ¿Cómo conocés el monto?
+                        💵 ¿Cómo conoces el monto?
                       </label>
                       <div style={{ background: T.bg3, borderRadius: 10, padding: 5, display: "flex", gap: 5 }}>
                         <button type="button"
@@ -1204,7 +1204,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   {/* Commit E: warning si capital muy bajo (<$10K) */}
                   {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
                     <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 11, color: T.red, lineHeight: 1.5 }}>
-                      ⚠️ El capital es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Si el valor es correcto, ignorá este aviso.
+                      ⚠️ El capital es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Si el valor es correcto, ignora este aviso.
                     </div>
                   )}
                   {/* Commit E: validacion de tasa absurda */}
@@ -1224,7 +1224,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     if (altoNaranja) {
                       return (
                         <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.25)", borderRadius: 8, fontSize: 11, color: "#f97316", lineHeight: 1.5 }}>
-                          🟠 Tasa alta: {tas}% {tm}. Verificá que la periodicidad ({tm}) sea correcta.
+                          🟠 Tasa alta: {tas}% {tm}. Verifica que la periodicidad ({tm}) sea correcta.
                         </div>
                       );
                     }

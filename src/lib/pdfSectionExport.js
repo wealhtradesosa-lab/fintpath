@@ -51,7 +51,7 @@ const L = {
     ordenPago: "Orden sugerido de pago (mayor tasa primero)",
     costoIntereses: "Costo anual en intereses",
     tagline: "Tu family office",
-    sinItems: (q) => `No hay ${q} activos para exportar. Prendé al menos uno con el toggle ✅.`,
+    sinItems: (q) => `No hay ${q} activos para exportar. Prende al menos uno con el toggle ✅.`,
     nota: "Documento generado por FINPATHIA. Incluye únicamente los ítems activos (los apagados con el toggle quedan fuera de las tablas y de los totales). Cifras de referencia, no constituyen asesoría fiscal ni estados financieros auditados.",
   },
   en: {
@@ -428,7 +428,7 @@ export async function exportGastosPDF(gastos, trm, en = false) {
     let y = chrome(doc, { titulo: t.gastos });
 
     // Fijos vs variables va arriba a propósito: es el dato que decide cuánto
-    // de tu gasto podés mover si necesitás ajustar.
+    // de tu gasto puedes mover si necesitas ajustar.
     y = resumen(doc, y, [
       { label: t.items, value: String(flat.length) },
       { label: t.totalMensual, value: fm(totalMes), color: [220, 38, 38] },

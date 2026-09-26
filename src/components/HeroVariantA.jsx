@@ -202,7 +202,7 @@ export default function HeroVariantA({ onGetStarted = () => {} }) {
             fontSize: 13, color: T.txt3, marginTop: 20,
             opacity: mounted ? 1 : 0,
           }}>
-            Sin tarjeta de crédito · Configuración en 5 minutos
+            Empiezas sin tarjeta (solo la necesitas para seguir con Pro) · Configuración en 5 minutos
           </p>
         </div>
 

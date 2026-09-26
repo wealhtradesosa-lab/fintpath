@@ -95,9 +95,9 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
             {headerTitle}
           </div>
           <div style={{ fontSize: 12, color: colors.tx2, lineHeight: 1.5 }}>
-            Comparamos tus declaraciones importadas con los datos que tenés cargados en FINPATHIA.
+            Comparamos tus declaraciones importadas con los datos que tienes cargados en FINPATHIA.
             Diferencias grandes pueden indicar: ingresos asignados al owner equivocado, gastos no
-            registrados, o ajustes de tu contador. <strong style={{ color: colors.txt }}>Verificá con tu contador antes de declarar.</strong>
+            registrados, o ajustes de tu contador. <strong style={{ color: colors.txt }}>Verifica con tu contador antes de declarar.</strong>
           </div>
         </div>
       </div>
@@ -199,7 +199,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                             background: "transparent", color: colors.warningText || colors.txt,
                             fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>
                           {sobra
-                            ? `Revisar mis ${DESTINO.que}s — tenés ${fmM(Math.abs(falta))} de más →`
+                            ? `Revisar mis ${DESTINO.que}s — tienes ${fmM(Math.abs(falta))} de más →`
                             : `Cargar el ${DESTINO.que} que falta — ${fmM(falta)} →`}
                         </button>
                       );

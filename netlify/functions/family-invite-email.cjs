@@ -79,7 +79,7 @@ exports.handler = async (event) => {
         ok: true,
         sent: false,
         reason: "resend_not_configured",
-        message: "Email automático deshabilitado · usá el link copyable",
+        message: "Email automático deshabilitado · usa el link copyable",
       }),
     };
   }
@@ -124,14 +124,14 @@ exports.handler = async (event) => {
             </td></tr>
           </table>
           <p style="font-size:12px;color:#71717a;line-height:1.6;margin:20px 0 0;word-break:break-all">
-            Si el botón no funciona, copiá y pegá este link en tu navegador:<br>
+            Si el botón no funciona, copia y pega este link en tu navegador:<br>
             <a href="${escapeHtml(invitation_url)}" style="color:#10b981;text-decoration:none">${escapeHtml(invitation_url)}</a>
           </p>
           ${expiresLine}
         </td></tr>
         <tr><td style="padding:20px 32px;border-top:1px solid #27272a;background:#0a0a0a">
           <p style="font-size:11px;color:#52525b;line-height:1.6;margin:0">
-            Si no esperabas esta invitación, podés ignorar este mensaje — el link expira solo. Tu información financiera sigue privada y solo se comparte si aceptás explícitamente.
+            Si no esperabas esta invitación, puedes ignorar este mensaje — el link expira solo. Tu información financiera sigue privada y solo se comparte si aceptas explícitamente.
           </p>
         </td></tr>
       </table>

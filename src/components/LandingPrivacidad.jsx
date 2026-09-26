@@ -168,7 +168,7 @@ export default function LandingPrivacidad() {
         >
           <strong style={{ color: T.txt }}>🔒 En lenguaje claro:</strong> tus datos son tuyos.
           Nosotros los usamos solo para que FINPATHIA funcione. No los vendemos. No los compartimos
-          con anunciantes. Vos podés exportarlos o borrarlos cuando quieras. Esta política te explica
+          con anunciantes. Tú puedes exportarlos o borrarlos cuando quieras. Esta política te explica
           en detalle qué guardamos, por qué, por cuánto tiempo, y cómo ejercer tus derechos.
         </div>
 
@@ -195,13 +195,13 @@ export default function LandingPrivacidad() {
             </ul>
           </SubSection>
 
-          <SubSection title="2.2 Datos financieros que vos cargás voluntariamente">
-            <p>Esta es información que vos decidís ingresar para que la plataforma funcione:</p>
+          <SubSection title="2.2 Datos financieros que tú cargas voluntariamente">
+            <p>Esta es información que tú decides ingresar para que la plataforma funcione:</p>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
               <li style={{ marginBottom: 4 }}>Ingresos, gastos, deudas y patrimonio</li>
               <li style={{ marginBottom: 4 }}>Inversiones, propiedades, cuentas bancarias (los detalles que decidas registrar)</li>
               <li style={{ marginBottom: 4 }}>Información de pensión y planes de retiro</li>
-              <li style={{ marginBottom: 4 }}>Datos de declaraciones fiscales pasadas (si los cargás)</li>
+              <li style={{ marginBottom: 4 }}>Datos de declaraciones fiscales pasadas (si los cargas)</li>
               <li>Documentos que subas (Excel, facturas, comprobantes para procesamiento)</li>
             </ul>
             <p style={{ marginTop: 12, color: T.amber, fontSize: 13 }}>
@@ -269,7 +269,7 @@ export default function LandingPrivacidad() {
 
         <Section number="4." title="Inteligencia artificial y tus datos">
           <p>
-            Cuando usás el <strong style={{ color: T.txt }}>Asesor IA</strong> o los <strong style={{ color: T.txt }}>Coaches IA</strong>, tu pregunta y los datos
+            Cuando usas el <strong style={{ color: T.txt }}>Asesor IA</strong> o los <strong style={{ color: T.txt }}>Coaches IA</strong>, tu pregunta y los datos
             financieros relevantes se envían a <strong style={{ color: T.txt }}>Anthropic (Claude API)</strong>, nuestro proveedor de IA.
           </p>
           <p style={{ marginTop: 12 }}>
@@ -339,10 +339,10 @@ export default function LandingPrivacidad() {
         </Section>
 
         <Section number="6." title="Tus derechos como titular de datos (Art. 8 Ley 1581)">
-          <p>Como titular de tus datos, tenés derecho a:</p>
+          <p>Como titular de tus datos, tienes derecho a:</p>
           <ul style={{ marginTop: 12, paddingLeft: 20 }}>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Conocer (acceso):</strong> ver qué datos tenemos sobre vos. Lo hacés en cualquier momento desde
+              <strong style={{ color: T.txt }}>Conocer (acceso):</strong> ver qué datos tenemos sobre ti. Lo haces en cualquier momento desde
               tu cuenta o pidiéndonos un export.
             </li>
             <li style={{ marginBottom: 8 }}>
@@ -350,18 +350,18 @@ export default function LandingPrivacidad() {
               escribiéndonos.
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Solicitar la prueba de la autorización:</strong> en cualquier momento podés pedir copia del
+              <strong style={{ color: T.txt }}>Solicitar la prueba de la autorización:</strong> en cualquier momento puedes pedir copia del
               consentimiento que diste al registrarte.
             </li>
             <li style={{ marginBottom: 8 }}>
               <strong style={{ color: T.txt }}>Ser informado:</strong> sobre el uso que se le da a tus datos.
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Presentar quejas:</strong> ante la Superintendencia de Industria y Comercio (SIC) si considerás que
+              <strong style={{ color: T.txt }}>Presentar quejas:</strong> ante la Superintendencia de Industria y Comercio (SIC) si consideras que
               violamos tus derechos.
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Revocar la autorización y solicitar supresión:</strong> podés borrar tu cuenta y todos tus
+              <strong style={{ color: T.txt }}>Revocar la autorización y solicitar supresión:</strong> puedes borrar tu cuenta y todos tus
               datos en cualquier momento.
             </li>
             <li>
@@ -372,7 +372,7 @@ export default function LandingPrivacidad() {
         </Section>
 
         <Section number="7." title="Cómo ejercer tus derechos">
-          <p>Tenés dos formas:</p>
+          <p>Tienes dos formas:</p>
           <SubSection title="7.1 Desde tu cuenta (autoservicio)">
             <ul style={{ marginTop: 4, paddingLeft: 20 }}>
               <li style={{ marginBottom: 4 }}>
@@ -382,19 +382,19 @@ export default function LandingPrivacidad() {
                 <strong style={{ color: T.txt }}>Eliminar tu cuenta:</strong> Mi Cuenta → "Eliminar mi cuenta"
               </li>
               <li>
-                <strong style={{ color: T.txt }}>Gestionar tu suscripción:</strong> Mi Cuenta → "Gestionar suscripción" (Stripe Customer Portal)
+                <strong style={{ color: T.txt }}>Gestionar tu suscripción:</strong> Mi Cuenta → "Gestionar / cancelar suscripción" (Stripe Customer Portal)
               </li>
             </ul>
           </SubSection>
 
           <SubSection title="7.2 Por email (asistencia personalizada)">
             <p>
-              Escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> con
+              Escríbenos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> con
               asunto <strong style={{ color: T.txt }}>"Solicitud de Datos Personales"</strong>. Indicanos:
             </p>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
               <li style={{ marginBottom: 4 }}>El email asociado a tu cuenta</li>
-              <li style={{ marginBottom: 4 }}>Qué derecho querés ejercer (acceso, rectificación, supresión, etc.)</li>
+              <li style={{ marginBottom: 4 }}>Qué derecho quieres ejercer (acceso, rectificación, supresión, etc.)</li>
               <li>Detalles específicos si aplica</li>
             </ul>
             <p style={{ marginTop: 12 }}>
@@ -413,11 +413,11 @@ export default function LandingPrivacidad() {
               <strong style={{ color: T.txt }}>Mientras tu cuenta esté activa:</strong> conservamos tus datos para que la plataforma funcione.
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Si cancelás tu suscripción pero no eliminás la cuenta:</strong> conservamos tus datos para que
-              puedas reactivar más adelante. Te avisamos por email cada 6 meses para que decidás.
+              <strong style={{ color: T.txt }}>Si cancelas tu suscripción pero no eliminas la cuenta:</strong> conservamos tus datos para que
+              puedas reactivar más adelante. Te avisamos por email cada 6 meses para que decidas.
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Si eliminás tu cuenta:</strong> borramos todos tus datos en máximo <strong>30 días</strong>, salvo
+              <strong style={{ color: T.txt }}>Si eliminas tu cuenta:</strong> borramos todos tus datos en máximo <strong>30 días</strong>, salvo
               información mínima requerida por ley (registros de facturación electrónica DIAN: 5 años).
             </li>
             <li>
@@ -456,7 +456,7 @@ export default function LandingPrivacidad() {
             </li>
             <li>
               <strong style={{ color: T.txt }}>Analytics anonimizados:</strong> Google Analytics 4 con IP anonimizada para entender uso agregado de
-              la plataforma. Podés bloquearlas con extensiones tipo Privacy Badger.
+              la plataforma. Puedes bloquearlas con extensiones tipo Privacy Badger.
             </li>
           </ul>
           <p style={{ marginTop: 12 }}>
@@ -468,7 +468,7 @@ export default function LandingPrivacidad() {
           <p>
             FINPATHIA <strong style={{ color: T.txt }}>NO está dirigida a menores de 18 años</strong>. No recolectamos intencionalmente datos de
             menores. Si te das cuenta de que un menor creó una cuenta sin permiso de sus padres,
-            escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y eliminaremos la cuenta inmediatamente.
+            escríbenos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y eliminaremos la cuenta inmediatamente.
           </p>
           <p style={{ marginTop: 12 }}>
             En el plan Pro Familiar, los administradores de cuenta confirman bajo su responsabilidad que
@@ -491,14 +491,14 @@ export default function LandingPrivacidad() {
         <Section number="13." title="Cómo presentar reclamos">
           <SubSection title="13.1 A nosotros primero">
             <p>
-              Escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y
+              Escríbenos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y
               respondemos en máximo 15 días hábiles.
             </p>
           </SubSection>
 
           <SubSection title="13.2 A la autoridad colombiana">
             <p>
-              Si no quedás conforme con nuestra respuesta, podés acudir a la <strong style={{ color: T.txt }}>Superintendencia de Industria
+              Si no quedas conforme con nuestra respuesta, puedes acudir a la <strong style={{ color: T.txt }}>Superintendencia de Industria
               y Comercio (SIC)</strong>, ente de control en materia de protección de datos personales en Colombia:
             </p>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>

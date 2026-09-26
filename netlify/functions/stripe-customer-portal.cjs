@@ -15,10 +15,13 @@
 //   3. Crea una billing portal session con return_url = la página actual
 //   4. Retorna { url } → frontend hace window.location.href = url
 //
-// AUTH:
-//   Por simplicidad, autenticamos por userId + email pasado desde el frontend.
-//   Stripe no permite generar portal sessions sin customer_id, así que el
-//   endpoint solo funciona si el user tiene un stripe_customer_id válido.
+// AUTH (26-sep-2026):
+//   Antes bastaba con mandar un userId en el body: cualquiera que conociera
+//   el UUID de otra persona podía abrir SU portal. Ahora el userId sale del
+//   token de Supabase (Authorization: Bearer) y el customer se resuelve con
+//   _stripeUsuario.resolverCustomer: stripe_customer_id guardado → metadata
+//   .userId → Checkout Sessions con client_reference_id. NUNCA por email
+//   (los emails no están verificados: auth-signup usa email_confirm:true).
 //
 // CONFIG STRIPE:
 //   Antes del primer uso, en Stripe Dashboard → Settings → Customer Portal
@@ -28,69 +31,58 @@
 
 const Stripe = require("stripe");
 
+const JSON_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json",
+};
+
+const { usuarioDesdeToken, resolverCustomer } = require("./_stripeUsuario.cjs");
+
+const MSG_NO_ENCONTRADA = "No pudimos abrir tu suscripción. Escríbenos a soporte@finpathia.com y la cancelamos por ti el mismo día.";
+
 exports.handler = async (event) => {
+  const headers = JSON_HEADERS;
   if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*" }, body: "" };
+    return { statusCode: 200, headers, body: "" };
   }
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+    return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
+  }
+
+  const sesion = await usuarioDesdeToken(event);
+  if (sesion.error) {
+    return { statusCode: sesion.status, headers, body: JSON.stringify({ error: sesion.error }) };
   }
 
   try {
-    const { userId, returnUrl } = JSON.parse(event.body || "{}");
-
-    if (!userId) {
-      return { statusCode: 400, body: JSON.stringify({ error: "userId requerido" }) };
-    }
+    const { returnUrl: returnUrlBody } = JSON.parse(event.body || "{}");
+    const userId = sesion.user.id;
+    // return_url solo a dominios propios (evita usar el portal como redirector).
+    const returnUrl = typeof returnUrlBody === "string"
+      && /^https:\/\/((www\.)?finpathia\.com|[a-z0-9-]+--finpathia\.netlify\.app)(\/|$)/i.test(returnUrlBody)
+      ? returnUrlBody : null;
 
     if (!process.env.STRIPE_SECRET_KEY) {
       console.error("[stripe-customer-portal] STRIPE_SECRET_KEY ausente");
-      return { statusCode: 500, body: JSON.stringify({ error: "config" }) };
+      return { statusCode: 500, headers, body: JSON.stringify({ error: "config" }) };
     }
 
-    // 1. Buscar el stripe_customer_id del user en Supabase
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-    if (!supabaseUrl || !supabaseKey) {
-      return { statusCode: 500, body: JSON.stringify({ error: "supabase config" }) };
-    }
-
-    const supaRes = await fetch(
-      `${supabaseUrl}/rest/v1/user_data?id=eq.${userId}&select=stripe_customer_id,email`,
-      {
-        headers: {
-          "apikey": supabaseKey,
-          "Authorization": `Bearer ${supabaseKey}`,
-        },
-      }
-    );
-
-    if (!supaRes.ok) {
-      const text = await supaRes.text();
-      console.error("[stripe-customer-portal] supabase error:", text);
-      return { statusCode: 500, body: JSON.stringify({ error: "user lookup failed" }) };
-    }
-
-    const rows = await supaRes.json();
-    if (!rows || rows.length === 0) {
-      return { statusCode: 404, body: JSON.stringify({ error: "user not found" }) };
-    }
-
-    const { stripe_customer_id: stripeCustomerId, email } = rows[0];
+    // 1. Customer del usuario (solo por IDs puestos por el servidor)
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const { id: stripeCustomerId } = await resolverCustomer(stripe, userId);
 
     if (!stripeCustomerId) {
-      // El user nunca compró nada via Stripe — no hay portal posible.
+      console.warn(`[stripe-customer-portal] sin customer para user=${userId}`);
       return {
-        statusCode: 400,
-        body: JSON.stringify({
-          error: "no_stripe_customer",
-          message: "No tienes una suscripción activa. Andá a /precios para suscribirte.",
-        }),
+        statusCode: 404,
+        headers,
+        body: JSON.stringify({ error: "no_stripe_customer", message: MSG_NO_ENCONTRADA }),
       };
     }
 
     // 2. Crear la portal session
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     const session = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
       return_url: returnUrl || "https://finpathia.com/?portal_return=1",
@@ -100,6 +92,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify({ url: session.url }),
     };
   } catch (err) {
@@ -110,13 +103,14 @@ exports.handler = async (event) => {
     if (isConfigError) {
       return {
         statusCode: 500,
+        headers,
         body: JSON.stringify({
           error: "portal_not_configured",
-          message: "Stripe Customer Portal no configurado. Revisá Stripe Dashboard → Settings → Customer Portal.",
+          message: "Stripe Customer Portal no configurado. Revisa Stripe Dashboard → Settings → Customer Portal.",
         }),
       };
     }
 
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };

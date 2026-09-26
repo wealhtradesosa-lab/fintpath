@@ -164,7 +164,7 @@ export default function BuyVsInvest({ isUS = false }) {
             borderLeft: `3px solid ${T.gold}` }}>
             <div style={{ fontSize: 13, color: T.txt, lineHeight: 1.6 }}>
               La casa tendría que valorizarse <strong style={{ color: T.gold }}>{equilibrio}% al año</strong> para
-              empatar con {activoSel.l} al {rendimiento}%. Hoy tenés puesto {valorizacionCasaAnual}%.
+              empatar con {activoSel.l} al {rendimiento}%. Hoy tienes puesto {valorizacionCasaAnual}%.
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>
               Comparalo con lo que se ha valorizado la zona en los últimos 10 años. Si es menos, la respuesta ya está dada.
@@ -182,7 +182,7 @@ export default function BuyVsInvest({ isUS = false }) {
             <NumberInput value={precioCasa} onChange={setPrecioCasa} />
           </Campo>
 
-          <Campo label={isUS ? "How do you buy it?" : "¿Cómo la comprás?"}>
+          <Campo label={isUS ? "How do you buy it?" : "¿Cómo la compras?"}>
             <div style={{ display: "flex", gap: 8 }}>
               {[["hipoteca",isUS?"Mortgage":"Con crédito"],["contado",isUS?"All cash":"De contado"]].map(([v,l]) => (
                 <button key={v} onClick={() => setModoCompra(v)}
@@ -274,7 +274,7 @@ export default function BuyVsInvest({ isUS = false }) {
             <NumberInput value={arriendoMensual} onChange={setArriendo} />
           </Campo>
 
-          <Campo label={isUS ? "Where do you invest the difference?" : "¿Dónde invertís la diferencia?"}>
+          <Campo label={isUS ? "Where do you invest the difference?" : "¿Dónde inviertes la diferencia?"}>
             <div style={{ display: "flex", gap: 8 }}>
               {ACTIVOS.map((a) => (
                 <button key={a.id} onClick={() => { setActivo(a.id); setCagrCustom(null); }}
@@ -334,7 +334,7 @@ export default function BuyVsInvest({ isUS = false }) {
       <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, marginBottom: 20 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 4 }}>Cómo evoluciona tu patrimonio</div>
         <div style={{ fontSize: 11, color: T.txt3, marginBottom: 16 }}>
-          Comprar = valor de la casa menos lo que debés al banco. Sin descontar aún impuestos ni gastos de venta.
+          Comprar = valor de la casa menos lo que debes al banco. Sin descontar aún impuestos ni gastos de venta.
         </div>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={datos}>

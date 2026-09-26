@@ -256,13 +256,13 @@ export default function LandingSeguridad({ onBack = () => {} }) {
               icon={IconKey}
               title="Tu contraseña"
               badge="Encriptada con bcrypt"
-              description="Nunca se guarda en texto plano. Se cifra con bcrypt (estándar de la industria) antes de almacenarse. Ni siquiera nosotros podemos leerla — si la olvidás, la única forma es resetearla."
+              description="Nunca se guarda en texto plano. Se cifra con bcrypt (estándar de la industria) antes de almacenarse. Ni siquiera nosotros podemos leerla — si la olvidas, la única forma es resetearla."
             />
             <SecurityCard
               icon={IconLock}
               title="Conexión segura"
               badge="TLS 1.3 + HTTPS"
-              description="Toda la comunicación entre tu navegador y FINPATHIA viaja cifrada con TLS 1.3, el mismo protocolo que usan los bancos digitales. Imposible interceptar lo que enviás o recibís."
+              description="Toda la comunicación entre tu navegador y FINPATHIA viaja cifrada con TLS 1.3, el mismo protocolo que usan los bancos digitales. Imposible interceptar lo que envías o recibes."
             />
             <SecurityCard
               icon={IconShield}
@@ -292,12 +292,12 @@ export default function LandingSeguridad({ onBack = () => {} }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
             <PolicyLine type="yes" text="Tu información se usa únicamente para que veas tu propio análisis financiero." />
-            <PolicyLine type="yes" text="Podés exportar todos tus datos en cualquier momento, en formato Excel." />
-            <PolicyLine type="yes" text="Podés eliminar tu cuenta y todos tus datos cuando quieras, sin condiciones." />
+            <PolicyLine type="yes" text="Puedes exportar todos tus datos en cualquier momento, en formato Excel." />
+            <PolicyLine type="yes" text="Puedes eliminar tu cuenta y todos tus datos cuando quieras, sin condiciones." />
             <PolicyLine type="yes" text="Cumplimos con la Ley 1581 de 2012 (protección de datos personales en Colombia)." />
             <PolicyLine type="no" text="No vendemos tus datos a terceros. Nunca. No es nuestro modelo de negocio." />
             <PolicyLine type="no" text="No compartimos tu información con anunciantes ni redes sociales." />
-            <PolicyLine type="no" text="No tenemos acceso a tus cuentas bancarias — FINPATHIA es planeación, no movés plata por acá." />
+            <PolicyLine type="no" text="No tenemos acceso a tus cuentas bancarias — FINPATHIA es planeación, no mueves plata por acá." />
             <PolicyLine type="no" text="No usamos tus datos para entrenar modelos de IA de terceros." />
           </div>
         </section>
@@ -326,7 +326,7 @@ export default function LandingSeguridad({ onBack = () => {} }) {
               privacidad de IA.
             </p>
             <p style={{ margin: "0 0 12px 0" }}>
-              Cuando consultás al asesor IA, le enviamos solo lo necesario para tu
+              Cuando consultas al asesor IA, le enviamos solo lo necesario para tu
               consulta (saldos agregados, no transacciones individuales). Anthropic
               <strong style={{ color: T.txt }}> no usa tus datos para entrenar sus modelos</strong> — es parte de
               nuestro acuerdo comercial con ellos.
@@ -352,11 +352,11 @@ export default function LandingSeguridad({ onBack = () => {} }) {
             margin: "0 0 12px 0",
             letterSpacing: -0.5,
           }}>
-            ¿Tenés más preguntas?
+            ¿Tienes más preguntas?
           </h2>
           <p style={{ fontSize: 15, color: T.txt2, marginBottom: 24, maxWidth: 500, marginLeft: "auto", marginRight: "auto" }}>
-            Si tenés cualquier inquietud sobre cómo manejamos tu información,
-            escribinos directamente. Tu confianza es lo que más cuidamos.
+            Si tienes cualquier inquietud sobre cómo manejamos tu información,
+            escríbenos directamente. Tu confianza es lo que más cuidamos.
           </p>
           <a
             href="mailto:soporte@finpathia.com?subject=Pregunta%20sobre%20seguridad"

@@ -199,7 +199,7 @@ export default function NumberInput({
 
   const handleFocus = (e) => {
     setIsFocused(true);
-    // Seleccionar todo (patrón Excel: tocás y reescribís todo)
+    // Seleccionar todo (patrón Excel: tocas y reescribes todo)
     setTimeout(() => {
       if (inputRef.current) inputRef.current.select();
     }, 0);

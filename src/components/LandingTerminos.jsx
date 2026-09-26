@@ -171,9 +171,9 @@ export default function LandingTerminos() {
           }}
         >
           <strong style={{ color: T.txt }}>📜 En lenguaje claro:</strong> al crear una cuenta y usar
-          FINPATHIA, aceptás estos términos. Te explicamos qué somos, qué te ofrecemos, qué esperamos
-          de vos, qué pasa si querés cancelar, y cómo resolvemos diferencias. Si algo no te queda
-          claro, escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a>.
+          FINPATHIA, aceptas estos términos. Te explicamos qué somos, qué te ofrecemos, qué esperamos
+          de ti, qué pasa si quieres cancelar, y cómo resolvemos diferencias. Si algo no te queda
+          claro, escríbenos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a>.
         </div>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
@@ -192,12 +192,12 @@ export default function LandingTerminos() {
 
         <Section number="2." title="Aceptación de los términos">
           <p>
-            Al registrarte, ingresar o usar FINPATHIA, declarás que leíste, entendiste y aceptás estos
+            Al registrarte, ingresar o usar FINPATHIA, declaras que leíste, entendiste y aceptas estos
             Términos y Condiciones, así como nuestra <a href="/privacidad" style={{ color: T.green, textDecoration: "none" }}>Política de Privacidad</a>.
             Si no estás de acuerdo, te pedimos no usar la plataforma.
           </p>
           <p style={{ marginTop: 12 }}>
-            Para crear una cuenta debés ser <strong style={{ color: T.txt }}>mayor de edad</strong> (18 años en Colombia, 18 en la mayoría de
+            Para crear una cuenta debes ser <strong style={{ color: T.txt }}>mayor de edad</strong> (18 años en Colombia, 18 en la mayoría de
             estados de USA) y tener capacidad legal para contratar.
           </p>
         </Section>
@@ -227,7 +227,7 @@ export default function LandingTerminos() {
             </p>
             <p style={{ marginTop: 12 }}>
               La información, cálculos, proyecciones y sugerencias son <strong style={{ color: T.txt }}>orientativas y educativas</strong>,
-              basadas en los datos que vos cargás y en reglas tributarias/financieras vigentes a la fecha
+              basadas en los datos que tú cargas y en reglas tributarias/financieras vigentes a la fecha
               de la última actualización del software. Para decisiones de alto valor (inversiones grandes,
               estructuración patrimonial, declaración de renta compleja), recomendamos consultar a un
               profesional certificado (Contador Público, CPA, Enrolled Agent, asesor SFC-aprobado).
@@ -246,7 +246,7 @@ export default function LandingTerminos() {
         <Section number="4." title="Tu cuenta y responsabilidades">
           <SubSection title="4.1 Información veraz">
             <p>
-              Te comprometés a proveer información veraz y actualizada al registrarte y al cargar datos
+              Te comprometes a proveer información veraz y actualizada al registrarte y al cargar datos
               en la plataforma. Los cálculos, sugerencias e informes generados dependen de la precisión
               de tus datos.
             </p>
@@ -254,14 +254,14 @@ export default function LandingTerminos() {
 
           <SubSection title="4.2 Seguridad de tu cuenta">
             <p>
-              Sos responsable de mantener confidencial tu contraseña y de toda la actividad realizada
-              desde tu cuenta. Si sospechás de un acceso no autorizado, escribinos inmediatamente a{" "}
+              Eres responsable de mantener confidencial tu contraseña y de toda la actividad realizada
+              desde tu cuenta. Si sospechas de un acceso no autorizado, escríbenos inmediatamente a{" "}
               <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a>.
             </p>
           </SubSection>
 
           <SubSection title="4.3 Uso permitido">
-            <p>Te comprometés a usar FINPATHIA solo para fines lícitos y personales o profesionales legítimos. Está prohibido:</p>
+            <p>Te comprometes a usar FINPATHIA solo para fines lícitos y personales o profesionales legítimos. Está prohibido:</p>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
               <li style={{ marginBottom: 4 }}>Usar la plataforma para actividades ilegales (lavado de activos, evasión fiscal, fraude)</li>
               <li style={{ marginBottom: 4 }}>Realizar ingeniería inversa, scraping, copia o redistribución del software</li>
@@ -291,15 +291,15 @@ export default function LandingTerminos() {
             </p>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
               <li style={{ marginBottom: 4 }}>No se requiere tarjeta de crédito al registrarse</li>
-              <li style={{ marginBottom: 4 }}>Tenés acceso completo al plan elegido</li>
-              <li style={{ marginBottom: 4 }}>Si no activás un plan al final del trial, tu cuenta vuelve automáticamente al plan Free</li>
+              <li style={{ marginBottom: 4 }}>Tienes acceso completo al plan elegido</li>
+              <li style={{ marginBottom: 4 }}>Si no activas un plan al final del trial, tu cuenta vuelve automáticamente al plan Free</li>
               <li>Tus datos se conservan</li>
             </ul>
           </SubSection>
 
           <SubSection title="5.3 Cobros recurrentes">
             <p>
-              Una vez activado un plan pago, autorizás a FINPATHIA (vía Stripe) a cobrar automáticamente la
+              Una vez activado un plan pago, autorizas a FINPATHIA (vía Stripe) a cobrar automáticamente la
               tarifa correspondiente al inicio de cada período (mensual o anual según elijas). Recibirás
               factura electrónica por cada cobro.
             </p>
@@ -307,8 +307,8 @@ export default function LandingTerminos() {
 
           <SubSection title="5.4 Cancelación">
             <p>
-              Podés cancelar tu suscripción en cualquier momento desde la sección{" "}
-              <strong style={{ color: T.txt }}>"Mi Cuenta → Gestionar suscripción"</strong>. Tu acceso continuará hasta el final del período
+              Puedes cancelar tu suscripción en cualquier momento desde la sección{" "}
+              <strong style={{ color: T.txt }}>"Mi Cuenta → Gestionar / cancelar suscripción"</strong>. Tu acceso continuará hasta el final del período
               ya pagado. <strong style={{ color: T.txt }}>No hay permanencia ni penalización por cancelar.</strong>
             </p>
           </SubSection>
@@ -321,7 +321,7 @@ export default function LandingTerminos() {
             </p>
             <p style={{ marginTop: 12 }}>
               <strong style={{ color: T.txt }}>Reembolsos por insatisfacción:</strong> aunque no estamos legalmente obligados, evaluamos
-              caso por caso. Escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y
+              caso por caso. Escríbenos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y
               respondemos en máximo 5 días hábiles.
             </p>
             <p style={{ marginTop: 12 }}>
@@ -343,7 +343,7 @@ export default function LandingTerminos() {
             En resumen:
           </p>
           <ul style={{ marginTop: 8, paddingLeft: 20 }}>
-            <li style={{ marginBottom: 4 }}>Tus datos son <strong style={{ color: T.txt }}>tuyos</strong>. Podés exportarlos o eliminarlos cuando quieras.</li>
+            <li style={{ marginBottom: 4 }}>Tus datos son <strong style={{ color: T.txt }}>tuyos</strong>. Puedes exportarlos o eliminarlos cuando quieras.</li>
             <li style={{ marginBottom: 4 }}>No vendemos ni compartimos tu información con terceros para publicidad.</li>
             <li style={{ marginBottom: 4 }}>Usamos encriptación de extremo a extremo para datos sensibles.</li>
             <li>Las consultas al Asesor IA NO se usan para entrenar modelos.</li>
@@ -357,7 +357,7 @@ export default function LandingTerminos() {
             que te otorgamos es de <strong style={{ color: T.txt }}>uso personal, limitada, no exclusiva, intransferible y revocable</strong>.
           </p>
           <p style={{ marginTop: 12 }}>
-            El contenido y datos que vos cargás siguen siendo de tu propiedad. Nos otorgás solo los
+            El contenido y datos que tú cargas siguen siendo de tu propiedad. Nos otorgas solo los
             permisos mínimos necesarios para procesarlos y mostrártelos según la funcionalidad de la
             plataforma.
           </p>
@@ -382,7 +382,7 @@ export default function LandingTerminos() {
               total de errores.
             </li>
             <li>
-              Nuestra responsabilidad económica máxima frente a vos por cualquier reclamo, en cualquier
+              Nuestra responsabilidad económica máxima frente a ti por cualquier reclamo, en cualquier
               período de 12 meses, está limitada a lo que hayas pagado a FINPATHIA en ese período.
               Esta limitación no aplica a daños causados por dolo o culpa grave probada de nuestra parte
               (límite del derecho colombiano según Art. 1604 Código Civil).
@@ -398,14 +398,14 @@ export default function LandingTerminos() {
           <ul style={{ marginTop: 8, paddingLeft: 20 }}>
             <li style={{ marginBottom: 4 }}>Te avisaremos por email con al menos 15 días de anticipación.</li>
             <li style={{ marginBottom: 4 }}>Publicaremos la nueva versión en esta página con fecha actualizada.</li>
-            <li>Si no estás de acuerdo con los cambios, podés cancelar tu suscripción antes de su entrada en vigor.</li>
+            <li>Si no estás de acuerdo con los cambios, puedes cancelar tu suscripción antes de su entrada en vigor.</li>
           </ul>
         </Section>
 
         <Section number="10." title="Resolución de conflictos y ley aplicable">
           <SubSection title="10.1 Intentemos resolverlo amigablemente primero">
             <p>
-              Si tenés un problema, escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a>.
+              Si tienes un problema, escríbenos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a>.
               Nos comprometemos a responder en máximo 5 días hábiles e intentar resolver el caso en máximo 30 días.
             </p>
           </SubSection>

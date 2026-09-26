@@ -82,7 +82,7 @@ export default function AgenteTributarioBienvenida({
 }) {
   const allOwners = useMemo(() => user?.owners || [], [user]);
   const isJuridica = selectedOwner?.type === "juridica";
-  const ownerName = selectedOwner?.name || "vos";
+  const ownerName = selectedOwner?.name || "tú";
 
   // State del modal de asignación masiva (abierto cuando hay un hallazgo activo)
   const [hallazgoAsignar, setHallazgoAsignar] = useState(null);
@@ -107,7 +107,7 @@ export default function AgenteTributarioBienvenida({
   if (!selectedOwner || !det) {
     return (
       <div style={{ padding: 40, textAlign: "center", color: C.txt2 }}>
-        Seleccioná un owner fiscal para ver tu resumen.
+        Selecciona un owner fiscal para ver tu resumen.
       </div>
     );
   }
@@ -148,7 +148,7 @@ export default function AgenteTributarioBienvenida({
         </h1>
         <p style={{ fontSize: 15, color: C.txt2, marginTop: 8, lineHeight: 1.5 }}>
           El auditor IA <strong style={{ color: C.txt }}>revisó tu borrador</strong> y detectó
-          oportunidades de optimización. Acá ves un resumen claro y concreto. Si querés ver
+          oportunidades de optimización. Acá ves un resumen claro y concreto. Si quieres ver
           el detalle técnico del formulario, hay un botón abajo.
         </p>
       </div>
@@ -261,15 +261,15 @@ export default function AgenteTributarioBienvenida({
             <>
               Esto es <strong style={{ color: C.txt }}>{tasaEfectiva.toFixed(1)}%</strong>{" "}
               de tus ingresos (<TerminoTributario clave="tasaEfectiva">tasa efectiva</TerminoTributario>). {tasaEfectiva < 5
-                ? "Está dentro del rango bajo — pagás poco impuesto efectivo."
+                ? "Está dentro del rango bajo — pagas poco impuesto efectivo."
                 : tasaEfectiva < 15
                   ? "Es un nivel típico para alguien con tu perfil."
                   : tasaEfectiva < 25
-                    ? "Es alto — puede haber palancas legales para reducirlo (mirá abajo)."
+                    ? "Es alto — puede haber palancas legales para reducirlo (mira abajo)."
                     : "Es muy alto — vale la pena hablar con un contador para optimizar."}
             </>
           ) : (
-            <>No tenés saldo a pagar este año. ¡Buen trabajo!</>
+            <>No tienes saldo a pagar este año. ¡Buen trabajo!</>
           )}
         </div>
       </div>
@@ -398,7 +398,7 @@ export default function AgenteTributarioBienvenida({
         borderRadius: 14,
       }}>
         <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 16, textTransform: "uppercase", letterSpacing: 0.5 }}>
-          ¿Qué querés hacer ahora?
+          ¿Qué quieres hacer ahora?
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
           <button

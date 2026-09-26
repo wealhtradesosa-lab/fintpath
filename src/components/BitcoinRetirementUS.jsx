@@ -108,7 +108,7 @@ export default function BitcoinRetirementUS({ user }) {
 
   // ── Aportes ───────────────────────────────────────────────────────────────
   const yourContrib = Math.min(salary * (pct / 100), LIMITS.K401_LIMIT);
-  // El match iguala un % de lo que ponés, pero solo hasta un tope del salario.
+  // El match iguala un % de lo que pones, pero solo hasta un tope del salario.
   // Es la parte que la gente subestima: sobre ese tramo, el retorno inmediato
   // es del 50% o 100% antes de que el mercado haga nada.
   const matchable = Math.min(salary * (matchCap / 100), yourContrib);

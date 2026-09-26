@@ -326,7 +326,7 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
           opacity: mounted ? 1 : 0,
         }}>
           <span>✓ 14 días gratis</span>
-          <span>✓ Sin tarjeta de crédito</span>
+          <span>✓ Empiezas sin tarjeta · solo la pides si sigues con Pro</span>
           <span>✓ Cancelas cuando quieras</span>
         </div>
       </div>

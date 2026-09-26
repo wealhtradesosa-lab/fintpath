@@ -49,18 +49,24 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ── PriceIds Stripe (Live mode workspace pix2print) ───────────────────────
+// 26-sep-2026 — Override opcional por entorno (VITE_STRIPE_PRICE_*). Sirve para
+// que los Deploy Previews de Netlify usen precios de TEST junto con una
+// sk_test: hoy los previews cobran en LIVE porque heredan las variables de
+// producción. Sin las variables, se usan los priceIds Live de siempre.
+// Deben coincidir con STRIPE_PRICE_* del servidor (stripe-webhook.cjs).
+const _env = (typeof import.meta !== "undefined" && import.meta.env) || {};
 export const STRIPE_PRICE_IDS = {
   "Básico": {
-    mensual: "price_1TIGRWKEnhNr9wQd2oEgNin9",
-    anual: "price_1TIGRWKEnhNr9wQdJTMTGfYa",
+    mensual: _env.VITE_STRIPE_PRICE_BASICO_MENSUAL || "price_1TIGRWKEnhNr9wQd2oEgNin9",
+    anual: _env.VITE_STRIPE_PRICE_BASICO_ANUAL || "price_1TIGRWKEnhNr9wQdJTMTGfYa",
   },
   "Pro": {
-    mensual: "price_1TIGRXKEnhNr9wQdC8eKj2xS",
-    anual: "price_1TIGRYKEnhNr9wQd7QTFxT6z",
+    mensual: _env.VITE_STRIPE_PRICE_PRO_MENSUAL || "price_1TIGRXKEnhNr9wQdC8eKj2xS",
+    anual: _env.VITE_STRIPE_PRICE_PRO_ANUAL || "price_1TIGRYKEnhNr9wQd7QTFxT6z",
   },
   "Pro Familiar": {
-    mensual: "price_1TRC9mKEnhNr9wQdQr9gsRot",
-    anual: "price_1TRCCaKEnhNr9wQdpWlaXP0r",
+    mensual: _env.VITE_STRIPE_PRICE_PRO_FAMILIAR_MENSUAL || "price_1TRC9mKEnhNr9wQdQr9gsRot",
+    anual: _env.VITE_STRIPE_PRICE_PRO_FAMILIAR_ANUAL || "price_1TRCCaKEnhNr9wQdpWlaXP0r",
   },
 };
 
@@ -78,7 +84,7 @@ export function usdToCop(usd, trm) {
 export const PLAN_BASE = [
   {
     name: "Free",
-    tag: "Empezá a ordenar tu vida financiera",
+    tag: "Empieza a ordenar tu vida financiera",
     priceUSD: { mensual: 0, anual: 0 },
     users: "1 usuario",
     usersDetail: "1 usuario",
@@ -91,7 +97,7 @@ export const PLAN_BASE = [
     features: [
       "👤 1 usuario",
       "📊 Dashboard con resumen de tu patrimonio",
-      "💰 Registrá ingresos, gastos y deudas",
+      "💰 Registra ingresos, gastos y deudas",
       "📈 Hasta 3 inversiones y 1 meta financiera",
       "🔒 Encriptación E2E de tus datos",
     ],
@@ -118,13 +124,13 @@ export const PLAN_BASE = [
       "👤 1 usuario · sin límites en inversiones ni metas",
       "📊 Dashboard con resumen patrimonial",
       "💰 Ingresos, gastos y deudas ilimitados",
-      "🖥️ Simulador financiero con palancas (cambiá ingresos/gastos y simulá)",
+      "🖥️ Simulador financiero con palancas (cambia ingresos/gastos y simula)",
       isUS
         ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
         : "🏛️ Pensión Colombia: Colpensiones (RPM) + RAIS",
       isCO ? "💰 Aportes obligatorios (4%+4%) y voluntarios calculados" : null,
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "📥 Importá Excel/CSV con IA",
+      "📥 Importa Excel/CSV con IA",
       "📸 Lectura de facturas con IA",
     ].filter(Boolean),
     notFeatures: ["Asesor IA", "5 Coaches IA", "Plan Tributario completo", "Multi-usuario"],
@@ -134,12 +140,12 @@ export const PLAN_BASE = [
     tag: "Como tener un asesor financiero personal",
     priceUSD: { mensual: 16, anual: 12 },
     users: "Hasta 3 usuarios",
-    usersDetail: "Hasta 3 usuarios (vos + pareja + contador)",
+    usersDetail: "Hasta 3 usuarios (tú + pareja + contador)",
     maxMembers: 3,
     accent: true, // MÁS POPULAR badge
     save: "Ahorra 25%",
     features: ({ isCO, isUS }) => [
-      "👥 Hasta 3 usuarios (vos + pareja + contador)",
+      "👥 Hasta 3 usuarios (tú + pareja + contador)",
       "📊 Dashboard con resumen patrimonial",
       "💰 Ingresos, gastos y deudas ilimitados",
       "🖥️ Simulador financiero con palancas",
@@ -152,7 +158,7 @@ export const PLAN_BASE = [
       isCO
         ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
         : "🧾 Tax Planning US (federal + state, deductions, optimization)",
-      "📥 Importá Excel/CSV y leé facturas con IA",
+      "📥 Importa Excel/CSV y lee facturas con IA",
       "📈 Resumen ejecutivo del patrimonio en PDF",
       "🚀 Soporte prioritario por email",
     ],
@@ -177,13 +183,13 @@ export const PLAN_BASE = [
         ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
         : "🏛️ Pensión Colombia: Colpensiones + RAIS",
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "🎯 Simulá escenarios para alcanzar tu libertad financiera",
+      "🎯 Simula escenarios para alcanzar tu libertad financiera",
       "🤖 Asesor IA que analiza el patrimonio consolidado",
       "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
       isCO
         ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
         : "🧾 Tax Planning US (federal + state, deductions, optimization)",
-      "📥 Importá Excel/CSV y leé facturas con IA",
+      "📥 Importa Excel/CSV y lee facturas con IA",
       "📈 Reporte ejecutivo del patrimonio en PDF",
       "🚀 Soporte prioritario con respuesta en 24h",
     ],

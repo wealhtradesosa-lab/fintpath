@@ -275,7 +275,7 @@ export default function LandingPage({ onGetStarted }) {
           Tu patrimonio merece atención profesional. Es <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>gratis</span>.
         </h2>
         <p style={{ fontSize: 16, color: T.txt2, marginBottom: 32, maxWidth: 480, margin: "0 auto 32px" }}>
-          Gestión patrimonial con inteligencia artificial. 14 días de prueba gratuita, sin tarjeta de crédito.
+          Gestión patrimonial con inteligencia artificial. Tu prueba Pro de 14 días empieza sin tarjeta; solo la necesitas si decides seguir con Pro.
         </p>
         <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "18px 48px", borderRadius: 14, cursor: "pointer", fontSize: 18, fontWeight: 800, letterSpacing: "-0.01em" }}>
           Comenzar 14 días Pro gratis →
