@@ -62,6 +62,7 @@ console.log("Datos cifrados sin desbloquear (bloqueado)");
   const b = estadoPlan({ bloqueado: true, planGuardado: null, creadoEn: vieja, ahora });
   assert(b.clave === "bloqueado" && b.bloqueado, "sin evidencia → 'bloqueado'");
   assert(b.clave !== "free" && !/Gratis/.test(b.etiqueta), "nunca 'free' ni 'Gratis': " + b.etiqueta);
+  assert(!/PIN/.test(b.etiqueta) && /contraseña/.test(b.etiqueta), "habla de la contraseña, no de un PIN");
   const pagado = estadoPlan({ bloqueado: true, planGuardado: "pro", creadoEn: vieja, ahora });
   assert(pagado.clave === "pro" && pagado.pago && pagado.etiqueta === "Pro", "columna plan=pro → Pro");
   const basico = estadoPlan({ bloqueado: true, planGuardado: "basico", creadoEn: vieja, ahora });

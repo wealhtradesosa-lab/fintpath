@@ -6,7 +6,7 @@
 // Solo cuentas de PRUEBA. Dry-run por defecto; guarda respaldo JSON antes.
 //
 //   SUPABASE_URL=... SUPABASE_SERVICE_KEY=... \
-//   node scripts/qa-cifrar-cuenta.cjs --email qa+cifrado@x.com --pin 'Clave123!' [--apply]
+//   node scripts/qa-cifrar-cuenta.cjs --email qa+cifrado@x.com --clave 'Clave123!' [--apply]
 //   node scripts/qa-cifrar-cuenta.cjs --email qa+cifrado@x.com --restaurar qa-respaldo-....json [--apply]
 // ═══════════════════════════════════════════════════════════════════════════
 const fs = require("fs");
@@ -15,7 +15,7 @@ const subtle = webcrypto.subtle;
 const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const APPLY = process.argv.includes("--apply");
 const email = (arg("--email") || "").trim().toLowerCase();
-const pin = arg("--pin");
+const pin = arg("--clave") || arg("--pin");
 const restaurar = arg("--restaurar");
 const URL_ = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -36,7 +36,7 @@ async function rest(path, opts = {}) {
 }
 (async () => {
   if (!URL_ || !KEY) throw new Error("Faltan SUPABASE_URL / SUPABASE_SERVICE_KEY");
-  if (!email || (!pin && !restaurar)) throw new Error("Uso: --email <cuenta de prueba> (--pin <clave> | --restaurar <respaldo.json>) [--apply]");
+  if (!email || (!pin && !restaurar)) throw new Error("Uso: --email <cuenta de prueba> (--clave <contraseña> | --restaurar <respaldo.json>) [--apply]");
   const filas = await rest(`user_data?email=eq.${encodeURIComponent(email)}&select=id,email,plan,data`);
   if (!filas || !filas.length) throw new Error("No hay user_data para " + email);
   const f = filas[0];

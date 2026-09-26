@@ -127,7 +127,7 @@ export function estadoPlan({ isAdmin = false, bloqueado = false, planGuardado, p
   }
 
   if (bloqueado) {
-    return { ...base, clave: "bloqueado", etiqueta: "Tu plan se muestra al ingresar tu PIN", enPrueba: false, pago: false, bloqueado: true };
+    return { ...base, clave: "bloqueado", etiqueta: "Tu plan se muestra al ingresar tu contraseña", enPrueba: false, pago: false, bloqueado: true };
   }
 
   return { ...base, clave: "free", etiqueta: "Gratis", enPrueba: false, pago: false };

@@ -525,6 +525,9 @@ export default function FinPath(){
   // Password recovery flow: detectar link de recovery y pedir nueva contraseña
   const[showResetPassword,setShowResetPassword]=useState(false);
   const[resetNewPassword,setResetNewPassword]=useState("");
+  // true solo si la fila de user_data del usuario que está reseteando tiene
+  // un blob cifrado (_encrypted): esos datos no se abren con la nueva clave.
+  const[resetConCifrado,setResetConCifrado]=useState(false);
   const[resetLoading,setResetLoading]=useState(false);
   const[resetError,setResetError]=useState("");
   const[resetSent,setResetSent]=useState(false);
@@ -641,6 +644,16 @@ export default function FinPath(){
         setShowResetPassword(true);
         setResetError("");
         setResetNewPassword("");
+        setResetConCifrado(false);
+        // El link de recuperación abre una sesión: ya se puede leer la propia
+        // fila (RLS) y avisar ANTES de cambiar la contraseña si hay datos
+        // cifrados. Antes del login no es posible (anon no lee user_data).
+        const uid=session?.user?.id;
+        if(uid){
+          supabase.from("user_data").select("enc:data->_encrypted").eq("id",uid).maybeSingle()
+            .then(({data:fila,error})=>{if(!error&&fila&&fila.enc)setResetConCifrado(true)})
+            .catch(()=>{});
+        }
       }
     });
     return()=>subscription?.unsubscribe();
@@ -889,7 +902,7 @@ export default function FinPath(){
   const[desbloqueando,setDesbloqueando]=useState(false);
   const[olvidoPin,setOlvidoPin]=useState(false);
   const[confirmaBorrado,setConfirmaBorrado]=useState("");
-  // "¿Olvidaste tu PIN?" → empezar de cero. Los datos cifrados NO se pueden
+  // "¿Olvidaste tu contraseña?" → empezar de cero. Los datos cifrados NO se pueden
   // recuperar sin la clave (AES-GCM con clave derivada por PBKDF2 de la
   // contraseña; no hay copia de la clave en el servidor). Solo se reemplaza
   // el blob tras escribir BORRAR. El plan pago no vive en el blob: se conserva.
@@ -928,7 +941,7 @@ export default function FinPath(){
     if(d){setClaveDesbloqueo("");setBloqueo(null);setU(sanitize(d));setPg("dash")}
     else{
       if(anterior)localStorage.setItem("fp3_enc_key",anterior);else localStorage.removeItem("fp3_enc_key");
-      setErrorDesbloqueo("Ese PIN no abre tus datos. Prueba con la contraseña que usabas cuando guardaste tus datos.");
+      setErrorDesbloqueo("Esa contraseña no abre tus datos. Si la cambiaste, prueba con la que usabas antes.");
     }
     setDesbloqueando(false);
   };
@@ -1605,7 +1618,7 @@ export default function FinPath(){
 
   // ═══ DATOS CIFRADOS SIN DESBLOQUEAR ═══
   // Nada de "Gratis", badge PRO ni módulos bloqueados por un plan por defecto:
-  // la app entera queda detrás de esta pantalla hasta que el PIN abra el blob.
+  // la app entera queda detrás de esta pantalla hasta que la contraseña abra el blob.
   // El plan que se muestra sale de lo legible sin la clave (planEstado con
   // bloqueado:true nunca devuelve "free").
   if(authUser&&bloqueo&&!u){
@@ -1615,28 +1628,28 @@ export default function FinPath(){
       <div role="dialog" aria-labelledby="fp-bloqueo-titulo" style={{width:"100%",maxWidth:400,textAlign:"center"}}>
         <div style={{fontSize:40,marginBottom:12}}>🔐</div>
         <div style={{fontSize:20,fontWeight:800,color:T.gn,marginBottom:8}}>FINPATHIA</div>
-        <div id="fp-bloqueo-titulo" style={{fontSize:15,fontWeight:600,lineHeight:1.5,marginBottom:10}}>Ingresa tu PIN para ver tus datos y tu plan en este dispositivo.</div>
-        <div style={{fontSize:12,color:T.tx3,lineHeight:1.5,marginBottom:16}}>Tus datos están cifrados y este dispositivo todavía no tiene tu PIN. Es la contraseña con la que protegiste tus datos.</div>
+        <div id="fp-bloqueo-titulo" style={{fontSize:15,fontWeight:600,lineHeight:1.5,marginBottom:10}}>Ingresa tu contraseña para ver tus datos y tu plan en este dispositivo.</div>
+        <div style={{fontSize:12,color:T.tx3,lineHeight:1.5,marginBottom:16}}>Tus datos están cifrados con la contraseña con la que entras a Finpathia, y este dispositivo todavía no la tiene. Si la cambiaste hace poco, prueba con la anterior.</div>
         <div data-testid="plan-bloqueado" style={{display:"inline-block",fontSize:12,fontWeight:700,color:eb.clave==="bloqueado"?T.tx3:T.gn,background:eb.clave==="bloqueado"?T.bg3:T.gnB,padding:"4px 12px",borderRadius:99,marginBottom:16}}>{eb.clave==="bloqueado"?eb.etiqueta:"Tu plan: "+eb.etiqueta}</div>
         {!olvidoPin?<>
           <form onSubmit={e=>{e.preventDefault();desbloquearDatos()}}>
-            <input type="password" autoFocus autoComplete="current-password" aria-label="PIN" placeholder="Tu PIN" value={claveDesbloqueo} onChange={e=>{setClaveDesbloqueo(e.target.value);setErrorDesbloqueo("")}} style={{width:"100%",boxSizing:"border-box",background:T.bg3,border:"1px solid "+T.border,color:T.tx,padding:"12px 14px",borderRadius:10,fontSize:15,outline:"none",marginBottom:10}}/>
+            <input type="password" autoFocus autoComplete="current-password" aria-label="Contraseña" placeholder="Tu contraseña de Finpathia" value={claveDesbloqueo} onChange={e=>{setClaveDesbloqueo(e.target.value);setErrorDesbloqueo("")}} style={{width:"100%",boxSizing:"border-box",background:T.bg3,border:"1px solid "+T.border,color:T.tx,padding:"12px 14px",borderRadius:10,fontSize:15,outline:"none",marginBottom:10}}/>
             {errorDesbloqueo&&<div role="alert" style={{fontSize:12,color:T.rd,marginBottom:10,lineHeight:1.4}}>{errorDesbloqueo}</div>}
             <button type="submit" disabled={desbloqueando||!claveDesbloqueo} style={{width:"100%",background:T.gn,color:"#000",border:"none",padding:"12px",borderRadius:10,cursor:desbloqueando||!claveDesbloqueo?"default":"pointer",opacity:desbloqueando||!claveDesbloqueo?0.6:1,fontWeight:700,fontSize:14}}>{desbloqueando?"Abriendo…":"Ver mis datos"}</button>
           </form>
-          <button type="button" onClick={()=>setOlvidoPin(true)} style={{marginTop:14,background:"none",border:"none",color:T.bl,cursor:"pointer",fontSize:13,fontWeight:600}}>¿Olvidaste tu PIN?</button>
+          <button type="button" onClick={()=>setOlvidoPin(true)} style={{marginTop:14,background:"none",border:"none",color:T.bl,cursor:"pointer",fontSize:13,fontWeight:600}}>¿Olvidaste tu contraseña?</button>
         </>:<div data-testid="olvido-pin" style={{textAlign:"left",background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:16,fontSize:13,lineHeight:1.55}}>
-          <div style={{fontWeight:700,marginBottom:8}}>Si olvidaste tu PIN</div>
-          <p style={{margin:"0 0 8px"}}>Tus datos financieros están cifrados con tu PIN, y solo tú lo tienes. <strong>Sin él no se pueden recuperar</strong>: ni FINPATHIA ni soporte pueden abrirlos.</p>
+          <div style={{fontWeight:700,marginBottom:8}}>Si olvidaste tu contraseña</div>
+          <p style={{margin:"0 0 8px"}}>Tus datos financieros están cifrados con la contraseña con la que entras a Finpathia. <strong>Sin esa contraseña no se pueden recuperar</strong>: ni FINPATHIA ni soporte pueden abrirlos, y crear una contraseña nueva tampoco los abre.</p>
           <p style={{margin:"0 0 8px"}}><strong>Tu plan y tus pagos no se pierden.</strong> Están guardados en tu cuenta y en Stripe, no dentro de los datos cifrados.</p>
-          <p style={{margin:"0 0 12px"}}>Si recuerdas una contraseña anterior, pruébala como PIN. Si necesitas ayuda, escríbenos a <a href="mailto:soporte@finpathia.com" style={{color:T.bl}}>soporte@finpathia.com</a>.</p>
+          <p style={{margin:"0 0 12px"}}>Si recuerdas una contraseña anterior, pruébala aquí. Si necesitas ayuda, escríbenos a <a href="mailto:soporte@finpathia.com" style={{color:T.bl}}>soporte@finpathia.com</a>.</p>
           <div style={{borderTop:"1px solid "+T.border,paddingTop:12}}>
             <div style={{fontWeight:600,marginBottom:6}}>Empezar de cero</div>
             <div style={{fontSize:12,color:T.tx3,marginBottom:8}}>Borra para siempre tus datos cifrados (inversiones, ingresos, gastos y deudas) y deja tu cuenta vacía, con el mismo plan. No se puede deshacer. Para confirmar, escribe BORRAR.</div>
             <input aria-label="Escribe BORRAR para confirmar" value={confirmaBorrado} onChange={e=>setConfirmaBorrado(e.target.value)} placeholder="BORRAR" style={{width:"100%",boxSizing:"border-box",background:T.bg3,border:"1px solid "+T.border,color:T.tx,padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",marginBottom:8}}/>
             <button type="button" disabled={!okBorrar} onClick={empezarDeCeroBloqueado} style={{width:"100%",background:okBorrar?T.rd:T.bg3,color:okBorrar?"#fff":T.tx3,border:"none",padding:"10px",borderRadius:8,cursor:okBorrar?"pointer":"default",fontWeight:700,fontSize:13}}>Borrar mis datos cifrados y empezar de cero</button>
           </div>
-          <button type="button" onClick={()=>{setOlvidoPin(false);setConfirmaBorrado("")}} style={{marginTop:12,background:"none",border:"none",color:T.bl,cursor:"pointer",fontSize:13,fontWeight:600,padding:0}}>← Volver a ingresar mi PIN</button>
+          <button type="button" onClick={()=>{setOlvidoPin(false);setConfirmaBorrado("")}} style={{marginTop:12,background:"none",border:"none",color:T.bl,cursor:"pointer",fontSize:13,fontWeight:600,padding:0}}>← Volver a ingresar mi contraseña</button>
         </div>}
         <div style={{fontSize:11,color:T.tx3,marginTop:16,lineHeight:1.5}}>¿Necesitas ayuda? Escríbenos a soporte@finpathia.com.</div>
         <button onClick={logout} style={{marginTop:10,background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:12,textDecoration:"underline"}}>Cerrar sesión</button>
@@ -1735,7 +1748,7 @@ export default function FinPath(){
           </p>
           <p style={{fontSize:12,color:T.tx3,textAlign:"center",marginBottom:20,lineHeight:1.6}}>
             Revisa tu bandeja de entrada y la carpeta de spam. El link expira en 1 hora. Cuando lo abras vas a volver acá para crear tu nueva contraseña.
-            {" "}<strong>Abrilo en este mismo navegador</strong>, en la misma pestaña o una nueva; si lo abres en otro dispositivo no va a funcionar.
+            {" "}<strong>Ábrelo en este mismo navegador</strong>, en la misma pestaña o una nueva; si lo abres en otro dispositivo no va a funcionar.
             ¿No funciona? Escríbenos a soporte@finpathia.com.
           </p>
           <button onClick={()=>{setShowRecoveryRequest(false);setResetSent(false)}} style={{width:"100%",background:T.bg3,color:T.tx,border:`1px solid ${T.border}`,padding:"12px 20px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>
@@ -1785,9 +1798,9 @@ export default function FinPath(){
         >
           {resetLoading?"Actualizando...":"Actualizar contraseña"}
         </button>
-        <div style={{marginTop:16,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,fontSize:11,color:T.tx3,lineHeight:1.5}}>
-          ⚠️ Tu información está cifrada con tu contraseña. Al cambiarla, si tenías datos encriptados bajo la contraseña anterior no podrás recuperarlos — tendrás que volver a cargarlos.
-        </div>
+        {resetConCifrado&&<div role="alert" data-testid="aviso-reset-cifrado" style={{marginTop:16,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,fontSize:12,color:T.tx2,lineHeight:1.5}}>
+          ⚠️ Antes de cambiarla: tus datos financieros están cifrados con tu contraseña actual. Con una contraseña nueva no se podrán abrir y no hay forma de recuperarlos. Tu plan y tus pagos se conservan. Si recuerdas tu contraseña actual, mejor no la cambies. ¿Dudas? Escríbenos a soporte@finpathia.com.
+        </div>}
       </div>
     </div>}
     <div style={{width:"100%",maxWidth:420,padding:"clamp(24px, 6vw, 40px) clamp(20px, 5vw, 32px)"}}>
