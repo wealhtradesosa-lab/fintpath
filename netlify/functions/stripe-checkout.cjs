@@ -20,8 +20,8 @@
 
 const Stripe = require("stripe");
 
-// Trial period en días para Pro Familiar. Si querés cambiarlo (ej: 7 días),
-// modificá esta constante. Si querés desactivar trial, ponela en 0.
+// Trial period en días para Pro Familiar. Si quieres cambiarlo (ej: 7 días),
+// modifica esta constante. Si quieres desactivar trial, ponla en 0.
 const TRIAL_DAYS = 14; // aplica a todos los planes desde 25-jul-2026
 const PRO_FAMILIAR_TRIAL_DAYS = TRIAL_DAYS; // compat: usado por isProFamiliarPrice y logs
 
@@ -151,7 +151,7 @@ exports.handler = async (event) => {
 
     // 25-jul-2026 — Trial de 14 días para TODOS los planes.
     // Antes solo lo tenía Pro Familiar: quien compraba Pro o Básico pagaba
-    // desde el primer día, mientras toda la app le prometía "probalo gratis".
+    // desde el primer día, mientras toda la app le prometía "pruébalo gratis".
     // Incoherente, y castigaba justo a quien elegía el plan más barato.
     // Nota: si el usuario ya tuvo trial con la misma tarjeta, Stripe lo
     // detecta y no otorga un segundo trial.
@@ -180,7 +180,7 @@ exports.handler = async (event) => {
     //
     // allow_promotion_codes: true Y discounts son MUTUAMENTE EXCLUYENTES en
     // Stripe — si pre-aplicamos un código, el campo input desaparece. Esto
-    // está OK para la flow de Pioneros (ya tenés el código aplicado).
+    // está OK para la flow de Pioneros (ya tienes el código aplicado).
     // ─────────────────────────────────────────────────────────────────────
     const promotionCode = (body.promotionCode || "").trim().toUpperCase();
     if (promotionCode) {

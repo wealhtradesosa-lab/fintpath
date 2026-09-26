@@ -77,10 +77,10 @@ function mensajeCuota({ usos, tope, plan }) {
   const enPago = plan !== "free";
   return {
     error: "cuota_ia_agotada",
-    mensaje: `Llegaste al tope de ${tope} lecturas con IA de este mes (llevás ${usos}).` +
+    mensaje: `Llegaste al tope de ${tope} lecturas con IA de este mes (llevas ${usos}).` +
       (enPago
-        ? " Se renueva el primer día del mes. Si necesitás más, escribinos a soporte@finpathia.com."
-        : " Se renueva el primer día del mes, o podés mejorar tu plan para tener más."),
+        ? " Se renueva el primer día del mes. Si necesitas más, escríbenos a soporte@finpathia.com."
+        : " Se renueva el primer día del mes, o puedes mejorar tu plan para tener más."),
     usos, tope, plan,
   };
 }
