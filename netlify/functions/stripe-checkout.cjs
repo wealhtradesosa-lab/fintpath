@@ -41,10 +41,38 @@ function isProFamiliarPrice(priceId) {
   return false;
 }
 
+// 26-sep-2026 (P0) — Validación del token de Supabase.
+// Antes el endpoint confiaba en el userId que mandaba el navegador y lo
+// escribía en metadata.userId, que el webhook usa para activar el plan:
+// cualquiera podía crear un checkout a nombre de otro usuario. Ahora el
+// frontend manda "Authorization: Bearer <access_token>" y aquí se valida
+// contra Supabase Auth (GET /auth/v1/user). userId y email salen del token.
+async function usuarioDesdeToken(event) {
+  const h = event.headers || {};
+  const auth = h.authorization || h.Authorization || "";
+  const m = /^Bearer\s+(.+)$/i.exec(auth.trim());
+  if (!m) return { error: "Falta el token de sesión", status: 401 };
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+    || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return { error: "Supabase no configurado en el servidor", status: 500 };
+  try {
+    const r = await fetch(`${url}/auth/v1/user`, {
+      headers: { apikey: key, Authorization: `Bearer ${m[1]}` },
+    });
+    if (!r.ok) return { error: "Sesión inválida o vencida", status: 401 };
+    const user = await r.json();
+    if (!user || !user.id) return { error: "Sesión inválida o vencida", status: 401 };
+    return { user };
+  } catch (e) {
+    return { error: "No se pudo validar la sesión: " + e.message, status: 502 };
+  }
+}
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
   };
@@ -57,10 +85,18 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: "STRIPE_SECRET_KEY no configurada" }) };
   }
 
+  const sesion = await usuarioDesdeToken(event);
+  if (sesion.error) {
+    return { statusCode: sesion.status, headers, body: JSON.stringify({ error: sesion.error }) };
+  }
+
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     const body = JSON.parse(event.body || "{}");
-    const { priceId, email, userId, successUrl, cancelUrl } = body;
+    const { priceId, successUrl, cancelUrl } = body;
+    // userId y email SIEMPRE del token validado; el body solo es respaldo del email.
+    const userId = sesion.user.id;
+    const email = sesion.user.email || body.email;
 
     if (!priceId) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "priceId requerido" }) };

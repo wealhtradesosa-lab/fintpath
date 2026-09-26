@@ -634,7 +634,15 @@ export default function FinPath(){
     // retry silencioso), la app cargaba para siempre con 'Cargando tu patrimonio...'.
     // Con este timeout de 8s, la app sigue cargando como unauthenticated y se
     // recupera cuando la sesión llegue (si alguna vez llega).
-    const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error("auth timeout")),8000));
+    // 26-sep-2026 — el timer quedaba vivo SIEMPRE: aunque getSession
+    // respondiera en 50ms (o si Supabase ni siquiera estaba configurado, como
+    // en el deploy de Vercel), a los 8s la promesa se rechazaba sin nadie
+    // escuchando y la consola mostraba "auth timeout" como si la sesión se
+    // hubiera caído. Ahora el timer se limpia al terminar la carga y la
+    // rechazo tardía queda absorbida.
+    let _authTimer=null;
+    const timeout=new Promise((_,rej)=>{_authTimer=setTimeout(()=>rej(new Error("auth timeout")),8000)});
+    timeout.catch(()=>{});
     try{
       if(isSupabaseConfigured&&supabase){
         const{data:{session}}=await Promise.race([supabase.auth.getSession(),timeout]);
@@ -672,6 +680,7 @@ export default function FinPath(){
     }catch(e){
       if(typeof console!=="undefined")console.warn("[load] session fetch failed/timeout, continuando sin auth:",e);
     }
+    clearTimeout(_authTimer);
     setLd(false);
     // 03-ago-2026 (Santiago: "necesito que el dólar esté en tiempo real a tasa
     // de hoy"). /api/trm ya traía el dato del Banco de la República ($3.144
@@ -949,7 +958,7 @@ export default function FinPath(){
             new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout cargando datos")),10000))
           ]);
           if(d){const __sd=sanitize(d);setU(__sd);setPg("dash");if(cuentaVacia(__sd))setShowOnboarding(true);}
-          else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);setShowOnboarding(true)}
+          else{const nd=cuentaNueva(aF.n||"Usuario",aF.e,aF.country);setU(nd);await sS(nd,data.user.id);setShowOnboarding(true)}
         }catch(loadErr){
           // Si falla la carga de datos: limpiamos el estado a medio-loguear para no
           // dejar al usuario atrapado con authUser seteado pero sin data (lo que
@@ -988,11 +997,11 @@ export default function FinPath(){
           setViewMode("personal");
         }
       }else{
-        const sr=await fetch("/.netlify/functions/auth-signup",{
+        const sr=await fetch("/api/auth-signup",{
           method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({email:aF.e,password:aF.p,name:aF.n||""})
         });
-        const srd=await sr.json();
+        const srd=await sr.json().catch(()=>({error:"Error creando cuenta (HTTP "+sr.status+")"}));
         if(!sr.ok){const errMsg=srd.error||"Error creando cuenta";
         // 04-sep-2026 — Se medía cuando alguien ABRE el registro y cuando lo
         // COMPLETA, pero nunca cuando falla. Con 16 caminos de error sin
@@ -1015,7 +1024,7 @@ export default function FinPath(){
         let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Probá iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intentá de nuevo o escribinos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verificá que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);
+        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=cuentaNueva(aF.n||"Usuario",aF.e,aF.country);setU(nd);await sS(nd,data.user.id);
         // Sesión 4-may-2026: tracking GA4 — signup completed con metadata
         // de promo (Pioneros) y user_id para atribución cross-device.
         trackSignup({ method: "email", userId: data.user.id });
@@ -1044,7 +1053,7 @@ export default function FinPath(){
         // Conversión Google Ads (legacy — pre-existente)
         window.gtag?.('event','conversion',{send_to:'AW-613365221/dbh6CL2pn9cZEOXrvKQC',value:1.0,currency:'COP'});
       }
-    }else{setU(mkU(aF.n||"Usuario",aF.e))}
+    }else{setU(cuentaNueva(aF.n||"Usuario",aF.e,aF.country))}
     }catch(e){setAuthError("Error: "+e.message)}
     setAuthLoading(false);
   };
@@ -1320,6 +1329,20 @@ export default function FinPath(){
   const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";
   const INVITADOS=["andres.isaza@grupogiesas.com","renatomaestri76@hotmail.com"];
   const getTrialDays=(email)=>INVITADOS.includes(email)?30:14;
+  // 26-sep-2026 — Única fábrica de cuentas NUEVAS. El registro promete
+  // "14 días de acceso Pro incluidos", pero había un camino (sin Supabase
+  // configurado, p. ej. el deploy de Vercel) que creaba la cuenta con mkU()
+  // pelado: plan free y SIN trialEnd → módulos Pro bloqueados desde el día 1.
+  // El trial vive en p.trialEnd y el gating ya lo respeta (trialActive → pro);
+  // al vencer, plan vuelve solo a p.plan ("free"). Solo se llama al CREAR una
+  // cuenta: las cuentas Free existentes no se tocan (sin trial retroactivo).
+  const cuentaNueva=(nombre,email,pais)=>{
+    const nd=mkU(nombre||"Usuario",email||"");
+    nd.p.plan="free";
+    nd.p.trialEnd=new Date(Date.now()+getTrialDays(email)*86400000).toISOString().split("T")[0];
+    nd.jurisdiction=pais||"CO";
+    return nd;
+  };
   const trialEnd=u?.p?.trialEnd;
   const trialActive=trialEnd&&new Date(trialEnd)>=new Date();
   const trialDays=trialEnd?Math.max(0,Math.ceil((new Date(trialEnd)-new Date())/(86400000))):0;
@@ -1339,6 +1362,101 @@ export default function FinPath(){
   // Usar este en gates de features. plan==="pro" es solo para "soy plan Pro
   // exacto" (ej. mostrar 'Plan actual' en pricing card del plan Pro).
   const hasProAccess=plan==="pro"||plan==="pro_familiar"||plan==="advisor_pro";
+
+  // ═══ CHECKOUT STRIPE ═══════════════════════════════════════════════════
+  // 26-sep-2026 (P0). Con una cuenta recién creada, "Comenzar" en Pro decía
+  // "Sesión no detectada. Hacé logout/login…" y no abría Stripe. El botón
+  // dependía SOLO del estado React authUser: si no estaba (carga de sesión
+  // lenta, recarga de la página, o Supabase sin configurar), se cortaba ahí.
+  // Además el endpoint no recibía ningún token: confiaba en el userId que
+  // mandaba el navegador.
+  // Ahora: se le pide la sesión a Supabase en el momento del clic, con
+  // reintentos silenciosos (getSession → refreshSession → esperar el evento
+  // de auth), y se manda el access_token al endpoint, que lo valida y saca
+  // de ahí el userId/email. Si aun así no hay sesión, mensaje en tuteo con
+  // botón Reintentar. Nunca se le pide al usuario cerrar sesión.
+  const[checkoutCargando,setCheckoutCargando]=useState(null);
+  const[checkoutError,setCheckoutError]=useState(null);
+  const MSG_CHECKOUT_REINTENTO="No pudimos abrir el pago. Intenta de nuevo en unos segundos.";
+  const obtenerSesionCheckout=async()=>{
+    if(!isSupabaseConfigured||!supabase)return null;
+    const esperar=(ms,v=null)=>new Promise(r=>setTimeout(()=>r(v),ms));
+    const valida=s=>(s&&s.access_token&&s.user&&(!s.expires_at||s.expires_at*1000>Date.now()+30000))?s:null;
+    for(let intento=0;intento<3;intento++){
+      try{
+        const r1=await Promise.race([supabase.auth.getSession(),esperar(4000,{data:{session:null}})]);
+        let s=valida(r1?.data?.session);
+        if(!s){
+          const r2=await Promise.race([supabase.auth.refreshSession(),esperar(4000,{data:{session:null}})]);
+          s=valida(r2?.data?.session);
+        }
+        if(!s){
+          // Justo después del registro la sesión puede estar escribiéndose:
+          // esperamos el evento de auth (SIGNED_IN / TOKEN_REFRESHED).
+          s=await new Promise(res=>{
+            let listo=false,sub=null;
+            const fin=v=>{if(listo)return;listo=true;try{sub?.unsubscribe()}catch{}res(v)};
+            const{data}=supabase.auth.onAuthStateChange((_ev,ss)=>{const v=valida(ss);if(v)fin(v)});
+            sub=data?.subscription;
+            setTimeout(()=>fin(null),1500+intento*1000);
+          });
+        }
+        if(s)return s;
+      }catch(e){console.warn("[checkout] intento de sesión "+(intento+1)+" falló:",e)}
+      await esperar(600*(intento+1));
+    }
+    return null;
+  };
+  const abrirCheckout=async(pl)=>{
+    if(!pl||checkoutCargando)return;
+    // PriceIds vienen de src/lib/plans.js (STRIPE_PRICE_IDS), source-of-truth única.
+    const priceId=STRIPE_PRICE_IDS[pl.n]?.[billingCycle];
+    if(!priceId)return;
+    setCheckoutError(null);
+    setCheckoutCargando(pl.n);
+    try{
+      let sesion=await obtenerSesionCheckout();
+      if(!sesion){
+        console.warn("[checkout] sin sesión de Supabase tras reintentos");
+        setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO});
+        return;
+      }
+      const userEmail=sesion.user.email||u?.p?.email||authUser?.email||"";
+      if(!userEmail){alert("Necesitamos tu email para procesar el pago. Complétalo en Configuración → Datos personales y vuelve a intentar.");return;}
+      trackCheckoutStarted({ plan: pl.n, billingCycle, priceId });
+      const pedir=(token)=>fetch("/api/stripe-checkout",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+        body:JSON.stringify({priceId,email:userEmail,userId:sesion.user.id,promotionCode:sessionStorage.getItem("fp3_promo_code")||"",successUrl:window.location.origin+"/?success=1&session_id={CHECKOUT_SESSION_ID}",cancelUrl:window.location.origin+"/?canceled=true"})
+      });
+      let r=await pedir(sesion.access_token);
+      if(r.status===401){
+        // Token vencido o rechazado: refrescamos una vez y reintentamos en silencio.
+        try{const rr=await supabase.auth.refreshSession();if(rr?.data?.session?.access_token){sesion=rr.data.session;r=await pedir(sesion.access_token)}}catch{}
+      }
+      if(r.status===401){
+        console.error("[checkout] token rechazado por el servidor");
+        setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO});
+        return;
+      }
+      if(!r.ok){
+        const txt=await r.text().catch(()=>"(no body)");
+        console.error("[checkout] HTTP",r.status,txt);
+        setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO+" Si el problema sigue, escríbenos a soporte@finpathia.com."});
+        return;
+      }
+      const d=await r.json().catch(()=>({}));
+      if(d.url){window.location.href=d.url;return;}
+      console.error("[checkout] respuesta sin url:",d);
+      setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO+" Si el problema sigue, escríbenos a soporte@finpathia.com."});
+    }catch(e){
+      console.error("[checkout] fetch failed:",e);
+      const isBlocked=e.message&&/blocked|aborted|failed|network|cors/i.test(e.message);
+      setCheckoutError({pl,msg:MSG_CHECKOUT_REINTENTO+(isBlocked?" Si usas un bloqueador de anuncios, desactívalo para finpathia.com o prueba en modo incógnito.":"")});
+    }finally{
+      setCheckoutCargando(null);
+    }
+  };
   const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200):{},[u]);
   const ib=useMemo(()=>{if(!u?.ibk?.length)return{tc:0,tv:0,pnl:0,pp:0,pos:[]};let tc=0,tv=0;const pos=u.ibk.map(p=>{
     // 26-jul-2026 (Santiago: "¿y si la persona tiene opciones qué hace?").
@@ -3188,6 +3306,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             ))}
           </div>
         </div>
+        {checkoutError&&<div role="alert" style={{maxWidth:1200,margin:"0 auto 16px",padding:"14px 18px",background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+          <div style={{fontSize:13,color:T.tx,flex:"1 1 220px",minWidth:0}}>{checkoutError.msg}</div>
+          <div style={{display:"flex",gap:8,flexShrink:0}}>
+            <button onClick={()=>abrirCheckout(checkoutError.pl)} disabled={!!checkoutCargando} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:13}}>{checkoutCargando?"Reintentando…":"Reintentar"}</button>
+            <button onClick={()=>setCheckoutError(null)} aria-label="Cerrar" style={{background:"transparent",color:T.tx3,border:"1px solid "+T.border,padding:"10px 12px",borderRadius:8,cursor:"pointer",fontSize:13}}>✕</button>
+          </div>
+        </div>}
         <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(240px, 1fr))",gap:16,maxWidth:1200,margin:"0 auto"}}>
           {plans.map(pl=>(
             <Cd key={pl.n} s={{border:pl.ac?"2px solid "+T.gn:pl.comingSoon?"1px dashed "+T.border:"1px solid "+T.border,position:"relative",opacity:pl.comingSoon?0.95:1}}>
@@ -3226,44 +3351,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 {pl.comingSoon?(
                   <Bt v="s" sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{window.location.href="mailto:soporte@finpathia.com?subject=Plan Pro Familiar — interesado&body=Hola, quiero entrar a la lista de espera del plan Pro Familiar para mi familia/equipo. Mi email: "+(u?.p?.email||"")}}>Únete a la lista de espera</Bt>
                 ):(
-                <Bt v={pl.cur?"s":pl.rank>pl.rankActual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",opacity:(pl.cur||pl.rank===0)?0.55:1,cursor:(pl.cur||pl.rank===0)?"default":"pointer"}} onClick={()=>{if(!pl.cur&&pl.rank!==0)(async()=>{
-                  try{
-                    // PriceIds vienen de src/lib/plans.js (STRIPE_PRICE_IDS),
-                    // source-of-truth única. Refactor item #9.
-                    const priceId=STRIPE_PRICE_IDS[pl.n]?.[billingCycle];
-                    if(!priceId)return;
-                    // Email fallback: u?.p?.email puede no estar cargado para users
-                    // recién signup. authUser.email SIEMPRE está si hay sesión.
-                    const userEmail=u?.p?.email||authUser?.email||"";
-                    const userIdReal=authUser?.id||"";
-                    if(!userEmail){alert("Necesitamos tu email para procesar el pago. Completá tu perfil primero (Configuración → Datos personales) y volvé a intentar.");return;}
-                    if(!userIdReal){alert("Sesión no detectada. Hacé logout/login y volvé a intentar.");return;}
-                    // Sesión 4-may-2026: tracking GA4 — checkout iniciado
-                    // con metadata de plan, ciclo y promo (Pioneros).
-                    trackCheckoutStarted({ plan: pl.n, billingCycle, priceId });
-                    const r=await fetch("/.netlify/functions/stripe-checkout",{
-                      method:"POST",
-                      headers:{"Content-Type":"application/json"},
-                      body:JSON.stringify({priceId,email:userEmail,userId:userIdReal,promotionCode:sessionStorage.getItem("fp3_promo_code")||"",successUrl:window.location.origin+"/?success=1&session_id={CHECKOUT_SESSION_ID}",cancelUrl:window.location.origin+"/?canceled=true"})
-                    });
-                    if(!r.ok){
-                      const txt=await r.text().catch(()=>"(no body)");
-                      console.error("[checkout] HTTP",r.status,txt);
-                      alert("Error de Stripe (HTTP "+r.status+"):\n"+txt.slice(0,200)+"\n\nRevisá la consola del browser (F12) o contactá soporte@finpathia.com.");
-                      return;
-                    }
-                    const d=await r.json();
-                    if(d.url)window.location.href=d.url;
-                    else alert("Error de Stripe: "+(d.error||"No se pudo crear la sesión")+". Si el problema persiste, escribinos a soporte@finpathia.com");
-                  }catch(e){
-                    console.error("[checkout] fetch failed:",e);
-                    const isBlocked=e.message&&/blocked|aborted|failed|network|cors/i.test(e.message);
-                    alert(
-                      "Error conectando con Stripe: "+e.message+
-                      (isBlocked?"\n\n⚠️ Posible AdBlocker o extensión del browser bloqueando la conexión.\nProbá:\n• Desactivar adblocker para finpathia.com\n• Abrir en modo incógnito\n• Probar con otro browser":"\n\nVerificá tu conexión. Detalle del error en consola (F12 → Console).")
-                    );
-                  }
-                })()}}>{
+                <Bt v={pl.cur?"s":pl.rank>pl.rankActual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",opacity:(pl.cur||pl.rank===0)?0.55:1,cursor:(pl.cur||pl.rank===0)?"default":"pointer"}} dis={checkoutCargando===pl.n} onClick={()=>{if(!pl.cur&&pl.rank!==0)abrirCheckout(pl)}}>{
+                  checkoutCargando===pl.n ? "Abriendo pago…" :
                   // 25-jul-2026: el botón decía "Comenzar" en TODAS las tarjetas,
                   // incluida Free — que no tiene precio, así que era un botón
                   // muerto (el handler hace `if(!priceId)return`). Quien ya tenía
@@ -3475,7 +3564,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       </div>}
     case"cuenta":
     case"set":{
-    const cuentaConfig=<div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:20}}><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Perfil</h3><div style={{display:"flex",flexDirection:"column",gap:14}}><In l="Nombre" value={u?.p?.name||""} onChange={v=>setU(p=>({...p,p:{...p.p,name:v}}))}/><In l="Email" value={u?.p?.email||""} onChange={v=>setU(p=>({...p,p:{...p.p,email:v}}))}/><In l="TRM (Tasa de cambio USD→COP)" value={(u&&u.trm)} onChange={v=>setU(p=>({...p,trm:+v||4200}))} type="number"/>{(u?.jurisdiction||"CO")==="CO"&&<div><label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6}}>Componente inflacionario (% exento rendimientos)</label><input type="number" step="0.01" value={u?.componenteInflacionarioPct!=null?u.componenteInflacionarioPct:50.88} onChange={e=>{const v=+e.target.value;if(!isNaN(v)&&v>=0&&v<=100)setU(p=>({...p,componenteInflacionarioPct:v}))}} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none"}}/><div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Art. 38-39 ET · Decreto 0771/2025: <strong>50,88%</strong> para año gravable 2024. Parte de intereses bancarios/CDT/FIC que NO constituye renta para persona natural no obligada a llevar contabilidad. Actualizable cuando la DIAN publique el decreto del próximo año.</div></div>}<div><label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6}}>Jurisdicción fiscal</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{[{code:"CO",flag:"🇨🇴",name:"Colombia"},{code:"US",flag:"🇺🇸",name:"United States"}].map(c=>{const sel=(u?.jurisdiction||"CO")===c.code;return<button key={c.code} type="button" onClick={()=>{if((u?.jurisdiction||"CO")===c.code)return;if(!confirm(`¿Cambiar jurisdicción fiscal a ${c.name}?\n\nEsto cambia las reglas fiscales, el módulo de pensiones (Colpensiones+RAIS vs 401k) y la planeación tributaria. Tus datos se conservan — solo cambia cómo se calculan y presentan.`))return;setU(p=>({...p,jurisdiction:c.code}));showToast(`✓ Jurisdicción cambiada a ${c.name}`)}} style={{padding:"10px 12px",borderRadius:8,border:"1px solid "+(sel?T.gn:T.border),background:sel?T.gnB:T.bg2,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,color:sel?T.gn:T.tx2,fontWeight:sel?700:400,fontSize:12}}><span style={{fontSize:16}}>{c.flag}</span>{c.name}</button>})}</div><div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Define el módulo de pensiones, plan tributario y moneda por default.</div></div></div></Cd><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Datos</h3><div style={{display:"flex",flexDirection:"column",gap:10}}><div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan:</strong> {plan} {!hasProAccess&&<span onClick={()=>setPg("price")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}> → Upgrade</span>}</div>{isAdmin&&<div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan manual:</strong> <select value={(u?.p?.plan)||"free"} onChange={e=>setU(p=>({...p,p:{...p.p,plan:e.target.value}}))} style={{background:T.bg2,border:"1px solid "+T.border,color:T.tx,padding:"4px 8px",borderRadius:6,marginLeft:8}}><option value="free">Free</option><option value="basico">Básico</option><option value="pro">Pro</option><option value="pro_familiar">Pro Familiar</option></select></div>}<Bt v="s" onClick={()=>{if(((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0||Object.keys((u&&u.gas)||{}).length>0){if(!confirm("⚠️ Esto reemplazará tus datos actuales con datos de ejemplo. ¿Continuar?"))return}demo()}} st={{justifyContent:"center"}}>Cargar datos demo</Bt><Bt v="s" onClick={()=>{const d=localStorage.getItem(SK);if(!d)return alert("No hay datos");const b=new Blob([d],{type:"application/json"});const u2=URL.createObjectURL(b);const a=document.createElement("a");a.href=u2;a.download="finpathia-backup-"+new Date().toISOString().split("T")[0]+".json";a.click()}} st={{justifyContent:"center"}}>📥 Exportar Datos (JSON)</Bt>
+    const cuentaConfig=<div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:20}}><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Perfil</h3><div style={{display:"flex",flexDirection:"column",gap:14}}><In l="Nombre" value={u?.p?.name||""} onChange={v=>setU(p=>({...p,p:{...p.p,name:v}}))}/><In l="Email" value={u?.p?.email||""} onChange={v=>setU(p=>({...p,p:{...p.p,email:v}}))}/><In l="TRM (Tasa de cambio USD→COP)" value={(u&&u.trm)} onChange={v=>setU(p=>({...p,trm:+v||4200}))} type="number"/>{(u?.jurisdiction||"CO")==="CO"&&<div><label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6}}>Componente inflacionario (% exento rendimientos)</label><input type="number" step="0.01" value={u?.componenteInflacionarioPct!=null?u.componenteInflacionarioPct:50.88} onChange={e=>{const v=+e.target.value;if(!isNaN(v)&&v>=0&&v<=100)setU(p=>({...p,componenteInflacionarioPct:v}))}} style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,color:T.txt,padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none"}}/><div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Art. 38-39 ET · Decreto 0771/2025: <strong>50,88%</strong> para año gravable 2024. Parte de intereses bancarios/CDT/FIC que NO constituye renta para persona natural no obligada a llevar contabilidad. Actualizable cuando la DIAN publique el decreto del próximo año.</div></div>}<div><label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6}}>Jurisdicción fiscal</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{[{code:"CO",flag:"🇨🇴",name:"Colombia"},{code:"US",flag:"🇺🇸",name:"United States"}].map(c=>{const sel=(u?.jurisdiction||"CO")===c.code;return<button key={c.code} type="button" onClick={()=>{if((u?.jurisdiction||"CO")===c.code)return;if(!confirm(`¿Cambiar jurisdicción fiscal a ${c.name}?\n\nEsto cambia las reglas fiscales, el módulo de pensiones (Colpensiones+RAIS vs 401k) y la planeación tributaria. Tus datos se conservan — solo cambia cómo se calculan y presentan.`))return;setU(p=>({...p,jurisdiction:c.code}));showToast(`✓ Jurisdicción cambiada a ${c.name}`)}} style={{padding:"10px 12px",borderRadius:8,border:"1px solid "+(sel?T.gn:T.border),background:sel?T.gnB:T.bg2,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,color:sel?T.gn:T.tx2,fontWeight:sel?700:400,fontSize:12}}><span style={{fontSize:16}}>{c.flag}</span>{c.name}</button>})}</div><div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>Define el módulo de pensiones, plan tributario y moneda por default.</div></div></div></Cd><Cd s={{padding:20}}><h3 style={{fontSize:15,fontWeight:700,margin:"0 0 16px"}}>Datos</h3><div style={{display:"flex",flexDirection:"column",gap:10}}><div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan:</strong> {plan}{trialActive&&planAccount!=="pro_familiar"&&!isAdmin&&<span style={{color:T.gn,fontWeight:600}}> · Trial Pro activo ({trialDays} {trialDays===1?"día":"días"} restantes de tus 14 días Pro)</span>} {!hasProAccess&&<span onClick={()=>setPg("price")} style={{color:T.gn,cursor:"pointer",fontWeight:600}}> → Upgrade</span>}</div>{isAdmin&&<div style={{padding:12,background:T.bg3,borderRadius:10,fontSize:13}}><strong>Plan manual:</strong> <select value={(u?.p?.plan)||"free"} onChange={e=>setU(p=>({...p,p:{...p.p,plan:e.target.value}}))} style={{background:T.bg2,border:"1px solid "+T.border,color:T.tx,padding:"4px 8px",borderRadius:6,marginLeft:8}}><option value="free">Free</option><option value="basico">Básico</option><option value="pro">Pro</option><option value="pro_familiar">Pro Familiar</option></select></div>}<Bt v="s" onClick={()=>{if(((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0||Object.keys((u&&u.gas)||{}).length>0){if(!confirm("⚠️ Esto reemplazará tus datos actuales con datos de ejemplo. ¿Continuar?"))return}demo()}} st={{justifyContent:"center"}}>Cargar datos demo</Bt><Bt v="s" onClick={()=>{const d=localStorage.getItem(SK);if(!d)return alert("No hay datos");const b=new Blob([d],{type:"application/json"});const u2=URL.createObjectURL(b);const a=document.createElement("a");a.href=u2;a.download="finpathia-backup-"+new Date().toISOString().split("T")[0]+".json";a.click()}} st={{justifyContent:"center"}}>📥 Exportar Datos (JSON)</Bt>
               <Bt v="s" onClick={()=>{try{const backups=JSON.parse(localStorage.getItem("fp3_backups")||"[]");if(!backups.length){alert("No hay backups disponibles");return}const last=backups[backups.length-1];const d=JSON.parse(last.data);if(confirm("¿Restaurar backup del "+new Date(last.date).toLocaleDateString("es-CO")+"? Esto reemplazará tus datos actuales.")){setU(sanitize(d));showToast("✅ Backup restaurado")}}catch{alert("Error restaurando backup")}}} st={{justifyContent:"center"}}>🔄 Restaurar último backup</Bt>
               <div style={{marginTop:12,padding:12,background:T.bg3,borderRadius:10}}>
                 <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>🧾 Planeación Tributaria</div>
