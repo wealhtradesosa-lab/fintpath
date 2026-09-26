@@ -93,7 +93,7 @@ export const PLAN_BASE = [
       "📊 Dashboard con resumen de tu patrimonio",
       "💰 Registrá ingresos, gastos y deudas",
       "📈 Hasta 3 inversiones y 1 meta financiera",
-      "🔒 Conexión segura y acceso restringido a tu cuenta",
+      "🔒 Conexión segura (HTTPS/TLS)",
     ],
     notFeatures: [
       "Simulador financiero",

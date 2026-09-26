@@ -176,7 +176,7 @@ fintpath/
 
 ## 🔐 Política de privacidad y seguridad
 
-- 🔒 Conexión segura (HTTPS) y Row Level Security en Supabase
+- 🔒 Conexión segura (HTTPS/TLS)
 - 🛡️ Row-Level Security en Supabase
 - 🔑 Service-role keys solo en serverless functions (nunca en frontend)
 - 💳 PCI compliance via Stripe (no almacenamos tarjetas)

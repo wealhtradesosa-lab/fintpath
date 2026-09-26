@@ -193,7 +193,7 @@ export default function LandingPage({ onGetStarted }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, maxWidth: 900, margin: "0 auto" }}>
           {[
-            { i: "🔐", t: "Conexión segura", d: "Tus datos viajan por HTTPS y, con cuenta, se guardan con acceso restringido a tu cuenta. No vendemos tus datos." },
+            { i: "🔐", t: "Conexión segura", d: "Tus datos viajan por conexión segura (HTTPS/TLS). No vendemos tus datos." },
             { i: "👤", t: "Sin registro obligatorio", d: "Usa la plataforma completa sin crear cuenta. Tus datos se guardan solo en tu navegador." },
             { i: "🚫", t: "No vendemos datos", d: "Cero publicidad, cero tracking financiero, cero venta de información." },
             { i: "✊", t: "Tú mandas", d: "Exporta, borra o lleva tus datos cuando quieras. Sin contratos." },

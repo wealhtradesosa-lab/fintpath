@@ -344,8 +344,8 @@ export default function LandingTerminos() {
           </p>
           <ul style={{ marginTop: 8, paddingLeft: 20 }}>
             <li style={{ marginBottom: 4 }}>Tus datos son <strong style={{ color: T.txt }}>tuyos</strong>. Podés exportarlos o eliminarlos cuando quieras.</li>
-            <li style={{ marginBottom: 4 }}>No vendemos ni compartimos tu información con terceros para publicidad.</li>
-            <li style={{ marginBottom: 4 }}>Usamos conexión segura (HTTPS/TLS) y control de acceso en la base de datos para que cada cuenta solo lea sus propios datos.</li>
+            <li style={{ marginBottom: 4 }}>No vendemos tus datos. Los proveedores que reciben datos y para qué están en la Política de privacidad.</li>
+            <li style={{ marginBottom: 4 }}>Usamos conexión segura (HTTPS/TLS) para todos los datos en tránsito.</li>
             <li>Las consultas al Asesor IA NO se usan para entrenar modelos.</li>
           </ul>
         </Section>

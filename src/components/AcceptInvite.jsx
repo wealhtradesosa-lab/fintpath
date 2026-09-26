@@ -426,7 +426,7 @@ export default function AcceptInvite({ token, onComplete }) {
               <br />🔒 Tus datos viajan por conexión segura (HTTPS).
             </>
           ) : (
-            <>🔒 Tus datos viajan por conexión segura (HTTPS) y se guardan con acceso restringido a tu cuenta.</>
+            <>🔒 Tus datos viajan por conexión segura (HTTPS/TLS).</>
           )}
         </div>
       </div>

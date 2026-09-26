@@ -82,6 +82,16 @@
   to = "/pioneros.html"
   status = 200
 
+# Política de privacidad: la única versión es /privacidad (LandingPrivacidad).
+# public/privacidad.html era una copia vieja y contradictoria; se eliminó.
+# No se deja un HTML con meta refresh porque, con "pretty URLs", Netlify
+# serviría ese archivo también en /privacidad y se haría un bucle.
+[[redirects]]
+  from = "/privacidad.html"
+  to = "/privacidad"
+  status = 301
+  force = true
+
 # SPA fallback (LAST - catches everything else)
 [[redirects]]
   from = "/*"
