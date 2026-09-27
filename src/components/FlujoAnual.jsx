@@ -70,6 +70,11 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
   };
   const { año: añoDefault, mes: mesActualHoy } = getMesActual();
   const [año, setAño] = useState(añoDefault);
+  // 27-sep-2026 (Santiago: "no sé por qué mayo en mi cuenta tuvo un pico
+  // positivo tan bueno, qué fue lo diferente"). El gráfico mostraba la FORMA
+  // del año pero no explicaba ningún mes: para entender un pico había que
+  // salir a Ingresos y a Egresos y reconstruirlo a mano.
+  const [mesDetalle, setMesDetalle] = useState(null);
 
   // ─── Motor: calcular ingresos/egresos/cash flow por cada mes ──────────
   const datosMensuales = useMemo(() => {
@@ -164,6 +169,79 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
   }, [user, trm, año, añoDefault, mesActualHoy]);
 
   // ─── Highlights del año ────────────────────────────────────────────
+  // ─── Qué hizo distinto a un mes ──────────────────────────────────────
+  // Compara cada concepto contra su propio promedio mensual y devuelve los que
+  // se movieron. No es "cuánto pesó", es "cuánto se salió de lo típico", que es
+  // la pregunta que uno se hace al ver un pico.
+  //
+  // Dos reglas heredadas del simulador, aprendidas a golpes:
+  //  1. Un concepto FUERA DE SU VIGENCIA no se reporta. Un arriendo que empieza
+  //     en octubre no le "quitó" plata a mayo: simplemente no existía. Listarlo
+  //     como faltante hace desconfiar de toda la lista.
+  //  2. En gastos el signo se invierte: gastar MÁS que lo típico empuja el mes
+  //     hacia abajo, aunque el delta del gasto sea positivo.
+  const detalleMes = useMemo(() => {
+    if (!mesDetalle) return null;
+    const trmR = trm || 4200;
+    const mes = mesDetalle;
+    const fueraDeVigencia = (it) => {
+      const desde = Number(it?.desdeMes) || 1;
+      const hasta = Number(it?.hastaMes) || 12;
+      return mes < desde || mes > hasta;
+    };
+    const movs = [];
+
+    (user?.ingresos || []).forEach((ing) => {
+      if (ing.sim === false || fueraDeVigencia(ing)) return;
+      const base = { ...ing, mensual: (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trmR : 1) };
+      const delM = montoDelMes(base, año, mes);
+      const tipico = montoPromedioMensual(base);
+      if (Math.round(delM - tipico) !== 0) {
+        movs.push({ nombre: ing.nombre || ing.fuente || L.ingresos, tipo: "ingreso",
+                    monto: delM, tipico, efecto: delM - tipico });
+      }
+    });
+
+    Object.entries(user?.gas || user?.gastos || {}).forEach(([cat, items]) => {
+      (items || []).forEach((g) => {
+        if (g.sim === false || fueraDeVigencia(g)) return;
+        const delM = montoDelMes(g, año, mes);
+        const tipico = montoPromedioMensual(g);
+        if (Math.round(delM - tipico) !== 0) {
+          movs.push({ nombre: g.c || cat, tipo: "gasto", cat,
+                      monto: delM, tipico, efecto: -(delM - tipico) });
+        }
+      });
+    });
+
+    // Cuotas: acá el movimiento es binario — la cuota aplica este mes o no.
+    (user?.deu || user?.deudas || []).forEach((d) => {
+      if (d.sim === false || (d.mt || 0) <= 0) return;
+      const cuota = (Number(d.pg || d.pago) || 0) * (d.moneda === "USD" ? trmR : 1);
+      if (cuota <= 0) return;
+      const desde = Number(d.desdeMes) || 1;
+      const hasta = Number(d.hastaMes) || 12;
+      const vigentes = Math.max(0, Math.min(12, hasta) - Math.max(1, desde) + 1);
+      const aplica = mes >= desde && mes <= hasta;
+      const tipico = (cuota * vigentes) / 12;
+      const delM = aplica ? cuota : 0;
+      if (Math.round(delM - tipico) !== 0) {
+        movs.push({ nombre: d.n || d.nombre || L.cuotas, tipo: "cuota",
+                    monto: delM, tipico, efecto: -(delM - tipico) });
+      }
+    });
+
+    movs.sort((a, b) => Math.abs(b.efecto) - Math.abs(a.efecto));
+    const dato = datosMensuales.find((d) => d.mes === mes);
+    const promedioCF = datosMensuales.reduce((s, d) => s + d.cashFlow, 0) / 12;
+    return {
+      mes, dato,
+      contraPromedio: (dato?.cashFlow || 0) - promedioCF,
+      suben: movs.filter((m) => m.efecto > 0),
+      bajan: movs.filter((m) => m.efecto < 0),
+    };
+  }, [mesDetalle, user, trm, año, datosMensuales, L.ingresos, L.cuotas]);
+
   const highlights = useMemo(() => {
     const cashFlows = datosMensuales.map(d => d.cashFlow);
     const promedio = cashFlows.reduce((s, c) => s + c, 0) / 12;
@@ -465,7 +543,14 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
 
         <div style={{ width: "100%", height: 380 }}>
           <ResponsiveContainer>
-            <ComposedChart data={datosMensuales} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+            <ComposedChart data={datosMensuales} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+              onClick={(e) => {
+                const i = e?.activeTooltipIndex;
+                if (typeof i !== "number" || !datosMensuales[i]) return;
+                const m = datosMensuales[i].mes;
+                setMesDetalle((prev) => (prev === m ? null : m));
+              }}
+              style={{ cursor: "pointer" }}>
               <CartesianGrid stroke={T.border} vertical={false} />
               <XAxis dataKey="mesLabel" stroke={T.txt3} fontSize={11} axisLine={{ stroke: T.border }} tickLine={false} />
               <YAxis stroke={T.txt3} fontSize={10} axisLine={false} tickLine={false} tickFormatter={fmShort} />
@@ -478,6 +563,107 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+
+        {!detalleMes && (
+          <div style={{ fontSize: 11, color: T.txt3, marginTop: 8, textAlign: "center" }}>
+            {isEN ? "Click any month to see what made it different."
+                  : "Tocá cualquier mes para ver qué lo hizo distinto."}
+          </div>
+        )}
+
+        {detalleMes && (() => {
+          const d = detalleMes.dato || {};
+          const vs = detalleMes.contraPromedio;
+          const Fila = ({ m }) => {
+            const arriba = m.efecto > 0;
+            return (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
+                    gap: 10, padding: "6px 0", borderBottom: `1px solid ${T.border}` }}>
+                <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden",
+                      textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {m.nombre}
+                  <span style={{ fontSize: 10, color: T.txt3, marginLeft: 6 }}>
+                    {m.tipo === "ingreso" ? L.ingresos : m.tipo === "cuota" ? L.cuotas : (m.cat || L.gastosFam)}
+                  </span>
+                </span>
+                <span style={{ display: "flex", alignItems: "baseline", gap: 9, flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, color: T.txt3, fontFamily: "monospace" }}>
+                    {m.monto === 0
+                      ? (isEN ? "not this month" : "no cae este mes")
+                      : `${fm(m.monto)} ${isEN ? "vs" : "vs"} ${fm(m.tipico)}`}
+                  </span>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, fontFamily: "monospace",
+                        color: arriba ? T.gn : T.rd, minWidth: 92, textAlign: "right" }}>
+                    {(arriba ? "+" : "−") + fm(Math.abs(m.efecto))}
+                  </span>
+                </span>
+              </div>
+            );
+          };
+          return (
+            <div style={{ marginTop: 14, background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 12, padding: "14px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
+                    flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: T.txt }}>
+                    {d.mesLabelFull} {año}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: T.txt2, marginTop: 2 }}>
+                    {L.ingresos} {fm(d.ingresos)} · {L.egresos} {fm(d.egresos)} ·{" "}
+                    <strong style={{ color: d.cashFlow >= 0 ? T.gn : T.rd }}>
+                      {L.cashflow} {fm(d.cashFlow)}
+                    </strong>
+                  </div>
+                </div>
+                <button onClick={() => setMesDetalle(null)}
+                  style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt3,
+                        borderRadius: 8, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}>
+                  {isEN ? "Close" : "Cerrar"}
+                </button>
+              </div>
+
+              <div style={{ fontSize: 12, color: T.txt2, margin: "8px 0 12px", lineHeight: 1.5 }}>
+                {Math.round(vs) === 0
+                  ? (isEN ? "This month matched the yearly average." : "Este mes rindió igual que el promedio del año.")
+                  : (<>
+                      {isEN ? "This month ran " : "Este mes rindió "}
+                      <strong style={{ color: vs > 0 ? T.gn : T.rd }}>
+                        {fm(Math.abs(vs))} {vs > 0 ? (isEN ? "above" : "por encima") : (isEN ? "below" : "por debajo")}
+                      </strong>
+                      {isEN ? " the yearly average. What moved it:" : " del promedio del año. Qué lo movió:"}
+                    </>)}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px,100%), 1fr))", gap: 18 }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase",
+                        color: T.gn, marginBottom: 4 }}>
+                    {isEN ? "Pushed it up" : "Lo empujó arriba"}
+                  </div>
+                  {detalleMes.suben.length === 0
+                    ? <div style={{ fontSize: 11.5, color: T.txt3, padding: "6px 0" }}>{isEN ? "Nothing above its usual level." : "Nada por encima de su nivel habitual."}</div>
+                    : detalleMes.suben.slice(0, 6).map((m, i) => <Fila key={"s" + i} m={m} />)}
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase",
+                        color: T.rd, marginBottom: 4 }}>
+                    {isEN ? "Pushed it down" : "Lo empujó abajo"}
+                  </div>
+                  {detalleMes.bajan.length === 0
+                    ? <div style={{ fontSize: 11.5, color: T.txt3, padding: "6px 0" }}>{isEN ? "Nothing above its usual level." : "Nada por encima de su nivel habitual."}</div>
+                    : detalleMes.bajan.slice(0, 6).map((m, i) => <Fila key={"b" + i} m={m} />)}
+                </div>
+              </div>
+
+              <div style={{ fontSize: 10.5, color: T.txt3, marginTop: 11, lineHeight: 1.5 }}>
+                {isEN
+                  ? "Each line compares that concept against its own monthly average. Concepts outside their active range are not listed: they did not take money from this month, they simply did not exist yet."
+                  : "Cada línea compara ese concepto contra su propio promedio mensual. Los conceptos fuera de su vigencia no se listan: no le quitaron plata a este mes, sencillamente todavía no existían."}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ═══ PRÓXIMOS PAGOS DEL AÑO (20-jul-2026, Santiago) ═══
