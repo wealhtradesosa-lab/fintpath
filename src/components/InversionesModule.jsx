@@ -96,7 +96,12 @@ function calcMetrics(inv, deudas, trm, rentaVinculadaMes = 0, gastoVinculadoMes 
   }
   const va = getVA(inv, trm), vc = getVC(inv, trm);
   const noi = ig - gs;
-  const linkedDebt = (deudas || []).filter((d) => (d.la || d.link) === inv.id);
+  // 27-sep-2026 — Sin filtrar por saldo ni por sim, una deuda ya saldada
+  // (mt: 0, que es lo que deja "Marcar pagada") o apagada seguia restando su
+  // cuota vieja del cash-on-cash del activo. Mismo criterio que usa el resto
+  // del motor para decidir si una deuda existe: activa y con saldo.
+  const linkedDebt = (deudas || []).filter((d) =>
+    (d.la || d.link) === inv.id && d.sim !== false && (Number(d.mt || d.monto) || 0) > 0);
   const debtTotal = linkedDebt.reduce((s, d) => s + (d.mt || d.monto || 0), 0);
   const debtPayment = linkedDebt.reduce((s, d) => s + (d.pg || d.pago || 0), 0);
   const equity = va - debtTotal;
