@@ -37,6 +37,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 const Stripe = require("stripe");
+const { sendTemplate } = require("./send-email.cjs");
 
 // ── Mapeo priceId → plan name ─────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════
@@ -279,21 +280,17 @@ exports.handler = async (event) => {
               ? new Date(sub.current_period_end * 1000).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })
               : null;
             const planFromMetadata = sub.metadata?.plan || "Pro";
-            // Llamada interna a send-email (mismo dominio Netlify)
-            const emailHost = process.env.URL || process.env.DEPLOY_URL || "https://finpathia.com";
-            await fetch(`${emailHost}/.netlify/functions/send-email`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                to: customer.email,
-                template: "cancellation",
-                vars: {
-                  name: customer.name || "",
-                  plan: planFromMetadata,
-                  periodEnd,
-                  reason,
-                },
-              }),
+            // 27-sep-2026: llamada directa, sin pasar por HTTP. El endpoint
+            // send-email ahora exige Origin del navegador y esta funcion no lo tiene.
+            await sendTemplate({
+              to: customer.email,
+              template: "cancellation",
+              vars: {
+                name: customer.name || "",
+                plan: planFromMetadata,
+                periodEnd,
+                reason,
+              },
             });
             console.log(`[stripe-webhook] cancellation email enviado a ${customer.email}`);
           }

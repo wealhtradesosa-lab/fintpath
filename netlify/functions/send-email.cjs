@@ -273,6 +273,43 @@ const TEMPLATES = {
 };
 
 // ─── Handler ─────────────────────────────────────────────────────────────
+// ─── Envío directo (uso interno desde otras funciones) ──────────────────
+// 27-sep-2026: el webhook de Stripe y el cron de trial llamaban a este mismo
+// endpoint por HTTP, sin cabecera Origin. Para que eso funcionara, el filtro de
+// origen dejaba pasar cualquier petición SIN Origin — o sea, cualquier curl.
+// Ahora las funciones internas importan sendTemplate() y el endpoint HTTP
+// exige un origen permitido, sin excepciones.
+async function sendTemplate({ to, template, vars = {} }) {
+  if (!to || !template) return { ok: false, error: "Faltan params: to, template" };
+  const tmpl = TEMPLATES[template];
+  if (!tmpl) return { ok: false, error: `Template "${template}" no existe. Disponibles: ${Object.keys(TEMPLATES).join(", ")}` };
+
+  if (!process.env.RESEND_API_KEY) {
+    console.warn(`[send-email] RESEND_API_KEY ausente — skip envío de "${template}" a ${to}`);
+    return { ok: true, sent: false, reason: "resend_not_configured" };
+  }
+
+  const { subject, html } = tmpl(vars);
+  const from = process.env.RESEND_FROM || "FINPATHIA <soporte@finpathia.com>";
+
+  const resp = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ from, to: [to], subject, html }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) {
+    console.error(`[send-email] Resend error (${resp.status}):`, data);
+    return { ok: false, error: data.message || "Resend error", status: resp.status };
+  }
+  console.log(`[send-email] ✅ template=${template} to=${to} message_id=${data.id}`);
+  return { ok: true, sent: true, message_id: data.id };
+}
+exports.sendTemplate = sendTemplate;
+
 exports.handler = async (event) => {
   const cors = {
     "Access-Control-Allow-Origin": "*",
@@ -284,65 +321,26 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, headers: cors, body: JSON.stringify({ ok: false, error: "Method not allowed" }) };
 
   try {
-    const { to, template, vars = {} } = JSON.parse(event.body || "{}");
-
     // ── 02-ago-2026 — ENDPOINT ABIERTO ────────────────────────────────────
     // Esta función NO validaba quién la llama: cualquiera con la URL podía
     // enviar correos DESDE finpathia.com a cualquier destinatario. Riesgo
     // doble: consumo de la cuota de Resend y, peor, que el dominio termine
     // marcado como spam por envíos que no salieron de la app.
-    // Es el mismo agujero que se cerró hoy en analyze-image y
-    // parse-declaration.
     // Se valida el ORIGEN en vez de exigir sesión, porque el welcome email se
     // dispara justo al registrarse, cuando todavía no hay token estable.
+    // 27-sep-2026: una petición SIN Origin ya no pasa. Los navegadores mandan
+    // Origin en todo POST; quien no lo manda no es la app.
     const origen = event.headers.origin || event.headers.referer || "";
     const permitidos = ["https://finpathia.com", "https://www.finpathia.com", "http://localhost"];
-    if (origen && !permitidos.some(o => origen.startsWith(o))) {
+    if (!permitidos.some(o => origen.startsWith(o))) {
       return { statusCode: 403, headers: cors,
         body: JSON.stringify({ ok: false, error: "origen_no_permitido" }) };
     }
 
-    if (!to || !template) {
-      return { statusCode: 400, headers: cors, body: JSON.stringify({ ok: false, error: "Faltan params: to, template" }) };
-    }
-
-    const tmpl = TEMPLATES[template];
-    if (!tmpl) {
-      return { statusCode: 400, headers: cors, body: JSON.stringify({ ok: false, error: `Template "${template}" no existe. Disponibles: ${Object.keys(TEMPLATES).join(", ")}` }) };
-    }
-
-    // Defensive fallback: si Resend no está configurado, no bloqueamos
-    if (!process.env.RESEND_API_KEY) {
-      console.warn(`[send-email] RESEND_API_KEY ausente — skip envío de "${template}" a ${to}`);
-      return { statusCode: 200, headers: cors, body: JSON.stringify({ ok: true, sent: false, reason: "resend_not_configured" }) };
-    }
-
-    const { subject, html, preheader } = tmpl(vars);
-    const from = process.env.RESEND_FROM || "FINPATHIA <soporte@finpathia.com>";
-
-    const resp = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [to],
-        subject,
-        html,
-      }),
-    });
-
-    const data = await resp.json();
-
-    if (!resp.ok) {
-      console.error(`[send-email] Resend error (${resp.status}):`, data);
-      return { statusCode: 500, headers: cors, body: JSON.stringify({ ok: false, error: data.message || "Resend error", status: resp.status }) };
-    }
-
-    console.log(`[send-email] ✅ template=${template} to=${to} message_id=${data.id}`);
-    return { statusCode: 200, headers: cors, body: JSON.stringify({ ok: true, sent: true, message_id: data.id }) };
+    const { to, template, vars = {} } = JSON.parse(event.body || "{}");
+    const r = await sendTemplate({ to, template, vars });
+    const statusCode = r.ok ? 200 : (r.status ? 500 : 400);
+    return { statusCode, headers: cors, body: JSON.stringify(r) };
   } catch (e) {
     console.error("[send-email] exception:", e);
     return { statusCode: 500, headers: cors, body: JSON.stringify({ ok: false, error: String(e?.message || e) }) };
