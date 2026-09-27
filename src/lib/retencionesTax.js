@@ -36,6 +36,8 @@
 //   - retenedor: pista de quién típicamente retiene
 //   - aplicaJur: si aplica para owner jurídica
 //   - aplicaNat: si aplica para owner persona natural (algunas son distintas)
+import { totalAnualItem } from "./flowHelpers.js";
+
 export const RETENCIONES_DEFAULT = {
   // ── Rendimientos financieros (Art. 395 ET) ──────────────────────────────
   CAP_INTERESES_BANCARIOS: {
@@ -173,7 +175,9 @@ export const RETENCIONES_DEFAULT = {
  *   fuente: 'override_item' | 'override_disabled' | 'default_table' | 'default_25' | 'no_aplica'
  */
 export function calcularRetencionIngreso(ing, ownerType = "natural", trm = 4200) {
-  const m = (ing.mensual || 0) * (ing.moneda === "USD" ? trm : 1) * 12;
+  // 27-sep-2026 — la base es el ingreso ANUAL del item; mensual * 12 la inflaba
+  // en un ingreso de medio ano y la dejaba en cero en un variable.
+  const m = totalAnualItem(ing) * (ing.moneda === "USD" ? trm : 1);
   const cfg = ing.retencionConfig || {};
 
   // Override 1: user marcó explícitamente "no aplica"

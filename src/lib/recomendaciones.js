@@ -28,6 +28,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { GRUPOS_SIMPLE, TOPE_SIMPLE_UVT, calcularImpuestoSimple } from "./regimenSimple.js";
+// 27-sep-2026 — gastos anualizados por el motor, no con m * 12.
+import { totalAnualItem } from "./flowHelpers.js";
 
 const UVT = 49799; // AG 2025 default ($49.799) — ver UVT_BY_AG / uvtForYear en taxCO.js
 
@@ -374,7 +376,7 @@ function recomendacionesJuridica(user, ow, det) {
   const gastosICA = Object.values(user.gas || {}).flat().filter(g =>
     g.owner === ow.id && (g.fiscalCode === "GAS_JUR_PREDIAL" || g.cat === "Impuesto" || g.cat === "Predial") && g.sim !== false
   );
-  const icaPagadoAnual = gastosICA.reduce((s, g) => s + ((Number(g.m) || 0) * 12), 0);
+  const icaPagadoAnual = gastosICA.reduce((s, g) => s + totalAnualItem(g), 0);
   if (icaPagadoAnual > 500_000 && impBruto > 0) {
     const descuentoPotencial = Math.round(icaPagadoAnual * 0.5);
     const descuentoActual = Number(ow.descuentosTributarios?.ica) || 0;
@@ -478,7 +480,7 @@ function recomendacionesJuridica(user, ow, det) {
   const tieneDeducDiscap = Number(ow.descuentosTributarios?.salariosDiscapacidadAnual) > 0;
   const gastosNomina = Object.values(user.gas || {}).flat()
     .filter(g => g.owner === ow.id && (g.cat === "Nómina" || g.fiscalCode === "GAS_JUR_NOMINA") && g.sim !== false)
-    .reduce((s, g) => s + ((Number(g.m) || 0) * 12), 0);
+    .reduce((s, g) => s + totalAnualItem(g), 0);
   if (gastosNomina > 50_000_000 && !tieneDeducDiscap && impBruto > 0 &&
       (regimenActual === "ordinario" || regimenActual === "zona_franca" || regimenActual === "chc")) {
     recs.push({
@@ -534,7 +536,7 @@ function recomendacionesJuridica(user, ow, det) {
   const tieneCapacitacion175 = Number(ow.descuentosTributarios?.capacitacionLaboralAnual) > 0;
   const gastosEducacion = Object.values(user.gas || {}).flat()
     .filter(g => g.owner === ow.id && (g.cat === "Educación" || g.cat === "Capacitación" || g.fiscalCode === "GAS_JUR_CAPACITACION") && g.sim !== false)
-    .reduce((s, g) => s + ((Number(g.m) || 0) * 12), 0);
+    .reduce((s, g) => s + totalAnualItem(g), 0);
   if (gastosEducacion > 5_000_000 && !tieneCapacitacion175 && impBruto > 0 &&
       (regimenActual === "ordinario" || regimenActual === "zona_franca" || regimenActual === "chc")) {
     const ahorroEstimado = gastosEducacion * 0.75 * 0.35;
@@ -677,7 +679,7 @@ function estimarTasaMarginal(det) {
 function pvAportadaHoyAnual(user, ownerId) {
   return Object.values(user.gas || {}).flat()
     .filter(g => g.owner === ownerId && (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC") && g.sim !== false)
-    .reduce((s, g) => s + ((Number(g.m) || 0) * 12), 0);
+    .reduce((s, g) => s + totalAnualItem(g), 0);
 }
 
 function severityByAhorro(ahorro) {
