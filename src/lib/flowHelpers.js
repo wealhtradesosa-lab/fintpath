@@ -64,7 +64,45 @@ export const MESES = [
 
 // Extrae el monto base del item, sin importar si es ingreso (mensual) o
 // gasto (m) — soporta ambas keys.
-export const getMonto = (item) => Number(item.mensual ?? item.m ?? 0) || 0;
+// 27-sep-2026 (Santiago, sobre el modo "capital × tasa" de Ingresos y Gastos):
+// "el monto deja de ser una foto y pasa a derivarse del capital vigente".
+//
+// Antes, ese modo era solo una calculadora de formulario: multiplicaba una vez,
+// escribía el resultado en `m`/`mensual` y ahí quedaba. Si el capital cambiaba,
+// el monto seguía congelado hasta que alguien reabriera el formulario. Mismo
+// patrón del campo residual que ya nos costó caro en los gastos variables: un
+// número que parece vivo y no lo es.
+//
+// Ahora la derivación vive acá, que es el único punto por donde pasan
+// montoDelMes y montoPromedioMensual, así que todo el motor la hereda.
+//
+// DOS GUARDAS, y las dos importan:
+//
+// 1. Solo frecuencia "mensual". La fórmula produce un valor POR MES. Para las
+//    demás frecuencias `getMonto` significa "monto por período" (el pago anual,
+//    el semestral), así que devolver un mensual ahí lo multiplicaría por el
+//    factor de frecuencia y saldría disparado. El formulario solo produce esta
+//    combinación, pero un dato viejo o importado podría traer otra.
+//
+// 2. Solo moneda local. Los llamadores convierten USD ANTES de llamar al motor,
+//    sobrescribiendo `mensual` con el valor ya pasado a COP:
+//       montoDelMes({ ...ing, mensual: ing.mensual * trm }, año, mes)
+//    El spread conserva capital y tasa, así que derivar a ciegas ignoraría esa
+//    conversión y devolvería dólares donde se esperan pesos. Para USD se respeta
+//    el valor que el llamador ya calculó.
+//
+// Si falta capital o tasa, cae al valor guardado. Nunca devuelve 0 por derivar.
+export const getMonto = (item) => {
+  const guardado = Number(item?.mensual ?? item?.m ?? 0) || 0;
+  if (item?.montoModo !== "tasa") return guardado;
+  if ((item?.frecuencia || "mensual") !== "mensual") return guardado;
+  if (item?.moneda === "USD") return guardado;
+  const capital = Number(item?.capital) || 0;
+  const tasa = Number(item?.tasa) || 0;
+  if (capital <= 0 || tasa <= 0) return guardado;
+  const bruto = capital * tasa / 100;
+  return Math.round(item?.tasaModo === "anual" ? bruto / 12 : bruto);
+};
 
 // Obtiene la frecuencia con default "mensual" (retrocompat con items viejos)
 export const getFrecuencia = (item) => item?.frecuencia || "mensual";
@@ -233,7 +271,8 @@ export function totalAnualItem(item) {
       return s + (valor || 0);
     }, 0);
   }
-  const monto = Number(item.mensual ?? item.m ?? 0) || 0;
+  // 27-sep-2026 — via getMonto, para heredar la derivación capital × tasa.
+  const monto = getMonto(item);
   if (monto === 0) return 0;
   if (freq === "mensual") {
     const activos = mesesActivosDelAño(item);
@@ -572,7 +611,7 @@ export function costoCredito(d) {
 // mes que corre. Para el resto, el monto de siempre.
 export function promedioMesActivo(item) {
   const freq = getFrecuencia(item);
-  if (freq !== "variable") return Number(item?.mensual ?? item?.m ?? 0) || 0;
+  if (freq !== "variable") return getMonto(item);
   const montos = getMontosMensuales(item);
   const { desde, hasta } = getRangoMeses(item);
   const { año } = getMesActual();
