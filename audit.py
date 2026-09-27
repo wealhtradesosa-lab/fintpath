@@ -40,6 +40,73 @@ bad_react = len(re.findall(r'React\.(use|create|memo|forward)', c))
 if bad_react==0: ok+=1; print(f"  ✅ Sin React.xxx")
 else: fail+=1; print(f"  ❌ {bad_react} React.xxx — usar import directo")
 
+# ═══════════════════════════════════════════════════════════════════════════
+# DERIVA DE DISEÑO (27-sep-2026)
+# ─────────────────────────────────────────────────────────────────────────
+# El sistema de diseño ya existía en src/lib/designTokens.js y lo importaban
+# 7 de 89 componentes; los otros 52 declaraban su propia paleta. Resultado
+# medido: 97 colores distintos, 32 tamaños de fuente y 15 radios, para un
+# sistema que define 10 / 6 / 3.
+#
+# Esta verificación es un TRINQUETE, no un umbral: compara contra el máximo
+# histórico y falla solo si el número SUBE. Permite migrar por etapas sin
+# bloquear el trabajo, e impide que la deuda vuelva a crecer mientras tanto.
+# Al bajar un tope se actualiza aquí, y ya no se puede volver atrás.
+# ═══════════════════════════════════════════════════════════════════════════
+import glob, os
+
+TOPES = {'colores': 97, 'fuentes': 33, 'radios': 19}
+
+fuentes_ui = ['src/App.jsx'] + sorted(glob.glob('src/components/*.jsx'))
+blob = ''
+for ruta in fuentes_ui:
+    with open(ruta, 'r') as f:
+        blob += f.read()
+
+medido = {
+    'colores': len(set(m.lower() for m in re.findall(r'#[0-9a-fA-F]{6}\b', blob))),
+    'fuentes': len(set(re.findall(r'fontSize: *([0-9.]+)', blob))),
+    'radios':  len(set(re.findall(r'borderRadius: *([0-9]+)', blob))),
+}
+
+for clave, tope in TOPES.items():
+    n = medido[clave]
+    if n > tope:
+        fail += 1
+        print(f"  ❌ Deriva de diseño: {n} {clave} distintos, el tope es {tope}")
+    elif n < tope:
+        ok += 1
+        print(f"  ✅ {clave.capitalize()}: {n} (tope {tope} — bajá el tope en audit.py)")
+    else:
+        ok += 1
+        print(f"  ✅ {clave.capitalize()}: {n} en el tope")
+
+# Los tokens viven en dos archivos por necesidad (ver el comentario en
+# index.html). Si se separan, el que manda deja de ser evidente.
+with open('index.html', 'r') as f:
+    raiz = f.read()
+with open('src/lib/designTokens.js', 'r') as f:
+    tokens_js = f.read()
+
+PAREJAS = [('--fp-bg', 'bg'), ('--fp-surface', 'surface'), ('--fp-raised', 'raised'),
+           ('--fp-text', 'text'), ('--fp-muted', 'muted'), ('--fp-subtle', 'subtle'),
+           ('--fp-accent', 'accent'), ('--fp-ok', 'ok'), ('--fp-warn', 'warn'),
+           ('--fp-danger', 'danger'), ('--fp-purple', 'purple')]
+
+desalineados = []
+for var_css, clave_js in PAREJAS:
+    mc = re.search(re.escape(var_css) + r': *(#[0-9a-fA-F]{6})', raiz)
+    mj = re.search(r'\b' + re.escape(clave_js) + r': *"(#[0-9a-fA-F]{6})"', tokens_js)
+    if not mc or not mj:
+        desalineados.append(f"{var_css}/{clave_js} no encontrado")
+    elif mc.group(1).lower() != mj.group(1).lower():
+        desalineados.append(f"{clave_js}: CSS {mc.group(1)} vs JS {mj.group(1)}")
+
+if not desalineados:
+    ok += 1; print("  ✅ Tokens CSS ↔ JS alineados")
+else:
+    fail += 1; print(f"  ❌ Tokens desalineados: {desalineados}")
+
 r = subprocess.run(['npx','vite','build'], capture_output=True, text=True)
 if r.returncode==0: ok+=1; print(f"  ✅ Build exitoso")
 else: fail+=1; print(f"  ❌ Build FALLA")

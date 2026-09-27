@@ -83,6 +83,60 @@
     </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%2309090b'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-size='40' font-weight='800' fill='%2322c55e'%3EF%3C/text%3E%3C/svg%3E" />
   <style>
+      /* ═══════════════════════════════════════════════════════════════════
+         FINPATHIA — Tokens de diseño (27-sep-2026)
+         ─────────────────────────────────────────────────────────────────
+         Fuente única de verdad para color, tipografía y radios. Los mismos
+         valores viven en src/lib/designTokens.js para los estilos en línea;
+         audit.py verifica que los dos archivos nunca se separen.
+
+         Por qué existen los dos: la app renderiza con estilos en línea y 53
+         lugares concatenan alfa sobre un token (T.gn + "15"). Si el JS
+         devolviera var(--fp-ok) esas 53 reglas quedarían inválidas y no
+         pintarían nada, sin lanzar ningún error. Así que el JS conserva los
+         hexadecimales y estas variables son el lugar donde se cambian.
+
+         Medición al abrir esta etapa: 97 colores distintos en uso, 32 tamaños
+         de fuente, 15 radios. Objetivo: 10 / 6 / 3.
+         ═══════════════════════════════════════════════════════════════════ */
+      :root {
+        color-scheme: dark;
+
+        /* Superficies */
+        --fp-bg:            #0c0c0f;
+        --fp-surface:       #141418;
+        --fp-raised:        #1e1e24;
+
+        /* Texto */
+        --fp-text:          #fafafa;
+        --fp-muted:         #a1a1aa;
+        --fp-subtle:        #71717a;
+
+        /* Bordes */
+        --fp-border:        rgba(255,255,255,0.08);
+        --fp-border-strong: rgba(255,255,255,0.15);
+
+        /* Acentos semánticos */
+        --fp-accent:        #3b82f6;
+        --fp-ok:            #22c55e;
+        --fp-warn:          #f97316;
+        --fp-danger:        #ef4444;
+        --fp-purple:        #a78bfa;
+
+        /* Tipografía */
+        --fp-f-display:  28px;
+        --fp-f-h1:       22px;
+        --fp-f-h2:       16px;
+        --fp-f-h3:       13px;
+        --fp-f-body:     13px;
+        --fp-f-caption:  11px;
+
+        /* Radios */
+        --fp-r-sm:        8px;
+        --fp-r-md:       12px;
+        --fp-r-lg:       16px;
+      }
+
       @media print {
         @page { size: letter portrait; margin: 10mm; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box !important; }
