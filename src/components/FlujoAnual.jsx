@@ -89,10 +89,30 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     const retencionMes = Math.round(retencionAnual / 12);
     const impuestoNetoMes = Math.max(0, Math.round((impuestoBrutoAnual - retencionAnual) / 12));
 
-    // Cuotas de deudas: mensuales por diseño
-    const cuotasDeudasMes = deudas
-      .filter(d => (d.mt || 0) > 0 && d.sim !== false)
-      .reduce((s, d) => s + (d.pg || d.pago || 0), 0);
+    // 27-sep-2026 (Santiago: "ya pagué el crédito de libre inversión y me
+    // aparece todavía en diciembre con una cuota de 2.500.000 por pagar").
+    //
+    // CAUSA: esta suma filtraba por saldo y por sim, pero ignoraba la VIGENCIA
+    // de la deuda. Se calculaba UNA cuota mensual y se aplicaba a los 12 meses
+    // por igual —"mensuales por diseño", decía el comentario original—, así que
+    // una deuda con hastaMes = septiembre seguía descontándose en octubre,
+    // noviembre y diciembre.
+    //
+    // Marcar la deuda como pagada sí la sacaba (pone mt: 0), pero quien en vez
+    // de eso ajusta la vigencia —que es lo que el formulario invita a hacer—
+    // no veía ningún efecto acá. Dos caminos para el mismo hecho y solo uno
+    // funcionaba.
+    //
+    // Los ingresos y los gastos de este mismo cálculo ya pasaban por
+    // montoDelMes, que respeta frecuencia y vigencia. Las cuotas eran la única
+    // línea que no. Ahora se calculan por mes, con el mismo criterio.
+    const deudasVivas = deudas.filter(d => (d.mt || 0) > 0 && d.sim !== false);
+    const cuotaDeudasEnMes = (mes) => deudasVivas.reduce((s, d) => {
+      const desde = Number(d.desdeMes) || 1;
+      const hasta = Number(d.hastaMes) || 12;
+      if (mes < desde || mes > hasta) return s;
+      return s + (d.pg || d.pago || 0);
+    }, 0);
 
     // Para cada mes del año, calcular ingresos y gastos
     return Array.from({ length: 12 }, (_, i) => {
@@ -118,6 +138,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         });
       });
 
+      const cuotasDeudasMes = cuotaDeudasEnMes(mes);
       const disponible = ingresosMes - retencionMes;
       const egresosMes = aportesObligatorios + gastosFamiliares + cuotasDeudasMes + impuestoNetoMes;
       const cashFlow = disponible - egresosMes;
@@ -241,10 +262,18 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       });
     });
 
-    // Cuotas de deudas (agrupadas en una categoría)
+    // Cuotas de deudas (agrupadas en una categoría).
+    // 27-sep-2026 — Mismo defecto que arriba, y acá pesaba más: multiplicar la
+    // cuota por 12 le cobra el año entero a una deuda que corre medio año. Una
+    // cuota de $2,5M vigente hasta septiembre inflaba la categoría en $7,5M.
     const cuotasAnual = deudas
       .filter(d => (d.mt || 0) > 0 && d.sim !== false)
-      .reduce((s, d) => s + (d.pg || d.pago || 0), 0) * 12;
+      .reduce((s, d) => {
+        const desde = Number(d.desdeMes) || 1;
+        const hasta = Number(d.hastaMes) || 12;
+        const mesesVigentes = Math.max(0, Math.min(12, hasta) - Math.max(1, desde) + 1);
+        return s + (d.pg || d.pago || 0) * mesesVigentes;
+      }, 0);
     if (cuotasAnual > 0) egresosPorCat["💳 Cuotas de deudas"] = cuotasAnual;
 
     // Impuesto neto (después de retención) como categoría separada
