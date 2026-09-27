@@ -1293,37 +1293,64 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               const sale = hasta.reduce((t, m) => t + (m.sale || 0), 0);
               const queda = entra - sale;
               const mesNom = MESES.find((x) => x.v === mesHoy)?.l || "";
-              const Celda = ({ etiqueta, valor, color }) => (
-                <div style={{ flex: "1 1 130px", minWidth: 0 }}>
+              const restantes = 12 - mesHoy;
+              // 27-sep-2026 (Santiago: "en el simulador que también se vea como
+              // el dashboard, el actual y proyectado"). Mismo par de preguntas
+              // y mismo lenguaje visual que AñoEnCurso: lo cumplido con fondo
+              // neutro, el cierre con fondo verde tenue y cifras a menor
+              // opacidad. Sin contorno punteado.
+              //
+              // Diferencia propia del simulador: acá el cierre NO es "con lo
+              // que tenés cargado" sino "con este escenario" — se mueve con los
+              // sliders y con el preset elegido. Decirlo evita que se lea como
+              // un pronóstico fijo.
+              // La etiqueta decía "Ejecutado" a secas y debajo iban las 12
+              // barras del año: dos rangos distintos apilados sin separación.
+              // El rango siempre fue enero–mes actual; faltaba decirlo y, sobre
+              // todo, mostrar también el cierre, que es la otra mitad de la
+              // pregunta.
+              const entraAño = cashFlowPorMes.reduce((t, m) => t + (m.entra || 0), 0);
+              const saleAño = cashFlowPorMes.reduce((t, m) => t + (m.sale || 0), 0);
+              const quedaAño = entraAño - saleAño;
+              const Celda = ({ etiqueta, valor, color, tenue }) => (
+                <div style={{ flex: "1 1 110px", minWidth: 0 }}>
                   <div style={{ fontSize: 9.5, color: T.txt3, letterSpacing: 0.4,
                         textTransform: "uppercase", fontWeight: 700 }}>{etiqueta}</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color, marginTop: 2,
-                        fontFamily: "monospace" }}>
+                  <div style={{ fontSize: tenue ? 13.5 : 15, fontWeight: tenue ? 700 : 800,
+                        color, marginTop: 2, fontFamily: "monospace",
+                        opacity: tenue ? 0.82 : 1 }}>
                     {(valor < 0 ? "−$" : "$") + Math.abs(Math.round(valor)).toLocaleString("es-CO")}
                   </div>
                 </div>
               );
+              const Grupo = ({ titulo, sub, proyectado, children }) => (
+                <div style={{ flex: "1 1 265px", minWidth: 0, padding: "10px 13px",
+                      background: proyectado ? "rgba(34,197,94,0.05)" : T.bg3,
+                      border: `1px solid ${proyectado ? "rgba(34,197,94,0.18)" : T.border}`,
+                      borderRadius: 11 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.9,
+                        textTransform: "uppercase", color: T.txt3 }}>{titulo}</div>
+                  <div style={{ fontSize: 10, color: T.txt3, opacity: 0.8, marginTop: 1 }}>{sub}</div>
+                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>{children}</div>
+                </div>
+              );
               return (
-                <div style={{ marginTop: 10, marginBottom: 4, padding: "11px 13px",
-                      background: T.bg3, borderRadius: 11,
-                      border: `1px solid ${T.border}` }}>
-                  {/* 27-sep-2026 (Santiago: "¿estos números son hasta qué
-                      fecha? ¿hasta el mes actual o es todo el 2026?"). La
-                      etiqueta decía "Ejecutado" a secas y debajo iban las 12
-                      barras del año: dos rangos distintos apilados sin
-                      separación. El rango siempre fue enero–mes actual; lo que
-                      faltaba era decirlo con precisión y aclarar que dos de las
-                      líneas —retención e impuesto— son estimaciones del motor
-                      repartidas en 12, no registros del período. */}
-                  <div style={{ fontSize: 10, color: T.txt3, marginBottom: 7 }}>
-                    Enero–{mesNom.toLowerCase()} · {mesHoy} {mesHoy === 1 ? "mes" : "meses"} transcurridos
-                    <span style={{ opacity: 0.7 }}> — no incluye {mesHoy === 12 ? "meses" : "el resto del año"}</span>
-                  </div>
-                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap",
+                      marginTop: 10, marginBottom: 4 }}>
+                  <Grupo titulo="A la fecha"
+                         sub={`Enero–${mesNom.toLowerCase()} · ${mesHoy} ${mesHoy === 1 ? "mes cumplido" : "meses cumplidos"}`}>
                     <Celda etiqueta="Ingresos" valor={entra} color={T.gn} />
                     <Celda etiqueta="Egresos" valor={sale} color={T.rd} />
                     <Celda etiqueta="Flujo neto" valor={queda} color={queda >= 0 ? T.gn : T.rd} />
-                  </div>
+                  </Grupo>
+                  {restantes > 0 && (
+                    <Grupo proyectado titulo={`Cierre de ${getMesActual().año}`}
+                           sub="Año completo · con este escenario">
+                      <Celda tenue etiqueta="Ingresos" valor={entraAño} color={T.gn} />
+                      <Celda tenue etiqueta="Egresos" valor={saleAño} color={T.rd} />
+                      <Celda tenue etiqueta="Flujo neto" valor={quedaAño} color={quedaAño >= 0 ? T.gn : T.rd} />
+                    </Grupo>
+                  )}
                 </div>
               );
             })()}
