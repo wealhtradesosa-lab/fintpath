@@ -179,7 +179,11 @@ const Chip = ({children, color}) => (
 
 // ─── Tax Calculator per income source ──────────────────────────────────────
 function calcTaxForSource(src, ordinaryIncome = 0) {
-  const annual = (src.mensual || 0) * 12;
+  // 27-sep-2026 — El total de la pantalla se corrigio en agosto y esta funcion
+  // quedo atras: seguia haciendo mensual * 12, asi que el desglose por fuente
+  // no cuadraba con el total que aparece arriba, y un ingreso vigente solo de
+  // octubre a diciembre tributaba como si entrara los doce meses.
+  const annual = totalAnualItem(src);
   if (!annual) return null;
 
   switch(src.tipo) {
