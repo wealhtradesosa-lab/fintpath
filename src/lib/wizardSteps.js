@@ -34,6 +34,10 @@
  * El flujo es lineal pero con skipping condicional. Ej: si user dice
  * "no trabajé", saltamos las preguntas de salario, honorarios, etc.
  */
+// 27-sep-2026 — las sumas de ingresos y gastos pasan por el motor: mensual * 12
+// ignora frecuencia y vigencia y deja en cero los variables.
+import { totalAnualItem, montoPromedioMensual } from "./flowHelpers.js";
+
 export const WIZARD_NATURAL = [
   // ═══ INTRO ═══════════════════════════════════════════════════════════
   {
@@ -1036,7 +1040,7 @@ function precargarRespuestasJuridica(user, owner) {
   // Helper: suma anual por fiscalCode
   const sumaAnual = (fc) => ingresosOwner
     .filter(i => i.fiscalCode === fc)
-    .reduce((s, i) => s + (Number(i.mensual) || 0) * 12 * (i.moneda === "USD" ? (user.trm || 4200) : 1), 0);
+    .reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? (user.trm || 4200) : 1), 0);
 
   // ── Régimen tributario ──────────────────────────────────────────────────
   if (owner.regimen) {
@@ -1084,7 +1088,7 @@ function precargarRespuestasJuridica(user, owner) {
   // ── Gastos: costo de ventas y operacionales ─────────────────────────────
   const sumGastosCat = (cat) => (user.gas?.[cat] || [])
     .filter(g => g.owner === ownerId && g.sim !== false)
-    .reduce((s, g) => s + (Number(g.m) || 0) * 12, 0);
+    .reduce((s, g) => s + totalAnualItem(g), 0);
 
   const costoVentas = sumGastosCat("Costo de ventas");
   if (costoVentas > 0) {
@@ -1101,7 +1105,7 @@ function precargarRespuestasJuridica(user, owner) {
   // ── Intereses pagados (sub-categoría dentro de operativos) ──────────────
   const interesesPagados = (user.gas?.["Operativos"] || [])
     .filter(g => g.owner === ownerId && g.sim !== false && /interes|financiero/i.test(g.subtipo || ""))
-    .reduce((s, g) => s + (Number(g.m) || 0) * 12, 0);
+    .reduce((s, g) => s + totalAnualItem(g), 0);
   if (interesesPagados > 0) {
     answers.tieneInteresesPagados = "si";
     answers.interesesPagadosAnual = Math.round(interesesPagados);
@@ -1112,7 +1116,7 @@ function precargarRespuestasJuridica(user, owner) {
   // ── ICA pagado ──────────────────────────────────────────────────────────
   const ica = (user.gas?.["Impuesto"] || [])
     .filter(g => g.owner === ownerId && g.sim !== false && /ica/i.test(g.subtipo || g.cat || ""))
-    .reduce((s, g) => s + (Number(g.m) || 0) * 12, 0);
+    .reduce((s, g) => s + totalAnualItem(g), 0);
   if (ica > 0) {
     answers.icaPagadoAnual = Math.round(ica);
     precargados.add("icaPagadoAnual");
@@ -1196,7 +1200,7 @@ function precargarRespuestasNatural(user, owner) {
   const sumaAnual = (fc) => {
     return ingresosOwner
       .filter(i => i.fiscalCode === fc)
-      .reduce((s, i) => s + (Number(i.mensual) || 0) * 12 * (i.moneda === "USD" ? (user.trm || 4200) : 1), 0);
+      .reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? (user.trm || 4200) : 1), 0);
   };
   const sumaMensual = (fc) => sumaAnual(fc) / 12;
 
@@ -1264,7 +1268,7 @@ function precargarRespuestasNatural(user, owner) {
   // ── Medicina prepagada ──────────────────────────────────────────────────
   const gastosSalud = (user.gas?.["Salud"] || []).filter(g => g.owner === ownerId && g.sim !== false);
   if (gastosSalud.length > 0) {
-    const totalMensualSalud = gastosSalud.reduce((s, g) => s + (Number(g.m) || 0), 0);
+    const totalMensualSalud = gastosSalud.reduce((s, g) => s + montoPromedioMensual(g), 0);
     if (totalMensualSalud > 0) {
       answers.pagaMedicinaPrepagada = "si";
       answers.medicinaMensual = Math.round(totalMensualSalud);
@@ -1295,7 +1299,7 @@ function precargarRespuestasNatural(user, owner) {
     (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC")
   );
   if (gastosPV.length > 0) {
-    const totalMensualPV = gastosPV.reduce((s, g) => s + (Number(g.m) || 0), 0);
+    const totalMensualPV = gastosPV.reduce((s, g) => s + montoPromedioMensual(g), 0);
     if (totalMensualPV > 0) {
       answers.tieneAportesPV = "si";
       answers.aportesPVMensual = Math.round(totalMensualPV);
@@ -1387,11 +1391,11 @@ export function precargarRespuestasJuridicaDesdeUser(user, ownerId) {
   // Helper: suma anual por fiscalCode con conversión USD→COP
   const sumaAnualIng = (fc) => ingresosOwner
     .filter(i => i.fiscalCode === fc)
-    .reduce((s, i) => s + (Number(i.mensual) || 0) * 12 * (i.moneda === "USD" ? (user.trm || 4200) : 1), 0);
+    .reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? (user.trm || 4200) : 1), 0);
   const sumaAnualGas = (cat, subtipoFiltro) => {
     const items = gastosOwner(cat);
     const filtered = subtipoFiltro ? items.filter(g => subtipoFiltro(g)) : items;
-    return filtered.reduce((s, g) => s + (Number(g.m) || 0) * 12, 0);
+    return filtered.reduce((s, g) => s + totalAnualItem(g), 0);
   };
 
   // ── Régimen tributario (desde owner.regimen) ───────────────────────────
