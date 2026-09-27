@@ -527,11 +527,11 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           </div>
           <div style={{ display: "flex", gap: 12, fontSize: 11 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ width: 10, height: 10, background: T.gn, borderRadius: 2 }}></span>
+              <span style={{ width: 10, height: 10, background: T.gn, borderRadius: 3 }}></span>
               <span style={{ color: T.txt2 }}>Ingresos</span>
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ width: 10, height: 10, background: T.rd, borderRadius: 2 }}></span>
+              <span style={{ width: 10, height: 10, background: T.rd, borderRadius: 3 }}></span>
               <span style={{ color: T.txt2 }}>Egresos</span>
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -592,7 +592,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                       ? (isEN ? "not this month" : "no cae este mes")
                       : `${fm(m.monto)} ${isEN ? "vs" : "vs"} ${fm(m.tipico)}`}
                   </span>
-                  <span style={{ fontSize: 12.5, fontWeight: 800, fontFamily: "monospace",
+                  <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "monospace",
                         color: arriba ? T.gn : T.rd, minWidth: 92, textAlign: "right" }}>
                     {(arriba ? "+" : "−") + fm(Math.abs(m.efecto))}
                   </span>
@@ -609,7 +609,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                   <div style={{ fontSize: 14, fontWeight: 800, color: T.txt }}>
                     {d.mesLabelFull} {año}
                   </div>
-                  <div style={{ fontSize: 11.5, color: T.txt2, marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>
                     {L.ingresos} {fm(d.ingresos)} · {L.egresos} {fm(d.egresos)} ·{" "}
                     <strong style={{ color: d.cashFlow >= 0 ? T.gn : T.rd }}>
                       {L.cashflow} {fm(d.cashFlow)}
@@ -642,7 +642,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                     {isEN ? "Pushed it up" : "Lo empujó arriba"}
                   </div>
                   {detalleMes.suben.length === 0
-                    ? <div style={{ fontSize: 11.5, color: T.txt3, padding: "6px 0" }}>{isEN ? "Nothing above its usual level." : "Nada por encima de su nivel habitual."}</div>
+                    ? <div style={{ fontSize: 12, color: T.txt3, padding: "6px 0" }}>{isEN ? "Nothing above its usual level." : "Nada por encima de su nivel habitual."}</div>
                     : detalleMes.suben.slice(0, 6).map((m, i) => <Fila key={"s" + i} m={m} />)}
                 </div>
                 <div>
@@ -651,12 +651,12 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                     {isEN ? "Pushed it down" : "Lo empujó abajo"}
                   </div>
                   {detalleMes.bajan.length === 0
-                    ? <div style={{ fontSize: 11.5, color: T.txt3, padding: "6px 0" }}>{isEN ? "Nothing above its usual level." : "Nada por encima de su nivel habitual."}</div>
+                    ? <div style={{ fontSize: 12, color: T.txt3, padding: "6px 0" }}>{isEN ? "Nothing above its usual level." : "Nada por encima de su nivel habitual."}</div>
                     : detalleMes.bajan.slice(0, 6).map((m, i) => <Fila key={"b" + i} m={m} />)}
                 </div>
               </div>
 
-              <div style={{ fontSize: 10.5, color: T.txt3, marginTop: 11, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 11, color: T.txt3, marginTop: 11, lineHeight: 1.5 }}>
                 {isEN
                   ? "Each line compares that concept against its own monthly average. Concepts outside their active range are not listed: they did not take money from this month, they simply did not exist yet."
                   : "Cada línea compara ese concepto contra su propio promedio mensual. Los conceptos fuera de su vigencia no se listan: no le quitaron plata a este mes, sencillamente todavía no existían."}

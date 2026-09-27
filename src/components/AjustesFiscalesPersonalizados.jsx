@@ -47,7 +47,7 @@ function SwitchRow({ label, descripcion, baseLegal, impactoTexto, value, onChang
           type="button"
           onClick={() => onChange(!value)}
           style={{
-            flexShrink: 0, width: 38, height: 22, borderRadius: 11,
+            flexShrink: 0, width: 38, height: 22, borderRadius: 12,
             background: value ? T.green : T.bg2,
             border: "1px solid " + (value ? T.green : T.border),
             position: "relative", cursor: "pointer", padding: 0, marginTop: 2,

@@ -18,9 +18,9 @@ const fB=v=>v.toFixed(4)+" ₿";
 const pc=v=>(v||0).toFixed(1)+"%";
 const TT={background:"#1e1e24",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,color:"#fafafa",fontSize:12};
 const Cd=({children,style:s,glow})=><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",...(glow?{borderColor:glow+"30",boxShadow:`0 0 20px ${glow}10`}:{}),...s}}>{children}</div>;
-const MC=({l,v,sub,color})=><Cd><div style={{padding:"20px 24px"}}><div style={{fontSize:12,color:T.txt3,marginBottom:6}}>{l}</div><div style={{fontSize:26,fontWeight:800,color:color||T.txt,letterSpacing:"-0.03em"}}>{v}</div>{sub&&<div style={{fontSize:12,color:color||T.txt3,marginTop:3}}>{sub}</div>}</div></Cd>;
+const MC=({l,v,sub,color})=><Cd><div style={{padding:"20px 24px"}}><div style={{fontSize:12,color:T.txt3,marginBottom:6}}>{l}</div><div style={{fontSize:28,fontWeight:800,color:color||T.txt,letterSpacing:"-0.03em"}}>{v}</div>{sub&&<div style={{fontSize:12,color:color||T.txt3,marginTop:3}}>{sub}</div>}</div></Cd>;
 const Rw=({l,v,color,bold})=><div style={{display:"flex",justifyContent:"space-between",padding:"10px 16px",borderBottom:`1px solid ${T.border}`}}><span style={{fontSize:14,color:T.txt2}}>{l}</span><span style={{fontSize:14,fontWeight:bold?700:600,color:color||T.txt,fontFamily:"monospace"}}>{v}</span></div>;
-const Sl=({label,value,onChange,min,max,step,color,display,sub})=><div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:14,color:T.txt2}}>{label}: <strong style={{color:color||T.orange}}>{display}</strong></span></div><input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(+e.target.value)} style={{width:"100%",height:8,borderRadius:4,cursor:"pointer",accentColor:color||T.orange}}/>{sub&&<div style={{fontSize:11,color:T.txt3,marginTop:4}}>{sub}</div>}</div>;
+const Sl=({label,value,onChange,min,max,step,color,display,sub})=><div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:14,color:T.txt2}}>{label}: <strong style={{color:color||T.orange}}>{display}</strong></span></div><input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(+e.target.value)} style={{width:"100%",height:8,borderRadius:3,cursor:"pointer",accentColor:color||T.orange}}/>{sub&&<div style={{fontSize:11,color:T.txt3,marginTop:4}}>{sub}</div>}</div>;
 
 export default function PensionBTC({trm:pTrm}){
   const[tab,setTab]=useState("resumen");
@@ -99,7 +99,7 @@ export default function PensionBTC({trm:pTrm}){
       label="Bitcoin"
       title="Proyección DCA"
       subtitle={`Sistema pensional colombiano + DCA Bitcoin · BTC ${fU(pBTC)} · USD/COP $${trm.toLocaleString("es-CO")}`}
-      rightSlot={<button onClick={()=>{document.body.setAttribute("data-date",new Date().toLocaleDateString("es-CO"));window.print()}} style={{background:T.orange,color:"#000",border:"none",padding:"10px 22px",borderRadius:100,cursor:"pointer",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>📄 Exportar PDF</button>}
+      rightSlot={<button onClick={()=>{document.body.setAttribute("data-date",new Date().toLocaleDateString("es-CO"));window.print()}} style={{background:T.orange,color:"#000",border:"none",padding:"10px 22px",borderRadius:999,cursor:"pointer",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>📄 Exportar PDF</button>}
     />
     <div style={{display:"flex",gap:4,marginBottom:24}}>{tabs.map(t=>{const a=tab===t.id;return<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"10px 20px",borderRadius:10,border:a?`1px solid ${T.orange}`:`1px solid ${T.border}`,background:a?T.orangeDim:"transparent",color:a?T.orange:T.txt3,cursor:"pointer",fontSize:14,fontWeight:a?700:500}}>{t.i} {t.l}</button>})}</div>
 
@@ -264,7 +264,7 @@ export default function PensionBTC({trm:pTrm}){
               pensión son colombianos. Lo que faltaba era DECIRLO — y que los
               dos formatos no se parecieran tanto (ambos empezaban con "$").
               La regla queda declarada arriba de todo, una sola vez. */}
-          <div style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:10,padding:"10px 13px",marginBottom:18,fontSize:11.5,color:T.txt3,lineHeight:1.6}}>
+          <div style={{background:T.bg3,border:"1px solid "+T.border,borderRadius:10,padding:"10px 13px",marginBottom:18,fontSize:12,color:T.txt3,lineHeight:1.6}}>
             💱 <strong style={{color:T.txt2}}>Dos monedas, a propósito:</strong> lo que vos aportás va en <strong style={{color:T.txt2}}>pesos (COP)</strong>;
             el precio del Bitcoin va en <strong style={{color:T.gold}}>dólares (USD)</strong>, que es como cotiza en el mundo.
             Cada cifra lleva su moneda al lado. TRM usada: <strong style={{color:T.txt2}}>{fC(trm)}</strong> por dólar.
@@ -284,7 +284,7 @@ export default function PensionBTC({trm:pTrm}){
                 <button key={o.v} onClick={()=>setFrecAporte(o.v)}
                   style={{flex:"1 1 110px",background:frecAporte===o.v?"rgba(247,147,26,0.15)":T.bg3,
                     border:"1px solid "+(frecAporte===o.v?T.orange:T.border),borderRadius:10,padding:"10px 12px",
-                    cursor:"pointer",color:T.txt,fontWeight:700,fontSize:12.5}}>{o.l}</button>)}
+                    cursor:"pointer",color:T.txt,fontWeight:700,fontSize:13}}>{o.l}</button>)}
             </div>
 
             {frecAporte==="mensual" && <>
@@ -293,7 +293,7 @@ export default function PensionBTC({trm:pTrm}){
                   <button key={o.v} onClick={()=>setModoAporte(o.v)}
                     style={{flex:1,background:modoAporte===o.v?"rgba(59,130,246,0.12)":T.bg3,
                       border:"1px solid "+(modoAporte===o.v?T.blue:T.border),borderRadius:8,padding:"7px 10px",
-                      cursor:"pointer",color:T.txt,fontWeight:600,fontSize:11.5}}>{o.l}</button>)}
+                      cursor:"pointer",color:T.txt,fontWeight:600,fontSize:12}}>{o.l}</button>)}
               </div>
               {modoAporte==="libre" ? (
                 <div>
@@ -301,7 +301,7 @@ export default function PensionBTC({trm:pTrm}){
                   <NumberInput value={montoLibre} onChange={v=>setMontoLibre(v===""?"":String(v))}
                 placeholder="500000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
-                  {Number(montoLibre)>0 && <div style={{fontSize:11.5,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
+                  {Number(montoLibre)>0 && <div style={{fontSize:12,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
                     {fC(Number(montoLibre))}/mes · {fC(Number(montoLibre)*12*anios)} en {anios} años
                   </div>}
                 </div>
@@ -337,7 +337,7 @@ export default function PensionBTC({trm:pTrm}){
               <NumberInput value={montoAnual} onChange={v=>setMontoAnual(v===""?"":String(v))}
                 placeholder="6000000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
-              {Number(montoAnual)>0 && <div style={{fontSize:11.5,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
+              {Number(montoAnual)>0 && <div style={{fontSize:12,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
                 {fC(Number(montoAnual))} al año · {fC(Number(montoAnual)*anios)} en {anios} años
               </div>}
             </div>}
@@ -347,7 +347,7 @@ export default function PensionBTC({trm:pTrm}){
               <NumberInput value={montoUnico} onChange={v=>setMontoUnico(v===""?"":String(v))}
                 placeholder="20000000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
-              {Number(montoUnico)>0 && <div style={{fontSize:11.5,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
+              {Number(montoUnico)>0 && <div style={{fontSize:12,color:T.orange,marginTop:6,fontFamily:"monospace"}}>
                 {fC(Number(montoUnico))} hoy · {(Number(montoUnico)/trm/pBTC).toFixed(6)} BTC a precio actual
               </div>}
             </div>}
@@ -377,7 +377,7 @@ export default function PensionBTC({trm:pTrm}){
           const veces = capImplicita / RIQUEZA_MUNDIAL;
           return (
             <div style={{background:"rgba(249,115,22,0.10)",border:"1px solid rgba(249,115,22,0.35)",
-                 borderRadius:12,padding:14,marginTop:10,fontSize:12.5,lineHeight:1.6,color:T.txt2}}>
+                 borderRadius:12,padding:14,marginTop:10,fontSize:13,lineHeight:1.6,color:T.txt2}}>
               <strong style={{color:T.orange}}>⚠️ Este escenario no se sostiene.</strong>{" "}
               Con {pc(cagr)} anual durante {anios} años, un Bitcoin valdría{" "}
               <strong style={{color:T.txt}}>

@@ -227,14 +227,14 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
               {displayName || "Mi cuenta"}
             </h3>
             <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ background: T.blueB, color: T.blue, padding: "3px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600 }}>
+              <span style={{ background: T.blueB, color: T.blue, padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
                 Plan {PLAN_LABELS[plan] || plan}
               </span>
               <span style={{ color: T.txt2, fontSize: 13 }}>
                 {totalUsed} de {maxMembers || 1} miembros
               </span>
               {role === "reader" && (
-                <span style={{ background: T.amberB, color: T.amber, padding: "3px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600 }}>
+                <span style={{ background: T.amberB, color: T.amber, padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
                   Vista de solo lectura
                 </span>
               )}
@@ -434,7 +434,7 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
       flexWrap: "wrap",
     }}>
       <div style={{
-        width: 36, height: 36, borderRadius: 99, background: T.blueB,
+        width: 36, height: 36, borderRadius: 999, background: T.blueB,
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 14, fontWeight: 700, color: T.blue, flexShrink: 0,
       }}>
@@ -444,7 +444,7 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
         <div style={{ fontSize: 13, fontWeight: 600, color: T.txt, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
           <span>{member.display_name || member.email.split("@")[0]}</span>
           {isMe && <span style={{ fontSize: 10, color: T.txt3, fontWeight: 400 }}>(vos)</span>}
-          {isOwner && <span style={{ background: T.greenB, color: T.green, padding: "1px 6px", borderRadius: 99, fontSize: 9, fontWeight: 700 }}>OWNER</span>}
+          {isOwner && <span style={{ background: T.greenB, color: T.green, padding: "1px 6px", borderRadius: 999, fontSize: 9, fontWeight: 700 }}>OWNER</span>}
         </div>
         <div style={{ fontSize: 11, color: T.txt3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {member.email}
@@ -453,7 +453,7 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
       <div style={{
         background: member.role === "admin" ? T.greenB : T.bg3,
         color: member.role === "admin" ? T.green : T.txt2,
-        padding: "4px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600,
+        padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600,
       }}>
         {ROLE_LABELS[member.role] || member.role}
       </div>
@@ -505,7 +505,7 @@ function InvitationRow({ invitation, isLast, onRevoke }) {
       flexWrap: "wrap",
     }}>
       <div style={{
-        width: 36, height: 36, borderRadius: 99, background: T.amberB,
+        width: 36, height: 36, borderRadius: 999, background: T.amberB,
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 14, color: T.amber, flexShrink: 0,
       }}>
@@ -793,7 +793,7 @@ function RoleOption({ value, currentValue, onChange, title, description }) {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <div style={{
-          width: 16, height: 16, borderRadius: 99,
+          width: 16, height: 16, borderRadius: 999,
           border: `2px solid ${selected ? T.green : T.txt3}`,
           background: selected ? T.green : "transparent",
           flexShrink: 0,

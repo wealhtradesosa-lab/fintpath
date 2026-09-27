@@ -480,7 +480,7 @@ export default function MetasModule({
                   }}
                 >
                   <div style={{ display: "flex", gap: 12, alignItems: "center", minWidth: 0 }}>
-                    <span style={{ fontSize: 26 }}>{meta.icono || "🎯"}</span>
+                    <span style={{ fontSize: 28 }}>{meta.icono || "🎯"}</span>
                     <div style={{ minWidth: 0 }}>
                       <div
                         style={{
@@ -601,7 +601,7 @@ export default function MetasModule({
                     style={{
                       height: 10,
                       background: T.bg3,
-                      borderRadius: 5,
+                      borderRadius: 6,
                       overflow: "hidden",
                     }}
                   >
@@ -614,7 +614,7 @@ export default function MetasModule({
                           : fondeo.pctAvance > 50
                             ? T.blue
                             : T.orange,
-                        borderRadius: 5,
+                        borderRadius: 6,
                         transition: "width 0.3s",
                       }}
                     />

@@ -171,7 +171,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
         <div>
-          <h1 style={{fontSize:26,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>
+          <h1 style={{fontSize:28,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>
             {greeting}{firstName?`, ${firstName}`:""}
           </h1>
           <p style={{color:T.tx2,fontSize:13,margin:0}}>Your financial snapshot</p>
@@ -343,7 +343,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
                   {pie.map((p,i)=>(
                     <div key={p.name} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 0",borderBottom:`1px solid ${T.border}`}}>
                       <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <div style={{width:8,height:8,borderRadius:2,background:T.ch[i%T.ch.length]}}/>
+                        <div style={{width:8,height:8,borderRadius:3,background:T.ch[i%T.ch.length]}}/>
                         <span style={{color:T.tx2}}>{p.name}</span>
                       </div>
                       <span style={{fontWeight:600,color:T.tx3,fontSize:10}}>
@@ -417,10 +417,10 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
         </Card>
         <Card s={{padding:24,display:"flex",flexDirection:"column",justifyContent:"center"}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>🔥 FIRE Progress</div>
-          <div style={{position:"relative",height:14,background:T.bg3,borderRadius:7,overflow:"hidden",marginBottom:8}}>
+          <div style={{position:"relative",height:14,background:T.bg3,borderRadius:6,overflow:"hidden",marginBottom:8}}>
             <div style={{height:"100%",width:Math.min(firePct,100)+"%",
               background:firePct>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#ef4444,#eab308)",
-              borderRadius:7,transition:"width 0.5s"}}/>
+              borderRadius:6,transition:"width 0.5s"}}/>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.tx3}}>
             <span>0%</span>

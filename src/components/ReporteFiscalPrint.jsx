@@ -257,7 +257,7 @@ export default function ReporteFiscalPrint({
                   </div>
                   {rec.ahorroAnualEstimado > 0 && (
                     <div style={{ textAlign: "right", minWidth: 100 }}>
-                      <div style={{ fontSize: 8, color: "#6b7280", textTransform: "uppercase" }}>Ahorro/año</div>
+                      <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase" }}>Ahorro/año</div>
                       <div className="rf-rec-ahorro">{fm(rec.ahorroAnualEstimado)}</div>
                       {rec.aporteSugeridoMensual > 0 && (
                         <div style={{ fontSize: 9, color: "#6b7280", marginTop: 2 }}>

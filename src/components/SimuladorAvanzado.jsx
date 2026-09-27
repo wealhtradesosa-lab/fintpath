@@ -153,7 +153,7 @@ function FreedomBarLive({ ni, te, cf }) {
 
       {/* Progress Bar */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ height: 36, background: T.bg3, borderRadius: 18, overflow: "hidden", position: "relative" }}>
+        <div style={{ height: 36, background: T.bg3, borderRadius: 16, overflow: "hidden", position: "relative" }}>
           {/* Level markers */}
           {LEVELS.map((l, i) => {
             const pos = (l.factor / LEVELS[4].factor) * 100;
@@ -167,7 +167,7 @@ function FreedomBarLive({ ni, te, cf }) {
           <div style={{
             width: overallProg + "%", height: "100%",
             background: "linear-gradient(90deg, #3b82f6 0%, #22d3ee 20%, #22c55e 40%, #f97316 70%, #eab308 100%)",
-            borderRadius: 18, transition: "width 0.3s ease",
+            borderRadius: 16, transition: "width 0.3s ease",
             display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 14,
             minWidth: overallProg > 3 ? 50 : 0,
           }}>
@@ -208,9 +208,9 @@ function FreedomBarLive({ ni, te, cf }) {
               <div style={{ fontSize: 18, marginBottom: 4 }}>{l.icon}</div>
               <div style={{ fontSize: 10, fontWeight: 700, color: reached ? l.color : T.txt3, lineHeight: 1.2 }}>{l.name}</div>
               <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                {fm(needed)}<span style={{ fontSize: 8 }}>/m</span>
+                {fm(needed)}<span style={{ fontSize: 9 }}>/m</span>
               </div>
-              <div style={{ fontSize: 8, color: T.txt3, marginTop: 3 }}>click para info ▾</div>
+              <div style={{ fontSize: 9, color: T.txt3, marginTop: 3 }}>click para info ▾</div>
             </div>
           );
         })}
@@ -1314,7 +1314,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               const quedaAño = entraAño - saleAño;
               const Celda = ({ etiqueta, valor, color, tenue }) => (
                 <div style={{ flex: "1 1 110px", minWidth: 0 }}>
-                  <div style={{ fontSize: 9.5, color: T.txt3, letterSpacing: 0.4,
+                  <div style={{ fontSize: 10, color: T.txt3, letterSpacing: 0.4,
                         textTransform: "uppercase", fontWeight: 700 }}>{etiqueta}</div>
                   <div style={{ fontSize: tenue ? 13.5 : 15, fontWeight: tenue ? 700 : 800,
                         color, marginTop: 2, fontFamily: "monospace",
@@ -1327,8 +1327,8 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 <div style={{ flex: "1 1 265px", minWidth: 0, padding: "10px 13px",
                       background: proyectado ? "rgba(34,197,94,0.05)" : T.bg3,
                       border: `1px solid ${proyectado ? "rgba(34,197,94,0.18)" : T.border}`,
-                      borderRadius: 11 }}>
-                  <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.9,
+                      borderRadius: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.9,
                         textTransform: "uppercase", color: T.txt3 }}>{titulo}</div>
                   <div style={{ fontSize: 10, color: T.txt3, opacity: 0.8, marginTop: 1 }}>{sub}</div>
                   <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>{children}</div>
@@ -1391,13 +1391,13 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               })}
             </div>
             {mesActualNum < 12 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 9, fontSize: 9.5, color: T.txt3 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 9, fontSize: 10, color: T.txt3 }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 13, height: 8, background: T.gn, opacity: 0.7, borderRadius: 2 }} />
+                  <span style={{ width: 13, height: 8, background: T.gn, opacity: 0.7, borderRadius: 3 }} />
                   Ejecutado
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 13, height: 8, background: T.gn, opacity: 0.3, borderRadius: 2 }} />
+                  <span style={{ width: 13, height: 8, background: T.gn, opacity: 0.3, borderRadius: 3 }} />
                   Proyectado
                 </span>
               </div>
@@ -1478,7 +1478,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8, opacity: row.value > 0 ? 1 : 0.5 }}>
               <div>
                 <div style={{ fontSize: 12, color: T.txt2 }}>{row.label}</div>
-                <div style={{ fontSize: 9.5, color: T.txt3, marginTop: 1 }}>{row.sub}</div>
+                <div style={{ fontSize: 10, color: T.txt3, marginTop: 1 }}>{row.sub}</div>
               </div>
               <div style={{ fontSize: 13, fontWeight: 500, color: row.color, fontFamily: "'Plus Jakarta Sans',ui-monospace" }}>
                 {fm(row.value)}
@@ -1587,7 +1587,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 return d.efecto > 0 ? " (más que un mes promedio)" : " (menos que un mes promedio)";
               };
               return (
-                <div style={{ fontSize: 11.5, color: T.txt2, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.bd}`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.7, marginTop: 10 }}>
+                <div style={{ fontSize: 12, color: T.txt2, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.bd}`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.7, marginTop: 10 }}>
                   💡 <strong style={{ color: T.txt }}>Por qué este mes se movió</strong> <span style={{ opacity: 0.75 }}>(vs mes promedio):</span>{" "}
                   {top3.map((d, i) => {
                     const c = d.efecto > 0 ? T.gn : T.rd;
@@ -2043,7 +2043,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                                   <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>{isJuridica ? "🧾 Impuesto corporativo bruto (35% × utilidad)" : "🧾 Impuesto total (tabla progresiva DIAN)"}</div>
                                   <div style={{fontSize:9,color:T.txt3,marginTop:1}}>{isJuridica ? "Tasa efectiva sobre ingresos: " : "Tasa efectiva sobre ingreso bruto: "}{tasaEfectivaEff.toFixed(1)}%{isJuridica && grp.tax.baseGravable > 0 && grp.tax.ingreso > 0 && <span> · Utilidad/ingreso: {((grp.tax.baseGravable / grp.tax.ingreso) * 100).toFixed(0)}%</span>}</div>
                                 </div>
-                                <div style={{fontSize:17,fontWeight:800,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
+                                <div style={{fontSize:18,fontWeight:800,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                               </div>
                               {reteNMes > 0 && <>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px dashed rgba(255,255,255,0.06)"}}>
@@ -2195,7 +2195,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               const neg = cierre < 0;
               return (
                 <div style={{ fontSize: 12, color: T.txt2, marginBottom: 12,
-                      padding: "8px 11px", borderRadius: 9,
+                      padding: "8px 11px", borderRadius: 10,
                       background: neg ? "rgba(239,68,68,0.10)" : "rgba(34,197,94,0.10)",
                       border: `1px solid ${neg ? "rgba(239,68,68,0.28)" : "rgba(34,197,94,0.28)"}` }}>
                   Acumulado a diciembre:{" "}

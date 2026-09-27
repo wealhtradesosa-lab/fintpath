@@ -134,21 +134,21 @@ export default function BuyVsInvest({ isUS = false }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
           <div>
             <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.6px" }}>{isUS ? "🏠 Buy" : "🏠 Comprar"}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: ganaComprar ? T.green : T.txt, marginTop: 6 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: ganaComprar ? T.green : T.txt, marginTop: 6 }}>
               {fm(r.patrimonioComprar)}
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>patrimonio neto a {horizonteAnios} años</div>
           </div>
           <div>
             <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.6px" }}>📈 Arrendar + {activoSel.l}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: !ganaComprar ? T.green : T.txt, marginTop: 6 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: !ganaComprar ? T.green : T.txt, marginTop: 6 }}>
               {fm(r.patrimonioArrendar)}
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>patrimonio neto a {horizonteAnios} años</div>
           </div>
           <div>
             <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.6px" }}>Diferencia</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: T.gold, marginTop: 6 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: T.gold, marginTop: 6 }}>
               {fm(Math.abs(r.diferencia))}
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
@@ -321,7 +321,7 @@ export default function BuyVsInvest({ isUS = false }) {
                       border: `1px solid ${estadoCivil === v ? T.blue : T.border}` }}>{l}</button>
                 ))}
               </div>
-              <div style={{ fontSize: 10.5, color: T.txt3, marginTop: 6, lineHeight: 1.45 }}>
+              <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, lineHeight: 1.45 }}>
                 §121 excludes the first {estadoCivil === "married" ? "$500,000" : "$250,000"} of
                 gain if it was your primary home 2 of the last 5 years. Anything above that is taxed.
               </div>

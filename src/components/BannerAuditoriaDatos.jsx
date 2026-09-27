@@ -477,7 +477,7 @@ function HallazgoIgnorado({ hallazgo, onReactivar }) {
             border: `1px solid ${C.border}`,
             color: C.txt3,
             padding: "4px 8px",
-            borderRadius: 5,
+            borderRadius: 6,
             fontSize: 10,
             fontWeight: 600,
             cursor: "pointer",

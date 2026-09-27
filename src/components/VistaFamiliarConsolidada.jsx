@@ -358,7 +358,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
                         style={{
                           fontSize: 10, padding: "3px 8px",
                           background: "transparent", color: C.txt3,
-                          border: `1px solid ${C.border}`, borderRadius: 4,
+                          border: `1px solid ${C.border}`, borderRadius: 3,
                           cursor: "pointer", fontWeight: 600,
                         }}
                       >

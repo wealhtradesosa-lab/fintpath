@@ -148,7 +148,7 @@ export default function LandingPage({ onGetStarted }) {
             { icon: "👑", name: "Absoluta", desc: "Sin límites", color: T.gold },
           ].map((l, i) => (
             <div key={l.name} style={{ background: T.bg2, border: `1px solid ${l.color}20`, borderRadius: 16, padding: "24px 20px", textAlign: "center", width: 180, position: "relative" }}>
-              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: T.bg, border: `1px solid ${l.color}30`, borderRadius: 99, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: l.color }}>{i + 1}</div>
+              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: T.bg, border: `1px solid ${l.color}30`, borderRadius: 999, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: l.color }}>{i + 1}</div>
               <div style={{ fontSize: 36, marginBottom: 8 }}>{l.icon}</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: l.color, marginBottom: 4 }}>{l.name}</div>
               <div style={{ fontSize: 12, color: T.txt3 }}>{l.desc}</div>
@@ -181,14 +181,14 @@ export default function LandingPage({ onGetStarted }) {
             a quienes confían en nosotros, porque entendemos que detrás de cada patrimonio
             hay sueños, esfuerzo y una familia que merece prosperar.
           </p>
-          <div style={{ width: 48, height: 3, background: T.gn, borderRadius: 99, margin: "30px auto 0", opacity: 0.65 }} />
+          <div style={{ width: 48, height: 3, background: T.gn, borderRadius: 999, margin: "30px auto 0", opacity: 0.65 }} />
         </div>
       </Section>
 
       {/* ─── TRUST ─── */}
       <Section style={{ padding: "80px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <h2 style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>Tu privacidad es nuestra prioridad</h2>
+          <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>Tu privacidad es nuestra prioridad</h2>
           <p style={{ fontSize: 15, color: T.txt2, maxWidth: 480, margin: "0 auto" }}>Construido con los más altos estándares de seguridad financiera</p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, maxWidth: 900, margin: "0 auto" }}>
@@ -211,7 +211,7 @@ export default function LandingPage({ onGetStarted }) {
       <div style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "clamp(48px, 10vw, 80px) 0" }}>
         <Section>
           <div style={{ textAlign: "center", marginBottom: "clamp(28px, 6vw, 48px)" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: "1px solid " + T.border, borderRadius: 99, padding: "6px 16px", marginBottom: 20, fontSize: 13, color: T.txt2 }}>💰 Planes flexibles</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: "1px solid " + T.border, borderRadius: 999, padding: "6px 16px", marginBottom: 20, fontSize: 13, color: T.txt2 }}>💰 Planes flexibles</div>
             <h2 style={{ fontSize: "clamp(24px, 6vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Proyecta tu futuro financiero hoy</h2>
             <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Regístrate gratis y toma control de tu patrimonio</p>
           </div>

@@ -522,7 +522,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
             <li><strong>📊 Dividendos:</strong> si te pagó plata una empresa donde sos socio.</li>
           </ul>
           <div style={{ marginTop: 14, padding: "10px 14px", background: T.bg3, borderRadius: 8, fontSize: 13, color: T.txt, lineHeight: 1.5 }}>
-            💡 <strong>Tip:</strong> tocá el botón <span style={{ background: T.purple, padding: "2px 7px", borderRadius: 4, color: "#fff", fontWeight: 700, fontSize: 11 }}>💡</span> de cualquier fila para que te explique
+            💡 <strong>Tip:</strong> tocá el botón <span style={{ background: T.purple, padding: "2px 7px", borderRadius: 3, color: "#fff", fontWeight: 700, fontSize: 11 }}>💡</span> de cualquier fila para que te explique
             qué significa cada cosa, cuánto te conviene y por qué.
           </div>
         </div>
@@ -657,7 +657,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                             border: `1px solid ${showTipFor === r.numero ? T.purple : T.border}`,
                             color: T.purple,
                             padding: "1px 6px",
-                            borderRadius: 4,
+                            borderRadius: 3,
                             fontSize: 10,
                             cursor: "pointer",
                             fontWeight: 600,
@@ -716,20 +716,20 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                       <div style={{ display: "flex", gap: 4 }}>
                         <button
                           onClick={handleGuardarEdit}
-                          style={{ background: T.green, color: "#000", border: "none", padding: "5px 10px", borderRadius: 5, fontSize: 11, cursor: "pointer", fontWeight: 700 }}
+                          style={{ background: T.green, color: "#000", border: "none", padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 700 }}
                         >
                           ✓
                         </button>
                         <button
                           onClick={() => setEditingRenglon(null)}
-                          style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "5px 10px", borderRadius: 5, fontSize: 11, cursor: "pointer" }}
+                          style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}
                         >
                           ✕
                         </button>
                         {hasOverride && (
                           <button
                             onClick={() => handleResetear(r.numero)}
-                            style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt3, padding: "5px 8px", borderRadius: 5, fontSize: 10, cursor: "pointer" }}
+                            style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt3, padding: "5px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer" }}
                             title="Volver a valor automático"
                           >
                             ↺
@@ -741,7 +741,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                     ) : (
                       <button
                         onClick={() => handleEditar(r)}
-                        style={{ background: "transparent", border: `1px solid ${T.border}`, color: hasOverride ? T.purple : T.txt2, padding: "5px 10px", borderRadius: 5, fontSize: 11, cursor: "pointer", fontWeight: 600 }}
+                        style={{ background: "transparent", border: `1px solid ${T.border}`, color: hasOverride ? T.purple : T.txt2, padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 600 }}
                       >
                         ✏️ {hasOverride ? "Editado" : "Editar"}
                       </button>
@@ -979,7 +979,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
             <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ fontSize: 20 }}>💡</span>
               ¿Cómo pago menos?
-              <span style={{ fontSize: 11, background: "#22c55e", color: "#000", padding: "2px 8px", borderRadius: 4, fontWeight: 700 }}>
+              <span style={{ fontSize: 11, background: "#22c55e", color: "#000", padding: "2px 8px", borderRadius: 3, fontWeight: 700 }}>
                 PASO A PASO
               </span>
             </div>
@@ -1066,7 +1066,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
                       <div style={{ fontSize: 11, color: T.txt3 }}>Te ahorrás</div>
-                      <div style={{ fontSize: 17, fontWeight: 800, color: "#22c55e", lineHeight: 1 }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#22c55e", lineHeight: 1 }}>
                         {"$" + Math.round(ahorro).toLocaleString("es-CO")}
                       </div>
                       <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>al año</div>

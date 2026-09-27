@@ -102,7 +102,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
             gap: 8,
             background: `linear-gradient(135deg, ${T.green}10, ${T.blue}10)`,
             border: `1px solid ${T.green}30`,
-            borderRadius: 100,
+            borderRadius: 999,
             padding: "6px 14px",
             marginBottom: 24,
             fontSize: 12,
@@ -132,7 +132,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
           </h2>
 
           <p style={{
-            fontSize: 17,
+            fontSize: 18,
             color: T.txt2,
             lineHeight: 1.6,
             marginBottom: 32,
@@ -194,7 +194,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
             color: "#fff",
             border: "none",
             padding: "14px 28px",
-            borderRadius: 100,
+            borderRadius: 999,
             cursor: "pointer",
             fontSize: 15,
             fontWeight: 700,
@@ -359,7 +359,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
                 flex: 1,
                 background: "rgba(255,255,255,0.04)",
                 border: `1px solid ${T.border}`,
-                borderRadius: 100,
+                borderRadius: 999,
                 padding: "8px 16px",
                 fontSize: 13,
                 color: T.txt3,

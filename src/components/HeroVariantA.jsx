@@ -126,7 +126,7 @@ export default function HeroVariantA({ onGetStarted = () => {} }) {
             gap: 8,
             background: "rgba(255,255,255,0.03)",
             border: `1px solid ${T.borderStrong}`,
-            borderRadius: 99,
+            borderRadius: 999,
             padding: "6px 14px",
             marginBottom: 32,
             fontSize: 13,
@@ -162,7 +162,7 @@ export default function HeroVariantA({ onGetStarted = () => {} }) {
 
           {/* Subtítulo */}
           <p className={mounted ? "fade-up fade-up-3" : ""} style={{
-            fontSize: 19,
+            fontSize: 20,
             color: T.txt2,
             lineHeight: 1.55,
             maxWidth: 560,

@@ -348,14 +348,14 @@ function OpportunityCard({ opp, expanded, onToggle }) {
                 color: priColor,
                 background: priColor + "15",
                 padding: "3px 10px",
-                borderRadius: 99,
+                borderRadius: 999,
               }}
             >
               {priLabel}
             </span>
             <span style={{ fontSize: 11, color: T.txt3 }}>{opp.category}</span>
           </div>
-          <h3 style={{ fontSize: 17, fontWeight: 800, color: T.txt, margin: "0 0 6px", fontFamily: FONT_DISPLAY }}>
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: T.txt, margin: "0 0 6px", fontFamily: FONT_DISPLAY }}>
             {opp.title}
           </h3>
           <p style={{ fontSize: 13, color: T.txt2, margin: 0, lineHeight: 1.5 }}>{opp.oneliner}</p>

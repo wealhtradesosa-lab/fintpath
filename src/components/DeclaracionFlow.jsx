@@ -1171,7 +1171,7 @@ export default function DeclaracionFlow({
             )}
           </div>
           <div style={{
-            fontSize: 44, fontWeight: 900, color: saldoActual > 0 ? C.txt : C.green,
+            fontSize: 40, fontWeight: 900, color: saldoActual > 0 ? C.txt : C.green,
             lineHeight: 1, letterSpacing: -1, fontFamily: "monospace",
           }}>
             {fm(Math.max(0, saldoActual))}
@@ -1502,7 +1502,7 @@ function MiniCard({ icono, label, valor, color, sub }) {
       <div style={{ fontSize: 10, color: C.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
         {icono} {label}
       </div>
-      <div style={{ fontSize: 17, fontWeight: 800, color, fontFamily: "monospace", lineHeight: 1 }}>
+      <div style={{ fontSize: 18, fontWeight: 800, color, fontFamily: "monospace", lineHeight: 1 }}>
         {valor}
       </div>
       {sub && (

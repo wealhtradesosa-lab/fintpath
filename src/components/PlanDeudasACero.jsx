@@ -304,7 +304,7 @@ export default function PlanDeudasACero({
                     color: T.orange,
                     background: "rgba(249,115,22,0.12)",
                     border: "1px solid rgba(249,115,22,0.35)",
-                    borderRadius: 100,
+                    borderRadius: 999,
                     padding: "4px 10px",
                   }}
                 >
@@ -521,7 +521,7 @@ function chipStyle(active) {
     border: active ? "1px solid rgba(34,197,94,0.45)" : "1px solid " + T.border,
     color: active ? T.green : T.txt2,
     padding: "6px 12px",
-    borderRadius: 100,
+    borderRadius: 999,
     cursor: "pointer",
     fontWeight: 700,
     fontSize: 12,

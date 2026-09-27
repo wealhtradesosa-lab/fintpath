@@ -291,7 +291,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
           <div style={{ fontSize: 11, color: C.green, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
             Aplicar oportunidad fiscal
           </div>
-          <h2 style={{ fontSize: 17, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.3 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.3 }}>
             {config.title}
           </h2>
           <div style={{ fontSize: 12, color: C.txt3, marginTop: 4 }}>

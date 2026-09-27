@@ -453,7 +453,7 @@ function OportunidadCard({ opo, index, onAplicar }) {
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
         <div style={{ fontSize: 11, color: C.txt3 }}>Te ahorrás</div>
-        <div style={{ fontSize: 17, fontWeight: 800, color: C.green, lineHeight: 1 }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: C.green, lineHeight: 1 }}>
           {fmShort(ahorro)}
         </div>
         <div style={{ fontSize: 10, color: C.txt3, marginTop: 2 }}>al año</div>

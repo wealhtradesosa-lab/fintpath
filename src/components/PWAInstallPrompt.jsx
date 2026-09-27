@@ -180,16 +180,16 @@ export default function PWAInstallPrompt() {
         boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
       }}>
         <div style={{ flex: "1 1 200px", minWidth: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 700, color: "#fafafa" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#fafafa" }}>
             Hay una versión nueva
           </div>
-          <div style={{ fontSize: 11.5, color: "#a1a1aa", marginTop: 2, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: "#a1a1aa", marginTop: 2, lineHeight: 1.5 }}>
             Recargá para verla. Tus datos están guardados.
           </div>
         </div>
         <button onClick={() => window.location.reload()} style={{
           background: "#22c55e", color: "#000", border: "none", padding: "9px 18px",
-          borderRadius: 9, cursor: "pointer", fontWeight: 700, fontSize: 12.5, flexShrink: 0,
+          borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13, flexShrink: 0,
         }}>Recargar</button>
         <button onClick={() => setHayActualizacion(false)} style={{
           background: "transparent", color: "#71717a", border: "none",

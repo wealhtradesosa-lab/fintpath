@@ -183,7 +183,7 @@ export default function AgenteTributarioBienvenida({
               <div style={{ fontSize: 11, fontWeight: 800, color: isJuridica ? "#c4b5fd" : "#60a5fa", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
                 Auditando ahora · {isJuridica ? "Persona jurídica" : "Persona natural"}
               </div>
-              <div style={{ fontSize: 19, fontWeight: 800, color: C.txt, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: C.txt, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis" }}>
                 {ownerName}
               </div>
               <div style={{ fontSize: 11, color: C.txt3, marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>

@@ -246,7 +246,7 @@ export default function PensionesColpensiones({ trm }) {
         label="Pensiones"
         title="Cálculo actuarial"
         subtitle={`Ley 100/1993 · Ley 797/2003 · SMMLV 2026: ${fCOP(SM_2026)}`}
-        rightSlot={<button onClick={() => { document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO")); window.print(); }} style={{ background: T.blue, color: "#fff", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>📄 Exportar PDF</button>}
+        rightSlot={<button onClick={() => { document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO")); window.print(); }} style={{ background: T.blue, color: "#fff", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>📄 Exportar PDF</button>}
       />
 
             <div style={{ padding: "10px 14px", marginBottom: 16, borderRadius: 10, background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.35)", color: T.txt2, fontSize: 13, lineHeight: 1.5 }}>
@@ -737,7 +737,7 @@ export default function PensionesColpensiones({ trm }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Cd glow={T.green} style={{ padding: 28, textAlign: "center" }}>
                 <div style={{ fontSize: 12, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.1em" }}>Retiro Programado</div>
-                <div style={{ fontSize: 42, fontWeight: 800, color: T.green, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(rais.retiroProgramado)}</div>
+                <div style={{ fontSize: 40, fontWeight: 800, color: T.green, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(rais.retiroProgramado)}</div>
                 <div style={{ fontSize: 13, color: T.txt3, marginTop: 4 }}>≈ {fUSD(rais.retiroProgramado, trm)}</div>
                 <div style={{ fontSize: 12, color: T.txt2, marginTop: 8, lineHeight: 1.6 }}>Heredable • Saldo en AFP • Tasa 4% real</div>
                 <div style={{ borderTop: "1px solid " + T.border, marginTop: 12, paddingTop: 12 }}>

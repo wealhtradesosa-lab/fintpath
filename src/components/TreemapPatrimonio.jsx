@@ -192,8 +192,8 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
           {bloques.filter((b) => !(b.w > 42 && b.h > 34)).map((b, i) => {
             const idx = bloques.indexOf(b);
             return (
-              <div key={b.name + i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: T.tx3 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: COLORES[idx % COLORES.length], display: "inline-block" }} />
+              <div key={b.name + i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.tx3 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 3, background: COLORES[idx % COLORES.length], display: "inline-block" }} />
                 {b.name} · {((b.value / base) * 100).toFixed(1)}%
               </div>
             );

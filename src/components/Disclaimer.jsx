@@ -79,7 +79,7 @@ export default function Disclaimer({ variante = "general", idioma = "es", T = {}
   // interrumpiría la lectura. El texto largo sigue disponible al pasar el cursor.
   if (compacto) {
     return (
-      <div title={txt.p} style={{ fontSize: 10.5, color: tx3, marginTop: 12,
+      <div title={txt.p} style={{ fontSize: 11, color: tx3, marginTop: 12,
                                   lineHeight: 1.5, fontStyle: "italic" }}>
         ⚠️ {txt.t}. {idioma === "en"
           ? "Not financial, tax or legal advice."
@@ -91,10 +91,10 @@ export default function Disclaimer({ variante = "general", idioma = "es", T = {}
   return (
     <div style={{ marginTop: 16, padding: "13px 15px", borderRadius: 10,
                   border: `1px dashed ${border}`, background: "rgba(255,255,255,0.015)" }}>
-      <div style={{ fontSize: 11.5, fontWeight: 700, color: tx2, marginBottom: 5 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: tx2, marginBottom: 5 }}>
         ⚠️ {txt.t}
       </div>
-      <div style={{ fontSize: 10.5, color: tx3, lineHeight: 1.65 }}>
+      <div style={{ fontSize: 11, color: tx3, lineHeight: 1.65 }}>
         {txt.p}
       </div>
     </div>

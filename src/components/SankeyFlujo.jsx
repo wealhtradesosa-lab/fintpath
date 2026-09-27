@@ -42,7 +42,7 @@ export default function SankeyFlujo({
 
   if (!(bruto > 0)) {
     return (
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, textAlign: "center", color: T.tx3, fontSize: 12.5 }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, textAlign: "center", color: T.tx3, fontSize: 13 }}>
         💧 Sin ingresos en este mes — no hay flujo que mostrar.
       </div>
     );
@@ -109,8 +109,8 @@ export default function SankeyFlujo({
           fijos en español, así que en la vista US salía "¿Por dónde se va tu
           plata?" seguido de "Where your money goes". Ahora vienen en `labels`
           como los demás rótulos. */}
-      <div style={{ fontSize: 14.5, fontWeight: 800, color: T.tx }}>{L.titulo}</div>
-      <div style={{ fontSize: 11.5, color: T.tx3, marginTop: 2, marginBottom: 12 }}>
+      <div style={{ fontSize: 15, fontWeight: 800, color: T.tx }}>{L.titulo}</div>
+      <div style={{ fontSize: 12, color: T.tx3, marginTop: 2, marginBottom: 12 }}>
         {subtitulo} {L.pie(fmt(Math.round(bruto)))}
       </div>
 

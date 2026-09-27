@@ -230,7 +230,7 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
             <div style={{ fontSize: 11, color: C.purple, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
               {itemsAfectados.length} {itemsAfectados.length === 1 ? tipoLabel.sing : tipoLabel.plur} sin titular fiscal
             </div>
-            <h2 style={{ fontSize: 17, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.3 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.3 }}>
               ¿Qué querés hacer con {itemsAfectados.length === 1 ? "este " + tipoLabel.sing : "estos " + tipoLabel.plur}?
             </h2>
           </div>
@@ -291,7 +291,7 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
                 >
                   <div style={{
                     width: 18, height: 18, flexShrink: 0,
-                    borderRadius: 4,
+                    borderRadius: 3,
                     border: `1.5px solid ${sel ? C.green : C.border}`,
                     background: sel ? C.green : "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -573,7 +573,7 @@ function TabBtn({ activo, onClick, color, children }) {
 const btnPrimary = { padding: "10px 20px", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 800 };
 const btnSec = { padding: "10px 18px", background: "transparent", border: `1.5px solid ${C.border}`, borderRadius: 8, color: C.txt2, cursor: "pointer", fontSize: 13, fontWeight: 700 };
 const closeBtn = { background: "transparent", border: "none", color: C.txt3, fontSize: 22, cursor: "pointer", padding: 0, lineHeight: 1 };
-const miniBtn = { padding: "4px 10px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: 5, color: C.txt2, fontSize: 11, fontWeight: 600, cursor: "pointer" };
+const miniBtn = { padding: "4px 10px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: 6, color: C.txt2, fontSize: 11, fontWeight: 600, cursor: "pointer" };
 const lblStyle = { display: "block", fontSize: 11, fontWeight: 700, color: C.txt3, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 };
 const inputStyle = { width: "100%", padding: "10px 12px", background: C.bg3, border: `1.5px solid ${C.border}`, borderRadius: 6, color: C.txt, fontSize: 14, outline: "none", boxSizing: "border-box" };
 function pillBtn(activo) {

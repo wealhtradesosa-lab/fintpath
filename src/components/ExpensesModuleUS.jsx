@@ -324,7 +324,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             <div key={k.l} style={{background:T.bg3,borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
               <div style={{fontSize:9,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{k.l}</div>
               <div style={{fontSize:18,fontWeight:800,color:k.c,marginTop:4}}>{k.v}</div>
-              {k.badge&&<div style={{fontSize:9,fontWeight:700,color:"#000",background:T.gn,borderRadius:99,padding:"2px 8px",marginTop:4,display:"inline-block"}}>{k.badge}</div>}
+              {k.badge&&<div style={{fontSize:9,fontWeight:700,color:"#000",background:T.gn,borderRadius:999,padding:"2px 8px",marginTop:4,display:"inline-block"}}>{k.badge}</div>}
             </div>
           ))}
         </div>
@@ -345,7 +345,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
       <div style={{display:"flex",gap:4,marginBottom:16,background:T.bg3,borderRadius:12,padding:4,flexWrap:"wrap"}}>
         {tabs.map(tab=>(
           <button key={tab.id} onClick={()=>setActiveTab(tab.id)}
-            style={{flex:1,minWidth:100,padding:"8px 12px",borderRadius:9,border:"none",cursor:"pointer",
+            style={{flex:1,minWidth:100,padding:"8px 12px",borderRadius:10,border:"none",cursor:"pointer",
                     fontSize:12,fontWeight:600,
                     background:activeTab===tab.id?T.card:"transparent",
                     color:activeTab===tab.id?T.tx:T.tx3}}>

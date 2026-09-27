@@ -147,7 +147,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
             <div style={{ fontSize: 18, fontWeight: 700 }}>{owner.name}</div>
             <div style={{ fontSize: 11, color: T.txt3, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
               <span>{isJ ? "Persona Jurídica" : "Persona Natural"}</span>
-              <span style={{ background: "rgba(59,130,246,0.12)", color: T.blue, padding: "2px 8px", borderRadius: 99, fontSize: 10, fontWeight: 600 }}>
+              <span style={{ background: "rgba(59,130,246,0.12)", color: T.blue, padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 600 }}>
                 {calc.regimen === "ordinario" ? (isJ ? "Ordinario 35%" : "Cédula General") :
                  calc.regimen === "simple" ? "Simple (RST)" :
                  calc.regimen === "zona_franca" ? "Zona Franca 20%" :

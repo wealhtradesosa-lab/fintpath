@@ -199,9 +199,9 @@ export default function AsesorIA({ user, totals, userId }) {
         title="Conversa con tu family office"
         subtitle="Análisis de tus datos encendidos y recomendaciones personalizadas con datos reales."
         rightSlot={<>
-          <span style={{fontSize:11,color:remaining<=5?"#ef4444":"#71717a",background:"#1e1e24",padding:"6px 12px",borderRadius:100}}>{remaining} consultas restantes hoy</span>
+          <span style={{fontSize:11,color:remaining<=5?"#ef4444":"#71717a",background:"#1e1e24",padding:"6px 12px",borderRadius:999}}>{remaining} consultas restantes hoy</span>
           {msgs.length > 0 && (
-            <button onClick={() => setMsgs([])} style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt3, padding: "8px 16px", borderRadius: 100, cursor: "pointer", fontSize: 12 }}>Nueva consulta</button>
+            <button onClick={() => setMsgs([])} style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt3, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontSize: 12 }}>Nueva consulta</button>
           )}
         </>}
       />

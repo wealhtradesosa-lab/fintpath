@@ -187,7 +187,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
   if (owners.length === 0) {
     return (
       <div style={{ maxWidth: 820, margin: "0 auto", padding: "40px 16px", textAlign: "center" }}>
-        <div style={{ fontSize: 42, marginBottom: 12 }}>🏛️</div>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🏛️</div>
         <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, marginBottom: 6 }}>Sin propietarios fiscales</div>
         <div style={{ fontSize: 13, color: T.txt2, marginBottom: 16, lineHeight: 1.6 }}>
           Agregá al menos un propietario fiscal (persona natural o jurídica) para ver el dashboard.
@@ -345,7 +345,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
             🏦 Retención en la fuente estimada
             {detalleActual.retencionDesglose.fuente === "override_global" && (
-              <span style={{ marginLeft: 8, padding: "2px 8px", background: "rgba(168,85,247,0.15)", borderRadius: 4, fontSize: 9, color: "#a78bfa" }}>
+              <span style={{ marginLeft: 8, padding: "2px 8px", background: "rgba(168,85,247,0.15)", borderRadius: 3, fontSize: 9, color: "#a78bfa" }}>
                 OVERRIDE MANUAL
               </span>
             )}
@@ -557,7 +557,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
                   </div>
                 </div>
               ))}
-              <div style={{ fontSize: 9.5, color: T.txt3, marginTop: 12, fontStyle: "italic", textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: T.txt3, marginTop: 12, fontStyle: "italic", textAlign: "center" }}>
                 Últimas {declaraciones.length} declaraciones + simulación del año en curso (en azul).
               </div>
             </div>

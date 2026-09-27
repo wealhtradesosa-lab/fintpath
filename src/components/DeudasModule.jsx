@@ -228,25 +228,25 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         subtitle={`${activos.length}${activos.length !== items.length ? ` de ${items.length}` : ""} deuda${activos.length !== 1 ? "s" : ""} · Saldo: ${fm(totalDeuda)} · Cuotas: ${fm(totalCuotas)}/mes`}
         rightSlot={<>
           {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
+            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
           )}
           {onImport && <button onClick={onImport}
             title="Cargar deudas desde una tabla de Excel"
-            style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬆️ Subir Excel
           </button>}
           <button onClick={() => exportDeudasExcel(activos, inversiones, owners, trm)}
             title="Bajar Excel: detalle de deudas + vinculación con activos"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar Excel
           </button>
           <button onClick={() => exportDeudasPDF(activos, inversiones, owners, trm)}
             title="Bajar PDF: saldos, tasas y orden sugerido de pago"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar PDF
           </button>
           <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", desdeMes: 1, hastaMes: 12, vigenciaModo: undefined }); setShowForm(true); }}
-            style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
+            style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
       />
 
@@ -367,7 +367,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 8 }}>
               {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
-                <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, color: T.txt2 }}>
+                <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: T.txt2 }}>
                   <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
                   {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
                 </span>
@@ -422,7 +422,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                           <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
                             {d.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {d.__n}</span>
                           </span>
-                          <span style={{ fontSize: 12.5, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>
                             {fm(d.__sub)}
                             <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{d.__pct.toFixed(0)}%</span>
                           </span>
@@ -471,7 +471,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       })()}
                     </td>
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>
-                      <span style={{ background: T.orange + "15", color: T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{d.tp}</span>
+                      <span style={{ background: T.orange + "15", color: T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{d.tp}</span>
                     </td>
                     <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.red, fontFamily: "monospace" }}>{fm(d.mt)}</td>
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>{fm(d.pg)}</td>
@@ -482,9 +482,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                         <td style={{ padding: "10px 14px", textAlign: "right" }}>
                           <div style={{ fontWeight: 700, fontFamily: "monospace", color: T.orange }}>{fm(cc.interesAnual)}</div>
                           {cc.noAmortiza ? (
-                            <div style={{ fontSize: 9.5, color: T.red, marginTop: 2 }}>⚠ la cuota no cubre el interés</div>
+                            <div style={{ fontSize: 10, color: T.red, marginTop: 2 }}>⚠ la cuota no cubre el interés</div>
                           ) : cc.meses != null ? (
-                            <div style={{ fontSize: 9.5, color: T.txt3, marginTop: 2 }}>
+                            <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>
                               termina en {Math.floor(cc.meses / 12)}a {cc.meses % 12}m
                               {cc.interesTotal > 0 && <> · <span title="Interés restante hasta pagarla toda">interés total {fm(cc.interesTotal)}</span></>}
                               <div style={{ marginTop: 2 }}>
@@ -496,7 +496,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                         </td>
                       );
                     })()}
-                    <td style={{ padding: "10px 14px" }}>{lk ? <span style={{ background: T.blue + "15", color: T.blue, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{lk.n || lk.nombre || lk.name || "—"}</span> : <span style={{ color: T.txt3 }}>—</span>}</td>
+                    <td style={{ padding: "10px 14px" }}>{lk ? <span style={{ background: T.blue + "15", color: T.blue, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{lk.n || lk.nombre || lk.name || "—"}</span> : <span style={{ color: T.txt3 }}>—</span>}</td>
                     <td style={{ padding: "10px 14px" }}>
                       <button onClick={() => { if (!guardEdit(role)) return; onUpdate(deudas.map(x => x.id===d.id ? {...x, sim: !(d.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={d.sim===false?"Mostrar":"Ocultar"}>{d.sim===false?"⬜":"✅"}</button>
                       {/* 15-sep-2026 (Santiago: "ya pagué una deuda que era un
@@ -673,7 +673,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 usuario decide. Esa fue la lección de aquel bug. */}
             {(form.tipoInteres || "compuesto") !== "simple" && (
               <div style={{gridColumn:"1/-1",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
-                <div style={{fontSize:11.5,fontWeight:700,color:T.txt2,marginBottom:8}}>🧮 ¿No sabés la cuota o la tasa? Poné el plazo</div>
+                <div style={{fontSize:12,fontWeight:700,color:T.txt2,marginBottom:8}}>🧮 ¿No sabés la cuota o la tasa? Poné el plazo</div>
                 <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
                   <div style={{flex:"1 1 130px"}}>
                     <div style={{fontSize:10,color:T.txt3,marginBottom:4,fontWeight:600}}>PLAZO (MESES)</div>
@@ -688,7 +688,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       const q=cuotaFija(B,ts,n);
                       if (q) acciones.push(
                         <button key="q" type="button" onClick={()=>setForm(p=>({...p,pg:String(Math.round(q))}))}
-                          style={{background:"#3b82f6",color:"#fff",border:"none",padding:"9px 13px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
+                          style={{background:"#3b82f6",color:"#fff",border:"none",padding:"9px 13px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>
                           Cuota = {fm(Math.round(q))}
                         </button>);
                     }
@@ -696,7 +696,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       const t=tasaDesdeCuota(B,pg,n);
                       if (t!==null && t>0) acciones.push(
                         <button key="t" type="button" onClick={()=>setForm(p=>({...p,ts:String(Number(t.toFixed(2)))}))}
-                          style={{background:T.bg2,color:T.txt,border:`1px solid ${T.border}`,padding:"9px 13px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
+                          style={{background:T.bg2,color:T.txt,border:`1px solid ${T.border}`,padding:"9px 13px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>
                           Tasa = {t.toFixed(2)}%
                         </button>);
                     }
@@ -732,7 +732,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   <div style={{fontSize:12,color:T.txt2,fontWeight:600,marginBottom:4}}>
                     💡 Interés mensual de este préstamo: <span style={{fontFamily:"monospace",color:T.green,fontWeight:800}}>{fm(Math.round(interesMes))}</span>
                   </div>
-                  <div style={{fontSize:10.5,color:T.txt3,lineHeight:1.5,marginBottom:yaEsIgual?0:8}}>
+                  <div style={{fontSize:11,color:T.txt3,lineHeight:1.5,marginBottom:yaEsIgual?0:8}}>
                     {esSimple
                       ? <>{fm(Number(form.mt))} × {form.ts}% ÷ 12. Si solo pagás intereses, esa es tu cuota.</>
                       : <>Interés del primer mes con tasa {form.ts}% E.A. Tu cuota debe superarlo para que la deuda baje.</>}
@@ -744,7 +744,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       deba ayudar. */}
                   {!yaEsIgual && (esSimple ? (
                       <button type="button" onClick={() => setForm(p => ({...p, pg: String(Math.round(interesMes))}))}
-                        style={{background:"#3b82f6",color:"#fff",border:"none",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
+                        style={{background:"#3b82f6",color:"#fff",border:"none",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>
                         Usar {fm(Math.round(interesMes))} como cuota
                       </button>
                     ) : (Number(form.pg) > 0 && Number(form.pg) <= interesMes && (
@@ -766,8 +766,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   <button key={o.v} type="button" onClick={()=>setForm(p=>({...p,tipoInteres:o.v}))}
                     style={{flex:"1 1 220px",textAlign:"left",background:(form.tipoInteres||"compuesto")===o.v?"rgba(34,197,94,0.10)":T.bg3,
                       border:"1px solid "+((form.tipoInteres||"compuesto")===o.v?T.green:T.border),borderRadius:10,padding:"10px 12px",cursor:"pointer",color:T.txt}}>
-                    <div style={{fontSize:12.5,fontWeight:700}}>{o.l}</div>
-                    <div style={{fontSize:10.5,color:T.txt3,marginTop:2,lineHeight:1.4}}>{o.d}</div>
+                    <div style={{fontSize:13,fontWeight:700}}>{o.l}</div>
+                    <div style={{fontSize:11,color:T.txt3,marginTop:2,lineHeight:1.4}}>{o.d}</div>
                   </button>)}
               </div>
             </div>
@@ -786,7 +786,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   Es inusualmente alta. ¿Quisiste escribir {String(form.ts).slice(0,-1)},{String(form.ts).slice(-1)}%?
                 </div>
                 <button type="button" onClick={() => setForm(p => ({...p, ts: String(Number(form.ts) / 10)}))}
-                  style={{background:"#ef4444",color:"#fff",border:"none",padding:"6px 13px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11.5}}>
+                  style={{background:"#ef4444",color:"#fff",border:"none",padding:"6px 13px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>
                   Corregir a {Number(form.ts) / 10}%
                 </button>
               </div>
@@ -828,7 +828,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                     <div style={{ marginTop: 10, fontSize: 11, color: T.txt2 }}>
                       Cuota = {fmt(c)} + {fmt(i)} = <strong style={{ color: "#fafafa" }}>{fmt(c + i)}/mes</strong>
                       {previo > 0 && (
-                        <div style={{ marginTop: 6, fontSize: 10.5, color: dif == null ? T.txt3 : dif <= 1.5 ? "#4ade80" : "#fca5a5" }}>
+                        <div style={{ marginTop: 6, fontSize: 11, color: dif == null ? T.txt3 : dif <= 1.5 ? "#4ade80" : "#fca5a5" }}>
                           {dif == null
                             ? <>Tasa implícita de este extracto: <strong>{eaImp.toFixed(2)}% E.A.</strong> — podés usarla arriba.</>
                             : dif <= 1.5
@@ -890,7 +890,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       <span>Interés <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesMes))}</strong></span>
                       <span>Capital <strong style={{color:"#22c55e"}}>{fmt(Math.round(cc.capitalMes))}</strong></span>
                     </div>
-                    <div style={{display:"flex",height:8,borderRadius:99,overflow:"hidden",background:"#0f0f13",marginBottom:6}}>
+                    <div style={{display:"flex",height:8,borderRadius:999,overflow:"hidden",background:"#0f0f13",marginBottom:6}}>
                       <div style={{width:(100-cc.pctCapital)+"%",background:"#f59e0b"}} title="Intereses" />
                       <div style={{width:cc.pctCapital+"%",background:"#22c55e"}} title="Abono a capital" />
                     </div>

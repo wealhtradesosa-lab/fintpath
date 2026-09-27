@@ -80,7 +80,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   // supuesto y no como hecho.
   const Dato = ({ l, v, color, tenue }) => (
     <div>
-      <div style={{ fontSize: 9.5, color: T.tx3, letterSpacing: 1, fontWeight: 700 }}>{l}</div>
+      <div style={{ fontSize: 10, color: T.tx3, letterSpacing: 1, fontWeight: 700 }}>{l}</div>
       <div style={{ fontSize: tenue ? 15 : 17, fontWeight: tenue ? 700 : 800,
             color: color || T.tx, fontFamily: "monospace", marginTop: 2,
             opacity: tenue ? 0.82 : 1 }}>{fmt(v)}</div>
@@ -98,9 +98,9 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
       border: `1px solid ${proyectado ? "rgba(34,197,94,0.18)" : T.border}`,
       borderRadius: 10,
     }}>
-      <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.9,
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.9,
             textTransform: "uppercase", color: T.tx3 }}>{titulo}</div>
-      <div style={{ fontSize: 10.5, color: T.tx3, opacity: 0.8, marginTop: 1 }}>{sub}</div>
+      <div style={{ fontSize: 11, color: T.tx3, opacity: 0.8, marginTop: 1 }}>{sub}</div>
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 9 }}>{children}</div>
     </div>
   );
@@ -108,7 +108,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 800, color: T.tx }}>Cómo va {año}</div>
+        <div style={{ fontSize: 15, fontWeight: 800, color: T.tx }}>Cómo va {año}</div>
         <div style={{ fontSize: 11, color: T.tx3, marginTop: 1, marginBottom: 11 }}>
           {mesActual} {mesActual === 1 ? "mes cumplido" : "meses cumplidos"}
           {mesesRestantes > 0 && `, ${mesesRestantes} por delante`}
@@ -156,7 +156,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
       </div>
       <div style={{ display: "flex", gap: 3, marginTop: 4 }}>
         {meses.map((x) => (
-          <div key={x.m} style={{ flex: 1, textAlign: "center", fontSize: 9.5, color: x.m === mesActual ? T.tx : T.tx3, fontWeight: x.m === mesActual ? 800 : 500 }}>
+          <div key={x.m} style={{ flex: 1, textAlign: "center", fontSize: 10, color: x.m === mesActual ? T.tx : T.tx3, fontWeight: x.m === mesActual ? 800 : 500 }}>
             {M[x.m - 1]}
           </div>
         ))}

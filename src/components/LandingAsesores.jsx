@@ -216,7 +216,7 @@ export default function LandingAsesores({ onGetStarted }) {
       <Section style={{ paddingTop: 80, paddingBottom: 80, textAlign: "center", position: "relative" }}>
         <div style={{ position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)", width: 600, height: 600, borderRadius: "50%", background: `radial-gradient(circle, ${T.green}06, transparent)`, pointerEvents: "none" }} />
         <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 99, padding: "6px 16px", marginBottom: 24, fontSize: 13, color: T.txt2 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 999, padding: "6px 16px", marginBottom: 24, fontSize: 13, color: T.txt2 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, display: "inline-block" }} />
             Para contadores, asesores tributarios y planificadores patrimoniales
           </div>
@@ -287,7 +287,7 @@ export default function LandingAsesores({ onGetStarted }) {
       <div id="planes" style={{ padding: "80px 0" }}>
         <Section>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: "1px solid " + T.border, borderRadius: 99, padding: "6px 16px", marginBottom: 20, fontSize: 13, color: T.txt2 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: "1px solid " + T.border, borderRadius: 999, padding: "6px 16px", marginBottom: 20, fontSize: 13, color: T.txt2 }}>
               💼 Planes corporativos
             </div>
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>
@@ -337,7 +337,7 @@ export default function LandingAsesores({ onGetStarted }) {
                 }}
               >
                 {p.featured && (
-                  <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: T.grad, color: "#000", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 100, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: T.grad, color: "#000", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 999, letterSpacing: "0.04em", textTransform: "uppercase" }}>
                     Más Popular
                   </div>
                 )}
@@ -346,7 +346,7 @@ export default function LandingAsesores({ onGetStarted }) {
                   <div style={{ fontSize: 13, color: T.txt3, marginBottom: 24, minHeight: 36, lineHeight: 1.5 }}>{p.tagline}</div>
 
                   <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
-                    <span style={{ fontSize: 44, fontWeight: 900, letterSpacing: "-0.04em" }}>{p.price[billingCycle]}</span>
+                    <span style={{ fontSize: 40, fontWeight: 900, letterSpacing: "-0.04em" }}>{p.price[billingCycle]}</span>
                     <span style={{ color: T.txt3, fontSize: 15 }}>{p.priceSub[billingCycle]}</span>
                   </div>
                   {billingCycle === "anual" && (
@@ -420,7 +420,7 @@ export default function LandingAsesores({ onGetStarted }) {
                     background: "transparent",
                     border: "none",
                     color: T.txt,
-                    fontSize: 17,
+                    fontSize: 18,
                     fontWeight: 600,
                     textAlign: "left",
                     cursor: "pointer",

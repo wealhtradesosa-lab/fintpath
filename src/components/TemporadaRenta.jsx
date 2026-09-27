@@ -115,7 +115,7 @@ export default function TemporadaRenta({ onEmpezar }) {
 
   return (
     <div style={{ background: T.bg2, border: `1px solid ${T.border}`,
-      borderRadius: 18, padding: "28px 24px", maxWidth: 620, margin: "0 auto" }}>
+      borderRadius: 16, padding: "28px 24px", maxWidth: 620, margin: "0 auto" }}>
 
       {/* NOTA PARA SANTIAGO: los textos de abajo son funcionales, escritos
           para que la herramienta se entienda. La voz de la marca es tuya --
@@ -140,7 +140,7 @@ export default function TemporadaRenta({ onEmpezar }) {
         inputMode="numeric"
         maxLength={2}
         placeholder="Ej: 47"
-        style={{ width: 130, fontSize: 30, fontWeight: 800, textAlign: "center",
+        style={{ width: 130, fontSize: 32, fontWeight: 800, textAlign: "center",
           padding: "12px 0", borderRadius: 12, background: T.bg3,
           border: `2px solid ${completo ? color : T.border}`, color: T.txt,
           letterSpacing: "4px", outline: "none" }}
@@ -151,7 +151,7 @@ export default function TemporadaRenta({ onEmpezar }) {
           borderRadius: 12, borderLeft: `3px solid ${color}` }}>
           {vencioEnAgosto ? (
             <>
-              <div style={{ fontSize: 17, fontWeight: 800, color: T.red, marginBottom: 6 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: T.red, marginBottom: 6 }}>
                 Tu plazo venció en agosto
               </div>
               <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.6 }}>
@@ -175,7 +175,7 @@ export default function TemporadaRenta({ onEmpezar }) {
                   : dias === 0 ? "Es hoy"
                   : `Te quedan ${dias} ${dias === 1 ? "día" : "días"}`}
               </div>
-              <div style={{ fontSize: 12.5, color: T.txt2, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.6 }}>
                 Esa es la fecha máxima para presentar y pagar. La sanción mínima
                 por presentar tarde es de ${SANCION_MINIMA.toLocaleString("es-CO")},
                 y aplica incluso si tu declaración da cero a pagar.
@@ -206,7 +206,7 @@ export default function TemporadaRenta({ onEmpezar }) {
                 onEmpezar && onEmpezar({ source: "renta", dias_restantes: dias });
               }}
               style={{ background: T.green, color: "#000", border: "none",
-                padding: "13px 26px", borderRadius: 100, cursor: "pointer",
+                padding: "13px 26px", borderRadius: 999, cursor: "pointer",
                 fontWeight: 800, fontSize: 14 }}>
               Crear mi cuenta en Finpathia
             </button>
@@ -219,7 +219,7 @@ export default function TemporadaRenta({ onEmpezar }) {
           fecha de vencimiento y un monto de sanción. Alguien podría dejar de
           declarar confiando en lo que acá diga. El aviso tiene que ser
           explícito sobre quién responde por la decisión. */}
-      <div style={{ fontSize: 10.5, color: T.txt3, marginTop: 16, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 11, color: T.txt3, marginTop: 16, lineHeight: 1.6 }}>
         <strong style={{ color: T.txt2 }}>Aviso.</strong> Fechas tomadas del calendario
         tributario de la DIAN para personas naturales, año gravable 2025. Esta herramienta
         es informativa y no constituye asesoría tributaria, contable ni legal. No verifica

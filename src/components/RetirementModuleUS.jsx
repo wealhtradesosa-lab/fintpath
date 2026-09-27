@@ -403,7 +403,7 @@ export default function RetirementModuleUS({ user = {} }) {
       <div style={{display:"flex",gap:4,marginBottom:16,background:T.bg3,borderRadius:12,padding:4,overflowX:"auto"}}>
         {TABS.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)}
-            style={{flexShrink:0,padding:"8px 14px",borderRadius:9,border:"none",cursor:"pointer",
+            style={{flexShrink:0,padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",
                     fontSize:12,fontWeight:600,whiteSpace:"nowrap",
                     background:tab===t.id?T.card:"transparent",color:tab===t.id?T.tx:T.tx3}}>
             {t.l}
@@ -497,8 +497,8 @@ export default function RetirementModuleUS({ user = {} }) {
                       {gap === 0 && <div style={{fontSize:11,color:T.gn,fontWeight:700}}>✅ Maxed!</div>}
                     </div>
                   </div>
-                  <div style={{height:8,background:T.bg2,borderRadius:4,overflow:"hidden",marginBottom:6}}>
-                    <div style={{height:"100%",width:(pct_*100)+"%",background:pct_>=1?T.gn:T.cy,borderRadius:4,transition:"width 0.3s"}}/>
+                  <div style={{height:8,background:T.bg2,borderRadius:3,overflow:"hidden",marginBottom:6}}>
+                    <div style={{height:"100%",width:(pct_*100)+"%",background:pct_>=1?T.gn:T.cy,borderRadius:3,transition:"width 0.3s"}}/>
                   </div>
                   <div style={{fontSize:10,color:T.tx3,lineHeight:1.5}}>{acc.note}</div>
                 </div>

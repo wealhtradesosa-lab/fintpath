@@ -47,14 +47,14 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
           <span style={{ fontSize: 11, color: T.tx3, fontWeight: 600 }}>{h.unidad}</span>
         </div>
 
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: T.tx, marginTop: 7, lineHeight: 1.3 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.tx, marginTop: 7, lineHeight: 1.3 }}>
           {h.titulo}
         </div>
 
         {abierto && (
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 12, color: T.tx2, lineHeight: 1.55 }}>{h.detalle}</div>
-            <div style={{ fontSize: 10.5, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 11, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
               <strong style={{ color: T.tx2 }}>De dónde sale:</strong> {h.base}
             </div>
             <div style={{ display: "flex", gap: 14, marginTop: 10, flexWrap: "wrap" }}>
@@ -85,7 +85,7 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
         <span style={{ fontSize: 16 }}>&#129302;</span>
-        <div style={{ fontSize: 14.5, fontWeight: 800, color: T.tx }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: T.tx }}>
           Tu family office analiz&oacute; tus n&uacute;meros
         </div>
       </div>

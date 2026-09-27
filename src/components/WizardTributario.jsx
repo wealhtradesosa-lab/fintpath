@@ -222,7 +222,7 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
                     }}
                     style={{
                       padding: "7px 11px",
-                      borderRadius: 7,
+                      borderRadius: 6,
                       border: "1.5px solid " + (activo ? C.txt : C.border),
                       background: activo ? C.txt : "transparent",
                       color: activo ? C.bg : C.txt2,

@@ -49,7 +49,7 @@ export default function AdminMetrics({ email, fmt, T }) {
 
       {/* Alerta si el registro se detuvo — el síntoma que costó 3 semanas detectar */}
       {diasSin !== null && diasSin >= 3 && (
-        <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: 12, padding: "12px 14px", fontSize: 12.5, color: "#fca5a5" }}>
+        <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: 12, padding: "12px 14px", fontSize: 13, color: "#fca5a5" }}>
           ⚠️ <strong>Hace {diasSin} días que no se registra nadie.</strong> Si estás pautando, revisá que el registro funcione antes de seguir gastando.
         </div>
       )}
@@ -63,9 +63,9 @@ export default function AdminMetrics({ email, fmt, T }) {
           { l: "CON PLAN PAGO", v: num(d.diag?.conPlanPago), c: (d.diag?.conPlanPago || 0) > 0 ? "#22c55e" : T.tx3, s: "asignado — verificar en Stripe" },
         ].map((k) => (
           <div key={k.l} style={card}>
-            <div style={{ fontSize: 9.5, color: T.tx3, letterSpacing: 1, fontWeight: 700 }}>{k.l}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: k.c, marginTop: 2 }}>{k.v}</div>
-            <div style={{ fontSize: 10.5, color: T.tx3 }}>{k.s}</div>
+            <div style={{ fontSize: 10, color: T.tx3, letterSpacing: 1, fontWeight: 700 }}>{k.l}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: k.c, marginTop: 2 }}>{k.v}</div>
+            <div style={{ fontSize: 11, color: T.tx3 }}>{k.s}</div>
           </div>
         ))}
       </div>
@@ -86,8 +86,8 @@ export default function AdminMetrics({ email, fmt, T }) {
                 <span style={{ color: T.tx2 }}>{p.l}{p.nota && <span style={{ color: T.tx3 }}> · {p.nota}</span>}</span>
                 <span style={{ color: T.tx, fontWeight: 700, fontFamily: "monospace" }}>{num(p.v)} <span style={{ color: T.tx3, fontWeight: 400 }}>({pct(w)})</span></span>
               </div>
-              <div style={{ height: 8, background: T.bg3, borderRadius: 99, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: Math.max(w, 0.5) + "%", background: p.c, borderRadius: 99 }} />
+              <div style={{ height: 8, background: T.bg3, borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: Math.max(w, 0.5) + "%", background: p.c, borderRadius: 999 }} />
               </div>
             </div>
           );
@@ -105,7 +105,7 @@ export default function AdminMetrics({ email, fmt, T }) {
         <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 90 }}>
           {d.porDia.map((x, i) => (
             <div key={i} title={`${x.dia}: ${x.registros}`} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" }}>
-              <div style={{ height: Math.max((x.registros / maxDia) * 100, x.registros > 0 ? 8 : 2) + "%", background: x.registros > 0 ? "#22c55e" : T.bg3, borderRadius: 2 }} />
+              <div style={{ height: Math.max((x.registros / maxDia) * 100, x.registros > 0 ? 8 : 2) + "%", background: x.registros > 0 ? "#22c55e" : T.bg3, borderRadius: 3 }} />
             </div>
           ))}
         </div>

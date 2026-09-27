@@ -300,7 +300,7 @@ export default function GoalsModuleUS({
       <div style={{display:"flex",gap:4,marginBottom:16,background:T.bg3,borderRadius:12,padding:4,overflowX:"auto"}}>
         {TABS.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)}
-            style={{flexShrink:0,padding:"8px 14px",borderRadius:9,border:"none",cursor:"pointer",
+            style={{flexShrink:0,padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",
                     fontSize:12,fontWeight:600,whiteSpace:"nowrap",
                     background:tab===t.id?T.card:"transparent",color:tab===t.id?T.tx:T.tx3}}>
             {t.l}
@@ -453,8 +453,8 @@ export default function GoalsModuleUS({
                        <div>
                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
                            <span style={{fontSize:14,fontWeight:700}}>{g.name||info.l}</span>
-                           <span style={{fontSize:10,background:`${info.color}20`,color:info.color,padding:"2px 8px",borderRadius:99,fontWeight:600}}>{info.l}</span>
-                           {done&&<span style={{fontSize:10,background:`${T.gn}20`,color:T.gn,padding:"2px 8px",borderRadius:99,fontWeight:700}}>✅ ACHIEVED</span>}
+                           <span style={{fontSize:10,background:`${info.color}20`,color:info.color,padding:"2px 8px",borderRadius:999,fontWeight:600}}>{info.l}</span>
+                           {done&&<span style={{fontSize:10,background:`${T.gn}20`,color:T.gn,padding:"2px 8px",borderRadius:999,fontWeight:700}}>✅ ACHIEVED</span>}
                          </div>
                          {g.notes&&<div style={{fontSize:11,color:T.tx3}}>{g.notes}</div>}
                        </div>
@@ -650,7 +650,7 @@ export default function GoalsModuleUS({
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:16}}>
               {GOAL_TYPES.map(t=>(
                 <button key={t.v} type="button" onClick={()=>sfS("type",t.v)}
-                  style={{padding:"9px 12px",borderRadius:9,border:`1px solid ${form.type===t.v?t.color:T.border}`,
+                  style={{padding:"9px 12px",borderRadius:10,border:`1px solid ${form.type===t.v?t.color:T.border}`,
                           background:form.type===t.v?`${t.color}15`:T.bg3,cursor:"pointer",textAlign:"left",
                           color:form.type===t.v?t.color:T.tx2,fontSize:12,fontWeight:form.type===t.v?700:400}}>
                   {t.l}

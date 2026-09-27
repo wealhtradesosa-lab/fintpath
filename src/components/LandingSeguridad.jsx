@@ -106,7 +106,7 @@ function SecurityCard({ icon: Icon, title, badge, description }) {
               display: "inline-block", marginTop: 4,
               fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
               color: T.green, background: "rgba(34,197,94,0.1)",
-              padding: "2px 8px", borderRadius: 99,
+              padding: "2px 8px", borderRadius: 999,
               textTransform: "uppercase",
             }}>
               {badge}
@@ -183,7 +183,7 @@ export default function LandingSeguridad({ onBack = () => {} }) {
             display: "inline-flex", alignItems: "center", gap: 8,
             background: "rgba(34,197,94,0.1)",
             border: `1px solid rgba(34,197,94,0.3)`,
-            padding: "6px 14px", borderRadius: 99,
+            padding: "6px 14px", borderRadius: 999,
             fontSize: 12, fontWeight: 600, color: T.green,
             marginBottom: 24,
           }}>
@@ -365,7 +365,7 @@ export default function LandingSeguridad({ onBack = () => {} }) {
               background: T.green,
               color: "#0a0a0a",
               padding: "12px 28px",
-              borderRadius: 99,
+              borderRadius: 999,
               fontWeight: 700,
               fontSize: 15,
               textDecoration: "none",

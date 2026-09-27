@@ -64,7 +64,7 @@ export default function DashboardObservabilidad({ onClose }) {
   return (
     <div style={{ padding: 20, maxWidth: 1000, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 26 }}>🔬</span>
+        <span style={{ fontSize: 28 }}>🔬</span>
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: T.txt }}>Dashboard de observabilidad</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>

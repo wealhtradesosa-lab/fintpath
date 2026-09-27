@@ -546,26 +546,26 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         subtitle={`${activos.length}${activos.length !== allItems.length ? ` de ${allItems.length}` : ""} gasto${activos.length !== 1 ? "s" : ""} en ${cats.length} categorías · Total: ${fm(totalMes)}/mes · ${fm(totalMes * 12)}/año`}
         rightSlot={<>
           {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
               🗑️ Eliminar ({selected.size})
             </button>
           )}
           {onImport && <button onClick={onImport}
             title="Cargar gastos desde una tabla de Excel"
-            style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬆️ Subir Excel
           </button>}
           <button onClick={() => exportGastosExcel(gastos, trm)}
             title="Bajar Excel: detalle + resumen por categoría (Fijos vs Variables)"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar Excel
           </button>
           <button onClick={() => exportGastosPDF(gastos, trm)}
             title="Bajar PDF: fijos vs variables y desglose por categoría"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar PDF
           </button>
-          <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
+          <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
       />
 
@@ -652,7 +652,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
               <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 8 }}>
                 {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
-                  <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, color: T.txt2 }}>
+                  <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: T.txt2 }}>
                     <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
                     {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
                   </span>
@@ -707,7 +707,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
                             {item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
                           </span>
-                          <span style={{ fontSize: 12.5, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>
                             {fm(item.__sub)}/mes
                             <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{item.__pct.toFixed(0)}%</span>
                           </span>
@@ -789,7 +789,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   })()}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
-                  <span style={{ background: T.redDim, color: T.red, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.cat}</span>
+                  <span style={{ background: T.redDim, color: T.red, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.cat}</span>
                 </td>
                 <td style={{ padding: "10px 14px", fontSize: 10 }}>
                   {(()=>{
@@ -802,7 +802,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   })()}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
-                  <span style={{ background: (item.t === "f" ? T.blue : T.orange) + "15", color: item.t === "f" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99 }}>{item.t === "f" ? "fijo" : "variable"}</span>
+                  <span style={{ background: (item.t === "f" ? T.blue : T.orange) + "15", color: item.t === "f" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.t === "f" ? "fijo" : "variable"}</span>
                 </td>
                 <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                   <div style={{ fontWeight: 700, color: T.red }}>{fm(promedioMesActivo(item))}</div>
@@ -1063,7 +1063,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             }
                             setModoIngreso("porPago");
                           }}
-                          style={{ flex: 1, padding: "10px 12px", borderRadius: 7, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                           💵 Mensual<br/>
                           <span style={{fontSize:10,opacity:0.7,fontWeight:500}}>Lo que sale cada mes</span>
                         </button>
@@ -1076,7 +1076,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             }
                             setModoIngreso("anual");
                           }}
-                          style={{ flex: 1, padding: "10px 12px", borderRadius: 7, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                           📊 Total del año<br/>
                           <span style={{fontSize:10,opacity:0.7,fontWeight:500}}>La suma anual</span>
                         </button>
@@ -1101,7 +1101,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             }
                             setModoIngreso("porPago");
                           }}
-                          style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 11.5, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                           Por pago<br/>
                           <span style={{fontSize:9,opacity:0.7,fontWeight:500}}>(lo que sale cada vez)</span>
                         </button>
@@ -1115,7 +1115,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             }
                             setModoIngreso("anual");
                           }}
-                          style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 11.5, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                           Total anual<br/>
                           <span style={{fontSize:9,opacity:0.7,fontWeight:500}}>(gasto del año)</span>
                         </button>

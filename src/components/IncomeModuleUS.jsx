@@ -174,7 +174,7 @@ const InfoBox = ({color, children}) => (
   </div>
 );
 const Chip = ({children, color}) => (
-  <span style={{background:`${color}20`,color,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,marginLeft:6}}>{children}</span>
+  <span style={{background:`${color}20`,color,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:999,marginLeft:6}}>{children}</span>
 );
 
 // ─── Tax Calculator per income source ──────────────────────────────────────
@@ -447,7 +447,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                 <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
                 <div style={{display:"flex",flexWrap:"wrap",gap:"7px 16px",marginTop:8}}>
                   {[...datos].sort((a,b)=>b.value-a.value).map((d,i)=>(
-                    <span key={d.name} style={{display:"flex",alignItems:"center",gap:7,fontSize:12.5,color:T.txt2}}>
+                    <span key={d.name} style={{display:"flex",alignItems:"center",gap:7,fontSize:13,color:T.txt2}}>
                       <span style={{width:10,height:10,borderRadius:3,background:PAL[i%PAL.length],flexShrink:0}}/>
                       {d.name} <strong style={{fontFamily:"monospace"}}>{((d.value/tot)*100).toFixed(0)}%</strong>
                     </span>
@@ -485,7 +485,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                 <span style={{fontSize:12,fontWeight:800,color:T.txt2}}>
                   {gr.tipo} <span style={{color:T.txt3,fontWeight:500}}>· {gr.items.length}</span>
                 </span>
-                <span style={{fontSize:12.5,fontWeight:800,color:T.green,fontFamily:"monospace"}}>
+                <span style={{fontSize:13,fontWeight:800,color:T.green,fontFamily:"monospace"}}>
                   {fm(gr.sub)}/año
                   <span style={{color:T.txt3,fontWeight:500,marginLeft:6}}>
                     {tot > 0 ? ((gr.sub/tot)*100).toFixed(0) : 0}%
@@ -506,7 +506,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                   <div style={{flex:1}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                       <span style={{fontSize:14,fontWeight:700}}>{src.nombre||info.l}</span>
-                      <span style={{fontSize:10,background:`${T.bl}20`,color:T.bl,padding:"2px 8px",borderRadius:99,fontWeight:600}}>{info.form}</span>
+                      <span style={{fontSize:10,background:`${T.bl}20`,color:T.bl,padding:"2px 8px",borderRadius:999,fontWeight:600}}>{info.form}</span>
                       {calc?.chips?.map((ch,i)=><Chip key={i} color={ch.c}>{ch.l}</Chip>)}
                     </div>
                     <div style={{fontSize:11,color:T.tx3,marginTop:3}}>{info.l} · {src.notes||info.desc.slice(0,60)+"…"}</div>

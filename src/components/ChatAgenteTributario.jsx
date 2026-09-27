@@ -498,7 +498,7 @@ function MessageBubble({ message }) {
           borderRadius: isUser ? "12px 12px 0 12px" : "12px 12px 12px 0",
           border: `1px solid ${isUser ? C.blue + "30" : C.border}`,
           color: C.txt,
-          fontSize: 13.5,
+          fontSize: 14,
           lineHeight: 1.6,
           whiteSpace: "pre-wrap",
         }}

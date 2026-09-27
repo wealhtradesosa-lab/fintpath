@@ -204,7 +204,7 @@ export default function ProyeccionPatrimonio({
             en poder adquisitivo de hoy. La real es la relevante para decidir.
           </div>
         </div>
-        <div style={{ fontSize: 10.5, color: T.txt3 || "#71717a", marginTop: 8, lineHeight: 1.5,
+        <div style={{ fontSize: 11, color: T.txt3 || "#71717a", marginTop: 8, lineHeight: 1.5,
              paddingTop: 8, borderTop: `1px solid ${T.border || "rgba(255,255,255,0.08)"}` }}>
           <strong style={{ color: T.txt2 || "#a1a1aa" }}>Crece</strong>: el patrimonio real
           a ese horizonte supera el actual.{" "}
@@ -297,10 +297,10 @@ export default function ProyeccionPatrimonio({
             const actual = Number(retornoPct) || 0;
             const igual = Math.abs(nominal - actual) < 0.15;
             return (
-              <div style={{ marginTop: 8, padding: "9px 11px", borderRadius: 9,
+              <div style={{ marginTop: 8, padding: "9px 11px", borderRadius: 10,
                     background: T.bg2 || "#18181b",
                     border: `1px solid ${T.border || "rgba(255,255,255,0.08)"}` }}>
-                <div style={{ fontSize: 10.5, color: T.txt3 || "#71717a", lineHeight: 1.5 }}>
+                <div style={{ fontSize: 11, color: T.txt3 || "#71717a", lineHeight: 1.5 }}>
                   Según la composición de tu patrimonio, la valorización esperada es{" "}
                   <strong style={{ color: T.txt2 || "#a1a1aa" }}>{nominal.toFixed(1)}%</strong>{" "}
                   nominal ({(mezcla.tasaReal * 100).toFixed(1)}% real).
@@ -318,8 +318,8 @@ export default function ProyeccionPatrimonio({
                 {!igual && (
                   <button type="button"
                     onClick={() => setRetornoPct(String(nominal.toFixed(1)))}
-                    style={{ marginTop: 7, padding: "5px 10px", borderRadius: 7,
-                      background: "transparent", cursor: "pointer", fontSize: 10.5, fontWeight: 700,
+                    style={{ marginTop: 7, padding: "5px 10px", borderRadius: 6,
+                      background: "transparent", cursor: "pointer", fontSize: 11, fontWeight: 700,
                       color: T.green || "#22c55e",
                       border: `1px solid ${T.green || "#22c55e"}` }}>
                     Usar {nominal.toFixed(1)}%
@@ -376,7 +376,7 @@ export default function ProyeccionPatrimonio({
                 onClick={() => setCfOverride(f === 1 ? null : String(valor))}
                 style={{
                   padding: "7px 13px", borderRadius: 999, cursor: "pointer",
-                  fontSize: 11.5, fontWeight: 700,
+                  fontSize: 12, fontWeight: 700,
                   background: activo ? (T.green || "#22c55e") : "transparent",
                   color: activo ? "#0a0a0a" : (T.txt2 || "#a1a1aa"),
                   border: `1px solid ${activo ? (T.green || "#22c55e") : (T.border || "rgba(255,255,255,0.12)")}`,
@@ -386,7 +386,7 @@ export default function ProyeccionPatrimonio({
             );
           })}
         </div>
-        <div style={{ fontSize: 9.5, color: T.txt3 || "#71717a", marginTop: 6 }}>
+        <div style={{ fontSize: 10, color: T.txt3 || "#71717a", marginTop: 6 }}>
           Calculado sobre el flujo de caja simulado de {fm(cfAnualDefault)} anuales.
           También podés ingresar una cifra exacta abajo.
         </div>

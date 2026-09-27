@@ -35,7 +35,7 @@ export default function BloqueadosPorPlan({ cantidad, monto, fmt, T, onUpgrade, 
           <div style={{ fontSize: 13, fontWeight: 700, color: c1 }}>
             {cantidad} {cantidad === 1 ? que.replace(/s$/, "") : que} sin acceso en el plan gratuito
           </div>
-          <div style={{ fontSize: 11.5, color: c3, marginTop: 2, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: c3, marginTop: 2, lineHeight: 1.5 }}>
             {monto > 0 && <>Suman <strong style={{ color: c2 }}>{fmt(monto)}</strong> y <strong>sí están incluidos</strong> en tus totales. </>}
             Para verlos y editarlos, mejorá tu plan.
           </div>

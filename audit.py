@@ -59,7 +59,7 @@ import glob, os
 # globales (colores/fuentes/radios) solo bajan cuando cae el ÚLTIMO archivo que
 # usa un valor, así que durante la migración se quedan quietos aunque se avance.
 # Este cuenta los componentes cuya paleta local contradice a los tokens.
-TOPES = {'colores': 90, 'fuentes': 33, 'radios': 19, 'divergentes': 0}
+TOPES = {'colores': 90, 'fuentes': 18, 'radios': 9, 'divergentes': 0}
 
 DIVERGENTES = re.compile(
     r'bg2: *"#(?:18181b|16161a|141414)"'

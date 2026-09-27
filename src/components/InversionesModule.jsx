@@ -299,26 +299,26 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         subtitle={`${activos.length}${activos.length !== items.length ? ` de ${items.length}` : ""} activo${activos.length !== 1 ? "s" : ""} · Valor total: ${fm(totalValor)}`}
         rightSlot={<>
           {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
               🗑️ Eliminar ({selected.size})
             </button>
           )}
           {onImport && <button onClick={onImport}
             title="Cargar activos desde una tabla de Excel"
-            style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
             ⬆️ Subir Excel
           </button>}
           <button onClick={() => exportInversionesExcel(activos, owners, trm)}
             title="Descarga XLSX con activos + resumen por tipo + resumen por propietario fiscal"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar Excel
           </button>
           <button onClick={() => exportPatrimonioPDF(activos, owners, trm)}
             title="Bajar PDF: valor, ganancia y concentración por tipo"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 100, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar PDF
           </button>
-          <button onClick={openAdd} style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 100, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
+          <button onClick={openAdd} style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
       />
 
@@ -400,7 +400,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
             <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
             <div style={{ display: "flex", flexWrap: "wrap", gap: "7px 16px", marginTop: 8 }}>
               {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
-                <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, color: T.txt2 }}>
+                <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: T.txt2 }}>
                   <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
                   {d.name} <strong style={{ fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
                 </span>
@@ -456,7 +456,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
                           {inv.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {inv.__n}</span>
                         </span>
-                        <span style={{ fontSize: 12.5, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>
                           {fm(inv.__sub)}
                           <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{inv.__pct.toFixed(0)}%</span>
                         </span>
@@ -600,10 +600,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     ? (rentaPorActivo[editId] || 0) : 0;
                   if (!anual) return null;
                   return (
-                    <div style={{ marginBottom: 10, padding: "9px 11px", borderRadius: 9,
+                    <div style={{ marginBottom: 10, padding: "9px 11px", borderRadius: 10,
                           background: T.greenDim || "rgba(34,197,94,0.10)",
                           border: "1px solid rgba(34,197,94,0.28)" }}>
-                      <div style={{ fontSize: 11.5, color: T.txt2, lineHeight: 1.55 }}>
+                      <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.55 }}>
                         Ingresos ya registrados para este activo:{" "}
                         <strong style={{ color: T.green }}>
                           ${Math.round(anual / 12).toLocaleString("es-CO")}/mes
@@ -753,7 +753,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         });
                         alert(`Ingreso creado: Rendimiento — ${nombreActivo}. Queda vinculado a este activo y podés ajustarlo en el módulo de Ingresos.`);
                       }}
-                      style={{ marginTop: 8, padding: "8px 14px", borderRadius: 9,
+                      style={{ marginTop: 8, padding: "8px 14px", borderRadius: 10,
                         background: T.green, color: "#0a0a0a", border: "none",
                         cursor: "pointer", fontSize: 12, fontWeight: 800 }}>
                       + Registrar este rendimiento como ingreso

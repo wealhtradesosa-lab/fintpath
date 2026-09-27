@@ -197,7 +197,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                           style={{ marginTop: 8, padding: "7px 12px", borderRadius: 8,
                             border: `1px solid ${colors.warningText || colors.txt}`,
                             background: "transparent", color: colors.warningText || colors.txt,
-                            fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>
+                            fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           {sobra
                             ? `Revisar mis ${DESTINO.que}s — tenés ${fmM(Math.abs(falta))} de más →`
                             : `Cargar el ${DESTINO.que} que falta — ${fmM(falta)} →`}

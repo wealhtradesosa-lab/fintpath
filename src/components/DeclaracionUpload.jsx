@@ -236,7 +236,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
               .filter(Boolean)
               .sort((a, b) => b - a)
               .map((y) => (
-                <span key={y} style={{ display: "inline-block", padding: "2px 8px", background: T.bg3, borderRadius: 4, marginRight: 4, fontWeight: 600, color: T.txt2, fontFamily: "monospace" }}>
+                <span key={y} style={{ display: "inline-block", padding: "2px 8px", background: T.bg3, borderRadius: 3, marginRight: 4, fontWeight: 600, color: T.txt2, fontFamily: "monospace" }}>
                   {y}
                 </span>
               ))}

@@ -204,7 +204,7 @@ const InfoBox = ({color=T.bl, children}) => (
   </div>
 );
 const Pill = ({color,children}) => (
-  <span style={{background:`${color}20`,color,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,marginLeft:4}}>{children}</span>
+  <span style={{background:`${color}20`,color,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:999,marginLeft:4}}>{children}</span>
 );
 
 // ─── Depreciation Calculator ──────────────────────────────────────────────────
@@ -555,7 +555,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                     <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
                     <div style={{display:"flex",flexWrap:"wrap",gap:"7px 16px",marginTop:8}}>
                       {[...datos].sort((a,b)=>b.value-a.value).map((d,i)=>(
-                        <span key={d.name} style={{display:"flex",alignItems:"center",gap:7,fontSize:12.5,color:T.txt2}}>
+                        <span key={d.name} style={{display:"flex",alignItems:"center",gap:7,fontSize:13,color:T.txt2}}>
                           <span style={{width:10,height:10,borderRadius:3,background:PAL[i%PAL.length],flexShrink:0}}/>
                           {d.name} <strong style={{fontFamily:"monospace"}}>{((d.value/tot)*100).toFixed(0)}%</strong>
                         </span>
@@ -598,7 +598,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                     <span style={{fontSize:12,fontWeight:800,color:T.tx2}}>
                       {gr.cat} <span style={{color:T.tx3,fontWeight:500}}>· {gr.items.length}</span>
                     </span>
-                    <span style={{fontSize:12.5,fontWeight:800,color:T.gn,fontFamily:"monospace"}}>
+                    <span style={{fontSize:13,fontWeight:800,color:T.gn,fontFamily:"monospace"}}>
                       {fm(gr.sub)}
                       <span style={{color:T.tx3,fontWeight:500,marginLeft:6}}>
                         {tot > 0 ? ((gr.sub/tot)*100).toFixed(0) : 0}%
@@ -618,7 +618,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                       <div style={{flex:1}}>
                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                           <span style={{fontSize:14,fontWeight:700}}>{asset.n||info.l}</span>
-                          <span style={{fontSize:10,background:`${color}20`,color,padding:"2px 8px",borderRadius:99,fontWeight:600}}>{CAT_LABELS[info.cat]||info.cat}</span>
+                          <span style={{fontSize:10,background:`${color}20`,color,padding:"2px 8px",borderRadius:999,fontWeight:600}}>{CAT_LABELS[info.cat]||info.cat}</span>
                           <span style={{fontSize:10,color:T.tx3}}>{info.form}</span>
                         </div>
                         <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{info.l}</div>
@@ -688,7 +688,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                     <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
                     <div style={{display:"flex",flexWrap:"wrap",gap:"7px 16px",marginTop:8}}>
                       {[...datos].sort((a,b)=>b.value-a.value).map((d,i)=>(
-                        <span key={d.name} style={{display:"flex",alignItems:"center",gap:7,fontSize:12.5,color:T.tx2}}>
+                        <span key={d.name} style={{display:"flex",alignItems:"center",gap:7,fontSize:13,color:T.tx2}}>
                           <span style={{width:10,height:10,borderRadius:3,background:PAL[i%PAL.length],flexShrink:0}}/>
                           {d.name} <strong style={{fontFamily:"monospace"}}>{((d.value/tot)*100).toFixed(0)}%</strong>
                         </span>
@@ -764,7 +764,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
                 {ASSET_TYPES.map(t=>(
                   <button key={t.v} type="button" onClick={()=>sfS("tp",t.v)}
-                    style={{padding:"9px 12px",borderRadius:9,border:`1px solid ${form.tp===t.v?(CAT_COLORS[t.cat]||T.gn):T.border}`,
+                    style={{padding:"9px 12px",borderRadius:10,border:`1px solid ${form.tp===t.v?(CAT_COLORS[t.cat]||T.gn):T.border}`,
                             background:form.tp===t.v?`${CAT_COLORS[t.cat]||T.gn}15`:T.bg3,cursor:"pointer",textAlign:"left",
                             color:form.tp===t.v?(CAT_COLORS[t.cat]||T.gn):T.tx2,fontSize:12,fontWeight:form.tp===t.v?700:400}}>
                     {t.l}
@@ -831,7 +831,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
                 {LIAB_TYPES.map(t=>(
                   <button key={t.v} type="button" onClick={()=>sfL("tp",t.v)}
-                    style={{padding:"9px 12px",borderRadius:9,border:`1px solid ${formL.tp===t.v?T.bl:T.border}`,
+                    style={{padding:"9px 12px",borderRadius:10,border:`1px solid ${formL.tp===t.v?T.bl:T.border}`,
                             background:formL.tp===t.v?`${T.bl}15`:T.bg3,cursor:"pointer",textAlign:"left",
                             color:formL.tp===t.v?T.bl:T.tx2,fontSize:12,fontWeight:formL.tp===t.v?700:400}}>
                     {t.l}

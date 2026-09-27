@@ -328,7 +328,7 @@ function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{ fontSize: 14, fontWeight: 700 }}>{o.name}</div>
-                      {yaConfigurado && <span style={{ fontSize: 9, padding: "2px 6px", background: "rgba(34,197,94,0.15)", color: T.green, borderRadius: 4, fontWeight: 700 }}>✓ configurado</span>}
+                      {yaConfigurado && <span style={{ fontSize: 9, padding: "2px 6px", background: "rgba(34,197,94,0.15)", color: T.green, borderRadius: 3, fontWeight: 700 }}>✓ configurado</span>}
                     </div>
                     <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
                       {o.type === "juridica" ? "Persona jurídica" : "Persona natural"}
@@ -1525,7 +1525,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
   return (
     <div>
       <div style={{ textAlign: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 34, marginBottom: 6 }}>🎯</div>
+        <div style={{ fontSize: 36, marginBottom: 6 }}>🎯</div>
         <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, marginBottom: 3 }}>
           Tu impuesto estimado para {selectedOwner?.name}
         </div>
@@ -1592,7 +1592,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
         <div style={{ marginBottom: 14, padding: "12px 14px", background: T.bg3, borderRadius: 10, border: "1px solid " + T.border }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: T.txt2, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
             <span>✅</span> Optimizaciones aplicadas ({optimizacionesActivas.length})
-            <button onClick={() => onGotoStep?.(2)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 5, padding: "3px 8px", fontSize: 10, cursor: "pointer" }}>
+            <button onClick={() => onGotoStep?.(2)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, padding: "3px 8px", fontSize: 10, cursor: "pointer" }}>
               Modificar
             </button>
           </div>

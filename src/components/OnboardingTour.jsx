@@ -118,7 +118,7 @@ function PathCard({ icon: Icon, iconColor, title, description, onClick, recommen
             fontSize: 10,
             fontWeight: 800,
             padding: "3px 10px",
-            borderRadius: 99,
+            borderRadius: 999,
             letterSpacing: 0.5,
             textTransform: "uppercase",
           }}
@@ -284,7 +284,7 @@ export default function OnboardingTour({
                   background: "rgba(34,197,94,0.1)",
                   border: `1px solid rgba(34,197,94,0.3)`,
                   padding: "6px 14px",
-                  borderRadius: 99,
+                  borderRadius: 999,
                   fontSize: 11,
                   fontWeight: 700,
                   color: T.green,
@@ -348,7 +348,7 @@ export default function OnboardingTour({
                 color: "#000",
                 border: "none",
                 padding: "14px 32px",
-                borderRadius: 99,
+                borderRadius: 999,
                 fontSize: 15,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -370,7 +370,7 @@ export default function OnboardingTour({
               <h2
                 style={{
                   fontFamily: FONT_DISPLAY,
-                  fontSize: 26,
+                  fontSize: 28,
                   fontWeight: 800,
                   margin: "0 0 12px 0",
                   letterSpacing: -0.5,
