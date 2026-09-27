@@ -10,8 +10,8 @@ import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
 const T = {
-  bg2: "#18181b", bg3: "#27272a", bg4: "#2a2a32",
-  card: "#111113", border: "rgba(255,255,255,0.06)",
+  bg2: "#141418", bg3: "#1e1e24", bg4: "#2a2a32",
+  card: "#141418", border: "rgba(255,255,255,0.06)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   gn: "#22c55e", gnD: "rgba(34,197,94,0.1)",
   rd: "#ef4444", rdD: "rgba(239,68,68,0.08)",

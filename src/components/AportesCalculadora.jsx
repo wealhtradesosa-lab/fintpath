@@ -3,7 +3,7 @@ import NumberInput from "./NumberInput";
 import PageHeader from "./PageHeader.jsx";
 
 const T = {
-  bg2: "#18181b", bg3: "#1e1e24", card: "#111113",
+  bg2: "#141418", bg3: "#1e1e24", card: "#141418",
   border: "rgba(255,255,255,0.06)", txt: "#fafafa",
   txt2: "#a1a1aa", txt3: "#71717a", green: "#22c55e",
   blue: "#3b82f6", orange: "#f97316",

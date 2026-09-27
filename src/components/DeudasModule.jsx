@@ -17,7 +17,7 @@ import { MESES, costoCredito, montoPromedioMensual, cuotaFija, tasaDesdeCuota } 
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
-  card: "#111113", border: C.border,
+  card: "#141418", border: C.border,
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
@@ -852,7 +852,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   monto={parseFloat(form.pg) || 0}
                   montosMensuales={form.montosMensuales}
                   onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
-                  tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "#fafafa", txt2: "#d4d4d8", txt3: "#71717a", bg3: "#27272a", border: "rgba(255,255,255,0.08)" }}
+                  tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a", bg3: "#1e1e24", border: "rgba(255,255,255,0.08)" }}
                   mostrarChipsFrecuencia={true}
                   mostrarSelectorMes={false}
                   mostrarVigencia={true}
@@ -870,7 +870,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   <TablaMensual
                     values={form.montosMensuales}
                     onChange={(arr) => setForm(p => ({ ...p, montosMensuales: arr, frecuencia: "variable" }))}
-                    tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "#fafafa", txt2: "#d4d4d8", txt3: "#71717a", bg3: "#27272a", border: "#3f3f46" }}
+                    tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a", bg3: "#1e1e24", border: "#3f3f46" }}
                     desdeMes={Number(form.desdeMes) || 1}
                     hastaMes={Number(form.hastaMes) || 12}
                   />

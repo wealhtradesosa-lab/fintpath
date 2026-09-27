@@ -14,7 +14,7 @@ import { vaCOP, vcCOP, totalAnualItem } from "../lib/flowHelpers.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
-  card: "#111113", border: C.border,
+  card: "#141418", border: C.border,
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",

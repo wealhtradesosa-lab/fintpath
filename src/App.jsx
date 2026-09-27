@@ -88,7 +88,32 @@ import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
-const T={bg:"#09090b",bg2:"#18181b",bg3:"#27272a",card:"#111113",border:"rgba(255,255,255,0.06)",borderL:"rgba(255,255,255,0.1)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f59e0b",gd:"#eab308",ch:["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"]};
+// ═══════════════════════════════════════════════════════════════════════════
+// PALETA DEL SHELL — alineada a los tokens (27-sep-2026)
+// ─────────────────────────────────────────────────────────────────────────
+// Esta T se pasa como prop a los módulos hijos, así que sus valores son los
+// que más superficie pintan en toda la app. Estaban desalineados de
+// designTokens.js y de :root, que es lo que producía el efecto de "cada
+// pantalla se ve distinta":
+//
+//   bg      #09090b → #0c0c0f   (--fp-bg)
+//   bg2     #18181b → #141418   (--fp-surface)
+//   card    #111113 → #141418   (--fp-surface)  · era el mismo rol que bg2
+//   bg3     #27272a → #1e1e24   (--fp-raised)
+//   border  0.06    → 0.08      (--fp-border)
+//   borderL 0.1     → 0.15      (--fp-border-strong)
+//   or      #f59e0b → #f97316   (--fp-warn)
+//
+// NO se tocan, y no son deriva:
+//   · gd #eab308 — acento dorado; sin token propio todavía. Sin uso en este
+//     archivo, pero los hijos lo reciben por prop.
+//   · Los grises claros (#e5e7eb, #f9fafb, #374151, #d1d5db…) viven dentro de
+//     las plantillas HTML de impresión y PDF, que son un lienzo CLARO aparte.
+//     Contarlos como deriva del tema oscuro fue un error de mi medición.
+//   · #25d366 es el verde de marca de WhatsApp.
+//   · #0f2a1a / #2a2416 / #12203a son tintes de estado de pago, deliberados.
+// ═══════════════════════════════════════════════════════════════════════════
+const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(255,255,255,0.08)",borderL:"rgba(255,255,255,0.15)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f97316",gd:"#eab308",ch:["#22c55e","#3b82f6","#f97316","#a78bfa","#ec4899","#06b6d4","#eab308"]};
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>(n||0).toFixed(1)+"%";
 const SK="fp3";

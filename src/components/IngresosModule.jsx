@@ -56,7 +56,7 @@ function aporteSaludPorSmmlv(nSmmlv) {
 // de "diseño inconsistente" entre módulos.
 const T = {
   bg2: C.surface, bg3: C.raised,
-  card: "#111113", border: C.border,
+  card: "#141418", border: C.border,
   txt: C.text, txt2: C.muted, txt3: C.subtle,
   green: C.ok, greenDim: "rgba(34,197,94,0.1)",
   red: C.danger, redDim: "rgba(239,68,68,0.08)",

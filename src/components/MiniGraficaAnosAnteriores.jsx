@@ -25,7 +25,7 @@ import { track } from "../lib/analytics.js";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
 const T = {
-  txt: "#e8eaed", txt2: "#b8bcc4", txt3: "#6b7280",
+  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   border: "rgba(255,255,255,0.08)",
   red: "#ef4444", orange: "#f59e0b", green: "#22c55e", blue: "#3b82f6", cyan: "#06b6d4",
   card: "rgba(255,255,255,0.02)",

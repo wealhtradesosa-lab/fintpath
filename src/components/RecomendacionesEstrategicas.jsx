@@ -20,8 +20,8 @@ import { useState } from "react";
 
 // Paleta consistente con DeclaracionFlow
 const C = {
-  bg: "#0a0a0a", bg2: "#141414", bg3: "#1a1a1a",
-  txt: "#fff", txt2: "#a3a3a3", txt3: "#737373",
+  bg: "#0a0a0a", bg2: "#141418", bg3: "#1e1e24",
+  txt: "#fff", txt2: "#a1a1aa", txt3: "#71717a",
   border: "#262626",
   green: "#4ade80", greenBg: "rgba(74,222,128,0.1)",
   blue: "#60a5fa", blueBg: "rgba(96,165,250,0.1)",

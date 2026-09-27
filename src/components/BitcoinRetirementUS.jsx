@@ -24,7 +24,7 @@ import Disclaimer from "./Disclaimer";
  */
 
 const C = {
-  bg2: "#18181b", bg3: "#27272a", card: "#111113",
+  bg2: "#141418", bg3: "#1e1e24", card: "#141418",
   border: "rgba(255,255,255,0.06)",
   tx: "#fafafa", tx2: "#a1a1aa", tx3: "#71717a",
   gn: "#22c55e", rd: "#ef4444", or: "#f97316", bl: "#3b82f6", gold: "#eab308",

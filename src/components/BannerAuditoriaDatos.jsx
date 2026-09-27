@@ -20,11 +20,11 @@ import { auditarDatos } from "../lib/auditoriaDatos.js";
 
 const C = {
   bg: "#0a0a0c",
-  bg2: "#16161a",
-  bg3: "#222228",
-  txt: "#ffffff",
-  txt2: "#d4d4d8",
-  txt3: "#a1a1aa",
+  bg2: "#141418",
+  bg3: "#1e1e24",
+  txt: "#fafafa",
+  txt2: "#a1a1aa",
+  txt3: "#71717a",
   border: "rgba(255,255,255,0.10)",
   green: "#4ade80",
   greenBg: "rgba(74,222,128,0.10)",

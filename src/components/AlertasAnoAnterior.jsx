@@ -29,7 +29,7 @@ import { useEffect } from "react";
 import { track } from "../lib/analytics.js";
 
 const T = {
-  txt: "#e8eaed", txt2: "#b8bcc4", txt3: "#6b7280",
+  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   border: "rgba(255,255,255,0.08)",
   orange: "#f59e0b", red: "#ef4444", green: "#22c55e", cyan: "#06b6d4",
 };

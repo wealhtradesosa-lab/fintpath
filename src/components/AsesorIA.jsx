@@ -6,7 +6,7 @@ import PageHeader from "./PageHeader.jsx";
 
 const T = {
   bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
-  card: "#111113", border: "rgba(255,255,255,0.06)",
+  card: "#141418", border: "rgba(255,255,255,0.06)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   gn: "#22c55e", gnD: "rgba(34,197,94,0.1)",
   bl: "#3b82f6", rd: "#ef4444",

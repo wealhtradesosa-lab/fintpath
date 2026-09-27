@@ -55,18 +55,36 @@ else: fail+=1; print(f"  ❌ {bad_react} React.xxx — usar import directo")
 # ═══════════════════════════════════════════════════════════════════════════
 import glob, os
 
-TOPES = {'colores': 97, 'fuentes': 33, 'radios': 19}
+# 'divergentes' es la medida que se mueve archivo por archivo. Los conteos
+# globales (colores/fuentes/radios) solo bajan cuando cae el ÚLTIMO archivo que
+# usa un valor, así que durante la migración se quedan quietos aunque se avance.
+# Este cuenta los componentes cuya paleta local contradice a los tokens.
+TOPES = {'colores': 90, 'fuentes': 33, 'radios': 19, 'divergentes': 0}
+
+DIVERGENTES = re.compile(
+    r'bg2: *"#(?:18181b|16161a|141414)"'
+    r'|bg3: *"#(?:27272a|222228|1f1f23|1a1a1a)"'
+    r'|card: *"#111113"'
+    r'|txt2: *"#(?:d4d4d8|b8bcc4|a3a3a3)"'
+    r'|txt3: *"#(?:a1a1aa|6b7280|737373)"'
+    r'|txt: *"#(?:ffffff|e8eaed)"'
+)
 
 fuentes_ui = ['src/App.jsx'] + sorted(glob.glob('src/components/*.jsx'))
 blob = ''
+divergentes = 0
 for ruta in fuentes_ui:
     with open(ruta, 'r') as f:
-        blob += f.read()
+        texto = f.read()
+    blob += texto
+    if DIVERGENTES.search(texto):
+        divergentes += 1
 
 medido = {
     'colores': len(set(m.lower() for m in re.findall(r'#[0-9a-fA-F]{6}\b', blob))),
     'fuentes': len(set(re.findall(r'fontSize: *([0-9.]+)', blob))),
     'radios':  len(set(re.findall(r'borderRadius: *([0-9]+)', blob))),
+    'divergentes': divergentes,
 }
 
 for clave, tope in TOPES.items():

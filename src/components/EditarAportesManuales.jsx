@@ -21,7 +21,7 @@ import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  txt: "#e8eaed", txt2: "#b8bcc4", txt3: "#6b7280",
+  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   border: "rgba(255,255,255,0.08)",
   cyan: "#06b6d4", green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#a78bfa",
 };
