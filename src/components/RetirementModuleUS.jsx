@@ -196,9 +196,40 @@ export default function RetirementModuleUS({ user = {} }) {
   }, [p]);
 
   // ── Portfolio projection ─────────────────────────────────────────────────
+  // 27-sep-2026 — La proyeccion retiraba del portafolio el 100% del ingreso
+  // deseado e ignoraba el Seguro Social, que hasta ahora solo se usaba en su
+  // propia pestana para comparar edades de reclamo.
+  //
+  // Con los valores por defecto --\$8.000/mes deseados y \$2.800/mes de
+  // beneficio-- el portafolio cargaba con todo cuando en realidad le toca cerca
+  // del 65%. En un planificador de retiro eso no es un detalle: hace que el
+  // saldo se agote anos antes de lo real y empuja al usuario a sobreahorrar o a
+  // asustarse sin motivo.
+  //
+  // El beneficio entra desde ssClaimAge, no desde retirementAge: quien se
+  // retira a los 62 y reclama a los 67 tiene cinco anos en que el portafolio si
+  // carga solo. Se ajusta por edad de reclamo con la MISMA formula que ya usa
+  // el optimizador (reduccion de 5/9 por mes en los primeros 36 y 5/12 en los
+  // siguientes; credito por diferimiento despues de la FRA) y se indexa por
+  // inflacion, que es el COLA anual del Seguro Social.
   const projection = useMemo(() => {
     const blendedReturn = p.equityPct * C.EQUITY_RETURN + (1-p.equityPct) * C.BOND_RETURN;
     const annualContrib = (p.contrib401k + p.contribRoth + p.contribHSA) * 12;
+
+    const fra = C.SS_FRA;
+    const claimAge = Number(p.ssClaimAge) || fra;
+    const beneficioBase = Number(p.ssEstimatedBenefit) || 0;
+    const beneficioMensual = (() => {
+      if (!beneficioBase) return 0;
+      if (claimAge <= fra) {
+        const mesesAntes = (fra - claimAge) * 12;
+        const primeros36 = Math.min(mesesAntes, 36);
+        const resto      = Math.max(0, mesesAntes - 36);
+        const reduccion  = primeros36 * (5/9/100) + resto * (5/12/100);
+        return Math.round(beneficioBase * (1 - reduccion));
+      }
+      return Math.round(beneficioBase * (1 + (claimAge - fra) * C.SS_DELAYED_CREDIT));
+    })();
     const currentTotal  = (p.bal401k||0) + (p.balRothIRA||0) + (p.balTradIRA||0) + (p.balHSA||0);
 
     // Year-by-year projection
@@ -207,7 +238,10 @@ export default function RetirementModuleUS({ user = {} }) {
     for (let y = 0; y <= Math.min(yearsToRetire + 30, 50); y++) {
       const age_ = p.currentAge + y;
       const inRetirement = age_ >= p.retirementAge;
-      const withdrawal = inRetirement ? (p.desiredIncome * 12 * Math.pow(1+C.INFLATION, y)) : 0;
+      const inflador = Math.pow(1+C.INFLATION, y);
+      const necesita = inRetirement ? p.desiredIncome * 12 * inflador : 0;
+      const cubreSS  = (inRetirement && age_ >= claimAge) ? beneficioMensual * 12 * inflador : 0;
+      const withdrawal = Math.max(0, necesita - cubreSS);
       bal = bal * (1 + blendedReturn) + (inRetirement ? 0 : annualContrib) - withdrawal;
       if (y % 5 === 0 || age_ === p.retirementAge)
         years.push({ age: age_, bal: Math.max(0, bal), inRetirement });
