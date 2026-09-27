@@ -249,7 +249,9 @@ export default function SimuladorUS({ user, totals }) {
   const baseDebt = useMemo(() => {
     const map = {};
     deudas.forEach((d, i) => {
-      if (d.sim === false) return;
+      // 27-sep-2026 — tambien se excluye la deuda ya saldada (mt: 0): seguia
+      // apareciendo como slider con su cuota vieja y entrando al calculo.
+      if (d.sim === false || (d.mt || 0) <= 0) return;
       map[`deu_${i}`] = { label: d.n||`Loan ${i+1}`, base: d.pg||0 };
     });
     return map;
