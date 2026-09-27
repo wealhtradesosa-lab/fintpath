@@ -234,11 +234,40 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       }
     });
 
+    // 27-sep-2026 (Santiago: "es confuso, Puerto Madero tuvo renta corta hasta
+    // sept y renta tradicional de sept en adelante").
+    //
+    // Terminar NO es lo mismo que faltar. Un concepto que se acabó el mes
+    // pasado sí cambió este mes —ya no entra esa plata— pero puntuarlo como un
+    // faltante contra el promedio de 12 meses es aritmética equivocada: ese
+    // promedio viene diluido por los meses en que el concepto no existía.
+    // El dato útil no es un número, es el HECHO: esto empezó, esto terminó.
+    //
+    // En el caso de Puerto Madero son dos conceptos distintos sobre el mismo
+    // activo relevándose. Nombrarlos juntos explica el mes; dos líneas sueltas,
+    // una restando y otra sumando, no.
+    const transiciones = [];
+    const mirarTransicion = (it, tipo, nombre) => {
+      if (it?.sim === false) return;
+      const { desde, hasta } = rangoEfectivo(it);
+      if (hasta < desde) return;                       // nunca tuvo vida
+      if (desde === mes && mes !== 1) transiciones.push({ nombre, tipo, evento: "empieza" });
+      else if (hasta === mes - 1) transiciones.push({ nombre, tipo, evento: "termino" });
+      else if (hasta === mes && mes !== 12) transiciones.push({ nombre, tipo, evento: "ultimo" });
+    };
+    (user?.ingresos || []).forEach((i) => mirarTransicion(i, "ingreso", i.nombre || i.fuente || L.ingresos));
+    Object.entries(user?.gas || user?.gastos || {}).forEach(([cat, items]) =>
+      (items || []).forEach((g) => mirarTransicion(g, "gasto", g.c || cat)));
+    (user?.deu || user?.deudas || []).forEach((d) => {
+      if ((d.mt || 0) <= 0) return;
+      mirarTransicion(d, "cuota", d.n || d.nombre || L.cuotas);
+    });
+
     movs.sort((a, b) => Math.abs(b.efecto) - Math.abs(a.efecto));
     const dato = datosMensuales.find((d) => d.mes === mes);
     const promedioCF = datosMensuales.reduce((s, d) => s + d.cashFlow, 0) / 12;
     return {
-      mes, dato,
+      mes, dato, transiciones,
       contraPromedio: (dato?.cashFlow || 0) - promedioCF,
       suben: movs.filter((m) => m.efecto > 0),
       bajan: movs.filter((m) => m.efecto < 0),
@@ -623,8 +652,16 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                 </span>
                 <span style={{ display: "flex", alignItems: "baseline", gap: 9, flexShrink: 0 }}>
                   <span style={{ fontSize: 10, color: T.txt3 }}>
+                    {/* 27-sep-2026 — Decía "no cae este mes" para todo.
+                        Santiago: "¿qué quiere decir que no cae? eso no se
+                        entiende". Es jerga contable, y para un ingreso no
+                        significa nada. Cada naturaleza dice lo suyo. */}
                     {m.monto === 0
-                      ? (isEN ? "nothing this month" : "no se paga este mes")
+                      ? (m.tipo === "ingreso"
+                          ? (isEN ? "no income this month" : "este mes no entró")
+                          : m.tipo === "cuota"
+                            ? (isEN ? "no payment this month" : "este mes no hubo cuota")
+                            : (isEN ? "nothing paid this month" : "este mes no se pagó"))
                       : <>{isEN ? (m.tipo === "ingreso" ? "received" : "paid") : verbo}{" "}
                           <span style={{ fontFamily: "monospace" }}>{fm(m.monto)}</span>
                           {" · "}{isEN ? "usual" : "habitual"}{" "}
@@ -675,6 +712,28 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                       {isEN ? " the yearly average. What moved it:" : " del promedio del año. Qué lo movió:"}
                     </>)}
               </div>
+
+              {detalleMes.transiciones.length > 0 && (
+                <div style={{ marginBottom: 12, padding: "9px 12px", background: T.bg2,
+                      border: `1px solid ${T.border}`, borderRadius: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8,
+                        textTransform: "uppercase", color: T.txt3, marginBottom: 5 }}>
+                    {isEN ? "Changes this month" : "Cambios de este mes"}
+                  </div>
+                  {detalleMes.transiciones.map((t, i) => (
+                    <div key={i} style={{ fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
+                      <span style={{ color: t.evento === "termino" ? T.rd : t.evento === "empieza" ? T.gn : T.gd,
+                            fontWeight: 800, marginRight: 6 }}>
+                        {t.evento === "termino" ? "◀" : t.evento === "empieza" ? "▶" : "◆"}
+                      </span>
+                      <strong style={{ color: T.txt }}>{t.nombre}</strong>{" "}
+                      {t.evento === "empieza" && (isEN ? "starts this month." : "empieza este mes.")}
+                      {t.evento === "termino" && (isEN ? "ended last month — it no longer comes in." : "terminó el mes pasado — ya no entra.")}
+                      {t.evento === "ultimo" && (isEN ? "is in its last month." : "va en su último mes.")}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px,100%), 1fr))", gap: 18 }}>
                 <div>
