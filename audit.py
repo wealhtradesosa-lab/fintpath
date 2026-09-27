@@ -82,8 +82,13 @@ for ruta in fuentes_ui:
 
 medido = {
     'colores': len(set(m.lower() for m in re.findall(r'#[0-9a-fA-F]{6}\b', blob))),
-    'fuentes': len(set(re.findall(r'fontSize: *([0-9.]+)', blob))),
-    'radios':  len(set(re.findall(r'borderRadius: *([0-9]+)', blob))),
+    # 27-sep-2026 — Cuentan las DOS formas. La primera pasada solo miraba
+    # fontSize: 12.5 (objeto JS) y se saltaba fontSize="12.5" (atributo SVG).
+    # Dos medios puntos sobrevivieron a la etapa 3 y aparecieron recién al
+    # revisar el bundle desplegado. Un trinquete con un punto ciego da una
+    # falsa sensación de que el problema quedó cerrado.
+    'fuentes': len(set(re.findall(r'fontSize(?:: *|=\{?")([0-9.]+)', blob))),
+    'radios':  len(set(re.findall(r'borderRadius(?:: *|=\{?")([0-9]+)', blob))),
     'divergentes': divergentes,
 }
 

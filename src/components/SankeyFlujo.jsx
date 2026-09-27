@@ -132,10 +132,10 @@ export default function SankeyFlujo({
           {nF.map((n, i) => (
             <g key={`nf${i}`} onMouseEnter={() => setHover(`f${i}`)} onMouseLeave={() => setHover(null)}>
               <rect x={xF} y={n.y} width={NODO_W} height={n.h} rx={2} fill="#22c55e" />
-              <text x={xF - 9} y={n.y + n.h / 2 - 1} textAnchor="end" fontSize="14.5" fontWeight="600" fill={T.tx}>
+              <text x={xF - 9} y={n.y + n.h / 2 - 1} textAnchor="end" fontSize="15" fontWeight="600" fill={T.tx}>
                 {n.nombre.length > 18 ? n.nombre.slice(0, 17) + "…" : n.nombre}
               </text>
-              <text x={xF - 9} y={n.y + n.h / 2 + 13} textAnchor="end" fontSize="12.5" fontFamily="monospace" fill={T.tx3}>
+              <text x={xF - 9} y={n.y + n.h / 2 + 13} textAnchor="end" fontSize="13" fontFamily="monospace" fill={T.tx3}>
                 {fmt(Math.round(n.valor))}
               </text>
             </g>
@@ -150,10 +150,10 @@ export default function SankeyFlujo({
           {nD.map((n, i) => (
             <g key={`nd${i}`} onMouseEnter={() => setHover(`d${i}`)} onMouseLeave={() => setHover(null)}>
               <rect x={xD} y={n.y} width={NODO_W} height={n.h} rx={2} fill={n.color} />
-              <text x={xD + NODO_W + 9} y={n.y + n.h / 2 - 1} fontSize="14.5" fontWeight="600" fill={T.tx}>
+              <text x={xD + NODO_W + 9} y={n.y + n.h / 2 - 1} fontSize="15" fontWeight="600" fill={T.tx}>
                 {n.nombre.length > 19 ? n.nombre.slice(0, 18) + "…" : n.nombre}
               </text>
-              <text x={xD + NODO_W + 9} y={n.y + n.h / 2 + 13} fontSize="12.5" fontFamily="monospace" fill={T.tx3}>
+              <text x={xD + NODO_W + 9} y={n.y + n.h / 2 + 13} fontSize="13" fontFamily="monospace" fill={T.tx3}>
                 {fmt(Math.round(n.valor))} <tspan fill={T.tx2}>· {pct(n.valor)}%</tspan>
               </text>
             </g>
