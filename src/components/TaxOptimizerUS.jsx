@@ -28,6 +28,7 @@
 
 import { useMemo, useState } from "react";
 import Disclaimer from "./Disclaimer";
+import { totalAnualItem } from "../lib/flowHelpers.js";
 import { calculateStateTax, FEDERAL_BRACKETS_2025, STANDARD_DEDUCTION_2025 } from "../lib/jurisdictions/usStateTax.js";
 
 // 2025 limits (IRS Rev. Proc. 2024-40)
@@ -78,7 +79,11 @@ function detectOpportunities(user) {
   // ── Calcular income breakdown ────────────────────────────────────────
   let w2 = 0, se = 0, rental = 0, divs = 0, interest = 0;
   ingresos.forEach((i) => {
-    const annual = (i.mensual || 0) * (i.moneda === "USD" ? 1 : 1 / trm) * 12;
+    // 27-sep-2026 — mensual * 12 ignora frecuencia y vigencia: un ingreso que
+    // entra solo de octubre a diciembre tributaba como si entrara los doce
+    // meses. Mismo error que ya se corrigio en IncomeModuleUS (el total en
+    // agosto, el desglose por fuente hoy). Este alimenta el calculo federal.
+    const annual = totalAnualItem(i) * (i.moneda === "USD" ? 1 : 1 / trm);
     const cat = i.categoria || "";
     if (/Salario|W-2/i.test(cat)) w2 += annual;
     else if (/Honorarios|Freelance|1099/i.test(cat)) se += annual;

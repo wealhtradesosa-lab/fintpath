@@ -11,6 +11,7 @@
  */
 import { useState, useMemo } from "react";
 import Disclaimer from "./Disclaimer";
+import { totalAnualItem } from "../lib/flowHelpers.js";
 import { US } from "../lib/jurisdictions/US.js";
 import { US_STATE_TAX, calculateStateTax, getStateName, FILING_STATUS_LABELS, FEDERAL_BRACKETS_2025, STANDARD_DEDUCTION_2025 } from "../lib/jurisdictions/usStateTax.js";
 
@@ -82,7 +83,11 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
   const inc = useMemo(() => {
     let w2=0,se=0,rental=0,inv=0,other=0;
     ingresos.forEach(i => {
-      const annual = (i.mensual||0)*(i.moneda==="USD"?1:1/trm)*12;
+      // 27-sep-2026 — mensual * 12 ignora frecuencia y vigencia: un ingreso que
+      // entra solo de octubre a diciembre tributaba como si entrara los doce
+      // meses. Mismo error que ya se corrigio en IncomeModuleUS (el total en
+      // agosto, el desglose por fuente hoy). Este alimenta el calculo federal.
+      const annual = totalAnualItem(i) * (i.moneda === "USD" ? 1 : 1 / trm);
       const cat = i.categoria||"";
       if(/Salario/i.test(cat))                              w2   +=annual;
       else if(/Honorarios|Freelance/i.test(cat))            se   +=annual;
