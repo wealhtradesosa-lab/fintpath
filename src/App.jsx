@@ -1276,7 +1276,7 @@ export default function FinPath(){
     const aportesObligatorios=gasCats.filter(c=>c.esAporte).reduce((s,c)=>s+c.total,0);
     const gastosFamiliares=gasCats.filter(c=>!c.esAporte).reduce((s,c)=>s+c.total,0);
     const totalGas=aportesObligatorios+gastosFamiliares;
-    const brutoTotal=ing.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?(u&&u.trm||4200):1)),0);
+    const brutoTotal=ing.reduce((s,i)=>s+(montoPromedioMensual(i)*(i.moneda==="USD"?(u&&u.trm||4200):1)),0);
     const totalDeu=deu.reduce((s,d)=>s+(d.mt||0),0);
     const totalCuotas=deu.reduce((s,d)=>s+(d.pg||0),0);
     const totalPat=inv.reduce((s,i)=>s+vaCOP(i,trm),0);
@@ -1293,7 +1293,7 @@ export default function FinPath(){
     const dta=totalPat>0?(totalDeu/totalPat*100):0;
     const runway=egresosTotales>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija","Fondo de Inversión"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)/egresosTotales):0;
     const invRows=inv.map(i=>"<tr><td>"+(i.n||i.nombre||"")+"</td><td>"+(i.tp||i.tipo||"Otro")+"</td><td class=r>"+fm(vaCOP(i,trm))+"</td><td class=r "+(vaCOP(i,trm)>=vcCOP(i,trm)?"style=color:#16a34a":"style=color:#dc2626")+">"+fm(vaCOP(i,trm)-vcCOP(i,trm))+"</td></tr>").join("");
-    const ingRows=ing.map(i=>"<tr><td>"+(i.nombre||"")+"</td><td>"+(i.categoria||"")+"</td><td class=r>"+fm((i.mensual||0)*(i.moneda==="USD"?(u&&u.trm||4200):1))+"</td></tr>").join("");
+    const ingRows=ing.map(i=>"<tr><td>"+(i.nombre||"")+"</td><td>"+(i.categoria||"")+"</td><td class=r>"+fm(montoPromedioMensual(i)*(i.moneda==="USD"?(u&&u.trm||4200):1))+"</td></tr>").join("");
     const gasRows=gasCats.map(g=>"<tr><td>"+g.cat+(g.esAporte?" <span style='font-size:9px;color:#f59e0b'>(aporte)</span>":"")+"</td><td class=r>"+fm(g.total)+"</td><td class=r>"+(brutoTotal>0?(g.total/brutoTotal*100).toFixed(1)+"%":"—")+"</td></tr>").join("");
     const deuRows=deu.map(d=>"<tr><td>"+(d.n||"")+"</td><td class=r>"+fm(d.mt||0)+"</td><td class=r>"+fm(d.pg||0)+"</td><td class=r>"+(d.ts||0)+"%</td></tr>").join("");
     // Bloque desglose family office (nuevo Fase 4)
@@ -1706,8 +1706,8 @@ export default function FinPath(){
     const gasCats=Object.entries(gas).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+montoPromedioMensual(g),0),items}))/* frecuencia: un gasto anual no es un gasto mensual (fix 25-jul-2026) */.sort((a,b)=>b.total-a.total);
     const pasivos=ing.filter(i=>["Arriendo","Rendimiento","Dividendos","Inversión"].includes(i.categoria));
     const activos=ing.filter(i=>!["Arriendo","Rendimiento","Dividendos","Inversión"].includes(i.categoria));
-    const ingPasivo=pasivos.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);
-    const ingActivo=activos.reduce((s,i)=>s+((i.mensual||0)*(i.moneda==="USD"?4200:1)),0);
+    const ingPasivo=pasivos.reduce((s,i)=>s+(montoPromedioMensual(i)*(i.moneda==="USD"?4200:1)),0);
+    const ingActivo=activos.reduce((s,i)=>s+(montoPromedioMensual(i)*(i.moneda==="USD"?4200:1)),0);
     const pctPasivo=t.ni>0?(ingPasivo/t.ni*100):0;
     const runway=t.te>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)/t.te):0;
     const fireNum=t.gfm*12*25;
@@ -1718,7 +1718,7 @@ export default function FinPath(){
     const worstDebt=hiDebt[0];
     const worstAsset=topA.length>1?topA[topA.length-1]:null;
     const currencies={COP:0,USD:0};
-    ing.forEach(i=>{if(i.moneda==="USD")currencies.USD+=(i.mensual||0)*4200;else currencies.COP+=(i.mensual||0)});
+    ing.forEach(i=>{if(i.moneda==="USD")currencies.USD+=montoPromedioMensual(i)*4200;else currencies.COP+=montoPromedioMensual(i)});
     const usdPct=t.ni>0?(currencies.USD/t.ni*100):0;
 
     if(id==="cashflow"){
@@ -1749,7 +1749,7 @@ export default function FinPath(){
       const te=Object.entries(types).sort((a,b)=>b[1]-a[1]);
       const mx=te[0]||["",0];const mxP=t.nw>0?(mx[1]/t.nw*100):0;
       msgs.push({t:"🔬 Concentración",c:te.map(([tp,v])=>"• "+tp+": "+fm(v)+" ("+((v/(t.nw||1))*100).toFixed(0)+"%)").join("\n")+"\n\n"+(mxP>50?"🔴 "+mx[0]+" = "+mxP.toFixed(0)+"%. Riesgo extremo.":mxP>35?"🟡 "+mx[0]+" = "+mxP.toFixed(0)+"%. Cerca del límite.":"🟢 Diversificación aceptable.")});
-      msgs.push({t:"⚡ Stress Test",c:"Caída inmobiliaria -20%:\n• Pierdes: "+fm(reVal*0.2)+"\n• Patrimonio: "+fm(t.nw-reVal*0.2)+"\n\nPierdes mayor ingreso"+(ing.length>0?" ("+ing.sort((a,b)=>(b.mensual||0)-(a.mensual||0))[0].nombre+")":"")+":\n• Cash flow: "+fm(t.cf-(ing.length>0?(ing.sort((a,b)=>(b.mensual||0)-(a.mensual||0))[0].mensual||0)*(ing.sort((a,b)=>(b.mensual||0)-(a.mensual||0))[0].moneda==="USD"?4200:1):0))+"/mes\n\nRunway sin ingresos: "+runway+" meses "+(runway<6?"🔴":"🟢")});
+      msgs.push({t:"⚡ Stress Test",c:"Caída inmobiliaria -20%:\n• Pierdes: "+fm(reVal*0.2)+"\n• Patrimonio: "+fm(t.nw-reVal*0.2)+"\n\nPierdes mayor ingreso"+(ing.length>0?" ("+ing.sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a))[0].nombre+")":"")+":\n• Cash flow: "+fm(t.cf-(ing.length>0?(ing.sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a))[0].mensual||0)*(ing.sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a))[0].moneda==="USD"?4200:1):0))+"/mes\n\nRunway sin ingresos: "+runway+" meses "+(runway<6?"🔴":"🟢")});
       msgs.push({t:"🌐 Moneda",c:"COP: "+fm(currencies.COP)+"/mes ("+(100-usdPct).toFixed(0)+"%)\nUSD: "+fm(currencies.USD)+"/mes ("+usdPct.toFixed(0)+"%)\n\n"+(usdPct<15?"🟡 Muy expuesto al COP. Recomendación: 30%+ en USD.":usdPct>70?"🟡 Muy dolarizado.":"🟢 Buena diversificación.")});
     }
     else if(id==="valor"){
@@ -1865,7 +1865,7 @@ export default function FinPath(){
     const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     const totalPat=t.ab+ib.tv;
     // Income by category
-    const incByCat={};((u&&u.ingresos)||[]).filter(i=>i.sim!==false).forEach(i=>{incByCat[i.categoria||"Otro"]=(incByCat[i.categoria||"Otro"]||0)+(i.mensual||0)});
+    const incByCat={};((u&&u.ingresos)||[]).filter(i=>i.sim!==false).forEach(i=>{incByCat[i.categoria||"Otro"]=(incByCat[i.categoria||"Otro"]||0)+montoPromedioMensual(i)});
     const incPie=Object.entries(incByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     // Expense by category
     // 25-jul-2026 — BUG DE DATOS. Esta suma usaba `g.m` crudo, mientras que el
@@ -1879,7 +1879,7 @@ export default function FinPath(){
     const expByCat={};Object.entries((u&&u.gas)||{}).forEach(([cat,its])=>{expByCat[cat]=(its||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+montoPromedioMensual(g),0)});
     const expPie=Object.entries(expByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     // Top income sources
-    const topInc=[...((u&&u.ingresos)||[]).filter(i=>i.sim!==false)].sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,5);
+    const topInc=[...((u&&u.ingresos)||[]).filter(i=>i.sim!==false)].sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a)).slice(0,5);
     // Health score (0-100)
     const healthScore=Math.min(100,Math.round(
       (t.ind>=100?30:t.ind*0.3) + // independence: 30 pts
@@ -2358,7 +2358,7 @@ export default function FinPath(){
         const debtService = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
         // Passive vs active income
         const passCats = ["Arriendo","Rendimiento","Dividendos","Inversión"];
-        const passiveInc = ((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i => passCats.includes(i.categoria)).reduce((s,i) => s + (i.mensual||0), 0);
+        const passiveInc = ((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i => passCats.includes(i.categoria)).reduce((s,i) => s + montoPromedioMensual(i), 0);
         const passiveRatio = t.ti > 0 ? (passiveInc / t.ti * 100) : 0;
         // Yield on cost
         const totalInvested = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vcCOP(i,trm), 0);
@@ -2729,7 +2729,7 @@ export default function FinPath(){
               const gastosEdu = Object.values((u&&u.gas)||{}).flat().filter(g => g.sim!==false).filter(g => 
                 (g.c||"").toLowerCase().includes("colegio") || (g.c||"").toLowerCase().includes("universidad") || (g.c||"").toLowerCase().includes("educación")
               );
-              const gastoEduMes = gastosEdu.reduce((s,g) => s + (g.m||0), 0);
+              const gastoEduMes = gastosEdu.reduce((s,g) => s + montoPromedioMensual(g), 0);
               if (gastoEduMes === 0) return null;
               const costoUni = 180000000; // Semestre universidad privada Colombia ~$180M
               const aniosUni = 5;
@@ -2790,7 +2790,7 @@ export default function FinPath(){
                 if (t.cf < 0) actions.push({pri:"🔴",text:"Tu cash flow es negativo. Gastas más de lo que ganas. Revisa gastos o busca más ingresos.",cat:"Cash Flow"});
                 else if (t.ti > 0 && (t.cf/t.ti*100) < 10) actions.push({pri:"🟡",text:"Tu tasa de ahorro es baja (" + (t.cf/t.ti*100).toFixed(0) + "%). Intenta ahorrar al menos el 20%.",cat:"Ahorro"});
                 
-                const passI = ((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i => ["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i) => s + (i.mensual||0), 0);
+                const passI = ((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i => ["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i) => s + montoPromedioMensual(i), 0);
                 if (t.ti > 0 && (passI/t.ti*100) < 50) actions.push({pri:"🟡",text:"Solo el " + (passI/t.ti*100).toFixed(0) + "% de tu ingreso es pasivo. Invierte más en activos que generen renta.",cat:"Independencia"});
                 
                 if (actions.length === 0) actions.push({pri:"🟢",text:"¡Excelente situación financiera! Mantén tu estrategia actual y sigue diversificando.",cat:"General"});
@@ -2976,7 +2976,7 @@ export default function FinPath(){
           if (maxPct > 35) alerts.push({type:"🟡",title:maxAsset.n+" = "+maxPct.toFixed(0)+"% del patrimonio",msg:"Ningún activo debería superar el 30%. Considera vender una porción o no seguir incrementando esta posición. Mover "+fm(maxAsset.v*0.1)+" a otros activos reduciría tu riesgo.",cat:"Concentración"});
 
           // 3. Income dependency
-          const maxIng = ing.reduce((max,i) => (i.mensual||0) > max.v ? {n:i.nombre||"",v:i.mensual||0} : max, {n:"",v:0});
+          const maxIng = ing.reduce((max,i) => montoPromedioMensual(i) > max.v ? {n:i.nombre||"",v:montoPromedioMensual(i)} : max, {n:"",v:0});
           const maxIngPct = t.ti > 0 ? (maxIng.v / t.ti * 100) : 0;
           if (maxIngPct > 40) alerts.push({type:"🟡",title:"Dependencia de ingreso: "+maxIng.n,msg:"El "+maxIngPct.toFixed(0)+"% de tus ingresos viene de una sola fuente. Si esa fuente falla, tu cash flow cae "+fm(maxIng.v)+"/mes. Diversifica fuentes de ingreso.",cat:"Riesgo de ingreso"});
 
@@ -2996,7 +2996,7 @@ export default function FinPath(){
           if (vehPct > 5) alerts.push({type:"🟡",title:"Vehículos = "+vehPct.toFixed(1)+"% del patrimonio",msg:"Los vehículos pierden ~15% de valor por año. "+fm(vehVal)+" en activos que se deprecian. Un family office los considera gastos, no inversiones.",cat:"Depreciación"});
 
           // 7. Positive alerts
-          const passI = ing.filter(i => ["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i) => s + (i.mensual||0), 0);
+          const passI = ing.filter(i => ["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i) => s + montoPromedioMensual(i), 0);
           const passR = t.ti > 0 ? (passI / t.ti * 100) : 0;
           if (passR >= 80) alerts.push({type:"🟢",title:"Ingreso pasivo "+passR.toFixed(0)+"% — excelente",msg:"La mayoría de tu ingreso no depende de tu trabajo. Esto te da libertad y reduce riesgo. Mantén esta estructura.",cat:"Independencia"});
 
@@ -3321,7 +3321,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // BUG FIX 13-jun-2026: mismo bug del PDF — esta vista también sumaba
       // items con sim===false. Ahora filtramos igual que en cT() para que la
       // vista sea consistente con los KPIs del Dashboard.
-      const passI=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i=>i.sim!==false&&["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i)=>s+(i.mensual||0),0);
+      const passI=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i=>i.sim!==false&&["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i)=>s+montoPromedioMensual(i),0);
       const passR=t.ti>0?(passI/t.ti*100):0;
       const totalInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i)=>s+vcCOP(i,trm),0);
       const totalVal=((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i)=>s+vaCOP(i,trm),0);
@@ -3411,10 +3411,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(min(260px, 100%), 1fr))",gap:20,marginBottom:24}}>
             <div>
               <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>💰 Ingresos mensuales</div>
-              {((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i=>i.sim!==false&&(i.mensual||0)>0).sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,6).map((i,idx)=>(
+              {((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i=>i.sim!==false&&montoPromedioMensual(i)>0).sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a)).slice(0,6).map((i,idx)=>(
                 <div key={idx} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
                   <span style={{color:T.tx2}}>{i.nombre}</span>
-                  <span style={{fontWeight:600,fontFamily:"monospace",color:T.gn}}>{fm(i.mensual||0)}</span>
+                  <span style={{fontWeight:600,fontFamily:"monospace",color:T.gn}}>{fmmontoPromedioMensual(i)}</span>
                 </div>
               ))}
               <div style={{display:"flex",justifyContent:"space-between",fontSize:13,padding:"6px 0",fontWeight:700}}>
@@ -3423,7 +3423,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             </div>
             <div>
               <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>💳 Egresos principales</div>
-              {Object.entries((u&&u.gas)||{}).map(([cat,items])=>({cat,total:(items||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+(g.m||0),0)})).filter(g=>g.total>0).sort((a,b)=>b.total-a.total).slice(0,5).map((g,idx)=>(
+              {Object.entries((u&&u.gas)||{}).map(([cat,items])=>({cat,total:(items||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+montoPromedioMensual(g),0)})).filter(g=>g.total>0).sort((a,b)=>b.total-a.total).slice(0,5).map((g,idx)=>(
                 <div key={idx} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
                   <span style={{color:T.tx2}}>{g.cat}</span>
                   <span style={{fontWeight:600,fontFamily:"monospace",color:T.rd}}>{fm(g.total)}</span>
