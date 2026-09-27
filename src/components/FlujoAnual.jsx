@@ -200,8 +200,10 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       const delM = montoDelMes(base, año, mes);
       const tipico = montoPromedioMensual(base);
       if (Math.round(delM - tipico) !== 0) {
+        const r = rangoEfectivo(ing);
         movs.push({ nombre: ing.nombre || ing.fuente || L.ingresos, tipo: "ingreso",
-                    monto: delM, tipico, efecto: delM - tipico });
+                    monto: delM, tipico, efecto: delM - tipico,
+                    mesesActivos: Math.max(0, r.hasta - r.desde + 1) });
       }
     });
 
@@ -211,8 +213,10 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         const delM = montoDelMes(g, año, mes);
         const tipico = montoPromedioMensual(g);
         if (Math.round(delM - tipico) !== 0) {
+          const r = rangoEfectivo(g);
           movs.push({ nombre: g.c || cat, tipo: "gasto", cat,
-                      monto: delM, tipico, efecto: -(delM - tipico) });
+                      monto: delM, tipico, efecto: -(delM - tipico),
+                      mesesActivos: Math.max(0, r.hasta - r.desde + 1) });
         }
       });
     });
@@ -230,7 +234,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       const delM = aplica ? cuota : 0;
       if (Math.round(delM - tipico) !== 0) {
         movs.push({ nombre: d.n || d.nombre || L.cuotas, tipo: "cuota",
-                    monto: delM, tipico, efecto: -(delM - tipico) });
+                    monto: delM, tipico, efecto: -(delM - tipico),
+                    mesesActivos: vigentes });
       }
     });
 
@@ -664,8 +669,31 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                             : (isEN ? "nothing paid this month" : "este mes no se pagó"))
                       : <>{isEN ? (m.tipo === "ingreso" ? "received" : "paid") : verbo}{" "}
                           <span style={{ fontFamily: "monospace" }}>{fm(m.monto)}</span>
-                          {" · "}{isEN ? "usual" : "habitual"}{" "}
-                          <span style={{ fontFamily: "monospace" }}>{fm(m.tipico)}</span></>}
+                          {/* 27-sep-2026 (Santiago: "la renta tradicional Puerto
+                              Madero no existía, ¿por qué dice que lo habitual
+                              era 16mm?"). Tenía razón: ese concepto nunca
+                              recibió $16,25M en ningún mes. Es su total del año
+                              repartido entre 12, incluidos los ocho meses en
+                              que no existía.
+
+                              La cifra NO se puede cambiar: el titular de arriba
+                              compara este mes contra el promedio de los 12
+                              meses, y estas líneas descomponen ese titular. Si
+                              cada una usara su propio promedio activo, dejarían
+                              de sumar a lo que dice el titular.
+
+                              Lo que sí estaba mal era llamarla "habitual", que
+                              afirma algo falso. Ahora se nombra por lo que es
+                              —el prorrateo del año— y, cuando el concepto vivió
+                              menos de 12 meses, se dice cuántos, que es
+                              justamente el dato que faltaba para entenderla. */}
+                          {" · "}{isEN ? "yearly proration" : "prorrateo del año"}{" "}
+                          <span style={{ fontFamily: "monospace" }}>{fm(m.tipico)}</span>
+                          {m.mesesActivos > 0 && m.mesesActivos < 12 && (
+                            <span style={{ opacity: 0.75 }}>
+                              {" "}({isEN ? `active ${m.mesesActivos} mo` : `activo ${m.mesesActivos} ${m.mesesActivos === 1 ? "mes" : "meses"}`})
+                            </span>
+                          )}</>}
                   </span>
                   <span style={{ textAlign: "right", minWidth: 104 }}>
                     <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "monospace",
@@ -758,8 +786,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
 
               <div style={{ fontSize: 11, color: T.txt3, marginTop: 11, lineHeight: 1.5 }}>
                 {isEN
-                  ? "Each line compares that concept against its own monthly average. Concepts outside their active range are not listed: they did not take money from this month, they simply did not exist yet."
-                  : "Cada línea compara ese concepto contra su propio promedio mensual. Los conceptos fuera de su vigencia no se listan: no le quitaron plata a este mes, sencillamente todavía no existían."}
+                  ? "The baseline is the yearly average, the same one in the headline above, so each concept is compared against its total spread over 12 months. For one that ran only part of the year, that proration is lower than what it actually brought in each active month — the month count next to the figure says how many."
+                  : "La referencia es el promedio del año, el mismo del titular de arriba, así que cada concepto se compara contra su total repartido en 12 meses. En uno que solo corrió parte del año, ese prorrateo es menor que lo que realmente entraba cada mes activo: el número de meses al lado de la cifra dice cuántos fueron."}
               </div>
             </div>
           );
