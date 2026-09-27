@@ -59,7 +59,18 @@ import glob, os
 # globales (colores/fuentes/radios) solo bajan cuando cae el ÚLTIMO archivo que
 # usa un valor, así que durante la migración se quedan quietos aunque se avance.
 # Este cuenta los componentes cuya paleta local contradice a los tokens.
-TOPES = {'colores': 90, 'fuentes': 18, 'radios': 9, 'divergentes': 0}
+TOPES = {'colores': 90, 'fuentes': 18, 'radios': 9, 'divergentes': 0, 'crudos': 62}
+
+# 'crudos' (27-sep-2026): lineas que suman o anualizan .mensual/.m en crudo sin
+# pasar por el motor (montoDelMes, montoPromedioMensual, totalAnualItem,
+# getMonto). Es la familia de errores mas repetida del dia: once fallas
+# corregidas, y al medir quedaban 62 lecturas asi, veinte de ellas en taxCO.js.
+# Un item vigente tres meses cuenta como doce; un variable se ignora porque su
+# .mensual es residual. Se excluyen las lineas que solo leen para convertir y
+# pasar al motor (mensual: ...) y las de flowHelpers, que ES el motor.
+CRUDO = re.compile(r'\.(mensual|m)\b\s*(\|\|\s*0|\))')
+SUMA  = re.compile(r'reduce\(|\+=|\*\s*12\b')
+MOTOR = re.compile(r'montoDelMes|montoPromedioMensual|totalAnualItem|getMonto|promedioMesActivo|mensual:\s*')
 
 DIVERGENTES = re.compile(
     r'bg2: *"#(?:18181b|16161a|141414)"'
@@ -80,6 +91,17 @@ for ruta in fuentes_ui:
     if DIVERGENTES.search(texto):
         divergentes += 1
 
+crudos = 0
+for ruta in fuentes_ui + sorted(glob.glob('src/lib/*.js')):
+    if ruta.endswith('flowHelpers.js'):
+        continue
+    with open(ruta, 'r') as f:
+        for linea in f:
+            if linea.lstrip().startswith(('//', '*', '/*')):
+                continue
+            if CRUDO.search(linea) and SUMA.search(linea) and not MOTOR.search(linea):
+                crudos += 1
+
 medido = {
     'colores': len(set(m.lower() for m in re.findall(r'#[0-9a-fA-F]{6}\b', blob))),
     # 27-sep-2026 — Cuentan las DOS formas. La primera pasada solo miraba
@@ -90,6 +112,7 @@ medido = {
     'fuentes': len(set(re.findall(r'fontSize(?:: *|=\{?")([0-9.]+)', blob))),
     'radios':  len(set(re.findall(r'borderRadius(?:: *|=\{?")([0-9]+)', blob))),
     'divergentes': divergentes,
+    'crudos': crudos,
 }
 
 for clave, tope in TOPES.items():

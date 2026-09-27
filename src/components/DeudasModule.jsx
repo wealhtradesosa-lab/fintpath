@@ -118,7 +118,6 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   };
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", frecuencia: "mensual", montosMensuales: new Array(12).fill(0) });
-  const [selected, setSelected] = useState(new Set());
   // Commit 5 Tarea 3: confirmaciones del Art. 119 ET cuando el usuario marca
   // una deuda como vivienda habitacional. Es solo UI — no se persiste al item
   // ni se envía al motor. Sirve para alertar al usuario si está clasificando
@@ -167,15 +166,10 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   const interesAnual = activos.reduce((s, d) => s + (d.mt || 0) * ((Number(d.ts) || 0) / 100), 0);
   const totalInteresAnual = activos.reduce((s, d) => s + costoCredito(d).interesAnual, 0);
 
-  const toggleSel = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
-
-  const deleteSelected = () => {
-    if (!guardEdit(role)) return;
-    if (!selected.size || !confirm(`¿Eliminar ${selected.size} deuda(s)?`)) return;
-    onUpdate(items.filter((i) => !selected.has(i.id)));
-    setSelected(new Set());
-  };
+  // 27-sep-2026 (Santiago: "no le veo uso a seleccionar todos los items").
+  // Se quitó la selección múltiple: servía solo para borrar en lote, la app
+  // no tiene deshacer ni papelera, y marcar todo de un clic pegado a un botón
+  // de eliminar era riesgo sin beneficio. Queda el borrado fila por fila.
 
   const handleSave = () => {
     if (!guardEdit(role)) return;
@@ -227,9 +221,6 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         title="Lo que debes"
         subtitle={`${activos.length}${activos.length !== items.length ? ` de ${items.length}` : ""} deuda${activos.length !== 1 ? "s" : ""} · Saldo: ${fm(totalDeuda)} · Cuotas: ${fm(totalCuotas)}/mes`}
         rightSlot={<>
-          {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🗑️ Eliminar ({selected.size})</button>
-          )}
           {onImport && <button onClick={onImport}
             title="Cargar deudas desde una tabla de Excel"
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
@@ -382,10 +373,6 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr>
-                <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${T.border}` }}>
-                  <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
-                    style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
-                </th>
                 {["Deuda", "Tipo", "Saldo", "Cuota", "Tasa", "Interés/año", "Activo", "On/Off", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: ["Deuda", "Activo", ""].includes(h) ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
@@ -432,11 +419,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   );
                 const lk = d.la ? (inversiones || []).find((i) => i.id === d.la) : null;
                 return (
-                  <tr key={d.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(d.id) ? T.redDim : "transparent" }}>
-                    <td style={{ padding: "10px 12px" }}>
-                      <input type="checkbox" checked={selected.has(d.id)} onChange={() => toggleSel(d.id)}
-                        style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
-                    </td>
+                  <tr key={d.id} style={{ borderBottom: `1px solid ${T.border}`, background: "transparent" }}>
                     <td style={{ padding: "10px 14px" }}>
                       <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6}}>
                         {deudasSinOwnerIds.has(d.id) && (

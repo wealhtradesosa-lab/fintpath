@@ -326,7 +326,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     return templateElegido.camposVisibles.includes(campo);
   };
   const [busqueda, setBusqueda] = useState("");
-  const [selected, setSelected] = useState(new Set());
   // Commit 11 Tarea 3: feedback visible para el usuario sobre lo que paso
   // con la auto-creacion de cesantias (creada / saltada / no aplica). El silencio
   // del Commit 4 confundia a usuarios que no veian si el sistema actuo o no.
@@ -386,9 +385,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   const fijos = activos.filter((i) => i.tipo === "fijo").reduce((s, i) => s + (montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
   const variables = totalMes - fijos;
 
-  const toggleSelect = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((i) => i.id)));
-
   // Fase 2 flujo anual (18-jul-2026): toggle pagado/pendiente por año.
   const añoActual = new Date().getFullYear();
   const togglePagoItem = (item) => {
@@ -396,12 +392,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     onUpdate(items.map(i => i.id === item.id ? togglePagado(i, añoActual) : i));
   };
 
-  const deleteSelected = () => {
-    if (!guardEdit(role)) return;
-    if (!selected.size || !confirm(`¿Eliminar ${selected.size} ingreso(s)?`)) return;
-    onUpdate(items.filter((i) => !selected.has(i.id))); // only deletes standalone, not inv-derived
-    setSelected(new Set());
-  };
+  // 27-sep-2026 (Santiago: "no le veo uso a seleccionar todos los items").
+  // Se quitó la selección múltiple: servía solo para borrar en lote, la app
+  // no tiene deshacer ni papelera, y marcar todo de un clic pegado a un botón
+  // de eliminar era riesgo sin beneficio. Queda el borrado fila por fila.
   const handleSave = () => {
     if (!guardEdit(role)) return;
     const isSalario = form.categoria === "Salario";
@@ -671,11 +665,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
         title="Tus fuentes"
         subtitle={`${activos.length}${activos.length !== allItems.length ? ` de ${allItems.length}` : ""} fuente${activos.length !== 1 ? "s" : ""} activa${activos.length !== 1 ? "s" : ""} · Total: ${fm(totalMes)}/mes`}
         rightSlot={<>
-          {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-              🗑️ Eliminar ({selected.size})
-            </button>
-          )}
           {onImport && <button onClick={onImport}
             title="Cargar ingresos desde una tabla de Excel"
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
@@ -812,10 +801,6 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               total={items.length} filtrados={allItems.length} />
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead><tr>
-                <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${T.border}` }}>
-                  <input type="checkbox" checked={allItems.length > 0 && selected.size === allItems.length} onChange={toggleAll}
-                    style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
-                </th>
                 {["Nombre", "Categoría", "Tipo", "Mensual", "Capital / Fuente", "On/Off", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: h === "Mensual" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
@@ -860,11 +845,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       </td>
                     </tr>
                   ) : (
-                  <tr key={item.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.id) ? T.greenDim : "transparent" }}>
-                    <td style={{ padding: "10px 12px" }}>
-                      <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)}
-                        style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
-                    </td>
+                  <tr key={item.id} style={{ borderBottom: `1px solid ${T.border}`, background: "transparent" }}>
                     <td style={{ padding: "10px 14px" }}>
                       <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap"}}>
                         {warningsByItemId.has(item.id) && (() => {

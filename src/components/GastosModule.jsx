@@ -314,8 +314,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     if (!templateElegido) return false;
     return templateElegido.camposVisibles.includes(campo);
   };
-  const [busqueda, setBusqueda] = useState("");
-  const [selected, setSelected] = useState(new Set()); // "cat|idx"
+  const [busqueda, setBusqueda] = useState(""); // "cat|idx"
 
   const gas = gastos || {};
   const cats = Object.entries(gas);
@@ -356,9 +355,6 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const _MESES_L = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
   const totalEsteMes = activos.reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * (g.moneda === "USD" ? (trm || 4200) : 1), 0);
 
-  const toggleSel = (key) => setSelected((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
-  const toggleAll = () => setSelected(selected.size === allItems.length ? new Set() : new Set(allItems.map((g) => g.key)));
-
   // Fase 2 flujo anual (18-jul-2026): toggle pagado/pendiente por año.
   // El user hace click en el chip "⏳ Pendiente" y pasa a "✅ Pagado".
   // Se guarda en `item.pagos[año] = true` (persistente en Supabase).
@@ -371,17 +367,10 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     onUpdate(newGas);
   };
 
-  const deleteSelected = () => {
-    if (!guardEdit(role)) return;
-    if (!selected.size || !confirm(`¿Eliminar ${selected.size} gasto(s)?`)) return;
-    const newGas = {};
-    cats.forEach(([cat, its]) => {
-      const kept = its.filter((_, i) => !selected.has(cat + "|" + i));
-      if (kept.length > 0) newGas[cat] = kept;
-    });
-    onUpdate(newGas);
-    setSelected(new Set());
-  };
+  // 27-sep-2026 (Santiago: "no le veo uso a seleccionar todos los items").
+  // Se quitó la selección múltiple: servía solo para borrar en lote, la app
+  // no tiene deshacer ni papelera, y marcar todo de un clic pegado a un botón
+  // de eliminar era riesgo sin beneficio. Queda el borrado fila por fila.
 
   const handleSave = () => {
     if (!guardEdit(role)) return;
@@ -545,11 +534,6 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         title="Tus gastos"
         subtitle={`${activos.length}${activos.length !== allItems.length ? ` de ${allItems.length}` : ""} gasto${activos.length !== 1 ? "s" : ""} en ${cats.length} categorías · Total: ${fm(totalMes)}/mes · ${fm(totalMes * 12)}/año`}
         rightSlot={<>
-          {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-              🗑️ Eliminar ({selected.size})
-            </button>
-          )}
           {onImport && <button onClick={onImport}
             title="Cargar gastos desde una tabla de Excel"
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
@@ -666,10 +650,6 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600 }}>
           <thead>
             <tr>
-              <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${T.border}` }}>
-                <input type="checkbox" checked={allItems.length > 0 && selected.size === allItems.length} onChange={toggleAll}
-                  style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
-              </th>
               {["Concepto", "Categoría", "DIAN", "Monto/mes", "On/Off", ""].map((h) => (
                 <th key={h} style={{ padding: "12px 14px", textAlign: h === "Monto/mes" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
               ))}
@@ -715,11 +695,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       </td>
                     </tr>
                   ) : (
-              <tr key={item.key} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(item.key) ? T.redDim : "transparent" }}>
-                <td style={{ padding: "10px 12px" }}>
-                  <input type="checkbox" checked={selected.has(item.key)} onChange={() => toggleSel(item.key)}
-                    style={{ accentColor: "#22c55e", cursor: "pointer", width: 16, height: 16 }} />
-                </td>
+              <tr key={item.key} style={{ borderBottom: `1px solid ${T.border}`, background: "transparent" }}>
                 <td style={{ padding: "10px 14px" }}>
                   <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap"}}>
                     {warningsByItemKey.has(item.key) && (() => {
