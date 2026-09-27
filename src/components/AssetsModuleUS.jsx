@@ -389,10 +389,16 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
   const liabTotals = useMemo(() => {
     let total=0, deductible=0, monthlyPayments=0;
     deudas.forEach(d => {
+      // 27-sep-2026 — Sin estos dos filtros, una deuda apagada seguia
+      // sumando saldo y cuota, y una ya saldada (mt: 0, lo que deja 'Mark as
+      // paid') dejaba de sumar saldo pero seguia sumando su cuota mensual.
+      if (d.sim === false) return;
+      const saldo = d.mt || 0;
+      if (saldo <= 0) return;
       const info = liabInfo(d.tp);
-      total += d.mt||0;
+      total += saldo;
       monthlyPayments += d.pg||0;
-      if(info.deductible === true) deductible += d.mt||0;
+      if(info.deductible === true) deductible += saldo;
     });
     return { total, deductible, monthlyPayments, netWorth: totals.totalValue - total };
   }, [deudas, totals.totalValue]);
