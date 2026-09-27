@@ -26,7 +26,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useRef, useEffect } from "react";
-import { montoPromedioMensual } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, promedioMesActivo } from "../lib/flowHelpers.js";
 
 // Paleta consistente con AgenteTributarioBienvenida (alto contraste)
 const C = {
@@ -94,7 +94,7 @@ function buildTaxContext(user, estimacion, selectedOwner) {
     ctx += `\nINGRESOS (mensuales):\n`;
     oIng.forEach((i) => {
       const mon = i.moneda === "USD" ? " USD" : "";
-      ctx += `• ${i.categoria || i.fiscalCode || "?"}: ${fm(i.mensual)}${mon}/mes\n`;
+      ctx += `• ${i.categoria || i.fiscalCode || "?"}: ${fm(promedioMesActivo(i))}${mon}/mes\n`;
     });
   }
 

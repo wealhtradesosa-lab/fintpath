@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import Disclaimer from "./Disclaimer";
-import { montoPromedioMensual } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, promedioMesActivo } from "../lib/flowHelpers.js";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
 import PageHeader from "./PageHeader.jsx";
 
@@ -52,7 +52,7 @@ function buildContext(user, totals) {
     ctx += "\nINGRESOS MENSUALES:\n";
     (u.ingresos || []).forEach(i => {
       const mon = i.moneda === "USD" ? " (USD)" : "";
-      ctx += `• ${i.nombre || "?"}: ${fm(i.mensual)}/mes${mon} (${i.categoria || "?"})${i.capital ? " capital: " + fm(i.capital) + " tasa: " + i.tasa + "%" : ""}\n`;
+      ctx += `• ${i.nombre || "?"}: ${fm(promedioMesActivo(i))}/mes${mon} (${i.categoria || "?"})${i.capital ? " capital: " + fm(i.capital) + " tasa: " + i.tasa + "%" : ""}\n`;
     });
   }
 

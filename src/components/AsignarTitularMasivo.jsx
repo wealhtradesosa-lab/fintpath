@@ -99,7 +99,7 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
       case "asignar_owner_ingresos":
         return mapear(user.ingresos || [], "Ingreso",
           i => i.mensual,
-          i => i.mensual ? fm(i.mensual) + "/mes · " + fm(i.mensual * 12) + "/año" : "");
+          i => totalAnualItem(i) ? fm(promedioMesActivo(i)) + "/mes · " + fm(totalAnualItem(i)) + "/año" : "");
       case "asignar_owner_deudas":
         return mapear(user.deu || [], "Deuda",
           d => d.mt,

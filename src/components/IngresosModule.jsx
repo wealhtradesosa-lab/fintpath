@@ -988,7 +988,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           {(() => {
             const b = separarPorLimite(allItems, plan).bloqueados;
             if (!b.length) return null;
-            return <BloqueadosPorPlan cantidad={b.length} monto={b.reduce((s,i)=>s+((i.mensual)||0),0)}
+            return <BloqueadosPorPlan cantidad={b.length} monto={b.reduce((s,i)=>s+promedioMesActivo(i),0)}
               fmt={fm} T={T} onUpgrade={onUpgrade} que="ingresos" />;
           })()}
           </div>

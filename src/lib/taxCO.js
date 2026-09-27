@@ -630,7 +630,7 @@ export const estimarImpuesto = (u, options = {}) => {
         // Lo unimos en el mismo flujo para coherencia.
         const vehiculosTodos = oGas.filter(g => g.fiscalCode === GAS_HON_VEHICULO || g.fiscalCode === IMP_VEHICULAR_PROFESIONAL);
         const vehiculoUnico = vehiculosTodos.length > 0
-          ? vehiculosTodos.reduce((max, g) => ((g.m || 0) > (max.m || 0) ? g : max))
+          ? vehiculosTodos.reduce((max, g) => (montoPromedioMensual(g) > montoPromedioMensual(max) ? g : max))
           : null;
         gastosHonorariosDesglose.vehiculosTotalRegistrados = vehiculosTodos.length;
         gastosHonorariosDesglose.vehiculosIgnorados = Math.max(0, vehiculosTodos.length - 1);

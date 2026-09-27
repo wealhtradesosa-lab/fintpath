@@ -5,7 +5,7 @@ import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import CtaUnaAccion from "./CtaUnaAccion";
-import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo, totalAnualItem } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
@@ -1203,7 +1203,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                   i.moneda || "COP",
                   i.capital || 0,
                   i.tasa || 0,
-                  Math.round((i.mensual || 0) * 12),
+                  Math.round(totalAnualItem(i)),
                 ]);
               });
               ingresosData.push([]);

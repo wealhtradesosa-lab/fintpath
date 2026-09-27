@@ -59,7 +59,14 @@ import glob, os
 # globales (colores/fuentes/radios) solo bajan cuando cae el ÚLTIMO archivo que
 # usa un valor, así que durante la migración se quedan quietos aunque se avance.
 # Este cuenta los componentes cuya paleta local contradice a los tokens.
-TOPES = {'colores': 90, 'fuentes': 18, 'radios': 9, 'divergentes': 0, 'crudos': 15}
+TOPES = {'colores': 90, 'fuentes': 18, 'radios': 9, 'divergentes': 0, 'crudos': 7}
+# Las 7 lecturas crudas que quedan son LEGÍTIMAS y no deben migrarse:
+#   · App.jsx:352-353 e InversionesModule.jsx:90-95 — sub-objetos de una
+#     inversión (inv.ig / inv.gs / u.ig): otra forma de dato, sin frecuencia ni
+#     vigencia; su .m es un mensual plano por definición.
+#   · GastosModule.jsx:487 — el formulario de edición mostrando el valor
+#     guardado tal cual, que es lo que el usuario edita.
+# Si este número baja de 7, alguien migró una de esas y hay que revisar.
 
 # 'crudos' (27-sep-2026): lineas que suman o anualizan .mensual/.m en crudo sin
 # pasar por el motor (montoDelMes, montoPromedioMensual, totalAnualItem,

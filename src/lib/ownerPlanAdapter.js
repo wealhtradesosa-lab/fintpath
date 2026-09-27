@@ -25,6 +25,7 @@
 //     o null si no hay ingresos.
 
 import { estimarImpuesto } from "./taxCO.js";
+import { totalAnualItem } from "./flowHelpers.js";
 import { GAS_JUR_NO_DEDUCIBLE } from "./fiscalCodes.js";
 
 export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, componenteInflacionarioPct }) {
@@ -83,7 +84,7 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
   }
 
   // Totales agregados para resúmenes.
-  const gastosTotal = (gastos || []).reduce((s, g) => s + (g.m || 0), 0) * 12;
+  const gastosTotal = (gastos || []).reduce((s, g) => s + totalAnualItem(g), 0);
   // gastosDeducTotal coincide con lo que el motor reporta.
   const gastosDeducTotal = owner.type === "juridica"
     ? (d.gastosRegistrados || 0)

@@ -1783,7 +1783,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
     const nuevasCesantias = ownersConSalarioSinCesantias.flatMap(o => {
       const salariosOwner = (user.ingresos || []).filter(i => i.owner === o.id && i.fiscalCode === "LAB_SALARIO" && i.sim !== false);
       // Una sola entrada de cesantías por owner (suma los salarios si tiene más de uno)
-      const totalSalarioMensual = salariosOwner.reduce((s, x) => s + (Number(x.mensual) || 0), 0);
+      const totalSalarioMensual = salariosOwner.reduce((s, x) => s + montoPromedioMensual(x), 0);
       if (totalSalarioMensual <= 0) return [];
       return [{
         id: "ing_" + Date.now() + "_" + o.id,
