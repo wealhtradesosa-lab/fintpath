@@ -29,7 +29,7 @@ const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 const FONT_BODY = "'Inter', system-ui, sans-serif";
 
 const T = {
-  bg: "#09090b",
+  bg: "#0c0c0f",
   bg2: "#141418",
   border: "rgba(255,255,255,0.08)",
   borderL: "rgba(255,255,255,0.14)",

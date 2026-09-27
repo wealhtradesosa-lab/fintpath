@@ -29,7 +29,7 @@
 import { useEffect, useState } from "react";
 
 const T = {
-  bg: "#09090b", bg2: "#141418",
+  bg: "#0c0c0f", bg2: "#141418",
   border: "rgba(255,255,255,0.08)",
   borderStrong: "rgba(255,255,255,0.14)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",

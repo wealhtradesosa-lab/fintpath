@@ -13,7 +13,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
          ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 
 const T = {
-  bg:"#09090b",bg2:"#141418",bg3:"#1e1e24",card:"#141418",
+  bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",
   border:"rgba(255,255,255,0.06)",
   tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",
   gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",

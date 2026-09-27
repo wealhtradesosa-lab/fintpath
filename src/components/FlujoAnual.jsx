@@ -32,7 +32,7 @@ import { ChartTooltip } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
 
 const T = {
-  bg: "#09090b", bg2: "#141418", bg3: "#1e1e24", bg4: "#2a2a32",
+  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24", bg4: "#2a2a32",
   card: "#141418", border: "rgba(255,255,255,0.06)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   gn: "#22c55e", gnD: "rgba(34,197,94,0.1)",

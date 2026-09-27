@@ -5,7 +5,7 @@ import LandingAIAdvisorSection from "./LandingAIAdvisorSection.jsx";
 import TemporadaRenta from "./TemporadaRenta";
 
 const T = {
-  bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
+  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
   card: "#141418", border: "rgba(255,255,255,0.06)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
@@ -35,7 +35,7 @@ export default function LandingPage({ onGetStarted }) {
 
   return (
     <div style={{ background: T.bg, color: T.txt, fontFamily: "'Inter', system-ui, sans-serif", minHeight: "100vh", overflowX: "hidden" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}
 
 /* ── Banner del home (12-ago-2026) ──────────────────────────────────────────
    La imagen de dispositivos ocupa el ancho completo y el copy se superpone
@@ -56,7 +56,7 @@ export default function LandingPage({ onGetStarted }) {
    el PNG columna por columna, no estimado. */
 .fp-showcase-copy{position:absolute;inset:0;display:flex;align-items:flex-start;line-height:1.2;
   padding-left:max(32px,calc((100% - 1280px)/2 + 32px));padding-right:71%;padding-top:10%;
-  background:linear-gradient(90deg,rgba(9,9,11,.94) 0%,rgba(9,9,11,.86) 16%,rgba(9,9,11,.5) 31%,rgba(9,9,11,0) 50%)}
+  background:linear-gradient(90deg,rgba(12,12,15,.94) 0%,rgba(12,12,15,.86) 16%,rgba(12,12,15,.5) 31%,rgba(12,12,15,0) 50%)}
 .fp-showcase-copy>div{width:100%}
 /* El tope de 30px evita que en pantallas anchas la tipografía crezca más
    rápido que la columna disponible y quede una palabra por renglón. */

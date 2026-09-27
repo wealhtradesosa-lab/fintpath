@@ -51,7 +51,7 @@ const LIMITS_2025 = {
 };
 
 const T = {
-  bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
+  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
   border: "rgba(255,255,255,0.08)",
   borderL: "rgba(255,255,255,0.14)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",

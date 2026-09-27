@@ -21,7 +21,7 @@
 import { useState, useEffect } from "react";
 
 const T = {
-  bg: "#09090b", bg2: "#141418",
+  bg: "#0c0c0f", bg2: "#141418",
   border: "rgba(255,255,255,0.08)",
   borderStrong: "rgba(255,255,255,0.14)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
@@ -108,8 +108,8 @@ export default function LandingPioneros({ onGetStarted = () => {} }) {
         inset: 0,
         pointerEvents: "none",
         background: `
-          linear-gradient(135deg, rgba(9,9,11,0.92) 0%, rgba(9,9,11,0.78) 50%, rgba(9,9,11,0.85) 100%),
-          linear-gradient(rgba(9,9,11,0.4), rgba(9,9,11,0.4))
+          linear-gradient(135deg, rgba(12,12,15,0.92) 0%, rgba(12,12,15,0.78) 50%, rgba(12,12,15,0.85) 100%),
+          linear-gradient(rgba(12,12,15,0.4), rgba(12,12,15,0.4))
         `,
       }} />
 

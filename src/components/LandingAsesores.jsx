@@ -12,7 +12,7 @@ import { useState } from "react";
 // ═══════════════════════════════════════════════════════════════════
 
 const T = {
-  bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
+  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
   card: "#141418", border: "rgba(255,255,255,0.06)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
@@ -189,13 +189,13 @@ export default function LandingAsesores({ onGetStarted }) {
       fontFamily: "'Inter', system-ui, sans-serif",
       minHeight: "100vh",
       overflowX: "hidden",
-      backgroundImage: "linear-gradient(to bottom, rgba(9,9,11,0.4) 0%, rgba(9,9,11,0.6) 40%, rgba(9,9,11,0.85) 70%, #09090b 100%), url(/hero-bg.png)",
+      backgroundImage: "linear-gradient(to bottom, rgba(12,12,15,0.4) 0%, rgba(12,12,15,0.6) 40%, rgba(12,12,15,0.85) 70%, #09090b 100%), url(/hero-bg.png)",
       backgroundSize: "cover, cover",
       backgroundPosition: "center, center top",
       backgroundRepeat: "no-repeat",
       backgroundAttachment: "scroll, fixed",
     }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}`}</style>
 
       {/* ─── NAV ─── */}
       <nav style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>

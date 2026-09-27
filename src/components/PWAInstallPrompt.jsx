@@ -174,7 +174,7 @@ export default function PWAInstallPrompt() {
     return (
       <div style={{
         position: "fixed", bottom: 16, left: 16, right: 16, maxWidth: 440,
-        margin: "0 auto", background: "#111113", border: "1px solid #22c55e",
+        margin: "0 auto", background: "#141418", border: "1px solid #22c55e",
         borderRadius: 14, padding: "14px 16px", zIndex: 9999,
         display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
         boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
@@ -231,7 +231,7 @@ export default function PWAInstallPrompt() {
             style={{
               width: 44,
               height: 44,
-              background: "#09090b",
+              background: "#0c0c0f",
               borderRadius: 10,
               display: "flex",
               alignItems: "center",

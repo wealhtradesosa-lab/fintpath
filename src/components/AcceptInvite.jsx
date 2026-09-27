@@ -18,7 +18,7 @@ import { supabase, isSupabaseConfigured } from "../lib/supabase";
 // ═══════════════════════════════════════════════════════════════════
 
 const T = {
-  bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
+  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
   border: "rgba(255,255,255,0.06)", borderL: "rgba(255,255,255,0.1)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa", red: "#ef4444",
@@ -184,7 +184,7 @@ export default function AcceptInvite({ token, onComplete }) {
   if (stage === "validating") {
     return (
       <div style={wrap}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}`}</style>
         <div style={{ ...card, textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 20 }}>FINPATHIA</div>
           <div style={{ fontSize: 14, color: T.txt2 }}>Validando invitación...</div>
@@ -197,7 +197,7 @@ export default function AcceptInvite({ token, onComplete }) {
   if (stage === "error") {
     return (
       <div style={wrap}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}`}</style>
         <div style={card}>
           <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 28, textAlign: "center" }}>FINPATHIA</div>
           <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(239,68,68,0.12)", border: `2px solid ${T.red}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 20px" }}>!</div>
@@ -215,7 +215,7 @@ export default function AcceptInvite({ token, onComplete }) {
   if (stage === "accepting") {
     return (
       <div style={wrap}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}`}</style>
         <div style={{ ...card, textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 20 }}>FINPATHIA</div>
           <div style={{ fontSize: 14, color: T.txt2 }}>Vinculando tu cuenta...</div>
@@ -229,7 +229,7 @@ export default function AcceptInvite({ token, onComplete }) {
     const isFamily = invitation?.type === "family";
     return (
       <div style={wrap}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}`}</style>
         <div style={{ ...card, textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 28 }}>FINPATHIA</div>
           <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(34,197,94,0.12)", border: `2px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 20px" }}>✓</div>
@@ -256,7 +256,7 @@ export default function AcceptInvite({ token, onComplete }) {
   // ─── Ready (signup/login form) ───
   return (
     <div style={wrap}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}input:focus{outline:none;border-color:#3b82f6 !important}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}input:focus{outline:none;border-color:#3b82f6 !important}`}</style>
       <div style={card}>
         <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 24, textAlign: "center" }}>FINPATHIA</div>
 

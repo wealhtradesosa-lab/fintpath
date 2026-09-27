@@ -17,7 +17,7 @@ import { useState } from "react";
 // ═══════════════════════════════════════════════════════════════════
 
 const T = {
-  bg: "#09090b", bg2: "#141418", bg3: "#1e1e24",
+  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
   card: "#141418", border: "rgba(255,255,255,0.06)", borderL: "rgba(255,255,255,0.1)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
   green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
@@ -118,10 +118,10 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", color: T.txt, fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#09090b}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}`}</style>
 
       {/* ─── NAV ─── */}
-      <nav style={{ borderBottom: `1px solid ${T.border}`, padding: "16px 24px", background: "rgba(9,9,11,0.8)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 50 }}>
+      <nav style={{ borderBottom: `1px solid ${T.border}`, padding: "16px 24px", background: "rgba(12,12,15,0.8)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: "-0.04em" }}>

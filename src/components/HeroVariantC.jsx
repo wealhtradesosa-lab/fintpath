@@ -14,7 +14,7 @@
 import { useState, useEffect } from "react";
 
 const T = {
-  bg: "#09090b", bg2: "#141418",
+  bg: "#0c0c0f", bg2: "#141418",
   border: "rgba(255,255,255,0.08)",
   borderStrong: "rgba(255,255,255,0.14)",
   txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
@@ -89,9 +89,9 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
         //   2. Gradient inferior negro→transparente (transición suave al resto del landing)
         //   3. Capa global oscura sutil para asegurar contraste universal
         background: `
-          linear-gradient(90deg, rgba(9,9,11,0.85) 0%, rgba(9,9,11,0.65) 35%, rgba(9,9,11,0.4) 65%, rgba(9,9,11,0.55) 100%),
-          linear-gradient(180deg, rgba(9,9,11,0.3) 0%, rgba(9,9,11,0.5) 60%, #09090b 100%),
-          linear-gradient(rgba(9,9,11,0.25), rgba(9,9,11,0.25))
+          linear-gradient(90deg, rgba(12,12,15,0.85) 0%, rgba(12,12,15,0.65) 35%, rgba(12,12,15,0.4) 65%, rgba(12,12,15,0.55) 100%),
+          linear-gradient(180deg, rgba(12,12,15,0.3) 0%, rgba(12,12,15,0.5) 60%, #09090b 100%),
+          linear-gradient(rgba(12,12,15,0.25), rgba(12,12,15,0.25))
         `,
       }} />
 
