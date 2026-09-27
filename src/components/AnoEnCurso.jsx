@@ -60,32 +60,76 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   const entraYTD = acum("entra", transcurridos);
   const saleYTD = acum("sale", transcurridos);
   const netoYTD = entraYTD - saleYTD;
+  // 27-sep-2026 (Santiago: "debería mostrar cómo va a la fecha y cómo está lo
+  // proyectado a dic de 2026"). El cierre del año existía, pero enterrado como
+  // una frase al pie —"si el año cierra así, terminás con X"— y solo el neto.
+  // Las dos preguntas que el bloque debe responder son simétricas: qué pasó y
+  // qué va a pasar. Ahora van una al lado de la otra, con las tres cifras cada
+  // una, y la proyección marcada como tal.
+  const entraAño = acum("entra", meses);
+  const saleAño = acum("sale", meses);
   const netoAño = acum("neto", meses);
+  const mesesRestantes = 12 - mesActual;
 
   const maxAbs = Math.max(1, ...meses.map((x) => Math.abs(x.neto)));
   const M = ["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
   const MESES_L = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-  const Dato = ({ l, v, color }) => (
+  // `tenue` baja el peso visual de la columna proyectada, con el mismo criterio
+  // que las barras de los meses futuros: el dato es legible, pero se lee como
+  // supuesto y no como hecho.
+  const Dato = ({ l, v, color, tenue }) => (
     <div>
       <div style={{ fontSize: 9.5, color: T.tx3, letterSpacing: 1, fontWeight: 700 }}>{l}</div>
-      <div style={{ fontSize: 17, fontWeight: 800, color: color || T.tx, fontFamily: "monospace", marginTop: 2 }}>{fmt(v)}</div>
+      <div style={{ fontSize: tenue ? 15 : 17, fontWeight: tenue ? 700 : 800,
+            color: color || T.tx, fontFamily: "monospace", marginTop: 2,
+            opacity: tenue ? 0.82 : 1 }}>{fmt(v)}</div>
+    </div>
+  );
+
+  // El grupo proyectado no se marca con contorno punteado (Santiago:
+  // "estaba mejor en el verde como tramado"): se marca bajando la opacidad de
+  // sus cifras y tiñendo el fondo, el mismo recurso que usan las barras de los
+  // meses futuros. Un solo lenguaje para "esto todavía no pasó".
+  const Grupo = ({ titulo, sub, children, proyectado }) => (
+    <div style={{
+      flex: "1 1 280px", minWidth: 0, padding: "10px 13px",
+      background: proyectado ? "rgba(34,197,94,0.05)" : "rgba(255,255,255,0.03)",
+      border: `1px solid ${proyectado ? "rgba(34,197,94,0.18)" : T.border}`,
+      borderRadius: 10,
+    }}>
+      <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.9,
+            textTransform: "uppercase", color: T.tx3 }}>{titulo}</div>
+      <div style={{ fontSize: 10.5, color: T.tx3, opacity: 0.8, marginTop: 1 }}>{sub}</div>
+      <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 9 }}>{children}</div>
     </div>
   );
 
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-        <div>
-          <div style={{ fontSize: 14.5, fontWeight: 800, color: T.tx }}>Cómo va {año}</div>
-          <div style={{ fontSize: 11, color: T.tx3, marginTop: 1 }}>
-            Llevás {mesActual} {mesActual === 1 ? "mes" : "meses"} del año
-          </div>
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 800, color: T.tx }}>Cómo va {año}</div>
+        <div style={{ fontSize: 11, color: T.tx3, marginTop: 1, marginBottom: 11 }}>
+          {mesActual} {mesActual === 1 ? "mes cumplido" : "meses cumplidos"}
+          {mesesRestantes > 0 && `, ${mesesRestantes} por delante`}
         </div>
-        <div style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
-          <Dato l="HA ENTRADO" v={entraYTD} color="#22c55e" />
-          <Dato l="HA SALIDO" v={saleYTD} color="#ef4444" />
-          <Dato l="TE HA QUEDADO" v={netoYTD} color={netoYTD >= 0 ? "#22c55e" : "#ef4444"} />
+
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Grupo titulo="A la fecha"
+                 sub={`Enero–${MESES_L[mesActual - 1].toLowerCase()} · ejecutado`}>
+            <Dato l="HA ENTRADO" v={entraYTD} color="#22c55e" />
+            <Dato l="HA SALIDO" v={saleYTD} color="#ef4444" />
+            <Dato l="TE HA QUEDADO" v={netoYTD} color={netoYTD >= 0 ? "#22c55e" : "#ef4444"} />
+          </Grupo>
+
+          {mesesRestantes > 0 && (
+            <Grupo proyectado titulo={`Cierre de ${año}`}
+                   sub="Año completo · proyectado con lo cargado">
+              <Dato tenue l="ENTRARÁ" v={entraAño} color="#22c55e" />
+              <Dato tenue l="SALDRÁ" v={saleAño} color="#ef4444" />
+              <Dato tenue l="QUEDARÁ" v={netoAño} color={netoAño >= 0 ? "#22c55e" : "#ef4444"} />
+            </Grupo>
+          )}
         </div>
       </div>
 
@@ -119,8 +163,10 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
       </div>
 
       <div style={{ fontSize: 11, color: T.tx3, marginTop: 10, lineHeight: 1.5 }}>
-        Incluye retención e impuesto, igual que el simulador. Los meses que faltan son proyección — se ven más tenues.
-        Si el año cierra así, terminás con <strong style={{ color: netoAño >= 0 ? "#22c55e" : "#ef4444" }}>{fmt(netoAño)}</strong>.
+        {mesesRestantes > 0
+          ? <>Las barras sólidas son meses cumplidos; las tenues, los {mesesRestantes} que faltan. El cierre proyectado supone que {mesesRestantes === 1 ? "ese mes se comporta" : "esos meses se comportan"} según los ingresos, gastos y cuotas que tenés cargados hoy.</>
+          : <>El año está completo: las doce barras son meses cumplidos.</>}
+        {" "}Incluye retención e impuesto de renta.
       </div>
     </div>
   );

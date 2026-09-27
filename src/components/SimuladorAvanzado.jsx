@@ -1336,10 +1336,15 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 const esActual = m.mes === mesActualNum;
                 // 27-sep-2026 — Lo ejecutado y lo proyectado se veían idénticos:
                 // solo el mes en curso estaba resaltado, así que septiembre y
-                // noviembre pesaban igual a la vista. Ahora los meses futuros
-                // van huecos (relleno tenue + contorno punteado): la forma del
-                // año se sigue leyendo, pero el ojo distingue el dato del
-                // supuesto sin tener que leer ninguna etiqueta.
+                // noviembre pesaban igual a la vista.
+                //
+                // Primer intento: barras huecas con contorno punteado para el
+                // futuro. Santiago: "no me gusta lo proyectado en línea
+                // punteada, estaba mejor en el verde como tramado". Tenía
+                // razón: el contorno punteado rompe la lectura de la forma del
+                // año, que es justamente para lo que sirve esta franja. El
+                // relleno translúcido separa igual de bien el dato del supuesto
+                // y deja la silueta intacta.
                 const esFuturo = m.mes > mesActualNum;
                 const color = positivo ? T.gn : T.rd;
                 return (
@@ -1347,11 +1352,10 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                     <div style={{
                       width: "100%",
                       height: `${Math.max(heightPct, 2)}%`,
-                      background: esFuturo ? "transparent" : color,
-                      opacity: esActual ? 1 : (esFuturo ? 0.85 : 0.7),
+                      background: color,
+                      opacity: esActual ? 1 : (esFuturo ? 0.3 : 0.85),
                       borderRadius: "3px 3px 0 0",
-                      border: esActual ? `1.5px solid ${T.gd}`
-                            : esFuturo ? `1px dashed ${color}` : "none",
+                      border: esActual ? `1.5px solid ${T.gd}` : "none",
                     }} title={`${m.mesLabel}: ${fm(m.cashFlow)}${esFuturo ? " (proyectado)" : ""}`} />
                     <div style={{ fontSize: 9, color: esActual ? T.gd : T.txt3, marginTop: 3,
                           fontWeight: esActual ? 700 : 500, opacity: esFuturo ? 0.6 : 1 }}>{m.mesLabel}</div>
@@ -1366,7 +1370,7 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                   Ejecutado
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 13, height: 8, border: `1px dashed ${T.gn}`, borderRadius: 2 }} />
+                  <span style={{ width: 13, height: 8, background: T.gn, opacity: 0.3, borderRadius: 2 }} />
                   Proyectado
                 </span>
               </div>
