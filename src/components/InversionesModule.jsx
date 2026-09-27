@@ -210,9 +210,36 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   const toggleSel = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
 
+  // 27-sep-2026 (Santiago: "¿cuál es el objetivo de poder elegir todos los
+  // items de patrimonio?"). Pregunta justa: en este módulo la selección sirve
+  // para UNA sola cosa, borrar en lote. Y el checkbox de la cabecera marca los
+  // N activos de un clic, pegado al botón de eliminar, con un confirm() de una
+  // línea como única barrera. La app no tiene deshacer, ni papelera, ni
+  // restaurar: lo borrado se va.
+  //
+  // La confirmación pasa a ser proporcional al daño. Hasta 3 activos, el
+  // confirm de siempre. De 4 en adelante se nombra lo que se pierde --cuántos,
+  // cuánto valen, cuáles-- y hay que escribir el número para seguir. Teclear
+  // un número no se hace sin querer.
   const deleteSelected = () => {
     if (!guardEdit(role)) return;
-    if (!selected.size || !confirm(`¿Eliminar ${selected.size} activo(s)?`)) return;
+    if (!selected.size) return;
+    const aBorrar = items.filter((i) => selected.has(i.id));
+    const valor = aBorrar.reduce((s, i) => s + getVA(i, trm), 0);
+
+    if (aBorrar.length <= 3) {
+      const nombres = aBorrar.map((i) => `· ${i.n || i.nombre || "(sin nombre)"}`).join("\n");
+      if (!confirm(`Se eliminan ${aBorrar.length} activo${aBorrar.length !== 1 ? "s" : ""} por ${fm(valor)}:\n\n${nombres}\n\nEsta acción no se puede deshacer.`)) return;
+    } else {
+      const muestra = aBorrar.slice(0, 5).map((i) => `· ${i.n || i.nombre || "(sin nombre)"}`).join("\n");
+      const resto = aBorrar.length > 5 ? `\n· …y ${aBorrar.length - 5} más` : "";
+      const resp = prompt(
+        `Vas a eliminar ${aBorrar.length} activos por ${fm(valor)}:\n\n${muestra}${resto}\n\n` +
+        `Esta acción no se puede deshacer: la plataforma no tiene papelera.\n\n` +
+        `Para confirmar, escribí el número ${aBorrar.length}.`
+      );
+      if (resp === null || resp.trim() !== String(aBorrar.length)) return;
+    }
     onUpdate(items.filter((i) => !selected.has(i.id)));
     setSelected(new Set());
   };
