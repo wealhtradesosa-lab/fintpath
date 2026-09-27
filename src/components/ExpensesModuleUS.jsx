@@ -219,7 +219,17 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
     const meals       = form.businessMeals * 0.50;                 // 50% rule
     const s179        = Math.min(form.section179, C.SECTION_179_LIMIT);
     const profDev     = form.professionalDev;
-    const bizExpenses = form.businessExpenses;
+    // 27-sep-2026 — El campo se pide POR MES ("General Business Expenses /
+    // Month") y todos los demas componentes de este Schedule C son anuales:
+    // home office = sqft x $5/ano, millaje = millas x tarifa del ano, comidas,
+    // 179 y desarrollo profesional, anuales.
+    //
+    // La fila del resumen ya mostraba bizExpenses x 12, pero el `total` --el
+    // que de verdad reduce el AGI-- lo sumaba sin multiplicar. Resultado: al
+    // usuario se le mostraba una deduccion doce veces mayor que la que el
+    // calculo aplicaba. Con \$1.000 al mes, la pantalla prometia \$12.000 de
+    // deduccion y el impuesto se calculaba con \$1.000.
+    const bizExpenses = (form.businessExpenses || 0) * 12;
     const total       = homeOffice + mileage + meals + s179 + profDev + bizExpenses;
     return { homeOffice, mileage, meals, s179, profDev, bizExpenses, total };
   }, [form]);
@@ -548,7 +558,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
           </div>
           <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:16}}>
             <div style={{fontSize:12,fontWeight:700,color:T.or,marginBottom:12}}>Schedule C Deductions Summary</div>
-            {schedC.bizExpenses > 0 && <DeductRow label="Business Expenses (monthly × 12)"   amount={schedC.bizExpenses*12} irc="§ 162" />}
+            {schedC.bizExpenses > 0 && <DeductRow label={`Business Expenses (${fm(form.businessExpenses)}/mo × 12)`} amount={schedC.bizExpenses} irc="§ 162" />}
             {schedC.homeOffice  > 0 && <DeductRow label="Home Office (simplified method)"    amount={schedC.homeOffice}    irc="§ 280A" />}
             {schedC.mileage     > 0 && <DeductRow label={`Mileage (${form.businessMiles.toLocaleString("en-US")} mi × $0.70)`} amount={schedC.mileage} irc="§ 162" />}
             {schedC.meals       > 0 && <DeductRow label="Business Meals (50% of total)"     amount={schedC.meals}         irc="§ 274(n)" />}
