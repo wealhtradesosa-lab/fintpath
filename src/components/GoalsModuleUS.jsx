@@ -172,7 +172,14 @@ const EMPTY_GOAL = {
   // 529 fields
   childAge:0, collegeAge:18, collegeType:"public",
   // Debt fields
-  debtBalance:0, debtRate:0, debtPayment:0,
+  // 27-sep-2026 — `debtExtra` reemplaza a `debtPayment`, que estaba declarado
+  // acá y no se usaba en ninguna parte. El campo "Extra Payment (monthly)" del
+  // objetivo de deuda estaba enlazado por error a `homePrice`, que es el precio
+  // objetivo del objetivo de COMPRA DE VIVIENDA. Los dos objetivos escribían en
+  // la misma variable: poner una casa de $450.000 hacía que la pestaña de deuda
+  // creyera un abono extra de $450.000 al mes y diera la deuda por saldada; y
+  // escribir un abono de $200 borraba el precio de la casa sin avisar.
+  debtBalance:0, debtRate:0, debtExtra:0,
 };
 
 // ─── 529 Calculator ───────────────────────────────────────────────────────────
@@ -608,12 +615,12 @@ export default function GoalsModuleUS({
             <Field l="Total Debt Balance" value={form.debtBalance||0} onChange={v=>sf("debtBalance",v)} />
             <Field l="Annual Interest Rate (%)" value={form.debtRate||0} onChange={v=>sf("debtRate",v)} placeholder="24.99" />
             <Field l="Current Monthly Payment" value={form.monthly||0} onChange={v=>sf("monthly",v)} />
-            <Field l="Extra Payment (monthly)" value={form.homePrice||0} onChange={v=>sf("homePrice",v)}
+            <Field l="Extra Payment (monthly)" value={form.debtExtra||0} onChange={v=>sf("debtExtra",v)}
               hint="How much more can you pay per month?" />
           </div>
           {(()=>{
             const base = calcDebtPayoff(form.debtBalance||0, form.debtRate||0, form.monthly||0);
-            const extra = calcDebtPayoff(form.debtBalance||0, form.debtRate||0, (form.monthly||0)+(form.homePrice||0));
+            const extra = calcDebtPayoff(form.debtBalance||0, form.debtRate||0, (form.monthly||0)+(form.debtExtra||0));
             if (!base) return <div style={{color:T.tx3,fontSize:13}}>Enter debt balance and payment to calculate.</div>;
             const interestSaved = extra ? base.totalInterest - extra.totalInterest : 0;
             const monthsSaved = extra ? base.months - extra.months : 0;
