@@ -1,3 +1,6 @@
+// 27-sep-2026 — los ingresos del borrador pasan por el motor: mensual * 12
+// ignora frecuencia y vigencia y deja en cero los variables.
+import { totalAnualItem } from "./flowHelpers.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · borradorDeclaracionF210.js — Generador de borrador F-210
 //
@@ -68,7 +71,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
   const oIng = (user.ingresos || []).filter(i => i.owner === owner.id && i.sim !== false && !i.excluirDeclaracion);
   const ingArriendos = oIng
     .filter(i => i.fiscalCode === "NOL_ARRIENDO_INMUEBLE" || i.fiscalCode === "NOL_ARRIENDO_BIENES_MUEBLES")
-    .reduce((s, i) => s + (Number(i.mensual) || 0) * 12 * (i.moneda === "USD" ? trm : 1), 0);
+    .reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
 
   // Gastos generales (informativos para la persona natural)
   const totalNoConst = noConstSalPenSalud;

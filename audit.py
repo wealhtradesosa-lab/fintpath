@@ -59,7 +59,7 @@ import glob, os
 # globales (colores/fuentes/radios) solo bajan cuando cae el ÚLTIMO archivo que
 # usa un valor, así que durante la migración se quedan quietos aunque se avance.
 # Este cuenta los componentes cuya paleta local contradice a los tokens.
-TOPES = {'colores': 90, 'fuentes': 18, 'radios': 9, 'divergentes': 0, 'crudos': 44}
+TOPES = {'colores': 90, 'fuentes': 18, 'radios': 9, 'divergentes': 0, 'crudos': 40}
 
 # 'crudos' (27-sep-2026): lineas que suman o anualizan .mensual/.m en crudo sin
 # pasar por el motor (montoDelMes, montoPromedioMensual, totalAnualItem,

@@ -89,7 +89,7 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
       i.fiscalCode === "NOL_ARRIENDO_BIENES_MUEBLES" ||
       i.fiscalCode === "ING_JUR_OPERACIONAL"
     )
-    .reduce((s, i) => s + (Number(i.mensual) || 0) * 12 * (i.moneda === "USD" ? trm : 1), 0);
+    .reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
 
   // Renglón 48: ingresos financieros
   const ingFinancieros = oIng
@@ -98,7 +98,7 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
       i.fiscalCode === "CAP_RENDIMIENTO_GENERICO" ||
       i.fiscalCode === "CAP_FIC"
     )
-    .reduce((s, i) => s + (Number(i.mensual) || 0) * 12 * (i.moneda === "USD" ? trm : 1), 0);
+    .reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
 
   // Renglón 51: dividendos gravados
   const ingDividendos = oIng
@@ -106,7 +106,7 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
       i.fiscalCode === "DIV_DIVIDENDOS_GRAVADOS" ||
       i.fiscalCode === "DIV_INTERSOCIETARIOS"
     )
-    .reduce((s, i) => s + (Number(i.mensual) || 0) * 12 * (i.moneda === "USD" ? trm : 1), 0);
+    .reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
 
   // ── Cálculo de gastos por categoría F-110 ───────────────────────────────
   const allGastos = Object.values(user.gas || {}).flat()
