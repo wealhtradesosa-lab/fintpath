@@ -39,8 +39,40 @@
 const Stripe = require("stripe");
 
 // ── Mapeo priceId → plan name ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// 27-sep-2026 — POR QUE NUNCA HUBO UN CLIENTE PAGO ORGANICO.
+//
+// Este mapa se construia SOLO desde seis variables de entorno STRIPE_PRICE_*.
+// En Netlify no existe ninguna de las seis (verificado hoy: hay ocho
+// variables y ninguna es STRIPE_PRICE_*). El mapa quedaba vacio, la linea de
+// abajo lo registraba como advertencia y seguia adelante, y CADA
+// checkout.session.completed caia en "unknown_price" y se ignoraba.
+//
+// Resultado: Stripe cobraba, el webhook respondia 200 "received", y el plan
+// nunca se activaba. El cliente pagaba y seguia en gratis. La existencia de
+// admin-fix-plans.cjs --arreglar planes a mano-- es la huella del problema.
+//
+// stripe-checkout.cjs ya tenia precios de respaldo escritos en el codigo;
+// este archivo no. Ahora los dos comparten el mismo criterio: la fuente de
+// verdad es STRIPE_PRICE_IDS en src/lib/plans.js (el frontend manda esos
+// priceIds), y este mapa los replica. Las variables de entorno, si existen,
+// SOBRESCRIBEN; si no existen, el webhook igual funciona. audit.py verifica
+// que los IDs de aqui y los de plans.js no se separen.
+// ═══════════════════════════════════════════════════════════════════════════
+const PRICE_FALLBACK = {
+  // Basico
+  "price_1TIGRWKEnhNr9wQd2oEgNin9": "basico",       // mensual
+  "price_1TIGRWKEnhNr9wQdJTMTGfYa": "basico",       // anual
+  // Pro
+  "price_1TIGRXKEnhNr9wQdC8eKj2xS": "pro",          // mensual
+  "price_1TIGRYKEnhNr9wQd7QTFxT6z": "pro",          // anual
+  // Pro Familiar
+  "price_1TRC9mKEnhNr9wQdQr9gsRot": "pro_familiar", // mensual
+  "price_1TRCCaKEnhNr9wQdpWlaXP0r": "pro_familiar", // anual
+};
+
 function buildPriceMap() {
-  const map = {};
+  const map = { ...PRICE_FALLBACK };
   const add = (envVar, plan) => {
     const id = process.env[envVar];
     if (id) map[id] = plan;
@@ -140,8 +172,11 @@ exports.handler = async (event) => {
 
   // 2. Construir mapeo priceId → plan
   const priceMap = buildPriceMap();
+  // Con el respaldo en codigo esto ya no puede ser vacio; si lo fuera, algo
+  // muy raro paso y NO queremos seguir en silencio cobrando sin activar.
   if (Object.keys(priceMap).length === 0) {
-    console.warn("[stripe-webhook] priceMap vacío — ninguna env var STRIPE_PRICE_* configurada");
+    console.error("[stripe-webhook] priceMap vacío — imposible con PRICE_FALLBACK; abortando");
+    return { statusCode: 500, headers: cors, body: JSON.stringify({ error: "price map vacío" }) };
   }
 
   // 3. Manejar eventos

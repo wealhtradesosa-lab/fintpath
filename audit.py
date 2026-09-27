@@ -160,6 +160,28 @@ if not desalineados:
 else:
     fail += 1; print(f"  ❌ Tokens desalineados: {desalineados}")
 
+# ═══════════════════════════════════════════════════════════════════════════
+# PRECIOS DE STRIPE EN TRES LUGARES (27-sep-2026)
+# ─────────────────────────────────────────────────────────────────────────
+# El frontend manda los priceIds de src/lib/plans.js. El checkout los valida
+# con un respaldo escrito en codigo. El webhook los necesita para activar el
+# plan tras el cobro, y durante meses los leia SOLO de variables de entorno
+# que nunca existieron: cada pago se ignoraba y el cliente quedaba en gratis.
+# Este chequeo exige que los seis IDs de plans.js esten, exactos, en el
+# respaldo del webhook. Si alguien cambia un precio en Stripe y actualiza uno
+# solo de los archivos, el gate falla antes del deploy.
+# ═══════════════════════════════════════════════════════════════════════════
+with open('src/lib/plans.js') as f:
+    ids_plans = set(re.findall(r'"(price_[A-Za-z0-9]{14,})"', f.read()))
+with open('netlify/functions/stripe-webhook.cjs') as f:
+    ids_webhook = set(re.findall(r'"(price_[A-Za-z0-9]{14,})"', f.read()))
+faltan = ids_plans - ids_webhook
+sobran = ids_webhook - ids_plans
+if len(ids_plans) == 6 and not faltan and not sobran:
+    ok += 1; print(f"  ✅ Precios Stripe: plans.js y webhook coinciden ({len(ids_plans)})")
+else:
+    fail += 1; print(f"  ❌ Precios Stripe desalineados — plans.js:{len(ids_plans)} faltan en webhook:{sorted(faltan)} sobran:{sorted(sobran)}")
+
 r = subprocess.run(['npx','vite','build'], capture_output=True, text=True)
 if r.returncode==0: ok+=1; print(f"  ✅ Build exitoso")
 else: fail+=1; print(f"  ❌ Build FALLA")
