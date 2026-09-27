@@ -26,7 +26,7 @@ import {
   PieChart, Pie, Cell
 } from "recharts";
 import PageHeader from "./PageHeader";
-import { montoDelMes, MESES, getMesActual, montoPromedioMensual, getFrecuencia, estaPagadoEnAño, getMesPago, FRECUENCIAS, getMonto } from "../lib/flowHelpers.js";
+import { montoDelMes, MESES, getMesActual, montoPromedioMensual, getFrecuencia, estaPagadoEnAño, getMesPago, FRECUENCIAS, getMonto, rangoEfectivo } from "../lib/flowHelpers.js";
 import { estimarImpuesto } from "../lib/taxCO";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
@@ -184,9 +184,12 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     if (!mesDetalle) return null;
     const trmR = trm || 4200;
     const mes = mesDetalle;
+    // rangoEfectivo y no el declarado: en un item variable la vigencia suele
+    // quedar en enero–diciembre aunque los montos cubran solo unos meses, y
+    // entonces un ingreso que arranca en septiembre se reportaba como un
+    // faltante de mayo.
     const fueraDeVigencia = (it) => {
-      const desde = Number(it?.desdeMes) || 1;
-      const hasta = Number(it?.hastaMes) || 12;
+      const { desde, hasta } = rangoEfectivo(it);
       return mes < desde || mes > hasta;
     };
     const movs = [];
@@ -574,27 +577,65 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         {detalleMes && (() => {
           const d = detalleMes.dato || {};
           const vs = detalleMes.contraPromedio;
+          // 27-sep-2026 (Santiago, sobre esta misma tabla: "¿por qué arriendo me
+          // aparece en ingreso?"). El cálculo estaba bien: pagó $10M de arriendo
+          // contra $13,3M habituales, así que ahorró $3,3M y eso empujó el mes
+          // hacia arriba. Lo que fallaba era la lectura.
+          //
+          // El gasto quedaba sentado entre cinco líneas que decían "Ingresos",
+          // con un signo + y en verde, y su naturaleza vivía en una palabra gris
+          // y pequeña ("Vivienda"), fácil de pasar por alto. A él, que construyó
+          // la plataforma, le tomó una captura y tres mensajes entenderlo; un
+          // cliente simplemente desconfía del número.
+          //
+          // Segunda aparición del mismo problema: ya lo había señalado con
+          // BROOKFORT en el simulador. En una lista mezclada el color no alcanza
+          // — la fila tiene que decir QUÉ ES y POR QUÉ suma.
+          const NATURALEZA = {
+            ingreso: { et: isEN ? "Income" : "Ingreso", c: T.gn },
+            gasto:   { et: isEN ? "Expense" : "Gasto",  c: T.rd },
+            cuota:   { et: isEN ? "Loan" : "Cuota",     c: T.pr || T.rd },
+          };
+          const sufijo = (m) => {
+            if (m.tipo === "ingreso") return m.efecto > 0
+              ? (isEN ? "more income" : "más ingreso") : (isEN ? "less income" : "menos ingreso");
+            if (m.tipo === "cuota") return m.efecto > 0
+              ? (isEN ? "no payment due" : "no cae este mes") : (isEN ? "payment due" : "cuota del mes");
+            return m.efecto > 0
+              ? (isEN ? "saved" : "ahorro") : (isEN ? "extra spend" : "gasto extra");
+          };
           const Fila = ({ m }) => {
             const arriba = m.efecto > 0;
+            const nat = NATURALEZA[m.tipo] || NATURALEZA.gasto;
+            const verbo = m.tipo === "ingreso" ? (isEN ? "recibió" : "recibió") : (isEN ? "paid" : "pagó");
             return (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
-                    gap: 10, padding: "6px 0", borderBottom: `1px solid ${T.border}` }}>
+                    gap: 10, padding: "7px 0", borderBottom: `1px solid ${T.border}`, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden",
-                      textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1 1 140px" }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase",
+                        color: nat.c, background: nat.c + "1A", borderRadius: 3,
+                        padding: "1px 5px", marginRight: 6 }}>{nat.et}</span>
                   {m.nombre}
-                  <span style={{ fontSize: 10, color: T.txt3, marginLeft: 6 }}>
-                    {m.tipo === "ingreso" ? L.ingresos : m.tipo === "cuota" ? L.cuotas : (m.cat || L.gastosFam)}
-                  </span>
+                  {m.cat && m.tipo === "gasto" && (
+                    <span style={{ fontSize: 10, color: T.txt3, marginLeft: 6 }}>{m.cat}</span>
+                  )}
                 </span>
                 <span style={{ display: "flex", alignItems: "baseline", gap: 9, flexShrink: 0 }}>
-                  <span style={{ fontSize: 10, color: T.txt3, fontFamily: "monospace" }}>
+                  <span style={{ fontSize: 10, color: T.txt3 }}>
                     {m.monto === 0
-                      ? (isEN ? "not this month" : "no cae este mes")
-                      : `${fm(m.monto)} ${isEN ? "vs" : "vs"} ${fm(m.tipico)}`}
+                      ? (isEN ? "nothing this month" : "no se paga este mes")
+                      : <>{isEN ? (m.tipo === "ingreso" ? "received" : "paid") : verbo}{" "}
+                          <span style={{ fontFamily: "monospace" }}>{fm(m.monto)}</span>
+                          {" · "}{isEN ? "usual" : "habitual"}{" "}
+                          <span style={{ fontFamily: "monospace" }}>{fm(m.tipico)}</span></>}
                   </span>
-                  <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "monospace",
-                        color: arriba ? T.gn : T.rd, minWidth: 92, textAlign: "right" }}>
-                    {(arriba ? "+" : "−") + fm(Math.abs(m.efecto))}
+                  <span style={{ textAlign: "right", minWidth: 104 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "monospace",
+                          color: arriba ? T.gn : T.rd, display: "block" }}>
+                      {(arriba ? "+" : "−") + fm(Math.abs(m.efecto))}
+                    </span>
+                    <span style={{ fontSize: 10, color: T.txt3, display: "block" }}>{sufijo(m)}</span>
                   </span>
                 </span>
               </div>

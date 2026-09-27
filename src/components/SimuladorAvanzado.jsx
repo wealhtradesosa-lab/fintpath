@@ -5,7 +5,7 @@ import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import CtaUnaAccion from "./CtaUnaAccion";
-import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS, getRangoMeses } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
@@ -668,8 +668,15 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // "qué movió ESTE mes respecto a lo típico", y un concepto fuera de su
     // vigencia no movió nada -- no es un faltante, es una ausencia esperada.
     // Mostrarlo además hace desconfiar de toda la lista.
+    //
+    // 27-sep-2026 — El guard usaba getRangoMeses, la vigencia DECLARADA, y eso
+    // dejaba pasar los items variables: su rango suele quedar en enero-diciembre
+    // aunque los montos cubran solo unos meses. Un ingreso que arranca en
+    // septiembre seguia reportandose como faltante de mayo. rangoEfectivo acota
+    // el rango a los meses con monto cargado. Mismo error del caso Frank,
+    // entrando por otra puerta.
     const fueraDeVigencia = (item, mes) => {
-      const { desde, hasta } = getRangoMeses(item);
+      const { desde, hasta } = rangoEfectivo(item);
       return mes < desde || mes > hasta;
     };
 
@@ -1582,9 +1589,22 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
               // TOP 3 (20-jul-2026, Santiago: "consideremos el 1, 2, 3 más
               // importante") — los 3 mayores movimientos del mes, numerados.
               const top3 = todos.slice(0, 3);
+              // 27-sep-2026 — El sufijo de gastos no nombraba el caso más común:
+              // gastar MENOS que lo habitual. Decía "gasto que no cae este mes",
+              // que solo es cierto cuando el monto es cero; si el gasto cayó
+              // pero por debajo de su promedio, la frase era falsa y el signo +
+              // en verde lo hacía leer como un ingreso.
+              //
+              // Es el reclamo de Santiago con BROOKFORT, y volvió a aparecer en
+              // el desglose de FlujoAnual con ARRIENDO. Ahora cada línea dice su
+              // naturaleza y por qué suma o resta, con las mismas palabras en
+              // las dos pantallas.
               const sufijo = (d) => {
-                if (d.tipo === "gasto") return d.efecto < 0 ? " (pago del mes)" : " (gasto que no cae este mes)";
-                return d.efecto > 0 ? " (más que un mes promedio)" : " (menos que un mes promedio)";
+                if (d.tipo === "gasto") {
+                  if (d.monto === 0) return " (gasto que no cae este mes)";
+                  return d.efecto > 0 ? " (gasto · ahorro vs. lo habitual)" : " (gasto · por encima de lo habitual)";
+                }
+                return d.efecto > 0 ? " (ingreso · más que lo habitual)" : " (ingreso · menos que lo habitual)";
               };
               return (
                 <div style={{ fontSize: 12, color: T.txt2, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.bd}`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.7, marginTop: 10 }}>

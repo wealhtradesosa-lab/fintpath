@@ -128,6 +128,43 @@ export const getRangoMeses = (item) => ({
   hasta: Number(item?.hastaMes) || 12,
 });
 
+// Rango REAL en el que un concepto tuvo vida, que no siempre es el declarado.
+//
+// 27-sep-2026 (Santiago: "rendimiento empieza en sept y me sale aquí en mayo",
+// y en el mismo panel "RENTA PUERTO MADERO+DOME HASTA SEPT" apareciendo en
+// septiembre como si faltara plata).
+//
+// En un item VARIABLE la vigencia declarada suele quedar en enero–diciembre
+// aunque los montos cargados cubran solo unos meses: el usuario llena la tabla
+// mensual y no toca el rango. getRangoMeses devuelve ese enero–diciembre, así
+// que cualquier análisis que pregunte "¿este concepto existía en mayo?" recibe
+// un sí falso, y un ingreso que todavía no empezaba se reporta como un faltante
+// de mayo. Es el mismo error conceptual del caso Frank, que ya habíamos
+// corregido para los mensuales y volvió a aparecer por esta puerta.
+//
+// Acá el rango se acota al primer y último mes con monto cargado. Un mes en
+// CERO dentro de ese tramo sigue siendo un cero real y se conserva: un gasto
+// variable que no cae en mayo pero sí en marzo y en junio sí ahorró plata en
+// mayo. Lo que se descarta son los meses de antes de empezar y de después de
+// terminar, que no movieron nada porque el concepto no existía.
+export const rangoEfectivo = (item) => {
+  const declarado = getRangoMeses(item);
+  if (getFrecuencia(item) !== "variable") return declarado;
+  const montos = getMontosMensuales(item);
+  let primero = null, ultimo = null;
+  montos.forEach((v, idx) => {
+    if ((Number(v) || 0) === 0) return;
+    const mes = idx + 1;
+    if (primero === null) primero = mes;
+    ultimo = mes;
+  });
+  if (primero === null) return { desde: 1, hasta: 0 };  // nunca tuvo monto
+  return {
+    desde: Math.max(declarado.desde, primero),
+    hasta: Math.min(declarado.hasta, ultimo),
+  };
+};
+
 // Cuenta cuántos meses del año este item está activo (util para promedio).
 export const mesesActivosDelAño = (item) => {
   const freq = getFrecuencia(item);
