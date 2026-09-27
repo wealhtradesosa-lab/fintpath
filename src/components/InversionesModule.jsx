@@ -168,7 +168,6 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", owner: "", moneda: "COP" });
-  const [selected, setSelected] = useState(new Set());
 
   const items = inversiones || [];
   const activos = items.filter((i) => i.sim !== false);
@@ -207,42 +206,17 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // declarado no rinde 0%, simplemente no se sabe, y no se inventa.
   const rendimientoAnual = activos.reduce((s, i) => s + getVA(i, trm) * ((Number(i.tasa) || 0) / 100), 0);
 
-  const toggleSel = (id) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleAll = () => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
 
   // 27-sep-2026 (Santiago: "¿cuál es el objetivo de poder elegir todos los
-  // items de patrimonio?"). Pregunta justa: en este módulo la selección sirve
-  // para UNA sola cosa, borrar en lote. Y el checkbox de la cabecera marca los
-  // N activos de un clic, pegado al botón de eliminar, con un confirm() de una
-  // línea como única barrera. La app no tiene deshacer, ni papelera, ni
-  // restaurar: lo borrado se va.
+  // items de patrimonio?"). Se quitó la selección múltiple de esta tabla.
   //
-  // La confirmación pasa a ser proporcional al daño. Hasta 3 activos, el
-  // confirm de siempre. De 4 en adelante se nombra lo que se pierde --cuántos,
-  // cuánto valen, cuáles-- y hay que escribir el número para seguir. Teclear
-  // un número no se hace sin querer.
-  const deleteSelected = () => {
-    if (!guardEdit(role)) return;
-    if (!selected.size) return;
-    const aBorrar = items.filter((i) => selected.has(i.id));
-    const valor = aBorrar.reduce((s, i) => s + getVA(i, trm), 0);
-
-    if (aBorrar.length <= 3) {
-      const nombres = aBorrar.map((i) => `· ${i.n || i.nombre || "(sin nombre)"}`).join("\n");
-      if (!confirm(`Se eliminan ${aBorrar.length} activo${aBorrar.length !== 1 ? "s" : ""} por ${fm(valor)}:\n\n${nombres}\n\nEsta acción no se puede deshacer.`)) return;
-    } else {
-      const muestra = aBorrar.slice(0, 5).map((i) => `· ${i.n || i.nombre || "(sin nombre)"}`).join("\n");
-      const resto = aBorrar.length > 5 ? `\n· …y ${aBorrar.length - 5} más` : "";
-      const resp = prompt(
-        `Vas a eliminar ${aBorrar.length} activos por ${fm(valor)}:\n\n${muestra}${resto}\n\n` +
-        `Esta acción no se puede deshacer: la plataforma no tiene papelera.\n\n` +
-        `Para confirmar, escribí el número ${aBorrar.length}.`
-      );
-      if (resp === null || resp.trim() !== String(aBorrar.length)) return;
-    }
-    onUpdate(items.filter((i) => !selected.has(i.id)));
-    setSelected(new Set());
-  };
+  // Servía para UNA sola cosa: borrar en lote. El checkbox de la cabecera
+  // marcaba los N activos de un clic, pegado al botón de eliminar, y la app no
+  // tiene deshacer, papelera ni restaurar. El riesgo era real y el beneficio
+  // ninguno: la operación en lote que sí es útil —asignar titular— vive en
+  // AsignarTitularMasivo, no acá.
+  //
+  // Queda el borrado fila por fila, que ya existía y pide confirmación.
 
   const openEdit = (inv) => {
     setForm({
@@ -325,11 +299,6 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         title="Portafolio"
         subtitle={`${activos.length}${activos.length !== items.length ? ` de ${items.length}` : ""} activo${activos.length !== 1 ? "s" : ""} · Valor total: ${fm(totalValor)}`}
         rightSlot={<>
-          {selected.size > 0 && (
-            <button onClick={deleteSelected} style={{ background: T.redDim, border: `1px solid ${T.red}30`, color: T.red, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-              🗑️ Eliminar ({selected.size})
-            </button>
-          )}
           {onImport && <button onClick={onImport}
             title="Cargar activos desde una tabla de Excel"
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
@@ -442,10 +411,6 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr>
-                <th style={{ padding: "12px", width: 40, borderBottom: `1px solid ${T.border}` }}>
-                  <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll}
-                    style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
-                </th>
                 {["Inversión", "Tipo", "Valor", "Ganancia", "Deuda", "On/Off", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: h === "Inversión" || h === "" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
@@ -499,11 +464,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 const tipo = getType(inv);
                 const va = getVA(inv, trm);
                 return (
-                  <tr key={inv.id} style={{ borderBottom: `1px solid ${T.border}`, background: selected.has(inv.id) ? T.greenDim : "transparent" }}>
-                    <td style={{ padding: "10px 12px" }}>
-                      <input type="checkbox" checked={selected.has(inv.id)} onChange={() => toggleSel(inv.id)}
-                        style={{ accentColor: T.green, cursor: "pointer", width: 16, height: 16 }} />
-                    </td>
+                  <tr key={inv.id} style={{ borderBottom: `1px solid ${T.border}`, background: "transparent" }}>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                         {inversionesSinOwnerIds.has(inv.id) && (
