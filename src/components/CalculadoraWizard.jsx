@@ -19,7 +19,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useMemo, useState, useEffect } from "react";
-import { montoPromedioMensual } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, totalAnualItem } from "../lib/flowHelpers.js";
 import { estimarImpuesto, UVT } from "../lib/taxCO.js";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { GRUPOS_SIMPLE } from "../lib/regimenSimple.js";
@@ -398,11 +398,20 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
   const ownerDeu = useMemo(() => ownerDeuAll.filter(d => d.sim !== false), [ownerDeuAll]);
 
   const resumen = useMemo(() => {
-    const salario = ownerIng.filter(i => i.categoria === "Salario").reduce((s, i) => s + (i.mensual || 0), 0);
-    const honorarios = ownerIng.filter(i => i.categoria === "Honorarios").reduce((s, i) => s + (i.mensual || 0), 0);
-    const arriendos = ownerIng.filter(i => i.categoria === "Arriendo").reduce((s, i) => s + (i.mensual || 0), 0);
-    const rendimientos = ownerIng.filter(i => i.categoria === "Rendimientos").reduce((s, i) => s + (i.mensual || 0), 0);
-    const dividendos = ownerIng.filter(i => i.categoria === "Dividendos").reduce((s, i) => s + (i.mensual || 0), 0);
+    // 27-sep-2026 — Estas cinco lineas leian i.mensual en crudo mientras que,
+    // DOS LINEAS ABAJO, los gastos ya pasaban por montoPromedioMensual. Dentro
+    // de la misma funcion convivian dos criterios: un arriendo vigente tres
+    // meses contaba como si corriera los doce, y un gasto vigente tres meses
+    // contaba correctamente como 3/12. De ahi salian avisos falsos ("recibis
+    // arriendo y no registraste gastos del inmueble") y un resumen inflado.
+    const porCategoria = (cat) => ownerIng
+      .filter(i => i.categoria === cat)
+      .reduce((s, i) => s + montoPromedioMensual(i), 0);
+    const salario = porCategoria("Salario");
+    const honorarios = porCategoria("Honorarios");
+    const arriendos = porCategoria("Arriendo");
+    const rendimientos = porCategoria("Rendimientos");
+    const dividendos = porCategoria("Dividendos");
     const gastosActividad = ownerGas.filter(g => ["Oficina", "Servicios", "Tecnología", "Transporte"].includes(g.cat)).reduce((s, g) => s + montoPromedioMensual(g), 0);
     // Categorías de gastos del inmueble — ampliadas para evitar falso positivo
     // cuando el usuario registró el predial/mantenimiento bajo otro nombre.
@@ -1364,9 +1373,12 @@ function Paso3Situacion({ user, selectedOwner, onUpdateProfile, onUpdateOwner, o
   // Commit B3: calcular ingreso bruto anual del owner para validación UVT del Régimen Simple.
   // Suma de ingresos mensuales activos × 12, convirtiendo USD a COP con TRM si aplica.
   const trm = Number(user?.trm) || 4200;
+  // 27-sep-2026 — Multiplicar el mensual por 12 le cobra el ano entero a un
+  // ingreso que corre medio ano, e ignora los variables. totalAnualItem respeta
+  // frecuencia y vigencia.
   const ingresoBrutoAnual = (user?.ingresos || [])
     .filter(i => i.owner === selectedOwner?.id && i.sim !== false)
-    .reduce((s, i) => s + ((Number(i.mensual) || 0) * (i.moneda === "USD" ? trm : 1)), 0) * 12;
+    .reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
   return (
     <div>
       <PasoHeader
