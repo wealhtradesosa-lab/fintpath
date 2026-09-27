@@ -1307,8 +1307,17 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 <div style={{ marginTop: 10, marginBottom: 4, padding: "11px 13px",
                       background: T.bg3, borderRadius: 11,
                       border: `1px solid ${T.border}` }}>
+                  {/* 27-sep-2026 (Santiago: "¿estos números son hasta qué
+                      fecha? ¿hasta el mes actual o es todo el 2026?"). La
+                      etiqueta decía "Ejecutado" a secas y debajo iban las 12
+                      barras del año: dos rangos distintos apilados sin
+                      separación. El rango siempre fue enero–mes actual; lo que
+                      faltaba era decirlo con precisión y aclarar que dos de las
+                      líneas —retención e impuesto— son estimaciones del motor
+                      repartidas en 12, no registros del período. */}
                   <div style={{ fontSize: 10, color: T.txt3, marginBottom: 7 }}>
-                    Ejecutado enero–{mesNom.toLowerCase()}
+                    Enero–{mesNom.toLowerCase()} · {mesHoy} {mesHoy === 1 ? "mes" : "meses"} transcurridos
+                    <span style={{ opacity: 0.7 }}> — no incluye {mesHoy === 12 ? "meses" : "el resto del año"}</span>
                   </div>
                   <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
                     <Celda etiqueta="Ingresos" valor={entra} color={T.gn} />
@@ -1325,21 +1334,43 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                 const heightPct = (Math.abs(m.cashFlow) / maxAbs) * 100;
                 const positivo = m.cashFlow >= 0;
                 const esActual = m.mes === mesActualNum;
+                // 27-sep-2026 — Lo ejecutado y lo proyectado se veían idénticos:
+                // solo el mes en curso estaba resaltado, así que septiembre y
+                // noviembre pesaban igual a la vista. Ahora los meses futuros
+                // van huecos (relleno tenue + contorno punteado): la forma del
+                // año se sigue leyendo, pero el ojo distingue el dato del
+                // supuesto sin tener que leer ninguna etiqueta.
+                const esFuturo = m.mes > mesActualNum;
+                const color = positivo ? T.gn : T.rd;
                 return (
                   <div key={m.mes} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
                     <div style={{
                       width: "100%",
                       height: `${Math.max(heightPct, 2)}%`,
-                      background: positivo ? T.gn : T.rd,
-                      opacity: esActual ? 1 : 0.65,
+                      background: esFuturo ? "transparent" : color,
+                      opacity: esActual ? 1 : (esFuturo ? 0.85 : 0.7),
                       borderRadius: "3px 3px 0 0",
-                      border: esActual ? `1.5px solid ${T.gd}` : "none",
-                    }} title={`${m.mesLabel}: ${fm(m.cashFlow)}`} />
-                    <div style={{ fontSize: 9, color: esActual ? T.gd : T.txt3, marginTop: 3, fontWeight: esActual ? 700 : 500 }}>{m.mesLabel}</div>
+                      border: esActual ? `1.5px solid ${T.gd}`
+                            : esFuturo ? `1px dashed ${color}` : "none",
+                    }} title={`${m.mesLabel}: ${fm(m.cashFlow)}${esFuturo ? " (proyectado)" : ""}`} />
+                    <div style={{ fontSize: 9, color: esActual ? T.gd : T.txt3, marginTop: 3,
+                          fontWeight: esActual ? 700 : 500, opacity: esFuturo ? 0.6 : 1 }}>{m.mesLabel}</div>
                   </div>
                 );
               })}
             </div>
+            {mesActualNum < 12 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 9, fontSize: 9.5, color: T.txt3 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 13, height: 8, background: T.gn, opacity: 0.7, borderRadius: 2 }} />
+                  Ejecutado
+                </span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 13, height: 8, border: `1px dashed ${T.gn}`, borderRadius: 2 }} />
+                  Proyectado
+                </span>
+              </div>
+            )}
           </div>
         );
       })()}
