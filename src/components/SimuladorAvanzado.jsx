@@ -20,6 +20,31 @@ const T = {
 const fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 
 // Vigencia de deudas (20-jul-2026): ¿la cuota aplica en este mes?
+// ═══════════════════════════════════════════════════════════════════════════
+// CRITERIO ÚNICO CON EL DASHBOARD (27-sep-2026)
+// ─────────────────────────────────────────────────────────────────────────
+// Esta pantalla y AñoEnCurso daban cifras distintas para el mismo período:
+// ene–sep salía $947,6M de egresos en el dashboard y $919,1M acá. Dos criterios
+// conviviendo sobre el mismo hecho. Se adopta el del dashboard, correcto en los
+// dos puntos, y vive en estos dos helpers para que no se vuelva a bifurcar: el
+// cálculo estaba copiado en tres lugares de este archivo.
+//
+// CUOTA — por montoDelMes, que respeta frecuencia Y vigencia. El chequeo previo
+// (cuotaDeudaEnMes, abajo) solo miraba el rango de meses, así que una deuda con
+// frecuencia no mensual se cobraba los 12. El override del slider entra como
+// monto base, así que se conserva.
+export const cuotaDeudaDelMes = (d, cuotaBase, año, mes, trm) =>
+  montoDelMes({ ...d, mensual: cuotaBase, m: undefined }, año, mes)
+  * (d?.moneda === "USD" ? (trm || 4200) : 1);
+
+// RETENCIÓN — sigue al ingreso del mes: si un mes entra menos, retienen menos.
+// Aplicarla plana en los 12 meses desplaza el cash flow mes a mes aunque el
+// total anual cuadre. El impuesto de renta sí va parejo: es una obligación
+// anual, no un descuento sobre cada pago.
+export const retencionDelMes = (ingresosMes, brutoRef, retencionRef) =>
+  (brutoRef > 0 ? (ingresosMes / brutoRef) * retencionRef : retencionRef);
+// ═══════════════════════════════════════════════════════════════════════════
+
 const cuotaDeudaEnMes = (d, mes) => {
   const desde = Number(d?.desdeMes) || 1;
   const hasta = Number(d?.hastaMes) || 12;
@@ -564,12 +589,12 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     let cuotasDeudasMes = 0;
     (user.deudas || []).forEach((d, di) => {
       if (d.sim === false || (d.mt || 0) <= 0) return;
-      if (!cuotaDeudaEnMes(d, mes)) return;
-      cuotasDeudasMes += getVal(`debt_${di}`, d.pago || d.pg || 0);
+      cuotasDeudasMes += cuotaDeudaDelMes(d, getVal(`debt_${di}`, d.pago || d.pg || 0),
+                                          añoActual, mes, user?.trm);
     });
 
-    // Impuesto neto y retención: anualizado ÷ 12 (constantes cada mes)
-    const retencionMes = simT.retencionMensual || 0;
+    // Retención proporcional al ingreso del mes; impuesto de renta parejo.
+    const retencionMes = retencionDelMes(brutoDelMes, simT.brutoTotal || 0, simT.retencionMensual || 0);
     const impuestoNetoMes = simT.impuestoNeto || 0;
 
     // Consolidación
@@ -751,13 +776,29 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
           else gastosFam += monto;
         });
       });
+      // ═══ UNIFICACIÓN CON EL DASHBOARD (27-sep-2026) ═══════════════════
+      // Esta franja y AñoEnCurso daban cifras distintas para el mismo período:
+      // ene–sep salía $947,6M de egresos en el dashboard y $919,1M acá. Dos
+      // criterios conviviendo sobre el mismo hecho, que es lo peor que puede
+      // pasar en una herramienta patrimonial. Se adopta el del dashboard, que
+      // es el correcto en los dos puntos:
+      //
+      //  · CUOTAS — pasan por montoDelMes, que respeta frecuencia Y vigencia.
+      //    El chequeo anterior (cuotaDeudaEnMes) solo miraba el rango de meses,
+      //    así que una deuda con frecuencia no mensual se cobraba los 12 meses.
+      //    El override del slider se conserva: entra como monto base.
+      //
+      //  · RETENCIÓN — sigue al ingreso del mes. Si un mes entra menos, retienen
+      //    menos. Antes se aplicaba plana e igual en los 12 meses, lo que en un
+      //    año con ingresos desparejos desplaza el cash flow mes a mes aunque el
+      //    total anual cuadre. El impuesto de renta sí va parejo: es una
+      //    obligación anual, no un descuento sobre cada pago.
       let cuotas = 0;
       (user.deudas || []).forEach((d, di) => {
         if (d.sim === false || (d.mt || 0) <= 0) return;
-        if (!cuotaDeudaEnMes(d, mes)) return;
-        cuotas += getVal(`debt_${di}`, d.pago || d.pg || 0);
+        cuotas += cuotaDeudaDelMes(d, getVal(`debt_${di}`, d.pago || d.pg || 0), año, mes, trm);
       });
-      const retencion = simT.retencionMensual || 0;
+      const retencion = retencionDelMes(ingresosMes, simT.brutoTotal || 0, simT.retencionMensual || 0);
       const impNeto = simT.impuestoNeto || 0;
       const cf = (ingresosMes - retencion) - (aportesObl + gastosFam + cuotas + impNeto);
       // 14-sep-2026 (Santiago: "es super bueno ver cuánto ha ingresado total
@@ -767,7 +808,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       const sale = retencion + aportesObl + gastosFam + cuotas + impNeto;
       return { mes, mesLabel: MESES.find(m => m.v === mes)?.l.slice(0, 3) || "", cashFlow: cf, entra, sale };
     });
-  }, [user, getVal, simT.retencionMensual, simT.impuestoNeto]);
+  }, [user, getVal, trm, simT.retencionMensual, simT.impuestoNeto, simT.brutoTotal]);
 
   // ── Baseline (sin overrides de simVals, sin toggle Optimizado) ──
   // Reproduce la misma fórmula de simT pero usando los valores de la data
@@ -872,13 +913,14 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     let cuotas = 0;
     (user?.deudas || []).forEach((d, di) => {
       if (d.sim === false || (d.mt || 0) <= 0) return;
-      if (!cuotaDeudaEnMes(d, mes)) return;
-      cuotas += vg(`debt_${di}`, d.pago || d.pg || 0);
+      cuotas += cuotaDeudaDelMes(d, vg(`debt_${di}`, d.pago || d.pg || 0),
+                                 añoActual, mes, user?.trm);
     });
 
-    // Retención e impuesto son anualizados ÷ 12, igual que en simTMes.
+    // Mismo criterio que simTMes y que el dashboard: retención proporcional al
+    // ingreso del mes, impuesto de renta parejo.
     const t = conOverrides ? simT : baseT;
-    const retencion = t.retencionMensual || 0;
+    const retencion = retencionDelMes(bruto, t.brutoTotal || 0, t.retencionMensual || 0);
     const impuesto = t.impuestoNeto || 0;
     return (bruto - retencion) - (aportes + gastosFam + cuotas + impuesto);
   }, [user, simT, baseT, getVal]);
