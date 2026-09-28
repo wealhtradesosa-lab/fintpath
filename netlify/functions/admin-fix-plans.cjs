@@ -17,7 +17,7 @@
 //   · Solo modifica data.p.plan. No borra ni altera ningún dato financiero.
 // ════════════════════════════════════════════════════════════════════════════
 
-const ADMINS = ["santiagososa1@me.com", "ajimenez001@gmail.com"];
+const { ADMINS } = require("./_auth.cjs");
 
 exports.handler = async (event) => {
   const headers = {

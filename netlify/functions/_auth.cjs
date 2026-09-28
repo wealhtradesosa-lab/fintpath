@@ -37,7 +37,9 @@ async function usuarioDesdeToken(event) {
   }
 }
 
-const ADMINS = ["santiagososa1@me.com", "ajimenez001@gmail.com"];
+// 27-sep-2026: Santiago: "no tiene por que ser administrador" — un segundo
+// correo llevaba meses aqui con el mismo poder que el suyo. Unica lista.
+const ADMINS = ["santiagososa1@me.com"];
 const esAdmin = (u) => !!u && ADMINS.includes(u.email);
 
 const sinSesion = (headers, mensaje = "Iniciá sesión para usar esta función.") => ({

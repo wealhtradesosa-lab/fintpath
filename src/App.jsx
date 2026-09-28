@@ -1343,7 +1343,7 @@ export default function FinPath(){
   //   3. Si OK → evento 'fp3-save-ok' → toast '☁️ Sincronizado'
   //   4. Si error → evento 'fp3-save-error' → toast '⚠️ Error guardando'
   const upd=(k,v)=>{showToast("💾 Guardando…");setU(p=>p?{...p,[k]:v}:p);};
-  const isAdmin=u?.p?.email==="santiagososa1@me.com"||u?.p?.email==="ajimenez001@gmail.com";
+  const isAdmin=u?.p?.email==="santiagososa1@me.com";
   const INVITADOS=["andres.isaza@grupogiesas.com","renatomaestri76@hotmail.com"];
   const getTrialDays=(email)=>INVITADOS.includes(email)?30:14;
   const trialEnd=u?.p?.trialEnd;
