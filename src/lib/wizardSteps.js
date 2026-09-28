@@ -702,7 +702,8 @@ export function mapearRespuestasAUser(answers, user, ownerId) {
       owner: ownerId,
       m: Number(answers.medicinaMensual),
       fiscalCode: "AP_TRIB_SALUD_PREPAGADA",
-      nombre: "Medicina prepagada (wizard)",
+      c: "Medicina prepagada (wizard)",
+      t: "f",
       _wizard: true,
     });
   }
@@ -714,7 +715,8 @@ export function mapearRespuestasAUser(answers, user, ownerId) {
       owner: ownerId,
       m: Number(answers.aportesPVMensual),
       fiscalCode: "AP_TRIB_PV",
-      nombre: "Aporte Pensión Voluntaria (wizard)",
+      c: "Aporte Pensión Voluntaria (wizard)",
+      t: "f",
       _wizard: true,
     });
   }

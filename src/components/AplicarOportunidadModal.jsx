@@ -84,6 +84,8 @@ const CODIGOS_APLICABLES = {
         id: "gas_op_pv_" + Date.now(),
         owner: ownerId,
         cat: "Aporte tributario",
+        c: vals.tipoCuenta === "AP_TRIB_AFC" ? "Aporte AFC (vivienda)" : "Aporte Pensión Voluntaria",
+        t: "f",
         m: Number(vals.aporteMensual) || 0,
         fiscalCode: vals.tipoCuenta || "AP_TRIB_PV",
         fuente: "Oportunidad aplicada (Auditor IA)",

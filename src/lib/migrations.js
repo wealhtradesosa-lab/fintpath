@@ -227,3 +227,28 @@ export function migrateDeudaViviendaWizardLegacy(d) {
   d.migratedDeudaViviendaWizard = true;
   return d;
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// 27-sep-2026: el wizard tributario, el Plan de Optimización y el Auditor IA
+// insertaban "Aporte tributario" con el nombre en `nombre` (la app lee `c`)
+// y sin `t` (la app pinta "variable" a todo lo que no sea "f"). Santiago vio
+// dos filas "—" marcadas variable y no supo de dónde salían. Los escritores
+// ya quedaron corregidos; esto repara lo guardado. Sin flag: es barato y
+// solo toca filas que lo necesitan, así que puede correr siempre.
+const NOMBRE_POR_CODIGO = {
+  AP_TRIB_PV: "Aporte Pensión Voluntaria",
+  AP_TRIB_PENSION_VOL: "Aporte Pensión Voluntaria",
+  AP_TRIB_AFC: "Aporte AFC (vivienda)",
+  AP_TRIB_SALUD_PREPAGADA: "Medicina prepagada",
+};
+export function migrateAporteTributarioNombre(d) {
+  if (!d || typeof d !== "object" || !d.gas) return d;
+  const lista = d.gas["Aporte tributario"];
+  if (!Array.isArray(lista)) return d;
+  for (const g of lista) {
+    if (!g || typeof g !== "object") continue;
+    if (!g.c) g.c = g.nombre || NOMBRE_POR_CODIGO[g.fiscalCode] || "Aporte tributario";
+    if (g.t !== "f" && g.t !== "v") g.t = "f";
+  }
+  return d;
+}
