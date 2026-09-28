@@ -37,11 +37,14 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { userId, returnUrl } = JSON.parse(event.body || "{}");
-
-    if (!userId) {
-      return { statusCode: 400, body: JSON.stringify({ error: "userId requerido" }) };
-    }
+    const { returnUrl } = JSON.parse(event.body || "{}");
+    // 28-sep-2026: el userId venia en el body. Con el UUID de otro usuario se
+    // abria SU portal de facturacion (facturas, tarjeta, cancelar). Ahora la
+    // identidad sale del token de sesion verificado con Supabase.
+    const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
+    const quien = await usuarioDesdeToken(event);
+    if (!quien) return sinSesion({}, "Inicia sesion para administrar tu suscripcion.");
+    const userId = quien.id;
 
     if (!process.env.STRIPE_SECRET_KEY) {
       console.error("[stripe-customer-portal] STRIPE_SECRET_KEY ausente");

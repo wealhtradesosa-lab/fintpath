@@ -1,4 +1,5 @@
 import LandingPage from "./components/LandingPage";
+import { fetchAuth } from "./lib/apiFetch";
 import BitcoinRetirementUS from "./components/BitcoinRetirementUS";
 
 // ═══ CARGA DIFERIDA (25-jul-2026) ═══════════════════════════════════════════
@@ -735,7 +736,7 @@ export default function FinPath(){
       try{
         const userId=(await supabase.auth.getUser()).data?.user?.id;
         if(userId&&sessionId&&sessionId!=='{CHECKOUT_SESSION_ID}'){
-          const r=await fetch('/.netlify/functions/stripe-recover-activation',{
+          const r=await fetchAuth('/.netlify/functions/stripe-recover-activation',{
             method:'POST',headers:{'Content-Type':'application/json'},
             body:JSON.stringify({userId,sessionId}),
           });

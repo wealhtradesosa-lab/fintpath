@@ -23,6 +23,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState, useCallback } from "react";
+import { fetchAuth } from "../lib/apiFetch";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -267,7 +268,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                 <button
                   onClick={async () => {
                     try {
-                      const res = await fetch("/.netlify/functions/stripe-customer-portal", {
+                      const res = await fetchAuth("/.netlify/functions/stripe-customer-portal", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -576,7 +577,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
       // Disparar envío del email en background.
       setEmailStatus("sending");
       try {
-        const res = await fetch("/.netlify/functions/family-invite-email", {
+        const res = await fetchAuth("/.netlify/functions/family-invite-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

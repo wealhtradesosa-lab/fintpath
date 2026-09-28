@@ -37,7 +37,15 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { advisor_id, email, message } = JSON.parse(event.body || "{}");
+    const { email, message } = JSON.parse(event.body || "{}");
+    // 28-sep-2026: advisor_id venia en el body. Cualquiera podia invitar en
+    // nombre de cualquier asesor activo, gastando sus cupos y mandando
+    // correos con su nombre. advisors.id ES el uid de auth, asi que el
+    // asesor es quien tiene la sesion.
+    const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
+    const quien = await usuarioDesdeToken(event);
+    if (!quien) return sinSesion(headers, "Inicia sesion como asesor para invitar clientes.");
+    const advisor_id = quien.id;
 
     if (!advisor_id || !email) {
       return {

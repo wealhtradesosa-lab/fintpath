@@ -56,11 +56,12 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { userId, sessionId } = JSON.parse(event.body || "{}");
-
-    if (!userId) {
-      return { statusCode: 400, body: JSON.stringify({ error: "userId requerido" }) };
-    }
+    const { sessionId } = JSON.parse(event.body || "{}");
+    // 28-sep-2026: el userId venia en el body; ahora sale del token verificado.
+    const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
+    const quien = await usuarioDesdeToken(event);
+    if (!quien) return sinSesion({}, "Inicia sesion para recuperar la activacion.");
+    const userId = quien.id;
 
     if (!process.env.STRIPE_SECRET_KEY) {
       return { statusCode: 500, body: JSON.stringify({ error: "stripe config" }) };

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { fetchAuth } from "../lib/apiFetch";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 
 // ═══════════════════════════════════════════════════════════════════
@@ -130,7 +131,7 @@ export default function AcceptInvite({ token, onComplete }) {
         if (acceptErr) throw new Error(acceptErr.message || "No se pudo aceptar la invitación");
       } else {
         // Flujo advisor (legacy): netlify function intacta
-        const acceptRes = await fetch("/.netlify/functions/advisor-accept-invite", {
+        const acceptRes = await fetchAuth("/.netlify/functions/advisor-accept-invite", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "accept", token, client_id: userId }),

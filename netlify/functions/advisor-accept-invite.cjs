@@ -46,7 +46,18 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body || "{}");
-    const { action, token, client_id } = body;
+    const { action, token } = body;
+    // 28-sep-2026: client_id venia en el body: quien aceptaba podia vincular a
+    // CUALQUIER usuario con el asesor. Para "accept" el cliente es quien tiene
+    // la sesion; "validate" sigue sin sesion porque corre antes del registro
+    // y el token de invitacion es secreto.
+    const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
+    let client_id = null;
+    if (action === "accept") {
+      const quien = await usuarioDesdeToken(event);
+      if (!quien) return sinSesion(headers, "Inicia sesion para aceptar la invitacion.");
+      client_id = quien.id;
+    }
 
     if (!token || typeof token !== "string") {
       return {

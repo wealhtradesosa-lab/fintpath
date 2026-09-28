@@ -57,6 +57,19 @@ exports.handler = async (event) => {
   }
 
   const { email, invitation_url, role, account_name, invited_by_name, expires_at } = payload;
+
+  // 28-sep-2026: esta funcion mandaba un correo firmado FINPATHIA a cualquier
+  // direccion con el link, el nombre del remitente y el de la cuenta que
+  // trajera el body: un relay de phishing listo. Ahora exige sesion y el
+  // link tiene que apuntar a finpathia.com.
+  const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
+  const quien = await usuarioDesdeToken(event);
+  if (!quien) return sinSesion(cors, "Inicia sesion para invitar a tu familia.");
+  const dominiosOk = ["https://finpathia.com/", "https://www.finpathia.com/"];
+  if (typeof invitation_url !== "string" || !dominiosOk.some((d) => invitation_url.startsWith(d))) {
+    return { statusCode: 400, headers: cors, body: JSON.stringify({ ok: false, error: "invitation_url invalida" }) };
+  }
+
   if (!email || !invitation_url || !role) {
     return {
       statusCode: 400,

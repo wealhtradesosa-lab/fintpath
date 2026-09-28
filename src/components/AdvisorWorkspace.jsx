@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fetchAuth } from "../lib/apiFetch";
 
 // ═══════════════════════════════════════════════════════════════════
 // ADVISOR WORKSPACE
@@ -78,7 +79,7 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
     if (!inviteEmail || sending) return;
     setSending(true);
     try {
-      const r = await fetch("/.netlify/functions/advisor-invite", {
+      const r = await fetchAuth("/.netlify/functions/advisor-invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

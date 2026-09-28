@@ -198,9 +198,21 @@ for ruta in sorted(glob.glob('netlify/functions/*')):
     nombre = os.path.basename(ruta)
     if nombre.startswith('_') or nombre.endswith('-cron.mjs') or nombre.startswith('cron-'):
         continue
+    # Excepciones con otra verificacion, documentadas aqui para que no se
+    # agreguen mas sin pensarlo:
+    #   stripe-webhook: firma de Stripe (constructEvent) — no hay usuario.
+    #   send-email: origen del navegador; se dispara al registrarse, sin sesion.
+    #   advisor-lead: formulario publico de la landing de asesores.
+    if nombre in ('stripe-webhook.cjs', 'send-email.cjs', 'advisor-lead.cjs'):
+        continue
     with open(ruta) as f:
         fn = f.read()
-    sensible = 'ANTHROPIC_API_KEY' in fn or 'ADMINS' in fn or 'esAdmin' in fn
+    # Tambien las que actuan sobre un usuario: si el id llegara por el body,
+    # cualquiera podria actuar sobre cualquier cuenta (portal de Stripe,
+    # invitaciones de asesor, correos de invitacion familiar).
+    sensible = ('ANTHROPIC_API_KEY' in fn or 'ADMINS' in fn or 'esAdmin' in fn
+                or 'RESEND_API_KEY' in fn or 'stripe_customer_id' in fn
+                or 'advisor_id' in fn or 'client_id' in fn)
     if sensible and 'usuarioDesdeToken' not in fn:
         abiertas.append(nombre)
 if not abiertas:
