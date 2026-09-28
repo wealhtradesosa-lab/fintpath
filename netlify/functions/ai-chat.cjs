@@ -331,14 +331,21 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method not allowed" };
 
   try {
-    const { messages, financialContext, userId, jurisdiction, taxConfig } = JSON.parse(event.body);
+    const { messages, financialContext, jurisdiction, taxConfig } = JSON.parse(event.body);
+    // 28-sep-2026: sin sesión no hay IA. El userId del body era un texto
+    // libre ("anon" para cualquiera) y el límite se reiniciaba en cada
+    // arranque en frío: presupuesto de Anthropic abierto a quien quisiera.
+    const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
+    const quien = await usuarioDesdeToken(event);
+    if (!quien) return sinSesion(headers, "Iniciá sesión para usar el asesor con IA.");
+    const userId = quien.id;
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_KEY) {
       return { statusCode: 500, headers, body: JSON.stringify({ error: "API key no configurada. Contacta al administrador." }) };
     }
 
     // Rate limit
-    const key = userId || event.headers["x-forwarded-for"] || "anon";
+    const key = userId;
     const now = Date.now();
     if (!rateLimits[key] || now - rateLimits[key].start > WINDOW) {
       rateLimits[key] = { start: now, count: 0 };

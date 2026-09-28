@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { fetchAuth } from "../lib/apiFetch";
 
 /**
  * AdminMetrics — El embudo de FINPATHIA de un vistazo.
@@ -13,7 +14,7 @@ export default function AdminMetrics({ email, fmt, T }) {
 
   const cargar = () => {
     setCargando(true); setErr("");
-    fetch("/.netlify/functions/admin-metrics", {
+    fetchAuth("/.netlify/functions/admin-metrics", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),

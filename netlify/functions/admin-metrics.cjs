@@ -30,10 +30,14 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
 
   try {
-    const { email } = JSON.parse(event.body || "{}");
-    if (!email || !ADMINS.includes(String(email).toLowerCase().trim())) {
+    // 28-sep-2026: antes bastaba con mandar el correo de un admin en el body.
+    // Ahora la identidad sale del token de sesión, verificado con Supabase.
+    const { usuarioDesdeToken, esAdmin } = require("./_auth.cjs");
+    const quien = await usuarioDesdeToken(event);
+    if (!esAdmin(quien)) {
       return { statusCode: 403, headers, body: JSON.stringify({ error: "No autorizado" }) };
     }
+    const email = quien.email;
 
     const URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const KEY = process.env.SUPABASE_SERVICE_KEY;

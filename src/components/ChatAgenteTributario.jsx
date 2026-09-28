@@ -26,6 +26,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useRef, useEffect } from "react";
+import { fetchAuth } from "../lib/apiFetch";
 import { montoPromedioMensual, promedioMesActivo } from "../lib/flowHelpers.js";
 
 // Paleta consistente con AgenteTributarioBienvenida (alto contraste)
@@ -178,7 +179,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
 
     try {
       const taxContext = buildTaxContext(user, estimacion, selectedOwner);
-      const res = await fetch("/api/agente-tributario-ia", {
+      const res = await fetchAuth("/api/agente-tributario-ia", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -189,7 +190,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
       });
       const data = await res.json();
       if (!res.ok || data.error) {
-        setError(data.error || "Error desconocido");
+        setError(data.mensaje || data.error || "Error desconocido");
         // Quitar el mensaje del user del historial si la API falló
         // (así el user puede reintentar sin duplicar)
         return;

@@ -14,6 +14,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useRef } from "react";
+import { fetchAuth } from "../lib/apiFetch";
 import NumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 
@@ -109,7 +110,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
     try {
       const base64 = await fileToBase64(file);
       const tipoHint = selectedOwner?.type === "juridica" ? "F110" : "F210";
-      const r = await fetch("/api/parse-declaration", {
+      const r = await fetchAuth("/api/parse-declaration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pdf: base64, tipoHint, userId: user?.id }),

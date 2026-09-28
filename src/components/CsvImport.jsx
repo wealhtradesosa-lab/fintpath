@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { fetchAuth } from "../lib/apiFetch";
 // 25-jul-2026: xlsx se carga bajo demanda. El import estático de esta línea
 // metía SheetJS (~500KB) en el bundle principal y anulaba el dynamic import
 // que excelExport.js ya hacía bien: bastaba un solo import estático en
@@ -101,7 +102,7 @@ async function analyzeWithAI(excelText, modulePrompt) {
   
   let res;
   try {
-    res = await fetch("/api/analyze-excel", {
+    res = await fetchAuth("/api/analyze-excel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ excelText: trimmedText, modulePrompt }),
@@ -111,7 +112,9 @@ async function analyzeWithAI(excelText, modulePrompt) {
   }
   
   if (!res.ok) {
-    throw new Error("Error del servidor: " + res.status + ". Verifica que ANTHROPIC_API_KEY esté configurada en Netlify.");
+    let msg = "";
+    try { const j = await res.json(); msg = j.mensaje || j.error || ""; } catch {}
+    throw new Error(msg || ("Error del servidor: " + res.status));
   }
   
   let data;

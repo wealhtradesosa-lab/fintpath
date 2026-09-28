@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
 import { montoPromedioMensual, promedioMesActivo } from "../lib/flowHelpers.js";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
@@ -173,7 +174,7 @@ export default function AsesorIA({ user, totals, userId }) {
       const taxConfig = user?.taxConfig || null;
       const apiMsgs = newMsgs.map(m => ({ role: m.role, content: m.content }));
 
-      const res = await fetch("/api/ai-chat", {
+      const res = await fetchAuth("/api/ai-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: apiMsgs, financialContext: ctx, userId: userId || "anon", jurisdiction, taxConfig }),
@@ -182,7 +183,7 @@ export default function AsesorIA({ user, totals, userId }) {
       const data = await res.json();
       trackUsage();
       if (data.error) {
-        setError(data.error);
+        setError(data.mensaje || data.error);
       } else {
         setMsgs([...newMsgs, { role: "assistant", content: data.reply }]);
       }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
 import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
 import BarraComposicion from "./BarraComposicion";
@@ -267,7 +268,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
         reader.onload = async (ev) => {
           const base64 = ev.target.result.split(",")[1];
           const mediaType = file.type || "image/jpeg";
-          const res = await fetch("/.netlify/functions/analyze-image", {
+          const res = await fetchAuth("/.netlify/functions/analyze-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ image: base64, type: "ingreso", mediaType, userId: user?.id })

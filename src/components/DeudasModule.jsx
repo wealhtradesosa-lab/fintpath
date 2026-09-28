@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
@@ -61,7 +62,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         reader.onload = async (ev) => {
           const base64 = ev.target.result.split(",")[1];
           const mediaType = file.type || "image/jpeg";
-          const res = await fetch("/.netlify/functions/analyze-image", {
+          const res = await fetchAuth("/.netlify/functions/analyze-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ image: base64, type: "deuda", mediaType, userId: user?.id })

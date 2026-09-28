@@ -182,6 +182,32 @@ if len(ids_plans) == 6 and not faltan and not sobran:
 else:
     fail += 1; print(f"  ❌ Precios Stripe desalineados — plans.js:{len(ids_plans)} faltan en webhook:{sorted(faltan)} sobran:{sorted(sobran)}")
 
+# ═══════════════════════════════════════════════════════════════════════════
+# FUNCIONES QUE CUESTAN O MANDAN, CON IDENTIDAD VERIFICADA (28-sep-2026)
+# ─────────────────────────────────────────────────────────────────────────
+# Cinco funciones confiaban en lo que el navegador les decia: un correo en el
+# body autorizaba admin-fix-plans (cambia planes) y admin-metrics; ai-chat,
+# agente-tributario-ia y analyze-excel no pedian nada y cada llamada gasta la
+# clave de Anthropic. Regla: toda funcion que toque ANTHROPIC_API_KEY o
+# esAdmin debe pasar por usuarioDesdeToken (_auth.cjs), que verifica el
+# access token con Supabase. Los cron programados no tienen URL publica y
+# quedan fuera.
+# ═══════════════════════════════════════════════════════════════════════════
+abiertas = []
+for ruta in sorted(glob.glob('netlify/functions/*')):
+    nombre = os.path.basename(ruta)
+    if nombre.startswith('_') or nombre.endswith('-cron.mjs') or nombre.startswith('cron-'):
+        continue
+    with open(ruta) as f:
+        fn = f.read()
+    sensible = 'ANTHROPIC_API_KEY' in fn or 'ADMINS' in fn or 'esAdmin' in fn
+    if sensible and 'usuarioDesdeToken' not in fn:
+        abiertas.append(nombre)
+if not abiertas:
+    ok += 1; print("  ✅ Funciones sensibles verifican token")
+else:
+    fail += 1; print(f"  ❌ Funciones sensibles sin usuarioDesdeToken: {abiertas}")
+
 r = subprocess.run(['npx','vite','build'], capture_output=True, text=True)
 if r.returncode==0: ok+=1; print(f"  ✅ Build exitoso")
 else: fail+=1; print(f"  ❌ Build FALLA")

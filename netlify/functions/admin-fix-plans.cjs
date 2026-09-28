@@ -30,12 +30,17 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body || "{}");
-    const { email } = body;
     const dryRun = body.dryRun !== false; // por defecto NO escribe
 
-    if (!email || !ADMINS.includes(String(email).toLowerCase().trim())) {
+    // 28-sep-2026: antes bastaba con mandar el correo de un admin en el body
+    // y dryRun:false para cambiar planes de cualquier usuario. Ahora la
+    // identidad sale del token de sesión, verificado con Supabase.
+    const { usuarioDesdeToken, esAdmin } = require("./_auth.cjs");
+    const quien = await usuarioDesdeToken(event);
+    if (!esAdmin(quien)) {
       return { statusCode: 403, headers, body: JSON.stringify({ error: "No autorizado" }) };
     }
+    const email = quien.email;
 
     const URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const KEY = process.env.SUPABASE_SERVICE_KEY;

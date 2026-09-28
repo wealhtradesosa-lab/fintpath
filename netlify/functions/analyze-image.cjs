@@ -11,7 +11,11 @@ exports.handler = async (event) => {
     const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_API_KEY) return { statusCode: 500, headers, body: JSON.stringify({ error: "API key no configurada" }) };
 
-    const { image, type, mediaType, userId } = JSON.parse(event.body);
+    const { image, type, mediaType } = JSON.parse(event.body);
+    // 28-sep-2026: el userId venía en el body; ahora sale del token verificado.
+    const { usuarioDesdeToken } = require("./_auth.cjs");
+    const quien = await usuarioDesdeToken(event);
+    const userId = quien?.id || null;
     if (!image) return { statusCode: 400, headers, body: JSON.stringify({ error: "No image provided" }) };
 
     // ── 26-jul-2026 — ENDPOINT ABIERTO + SIN TOPE ──────────────────────────

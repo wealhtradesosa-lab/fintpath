@@ -26,7 +26,11 @@ exports.handler = async (event) => {
       return { statusCode: 500, headers, body: JSON.stringify({ error: "API key no configurada" }) };
     }
 
-    const { pdf, tipoHint, userId } = JSON.parse(event.body || "{}");
+    const { pdf, tipoHint } = JSON.parse(event.body || "{}");
+    // 28-sep-2026: el userId venía en el body; ahora sale del token verificado.
+    const { usuarioDesdeToken } = require("./_auth.cjs");
+    const quien = await usuarioDesdeToken(event);
+    const userId = quien?.id || null;
     if (!pdf) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "Falta el PDF en el body" }) };
     }

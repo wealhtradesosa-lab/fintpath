@@ -1,3 +1,8 @@
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const { usuarioDesdeToken } = require("./_auth.cjs");
+const { consumirCuota, mensajeCuota } = require("./_cuotaIA.cjs");
+
 export default async function handler(req) {
   const corsHeaders = { 
     "Content-Type": "application/json", 
@@ -23,6 +28,22 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: "Missing excelText or modulePrompt" }), { status: 200, headers: corsHeaders });
     }
     
+    // 28-sep-2026: esta función no pedía nada — ni sesión ni cuota — y cada
+    // llamada consume la clave de Anthropic. Misma regla que analyze-image y
+    // parse-declaration: sesión verificada y descuento de la cuota del plan.
+    const quien = await usuarioDesdeToken({ headers: { authorization: req.headers.get("authorization") || "" } });
+    if (!quien) {
+      return new Response(JSON.stringify({ error: "sesion_requerida", mensaje: "Iniciá sesión para importar con IA." }), { status: 401, headers: corsHeaders });
+    }
+    const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+    if (SUPA_URL && SERVICE_KEY) {
+      const cuota = await consumirCuota({ url: SUPA_URL, serviceKey: SERVICE_KEY, userId: quien.id });
+      if (!cuota.permitido) {
+        return new Response(JSON.stringify(mensajeCuota(cuota)), { status: 429, headers: corsHeaders });
+      }
+    }
+
     const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_API_KEY) {
       return new Response(JSON.stringify({ fallback: true, error: "API key not configured" }), { status: 200, headers: corsHeaders });
