@@ -167,9 +167,9 @@ export function ChartTooltip({ active, payload, label, formatter, labelFormatter
             width: 10,
             height: 10,
             borderRadius: 3,
-            background: p.color || p.fill || CHART.txt2,
+            background: p.color || p.fill || p.payload?.fill || p.payload?.color || CHART.txt2,
             flexShrink: 0,
-            boxShadow: `0 0 8px ${p.color || p.fill || "transparent"}40`,
+            boxShadow: `0 0 8px ${p.color || p.fill || p.payload?.fill || p.payload?.color || "transparent"}40`,
           }} />
           <div style={{ display: "flex", justifyContent: "space-between", flex: 1, gap: 16, alignItems: "baseline" }}>
             <span style={{ color: CHART.txt2, fontSize: 12 }}>{p.name}</span>
