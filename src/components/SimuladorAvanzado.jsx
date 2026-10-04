@@ -1806,17 +1806,26 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                         // aumento de canon, cambio de rendimiento). El slider mueve
                         // la renta directamente; la tasa de retorno se recalcula
                         // como CONSECUENCIA de la renta sobre el capital fijo.
-                        const simCap = baseCap; // capital fijo, dato de referencia
+                        // 4-oct-2026 (Santiago: "si bajo el slider debería bajar el
+                        // capital invertido y por ende la renta"). Las dos lecturas son
+                        // válidas en situaciones distintas: vacancia o cambio de canon
+                        // (capital fijo, renta varía) vs. retirar o meter plata (capital
+                        // varía, renta sigue a la tasa). En vez de voltear la decisión de
+                        // mayo, el usuario elige qué mueve el slider. Capital por defecto
+                        // cuando hay tasa; renta cuando no.
                         const baseTasa = Number(ing.tasa) || 0;
                         const isInvType = ["Rendimiento","Dividendos","Arriendo","Inversión","Intereses bancarios","Utilidad FIC"].some(t => (ing.categoria||"").includes(t));
-                        const hasCap = simCap > 0; // tiene capital registrado → es inversión
-                        // La renta la controla el slider directamente
+                        const hasCap = baseCap > 0; // tiene capital registrado → es inversión
+                        const modo = getVal("ingmodo_"+safeIdx, hasCap && baseTasa > 0 ? "capital" : "renta");
+                        const simCap = modo === "capital" ? getVal("ingcap_"+safeIdx, baseCap) : baseCap;
+                        // El motor lee la renta en ing_<idx>; en modo capital se deriva.
                         const simRenta = getVal("ing_"+safeIdx, baseRenta);
-                        // Tasa de retorno = consecuencia (renta anual / capital)
-                        const simTasa = simCap > 0
-                          ? Math.round((simRenta*12/simCap)*1000)/10
-                          : baseTasa;
+                        const simTasa = modo === "capital"
+                          ? baseTasa
+                          : (simCap > 0 ? Math.round((simRenta*12/simCap)*1000)/10 : baseTasa);
                         const rentDiff = simRenta - baseRenta;
+                        const capDiff = simCap - baseCap;
+                        const rentaDesdeCapital = (cap) => baseCap > 0 ? baseRenta * (cap / baseCap) : baseRenta;
 
                         // ═══ Guard MES-CÉNTRICO (20-jul-2026): fila informativa
                         // profesional con valor y mes (mismo diseño que gastos).
@@ -1878,16 +1887,33 @@ ${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
                                 <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:"6px 10px"}}>
                                   <div style={{fontSize:9,color:T.txt3}}>Capital invertido</div>
                                   <div style={{fontSize:14,fontWeight:700}}>{fm(simCap)}</div>
+                                  {capDiff!==0&&<div style={{fontSize:10,color:capDiff>0?T.gn:T.rd,fontWeight:600}}>{capDiff>0?"+":""}{fm(capDiff)}</div>}
                                 </div>
                                 <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:"6px 10px"}}>
                                   <div style={{fontSize:9,color:T.txt3}}>Renta mensual ({simTasa}% anual)</div>
                                   <div style={{fontSize:14,fontWeight:700,color:"#22d3ee"}}>{fm(simRenta)}</div>
                                 </div>
                               </div>
-                              <Slider label="Renta mensual" value={simRenta} base={baseRenta}
-                                max={Math.max(Math.round(baseRenta*2),1000)} color={"#22d3ee"}
-                                onChange={(v)=>setVal("ing_"+safeIdx,v)}
-                                sub="el capital invertido se mantiene fijo" />
+                              <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}>
+                                <span style={{fontSize:10,color:T.txt3}}>Mover:</span>
+                                {[["capital","Capital"],["renta","Renta"]].map(([k,l])=>(
+                                  <button key={k} onClick={()=>{setVal("ingmodo_"+safeIdx,k);setVal("ingcap_"+safeIdx,baseCap);setVal("ing_"+safeIdx,baseRenta);}}
+                                    style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:999,cursor:"pointer",
+                                      background:modo===k?"rgba(34,211,238,0.18)":"transparent",color:modo===k?"#22d3ee":T.txt3,
+                                      border:"1px solid "+(modo===k?"#22d3ee":T.border)}}>{l}</button>
+                                ))}
+                              </div>
+                              {modo==="capital" ? (
+                                <Slider label="Capital invertido" value={simCap} base={baseCap}
+                                  max={Math.max(Math.round(baseCap*2),1000)} color={"#22d3ee"}
+                                  onChange={(v)=>{setVal("ingcap_"+safeIdx,v);setVal("ing_"+safeIdx,rentaDesdeCapital(v));}}
+                                  sub={`la renta sigue al capital a ${baseTasa}% anual`} />
+                              ) : (
+                                <Slider label="Renta mensual" value={simRenta} base={baseRenta}
+                                  max={Math.max(Math.round(baseRenta*2),1000)} color={"#22d3ee"}
+                                  onChange={(v)=>setVal("ing_"+safeIdx,v)}
+                                  sub="el capital invertido se mantiene fijo; la tasa es consecuencia" />
+                              )}
                             </>) : (
                               <Slider label={ing.nombre||"Ingreso"} value={simRenta} base={baseRenta}
                                 max={Math.max(baseRenta*3,1000)} color={"#22d3ee"}
