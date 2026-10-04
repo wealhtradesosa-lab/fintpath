@@ -20,6 +20,7 @@ const FlujoAnual = lazy(() => import("./components/FlujoAnual"));
 const CsvImport = lazy(() => import("./components/CsvImport"));
 const CalculadoraWizard = lazy(() => import("./components/CalculadoraWizard"));
 const SimuladorAvanzado = lazy(() => import("./components/SimuladorAvanzado"));
+const SimuladorFuturo = lazy(() => import("./components/SimuladorFuturo"));
 const DeclaracionFlow = lazy(() => import("./components/DeclaracionFlow"));
 const PensionesColpensiones = lazy(() => import("./components/PensionesColpensiones"));
 const BorradorDeclaracionF110 = lazy(() => import("./components/BorradorDeclaracionF110"));
@@ -1694,7 +1695,7 @@ export default function FinPath(){
 
   // Feature gating — inline, no separate component
   const gateOverlay=(planNeeded)=><div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10,background:"rgba(12,12,15,0.5)",backdropFilter:"blur(2px)",borderRadius:16}}><div style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:20,padding:"40px 48px",textAlign:"center",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:340}}><div style={{width:56,height:56,borderRadius:16,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 16px"}}>🔒</div><div style={{fontSize:18,fontWeight:800,marginBottom:6,letterSpacing:"-0.02em"}}>{"Plan "+planNeeded}</div><div style={{fontSize:13,color:T.tx3,marginBottom:20,lineHeight:1.5}}>{"Desbloquea esta función con el plan "+planNeeded}</div><Bt onClick={()=>setPg("price")} st={{width:"100%",justifyContent:"center"}}>Upgrade a {planNeeded}</Bt></div></div>;
-  const gated=(feat,planNeeded,content)=>{const ok=hasProAccess||(plan==="basico"&&["trd","pen","btc","sim"].includes(feat));if(ok||plan===planNeeded)return content;return<div style={{position:"relative"}}><div style={{filter:"blur(4px)",pointerEvents:"none",opacity:.3,maxHeight:400,overflow:"hidden"}}>{content}</div>{gateOverlay(planNeeded)}</div>};
+  const gated=(feat,planNeeded,content)=>{const ok=hasProAccess||(plan==="basico"&&["trd","pen","btc","sim","simf"].includes(feat));if(ok||plan===planNeeded)return content;return<div style={{position:"relative"}}><div style={{filter:"blur(4px)",pointerEvents:"none",opacity:.3,maxHeight:400,overflow:"hidden"}}>{content}</div>{gateOverlay(planNeeded)}</div>};
 
   const getCoach=id=>{
     if(!u)return[];
@@ -1816,7 +1817,7 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Optimizer",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:isUS||((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Declaraciones anteriores",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador"},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte"},{id:"flujo",i:"📅",l:isEN?"Annual Flow":"Flujo Anual"},{id:"met",i:"🎯",l:isEN?"Goals":"Metas"},{id:"trd",i:"💹",l:"Trading",
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Optimizer",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:isUS||((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Declaraciones anteriores",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador · año actual"},{id:"simf",i:"🔮",l:"Simulador · futuro",hidden:isUS},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte"},{id:"flujo",i:"📅",l:isEN?"Annual Flow":"Flujo Anual"},{id:"met",i:"🎯",l:isEN?"Goals":"Metas"},{id:"trd",i:"💹",l:"Trading",
       // 26-jul-2026 — OCULTO DEL MENÚ, NO ELIMINADO.
       // Uso real medido en la base: 2 de 86 cuentas tienen posiciones
       // cargadas, y una es la de Santiago. Contra 31 en Ingresos y 21 en
@@ -3082,6 +3083,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           retirementBalance={(u?.inv||[]).filter(i=>["Fondo de Inversión","CDT","Acciones"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)}
         />
       :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trm||u?.trm||4200} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado si Plan a cero (P0.3) está activo."} onNavigateNorte={()=>setPg("norte")} extraADeudas={extraADeudas}/>;
+    case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
     case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} user={{inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
     case"flujo":return <FlujoAnual user={u} trm={u?.trm||4200} isEN={isEN}/>;
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
