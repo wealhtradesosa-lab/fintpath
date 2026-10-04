@@ -924,13 +924,11 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         <Cell key={i} fill={entry.color} stroke={T.card} strokeWidth={2} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={(value, name, props) => [
-                        `$${Math.round(value).toLocaleString("es-CO")} (${props.payload.pct.toFixed(1)}%)`,
-                        name
-                      ]}
-                      contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "8px 12px", fontSize: 12 }}
-                    />
+                    {/* 4-oct-2026: el tooltip por defecto de Recharts pinta el
+                        texto en negro sobre nuestro fondo oscuro ("no se lee
+                        nada"). Se usa el del sistema como el resto de gráficos. */}
+                    <Tooltip content={<ChartTooltip formatter={(v, n, p) =>
+                      `$${Math.round(v).toLocaleString("es-CO")}${p?.payload?.pct != null ? ` (${p.payload.pct.toFixed(1)}%)` : ""}`} />} />
                   </PieChart>
                 </ResponsiveContainer>
 
@@ -1001,13 +999,11 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         <Cell key={i} fill={entry.color} stroke={T.card} strokeWidth={2} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={(value, name, props) => [
-                        `$${Math.round(value).toLocaleString("es-CO")} (${props.payload.pct.toFixed(1)}%)`,
-                        name
-                      ]}
-                      contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "8px 12px", fontSize: 12 }}
-                    />
+                    {/* 4-oct-2026: el tooltip por defecto de Recharts pinta el
+                        texto en negro sobre nuestro fondo oscuro ("no se lee
+                        nada"). Se usa el del sistema como el resto de gráficos. */}
+                    <Tooltip content={<ChartTooltip formatter={(v, n, p) =>
+                      `$${Math.round(v).toLocaleString("es-CO")}${p?.payload?.pct != null ? ` (${p.payload.pct.toFixed(1)}%)` : ""}`} />} />
                   </PieChart>
                 </ResponsiveContainer>
 

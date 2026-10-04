@@ -116,8 +116,8 @@ export function ChartGradients() {
 export function ChartTooltip({ active, payload, label, formatter, labelFormatter }) {
   if (!active || !payload || !payload.length) return null;
 
-  const formatValue = (v, name) => {
-    if (formatter) return formatter(v, name);
+  const formatValue = (v, name, entry) => {
+    if (formatter) return formatter(v, name, entry);
     if (typeof v === "number") {
       // Formato moneda colombiana por defecto
       if (Math.abs(v) >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
@@ -179,7 +179,7 @@ export function ChartTooltip({ active, payload, label, formatter, labelFormatter
               fontFamily: CHART.fontMono,
               fontSize: 13,
             }}>
-              {formatValue(p.value, p.name)}
+              {formatValue(p.value, p.name, p)}
             </span>
           </div>
         </div>

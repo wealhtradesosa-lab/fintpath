@@ -6,6 +6,7 @@
 // puede verificar con números sin montar la interfaz.
 // ═══════════════════════════════════════════════════════════════════════════
 import { useState, useMemo } from "react";
+import { ChartTooltip } from "../lib/chartTheme.jsx";
 import NumberInput from "./NumberInput";
 import PageHeader from "./PageHeader.jsx";
 import Disclaimer from "./Disclaimer";
@@ -342,8 +343,7 @@ export default function BuyVsInvest({ isUS = false }) {
             <XAxis dataKey="anio" stroke="#71717a" fontSize={11}
               label={{ value: "años", position: "insideBottomRight", fill: "#71717a", fontSize: 11 }} />
             <YAxis stroke="#71717a" fontSize={11} tickFormatter={fmCorto} width={70} />
-            <Tooltip formatter={(v) => fm(v)} labelFormatter={(l) => `Año ${l}`}
-              contentStyle={{ background: "#1e1e24", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, fontSize: 12 }} />
+            <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(l) => `Año ${l}`} />} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Line type="monotone" dataKey="Comprar" stroke={T.orange} strokeWidth={2} dot={false} />
             <Line type="monotone" dataKey={activoSel.l} stroke={T.blue} strokeWidth={2} dot={false} />

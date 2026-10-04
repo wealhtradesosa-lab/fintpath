@@ -220,6 +220,23 @@ if not abiertas:
 else:
     fail += 1; print(f"  ❌ Funciones sensibles sin usuarioDesdeToken: {abiertas}")
 
+# 4-oct-2026: tres graficos usaban el <Tooltip> por defecto de Recharts, que
+# escribe el texto en negro sobre nuestro fondo oscuro ("no se lee nada").
+# Todo Tooltip debe pasar content={<ChartTooltip .../>} (o un custom propio).
+sin_content = []
+for ruta in fuentes_ui:
+    with open(ruta) as f:
+        for n, linea in enumerate(f, 1):
+            if '<Tooltip' in linea and 'content=' not in linea and not linea.lstrip().startswith(('//', '*', '{/*')):
+                # el content puede venir en la linea siguiente; se tolera solo si
+                # la etiqueta no cierra en esta linea
+                if '/>' in linea or '>' in linea.split('<Tooltip',1)[1]:
+                    sin_content.append(f"{os.path.basename(ruta)}:{n}")
+if not sin_content:
+    ok += 1; print("  ✅ Tooltips de graficos con ChartTooltip")
+else:
+    fail += 1; print(f"  ❌ Tooltip por defecto (texto negro): {sin_content}")
+
 r = subprocess.run(['npx','vite','build'], capture_output=True, text=True)
 if r.returncode==0: ok+=1; print(f"  ✅ Build exitoso")
 else: fail+=1; print(f"  ❌ Build FALLA")
