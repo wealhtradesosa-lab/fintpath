@@ -34,6 +34,9 @@ const STATIC_ASSETS = [
   "/og-finpathia.jpg",
 ];
 
+// true si la respuesta es HTML (p. ej. index.html servido en lugar de un asset)
+const esHtml = (res) => (res.headers.get("content-type") || "").includes("text/html");
+
 // ─── Install: cachear app shell ──────────────────────────────────────────
 self.addEventListener("install", (event) => {
   console.log("[SW] Install", CACHE_VERSION);
@@ -100,8 +103,10 @@ self.addEventListener("fetch", (event) => {
       fetch(request)
         .then((response) => {
           // Cachear la respuesta para uso offline
-          const copy = response.clone();
-          caches.open(CACHE_RUNTIME).then((cache) => cache.put(request, copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_RUNTIME).then((cache) => cache.put(request, copy));
+          }
           return response;
         })
         .catch(() => {
@@ -117,9 +122,11 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/assets/") || url.pathname.match(/\.(js|css|woff2?|ttf)$/)) {
     event.respondWith(
       caches.match(request).then((cached) => {
-        if (cached) return cached;
+        // Un JS/CSS cacheado que en realidad es HTML (fallback del SPA de un
+        // deploy viejo) deja la app en blanco: se descarta y se pide de nuevo.
+        if (cached && !esHtml(cached)) return cached;
         return fetch(request).then((response) => {
-          if (response.ok) {
+          if (response.ok && !esHtml(response)) {
             const copy = response.clone();
             caches.open(CACHE_STATIC).then((cache) => cache.put(request, copy));
           }

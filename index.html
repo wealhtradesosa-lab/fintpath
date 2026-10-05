@@ -363,6 +363,31 @@
   </head>
   <body style="margin:0;background:#09090b;">
     <div id="root"><div style="background:#09090b;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui"><div style="text-align:center"><div style="font-size:28px;font-weight:900;background:linear-gradient(135deg,#22c55e,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px">FINPATHIA</div><div style="color:#71717a;font-size:13px">Cargando tu patrimonio...</div></div></div></div>
+    <script>
+      // Rescate de pantalla en blanco (PWA): si un deploy dejó en el caché del
+      // service worker un bundle que ya no existe, la app no arranca. Si a los
+      // 10 s #root sigue vacío o con el loader (o falla la carga de un chunk), se quita el SW,
+      // se borra SOLO el caché de archivos (no localStorage ni la sesión) y se
+      // recarga una vez.
+      (function () {
+        var KEY = "fp_rescate_sw";
+        function rescatar() {
+          try { if (sessionStorage.getItem(KEY)) return; sessionStorage.setItem(KEY, "1"); } catch (e) {}
+          var p = [];
+          if ("serviceWorker" in navigator) p.push(navigator.serviceWorker.getRegistrations().then(function (r) { return Promise.all(r.map(function (x) { return x.unregister(); })); }));
+          if ("caches" in window) p.push(caches.keys().then(function (k) { return Promise.all(k.map(function (n) { return caches.delete(n); })); }));
+          Promise.all(p).catch(function () {}).then(function () { location.reload(); });
+        }
+        window.addEventListener("vite:preloadError", rescatar);
+        window.addEventListener("load", function () {
+          setTimeout(function () {
+            var r = document.getElementById("root");
+            if (r && (!r.hasChildNodes() || r.textContent.indexOf("Cargando tu patrimonio") !== -1)) rescatar();
+            else { try { sessionStorage.removeItem(KEY); } catch (e) {} }
+          }, 10000);
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
