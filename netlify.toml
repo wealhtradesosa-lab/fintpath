@@ -82,6 +82,14 @@
   to = "/pioneros.html"
   status = 200
 
+# Assets con hash que ya no existen (deploy viejo): 404 real, NO index.html.
+# Si devolvemos el HTML con 200, el service worker lo guarda como si fuera el
+# JS y la app instalada (PWA) abre en blanco para siempre.
+[[redirects]]
+  from = "/assets/*"
+  to = "/404.html"
+  status = 404
+
 # SPA fallback (LAST - catches everything else)
 [[redirects]]
   from = "/*"
