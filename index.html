@@ -363,6 +363,32 @@
   </head>
   <body style="margin:0;background:#09090b;">
     <div id="root"><div style="background:#09090b;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui"><div style="text-align:center"><div style="font-size:28px;font-weight:900;background:linear-gradient(135deg,#22c55e,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px">FINPATHIA</div><div style="color:#71717a;font-size:13px">Cargando tu patrimonio...</div></div></div></div>
+    <!-- 6-oct-2026 — Autocuración de la copia instalada. Santiago abrió la app
+         instalada (Mac y celular) y vio pantalla negra: el service worker servía
+         un index.html viejo que apuntaba a archivos con hash que el deploy nuevo
+         ya había borrado. Si el código principal no carga, o en 12 s la app no
+         reemplazó el placeholder, se borra la copia local y se recarga UNA vez. -->
+    <script>
+      (function () {
+        var marca = "fp_autocura";
+        function curar(motivo) {
+          try { if (sessionStorage.getItem(marca)) return; sessionStorage.setItem(marca, motivo); } catch (e) {}
+          var tareas = [];
+          if ("serviceWorker" in navigator) tareas.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+          if ("caches" in window) tareas.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }));
+          Promise.all(tareas).catch(function () {}).then(function () { location.replace(location.pathname + "?v=" + Date.now()); });
+        }
+        window.addEventListener("error", function (e) {
+          var t = e && e.target;
+          if (t && (t.tagName === "SCRIPT" || t.tagName === "LINK") && /\/assets\//.test(t.src || t.href || "")) curar("asset");
+        }, true);
+        window.addEventListener("vite:preloadError", function () { curar("chunk"); });
+        setTimeout(function () {
+          var r = document.getElementById("root");
+          if (r && r.textContent.indexOf("Cargando tu patrimonio") !== -1) curar("timeout");
+        }, 12000);
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
