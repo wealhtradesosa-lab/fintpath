@@ -173,6 +173,24 @@ function CategoriaSelector({ tokens: T, cats, onSelect, onCancel }) {
   );
 }
 
+// 9-oct-2026 (Santiago: "si pongo la inversión y el 14% no es capaz de calcular
+// el ingreso mensual"). La derivación capital × tasa llenaba solo `mensual`;
+// con frecuencia "monto de cada mes" la tabla quedaba en cero. Ahora, si el
+// ingreso es variable, los meses vigentes se llenan con la renta derivada y
+// los demás quedan en cero. El usuario puede sobreescribir cualquier mes.
+const rentaMensualDesdeTasa = (cap, tas, tasaModo) =>
+  tasaModo === "mensual" ? Math.round(cap * tas / 100) : Math.round((cap * tas / 100) / 12);
+const mesesDesdeTasa = (form, renta) => {
+  const desde = Number(form.desdeMes) || 1, hasta = Number(form.hastaMes) || 12;
+  return new Array(12).fill(0).map((_, i) => (i + 1 >= desde && i + 1 <= hasta ? renta : 0));
+};
+const aplicarTasaSiVariable = (nf, form, cap, tas, tasaModo) => {
+  if ((form.frecuencia || "mensual") === "variable" && cap > 0 && tas > 0) {
+    nf.montosMensuales = mesesDesdeTasa(form, rentaMensualDesdeTasa(cap, tas, tasaModo));
+  }
+  return nf;
+};
+
 const DEFAULT_FISCAL_CODE = {
   "Salario": "LAB_SALARIO",
   "Cesantías": "LAB_PRESTACIONES_CESANTIAS",
@@ -420,9 +438,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     // Fase Variable (18-jul-2026 noche): si el ingreso es variable, el
     // `mensual` guardado es el PROMEDIO de los 12 meses (para retrocompat
     // con lugares que usan item.mensual como métrica global).
+    let montosFinales = Array.isArray(form.montosMensuales) ? form.montosMensuales : new Array(12).fill(0);
     if (frecuenciaFinal === "variable") {
-      const montos = Array.isArray(form.montosMensuales) ? form.montosMensuales : new Array(12).fill(0);
-      const total = montos.reduce((s, m) => s + (Number(m) || 0), 0);
+      // 9-oct-2026: tabla vacía pero capital y tasa llenos → derivar los meses vigentes.
+      if (montosFinales.every((m) => !(Number(m) > 0)) && capitalFinal > 0 && tasaFinal > 0) {
+        montosFinales = mesesDesdeTasa(form, rentaMensualDesdeTasa(capitalFinal, tasaFinal, form.tasaModo || "anual"));
+      }
+      const total = montosFinales.reduce((s, m) => s + (Number(m) || 0), 0);
       mensualFinal = Math.round(total / 12);
     }
     if (!isSalario && modoIngreso === "anual") {
@@ -435,7 +457,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
         mensualFinal = Math.round(mensualFinal / Math.max(1, activos));
       }
     }
-    const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal };
+    const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal, montosMensuales: frecuenciaFinal === "variable" ? montosFinales : form.montosMensuales };
     // Commit 1.5: persistir aportes obligatorios en shape anidado, sólo para Salario
     if (isSalario) {
       item.aportes = {
@@ -1305,6 +1327,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       // Sin tasa pero con mensual, derivar tasa.
                       if (cap > 0 && tas > 0) {
                         nf.mensual = String(tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
+                        aplicarTasaSiVariable(nf, form, cap, tas, tm);
                       } else if (cap > 0 && m > 0 && tas === 0) {
                         // derivar tasa: si modo mensual, m/cap*100; si anual, m*12/cap*100
                         nf.tasa = String(tm === "anual" ? Math.round((m * 12 / cap) * 1000) / 10 : Math.round((m / cap) * 1000) / 10);
@@ -1319,6 +1342,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       const tm = form.tasaModo || "anual";
                       if (tas > 0 && cap > 0) {
                         nf.mensual = String(tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
+                        aplicarTasaSiVariable(nf, form, cap, tas, tm);
                       } else if (tas > 0 && m > 0 && cap === 0) {
                         const capCalc = tm === "anual" ? Math.round((m * 12) / (tas / 100)) : Math.round(m / (tas / 100));
                         if (capCalc >= 10_000) nf.capital = String(capCalc);
@@ -1335,6 +1359,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     const nf = { tasaModo: v };
                     if (cap > 0 && tas > 0) {
                       nf.mensual = String(v === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100));
+                      aplicarTasaSiVariable(nf, form, cap, tas, v);
                     }
                     setForm(p => ({ ...p, ...nf }));
                   }} options={[{ v: "anual", l: "📅 Anual (ej: 24% al año)" }, { v: "mensual", l: "📅 Mensual (ej: 1% al mes)" }]} />
