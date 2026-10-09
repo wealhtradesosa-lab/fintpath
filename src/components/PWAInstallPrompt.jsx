@@ -54,51 +54,16 @@ export default function PWAInstallPrompt() {
   const [showIOSModal, setShowIOSModal] = useState(false);
   const [isOnIOS] = useState(() => isIOS());
 
-  // ─── Registrar el Service Worker + auto-update ──────────────────────────
+  // ─── Service worker: RETIRADO (9-oct-2026) ──────────────────────────────
+  // La app ya no registra service workers. public/sw.js quedó como "SW de
+  // retirada": los dispositivos que todavía tienen uno instalado lo
+  // actualizan a ese, que borra cachés, se desinstala y recarga. Acá solo
+  // se fuerza esa actualización una vez si existe un registro previo.
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-
-    let reloadGuard = false;
-
-    const register = async () => {
-      try {
-        const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-        console.log("[PWA] Service Worker registrado");
-
-        if (reg.waiting && navigator.serviceWorker.controller) {
-          reg.waiting.postMessage({ type: "SKIP_WAITING" });
-        }
-
-        reg.addEventListener("updatefound", () => {
-          const newWorker = reg.installing;
-          if (!newWorker) return;
-          newWorker.addEventListener("statechange", () => {
-            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              newWorker.postMessage({ type: "SKIP_WAITING" });
-            }
-          });
-        });
-
-        setInterval(() => { reg.update().catch(() => {}); }, 60000);
-      } catch (err) {
-        console.warn("[PWA] Falló registro de SW:", err);
-      }
-    };
-
-    // 02-ago-2026 (tras el "fmt is not defined" que vio Santiago con un chunk
-    // viejo). Antes acá se hacía window.location.reload() automático: si el
-    // usuario estaba cargando un gasto o escribiendo en un formulario, perdía
-    // lo que llevaba. Y si NO se recargaba, la pestaña quedaba pidiendo chunks
-    // de una versión que ya no existe — que es exactamente el error que vio.
-    // Ahora se avisa y decide el usuario.
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloadGuard) return;
-      reloadGuard = true;
-      setHayActualizacion(true);
-    });
-
-    if (document.readyState === "complete") register();
-    else window.addEventListener("load", register);
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((r) => r.update().catch(() => {}));
+    }).catch(() => {});
   }, []);
 
   // ─── Mostrar el banner cuando aplica ────────────────────────────────────

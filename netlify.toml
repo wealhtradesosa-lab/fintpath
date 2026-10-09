@@ -82,6 +82,15 @@
   to = "/pioneros.html"
   status = 200
 
+# 9-oct-2026 — Un archivo de código que no existe responde 404 de verdad.
+# Antes caía en el fallback del SPA y volvía como index.html con 200: el
+# navegador recibía HTML donde esperaba JavaScript y la app quedaba en blanco
+# sin ningún error visible. force=false: si el archivo existe, se sirve normal.
+[[redirects]]
+  from = "/assets/*"
+  to = "/404.html"
+  status = 404
+
 # SPA fallback (LAST - catches everything else)
 [[redirects]]
   from = "/*"
