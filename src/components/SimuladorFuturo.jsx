@@ -29,7 +29,7 @@ import { useState, useMemo } from "react";
 import PageHeader from "./PageHeader";
 import { estimarImpuesto } from "../lib/taxCO";
 import { C, Cα, F, R } from "../lib/designTokens";
-import { montoDelMes, promedioMesActivo, getFrecuencia, MESES, getMesActual } from "../lib/flowHelpers.js";
+import { montoDelMes, promedioMesActivo, getFrecuencia, MESES, getMesActual, rangoEfectivo } from "../lib/flowHelpers.js";
 import { cuotaDeudaDelMes, retencionDelMes } from "./SimuladorAvanzado";
 
 const fm = (n) => (n < 0 ? "−$" : "$") + Math.abs(Math.round(n || 0)).toLocaleString("es-CO");
@@ -45,14 +45,25 @@ const FISCAL_ING = {
 
 // ─── Base: la vida de hoy, por ítem ────────────────────────────────────────
 // Cada entrada: { key, kind: "ing"|"gas"|"deu", nombre, cat, montoTipico, porMes(año) → [12] COP }
+// 9-oct-2026 (Santiago: "carga ítems que ni siquiera tengo activados"). Lo que
+// termina antes de diciembre de este año NO continúa el año entrante: "RENTA
+// HASTA SEPT" o un crédito que acaba en noviembre son cosas que se acabaron,
+// no cosas que se repiten cada año. Quedan listadas aparte con un botón "sí
+// continúa" por si el usuario sabe que siguen. Lo que empieza a mitad de año,
+// el año entrante va completo.
 function construirBase(user) {
   const trm = user?.trm || 4200;
   const out = [];
+  const vig = (item) => {
+    const r = rangoEfectivo(item);
+    return { ...r, termina: r.hasta < 12 };
+  };
   (user.ingresos || []).forEach((i, idx) => {
     if (i.sim === false) return;
     const fx = i.moneda === "USD" ? trm : 1;
+    const v = vig(i);
     out.push({
-      key: `ing_${idx}`, kind: "ing", ref: i,
+      key: `ing_${idx}`, kind: "ing", ref: i, vig: v,
       nombre: i.nombre || i.fuente || "Ingreso", cat: i.categoria || "",
       montoTipico: promedioMesActivo(i) * fx,
       porMes: (año) => proyectarPorMes(i, año, fx),
@@ -62,8 +73,9 @@ function construirBase(user) {
     (items || []).forEach((g, idx) => {
       if (g.sim === false) return;
       const fx = g.moneda === "USD" ? trm : 1;
+      const v = vig(g);
       out.push({
-        key: `gas_${cat}_${idx}`, kind: "gas", ref: g,
+        key: `gas_${cat}_${idx}`, kind: "gas", ref: g, vig: v,
         nombre: g.c || "Gasto", cat,
         montoTipico: promedioMesActivo(g) * fx,
         porMes: (año) => proyectarPorMes(g, año, fx),
@@ -73,11 +85,14 @@ function construirBase(user) {
   (user.deudas || []).forEach((d, idx) => {
     if (d.sim === false || (d.mt || 0) <= 0) return;
     const cuota = d.pago || d.pg || 0;
+    const hasta = Number(d.hastaMes) || 12;
+    const v = { desde: Number(d.desdeMes) || 1, hasta, termina: hasta < 12 };
+    const dFull = { ...d, desdeMes: 1, hastaMes: 12 };
     out.push({
-      key: `deu_${idx}`, kind: "deu", ref: d,
+      key: `deu_${idx}`, kind: "deu", ref: d, vig: v,
       nombre: d.n || d.nombre || "Deuda", cat: d.tipo || "",
-      montoTipico: cuotaDeudaDelMes(d, cuota, getMesActual().año, 1, trm) || cuota * (d.moneda === "USD" ? trm : 1),
-      porMes: (año) => MESES.map((m) => cuotaDeudaDelMes(d, cuota, año, m.v, trm)),
+      montoTipico: cuotaDeudaDelMes(dFull, cuota, getMesActual().año, 1, trm) || cuota * (d.moneda === "USD" ? trm : 1),
+      porMes: (año) => MESES.map((m) => cuotaDeudaDelMes(dFull, cuota, año, m.v, trm)),
     });
   });
   return out;
@@ -94,13 +109,17 @@ function proyectarPorMes(item, año, fx) {
   }
   // Frecuencias periódicas: montoDelMes respeta mesPago y vigencia, pero mira
   // el flag "pagado" del año — en el futuro nada está pagado, así que se limpia.
-  const limpio = { ...item, pagados: undefined, pagado: undefined };
+  // Año completo: lo que empezó a mitad de este año, el entrante va entero.
+  const limpio = { ...item, pagados: undefined, pagado: undefined, desdeMes: 1, hastaMes: 12 };
   return MESES.map((m) => (montoDelMes(limpio, año, m.v) || 0) * fx);
 }
 
 // ─── Aplicar cambios → 12 meses por ítem (base + nuevos) ───────────────────
 function aplicarCambios(base, cambios, año) {
-  const filas = base.map((b) => ({ ...b, meses: b.porMes(año), origen: "hoy" }));
+  const continuan = new Set(cambios.filter((c) => c.tipo === "continua").map((c) => c.ref));
+  const filas = base
+    .filter((b) => !b.vig?.termina || continuan.has(b.key))
+    .map((b) => ({ ...b, meses: b.porMes(año), origen: "hoy", continua: b.vig?.termina ? cambios.find((c) => c.tipo === "continua" && c.ref === b.key) : null }));
   cambios.forEach((c) => {
     if (c.tipo === "nuevo") {
       const desde = Number(c.desdeMes) || 1, hasta = Number(c.hastaMes) || 12;
@@ -355,7 +374,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           {cambios.map((c) => {
             const fila = filas.find((f) => f.key === c.ref) || filas.find((f) => f.key === c.id);
             const nombre = c.tipo === "nuevo" ? c.nombre : (fila?.nombre || "—");
-            const texto = c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
+            const texto = c.tipo === "continua" ? `sigue en ${año} aunque en ${añoHoy} terminó en ${mesL(base.find((b) => b.key === c.ref)?.vig?.hasta || 12).toLowerCase()}`
+              : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
               : c.tipo === "cambia" ? `pasa a ${fm(c.monto)} desde ${mesL(c.desdeMes).toLowerCase()}`
               : `entra ${fm(c.monto)}/mes de ${mesL(c.desdeMes).toLowerCase()} a ${mesL(c.hastaMes || 12).toLowerCase()}`;
             return (
@@ -431,6 +451,26 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               </div>
             );
           })}
+          {(() => {
+            const terminan = base.filter((b) => b.vig?.termina && !cambios.some((c) => c.tipo === "continua" && c.ref === b.key));
+            if (!terminan.length) return null;
+            return (
+              <div style={{ marginTop: 16, paddingTop: 10, borderTop: `1px dashed ${C.borderStrong}` }}>
+                <div style={F.h3}>Terminan en {añoHoy} · no se llevan a {año}</div>
+                <div style={{ ...F.caption, marginBottom: 6 }}>Su vigencia acaba antes de diciembre. Si en realidad siguen, márcalo.</div>
+                {terminan.map((f) => (
+                  <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderTop: `1px solid ${C.border}`, opacity: 0.75 }}>
+                    <span style={{ ...F.label, color: colorK[f.kind], minWidth: 56 }}>{kindL[f.kind]}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
+                      <div style={F.caption}>{fm(f.montoTipico)}/mes · hasta {mesL(f.vig.hasta).toLowerCase()} de {añoHoy}</div>
+                    </div>
+                    <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11 }} onClick={() => agregarCambio({ tipo: "continua", kind: f.kind, ref: f.key, desdeMes: 1 })}>Sí continúa en {año}</button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           {filas.filter((f) => f.origen === "hoy").length === 0 && (
             <div style={F.body}>No hay nada encendido para simular. Revisa los interruptores "simular" en Ingresos, Egresos y Deudas{onNavigate ? "" : "."}</div>
           )}
