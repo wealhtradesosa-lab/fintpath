@@ -39,6 +39,7 @@ const mesL = (m) => (MESES.find((x) => x.v === m) || {}).l || "";
 const fmC = (n) => {
   const a = Math.abs(Math.round(n || 0)), sg = n < 0 ? "−" : "";
   if (a >= 1e9) return sg + "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M";
+  if (a >= 1e7) return sg + "$" + Math.round(a / 1e6) + " M";
   if (a >= 1e6) return sg + "$" + (a / 1e6).toFixed(1).replace(".0", "").replace(".", ",") + " M";
   if (a >= 1e3) return sg + "$" + Math.round(a / 1e3) + " K";
   return sg + "$" + a;
@@ -480,31 +481,37 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
 
         {/* ── Veredicto ── */}
         <div style={card} ref={veredictoRef}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ flex: "1 1 260px", padding: "10px 13px", background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.lg }}>
-              <div style={F.label}>Mes típico hoy · referencia</div>
-              <div style={F.caption}>Tu {añoHoy} tal como va. No cambia con el escenario: es contra lo que se compara.</div>
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
-                <Celda etiqueta="Ingresos" valor={hoy.ingresos} color={C.ok} />
-                <Celda etiqueta="Gastos + cuotas" valor={hoy.gastos + hoy.cuotas} color={C.danger} />
-                <Celda etiqueta="Impuestos" valor={hoy.impuesto + hoy.retencion} color={C.purple} />
-                <Celda etiqueta="Queda" valor={hoy.queda} color={hoy.queda >= 0 ? C.ok : C.danger} />
+          {/* 11-oct-2026 (Santiago: "ingresos y cuotas no podrían estar en una sola
+              franja y así liberar espacio para gráficos"). Hoy vs futuro en una
+              sola tabla: una fila por año, una columna por concepto. */}
+          {(() => {
+            const cols = [["Ingresos", (x) => x.ingresos, C.ok], ["Gastos", (x) => x.gastos, C.danger], ["Cuotas", (x) => x.cuotas, C.warn], ["Impuestos", (x) => x.impuesto + x.retencion, C.purple], ["Queda", (x) => x.queda, null]];
+            const filasT = [
+              { k: "hoy", titulo: `Hoy · ${añoHoy}`, sub: "referencia, no cambia", d: hoy },
+              { k: "fut", titulo: foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`, sub: foco ? "ese mes en concreto" : (cambios.length ? `promedio ${mesL(mesRegimen).toLowerCase()}–dic, ${cambios.length} ${cambios.length === 1 ? "cambio" : "cambios"}` : "sin cambios todavía"), d: vista, fuerte: true },
+            ];
+            const th = { ...F.label, textAlign: "right", padding: "4px 8px", whiteSpace: "nowrap" };
+            const td = { ...F.mono, textAlign: "right", padding: "6px 8px", whiteSpace: "nowrap" };
+            return (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead><tr><th style={{ ...th, textAlign: "left" }}></th>{cols.map(([t]) => <th key={t} style={th}>{t}</th>)}</tr></thead>
+                  <tbody>
+                    {filasT.map((r) => (
+                      <tr key={r.k} style={{ background: r.fuerte ? Cα.ok08 : "transparent", borderTop: `1px solid ${C.border}` }}>
+                        <td style={{ padding: "6px 8px", minWidth: 150 }}><div style={{ ...F.body, color: C.text, fontWeight: 600 }}>{r.titulo}</div><div style={F.caption}>{r.sub}</div></td>
+                        {cols.map(([t, g, col]) => { const v = g(r.d); return <td key={t} style={{ ...td, color: col || (v >= 0 ? C.ok : C.danger), fontWeight: r.fuerte ? 700 : 400 }}>{fm(v)}</td>; })}
+                      </tr>
+                    ))}
+                    <tr style={{ borderTop: `1px solid ${C.border}` }}>
+                      <td style={{ padding: "4px 8px", ...F.caption }}>Diferencia vs hoy</td>
+                      {cols.map(([t, g]) => { const d = g(vista) - g(hoy); const bueno = t === "Ingresos" || t === "Queda" ? d >= 0 : d <= 0; return <td key={t} style={{ ...td, fontSize: 11, padding: "3px 8px", color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>{Math.abs(d) < 1 ? "=" : (d > 0 ? "+" : "−") + fm(Math.abs(d))}</td>; })}
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-            </div>
-            <div style={{ flex: "1 1 260px", padding: "10px 13px", background: Cα.ok08, border: `1px solid ${Cα.ok25}`, borderRadius: R.lg }}>
-              <div style={F.label}>{foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`}</div>
-              <div style={F.caption}>
-                {foco ? "Ese mes en concreto · clic en otra barra o en “mes típico” para volver"
-                  : cambios.length ? `Promedio ${mesL(mesRegimen).toLowerCase()}–dic con tus ${cambios.length} cambios aplicados · se actualiza con cada ajuste` : "Sin cambios todavía: tu vida de hoy llevada a todo el año · se actualiza con cada ajuste"}
-              </div>
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
-                <Celda etiqueta="Ingresos" valor={vista.ingresos} color={C.ok} />
-                <Celda etiqueta="Gastos + cuotas" valor={vista.gastos + vista.cuotas} color={C.danger} />
-                <Celda etiqueta="Impuestos" valor={vista.impuesto + vista.retencion} color={C.purple} />
-                <Celda etiqueta="Queda" valor={vista.queda} color={vista.queda >= 0 ? C.ok : C.danger} />
-              </div>
-            </div>
-          </div>
+            );
+          })()}
           <div style={{ marginTop: 12, padding: "10px 13px", borderRadius: R.md, background: vista.queda >= 0 ? Cα.ok08 : Cα.danger08, border: `1px solid ${vista.queda >= 0 ? Cα.ok25 : "rgba(239,68,68,0.25)"}` }}>
             <div style={{ ...F.h3, color: vista.queda >= 0 ? C.ok : C.danger }}>
               {vista.queda >= 0
@@ -528,7 +535,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             const valor = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / n;
             const grupos = [["ing", "Ingresos", C.ok], ["gas", "Gastos", C.danger], ["deu", "Cuotas", C.warn]];
             return (
-              <details open style={{ marginTop: 12 }}>
+              <details style={{ marginTop: 12 }}>
                 <summary style={{ ...F.h3, cursor: "pointer", color: C.accent }}>De dónde sale cada número ({foco ? `${mesL(foco.mes).toLowerCase()} ${año}` : "mes típico"})</summary>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginTop: 8 }}>
                   {grupos.map(([k, titulo, color]) => {
@@ -565,8 +572,12 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             );
           })()}
 
+          {/* Gráficos lado a lado: barras mes a mes + Sankey del flujo (11-oct-2026,
+              Santiago: "ese gráfico se ve enorme, diagrame bien la sección"). */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 16, marginTop: 16, alignItems: "start" }}>
+            <div style={{ minWidth: 0 }}>
           {/* 12 meses: ingresos vs egresos, con lo que pasa en cada uno */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 0, flexWrap: "wrap" }}>
             <div style={F.label}>Mes a mes en {año}</div>
             <div style={{ display: "flex", gap: 10, ...F.caption }}>
               <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.ok, borderRadius: 3, marginRight: 4 }} />Ingresos</span>
@@ -627,9 +638,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               </div>
             );
           })()}
-        </div>
-
-        {/* ── Por dónde se va la plata en el año futuro ── */}
+            </div>
+            <div style={{ minWidth: 0 }}>
         {(() => {
           const idx = foco ? [foco.mes - 1] : idxRegimen;
           const prom = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / (idx.length || 1);
@@ -643,7 +653,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           });
           const sub = foco ? `${mesL(foco.mes)} ${año} · un solo mes del escenario.` : (cambios.length ? `Mes típico ${año}: promedio ${mesL(mesRegimen).toLowerCase()}–dic con tus cambios aplicados.` : `Mes típico ${año}: tu vida de hoy llevada a todo el año.`);
           return (
-            <div style={{ marginBottom: 16 }}>
+            <div>
               <SankeyFlujo
                 bruto={vista.ingresos}
                 fuentes={fuentes}
@@ -660,6 +670,10 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             </div>
           );
         })()}
+
+            </div>
+          </div>
+        </div>
 
         {/* ── Cambios ── */}
         <div style={card}>
