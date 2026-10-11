@@ -51,7 +51,7 @@ const FISCAL_ING = {
 // no cosas que se repiten cada año. Quedan listadas aparte con un botón "sí
 // continúa" por si el usuario sabe que siguen. Lo que empieza a mitad de año,
 // el año entrante va completo.
-function construirBase(user) {
+export function construirBase(user) {
   const trm = user?.trm || 4200;
   const out = [];
   // 10-oct-2026: un variable sin montos en los meses que FALTAN del año no
@@ -73,7 +73,8 @@ function construirBase(user) {
       key: `ing_${idx}`, kind: "ing", ref: i, vig: v,
       nombre: i.nombre || i.fuente || "Ingreso", cat: i.categoria || "",
       capital: Number(i.capital) || 0, tasa: Number(i.tasa) || 0, tasaModo: i.tasaModo || "anual",
-      montoTipico: promedioMesActivo(i) * fx,
+      montoTipico: (getFrecuencia(i) === "variable" ? supuestoVariable(i).monto : promedioMesActivo(i)) * fx,
+      supuesto: getFrecuencia(i) === "variable" ? supuestoVariable(i).texto : (getFrecuencia(i) === "mensual" ? "" : `${getFrecuencia(i)} · cae en su mes`),
       porMes: (año) => proyectarPorMes(i, año, fx),
     });
   });
@@ -85,7 +86,8 @@ function construirBase(user) {
       out.push({
         key: `gas_${cat}_${idx}`, kind: "gas", ref: g, vig: v,
         nombre: g.c || "Gasto", cat,
-        montoTipico: promedioMesActivo(g) * fx,
+        montoTipico: (getFrecuencia(g) === "variable" ? supuestoVariable(g).monto : promedioMesActivo(g)) * fx,
+        supuesto: getFrecuencia(g) === "variable" ? supuestoVariable(g).texto : (getFrecuencia(g) === "mensual" ? "" : `${getFrecuencia(g)} · cae en su mes`),
         porMes: (año) => proyectarPorMes(g, año, fx),
       });
     });
@@ -106,14 +108,34 @@ function construirBase(user) {
   return out;
 }
 
+
+// 11-oct-2026: como se lleva un VARIABLE al ano siguiente. Antes: promedio de
+// mes activo, plano los 12 meses. Con RENTA TRADICIONAL (78, 39, 39 en
+// sep-nov) daba 52M/mes; con BROOKFORT (4 pagos sueltos, 35M en el ano) daba
+// 8,7M/mes. Regla: si viene desde comienzo de ano (primer monto en ene-mar),
+// su total anual repartido en 12; si empezo despues, la mediana de los meses
+// con monto (resiste un pago doble). El texto se muestra en la fila.
+function supuestoVariable(item) {
+  const montos = (Array.isArray(item?.montosMensuales) ? item.montosMensuales : []).map((v) => Number(v) || 0);
+  const conMonto = montos.map((v, i) => ({ v, mes: i + 1 })).filter((x) => x.v > 0);
+  if (!conMonto.length) return { monto: 0, texto: "sin montos este año" };
+  const primero = conMonto[0].mes;
+  if (primero <= 3) {
+    const total = montos.reduce((a, v) => a + v, 0);
+    return { monto: total / 12, texto: `${fm(total)} de este año repartidos en 12` };
+  }
+  const vals = conMonto.map((x) => x.v).sort((a, b) => a - b);
+  const med = vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
+  return { monto: med, texto: `mediana de ${conMonto.length} ${conMonto.length === 1 ? "mes" : "meses"} con monto (desde ${mesL(primero).toLowerCase()})` };
+}
+
 // Un ítem de hoy, en cada mes del año futuro. "unico" no se repite; "variable"
 // entra plano por su promedio de mes activo (no sabemos cómo se repartirá).
-function proyectarPorMes(item, año, fx) {
+export function proyectarPorMes(item, año, fx) {
   const f = getFrecuencia(item);
   if (f === "unico") return MESES.map(() => 0);
   if (f === "variable") {
-    const p = promedioMesActivo(item) * fx;
-    return MESES.map(() => p);
+    return MESES.map(() => supuestoVariable(item).monto * fx);
   }
   // Frecuencias periódicas: montoDelMes respeta mesPago y vigencia, pero mira
   // el flag "pagado" del año — en el futuro nada está pagado, así que se limpia.
@@ -123,7 +145,7 @@ function proyectarPorMes(item, año, fx) {
 }
 
 // ─── Aplicar cambios → 12 meses por ítem (base + nuevos) ───────────────────
-function aplicarCambios(base, cambios, año) {
+export function aplicarCambios(base, cambios, año) {
   const continuan = new Set(cambios.filter((c) => c.tipo === "continua").map((c) => c.ref));
   const filas = base
     .filter((b) => !b.vig?.termina || continuan.has(b.key))
@@ -156,8 +178,13 @@ function aplicarCambios(base, cambios, año) {
 // ─── Usuario sintético para el motor tributario ────────────────────────────
 // Cada fila se vuelve un ítem "variable" con sus 12 montos en COP, que es la
 // forma que el motor ya entiende (totalAnualItem suma los 12).
-function usuarioFuturo(user, filas) {
+export function usuarioFuturo(user, filas) {
+  // 11-oct-2026: un item sin propietario ("" o "na") NO se le asigna a nadie.
+  // BTG PACTUAL (owner "") caia en Sosa como persona natural y tributaba
+  // $1.470M/ano al 39%: impuesto 28,6M/mes cuando el simulador normal da 0.
+  // Solo los NUEVOS sin eleccion toman el primer propietario.
   const owner0 = (user.owners || [])[0]?.id || "own_1";
+  const dueño = (base, f) => (base.owner !== undefined ? base.owner : (f.cambio?.owner || owner0));
   const ing = [], gas = {}, deu = [];
   filas.forEach((f) => {
     const avg = f.meses.reduce((s, v) => s + v, 0) / 12;
@@ -167,20 +194,20 @@ function usuarioFuturo(user, filas) {
       ing.push({ ...base, ...comun, nombre: f.nombre, mensual: avg, capital: f.capital || base.capital, tasa: f.tasa || base.tasa,
         categoria: base.categoria || f.cat || "Otro",
         fiscalCode: base.fiscalCode || FISCAL_ING[f.cat] || "NOL_OTROS",
-        owner: base.owner || f.cambio?.owner || owner0 });
+        owner: dueño(base, f) });
     } else if (f.kind === "gas") {
       const cat = f.cat || "Otros";
       gas[cat] = gas[cat] || [];
-      gas[cat].push({ ...base, ...comun, c: f.nombre, m: avg, cat, owner: base.owner || f.cambio?.owner || owner0 });
+      gas[cat].push({ ...base, ...comun, c: f.nombre, m: avg, cat, owner: dueño(base, f) });
     } else {
       deu.push({ ...base, ...comun, n: f.nombre, pago: avg, pg: avg, mt: base.mt || Number(f.cambio?.saldo) || avg * 12,
-        owner: base.owner || f.cambio?.owner || owner0 });
+        owner: dueño(base, f) });
     }
   });
   return { owners: user.owners || [], ingresos: ing, gas, deu, inv: user.inv || [], trm: user.trm || 4200 };
 }
 
-function impuestoAnual(u) {
+export function impuestoAnual(u) {
   const t = estimarImpuesto(u);
   let bruto = 0, rete = 0;
   (t.detalle || []).forEach((d) => {
@@ -191,7 +218,7 @@ function impuestoAnual(u) {
 }
 
 // ─── Cuadro de un mes (o de un promedio de meses) ──────────────────────────
-function cuadro(filas, mesesIdx, imp) {
+export function cuadro(filas, mesesIdx, imp) {
   const n = mesesIdx.length || 1;
   const suma = (kind) => filas.filter((f) => f.kind === kind).reduce((s, f) => s + mesesIdx.reduce((a, i) => a + (f.meses[i] || 0), 0), 0) / n;
   const ingresos = suma("ing"), gastos = suma("gas"), cuotas = suma("deu");
@@ -333,7 +360,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               <div style={F.caption}>Promedio de {añoHoy} con lo que tienes encendido</div>
               <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
                 <Celda etiqueta="Ingresos" valor={hoy.ingresos} color={C.ok} />
-                <Celda etiqueta="Egresos" valor={hoy.egresos + hoy.retencion} color={C.danger} />
+                <Celda etiqueta="Gastos + cuotas" valor={hoy.gastos + hoy.cuotas} color={C.danger} />
+                <Celda etiqueta="Impuestos" valor={hoy.impuesto + hoy.retencion} color={C.purple} />
                 <Celda etiqueta="Queda" valor={hoy.queda} color={hoy.queda >= 0 ? C.ok : C.danger} />
               </div>
             </div>
@@ -345,7 +373,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               </div>
               <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
                 <Celda etiqueta="Ingresos" valor={vista.ingresos} color={C.ok} />
-                <Celda etiqueta="Egresos" valor={vista.egresos + vista.retencion} color={C.danger} />
+                <Celda etiqueta="Gastos + cuotas" valor={vista.gastos + vista.cuotas} color={C.danger} />
+                <Celda etiqueta="Impuestos" valor={vista.impuesto + vista.retencion} color={C.purple} />
                 <Celda etiqueta="Queda" valor={vista.queda} color={vista.queda >= 0 ? C.ok : C.danger} />
               </div>
             </div>
@@ -361,7 +390,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               </span>
             </div>
             <div style={{ ...F.caption, marginTop: 4 }}>
-              Detalle: gastos {fm(vista.gastos)} · cuotas {fm(vista.cuotas)} · retención {fm(vista.retencion)} · impuesto de renta {fm(vista.impuesto)}/mes (recalculado para {año}: {fm(impFut.neto)} a pagar en la declaración).
+              Gastos {fm(vista.gastos)} + cuotas {fm(vista.cuotas)} = lo que gastas. Aparte, retención {fm(vista.retencion)} + impuesto de renta {fm(vista.impuesto)}/mes = {fm(vista.retencion + vista.impuesto)} de impuestos (recalculados para {año} sobre los ingresos de todo el año: {fm(impFut.neto)} a pagar en la declaración).
             </div>
           </div>
 
@@ -561,7 +590,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                           <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
                           <div style={F.caption}>
                             {f.capital > 0 && f.tasa > 0 ? `Capital ${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"} → ` : ""}
-                            {fm(f.montoTipico)}/mes · {fm(anual)} en {año}
+                            {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{f.supuesto ? ` · ${f.supuesto}` : ""}
                           </div>
                           {estado && (
                             <div style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 8, padding: "2px 10px", borderRadius: R.pill, background: Cα.warn15, color: C.warn, fontSize: 11, fontWeight: 700 }}>
