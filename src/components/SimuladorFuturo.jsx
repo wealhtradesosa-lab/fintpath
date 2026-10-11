@@ -308,6 +308,76 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
     </div>
   );
 
+  // Fila individual de la base (ingreso, gasto o deuda), reutilizada por categoría.
+  const renderFila = (f) => { const k = f.kind;
+                  const anual = f.meses.reduce((s, v) => s + v, 0);
+                  const c = f.cambio;
+                  const editando = form && form.tipo !== "nuevo" && form.ref === f.key;
+                  const estado = !c ? null
+                    : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
+                    : c.tipo === "cambia" ? `pasa a ${fm(c.monto)}/mes desde ${mesL(c.desdeMes).toLowerCase()}`
+                    : c.tipo === "continua" ? `sigue en ${año}` : "";
+                  return (
+                    <div key={f.key} style={{ padding: "8px 0", borderTop: `1px solid ${C.border}`, background: editando ? Cα.accent08 : "transparent", borderRadius: editando ? R.md : 0, paddingLeft: editando ? 8 : 0, paddingRight: editando ? 8 : 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
+                          {/* 11-oct-2026 (Santiago: "¿cuánto es entonces mi arriendo?").
+                              Con un cambio aplicado, primero el valor que rige en el año
+                              futuro; el supuesto anterior, tachado y en pequeño. */}
+                          {c && c.tipo !== "continua" ? (
+                            <div style={F.caption}>
+                              <b style={{ color: C.text }}>{fm(anual / 12)}/mes en {año}</b> · {fm(anual)} en el año
+                              <span style={{ marginLeft: 8, textDecoration: "line-through", opacity: 0.7 }}>antes {fm(f.montoTipico)}/mes</span>
+                            </div>
+                          ) : (
+                            <div style={F.caption}>
+                              {f.capital > 0 && f.tasa > 0 ? `Capital ${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"} → ` : ""}
+                              {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{f.supuesto ? ` · ${f.supuesto}` : ""}
+                            </div>
+                          )}
+                          {estado && (
+                            <div style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 8, padding: "2px 10px", borderRadius: R.pill, background: Cα.warn15, color: C.warn, fontSize: 11, fontWeight: 700 }}>
+                              {estado}
+                              <button onClick={() => quitarCambio(c.id)} style={{ background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 11, textDecoration: "underline", padding: 0 }}>deshacer</button>
+                            </div>
+                          )}
+                        </div>
+                        {!c && !editando && (<>
+                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "termina", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 7 })}>Termina</button>
+                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "cambia", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, monto: Math.round(f.montoTipico) })}>Cambia</button>
+                        </>)}
+                      </div>
+                      {editando && (
+                        <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+                          {form.tipo === "termina" ? (
+                            <div style={{ flex: "1 1 160px" }}>
+                              <div style={F.label}>Último mes que cuenta en {año}</div>
+                              <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value) })}>
+                                <option value={1}>Ninguno — no cuenta en {año}</option>
+                                {MESES.filter((m) => m.v < 12).map((m) => <option key={m.v} value={m.v + 1}>{m.l}</option>)}
+                              </select>
+                            </div>
+                          ) : (<>
+                            <div style={{ flex: "1 1 160px" }}>
+                              <div style={F.label}>{k === "deu" ? "Nueva cuota mensual" : "Nuevo monto mensual (COP)"}</div>
+                              <input style={input} type="number" autoFocus value={form.monto || ""} onChange={(e) => setForm({ ...form, monto: e.target.value })} />
+                            </div>
+                            <div style={{ flex: "0 1 140px" }}>
+                              <div style={F.label}>Desde</div>
+                              <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value) })}>
+                                {MESES.map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
+                              </select>
+                            </div>
+                          </>)}
+                          <button style={btn(true)} onClick={() => agregarCambio(form)}>Aplicar</button>
+                          <button style={btn(false)} onClick={() => setForm(null)}>Cancelar</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+  };
+
   return (
     <div>
       <PageHeader label="Simulador · futuro" title="¿Me alcanza con la vida que viene?"
@@ -590,74 +660,21 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                     </div>
                   );
                 })()}
-                {grupo.map((f) => {
-                  const anual = f.meses.reduce((s, v) => s + v, 0);
-                  const c = f.cambio;
-                  const editando = form && form.tipo !== "nuevo" && form.ref === f.key;
-                  const estado = !c ? null
-                    : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
-                    : c.tipo === "cambia" ? `pasa a ${fm(c.monto)}/mes desde ${mesL(c.desdeMes).toLowerCase()}`
-                    : c.tipo === "continua" ? `sigue en ${año}` : "";
-                  return (
-                    <div key={f.key} style={{ padding: "8px 0", borderTop: `1px solid ${C.border}`, background: editando ? Cα.accent08 : "transparent", borderRadius: editando ? R.md : 0, paddingLeft: editando ? 8 : 0, paddingRight: editando ? 8 : 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
-                          {/* 11-oct-2026 (Santiago: "¿cuánto es entonces mi arriendo?").
-                              Con un cambio aplicado, primero el valor que rige en el año
-                              futuro; el supuesto anterior, tachado y en pequeño. */}
-                          {c && c.tipo !== "continua" ? (
-                            <div style={F.caption}>
-                              <b style={{ color: C.text }}>{fm(anual / 12)}/mes en {año}</b> · {fm(anual)} en el año
-                              <span style={{ marginLeft: 8, textDecoration: "line-through", opacity: 0.7 }}>antes {fm(f.montoTipico)}/mes</span>
-                            </div>
-                          ) : (
-                            <div style={F.caption}>
-                              {f.capital > 0 && f.tasa > 0 ? `Capital ${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"} → ` : ""}
-                              {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{f.supuesto ? ` · ${f.supuesto}` : ""}
-                            </div>
-                          )}
-                          {estado && (
-                            <div style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 8, padding: "2px 10px", borderRadius: R.pill, background: Cα.warn15, color: C.warn, fontSize: 11, fontWeight: 700 }}>
-                              {estado}
-                              <button onClick={() => quitarCambio(c.id)} style={{ background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 11, textDecoration: "underline", padding: 0 }}>deshacer</button>
-                            </div>
-                          )}
-                        </div>
-                        {!c && !editando && (<>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "termina", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 7 })}>Termina</button>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "cambia", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, monto: Math.round(f.montoTipico) })}>Cambia</button>
-                        </>)}
+                {/* 11-oct-2026 (Santiago: "más separados, por categorías"). */}
+                {(() => {
+                  const porCat = {};
+                  grupo.forEach((f) => { const cat = f.cat || "Sin categoría"; (porCat[cat] = porCat[cat] || []).push(f); });
+                  const cats = Object.entries(porCat).map(([cat, fs]) => ({ cat, fs, anual: fs.reduce((a, f) => a + f.meses.reduce((x, v) => x + v, 0), 0) })).sort((a, b) => b.anual - a.anual);
+                  return cats.map(({ cat, fs, anual: anualCat }) => (
+                    <div key={cat} style={{ marginTop: 6 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "6px 8px", background: C.raised, borderRadius: R.sm, marginBottom: 2 }}>
+                        <span style={{ ...F.h3, fontSize: 12 }}>{cat} <span style={F.caption}>· {fs.length}</span></span>
+                        <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(anualCat / 12)}/mes</span>
                       </div>
-                      {editando && (
-                        <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
-                          {form.tipo === "termina" ? (
-                            <div style={{ flex: "1 1 160px" }}>
-                              <div style={F.label}>Último mes que cuenta en {año}</div>
-                              <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value) })}>
-                                <option value={1}>Ninguno — no cuenta en {año}</option>
-                                {MESES.filter((m) => m.v < 12).map((m) => <option key={m.v} value={m.v + 1}>{m.l}</option>)}
-                              </select>
-                            </div>
-                          ) : (<>
-                            <div style={{ flex: "1 1 160px" }}>
-                              <div style={F.label}>{k === "deu" ? "Nueva cuota mensual" : "Nuevo monto mensual (COP)"}</div>
-                              <input style={input} type="number" autoFocus value={form.monto || ""} onChange={(e) => setForm({ ...form, monto: e.target.value })} />
-                            </div>
-                            <div style={{ flex: "0 1 140px" }}>
-                              <div style={F.label}>Desde</div>
-                              <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value) })}>
-                                {MESES.map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
-                              </select>
-                            </div>
-                          </>)}
-                          <button style={btn(true)} onClick={() => agregarCambio(form)}>Aplicar</button>
-                          <button style={btn(false)} onClick={() => setForm(null)}>Cancelar</button>
-                        </div>
-                      )}
+                      {fs.map((f) => renderFila(f))}
                     </div>
-                  );
-                })}
+                  ));
+                })()}
               </div>
             );
           })}
