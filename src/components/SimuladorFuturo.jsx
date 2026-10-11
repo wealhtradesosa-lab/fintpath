@@ -408,8 +408,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             const valor = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / n;
             const grupos = [["ing", "Ingresos", C.ok], ["gas", "Gastos", C.danger], ["deu", "Cuotas", C.warn]];
             return (
-              <details style={{ marginTop: 12 }}>
-                <summary style={{ ...F.h3, cursor: "pointer", color: C.accent }}>Ver de dónde sale cada número ({foco ? `${mesL(foco.mes).toLowerCase()} ${año}` : "mes típico"})</summary>
+              <details open style={{ marginTop: 12 }}>
+                <summary style={{ ...F.h3, cursor: "pointer", color: C.accent }}>De dónde sale cada número ({foco ? `${mesL(foco.mes).toLowerCase()} ${año}` : "mes típico"})</summary>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginTop: 8 }}>
                   {grupos.map(([k, titulo, color]) => {
                     const lista = filas.filter((f) => f.kind === k).map((f) => ({ ...f, v: valor(f) })).filter((f) => f.v !== 0).sort((a, b) => b.v - a.v);
@@ -580,7 +580,16 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             if (!grupo.length) return null;
             return (
               <div key={k} style={{ marginTop: 10 }}>
-                <div style={{ ...F.label, color: colorK[k] }}>{kindL[k]}s · {grupo.length}</div>
+                {/* 11-oct-2026 (Santiago: "deberían verse los totales"). */}
+                {(() => {
+                  const anualGrupo = grupo.reduce((a, f) => a + f.meses.reduce((x, v) => x + v, 0), 0);
+                  return (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "6px 0" }}>
+                      <span style={{ ...F.label, color: colorK[k] }}>{kindL[k]}s · {grupo.length}</span>
+                      <span style={{ ...F.mono, fontSize: 13, color: colorK[k] }}>{fm(anualGrupo / 12)}/mes <span style={{ ...F.caption, color: C.subtle }}>· {fm(anualGrupo)} en {año}</span></span>
+                    </div>
+                  );
+                })()}
                 {grupo.map((f) => {
                   const anual = f.meses.reduce((s, v) => s + v, 0);
                   const c = f.cambio;
