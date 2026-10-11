@@ -588,10 +588,20 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
-                          <div style={F.caption}>
-                            {f.capital > 0 && f.tasa > 0 ? `Capital ${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"} → ` : ""}
-                            {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{f.supuesto ? ` · ${f.supuesto}` : ""}
-                          </div>
+                          {/* 11-oct-2026 (Santiago: "¿cuánto es entonces mi arriendo?").
+                              Con un cambio aplicado, primero el valor que rige en el año
+                              futuro; el supuesto anterior, tachado y en pequeño. */}
+                          {c && c.tipo !== "continua" ? (
+                            <div style={F.caption}>
+                              <b style={{ color: C.text }}>{fm(anual / 12)}/mes en {año}</b> · {fm(anual)} en el año
+                              <span style={{ marginLeft: 8, textDecoration: "line-through", opacity: 0.7 }}>antes {fm(f.montoTipico)}/mes</span>
+                            </div>
+                          ) : (
+                            <div style={F.caption}>
+                              {f.capital > 0 && f.tasa > 0 ? `Capital ${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"} → ` : ""}
+                              {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{f.supuesto ? ` · ${f.supuesto}` : ""}
+                            </div>
+                          )}
                           {estado && (
                             <div style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 8, padding: "2px 10px", borderRadius: R.pill, background: Cα.warn15, color: C.warn, fontSize: 11, fontWeight: 700 }}>
                               {estado}
