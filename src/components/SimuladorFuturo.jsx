@@ -362,8 +362,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
         <div style={card} ref={veredictoRef}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 260px", padding: "10px 13px", background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.lg }}>
-              <div style={F.label}>Mes típico hoy</div>
-              <div style={F.caption}>Promedio de {añoHoy} con lo que tienes encendido</div>
+              <div style={F.label}>Mes típico hoy · referencia</div>
+              <div style={F.caption}>Tu {añoHoy} tal como va. No cambia con el escenario: es contra lo que se compara.</div>
               <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
                 <Celda etiqueta="Ingresos" valor={hoy.ingresos} color={C.ok} />
                 <Celda etiqueta="Gastos + cuotas" valor={hoy.gastos + hoy.cuotas} color={C.danger} />
@@ -375,7 +375,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               <div style={F.label}>{foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`}</div>
               <div style={F.caption}>
                 {foco ? "Ese mes en concreto · clic en otra barra o en “mes típico” para volver"
-                  : cambios.length ? `Promedio ${mesL(mesRegimen).toLowerCase()}–dic, cuando ya aplican todos los cambios` : "Sin cambios todavía: tu vida de hoy repetida"}
+                  : cambios.length ? `Promedio ${mesL(mesRegimen).toLowerCase()}–dic con tus ${cambios.length} cambios aplicados · se actualiza con cada ajuste` : "Sin cambios todavía: tu vida de hoy llevada a todo el año · se actualiza con cada ajuste"}
               </div>
               <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
                 <Celda etiqueta="Ingresos" valor={vista.ingresos} color={C.ok} />
