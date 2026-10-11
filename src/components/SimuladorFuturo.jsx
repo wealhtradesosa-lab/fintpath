@@ -527,55 +527,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             </div>
           </div>
 
-          {/* 10-oct-2026 (Santiago: "solo se ve el total, no se sabe qué valor es
-              de cada uno"). Desglose ítem por ítem del mes que se está viendo. */}
-          {(() => {
-            const idx = foco ? [foco.mes - 1] : idxRegimen;
-            const n = idx.length || 1;
-            const valor = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / n;
-            const grupos = [["ing", "Ingresos", C.ok], ["gas", "Gastos", C.danger], ["deu", "Cuotas", C.warn]];
-            return (
-              <details style={{ marginTop: 12 }}>
-                <summary style={{ ...F.h3, cursor: "pointer", color: C.accent }}>De dónde sale cada número ({foco ? `${mesL(foco.mes).toLowerCase()} ${año}` : "mes típico"})</summary>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginTop: 8 }}>
-                  {grupos.map(([k, titulo, color]) => {
-                    const lista = filas.filter((f) => f.kind === k).map((f) => ({ ...f, v: valor(f) })).filter((f) => f.v !== 0).sort((a, b) => b.v - a.v);
-                    const total = lista.reduce((a, f) => a + f.v, 0);
-                    return (
-                      <div key={k} style={{ background: C.raised, borderRadius: R.md, padding: "8px 10px", border: `1px solid ${C.border}` }}>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ ...F.label, color }}>{titulo} · {lista.length}</span>
-                          <span style={{ ...F.mono, fontSize: 12, color }}>{fm(total)}</span>
-                        </div>
-                        {lista.length === 0 && <div style={{ ...F.caption, marginTop: 6 }}>Nada este mes.</div>}
-                        {lista.map((f) => (
-                          <div key={f.key} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ ...F.body, color: C.text, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {f.nombre}{f.origen === "nuevo" ? " · nuevo" : f.cambio ? " · con cambio" : ""}
-                              </div>
-                              <div style={{ ...F.caption, fontSize: 10 }}>
-                                {f.capital > 0 && f.tasa > 0 ? `${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"}` : f.cat}
-                              </div>
-                            </div>
-                            <span style={{ ...F.mono, fontSize: 12, color: C.text, flexShrink: 0 }}>{fm(f.v)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div style={{ ...F.caption, marginTop: 8 }}>
-                  Más retención {fm(vista.retencion)} e impuesto de renta {fm(vista.impuesto)}/mes, que salen del motor tributario sobre todo el año.
-                </div>
-              </details>
-            );
-          })()}
-
-          {/* Gráficos lado a lado: barras mes a mes + Sankey del flujo (11-oct-2026,
-              Santiago: "ese gráfico se ve enorme, diagrame bien la sección"). */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 16, marginTop: 16, alignItems: "start" }}>
-            <div style={{ minWidth: 0 }}>
+          {/* 11-oct-2026 (Santiago: "ese gráfico se ve enorme… mire esos espacios
+              vacíos"). Orden: barras a todo el ancho (son bajitas), y debajo el
+              Sankey y el desglose ítem por ítem lado a lado, que tienen alturas
+              parecidas y se llenan mutuamente. */}
+          <div style={{ marginTop: 16 }}>
           {/* 12 meses: ingresos vs egresos, con lo que pasa en cada uno */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 0, flexWrap: "wrap" }}>
             <div style={F.label}>Mes a mes en {año}</div>
@@ -638,8 +594,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               </div>
             );
           })()}
-            </div>
-            <div style={{ minWidth: 0 }}>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 16, marginTop: 16, alignItems: "stretch" }}>
         {(() => {
           const idx = foco ? [foco.mes - 1] : idxRegimen;
           const prom = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / (idx.length || 1);
@@ -653,7 +609,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           });
           const sub = foco ? `${mesL(foco.mes)} ${año} · un solo mes del escenario.` : (cambios.length ? `Mes típico ${año}: promedio ${mesL(mesRegimen).toLowerCase()}–dic con tus cambios aplicados.` : `Mes típico ${año}: tu vida de hoy llevada a todo el año.`);
           return (
-            <div>
+            <div style={{ minWidth: 0 }}>
               <SankeyFlujo
                 bruto={vista.ingresos}
                 fuentes={fuentes}
@@ -661,7 +617,12 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                 impuesto={vista.impuesto}
                 aportes={aportes}
                 cuotas={vista.cuotas}
-                gastosCats={Object.entries(porCat)}
+                gastosCats={(() => {
+                  // Máximo 3 categorías + "Otros": con más, las etiquetas de la derecha se pisan.
+                  const cs = Object.entries(porCat).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+                  if (cs.length <= 4) return cs;
+                  return [...cs.slice(0, 3), [`Otros gastos (${cs.length - 3})`, cs.slice(3).reduce((a, [, v]) => a + v, 0)]];
+                })()}
                 cashFlow={vista.queda}
                 subtitulo={sub}
                 fmt={fm}
@@ -670,8 +631,49 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             </div>
           );
         })()}
-
-            </div>
+          {(() => {
+            const idx = foco ? [foco.mes - 1] : idxRegimen;
+            const n = idx.length || 1;
+            const valor = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / n;
+            const grupos = [["ing", "Ingresos", C.ok], ["gas", "Gastos", C.danger], ["deu", "Cuotas", C.warn]];
+            return (
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: R.lg, padding: 16, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>🧾 De dónde sale cada número</div>
+                <div style={{ ...F.caption, marginBottom: 10 }}>{foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`} · ítem por ítem, ordenado de mayor a menor.</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", maxHeight: 400, paddingRight: 4 }}>
+                  {grupos.map(([k, titulo, color]) => {
+                    const lista = filas.filter((f) => f.kind === k).map((f) => ({ ...f, v: valor(f) })).filter((f) => f.v !== 0).sort((a, b) => b.v - a.v);
+                    const total = lista.reduce((a, f) => a + f.v, 0);
+                    return (
+                      <div key={k} style={{ background: C.raised, borderRadius: R.md, padding: "8px 10px", border: `1px solid ${C.border}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ ...F.label, color }}>{titulo} · {lista.length}</span>
+                          <span style={{ ...F.mono, fontSize: 12, color }}>{fm(total)}</span>
+                        </div>
+                        {lista.length === 0 && <div style={{ ...F.caption, marginTop: 6 }}>Nada este mes.</div>}
+                        {lista.map((f) => (
+                          <div key={f.key} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ ...F.body, color: C.text, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {f.nombre}{f.origen === "nuevo" ? " · nuevo" : f.cambio ? " · con cambio" : ""}
+                              </div>
+                              <div style={{ ...F.caption, fontSize: 10 }}>
+                                {f.capital > 0 && f.tasa > 0 ? `${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"}` : f.cat}
+                              </div>
+                            </div>
+                            <span style={{ ...F.mono, fontSize: 12, color: C.text, flexShrink: 0 }}>{fm(f.v)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ ...F.caption, marginTop: 8 }}>
+                  Más retención {fm(vista.retencion)} e impuesto de renta {fm(vista.impuesto)}/mes, que salen del motor tributario sobre todo el año.
+                </div>
+              </div>
+            );
+          })()}
           </div>
         </div>
 
