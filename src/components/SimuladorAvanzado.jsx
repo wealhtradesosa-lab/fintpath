@@ -992,17 +992,34 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
               // 26-jul-2026 — auditoría: el reporte ordenaba y mostraba por `mensual`
                 // crudo, así que un ingreso de vigencia parcial se listaba con su
                 // valor pleno y quedaba mal ordenado frente a los demás.
-                const ingRows = (user.ingresos||[]).filter(i=>i.sim!==false).sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a)).map(i => {
+                // 10-oct-2026 (Santiago: "si estoy analizando dic por qué me sale
+                // arriendo hasta sept"). El PDF decía el mes en el encabezado pero
+                // listaba cada ítem con su valor fijo del año. Ahora cada fila es
+                // lo del MES visualizado, con el override del slider, y los que
+                // no aplican quedan marcados en vez de mostrar un monto falso.
+                const { año: añoPdf } = getMesActual();
+                const mesPdfL = (MESES.find(m => m.v === mesVisualizado) || {}).l || "";
+                const trmPdf = user?.trm || 4200;
+                const ingMes = (user.ingresos||[]).map((i, idx) => {
+                  if (i.sim === false) return null;
+                  const base = montoDelMes(i, añoPdf, mesVisualizado) * (i.moneda === "USD" ? trmPdf : 1);
+                  return { i, v: getVal("ing_"+idx, base) };
+                }).filter(Boolean).sort((a,b)=>b.v-a.v);
+                const ingRows = ingMes.map(({ i, v }) => {
                 const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: $${(i.capital/1e6).toFixed(0)}M × ${i.tasa}%</span>` : "";
-                return `<tr><td>${i.nombre||""}</td><td style="color:#888">${i.categoria||""}</td><td style="text-align:right;font-weight:600;color:#16a34a">$${Math.round(i.mensual||0).toLocaleString("es-CO")}</td><td>${cap}</td></tr>`;
+                const monto = v > 0
+                  ? `<span style="font-weight:600;color:#16a34a">$${Math.round(v).toLocaleString("es-CO")}</span>`
+                  : `<span style="color:#9ca3af;font-size:10px">no aplica en ${mesPdfL.toLowerCase()}</span>`;
+                return `<tr style="${v > 0 ? "" : "color:#9ca3af"}"><td>${i.nombre||""}</td><td style="color:#888">${i.categoria||""}</td><td style="text-align:right">${monto}</td><td>${cap}</td></tr>`;
               }).join("");
               
               // Build expense rows by category — filtra items apagados dentro
               // de cada categoría y elimina categorías que quedaron vacías
               // (por si todos los items estaban apagados).
               const gasCats = Object.entries(user.gastos||{}).map(([cat,items])=>{
-                const active = (items||[]).filter(g=>g.sim!==false);
-                return {cat,total:active.reduce((s,g)=>s+montoPromedioMensual(g),0),items:active}; /* frecuencia: un gasto anual no es un gasto mensual (fix 25-jul-2026) */
+                // Mismo criterio que ingresos: lo del mes visualizado, con slider.
+                const active = (items||[]).map((g, gi) => g.sim === false ? null : ({ ...g, _v: montoDelMes({ ...g, m: getVal("gf_"+cat+"_"+gi, g.m || 0) }, añoPdf, mesVisualizado) * (g.moneda === "USD" ? trmPdf : 1) })).filter(Boolean).filter(g => g._v > 0);
+                return {cat,total:active.reduce((s,g)=>s+g._v,0),items:active};
               }).filter(g=>g.total>0).sort((a,b)=>b.total-a.total);
               const gasRows = gasCats.map(g => {
                 const detail = g.items.slice(0,3).map(i=>i.c).join(", ");
@@ -1010,9 +1027,12 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
               }).join("");
               
               // Build debt rows — filtra apagadas y las que no tienen saldo
-              const deuRows = (user.deudas||[]).filter(d=>d.sim!==false && (d.mt||0)>0).map(d => 
-                `<tr><td>${d.n||d.nombre||""}</td><td style="text-align:right">$${Math.round(d.mt||0).toLocaleString("es-CO")}</td><td style="text-align:right">$${Math.round(d.pg||0).toLocaleString("es-CO")}/mes</td><td style="text-align:right">${d.ts||0}%</td></tr>`
-              ).join("");
+              const deuRows = (user.deudas||[]).map((d, di) => {
+                if (d.sim === false || (d.mt||0) <= 0) return "";
+                const cuota = cuotaDeudaDelMes(d, getVal("debt_"+di, d.pago || d.pg || 0), añoPdf, mesVisualizado, trmPdf);
+                const cuotaTxt = cuota > 0 ? `$${Math.round(cuota).toLocaleString("es-CO")}/mes` : `<span style="color:#9ca3af;font-size:10px">sin cuota en ${mesPdfL.toLowerCase()}</span>`;
+                return `<tr><td>${d.n||d.nombre||""}</td><td style="text-align:right">$${Math.round(d.mt||0).toLocaleString("es-CO")}</td><td style="text-align:right">${cuotaTxt}</td><td style="text-align:right">${d.ts||0}%</td></tr>`;
+              }).join("");
               
               const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>FINPATHIA — ${scenarioName}</title>
 <style>
@@ -1039,7 +1059,7 @@ td{padding:4px 6px;border-bottom:1px solid #f0f0f0}
 @media print{@page{size:letter portrait;margin:12mm}}
 </style></head><body>
 <h1>FINPATHIA — ${scenarioName}</h1>
-<div class="sub">${scenarioName} • ${fecha}</div>
+<div class="sub">${scenarioName} • Mes analizado: ${mesPdfL} ${añoPdf} • Generado el ${fecha}</div>
 ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(/\n/g,"<br>")}</div>` : ""}
 
 <!-- Fase 4 PDF: bloque de desglose family office reemplaza los KPIs planos.
@@ -1049,7 +1069,7 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
 
   <!-- Card Ingresos -->
   <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px">
-    <div style="font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💰 Ingresos Mensuales</div>
+    <div style="font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💰 Ingresos de ${mesPdfL} ${añoPdf}</div>
     <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
       <span style="color:#374151">Bruto Total <span style="color:#9ca3af;font-size:9px">(genera activos)</span></span>
       <span style="font-weight:500">$${Math.round(expT.brutoTotal||0).toLocaleString("es-CO")}</span>
@@ -1104,22 +1124,22 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
   </div>
 </div>
 
-<h2>💰 Ingresos Mensuales</h2>
+<h2>💰 Ingresos de ${mesPdfL}</h2>
 <table><thead><tr><th>Fuente</th><th>Categoría</th><th style="text-align:right">Monto</th><th>Detalle</th></tr></thead>
 <tbody>${ingRows}</tbody>
 <tfoot><tr style="font-weight:700;border-top:2px solid #16a34a"><td colspan="2">TOTAL BRUTO</td><td style="text-align:right;color:#16a34a">$${Math.round(expT.brutoTotal||expT.ni||0).toLocaleString("es-CO")}</td><td></td></tr></tfoot>
 </table>
 
-<h2>💳 Gastos Familiares</h2>
+<h2>💳 Gastos de ${mesPdfL}</h2>
 <table><thead><tr><th>Categoría</th><th>Principales</th><th style="text-align:right">Total</th></tr></thead>
 <tbody>${gasRows}</tbody>
 <tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td colspan="2">TOTAL GASTOS</td><td style="text-align:right;color:#dc2626">$${Math.round(expT.gfm).toLocaleString("es-CO")}</td></tr></tfoot>
 </table>
 
-${deuRows ? `<h2>📋 Cuotas de Deudas</h2>
+${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
 <table><thead><tr><th>Deuda</th><th style="text-align:right">Saldo</th><th style="text-align:right">Cuota</th><th style="text-align:right">Tasa</th></tr></thead>
 <tbody>${deuRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td>TOTAL CUOTAS</td><td></td><td style="text-align:right;color:#dc2626">$${Math.round((user.deudas||[]).filter(d=>d.sim!==false && (d.mt||0)>0).reduce((s,d)=>s+(d.pg||0),0)).toLocaleString("es-CO")}/mes</td><td></td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td>TOTAL CUOTAS</td><td></td><td style="text-align:right;color:#dc2626">$${Math.round(expT.cuotasDeudas||0).toLocaleString("es-CO")}/mes</td><td></td></tr></tfoot>
 </table>` : ""}
 
 <h2>📊 Resumen</h2>
