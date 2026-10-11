@@ -29,11 +29,20 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import PageHeader from "./PageHeader";
 import { estimarImpuesto } from "../lib/taxCO";
 import { C, Cα, F, R } from "../lib/designTokens";
+import SankeyFlujo from "./SankeyFlujo";
 import { montoDelMes, promedioMesActivo, getFrecuencia, MESES, getMesActual, rangoEfectivo } from "../lib/flowHelpers.js";
 import { cuotaDeudaDelMes, retencionDelMes } from "./SimuladorAvanzado";
 
 const fm = (n) => (n < 0 ? "−$" : "$") + Math.abs(Math.round(n || 0)).toLocaleString("es-CO");
 const mesL = (m) => (MESES.find((x) => x.v === m) || {}).l || "";
+// Formato corto para las barras: $12,3 M · $850 K
+const fmC = (n) => {
+  const a = Math.abs(Math.round(n || 0)), sg = n < 0 ? "−" : "";
+  if (a >= 1e9) return sg + "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M";
+  if (a >= 1e6) return sg + "$" + (a / 1e6).toFixed(1).replace(".0", "").replace(".", ",") + " M";
+  if (a >= 1e3) return sg + "$" + Math.round(a / 1e3) + " K";
+  return sg + "$" + a;
+};
 const uid = () => "c_" + Math.random().toString(36).slice(2, 9);
 
 const CATS_ING = ["Salario", "Honorarios", "Arriendo", "Dividendos", "Intereses bancarios", "Rendimiento", "Pensión", "Negocio", "Otro"];
@@ -238,6 +247,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const añoHoy = getMesActual().año;
   const [selId, setSelId] = useState(escenarios[0]?.id || null);
   const [mesFoco, setMesFoco] = useState(null); // null = mes típico
+  const [mesHover, setMesHover] = useState(null);
   const [form, setForm] = useState(null);       // formulario de cambio abierto
 
 
@@ -288,6 +298,46 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const foco = mesFoco ? porMes[mesFoco - 1] : null;
   const vista = foco || tipico;
   const maxAbs = Math.max(1, ...porMes.map((m) => Math.abs(m.queda)));
+  const maxBar = Math.max(1, ...porMes.map((m) => Math.max(m.ingresos, m.egresos + m.retencion)));
+  // Qué pasa en cada mes: lo que entra, termina o cambia justo ahí.
+  const eventosMes = useMemo(() => {
+    const ev = MESES.map(() => []);
+    const nombreDe = (c) => c.tipo === "nuevo" ? (c.nombre || "Nuevo") : (filas.find((f) => f.key === c.ref)?.nombre || base.find((b) => b.key === c.ref)?.nombre || "—");
+    cambios.forEach((c) => {
+      const d = Number(c.desdeMes) || 1;
+      if (c.tipo === "nuevo") {
+        if (d >= 1 && d <= 12) ev[d - 1].push({ tipo: "entra", texto: `entra ${nombreDe(c)} (${fm(c.monto)}/mes)` });
+        const h = Number(c.hastaMes) || 12;
+        if (h < 12) ev[h].push({ tipo: "sale", texto: `termina ${nombreDe(c)}` });
+      } else if (c.tipo === "termina") {
+        if (d >= 2 && d <= 12) ev[d - 1].push({ tipo: "sale", texto: `termina ${nombreDe(c)}` });
+      } else if (c.tipo === "cambia") {
+        if (d >= 2 && d <= 12) ev[d - 1].push({ tipo: "cambia", texto: `${nombreDe(c)} pasa a ${fm(c.monto)}/mes` });
+      }
+    });
+    // Ítems de hoy que se agotan dentro del año (créditos que se pagan, contratos que acaban)
+    // y pagos de una sola vez, agrupados para no hacer ruido.
+    const tocado = new Set(cambios.flatMap((c) => [c.ref, c.id]));
+    const unaVez = MESES.map(() => []);
+    filas.forEach((f) => {
+      if (tocado.has(f.key)) return;
+      const ms = f.meses || [];
+      const activos = ms.filter((v) => v > 0).length;
+      if (activos === 0) return;
+      if (activos === 1) { unaVez[ms.findIndex((v) => v > 0)].push(f); return; }
+      for (let i = 1; i < 12; i++) {
+        if (ms[i - 1] > 0 && !(ms[i] > 0)) ev[i].push({ tipo: "sale", texto: `${f.nombre} ya no cuenta (${f.kind === "deu" ? "crédito pagado" : "termina"})` });
+        if (!(ms[i - 1] > 0) && ms[i] > 0) ev[i].push({ tipo: "entra", texto: `arranca ${f.nombre} (${fm(ms[i])}/mes)` });
+      }
+    });
+    unaVez.forEach((lista, i) => {
+      if (!lista.length) return;
+      const tot = lista.reduce((a, f) => a + (f.meses[i] || 0), 0);
+      ev[i].push({ tipo: "cambia", texto: `${lista.length === 1 ? "pago de una vez" : lista.length + " pagos de una vez"} (${fm(tot)}): ${lista.map((f) => f.nombre).join(", ")}` });
+    });
+    return ev;
+  }, [cambios, filas, base]);
+  const mesesIguales = porMes.every((m) => Math.abs(m.queda - porMes[0].queda) < 1 && Math.abs(m.ingresos - porMes[0].ingresos) < 1);
 
   // ─── Cambios: alta / baja ─────────────────────────────────────────────
   const agregarCambio = (c) => { actualizar({ cambios: [...cambios, { id: uid(), ...c }] }); setForm(null); };
@@ -515,27 +565,101 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             );
           })()}
 
-          {/* 12 barras clicables */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
-            <div style={F.label}>Los 12 meses de {año}</div>
-            {mesFoco && <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11 }} onClick={() => setMesFoco(null)}>← mes típico</button>}
+          {/* 12 meses: ingresos vs egresos, con lo que pasa en cada uno */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
+            <div style={F.label}>Mes a mes en {año}</div>
+            <div style={{ display: "flex", gap: 10, ...F.caption }}>
+              <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.ok, borderRadius: 3, marginRight: 4 }} />Ingresos</span>
+              <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.danger, borderRadius: 3, marginRight: 4 }} />Gastos + cuotas + impuestos y retención</span>
+              <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.warn, borderRadius: "50%", marginRight: 4 }} />algo entra, termina o cambia</span>
+            </div>
+            {mesFoco && <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11, marginLeft: "auto" }} onClick={() => setMesFoco(null)}>← volver al mes típico</button>}
           </div>
-          <div style={{ display: "flex", alignItems: "flex-end", height: 64, gap: 4, marginTop: 6 }}>
-            {porMes.map((m) => {
-              const h = (Math.abs(m.queda) / maxAbs) * 100;
-              const pos = m.queda >= 0, sel = mesFoco === m.mes;
+          <div style={{ ...F.caption, marginTop: 4 }}>
+            {mesesIguales
+              ? "Todos los meses salen iguales en este escenario: nada entra, termina ni cambia a mitad de año. El número de cada barra es lo que te queda ese mes."
+              : "El número sobre cada mes es lo que te queda. Pásate por encima para ver el detalle y haz clic para que el veredicto de arriba muestre ese mes."}
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, marginTop: 10, height: 128 }} onMouseLeave={() => setMesHover(null)}>
+            {porMes.map((m, i) => {
+              const hi = (m.ingresos / maxBar) * 100, he = ((m.egresos + m.retencion) / maxBar) * 100;
+              const sel = mesFoco === m.mes, hov = mesHover === m.mes, pos = m.queda >= 0;
+              const ev = eventosMes[i];
               return (
-                <div key={m.mes} onClick={() => setMesFoco(sel ? null : m.mes)} title={`${mesL(m.mes)}: ${fm(m.queda)}`}
-                  style={{ flex: 1, cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" }}>
-                  <div style={{ height: `${Math.max(4, h)}%`, background: pos ? C.ok : C.danger, opacity: sel ? 1 : 0.45, borderRadius: 3, border: sel ? `1px solid ${C.text}` : "none" }} />
+                <div key={m.mes} onClick={() => setMesFoco(sel ? null : m.mes)} onMouseEnter={() => setMesHover(m.mes)}
+                  style={{ flex: 1, cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%", minWidth: 0,
+                    background: sel || hov ? C.raised : "transparent", borderRadius: R.md, border: `1px solid ${sel ? C.text : "transparent"}`, padding: "4px 2px 2px" }}>
+                  <div style={{ ...F.mono, fontSize: 10, textAlign: "center", color: pos ? C.ok : C.danger, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 3 }}>{fmC(m.queda)}</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 2, flex: 1 }}>
+                    <div style={{ flex: 1, height: `${Math.max(3, hi)}%`, background: C.ok, opacity: sel || hov ? 1 : 0.6, borderRadius: 3 }} />
+                    <div style={{ flex: 1, height: `${Math.max(3, he)}%`, background: C.danger, opacity: sel || hov ? 1 : 0.6, borderRadius: 3 }} />
+                  </div>
                 </div>
               );
             })}
           </div>
-          <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
-            {MESES.map((m) => <div key={m.v} style={{ flex: 1, textAlign: "center", ...F.caption, fontSize: 9 }}>{m.l.slice(0, 3)}</div>)}
+          <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+            {MESES.map((m, i) => (
+              <div key={m.v} style={{ flex: 1, textAlign: "center", ...F.caption, fontSize: 10, color: mesFoco === m.v ? C.text : undefined, fontWeight: mesFoco === m.v ? 700 : 400 }}>
+                {m.l.slice(0, 3)}{eventosMes[i].length > 0 && <span style={{ display: "inline-block", width: 6, height: 6, background: C.warn, borderRadius: "50%", marginLeft: 3, verticalAlign: "middle" }} />}
+              </div>
+            ))}
           </div>
+          {(() => {
+            const mm = mesHover || mesFoco;
+            if (!mm) return null;
+            const m = porMes[mm - 1], ev = eventosMes[mm - 1];
+            return (
+              <div style={{ marginTop: 10, padding: "10px 12px", background: C.raised, borderRadius: R.md, border: `1px solid ${C.border}` }}>
+                <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "baseline" }}>
+                  <div style={{ ...F.label, minWidth: 90 }}>{mesL(mm)} {año}</div>
+                  <Celda etiqueta="Ingresos" valor={m.ingresos} color={C.ok} />
+                  <Celda etiqueta="Gastos" valor={m.gastos} color={C.danger} />
+                  <Celda etiqueta="Cuotas" valor={m.cuotas} color={C.warn} />
+                  <Celda etiqueta="Impuestos" valor={m.impuesto + m.retencion} color={C.purple} />
+                  <Celda etiqueta="Queda" valor={m.queda} color={m.queda >= 0 ? C.ok : C.danger} />
+                </div>
+                <div style={{ ...F.caption, marginTop: 6 }}>
+                  {ev.length === 0
+                    ? (mm === 1 ? "Arranca el año con todo lo que está activo." : `Igual que ${mesL(mm - 1).toLowerCase()}: nada entra ni termina este mes.`)
+                    : <>Este mes: {ev.map((e, k) => <span key={k} style={{ color: e.tipo === "entra" ? C.ok : e.tipo === "sale" ? C.danger : C.warn }}>{k > 0 ? " · " : ""}{e.texto}</span>)}</>}
+                </div>
+              </div>
+            );
+          })()}
         </div>
+
+        {/* ── Por dónde se va la plata en el año futuro ── */}
+        {(() => {
+          const idx = foco ? [foco.mes - 1] : idxRegimen;
+          const prom = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / (idx.length || 1);
+          const fuentes = filas.filter((f) => f.kind === "ing").map((f) => ({ nombre: f.nombre, valor: prom(f) }));
+          const porCat = {};
+          let aportes = 0;
+          filas.filter((f) => f.kind === "gas").forEach((f) => {
+            const v = prom(f);
+            if (f.cat === "Seguridad Social") aportes += v;
+            else porCat[f.cat || "Otros"] = (porCat[f.cat || "Otros"] || 0) + v;
+          });
+          const sub = foco ? `${mesL(foco.mes)} ${año} · un solo mes del escenario.` : (cambios.length ? `Mes típico ${año}: promedio ${mesL(mesRegimen).toLowerCase()}–dic con tus cambios aplicados.` : `Mes típico ${año}: tu vida de hoy llevada a todo el año.`);
+          return (
+            <div style={{ marginBottom: 16 }}>
+              <SankeyFlujo
+                bruto={vista.ingresos}
+                fuentes={fuentes}
+                retencion={vista.retencion}
+                impuesto={vista.impuesto}
+                aportes={aportes}
+                cuotas={vista.cuotas}
+                gastosCats={Object.entries(porCat)}
+                cashFlow={vista.queda}
+                subtitulo={sub}
+                fmt={fm}
+                T={{ card: C.surface, border: C.border, tx: C.text, tx2: C.muted, tx3: C.subtle }}
+              />
+            </div>
+          );
+        })()}
 
         {/* ── Cambios ── */}
         <div style={card}>
