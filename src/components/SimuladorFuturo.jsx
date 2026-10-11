@@ -54,9 +54,16 @@ const FISCAL_ING = {
 function construirBase(user) {
   const trm = user?.trm || 4200;
   const out = [];
+  // 10-oct-2026: un variable sin montos en los meses que FALTAN del año no
+  // "terminó" (district: montos hasta octubre porque nov y dic no han
+  // pasado). Solo cuenta como terminado si su último monto es anterior al
+  // mes actual. Los periódicos siguen la vigencia declarada.
+  const mesHoy = getMesActual().mes;
   const vig = (item) => {
     const r = rangoEfectivo(item);
-    return { ...r, termina: r.hasta < 12 };
+    const esVariable = getFrecuencia(item) === "variable";
+    const termina = esVariable ? (r.hasta < Math.min(mesHoy, 12)) : (r.hasta < 12);
+    return { ...r, termina };
   };
   (user.ingresos || []).forEach((i, idx) => {
     if (i.sim === false) return;
@@ -65,6 +72,7 @@ function construirBase(user) {
     out.push({
       key: `ing_${idx}`, kind: "ing", ref: i, vig: v,
       nombre: i.nombre || i.fuente || "Ingreso", cat: i.categoria || "",
+      capital: Number(i.capital) || 0, tasa: Number(i.tasa) || 0, tasaModo: i.tasaModo || "anual",
       montoTipico: promedioMesActivo(i) * fx,
       porMes: (año) => proyectarPorMes(i, año, fx),
     });
@@ -332,6 +340,51 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             </div>
           </div>
 
+          {/* 10-oct-2026 (Santiago: "solo se ve el total, no se sabe qué valor es
+              de cada uno"). Desglose ítem por ítem del mes que se está viendo. */}
+          {(() => {
+            const idx = foco ? [foco.mes - 1] : idxRegimen;
+            const n = idx.length || 1;
+            const valor = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / n;
+            const grupos = [["ing", "Ingresos", C.ok], ["gas", "Gastos", C.danger], ["deu", "Cuotas", C.warn]];
+            return (
+              <details style={{ marginTop: 12 }}>
+                <summary style={{ ...F.h3, cursor: "pointer", color: C.accent }}>Ver de dónde sale cada número ({foco ? `${mesL(foco.mes).toLowerCase()} ${año}` : "mes típico"})</summary>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginTop: 8 }}>
+                  {grupos.map(([k, titulo, color]) => {
+                    const lista = filas.filter((f) => f.kind === k).map((f) => ({ ...f, v: valor(f) })).filter((f) => f.v !== 0).sort((a, b) => b.v - a.v);
+                    const total = lista.reduce((a, f) => a + f.v, 0);
+                    return (
+                      <div key={k} style={{ background: C.raised, borderRadius: R.md, padding: "8px 10px", border: `1px solid ${C.border}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ ...F.label, color }}>{titulo} · {lista.length}</span>
+                          <span style={{ ...F.mono, fontSize: 12, color }}>{fm(total)}</span>
+                        </div>
+                        {lista.length === 0 && <div style={{ ...F.caption, marginTop: 6 }}>Nada este mes.</div>}
+                        {lista.map((f) => (
+                          <div key={f.key} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ ...F.body, color: C.text, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {f.nombre}{f.origen === "nuevo" ? " · nuevo" : f.cambio ? " · con cambio" : ""}
+                              </div>
+                              <div style={{ ...F.caption, fontSize: 10 }}>
+                                {f.capital > 0 && f.tasa > 0 ? `${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"}` : f.cat}
+                              </div>
+                            </div>
+                            <span style={{ ...F.mono, fontSize: 12, color: C.text, flexShrink: 0 }}>{fm(f.v)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ ...F.caption, marginTop: 8 }}>
+                  Más retención {fm(vista.retencion)} e impuesto de renta {fm(vista.impuesto)}/mes, que salen del motor tributario sobre todo el año.
+                </div>
+              </details>
+            );
+          })()}
+
           {/* 12 barras clicables */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
             <div style={F.label}>Los 12 meses de {año}</div>
@@ -439,7 +492,10 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                     <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderTop: `1px solid ${C.border}`, opacity: tocado ? 0.6 : 1 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
-                        <div style={F.caption}>{fm(f.montoTipico)}/mes típico · {fm(anual)} en {año}{tocado ? " · con cambio" : ""}</div>
+                        <div style={F.caption}>
+                          {f.capital > 0 && f.tasa > 0 ? `Capital ${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"} → ` : ""}
+                          {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{tocado ? " · con cambio" : ""}
+                        </div>
                       </div>
                       {!tocado && (<>
                         <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "termina", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 7 })}>Termina</button>
