@@ -35,6 +35,8 @@ import { cuotaDeudaDelMes, retencionDelMes } from "./SimuladorAvanzado";
 
 const fm = (n) => (n < 0 ? "−$" : "$") + Math.abs(Math.round(n || 0)).toLocaleString("es-CO");
 const mesL = (m) => (MESES.find((x) => x.v === m) || {}).l || "";
+// Renta mensual que sale de un capital y una tasa (anual o mensual).
+const rentaDe = (cap, tasa, modo) => { const c = Number(cap) || 0, t = Number(tasa) || 0; return c > 0 && t > 0 ? Math.round(modo === "mensual" ? c * t / 100 : c * t / 100 / 12) : 0; };
 // Formato corto para las barras: $12,3 M · $850 K
 const fmC = (n) => {
   const a = Math.abs(Math.round(n || 0)), sg = n < 0 ? "−" : "";
@@ -183,6 +185,7 @@ export function aplicarCambios(base, cambios, año) {
     } else if (c.tipo === "cambia") {
       fila.meses = fila.meses.map((v, i) => (i + 1 >= desde ? Number(c.monto) || 0 : v));
       fila.cambio = c; fila.origen = "cambia";
+      if (c.modo === "capital" && Number(c.capital) > 0) { fila.capital = Number(c.capital); fila.tasa = Number(c.tasa) || 0; fila.tasaModo = c.tasaModo || "anual"; }
     }
   });
   return filas;
@@ -366,7 +369,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   const editando = form && form.tipo !== "nuevo" && form.ref === f.key;
                   const estado = !c ? null
                     : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
-                    : c.tipo === "cambia" ? `pasa a ${fm(c.monto)}/mes desde ${mesL(c.desdeMes).toLowerCase()}`
+                    : c.tipo === "cambia" ? `pasa a ${fm(c.monto)}/mes desde ${mesL(c.desdeMes).toLowerCase()}${c.modo === "capital" && rentaDe(c.capital, c.tasa, c.tasaModo) > 0 ? ` (${fm(Number(c.capital))} × ${c.tasa}% ${c.tasaModo === "mensual" ? "mensual" : "anual"})` : ""}`
                     : c.tipo === "continua" ? `sigue en ${año}` : "";
                   return (
                     <div key={f.key} style={{ padding: "8px 0", borderTop: `1px solid ${C.border}`, background: editando ? Cα.accent08 : "transparent", borderRadius: editando ? R.md : 0, paddingLeft: editando ? 8 : 0, paddingRight: editando ? 8 : 0 }}>
@@ -396,7 +399,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                         </div>
                         {!c && !editando && (<>
                           <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "termina", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 7 })}>Termina</button>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "cambia", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, monto: Math.round(f.montoTipico) })}>Cambia</button>
+                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "cambia", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, monto: Math.round(f.montoTipico), modo: k === "ing" && f.capital > 0 ? "capital" : "monto", capital: f.capital || "", tasa: f.tasa || "", tasaModo: f.tasaModo || "anual" })}>Cambia</button>
                         </>)}
                       </div>
                       {editando && (
@@ -410,10 +413,45 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                               </select>
                             </div>
                           ) : (<>
-                            <div style={{ flex: "1 1 160px" }}>
-                              <div style={F.label}>{k === "deu" ? "Nueva cuota mensual" : "Nuevo monto mensual (COP)"}</div>
-                              <input style={input} type="number" autoFocus value={form.monto || ""} onChange={(e) => setForm({ ...form, monto: e.target.value })} />
-                            </div>
+                            {/* 11-oct-2026 (Santiago: "esto aquí debería permitir poner el
+                                capital y el % de rentabilidad, o el valor"). En ingresos se
+                                puede cambiar por capital × tasa o por monto directo. */}
+                            {k === "ing" && (
+                              <div style={{ flex: "1 1 100%", display: "flex", gap: 6 }}>
+                                {[["capital", "Capital y % rentabilidad"], ["monto", "Monto directo"]].map(([m, l]) => (
+                                  <button key={m} type="button" onClick={() => setForm({ ...form, modo: m, monto: m === "capital" && rentaDe(form.capital, form.tasa, form.tasaModo) > 0 ? String(rentaDe(form.capital, form.tasa, form.tasaModo)) : form.monto })}
+                                    style={{ ...btn(form.modo === m), padding: "4px 10px", fontSize: 11 }}>{l}</button>
+                                ))}
+                              </div>
+                            )}
+                            {k === "ing" && form.modo === "capital" ? (<>
+                              <div style={{ flex: "1 1 150px" }}>
+                                <div style={F.label}>Capital invertido</div>
+                                <input style={input} type="number" autoFocus value={form.capital || ""} placeholder="Ej: 500000000"
+                                  onChange={(e) => setForm({ ...form, capital: e.target.value, monto: String(rentaDe(e.target.value, form.tasa, form.tasaModo) || form.monto) })} />
+                              </div>
+                              <div style={{ flex: "0 1 120px" }}>
+                                <div style={F.label}>% {form.tasaModo === "mensual" ? "mensual" : "anual"}</div>
+                                <input style={input} type="number" step="0.1" value={form.tasa || ""} placeholder="Ej: 14"
+                                  onChange={(e) => setForm({ ...form, tasa: e.target.value, monto: String(rentaDe(form.capital, e.target.value, form.tasaModo) || form.monto) })} />
+                              </div>
+                              <div style={{ flex: "0 1 120px" }}>
+                                <div style={F.label}>Tasa</div>
+                                <select style={input} value={form.tasaModo || "anual"} onChange={(e) => setForm({ ...form, tasaModo: e.target.value, monto: String(rentaDe(form.capital, form.tasa, e.target.value) || form.monto) })}>
+                                  <option value="anual">anual</option><option value="mensual">mensual</option>
+                                </select>
+                              </div>
+                              <div style={{ flex: "1 1 100%", ...F.caption }}>
+                                {rentaDe(form.capital, form.tasa, form.tasaModo) > 0
+                                  ? <>{fm(Number(form.capital))} × {form.tasa}% {form.tasaModo === "mensual" ? "mensual" : "anual"} = <b style={{ color: C.text }}>{fm(rentaDe(form.capital, form.tasa, form.tasaModo))}/mes</b> · {fm(rentaDe(form.capital, form.tasa, form.tasaModo) * 12)} al año{f.capital > 0 ? ` · hoy: ${fm(f.capital)} × ${f.tasa}% = ${fm(f.montoTipico)}/mes` : ""}</>
+                                  : "Pon capital y tasa y el monto mensual sale solo."}
+                              </div>
+                            </>) : (
+                              <div style={{ flex: "1 1 160px" }}>
+                                <div style={F.label}>{k === "deu" ? "Nueva cuota mensual" : "Nuevo monto mensual (COP)"}</div>
+                                <input style={input} type="number" autoFocus value={form.monto || ""} onChange={(e) => setForm({ ...form, monto: e.target.value })} />
+                              </div>
+                            )}
                             <div style={{ flex: "0 1 140px" }}>
                               <div style={F.label}>Desde</div>
                               <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value) })}>
