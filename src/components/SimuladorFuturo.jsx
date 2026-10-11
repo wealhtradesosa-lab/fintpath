@@ -76,6 +76,7 @@ export function construirBase(user) {
       montoTipico: (getFrecuencia(i) === "variable" ? supuestoVariable(i).monto : promedioMesActivo(i)) * fx,
       supuesto: getFrecuencia(i) === "variable" ? supuestoVariable(i).texto : (getFrecuencia(i) === "mensual" ? "" : `${getFrecuencia(i)} · cae en su mes`),
       porMes: (año) => proyectarPorMes(i, año, fx),
+      porMesReal: (año) => MESES.map((m) => (montoDelMes(i, año, m.v) || 0) * fx),
     });
   });
   Object.entries(user.gastos || {}).forEach(([cat, items]) => {
@@ -89,6 +90,7 @@ export function construirBase(user) {
         montoTipico: (getFrecuencia(g) === "variable" ? supuestoVariable(g).monto : promedioMesActivo(g)) * fx,
         supuesto: getFrecuencia(g) === "variable" ? supuestoVariable(g).texto : (getFrecuencia(g) === "mensual" ? "" : `${getFrecuencia(g)} · cae en su mes`),
         porMes: (año) => proyectarPorMes(g, año, fx),
+        porMesReal: (año) => MESES.map((m) => (montoDelMes(g, año, m.v) || 0) * fx),
       });
     });
   });
@@ -103,6 +105,7 @@ export function construirBase(user) {
       nombre: d.n || d.nombre || "Deuda", cat: d.tipo || "",
       montoTipico: cuotaDeudaDelMes(dFull, cuota, getMesActual().año, 1, trm) || cuota * (d.moneda === "USD" ? trm : 1),
       porMes: (año) => MESES.map((m) => cuotaDeudaDelMes(dFull, cuota, año, m.v, trm)),
+      porMesReal: (año) => MESES.map((m) => cuotaDeudaDelMes(d, cuota, año, m.v, trm)),
     });
   });
   return out;
@@ -270,7 +273,10 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const impFut = useMemo(() => impuestoAnual(usuarioFuturo(user, filas)), [user, filas]);
 
   // Hoy: la misma base, en el año en curso, con el impuesto de hoy.
-  const filasHoy = useMemo(() => aplicarCambios(base, [], añoHoy), [base, añoHoy]);
+  // 11-oct-2026 (Santiago: "de dónde me gasto yo hoy 115M, no me da"). "Hoy"
+  // usaba la proyección a 12 meses completos: las pensiones que en 2026 corren
+  // oct–dic contaban como todo el año. Ahora es 2026 tal como fue.
+  const filasHoy = useMemo(() => base.map((b) => ({ ...b, meses: b.porMesReal(añoHoy), origen: "hoy" })), [base, añoHoy]);
   const impHoy = useMemo(() => impuestoAnual(usuarioFuturo(user, filasHoy)), [user, filasHoy]);
   const hoy = useMemo(() => cuadro(filasHoy, MESES.map((_, i) => i), impHoy), [filasHoy, impHoy]);
 
