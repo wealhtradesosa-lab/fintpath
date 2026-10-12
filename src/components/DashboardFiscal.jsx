@@ -22,6 +22,7 @@ import RecomendacionesFiscales from "./RecomendacionesFiscales";
 import BannerMismatchDeclaracion from "./BannerMismatchDeclaracion";
 import ReporteFiscalPrint from "./ReporteFiscalPrint";
 import DeclaracionUpload from "./DeclaracionUpload";
+import RentaAnoTrasAno from "./RentaAnoTrasAno";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
 import PageHeader from "./PageHeader.jsx";
 import { uvtForYear, DEFAULT_AG } from "../lib/taxCO.js";
@@ -320,6 +321,19 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           </button>
         </div>
       )}
+
+      {/* 12-oct-2026: la comparación año tras año en palabras simples va
+          PRIMERO. Lo demás (indicadores, alertas, renglón a renglón) queda
+          para quien quiera profundizar. */}
+      <div style={{ marginBottom: 18 }}>
+        <RentaAnoTrasAno
+          declaraciones={declaraciones}
+          detalleActual={detalleActual}
+          anoActual={DEFAULT_AG}
+          ownerName={selectedOwner?.name || ""}
+          onSubir={() => { if (onGoToUpload) { onGoToUpload(); } else { setShowUpload(true); } }}
+        />
+      </div>
 
       {/* Bloque 1: KPIs */}
       <div style={{ marginBottom: 18 }}>
