@@ -63,7 +63,7 @@ export const COPY = {
   d10_sin_asesor: {
     asunto: "Te quedan 4 días de Pro, {nombre}",
     cuerpo: [
-      "Ya viste tu nivel. Ahora pregúntale a tu Asesor IA qué hacer para subir al siguiente: entiende tus números y te orienta. Si administras la plata en familia, Pro Familiar suma hasta {familiar_personas} personas.",
+      "Te quedan 4 días de Pro. Aprovéchalos para preguntarle a tu Asesor IA qué hacer para llegar a tu siguiente nivel: entiende tus números y te orienta. Si administras la plata en familia, Pro Familiar suma hasta {familiar_personas} personas.",
     ],
     cta: "Preguntarle a mi asesor",
     destino: "asesor",
@@ -89,7 +89,12 @@ export const COPY = {
   },
   d13_valor: {
     asunto: "Esto es lo que ya organizaste en Finpathia",
-    apertura: "Ya cargaste {n} {cuentas} y {m} {activos}.",
+    // Si uno de los conteos es 0 se quita esa parte; si ambos son 0, la frase entera.
+    apertura: {
+      ambos: "Ya tienes {n} {registros} y {m} {activos} en Finpathia.",
+      soloN: "Ya tienes {n} {registros} en Finpathia.",
+      soloM: "Ya tienes {m} {activos} en Finpathia.",
+    },
     cuerpo: [
       "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Lo que se queda en Pro es el Asesor IA, los coaches y el plan de impuestos. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
     ],

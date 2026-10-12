@@ -78,11 +78,13 @@ describe("correos", () => {
   });
   it("d13 valor: abre con conteos solo si se conocen y no son cero", () => {
     const k = (conteos) => armarCorreo({ clave: "d13_valor", paso: "d13", utmContent: "valor", vars: { conteos }, urlBaja: URL_BAJA });
-    expect(k({ n: 5, m: 2 }).texto.startsWith("Ya cargaste 5 cuentas y 2 activos.")).toBe(true);
-    expect(k({ n: 1, m: 1 }).texto.startsWith("Ya cargaste 1 cuenta y 1 activo.")).toBe(true);
-    for (const c of [null, { n: 0, m: 3 }, { n: 4, m: 0 }]) {
+    expect(k({ n: 5, m: 2 }).texto.startsWith("Ya tienes 5 registros y 2 activos en Finpathia.")).toBe(true);
+    expect(k({ n: 1, m: 1 }).texto.startsWith("Ya tienes 1 registro y 1 activo en Finpathia.")).toBe(true);
+    expect(k({ n: 4, m: 0 }).texto.startsWith("Ya tienes 4 registros en Finpathia.")).toBe(true);
+    expect(k({ n: 0, m: 3 }).texto.startsWith("Ya tienes 3 activos en Finpathia.")).toBe(true);
+    for (const c of [null, { n: 0, m: 0 }]) {
       const r = k(c);
-      expect(r.texto).not.toContain("Ya cargaste");
+      expect(r.texto).not.toContain("Ya tienes");
       expect(r.texto.startsWith("Mañana termina tu prueba Pro.")).toBe(true);
       expect(r.asunto).toBe("Esto es lo que ya organizaste en Finpathia");
     }
@@ -90,6 +92,6 @@ describe("correos", () => {
   it("d13 urgencia nunca lleva la frase de conteos", () => {
     const c = armarCorreo({ clave: "d13_urgencia", paso: "d13", utmContent: "urgencia", vars: { conteos: { n: 3, m: 3 } }, urlBaja: URL_BAJA });
     expect(c.asunto).toBe("Tu prueba Pro vence mañana");
-    expect(c.texto).not.toContain("Ya cargaste");
+    expect(c.texto).not.toContain("Ya tienes");
   });
 });

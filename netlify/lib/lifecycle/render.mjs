@@ -43,11 +43,13 @@ export function armarCorreo({ clave, paso, utmContent, vars = {}, urlBaja }) {
   const parrafos = [];
   if (c.apertura) {
     const k = vars.conteos;
-    if (k && Number(k.n) > 0 && Number(k.m) > 0) {
-      parrafos.push(rellenar(c.apertura, {
-        ...v, n: k.n, m: k.m,
-        cuentas: Number(k.n) === 1 ? "cuenta" : "cuentas",
-        activos: Number(k.m) === 1 ? "activo" : "activos",
+    const n = Number(k?.n) || 0, m = Number(k?.m) || 0;
+    const plantilla = n > 0 && m > 0 ? c.apertura.ambos : n > 0 ? c.apertura.soloN : m > 0 ? c.apertura.soloM : null;
+    if (plantilla) {
+      parrafos.push(rellenar(plantilla, {
+        ...v, n, m,
+        registros: n === 1 ? "registro" : "registros",
+        activos: m === 1 ? "activo" : "activos",
       }));
     }
   }
