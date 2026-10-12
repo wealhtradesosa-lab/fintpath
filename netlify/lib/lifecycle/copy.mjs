@@ -2,11 +2,17 @@
 // FINPATHIA · COPY de la secuencia de prueba Pro (14 días)
 //
 // ESTE ES EL ÚNICO ARCHIVO QUE LA AGENCIA TIENE QUE EDITAR.
-// Fuente: Agencia · Creativos, v2 «centrada en nivel y simulador»
-// (copy_secuencia_trial_v2.md, 11-oct-2026). Texto literal.
-// v2 reemplaza a la v1 mientras el Asesor IA no pase QA: ningún correo
-// invita a usar el asesor. Cuando Luis apruebe el asesor se vuelve a la v1
-// (ver historial de git de este archivo).
+// Fuente: Agencia · Creativos, v3 «centrada en patrimonio»
+// (copy_secuencia_trial_v3_patrimonio.md, 11-oct-2026). Texto literal.
+// v3 reemplaza a la v2 (nivel y simulador) mientras el ángulo libertad está
+// en pausa. Solo usa lo verificado por QA: patrimonio total y, por activo,
+// su valor, su ganancia y la deuda vinculada. No menciona nivel, simulador,
+// "te faltan", Asesor IA, coaches, impuestos, Salud financiera ni cancelar
+// desde la app. La v2 y la v1 quedan en el historial de git de este archivo.
+//
+// d2 y d5 se dividen por accounts.activated_at = «primer activo cargado»
+// (lo marca el servidor, ver netlify/functions/track-activation.cjs).
+// d10 ya no se divide.
 //
 // Variables que se pueden usar dentro de los textos:
 //   {nombre}        nombre de la persona. Si está vacío, ", {nombre}" se
@@ -27,74 +33,61 @@
 // Línea de marca: cierra TODOS los correos.
 export const CIERRE_MARCA = "Transformamos la complejidad financiera en claridad para construir tranquilidad.";
 
-// (11-oct, spec final) Se quitó la nota al pie sobre el asesor: ningún
-// correo de la v2 menciona el Asesor IA. Vuelve con la v1 cuando el asesor
-// pase QA y Luis lo apruebe.
+// Ningún correo de la v3 menciona el Asesor IA (ni la v2 lo hacía).
 
 export const TEXTO_BAJA = "Darme de baja de estos correos";
 
-// destino: "nivel" (Dashboard), "simulador", "patrimonio" o "planes" (Planes).
+// destino: "patrimonio" (Patrimonio) o "planes" (Planes).
+// "nivel" y "simulador" siguen en enlaces.mjs pero la v3 no los usa.
 export const COPY = {
-  d2_sin_activar: {
-    asunto: "Tu nivel está a dos datos de distancia",
+  // d2 y d5: se dividen por activated_at (¿ya cargó su primer activo?).
+  d2_sin_activo: {
+    asunto: "Tu patrimonio empieza con un activo",
     cuerpo: [
-      "Para ver tu nivel de libertad financiera solo necesitas esto: 1) carga tus ingresos del mes, 2) carga tus gastos, 3) Finpathia calcula tu nivel al instante.",
+      "Carga tu primer activo, por ejemplo tu cuenta de ahorros, un CDT o tu apartamento, y Finpathia empieza a armar tu patrimonio total en un solo lugar.",
     ],
-    cta: "Ver mi nivel",
-    destino: "nivel",
+    cta: "Cargar mi primer activo",
+    destino: "patrimonio",
   },
-  d2_activado: {
-    asunto: "Ya sabes tu nivel. ¿Qué te falta para el siguiente?",
+  d2_con_activo: {
+    asunto: "Ya empezaste. ¿Qué más tienes?",
     cuerpo: [
-      "Abre el simulador y mira cuánto te falta cada mes para llegar a tu siguiente nivel, y qué cambia si ajustas tus ingresos o tus gastos.",
-    ],
-    cta: "Abrir el simulador",
-    destino: "simulador",
-  },
-  // d5 y d10: se dividen por simulator_first_used_at (¿ya abrió el simulador?).
-  d5_sin_simulador: {
-    asunto: "¿Cuánto te falta para tu siguiente nivel?",
-    cuerpo: [
-      "Tu nivel es el punto de partida. El simulador te muestra cuánto te falta cada mes para llegar al siguiente, y qué cambia si ajustas tus ingresos o tus gastos.",
-    ],
-    cta: "Abrir el simulador",
-    destino: "simulador",
-  },
-  d5_con_simulador: {
-    asunto: "Mira tu plata completa en una sola vista",
-    cuerpo: [
-      "Ya usaste el simulador. Ahora carga tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio total en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.",
+      "Suma tus otras cuentas, inversiones, propiedades y deudas. Entre más completo, más claro ves cuánto vale lo que tienes y cuánta deuda tiene encima.",
     ],
     cta: "Completar mi patrimonio",
     destino: "patrimonio",
   },
-  d10_sin_simulador: {
+  d5_sin_activo: {
+    asunto: "¿Cuánto vale todo lo que tienes?",
+    cuerpo: [
+      "Tus cuentas, tu carro, tu CDT y tus deudas, juntos en una sola vista. Carga lo que tengas a la mano y mira tu patrimonio total.",
+    ],
+    cta: "Ver mi patrimonio",
+    destino: "patrimonio",
+  },
+  d5_con_activo: {
+    asunto: "Mira cuánto ha ganado cada activo",
+    cuerpo: [
+      "En Finpathia ves, activo por activo, cuánto vale, cuánto ha ganado y cuánta deuda tiene encima. Revisa los tuyos y completa los que falten.",
+    ],
+    cta: "Revisar mis activos",
+    destino: "patrimonio",
+  },
+  d10: {
     asunto: "Te quedan 4 días de Pro, {nombre}",
     cuerpo: [
-      "Aprovecha estos días para abrir el simulador y ver qué te acerca a tu siguiente nivel. Si administras la plata en familia, Pro Familiar suma hasta {familiar_personas} personas.",
+      "Aprovecha estos días para dejar tu patrimonio completo. Si administras la plata en familia, con Pro Familiar compartes tu Finpathia con hasta {familiar_personas} personas de tu familia.",
     ],
-    cta: "Abrir el simulador",
-    destino: "simulador",
+    cta: "Completar mi patrimonio",
+    destino: "patrimonio",
   },
-  d10_con_simulador: {
-    asunto: "Te quedan 4 días de Pro, {nombre}",
-    cuerpo: [
-      "Ya sabes cuánto te falta para tu siguiente nivel. Si administras la plata en familia, invita a los tuyos: con Pro Familiar hasta {familiar_personas} personas ven y ordenan la plata juntos.",
-    ],
-    cta: "Ver Pro Familiar",
-    destino: "planes",
-  },
-  // d13: mismo cuerpo para las dos variantes. AJUSTE de Eng contra la spec
-  // final: se quitó la frase «Pro suma los coaches, el plan de impuestos y el
-  // Asesor IA.» del copy v2, porque ningún correo puede empujar el asesor,
-  // los coaches ni Impuestos. La agencia la reemplazó por la de Pro Familiar.
-  // "valor" abre con la frase de
+  // d13: mismo cuerpo para las dos variantes. "valor" abre con la frase de
   // conteos. Si uno de los conteos es 0 se quita esa parte; si ambos son 0
   // (o no se conocen), la frase entera.
   d13_urgencia: {
     asunto: "Tu prueba Pro vence mañana",
     cuerpo: [
-      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Con Pro Familiar compartes tu Finpathia con hasta {familiar_personas} personas de tu familia. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual. Pro Familiar: {familiar_mensual} USD/mes o {familiar_anual} USD/mes en plan anual.",
+      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos. Con Pro Familiar compartes tu Finpathia con hasta {familiar_personas} personas de tu familia. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual. Pro Familiar: {familiar_mensual} USD/mes o {familiar_anual} USD/mes en plan anual.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",
@@ -107,7 +100,7 @@ export const COPY = {
       soloM: "Ya tienes {m} {activos} en Finpathia.",
     },
     cuerpo: [
-      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Con Pro Familiar compartes tu Finpathia con hasta {familiar_personas} personas de tu familia. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual. Pro Familiar: {familiar_mensual} USD/mes o {familiar_anual} USD/mes en plan anual.",
+      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos. Con Pro Familiar compartes tu Finpathia con hasta {familiar_personas} personas de tu familia. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual. Pro Familiar: {familiar_mensual} USD/mes o {familiar_anual} USD/mes en plan anual.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",
@@ -115,7 +108,7 @@ export const COPY = {
   d16: {
     asunto: "Tu información sigue aquí",
     cuerpo: [
-      "Estás en el plan gratis: conservas tus datos, tu nivel y el simulador. Cuando quieras las funciones Pro, actívalas en un clic.",
+      "Estás en el plan gratis y todo lo que cargaste sigue guardado. Cuando quieras las funciones Pro, actívalas en un clic.",
     ],
     cta: "Activar Pro",
     destino: "planes",

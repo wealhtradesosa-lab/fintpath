@@ -49,20 +49,26 @@ describe("calendario: solo el paso cuyo día es hoy", () => {
 });
 
 describe("variantes", () => {
-  it("d2 por activated_at", () => {
-    expect(elegirPaso(base({ trial_end: finParaDia(2) }), HOY).clave).toBe("d2_sin_activar");
-    const r = elegirPaso(base({ trial_end: finParaDia(2), activated_at: "2026-10-19T10:00:00Z" }), HOY);
-    expect(r.clave).toBe("d2_activado");
-    expect(r.utmContent).toBe("d2_activado");
-  });
-  it("d5 y d10 por simulator_first_used_at (el asesor ya no influye)", () => {
-    for (const adv of [null, "2026-10-19T10:00:00Z"]) {
-      const c = (dia, sim) => elegirPaso(base({ trial_end: finParaDia(dia), advisor_first_used_at: adv, simulator_first_used_at: sim }), HOY);
-      expect([c(5, null).clave, c(5, null).utmContent]).toEqual(["d5_sin_simulador", "d5_sin_simulador"]);
-      expect(c(5, "2026-10-18T10:00:00Z").clave).toBe("d5_con_simulador");
-      expect([c(10, null).clave, c(10, null).utmContent]).toEqual(["d10_sin_simulador", "d10_sin_simulador"]);
-      expect(c(10, "2026-10-18T10:00:00Z").clave).toBe("d10_con_simulador");
+  it("d2 y d5 por activated_at (= primer activo cargado)", () => {
+    for (const [dia, paso] of [[2, "d2"], [5, "d5"]]) {
+      const sin = elegirPaso(base({ trial_end: finParaDia(dia) }), HOY);
+      expect([sin.clave, sin.utmContent]).toEqual([`${paso}_sin_activo`, `${paso}_sin_activo`]);
+      const con = elegirPaso(base({ trial_end: finParaDia(dia), activated_at: "2026-10-19T10:00:00Z" }), HOY);
+      expect([con.clave, con.utmContent]).toEqual([`${paso}_con_activo`, `${paso}_con_activo`]);
     }
+  });
+  it("simulator_first_used_at y el asesor ya no deciden ninguna variante", () => {
+    for (const sim of [null, "2026-10-18T10:00:00Z"]) for (const adv of [null, "2026-10-18T10:00:00Z"]) {
+      const c = (dia, act) => elegirPaso(base({ trial_end: finParaDia(dia), activated_at: act, simulator_first_used_at: sim, advisor_first_used_at: adv }), HOY).clave;
+      expect(c(5, null)).toBe("d5_sin_activo");
+      expect(c(5, "x")).toBe("d5_con_activo");
+      expect(c(10, null)).toBe("d10");
+      expect(c(10, "x")).toBe("d10");
+    }
+  });
+  it("d10 sin variante: clave y utm_content d10", () => {
+    const r = elegirPaso(base({ trial_end: finParaDia(10) }), HOY);
+    expect([r.clave, r.utmContent]).toEqual(["d10", "d10"]);
   });
   it("d13: sorteo 50/50 independiente del asesor; utm_content = urgencia|valor", () => {
     const u = elegirPaso(base({ trial_end: finParaDia(13), advisor_first_used_at: "x" }), HOY, { rnd: () => 0.2 });

@@ -7,8 +7,13 @@
 //
 // CALENDARIO (contado desde el inicio de la prueba = trial_end − 14 días):
 //   día 2  → d2   (variante por activated_at)          · faltan 12 días
-//   día 5  → d5   (variante por simulator_first_used_at) · faltan 9
-//   día 10 → d10  (variante por simulator_first_used_at) · faltan 4
+//   día 5  → d5   (variante por activated_at)          · faltan 9
+//   día 10 → d10  (sin variante)                       · faltan 4
+//
+// activated_at = «primer activo cargado» (copy v3, campaña Patrimonio). Lo
+// marca el servidor después de comprobar que el activo existe
+// (netlify/functions/track-activation.cjs). simulator_first_used_at se sigue
+// registrando pero ya no decide ninguna variante.
 //   día 13 → d13  (urgencia | valor, 50/50 al azar)    · falta 1
 //   día 16 → d16  (2 días después de vencer)           · −2
 //
@@ -82,7 +87,7 @@ export function sortearVarianteD13(rnd = Math.random) {
  * Decide el correo de hoy para una cuenta.
  *
  * cuenta = {
- *   trial_end, activated_at, simulator_first_used_at, seq_sent, seq_variant,
+ *   trial_end, activated_at, seq_sent, seq_variant,
  *   email_unsubscribed_at, plan, planUsuario, email
  * }
  * Devuelve { enviar:true, paso, clave, utmContent, varianteD13, diasRestantes }
@@ -107,16 +112,13 @@ export function elegirPaso(cuenta, hoy, { rnd = Math.random } = {}) {
   let clave, utmContent, varianteD13 = null;
   switch (def.paso) {
     case "d2":
-      clave = cuenta.activated_at ? "d2_activado" : "d2_sin_activar";
-      utmContent = clave;
-      break;
     case "d5":
-      clave = cuenta.simulator_first_used_at ? "d5_con_simulador" : "d5_sin_simulador";
+      clave = `${def.paso}_${cuenta.activated_at ? "con_activo" : "sin_activo"}`;
       utmContent = clave;
       break;
     case "d10":
-      clave = cuenta.simulator_first_used_at ? "d10_con_simulador" : "d10_sin_simulador";
-      utmContent = clave;
+      clave = "d10";
+      utmContent = "d10";
       break;
     case "d13":
       varianteD13 = cuenta.seq_variant === "urgencia" || cuenta.seq_variant === "valor"

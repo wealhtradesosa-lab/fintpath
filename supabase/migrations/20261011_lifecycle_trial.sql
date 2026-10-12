@@ -26,9 +26,9 @@ ALTER TABLE public.accounts
   ADD COLUMN IF NOT EXISTS entry_angle           text;
 
 COMMENT ON COLUMN public.accounts.trial_end IS 'Fin de la prueba Pro (fecha). Lo fija el servidor al registrarse (14 días; 30 para invitados).';
-COMMENT ON COLUMN public.accounts.activated_at IS 'Primera vez con ingreso + egreso cargados (evento activation). Una sola vez.';
+COMMENT ON COLUMN public.accounts.activated_at IS 'Primer activo cargado en Patrimonio (evento activation; el servidor comprueba user_data.data.inv). Una sola vez.';
 COMMENT ON COLUMN public.accounts.advisor_first_used_at IS 'Primera pregunta al Asesor IA durante la prueba (evento advisor_used).';
-COMMENT ON COLUMN public.accounts.simulator_first_used_at IS 'Primera vez que abre el simulador, sim o simf (evento simulator_used). Una sola vez.';
+COMMENT ON COLUMN public.accounts.simulator_first_used_at IS 'Primera vez que abre el simulador, sim o simf (evento simulator_used). Una sola vez. Solo analítica: ninguna variante lo usa.';
 COMMENT ON COLUMN public.accounts.seq_sent IS 'Pasos de la secuencia ENVIADOS de verdad: {"d2":"<iso>", ...}. Los dry run no cuentan.';
 COMMENT ON COLUMN public.accounts.last_seq_email IS 'Último correo de la secuencia enviado (ej. d10_sin_asesor).';
 COMMENT ON COLUMN public.accounts.seq_variant IS 'Variante d13 asignada al azar 50/50: urgencia | valor.';
@@ -128,7 +128,7 @@ CREATE INDEX IF NOT EXISTS accounts_trial_end_idx ON public.accounts (trial_end)
 CREATE TABLE IF NOT EXISTS public.lifecycle_email_sends (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  email_key   text NOT NULL,          -- d2_sin_activar … d13_urgencia, d13_valor, d16
+  email_key   text NOT NULL,          -- d2_sin_activo … d10, d13_urgencia, d13_valor, d16
   utm_content text NOT NULL,          -- variante en utm_content
   d13_variant text CHECK (d13_variant IS NULL OR d13_variant IN ('urgencia', 'valor')),
   sent_at     timestamptz NOT NULL DEFAULT now(),

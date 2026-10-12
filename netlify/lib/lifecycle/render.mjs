@@ -32,7 +32,7 @@ export function primerNombre(nombre) {
 }
 
 /**
- * clave: "d2_sin_activar" … "d16"
+ * clave: "d2_sin_activo" … "d16"
  * paso: "d2" … "d16"; utmContent: variante para utm_content
  * vars: { nombre, conteos: {n, m} | null }
  * urlBaja: URL firmada para darse de baja

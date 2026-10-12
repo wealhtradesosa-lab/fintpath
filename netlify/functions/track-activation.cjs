@@ -3,33 +3,39 @@
 // (una vez por persona cada uno). body.event elige el evento
 // (netlify/lib/eventosEmbudo.cjs):
 //   · "activation" (por defecto) → accounts.activated_at
-//   · "simulator_used" (11-oct-2026, Analítica: medir la v2 de los correos)
-//     → accounts.simulator_first_used_at. Primera vez que abre el simulador
-//     (página del año en curso "sim" o futuro "simf").
-// Todo lo de abajo aplica igual a los dos.
-//
-// Activación = la persona cargó al menos un ingreso Y un egreso, o sea, ya
-// hay un nivel de libertad calculado. Lo detecta el NAVEGADOR (App.jsx),
-// porque el servidor no puede leer los datos cifrados. El navegador manda
-// SOLO la bandera, con las UTM y el ángulo de entrada: ningún dato, monto
-// ni nivel.
+//     = «primer activo cargado» (campaña Patrimonio, copy v3; reemplaza a la
+//     activación por nivel, ingreso + egreso, que se eliminó).
+//   · "simulator_used" → accounts.simulator_first_used_at. Primera vez que
+//     abre el simulador ("sim" o "simf"). Se sigue registrando; ninguna
+//     variante de la v3 depende de él.
 //
 // El servidor:
 //   1. Verifica la sesión (Authorization: Bearer <token de Supabase>).
-//   2. Marca accounts.activated_at SOLO si estaba vacío (idempotente: una
-//      vez por persona en toda su vida), y guarda entry_utm / entry_angle.
-//   3. Si esta llamada fue la que lo marcó, emite "activation" por GA4
+//   2. Solo para activation: comprueba él mismo, con la service key, que la
+//      persona tiene al menos un activo en user_data (data.inv no vacío),
+//      SIN leer su valor (netlify/lib/activoCargado.cjs). Si el blob está
+//      cifrado no puede mirar la lista y acepta la señal del navegador.
+//      Si no hay activo, no marca nada (activo:false) y el navegador
+//      reintenta en la próxima carga o al siguiente guardado.
+//   3. Marca la columna SOLO si estaba vacía (una vez por persona en toda su
+//      vida). activation guarda también entry_utm / entry_angle.
+//   4. Si esta llamada fue la que la marcó, emite el evento por GA4
 //      Measurement Protocol (si hay GA4_API_SECRET) o lo deja en el log.
+//      Parámetros: solo utm_* y entry_angle. Nada de user_id, correo,
+//      montos ni conteos.
 //
-// Como el cliente es el que dice "ya activé", alguien podría marcarse a sí
-// mismo antes de tiempo. El único efecto es recibir la variante d2_activado
-// en vez de d2_sin_activar y un evento de más en GA4: riesgo aceptable.
+// Por qué un endpoint y no un trigger en user_data: el trigger correría en
+// cada guardado del blob completo (cada 2 s de edición) y no puede emitir
+// el evento de GA4 sin pg_net; el endpoint hace una sola consulta indexada
+// por id cuando el navegador ve el primer activo, y deja la marca y el
+// evento en el mismo sitio.
 //
 // ENV: SUPABASE_URL / VITE_SUPABASE_URL · SUPABASE_SERVICE_KEY · GA4_API_SECRET (opcional)
 // ═══════════════════════════════════════════════════════════════════════════
 const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
 const { emitirEvento, clientIdDesdeCookie, limpiarUtm, limpiarAngulo } = require("../lib/ga4.cjs");
 const { resolverEvento } = require("../lib/eventosEmbudo.cjs");
+const { activoCargado } = require("../lib/activoCargado.cjs");
 
 exports.handler = async (event) => {
   const headers = { "Content-Type": "application/json" };
@@ -50,6 +56,11 @@ exports.handler = async (event) => {
   if (!url || !key) return { statusCode: 500, headers, body: JSON.stringify({ ok: false, error: "config" }) };
 
   try {
+    if (ev.evento === "activation") {
+      const estado = await activoCargado({ url, key, userId: quien.id });
+      if (estado === "error") return { statusCode: 200, headers, body: JSON.stringify({ ok: false }) };
+      if (estado === "no") return { statusCode: 200, headers, body: JSON.stringify({ ok: true, evento: ev.evento, primera: false, activo: false }) };
+    }
     // PATCH condicional: solo filas con activated_at vacío. Si devuelve filas,
     // esta llamada fue la primera.
     const r = await fetch(

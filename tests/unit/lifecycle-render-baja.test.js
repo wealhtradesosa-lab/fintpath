@@ -30,11 +30,19 @@ describe("token de baja", () => {
 });
 
 describe("correos", () => {
-  it("v2: 9 correos (d5 y d10 divididos por el simulador)", () => {
+  it("v3: 8 correos (d2 y d5 divididos por primer activo; d10 único)", () => {
     expect(Object.keys(COPY).sort()).toEqual([
-      "d10_con_simulador", "d10_sin_simulador", "d13_urgencia", "d13_valor", "d16",
-      "d2_activado", "d2_sin_activar", "d5_con_simulador", "d5_sin_simulador",
+      "d10", "d13_urgencia", "d13_valor", "d16",
+      "d2_con_activo", "d2_sin_activo", "d5_con_activo", "d5_sin_activo",
     ]);
+  });
+  it("v3: no menciona nivel, simulador, 'te faltan', asesor, coaches, impuestos, Salud financiera ni cancelar", () => {
+    const prohibido = /nivel|simulador|te falta|asesor|coach|impuesto|tributari|salud financiera|cancel/i;
+    for (const clave of Object.keys(COPY)) {
+      const c = armarCorreo({ clave, paso: pasoDe(clave), utmContent: utmDe(clave), vars: { nombre: "Ana", conteos: { n: 3, m: 2 } }, urlBaja: URL_BAJA });
+      expect(c.asunto).not.toMatch(prohibido);
+      expect(c.texto.replace(CIERRE_MARCA, "")).not.toMatch(prohibido);
+    }
   });
   it("spec final: ningún asunto, cuerpo ni enlace empuja el asesor, los coaches o Impuestos", () => {
     const prohibido = /asesor|coach|impuesto|tributari|ir=(asesor|coach|tax)/i;
@@ -47,21 +55,16 @@ describe("correos", () => {
       for (const h of hrefs) expect(h).not.toMatch(prohibido);
     }
   });
-  it("v2: ningún botón lleva al Asesor IA", () => {
+  it("ningún botón lleva al Asesor IA", () => {
     for (const clave of Object.keys(COPY)) {
       const c = armarCorreo({ clave, paso: pasoDe(clave), utmContent: utmDe(clave), urlBaja: URL_BAJA });
       expect(c.urlCta).not.toContain("ir=asesor");
       expect(c.html).not.toMatch(/Preguntarle a mi asesor|Abrir mi asesor|Seguir con mi asesor/);
     }
   });
-  it("v2: destinos de los botones", () => {
+  it("v3: destinos de los botones", () => {
     const dest = (clave) => new URL(armarCorreo({ clave, paso: pasoDe(clave), utmContent: utmDe(clave), urlBaja: URL_BAJA }).urlCta).searchParams.get("ir");
-    expect(dest("d2_sin_activar")).toBe("dash");
-    expect(dest("d2_activado")).toBe("sim");
-    expect(dest("d5_sin_simulador")).toBe("sim");
-    expect(dest("d5_con_simulador")).toBe("inv");
-    expect(dest("d10_sin_simulador")).toBe("sim");
-    expect(dest("d10_con_simulador")).toBe("price");
+    for (const k of ["d2_sin_activo", "d2_con_activo", "d5_sin_activo", "d5_con_activo", "d10"]) expect(dest(k)).toBe("inv");
     expect(dest("d13_urgencia")).toBe("price");
     expect(dest("d13_valor")).toBe("price");
     expect(dest("d16")).toBe("price");
@@ -98,18 +101,18 @@ describe("correos", () => {
     const v = armarCorreo({ clave: "d13_valor", paso: "d13", utmContent: "valor", vars: { conteos: { n: 2, m: 1 } }, urlBaja: URL_BAJA });
     expect(v.texto.startsWith("Ya tienes 2 registros y 1 activo en Finpathia.")).toBe(true);
     expect(v.texto).toContain("Con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia. Pro: 16 USD/mes o 12 USD/mes en plan anual. Pro Familiar: 27 USD/mes o 20 USD/mes en plan anual.");
-    const d10 = armarCorreo({ clave: "d10_sin_simulador", paso: "d10", utmContent: "d10_sin_simulador", urlBaja: URL_BAJA });
-    expect(d10.texto).toContain("Pro Familiar suma hasta 10 personas.");
+    const d10 = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", urlBaja: URL_BAJA });
+    expect(d10.texto).toContain("con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia.");
   });
   it("{nombre}: con nombre y sin nombre (se borra ', {nombre}' limpio)", () => {
-    const con = armarCorreo({ clave: "d10_sin_simulador", paso: "d10", utmContent: "d10_sin_simulador", vars: { nombre: "Ana María Pérez" }, urlBaja: URL_BAJA });
+    const con = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", vars: { nombre: "Ana María Pérez" }, urlBaja: URL_BAJA });
     expect(con.asunto).toBe("Te quedan 4 días de Pro, Ana");
-    const sin = armarCorreo({ clave: "d10_sin_simulador", paso: "d10", utmContent: "d10_sin_simulador", vars: { nombre: "  " }, urlBaja: URL_BAJA });
+    const sin = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", vars: { nombre: "  " }, urlBaja: URL_BAJA });
     expect(sin.asunto).toBe("Te quedan 4 días de Pro");
     expect(rellenar("Hola, {nombre}.", { nombre: "" })).toBe("Hola.");
   });
   it("nombre se escapa en HTML", () => {
-    const c = armarCorreo({ clave: "d10_sin_simulador", paso: "d10", utmContent: "d10_sin_simulador", vars: { nombre: "<b>x" }, urlBaja: URL_BAJA });
+    const c = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", vars: { nombre: "<b>x" }, urlBaja: URL_BAJA });
     expect(c.html).not.toContain("<b>x");
   });
   it("d13 valor: abre con conteos solo si se conocen y no son cero", () => {
@@ -132,16 +135,15 @@ describe("correos", () => {
   });
 });
 
-describe("copy v2 literal (asuntos, CTA y cuerpos)", () => {
+describe("copy v3 literal (copy_secuencia_trial_v3_patrimonio.md)", () => {
   const C = (clave, vars = {}) => armarCorreo({ clave, paso: pasoDe(clave), utmContent: utmDe(clave), vars, urlBaja: URL_BAJA });
   it("asuntos y CTA", () => {
     const esperado = {
-      d2_sin_activar: ["Tu nivel está a dos datos de distancia", "Ver mi nivel"],
-      d2_activado: ["Ya sabes tu nivel. ¿Qué te falta para el siguiente?", "Abrir el simulador"],
-      d5_sin_simulador: ["¿Cuánto te falta para tu siguiente nivel?", "Abrir el simulador"],
-      d5_con_simulador: ["Mira tu plata completa en una sola vista", "Completar mi patrimonio"],
-      d10_sin_simulador: ["Te quedan 4 días de Pro, Ana", "Abrir el simulador"],
-      d10_con_simulador: ["Te quedan 4 días de Pro, Ana", "Ver Pro Familiar"],
+      d2_sin_activo: ["Tu patrimonio empieza con un activo", "Cargar mi primer activo"],
+      d2_con_activo: ["Ya empezaste. ¿Qué más tienes?", "Completar mi patrimonio"],
+      d5_sin_activo: ["¿Cuánto vale todo lo que tienes?", "Ver mi patrimonio"],
+      d5_con_activo: ["Mira cuánto ha ganado cada activo", "Revisar mis activos"],
+      d10: ["Te quedan 4 días de Pro, Ana", "Completar mi patrimonio"],
       d13_urgencia: ["Tu prueba Pro vence mañana", "Seguir con Pro"],
       d13_valor: ["Esto es lo que ya organizaste en Finpathia", "Seguir con Pro"],
       d16: ["Tu información sigue aquí", "Activar Pro"],
@@ -153,12 +155,16 @@ describe("copy v2 literal (asuntos, CTA y cuerpos)", () => {
     }
   });
   it("cuerpos", () => {
-    expect(C("d5_sin_simulador").texto.startsWith("Tu nivel es el punto de partida. El simulador te muestra cuánto te falta cada mes para llegar al siguiente, y qué cambia si ajustas tus ingresos o tus gastos.")).toBe(true);
-    expect(C("d5_con_simulador").texto.startsWith("Ya usaste el simulador. Ahora carga tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio total en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.")).toBe(true);
-    expect(C("d10_sin_simulador").texto.startsWith("Aprovecha estos días para abrir el simulador y ver qué te acerca a tu siguiente nivel. Si administras la plata en familia, Pro Familiar suma hasta 10 personas.")).toBe(true);
-    expect(C("d10_con_simulador").texto.startsWith("Ya sabes cuánto te falta para tu siguiente nivel. Si administras la plata en familia, invita a los tuyos: con Pro Familiar hasta 10 personas ven y ordenan la plata juntos.")).toBe(true);
-    expect(C("d13_urgencia").texto.startsWith("Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia. Pro: 16 USD/mes o 12 USD/mes en plan anual. Pro Familiar: 27 USD/mes o 20 USD/mes en plan anual.")).toBe(true);
-    expect(C("d16").texto.startsWith("Estás en el plan gratis: conservas tus datos, tu nivel y el simulador. Cuando quieras las funciones Pro, actívalas en un clic.")).toBe(true);
-    expect(C("d2_activado").texto.startsWith("Abre el simulador y mira cuánto te falta cada mes para llegar a tu siguiente nivel, y qué cambia si ajustas tus ingresos o tus gastos.")).toBe(true);
+    const cuerpos = {
+      d2_sin_activo: "Carga tu primer activo, por ejemplo tu cuenta de ahorros, un CDT o tu apartamento, y Finpathia empieza a armar tu patrimonio total en un solo lugar.",
+      d2_con_activo: "Suma tus otras cuentas, inversiones, propiedades y deudas. Entre más completo, más claro ves cuánto vale lo que tienes y cuánta deuda tiene encima.",
+      d5_sin_activo: "Tus cuentas, tu carro, tu CDT y tus deudas, juntos en una sola vista. Carga lo que tengas a la mano y mira tu patrimonio total.",
+      d5_con_activo: "En Finpathia ves, activo por activo, cuánto vale, cuánto ha ganado y cuánta deuda tiene encima. Revisa los tuyos y completa los que falten.",
+      d10: "Aprovecha estos días para dejar tu patrimonio completo. Si administras la plata en familia, con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia.",
+      d13_urgencia: "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos. Con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia. Pro: 16 USD/mes o 12 USD/mes en plan anual. Pro Familiar: 27 USD/mes o 20 USD/mes en plan anual.",
+      d16: "Estás en el plan gratis y todo lo que cargaste sigue guardado. Cuando quieras las funciones Pro, actívalas en un clic.",
+    };
+    for (const [clave, cuerpo] of Object.entries(cuerpos)) expect(C(clave).texto.startsWith(cuerpo)).toBe(true);
+    expect(C("d13_valor", { conteos: { n: 2, m: 1 } }).texto.startsWith("Ya tienes 2 registros y 1 activo en Finpathia.\n" + cuerpos.d13_urgencia)).toBe(true);
   });
 });

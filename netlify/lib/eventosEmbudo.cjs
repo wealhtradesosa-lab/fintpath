@@ -3,9 +3,11 @@
 // su columna de accounts (solo si está vacía) y se emite por GA4 MP.
 // Puro: sin red, para poder probarlo.
 const EVENTOS = {
-  // Primer ingreso + primer egreso cargados (ya hay nivel de libertad).
+  // Primer activo cargado en Patrimonio (copy v3). El servidor lo comprueba
+  // en user_data antes de marcar (netlify/lib/activoCargado.cjs).
   activation: "activated_at",
-  // Primera vez que abre el simulador (página "sim" o "simf").
+  // Primera vez que abre el simulador (página "sim" o "simf"). Se sigue
+  // registrando para Analítica; la v3 no lo usa para ninguna variante.
   simulator_used: "simulator_first_used_at",
 };
 

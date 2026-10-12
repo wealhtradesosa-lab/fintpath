@@ -30,11 +30,11 @@ describe("cron de la secuencia", () => {
     expect(r.real).toBe(false);
     const inserts = llamadas.filter((l) => l.method === "POST");
     expect(inserts).toHaveLength(1);
-    expect(inserts[0].body).toMatchObject({ user_id: U1, email_key: "d10_sin_simulador", utm_content: "d10_sin_simulador", dry_run: true });
+    expect(inserts[0].body).toMatchObject({ user_id: U1, email_key: "d10", utm_content: "d10", dry_run: true });
     expect(llamadas.some((l) => l.method === "PATCH")).toBe(false);
   });
   it("dry run no duplica filas si ya existe una para esa persona y correo", async () => {
-    const { fetchFn, llamadas } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10_sin_simulador", dry_run: true, error: null }] });
+    const { fetchFn, llamadas } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10", dry_run: true, error: null }] });
     await correrSecuencia({ ahora: AHORA, env: envBase, fetchFn, enviar: async () => ({}) });
     expect(llamadas.filter((l) => l.method === "POST")).toHaveLength(0);
   });
@@ -46,7 +46,7 @@ describe("cron de la secuencia", () => {
     expect(r.real).toBe(false);
   });
   it("un dry run previo NO cuenta como enviado al prender la bandera", async () => {
-    const { fetchFn, llamadas } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10_sin_simulador", dry_run: true, error: null }] });
+    const { fetchFn, llamadas } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10", dry_run: true, error: null }] });
     const enviados = [];
     await correrSecuencia({
       ahora: AHORA, env: { ...envBase, LIFECYCLE_EMAILS_ENABLED: "true", EMAIL_UNSUB_SECRET: "s" }, fetchFn,
@@ -59,12 +59,12 @@ describe("cron de la secuencia", () => {
     const patch = llamadas.find((l) => l.method === "PATCH");
     expect(patch.url).toContain(`accounts?id=eq.${A1}`);
     expect(Object.keys(patch.body).sort()).toEqual(["last_seq_email", "seq_sent"]);
-    expect(patch.body.last_seq_email).toBe("d10_sin_simulador");
+    expect(patch.body.last_seq_email).toBe("d10");
     const ins = llamadas.find((l) => l.method === "POST");
     expect(ins.body).toMatchObject({ dry_run: false, resend_id: "re_1" });
   });
   it("un envío real previo del mismo paso bloquea (red de seguridad)", async () => {
-    const { fetchFn } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10_sin_simulador", dry_run: false, error: null }] });
+    const { fetchFn } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10", dry_run: false, error: null }] });
     let enviados = 0;
     await correrSecuencia({ ahora: AHORA, env: { ...envBase, LIFECYCLE_EMAILS_ENABLED: "true", EMAIL_UNSUB_SECRET: "s" }, fetchFn, enviar: async () => { enviados++; return { ok: true, sent: true }; } });
     expect(enviados).toBe(0);
@@ -75,10 +75,19 @@ describe("cron de la secuencia", () => {
     expect(llamadas.some((l) => l.method === "PATCH")).toBe(false);
     expect(llamadas.find((l) => l.method === "POST").body).toMatchObject({ dry_run: false, error: "resend_not_configured" });
   });
-  it("lee simulator_first_used_at de accounts y elige d10_con_simulador", async () => {
+  it("lee activated_at de accounts y elige d5_con_activo / d5_sin_activo", async () => {
+    const d5 = { ...cuentaD10, trial_end: "2026-10-29" }; // hoy = día 5
+    const { fetchFn, llamadas } = simular({ cuenta: { ...d5, activated_at: "2026-10-17T12:00:00Z" } });
+    await correrSecuencia({ ahora: AHORA, env: envBase, fetchFn, enviar: async () => ({}) });
+    expect(llamadas[0].url).toContain("activated_at");
+    expect(llamadas.find((l) => l.method === "POST").body).toMatchObject({ email_key: "d5_con_activo", utm_content: "d5_con_activo", dry_run: true });
+    const s2 = simular({ cuenta: d5 });
+    await correrSecuencia({ ahora: AHORA, env: envBase, fetchFn: s2.fetchFn, enviar: async () => ({}) });
+    expect(s2.llamadas.find((l) => l.method === "POST").body).toMatchObject({ email_key: "d5_sin_activo" });
+  });
+  it("d10 es uno solo, tenga o no simulador", async () => {
     const { fetchFn, llamadas } = simular({ cuenta: { ...cuentaD10, simulator_first_used_at: "2026-10-15T12:00:00Z" } });
     await correrSecuencia({ ahora: AHORA, env: envBase, fetchFn, enviar: async () => ({}) });
-    expect(llamadas[0].url).toContain("simulator_first_used_at");
-    expect(llamadas.find((l) => l.method === "POST").body).toMatchObject({ email_key: "d10_con_simulador", utm_content: "d10_con_simulador", dry_run: true });
+    expect(llamadas.find((l) => l.method === "POST").body).toMatchObject({ email_key: "d10", utm_content: "d10" });
   });
 });

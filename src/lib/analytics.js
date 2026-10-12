@@ -217,7 +217,7 @@ export function captureUTMs() {
 // ═══════════════════════════════════════════════════════════════════════════
 // 11-oct-2026 — ENTRADA (UTM + ángulo) para el evento "activation"
 //
-// La activación (primer ingreso + primer egreso) puede pasar días después
+// La activación (primer activo cargado) puede pasar días después
 // del registro, cuando sessionStorage ya se borró. Al registrarse guardamos
 // en localStorage SOLO las UTM y el ángulo de entrada (ej. "renta:declaracion"
 // o "pioneros"). Sin correo, sin montos, sin ids.
