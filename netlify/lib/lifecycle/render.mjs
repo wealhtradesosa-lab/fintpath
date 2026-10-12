@@ -1,7 +1,7 @@
 // FINPATHIA · Arma asunto + HTML + texto de un correo de la secuencia.
 // Puro (sin red): recibe la clave, las variables y la URL de baja.
 import { PLAN_BASE } from "../../../src/lib/plans.js";
-import { COPY, CIERRE_MARCA, NOTA_ASESOR, TEXTO_BAJA } from "./copy.mjs";
+import { COPY, CIERRE_MARCA, TEXTO_BAJA } from "./copy.mjs";
 import { conUtm, DESTINOS, BASE_APP } from "./enlaces.mjs";
 
 const pro = PLAN_BASE.find((p) => p.name === "Pro");
@@ -78,7 +78,6 @@ ${parrafos.map((p) => `<p style="font-size:15px;color:#d4d4d8;line-height:1.7;ma
 <p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:28px 0 0;font-style:italic;">${escaparHtml(CIERRE_MARCA)}</p>
 </td></tr>
 <tr><td style="padding:20px 40px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:#71717a;line-height:1.6;">
-<div style="margin-bottom:8px;">${escaparHtml(NOTA_ASESOR)}</div>
 ${urlBajaUtm ? `<div><a href="${escaparHtml(urlBajaUtm)}" style="color:#a1a1aa;text-decoration:underline;">${escaparHtml(TEXTO_BAJA)}</a></div>` : ""}
 </td></tr>
 </table></td></tr></table></body></html>`;
@@ -87,7 +86,6 @@ ${urlBajaUtm ? `<div><a href="${escaparHtml(urlBajaUtm)}" style="color:#a1a1aa;t
     ...parrafos, "",
     `${c.cta}: ${urlCta}`, "",
     CIERRE_MARCA, "",
-    NOTA_ASESOR,
     urlBajaUtm ? `${TEXTO_BAJA}: ${urlBajaUtm}` : "",
   ].join("\n");
 

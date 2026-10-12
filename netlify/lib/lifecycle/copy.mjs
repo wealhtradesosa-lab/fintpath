@@ -17,7 +17,9 @@
 //                   salen de src/lib/plans.js (precio de Pro y cupo de Pro
 //                   Familiar) para que el correo no se desfase del precio real.
 //
-// Prohibido en este archivo: montos del usuario, promesas de cifrado de
+// Prohibido en este archivo (spec final 11-oct): empujar el Asesor IA, los
+// Coaches o Impuestos hasta que QA los apruebe y Luis dé el OK. También:
+// montos del usuario, promesas de cifrado de
 // extremo a extremo, asesoría tributaria, llamar a Finpathia plataforma
 // para declarar.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -25,8 +27,9 @@
 // Línea de marca: cierra TODOS los correos.
 export const CIERRE_MARCA = "Transformamos la complejidad financiera en claridad para construir tranquilidad.";
 
-// Nota al pie de TODOS los correos.
-export const NOTA_ASESOR = "Las respuestas del asesor son orientación, no recomendación de inversión.";
+// (11-oct, spec final) Se quitó la nota al pie sobre el asesor: ningún
+// correo de la v2 menciona el Asesor IA. Vuelve con la v1 cuando el asesor
+// pase QA y Luis lo apruebe.
 
 export const TEXTO_BAJA = "Darme de baja de estos correos";
 
@@ -81,13 +84,17 @@ export const COPY = {
     cta: "Ver Pro Familiar",
     destino: "planes",
   },
-  // d13: mismo cuerpo para las dos variantes; "valor" abre con la frase de
+  // d13: mismo cuerpo para las dos variantes. AJUSTE de Eng contra la spec
+  // final: se quitó la frase «Pro suma los coaches, el plan de impuestos y el
+  // Asesor IA.» del copy v2, porque ningún correo puede empujar el asesor,
+  // los coaches ni Impuestos. Si la agencia quiere otra frase, va aquí.
+  // "valor" abre con la frase de
   // conteos. Si uno de los conteos es 0 se quita esa parte; si ambos son 0
   // (o no se conocen), la frase entera.
   d13_urgencia: {
     asunto: "Tu prueba Pro vence mañana",
     cuerpo: [
-      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro suma los coaches, el plan de impuestos y el Asesor IA. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
+      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",
@@ -100,7 +107,7 @@ export const COPY = {
       soloM: "Ya tienes {m} {activos} en Finpathia.",
     },
     cuerpo: [
-      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro suma los coaches, el plan de impuestos y el Asesor IA. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
+      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",

@@ -1403,7 +1403,7 @@ export default function FinPath(){
     fetchAuth("/api/track-activation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:"simulator_used",utm:ent.utm,angle:ent.angle})})
       .then(r=>r.ok?r.json():null).then(d=>{if(d&&d.ok){try{localStorage.setItem(k,"1")}catch{}}}).catch(()=>{});
   },[pg,authUser?.id,viewMode]);
-  // ═══ 11-oct-2026 — ENLACES DE LOS CORREOS (?ir=dash|sim|inv|price|asesor) ═══
+  // ═══ 11-oct-2026 — ENLACES DE LOS CORREOS (?ir=dash|sim|inv|price) ═══
   // Los botones de los correos de la prueba abren una sección concreta.
   // Lista cerrada de destinos; se lee una vez cuando ya hay datos cargados.
   const irAplicado=useRef(false);
@@ -1413,7 +1413,7 @@ export default function FinPath(){
     try{
       const ps=new URLSearchParams(window.location.search);
       const ir=ps.get("ir");
-      if(ir&&["dash","sim","inv","asesor","price"].includes(ir))setPg(ir);
+      if(ir&&["dash","sim","inv","price"].includes(ir))setPg(ir);
       if(ir){ps.delete("ir");const q=ps.toString();window.history.replaceState({},"",window.location.pathname+(q?"?"+q:""));}
     }catch{}
   },[u]);

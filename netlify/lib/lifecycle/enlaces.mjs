@@ -18,5 +18,4 @@ export const DESTINOS = {
   simulador: "/?ir=sim",
   patrimonio: "/?ir=inv",
   planes: "/?ir=price",
-  asesor: "/?ir=asesor", // sin uso en la v2 del copy; queda para volver a la v1
 };

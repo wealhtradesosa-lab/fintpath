@@ -1,7 +1,7 @@
 // Copy, enlaces con UTM y token de baja de la secuencia de prueba.
 import { describe, it, expect } from "vitest";
 import { armarCorreo, rellenar, PRECIOS } from "../../netlify/lib/lifecycle/render.mjs";
-import { COPY, CIERRE_MARCA, NOTA_ASESOR } from "../../netlify/lib/lifecycle/copy.mjs";
+import { COPY, CIERRE_MARCA } from "../../netlify/lib/lifecycle/copy.mjs";
 import { firmarTokenBaja, verificarTokenBaja } from "../../netlify/lib/lifecycle/tokenBaja.mjs";
 import { PLAN_BASE } from "../../src/lib/plans.js";
 
@@ -36,6 +36,17 @@ describe("correos", () => {
       "d2_activado", "d2_sin_activar", "d5_con_simulador", "d5_sin_simulador",
     ]);
   });
+  it("spec final: ningún asunto, cuerpo ni enlace empuja el asesor, los coaches o Impuestos", () => {
+    const prohibido = /asesor|coach|impuesto|tributari|ir=(asesor|coach|tax)/i;
+    for (const clave of Object.keys(COPY)) {
+      const c = armarCorreo({ clave, paso: pasoDe(clave), utmContent: utmDe(clave), vars: { nombre: "Ana", conteos: { n: 3, m: 2 } }, urlBaja: URL_BAJA });
+      expect(c.asunto).not.toMatch(prohibido);
+      expect(c.texto).not.toMatch(prohibido);
+      expect(c.html).not.toMatch(prohibido);
+      const hrefs = [...c.html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+      for (const h of hrefs) expect(h).not.toMatch(prohibido);
+    }
+  });
   it("v2: ningún botón lleva al Asesor IA", () => {
     for (const clave of Object.keys(COPY)) {
       const c = armarCorreo({ clave, paso: pasoDe(clave), utmContent: utmDe(clave), urlBaja: URL_BAJA });
@@ -68,7 +79,6 @@ describe("correos", () => {
         expect(u.searchParams.get("utm_content")).toBe(utmDe(clave));
       }
       expect(c.html).toContain(CIERRE_MARCA);
-      expect(c.html).toContain(NOTA_ASESOR);
       expect(c.html).toContain("Darme de baja");
       expect(c.texto).toContain(CIERRE_MARCA);
       expect(c.html).not.toMatch(/extremo a extremo|E2E|declarar tu renta/i);
@@ -141,7 +151,7 @@ describe("copy v2 literal (asuntos, CTA y cuerpos)", () => {
     expect(C("d5_con_simulador").texto.startsWith("Ya usaste el simulador. Ahora carga tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio neto en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.")).toBe(true);
     expect(C("d10_sin_simulador").texto.startsWith("Aprovecha estos días para abrir el simulador y ver qué te acerca a tu siguiente nivel. Si administras la plata en familia, Pro Familiar suma hasta 10 personas.")).toBe(true);
     expect(C("d10_con_simulador").texto.startsWith("Ya sabes cuánto te falta para tu siguiente nivel. Si administras la plata en familia, invita a los tuyos: con Pro Familiar hasta 10 personas ven y ordenan la plata juntos.")).toBe(true);
-    expect(C("d13_urgencia").texto.startsWith("Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro suma los coaches, el plan de impuestos y el Asesor IA. Pro: 16 USD/mes o 12 USD/mes en plan anual.")).toBe(true);
+    expect(C("d13_urgencia").texto.startsWith("Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro: 16 USD/mes o 12 USD/mes en plan anual.")).toBe(true);
     expect(C("d16").texto.startsWith("Estás en el plan gratis: conservas tus datos, tu nivel y el simulador. Cuando quieras las funciones Pro, actívalas en un clic.")).toBe(true);
     expect(C("d2_activado").texto.startsWith("Abre el simulador y mira cuánto te falta cada mes para llegar a tu siguiente nivel, y qué cambia si ajustas tus ingresos o tus gastos.")).toBe(true);
   });
