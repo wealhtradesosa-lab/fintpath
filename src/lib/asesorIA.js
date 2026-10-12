@@ -40,6 +40,50 @@ export function mesesDeuda({ saldo, cuota, tasaEA }) {
   return Math.ceil(-Math.log(1 - (r * B) / P) / Math.log(1 + r));
 }
 
+const pctDe = (parte, total) => (Number(total) > 0 ? pc((Number(parte) || 0) / Number(total) * 100) : "—");
+
+// Factor de egresos que pide cada siguiente nivel = UMBRALES[nivel] / 100
+// (mismos factores del coach Estratega: 0,65 · 0,825 · 1 · 1,5 · 2,5).
+/** Brecha al siguiente nivel: por ingresos o por egresos, cifras exactas. */
+export function brechaNivel({ ni, te, nivel }) {
+  if (!(te > 0) || nivel >= 5) return null;
+  const factor = UMBRALES[nivel] / 100;
+  const ingresoNecesario = te * factor;
+  const egresoMaximo = ni / factor;
+  return {
+    ingresoNecesario,
+    faltaIngreso: Math.max(0, ingresoNecesario - ni),
+    egresoMaximo,
+    bajarEgresos: Math.max(0, te - egresoMaximo),
+  };
+}
+
+/** Meta y faltante del fondo de emergencia a 3 y 6 meses de egresos totales. */
+export function fondoEmergencia({ te, liquidez }) {
+  return [3, 6].map((meses) => {
+    const meta = meses * (Number(te) || 0);
+    return { meses, meta, falta: Math.max(0, meta - (Number(liquidez) || 0)) };
+  });
+}
+
+/** Qué deuda va primero con avalancha (tasa) y con bola de nieve (saldo). */
+export function ordenDeudas(deudas) {
+  const ds = (deudas || []).filter((d) => (Number(d.mt) || 0) > 0);
+  if (ds.length < 2) return null;
+  const nombre = (d) => d.n || d.nombre || "Deuda";
+  const avalancha = [...ds].sort((a, b) => (Number(b.ts) || 0) - (Number(a.ts) || 0))[0];
+  const bola = [...ds].sort((a, b) => (Number(a.mt) || 0) - (Number(b.mt) || 0))[0];
+  return { coinciden: avalancha === bola, avalancha: nombre(avalancha), bolaDeNieve: nombre(bola) };
+}
+
+/** Gastos encendidos por categoría, en monto promedio mensual, de mayor a menor. */
+export function gastosPorCategoria(user) {
+  return Object.entries((user && user.gas) || {})
+    .map(([cat, items]) => ({ cat, total: encendidos(items).reduce((s, g) => s + montoPromedioMensual(g), 0) }))
+    .filter((g) => g.total > 0)
+    .sort((a, b) => b.total - a.total);
+}
+
 /** Cifras clave ya calculadas, para que el modelo no haga aritmética. */
 export function cifrasClave(user, totals) {
   const u = user || {};
@@ -54,11 +98,25 @@ export function cifrasClave(user, totals) {
   if (te > 0) {
     let txt = `• Nivel de libertad financiera en Finpathia: ${NIVELES[nivel]} (nivel ${nivel}/5, índice ${pc(t.ind)} = ingresos netos / egresos totales)`;
     if (nivel < 5) {
-      const factores = [0.65, 0.825, 1.0, 1.5, 2.5];
-      const necesario = te * factores[nivel];
-      txt += `. Siguiente nivel: ${NIVELES[nivel + 1]}, que pide ingresos netos de ${fm(necesario)}/mes con los egresos actuales; faltan ${fm(Math.max(0, necesario - ni))}/mes (o bajar egresos)`;
+      const b = brechaNivel({ ni, te, nivel });
+      txt += `. Siguiente nivel: ${NIVELES[nivel + 1]} (índice ${UMBRALES[nivel]}%).` +
+        ` Brecha exacta, por ingresos: faltan ${fm(b.faltaIngreso)}/mes de ingresos netos (llegar a ${fm(b.ingresoNecesario)}/mes con los egresos actuales).` +
+        ` O, por egresos: con los ingresos actuales, los egresos totales tendrían que bajar ${fm(b.bajarEgresos)}/mes (hasta ${fm(b.egresoMaximo)}/mes)`;
     }
     lineas.push(txt);
+  }
+
+  // 11-oct-2026 (QA #35): el modelo daba el % de los egresos como si fuera de
+  // los ingresos ("Vivienda 31,8 % de tus ingresos netos"; es el 25,9 %).
+  // Se le dan los dos porcentajes, rotulados.
+  const gastos = gastosPorCategoria(u);
+  if (gastos.length) {
+    lineas.push("• Gastos por categoría (monto/mes · % de los ingresos netos · % de los egresos totales):");
+    gastos.forEach(({ cat, total }) => {
+      lineas.push(`  - ${cat}: ${fm(total)} · ${pctDe(total, ni)} de los ingresos netos · ${pctDe(total, te)} de los egresos totales`);
+    });
+    const cuotasDeu = Number(t.tc) || 0;
+    if (cuotasDeu > 0) lineas.push(`  - Cuotas de deudas: ${fm(cuotasDeu)} · ${pctDe(cuotasDeu, ni)} de los ingresos netos · ${pctDe(cuotasDeu, te)} de los egresos totales`);
   }
 
   const deudas = encendidos(u.deu).filter((d) => (Number(d.mt) || 0) > 0);
@@ -66,6 +124,13 @@ export function cifrasClave(user, totals) {
     const saldo = deudas.reduce((s, d) => s + (Number(d.mt) || 0), 0);
     const cuotas = deudas.reduce((s, d) => s + (Number(d.pg || d.pago) || 0), 0);
     lineas.push(`• Deudas: saldo total ${fm(saldo)}, cuotas ${fm(cuotas)}/mes` + (ni > 0 ? ` (${pc(cuotas / ni * 100)} de los ingresos netos)` : ""));
+    const orden = ordenDeudas(deudas);
+    if (orden) {
+      lineas.push(orden.coinciden
+        ? `  - avalancha y bola de nieve coinciden: ${orden.avalancha} (es la de tasa más alta y también la de saldo más bajo)`
+        : `  - avalancha (tasa más alta primero): ${orden.avalancha}; bola de nieve (saldo más bajo primero): ${orden.bolaDeNieve}`);
+    }
+    lineas.push("  - Un abono extra baja el saldo y los intereses futuros, no la cuota mensual.");
     [...deudas].sort((a, b) => (Number(b.ts) || 0) - (Number(a.ts) || 0)).forEach((d) => {
       const saldoD = Number(d.mt) || 0, cuota = Number(d.pg || d.pago) || 0, ts = Number(d.ts) || 0;
       const interes = saldoD * tasaMensualEq(ts);
@@ -78,11 +143,17 @@ export function cifrasClave(user, totals) {
   }
 
   const liquidos = encendidos(u.inv).filter((i) => TIPOS_LIQUIDOS.includes(i.tp || i.tipo));
+  const liquidez = liquidos.reduce((s, i) => s + vaCOP(i, trm), 0);
   if (liquidos.length) {
-    const liquidez = liquidos.reduce((s, i) => s + vaCOP(i, trm), 0);
     let txt = `• Liquidez (${liquidos.map((i) => i.n || i.nombre || i.tp || i.tipo).join(", ")}): ${fm(liquidez)}`;
     if (te > 0) txt += ` = ${(liquidez / te).toFixed(1)} meses de egresos totales`;
     lineas.push(txt);
+  }
+  if (te > 0) {
+    lineas.push("• Fondo de emergencia (meses de egresos totales; la liquidez de arriba cuenta como fondo):");
+    fondoEmergencia({ te, liquidez }).forEach(({ meses, meta, falta }) => {
+      lineas.push(`  - ${meses} meses = ${fm(meta)}; ${falta > 0 ? `faltan exactamente ${fm(falta)}` : "ya está cubierto"}`);
+    });
   }
 
   return "CIFRAS CALCULADAS POR FINPATHIA (úsalas tal cual):\n" + lineas.join("\n") + "\n";

@@ -2,7 +2,7 @@
 // historial, cuota en el servidor, cifras precalculadas y markdown.
 import { describe, it, expect } from "vitest";
 import { createRequire } from "module";
-import { buildContext, cifrasClave, mesesDeuda, nivelLibertad, normalizarMarkdown } from "../../src/lib/asesorIA.js";
+import { buildContext, cifrasClave, mesesDeuda, nivelLibertad, normalizarMarkdown, brechaNivel, fondoEmergencia, ordenDeudas, gastosPorCategoria } from "../../src/lib/asesorIA.js";
 
 const require = createRequire(import.meta.url);
 const A = require("../../netlify/functions/_asesorIA.cjs");
@@ -22,11 +22,11 @@ describe("construirPromptSistema", () => {
       "No supongas estrato", "una sola pregunta corta",
       "no recomiendes ni nombres productos financieros concretos (CDT, AFC, FPV",
       "no des cifras, tarifas, topes, deducciones", "módulo de Impuestos", "contador",
-      "no prometas plazos ni resultados", "2 o 3 opciones", "la decisión es de la persona",
+      "no prometas plazos ni resultados", "como máximo 2 opciones", "la decisión es de la persona",
       "tutea siempre", "Nunca uses voseo", "sin alarmas",
       "entre 120 y 180 palabras", "No uses tablas", "no las recalcules",
     ]) expect(es).toContain(frase);
-    for (const frase of ["Do not assume", "do not quote market rates", "do not give tax figures", "No promises", "No orders", "No tables", "never \"vos\""]) {
+    for (const frase of ["Do not assume", "do not quote market rates", "do not give tax figures", "No promises", "Options, not orders", "No tables", "never \"vos\""]) {
       expect(en).toContain(frase);
     }
   });
@@ -205,5 +205,130 @@ describe("normalizarMarkdown", () => {
   });
   it("quita las cercas de código", () => {
     expect(normalizarMarkdown("a\n```\nb\n```\nc")).toBe("a\nb\nc");
+  });
+});
+
+// ── Ronda 2 de QA sobre #35 (criterios e y h) ──────────────────────────────
+// Cuenta QA Pro tal como la mandó la app (qa-pr35/respuestas.md).
+const QA_USER = {
+  trm: 4000,
+  gas: {
+    "Vivienda": [{ m: 1900000 }],
+    "Servicios": [{ m: 320000 }],
+    "Transporte": [{ m: 380000 }],
+    "Tecnología": [{ m: 160000 }],
+    "Alimentación": [{ m: 1000000 }, { m: 850000 }],
+    "Entretenimiento": [{ m: 300000 }],
+    "Apagado": [{ m: 999999999, sim: false }],
+  },
+  deu: [
+    { n: "Tarjeta de crédito", mt: 4200000, pg: 350000, ts: 28 },
+    { n: "Crédito vehículo", mt: 18500000, pg: 720000, ts: 16 },
+  ],
+  inv: [
+    { n: "Cuenta de ahorros", va: 3500000, vc: 3500000, tp: "Cash" },
+    { n: "CDT", va: 8000000, vc: 8000000, tp: "CDT" },
+  ],
+};
+const QA_TOTALS = { nw: -11200000, ni: 7329000, gfm: 4910000, tc: 1070000, te: 5980000, cf: 1349000, ind: 122.6, td: 22700000, dta: 197.4 };
+
+describe("prompt: opciones con Pro/Contra y reglas de cifras (QA e/h)", () => {
+  const es = A.construirPromptSistema({ jurisdiction: "CO", financialContext: "x" });
+  const en = A.construirPromptSistema({ jurisdiction: "US", financialContext: "x" });
+  it("cada opción con «Pro:» y «Contra:», máximo 2, dentro de 120-180 palabras", () => {
+    expect(es).toContain("como máximo 2 opciones");
+    expect(es).toContain("Pro: <una ventaja>. Contra: <una desventaja>.");
+    expect(es).toContain('Ninguna opción va sin "Pro:" y "Contra:"');
+    expect(es).toContain("entre 120 y 180 palabras en total, opciones incluidas");
+    expect(es).not.toContain("2 o 3 opciones");
+    expect(en).toContain("Pro: <one advantage>. Con: <one drawback>.");
+    expect(en).toContain("at most 2 options");
+  });
+  it("prohíbe rangos con cifra exacta, porcentajes no dados, y aclara que el abono no baja la cuota", () => {
+    expect(es).toContain("no la conviertas en un rango");
+    expect(es).toContain("No calcules porcentajes que no estén en el bloque");
+    expect(es).toContain("no baja la cuota mensual ni los egresos del mes, salvo que las cifras digan lo contrario");
+    expect(es).toContain("avalancha y bola de nieve coinciden");
+    expect(es).toContain("termina preguntando por eso");
+    expect(en).toContain("never as a range");
+    expect(en).toContain("Do not compute percentages that are not provided");
+    expect(en).toContain("does not lower the monthly payment");
+  });
+});
+
+describe("cifrasClave con la cuenta QA (criterio h)", () => {
+  const txt = cifrasClave(QA_USER, QA_TOTALS);
+
+  it("cada gasto con % de ingresos netos y % de egresos totales, rotulados", () => {
+    expect(txt).toContain("  - Vivienda: $1.900.000 · 25.9% de los ingresos netos · 31.8% de los egresos totales");
+    expect(txt).toContain("  - Alimentación: $1.850.000 · 25.2% de los ingresos netos · 30.9% de los egresos totales");
+    expect(txt).toContain("  - Cuotas de deudas: $1.070.000 · 14.6% de los ingresos netos · 17.9% de los egresos totales");
+    expect(txt).not.toContain("Apagado");
+    expect(gastosPorCategoria(QA_USER).map((g) => g.cat).slice(0, 2)).toEqual(["Vivienda", "Alimentación"]);
+  });
+
+  it("brecha al siguiente nivel: una cifra exacta por ingresos y otra por egresos", () => {
+    // Estratega: nivel 3 (Independencia) → Libertad pide índice 150 % (factor 1,5).
+    expect(brechaNivel({ ni: 7329000, te: 5980000, nivel: 3 })).toEqual({
+      ingresoNecesario: 8970000, faltaIngreso: 1641000, egresoMaximo: 4886000, bajarEgresos: 1094000,
+    });
+    expect(txt).toContain("Siguiente nivel: Libertad (índice 150%)");
+    expect(txt).toContain("faltan $1.641.000/mes de ingresos netos (llegar a $8.970.000/mes");
+    expect(txt).toContain("tendrían que bajar $1.094.000/mes (hasta $4.886.000/mes)");
+    expect(brechaNivel({ ni: 1, te: 1, nivel: 5 })).toBe(null);
+  });
+
+  it("fondo de emergencia a 3 y 6 meses: faltan $6.440.000 y $24.380.000", () => {
+    expect(fondoEmergencia({ te: 5980000, liquidez: 11500000 })).toEqual([
+      { meses: 3, meta: 17940000, falta: 6440000 },
+      { meses: 6, meta: 35880000, falta: 24380000 },
+    ]);
+    expect(txt).toContain("  - 3 meses = $17.940.000; faltan exactamente $6.440.000");
+    expect(txt).toContain("  - 6 meses = $35.880.000; faltan exactamente $24.380.000");
+    expect(fondoEmergencia({ te: 100, liquidez: 1000 })[1].falta).toBe(0);
+  });
+
+  it("avalancha y bola de nieve coinciden en la tarjeta", () => {
+    expect(txt).toContain("  - avalancha y bola de nieve coinciden: Tarjeta de crédito");
+    expect(txt).toContain("Un abono extra baja el saldo y los intereses futuros, no la cuota mensual.");
+    const distintas = ordenDeudas([{ n: "A", mt: 9, ts: 30 }, { n: "B", mt: 1, ts: 10 }]);
+    expect(distintas).toEqual({ coinciden: false, avalancha: "A", bolaDeNieve: "B" });
+    expect(ordenDeudas([{ n: "A", mt: 9, ts: 30 }])).toBe(null);
+  });
+
+  it("lo que QA ya validó sigue igual", () => {
+    expect(txt).toContain("$7.329.000 (ingresos netos) − $5.980.000 (egresos totales) = $1.349.000");
+    expect(txt).toContain("interés de este mes ≈ $87.296");
+    expect(txt).toContain("interés de este mes ≈ $230.235");
+    expect(txt).toContain("$11.500.000 = 1.9 meses de egresos totales");
+  });
+});
+
+describe("cuota: tuteo y mes en hora de Colombia", () => {
+  it("mensajeCuota de _cuotaIA ya no vosea", () => {
+    const pago = C.mensajeCuota({ usos: 151, tope: 150, plan: "pro" }).mensaje;
+    const free = C.mensajeCuota({ usos: 11, tope: 10, plan: "free" }).mensaje;
+    expect(pago).toBe("Llegaste al tope de 150 lecturas con IA de este mes (llevas 151). Se renueva el primer día del mes. Si necesitas más, escríbenos a soporte@finpathia.com.");
+    expect(free).toContain("o puedes mejorar tu plan");
+    expect(pago + free).not.toMatch(/llevás|necesitás|escribinos|podés/);
+  });
+
+  it("las llamadas a la RPC piden la zona America/Bogota", async () => {
+    const vistas = [];
+    const orig = globalThis.fetch;
+    globalThis.fetch = async (url, opts = {}) => { vistas.push({ url, h: opts.headers || {} }); return { ok: true, json: async () => 1 }; };
+    try {
+      await C.consumirCuota({ url: "https://s", serviceKey: "k", userId: "u", plan: "pro" });
+      await C.consultarUsos({ url: "https://s", serviceKey: "k", userId: "u" });
+    } finally { globalThis.fetch = orig; }
+    const rpcs = vistas.filter((v) => v.url.includes("/rpc/"));
+    expect(rpcs.map((v) => v.url.split("/rpc/")[1])).toEqual(["incrementar_uso_ia", "consultar_uso_ia"]);
+    rpcs.forEach((v) => expect(v.h.Prefer).toBe("timezone=America/Bogota"));
+  });
+
+  it("el aviso de renovación usa el mes de Colombia", () => {
+    // 1-nov 03:00 UTC = 31-oct 22:00 en Colombia: todavía es octubre.
+    expect(A.mensajeCuotaAsesor({ tope: 150, plan: "pro", ahora: new Date("2026-11-01T03:00:00Z") })).toContain("1 de noviembre");
+    expect(A.mensajeCuotaAsesor({ tope: 150, plan: "pro", ahora: new Date("2026-11-01T06:00:00Z") })).toContain("1 de diciembre");
   });
 });

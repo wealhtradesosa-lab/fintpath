@@ -36,6 +36,15 @@ const TOPES = {
 
 const topeDe = (plan) => TOPES[plan] ?? TOPES.free;
 
+// 11-oct-2026 — El mes de la cuota se corta en hora de Colombia.
+// incrementar_uso_ia y consultar_uso_ia calculan el periodo con
+// to_char(now(), 'YYYY-MM'), y to_char usa la zona horaria de la sesión
+// (UTC en Supabase): el mes nuevo empezaba el último día del mes a las
+// 7:00 p. m. hora Colombia. PostgREST (v12+) acepta "Prefer: timezone=…" y
+// la fija solo para esa petición, sin migración. Si una versión vieja no la
+// reconoce, la ignora y todo sigue en UTC como antes.
+const PREFER_MES_COLOMBIA = { Prefer: "timezone=America/Bogota" };
+
 /**
  * Verifica y consume una unidad de cuota.
  * Devuelve { permitido, usos, tope, plan }.
@@ -64,7 +73,7 @@ async function consumirCuota({ url, serviceKey, userId, plan: planDado }) {
 
   try {
     const r = await fetch(`${url}/rest/v1/rpc/incrementar_uso_ia`, {
-      method: "POST", headers: h, body: JSON.stringify({ p_user_id: userId }),
+      method: "POST", headers: { ...h, ...PREFER_MES_COLOMBIA }, body: JSON.stringify({ p_user_id: userId }),
     });
     if (!r.ok) return { permitido: true, usos: 0, tope, plan, motivo: "rpc_fallo" };
     const usos = await r.json();
@@ -110,7 +119,7 @@ async function consultarUsos({ url, serviceKey, userId }) {
   try {
     const r = await fetch(`${url}/rest/v1/rpc/consultar_uso_ia`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json", ...PREFER_MES_COLOMBIA },
       body: JSON.stringify({ p_user_id: userId }),
     });
     if (!r.ok) return null;
@@ -126,12 +135,13 @@ function mensajeCuota({ usos, tope, plan }) {
   const enPago = plan !== "free";
   return {
     error: "cuota_ia_agotada",
-    mensaje: `Llegaste al tope de ${tope} lecturas con IA de este mes (llevás ${usos}).` +
+    // 11-oct-2026: tuteo, como el resto de la app (antes: llevás, necesitás, escribinos, podés).
+    mensaje: `Llegaste al tope de ${tope} lecturas con IA de este mes (llevas ${usos}).` +
       (enPago
-        ? " Se renueva el primer día del mes. Si necesitás más, escribinos a soporte@finpathia.com."
-        : " Se renueva el primer día del mes, o podés mejorar tu plan para tener más."),
+        ? " Se renueva el primer día del mes. Si necesitas más, escríbenos a soporte@finpathia.com."
+        : " Se renueva el primer día del mes, o puedes mejorar tu plan para tener más."),
     usos, tope, plan,
   };
 }
 
-module.exports = { consumirCuota, mensajeCuota, TOPES, topeDe, planEfectivo, hoyColombia, leerPlanIA, consultarUsos };
+module.exports = { consumirCuota, mensajeCuota, TOPES, topeDe, PREFER_MES_COLOMBIA, planEfectivo, hoyColombia, leerPlanIA, consultarUsos };
