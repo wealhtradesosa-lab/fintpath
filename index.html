@@ -325,6 +325,326 @@
            CompleteRegistration (signup) · InitiateCheckout (upgrade)
          ───────────────────────────────────────────────────────────────── -->
     <script>
+      // 11-oct-2026: nada secreto de la URL puede llegar a GA4, Google Ads,
+      // ccm ni Meta (QA vio el token en top=, dl= y dr=). Antes de cargar
+      // cualquier tracker:
+      //  · /invite/<token>: el token se guarda en memoria y la URL pasa a
+      //    /invite/_ (la app lo lee de window.__fpInviteToken).
+      //  · ?session_id=cs_… (regreso de Stripe): igual, a
+      //    window.__fpStripeSessionId, y se quita de la URL.
+      //  · Retorno de auth de Supabase (?code=, #access_token…): no se puede
+      //    tocar la URL (Supabase la lee), así que en esa carga NO se carga
+      //    ningún tracker.
+      (function () {
+        var l = window.location;
+        var path = l.pathname, q = new URLSearchParams(l.search), cambio = false;
+        var m = path.match(/^\/invite\/([A-Za-z0-9_-]+)\/?$/);
+        if (m && m[1] !== "_") { window.__fpInviteToken = m[1]; try { sessionStorage.setItem("fp3_invite_token", m[1]); } catch (e) {} path = "/invite/_"; cambio = true; }
+        if (q.has("session_id")) { window.__fpStripeSessionId = q.get("session_id"); q.delete("session_id"); cambio = true; }
+        if (cambio) {
+          var qs = q.toString();
+          try { history.replaceState(history.state, "", path + (qs ? "?" + qs : "") + l.hash); } catch (e) {}
+        }
+        var sensible = ["token", "code", "access_token", "refresh_token", "email", "token_hash"].some(function (k) { return q.has(k); })
+          || /access_token|refresh_token|token_hash/.test(l.hash);
+        window.__fpSinTrackers = sensible;
+        window.__fpSinPixel = sensible || path.indexOf("/invite/") === 0;
+      })();
+    </script>
+    <script>
+      if (!window.__fpSinPixel) {
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+      document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '1637963763961269');
+      fbq('track', 'PageView');
+      }
+    </script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      if (!window.__fpSinTrackers) {
+        var gs = document.createElement("script");
+        gs.async = true;
+        gs.src = "https://www.googletagmanager.com/gtag/js?id=G-51CV6PWRLT";
+        document.head.appendChild(gs);
+        gtag('js', new Date());
+        gtag('config', 'G-51CV6PWRLT', {
+          // anonymize_ip cumple con GDPR/Ley 1581 Colombia (privacidad)
+          anonymize_ip: true,
+          send_page_view: true,
+        });
+        gtag('config', 'AW-613365221');
+      }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "FINPATHIA",
+      "description": "Plataforma de gestión patrimonial con inteligencia artificial para familias. Simulador financiero, coaches IA, asesor patrimonial.",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "url": "https://finpathia.com",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "14 días gratis del plan Pro completo"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "12"
+      }
+    }
+    </script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%2309090b'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-size='40' font-weight='800' fill='%2322c55e'%3EF%3C/text%3E%3C/svg%3E" />
+  <style>
+      /* ═══════════════════════════════════════════════════════════════════
+         FINPATHIA — Tokens de diseño (27-sep-2026)
+         ─────────────────────────────────────────────────────────────────
+         Fuente única de verdad para color, tipografía y radios. Los mismos
+         valores viven en src/lib/designTokens.js para los estilos en línea;
+         audit.py verifica que los dos archivos nunca se separen.
+
+         Por qué existen los dos: la app renderiza con estilos en línea y 53
+         lugares concatenan alfa sobre un token (T.gn + "15"). Si el JS
+         devolviera var(--fp-ok) esas 53 reglas quedarían inválidas y no
+         pintarían nada, sin lanzar ningún error. Así que el JS conserva los
+         hexadecimales y estas variables son el lugar donde se cambian.
+
+         Medición al abrir esta etapa: 97 colores distintos en uso, 32 tamaños
+         de fuente, 15 radios. Objetivo: 10 / 6 / 3.
+         ═══════════════════════════════════════════════════════════════════ */
+      :root {
+        color-scheme: dark;
+
+        /* Superficies */
+        --fp-bg:            #0c0c0f;
+        --fp-surface:       #141418;
+        --fp-raised:        #1e1e24;
+
+        /* Texto */
+        --fp-text:          #fafafa;
+        --fp-muted:         #a1a1aa;
+        --fp-subtle:        #71717a;
+
+        /* Bordes */
+        --fp-border:        rgba(255,255,255,0.08);
+        --fp-border-strong: rgba(255,255,255,0.15);
+
+        /* Acentos semánticos */
+        --fp-accent:        #3b82f6;
+        --fp-ok:            #22c55e;
+        --fp-warn:          #f97316;
+        --fp-danger:        #ef4444;
+        --fp-purple:        #a78bfa;
+
+        /* Tipografía */
+        --fp-f-display:  28px;
+        --fp-f-h1:       22px;
+        --fp-f-h2:       16px;
+        --fp-f-h3:       13px;
+        --fp-f-body:     13px;
+        --fp-f-caption:  11px;
+
+        /* Radios */
+        --fp-r-sm:        8px;
+        --fp-r-md:       12px;
+        --fp-r-lg:       16px;
+      }
+
+      @media print {
+        @page { size: letter portrait; margin: 10mm; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box !important; }
+        body { background: #fff !important; color: #1a1a1a !important; margin: 0 !important; font-size: 10px !important; line-height: 1.35 !important; font-family: -apple-system, system-ui, sans-serif !important; }
+        
+        /* HIDE: sidebar, header, buttons, sliders, tooltips */
+        aside, header, nav, footer, button, select,
+        input[type="range"], input[type="number"], input[type="text"], input[type="date"], input[type="file"],
+        span[style*="minWidth: 32"], span[style*="minWidth:32"],
+        [data-no-print],
+        div[style*="rgba(34,211,238"],
+        div[style*="simular cuánto"],
+        div[style*="cursor: pointer"],
+        div[style*="position: sticky"],
+        div[style*="position: fixed"] { display: none !important; }
+
+        /* SHOW: keep cards with data visible */
+        div[style*="cursor: pointer"][style*="borderLeft"] { display: flex !important; }
+
+        /* Full width - remove sidebar gap */
+        #root, #root > div, main, #root > div > div, #root > div > main,
+        #root > div > div > div { 
+          display: block !important; width: 100% !important; max-width: 100% !important; 
+          padding: 0 !important; margin: 0 !important; flex: none !important; 
+        }
+        main > div { padding: 0 !important; max-width: 100% !important; }
+        
+        /* Remove scroll containers */
+        [style*="overflow"] { overflow: visible !important; max-height: none !important; height: auto !important; }
+        [style*="70vh"], [style*="85vh"], [style*="88vh"], [style*="100vh"] { max-height: none !important; height: auto !important; }
+        
+        /* Make 2-column simulator layout into 1 column */
+        div[style*="1fr 2fr"], div[style*="2fr 1fr"], div[style*="1fr 1.2fr"],
+        div[style*="minmax(340"], div[style*="minmax(320"] {
+          display: block !important; grid-template-columns: 1fr !important;
+        }
+        
+        /* Cards: compact */
+        div[style*="border-radius"], div[style*="borderRadius"] { 
+          background: #fff !important; border: 1px solid #ddd !important; 
+          box-shadow: none !important; margin-bottom: 4px !important; 
+          padding: 6px 10px !important; border-radius: 6px !important;
+          page-break-inside: avoid !important; break-inside: avoid !important;
+        }
+        
+        /* Text sizes */
+        h1 { font-size: 16px !important; margin: 0 0 4px !important; color: #111 !important; }
+        h2 { font-size: 14px !important; margin: 0 0 4px !important; color: #111 !important; }
+        h3 { font-size: 12px !important; margin: 2px 0 !important; color: #111 !important; }
+        h4, h5 { font-size: 11px !important; margin: 2px 0 !important; }
+        p { margin: 2px 0 !important; font-size: 10px !important; }
+        span, div, td, th, label { color: #333 !important; }
+        
+        /* Preserve semantic colors */
+        [style*="color:#22c55e"], [style*="color: rgb(34, 197, 94)"],
+        [style*="color:"#22c55e"] { color: #16a34a !important; }
+        [style*="color:#ef4444"], [style*="color: rgb(239, 68, 68)"],
+        [style*="color:"#ef4444"] { color: #dc2626 !important; }
+        [style*="color:#3b82f6"] { color: #2563eb !important; }
+        [style*="color:#f97316"], [style*="color:#f59e0b"] { color: #d97706 !important; }
+        [style*="color:#a78bfa"] { color: #7c3aed !important; }
+        [style*="color:#eab308"] { color: #a16207 !important; }
+        [style*="color:#22d3ee"] { color: #0891b2 !important; }
+        
+        /* Big numbers: shrink significantly */
+        div[style*="fontSize: 48"], div[style*="fontSize:48"],
+        div[style*="fontSize: 64"], div[style*="fontSize:64"],
+        div[style*="fontSize: 72"], div[style*="fontSize:72"] { font-size: 18px !important; }
+        div[style*="fontSize: 36"], div[style*="fontSize:36"],
+        div[style*="fontSize: 32"], div[style*="fontSize:32"] { font-size: 16px !important; }
+        div[style*="fontSize: 28"], div[style*="fontSize:28"],
+        div[style*="fontSize: 26"], div[style*="fontSize:26"] { font-size: 14px !important; }
+        div[style*="fontSize: 22"], div[style*="fontSize:22"],
+        div[style*="fontSize: 20"], div[style*="fontSize:20"] { font-size: 13px !important; }
+        div[style*="fontSize: 18"], div[style*="fontSize:18"] { font-size: 12px !important; }
+        div[style*="fontSize: 16"], div[style*="fontSize:16"],
+        div[style*="fontSize: 15"], div[style*="fontSize:15"] { font-size: 11px !important; }
+        
+        /* Grids: force compact multi-column */
+        div[style*="repeat(auto-fit"] { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important; gap: 4px !important; }
+        div[style*="repeat(4"] { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 4px !important; }
+        div[style*="1fr 1fr"][style*="gap: 16"] {
+          display: block !important;
+        }
+        div[style*="1fr 1fr"][style*="gap: 14"],
+        div[style*="1fr 1fr"][style*="gap: 12"],
+        div[style*="1fr 1fr"][style*="gap: 10"] {
+          display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 4px !important;
+        }
+        
+        /* Freedom bar: compact */
+        div[style*="borderRadius: 20"] { padding: 6px 10px !important; margin-bottom: 4px !important; }
+        div[style*="height: 36"], div[style*="height: 32"] { height: 14px !important; }
+        div[style*="height: 10"], div[style*="height: 8"], div[style*="height: 6"] { height: 6px !important; }
+        
+        /* Income/expense cards in simulator: ultra compact */
+        div[style*="borderLeft: "3px"], div[style*="borderLeft:"3px"],
+        div[style*="border-left: 3px"], div[style*="borderLeft: 3px"] {
+          padding: 4px 8px !important; margin-bottom: 2px !important;
+          border-left-width: 2px !important; border-radius: 4px !important;
+        }
+        
+        /* Hide slider labels like "100%" and tips */
+        div[style*="opacity: 0.7"], div[style*="opacity: 0.6"],
+        div[style*="opacity: 0.5"] { display: none !important; }
+        
+        /* Hide slider wrappers with accentColor (the entire slider row) */
+        div[style*="accentColor"] { display: none !important; }
+        
+        /* Simulator income/expense items: only show name + value */
+        div[style*="borderLeft: "3px"] > div:last-child,
+        div[style*="borderLeft:"3px"] > div:last-child { display: none !important; }
+        
+        /* Hide "edita este ingreso" tips */
+        div[style*="background:"#22d3ee"], div[style*="background: "#22d3ee"],
+        div[style*="background:rgba(34,211,238"],
+        div[style*="Edita este"], div[style*="click para info"],
+        div[style*="Mueve para simular"], div[style*="Capital invertido:"] { display: none !important; }
+        
+        /* Charts: reasonable size */
+        .recharts-wrapper { max-height: 120px !important; page-break-inside: avoid !important; }
+        .recharts-responsive-container { height: 120px !important; max-height: 120px !important; }
+        svg.recharts-surface { max-height: 120px !important; }
+        svg text { fill: #555 !important; font-size: 8px !important; }
+        
+        /* Tables ultra compact */
+        table { font-size: 9px !important; width: 100% !important; border-collapse: collapse !important; }
+        th { background: #f0f0f0 !important; padding: 3px 5px !important; font-size: 8px !important; color: #333 !important; }
+        td { padding: 3px 5px !important; color: #333 !important; }
+        
+        /* Padding/margin aggressive reduction */
+        div[style*="padding: 32"], div[style*="padding:32"] { padding: 8px !important; }
+        div[style*="padding: 28"], div[style*="padding:28"] { padding: 6px 10px !important; }
+        div[style*="padding: 24"], div[style*="padding:24"] { padding: 5px 10px !important; }
+        div[style*="padding: 20"], div[style*="padding:20"] { padding: 4px 8px !important; }
+        div[style*="padding: 16"], div[style*="padding:16"] { padding: 3px 8px !important; }
+        div[style*="padding: 14"], div[style*="padding:14"] { padding: 3px 6px !important; }
+        div[style*="padding: 12"], div[style*="padding:12"] { padding: 3px 6px !important; }
+        div[style*="marginBottom: 28"], div[style*="marginBottom:28"] { margin-bottom: 4px !important; }
+        div[style*="marginBottom: 24"], div[style*="marginBottom:24"] { margin-bottom: 4px !important; }
+        div[style*="marginBottom: 20"], div[style*="marginBottom:20"] { margin-bottom: 3px !important; }
+        div[style*="marginBottom: 16"], div[style*="marginBottom:16"] { margin-bottom: 3px !important; }
+        div[style*="marginBottom: 14"], div[style*="marginBottom:14"] { margin-bottom: 2px !important; }
+        div[style*="marginBottom: 12"], div[style*="marginBottom:12"] { margin-bottom: 2px !important; }
+        div[style*="marginTop: 20"], div[style*="marginTop:20"] { margin-top: 4px !important; }
+        div[style*="marginTop: 16"], div[style*="marginTop:16"] { margin-top: 3px !important; }
+        div[style*="marginTop: 14"], div[style*="marginTop:14"] { margin-top: 2px !important; }
+        div[style*="marginTop: 12"], div[style*="marginTop:12"] { margin-top: 2px !important; }
+        div[style*="gap: 20"], div[style*="gap:20"] { gap: 4px !important; }
+        div[style*="gap: 16"], div[style*="gap:16"] { gap: 3px !important; }
+        div[style*="gap: 14"], div[style*="gap:14"] { gap: 3px !important; }
+        div[style*="gap: 12"], div[style*="gap:12"] { gap: 2px !important; }
+        div[style*="gap: 10"], div[style*="gap:10"] { gap: 2px !important; }
+        div[style*="gap: 8"], div[style*="gap:8"] { gap: 2px !important; }
+        
+        /* DISPONIBLE hero: compact */
+        div[style*="clamp(1.8rem"], div[style*="clamp("] { font-size: 16px !important; line-height: 1.2 !important; }
+        
+        /* Sticky elements: unstick */
+        div[style*="position: sticky"], div[style*="position:sticky"] { position: static !important; }
+        
+        /* Report branding */
+        body::before { content: "FINPATHIA — Reporte Financiero"; display: block; font-size: 13px; font-weight: 800; color: #16a34a; padding: 0 0 6px; border-bottom: 2px solid #16a34a; margin-bottom: 8px; }
+        body::after { content: "Generado el " attr(data-date) " | finpathia.com"; display: block; font-size: 8px; color: #999; padding: 6px 0 0; border-top: 1px solid #ddd; margin-top: 6px; text-align: center; }
+      }
+    </style>
+    <!-- ─────────────────────────────────────────────────────────────────
+         Google Analytics 4 + Google Ads · unificado 23-jul-2026
+         CAUSA: el tag estaba instalado DOS veces (dos loaders + dos
+         gtag('config') del mismo G-51CV6PWRLT), así que cada visita
+         disparaba page_view duplicado y las visitas salían ~2x infladas.
+         Ahora: un solo loader, un solo config de GA4 + el tag de Ads.
+         Va lo más alto posible en <head> para capturar todas las visitas.
+
+         Eventos custom disparados desde la app (src/lib/analytics.js):
+           signup_modal_opened · signup_completed
+           checkout_started · checkout_completed
+         ───────────────────────────────────────────────────────────────── -->
+    <!-- ─────────────────────────────────────────────────────────────────
+         Meta Pixel (Instagram/Facebook Ads) · instalado 25-jul-2026
+         Dataset "finpathia" ID 1637963763961269.
+         Sin esto, Meta solo podía optimizar por clics baratos: no sabía
+         quién se registraba, así que no podía buscar gente parecida a los
+         usuarios reales, ni permitía retargeting ni costo por registro.
+         Eventos custom desde la app (src/lib/analytics.js):
+           CompleteRegistration (signup) · InitiateCheckout (upgrade)
+         ───────────────────────────────────────────────────────────────── -->
+    <script>
       // 11-oct-2026: URL "segura" para trackers. Los links /invite/<token>
       // llevan un secreto en la ruta y no deben llegar a GA4, Ads ni Meta.
       // Tampoco parámetros tipo token/code de la query.

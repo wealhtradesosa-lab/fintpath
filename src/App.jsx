@@ -719,7 +719,7 @@ export default function FinPath(){
     // Handle Stripe success redirect
     const params=new URLSearchParams(window.location.search);
     const successFlag=params.get('success');
-    const sessionId=params.get('session_id');
+    const sessionId=params.get('session_id')||(typeof window!=="undefined"?window.__fpStripeSessionId:null)||null;
     // ═══ REGRESO DESDE STRIPE ═══════════════════════════════════════════
     // 25-jul-2026. Antes, el momento más delicado del producto era SILENCIO:
     //  · Al volver de un pago exitoso no se mostraba nada. La página se
@@ -1400,7 +1400,8 @@ export default function FinPath(){
     const pathname=typeof window!=="undefined"?window.location.pathname:"";
     const inviteMatch=pathname.match(/^\/invite\/([A-Za-z0-9_-]+)\/?$/);
     if(inviteMatch){
-      const token=inviteMatch[1];
+      // index.html saca el token de la URL (queda /invite/_) y lo deja en memoria.
+      const token=inviteMatch[1]==="_"?(window.__fpInviteToken||(()=>{try{return sessionStorage.getItem("fp3_invite_token")||""}catch{return ""}})()):inviteMatch[1];
       return<AcceptInvite token={token} onComplete={()=>{window.location.href="/"}}/>;
     }
   }
