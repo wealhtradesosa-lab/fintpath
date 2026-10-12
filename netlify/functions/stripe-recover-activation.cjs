@@ -58,13 +58,21 @@ function buildPriceMap() {
 // Extrae de una Checkout Session solo lo que la analítica necesita, sin PII.
 // Devuelve null si la sesión no es de este usuario o no está pagada.
 // metadata.userId lo pone stripe-checkout.cjs al crear la sesión.
+const crypto = require("crypto");
+
+// Id opaco de la compra para analítica: el id de la sesión de Stripe (cs_…)
+// no debe llegar a GA4 ni a Meta. SHA-256 truncado, estable por sesión.
+function purchaseIdDe(sessionId) {
+  return "fp_" + crypto.createHash("sha256").update(String(sessionId)).digest("hex").slice(0, 24);
+}
+
 function compraParaAnalitica(session, userId) {
   if (!session || !userId) return null;
   if (session.metadata?.userId !== userId) return null;
   if (session.status !== "complete" || session.payment_status !== "paid") return null;
   if (typeof session.amount_total !== "number") return null;
   return {
-    sessionId: session.id,
+    purchaseId: purchaseIdDe(session.id),
     amountTotal: session.amount_total, // centavos
     currency: session.currency || "usd",
     priceId: session.line_items?.data?.[0]?.price?.id || null,
@@ -225,3 +233,4 @@ exports.handler = async (event) => {
 };
 
 exports.compraParaAnalitica = compraParaAnalitica;
+exports.purchaseIdDe = purchaseIdDe;

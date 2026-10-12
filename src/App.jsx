@@ -748,7 +748,7 @@ export default function FinPath(){
           // vez por session id; trackPurchase ignora totales en 0 (cupón 100%).
           if(data?.compra){
             const pp=planDesdePriceId(data.compra.priceId);
-            trackPurchase({sessionId:data.compra.sessionId,amountTotal:data.compra.amountTotal,currency:data.compra.currency,plan:pp?.plan,billingCycle:pp?.billingCycle});
+            trackPurchase({purchaseId:data.compra.purchaseId,amountTotal:data.compra.amountTotal,currency:data.compra.currency,plan:pp?.plan,billingCycle:pp?.billingCycle});
           }
           if(data.ok){
             setPagoEstado({tipo:"exito",titulo:"¡Listo! Tu plan está activo",msg:"Gracias por confiar en FINPATHIA. Ya tenés acceso completo."});

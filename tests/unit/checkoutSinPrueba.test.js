@@ -6,7 +6,7 @@ import { trackPurchase, trackCheckoutStarted } from "../../src/lib/analytics.js"
 
 const require = createRequire(import.meta.url);
 const { buildSessionParams } = require("../../netlify/functions/stripe-checkout.cjs");
-const { compraParaAnalitica } = require("../../netlify/functions/stripe-recover-activation.cjs");
+const { compraParaAnalitica, purchaseIdDe } = require("../../netlify/functions/stripe-recover-activation.cjs");
 
 describe("stripe-checkout: sin prueba en Checkout", () => {
   it("la sesión no lleva trial_period_days, trial_end, trial_settings ni trial_from_plan", () => {
@@ -60,7 +60,7 @@ describe("recover-activation: compra para analítica", () => {
   };
   it("devuelve solo session, monto, moneda y priceId (sin PII)", () => {
     expect(compraParaAnalitica(base, "u1")).toEqual({
-      sessionId: "cs_test_1", amountTotal: 1600, currency: "usd", priceId: STRIPE_PRICE_IDS.Pro.mensual,
+      purchaseId: purchaseIdDe("cs_test_1"), amountTotal: 1600, currency: "usd", priceId: STRIPE_PRICE_IDS.Pro.mensual,
     });
   });
   it("null si la sesión es de otro usuario o no está pagada", () => {
@@ -77,24 +77,36 @@ describe("analytics: Purchase e InitiateCheckout", () => {
     globalThis.window = {
       fbq: vi.fn(), gtag: vi.fn(), console: { info() {}, warn() {} },
       sessionStorage: { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = v; }, removeItem: (k) => { delete store[k]; } },
-      localStorage: { getItem: () => null, setItem() {} },
+      localStorage: { getItem: (k) => store["L:" + k] ?? null, setItem: (k, v) => { store["L:" + k] = v; } },
     };
   });
   afterEach(() => { delete globalThis.window; });
 
   it("dispara Purchase y purchase una sola vez por sesión", () => {
-    const args = { sessionId: "cs_1", amountTotal: 14400, currency: "usd", plan: "Pro", billingCycle: "anual" };
+    const args = { purchaseId: "fp_abc", amountTotal: 14400, currency: "usd", plan: "Pro", billingCycle: "anual" };
     expect(trackPurchase(args)).toBe(true);
     expect(trackPurchase(args)).toBe(false);
     expect(window.fbq).toHaveBeenCalledTimes(1);
-    expect(window.fbq).toHaveBeenCalledWith("track", "Purchase", { value: 144, currency: "USD", content_name: "Pro" }, { eventID: "cs_1" });
+    expect(window.fbq).toHaveBeenCalledWith("track", "Purchase", { value: 144, currency: "USD", content_name: "Pro" }, { eventID: "fp_abc" });
     expect(window.gtag).toHaveBeenCalledTimes(1);
     const [, name, payload] = window.gtag.mock.calls[0];
     expect(name).toBe("purchase");
-    expect(payload).toMatchObject({ transaction_id: "cs_1", value: 144, currency: "USD" });
+    expect(payload).toMatchObject({ transaction_id: "fp_abc", value: 144, currency: "USD" });
+  });
+  it("el id de compra es opaco (no expone cs_) y estable", () => {
+    const id = purchaseIdDe("cs_live_123");
+    expect(id).toMatch(/^fp_[0-9a-f]{24}$/);
+    expect(id).not.toContain("cs_");
+    expect(purchaseIdDe("cs_live_123")).toBe(id);
+  });
+  it("no se repite en otra pestaña (localStorage)", () => {
+    const args = { purchaseId: "fp_tab", amountTotal: 1600, currency: "usd", plan: "Pro" };
+    expect(trackPurchase(args)).toBe(true);
+    for (const k of Object.keys(store)) if (!k.startsWith("L:")) delete store[k]; // pestaña nueva: sessionStorage vacío
+    expect(trackPurchase(args)).toBe(false);
   });
   it("no dispara con total 0 (cupón 100%) ni sin session id", () => {
-    expect(trackPurchase({ sessionId: "cs_2", amountTotal: 0, currency: "usd", plan: "Pro" })).toBe(false);
+    expect(trackPurchase({ purchaseId: "fp_2", amountTotal: 0, currency: "usd", plan: "Pro" })).toBe(false);
     expect(trackPurchase({ amountTotal: 1600, currency: "usd", plan: "Pro" })).toBe(false);
     expect(window.fbq).not.toHaveBeenCalled();
     expect(window.gtag).not.toHaveBeenCalled();
