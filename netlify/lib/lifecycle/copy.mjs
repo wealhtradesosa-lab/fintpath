@@ -13,9 +13,9 @@
 //                   borra limpio ("Te quedan 4 días de Pro").
 //   {n} {m}         conteos (registros y activos), NUNCA montos. Solo en d13 valor:
 //                   si uno es 0 se omite esa parte; si ambos son 0, la frase.
-//   {pro_mensual} {pro_anual} {familiar_personas}
-//                   salen de src/lib/plans.js (precio de Pro y cupo de Pro
-//                   Familiar) para que el correo no se desfase del precio real.
+//   {pro_mensual} {pro_anual} {familiar_mensual} {familiar_anual} {familiar_personas}
+//                   salen de src/lib/plans.js (precios de Pro y Pro Familiar
+//                   y cupo de Pro Familiar) para que el correo no se desfase del precio real.
 //
 // Prohibido en este archivo (spec final 11-oct): empujar el Asesor IA, los
 // Coaches o Impuestos hasta que QA los apruebe y Luis dé el OK. También:
@@ -87,14 +87,14 @@ export const COPY = {
   // d13: mismo cuerpo para las dos variantes. AJUSTE de Eng contra la spec
   // final: se quitó la frase «Pro suma los coaches, el plan de impuestos y el
   // Asesor IA.» del copy v2, porque ningún correo puede empujar el asesor,
-  // los coaches ni Impuestos. Si la agencia quiere otra frase, va aquí.
+  // los coaches ni Impuestos. La agencia la reemplazó por la de Pro Familiar.
   // "valor" abre con la frase de
   // conteos. Si uno de los conteos es 0 se quita esa parte; si ambos son 0
   // (o no se conocen), la frase entera.
   d13_urgencia: {
     asunto: "Tu prueba Pro vence mañana",
     cuerpo: [
-      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
+      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Con Pro Familiar compartes tu Finpathia con hasta {familiar_personas} personas de tu familia. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual. Pro Familiar: {familiar_mensual} USD/mes o {familiar_anual} USD/mes en plan anual.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",
@@ -107,7 +107,7 @@ export const COPY = {
       soloM: "Ya tienes {m} {activos} en Finpathia.",
     },
     cuerpo: [
-      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
+      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Con Pro Familiar compartes tu Finpathia con hasta {familiar_personas} personas de tu familia. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual. Pro Familiar: {familiar_mensual} USD/mes o {familiar_anual} USD/mes en plan anual.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",

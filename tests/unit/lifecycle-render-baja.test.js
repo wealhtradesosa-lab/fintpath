@@ -92,6 +92,12 @@ describe("correos", () => {
     expect(PRECIOS.pro_anual).toBe(pro.priceUSD.anual);
     const c = armarCorreo({ clave: "d13_urgencia", paso: "d13", utmContent: "urgencia", urlBaja: URL_BAJA });
     expect(c.texto).toContain(`Pro: ${pro.priceUSD.mensual} USD/mes o ${pro.priceUSD.anual} USD/mes en plan anual.`);
+    const fam = PLAN_BASE.find((p) => p.name === "Pro Familiar");
+    expect(c.texto).toContain(`Pro Familiar: ${fam.priceUSD.mensual} USD/mes o ${fam.priceUSD.anual} USD/mes en plan anual.`);
+    expect(c.texto).toContain(`hasta ${fam.maxMembers} personas de tu familia`);
+    const v = armarCorreo({ clave: "d13_valor", paso: "d13", utmContent: "valor", vars: { conteos: { n: 2, m: 1 } }, urlBaja: URL_BAJA });
+    expect(v.texto.startsWith("Ya tienes 2 registros y 1 activo en Finpathia.")).toBe(true);
+    expect(v.texto).toContain("Con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia. Pro: 16 USD/mes o 12 USD/mes en plan anual. Pro Familiar: 27 USD/mes o 20 USD/mes en plan anual.");
     const d10 = armarCorreo({ clave: "d10_sin_simulador", paso: "d10", utmContent: "d10_sin_simulador", urlBaja: URL_BAJA });
     expect(d10.texto).toContain("Pro Familiar suma hasta 10 personas.");
   });
@@ -151,7 +157,7 @@ describe("copy v2 literal (asuntos, CTA y cuerpos)", () => {
     expect(C("d5_con_simulador").texto.startsWith("Ya usaste el simulador. Ahora carga tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio neto en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.")).toBe(true);
     expect(C("d10_sin_simulador").texto.startsWith("Aprovecha estos días para abrir el simulador y ver qué te acerca a tu siguiente nivel. Si administras la plata en familia, Pro Familiar suma hasta 10 personas.")).toBe(true);
     expect(C("d10_con_simulador").texto.startsWith("Ya sabes cuánto te falta para tu siguiente nivel. Si administras la plata en familia, invita a los tuyos: con Pro Familiar hasta 10 personas ven y ordenan la plata juntos.")).toBe(true);
-    expect(C("d13_urgencia").texto.startsWith("Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro: 16 USD/mes o 12 USD/mes en plan anual.")).toBe(true);
+    expect(C("d13_urgencia").texto.startsWith("Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia. Pro: 16 USD/mes o 12 USD/mes en plan anual. Pro Familiar: 27 USD/mes o 20 USD/mes en plan anual.")).toBe(true);
     expect(C("d16").texto.startsWith("Estás en el plan gratis: conservas tus datos, tu nivel y el simulador. Cuando quieras las funciones Pro, actívalas en un clic.")).toBe(true);
     expect(C("d2_activado").texto.startsWith("Abre el simulador y mira cuánto te falta cada mes para llegar a tu siguiente nivel, y qué cambia si ajustas tus ingresos o tus gastos.")).toBe(true);
   });
