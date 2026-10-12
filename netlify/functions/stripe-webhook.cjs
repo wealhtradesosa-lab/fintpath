@@ -36,7 +36,7 @@
 // evento, el resultado es el mismo (no duplica accounts ni members).
 // ═══════════════════════════════════════════════════════════════════════════
 
-const { enmascararEmail } = require("../lib/enmascararEmail.cjs");
+const { enmascararEmail, uidCorto } = require("../lib/logSeguro.cjs");
 const Stripe = require("stripe");
 const { sendTemplate } = require("./send-email.cjs");
 
@@ -207,7 +207,7 @@ exports.handler = async (event) => {
           return { statusCode: 200, headers: cors, body: JSON.stringify({ received: true, ignored: "unknown_price" }) };
         }
 
-        console.log(`[stripe-webhook] activando plan=${plan} para userId=${userId} customer=${stripeCustomerId}`);
+        console.log(`[stripe-webhook] activando plan=${plan} para userId=${uidCorto(userId)} customer=${stripeCustomerId}`);
 
         if (plan === "pro_familiar") {
           const accountId = await callSupabaseRpc("activate_pro_familiar", {

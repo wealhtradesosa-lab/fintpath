@@ -20,7 +20,7 @@
 // { token, invitation_url, expires_at }
 // ═══════════════════════════════════════════════════════════════════
 
-const { enmascararEmail } = require("../lib/enmascararEmail.cjs");
+const { enmascararEmail, uidCorto } = require("../lib/logSeguro.cjs");
 const crypto = require("crypto");
 
 exports.handler = async (event) => {
@@ -154,7 +154,7 @@ exports.handler = async (event) => {
     const protocol = host.includes("localhost") ? "http" : "https";
     const invitation_url = `${protocol}://${host}/invite/${token}`;
 
-    console.log(`🎟 Invitation created by ${advisor_id} for ${enmascararEmail(email)}: ${token.slice(0, 8)}...`);
+    console.log(`🎟 Invitation created by ${uidCorto(advisor_id)} for ${enmascararEmail(email)}`);
 
     return {
       statusCode: 200,

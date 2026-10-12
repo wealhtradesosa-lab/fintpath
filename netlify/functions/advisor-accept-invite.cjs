@@ -30,6 +30,7 @@
 // - Actualiza plan del cliente a 'pro' automáticamente (gratis, cubierto por advisor)
 // ═══════════════════════════════════════════════════════════════════
 
+const { uidCorto } = require("../lib/logSeguro.cjs");
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -243,7 +244,7 @@ exports.handler = async (event) => {
         }
       );
 
-      console.log(`✅ Invitation ${invitation.id} accepted by client ${client_id} for advisor ${invitation.advisor_id}`);
+      console.log(`✅ Invitation ${uidCorto(invitation.id)} accepted by client ${uidCorto(client_id)} for advisor ${uidCorto(invitation.advisor_id)}`);
 
       return {
         statusCode: 200,
