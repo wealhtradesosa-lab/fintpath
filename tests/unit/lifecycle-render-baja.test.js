@@ -154,7 +154,7 @@ describe("copy v2 literal (asuntos, CTA y cuerpos)", () => {
   });
   it("cuerpos", () => {
     expect(C("d5_sin_simulador").texto.startsWith("Tu nivel es el punto de partida. El simulador te muestra cuánto te falta cada mes para llegar al siguiente, y qué cambia si ajustas tus ingresos o tus gastos.")).toBe(true);
-    expect(C("d5_con_simulador").texto.startsWith("Ya usaste el simulador. Ahora carga tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio neto en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.")).toBe(true);
+    expect(C("d5_con_simulador").texto.startsWith("Ya usaste el simulador. Ahora carga tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio total en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.")).toBe(true);
     expect(C("d10_sin_simulador").texto.startsWith("Aprovecha estos días para abrir el simulador y ver qué te acerca a tu siguiente nivel. Si administras la plata en familia, Pro Familiar suma hasta 10 personas.")).toBe(true);
     expect(C("d10_con_simulador").texto.startsWith("Ya sabes cuánto te falta para tu siguiente nivel. Si administras la plata en familia, invita a los tuyos: con Pro Familiar hasta 10 personas ven y ordenan la plata juntos.")).toBe(true);
     expect(C("d13_urgencia").texto.startsWith("Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia. Pro: 16 USD/mes o 12 USD/mes en plan anual. Pro Familiar: 27 USD/mes o 20 USD/mes en plan anual.")).toBe(true);

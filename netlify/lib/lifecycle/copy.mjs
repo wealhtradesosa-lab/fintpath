@@ -63,7 +63,7 @@ export const COPY = {
   d5_con_simulador: {
     asunto: "Mira tu plata completa en una sola vista",
     cuerpo: [
-      "Ya usaste el simulador. Ahora carga tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio neto en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.",
+      "Ya usaste el simulador. Ahora carga tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio total en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.",
     ],
     cta: "Completar mi patrimonio",
     destino: "patrimonio",
