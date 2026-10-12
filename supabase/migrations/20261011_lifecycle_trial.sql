@@ -17,6 +17,7 @@ ALTER TABLE public.accounts
   ADD COLUMN IF NOT EXISTS trial_end             date,
   ADD COLUMN IF NOT EXISTS activated_at          timestamptz,
   ADD COLUMN IF NOT EXISTS advisor_first_used_at timestamptz,
+  ADD COLUMN IF NOT EXISTS simulator_first_used_at timestamptz,
   ADD COLUMN IF NOT EXISTS last_seq_email        text,
   ADD COLUMN IF NOT EXISTS seq_sent              jsonb NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS seq_variant           text,
@@ -27,6 +28,7 @@ ALTER TABLE public.accounts
 COMMENT ON COLUMN public.accounts.trial_end IS 'Fin de la prueba Pro (fecha). Lo fija el servidor al registrarse (14 días; 30 para invitados).';
 COMMENT ON COLUMN public.accounts.activated_at IS 'Primera vez con ingreso + egreso cargados (evento activation). Una sola vez.';
 COMMENT ON COLUMN public.accounts.advisor_first_used_at IS 'Primera pregunta al Asesor IA durante la prueba (evento advisor_used).';
+COMMENT ON COLUMN public.accounts.simulator_first_used_at IS 'Primera vez que abre el simulador, sim o simf (evento simulator_used). Una sola vez.';
 COMMENT ON COLUMN public.accounts.seq_sent IS 'Pasos de la secuencia ENVIADOS de verdad: {"d2":"<iso>", ...}. Los dry run no cuentan.';
 COMMENT ON COLUMN public.accounts.last_seq_email IS 'Último correo de la secuencia enviado (ej. d10_sin_asesor).';
 COMMENT ON COLUMN public.accounts.seq_variant IS 'Variante d13 asignada al azar 50/50: urgencia | valor.';
@@ -63,6 +65,7 @@ BEGIN
  NEW.trial_end := OLD.trial_end;
  NEW.activated_at := OLD.activated_at;
  NEW.advisor_first_used_at := OLD.advisor_first_used_at;
+ NEW.simulator_first_used_at := OLD.simulator_first_used_at;
  NEW.last_seq_email := OLD.last_seq_email;
  NEW.seq_sent := OLD.seq_sent;
  NEW.seq_variant := OLD.seq_variant;
@@ -81,6 +84,7 @@ BEGIN
  NEW.trial_end := ((now() AT TIME ZONE 'utc') + interval '14 days')::date;
  NEW.activated_at := NULL;
  NEW.advisor_first_used_at := NULL;
+ NEW.simulator_first_used_at := NULL;
  NEW.last_seq_email := NULL;
  NEW.seq_sent := '{}'::jsonb;
  NEW.seq_variant := NULL;
@@ -172,6 +176,7 @@ REVOKE ALL ON public.lifecycle_email_sends FROM anon, authenticated;
 --   DROP COLUMN IF EXISTS trial_end,
 --   DROP COLUMN IF EXISTS activated_at,
 --   DROP COLUMN IF EXISTS advisor_first_used_at,
+--   DROP COLUMN IF EXISTS simulator_first_used_at,
 --   DROP COLUMN IF EXISTS last_seq_email,
 --   DROP COLUMN IF EXISTS seq_sent,
 --   DROP COLUMN IF EXISTS seq_variant,

@@ -11,7 +11,7 @@ const finParaDia = (dia) => {
 const base = (extra = {}) => ({
   id: "11111111-1111-1111-1111-111111111111",
   email: "ana@example.com", plan: "free", planUsuario: "free",
-  activated_at: null, advisor_first_used_at: null, seq_sent: {}, seq_variant: null,
+  activated_at: null, advisor_first_used_at: null, simulator_first_used_at: null, seq_sent: {}, seq_variant: null,
   email_unsubscribed_at: null, ...extra,
 });
 
@@ -55,12 +55,13 @@ describe("variantes", () => {
     expect(r.clave).toBe("d2_activado");
     expect(r.utmContent).toBe("d2_activado");
   });
-  it("d5 y d10: una sola versión, sin importar advisor_first_used_at", () => {
+  it("d5 y d10 por simulator_first_used_at (el asesor ya no influye)", () => {
     for (const adv of [null, "2026-10-19T10:00:00Z"]) {
-      const d5 = elegirPaso(base({ trial_end: finParaDia(5), advisor_first_used_at: adv }), HOY);
-      expect([d5.clave, d5.utmContent]).toEqual(["d5", "d5"]);
-      const d10 = elegirPaso(base({ trial_end: finParaDia(10), advisor_first_used_at: adv }), HOY);
-      expect([d10.clave, d10.utmContent]).toEqual(["d10", "d10"]);
+      const c = (dia, sim) => elegirPaso(base({ trial_end: finParaDia(dia), advisor_first_used_at: adv, simulator_first_used_at: sim }), HOY);
+      expect([c(5, null).clave, c(5, null).utmContent]).toEqual(["d5_sin_simulador", "d5_sin_simulador"]);
+      expect(c(5, "2026-10-18T10:00:00Z").clave).toBe("d5_con_simulador");
+      expect([c(10, null).clave, c(10, null).utmContent]).toEqual(["d10_sin_simulador", "d10_sin_simulador"]);
+      expect(c(10, "2026-10-18T10:00:00Z").clave).toBe("d10_con_simulador");
     }
   });
   it("d13: sorteo 50/50 independiente del asesor; utm_content = urgencia|valor", () => {

@@ -26,7 +26,7 @@ export async function correrSecuencia({ ahora = new Date(), env = process.env, f
 
   // 1) Cuentas free con trial_end en la ventana de la secuencia (d2 … d16).
   const desde = fechaMas(hoy, -2), hasta = fechaMas(hoy, 12);
-  const cols = "id,owner_user_id,plan,subscription_status,created_at,trial_end,activated_at,advisor_first_used_at,seq_sent,last_seq_email,seq_variant,email_unsubscribed_at";
+  const cols = "id,owner_user_id,plan,subscription_status,created_at,trial_end,activated_at,advisor_first_used_at,simulator_first_used_at,seq_sent,last_seq_email,seq_variant,email_unsubscribed_at";
   const ra = await fetchFn(
     `${url}/rest/v1/accounts?select=${cols}&plan=eq.free&email_unsubscribed_at=is.null&trial_end=gte.${desde}&trial_end=lte.${hasta}&order=created_at.asc`,
     { headers: h });
@@ -66,7 +66,7 @@ export async function correrSecuencia({ ahora = new Date(), env = process.env, f
 
     const blob = u.data && typeof u.data === "object" ? u.data : null;
     let nombre = blob && !blob._encrypted ? (blob.p?.name || "") : "";
-    if (!nombre && decision.clave === "d10") nombre = await nombreDesdeAuth({ url, h, id: c.owner_user_id, fetchFn });
+    if (!nombre && decision.paso === "d10") nombre = await nombreDesdeAuth({ url, h, id: c.owner_user_id, fetchFn });
     const conteos = decision.clave === "d13_valor" ? conteosDesdeBlob(blob) : null;
 
     const token = real ? firmarTokenBaja(c.id, secreto) : "DRY-RUN";

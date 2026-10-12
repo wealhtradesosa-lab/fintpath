@@ -1,5 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// FINPATHIA · track-activation — evento "activation" (una vez por persona)
+// FINPATHIA · track-activation — eventos de embudo marcados por el navegador
+// (una vez por persona cada uno). body.event elige el evento
+// (netlify/lib/eventosEmbudo.cjs):
+//   · "activation" (por defecto) → accounts.activated_at
+//   · "simulator_used" (11-oct-2026, Analítica: medir la v2 de los correos)
+//     → accounts.simulator_first_used_at. Primera vez que abre el simulador
+//     (página del año en curso "sim" o futuro "simf").
+// Todo lo de abajo aplica igual a los dos.
 //
 // Activación = la persona cargó al menos un ingreso Y un egreso, o sea, ya
 // hay un nivel de libertad calculado. Lo detecta el NAVEGADOR (App.jsx),
@@ -22,6 +29,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
 const { emitirEvento, clientIdDesdeCookie, limpiarUtm, limpiarAngulo } = require("../lib/ga4.cjs");
+const { resolverEvento } = require("../lib/eventosEmbudo.cjs");
 
 exports.handler = async (event) => {
   const headers = { "Content-Type": "application/json" };
@@ -32,6 +40,8 @@ exports.handler = async (event) => {
 
   let body = {};
   try { body = JSON.parse(event.body || "{}"); } catch { body = {}; }
+  const ev = resolverEvento(body);
+  if (!ev) return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: "evento_no_permitido" }) };
   const utm = limpiarUtm(body.utm);
   const angulo = limpiarAngulo(body.angle);
 
@@ -43,34 +53,34 @@ exports.handler = async (event) => {
     // PATCH condicional: solo filas con activated_at vacío. Si devuelve filas,
     // esta llamada fue la primera.
     const r = await fetch(
-      `${url}/rest/v1/accounts?owner_user_id=eq.${encodeURIComponent(quien.id)}&activated_at=is.null`,
+      `${url}/rest/v1/accounts?owner_user_id=eq.${encodeURIComponent(quien.id)}&${ev.columna}=is.null`,
       {
         method: "PATCH",
         headers: {
           apikey: key, Authorization: `Bearer ${key}`,
           "Content-Type": "application/json", Prefer: "return=representation",
         },
-        body: JSON.stringify({
-          activated_at: new Date().toISOString(),
-          entry_utm: Object.keys(utm).length ? utm : null,
-          entry_angle: angulo,
-        }),
+        // entry_utm / entry_angle se guardan con la activación (la primera
+        // vez que se conocen). simulator_used solo marca su columna.
+        body: JSON.stringify(ev.evento === "activation"
+          ? { activated_at: new Date().toISOString(), entry_utm: Object.keys(utm).length ? utm : null, entry_angle: angulo }
+          : { [ev.columna]: new Date().toISOString() }),
       }
     );
     if (!r.ok) {
-      console.error("[track-activation] PATCH accounts falló:", r.status, await r.text());
+      console.error(`[track-activation] ${ev.evento}: PATCH accounts falló:`, r.status, await r.text());
       return { statusCode: 200, headers, body: JSON.stringify({ ok: false }) };
     }
     const filas = await r.json();
     const primera = Array.isArray(filas) && filas.length > 0;
     if (primera) {
       await emitirEvento({
-        nombre: "activation",
+        nombre: ev.evento,
         clientId: clientIdDesdeCookie(event.headers?.cookie || event.headers?.Cookie),
         utm, angulo,
       });
     }
-    return { statusCode: 200, headers, body: JSON.stringify({ ok: true, primera }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true, evento: ev.evento, primera }) };
   } catch (e) {
     console.error("[track-activation] error:", e?.message || e);
     return { statusCode: 200, headers, body: JSON.stringify({ ok: false }) };

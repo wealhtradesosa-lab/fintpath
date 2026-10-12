@@ -1387,6 +1387,22 @@ export default function FinPath(){
     fetchAuth("/api/track-activation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({utm:ent.utm,angle:ent.angle})})
       .then(r=>r.ok?r.json():null).then(d=>{if(d&&d.ok){try{localStorage.setItem(k,"1")}catch{}}}).catch(()=>{});
   },[activo,authUser?.id,viewMode]);
+  // ═══ 11-oct-2026 — simulator_used (Analítica: medir la v2 de los correos) ═══
+  // Primera vez que abre el simulador (año en curso "sim" o futuro "simf").
+  // Mismo camino que la activación: solo la bandera + UTM + ángulo, sesión
+  // verificada, el servidor marca simulator_first_used_at una vez. Un solo
+  // intento por carga de página (ref) y bandera en localStorage al lograrlo.
+  // No cuenta cuando un asesor está viendo a un cliente.
+  const simIntentado=useRef(false);
+  useEffect(()=>{
+    if((pg!=="sim"&&pg!=="simf")||simIntentado.current||!authUser?.id||viewMode!=="personal")return;
+    const k="fp3_simulador_"+authUser.id;
+    try{if(localStorage.getItem(k))return;}catch{}
+    simIntentado.current=true;
+    const ent=leerEntrada();
+    fetchAuth("/api/track-activation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:"simulator_used",utm:ent.utm,angle:ent.angle})})
+      .then(r=>r.ok?r.json():null).then(d=>{if(d&&d.ok){try{localStorage.setItem(k,"1")}catch{}}}).catch(()=>{});
+  },[pg,authUser?.id,viewMode]);
   // ═══ 11-oct-2026 — ENLACES DE LOS CORREOS (?ir=dash|sim|inv|price|asesor) ═══
   // Los botones de los correos de la prueba abren una sección concreta.
   // Lista cerrada de destinos; se lee una vez cuando ya hay datos cargados.

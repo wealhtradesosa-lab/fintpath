@@ -48,23 +48,38 @@ export const COPY = {
     cta: "Abrir el simulador",
     destino: "simulador",
   },
-  // d5: una sola versión (ya no se divide por advisor_used).
-  d5: {
+  // d5 y d10: se dividen por simulator_first_used_at (¿ya abrió el simulador?).
+  d5_sin_simulador: {
+    asunto: "¿Cuánto te falta para tu siguiente nivel?",
+    cuerpo: [
+      "Tu nivel es el punto de partida. El simulador te muestra cuánto te falta cada mes para llegar al siguiente, y qué cambia si ajustas tus ingresos o tus gastos.",
+    ],
+    cta: "Abrir el simulador",
+    destino: "simulador",
+  },
+  d5_con_simulador: {
     asunto: "Mira tu plata completa en una sola vista",
     cuerpo: [
-      "Además de tu nivel, en Finpathia puedes cargar tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio neto en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.",
+      "Ya usaste el simulador. Ahora carga tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio neto en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.",
     ],
     cta: "Completar mi patrimonio",
     destino: "patrimonio",
   },
-  // d10: una sola versión.
-  d10: {
+  d10_sin_simulador: {
     asunto: "Te quedan 4 días de Pro, {nombre}",
     cuerpo: [
-      "Aprovecha estos días para usar el simulador y ver qué te acerca a tu siguiente nivel. Si administras la plata en familia, Pro Familiar suma hasta {familiar_personas} personas.",
+      "Aprovecha estos días para abrir el simulador y ver qué te acerca a tu siguiente nivel. Si administras la plata en familia, Pro Familiar suma hasta {familiar_personas} personas.",
     ],
     cta: "Abrir el simulador",
     destino: "simulador",
+  },
+  d10_con_simulador: {
+    asunto: "Te quedan 4 días de Pro, {nombre}",
+    cuerpo: [
+      "Ya sabes cuánto te falta para tu siguiente nivel. Si administras la plata en familia, invita a los tuyos: con Pro Familiar hasta {familiar_personas} personas ven y ordenan la plata juntos.",
+    ],
+    cta: "Ver Pro Familiar",
+    destino: "planes",
   },
   // d13: mismo cuerpo para las dos variantes; "valor" abre con la frase de
   // conteos. Si uno de los conteos es 0 se quita esa parte; si ambos son 0
