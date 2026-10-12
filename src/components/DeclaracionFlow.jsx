@@ -943,7 +943,7 @@ export default function DeclaracionFlow({
   user,
   estimacion,
   onUpdateUser,
-  ano = 2025,
+  ano = DEFAULT_AG,
 }) {
   const allOwners = useMemo(() => user?.owners || [], [user]);
 

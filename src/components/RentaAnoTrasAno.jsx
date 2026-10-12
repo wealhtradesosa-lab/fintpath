@@ -57,7 +57,10 @@ export default function RentaAnoTrasAno({ declaraciones = [], detalleActual = nu
   const filas = useMemo(() => {
     const decl = (declaraciones || []).map(filaDesdeDeclaracion).filter((f) => f.ano > 0 && (f.ingresos > 0 || f.impuesto > 0));
     const act = filaDesdeMotor(detalleActual, anoActual);
-    const todas = [...decl.filter((f) => f.ano !== anoActual), ...(act && (act.ingresos > 0 || act.impuesto > 0) ? [act] : [])];
+    // Si ya subiste la declaración del año que la app está estimando, manda
+    // la declarada: es lo que presentaste, no un borrador.
+    const yaDeclaradoActual = decl.some((f) => f.ano === anoActual);
+    const todas = [...decl, ...(act && !yaDeclaradoActual && (act.ingresos > 0 || act.impuesto > 0) ? [act] : [])];
     return todas.sort((a, b) => a.ano - b.ano).map((f) => ({ ...f, tasa: f.ingresos > 0 ? (f.impuesto / f.ingresos) * 100 : 0 }));
   }, [declaraciones, detalleActual, anoActual]);
 
