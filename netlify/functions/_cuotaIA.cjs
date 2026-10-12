@@ -44,13 +44,15 @@ const topeDe = (plan) => TOPES[plan] ?? TOPES.free;
  * que una caída de la base no bloquee a un usuario legítimo que ya pagó. El
  * riesgo de abuso durante una caída es menor que el de romper el producto.
  */
-async function consumirCuota({ url, serviceKey, userId }) {
+async function consumirCuota({ url, serviceKey, userId, plan: planDado }) {
   if (!userId) return { permitido: true, usos: 0, tope: 0, plan: "desconocido", motivo: "sin_usuario" };
 
   const h = { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json" };
 
-  let plan = "free";
-  try {
+  // 11-oct-2026: quien llama puede pasar el plan ya resuelto (ai-chat lo
+  // resuelve con la prueba de 14 días incluida, ver leerPlanIA).
+  let plan = planDado || "free";
+  if (!planDado) try {
     const r = await fetch(`${url}/rest/v1/accounts?select=plan&owner_user_id=eq.${userId}`, { headers: h });
     if (r.ok) {
       const filas = await r.json();
@@ -72,6 +74,53 @@ async function consumirCuota({ url, serviceKey, userId }) {
   }
 }
 
+/**
+ * 11-oct-2026 — Plan que cuenta para la cuota, con la prueba incluida.
+ * Durante la prueba de 14 días accounts.plan sigue en "free" y la app da
+ * acceso Pro con user_data.p.trialEnd. Sin esto, quien está probando el
+ * Asesor IA tendría el tope de free (10 al mes) justo en la prueba.
+ * Función pura: `hoy` es la fecha 'YYYY-MM-DD' en Colombia.
+ */
+function planEfectivo({ planCuenta, trialEnd, hoy }) {
+  const plan = planCuenta || "free";
+  const enPrueba = typeof trialEnd === "string" && /^\d{4}-\d{2}-\d{2}/.test(trialEnd) && trialEnd.slice(0, 10) >= hoy;
+  if (enPrueba && (plan === "free" || plan === "basico")) return "pro";
+  return plan;
+}
+
+const hoyColombia = (ahora = Date.now()) => new Date(ahora - 5 * 3600000).toISOString().slice(0, 10);
+
+/** Lee accounts.plan y user_data.p.trialEnd y devuelve el plan efectivo. */
+async function leerPlanIA({ url, serviceKey, userId }) {
+  const h = { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey };
+  let planCuenta = "free", trialEnd = null;
+  try {
+    const [ra, ru] = await Promise.all([
+      fetch(`${url}/rest/v1/accounts?select=plan&owner_user_id=eq.${userId}`, { headers: h }),
+      fetch(`${url}/rest/v1/user_data?select=trial_end:data->p->>trialEnd&id=eq.${userId}`, { headers: h }),
+    ]);
+    if (ra.ok) { const f = await ra.json(); if (f?.[0]?.plan) planCuenta = f[0].plan; }
+    if (ru.ok) { const f = await ru.json(); trialEnd = f?.[0]?.trial_end || null; }
+  } catch { /* queda en free, el tope más restrictivo */ }
+  return planEfectivo({ planCuenta, trialEnd, hoy: hoyColombia() });
+}
+
+/** Usos del mes sin consumir (para mostrar el contador al abrir el asesor). */
+async function consultarUsos({ url, serviceKey, userId }) {
+  try {
+    const r = await fetch(`${url}/rest/v1/rpc/consultar_uso_ia`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_user_id: userId }),
+    });
+    if (!r.ok) return null;
+    const usos = await r.json();
+    return Number(usos) || 0;
+  } catch {
+    return null;
+  }
+}
+
 /** Mensaje para el usuario cuando se agotó la cuota. */
 function mensajeCuota({ usos, tope, plan }) {
   const enPago = plan !== "free";
@@ -85,4 +134,4 @@ function mensajeCuota({ usos, tope, plan }) {
   };
 }
 
-module.exports = { consumirCuota, mensajeCuota, TOPES, topeDe };
+module.exports = { consumirCuota, mensajeCuota, TOPES, topeDe, planEfectivo, hoyColombia, leerPlanIA, consultarUsos };
