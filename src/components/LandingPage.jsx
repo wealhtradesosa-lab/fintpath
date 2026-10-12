@@ -107,7 +107,7 @@ export default function LandingPage({ onGetStarted }) {
               { icon: "🖥️", title: "Simulador con Sliders", desc: "Ajusta cada ingreso y gasto individualmente. La barra de libertad financiera reacciona en tiempo real.", color: T.purple },
               { icon: "🏛️", title: "Pensiones Colombia", desc: "Cálculo actuarial real: Colpensiones (Ley 797/2003), Fondo Privado, comparador lado a lado.", color: T.cyan },
               { icon: "₿", title: "Ahorro con Bitcoin", desc: "Simulador DCA con CAGR, regla 4% de retiro, proyección año por año. Inspirado en @AndresFelArias.", color: T.orange },
-              { icon: "🤖", title: "Asesor Financiero IA", desc: "Agente inteligente que analiza tu patrimonio real: simula escenarios, optimiza impuestos, identifica riesgos y te da recomendaciones con montos exactos.", color: T.gold },
+              { icon: "🤖", title: "Asesor Financiero IA", desc: "Agente inteligente que analiza tu patrimonio real: simula escenarios, identifica riesgos y te orienta con tus propios números. Es orientación, no una recomendación de inversión.", color: T.gold },
               // 26-jul-2026 — TARJETA DE TRADING REMOVIDA. Prometía "Conecta tu
               // broker favorito", algo que la plataforma NUNCA hizo: las
               // posiciones siempre fueron manuales. La sección además se ocultó

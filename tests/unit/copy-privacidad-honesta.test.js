@@ -78,4 +78,25 @@ describe("copy de privacidad honesto", () => {
     const s = readFileSync("src/App.jsx", "utf8");
     expect(s).toContain("No cifra tus datos.");
   });
+
+  it("el Asesor no promete optimizar impuestos ni recomienda productos con montos", () => {
+    const landing = readFileSync("src/components/LandingPage.jsx", "utf8");
+    const asesor = readFileSync("src/components/LandingAIAdvisorSection.jsx", "utf8");
+    expect(landing).not.toMatch(/optimiza impuestos/);
+    expect(asesor).not.toMatch(/a AFC/);
+    expect(asesor).not.toMatch(/mitad de costo/);
+  });
+
+  it("la alerta del portal de cliente usa tuteo", () => {
+    const s = readFileSync("src/components/MiCuenta.jsx", "utf8");
+    expect(s).not.toMatch(/No tenés|esperá unos|contactá soporte/);
+    expect(s).toContain("No tienes una suscripción de Stripe");
+  });
+
+  it("Free incluye el Simulador (la tabla de Planes no lo marca con ✗)", async () => {
+    const { PLAN_BASE } = await import("../../src/lib/plans.js");
+    const free = PLAN_BASE.find(p => p.name === "Free");
+    expect(free.notFeatures.some(f => /Simulador/.test(f))).toBe(false);
+    expect(free.features.some(f => /Simulador/.test(f))).toBe(true);
+  });
 });
