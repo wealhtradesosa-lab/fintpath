@@ -69,6 +69,16 @@
   to = "/.netlify/functions/advisor-accept-invite"
   status = 200
 
+[[redirects]]
+  from = "/api/email-unsubscribe"
+  to = "/.netlify/functions/email-unsubscribe"
+  status = 200
+
+[[redirects]]
+  from = "/api/track-activation"
+  to = "/.netlify/functions/track-activation"
+  status = 200
+
 # Pioneros campaign — sirve pioneros.html con meta tags Open Graph específicas
 # (preview correcto en WhatsApp / Twitter). Status 200 = rewrite (mantiene la URL).
 # DEBE ir antes del SPA fallback /* para tomar precedencia.

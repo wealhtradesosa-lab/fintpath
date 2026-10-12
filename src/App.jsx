@@ -43,7 +43,7 @@ import LandingTerminos from "./components/LandingTerminos";
 import LandingPrivacidad from "./components/LandingPrivacidad";
 import OnboardingTour from "./components/OnboardingTour";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import { track, trackSignup, trackCheckoutStarted, captureUTMs, identifyUser } from "./lib/analytics";
+import { track, trackSignup, trackCheckoutStarted, captureUTMs, identifyUser, guardarEntrada, leerEntrada } from "./lib/analytics";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "./lib/chartTheme.jsx";
@@ -1046,6 +1046,9 @@ export default function FinPath(){
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);
         // Sesión 4-may-2026: tracking GA4 — signup completed con metadata
         // de promo (Pioneros) y user_id para atribución cross-device.
+        // 11-oct-2026: guardar UTM + ángulo ANTES de trackSignup (que borra
+        // fp3_signup_intent) para el evento "activation" de días después.
+        guardarEntrada();
         trackSignup({ method: "email", userId: data.user.id });
         // 25-jul-2026 (Santiago: "creé una cuenta nueva y me llevó al simulador
         // de Pedro"): setPg solo se reseteaba en logout. Si el visitante venía
@@ -1368,6 +1371,36 @@ export default function FinPath(){
   // exacto" (ej. mostrar 'Plan actual' en pricing card del plan Pro).
   const hasProAccess=plan==="pro"||plan==="pro_familiar"||plan==="advisor_pro";
   const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200):{},[u]);
+  // ═══ 11-oct-2026 — ACTIVACIÓN (secuencia de la prueba) ═══
+  // Activación = al menos un ingreso Y un egreso: ya hay nivel de libertad
+  // (t.ind = ingresos/egresos). Se detecta aquí porque el servidor no puede
+  // leer datos cifrados. Se manda SOLO la bandera + UTM + ángulo de entrada a
+  // track-activation, que verifica la sesión y marca activated_at una sola
+  // vez. Nunca se manda el nivel ni montos. Solo en la vista personal: un
+  // asesor mirando a un cliente no activa su propia cuenta.
+  const activo=!!(t&&t.ni>0&&t.te>0);
+  useEffect(()=>{
+    if(!activo||!authUser?.id||viewMode!=="personal")return;
+    const k="fp3_activacion_"+authUser.id;
+    try{if(localStorage.getItem(k))return;}catch{}
+    const ent=leerEntrada();
+    fetchAuth("/api/track-activation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({utm:ent.utm,angle:ent.angle})})
+      .then(r=>r.ok?r.json():null).then(d=>{if(d&&d.ok){try{localStorage.setItem(k,"1")}catch{}}}).catch(()=>{});
+  },[activo,authUser?.id,viewMode]);
+  // ═══ 11-oct-2026 — ENLACES DE LOS CORREOS (?ir=asesor|price|dash) ═══
+  // Los botones de los correos de la prueba abren una sección concreta.
+  // Lista cerrada de destinos; se lee una vez cuando ya hay datos cargados.
+  const irAplicado=useRef(false);
+  useEffect(()=>{
+    if(!u||irAplicado.current||typeof window==="undefined")return;
+    irAplicado.current=true;
+    try{
+      const ps=new URLSearchParams(window.location.search);
+      const ir=ps.get("ir");
+      if(ir&&["dash","asesor","price"].includes(ir))setPg(ir);
+      if(ir){ps.delete("ir");const q=ps.toString();window.history.replaceState({},"",window.location.pathname+(q?"?"+q:""));}
+    }catch{}
+  },[u]);
   const ib=useMemo(()=>{if(!u?.ibk?.length)return{tc:0,tv:0,pnl:0,pp:0,pos:[]};let tc=0,tv=0;const pos=u.ibk.map(p=>{
     // 26-jul-2026 (Santiago: "¿y si la persona tiene opciones qué hace?").
     // Un contrato de opción representa 100 acciones: su valor es
