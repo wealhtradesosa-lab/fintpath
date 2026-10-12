@@ -36,6 +36,7 @@
 // evento, el resultado es el mismo (no duplica accounts ni members).
 // ═══════════════════════════════════════════════════════════════════════════
 
+const { enmascararEmail } = require("../lib/enmascararEmail.cjs");
 const Stripe = require("stripe");
 const { sendTemplate } = require("./send-email.cjs");
 
@@ -292,7 +293,7 @@ exports.handler = async (event) => {
                 reason,
               },
             });
-            console.log(`[stripe-webhook] cancellation email enviado a ${customer.email}`);
+            console.log(`[stripe-webhook] cancellation email enviado a ${enmascararEmail(customer.email)}`);
           }
         } catch (mailErr) {
           // Email no es crítico — loggeamos y seguimos

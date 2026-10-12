@@ -35,6 +35,7 @@
 //   RESEND_FROM     (opcional; default 'Finpathia <noreply@finpathia.com>')
 // ═══════════════════════════════════════════════════════════════════
 
+const { enmascararEmail } = require("../lib/enmascararEmail.cjs");
 exports.handler = async (event) => {
   const cors = {
     "Access-Control-Allow-Origin": "*",
@@ -191,7 +192,7 @@ exports.handler = async (event) => {
       };
     }
 
-    console.log(`[family-invite-email] Enviado a ${email} · message_id=${data?.id}`);
+    console.log(`[family-invite-email] Enviado a ${enmascararEmail(email)} · message_id=${data?.id}`);
     return {
       statusCode: 200,
       headers: cors,
