@@ -214,10 +214,9 @@ export default function LandingSeguridad({ onBack = () => {} }) {
             fontSize: 18, color: T.txt2, lineHeight: 1.6,
             maxWidth: 640, margin: "0 auto",
           }}>
-            FINPATHIA está construido sobre la misma infraestructura que usan
-            empresas como Stripe, Notion y Linear. Tu información financiera está
-            protegida con el mismo estándar que los bancos digitales más serios
-            del mundo.
+            FINPATHIA funciona sobre proveedores conocidos (Stripe, Supabase,
+            Netlify). Aquí te contamos, sin exagerar, cómo se protege tu información
+            y qué puede ver nuestro equipo.
           </p>
         </div>
 
@@ -232,7 +231,7 @@ export default function LandingSeguridad({ onBack = () => {} }) {
             Cómo protegemos tu información
           </h2>
           <p style={{ fontSize: 15, color: T.txt2, marginBottom: 32 }}>
-            Cinco capas de seguridad, cada una a cargo de los líderes de la industria.
+            Cinco capas, cada una a cargo de un proveedor especializado.
           </p>
 
           <div style={{
@@ -249,26 +248,26 @@ export default function LandingSeguridad({ onBack = () => {} }) {
             <SecurityCard
               icon={IconDatabase}
               title="Base de datos"
-              badge="SOC 2 Type II"
-              description="Hospedada en Supabase + AWS, con acceso aislado por usuario gracias a Row Level Security (RLS). Tu información está físicamente separada de la del resto — ni nuestros desarrolladores pueden ver tus datos sin tu autorización."
+              badge="Cifrada en reposo"
+              description="Hospedada en Supabase sobre AWS, que guarda los datos cifrados en disco. Las reglas de acceso de la base de datos (Row Level Security) limitan cada sesión a los datos de su cuenta. No usamos cifrado de extremo a extremo: el equipo de Finpathia puede acceder a la base de datos para operar el servicio y darte soporte."
             />
             <SecurityCard
               icon={IconKey}
               title="Tu contraseña"
               badge="Encriptada con bcrypt"
-              description="Nunca se guarda en texto plano. Se cifra con bcrypt (estándar de la industria) antes de almacenarse. Ni siquiera nosotros podemos leerla — si la olvidás, la única forma es resetearla."
+              description="Nunca se guarda en texto plano. Se cifra con bcrypt (estándar de la industria) antes de almacenarse. Ni siquiera nosotros podemos leerla: si la olvidas, la única forma es restablecerla."
             />
             <SecurityCard
               icon={IconLock}
               title="Conexión segura"
               badge="TLS 1.3 + HTTPS"
-              description="Toda la comunicación entre tu navegador y FINPATHIA viaja cifrada con TLS 1.3, el mismo protocolo que usan los bancos digitales. Imposible interceptar lo que enviás o recibís."
+              description="Toda la comunicación entre tu navegador y FINPATHIA viaja cifrada con TLS 1.3, así que lo que envías y recibes no viaja en texto plano."
             />
             <SecurityCard
               icon={IconShield}
               title="Infraestructura"
               badge="Netlify + AWS"
-              description="Hospedado en Netlify (red global con protección DDoS) sobre infraestructura AWS. Disponibilidad del 99.99% y backups automáticos diarios de tu información."
+              description="Hospedado en Netlify (red global con protección DDoS). La base de datos la opera Supabase sobre AWS."
             />
           </div>
         </section>
@@ -292,12 +291,11 @@ export default function LandingSeguridad({ onBack = () => {} }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
             <PolicyLine type="yes" text="Tu información se usa únicamente para que veas tu propio análisis financiero." />
-            <PolicyLine type="yes" text="Podés exportar todos tus datos en cualquier momento, en formato Excel." />
-            <PolicyLine type="yes" text="Podés eliminar tu cuenta y todos tus datos cuando quieras, sin condiciones." />
-            <PolicyLine type="yes" text="Cumplimos con la Ley 1581 de 2012 (protección de datos personales en Colombia)." />
-            <PolicyLine type="no" text="No vendemos tus datos a terceros. Nunca. No es nuestro modelo de negocio." />
-            <PolicyLine type="no" text="No compartimos tu información con anunciantes ni redes sociales." />
-            <PolicyLine type="no" text="No tenemos acceso a tus cuentas bancarias — FINPATHIA es planeación, no movés plata por acá." />
+            <PolicyLine type="yes" text="Puedes exportar todos tus datos en cualquier momento, en formato Excel." />
+            <PolicyLine type="yes" text="Puedes eliminar tu cuenta y todos tus datos cuando quieras, sin condiciones." />
+                        <PolicyLine type="no" text="No vendemos tus datos a terceros. Nunca. No es nuestro modelo de negocio." />
+            <PolicyLine type="no" text="No compartimos tus cifras financieras con anunciantes. Sí usamos Google y Meta para medir nuestros anuncios (detalle en la política de privacidad)." />
+            <PolicyLine type="no" text="No tenemos acceso a tus cuentas bancarias — FINPATHIA es planeación, no mueves plata por aquí." />
             <PolicyLine type="no" text="No usamos tus datos para entrenar modelos de IA de terceros." />
           </div>
         </section>
@@ -326,14 +324,13 @@ export default function LandingSeguridad({ onBack = () => {} }) {
               privacidad de IA.
             </p>
             <p style={{ margin: "0 0 12px 0" }}>
-              Cuando consultás al asesor IA, le enviamos solo lo necesario para tu
-              consulta (saldos agregados, no transacciones individuales). Anthropic
+              Cuando consultas al asesor IA, le enviamos tu pregunta y un resumen de
+              tus datos (por ejemplo tus inversiones, ingresos y deudas con sus montos). Anthropic
               <strong style={{ color: T.txt }}> no usa tus datos para entrenar sus modelos</strong> — es parte de
               nuestro acuerdo comercial con ellos.
             </p>
             <p style={{ margin: 0 }}>
-              Tu nombre, email, número de identificación, dirección y datos
-              personales nunca se envían a la IA.
+              No le enviamos tu nombre ni tu email.
             </p>
           </div>
         </section>
@@ -352,11 +349,11 @@ export default function LandingSeguridad({ onBack = () => {} }) {
             margin: "0 0 12px 0",
             letterSpacing: -0.5,
           }}>
-            ¿Tenés más preguntas?
+            ¿Tienes más preguntas?
           </h2>
           <p style={{ fontSize: 15, color: T.txt2, marginBottom: 24, maxWidth: 500, marginLeft: "auto", marginRight: "auto" }}>
-            Si tenés cualquier inquietud sobre cómo manejamos tu información,
-            escribinos directamente. Tu confianza es lo que más cuidamos.
+            Si tienes cualquier inquietud sobre cómo manejamos tu información,
+            escríbenos directamente. Tu confianza es lo que más cuidamos.
           </p>
           <a
             href="mailto:soporte@finpathia.com?subject=Pregunta%20sobre%20seguridad"

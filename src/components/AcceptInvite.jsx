@@ -424,10 +424,10 @@ export default function AcceptInvite({ token, onComplete }) {
           {invitation?.type === "family" ? (
             <>
               ✓ Sin costo &nbsp;·&nbsp; ✓ Sin elegir plan &nbsp;·&nbsp; ✓ La cuenta es de {invitation?.invited_by_name || "quien te invitó"}
-              <br />🔒 Tus datos se encriptan end-to-end.
+              <br />🔒 Tus datos viajan y se guardan cifrados.
             </>
           ) : (
-            <>🔒 Tus datos se encriptan end-to-end. Ni tu asesor ni Finpathia pueden leerlos sin tu contraseña.</>
+            <>🔒 Tus datos viajan y se guardan cifrados. Tu asesor solo ve lo que la invitación le permite.</>
           )}
         </div>
       </div>

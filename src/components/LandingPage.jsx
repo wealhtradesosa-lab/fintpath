@@ -193,9 +193,9 @@ export default function LandingPage({ onGetStarted }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, maxWidth: 900, margin: "0 auto" }}>
           {[
-            { i: "🔐", t: "Encriptación End-to-End", d: "Tus datos se encriptan con tu contraseña. Ni nosotros podemos leerlos. Nivel Signal." },
-            { i: "👤", t: "Sin registro obligatorio", d: "Usa la plataforma completa sin crear cuenta. Tus datos nunca salen de tu navegador." },
-            { i: "🚫", t: "No vendemos datos", d: "Cero publicidad, cero tracking financiero, cero venta de información." },
+            { i: "🔐", t: "Datos cifrados", d: "Tus datos viajan por HTTPS y se guardan cifrados en el servidor de nuestro proveedor." },
+            { i: "👤", t: "Prueba sin crear cuenta", d: "Explora sin registrarte. Lo que cargas se guarda en tu navegador hasta que crees una cuenta." },
+            { i: "🚫", t: "No vendemos datos", d: "Sin publicidad dentro de la app y sin venta de información. Usamos Google y Meta para medir nuestros anuncios." },
             { i: "✊", t: "Tú mandas", d: "Exporta, borra o lleva tus datos cuando quieras. Sin contratos." },
           ].map((item) => (
             <div key={item.t} style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 16, padding: "28px 16px", textAlign: "center" }}>

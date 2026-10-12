@@ -69,6 +69,18 @@
   to = "/.netlify/functions/advisor-accept-invite"
   status = 200
 
+# 11-oct-2026 — Una sola política de privacidad: la de la app (/privacidad).
+# public/privacidad.html era una copia vieja (prometía «ni siquiera nuestro
+# equipo puede ver tus datos» y «no compartimos con terceros») y, con pretty
+# URLs, Netlify la servía también en /privacidad. Se borró; los enlaces viejos
+# a /privacidad.html van con 301 a /privacidad. force=true por si queda una
+# copia en caché de un deploy anterior.
+[[redirects]]
+  from = "/privacidad.html"
+  to = "/privacidad"
+  status = 301
+  force = true
+
 # Pioneros campaign — sirve pioneros.html con meta tags Open Graph específicas
 # (preview correcto en WhatsApp / Twitter). Status 200 = rewrite (mantiene la URL).
 # DEBE ir antes del SPA fallback /* para tomar precedencia.

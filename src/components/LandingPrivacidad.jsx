@@ -167,8 +167,8 @@ export default function LandingPrivacidad() {
           }}
         >
           <strong style={{ color: T.txt }}>🔒 En lenguaje claro:</strong> tus datos son tuyos.
-          Nosotros los usamos solo para que FINPATHIA funcione. No los vendemos. No los compartimos
-          con anunciantes. Vos podés exportarlos o borrarlos cuando quieras. Esta política te explica
+          Nosotros los usamos solo para que FINPATHIA funcione. No los vendemos. No compartimos tus
+          cifras financieras con anunciantes. Puedes exportarlos o borrarlos cuando quieras. Esta política te explica
           en detalle qué guardamos, por qué, por cuánto tiempo, y cómo ejercer tus derechos.
         </div>
 
@@ -195,17 +195,17 @@ export default function LandingPrivacidad() {
             </ul>
           </SubSection>
 
-          <SubSection title="2.2 Datos financieros que vos cargás voluntariamente">
-            <p>Esta es información que vos decidís ingresar para que la plataforma funcione:</p>
+          <SubSection title="2.2 Datos financieros que cargas voluntariamente">
+            <p>Esta es información que tú decides ingresar para que la plataforma funcione:</p>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
               <li style={{ marginBottom: 4 }}>Ingresos, gastos, deudas y patrimonio</li>
               <li style={{ marginBottom: 4 }}>Inversiones, propiedades, cuentas bancarias (los detalles que decidas registrar)</li>
               <li style={{ marginBottom: 4 }}>Información de pensión y planes de retiro</li>
-              <li style={{ marginBottom: 4 }}>Datos de declaraciones fiscales pasadas (si los cargás)</li>
+              <li style={{ marginBottom: 4 }}>Datos de declaraciones fiscales pasadas (si los cargas)</li>
               <li>Documentos que subas (Excel, facturas, comprobantes para procesamiento)</li>
             </ul>
             <p style={{ marginTop: 12, color: T.amber, fontSize: 13 }}>
-              ⚠️ Estos datos son <strong>sensibles</strong>. Los protegemos con encriptación AES-256 en tránsito y en reposo.
+              ⚠️ Estos datos son <strong>sensibles</strong>. Viajan cifrados (TLS) y nuestro proveedor de base de datos (Supabase) los guarda cifrados en disco. No usamos cifrado de extremo a extremo: el equipo de FINPATHIA puede acceder a ellos para operar el servicio y darte soporte.
             </p>
           </SubSection>
 
@@ -261,15 +261,15 @@ export default function LandingPrivacidad() {
               color: T.txt2,
             }}
           >
-            <strong style={{ color: T.txt }}>Lo que NO hacemos:</strong> NO vendemos tus datos a terceros. NO los compartimos con anunciantes
-            o redes sociales. NO usamos tus datos financieros para entrenar modelos de inteligencia artificial.
+            <strong style={{ color: T.txt }}>Lo que NO hacemos:</strong> NO vendemos tus datos a terceros. NO compartimos tus cifras
+            financieras con anunciantes ni redes sociales (lo que sí reciben Google y Meta está en la sección 10). NO usamos tus datos financieros para entrenar modelos de inteligencia artificial.
             NO te perfilamos para marketing externo.
           </p>
         </Section>
 
         <Section number="4." title="Inteligencia artificial y tus datos">
           <p>
-            Cuando usás el <strong style={{ color: T.txt }}>Asesor IA</strong> o los <strong style={{ color: T.txt }}>Coaches IA</strong>, tu pregunta y los datos
+            Cuando usas el <strong style={{ color: T.txt }}>Asesor IA</strong> o los <strong style={{ color: T.txt }}>Coaches IA</strong>, tu pregunta y los datos
             financieros relevantes se envían a <strong style={{ color: T.txt }}>Anthropic (Claude API)</strong>, nuestro proveedor de IA.
           </p>
           <p style={{ marginTop: 12 }}>
@@ -277,8 +277,7 @@ export default function LandingPrivacidad() {
           </p>
           <ul style={{ marginTop: 8, paddingLeft: 20 }}>
             <li style={{ marginBottom: 4 }}>Anthropic <strong>NO usa tus datos</strong> para entrenar sus modelos de IA.</li>
-            <li style={{ marginBottom: 4 }}>Tus consultas se procesan en infraestructura segura (SOC 2 Type II).</li>
-            <li>Anthropic retiene los datos solo el tiempo necesario para procesar tu consulta y para detección de abuso (máximo 30 días).</li>
+                        <li>Anthropic retiene los datos solo el tiempo necesario para procesar tu consulta y para detección de abuso (máximo 30 días).</li>
           </ul>
           <p style={{ marginTop: 12 }}>
             Más detalles en la{" "}
@@ -296,17 +295,18 @@ export default function LandingPrivacidad() {
 
         <Section number="5." title="Con quién compartimos tus datos (encargados)">
           <p>
-            Solo compartimos información con proveedores que nos ayudan a operar la plataforma. Cada uno
-            firma cláusulas contractuales para proteger tus datos:
+            Compartimos información solo con los proveedores que nos ayudan a operar y medir la plataforma:
           </p>
           <div style={{ marginTop: 16 }}>
             {[
-              { name: "Stripe (USA)", role: "Procesamiento de pagos", cert: "PCI-DSS Nivel 1" },
-              { name: "Supabase (USA)", role: "Base de datos y autenticación", cert: "SOC 2 Type II" },
-              { name: "Netlify / AWS (USA)", role: "Hosting de la aplicación", cert: "ISO 27001, SOC 2" },
-              { name: "Anthropic (USA)", role: "Inteligencia artificial (Asesor IA)", cert: "SOC 2 Type II — sin uso para entrenamiento" },
-              { name: "Resend (USA)", role: "Envío de emails transaccionales", cert: "SOC 2" },
-              { name: "Google (USA)", role: "Analytics anonimizados (Google Analytics 4)", cert: "ISO 27001, IP anonimizada" },
+              { name: "Stripe (USA)", role: "Procesamiento de pagos", cert: "Tus datos de pago" },
+              { name: "Supabase (USA)", role: "Base de datos y autenticación", cert: "Tu cuenta y tus datos financieros" },
+              { name: "Netlify (USA)", role: "Hosting de la aplicación", cert: "Datos técnicos de cada visita" },
+              { name: "Anthropic (USA)", role: "Inteligencia artificial (Asesor IA)", cert: "Tu pregunta y un resumen de tus datos, solo si usas la IA" },
+              { name: "Resend (USA)", role: "Envío de emails de la cuenta", cert: "Tu email y tu nombre" },
+              { name: "Finnhub / Yahoo Finance", role: "Precios de acciones", cert: "Solo los tickers" },
+              { name: "Google (USA)", role: "Google Analytics 4 y Google Ads", cert: "Uso del sitio y conversiones" },
+              { name: "Meta (USA)", role: "Meta Pixel", cert: "Uso del sitio y conversiones" },
             ].map((p, i) => (
               <div
                 key={i}
@@ -332,17 +332,16 @@ export default function LandingPrivacidad() {
           </div>
           <p style={{ marginTop: 16, fontSize: 13 }}>
             Algunos proveedores procesan datos en territorio de Estados Unidos. Esto se considera{" "}
-            <strong style={{ color: T.txt }}>transferencia internacional</strong>. Solo trabajamos con proveedores que demuestren niveles
-            de protección equivalentes o superiores a los exigidos por la Ley 1581 colombiana
-            (Decreto 1377/2013, Art. 26).
+            <strong style={{ color: T.txt }}>transferencia internacional</strong>. Elegimos proveedores con políticas de protección de datos
+            publicadas (Decreto 1377/2013, Art. 26).
           </p>
         </Section>
 
         <Section number="6." title="Tus derechos como titular de datos (Art. 8 Ley 1581)">
-          <p>Como titular de tus datos, tenés derecho a:</p>
+          <p>Como titular de tus datos, tienes derecho a:</p>
           <ul style={{ marginTop: 12, paddingLeft: 20 }}>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Conocer (acceso):</strong> ver qué datos tenemos sobre vos. Lo hacés en cualquier momento desde
+              <strong style={{ color: T.txt }}>Conocer (acceso):</strong> ver qué datos tenemos sobre ti. Lo haces en cualquier momento desde
               tu cuenta o pidiéndonos un export.
             </li>
             <li style={{ marginBottom: 8 }}>
@@ -350,7 +349,7 @@ export default function LandingPrivacidad() {
               escribiéndonos.
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Solicitar la prueba de la autorización:</strong> en cualquier momento podés pedir copia del
+              <strong style={{ color: T.txt }}>Solicitar la prueba de la autorización:</strong> en cualquier momento puedes pedir copia del
               consentimiento que diste al registrarte.
             </li>
             <li style={{ marginBottom: 8 }}>
@@ -361,7 +360,7 @@ export default function LandingPrivacidad() {
               violamos tus derechos.
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Revocar la autorización y solicitar supresión:</strong> podés borrar tu cuenta y todos tus
+              <strong style={{ color: T.txt }}>Revocar la autorización y solicitar supresión:</strong> puedes borrar tu cuenta y todos tus
               datos en cualquier momento.
             </li>
             <li>
@@ -372,7 +371,7 @@ export default function LandingPrivacidad() {
         </Section>
 
         <Section number="7." title="Cómo ejercer tus derechos">
-          <p>Tenés dos formas:</p>
+          <p>Tienes dos formas:</p>
           <SubSection title="7.1 Desde tu cuenta (autoservicio)">
             <ul style={{ marginTop: 4, paddingLeft: 20 }}>
               <li style={{ marginBottom: 4 }}>
@@ -389,12 +388,12 @@ export default function LandingPrivacidad() {
 
           <SubSection title="7.2 Por email (asistencia personalizada)">
             <p>
-              Escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> con
+              Escríbenos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> con
               asunto <strong style={{ color: T.txt }}>"Solicitud de Datos Personales"</strong>. Indicanos:
             </p>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
               <li style={{ marginBottom: 4 }}>El email asociado a tu cuenta</li>
-              <li style={{ marginBottom: 4 }}>Qué derecho querés ejercer (acceso, rectificación, supresión, etc.)</li>
+              <li style={{ marginBottom: 4 }}>Qué derecho quieres ejercer (acceso, rectificación, supresión, etc.)</li>
               <li>Detalles específicos si aplica</li>
             </ul>
             <p style={{ marginTop: 12 }}>
@@ -430,11 +429,10 @@ export default function LandingPrivacidad() {
           <p>Aplicamos medidas técnicas y organizativas razonables:</p>
           <ul style={{ marginTop: 12, paddingLeft: 20 }}>
             <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Encriptación TLS 1.3</strong> para todos los datos en tránsito.</li>
-            <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Encriptación AES-256</strong> para datos sensibles en reposo.</li>
+            <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Cifrado en reposo</strong> a cargo de nuestro proveedor de base de datos (Supabase). No es cifrado de extremo a extremo.</li>
             <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Hash bcrypt</strong> para contraseñas (nunca almacenadas en texto plano).</li>
             <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Acceso mínimo necesario</strong>: solo personal autorizado accede a sistemas con tus datos.</li>
-            <li style={{ marginBottom: 6 }}><strong style={{ color: T.txt }}>Auditoría de accesos</strong>: registramos quién accede a qué.</li>
-            <li><strong style={{ color: T.txt }}>Backups diarios</strong> con retención de 30 días.</li>
+                        <li><strong style={{ color: T.txt }}>Copias de respaldo</strong> de la base de datos, gestionadas por Supabase.</li>
           </ul>
           <p style={{ marginTop: 16 }}>
             En caso de un incidente de seguridad que afecte tus datos personales, te notificaremos por
@@ -455,20 +453,22 @@ export default function LandingPrivacidad() {
               recargas innecesarias. Sin estas, la plataforma no funciona.
             </li>
             <li>
-              <strong style={{ color: T.txt }}>Analytics anonimizados:</strong> Google Analytics 4 con IP anonimizada para entender uso agregado de
-              la plataforma. Podés bloquearlas con extensiones tipo Privacy Badger.
+              <strong style={{ color: T.txt }}>Medición:</strong> Google Analytics 4 para entender el uso de
+              la plataforma.
+            </li>
+            <li>
+              <strong style={{ color: T.txt }}>Publicidad:</strong> Google Ads y Meta Pixel usan cookies para medir
+              qué anuncios traen visitas, registros y pagos. Puedes bloquearlas en la configuración de tu navegador
+              o con extensiones tipo Privacy Badger.
             </li>
           </ul>
-          <p style={{ marginTop: 12 }}>
-            <strong style={{ color: T.txt }}>NO usamos cookies de publicidad ni tracking de terceros</strong> para perfilamiento comercial.
-          </p>
         </Section>
 
         <Section number="11." title="Datos de menores de edad">
           <p>
             FINPATHIA <strong style={{ color: T.txt }}>NO está dirigida a menores de 18 años</strong>. No recolectamos intencionalmente datos de
             menores. Si te das cuenta de que un menor creó una cuenta sin permiso de sus padres,
-            escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y eliminaremos la cuenta inmediatamente.
+            escríbenos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y eliminaremos la cuenta inmediatamente.
           </p>
           <p style={{ marginTop: 12 }}>
             En el plan Pro Familiar, los administradores de cuenta confirman bajo su responsabilidad que
@@ -491,14 +491,14 @@ export default function LandingPrivacidad() {
         <Section number="13." title="Cómo presentar reclamos">
           <SubSection title="13.1 A nosotros primero">
             <p>
-              Escribinos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y
+              Escríbenos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> y
               respondemos en máximo 15 días hábiles.
             </p>
           </SubSection>
 
           <SubSection title="13.2 A la autoridad colombiana">
             <p>
-              Si no quedás conforme con nuestra respuesta, podés acudir a la <strong style={{ color: T.txt }}>Superintendencia de Industria
+              Si no quedas conforme con nuestra respuesta, puedes acudir a la <strong style={{ color: T.txt }}>Superintendencia de Industria
               y Comercio (SIC)</strong>, ente de control en materia de protección de datos personales en Colombia:
             </p>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
@@ -537,7 +537,7 @@ export default function LandingPrivacidad() {
           }}
         >
           Documento generado el 4 de mayo de 2026 · Versión 1.0<br />
-          FINPATHIA es operada por SOSALABS · Cumple con Ley 1581/2012 (Colombia) y principios CCPA/GDPR
+          FINPATHIA es operada por SOSALABS · Marco legal: Ley 1581/2012 (Colombia) y principios CCPA/GDPR
         </div>
       </main>
 
