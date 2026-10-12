@@ -88,7 +88,7 @@ export async function correrSecuencia({ ahora = new Date(), env = process.env, f
     let r;
     try {
       r = await enviar({
-        to: u.email, subject: correo.asunto, html: correo.html, text: correo.texto, etiqueta: `lifecycle_${decision.clave}`,
+        to: u.email, subject: correo.asunto, html: correo.html, text: correo.texto, etiqueta: `lifecycle_${decision.clave}`, idempotencyKey: `lifecycle-${c.id}-${decision.paso}`,
         headers: {
           "List-Unsubscribe": `<${urlBaja}>, <mailto:soporte@finpathia.com?subject=baja>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
