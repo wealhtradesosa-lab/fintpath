@@ -135,7 +135,7 @@ export function cifrasClave(user, totals) {
       const saldoD = Number(d.mt) || 0, cuota = Number(d.pg || d.pago) || 0, ts = Number(d.ts) || 0;
       const interes = saldoD * tasaMensualEq(ts);
       const meses = mesesDeuda({ saldo: saldoD, cuota, tasaEA: ts });
-      let txt = `  - ${d.n || d.nombre || "Deuda"}: tasa ${ts}% E.A. → interés de este mes ≈ ${fm(interes)}; de la cuota de ${fm(cuota)}, ≈ ${fm(Math.max(0, cuota - interes))} abona a capital`;
+      let txt = `  - ${d.n || d.nombre || "Deuda"}: tasa ${ts}% E.A. → interés de este mes ≈ ${fm(interes)} (solo este mes: baja a medida que baja el saldo); de la cuota de ${fm(cuota)}, ≈ ${fm(Math.max(0, cuota - interes))} abona a capital`;
       if (meses === Infinity) txt += "; la cuota no alcanza a cubrir los intereses";
       else if (meses) txt += `; pagando solo la cuota termina en ≈ ${meses} meses`;
       lineas.push(txt);

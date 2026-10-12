@@ -88,3 +88,69 @@ describe("ai-chat handler", () => {
     expect((await handler({ httpMethod: "GET", headers: {} })).statusCode).toBe(405);
   });
 });
+
+describe("ai-chat: reintento de formato (QA #35 e)", () => {
+  const MAL = "La tarjeta primero.\n- Pagando solo la cuota terminas en 14 meses.\n- Un abono extra baja el saldo.";
+  const BIEN = "La tarjeta primero.\n- **Opción A: solo la cuota**: x. Pro: a. Contra: b.\n- **Opción B: cuota + abono extra**: y. Pro: a. Contra: b.\nLa decisión es tuya.";
+  const preguntaDeuda = { messages: [{ role: "user", content: "¿Qué deuda me conviene pagar primero?" }], financialContext: "datos" };
+
+  it("si no cumple, reintenta una vez con la corrección y descuenta un solo uso", async () => {
+    const respuestas = [MAL, BIEN];
+    const cuerpos = [];
+    const base = globalThis.fetch;
+    vi.stubGlobal("fetch", vi.fn(async (url, opts = {}) => {
+      if (url.startsWith("https://api.anthropic.com")) {
+        cuerpos.push(JSON.parse(opts.body));
+        return json({ content: [{ type: "text", text: respuestas.shift() }], stop_reason: "end_turn" });
+      }
+      return base(url, opts);
+    }));
+    const b = JSON.parse((await pedir(preguntaDeuda)).body);
+    expect(cuerpos).toHaveLength(2);
+    expect(cuerpos[1].messages.at(-2)).toEqual({ role: "assistant", content: MAL });
+    expect(cuerpos[1].messages.at(-1).content).toContain("Corrección de formato");
+    expect(b).toMatchObject({ reply: BIEN, reintentada: true, restantes: 149 });
+    expect(usos).toBe(1);
+  });
+
+  it("si cumple a la primera, no reintenta", async () => {
+    anthropic = { content: [{ type: "text", text: BIEN }], stop_reason: "end_turn" };
+    const b = JSON.parse((await pedir(preguntaDeuda)).body);
+    expect(b.reintentada).toBe(false);
+    expect(llamadas.filter((u) => u.includes("anthropic"))).toHaveLength(1);
+  });
+
+  it("si el reintento sale peor o falla, queda la primera", async () => {
+    const respuestas = [{ ok: true, text: MAL }, { ok: false }];
+    const base = globalThis.fetch;
+    vi.stubGlobal("fetch", vi.fn(async (url, opts = {}) => {
+      if (url.startsWith("https://api.anthropic.com")) {
+        const r = respuestas.shift();
+        return r.ok ? json({ content: [{ type: "text", text: r.text }], stop_reason: "end_turn" }) : json({ error: { message: "x" } }, 500);
+      }
+      return base(url, opts);
+    }));
+    const r = await pedir(preguntaDeuda);
+    expect(r.statusCode).toBe(200);
+    expect(JSON.parse(r.body)).toMatchObject({ reply: MAL, reintentada: true });
+  });
+
+  it("si la primera tardó demasiado, no reintenta (límite de 10 s de Netlify)", async () => {
+    const base = globalThis.fetch;
+    let n = 0;
+    const ahora = Date.now;
+    let desfase = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => ahora() + desfase);
+    vi.stubGlobal("fetch", vi.fn(async (url, opts = {}) => {
+      if (url.startsWith("https://api.anthropic.com")) {
+        n++; desfase = 7000; // la primera "tardó" 7 s
+        return json({ content: [{ type: "text", text: MAL }], stop_reason: "end_turn" });
+      }
+      return base(url, opts);
+    }));
+    const b = JSON.parse((await pedir(preguntaDeuda)).body);
+    vi.restoreAllMocks();
+    expect(n).toBe(1);
+    expect(b).toMatchObject({ reply: MAL, reintentada: false });
+  });
+});

@@ -17,11 +17,20 @@
 
 const {
   MAX_TOKENS, construirPromptSistema, limpiarMensajes, recortarRespuesta, resumenCuota, mensajeCuotaAsesor,
+  revisarOpciones, instruccionCorrectiva,
 } = require("./_asesorIA.cjs");
 
 const MODELO = "claude-sonnet-4-5-20250929";
 
+// Las funciones síncronas de Netlify cortan a los 10 s por defecto (netlify.toml
+// no lo sube). El reintento de formato solo se intenta si la primera respuesta
+// llegó rápido, y se aborta antes del límite: si no alcanza, queda la primera.
+const LIMITE_FUNCION_MS = 10000;
+const MARGEN_MS = 800;
+const MIN_PARA_REINTENTO_MS = 4000;
+
 exports.handler = async (event) => {
+  const inicio = Date.now();
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -78,35 +87,66 @@ exports.handler = async (event) => {
       };
     }
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: MODELO,
-        max_tokens: MAX_TOKENS,
-        system: construirPromptSistema({ jurisdiction, financialContext, taxConfig }),
-        messages: mensajes,
-      }),
-    });
+    const system = construirPromptSistema({ jurisdiction, financialContext, taxConfig });
+    const llamar = async (msgs, signal) => {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        signal,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({ model: MODELO, max_tokens: MAX_TOKENS, system, messages: msgs }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) {
+        console.error("[ai-chat] Anthropic", res.status, data?.error?.type || "", data?.error?.message || "");
+        return null;
+      }
+      const crudo = (data.content || []).map((b) => b.text || "").join("");
+      return { crudo, ...recortarRespuesta(crudo, data.stop_reason, idioma) };
+    };
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.error) {
-      console.error("[ai-chat] Anthropic", res.status, data?.error?.type || "", data?.error?.message || "");
+    const primera = await llamar(mensajes);
+    if (!primera) {
       return {
         statusCode: 502, headers,
         body: JSON.stringify({ error: "ia_no_disponible", mensaje: idioma === "en" ? "I couldn't answer right now. Please try again in a moment." : "Ahora no pude responder. Intenta de nuevo en un momento.", restantes: cuota.restantes, tope: cuota.tope }),
       };
     }
 
-    const crudo = (data.content || []).map((b) => b.text || "").join("");
-    const { texto, recortada } = recortarRespuesta(crudo, data.stop_reason, idioma);
+    // 11-oct-2026 (QA #35, criterio e): si las opciones no cumplen (más de 2,
+    // o sin Pro/Contra, o no son las 2 fijas en "qué deuda primero" / fondo de
+    // emergencia), se pide UNA corrección. Es la misma consulta: no descuenta
+    // otra unidad de cuota. Si la corrección falla o empeora, queda la primera.
+    let final = primera, reintentada = false;
+    const pregunta = mensajes[mensajes.length - 1].content;
+    const revision = revisarOpciones(primera.texto, pregunta);
+    const quedaMs = LIMITE_FUNCION_MS - MARGEN_MS - (Date.now() - inicio);
+    if (!revision.ok && quedaMs >= MIN_PARA_REINTENTO_MS) {
+      reintentada = true;
+      const ctrl = new AbortController();
+      const reloj = setTimeout(() => ctrl.abort(), quedaMs);
+      try {
+        const segunda = await llamar([
+          ...mensajes,
+          { role: "assistant", content: primera.crudo || primera.texto },
+          { role: "user", content: instruccionCorrectiva(revision, idioma) },
+        ], ctrl.signal);
+        if (segunda && revisarOpciones(segunda.texto, pregunta).problemas.length <= revision.problemas.length) final = segunda;
+      } catch (e) {
+        console.warn("[ai-chat] reintento de formato sin respuesta a tiempo:", e?.name || e);
+      } finally {
+        clearTimeout(reloj);
+      }
+    } else if (!revision.ok) {
+      console.warn("[ai-chat] formato de opciones sin corregir (sin tiempo para reintentar):", revision.problemas.join("; "));
+    }
+    const { texto, recortada } = final;
     return {
       statusCode: 200, headers,
-      body: JSON.stringify({ reply: texto || (idioma === "en" ? "No answer." : "Sin respuesta."), recortada, restantes: cuota.restantes, tope: cuota.tope }),
+      body: JSON.stringify({ reply: texto || (idioma === "en" ? "No answer." : "Sin respuesta."), recortada, reintentada, restantes: cuota.restantes, tope: cuota.tope }),
     };
   } catch (e) {
     console.error("[ai-chat] error", e?.message || e);
