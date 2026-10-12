@@ -325,6 +325,21 @@
            CompleteRegistration (signup) · InitiateCheckout (upgrade)
          ───────────────────────────────────────────────────────────────── -->
     <script>
+      // 11-oct-2026: URL "segura" para trackers. Los links /invite/<token>
+      // llevan un secreto en la ruta y no deben llegar a GA4, Ads ni Meta.
+      // Tampoco parámetros tipo token/code de la query.
+      (function () {
+        var l = window.location;
+        var path = l.pathname.replace(/^\/invite\/[^/]+/, "/invite/_");
+        var q = new URLSearchParams(l.search);
+        ["token", "code", "access_token", "refresh_token", "email"].forEach(function (k) { q.delete(k); });
+        var qs = q.toString();
+        window.__fpSafeLoc = l.origin + path + (qs ? "?" + qs : "");
+        window.__fpRutaSensible = path !== l.pathname || qs !== l.search.replace(/^\?/, "");
+      })();
+    </script>
+    <script>
+      if (!window.__fpRutaSensible) {
       !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
       n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
       n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
@@ -332,6 +347,7 @@
       document,'script','https://connect.facebook.net/en_US/fbevents.js');
       fbq('init', '1637963763961269');
       fbq('track', 'PageView');
+      }
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-51CV6PWRLT"></script>
     <script>
@@ -342,8 +358,9 @@
         // anonymize_ip cumple con GDPR/Ley 1581 Colombia (privacidad)
         anonymize_ip: true,
         send_page_view: true,
+        page_location: window.__fpSafeLoc,
       });
-      gtag('config', 'AW-613365221');
+      gtag('config', 'AW-613365221', { page_location: window.__fpSafeLoc });
     </script>
     <script type="application/ld+json">
     {

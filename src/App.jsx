@@ -633,8 +633,9 @@ export default function FinPath(){
   useEffect(()=>{
     captureUTMs();
     track("app_loaded", {
-      pathname: typeof window !== "undefined" ? window.location.pathname : "",
-      referrer: typeof document !== "undefined" ? document.referrer : "",
+      // Sin el token de /invite/<token> y sin query del referrer.
+      pathname: typeof window !== "undefined" ? window.location.pathname.replace(/^\/invite\/[^/]+/, "/invite/_") : "",
+      referrer: typeof document !== "undefined" && document.referrer ? (()=>{try{return new URL(document.referrer).origin}catch{return ""}})() : "",
     });
   },[]);
   // Password recovery: escuchar el evento de Supabase cuando el usuario hace
@@ -952,7 +953,7 @@ export default function FinPath(){
         if(error){const msg=error.message==="Invalid login credentials"?"Email o contraseña incorrectos":error.message==="Email not confirmed"?"Revisa tu email y confirma tu cuenta":error.message;setAuthError(msg);setAuthLoading(false);return}
         // Sesión 4-may-2026: tracking GA4 — login exitoso con user_id
         // para atribución cross-device.
-        track("login_completed",{ method:"email", user_id: data.user.id });
+        track("login_completed",{ method:"email" });
         identifyUser(data.user.id);
         // Advisor lookup: corre SIEMPRE para saber si la cuenta tiene plan Asesor
         let advData=null;

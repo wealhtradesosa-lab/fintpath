@@ -13,13 +13,38 @@
 // - Falla silenciosamente si no hay tracker (no rompe la UI)
 //
 // PRIVACIDAD:
-// Nunca se envían montos o PII del contribuyente. Solo metadatos de USO:
-// qué señales se activaron (sin el valor), cuántos años de historial hay,
-// si el owner es natural o jurídica, etc.
+// Nunca se envían montos, identificadores de usuario ni PII a GA4, Google
+// Ads, Meta Pixel u otro tracker. Solo metadatos de USO: qué señales se
+// activaron (sin el valor), cuántos años de historial hay, etc.
+// sanitizePayload() lo hace cumplir aunque un evento nuevo se equivoque.
 // ═══════════════════════════════════════════════════════════════════════════
 
-export function track(event, payload = {}) {
+// Claves que nunca salen del navegador: identificadores de usuario/cuenta,
+// datos de contacto y cualquier monto. Se compara por nombre de clave.
+const CLAVES_EXACTAS_BLOQUEADAS = new Set(["user_id", "userid", "owner_id", "ownerid", "uid", "id"]);
+// Datos personales: se bloquean siempre.
+const PATRON_PII = /(email|correo|nombre|telefono|phone|cedula|documento|^nit$)/i;
+// Montos: se bloquean cuando el valor es numérico (un booleano como
+// salario_es_bruto sí puede pasar; un conteo debe llamarse cantidad/count).
+const PATRON_MONTO = /(monto|pesos|_cop$|_usd$|valor|value|amount|saldo|ingreso|gasto|patrimonio|deuda|impuesto|salario|_m$)/i;
+const esNumerico = (v) => typeof v === "number" || (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v)));
+
+// Quita del payload cualquier clave sensible. Exportada para tests.
+export function sanitizePayload(payload) {
+  if (!payload || typeof payload !== "object") return {};
+  const out = {};
+  for (const [k, v] of Object.entries(payload)) {
+    if (CLAVES_EXACTAS_BLOQUEADAS.has(k.toLowerCase())) continue;
+    if (PATRON_PII.test(k)) continue;
+    if (PATRON_MONTO.test(k) && esNumerico(v)) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
+export function track(event, rawPayload = {}) {
   if (typeof window === "undefined") return;
+  const payload = sanitizePayload(rawPayload);
 
   try {
     // Log local (útil durante desarrollo y auditoría)
@@ -102,19 +127,11 @@ export function clearRecentEvents() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Identifica al usuario en GA4 con su user_id (UUID Supabase).
- * Permite conectar sesiones del mismo user en múltiples dispositivos.
+ * 11-oct-2026: ya NO se envía el user_id (UUID de Supabase) a GA4.
+ * Se deja la función como no-op para no romper llamadas existentes.
  */
-export function identifyUser(userId) {
-  if (typeof window === "undefined" || !userId) return;
-  try {
-    if (typeof window.gtag === "function") {
-      window.gtag("config", "G-51CV6PWRLT", { user_id: userId });
-    }
-  } catch (e) {
-    if (window.console) window.console.warn("[analytics] identify failed:", e);
-  }
-}
+// eslint-disable-next-line no-unused-vars
+export function identifyUser(_userId) {}
 
 /**
  * Disparado cuando se completa un signup. Captura si vino con promo
