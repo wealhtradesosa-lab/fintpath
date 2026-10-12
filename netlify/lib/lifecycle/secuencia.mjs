@@ -66,7 +66,7 @@ export async function correrSecuencia({ ahora = new Date(), env = process.env, f
 
     const blob = u.data && typeof u.data === "object" ? u.data : null;
     let nombre = blob && !blob._encrypted ? (blob.p?.name || "") : "";
-    if (!nombre && decision.clave === "d10_sin_asesor") nombre = await nombreDesdeAuth({ url, h, id: c.owner_user_id, fetchFn });
+    if (!nombre && decision.clave === "d10") nombre = await nombreDesdeAuth({ url, h, id: c.owner_user_id, fetchFn });
     const conteos = decision.clave === "d13_valor" ? conteosDesdeBlob(blob) : null;
 
     const token = real ? firmarTokenBaja(c.id, secreto) : "DRY-RUN";

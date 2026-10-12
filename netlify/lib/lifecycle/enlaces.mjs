@@ -15,6 +15,8 @@ export function conUtm(url, { paso, utmContent }) {
 // Destinos de los botones. `ir` lo lee App.jsx al cargar y abre esa sección.
 export const DESTINOS = {
   nivel: "/?ir=dash",
-  asesor: "/?ir=asesor",
+  simulador: "/?ir=sim",
+  patrimonio: "/?ir=inv",
   planes: "/?ir=price",
+  asesor: "/?ir=asesor", // sin uso en la v2 del copy; queda para volver a la v1
 };

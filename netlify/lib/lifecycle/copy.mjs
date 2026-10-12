@@ -2,13 +2,17 @@
 // FINPATHIA · COPY de la secuencia de prueba Pro (14 días)
 //
 // ESTE ES EL ÚNICO ARCHIVO QUE LA AGENCIA TIENE QUE EDITAR.
-// Fuente: Agencia · Creativos, grupo Agencia Marketing, 11-oct-2026
-// (copy_secuencia_trial.md). Texto literal, salvo lo marcado como AJUSTE.
+// Fuente: Agencia · Creativos, v2 «centrada en nivel y simulador»
+// (copy_secuencia_trial_v2.md, 11-oct-2026). Texto literal.
+// v2 reemplaza a la v1 mientras el Asesor IA no pase QA: ningún correo
+// invita a usar el asesor. Cuando Luis apruebe el asesor se vuelve a la v1
+// (ver historial de git de este archivo).
 //
 // Variables que se pueden usar dentro de los textos:
 //   {nombre}        nombre de la persona. Si está vacío, ", {nombre}" se
 //                   borra limpio ("Te quedan 4 días de Pro").
-//   {n} {m}         conteos (registros y activos), NUNCA montos. Solo en d13 valor.
+//   {n} {m}         conteos (registros y activos), NUNCA montos. Solo en d13 valor:
+//                   si uno es 0 se omite esa parte; si ambos son 0, la frase.
 //   {pro_mensual} {pro_anual} {familiar_personas}
 //                   salen de src/lib/plans.js (precio de Pro y cupo de Pro
 //                   Familiar) para que el correo no se desfase del precio real.
@@ -26,7 +30,7 @@ export const NOTA_ASESOR = "Las respuestas del asesor son orientación, no recom
 
 export const TEXTO_BAJA = "Darme de baja de estos correos";
 
-// destino: "nivel" (Dashboard), "asesor" (Asesor IA) o "planes" (Planes).
+// destino: "nivel" (Dashboard), "simulador", "patrimonio" o "planes" (Planes).
 export const COPY = {
   d2_sin_activar: {
     asunto: "Tu nivel está a dos datos de distancia",
@@ -39,72 +43,57 @@ export const COPY = {
   d2_activado: {
     asunto: "Ya sabes tu nivel. ¿Qué te falta para el siguiente?",
     cuerpo: [
-      "Tu Asesor IA ya conoce tus números. Pregúntale qué cambio te acerca más al siguiente nivel.",
+      "Abre el simulador y mira cuánto te falta cada mes para llegar a tu siguiente nivel, y qué cambia si ajustas tus ingresos o tus gastos.",
     ],
-    cta: "Preguntarle a mi asesor",
-    destino: "asesor",
+    cta: "Abrir el simulador",
+    destino: "simulador",
   },
-  d5_sin_asesor: {
-    asunto: "3 preguntas para hacerle a tu asesor hoy",
+  // d5: una sola versión (ya no se divide por advisor_used).
+  d5: {
+    asunto: "Mira tu plata completa en una sola vista",
     cuerpo: [
-      "Tu Asesor IA responde sobre tus propios números. Prueba con una: ¿Qué gasto me está frenando para subir de nivel? ¿Qué deuda me conviene pagar primero? ¿Cuántos meses de gastos debería tener ahorrados?",
+      "Además de tu nivel, en Finpathia puedes cargar tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio neto en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.",
     ],
-    cta: "Abrir mi asesor",
-    destino: "asesor",
+    cta: "Completar mi patrimonio",
+    destino: "patrimonio",
   },
-  d5_con_asesor: {
-    asunto: "Otra pregunta que vale la pena",
-    cuerpo: [
-      "Ya hablaste con tu asesor. Prueba ahora: ¿Cómo voy frente a mi meta de este año? Y si quieres ir más a fondo en un tema, los Coaches IA te acompañan paso a paso.",
-    ],
-    cta: "Seguir con mi asesor",
-    destino: "asesor",
-  },
-  d10_sin_asesor: {
+  // d10: una sola versión.
+  d10: {
     asunto: "Te quedan 4 días de Pro, {nombre}",
     cuerpo: [
-      "Te quedan 4 días de Pro. Aprovéchalos para preguntarle a tu Asesor IA qué hacer para llegar a tu siguiente nivel: entiende tus números y te orienta. Si administras la plata en familia, Pro Familiar suma hasta {familiar_personas} personas.",
+      "Aprovecha estos días para usar el simulador y ver qué te acerca a tu siguiente nivel. Si administras la plata en familia, Pro Familiar suma hasta {familiar_personas} personas.",
     ],
-    cta: "Preguntarle a mi asesor",
-    destino: "asesor",
+    cta: "Abrir el simulador",
+    destino: "simulador",
   },
-  d10_con_asesor: {
-    asunto: "Lo que pierdes el día 14",
+  // d13: mismo cuerpo para las dos variantes; "valor" abre con la frase de
+  // conteos. Si uno de los conteos es 0 se quita esa parte; si ambos son 0
+  // (o no se conocen), la frase entera.
+  d13_urgencia: {
+    asunto: "Tu prueba Pro vence mañana",
     cuerpo: [
-      "En 4 días termina tu prueba. Tus datos, tu nivel y el simulador se quedan contigo en el plan gratis. Lo que se va es tu Asesor IA, los coaches y el plan de impuestos. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual. Pro Familiar suma hasta {familiar_personas} personas.",
+      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro suma los coaches, el plan de impuestos y el Asesor IA. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",
   },
-  // d13: mismo cuerpo para las dos variantes; "valor" abre con la frase de
-  // conteos (AJUSTE: se omite si los conteos no se conocen o son cero, y
-  // usa singular con 1: "1 cuenta", "1 activo").
-  d13_urgencia: {
-    asunto: "Tu prueba Pro vence mañana",
-    cuerpo: [
-      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Lo que se queda en Pro es el Asesor IA, los coaches y el plan de impuestos. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
-    ],
-    cta: "Seguir con mi asesor",
-    destino: "asesor",
-  },
   d13_valor: {
     asunto: "Esto es lo que ya organizaste en Finpathia",
-    // Si uno de los conteos es 0 se quita esa parte; si ambos son 0, la frase entera.
     apertura: {
       ambos: "Ya tienes {n} {registros} y {m} {activos} en Finpathia.",
       soloN: "Ya tienes {n} {registros} en Finpathia.",
       soloM: "Ya tienes {m} {activos} en Finpathia.",
     },
     cuerpo: [
-      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Lo que se queda en Pro es el Asesor IA, los coaches y el plan de impuestos. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
+      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro suma los coaches, el plan de impuestos y el Asesor IA. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual.",
     ],
-    cta: "Seguir con mi asesor",
-    destino: "asesor",
+    cta: "Seguir con Pro",
+    destino: "planes",
   },
   d16: {
     asunto: "Tu información sigue aquí",
     cuerpo: [
-      "Estás en el plan gratis: conservas tus datos, tu nivel y el simulador. El Asesor IA, los coaches y el plan de impuestos son Pro. Cuando quieras volver a preguntarle a tu asesor, actívalo en un clic.",
+      "Estás en el plan gratis: conservas tus datos, tu nivel y el simulador. Cuando quieras las funciones Pro, actívalas en un clic.",
     ],
     cta: "Activar Pro",
     destino: "planes",

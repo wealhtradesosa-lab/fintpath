@@ -30,11 +30,11 @@ describe("cron de la secuencia", () => {
     expect(r.real).toBe(false);
     const inserts = llamadas.filter((l) => l.method === "POST");
     expect(inserts).toHaveLength(1);
-    expect(inserts[0].body).toMatchObject({ user_id: U1, email_key: "d10_sin_asesor", utm_content: "d10_sin_asesor", dry_run: true });
+    expect(inserts[0].body).toMatchObject({ user_id: U1, email_key: "d10", utm_content: "d10", dry_run: true });
     expect(llamadas.some((l) => l.method === "PATCH")).toBe(false);
   });
   it("dry run no duplica filas si ya existe una para esa persona y correo", async () => {
-    const { fetchFn, llamadas } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10_sin_asesor", dry_run: true, error: null }] });
+    const { fetchFn, llamadas } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10", dry_run: true, error: null }] });
     await correrSecuencia({ ahora: AHORA, env: envBase, fetchFn, enviar: async () => ({}) });
     expect(llamadas.filter((l) => l.method === "POST")).toHaveLength(0);
   });
@@ -46,7 +46,7 @@ describe("cron de la secuencia", () => {
     expect(r.real).toBe(false);
   });
   it("un dry run previo NO cuenta como enviado al prender la bandera", async () => {
-    const { fetchFn, llamadas } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10_sin_asesor", dry_run: true, error: null }] });
+    const { fetchFn, llamadas } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10", dry_run: true, error: null }] });
     const enviados = [];
     await correrSecuencia({
       ahora: AHORA, env: { ...envBase, LIFECYCLE_EMAILS_ENABLED: "true", EMAIL_UNSUB_SECRET: "s" }, fetchFn,
@@ -59,12 +59,12 @@ describe("cron de la secuencia", () => {
     const patch = llamadas.find((l) => l.method === "PATCH");
     expect(patch.url).toContain(`accounts?id=eq.${A1}`);
     expect(Object.keys(patch.body).sort()).toEqual(["last_seq_email", "seq_sent"]);
-    expect(patch.body.last_seq_email).toBe("d10_sin_asesor");
+    expect(patch.body.last_seq_email).toBe("d10");
     const ins = llamadas.find((l) => l.method === "POST");
     expect(ins.body).toMatchObject({ dry_run: false, resend_id: "re_1" });
   });
   it("un envío real previo del mismo paso bloquea (red de seguridad)", async () => {
-    const { fetchFn } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10_sin_asesor", dry_run: false, error: null }] });
+    const { fetchFn } = simular({ cuenta: cuentaD10, previos: [{ user_id: U1, email_key: "d10", dry_run: false, error: null }] });
     let enviados = 0;
     await correrSecuencia({ ahora: AHORA, env: { ...envBase, LIFECYCLE_EMAILS_ENABLED: "true", EMAIL_UNSUB_SECRET: "s" }, fetchFn, enviar: async () => { enviados++; return { ok: true, sent: true }; } });
     expect(enviados).toBe(0);

@@ -30,11 +30,27 @@ describe("token de baja", () => {
 });
 
 describe("correos", () => {
-  it("hay 9 correos", () => {
+  it("v2: 7 correos (d5 y d10 de una sola versión)", () => {
     expect(Object.keys(COPY).sort()).toEqual([
-      "d10_con_asesor", "d10_sin_asesor", "d13_urgencia", "d13_valor", "d16",
-      "d2_activado", "d2_sin_activar", "d5_con_asesor", "d5_sin_asesor",
+      "d10", "d13_urgencia", "d13_valor", "d16", "d2_activado", "d2_sin_activar", "d5",
     ]);
+  });
+  it("v2: ningún botón lleva al Asesor IA", () => {
+    for (const clave of Object.keys(COPY)) {
+      const c = armarCorreo({ clave, paso: pasoDe(clave), utmContent: utmDe(clave), urlBaja: URL_BAJA });
+      expect(c.urlCta).not.toContain("ir=asesor");
+      expect(c.html).not.toMatch(/Preguntarle a mi asesor|Abrir mi asesor|Seguir con mi asesor/);
+    }
+  });
+  it("v2: destinos de los botones", () => {
+    const dest = (clave) => new URL(armarCorreo({ clave, paso: pasoDe(clave), utmContent: utmDe(clave), urlBaja: URL_BAJA }).urlCta).searchParams.get("ir");
+    expect(dest("d2_sin_activar")).toBe("dash");
+    expect(dest("d2_activado")).toBe("sim");
+    expect(dest("d5")).toBe("inv");
+    expect(dest("d10")).toBe("sim");
+    expect(dest("d13_urgencia")).toBe("price");
+    expect(dest("d13_valor")).toBe("price");
+    expect(dest("d16")).toBe("price");
   });
   for (const clave of Object.keys(COPY)) {
     it(`${clave}: UTMs en todos los enlaces, cierre de marca, nota y baja`, () => {
@@ -61,19 +77,20 @@ describe("correos", () => {
     const pro = PLAN_BASE.find((p) => p.name === "Pro");
     expect(PRECIOS.pro_mensual).toBe(pro.priceUSD.mensual);
     expect(PRECIOS.pro_anual).toBe(pro.priceUSD.anual);
-    const c = armarCorreo({ clave: "d10_con_asesor", paso: "d10", utmContent: "d10_con_asesor", urlBaja: URL_BAJA });
+    const c = armarCorreo({ clave: "d13_urgencia", paso: "d13", utmContent: "urgencia", urlBaja: URL_BAJA });
     expect(c.texto).toContain(`Pro: ${pro.priceUSD.mensual} USD/mes o ${pro.priceUSD.anual} USD/mes en plan anual.`);
-    expect(c.texto).toContain("Pro Familiar suma hasta 10 personas.");
+    const d10 = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", urlBaja: URL_BAJA });
+    expect(d10.texto).toContain("Pro Familiar suma hasta 10 personas.");
   });
   it("{nombre}: con nombre y sin nombre (se borra ', {nombre}' limpio)", () => {
-    const con = armarCorreo({ clave: "d10_sin_asesor", paso: "d10", utmContent: "d10_sin_asesor", vars: { nombre: "Ana María Pérez" }, urlBaja: URL_BAJA });
+    const con = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", vars: { nombre: "Ana María Pérez" }, urlBaja: URL_BAJA });
     expect(con.asunto).toBe("Te quedan 4 días de Pro, Ana");
-    const sin = armarCorreo({ clave: "d10_sin_asesor", paso: "d10", utmContent: "d10_sin_asesor", vars: { nombre: "  " }, urlBaja: URL_BAJA });
+    const sin = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", vars: { nombre: "  " }, urlBaja: URL_BAJA });
     expect(sin.asunto).toBe("Te quedan 4 días de Pro");
     expect(rellenar("Hola, {nombre}.", { nombre: "" })).toBe("Hola.");
   });
   it("nombre se escapa en HTML", () => {
-    const c = armarCorreo({ clave: "d10_sin_asesor", paso: "d10", utmContent: "d10_sin_asesor", vars: { nombre: "<b>x" }, urlBaja: URL_BAJA });
+    const c = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", vars: { nombre: "<b>x" }, urlBaja: URL_BAJA });
     expect(c.html).not.toContain("<b>x");
   });
   it("d13 valor: abre con conteos solo si se conocen y no son cero", () => {
@@ -93,5 +110,32 @@ describe("correos", () => {
     const c = armarCorreo({ clave: "d13_urgencia", paso: "d13", utmContent: "urgencia", vars: { conteos: { n: 3, m: 3 } }, urlBaja: URL_BAJA });
     expect(c.asunto).toBe("Tu prueba Pro vence mañana");
     expect(c.texto).not.toContain("Ya tienes");
+  });
+});
+
+describe("copy v2 literal (asuntos, CTA y cuerpos)", () => {
+  const C = (clave, vars = {}) => armarCorreo({ clave, paso: pasoDe(clave), utmContent: utmDe(clave), vars, urlBaja: URL_BAJA });
+  it("asuntos y CTA", () => {
+    const esperado = {
+      d2_sin_activar: ["Tu nivel está a dos datos de distancia", "Ver mi nivel"],
+      d2_activado: ["Ya sabes tu nivel. ¿Qué te falta para el siguiente?", "Abrir el simulador"],
+      d5: ["Mira tu plata completa en una sola vista", "Completar mi patrimonio"],
+      d10: ["Te quedan 4 días de Pro, Ana", "Abrir el simulador"],
+      d13_urgencia: ["Tu prueba Pro vence mañana", "Seguir con Pro"],
+      d13_valor: ["Esto es lo que ya organizaste en Finpathia", "Seguir con Pro"],
+      d16: ["Tu información sigue aquí", "Activar Pro"],
+    };
+    for (const [clave, [asunto, cta]] of Object.entries(esperado)) {
+      const c = C(clave, { nombre: "Ana" });
+      expect(c.asunto).toBe(asunto);
+      expect(c.texto).toContain(`${cta}: `);
+    }
+  });
+  it("cuerpos", () => {
+    expect(C("d5").texto.startsWith("Además de tu nivel, en Finpathia puedes cargar tus cuentas, inversiones, propiedades y deudas para ver tu patrimonio neto en un solo lugar. Entre más completo, más claro ves tu camino al siguiente nivel.")).toBe(true);
+    expect(C("d10").texto.startsWith("Aprovecha estos días para usar el simulador y ver qué te acerca a tu siguiente nivel. Si administras la plata en familia, Pro Familiar suma hasta 10 personas.")).toBe(true);
+    expect(C("d13_urgencia").texto.startsWith("Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos, tu nivel y el simulador. Pro suma los coaches, el plan de impuestos y el Asesor IA. Pro: 16 USD/mes o 12 USD/mes en plan anual.")).toBe(true);
+    expect(C("d16").texto.startsWith("Estás en el plan gratis: conservas tus datos, tu nivel y el simulador. Cuando quieras las funciones Pro, actívalas en un clic.")).toBe(true);
+    expect(C("d2_activado").texto.startsWith("Abre el simulador y mira cuánto te falta cada mes para llegar a tu siguiente nivel, y qué cambia si ajustas tus ingresos o tus gastos.")).toBe(true);
   });
 });
