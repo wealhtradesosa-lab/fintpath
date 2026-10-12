@@ -43,7 +43,7 @@ import LandingTerminos from "./components/LandingTerminos";
 import LandingPrivacidad from "./components/LandingPrivacidad";
 import OnboardingTour from "./components/OnboardingTour";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import { track, trackSignup, trackCheckoutStarted, captureUTMs, identifyUser } from "./lib/analytics";
+import { track, trackSignup, trackCheckoutStarted, trackPurchase, captureUTMs, identifyUser } from "./lib/analytics";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "./lib/chartTheme.jsx";
@@ -86,7 +86,7 @@ import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre } from "./lib/migrations";
-import { getPlansForApp, STRIPE_PRICE_IDS } from "./lib/plans.js";
+import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
@@ -743,6 +743,13 @@ export default function FinPath(){
             body:JSON.stringify({userId,sessionId}),
           });
           const data=await r.json();
+          // 11-oct-2026: Checkout ya no da prueba → amount_total > 0 es el
+          // primer cobro real. Purchase (Pixel) + purchase (GA4), una sola
+          // vez por session id; trackPurchase ignora totales en 0 (cupón 100%).
+          if(data?.compra){
+            const pp=planDesdePriceId(data.compra.priceId);
+            trackPurchase({sessionId:data.compra.sessionId,amountTotal:data.compra.amountTotal,currency:data.compra.currency,plan:pp?.plan,billingCycle:pp?.billingCycle});
+          }
           if(data.ok){
             setPagoEstado({tipo:"exito",titulo:"¡Listo! Tu plan está activo",msg:"Gracias por confiar en FINPATHIA. Ya tenés acceso completo."});
             setTimeout(()=>window.location.reload(),2500);
@@ -1908,35 +1915,32 @@ export default function FinPath(){
             subtitle="Tu patrimonio y salud financiera, de un vistazo."
           />
           {((u?.p?.name)==="Usuario"||!(u?.p?.name))&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"10px 14px",marginTop:10,fontSize:12,color:T.bl,cursor:"pointer"}} onClick={()=>setPg("set")}>👤 Configura tu nombre en <strong>⚙️ Config</strong> para personalizar tu experiencia</div>}
-          {/* Banner Pro Familiar — muestra estado de trial o suscripción activa.
-              Lógica:
-                - Si planAccount === "pro_familiar" Y trialActive (trial 14d Stripe
-                  todavía no expira): "Plan Pro Familiar — Trial gratuito · X días"
-                - Si planAccount === "pro_familiar" Y NO trialActive: "Plan Pro
-                  Familiar activo" (post-trial, suscripción cobrando normal)
-              El campo trialEnd en user_data.p.trialEnd se setea al signup como 14
-              días desde signup. Coincide con el trial 14d de Stripe que damos
-              automáticamente. Si el user pasa los 14 días sin cancelar, Stripe
-              empieza a cobrar y el banner cambia a "activo". */}
+          {/* Banner Pro Familiar — suscripción activa.
+              11-oct-2026: Checkout ya no da prueba. Quien tiene planAccount
+              === "pro_familiar" ya pagó (el primer cobro es inmediato),
+              aunque le queden días de la prueba de la app (trialEnd, 14 días
+              desde el registro, independiente de Stripe). Antes este banner
+              decía "Trial gratuito" y "se cobra $27 USD/mes" mientras
+              trialActive, asumiendo que trialEnd coincidía con un trial de
+              Stripe; ya no es así, así que siempre muestra "activo". */}
           {planAccount==="pro_familiar"&&<div style={{background:trialActive?"linear-gradient(135deg,rgba(167,139,250,0.06),rgba(34,197,94,0.04))":"linear-gradient(135deg,rgba(167,139,250,0.06),rgba(59,130,246,0.04))",border:"1px solid rgba(167,139,250,0.15)",borderRadius:12,padding:"clamp(8px, 2vw, 12px) clamp(10px, 3vw, 16px)",marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}>
               <span style={{fontSize:14,flexShrink:0}}>👨‍👩‍👧</span>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:12,fontWeight:600,color:"#a78bfa"}}>
-                  {trialActive?"Plan Pro Familiar — Trial gratuito":"Plan Pro Familiar activo"}
+                  Plan Pro Familiar activo
                 </div>
                 <div style={{fontSize:10,color:T.tx3,lineHeight:1.4,marginTop:1}}>
-                  {trialActive
-                    ?(trialDays<=1?"⚠️ Tu trial vence HOY · se cobra $27 USD/mes":trialDays<=3?"⏰ Solo "+trialDays+" días · cancela antes":trialDays+" días · hasta 10 personas")
-                    :"Hasta 10 personas pueden compartir esta cuenta"}
+                  Hasta 10 personas pueden compartir esta cuenta
                 </div>
               </div>
             </div>
             <button onClick={()=>setPg("acc")} style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:11,flexShrink:0}}>Mi Cuenta →</button>
           </div>}
           {/* Banner Pro Trial — solo para users que NO compraron Pro Familiar.
-              Mantiene el flow tradicional: signup → 14 días Pro free → upgrade
-              al final del trial. */}
+              Flujo: registro → 14 días Pro gratis en la app (trialEnd) →
+              suscripción. Desde el 11-oct-2026 Checkout cobra de inmediato:
+              no hay una segunda prueba en Stripe. */}
           {trialActive&&planAccount!=="pro_familiar"&&<div style={{background:trialDays<=3?"rgba(239,68,68,0.06)":trialDays<=5?"rgba(234,179,8,0.06)":"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(59,130,246,0.05))",border:"1px solid "+(trialDays<=3?"rgba(239,68,68,0.15)":trialDays<=5?"rgba(234,179,8,0.15)":"rgba(34,197,94,0.15)"),borderRadius:12,padding:"14px 18px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}>
               <span style={{fontSize:18,flexShrink:0}}>⭐</span>
@@ -1954,8 +1958,10 @@ export default function FinPath(){
                 mantiene "tus datos están intactos" — es lo primero que uno
                 teme cuando le cierran una puerta.
                 Las tres opciones a la vista para que elija, con Pro Familiar
-                destacado (único con trial de 14 días en Stripe: el usuario ve
-                $0 hoy, que pesa más que la diferencia de precio). */}
+                destacado. (Antes el motivo era que Pro Familiar tenía 14 días
+                de prueba en Stripe y el usuario veía $0 hoy; desde el
+                11-oct-2026 ningún plan tiene prueba en Checkout: el primer
+                cobro es inmediato.) */}
             <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%"}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                 <span style={{fontSize:18,flexShrink:0}}>🔒</span>
