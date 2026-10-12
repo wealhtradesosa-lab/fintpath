@@ -1402,7 +1402,7 @@ export default function FinPath(){
     if(inviteMatch){
       // index.html saca el token de la URL (queda /invite/_) y lo deja en memoria.
       const token=inviteMatch[1]==="_"?(window.__fpInviteToken||(()=>{try{return sessionStorage.getItem("fp3_invite_token")||""}catch{return ""}})()):inviteMatch[1];
-      return<AcceptInvite token={token} onComplete={()=>{window.location.href="/"}}/>;
+      return<AcceptInvite token={token} onComplete={()=>{try{sessionStorage.removeItem("fp3_invite_token")}catch{};window.location.href="/"}}/>;
     }
   }
 
