@@ -120,6 +120,12 @@ const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(25
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>(n||0).toFixed(1)+"%";
 const SK="fp3";
+// 11-oct-2026 — La contraseña del usuario NUNCA se guarda en el navegador.
+// Antes el login la copiaba en claro a localStorage ("fp3_enc_key") para un
+// descifrado de extremo a extremo que ningún flujo usaba (nada cifraba; 0 filas
+// cifradas en prod). Se borra la que haya quedado en navegadores viejos.
+const CLAVES_PROHIBIDAS=["fp3_enc_key"];
+try{for(const k of CLAVES_PROHIBIDAS){localStorage.removeItem(k);sessionStorage.removeItem(k)}}catch{}
 const sL=async(uid,accountId)=>{
   try{
     if(isSupabaseConfigured&&uid){
@@ -132,11 +138,10 @@ const sL=async(uid,accountId)=>{
         :await q.eq("id",uid).maybeSingle();
       if(!error&&data?.data){
         let sd=data.data;
-        if(sd._encrypted&&sd.payload){
-          const encKey=localStorage.getItem("fp3_enc_key");
-          if(encKey){try{sd=await E2E.decrypt(sd.payload,encKey,uid)}catch{return null}}
-          else{return null}
-        }
+        // Blob cifrado de un cliente viejo: no hay clave en el navegador (ya
+        // no se guarda), así que se trata igual que antes en un dispositivo
+        // sin clave. Su desbloqueo es tema de #27.
+        if(sd._encrypted&&sd.payload)return null;
         sd=sanitize(sd);
         if(data.jurisdiction)sd.jurisdiction=data.jurisdiction;
         localStorage.setItem(SK,JSON.stringify(sd));return sd}
@@ -228,31 +233,6 @@ Object.keys(d.gas).forEach(cat => {
 });
 if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateAporteTributarioNombre(migrateDeudaViviendaWizardLegacy(migratePlanOptimizacionNamespace(migrateFiscalCodePVLegacy(migrateDeclaracionesV55(migrateAportesVoluntariosV17(d))))))};
 
-// ═══ END-TO-END ENCRYPTION ═══
-const E2E={
-  async deriveKey(password,salt){
-    const enc=new TextEncoder();
-    const keyMaterial=await crypto.subtle.importKey("raw",enc.encode(password),{name:"PBKDF2"},false,["deriveKey"]);
-    return crypto.subtle.deriveKey({name:"PBKDF2",salt:enc.encode(salt),iterations:100000,hash:"SHA-256"},keyMaterial,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
-  },
-  async encrypt(data,password,salt){
-    const key=await this.deriveKey(password,salt);
-    const iv=crypto.getRandomValues(new Uint8Array(12));
-    const enc=new TextEncoder();
-    const encrypted=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc.encode(JSON.stringify(data)));
-    const combined=new Uint8Array(iv.length+encrypted.byteLength);
-    combined.set(iv);combined.set(new Uint8Array(encrypted),iv.length);
-    return btoa(String.fromCharCode(...combined));
-  },
-  async decrypt(encryptedB64,password,salt){
-    const key=await this.deriveKey(password,salt);
-    const combined=Uint8Array.from(atob(encryptedB64),c=>c.charCodeAt(0));
-    const iv=combined.slice(0,12);
-    const data=combined.slice(12);
-    const decrypted=await crypto.subtle.decrypt({name:"AES-GCM",iv},key,data);
-    return JSON.parse(new TextDecoder().decode(decrypted));
-  }
-};
 let _svT=null;
 const takeSnapshot=(d)=>{
   try{
@@ -967,7 +947,7 @@ export default function FinPath(){
           setAuthLoading(false);
           return;
         }
-        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);
+        setAuthUser(data.user);
         try{
           const d=await Promise.race([
             // Multi-cuenta (Fase 2): paso accountIdRef.current. Inicialmente
@@ -984,7 +964,6 @@ export default function FinPath(){
           // causaría loader infinito). Mostramos error accionable.
           setAuthUser(null);
           try{await supabase.auth.signOut({scope:"local"})}catch{}
-          localStorage.removeItem("fp3_enc_key");
           setAuthError("No se pudo cargar tus datos: "+loadErr.message+". Volvé a intentar.");
           setAuthLoading(false);
           return;
@@ -1043,7 +1022,7 @@ export default function FinPath(){
         let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Probá iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intentá de nuevo o escribinos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verificá que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);
+        setAuthUser(data.user);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);
         // Sesión 4-may-2026: tracking GA4 — signup completed con metadata
         // de promo (Pioneros) y user_id para atribución cross-device.
         trackSignup({ method: "email", userId: data.user.id });
@@ -1535,7 +1514,6 @@ export default function FinPath(){
               // con el token del recovery. Cerramos sesión para forzar login limpio con la
               // contraseña nueva. Esto evita que queden sesiones raras por el reset.
               await supabase.auth.signOut({scope:"local"});
-              localStorage.removeItem("fp3_enc_key");
               setShowResetPassword(false);
               setResetNewPassword("");
               setAuthError("✅ Contraseña actualizada. Iniciá sesión con la nueva.");
@@ -3699,8 +3677,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 </div>
               </div>
               <div style={{marginTop:12,padding:12,background:T.bg3,borderRadius:10}}>
-                <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>🔐 Encriptación End-to-End</div>
-                <div style={{fontSize:11,color:T.tx3,marginBottom:8}}>{localStorage.getItem("fp3_enc_key")?"✅ Activa — Tus datos se encriptan con tu contraseña antes de salir de tu navegador. Ni FINPATHIA puede leerlos.":"⚠️ Solo disponible con cuenta. En Modo Privado tus datos nunca salen del navegador."}</div>
+                <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>🔐 Cómo guardamos tus datos</div>
+                <div style={{fontSize:11,color:T.tx3,marginBottom:8}}>{authUser?"Tus datos viajan cifrados (HTTPS) y se guardan cifrados en el servidor de nuestro proveedor (Supabase). No usamos cifrado de extremo a extremo: el equipo de Finpathia puede acceder a la base de datos para operar el servicio y darte soporte.":"Sin cuenta, tus datos se guardan solo en este navegador. Si usas el Asesor IA o creas una cuenta, se envían a nuestros servidores."}</div>
               </div>
               <div style={{marginTop:12,padding:12,background:T.bg3,borderRadius:10}}>
                 <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>🔒 PIN de seguridad</div>
