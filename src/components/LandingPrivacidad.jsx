@@ -231,7 +231,7 @@ export default function LandingPrivacidad() {
           <p>Tus datos se usan exclusivamente para:</p>
           <ul style={{ marginTop: 12, paddingLeft: 20 }}>
             <li style={{ marginBottom: 6 }}>
-              <strong style={{ color: T.txt }}>Prestar el servicio:</strong> calcular tu patrimonio, proyectar pensiones, optimizar impuestos,
+              <strong style={{ color: T.txt }}>Prestar el servicio:</strong> calcular tu patrimonio, proyectar pensiones, estimar impuestos,
               ejecutar el Asesor IA con tus números reales.
             </li>
             <li style={{ marginBottom: 6 }}>
@@ -356,7 +356,7 @@ export default function LandingPrivacidad() {
               <strong style={{ color: T.txt }}>Ser informado:</strong> sobre el uso que se le da a tus datos.
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Presentar quejas:</strong> ante la Superintendencia de Industria y Comercio (SIC) si considerás que
+              <strong style={{ color: T.txt }}>Presentar quejas:</strong> ante la Superintendencia de Industria y Comercio (SIC) si consideras que
               violamos tus derechos.
             </li>
             <li style={{ marginBottom: 8 }}>
@@ -389,7 +389,7 @@ export default function LandingPrivacidad() {
           <SubSection title="7.2 Por email (asistencia personalizada)">
             <p>
               Escríbenos a <a href="mailto:soporte@finpathia.com" style={{ color: T.green, textDecoration: "none" }}>soporte@finpathia.com</a> con
-              asunto <strong style={{ color: T.txt }}>"Solicitud de Datos Personales"</strong>. Indicanos:
+              asunto <strong style={{ color: T.txt }}>"Solicitud de Datos Personales"</strong>. Indícanos:
             </p>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
               <li style={{ marginBottom: 4 }}>El email asociado a tu cuenta</li>
@@ -412,11 +412,11 @@ export default function LandingPrivacidad() {
               <strong style={{ color: T.txt }}>Mientras tu cuenta esté activa:</strong> conservamos tus datos para que la plataforma funcione.
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Si cancelás tu suscripción pero no eliminás la cuenta:</strong> conservamos tus datos para que
-              puedas reactivar más adelante. Te avisamos por email cada 6 meses para que decidás.
+              <strong style={{ color: T.txt }}>Si cancelas tu suscripción pero no eliminas la cuenta:</strong> conservamos tus datos para que
+              puedas reactivar más adelante. Te avisamos por email cada 6 meses para que decidas.
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: T.txt }}>Si eliminás tu cuenta:</strong> borramos todos tus datos en máximo <strong>30 días</strong>, salvo
+              <strong style={{ color: T.txt }}>Si eliminas tu cuenta:</strong> borramos todos tus datos en máximo <strong>30 días</strong>, salvo
               información mínima requerida por ley (registros de facturación electrónica DIAN: 5 años).
             </li>
             <li>

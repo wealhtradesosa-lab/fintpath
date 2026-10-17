@@ -115,7 +115,7 @@ export default function LandingPage({ onGetStarted }) {
               // integración inexistente en la portada es la peor clase de
               // promesa: la primera que el usuario intenta y no encuentra.
               { icon: "💳", title: "Gastos & Deudas", desc: "Categorización inteligente, gastos fijos vs variables, deudas vinculadas a activos.", color: T.red },
-              { icon: "🧾", title: "Planeación Tributaria", desc: "Estima impuestos por propietario fiscal. Clasificación DIAN automática y recomendaciones de optimización.", color: T.purple },
+              { icon: "🧾", title: "Planeación Tributaria", desc: "Estima impuestos por propietario fiscal. Clasificación DIAN sugerida que puedes revisar con tu contador.", color: T.purple },
             ].map((f) => (
               <div key={f.title} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 16, padding: 28, transition: "border-color 0.2s" }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: f.color + "12", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>{f.icon}</div>
@@ -189,7 +189,7 @@ export default function LandingPage({ onGetStarted }) {
       <Section style={{ padding: "80px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>Tu privacidad es nuestra prioridad</h2>
-          <p style={{ fontSize: 15, color: T.txt2, maxWidth: 480, margin: "0 auto" }}>Construido con los más altos estándares de seguridad financiera</p>
+          <p style={{ fontSize: 15, color: T.txt2, maxWidth: 480, margin: "0 auto" }}>Esto es lo que hacemos, y lo que no, con tus datos</p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, maxWidth: 900, margin: "0 auto" }}>
           {[
