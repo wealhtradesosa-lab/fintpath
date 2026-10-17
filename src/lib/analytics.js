@@ -163,6 +163,10 @@ export function trackSignup({ method = "email", userId } = {}) {
   if (userId) identifyUser(userId);
 }
 
+// Precio real por plan (para InitiateCheckout). Import aquí y no arriba para
+// no chocar con los cambios del encabezado en el PR #32.
+import { precioCobroUSD } from "./plans.js";
+
 /**
  * Disparado cuando se inicia un checkout (click upgrade hacia Stripe).
  */
@@ -180,13 +184,76 @@ export function trackCheckoutStarted({ plan, billingCycle, priceId } = {}) {
   });
 
   // Meta Pixel: permite medir cuántos de los registrados llegan a intentar pagar.
+  // 11-oct-2026: antes mandaba value fijo 27/243 (Pro Familiar) aunque la
+  // persona eligiera Pro o Básico. Ahora es el precio real del plan elegido
+  // (mensual, o 12 × el mensual del plan anual) según PLAN_BASE.
   if (typeof window !== "undefined" && window.fbq) {
+    const value = precioCobroUSD(plan, billingCycle);
     window.fbq("track", "InitiateCheckout", {
       content_name: plan || "unknown",
       currency: "USD",
-      value: billingCycle === "anual" ? 243 : 27,
+      ...(value ? { value } : {}),
     });
   }
+}
+
+/**
+ * Compra confirmada al volver de Stripe (/?success=1&session_id=…).
+ *
+ * 11-oct-2026: Checkout ya no da prueba, así que una sesión completada con
+ * amount_total > 0 ES el primer cobro real. Con un cupón de 100% (ej.
+ * PIONEROS2026) el total es 0 y no se dispara: esa compra se medirá con el
+ * primer invoice.paid > 0 desde el servidor (PR aparte, CAPI / Measurement
+ * Protocol).
+ *
+ * - Una sola vez por compra (guarda en localStorage y sessionStorage, así
+ *   tampoco se repite en otra pestaña).
+ * - purchaseId es un id OPACO que calcula el servidor (SHA-256 truncado del
+ *   id de sesión de Stripe): el cs_… nunca llega a GA4 ni a Meta. Sirve de
+ *   transaction_id en GA4 y de eventID en Meta (dedupe con una futura CAPI).
+ * - Sin PII: solo plan, ciclo, monto del plan, moneda y purchaseId.
+ * - GA4 se manda directo con gtag y no con track(): el saneador de montos de
+ *   track() (PR #32) bloquea `value`, y el valor del plan es justo lo que
+ *   GA4 necesita en `purchase`. No es un dato financiero del usuario: es el
+ *   precio público del plan.
+ *
+ * @returns {boolean} true si se disparó.
+ */
+export function trackPurchase({ purchaseId, amountTotal, currency, plan, billingCycle } = {}) {
+  if (typeof window === "undefined") return false;
+  const centavos = Number(amountTotal);
+  if (!purchaseId || !Number.isFinite(centavos) || centavos <= 0) return false;
+
+  const KEY = "fp3_purchase_" + purchaseId;
+  try {
+    if (window.localStorage?.getItem(KEY) || window.sessionStorage?.getItem(KEY)) return false;
+    window.localStorage?.setItem(KEY, "1");
+    window.sessionStorage?.setItem(KEY, "1");
+  } catch { /* si el storage falla, igual se dispara una vez en esta carga */ }
+
+  const value = Math.round(centavos) / 100;
+  const cur = String(currency || "usd").toUpperCase();
+  const planName = plan || "unknown";
+
+  try {
+    if (window.fbq) {
+      window.fbq("track", "Purchase", { value, currency: cur, content_name: planName }, { eventID: purchaseId });
+    }
+    if (typeof window.gtag === "function") {
+      window.gtag("event", "purchase", {
+        transaction_id: purchaseId,
+        value,
+        currency: cur,
+        items: [{ item_id: planName, item_name: planName, item_variant: billingCycle || undefined, price: value, quantity: 1 }],
+      });
+    }
+    if (window.console && window.console.info) {
+      window.console.info("[finpathia-analytics]", "purchase", { plan: planName, billing_cycle: billingCycle });
+    }
+  } catch (e) {
+    if (window.console) window.console.warn("[analytics] purchase failed:", e);
+  }
+  return true;
 }
 
 /**
