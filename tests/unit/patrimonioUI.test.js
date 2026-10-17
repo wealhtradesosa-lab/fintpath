@@ -1,6 +1,6 @@
 // Bugs de UI de Patrimonio/Egresos que encontró QA (11-oct-2026).
 import { describe, it, expect } from "vitest";
-import { valorOpcion, etiquetaOpcion, gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, estiloTablaPortafolio, ANCHOS_ANGOSTO, deudasSinActivo } from "../../src/lib/patrimonioUI.js";
+import { valorOpcion, etiquetaOpcion, gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, estiloTablaPortafolio, estiloFilaPortafolio, estiloCeldaCompleta, PLANTILLA_ANGOSTO, ANCHOS_ANGOSTO, deudasSinActivo } from "../../src/lib/patrimonioUI.js";
 
 describe("opciones de <select> (Egresos: '[object Object]')", () => {
   const opciones = [{ v: "", l: "— Sin asignar (no calcula impuesto)" }, { v: "own_1", l: "👤 Personal" }, "Real Estate"];
@@ -36,12 +36,23 @@ describe("tabla del portafolio en el móvil", () => {
 });
 
 describe("tabla del portafolio en el móvil (subtotal cortado)", () => {
-  it("en angosto usa table-layout fijo y anchos que dejan lugar al nombre en 390 px", () => {
-    expect(estiloTablaPortafolio(true).tableLayout).toBe("fixed");
-    expect(estiloTablaPortafolio(false).tableLayout).toBeUndefined();
+  it("en angosto la tabla es una grilla que no puede crecer por contenido", () => {
+    expect(estiloTablaPortafolio(true).display).toBe("block");
+    expect(estiloTablaPortafolio(true).whiteSpace).toBe("normal"); // anula `table { white-space: nowrap }` de App.jsx en móvil
+    expect(estiloTablaPortafolio(false).display).toBeUndefined();
+    expect(estiloFilaPortafolio(true).display).toBe("grid");
+    expect(estiloFilaPortafolio(false)).toBeUndefined();
+    expect(estiloFilaPortafolio(true, { background: "x" }).background).toBe("x");
+    expect(PLANTILLA_ANGOSTO).toBe("minmax(0, 1fr) 84px 76px 44px");
     expect(ANCHOS_ANGOSTO).toHaveLength(columnasPortafolio(true).length);
+  });
+  it("la fila de grupo ocupa toda la grilla", () => {
+    expect(estiloCeldaCompleta(true).gridColumn).toBe("1 / -1");
+    expect(estiloCeldaCompleta(false)).toBeUndefined();
+  });
+  it("deja lugar al nombre incluso en 320 px", () => {
     const fijos = ANCHOS_ANGOSTO.reduce((s, w) => s + (w || 0), 0);
-    expect(390 - 32 - fijos).toBeGreaterThanOrEqual(140);
+    expect(320 - 32 - fijos).toBeGreaterThanOrEqual(80);
   });
   it("el encabezado de grupo no fuerza ancho", () => {
     const e = estiloEncabezadoGrupo();

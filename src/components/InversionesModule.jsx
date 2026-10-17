@@ -11,7 +11,7 @@ import { exportInversionesExcel } from "../lib/excelExport.js";
 import { exportPatrimonioPDF } from "../lib/pdfSectionExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { vaCOP, vcCOP, totalAnualItem } from "../lib/flowHelpers.js";
-import { gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, estiloTablaPortafolio, ANCHOS_ANGOSTO, deudasSinActivo, ANCHO_ANGOSTO } from "../lib/patrimonioUI.js";
+import { gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, estiloTablaPortafolio, estiloSeccionPortafolio, estiloFilaPortafolio, estiloCeldaCompleta, deudasSinActivo, ANCHO_ANGOSTO } from "../lib/patrimonioUI.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -434,19 +434,16 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={estiloTablaPortafolio(angosto)}>
-            {angosto && (
-              <colgroup>{ANCHOS_ANGOSTO.map((w, i) => <col key={i} style={w ? { width: w } : undefined} />)}</colgroup>
-            )}
-            <thead>
-              <tr>
+            <thead style={estiloSeccionPortafolio(angosto)}>
+              <tr style={estiloFilaPortafolio(angosto)}>
                 {columnasPortafolio(angosto).map((h) => (
                   <th key={h} style={{ padding: pad, textAlign: h === "Inversión" || h === "" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody style={estiloSeccionPortafolio(angosto)}>
               {items.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: 0 }}>
+                <tr style={estiloFilaPortafolio(angosto)}><td colSpan={7} style={estiloCeldaCompleta(angosto, { padding: 0 })}>
                     <div style={{padding:"40px 32px",textAlign:"center"}}>
                       <div style={{fontSize:40,marginBottom:12}}>🏦</div>
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"#fafafa"}}>Agrega tu patrimonio</h3>
@@ -470,8 +467,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   </td></tr>
               ) : conEncabezados(itemsVisibles).map((inv) => {
                 if (inv.__cat) return (
-                  <tr key={inv.id} style={{ background: T.bg2 }}>
-                    <td colSpan={columnasPortafolio(angosto).length} style={{ padding: angosto ? "9px 6px" : "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+                  <tr key={inv.id} style={estiloFilaPortafolio(angosto, { background: T.bg2 })}>
+                    <td colSpan={columnasPortafolio(angosto).length} style={estiloCeldaCompleta(angosto, { padding: angosto ? "9px 6px" : "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` })}>
                       <div style={estiloEncabezadoGrupo()}>
                         <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
                           {inv.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {inv.__n}</span>
@@ -492,8 +489,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 const tipo = getType(inv);
                 const va = getVA(inv, trm);
                 return (
-                  <tr key={inv.id} style={{ borderBottom: `1px solid ${T.border}`, background: "transparent" }}>
-                    <td style={{ padding: pad, wordBreak: angosto ? "break-word" : undefined }}>
+                  <tr key={inv.id} style={estiloFilaPortafolio(angosto, { borderBottom: `1px solid ${T.border}`, background: "transparent" })}>
+                    <td style={{ padding: pad, wordBreak: angosto ? "break-word" : undefined, overflowWrap: angosto ? "anywhere" : undefined, minWidth: angosto ? 0 : undefined }}>
                       <div style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                         {inversionesSinOwnerIds.has(inv.id) && (
                           <span

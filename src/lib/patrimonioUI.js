@@ -33,21 +33,40 @@ export function columnasPortafolio(angosto) {
 export const ANCHO_ANGOSTO = 640;
 
 /**
- * Estilo de la tabla del portafolio y anchos de columna en el móvil.
- * Causa real del subtotal cortado ($380.0I, $62.0I…): con table-layout
- * automático la tabla medía más que la pantalla (el contenido de las celdas
- * de Valor/Deuda más la columna de nombre) y el encabezado de grupo, que usa
- * colSpan, queda del ancho de toda la tabla: su subtotal, alineado a la
- * derecha, caía fuera de la vista dentro del contenedor con scroll. En angosto
- * se usa table-layout fijo con anchos explícitos: la tabla mide siempre el
- * ancho del contenedor, el nombre se parte en líneas y el subtotal cabe.
+ * Tabla del portafolio en el móvil.
+ * CAUSA RAÍZ: App.jsx trae una regla global `@media (max-width: 768px) {
+ * table { display: block; overflow-x: auto; white-space: nowrap } }`. En el
+ * móvil toda tabla es un bloque con texto sin partir: table-layout y <colgroup>
+ * no se aplican, el nombre («Bogotá • Real Estate • 6% anual») ensancha la
+ * columna y la fila de grupo (colSpan) mide más que la pantalla. Por eso mi
+ * prueba con nombres cortos y sin esa regla no lo reproducía.
+ * Historia del bug (subtotal cortado: $380.0I, $62.0I, «$38», «$6»):
+ *  1) la fila de grupo usa colSpan y, con table-layout automático, la tabla
+ *     medía más que la pantalla;
+ *  2) table-layout:fixed + <colgroup> tampoco bastó con la cuenta real: el
+ *     navegador midió las celdas por contenido (Inversión 233 px, suma 402 en
+ *     un contenedor de 330) y la fila del grupo quedó en 417 px.
+ * Una tabla CSS siempre puede crecer por su contenido; una grilla con
+ * `minmax(0, 1fr)` no. En angosto, table/thead/tbody/tr pasan a display
+ * block/grid: la columna del nombre toma el resto del ancho (y parte el
+ * texto), Valor/Deuda/acciones tienen ancho fijo, y la fila de grupo ocupa
+ * toda la grilla (`1 / -1`). Nada puede medir más que el contenedor.
  */
 export const ANCHOS_ANGOSTO = [null, 84, 76, 44];
+export const PLANTILLA_ANGOSTO = ANCHOS_ANGOSTO.map((w) => (w ? `${w}px` : "minmax(0, 1fr)")).join(" ");
 
 export function estiloTablaPortafolio(angosto) {
   const base = { width: "100%", borderCollapse: "collapse", fontSize: 13 };
-  return angosto ? { ...base, tableLayout: "fixed" } : base;
+  return angosto ? { ...base, display: "block", whiteSpace: "normal", overflowX: "hidden" } : base;
 }
+/** thead y tbody. */
+export const estiloSeccionPortafolio = (angosto) => (angosto ? { display: "block", width: "100%" } : undefined);
+/** Cada <tr>: en angosto es una grilla de 4 columnas. */
+export const estiloFilaPortafolio = (angosto, extra) =>
+  angosto ? { display: "grid", gridTemplateColumns: PLANTILLA_ANGOSTO, width: "100%", ...extra } : extra;
+/** Celda que ocupa toda la fila (encabezado de grupo, estado vacío). */
+export const estiloCeldaCompleta = (angosto, extra) =>
+  angosto ? { gridColumn: "1 / -1", minWidth: 0, ...extra } : extra;
 
 /** Estilo del contenido del encabezado de cada grupo (nombre · n … subtotal %). */
 export function estiloEncabezadoGrupo() {
