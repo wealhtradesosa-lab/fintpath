@@ -1,3 +1,4 @@
+import { fmtPctEs } from "./formato.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · recomendacionesEstrategicas.js · Sesión 1-may-2026
 //
@@ -143,7 +144,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
       },
       ahorroAnual: {
         monto: ahorroAnual,
-        calculoDetallado: `$60M intereses × tasa marginal ${(tasaMarg * 100).toFixed(0)}% = $${Math.round(60_000_000 * tasaMarg).toLocaleString("es-CO")}, capeado a tu saldo a cargo actual.`,
+        calculoDetallado: `$60M intereses × tasa marginal ${fmtPctEs((tasaMarg * 100), 0)} = $${Math.round(60_000_000 * tasaMarg).toLocaleString("es-CO")}, capeado a tu saldo a cargo actual.`,
       },
       roi: {
         porcentaje: 12,
@@ -174,7 +175,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
       },
       ahorroAnual: {
         monto: Math.min(ahorroAFC, saldoACargo),
-        calculoDetallado: `Aportar el 25% (cap legal) = $${aporteAFCmax.toLocaleString("es-CO")}/año a AFC, deducible al 100%. Ahorro: × ${(tasaMarg * 100).toFixed(0)}% tasa marginal.`,
+        calculoDetallado: `Aportar el 25% (cap legal) = $${aporteAFCmax.toLocaleString("es-CO")}/año a AFC, deducible al 100%. Ahorro: × ${fmtPctEs((tasaMarg * 100), 0)} tasa marginal.`,
       },
       roi: {
         porcentaje: 30,
@@ -256,7 +257,7 @@ function recomendacionesNaturalLaboral(perfil) {
         monto: aporteSugerido,
         descripcion: "Sale de tu liquidez pero queda invertido a tu nombre, generando rendimientos.",
       },
-      ahorroAnual: { monto: ahorroPV, calculoDetallado: `${aporteSugerido.toLocaleString("es-CO")} × ${(tasaMarg * 100).toFixed(0)}%` },
+      ahorroAnual: { monto: ahorroPV, calculoDetallado: `${aporteSugerido.toLocaleString("es-CO")} × ${fmtPctEs((tasaMarg * 100), 0)}` },
       roi: { porcentaje: tasaMarg * 100, descripcion: "ROI inmediato + capital crece a tu nombre." },
       baseLegal: "Art. 126-1 ET",
       caveat: "Si retirás antes de 10 años o sin cumplir requisitos de pensión, perdés el beneficio fiscal y pagás retención.",

@@ -16,6 +16,7 @@
 //   - selectedOwnerId: ID del owner natural a editar
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtPctEs } from "../lib/formato.js";
 import { useState, useMemo, useEffect } from "react";
 import NumberInput from "./NumberInput";
 import {
@@ -707,7 +708,7 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
         </div>
         <div style={{ fontSize: 14, color: C.txt2, lineHeight: 1.6 }}>
           {saldoFinal > 0 ? (
-            <>Esto es <strong style={{ color: C.txt }}>{tasaEfectiva.toFixed(1)}%</strong> de
+            <>Esto es <strong style={{ color: C.txt }}>{fmtPctEs(tasaEfectiva, 1)}</strong> de
               tus ingresos totales del año. {tasaEfectiva < 5
                 ? "Pagás muy poco efectivo — tu situación está optimizada."
                 : tasaEfectiva < 15

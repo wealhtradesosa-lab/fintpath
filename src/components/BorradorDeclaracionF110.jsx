@@ -19,6 +19,7 @@
 //   - Reset disponible: siempre podés volver al valor automático
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtPctEs } from "../lib/formato.js";
 import { useState, useMemo, useEffect } from "react";
 import NumberInput from "./NumberInput";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
@@ -909,8 +910,8 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
           value={impuestoTotal}
           color={T.red}
           explica={isJuridica
-            ? `35% sobre la utilidad gravable (${tasaEfectiva.toFixed(1)}% real sobre ingresos).`
-            : `Calculado con la tabla progresiva DIAN. Tasa efectiva ${tasaEfectiva.toFixed(1)}% sobre ingresos.`}
+            ? `35% sobre la utilidad gravable (${fmtPctEs(tasaEfectiva, 1)} real sobre ingresos).`
+            : `Calculado con la tabla progresiva DIAN. Tasa efectiva ${fmtPctEs(tasaEfectiva, 1)} sobre ingresos.`}
         />
         <CardSimple
           icon="✅"

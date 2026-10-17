@@ -14,6 +14,7 @@
 // permite cambiar a años anteriores guardados.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtPctEs } from "../lib/formato.js";
 import { useState, useMemo } from "react";
 import Disclaimer from "./Disclaimer";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
@@ -40,11 +41,11 @@ const T = {
 };
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
-const pc = (v) => (Number(v) || 0).toFixed(1) + "%";
+const pc = (v) => fmtPctEs((Number(v) || 0), 1);
 const deltaPct = (nuevo, viejo) => {
   const n = Number(nuevo) || 0, v = Number(viejo) || 0;
   if (v === 0) return n > 0 ? "+∞" : "0%";
-  return ((n - v) / Math.abs(v) * 100).toFixed(1) + "%";
+  return fmtPctEs(((n - v) / Math.abs(v) * 100), 1);
 };
 
 // Mapea el code de la alerta a un CTA con label + página destino
@@ -378,7 +379,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", fontSize: 12 }}>
                 <div style={{ flex: 1 }}>
                   <span style={{ color: T.txt2 }}>{d.nombre}</span>
-                  <span style={{ marginLeft: 8, color: T.txt3, fontSize: 11 }}>· {(d.tasa * 100).toFixed(1)}%</span>
+                  <span style={{ marginLeft: 8, color: T.txt3, fontSize: 11 }}>· {fmtPctEs((d.tasa * 100), 1)}</span>
                 </div>
                 <div style={{ color: T.green, fontWeight: 600 }}>-${Math.round(d.anual).toLocaleString("es-CO")}</div>
               </div>
@@ -559,7 +560,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
                           </div>
                           {delta !== null && (
                             <div style={{ fontSize: 10, color: T.txt3, marginTop: 3 }}>
-                              {delta >= 0 ? "▲" : "▼"} {Math.abs(delta) >= 1000 ? "×" + Math.round(valor / previo) : Math.abs(delta).toFixed(0) + "%"} vs {puntos[i - 1].ano}
+                              {delta >= 0 ? "▲" : "▼"} {Math.abs(delta) >= 1000 ? "×" + Math.round(valor / previo) : fmtPctEs(Math.abs(delta), 0)} vs {puntos[i - 1].ano}
                             </div>
                           )}
                           {previo === 0 && valor > 0 && (

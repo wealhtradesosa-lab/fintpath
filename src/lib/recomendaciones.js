@@ -27,6 +27,7 @@
 //   - base: referencia legal (artículo ET)
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtPctEs } from "./formato.js";
 import { GRUPOS_SIMPLE, TOPE_SIMPLE_UVT, calcularImpuestoSimple } from "./regimenSimple.js";
 // 27-sep-2026 — gastos anualizados por el motor, no con m * 12.
 import { totalAnualItem } from "./flowHelpers.js";
@@ -105,7 +106,7 @@ function recomendacionesNatural(user, ow, det) {
         cta: { label: "Aplicar ahora", action: "aplicar_pv_afc" },
         base: "Arts. 126-1 y 126-4 ET",
         supuestos: [
-          `Tasa marginal estimada: ${tasaMarginalAprox.toFixed(1)}%`,
+          `Tasa marginal estimada: ${fmtPctEs(tasaMarginalAprox, 1)}`,
           `Espacio legal disponible: ${fm(espacio)}/año`,
           `Aporte sugerido: 80% del espacio (conservador)`,
           `Ahorro acotado al saldo a cargo actual: ${fm(saldoACargoActual)}`,
@@ -142,7 +143,7 @@ function recomendacionesNatural(user, ow, det) {
         cta: { label: "Revisar deuda en Deudas", page: "deu" },
         base: "Art. 119 ET",
         supuestos: [
-          `Tasa marginal estimada: ${tasaMarginalAprox.toFixed(1)}%`,
+          `Tasa marginal estimada: ${fmtPctEs(tasaMarginalAprox, 1)}`,
           `Tope legal: ${fm(topLegalVivienda)} (1.200 UVT)`,
           `Intereses estimados: rem × tasa de cada deuda`,
         ],
@@ -181,7 +182,7 @@ function recomendacionesNatural(user, ow, det) {
         cta: { label: "Marcar dependientes ahora", action: "aplicar_dependientes" },
         base: "Art. 387 parr 2 ET",
         supuestos: [
-          `Tasa marginal estimada: ${tasaMarginalAprox.toFixed(1)}%`,
+          `Tasa marginal estimada: ${fmtPctEs(tasaMarginalAprox, 1)}`,
           `Tope: 10% del bruto laboral, máx 32 UVT × 12 meses`,
           `Ahorro acotado al impuesto a cargo actual: ${fm(saldoACargoActual)}`,
           `Requiere documentación (registro civil, certificados)`,
@@ -218,7 +219,7 @@ function recomendacionesNatural(user, ow, det) {
         base: "Art. 387 #2 ET",
         supuestos: [
           `Tope: 16 UVT × 12 meses = ${fm(topeAnual)}/año`,
-          `Tasa marginal: ${tasaMarginalAprox.toFixed(1)}%`,
+          `Tasa marginal: ${fmtPctEs(tasaMarginalAprox, 1)}`,
           `Ahorro acotado al saldo a cargo actual: ${fm(saldoACargoActual)}`,
         ],
       });
@@ -308,13 +309,13 @@ function recomendacionesJuridica(user, ow, det) {
             ownerId: ow.id,
             ownerName: ow.name,
             titulo: `Evaluar cambio a Régimen Simple (RST)`,
-            descripcion: `${ow.name} pagaría aproximadamente ${fm(impSimpleReal)}/año bajo SIMPLE (grupo: ${grupoInfo.label}, tarifa efectiva ${(tarifaEfectiva * 100).toFixed(2)}%), vs ${fm(impBruto)}/año bajo ordinario. SIMPLE también sustituye el ICA y avisos, lo que puede ampliar el ahorro real si hoy pagás ICA alto.`,
+            descripcion: `${ow.name} pagaría aproximadamente ${fm(impSimpleReal)}/año bajo SIMPLE (grupo: ${grupoInfo.label}, tarifa efectiva ${fmtPctEs((tarifaEfectiva * 100), 2)}), vs ${fm(impBruto)}/año bajo ordinario. SIMPLE también sustituye el ICA y avisos, lo que puede ampliar el ahorro real si hoy pagás ICA alto.`,
             ahorroAnualEstimado: Math.round(diferencia),
             cta: { label: "Cambiar régimen en perfil del owner", page: "set" },
             base: "Arts. 903-916 ET (tarifas Art. 908)",
             supuestos: [
               `Grupo asignado: "${grupoInfo.label}".`,
-              `Tarifa efectiva aplicada: ${(tarifaEfectiva * 100).toFixed(2)}% (cálculo por tramos marginales, Art. 908 ET).`,
+              `Tarifa efectiva aplicada: ${fmtPctEs((tarifaEfectiva * 100), 2)} (cálculo por tramos marginales, Art. 908 ET).`,
               `Comparación entre impuesto de renta ordinario vs SIMPLE; no incluye posible ahorro adicional por ICA absorbido (ampliaría el beneficio).`,
               `SIMPLE exige anticipos bimestrales (6 pagos/año) — afecta flujo de caja.`,
               `Cambio de régimen se formaliza en MUISCA hasta último día hábil de febrero.`,
@@ -329,7 +330,7 @@ function recomendacionesJuridica(user, ow, det) {
             ownerId: ow.id,
             ownerName: ow.name,
             titulo: `SIMPLE no conviene para ${ow.name} según el grupo configurado`,
-            descripcion: `Bajo SIMPLE pagarías ${fm(impSimpleReal)} (tarifa ${(tarifaEfectiva * 100).toFixed(2)}%), más que los ${fm(impBruto)} del régimen ordinario actual. La tarifa efectiva del grupo "${grupoInfo.label}" es alta para tu nivel de ingresos.`,
+            descripcion: `Bajo SIMPLE pagarías ${fm(impSimpleReal)} (tarifa ${fmtPctEs((tarifaEfectiva * 100), 2)}), más que los ${fm(impBruto)} del régimen ordinario actual. La tarifa efectiva del grupo "${grupoInfo.label}" es alta para tu nivel de ingresos.`,
             ahorroAnualEstimado: 0,
             cta: null,
             base: "Art. 908 ET",
@@ -433,7 +434,7 @@ function recomendacionesJuridica(user, ow, det) {
           `Provisión individual sobre cartera vencida +90 días (no aplica a empresas que cobran al contado).`,
           `Tope: 33% del valor de la cartera vencida individual; tope global 5% del total cartera.`,
           `Estimación basada en cartera B2B típica (~10% de ingresos vence +90 días). Tu contador calcula el monto real.`,
-          `La provisión es DEDUCCIÓN (reduce base gravable), no descuento. Impacto = monto × ${(tarifa * 100).toFixed(0)}%.`,
+          `La provisión es DEDUCCIÓN (reduce base gravable), no descuento. Impacto = monto × ${fmtPctEs((tarifa * 100), 0)}.`,
         ],
       });
     }

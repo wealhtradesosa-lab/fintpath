@@ -35,6 +35,7 @@
 //   - "Ver el detalle técnico" en vez de "Modo experto F-110"
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { useMemo, useState } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { auditarDatos } from "../lib/auditoriaDatos.js";
@@ -67,9 +68,9 @@ function fm(n) {
 }
 function fmShort(v) {
   const n = Math.abs(Number(v) || 0);
-  if (n >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
-  if (n >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
-  if (n >= 1e3) return "$" + (n / 1e3).toFixed(0) + "K";
+  if (n >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
+  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + Math.round(n);
 }
 
@@ -259,7 +260,7 @@ export default function EstrategiaTributaria({
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 12, color: C.txt3, marginTop: 8 }}>
             <span>💰 Ingresaste {fmShort(ingresoAnual)} en el año</span>
             <span>·</span>
-            <span>🏛️ Impuesto calculado {fmShort(impuestoBruto)} ({tasaEfectiva.toFixed(1)}%)</span>
+            <span>🏛️ Impuesto calculado {fmShort(impuestoBruto)} ({fmtPctEs(tasaEfectiva, 1)})</span>
             {retenciones > 0 && (
               <>
                 <span>·</span>

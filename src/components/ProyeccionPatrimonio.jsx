@@ -1,4 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
+import InputDecimalEs from "./InputDecimalEs.jsx";
+import { fmtNumEs } from "../lib/formato.js";
 import { fmtPctEs } from "../lib/metrics.js";
 import {
   AreaChart,
@@ -315,9 +317,9 @@ export default function ProyeccionPatrimonio({
                 <div style={{ fontSize: 10, color: T.txt3 || "#71717a", marginTop: 5, lineHeight: 1.6 }}>
                   {mezcla.detalle.map((d) => (
                     <span key={d.clase} style={{ marginRight: 10, whiteSpace: "nowrap" }}>
-                      {d.label} {(d.peso * 100).toFixed(0)}%
+                      {d.label} {fmtPctEs((d.peso * 100), 0)}
                       <span style={{ color: d.r < 0 ? "#ef4444" : T.txt3, marginLeft: 3 }}>
-                        ({d.r > 0 ? "+" : ""}{(d.r * 100).toFixed(0)}%)
+                        ({d.r > 0 ? "+" : ""}{fmtPctEs((d.r * 100), 0)})
                       </span>
                     </span>
                   ))}
@@ -338,11 +340,9 @@ export default function ProyeccionPatrimonio({
         </div>
         <div>
           <div style={labelStyle}>Inflación %</div>
-          <input
-            type="number"
-            step="0.1"
+          <InputDecimalEs
             value={inflacionPct}
-            onChange={(e) => setInflacionPct(e.target.value)}
+            onChange={(v) => setInflacionPct(v)}
             style={inputStyle}
             aria-label="Inflación anual"
           />
@@ -487,9 +487,9 @@ export default function ProyeccionPatrimonio({
           <YAxis
             {...axisProps}
             tickFormatter={(v) => {
-              if (Math.abs(v) >= 1e9) return "$" + (v / 1e9).toFixed(1) + "B";
-              if (Math.abs(v) >= 1e6) return "$" + (v / 1e6).toFixed(0) + "M";
-              if (Math.abs(v) >= 1e3) return "$" + (v / 1e3).toFixed(0) + "K";
+              if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e9), 1)+"B";
+              if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 0)+"M";
+              if (Math.abs(v) >= 1e3) return "$" + fmtNumEs((v / 1e3), 0)+"K";
               return "$" + v;
             }}
           />

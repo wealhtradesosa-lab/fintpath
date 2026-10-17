@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { fmtTasaEs } from "../lib/formato.js";
 import { fmtPctEs } from "../lib/metrics.js";
 import { bloqueNivelLibertad } from "../lib/asesorNivel.js";
 import { fetchAuth } from "../lib/apiFetch";
@@ -57,7 +58,7 @@ function buildContext(user, totals) {
     ctx += "\nINGRESOS MENSUALES:\n";
     (u.ingresos || []).forEach(i => {
       const mon = i.moneda === "USD" ? " (USD)" : "";
-      ctx += `• ${i.nombre || "?"}: ${fm(promedioMesActivo(i))}/mes${mon} (${i.categoria || "?"})${i.capital ? " capital: " + fm(i.capital) + " tasa: " + i.tasa + "%" : ""}\n`;
+      ctx += `• ${i.nombre || "?"}: ${fm(promedioMesActivo(i))}/mes${mon} (${i.categoria || "?"})${i.capital ? " capital: " + fm(i.capital) + " tasa: " +fmtTasaEs(i.tasa)+"" : ""}\n`;
     });
   }
 

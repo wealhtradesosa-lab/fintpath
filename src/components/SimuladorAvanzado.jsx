@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
@@ -1009,7 +1010,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
                   return { i, v: getVal("ing_"+idx, base) };
                 }).filter(Boolean).sort((a,b)=>b.v-a.v);
                 const ingRows = ingMes.map(({ i, v }) => {
-                const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: $${(i.capital/1e6).toFixed(0)}M × ${i.tasa}%</span>` : "";
+                const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: $${fmtNumEs((i.capital/1e6), 0)}M × ${fmtTasaEs(i.tasa)}</span>` : "";
                 const monto = v > 0
                   ? `<span style="font-weight:600;color:#16a34a">$${Math.round(v).toLocaleString("es-CO")}</span>`
                   : `<span style="color:#9ca3af;font-size:10px">no aplica en ${mesPdfL.toLowerCase()}</span>`;
@@ -1122,7 +1123,7 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
   </div>
   <div style="display:flex;gap:22px;text-align:center">
     <div><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">AL AÑO (PROMEDIO)</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#16a34a':'#dc2626'}">$${Math.round(simT.cf*12).toLocaleString("es-CO")}</div></div>
-    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${expT.ind>=100?'#16a34a':'#eab308'}">${(expT.ind||0).toFixed(0)}%</div></div>
+    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${expT.ind>=100?'#16a34a':'#eab308'}">${fmtPctEs((expT.ind||0), 0)}</div></div>
     <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">NIVEL</div><div style="font-size:13px;font-weight:700;color:#3b82f6">${niveles[nivel]} (${nivel+1}/5)</div></div>
   </div>
 </div>
@@ -1149,7 +1150,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
 <div class="grid2">
   <div>
     <div class="bar-container"><div class="bar-fill" style="width:${Math.min(expT.ind,100)}%;background:${expT.ind>=100?"#16a34a":"#eab308"}"></div></div>
-    <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${(expT.ind||0).toFixed(0)}%</span><span>100%</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${fmtPctEs((expT.ind||0), 0)}</span><span>100%</span></div>
   </div>
   <div class="diag">
     ${expT.ind>=100?"✅ Independencia financiera alcanzada":"⚠ Falta $"+Math.round(expT.te-expT.ni).toLocaleString("es-CO")+"/mes"}<br>
@@ -1897,7 +1898,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                               <div>
                                 <div style={{fontSize:13,fontWeight:700}}>{ing.nombre||"Ingreso"}</div>
-                                <div style={{fontSize:10,color:T.txt3}}>{ing.categoria||""}{simTasa>0?" • "+simTasa+"% anual":""}</div>
+                                <div style={{fontSize:10,color:T.txt3}}>{ing.categoria||""}{simTasa>0?" • "+fmtTasaEs(simTasa)+" anual":""}</div>
                               </div>
                               <div style={{textAlign:"right"}}>
                                 <div style={{fontSize:16,fontWeight:800,color:"#22d3ee"}}>{fm(simRenta)}<span style={{fontSize:10,fontWeight:400,color:T.txt3}}>/mes</span></div>
@@ -1913,7 +1914,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                                   {capDiff!==0&&<div style={{fontSize:10,color:capDiff>0?T.gn:T.rd,fontWeight:600}}>{capDiff>0?"+":""}{fm(capDiff)}</div>}
                                 </div>
                                 <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:"6px 10px"}}>
-                                  <div style={{fontSize:9,color:T.txt3}}>Renta mensual ({simTasa}% anual)</div>
+                                  <div style={{fontSize:9,color:T.txt3}}>Renta mensual ({fmtTasaEs(simTasa)} anual)</div>
                                   <div style={{fontSize:14,fontWeight:700,color:"#22d3ee"}}>{fm(simRenta)}</div>
                                 </div>
                               </div>
@@ -1930,7 +1931,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                                 <Slider label="Capital invertido" value={simCap} base={baseCap}
                                   max={Math.max(Math.round(baseCap*2),1000)} color={"#22d3ee"}
                                   onChange={(v)=>{setVal("ingcap_"+safeIdx,v);setVal("ing_"+safeIdx,rentaDesdeCapital(v));}}
-                                  sub={`la renta sigue al capital a ${baseTasa}% anual`} />
+                                  sub={`la renta sigue al capital a ${fmtTasaEs(baseTasa)} anual`} />
                               ) : (
                                 <Slider label="Renta mensual" value={simRenta} base={baseRenta}
                                   max={Math.max(Math.round(baseRenta*2),1000)} color={"#22d3ee"}
@@ -2152,7 +2153,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
                                 <div>
                                   <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>{isJuridica ? "🧾 Impuesto corporativo bruto (35% × utilidad)" : "🧾 Impuesto total (tabla progresiva DIAN)"}</div>
-                                  <div style={{fontSize:9,color:T.txt3,marginTop:1}}>{isJuridica ? "Tasa efectiva sobre ingresos: " : "Tasa efectiva sobre ingreso bruto: "}{tasaEfectivaEff.toFixed(1)}%{isJuridica && grp.tax.baseGravable > 0 && grp.tax.ingreso > 0 && <span> · Utilidad/ingreso: {((grp.tax.baseGravable / grp.tax.ingreso) * 100).toFixed(0)}%</span>}</div>
+                                  <div style={{fontSize:9,color:T.txt3,marginTop:1}}>{isJuridica ? "Tasa efectiva sobre ingresos: " : "Tasa efectiva sobre ingreso bruto: "}{fmtPctEs(tasaEfectivaEff, 1)}{isJuridica && grp.tax.baseGravable > 0 && grp.tax.ingreso > 0 && <span> · Utilidad/ingreso: {fmtPctEs(((grp.tax.baseGravable / grp.tax.ingreso) * 100), 0)}</span>}</div>
                                 </div>
                                 <div style={{fontSize:18,fontWeight:800,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                               </div>
@@ -2327,7 +2328,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                 <ChartGradients/>
                 <CartesianGrid {...gridProps} />
                 <XAxis dataKey="m" {...axisProps} />
-                <YAxis {...axisProps} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(0)+"M";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v}} />
+                <YAxis {...axisProps} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+fmtNumEs((v/1e9), 1)+"B";if(Math.abs(v)>=1e6)return"$"+fmtNumEs((v/1e6), 0)+"M";if(Math.abs(v)>=1e3)return"$"+fmtNumEs((v/1e3), 0)+"K";return"$"+v}} />
                 {/* 14-sep-2026 — Tercera pasada sobre lo mismo (Santiago:
                     "por eso explique mejor"). El encabezado del tooltip decía
                     solo "DIC", y al lado una cifra: se lee como el dato DE

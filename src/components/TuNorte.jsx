@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { OBJETIVOS, VEHICULOS, CANASTAS_EXPLICADAS, diagnosticar, proyectar } from "../lib/norte.js";
 import BarraComposicion from "./BarraComposicion";
 import Disclaimer from "./Disclaimer";
@@ -26,9 +27,9 @@ import Disclaimer from "./Disclaimer";
 
 const fm = (v) => {
   const n = Math.round(Number(v) || 0);
-  if (Math.abs(n) >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
-  if (Math.abs(n) >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
-  if (Math.abs(n) >= 1e3) return "$" + (n / 1e3).toFixed(0) + "K";
+  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
+  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (Math.abs(n) >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + n.toLocaleString("es-CO");
 };
 
@@ -260,7 +261,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                       )}
                     </span>
                     <span style={{ fontSize: 13, fontFamily: "monospace", color: tx }}>
-                      {b.actual.toFixed(0)}%
+                      {fmtPctEs(b.actual, 0)}
                       <span style={{ color: tx3 }}> → {b.objetivo}%</span>
                       {/* 03-ago-2026 (Santiago: "uno no sabe si debe sumar o restar
                           esos números para saber qué le falta o qué sobra"). Un
@@ -296,7 +297,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                             <span style={{ fontFamily: "monospace", color: tx3, whiteSpace: "nowrap" }}>
                               {fm(it.valor)}
                               <span style={{ marginLeft: 8, color: PAL_CANASTA[c] }}>
-                                {totalPat > 0 ? ((it.valor / totalPat) * 100).toFixed(1) : "0.0"}%
+                                {fmtPctEs(totalPat > 0 ? ((it.valor / totalPat) * 100) : 0, 1)}
                               </span>
                             </span>
                           </div>
@@ -374,7 +375,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                   {diag.total !== guardado.fotoInicial.total && (
                     <span style={{ color: diag.total > guardado.fotoInicial.total ? gn : "#ef4444", marginLeft: 8, fontWeight: 700 }}>
                       {diag.total > guardado.fotoInicial.total ? "+" : ""}
-                      {(((diag.total - guardado.fotoInicial.total) / guardado.fotoInicial.total) * 100).toFixed(1)}%
+                      {fmtPctEs((((diag.total - guardado.fotoInicial.total) / guardado.fotoInicial.total) * 100), 1)}
                     </span>
                   )}
                 </div>
@@ -437,7 +438,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                     </div>
                     <div style={{ fontSize: 11, color: tx3, marginTop: 3 }}>
                       {veces >= 1 ? `${veces.toFixed(1)}× ${isEN ? "your wealth today" : "tu patrimonio de hoy"}`
-                                  : `${((1 - veces) * 100).toFixed(0)}% ${isEN ? "less than today" : "menos que hoy"}`}
+                                  : `${fmtPctEs(((1 - veces) * 100), 0)} ${isEN ? "less than today" : "menos que hoy"}`}
                     </div>
                   </div>
                 );
@@ -448,11 +449,11 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                           border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10 }}>
               <div style={{ fontSize: 12, color: tx2, lineHeight: 1.6 }}>
                 {isEN ? (
-                  <><strong style={{ color: tx }}>How this is calculated:</strong> each bucket has a reference annual return — protection 1.5%, market 7%, aspiration 12%, all after inflation. Your mix averages <strong style={{ color: tx }}>{(proy.retornoEsperado * 100).toFixed(1)}% a year</strong>.
+                  <><strong style={{ color: tx }}>How this is calculated:</strong> each bucket has a reference annual return — protection 1.5%, market 7%, aspiration 12%, all after inflation. Your mix averages <strong style={{ color: tx }}>{fmtPctEs((proy.retornoEsperado * 100), 1)} a year</strong>.
                   The three numbers are one standard deviation apart — markets don't move in straight lines,
                   and the bad scenario is as possible as the good one.</>
                 ) : (
-                  <><strong style={{ color: tx }}>Cómo se calcula:</strong> cada canasta tiene un retorno anual de referencia — protección 1,5%, mercado 7%, aspiración 12%, todos ya descontada la inflación. Tu mezcla promedia <strong style={{ color: tx }}>{(proy.retornoEsperado * 100).toFixed(1)}% anual</strong>.
+                  <><strong style={{ color: tx }}>Cómo se calcula:</strong> cada canasta tiene un retorno anual de referencia — protección 1,5%, mercado 7%, aspiración 12%, todos ya descontada la inflación. Tu mezcla promedia <strong style={{ color: tx }}>{fmtPctEs((proy.retornoEsperado * 100), 1)} anual</strong>.
                   Los tres números están a una desviación estándar de distancia — los mercados no se mueven en línea recta,
                   y el escenario malo es tan posible como el bueno.</>
                 )}
@@ -579,7 +580,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                         fontWeight: 700, color: colCan }}>
                     {fm(totalCanasta)}
                     <span style={{ color: tx3, fontWeight: 500, marginLeft: 6 }}>
-                      {pesoCanasta.toFixed(0)}%
+                      {fmtPctEs(pesoCanasta, 0)}
                     </span>
                   </span>
                 </div>
@@ -604,7 +605,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                       </span>
                       <span style={{ fontSize: 13, fontFamily: "monospace", color: EST.col === border ? tx2 : EST.col, fontWeight: 700 }}>
                         {fm(a.valor)}
-                        <span style={{ color: tx3, fontWeight: 500, marginLeft: 6 }}>{a.peso.toFixed(0)}%</span>
+                        <span style={{ color: tx3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(a.peso, 0)}</span>
                       </span>
                     </div>
                     <div style={{ fontSize: 11, color: tx3, marginTop: 4, lineHeight: 1.55 }}>{a.razon}</div>

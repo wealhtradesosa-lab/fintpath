@@ -15,10 +15,11 @@
 // cualquier browser moderno.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtPctEs } from "../lib/formato.js";
 import { useEffect } from "react";
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
-const pc = (v) => (Number(v) || 0).toFixed(1) + "%";
+const pc = (v) => fmtPctEs((Number(v) || 0), 1);
 
 const PRINT_STYLES = `
   @media print {
@@ -298,7 +299,7 @@ function renderDiffRow(label, declarado, actual, fmt = fm) {
   const a = Number(actual) || 0;
   const d = Number(declarado) || 0;
   const diff = a - d;
-  const pctLabel = d !== 0 ? (((a - d) / Math.abs(d)) * 100).toFixed(1) + "%" : "—";
+  const pctLabel = d !== 0 ? fmtPctEs((((a - d) / Math.abs(d)) * 100), 1) : "—";
   const cls = diff > 0 ? "pos" : diff < 0 ? "neg" : "";
   return (
     <tr key={label}>

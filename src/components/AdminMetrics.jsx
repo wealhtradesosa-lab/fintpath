@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { fmtPctEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
 
 /**
@@ -28,7 +29,7 @@ export default function AdminMetrics({ email, fmt, T }) {
 
   const card = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "14px 16px" };
   const num = (v) => (v || 0).toLocaleString("es-CO");
-  const pct = (v) => (v || 0).toFixed(1) + "%";
+  const pct = (v) => fmtPctEs((v || 0), 1);
   const fecha = (s) => (s ? new Date(s).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
   const diasSin = d?.ultimoRegistro ? Math.floor((Date.now() - new Date(d.ultimoRegistro)) / 86400000) : null;
 

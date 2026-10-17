@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { fmtTasaEs } from "../lib/formato.js";
 import { fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
 import { separarPorLimite } from "../lib/limitePlan.js";
@@ -21,7 +22,7 @@ const T = {
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
 };
-const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
+const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 const pc = (n) => fmtPctEs(n);
 
 // Get name from item (handles multiple field formats)
@@ -260,7 +261,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     const vcCheck = Math.abs(parseFloat(form.vc)) || 0;
     if (va > 0 && vcCheck > 0 && va < vcCheck * 0.1) {
       const ok = window.confirm(
-        `⚠️ REVISÁ LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${(100 - (va / vcCheck) * 100).toFixed(0)}%. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usá el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
+        `⚠️ REVISÁ LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${fmtPctEs((100 - (va / vcCheck) * 100), 0)}. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usá el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
       );
       if (!ok) return;
     }
@@ -411,7 +412,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
                 <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: T.txt2 }}>
                   <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
-                  {d.name} <strong style={{ fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                  {d.name} <strong style={{ fontFamily: "monospace" }}>{fmtPctEs(((d.value/tot)*100), 0)}</strong>
                 </span>
               ))}
             </div>
@@ -463,7 +464,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         </span>
                         <span style={{ fontSize: 13, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>
                           {fm(inv.__sub)}
-                          <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{inv.__pct.toFixed(0)}%</span>
+                          <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(inv.__pct, 0)}</span>
                         </span>
                       </div>
                     </td>
@@ -489,7 +490,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         )}
                         <span>{name}</span>
                       </div>
-                      <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? "renta " + inv.tasa + "% anual" : ""].filter(Boolean).join(" • ")}</div>
+                      <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? "renta " +fmtTasaEs(inv.tasa)+" anual" : ""].filter(Boolean).join(" • ")}</div>
                       {(()=>{
                         if(!inv.owner || inv.owner==="") return null;
                         if(inv.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;
@@ -554,7 +555,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   <select value={form.fiscalCode || "INV_INMUEBLE_HABITACIONAL"} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                     style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer", marginBottom: 10 }}>
                     <option value="INV_INMUEBLE_HABITACIONAL">Habitacional — donde vivo (no se deprecia)</option>
-                    <option value="INV_INMUEBLE_ARRENDADO">Arrendado — genera renta (deprecia construcción 2.22%/año Art. 137)</option>
+                    <option value="INV_INMUEBLE_ARRENDADO">Arrendado — genera renta (deprecia construcción 2,22%/año Art. 137)</option>
                     <option value="INV_INMUEBLE_COMERCIAL_PROPIO">Uso propio comercial (deprecia construcción)</option>
                     <option value="INV_INMUEBLE_VACANTE">Vacante — sin uso productivo (no deprecia)</option>
                   </select>
@@ -721,7 +722,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     {"$" + Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12).toLocaleString("es-CO") + "/mes"}
                   </div>
                   <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                    = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString("es-CO") + "/año"} ({form.tasa}% de {"$" + Math.round(parseFloat(form.va)).toLocaleString("es-CO")})
+                    = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString("es-CO") + "/año"} ({fmtTasaEs(form.tasa)} de {"$" + Math.round(parseFloat(form.va)).toLocaleString("es-CO")})
                   </div>
                   {/* 14-sep-2026 (Santiago: "un activo dije que también
                       rentaba, me dijo que sí lo añadía como rendimiento y no lo

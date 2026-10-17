@@ -93,6 +93,7 @@ export function calcularEscenarioOptimo(user, owner, detActual) {
 // Commit 21 Tarea 3: integración de Régimen Simple como primera palanca real
 // del Optimizador V2. Ya tenemos el detector + simulador en regimenSimple.js.
 // Aquí los envolvemos en el shape estándar de "Palanca" del optimizador.
+import { fmtNumEs, fmtPctEs } from "./formato.js";
 import { simularRegimenSimple } from "./regimenSimple.js";
 
 // Commit 24 Tarea 3 (BUG FIX): NO importar UVT desde taxCO.js (ciclo con regimenSimple).
@@ -136,7 +137,7 @@ function construirPalancaRegimenSimple(user, owner, detActual) {
     nombre: "Cambio a Régimen Simple",
     articulo: "Arts. 903-916 ET",
     impactoEstimado: sim.mejorOpcion.ahorro,
-    descripcion: `Bajo el grupo "${sim.mejorOpcion.label}" del Régimen Simple, este owner pagaría aproximadamente ${formatearCOP(sim.mejorOpcion.impuestoSimple)} en lugar de ${formatearCOP(sim.mejorOpcion.impuestoOrdinario)}, ahorrando ~${(sim.mejorOpcion.ahorroPct).toFixed(0)}%.`,
+    descripcion: `Bajo el grupo "${sim.mejorOpcion.label}" del Régimen Simple, este owner pagaría aproximadamente ${formatearCOP(sim.mejorOpcion.impuestoSimple)} en lugar de ${formatearCOP(sim.mejorOpcion.impuestoOrdinario)}, ahorrando ~${fmtPctEs((sim.mejorOpcion.ahorroPct), 0)}.`,
     // Datos crudos para que la UI pueda mostrar más detalle si quiere
     datos: {
       simulacion: sim,
@@ -155,8 +156,8 @@ function construirPalancaRegimenSimple(user, owner, detActual) {
 
 function formatearCOP(n) {
   const num = Number(n) || 0;
-  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `$${(num / 1_000).toFixed(0)}K`;
+  if (num >= 1_000_000) return `$${fmtNumEs((num / 1_000_000), 1)}M`;
+  if (num >= 1_000) return `$${fmtNumEs((num / 1_000), 0)}K`;
   return `$${num.toFixed(0)}`;
 }
 

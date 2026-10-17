@@ -384,11 +384,7 @@ export function gananciaVsInflacion(b, inflacionPct) {
   };
 }
 
-/** Porcentaje con coma decimal (es-CO): 4,4%. Una sola función para toda la app. */
-export function fmtPctEs(n, dec = 1) {
-  const v = Number(n);
-  return (Number.isFinite(v) ? v : 0).toLocaleString("es-CO", { minimumFractionDigits: dec, maximumFractionDigits: dec }) + "%";
-}
+export { fmtPctEs, fmtNumEs, fmtMilesEs, fmtTasaEs, parseDecimalEs } from "./formato.js";
 
 /** Meses con plural correcto y coma es-CO: «1 mes», «1,3 meses», «3 meses». */
 export function fmtMeses(n) {

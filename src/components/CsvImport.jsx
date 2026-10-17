@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { fmtPctEs, fmtNumEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
 // 25-jul-2026: xlsx se carga bajo demanda. El import estático de esta línea
 // metía SheetJS (~500KB) en el bundle principal y anulaba el dynamic import
@@ -135,8 +136,8 @@ const fmt = (v) => {
   if (v === null || v === undefined || v === "") return "—";
   if (Array.isArray(v)) return v.length > 0 ? v.map((x) => `${x.c}: $${Math.round(x.m).toLocaleString("es-CO")}`).join(", ") : "—";
   if (typeof v === "number") {
-    if (Math.abs(v) >= 1e9) return "$" + (v / 1e9).toFixed(1) + "B";
-    if (Math.abs(v) >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
+    if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e9), 1)+"B";
+    if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+"M";
     if (Math.abs(v) >= 1e3) return "$" + Math.round(v).toLocaleString("es-CO");
     return String(v);
   }

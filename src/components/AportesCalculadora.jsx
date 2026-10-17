@@ -8,7 +8,7 @@ const T = {
   txt2: "#a1a1aa", txt3: "#71717a", green: "#22c55e",
   blue: "#3b82f6", orange: "#f97316",
 };
-const fm = (n) => "$" + Math.round(n || 0).toLocaleString("en-US");
+const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
 const Cd = ({ children, s }) => <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, overflow: "hidden", ...s }}>{children}</div>;
 
 export default function AportesCalculadora({ fmt }) {
@@ -59,7 +59,7 @@ export default function AportesCalculadora({ fmt }) {
         {tipo === "empleado" && <div style={{ marginBottom: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 4 }}>¿Cuál es tu salario mensual?</label>
           <input type="text" inputMode="numeric"
-            value={sal > 0 ? sal.toLocaleString("en-US") : ""}
+            value={sal > 0 ? sal.toLocaleString("es-CO") : ""}
             onChange={e => setIngreso(e.target.value.replace(/,/g, ""))}
             placeholder="Ej: 5,000,000"
             style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}
@@ -101,7 +101,7 @@ export default function AportesCalculadora({ fmt }) {
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 4 }}>¿Cuánto facturas al mes?</label>
             <input type="text" inputMode="numeric"
-              value={sal > 0 ? sal.toLocaleString("en-US") : ""}
+              value={sal > 0 ? sal.toLocaleString("es-CO") : ""}
               onChange={e => { const v = Number(e.target.value.replace(/,/g, "")) || 0; setIngreso(v); setIbcSM(Math.max(1, Math.ceil(v * 0.40 / SM))); }}
               placeholder="Ej: 25,000,000"
               style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}

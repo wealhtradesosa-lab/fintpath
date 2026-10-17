@@ -1,4 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { DEFAULT_AG } from "../lib/taxCO.js";
 // FINPATHIA · VistaFamiliarConsolidada.jsx
 //
@@ -57,9 +58,9 @@ const C = {
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 const fmShort = (v) => {
   const n = Math.abs(Number(v) || 0);
-  if (n >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
-  if (n >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
-  if (n >= 1e3) return "$" + (n / 1e3).toFixed(0) + "K";
+  if (n >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
+  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + Math.round(n);
 };
 
@@ -263,7 +264,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
           <KPI
             label="Impuesto total"
             value={fmShort(consolidado.impuestoTotal)}
-            subValue={`Tasa efectiva ${consolidado.tasaEfectivaConsolidada.toFixed(1)}%`}
+            subValue={`Tasa efectiva ${fmtPctEs(consolidado.tasaEfectivaConsolidada, 1)}`}
             color={C.orange}
             icon="🏛️"
           />
@@ -507,7 +508,7 @@ function DistribucionPatrimonio({ ownersData, total }) {
           return (
             <div
               key={d.owner.id}
-              title={`${d.owner.name}: ${pct.toFixed(1)}%`}
+              title={`${d.owner.name}: ${fmtPctEs(pct, 1)}`}
               style={{
                 width: pct + "%",
                 background: getColor(d.owner.type, i),
@@ -521,7 +522,7 @@ function DistribucionPatrimonio({ ownersData, total }) {
                 whiteSpace: "nowrap",
               }}
             >
-              {pct >= 8 && pct.toFixed(0) + "%"}
+              {pct >= 8 && fmtPctEs(pct, 0)}
             </div>
           );
         })}
@@ -535,7 +536,7 @@ function DistribucionPatrimonio({ ownersData, total }) {
             <div key={d.owner.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.txt2 }}>
               <span style={{ width: 10, height: 10, borderRadius: 3, background: getColor(d.owner.type, i) }}></span>
               <span style={{ fontWeight: 700 }}>{d.owner.type === "juridica" ? "🏢" : "👤"} {d.owner.name}</span>
-              <span style={{ color: C.txt3 }}>{pct.toFixed(1)}%</span>
+              <span style={{ color: C.txt3 }}>{fmtPctEs(pct, 1)}</span>
             </div>
           );
         })}
@@ -611,9 +612,9 @@ function OwnerCard({ data, consolidado, onSelectOwner }) {
 
       {/* Métricas del owner */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
-        <CardMetric label="Patrimonio" value={fmShort(data.patrimonioBruto)} subValue={`${pctPatrimonio.toFixed(0)}% del grupo`} />
-        <CardMetric label="Ingreso anual" value={fmShort(data.ingreso)} subValue={`${pctIngreso.toFixed(0)}% del grupo`} />
-        <CardMetric label="Impuesto" value={fmShort(data.impuesto)} subValue={`Tasa ${data.tasaEfectiva.toFixed(1)}%`} color={C.orange} />
+        <CardMetric label="Patrimonio" value={fmShort(data.patrimonioBruto)} subValue={`${fmtPctEs(pctPatrimonio, 0)} del grupo`} />
+        <CardMetric label="Ingreso anual" value={fmShort(data.ingreso)} subValue={`${fmtPctEs(pctIngreso, 0)} del grupo`} />
+        <CardMetric label="Impuesto" value={fmShort(data.impuesto)} subValue={`Tasa ${fmtPctEs(data.tasaEfectiva, 1)}`} color={C.orange} />
         {data.ahorroPotencial > 0 && (
           <CardMetric
             label="Ahorro detectado"

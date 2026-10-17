@@ -1,3 +1,4 @@
+import { fmtNumEs, fmtPctEs } from "./formato.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · Detector de mismatch declaración ↔ datos cargados
 //
@@ -67,9 +68,9 @@ function severidadDe(diferenciaPct, diferenciaAbs) {
  */
 function fmM(v) {
   const m = (Number(v) || 0) / 1e6;
-  if (Math.abs(m) >= 1000) return "$" + (m / 1000).toFixed(1) + "B";
-  if (Math.abs(m) >= 1) return "$" + m.toFixed(0) + "M";
-  if (Math.abs(m) >= 0.1) return "$" + m.toFixed(1) + "M";
+  if (Math.abs(m) >= 1000) return "$" + fmtNumEs((m / 1000), 1)+"B";
+  if (Math.abs(m) >= 1) return "$" + fmtNumEs(m, 0)+"M";
+  if (Math.abs(m) >= 0.1) return "$" + fmtNumEs(m, 1)+"M";
   return "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 }
 
@@ -95,7 +96,7 @@ function detectarMismatchJuridica(owner, decRenglones, detalleMotor) {
       diferenciaAbs: ingDiffAbs,
       diferenciaPct: ingDiff,
       severidad: ingSeveridad,
-      mensaje: `Tu declaración ${ano} reportó ${fmM(ingDeclarado)} en ingresos brutos. El motor calcula ${fmM(ingCalculado)} desde los datos cargados. Diferencia: ${fmM(ingDiffAbs)} (${(ingDiff * 100).toFixed(0)}%).`,
+      mensaje: `Tu declaración ${ano} reportó ${fmM(ingDeclarado)} en ingresos brutos. El motor calcula ${fmM(ingCalculado)} desde los datos cargados. Diferencia: ${fmM(ingDiffAbs)} (${fmtPctEs((ingDiff * 100), 0)}).`,
       explicaciones: [
         ingDeclarado === 0
           ? "Tu declaración reportó CERO ingresos para esta sociedad pero hay ingresos cargados. Esto puede indicar que: (a) los ingresos pertenecen a otra entidad (vos personal, otra sociedad); (b) el contador no los reportó pero debió hacerlo; (c) los ingresos son posteriores al año declarado."
@@ -124,7 +125,7 @@ function detectarMismatchJuridica(owner, decRenglones, detalleMotor) {
         diferenciaAbs: gastosDiffAbs,
         diferenciaPct: gastosDiff,
         severidad: gastosSeveridad,
-        mensaje: `Tu declaración ${ano} reportó ${fmM(gastosDeclarado)} en costos/gastos deducibles. El motor calcula ${fmM(gastosCalculado)}. Diferencia: ${fmM(gastosDiffAbs)} (${(gastosDiff * 100).toFixed(0)}%).`,
+        mensaje: `Tu declaración ${ano} reportó ${fmM(gastosDeclarado)} en costos/gastos deducibles. El motor calcula ${fmM(gastosCalculado)}. Diferencia: ${fmM(gastosDiffAbs)} (${fmtPctEs((gastosDiff * 100), 0)}).`,
         explicaciones: [
           "Verificá con tu contador: (a) si hay gastos legítimos no cargados en FINPATHIA (asesorías, gastos bancarios, depreciación, provisiones); (b) si hay gastos cargados que el contador no aceptó como deducibles (causalidad Art. 107).",
         ],
@@ -147,7 +148,7 @@ function detectarMismatchJuridica(owner, decRenglones, detalleMotor) {
         diferenciaAbs: impDiffAbs,
         diferenciaPct: impDiff,
         severidad: impSeveridad,
-        mensaje: `Tu declaración ${ano} reportó ${fmM(impDeclarado)} de impuesto neto. El motor calcula ${fmM(impCalculado)} con los datos actuales. Diferencia: ${fmM(impDiffAbs)} (${(impDiff * 100).toFixed(0)}%).`,
+        mensaje: `Tu declaración ${ano} reportó ${fmM(impDeclarado)} de impuesto neto. El motor calcula ${fmM(impCalculado)} con los datos actuales. Diferencia: ${fmM(impDiffAbs)} (${fmtPctEs((impDiff * 100), 0)}).`,
         explicaciones: [
           "Esto es consecuencia de los mismatches anteriores en ingresos/gastos. Si esos se aclaran, el impuesto debería cuadrar. También puede ser que tu contador aplicó descuentos/deducciones que no están cargadas en FINPATHIA (CTI, donaciones, depreciación).",
         ],
@@ -179,7 +180,7 @@ function detectarMismatchNatural(owner, decRenglones, detalleMotor) {
       diferenciaAbs: ingDiffAbs,
       diferenciaPct: ingDiff,
       severidad: ingSeveridad,
-      mensaje: `Tu declaración ${ano} reportó ${fmM(ingDeclarado)} en ingresos brutos. El motor calcula ${fmM(ingCalculado)} desde los datos cargados. Diferencia: ${fmM(ingDiffAbs)} (${(ingDiff * 100).toFixed(0)}%).`,
+      mensaje: `Tu declaración ${ano} reportó ${fmM(ingDeclarado)} en ingresos brutos. El motor calcula ${fmM(ingCalculado)} desde los datos cargados. Diferencia: ${fmM(ingDiffAbs)} (${fmtPctEs((ingDiff * 100), 0)}).`,
       explicaciones: [
         "Las diferencias en personas naturales suelen explicarse por: (a) ingresos esporádicos del año anterior que no se repetirán; (b) ingresos nuevos del año actual no declarados aún; (c) timing entre devengado y recibido.",
       ],
@@ -205,7 +206,7 @@ function detectarMismatchNatural(owner, decRenglones, detalleMotor) {
         diferenciaAbs: impDiffAbs,
         diferenciaPct: impDiff,
         severidad: impSeveridad,
-        mensaje: `Tu declaración ${ano} reportó ${fmM(impDeclarado)} de impuesto. El motor calcula ${fmM(impCalculado)}. Diferencia: ${fmM(impDiffAbs)} (${(impDiff * 100).toFixed(0)}%).`,
+        mensaje: `Tu declaración ${ano} reportó ${fmM(impDeclarado)} de impuesto. El motor calcula ${fmM(impCalculado)}. Diferencia: ${fmM(impDiffAbs)} (${fmtPctEs((impDiff * 100), 0)}).`,
         explicaciones: [
           "Verificá con tu contador: (a) deducciones aplicadas (medicina, dependientes, intereses vivienda, AFC); (b) rentas exentas declaradas; (c) ingresos no constitutivos de renta.",
         ],

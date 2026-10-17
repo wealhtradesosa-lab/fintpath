@@ -17,6 +17,7 @@
 // en cada switch es textual/informativo, no re-calcula el motor aún.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtPctEs, fmtNumEs } from "../lib/formato.js";
 import { useState, useMemo } from "react";
 import SmartNumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
@@ -31,8 +32,8 @@ const T = {
 
 const fm = (v) => {
   const n = Number(v) || 0;
-  if (Math.abs(n) >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
-  if (Math.abs(n) >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
+  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e9), 2)+"B";
+  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
   return "$" + Math.round(n).toLocaleString("es-CO");
 };
 

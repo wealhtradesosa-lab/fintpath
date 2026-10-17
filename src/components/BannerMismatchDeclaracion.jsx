@@ -16,6 +16,7 @@
 //   - Si hay mismatches sin revisar → muestra banner amarillo expandible
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { useState } from "react";
 
 // Paleta consistente con el resto del app
@@ -36,8 +37,8 @@ const colors = {
 
 function fmM(v) {
   const m = (Number(v) || 0) / 1e6;
-  if (Math.abs(m) >= 1000) return "$" + (m / 1000).toFixed(1) + "B";
-  if (Math.abs(m) >= 1) return "$" + m.toFixed(0) + "M";
+  if (Math.abs(m) >= 1000) return "$" + fmtNumEs((m / 1000), 1)+"B";
+  if (Math.abs(m) >= 1) return "$" + fmtNumEs(m, 0)+"M";
   return "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 }
 
@@ -169,7 +170,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                     <div style={{ display: "flex", gap: 16, fontSize: 11, color: colors.tx3, marginBottom: 6 }}>
                       <span>📋 Declarado: <strong style={{ color: colors.txt }}>{fmM(mm.declarado)}</strong></span>
                       <span>🔢 Calculado: <strong style={{ color: colors.txt }}>{fmM(mm.calculado)}</strong></span>
-                      <span>📊 Diferencia: <strong style={{ color: mm.severidad === "warning" ? colors.warningText : colors.infoText }}>{(mm.diferenciaPct * 100).toFixed(0)}%</strong></span>
+                      <span>📊 Diferencia: <strong style={{ color: mm.severidad === "warning" ? colors.warningText : colors.infoText }}>{fmtPctEs((mm.diferenciaPct * 100), 0)}</strong></span>
                     </div>
                     {/* 05-sep-2026 (Santiago: "seria ideal darle la posibilidad
                         de editar esos mismatch"). Hasta hoy la unica accion era

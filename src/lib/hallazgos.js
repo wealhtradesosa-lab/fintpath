@@ -1,4 +1,5 @@
 import { t as textos } from "./hallazgosI18n.js";
+import { fmtPctEs, fmtNumEs } from "./formato.js";
 import { calcularBase } from "./metrics.js";
 // ════════════════════════════════════════════════════════════════════════════
 // hallazgos.js — Lo que el asesor VE sin que se lo pregunten.
@@ -109,7 +110,7 @@ function deudaCaraVsAhorro(user, trm, L = textos("es")) {
     titulo: L.deudaCara.titulo(cara.nombre, cara.tasa),
     detalle: L.deudaCara.detalle(cara.tasa, diferencial, impacto),
     impactoAnual: impacto,
-    base: `Tasa del crédito (${cara.tasa.toFixed(2)}% E.A.) vs. rendimiento de tu efectivo y CDT (${RENDIMIENTO_TIPICO.toFixed(2)}% E.A.), ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.`,
+    base: `Tasa del crédito (${fmtPctEs(cara.tasa, 2)} E.A.) vs. rendimiento de tu efectivo y CDT (${fmtPctEs(RENDIMIENTO_TIPICO, 2)} E.A.), ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.`,
     accion: { label: L.deudaCara.accion, pagina: "deu" },
     tono: "oportunidad",
   };
@@ -133,7 +134,7 @@ function concentracion(user, trm, patrimonioTotal, L = textos("es")) {
 
   return {
     id: "concentracion",
-    metrica: pct.toFixed(0) + "%",
+    metrica: fmtPctEs(pct, 0),
     unidad: L.concentracion.unidad,
     titulo: mayor.nombre,
     detalle: L.concentracion.detalle,
@@ -195,7 +196,7 @@ function fondoEmergencia(user, t, trm, L = textos("es")) {
   const faltante = egresos * 3 - liquidez;
   return {
     id: "fondo_emergencia",
-    metrica: meses.toFixed(1),
+    metrica: fmtNumEs(meses, 1),
     unidad: L.fondoEmergencia.unidad,
     titulo: L.fondoEmergencia.titulo(meses),
     detalle: L.fondoEmergencia.detalle(meses, faltante),
@@ -219,7 +220,7 @@ function cargaDeuda(t, L = textos("es")) {
   if (pct < 35) return null;
   return {
     id: "carga_deuda",
-    metrica: pct.toFixed(0) + "%",
+    metrica: fmtPctEs(pct, 0),
     unidad: "de tu ingreso",
     titulo: L.cargaDeuda.titulo,
     detalle: L.cargaDeuda.detalle,
@@ -261,7 +262,7 @@ function flujoSano(t, L = textos("es")) {
   if (tasa < 15) return null;
   return {
     id: "flujo_sano", bueno: true, tono: "bueno",
-    metrica: tasa.toFixed(0) + "%",
+    metrica: fmtPctEs(tasa, 0),
     unidad: "de tu ingreso",
     titulo: L.flujoSano.titulo,
     detalle: L.flujoSano.detalle(cf),
@@ -277,7 +278,7 @@ function deudaControlada(t, L = textos("es")) {
   if (pct >= 25) return null;
   return {
     id: "deuda_controlada", bueno: true, tono: "bueno",
-    metrica: pct.toFixed(0) + "%",
+    metrica: fmtPctEs(pct, 0),
     unidad: "de tu ingreso",
     titulo: L.deudaControlada.titulo,
     detalle: L.deudaControlada.detalle,

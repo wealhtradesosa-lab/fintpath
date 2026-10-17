@@ -19,6 +19,7 @@
 //   marcados como pagados).
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -40,12 +41,12 @@ const T = {
   bl: "#3b82f6", pr: "#a78bfa", or: "#f97316", gd: "#eab308",
 };
 
-const fm = (n) => "$" + Math.round(n || 0).toLocaleString("en-US");
+const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
 const fmShort = (n) => {
   const abs = Math.abs(n || 0);
-  if (abs >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
-  if (abs >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
-  if (abs >= 1e3) return "$" + (n / 1e3).toFixed(0) + "K";
+  if (abs >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
+  if (abs >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (abs >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + Math.round(n || 0).toString();
 };
 
@@ -493,7 +494,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>📊 Volatilidad</div>
           <div style={{ fontSize: 18, fontWeight: 800, color: highlights.volatilidadColor, marginTop: 6 }}>{highlights.volatilidadLabel}</div>
           <div style={{ fontSize: 13, color: T.txt2, marginTop: 2 }}>
-            ±{(highlights.volatilidadPct * 100).toFixed(0)}% del promedio
+            ±{fmtPctEs((highlights.volatilidadPct * 100), 0)} del promedio
           </div>
           <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>
             Meses varían {fm(Math.abs((highlights.mejorMes?.cashFlow || 0) - (highlights.peorMes?.cashFlow || 0)) / 2)} arriba/abajo
@@ -915,7 +916,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
                         return (
                           <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={800} style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
-                            {pct.toFixed(0)}%
+                            {fmtPctEs(pct, 0)}
                           </text>
                         );
                       }}
@@ -928,7 +929,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         texto en negro sobre nuestro fondo oscuro ("no se lee
                         nada"). Se usa el del sistema como el resto de gráficos. */}
                     <Tooltip content={<ChartTooltip formatter={(v, n, p) =>
-                      `$${Math.round(v).toLocaleString("es-CO")}${p?.payload?.pct != null ? ` (${p.payload.pct.toFixed(1)}%)` : ""}`} />} />
+                      `$${Math.round(v).toLocaleString("es-CO")}${p?.payload?.pct != null ? ` (${fmtPctEs(p.payload.pct, 1)})` : ""}`} />} />
                   </PieChart>
                 </ResponsiveContainer>
 
@@ -945,7 +946,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                       </div>
                       {/* Fila 2: % + valor absoluto — siempre visibles */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingLeft: 16 }}>
-                        <span style={{ color: T.txt2, fontWeight: 700, fontFamily: "monospace" }}>{d.pct.toFixed(1)}%</span>
+                        <span style={{ color: T.txt2, fontWeight: 700, fontFamily: "monospace" }}>{fmtPctEs(d.pct, 1)}</span>
                         <span style={{ color: T.txt3, fontFamily: "monospace", fontSize: 10 }}>${Math.round(d.value).toLocaleString("es-CO")}</span>
                       </div>
                     </div>
@@ -990,7 +991,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
                         return (
                           <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={800} style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
-                            {pct.toFixed(0)}%
+                            {fmtPctEs(pct, 0)}
                           </text>
                         );
                       }}
@@ -1003,7 +1004,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         texto en negro sobre nuestro fondo oscuro ("no se lee
                         nada"). Se usa el del sistema como el resto de gráficos. */}
                     <Tooltip content={<ChartTooltip formatter={(v, n, p) =>
-                      `$${Math.round(v).toLocaleString("es-CO")}${p?.payload?.pct != null ? ` (${p.payload.pct.toFixed(1)}%)` : ""}`} />} />
+                      `$${Math.round(v).toLocaleString("es-CO")}${p?.payload?.pct != null ? ` (${fmtPctEs(p.payload.pct, 1)})` : ""}`} />} />
                   </PieChart>
                 </ResponsiveContainer>
 
@@ -1017,7 +1018,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                       </div>
                       {/* Fila 2: % + valor absoluto */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingLeft: 16 }}>
-                        <span style={{ color: T.txt2, fontWeight: 700, fontFamily: "monospace" }}>{d.pct.toFixed(1)}%</span>
+                        <span style={{ color: T.txt2, fontWeight: 700, fontFamily: "monospace" }}>{fmtPctEs(d.pct, 1)}</span>
                         <span style={{ color: T.txt3, fontFamily: "monospace", fontSize: 10 }}>${Math.round(d.value).toLocaleString("es-CO")}</span>
                       </div>
                     </div>
@@ -1033,7 +1034,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           <div style={{ marginTop: 16, padding: "12px 14px", background: T.bg3, borderRadius: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div style={{ fontSize: 11, color: T.txt3 }}>
               <span style={{ fontWeight: 700, color: T.txt2 }}>Excedente/Déficit del año:</span>
-              {" "}el {composicion.totalIng > 0 ? ((composicion.totalIng - composicion.totalEgr) / composicion.totalIng * 100).toFixed(1) : 0}% de tus ingresos queda libre después de todos los egresos.
+              {" "}el {fmtPctEs(composicion.totalIng > 0 ? ((composicion.totalIng - composicion.totalEgr) / composicion.totalIng * 100) : 0, 1)} de tus ingresos queda libre después de todos los egresos.
             </div>
             <div style={{ fontSize: 14, fontWeight: 800, fontFamily: "monospace", color: (composicion.totalIng - composicion.totalEgr) >= 0 ? T.gn : T.rd }}>
               ${Math.round(composicion.totalIng - composicion.totalEgr).toLocaleString("es-CO")}

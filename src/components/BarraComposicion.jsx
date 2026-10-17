@@ -1,3 +1,4 @@
+import { fmtPctEs } from "../lib/formato.js";
 /**
  * BarraComposicion — La proporción en 44px en vez de 260.
  *
@@ -38,7 +39,7 @@ export default function BarraComposicion({ datos = [], total = 0, paleta = [], T
         return (
           <div
             key={d.name + i}
-            title={`${d.name} · ${pct.toFixed(1)}%`}
+            title={`${d.name} · ${fmtPctEs(pct, 1)}`}
             style={{
               width: `${pct}%`,
               background: color,
@@ -51,7 +52,7 @@ export default function BarraComposicion({ datos = [], total = 0, paleta = [], T
           >
             {cabe && (
               <span style={{ fontSize: 13, fontWeight: 800, color: "#0a0a0a", fontFamily: "monospace" }}>
-                {pct.toFixed(0)}%
+                {fmtPctEs(pct, 0)}
               </span>
             )}
           </div>

@@ -25,6 +25,7 @@
 //   - onCerrar: callback cuando el user cierra el chat
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtTasaEs } from "../lib/formato.js";
 import { useState, useRef, useEffect } from "react";
 import { fetchAuth } from "../lib/apiFetch";
 import { montoPromedioMensual, promedioMesActivo } from "../lib/flowHelpers.js";
@@ -131,7 +132,7 @@ function buildTaxContext(user, estimacion, selectedOwner) {
     ctx += `• Saldo final a pagar: ${fm(det.impuesto || 0)}\n`;
     if (det.ingreso > 0) {
       const tasa = ((det.impuesto || 0) / det.ingreso * 100).toFixed(1);
-      ctx += `• Tasa efectiva: ${tasa}%\n`;
+      ctx += `• Tasa efectiva: ${fmtTasaEs(tasa)}\n`;
     }
   }
 
