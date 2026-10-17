@@ -388,7 +388,7 @@ export default function ProyeccionPatrimonio({
         </div>
         <div style={{ fontSize: 10, color: T.txt3 || "#71717a", marginTop: 6 }}>
           Calculado sobre el flujo de caja simulado de {fm(cfAnualDefault)} anuales.
-          También podés ingresar una cifra exacta abajo.
+          También puedes ingresar una cifra exacta abajo.
         </div>
       </div>
 
