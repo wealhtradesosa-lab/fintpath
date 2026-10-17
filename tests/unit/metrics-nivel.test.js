@@ -86,3 +86,23 @@ describe("liquidez", () => {
     expect(esLiquido({ tp: "Cash" })).toBe(true);
   });
 });
+
+describe("sin doble conteo de gastos del inmueble arrendado", () => {
+  const m = qaMetricas();
+  it("administración y predial (en u.gas) restan del IP y NO están en G/OB", () => {
+    const gastosVidaSinInmueble = Object.entries(qa.gas)
+      .filter(([c]) => c !== "Inmueble arrendado")
+      .flatMap(([, it]) => it).reduce((s, g) => s + g.m, 0);
+    expect(m.g).toBe(gastosVidaSinInmueble);        // 4.910.000
+    expect(m.ob).toBe(m.g + m.sd);                  // 8.630.000
+    expect(m.ip + m.costosNeteados).toBe(m.ipBruto);
+  });
+  it("si el costo supera la renta, solo el exceso vuelve a G (una vez)", () => {
+    const r = calcularMetricas({
+      ingresos: [{ categoria: "Rentas de capital", mensual: 100000, activoId: "x" }],
+      gastos: { "Inmueble arrendado": [{ m: 250000, frecuencia: "mensual", activoId: "x" }] },
+    });
+    expect(r.ip).toBe(0);
+    expect(r.g).toBe(150000);
+  });
+});
