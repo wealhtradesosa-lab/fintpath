@@ -106,9 +106,9 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       const interesesHip = deu.filter(d => /hipoteca|vivienda|casa|apto|mortgage/i.test((d.tp || "") + (d.n || ""))).reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
       if (interesesHip === 0 && !tieneHipotecaReal && ingAnual > 200e6) recs.push({ icon: "🏦", title: "Crédito de vivienda: intereses deducibles (Art. 119 ET)", desc: "Los intereses de un crédito hipotecario para vivienda del contribuyente son deducibles hasta 1.200 UVT/año (" + fm(1200 * UVT) + "). Es una de las deducciones más grandes disponibles — pero solo aplica si efectivamente tomas el crédito y usas la vivienda. No te endeudes solo por el beneficio fiscal; evalúalo con tu contador.", impact: 0, color: T.purple });
       if (ingAnual > 100e6) recs.push({ icon: "💳", title: "GMF 4×1000 deducible (Art. 115 ET)", desc: "El 50% del GMF pagado es deducible. Se calcula automáticamente: " + fm(ingAnual * 0.004 * 0.50) + "/año.", impact: 0, color: T.green });
-      if (ingAnual > 400e6) recs.push({ icon: "🏢", title: "Evalúa una estructura societaria", desc: "Con ingresos altos, una SAS puede optimizar tu carga fiscal canalizando ingresos por la empresa (35% sobre utilidad vs hasta 39% persona natural).", impact: 0, color: T.purple });
+      if (ingAnual > 400e6) recs.push({ icon: "🏢", title: "Evalúa una estructura societaria", desc: "Con ingresos altos, una SAS puede cambiar tu carga fiscal canalizando ingresos por la empresa (35% sobre utilidad vs hasta 39% persona natural).", impact: 0, color: T.purple });
       if (ahorro < 100000 && pctUsado >= 95) {
-        recs.push({ icon: "✅", title: "Tope 40% optimizado al máximo", desc: "Ya estás usando el " + pctUsado.toFixed(0) + "% del tope de deducciones. No hay más espacio para pensión voluntaria o AFC. Tu contador está haciendo un buen trabajo.", impact: 0, color: T.green });
+        recs.push({ icon: "✅", title: "Tope 40% usado al máximo", desc: "Ya estás usando el " + pctUsado.toFixed(0) + "% del tope de deducciones. No hay más espacio para pensión voluntaria o AFC. Tu contador está haciendo un buen trabajo.", impact: 0, color: T.green });
         if (ingAnual > 200e6) recs.push({ icon: "💡", title: "Para reducir más: redistribuir ingresos", desc: "La única forma de bajar más es mover ingresos a una persona jurídica (SAS). La empresa paga 35% sobre UTILIDAD (después de gastos), no sobre ingreso bruto. Consulta con tu contador.", impact: 0, color: T.purple });
       }
     }
@@ -452,20 +452,20 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
 
               let titulo, texto;
               if (isJ) {
-                titulo = "Sin optimización automática (persona jurídica)";
-                texto = "Las optimizaciones jurídicas (depreciación acelerada, distribución de dividendos, descuento ICA, CT&I) requieren decisiones estratégicas que no se automatizan. Para reducir el impuesto, captura los descuentos tributarios reales con el botón ⭐ Descuentos en la tarjeta de " + (owner?.name || "este owner") + ".";
+                titulo = "Sin ajuste automático (persona jurídica)";
+                texto = "Los ajustes jurídicos (depreciación acelerada, distribución de dividendos, descuento ICA, CT&I) requieren decisiones estratégicas que no se automatizan. Para reducir el impuesto, captura los descuentos tributarios reales con el botón ⭐ Descuentos en la tarjeta de " + (owner?.name || "este owner") + ".";
               } else if (calc?.regimen === "simple") {
-                titulo = "Régimen Simple (RST) no admite optimización";
+                titulo = "Régimen Simple (RST) no admite ajustes";
                 texto = "El régimen Simple tributa sobre ingresos brutos con tarifa fija (1,4%–8,3% según grupo de actividad). No admite deducciones de cédula general ni aportes voluntarios como reductores de base.";
               } else if (actual < 100_000) {
-                titulo = "No hay impuesto a optimizar";
+                titulo = "No hay impuesto que ajustar";
                 texto = "Con la renta líquida gravable actual estás por debajo del mínimo gravable o en el primer rango de la tabla Art. 241 ET (sin impuesto). No hay nada que reducir.";
               } else if ((Number(calc?.neto) || 0) < 1_000_000) {
                 titulo = "Sin ingresos laborales para aplicar PV/AFC";
-                texto = "La optimización automática sugiere aportes a pensión voluntaria + AFC hasta llenar el tope 40%. Estos aportes solo reducen la cédula laboral (salario + honorarios). Como tus ingresos son de capital/arrendamientos/dividendos, no hay base donde aplicar la estrategia.";
+                texto = "El ajuste automático sugiere aportes a pensión voluntaria + AFC hasta llenar el tope 40%. Estos aportes solo reducen la cédula laboral (salario + honorarios). Como tus ingresos son de capital/arrendamientos/dividendos, no hay base donde aplicar la estrategia.";
               } else {
                 titulo = "Ya aprovechas el máximo legal de deducciones";
-                texto = "Entre tus aportes obligatorios, exenta 25%, dependientes, intereses de vivienda, salud prepagada y pensión voluntaria ya capturada, llenaste el tope 40% / 1340 UVT (Art. 336 ET). No hay espacio adicional de optimización automática. Si quieres reducir más, mira las recomendaciones estratégicas abajo.";
+                texto = "Entre tus aportes obligatorios, exenta 25%, dependientes, intereses de vivienda, salud prepagada y pensión voluntaria ya capturada, llenaste el tope 40% / 1340 UVT (Art. 336 ET). No hay espacio adicional de ajuste automático. Si quieres reducir más, mira las recomendaciones estratégicas abajo.";
               }
 
               return (
@@ -521,7 +521,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 10, color: T.txt3 }}>{ahorro > 100000 ? "Reducción" : "Estado"}</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: ahorro > 100000 ? T.green : T.txt3 }}>{ahorro > 100000 ? "-" + (impActual > 0 ? (ahorro / impActual * 100).toFixed(0) : 0) + "%" : "✅ Optimizado"}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: ahorro > 100000 ? T.green : T.txt3 }}>{ahorro > 100000 ? "-" + (impActual > 0 ? (ahorro / impActual * 100).toFixed(0) : 0) + "%" : "✅ Sin ajuste adicional"}</div>
           </div>
         </div>
       )}
@@ -552,7 +552,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
                 <br /><br />
                 <strong style={{ color: "#fbbf24" }}>No se estiman automáticamente todavía:</strong> bonificaciones extralegales (Art. 107 ET), depreciación acelerada (Art. 137 ET), apalancamiento productivo (Art. 117 ET), zona franca, IVA sobre activos productivos (Art. 258-2 ET), beneficios sectoriales (turismo, agroindustria, energías renovables). Existen en el Estatuto Tributario pero su monto viable depende de la estructura contable de cada empresa — consulta con tu contador.
                 <br /><br />
-                <strong>Este simulador no sustituye la asesoría de un contador.</strong> Es una herramienta de referencia basada en los datos que tú registras. Para tu declaración oficial y para estructurar estrategias de optimización específicas, consulta con un contador público.
+                <strong>Este simulador no sustituye la asesoría de un contador.</strong> Es una herramienta de referencia basada en los datos que tú registras. Para tu declaración oficial y para evaluar estrategias específicas, consulta con un contador público.
               </div>
             </div>
           </div>
@@ -868,7 +868,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
 
       {/* ═══ CALENDARIO TRIBUTARIO ═══ */}
       <Cd style={{ marginBottom: 20, padding: "16px 20px" }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: T.cyan, marginBottom: 10 }}>📅 Fechas clave para optimizar</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.cyan, marginBottom: 10 }}>📅 Fechas clave para revisar</div>
         <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr 1fr 1fr", gap: 10, fontSize: 11 }}>
           <div style={{ background: T.bg3, borderRadius: 10, padding: "10px 14px" }}>
             <div style={{ fontWeight: 700, color: T.orange }}>Antes de diciembre 31</div>

@@ -255,7 +255,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
           <div style={{fontSize:11,fontWeight:700,color:T.gn,letterSpacing:1,marginBottom:8}}>
             💡 YOU SAVE
           </div>
-          <div style={{fontSize:11,color:T.tx3,marginBottom:4}}>with optimization</div>
+          <div style={{fontSize:11,color:T.tx3,marginBottom:4}}>with adjustments</div>
           <div style={{fontSize:36,fontWeight:900,color:T.gn,fontFamily:"monospace",lineHeight:1}}>
             {fm(savings)}
           </div>
@@ -363,7 +363,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
             <WRow label="Standard Deduction"     amount={`–${fm(STD_DED)}`} color={T.gn} indent irc="§ 63"/>
             {B.qbi>0    &&<WRow label="QBI Deduction 20%"   amount={`–${fm(B.qbi)}`}   color={T.gn} indent note="Qualified Business Income" irc="§ 199A"/>}
             <WRow label="Taxable Income"          amount={fm(B.taxInc)} bold color={T.or}
-              note={`${fm(A.taxInc-B.taxInc)} less than without optimization`}/>
+              note={`${fm(A.taxInc-B.taxInc)} less than without adjustments`}/>
             <div style={{margin:"10px 0 6px",fontSize:10,fontWeight:700,color:T.rd,letterSpacing:1}}>TAXES OWED</div>
             <WRow label="Federal Income Tax"      amount={fm(B.fed)}   color={T.rd} note={`${B.mLabel} bracket (was ${A.mLabel})`}/>
             {B.state>0 ? (
