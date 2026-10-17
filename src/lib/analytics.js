@@ -135,7 +135,19 @@ export function trackSignup({ method = "email", userId } = {}) {
     signupIntent = raw ? JSON.parse(raw) : null;
   } catch { signupIntent = null; }
 
+  // 17-oct-2026: primer toque (cookie fp_ft) + ángulo, y un event_id común
+  // para deduplicar GA4/Pixel. Solo UTMs/ids de clic: nada de montos ni correos.
+  const ft = readFirstTouch() || {};
+  const enPatrimonio = typeof window !== "undefined" && /^\/patrimonio\/?$/.test(window.location.pathname);
+  const angle = enPatrimonio || ft.landing_path === "/patrimonio" ? "patrimonio" : undefined;
+  const eventId = newEventId();
+  const utmProps = {};
+  ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].forEach((k) => { if (ft[k]) utmProps[k] = ft[k]; });
+
   track("signup_completed", {
+    ...utmProps,
+    angle,
+    event_id: eventId,
     method,
     with_promo: !!promoCode,
     promo_code: promoCode || undefined,
@@ -157,7 +169,8 @@ export function trackSignup({ method = "email", userId } = {}) {
     window.fbq("track", "CompleteRegistration", {
       content_name: promoCode ? "signup_promo" : "signup",
       status: true,
-    });
+      ...(angle ? { angle } : {}),
+    }, { eventID: eventId });
   }
 
   if (userId) identifyUser(userId);
@@ -212,4 +225,24 @@ export function captureUTMs() {
     } catch { /* noop */ }
     track("campaign_landed", utm);
   }
+}
+
+// ─── Atribución de primer toque (17-oct-2026) ──────────────────────────────
+// La cookie fp_ft la escribe public/patrimonio/attribution.js al cargar la
+// landing, antes de cualquier recarga. Aquí solo se lee.
+export function readFirstTouch() {
+  if (typeof document === "undefined") return null;
+  try {
+    const m = (document.cookie || "").match(/(?:^|;\s*)fp_ft=([^;]*)/);
+    if (!m) return null;
+    const o = JSON.parse(decodeURIComponent(m[1]));
+    return o && typeof o === "object" ? o : null;
+  } catch { return null; }
+}
+
+export function newEventId() {
+  try {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  } catch { /* noop */ }
+  return "ev_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
