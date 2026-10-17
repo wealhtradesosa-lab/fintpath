@@ -195,7 +195,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               </div>
             </div>
             <div style={{ marginTop: 8, fontSize: 9, color: T.txt3, lineHeight: 1.5, fontStyle: "italic" }}>
-              Retención estimada según tarifas legales (Art. 383-401 ET) por tipo de ingreso: salario tabla progresiva Art. 383, honorarios 11% Art. 392, arriendo 3,5% Art. 401, rendimientos/dividendos 7% Art. 392-395. Verificá con tu certificado de retención del año.
+              Retención estimada según tarifas legales (Art. 383-401 ET) por tipo de ingreso: salario tabla progresiva Art. 383, honorarios 11% Art. 392, arriendo 3,5% Art. 401, rendimientos/dividendos 7% Art. 392-395. Verifica con tu certificado de retención del año.
             </div>
           </div>
         );
@@ -216,7 +216,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           if (pctGastos < 15) {
             diagnos.push({
               msg: `Gastos registrados: ${pctGastos.toFixed(0)}% de ingresos (típico operativo: 40–70%).`,
-              accion: "Registrá gastos como nómina, honorarios, mantenimiento, impuestos (predial/ICA), servicios públicos en el módulo Gastos.",
+              accion: "Registra gastos como nómina, honorarios, mantenimiento, impuestos (predial/ICA), servicios públicos en el módulo Gastos.",
             });
           }
 
@@ -231,7 +231,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
             if (tieneInmuebles) {
               diagnos.push({
                 msg: "No hay depreciación aplicada aunque hay inmuebles registrados.",
-                accion: "La depreciación del 2.22%/año sobre inmuebles (vida útil 45 años) se aplica automáticamente si los activos están vinculados al owner. Verificá el campo owner del inmueble.",
+                accion: "La depreciación del 2.22%/año sobre inmuebles (vida útil 45 años) se aplica automáticamente si los activos están vinculados al owner. Verifica el campo owner del inmueble.",
               });
             }
           }
@@ -243,7 +243,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
             if (tieneDeudas) {
               diagnos.push({
                 msg: "Hay deudas pero los intereses no aparecen como deducción.",
-                accion: "Verificá que las deudas tengan tasa de interés configurada. Intereses = saldo × tasa anual.",
+                accion: "Verifica que las deudas tengan tasa de interés configurada. Intereses = saldo × tasa anual.",
               });
             }
           }
@@ -255,7 +255,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           if (hubo > 1_000_000 && descuentosSolicitados < hubo * 0.3) {
             diagnos.push({
               msg: `Año anterior usaste ~${fm(hubo)} en descuentos tributarios y ahora apenas ${fm(descuentosSolicitados)}.`,
-              accion: `Tocá el botón '⭐ Descuentos' en la tarjeta de ${owner?.name || "este owner"} para capturar ICA, donaciones, CT&I. Son directo del impuesto, no de la base.`,
+              accion: `Toca el botón '⭐ Descuentos' en la tarjeta de ${owner?.name || "este owner"} para capturar ICA, donaciones, CT&I. Son directo del impuesto, no de la base.`,
             });
           }
 
@@ -453,7 +453,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               let titulo, texto;
               if (isJ) {
                 titulo = "Sin optimización automática (persona jurídica)";
-                texto = "Las optimizaciones jurídicas (depreciación acelerada, distribución de dividendos, descuento ICA, CT&I) requieren decisiones estratégicas que no se automatizan. Para reducir el impuesto, capturá los descuentos tributarios reales con el botón ⭐ Descuentos en la tarjeta de " + (owner?.name || "este owner") + ".";
+                texto = "Las optimizaciones jurídicas (depreciación acelerada, distribución de dividendos, descuento ICA, CT&I) requieren decisiones estratégicas que no se automatizan. Para reducir el impuesto, captura los descuentos tributarios reales con el botón ⭐ Descuentos en la tarjeta de " + (owner?.name || "este owner") + ".";
               } else if (calc?.regimen === "simple") {
                 titulo = "Régimen Simple (RST) no admite optimización";
                 texto = "El régimen Simple tributa sobre ingresos brutos con tarifa fija (1,4%–8,3% según grupo de actividad). No admite deducciones de cédula general ni aportes voluntarios como reductores de base.";
@@ -464,8 +464,8 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
                 titulo = "Sin ingresos laborales para aplicar PV/AFC";
                 texto = "La optimización automática sugiere aportes a pensión voluntaria + AFC hasta llenar el tope 40%. Estos aportes solo reducen la cédula laboral (salario + honorarios). Como tus ingresos son de capital/arrendamientos/dividendos, no hay base donde aplicar la estrategia.";
               } else {
-                titulo = "Ya aprovechás el máximo legal de deducciones";
-                texto = "Entre tus aportes obligatorios, exenta 25%, dependientes, intereses de vivienda, salud prepagada y pensión voluntaria ya capturada, llenaste el tope 40% / 1340 UVT (Art. 336 ET). No hay espacio adicional de optimización automática. Si querés reducir más, mirá las recomendaciones estratégicas abajo.";
+                titulo = "Ya aprovechas el máximo legal de deducciones";
+                texto = "Entre tus aportes obligatorios, exenta 25%, dependientes, intereses de vivienda, salud prepagada y pensión voluntaria ya capturada, llenaste el tope 40% / 1340 UVT (Art. 336 ET). No hay espacio adicional de optimización automática. Si quieres reducir más, mira las recomendaciones estratégicas abajo.";
               }
 
               return (
@@ -491,7 +491,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               {calc.descuentoICA > 0 && <div style={{ padding: "4px 0", color: T.blue }}>✅ Descuento 50% ICA aplicado</div>}
               <div style={{ padding: "4px 0", color: T.blue }}>✅ Retención en la fuente descontada</div>
               <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
-                ℹ️ <strong>El motor ahora aplica 3 palancas avanzadas si las cargás:</strong> provisión de cartera (Art. 145), CT&I deducción 175% (Art. 158-1), y discapacidad 200% (Ley 361/97). Otras palancas (bonificaciones, depreciación acelerada, apalancamiento, zona franca, donaciones específicas) requieren análisis caso-por-caso con tu contador. Mirá las recomendaciones abajo para ver cuáles aplican a tu empresa.
+                ℹ️ <strong>El motor ahora aplica 3 palancas avanzadas si las cargas:</strong> provisión de cartera (Art. 145), CT&I deducción 175% (Art. 158-1), y discapacidad 200% (Ley 361/97). Otras palancas (bonificaciones, depreciación acelerada, apalancamiento, zona franca, donaciones específicas) requieren análisis caso-por-caso con tu contador. Mira las recomendaciones abajo para ver cuáles aplican a tu empresa.
               </div>
             </> : <>
               <div style={{ padding: "4px 0", color: T.green }}>✅ Renta exenta 25% ({fm(calc.exenta25)})</div>
@@ -548,9 +548,9 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.6 }}>
                 <strong style={{ color: T.green }}>Sí se aplica automáticamente:</strong> tarifa del 35% sobre utilidad (Art. 240 ET), deducción de intereses y gastos operativos registrados, depreciación según tipo de activo, GMF 4×1000 al 50% (Art. 115 ET), descuento del 50% del ICA (Art. 115 ET), retención en la fuente por tipo de ingreso, pérdidas fiscales acumuladas (Art. 147 ET), y descuentos manuales (CT&I, empleo 1ra vez, exterior, donaciones).
                 <br /><br />
-                <strong style={{ color: T.purple }}>Palancas avanzadas si las cargás manualmente:</strong> provisión de cartera (Art. 145 ET), CT&I deducción 175% (Art. 158-1 ET), salarios a personas con discapacidad 200% (Ley 361/97 Art. 31). Estas son las palancas que tu contador suele aplicar — el motor ahora las acepta como input para que tu cálculo coincida con el suyo.
+                <strong style={{ color: T.purple }}>Palancas avanzadas si las cargas manualmente:</strong> provisión de cartera (Art. 145 ET), CT&I deducción 175% (Art. 158-1 ET), salarios a personas con discapacidad 200% (Ley 361/97 Art. 31). Estas son las palancas que tu contador suele aplicar — el motor ahora las acepta como input para que tu cálculo coincida con el suyo.
                 <br /><br />
-                <strong style={{ color: "#fbbf24" }}>No se estiman automáticamente todavía:</strong> bonificaciones extralegales (Art. 107 ET), depreciación acelerada (Art. 137 ET), apalancamiento productivo (Art. 117 ET), zona franca, IVA sobre activos productivos (Art. 258-2 ET), beneficios sectoriales (turismo, agroindustria, energías renovables). Existen en el Estatuto Tributario pero su monto viable depende de la estructura contable de cada empresa — consultá con tu contador.
+                <strong style={{ color: "#fbbf24" }}>No se estiman automáticamente todavía:</strong> bonificaciones extralegales (Art. 107 ET), depreciación acelerada (Art. 137 ET), apalancamiento productivo (Art. 117 ET), zona franca, IVA sobre activos productivos (Art. 258-2 ET), beneficios sectoriales (turismo, agroindustria, energías renovables). Existen en el Estatuto Tributario pero su monto viable depende de la estructura contable de cada empresa — consulta con tu contador.
                 <br /><br />
                 <strong>Este simulador no sustituye la asesoría de un contador.</strong> Es una herramienta de referencia basada en los datos que tú registras. Para tu declaración oficial y para estructurar estrategias de optimización específicas, consulta con un contador público.
               </div>
@@ -806,7 +806,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
               <div style={{ fontSize: 13, fontWeight: 700, color: T.orange }}>🔍 Revisión de precisión fiscal</div>
               {onUpdate && warns.some(w => w.fiscalCodeSugerido) && (
                 <button onClick={() => {
-                  if (!confirm(`Aprobar la clasificación sugerida para ${warns.filter(w => w.fiscalCodeSugerido).length} ítem(s)?\n\nSe persiste el fiscalCode inferido en cada item. Podés revertir editando el item manualmente.`)) return;
+                  if (!confirm(`Aprobar la clasificación sugerida para ${warns.filter(w => w.fiscalCodeSugerido).length} ítem(s)?\n\nSe persiste el fiscalCode inferido en cada item. Puedes revertir editando el item manualmente.`)) return;
                   aprobarGrupo(warns.filter(w => w.fiscalCodeSugerido));
                 }} style={{ background: T.green + "22", border: "1px solid " + T.green, color: T.green, padding: "5px 12px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                   ✓ Aprobar todos ({warns.filter(w => w.fiscalCodeSugerido).length})
@@ -820,7 +820,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
                 const grupInfos = agruparWarnings(infos);
                 const total = grupErrs.length + grupWarnings.length + grupInfos.length;
                 return <>
-                  {total} alerta{total !== 1 ? "s" : ""} de clasificación fiscal ({warns.length} ítem{warns.length !== 1 ? "s" : ""} afectado{warns.length !== 1 ? "s" : ""}). Revisá cada una y aprobá o editá.
+                  {total} alerta{total !== 1 ? "s" : ""} de clasificación fiscal ({warns.length} ítem{warns.length !== 1 ? "s" : ""} afectado{warns.length !== 1 ? "s" : ""}). Revisa cada una y aprueba o edita.
                   {grupErrs.length > 0 && <> • <strong style={{ color: T.red }}>{grupErrs.length} error{grupErrs.length !== 1 ? "es" : ""}</strong></>}
                   {grupWarnings.length > 0 && <> • <span style={{ color: T.orange }}>{grupWarnings.length} advertencia{grupWarnings.length !== 1 ? "s" : ""}</span></>}
                   {grupInfos.length > 0 && <> • <span style={{ color: T.blue }}>{grupInfos.length} info</span></>}
