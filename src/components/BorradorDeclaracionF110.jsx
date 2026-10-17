@@ -1020,7 +1020,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
         {mostrarOportunidades && oportunidadesOwner.length > 0 && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: T.txt2, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              💡 Formas legales de pagar menos · {oportunidadesOwner.length}
+              💡 Deducciones y beneficios a revisar · {oportunidadesOwner.length}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {oportunidadesOwner.slice(0, 5).map((opo, i) => {

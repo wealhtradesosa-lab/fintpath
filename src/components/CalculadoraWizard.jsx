@@ -198,7 +198,7 @@ function getHintContextual(det, owner) {
     return {
       tono: "ok",
       icono: "💰",
-      texto: `Puedes ahorrar $${(ahorro / 1_000_000).toFixed(1)}M (${pct}%) optimizando aportes a PV/AFC.`,
+      texto: `Según tu estimación, aportes a PV/AFC podrían reducir tu impuesto en ~$${(ahorro / 1_000_000).toFixed(1)}M (${pct}%). Confírmalo con tu contador.`,
     };
   }
 
@@ -207,7 +207,7 @@ function getHintContextual(det, owner) {
     return {
       tono: "info",
       icono: "💡",
-      texto: `Ahorro pequeño detectado ($${Math.round(ahorro / 1000).toLocaleString('es-CO')}k). Hay margen limitado para optimizar.`,
+      texto: `Diferencia pequeña estimada ($${Math.round(ahorro / 1000).toLocaleString('es-CO')}k). Hay poco margen de ajuste.`,
     };
   }
 
@@ -1493,8 +1493,8 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
   if (ahorro > 1_000_000) {
     acciones.push({
       icono: "💸",
-      titulo: `Registra aportes a PV/AFC para capturar tu ahorro`,
-      desc: `El motor detectó espacio legal hasta ${fm(ahorro)}/año. Aportando a PV o AFC en Egresos, activas esa optimización real.`,
+      titulo: `Registra aportes a PV/AFC para reflejarlos en tu estimación`,
+      desc: `El cálculo estima espacio legal de hasta ${fm(ahorro)}/año. Si aportas a PV o AFC, regístralo en Egresos para reflejarlo en tu estimación.`,
       cta: "Ir a Egresos",
       page: "gas",
       prioridad: "alta",
@@ -1551,7 +1551,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
         <div style={{ fontSize: 16 }}>💾</div>
         <div style={{ flex: 1, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
           <strong style={{ color: T.green }}>Tu configuración se guardó automáticamente.</strong>
-          {optimizacionesActivas.length > 0 && ` Activaste ${optimizacionesActivas.length} optimización${optimizacionesActivas.length > 1 ? 'es' : ''} para este propietario.`}
+          {optimizacionesActivas.length > 0 && ` Aplicaste ${optimizacionesActivas.length} ajuste${optimizacionesActivas.length > 1 ? 's' : ''} para este propietario.`}
         </div>
       </div>
 
@@ -1603,7 +1603,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
       {optimizacionesActivas.length > 0 && (
         <div style={{ marginBottom: 14, padding: "12px 14px", background: T.bg3, borderRadius: 10, border: "1px solid " + T.border }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: T.txt2, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            <span>✅</span> Optimizaciones aplicadas ({optimizacionesActivas.length})
+            <span>✅</span> Ajustes aplicados ({optimizacionesActivas.length})
             <button onClick={() => onGotoStep?.(2)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, padding: "3px 8px", fontSize: 10, cursor: "pointer" }}>
               Modificar
             </button>
@@ -1622,7 +1622,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
         <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, fontSize: 11, color: T.txt2, display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ fontSize: 16 }}>💡</div>
           <div style={{ flex: 1, lineHeight: 1.5 }}>
-            No activaste ninguna optimización. Probablemente hay deducciones legales que aplican a tu caso — vuelve al Paso 3 o 4 y revisa las preguntas.
+            No aplicaste ningún ajuste. Puede haber deducciones legales que apliquen a tu caso — vuelve al Paso 3 o 4 y revisa las preguntas.
           </div>
           <button onClick={() => onGotoStep?.(2)} style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + T.orange, color: T.orange, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
             Revisar
@@ -2248,7 +2248,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                   {estado === "parcial" && onMarcarCompletoOwner && (
                     <button
                       onClick={() => onMarcarCompletoOwner(owner.id)}
-                      title="Si ya revisaste este responsable y no tiene más optimizaciones aplicables, márcalo como revisado."
+                      title="Si ya revisaste este responsable y no tiene más ajustes aplicables, márcalo como revisado."
                       style={{ flex: 1, padding: "6px 8px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}
                     >
                       ✓ Marcar revisado

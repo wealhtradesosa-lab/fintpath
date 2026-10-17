@@ -199,7 +199,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
           ⚙️ Ajustes fiscales personalizados {totalActivos > 0 && <span style={{ color: T.green }}>({totalActivos} activos)</span>}
         </div>
         <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
-          Un contador senior te haría estas preguntas para optimizar tu impuesto legalmente. Contesta solo las que apliquen a ti — el resto quedan vacías y no afectan el cálculo.
+          Un contador senior te haría estas preguntas para estimar tu impuesto con más precisión. Contesta solo las que apliquen a ti — el resto quedan vacías y no afectan el cálculo.
         </div>
       </div>
 
