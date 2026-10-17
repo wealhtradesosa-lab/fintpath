@@ -62,7 +62,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   const netoYTD = entraYTD - saleYTD;
   // 27-sep-2026 (Santiago: "debería mostrar cómo va a la fecha y cómo está lo
   // proyectado a dic de 2026"). El cierre del año existía, pero enterrado como
-  // una frase al pie —"si el año cierra así, terminás con X"— y solo el neto.
+  // una frase al pie —"si el año cierra así, terminas con X"— y solo el neto.
   // Las dos preguntas que el bloque debe responder son simétricas: qué pasó y
   // qué va a pasar. Ahora van una al lado de la otra, con las tres cifras cada
   // una, y la proyección marcada como tal.
@@ -164,7 +164,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
 
       <div style={{ fontSize: 11, color: T.tx3, marginTop: 10, lineHeight: 1.5 }}>
         {mesesRestantes > 0
-          ? <>Las barras sólidas son meses cumplidos; las tenues, los {mesesRestantes} que faltan. El cierre proyectado supone que {mesesRestantes === 1 ? "ese mes se comporta" : "esos meses se comportan"} según los ingresos, gastos y cuotas que tenés cargados hoy.</>
+          ? <>Las barras sólidas son meses cumplidos; las tenues, los {mesesRestantes} que faltan. El cierre proyectado supone que {mesesRestantes === 1 ? "ese mes se comporta" : "esos meses se comportan"} según los ingresos, gastos y cuotas que tienes cargados hoy.</>
           : <>El año está completo: las doce barras son meses cumplidos.</>}
         {" "}Incluye retención e impuesto de renta.
       </div>
