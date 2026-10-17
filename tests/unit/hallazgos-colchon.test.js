@@ -14,6 +14,6 @@ describe("hallazgos usan el colchón único (3,07 meses en QA Pro, no 1,3)", () 
     const u = { ...user, inv: qa.inv.filter((i) => i.tp !== "Fondo de Inversión") };
     const h = generarHallazgos({ user: u, trm: qa.trm, max: 10 });
     const f = [...(h.alertas || [])].find((x) => x.id === "fondo_emergencia");
-    expect(f.metrica).toBe("1.3");
+    expect(f.metrica).toBe("1,3");
   });
 });
