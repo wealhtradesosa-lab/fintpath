@@ -279,36 +279,67 @@ const TEMPLATES = {
 // origen dejaba pasar cualquier petición SIN Origin — o sea, cualquier curl.
 // Ahora las funciones internas importan sendTemplate() y el endpoint HTTP
 // exige un origen permitido, sin excepciones.
-async function sendTemplate({ to, template, vars = {} }) {
+async function sendTemplate({ to, template, vars = {}, headers } = {}) {
   if (!to || !template) return { ok: false, error: "Faltan params: to, template" };
   const tmpl = TEMPLATES[template];
   if (!tmpl) return { ok: false, error: `Template "${template}" no existe. Disponibles: ${Object.keys(TEMPLATES).join(", ")}` };
 
   if (!process.env.RESEND_API_KEY) {
-    console.warn(`[send-email] RESEND_API_KEY ausente — skip envío de "${template}" a ${to}`);
+    console.warn(`[send-email] RESEND_API_KEY ausente — skip envío de "${template}" a ${enmascarar(to)}`);
     return { ok: true, sent: false, reason: "resend_not_configured" };
   }
 
   const { subject, html } = tmpl(vars);
+  return enviarResend({ to, subject, html, headers, etiqueta: template });
+}
+
+// 11-oct-2026 — Envío de un correo YA ARMADO (secuencia de prueba). Solo
+// para uso interno desde otras funciones: NO se expone por HTTP, porque
+// permitiría mandar HTML arbitrario desde finpathia.com.
+// `headers` opcional (ej. List-Unsubscribe); `text` opcional (versión texto).
+// Nunca loguear el email completo: "an***@dominio.com".
+function enmascarar(email) {
+  const s = String(email || "");
+  const [u, d] = s.split("@");
+  if (!d) return "***";
+  return (u.slice(0, 2) || "*") + "***@" + d;
+}
+
+async function sendRendered({ to, subject, html, text, headers, etiqueta = "rendered", idempotencyKey } = {}) {
+  if (!to || !subject || !html) return { ok: false, error: "Faltan params: to, subject, html" };
+  if (!process.env.RESEND_API_KEY) {
+    console.warn(`[send-email] RESEND_API_KEY ausente — skip envío de "${etiqueta}"`);
+    return { ok: true, sent: false, reason: "resend_not_configured" };
+  }
+  return enviarResend({ to, subject, html, text, headers, etiqueta, idempotencyKey });
+}
+
+async function enviarResend({ to, subject, html, text, headers, etiqueta, idempotencyKey }) {
   const from = process.env.RESEND_FROM || "FINPATHIA <soporte@finpathia.com>";
+  const payload = { from, to: [to], subject, html };
+  if (text) payload.text = text;
+  if (headers && typeof headers === "object" && Object.keys(headers).length) payload.headers = headers;
 
   const resp = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
       "Content-Type": "application/json",
+      // Resend descarta un reintento con la misma clave (evita correos dobles).
+      ...(idempotencyKey ? { "Idempotency-Key": String(idempotencyKey).slice(0, 256) } : {}),
     },
-    body: JSON.stringify({ from, to: [to], subject, html }),
+    body: JSON.stringify(payload),
   });
   const data = await resp.json();
   if (!resp.ok) {
     console.error(`[send-email] Resend error (${resp.status}):`, data);
     return { ok: false, error: data.message || "Resend error", status: resp.status };
   }
-  console.log(`[send-email] ✅ template=${template} to=${to} message_id=${data.id}`);
+  console.log(`[send-email] ✅ template=${etiqueta} to=${enmascarar(to)} message_id=${data.id}`);
   return { ok: true, sent: true, message_id: data.id };
 }
 exports.sendTemplate = sendTemplate;
+exports.sendRendered = sendRendered;
 
 exports.handler = async (event) => {
   const cors = {

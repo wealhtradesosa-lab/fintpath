@@ -319,6 +319,48 @@ REGLAS DE RESPUESTA:
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// 11-oct-2026 — EVENTO advisor_used (una vez por persona, durante la prueba)
+// La primera vez que alguien en prueba le pregunta al Asesor IA se marca
+// accounts.advisor_first_used_at (solo si estaba vacío) y se emite
+// "advisor_used" por el mismo camino que "activation" (GA4 MP o log).
+// Nunca lleva el texto de la pregunta, montos ni user_id. Corre en paralelo
+// a la llamada a Anthropic y cualquier error se traga: jamás frena ni rompe
+// el chat. Antes de aplicar la migración la columna no existe: el PATCH
+// falla, se loguea y el chat sigue igual.
+// ════════════════════════════════════════════════════════════════════════════
+async function marcarAsesorUsado(userId, cookieHeader) {
+  try {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (!url || !key || !userId) return;
+    const hoy = new Date(Date.now() - 5 * 3600000).toISOString().slice(0, 10); // fecha COT
+    // Solo cuentas en prueba: plan free con trial_end vigente.
+    const r = await fetch(
+      `${url}/rest/v1/accounts?owner_user_id=eq.${encodeURIComponent(userId)}` +
+      `&advisor_first_used_at=is.null&plan=eq.free&trial_end=gte.${hoy}`,
+      {
+        method: "PATCH",
+        headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=representation" },
+        body: JSON.stringify({ advisor_first_used_at: new Date().toISOString() }),
+      }
+    );
+    if (!r.ok) { console.warn("[ai-chat] advisor_used PATCH status", r.status); return; }
+    const filas = await r.json();
+    if (!Array.isArray(filas) || filas.length === 0) return; // ya marcado o no está en prueba
+    const { emitirEvento, clientIdDesdeCookie } = require("../lib/ga4.cjs");
+    const f = filas[0];
+    await emitirEvento({
+      nombre: "advisor_used",
+      clientId: clientIdDesdeCookie(cookieHeader),
+      utm: f.entry_utm || {},
+      angulo: f.entry_angle || null,
+    });
+  } catch (e) {
+    console.warn("[ai-chat] advisor_used falló (no afecta el chat):", e?.message || e);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // HANDLER
 // ════════════════════════════════════════════════════════════════════════════
 exports.handler = async (event) => {
@@ -361,6 +403,9 @@ exports.handler = async (event) => {
       return { statusCode: 429, headers, body: JSON.stringify({ error: errMsg, remaining: 0 }) };
     }
 
+    // advisor_used: arranca en paralelo, sin await (ver marcarAsesorUsado).
+    const pAsesorUsado = marcarAsesorUsado(userId, event.headers?.cookie || event.headers?.Cookie).catch(() => {});
+
     // System prompt según jurisdicción
     const systemPrompt = buildSystemPrompt({ jurisdiction, financialContext, taxConfig });
 
@@ -383,6 +428,9 @@ exports.handler = async (event) => {
     if (data.error) return { statusCode: 400, headers, body: JSON.stringify({ error: data.error.message, remaining }) };
 
     const reply = data.content?.map((b) => b.text || "").join("") || "Sin respuesta";
+    // Le damos como mucho 300 ms extra para terminar (normalmente ya terminó
+    // mientras respondía Anthropic). Nunca bloquea la respuesta.
+    await Promise.race([pAsesorUsado, new Promise((r) => setTimeout(r, 300))]);
     return { statusCode: 200, headers, body: JSON.stringify({ reply, remaining }) };
   } catch (e) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };

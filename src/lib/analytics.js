@@ -213,3 +213,37 @@ export function captureUTMs() {
     track("campaign_landed", utm);
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 11-oct-2026 — ENTRADA (UTM + ángulo) para el evento "activation"
+//
+// La activación (primer activo cargado) puede pasar días después
+// del registro, cuando sessionStorage ya se borró. Al registrarse guardamos
+// en localStorage SOLO las UTM y el ángulo de entrada (ej. "renta:declaracion"
+// o "pioneros"). Sin correo, sin montos, sin ids.
+// ═══════════════════════════════════════════════════════════════════════════
+export function guardarEntrada() {
+  if (typeof window === "undefined") return;
+  try {
+    let utm = {};
+    try { utm = JSON.parse(window.sessionStorage.getItem("fp3_utm") || "{}") || {}; } catch { utm = {}; }
+    let intent = null;
+    try { intent = JSON.parse(window.sessionStorage.getItem("fp3_signup_intent") || "null"); } catch { intent = null; }
+    const promo = window.sessionStorage.getItem("fp3_promo_code") || "";
+    const angle = intent?.source
+      ? [intent.source, intent.intent].filter(Boolean).join(":")
+      : (promo === "PIONEROS2026" ? "pioneros" : null);
+    window.localStorage.setItem("fp3_entrada", JSON.stringify({ utm, angle }));
+  } catch { /* noop */ }
+}
+
+export function leerEntrada() {
+  if (typeof window === "undefined") return { utm: {}, angle: null };
+  try {
+    const e = JSON.parse(window.localStorage.getItem("fp3_entrada") || "null");
+    if (e && typeof e === "object") return { utm: e.utm || {}, angle: e.angle || null };
+  } catch { /* noop */ }
+  // Sin registro en este navegador: lo que haya en la sesión actual.
+  try { return { utm: JSON.parse(window.sessionStorage.getItem("fp3_utm") || "{}") || {}, angle: null }; }
+  catch { return { utm: {}, angle: null }; }
+}

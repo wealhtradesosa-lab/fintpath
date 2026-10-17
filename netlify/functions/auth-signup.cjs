@@ -52,6 +52,27 @@ exports.handler = async (event) => {
     const data = await res.json();
     if (!res.ok) return { statusCode: 400, headers, body: JSON.stringify({ error: data.msg || data.message || "Error creando cuenta" }) };
 
+    // 11-oct-2026 — trial_end en el SERVIDOR (accounts.trial_end, columna
+    // protegida). La cuenta la crea el trigger handle_new_user al crear el
+    // usuario; aquí solo le fijamos la fecha de fin de prueba: 14 días, o 30
+    // para los invitados (misma lista que INVITADOS en App.jsx y
+    // protect_user_data_plan). La columna también tiene DEFAULT de 14 días,
+    // así que si esto falla la cuenta igual queda con fecha. Nunca bloquea el
+    // registro. El blob (p.trialEnd) lo sigue poniendo el navegador como antes.
+    try {
+      const INVITADOS_30D = ["andres.isaza@grupogiesas.com", "renatomaestri76@hotmail.com"];
+      const dias = INVITADOS_30D.includes(String(email).trim().toLowerCase()) ? 30 : 14;
+      const trialEnd = new Date(Date.now() + dias * 86400000).toISOString().split("T")[0];
+      const rt = await fetch(`${SUPA_URL}/rest/v1/accounts?owner_user_id=eq.${encodeURIComponent(data.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, Prefer: "return=minimal" },
+        body: JSON.stringify({ trial_end: trialEnd }),
+      });
+      if (!rt.ok) console.warn("[auth-signup] no pude fijar trial_end:", rt.status);
+    } catch (e) {
+      console.warn("[auth-signup] trial_end falló (no bloquea):", e?.message || e);
+    }
+
     return { statusCode: 200, headers, body: JSON.stringify({ user: { id: data.id, email: data.email }, message: "Cuenta creada. Ya puedes ingresar." }) };
   } catch (err) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
