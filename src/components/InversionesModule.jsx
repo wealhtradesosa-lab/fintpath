@@ -11,7 +11,7 @@ import { exportInversionesExcel } from "../lib/excelExport.js";
 import { exportPatrimonioPDF } from "../lib/pdfSectionExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { vaCOP, vcCOP, totalAnualItem } from "../lib/flowHelpers.js";
-import { gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, deudasSinActivo, ANCHO_ANGOSTO } from "../lib/patrimonioUI.js";
+import { gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, estiloTablaPortafolio, ANCHOS_ANGOSTO, deudasSinActivo, ANCHO_ANGOSTO } from "../lib/patrimonioUI.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -433,7 +433,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       {/* Table */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <table style={estiloTablaPortafolio(angosto)}>
+            {angosto && (
+              <colgroup>{ANCHOS_ANGOSTO.map((w, i) => <col key={i} style={w ? { width: w } : undefined} />)}</colgroup>
+            )}
             <thead>
               <tr>
                 {columnasPortafolio(angosto).map((h) => (
@@ -469,7 +472,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 if (inv.__cat) return (
                   <tr key={inv.id} style={{ background: T.bg2 }}>
                     <td colSpan={columnasPortafolio(angosto).length} style={{ padding: angosto ? "9px 6px" : "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
-                      <div style={estiloEncabezadoGrupo(angosto)}>
+                      <div style={estiloEncabezadoGrupo()}>
                         <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
                           {inv.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {inv.__n}</span>
                         </span>

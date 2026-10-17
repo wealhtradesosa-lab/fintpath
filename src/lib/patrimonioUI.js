@@ -33,17 +33,25 @@ export function columnasPortafolio(angosto) {
 export const ANCHO_ANGOSTO = 640;
 
 /**
- * Contenido del encabezado de cada grupo (Real Estate · 3 … $380.0M 40%).
- * La celda ocupa todo el ancho de la tabla, y en el móvil la tabla es más
- * ancha que la pantalla, así que el subtotal quedaba fuera de la vista y se
- * cortaba ($380.0I, $62.0I). En angosto el contenido se ancla a la izquierda
- * del contenedor con scroll (sticky) y no pasa del ancho visible.
+ * Estilo de la tabla del portafolio y anchos de columna en el móvil.
+ * Causa real del subtotal cortado ($380.0I, $62.0I…): con table-layout
+ * automático la tabla medía más que la pantalla (el contenido de las celdas
+ * de Valor/Deuda más la columna de nombre) y el encabezado de grupo, que usa
+ * colSpan, queda del ancho de toda la tabla: su subtotal, alineado a la
+ * derecha, caía fuera de la vista dentro del contenedor con scroll. En angosto
+ * se usa table-layout fijo con anchos explícitos: la tabla mide siempre el
+ * ancho del contenedor, el nombre se parte en líneas y el subtotal cabe.
  */
-export function estiloEncabezadoGrupo(angosto) {
-  const base = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" };
-  return angosto
-    ? { ...base, position: "sticky", left: 0, boxSizing: "border-box", width: "calc(100vw - 32px)", maxWidth: "100%" }
-    : base;
+export const ANCHOS_ANGOSTO = [null, 84, 76, 44];
+
+export function estiloTablaPortafolio(angosto) {
+  const base = { width: "100%", borderCollapse: "collapse", fontSize: 13 };
+  return angosto ? { ...base, tableLayout: "fixed" } : base;
+}
+
+/** Estilo del contenido del encabezado de cada grupo (nombre · n … subtotal %). */
+export function estiloEncabezadoGrupo() {
+  return { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" };
 }
 
 /**

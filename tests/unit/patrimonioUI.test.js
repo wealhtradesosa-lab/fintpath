@@ -1,6 +1,6 @@
 // Bugs de UI de Patrimonio/Egresos que encontró QA (11-oct-2026).
 import { describe, it, expect } from "vitest";
-import { valorOpcion, etiquetaOpcion, gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, deudasSinActivo } from "../../src/lib/patrimonioUI.js";
+import { valorOpcion, etiquetaOpcion, gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, estiloTablaPortafolio, ANCHOS_ANGOSTO, deudasSinActivo } from "../../src/lib/patrimonioUI.js";
 
 describe("opciones de <select> (Egresos: '[object Object]')", () => {
   const opciones = [{ v: "", l: "— Sin asignar (no calcula impuesto)" }, { v: "own_1", l: "👤 Personal" }, "Real Estate"];
@@ -35,16 +35,19 @@ describe("tabla del portafolio en el móvil", () => {
   });
 });
 
-describe("encabezado de grupo en el móvil (subtotal cortado)", () => {
-  it("en angosto se ancla a la izquierda y no pasa del ancho visible", () => {
-    const e = estiloEncabezadoGrupo(true);
-    expect(e.position).toBe("sticky");
-    expect(e.left).toBe(0);
-    expect(e.maxWidth).toBe("100%");
-    expect(e.flexWrap).toBe("wrap");
+describe("tabla del portafolio en el móvil (subtotal cortado)", () => {
+  it("en angosto usa table-layout fijo y anchos que dejan lugar al nombre en 390 px", () => {
+    expect(estiloTablaPortafolio(true).tableLayout).toBe("fixed");
+    expect(estiloTablaPortafolio(false).tableLayout).toBeUndefined();
+    expect(ANCHOS_ANGOSTO).toHaveLength(columnasPortafolio(true).length);
+    const fijos = ANCHOS_ANGOSTO.reduce((s, w) => s + (w || 0), 0);
+    expect(390 - 32 - fijos).toBeGreaterThanOrEqual(140);
   });
-  it("en escritorio no cambia", () => {
-    expect(estiloEncabezadoGrupo(false).position).toBeUndefined();
+  it("el encabezado de grupo no fuerza ancho", () => {
+    const e = estiloEncabezadoGrupo();
+    expect(e.position).toBeUndefined();
+    expect(e.width).toBeUndefined();
+    expect(e.flexWrap).toBe("wrap");
   });
 });
 
