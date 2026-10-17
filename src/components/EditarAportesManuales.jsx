@@ -125,13 +125,13 @@ export default function EditarAportesManuales({ owner, onSave, onCancel }) {
           articulo="Art. 55 ET"
           value={a.segSocialIndependienteMensual}
           onChange={(v) => upd("segSocialIndependienteMensual", v)}
-          hint="Sólo si sos independiente con honorarios: pensión + salud + riesgos que aportás en PILA. Típicamente 16-19% × (40% de tus honorarios). Dejá en blanco si no aplica."
+          hint="Sólo si eres independiente con honorarios: pensión + salud + riesgos que aportas en PILA. Típicamente 16-19% × (40% de tus honorarios). Deja en blanco si no aplica."
         />
         <Toggle
           label="Mi salario en Ingresos es BRUTO (antes de aportes)"
           value={a.salarioEsBruto}
           onChange={(v) => upd("salarioEsBruto", v)}
-          hint="Recomendado: SÍ (es el default). Desactivá sólo si registraste el salario NETO (lo que efectivamente cae a la cuenta), para que el motor haga el gross-up correctamente."
+          hint="Recomendado: SÍ (es el default). Desactiva sólo si registraste el salario NETO (lo que efectivamente cae a la cuenta), para que el motor haga el gross-up correctamente."
         />
       </div>
 
@@ -145,7 +145,7 @@ export default function EditarAportesManuales({ owner, onSave, onCancel }) {
       </div>
 
       <div style={{ marginTop: 20, padding: 12, background: T.bg3, borderRadius: 10, fontSize: 10, color: T.txt3, textAlign: "center", lineHeight: 1.6 }}>
-        Estos ajustes afectan sólo el <strong>Simulador tributario</strong>. Si los dejás en los valores por default, el motor aplica las reglas estándar para la mayoría de usuarios.
+        Estos ajustes afectan sólo el <strong>Simulador tributario</strong>. Si los dejas en los valores por default, el motor aplica las reglas estándar para la mayoría de usuarios.
       </div>
     </div>
   );

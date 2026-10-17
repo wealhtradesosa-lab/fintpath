@@ -107,22 +107,22 @@ export function calcularFondeoMeta(meta = {}, opts = {}) {
   let veredicto = null; // "alcanza" | "no_alcanza" | null
   let frase = null;
   if (sinMonto) {
-    frase = "Indicá un monto objetivo para ver si el CF la fondea.";
+    frase = "Indica un monto objetivo para ver si el CF la fondea.";
   } else if (done) {
     veredicto = "alcanza";
     frase = "Meta completada: acumulado cubre el objetivo.";
   } else if (sinFecha) {
-    frase = "Indicá una fecha para calcular el aporte mensual.";
+    frase = "Indica una fecha para calcular el aporte mensual.";
   } else if (cfFuente <= 0) {
     veredicto = "no_alcanza";
     frase =
-      "Con CF ≤ 0 no hay aporte; primero estabilizá el flujo.";
+      "Con CF ≤ 0 no hay aporte; primero estabiliza el flujo.";
   } else if (gap != null && gap <= 0) {
     veredicto = "alcanza";
     frase = `Con $${Math.round(aporteSugerido).toLocaleString("es-CO")}/mes desde tu CF llegas en ${mesesRestantes} meses.`;
   } else if (gap != null && gap > 0) {
     veredicto = "no_alcanza";
-    frase = `Tu CF da $${Math.round(cfFuente).toLocaleString("es-CO")}/mes; necesitás $${Math.round(aporteSugerido).toLocaleString("es-CO")}. Gap $${Math.round(gap).toLocaleString("es-CO")}.`;
+    frase = `Tu CF da $${Math.round(cfFuente).toLocaleString("es-CO")}/mes; necesitas $${Math.round(aporteSugerido).toLocaleString("es-CO")}. Gap $${Math.round(gap).toLocaleString("es-CO")}.`;
   }
 
   const tradeOffs = buildTradeOffs({
@@ -189,7 +189,7 @@ export function buildTradeOffs({
   if (G > 0) {
     items.push({
       id: "recortar",
-      label: `Recortar gasto $${G.toLocaleString("es-CO")}/mes → llegás en ${M} meses`,
+      label: `Recortar gasto $${G.toLocaleString("es-CO")}/mes → llegas en ${M} meses`,
       recalculo: {
         tipo: "recortar_gasto",
         recorteMensual: G,
@@ -201,7 +201,7 @@ export function buildTradeOffs({
     // CF≤0: trade-off 1 sigue útil como número (cuánto hay que abrir de CF)
     items.push({
       id: "recortar",
-      label: `Abrir CF de $${Math.round(aporteSugerido).toLocaleString("es-CO")}/mes → llegás en ${M} meses`,
+      label: `Abrir CF de $${Math.round(aporteSugerido).toLocaleString("es-CO")}/mes → llegas en ${M} meses`,
       recalculo: {
         tipo: "recortar_gasto",
         recorteMensual: Math.round(aporteSugerido),
@@ -266,10 +266,10 @@ export function buildTradeOffs({
  * Nota V1: muchas metas compiten por el mismo CF (no se reparte).
  */
 export const NOTA_CF_COMPARTIDO =
-  "CF es el mismo para todas — priorizá. En V1 no se reparte el CF entre metas.";
+  "CF es el mismo para todas — prioriza. En V1 no se reparte el CF entre metas.";
 
 export const EMPTY_STATE_COPY =
-  "Creá una meta con monto y fecha para ver si el CF la fondea.";
+  "Crea una meta con monto y fecha para ver si el CF la fondea.";
 
 export const FUENTE_CF_DEFAULT =
   "CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado del CF cuando Plan a cero (P0.3) está activo.";
