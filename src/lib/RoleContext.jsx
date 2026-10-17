@@ -106,7 +106,7 @@ export function useRole() {
 export function guardEdit(role, showToast) {
   if (role === "reader") {
     if (typeof showToast === "function") {
-      showToast("Solo lectura · pedile al admin de la cuenta que actualice este dato");
+      showToast("Solo lectura · pídele al admin de la cuenta que actualice este dato");
     } else {
       // Sin showToast disponible (módulos hijos sin prop), emitir evento
       // global. App.jsx tiene un listener que muestra el toast para readers.
