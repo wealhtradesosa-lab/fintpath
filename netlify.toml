@@ -82,6 +82,20 @@
   to = "/pioneros.html"
   status = 200
 
+# 17-oct-2026 — Landing de anuncios /patrimonio. Sirve patrimonio.html (sin
+# Pixel/GA4/Ads en el HTML; cargan tras aceptar cookies). Antes de /* o
+# cualquier ruta caería en la home. Los archivos reales bajo /patrimonio/
+# (imágenes, attribution.js) se sirven normal: las reglas no son forzadas.
+[[redirects]]
+  from = "/patrimonio"
+  to = "/patrimonio.html"
+  status = 200
+
+[[redirects]]
+  from = "/patrimonio/"
+  to = "/patrimonio.html"
+  status = 200
+
 # 9-oct-2026 — Un archivo de código que no existe responde 404 de verdad.
 # Antes caía en el fallback del SPA y volvía como index.html con 200: el
 # navegador recibía HTML donde esperaba JavaScript y la app quedaba en blanco
