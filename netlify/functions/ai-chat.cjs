@@ -39,7 +39,7 @@ const KNOWLEDGE_CO = `
 - FBAR (FinCEN 114): obligatorio reportar si cuentas en exterior >$10,000
 - FATCA (Form 8938): reporte si activos >$200K (soltero) o >$400K (casado)
 - Estate tax USA: aplica a non-residents con activos USA >$60,000. Tarifa hasta 40%
-- Solución: LLC + Trust revocable para propiedades USA = evita probate y reduce estate tax
+- Solución: LLC + Trust revocable para propiedades USA = evita pruébate y reduce estate tax
 - Rental income USA: se reporta en Form 1040-NR
 - Tax treaty Colombia-USA: crédito tributario para evitar doble imposición
 
@@ -207,7 +207,7 @@ const KNOWLEDGE_US = `
 - Lifetime gift exemption: same as estate ($13.99M, unified)
 - Step-up in basis: heirs receive assets at FMV at death (massive tax benefit on appreciated assets)
 - State estate tax: 12 states + DC have separate estate tax (MA, OR, WA, NY, etc.)
-- Revocable Living Trust: avoids probate, public, doesn't reduce taxes
+- Revocable Living Trust: avoids pruébate, public, doesn't reduce taxes
 - Irrevocable trusts (ILIT, GRAT, IDGT, SLAT): asset protection, gift/estate tax planning
 - 529 plans: not in estate, 5-year forward contribution allowed ($95K/recipient single)
 - Beneficiary designations OVERRIDE will (401k, IRA, life insurance) — must update after divorce
@@ -337,7 +337,7 @@ exports.handler = async (event) => {
     // arranque en frío: presupuesto de Anthropic abierto a quien quisiera.
     const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
     const quien = await usuarioDesdeToken(event);
-    if (!quien) return sinSesion(headers, "Iniciá sesión para usar el asesor con IA.");
+    if (!quien) return sinSesion(headers, "Inicia sesión para usar el asesor con IA.");
     const userId = quien.id;
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_KEY) {
