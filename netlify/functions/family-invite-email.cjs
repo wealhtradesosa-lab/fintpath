@@ -35,6 +35,7 @@
 //   RESEND_FROM     (opcional; default 'Finpathia <noreply@finpathia.com>')
 // ═══════════════════════════════════════════════════════════════════
 
+const { enmascararEmail, errorParaLog } = require("../lib/logSeguro.cjs");
 exports.handler = async (event) => {
   const cors = {
     "Access-Control-Allow-Origin": "*",
@@ -178,7 +179,7 @@ exports.handler = async (event) => {
 
     if (!res.ok) {
       // Resend devuelve { name, message, statusCode } en errores
-      console.error("[family-invite-email] Resend error", res.status, data);
+      console.error("[family-invite-email] Resend error", res.status, errorParaLog(data));
       return {
         statusCode: 200, // 200 al cliente — no romper el flujo de invitación
         headers: cors,
@@ -191,7 +192,7 @@ exports.handler = async (event) => {
       };
     }
 
-    console.log(`[family-invite-email] Enviado a ${email} · message_id=${data?.id}`);
+    console.log(`[family-invite-email] Enviado a ${enmascararEmail(email)} · message_id=${data?.id}`);
     return {
       statusCode: 200,
       headers: cors,
@@ -202,7 +203,7 @@ exports.handler = async (event) => {
       }),
     };
   } catch (err) {
-    console.error("[family-invite-email] Exception", err);
+    console.error("[family-invite-email] Exception", errorParaLog(err));
     return {
       statusCode: 200, // 200 al cliente — el link sigue siendo copyable
       headers: cors,

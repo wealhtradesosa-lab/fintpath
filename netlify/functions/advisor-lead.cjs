@@ -60,7 +60,8 @@ exports.handler = async (event) => {
     };
 
     // Log to Netlify logs (always)
-    console.log("🎯 ADVISOR LEAD:", JSON.stringify(lead));
+    // Sin nombre, email, teléfono, firma ni mensaje: solo lo que no identifica.
+    console.log("🎯 ADVISOR LEAD:", JSON.stringify({ plan: lead.plan, billing_cycle: lead.billing_cycle, clients_count: lead.clients_count, source: lead.source }));
 
     // Save to Supabase if configured
     const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;

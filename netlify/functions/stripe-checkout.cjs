@@ -18,6 +18,7 @@
 //                                    priceIds reciben trial 14 días auto)
 // ═══════════════════════════════════════════════════════════════════════════
 
+const { uidCorto } = require("../lib/logSeguro.cjs");
 const Stripe = require("stripe");
 
 // Trial period en días para Pro Familiar. Si querés cambiarlo (ej: 7 días),
@@ -176,7 +177,7 @@ exports.handler = async (event) => {
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    console.log(`[stripe-checkout] session creada · priceId=${priceId} userId=${userId} session=${session.id}`);
+    console.log(`[stripe-checkout] session creada · priceId=${priceId} userId=${uidCorto(userId)} session=${session.id}`);
 
     return { statusCode: 200, headers, body: JSON.stringify({ url: session.url }) };
 

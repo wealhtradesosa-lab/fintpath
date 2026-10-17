@@ -28,6 +28,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Componentes HTML reusables ──────────────────────────────────────────
+const { errorParaLog } = require("../lib/logSeguro.cjs");
 const FONT_STACK = "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 function emailShell(content, { ctaText, ctaUrl, preheader = "" }) {
@@ -302,7 +303,7 @@ async function sendTemplate({ to, template, vars = {} }) {
   });
   const data = await resp.json();
   if (!resp.ok) {
-    console.error(`[send-email] Resend error (${resp.status}):`, data);
+    console.error(`[send-email] Resend error (${resp.status}):`, errorParaLog(data));
     return { ok: false, error: data.message || "Resend error", status: resp.status };
   }
   console.log(`[send-email] ✅ template=${template} to=${to} message_id=${data.id}`);
@@ -342,7 +343,7 @@ exports.handler = async (event) => {
     const statusCode = r.ok ? 200 : (r.status ? 500 : 400);
     return { statusCode, headers: cors, body: JSON.stringify(r) };
   } catch (e) {
-    console.error("[send-email] exception:", e);
+    console.error("[send-email] exception:", errorParaLog(e));
     return { statusCode: 500, headers: cors, body: JSON.stringify({ ok: false, error: String(e?.message || e) }) };
   }
 };
