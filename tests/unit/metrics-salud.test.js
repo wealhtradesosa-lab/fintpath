@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, INFLACION_DEFAULT_PCT, inflacionGlobal } from "../../src/lib/metrics.js";
+import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, clasificarMargen, INFLACION_DEFAULT_PCT, inflacionGlobal } from "../../src/lib/metrics.js";
 
 const qa = JSON.parse(readFileSync(new URL("../fixtures/qa_pro_patrimonio_completo.json", import.meta.url), "utf8"));
 const m = calcularMetricas({ ingresos: qa.ingresos, gastos: qa.gas, deudas: qa.deu, inv: qa.inv, trm: qa.trm });
@@ -66,9 +66,9 @@ describe("inflación (spec §5) — un solo supuesto global, default 4%", () => 
   it("sin valor explícito usa el default 4%", () => {
     expect(gananciaVsInflacion(m).inflacion).toBe(4);
   });
-  it("cambiar el supuesto cambia el mensaje (5,2% → no le gana)", () => {
+  it("cambiar el supuesto cambia el mensaje (5,2% → no le gana por poco)", () => {
     const g = gananciaVsInflacion(m, 5.2);
-    expect(g.mensaje).toBe("No le gana a la inflación (−0,8% real)");
+    expect(g.mensaje).toBe("Tu portafolio no le gana a la inflación por poco (−0,8% real)");
   });
   it("con valorización declarada suma al nominal y le gana con holgura", () => {
     const x = calcularMetricas({
@@ -78,5 +78,53 @@ describe("inflación (spec §5) — un solo supuesto global, default 4%", () => 
     const g = gananciaVsInflacion(x, 4);
     expect(g.nominal).toBeCloseTo(9, 5);
     expect(g.mensaje).toBe("Tu portafolio le gana a la inflación (+5,0% real al año)");
+  });
+});
+
+describe("copy de inflación por margen real (bordes 0, 1, −1)", () => {
+  // invertibles 100, IP 0: nominal = valorización; con inflación 4 → real = val − 4
+  const g = (val) => gananciaVsInflacion({ ip: 0, valorizacionAnual: val, invertibles: 100 }, 4);
+  it("real = +1 exacto → le gana", () => { expect(g(5).clase).toBe("gana"); expect(g(5).mensaje).toMatch(/^Tu portafolio le gana a la inflación \(\+1,0%/); });
+  it("real justo bajo 1 → le gana por poco", () => { expect(g(4.99).clase).toBe("gana_poco"); expect(g(4.99).mensaje).toMatch(/por poco/); });
+  it("real justo sobre 0 → le gana por poco", () => { expect(g(4.01).clase).toBe("gana_poco"); });
+  it("real = 0 exacto → no le gana por poco (0 incluido)", () => {
+    expect(g(4).clase).toBe("no_gana_poco");
+    expect(g(4).mensaje).toBe("Tu portafolio no le gana a la inflación por poco (0,0% real)");
+    expect(g(4).leGana).toBe(false);
+  });
+  it("real = −1 exacto → no le gana por poco", () => { expect(g(3).clase).toBe("no_gana_poco"); });
+  it("real justo bajo −1 → no le gana", () => {
+    expect(g(2.99).clase).toBe("no_gana");
+    expect(g(2).mensaje).toBe("No le gana a la inflación (−2,0% real)");
+  });
+  it("clasificarMargen directo", () => {
+    expect([1, 0.5, 0, -1, -1.0001].map(clasificarMargen)).toEqual(["gana", "gana_poco", "no_gana_poco", "no_gana_poco", "no_gana"]);
+  });
+});
+
+describe("origen de la renta del activo (manual vs derivada)", () => {
+  const base = (origen) => calcularMetricas({
+    ingresos: [{ categoria: "Rentas de capital", mensual: (380e6 * 0.043) / 12, activoId: "apt" }],
+    gastos: { "Inmueble arrendado": [
+      { m: 350000, frecuencia: "mensual", activoId: "apt" },
+      { m: 2400000, frecuencia: "anual", activoId: "apt" },
+    ] },
+    inv: [{ id: "apt", tp: "Real Estate", va: 380e6, vc: 380e6, ...(origen ? { rentaOrigen: origen } : {}) }],
+  });
+  it("manual 4,3% con gastos vinculados: 4,3% tal cual, sin descuento extra ni gasto duplicado", () => {
+    const m = base("manual");
+    expect(m.costosNeteados).toBe(0);
+    expect(m.g).toBe(0);
+    expect(m.ip * 12).toBeCloseTo(380e6 * 0.043, 0);
+    expect(rentaYYield(m).yield).toBeCloseTo(4.3, 6);
+  });
+  it("derivada: bruta, se descuentan administración y predial", () => {
+    const m = base("derivada");
+    expect(m.costosNeteados).toBeCloseTo(550000, 0);
+    expect(rentaYYield(m).yield).toBeLessThan(4.3);
+  });
+  it("sin indicador (activo viejo, p. ej. 6%): se trata como bruta", () => {
+    const m = base(undefined);
+    expect(m.costosNeteados).toBeCloseTo(550000, 0);
   });
 });

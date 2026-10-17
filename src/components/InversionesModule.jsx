@@ -234,7 +234,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       vc: String(getVCrw(inv) || ""),
       tasa: String(inv.tasa || ""),
       valorizacionPct: inv.valorizacionPct != null ? String(inv.valorizacionPct) : "",
-      tasaLegacy: !!inv.tasa && inv.tasaBase !== "neta",
+      rentaOrigen: inv.rentaOrigen || "",
+      tasaLegacy: !!inv.tasa && !inv.rentaOrigen,
       owner: inv.owner || "",
       moneda: inv.moneda || "COP",
     });
@@ -276,7 +277,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       vc: Math.abs(parseFloat(form.vc)) || 0,
       moneda: form.moneda || "COP",
       tasa,
-      tasaBase: "neta", // desde esta versión el % se declara como renta neta anual
+      // Origen de la renta: manual (el usuario escribió el %, ya neta) | derivada (arriendo×12÷valor, bruta).
+      // Un activo viejo sin indicador que se guarda sin tocar el % queda confirmado como bruta.
+      rentaOrigen: tasa > 0 ? (form.rentaOrigen || "derivada") : undefined,
       valorizacionPct: form.valorizacionPct !== "" && form.valorizacionPct != null ? parseFloat(form.valorizacionPct) || 0 : undefined,
       fiscalCode: form.fiscalCode || undefined,
       pctTerreno: form.pctTerreno !== "" && form.pctTerreno != null ? Math.max(0, Math.min(100, parseFloat(form.pctTerreno))) : undefined,
@@ -619,17 +622,20 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   <div style={{flex:1}}><In l="Renta mensual ($)" value={form.renta} onChange={(v) => {
                     const va=parseFloat(form.va)||0;
                     const newTasa=va>0&&v?((parseFloat(v)*12/va)*100).toFixed(1):"";
-                    setForm((p) => ({ ...p, renta: v, tasa: newTasa }));
+                    setForm((p) => ({ ...p, renta: v, tasa: newTasa, rentaOrigen: "derivada", tasaLegacy: false }));
                   }} type="number" placeholder="Ej: 4200000" /></div>
                   <div style={{flex:1}}><In l="Renta neta anual %" value={form.tasa} onChange={(v) => {
                     const va=parseFloat(form.va)||0;
                     const newRenta=va>0&&v?Math.round(va*parseFloat(v)/100/12):"";
-                    setForm((p) => ({ ...p, tasa: v, renta: String(newRenta) }));
+                    setForm((p) => ({ ...p, tasa: v, renta: String(newRenta), rentaOrigen: "manual", tasaLegacy: false }));
                   }} type="number" placeholder="Ej: 12" /></div>
+                </div>
+                <div style={{fontSize:10,color:T.txt3,marginTop:6,lineHeight:1.5}}>
+                  Renta después de administración y predial. Si ya es neta, escríbela tal cual.
                 </div>
                 {form.tasaLegacy && parseFloat(form.tasa) > 0 && (
                   <div style={{fontSize:10,color:"#eab308",marginTop:6,lineHeight:1.5}}>
-                    ⓘ Este % se cargó antes como «rendimiento anual»: se interpreta como renta bruta anual. Ahora la renta neta descuenta la administración y el predial vinculados al activo.
+                    ⓘ Este % se cargó antes como «rendimiento anual»: se interpreta como renta bruta anual y ahora se descuentan la administración y el predial vinculados al activo. Si ya es neta, vuelve a escribirla; si es bruta, guarda para confirmarla.
                   </div>
                 )}
                 <div style={{marginTop:8}}>
