@@ -31,3 +31,31 @@ export function columnasPortafolio(angosto) {
 }
 
 export const ANCHO_ANGOSTO = 640;
+
+/**
+ * Contenido del encabezado de cada grupo (Real Estate · 3 … $380.0M 40%).
+ * La celda ocupa todo el ancho de la tabla, y en el móvil la tabla es más
+ * ancha que la pantalla, así que el subtotal quedaba fuera de la vista y se
+ * cortaba ($380.0I, $62.0I). En angosto el contenido se ancla a la izquierda
+ * del contenedor con scroll (sticky) y no pasa del ancho visible.
+ */
+export function estiloEncabezadoGrupo(angosto) {
+  const base = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" };
+  return angosto
+    ? { ...base, position: "sticky", left: 0, boxSizing: "border-box", width: "calc(100vw - 32px)", maxWidth: "100%" }
+    : base;
+}
+
+/**
+ * Deudas activas (con saldo y encendidas) que no están vinculadas a ningún
+ * activo del portafolio: no restan de la deuda de ninguna fila, así que la
+ * suma de la columna Deuda no cuadra con el total. Se avisa en una nota.
+ */
+export function deudasSinActivo(deudas, activos) {
+  const ids = new Set((activos || []).map((a) => a.id));
+  const sueltas = (deudas || []).filter((d) => {
+    const link = d.la || d.link;
+    return d.sim !== false && (Number(d.mt || d.monto) || 0) > 0 && (!link || !ids.has(link));
+  });
+  return { n: sueltas.length, total: sueltas.reduce((s, d) => s + (Number(d.mt || d.monto) || 0), 0) };
+}

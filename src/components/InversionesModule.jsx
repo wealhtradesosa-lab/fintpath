@@ -11,7 +11,7 @@ import { exportInversionesExcel } from "../lib/excelExport.js";
 import { exportPatrimonioPDF } from "../lib/pdfSectionExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { vaCOP, vcCOP, totalAnualItem } from "../lib/flowHelpers.js";
-import { gastosDelUsuario, columnasPortafolio, ANCHO_ANGOSTO } from "../lib/patrimonioUI.js";
+import { gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, deudasSinActivo, ANCHO_ANGOSTO } from "../lib/patrimonioUI.js";
 
 const T = {
   bg2: C.surface, bg3: "#1e1e24",
@@ -267,7 +267,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     const vcCheck = Math.abs(parseFloat(form.vc)) || 0;
     if (va > 0 && vcCheck > 0 && va < vcCheck * 0.1) {
       const ok = window.confirm(
-        `⚠️ REVISÁ LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${(100 - (va / vcCheck) * 100).toFixed(0)}%. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usá el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
+        `⚠️ REVISA LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${(100 - (va / vcCheck) * 100).toFixed(0)}%. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usa el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
       );
       if (!ok) return;
     }
@@ -360,7 +360,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     <div style={{ fontSize: 12, color: T.txt, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {inv.n || "(sin nombre)"} <span style={{ color: T.txt3, fontWeight: 400, fontFamily: "monospace" }}>· valor {fm(inv.v || 0)}</span>
                     </div>
-                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginTop: 2 }}>Asignale un propietario para atribuir los rendimientos correctamente</div>
+                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginTop: 2 }}>Asígnale un propietario para atribuir los rendimientos correctamente</div>
                   </div>
                   <button onClick={() => openEdit(inv)} style={{ padding: "5px 10px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, color: "#22c55e", cursor: "pointer", fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
                     Editar →
@@ -421,6 +421,15 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           </div>
         );
       })()}
+      {(() => {
+        const ds = deudasSinActivo(deudas, activos);
+        if (ds.n === 0) return null;
+        return (
+          <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
+            Tienes {ds.n} {ds.n === 1 ? "deuda" : "deudas"} por <strong style={{ fontFamily: "monospace" }}>{fm(ds.total)}</strong> que {ds.n === 1 ? "no está vinculada" : "no están vinculadas"} a ningún activo. No aparece en la columna Deuda de la tabla, pero sí cuenta en tu deuda total. Si corresponde a un activo, vincúlala desde Deudas.
+          </div>
+        );
+      })()}
       {/* Table */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
@@ -460,7 +469,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 if (inv.__cat) return (
                   <tr key={inv.id} style={{ background: T.bg2 }}>
                     <td colSpan={columnasPortafolio(angosto).length} style={{ padding: angosto ? "9px 6px" : "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <div style={estiloEncabezadoGrupo(angosto)}>
                         <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
                           {inv.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {inv.__n}</span>
                         </span>
@@ -567,7 +576,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["Real Estate", "Fondo de Inversión", "CDT", "Acciones", "Crypto", "Bodega", "Lote", "Vehículo", "Local Comercial", "Renta Fija", "Negocio", "Cash", "Otro"]} />
               {["Real Estate", "Bodega", "Lote", "Local Comercial"].includes(form.tipo) && (
                 <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>🏠 ¿Cómo usás este inmueble? (define si depreciación aplica)</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>🏠 ¿Cómo usas este inmueble? (define si depreciación aplica)</div>
                   <select value={form.fiscalCode || "INV_INMUEBLE_HABITACIONAL"} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                     style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer", marginBottom: 10 }}>
                     <option value="INV_INMUEBLE_HABITACIONAL">Habitacional — donde vivo (no se deprecia)</option>
@@ -594,7 +603,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   const perdidaPct = ((1 - vaN / vcN) * 100).toFixed(0);
                   return (
                     <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.35)", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#f97316", lineHeight: 1.5 }}>
-                      ⚠️ <strong>Revisá los ceros:</strong> el valor actual (${vaN.toLocaleString("es-CO")}) es {perdidaPct}% menor que lo que costó (${vcN.toLocaleString("es-CO")}). Si es correcto, ignorá este aviso — pero si el activo vale ${(vaN/1e6).toFixed(1)} millones y costó ${(vcN/1e9).toFixed(1)} mil millones, probablemente faltan ceros en el valor actual.
+                      ⚠️ <strong>Revisa los ceros:</strong> el valor actual (${vaN.toLocaleString("es-CO")}) es {perdidaPct}% menor que lo que costó (${vcN.toLocaleString("es-CO")}). Si es correcto, ignora este aviso — pero si el activo vale ${(vaN/1e6).toFixed(1)} millones y costó ${(vcN/1e9).toFixed(1)} mil millones, probablemente faltan ceros en el valor actual.
                     </div>
                   );
                 }
@@ -649,9 +658,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   }} type="number" placeholder="Ej: 12" /></div>
                 </div>
                 <div style={{fontSize:10,color:T.txt3,marginTop:6,lineHeight:1.5}}>
-                  Estimación: escribí uno y el otro se calcula solo. Estos campos
+                  Estimación: escribe uno y el otro se calcula solo. Estos campos
                   NO crean el ingreso — sirven para dimensionarlo. Para que cuente
-                  en tu flujo, registralo con el botón de abajo o desde la sección
+                  en tu flujo, regístralo con el botón de abajo o desde la sección
                   de Ingresos.
                 </div>
                 {/* 14-sep-2026 (Santiago: "poner en una sola casilla todos los
@@ -679,8 +688,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     if (!anual && !legacy) {
                       return (
                         <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.55 }}>
-                          Sin gastos vinculados. Cargalos en <strong style={{ color: T.txt2 }}>Gastos</strong>{" "}
-                          y elegí este activo en “Activo al que pertenece”: predial,
+                          Sin gastos vinculados. Cárgalos en <strong style={{ color: T.txt2 }}>Gastos</strong>{" "}
+                          y elige este activo en “Activo al que pertenece”: predial,
                           administración, seguros y mantenimiento como registros
                           separados, cada uno con su propia vigencia.
                         </div>
@@ -769,7 +778,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                           activoId: editId || "",
                           sim: true,
                         });
-                        alert(`Ingreso creado: Rendimiento — ${nombreActivo}. Queda vinculado a este activo y podés ajustarlo en el módulo de Ingresos.`);
+                        alert(`Ingreso creado: Rendimiento — ${nombreActivo}. Queda vinculado a este activo y puedes ajustarlo en el módulo de Ingresos.`);
                       }}
                       style={{ marginTop: 8, padding: "8px 14px", borderRadius: 10,
                         background: T.green, color: "#0a0a0a", border: "none",
@@ -778,7 +787,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     </button>
                   ) : (
                     <div style={{ fontSize: 11, color: T.blue, marginTop: 6, fontWeight: 600 }}>
-                      👉 Agregá este ingreso en el módulo de Ingresos con categoría "Rendimiento"
+                      👉 Agrega este ingreso en el módulo de Ingresos con categoría "Rendimiento"
                     </div>
                   )}
                 </div>
