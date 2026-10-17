@@ -633,8 +633,9 @@ export default function FinPath(){
   useEffect(()=>{
     captureUTMs();
     track("app_loaded", {
-      pathname: typeof window !== "undefined" ? window.location.pathname : "",
-      referrer: typeof document !== "undefined" ? document.referrer : "",
+      // Sin el token de /invite/<token> y sin query del referrer.
+      pathname: typeof window !== "undefined" ? window.location.pathname.replace(/^\/invite\/[^/]+/, "/invite/_") : "",
+      referrer: typeof document !== "undefined" && document.referrer ? (()=>{try{return new URL(document.referrer).origin}catch{return ""}})() : "",
     });
   },[]);
   // Password recovery: escuchar el evento de Supabase cuando el usuario hace
@@ -718,7 +719,7 @@ export default function FinPath(){
     // Handle Stripe success redirect
     const params=new URLSearchParams(window.location.search);
     const successFlag=params.get('success');
-    const sessionId=params.get('session_id');
+    const sessionId=params.get('session_id')||(typeof window!=="undefined"?window.__fpStripeSessionId:null)||null;
     // ═══ REGRESO DESDE STRIPE ═══════════════════════════════════════════
     // 25-jul-2026. Antes, el momento más delicado del producto era SILENCIO:
     //  · Al volver de un pago exitoso no se mostraba nada. La página se
@@ -952,7 +953,7 @@ export default function FinPath(){
         if(error){const msg=error.message==="Invalid login credentials"?"Email o contraseña incorrectos":error.message==="Email not confirmed"?"Revisa tu email y confirma tu cuenta":error.message;setAuthError(msg);setAuthLoading(false);return}
         // Sesión 4-may-2026: tracking GA4 — login exitoso con user_id
         // para atribución cross-device.
-        track("login_completed",{ method:"email", user_id: data.user.id });
+        track("login_completed",{ method:"email" });
         identifyUser(data.user.id);
         // Advisor lookup: corre SIEMPRE para saber si la cuenta tiene plan Asesor
         let advData=null;
@@ -1399,8 +1400,9 @@ export default function FinPath(){
     const pathname=typeof window!=="undefined"?window.location.pathname:"";
     const inviteMatch=pathname.match(/^\/invite\/([A-Za-z0-9_-]+)\/?$/);
     if(inviteMatch){
-      const token=inviteMatch[1];
-      return<AcceptInvite token={token} onComplete={()=>{window.location.href="/"}}/>;
+      // index.html saca el token de la URL (queda /invite/_) y lo deja en memoria.
+      const token=inviteMatch[1]==="_"?(window.__fpInviteToken||(()=>{try{return sessionStorage.getItem("fp3_invite_token")||""}catch{return ""}})()):inviteMatch[1];
+      return<AcceptInvite token={token} onComplete={()=>{try{sessionStorage.removeItem("fp3_invite_token")}catch{};window.location.href="/"}}/>;
     }
   }
 

@@ -90,7 +90,6 @@ export default function EditarAportesManuales({ owner, onSave, onCancel }) {
   const handleSave = () => {
     if (!guardEdit(role)) return;
     track("ajustes_fiscales_avanzados_guardados", {
-      owner_id: owner?.id,
       tiene_ss_indep: +a.segSocialIndependienteMensual > 0,
       salario_es_bruto: a.salarioEsBruto,
     });
