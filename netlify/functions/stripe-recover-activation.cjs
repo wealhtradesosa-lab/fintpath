@@ -128,7 +128,7 @@ exports.handler = async (event) => {
           statusCode: 400,
           body: JSON.stringify({
             error: "no_stripe_customer",
-            message: "No encontramos un customer asociado. Si pagaste recién, esperá unos minutos y volvé a intentar.",
+            message: "No encontramos un customer asociado. Si pagaste recién, espera unos minutos y vuelve a intentar.",
           }),
         };
       }
