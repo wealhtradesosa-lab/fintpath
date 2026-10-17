@@ -206,13 +206,19 @@ export function calcularBase(d = {}) {
   });
   const invertibles = invertiblesLista.reduce((s, i) => s + valorActivo(i), 0);
 
-  const ingresoTotal = iaBruto + ipBruto; // bruto: base de % sobre ingreso
+  const ingresoTotal = iaBruto + ipBruto; // bruto: solo para la composición activo/pasivo
+  // Ingreso NETO de retención: base única de ahorro y carga de deuda. El flujo
+  // libre (fl) ya es neto de retención, así que el denominador debe serlo también.
+  // La retención no se vuelve a restar en el saldo a pagar de Renta (impuestoNeto ya viene neto).
+  const ingresoNeto = ia + ipBruto;
+  const ahorroPct = ingresoNeto > 0 ? (fl / ingresoNeto) * 100 : 0;
+  const cargaDeudaPct = ingresoNeto > 0 ? (sd / ingresoNeto) * 100 : 0;
   return {
     trm,
     iaBruto, ia, ipBruto, ip, costosNeteados, costosAbsorbidosManual,
     g, sd, ob, fl,
     aportesObligatorios, gastosVida, impuestoNeto, retencionMensual,
-    ingresoTotal,
+    ingresoTotal, ingresoNeto, ahorroPct, cargaDeudaPct,
     // % del ingreso que no depende del trabajo (composición, sobre bruto)
     pctIngresoPasivo: ingresoTotal > 0 ? (ipBruto / ingresoTotal) * 100 : 0,
     // Cobertura pasiva = IP / OB (el índice del nivel)
@@ -288,9 +294,9 @@ export const BANDAS_SALUD = [
   { min: 40, nombre: "Frágil" },    { min: 0,  nombre: "Crítica" },
 ];
 export function saludFinanciera(b) {
-  const ing = b.ingresoTotal || 0;
-  const ahorroPct = ing > 0 ? (b.fl / ing) * 100 : 0;
-  const deudaPct = ing > 0 ? (b.sd / ing) * 100 : 0;
+  // Misma base (ingreso neto de retención) en numerador y denominador.
+  const ahorroPct = b.ahorroPct != null ? b.ahorroPct : 0;
+  const deudaPct = b.cargaDeudaPct != null ? b.cargaDeudaPct : 0;
   const dA = b.activosTotal > 0 ? (b.deudaTotal / b.activosTotal) * 100 : 0;
   const col = b.colchonMeses == null ? 0 : b.colchonMeses;
   const cob = b.coberturaPasiva || 0;
@@ -364,7 +370,7 @@ export function gananciaVsInflacion(b, inflacionPct) {
   const txt = {
     gana: `Tu portafolio le gana a la inflación (+${x}% real al año)`,
     gana_poco: `Tu portafolio le gana a la inflación por poco (+${x}% real al año)`,
-    no_gana_poco: `Tu portafolio no le gana a la inflación por poco (${real < 0 ? "−" : ""}${x}% real)`,
+    no_gana_poco: `A tu portafolio le falta poco para ganarle a la inflación (${real < 0 ? "−" : ""}${x}% real)`,
     no_gana: `No le gana a la inflación (−${x}% real)`,
   }[clase];
   return {
@@ -373,4 +379,10 @@ export function gananciaVsInflacion(b, inflacionPct) {
     porPoco: clase === "gana_poco" || clase === "no_gana_poco",
     mensaje: txt,
   };
+}
+
+/** Porcentaje con coma decimal (es-CO): 4,4%. Una sola función para toda la app. */
+export function fmtPctEs(n, dec = 1) {
+  const v = Number(n);
+  return (Number.isFinite(v) ? v : 0).toLocaleString("es-CO", { minimumFractionDigits: dec, maximumFractionDigits: dec }) + "%";
 }

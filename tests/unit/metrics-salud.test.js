@@ -7,7 +7,7 @@ const m = calcularMetricas({ ingresos: qa.ingresos, gastos: qa.gas, deudas: qa.d
 
 describe("salud financiera (spec §2)", () => {
   const s = saludFinanciera(m);
-  it("caso QA: 38 Crítica (ahorro 5,8%, deuda 38,2%, colchón 3,07, D/A 49,7%, cobertura 17,4%)", () => {
+  it("caso QA sin retención: 38 Crítica (ahorro 5,8%, deuda 38,2% sobre ingreso neto = bruto)", () => {
     expect(s.score).toBe(38);
     expect(s.banda).toBe("Crítica");
     expect(s.componentes.ahorro.puntos).toBeCloseTo(29.1, 1);
@@ -17,12 +17,12 @@ describe("salud financiera (spec §2)", () => {
     expect(s.componentes.cobertura.puntos).toBeCloseTo(34.7, 1);
   });
   it("candado: patrimonio negativo o FL<0 → máx 39", () => {
-    const x = saludFinanciera({ ingresoTotal: 10e6, fl: 5e6, sd: 0, colchonMeses: 12, activosTotal: 100, deudaTotal: 120, patrimonioNeto: -20, coberturaPasiva: 100 });
+    const x = saludFinanciera({ ahorroPct: 50, cargaDeudaPct: 0, fl: 5e6, sd: 0, colchonMeses: 12, activosTotal: 100, deudaTotal: 120, patrimonioNeto: -20, coberturaPasiva: 100 });
     expect(x.score).toBe(39);
     expect(x.candado).toBe("patrimonio_negativo");
   });
   it("extremos: todo al máximo = 100 Excelente; bandas", () => {
-    const x = saludFinanciera({ ingresoTotal: 10e6, fl: 3e6, sd: 1e6, colchonMeses: 6, activosTotal: 100, deudaTotal: 10, patrimonioNeto: 90, coberturaPasiva: 60 });
+    const x = saludFinanciera({ ahorroPct: 30, cargaDeudaPct: 10, fl: 3e6, sd: 1e6, colchonMeses: 6, activosTotal: 100, deudaTotal: 10, patrimonioNeto: 90, coberturaPasiva: 60 });
     expect(x.score).toBe(100);
     expect(x.banda).toBe("Excelente");
   });
@@ -66,9 +66,9 @@ describe("inflación (spec §5) — un solo supuesto global, default 4%", () => 
   it("sin valor explícito usa el default 4%", () => {
     expect(gananciaVsInflacion(m).inflacion).toBe(4);
   });
-  it("cambiar el supuesto cambia el mensaje (5,2% → no le gana por poco)", () => {
+  it("cambiar el supuesto cambia el mensaje (5,2% → le falta poco para ganarle)", () => {
     const g = gananciaVsInflacion(m, 5.2);
-    expect(g.mensaje).toBe("Tu portafolio no le gana a la inflación por poco (−0,8% real)");
+    expect(g.mensaje).toBe("A tu portafolio le falta poco para ganarle a la inflación (−0,8% real)");
   });
   it("con valorización declarada suma al nominal y le gana con holgura", () => {
     const x = calcularMetricas({
@@ -87,12 +87,12 @@ describe("copy de inflación por margen real (bordes 0, 1, −1)", () => {
   it("real = +1 exacto → le gana", () => { expect(g(5).clase).toBe("gana"); expect(g(5).mensaje).toMatch(/^Tu portafolio le gana a la inflación \(\+1,0%/); });
   it("real justo bajo 1 → le gana por poco", () => { expect(g(4.99).clase).toBe("gana_poco"); expect(g(4.99).mensaje).toMatch(/por poco/); });
   it("real justo sobre 0 → le gana por poco", () => { expect(g(4.01).clase).toBe("gana_poco"); });
-  it("real = 0 exacto → no le gana por poco (0 incluido)", () => {
+  it("real = 0 exacto → le falta poco para ganarle (0 incluido)", () => {
     expect(g(4).clase).toBe("no_gana_poco");
-    expect(g(4).mensaje).toBe("Tu portafolio no le gana a la inflación por poco (0,0% real)");
+    expect(g(4).mensaje).toBe("A tu portafolio le falta poco para ganarle a la inflación (0,0% real)");
     expect(g(4).leGana).toBe(false);
   });
-  it("real = −1 exacto → no le gana por poco", () => { expect(g(3).clase).toBe("no_gana_poco"); });
+  it("real = −1 exacto → le falta poco para ganarle", () => { expect(g(3).clase).toBe("no_gana_poco"); });
   it("real justo bajo −1 → no le gana", () => {
     expect(g(2.99).clase).toBe("no_gana");
     expect(g(2).mensaje).toBe("No le gana a la inflación (−2,0% real)");
@@ -126,5 +126,46 @@ describe("origen de la renta del activo (manual vs derivada)", () => {
   it("sin indicador (activo viejo, p. ej. 6%): se trata como bruta", () => {
     const m = base(undefined);
     expect(m.costosNeteados).toBeCloseTo(550000, 0);
+  });
+});
+
+describe("ahorro y carga de deuda: misma base neta de retención (numerador y denominador)", () => {
+  const conRet = (r) => calcularMetricas({ ingresos: qa.ingresos, gastos: qa.gas, deudas: qa.deu, inv: qa.inv, trm: qa.trm, retencionMensual: r });
+  it("sin retención: FL 567.500 ÷ ingreso 9.747.500 = 5,8%", () => {
+    const x = conRet(0);
+    expect(x.ingresoNeto).toBe(9747500);
+    expect(x.ahorroPct).toBeCloseTo((567500 / 9747500) * 100, 6);
+    expect(x.cargaDeudaPct).toBeCloseTo((3720000 / 9747500) * 100, 6);
+  });
+  it("con retención 520.000: FL 47.500 ÷ ingreso neto 9.227.500 = 0,5% (no 0,49% sobre bruto)", () => {
+    const x = conRet(520000);
+    expect(x.fl).toBe(47500);
+    expect(x.ingresoNeto).toBe(9227500);
+    expect(x.ahorroPct).toBeCloseTo(0.5148, 3);
+    expect(x.ahorroPct).not.toBeCloseTo((47500 / 9747500) * 100, 2);
+    expect(x.cargaDeudaPct).toBeCloseTo((3720000 / 9227500) * 100, 6); // 40,3%
+  });
+  it("salud con retención: 30 Crítica (cuotas ÷ neto); la misma cifra de ahorro alimenta puntaje", () => {
+    const x = conRet(520000);
+    const s = saludFinanciera(x);
+    expect(s.componentes.ahorro.valor).toBe(x.ahorroPct);
+    expect(s.componentes.cargaDeuda.valor).toBe(x.cargaDeudaPct);
+    expect(s.score).toBe(30);
+    expect(s.banda).toBe("Crítica");
+  });
+  it("la retención no cambia IP ni OB (no se resta dos veces)", () => {
+    expect(conRet(520000).ob).toBe(conRet(0).ob);
+    expect(conRet(520000).ip).toBe(conRet(0).ip);
+  });
+});
+
+describe("nivel desde la fuente única, sin salario como pasivo", () => {
+  it("salario que cubre gastos y cuotas (101%) NO es Independencia: cobertura pasiva 0 → N2", () => {
+    const x = calcularMetricas({
+      ingresos: [{ categoria: "Salario", mensual: 10100000 }],
+      gastos: { Vida: [{ m: 10000000, frecuencia: "mensual" }] },
+    });
+    expect(x.coberturaPasiva).toBe(0);
+    expect(x.nivel.nivel).toBe(2);
   });
 });

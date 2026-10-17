@@ -75,7 +75,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
 import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual, mesesLibreDeuda, vaCOP, vcCOP } from "./lib/flowHelpers.js";
-import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, inflacionGlobal } from "./lib/metrics.js";
+import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, inflacionGlobal, fmtPctEs } from "./lib/metrics.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react";
@@ -471,7 +471,7 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200,inflacionPct)=>{
     met, nivel:met.nivel,
     salud:saludFinanciera(met), rentaYield:rentaYYield(met), inflacion:gananciaVsInflacion(met,inflacionPct), colchonMeses:met.colchonMeses,
     ingresoPasivo:met.ip, ingresoPasivoBruto:met.ipBruto, pctIngresoPasivo:met.pctIngresoPasivo,
-    ob:met.ob,
+    ob:met.ob, ahorroPct:met.ahorroPct, cargaDeudaPct:met.cargaDeudaPct, ingresoNeto:met.ingresoNeto,
     // ═══ Legacy aliases (compatibilidad) ═══
     ab, td, nw:ab-td,
     ti:brutoTotal, tg:0, ni:disponibleCuenta,
@@ -2372,10 +2372,10 @@ export default function FinPath(){
         const liquidAssets = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => ["Investment","Fondo de Inversión","CDT","Acciones","Crypto","Renta Fija","Cash"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trm), 0);
         const runway = t.colchonMeses != null ? Math.round(t.colchonMeses*10)/10 : 999; // colchón único (metrics.js)
         const burnRate = t.nw > 0 ? ((t.te * 12) / t.nw * 100) : 0;
-        const savingsRate = t.ti > 0 ? (t.cf / t.ti * 100) : 0;
+        const savingsRate = t.ahorroPct || 0; // misma cifra que alertas y puntaje (metrics.js, neto de retención)
         const fireNumber = t.gfm * 12 * 25;
         const fireProgress = fireNumber > 0 ? Math.min((t.nw / fireNumber) * 100, 100) : 0;
-        const debtService = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
+        const debtService = t.cargaDeudaPct || 0; // cuotas ÷ ingreso neto de retención (metrics.js)
         // Passive vs active income
         // % del ingreso que es pasivo: misma clasificación que el nivel (metrics.js).
         const passiveRatio = t.pctIngresoPasivo || 0;
@@ -2664,7 +2664,7 @@ export default function FinPath(){
                       <div key={i} style={{marginBottom:8}}>
                         <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:8}}>
                           <span style={{color:i<2?T.tx:T.tx2,fontWeight:i<2?700:400}}>{b.name}</span>
-                          <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{b.pct.toFixed(1)}%</span>
+                          <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{fmtPctEs(b.pct)}</span>
                         </div>
                         <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
                           <div style={{height:"100%",width:Math.max((Math.abs(b.pct)/maxPct)*100,2)+"%",background:b.color,borderRadius:3,opacity:i<2?1:0.6}}/>
@@ -2673,7 +2673,7 @@ export default function FinPath(){
                     ))}
                     <div style={{marginTop:8,fontSize:10,color:T.tx3,lineHeight:1.5}}>
                       {t.inflacion
-                        ? <span style={{color:t.inflacion.leGana?T.gn:T.rd}}>{t.inflacion.leGana?"✅":"⚠"} {t.inflacion.mensaje} · nominal {t.inflacion.nominal.toFixed(1)}% vs inflación usada {t.inflacion.inflacion.toFixed(1)}%</span>
+                        ? <span style={{color:t.inflacion.leGana?T.gn:T.rd}}>{t.inflacion.leGana?"✅":"⚠"} {t.inflacion.mensaje} · nominal {fmtPctEs(t.inflacion.nominal)} vs inflación usada {fmtPctEs(t.inflacion.inflacion)}</span>
                         : <span style={{color:T.tx3}}>Carga activos para comparar contra la inflación.</span>
                       }
                       <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
@@ -2681,7 +2681,7 @@ export default function FinPath(){
                         <input id="inflacion-global" type="number" step="0.1" min="0" value={(u&&u.inflacionPct)!=null?u.inflacionPct:4} onChange={e=>upd("inflacionPct",e.target.value===""?"":Number(e.target.value))} style={{width:64,background:T.bg3,color:T.tx,border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,padding:"3px 6px",fontSize:11}}/>
                         <span style={{fontSize:10,color:T.tx3}}>Alimenta también la proyección de patrimonio.</span>
                       </div>
-                      <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%) · Renta anual: {fm(t.rentaYield.rentaAnual)} ({incomeYield.toFixed(1)}% · {t.rentaYield.etiqueta})
+                      <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%) · Renta neta anual: {fm(t.rentaYield.rentaAnual)} ({incomeYield.toFixed(1)}% · {t.rentaYield.etiqueta})
                     </div>
                   </>
                 );
@@ -2811,7 +2811,7 @@ export default function FinPath(){
                 if (concR > 40) actions.push({pri:"🟡",text:maxA.n + " es " + concR.toFixed(0) + "% de tu patrimonio. Diversifica para reducir riesgo.",cat:"Riesgo"});
                 
                 if (t.cf < 0) actions.push({pri:"🔴",text:"Tu cash flow es negativo. Gastas más de lo que ganas. Revisa gastos o busca más ingresos.",cat:"Cash Flow"});
-                else if (t.ti > 0 && (t.cf/t.ti*100) < 10) actions.push({pri:"🟡",text:"Tu tasa de ahorro es baja (" + (t.cf/t.ti*100).toFixed(0) + "%). Intenta ahorrar al menos el 20%.",cat:"Ahorro"});
+                else if (t.ingresoNeto > 0 && t.ahorroPct < 10) actions.push({pri:"🟡",text:"Tu tasa de ahorro es baja (" + fmtPctEs(t.ahorroPct) + "). Intenta ahorrar al menos el 20%.",cat:"Ahorro"});
                 
                 const passPct = t.pctIngresoPasivo || 0;
                 if (t.ti > 0 && passPct < 50) actions.push({pri:"🟡",text:"Solo el " + passPct.toFixed(0) + "% de tu ingreso es pasivo. Invierte más en activos que generen renta.",cat:"Independencia"});
@@ -3002,12 +3002,12 @@ export default function FinPath(){
           if (maxIngPct > 40) alerts.push({type:"🟡",title:"Dependencia de ingreso: "+maxIng.n,msg:"El "+maxIngPct.toFixed(0)+"% de tus ingresos viene de una sola fuente. Si esa fuente falla, tu cash flow cae "+fm(maxIng.v)+"/mes. Diversifica fuentes de ingreso.",cat:"Riesgo de ingreso"});
 
           // 4. Debt-to-income
-          const dti = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
-          if (dti > 40) alerts.push({type:"🔴",title:"Carga de deuda alta: "+dti.toFixed(0)+"%",msg:"Más del 40% de tu ingreso va a cuotas. Prioriza pagar la deuda de mayor tasa. Meta: bajar a menos del 30%.",cat:"Deuda"});
+          const dti = t.cargaDeudaPct || 0;
+          if (dti > 40) alerts.push({type:"🔴",title:"Carga de deuda alta: "+fmtPctEs(dti),msg:"Más del 40% de tu ingreso va a cuotas. Prioriza pagar la deuda de mayor tasa. Meta: bajar a menos del 30%.",cat:"Deuda"});
 
           // 5. Savings rate
-          const savR = t.ti > 0 ? (t.cf / t.ti * 100) : 0;
-          if (savR < 10 && savR >= 0) alerts.push({type:"🟡",title:"Tasa de ahorro baja: "+savR.toFixed(0)+"%",msg:"Los family offices recomiendan ahorrar al menos 20% del ingreso. Busca reducir gastos variables o incrementar ingresos pasivos.",cat:"Ahorro"});
+          const savR = t.ahorroPct || 0;
+          if (savR < 10 && savR >= 0) alerts.push({type:"🟡",title:"Tasa de ahorro baja: "+fmtPctEs(savR),msg:"Los family offices recomiendan ahorrar al menos 20% del ingreso. Busca reducir gastos variables o incrementar ingresos pasivos.",cat:"Ahorro"});
           if (savR < 0) alerts.push({type:"🔴",title:"Ahorro negativo — estás descapitalizándote",msg:"Gastas "+fm(Math.abs(t.cf))+"/mes más de lo que ganas. Esto erosiona tu patrimonio. Acción urgente: recortar gastos o generar más ingresos.",cat:"Cash Flow"});
 
           // 6. Vehicles depreciating
