@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, clasificarMargen, INFLACION_DEFAULT_PCT, inflacionGlobal } from "../../src/lib/metrics.js";
+import { estimarImpuesto } from "../../src/lib/taxCO.js";
+import { fmtPctEs, fmtMeses, calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, clasificarMargen, INFLACION_DEFAULT_PCT, inflacionGlobal } from "../../src/lib/metrics.js";
 
 const qa = JSON.parse(readFileSync(new URL("../fixtures/qa_pro_patrimonio_completo.json", import.meta.url), "utf8"));
 const m = calcularMetricas({ ingresos: qa.ingresos, gastos: qa.gas, deudas: qa.deu, inv: qa.inv, trm: qa.trm });
@@ -130,23 +131,28 @@ describe("origen de la renta del activo (manual vs derivada)", () => {
 });
 
 describe("ahorro y carga de deuda: misma base neta de retención (numerador y denominador)", () => {
+  // Retención REAL del fixture: la que calcula estimarImpuesto sobre los datos de la cuenta (6.171.900/año).
+  const u = { owners: [{ id: "own_1", name: "Titular", type: "natural" }], ingresos: qa.ingresos, gas: qa.gas, deu: qa.deu, inv: qa.inv, trm: qa.trm };
+  const RET = Math.round(estimarImpuesto(u).detalle.reduce((s, d) => s + (d.reteN || 0), 0) / 12);
   const conRet = (r) => calcularMetricas({ ingresos: qa.ingresos, gastos: qa.gas, deudas: qa.deu, inv: qa.inv, trm: qa.trm, retencionMensual: r });
+  it("la retención real del fixture es ~514.325/mes", () => { expect(RET).toBe(514325); });
   it("sin retención: FL 567.500 ÷ ingreso 9.747.500 = 5,8%", () => {
     const x = conRet(0);
     expect(x.ingresoNeto).toBe(9747500);
     expect(x.ahorroPct).toBeCloseTo((567500 / 9747500) * 100, 6);
     expect(x.cargaDeudaPct).toBeCloseTo((3720000 / 9747500) * 100, 6);
   });
-  it("con retención 520.000: FL 47.500 ÷ ingreso neto 9.227.500 = 0,5% (no 0,49% sobre bruto)", () => {
-    const x = conRet(520000);
-    expect(x.fl).toBe(47500);
-    expect(x.ingresoNeto).toBe(9227500);
-    expect(x.ahorroPct).toBeCloseTo(0.5148, 3);
-    expect(x.ahorroPct).not.toBeCloseTo((47500 / 9747500) * 100, 2);
-    expect(x.cargaDeudaPct).toBeCloseTo((3720000 / 9227500) * 100, 6); // 40,3%
+  it("con retención real: FL 53.175 ÷ neto 9.233.175 = 0,6% (0,576%), no 0,55% sobre bruto", () => {
+    const x = conRet(RET);
+    expect(x.fl).toBe(567500 - RET);
+    expect(x.ingresoNeto).toBe(9747500 - RET);
+    expect(x.ahorroPct).toBeCloseTo(0.5759, 3);
+    expect(fmtPctEs(x.ahorroPct)).toBe("0,6%");
+    expect(x.ahorroPct).not.toBeCloseTo((x.fl / 9747500) * 100, 2);
+    expect(x.cargaDeudaPct).toBeCloseTo((3720000 / x.ingresoNeto) * 100, 6); // 40,3%
   });
-  it("salud con retención: 30 Crítica (cuotas ÷ neto); la misma cifra de ahorro alimenta puntaje", () => {
-    const x = conRet(520000);
+  it("salud con retención real: 30 Crítica; puntaje y tarjeta usan la misma cifra de ahorro", () => {
+    const x = conRet(RET);
     const s = saludFinanciera(x);
     expect(s.componentes.ahorro.valor).toBe(x.ahorroPct);
     expect(s.componentes.cargaDeuda.valor).toBe(x.cargaDeudaPct);
@@ -154,8 +160,17 @@ describe("ahorro y carga de deuda: misma base neta de retención (numerador y de
     expect(s.banda).toBe("Crítica");
   });
   it("la retención no cambia IP ni OB (no se resta dos veces)", () => {
-    expect(conRet(520000).ob).toBe(conRet(0).ob);
-    expect(conRet(520000).ip).toBe(conRet(0).ip);
+    expect(conRet(RET).ob).toBe(conRet(0).ob);
+    expect(conRet(RET).ip).toBe(conRet(0).ip);
+  });
+});
+
+describe("formato es-CO", () => {
+  it("fmtPctEs usa coma y fmtMeses el plural correcto", () => {
+    expect(fmtPctEs(49.7)).toBe("49,7%");
+    expect(fmtPctEs(-0.6)).toBe("-0,6%");
+    expect(fmtPctEs(0)).toBe("0,0%");
+    expect([fmtMeses(1), fmtMeses(0.96), fmtMeses(1.3), fmtMeses(3.07), fmtMeses(3)]).toEqual(["1 mes", "1 mes", "1,3 meses", "3,1 meses", "3 meses"]);
   });
 });
 
@@ -167,5 +182,16 @@ describe("nivel desde la fuente única, sin salario como pasivo", () => {
     });
     expect(x.coberturaPasiva).toBe(0);
     expect(x.nivel.nivel).toBe(2);
+  });
+});
+
+describe("salud financiera sin datos", () => {
+  it("cuenta con $0 / sin ingresos ni obligaciones: sin puntaje (no 40 ni 80)", () => {
+    const s = saludFinanciera(calcularMetricas({}));
+    expect(s.score).toBeNull();
+    expect(s.banda).toBe("Sin datos");
+  });
+  it("QA Pro no da 100 Excelente: 38 sin retención, 30 con retención real", () => {
+    expect(saludFinanciera(m).score).toBe(38);
   });
 });

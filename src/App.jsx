@@ -75,7 +75,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
 import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual, mesesLibreDeuda, vaCOP, vcCOP } from "./lib/flowHelpers.js";
-import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, inflacionGlobal, fmtPctEs } from "./lib/metrics.js";
+import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, inflacionGlobal, fmtPctEs, fmtMeses } from "./lib/metrics.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react";
@@ -119,7 +119,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 // ═══════════════════════════════════════════════════════════════════════════
 const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(255,255,255,0.08)",borderL:"rgba(255,255,255,0.15)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f97316",gd:"#eab308",ch:["#22c55e","#3b82f6","#f97316","#a78bfa","#ec4899","#06b6d4","#eab308"]};
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
-const pc=n=>(n||0).toFixed(1)+"%";
+const pc=n=>fmtPctEs(n);
 const SK="fp3";
 const sL=async(uid,accountId)=>{
   try{
@@ -1341,7 +1341,7 @@ export default function FinPath(){
     +"<h2>Ingresos ("+ing.length+" fuentes)</h2><table><thead><tr><th>Fuente</th><th>Categoría</th><th class=r>Bruto/mes</th></tr></thead><tbody>"+ingRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td colspan=2>Total Bruto</td><td class=r>"+fm(brutoTotal)+"</td></tr></tbody></table>"
     +"<h2>Gastos ("+gasCats.length+" categorías)</h2><table><thead><tr><th>Categoría</th><th class=r>Monto/mes</th><th class=r>% Bruto</th></tr></thead><tbody>"+gasRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td>Total</td><td class=r>"+fm(totalGas)+"</td><td class=r>"+(brutoTotal>0?(totalGas/brutoTotal*100).toFixed(0)+"%":"—")+"</td></tr></tbody></table>"
     +(deu.length>0?"<h2>Deudas ("+deu.length+")</h2><table><thead><tr><th>Deuda</th><th class=r>Saldo</th><th class=r>Cuota/mes</th><th class=r>Tasa</th></tr></thead><tbody>"+deuRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td>Total</td><td class=r>"+fm(totalDeu)+"</td><td class=r>"+fm(totalCuotas)+"</td><td></td></tr></tbody></table>":"")
-    +"<h2>Indicadores</h2><div class=g3><div class=k><div class=kl>Independencia</div><div class=kv>"+ind.toFixed(1)+"%</div><div class=ks>Meta: 100%+</div></div><div class=k><div class=kl>Deuda/Activos</div><div class=kv>"+dta.toFixed(1)+"%</div><div class=ks>Ideal: &lt;30%</div></div><div class=k><div class=kl>Runway</div><div class=kv>"+runway+" meses</div><div class=ks>Sin ingresos</div></div></div>"
+    +"<h2>Indicadores</h2><div class=g3><div class=k><div class=kl>Independencia</div><div class=kv>"+fmtPctEs(ind)+"</div><div class=ks>Meta: 100%+</div></div><div class=k><div class=kl>Deuda/Activos</div><div class=kv>"+dta.toFixed(1)+"%</div><div class=ks>Ideal: &lt;30%</div></div><div class=k><div class=kl>Runway</div><div class=kv>"+runway+" meses</div><div class=ks>Sin ingresos</div></div></div>"
     +"<div class=ds>Este reporte es generado por FINPATHIA con fines informativos. No constituye asesoría financiera profesional.</div>"
     +"<div class=ft>FINPATHIA — finpathia.com — "+fecha+"</div></body></html>";
     const w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
@@ -1789,7 +1789,7 @@ export default function FinPath(){
       const err=[];
       if(rePct>60)err.push("🏠 Concentración inmobiliaria "+rePct.toFixed(0)+"% — No compres más inmuebles.");
       if((100-pctPasivo)>80)err.push("💼 "+(100-pctPasivo).toFixed(0)+"% depende de trabajo — Si te enfermas, pierdes casi todo.");
-      if(runway<6)err.push("⏰ Solo "+runway+" meses de runway — Mínimo necesitas 6 meses líquidos.");
+      if(runway<6)err.push("⏰ Solo "+fmtMeses(runway)+" de colchón de liquidez — Mínimo necesitas 6 meses líquidos.");
       if(worstDebt&&worstDebt.ts>15)err.push("🔥 Deuda al "+worstDebt.ts+"% ("+worstDebt.n+") — Nada rinde eso consistentemente. Paga primero.");
       const bigG=gasCats.find(g=>t.ni>0&&g.total>t.ni*0.25);
       if(bigG)err.push("💸 "+bigG.cat+" = "+((bigG.total/t.ni)*100).toFixed(0)+"% del ingreso — Máx recomendado: 25%.");
@@ -1908,7 +1908,7 @@ export default function FinPath(){
     // Health score (0-100)
     // Salud financiera: spec Finanzas §2 (metrics.js), 5 componentes con peso.
     const healthScore=t.salud.score;
-    const healthColor=healthScore>=80?T.gn:healthScore>=60?"#84cc16":healthScore>=40?"#eab308":T.rd;
+    const healthColor=healthScore==null?T.tx3:healthScore>=80?T.gn:healthScore>=60?"#84cc16":healthScore>=40?"#eab308":T.rd;
     const healthLabel=t.salud.banda;
 
     return<div>
@@ -2097,7 +2097,7 @@ export default function FinPath(){
             marginBottom:14,
             boxShadow:`0 0 24px ${healthColor}30, inset 0 0 24px ${healthColor}10`,
           }}>
-            <div style={{fontFamily:CHART.fontDisplay,fontSize:32,fontWeight:800,color:healthColor,fontVariantNumeric:"tabular-nums"}}>{healthScore}</div>
+            <div style={{fontFamily:CHART.fontDisplay,fontSize:32,fontWeight:800,color:healthColor,fontVariantNumeric:"tabular-nums"}}>{healthScore==null?"—":healthScore}</div>
           </div>
           <div style={{fontSize:13,fontWeight:700,color:healthColor,fontFamily:CHART.fontDisplay}}>{healthLabel}</div>
           <div style={{fontSize:10,color:CHART.txt3,marginTop:4,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>Salud Financiera</div>
@@ -2232,7 +2232,7 @@ export default function FinPath(){
           {tx.detalle.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid "+T.border,fontSize:11}}>
             <span style={{color:T.tx2}}>{d.type==="juridica"?"🏢":"👤"} {d.name}</span>
             <div style={{textAlign:"right"}}>
-                    <span style={{color:T.tx2}}>{fm(d.impuesto)} <span style={{color:T.tx3}}>({d.tasa.toFixed(1)}%)</span></span>
+                    <span style={{color:T.tx2}}>{fm(d.impuesto)} <span style={{color:T.tx3}}>({fmtPctEs(d.tasa)})</span></span>
                     <div style={{fontSize:9,color:T.tx3}}>Ingresos: {fm(d.ingreso)}/año</div>
                     {d.ahorroOptimo>100000&&<div style={{fontSize:9,color:T.gn}}>Optimizable: -{fm(d.ahorroOptimo)}</div>}
                   </div>
@@ -2269,7 +2269,7 @@ export default function FinPath(){
               </div>
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
                 <span style={{fontWeight:700,fontFamily:"monospace",color:T.tx}}>{fm(p.value)}</span>
-                <span style={{color:T.tx3,fontSize:11,minWidth:34,textAlign:"right"}}>{totalPat>0?((p.value/totalPat)*100).toFixed(1)+"%":""}</span>
+                <span style={{color:T.tx3,fontSize:11,minWidth:34,textAlign:"right"}}>{totalPat>0?fmtPctEs((p.value/totalPat)*100):""}</span>
               </div>
             </div>)}
           </div>}
@@ -2391,7 +2391,7 @@ export default function FinPath(){
             <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:14}}>🏦 Indicadores Family Office</div>
             <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:14}}>
               {[
-                {l:"Colchón de liquidez",v:runway >= 999 ? "∞" : String(runway).replace(".",",") + " meses",c:runway>=12?T.gn:runway>=6?"#eab308":T.rd,tip:"Activos líquidos (caja, cuentas, CDT, fondos a la vista) ÷ gastos y cuotas del mes. Mínimo 6 meses.",i:"🛡️"},
+                {l:"Colchón de liquidez",v:runway >= 999 ? "∞" : fmtMeses(runway),c:runway>=12?T.gn:runway>=6?"#eab308":T.rd,tip:"Activos líquidos (caja, cuentas, CDT, fondos a la vista) ÷ gastos y cuotas del mes. Mínimo 6 meses.",i:"🛡️"},
                 {l:"Burn rate",v:pc(burnRate),c:burnRate<=4?T.gn:burnRate<=8?"#eab308":T.rd,tip:"% del patrimonio que gastas al año. Ideal: <4%.",i:"🔥"},
                 {l:"Tasa de ahorro",v:pc(savingsRate),c:savingsRate>=20?T.gn:savingsRate>=10?"#eab308":T.rd,tip:"% del ingreso que ahorras. Ideal: >20%.",i:"💰"},
                 {l:"Debt service",v:pc(debtService),c:debtService<=30?T.gn:debtService<=50?"#eab308":T.rd,tip:"% del ingreso que va a pagar deudas. Ideal: <30%.",i:"📋"},
@@ -2596,7 +2596,7 @@ export default function FinPath(){
                             <div key={i} style={{marginBottom:8}}>
                               <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:8}}>
                                 <span style={{color:risk?T.rd:T.tx2}}>{risk?"⚠ ":""}{a.name}</span>
-                                <span style={{color:risk?T.rd:T.tx3,fontWeight:600}}>{pct.toFixed(1)}% — {fm(a.value)}</span>
+                                <span style={{color:risk?T.rd:T.tx3,fontWeight:600}}>{fmtPctEs(pct)} — {fm(a.value)}</span>
                               </div>
                               <div style={{height:6,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
                                 <div style={{height:"100%",width:pct+"%",background:pct>40?T.rd:pct>25?"#eab308":T.gn,borderRadius:3}}/>
@@ -2615,7 +2615,7 @@ export default function FinPath(){
                                 <div style={{width:8,height:8,borderRadius:3,background:T.ch[i%T.ch.length]}}/>
                                 <span style={{color:T.tx2}}>{type}</span>
                               </div>
-                              <span style={{color:T.tx3,fontFamily:"monospace"}}>{pct.toFixed(1)}% ({fm(val)})</span>
+                              <span style={{color:T.tx3,fontFamily:"monospace"}}>{fmtPctEs(pct)} ({fm(val)})</span>
                             </div>
                           );
                         })}
@@ -2681,7 +2681,7 @@ export default function FinPath(){
                         <input id="inflacion-global" type="number" step="0.1" min="0" value={(u&&u.inflacionPct)!=null?u.inflacionPct:4} onChange={e=>upd("inflacionPct",e.target.value===""?"":Number(e.target.value))} style={{width:64,background:T.bg3,color:T.tx,border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,padding:"3px 6px",fontSize:11}}/>
                         <span style={{fontSize:10,color:T.tx3}}>Alimenta también la proyección de patrimonio.</span>
                       </div>
-                      <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%) · Renta neta anual: {fm(t.rentaYield.rentaAnual)} ({incomeYield.toFixed(1)}% · {t.rentaYield.etiqueta})
+                      <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{fmtPctEs(gainPct)}) · Renta neta anual: {fm(t.rentaYield.rentaAnual)} ({fmtPctEs(incomeYield)} · {t.rentaYield.etiqueta})
                     </div>
                   </>
                 );
@@ -2703,7 +2703,7 @@ export default function FinPath(){
                     </div>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:13,fontWeight:700,color:T.rd,fontFamily:"monospace"}}>{fm(aCargo)}</div>
-                      <div style={{fontSize:10,color:T.tx3}}>Tasa: {d.tasa.toFixed(1)}%</div>
+                      <div style={{fontSize:10,color:T.tx3}}>Tasa: {fmtPctEs(d.tasa)}</div>
                     </div>
                   </div>})}
                   {(()=>{const aCargo=tx.detalle.reduce((s,d)=>s+(d.impuestoACargo??d.impBruto??0),0);const rete=tx.detalle.reduce((s,d)=>s+(d.reteN||0),0);const saldo=tx.detalle.reduce((s,d)=>s+(d.saldoAPagar??d.impuesto??0),0);return<>
@@ -2800,11 +2800,11 @@ export default function FinPath(){
                 // Check each area
                 const runway2 = t.colchonMeses != null ? Math.round(t.colchonMeses*10)/10 : 999;
                 if (runway2 < 6) actions.push({pri:"🔴",text:"Fondo de emergencia insuficiente. Necesitas al menos 6 meses de gastos en activos líquidos.",cat:"Liquidez"});
-                else if (runway2 < 12) actions.push({pri:"🟡",text:"Fondo de emergencia aceptable ("+runway2+" meses). Ideal: 12-24 meses.",cat:"Liquidez"});
+                else if (runway2 < 12) actions.push({pri:"🟡",text:"Fondo de emergencia aceptable ("+fmtMeses(runway2)+"). Ideal: 12-24 meses.",cat:"Liquidez"});
                 
-                const debtSrv = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
+                const debtSrv = t.cargaDeudaPct || 0; // cuotas ÷ ingreso neto de retención (metrics.js)
                 if (debtSrv > 50) actions.push({pri:"🔴",text:"Más del 50% de tu ingreso va a deudas. Prioriza pagar la de mayor tasa.",cat:"Deuda"});
-                else if (debtSrv > 30) actions.push({pri:"🟡",text:"El " + debtSrv.toFixed(0) + "% de tu ingreso va a deudas. Busca reducirlo debajo del 30%.",cat:"Deuda"});
+                else if (debtSrv > 30) actions.push({pri:"🟡",text:"El " + fmtPctEs(debtSrv) + " de tu ingreso neto va a deudas. Busca reducirlo debajo del 30%.",cat:"Deuda"});
                 
                 const maxA = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((max,i) => vaCOP(i,trm) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trm)} : max, {n:"",v:0});
                 const concR = (t.ab+ib.tv) > 0 ? (maxA.v / (t.ab+ib.tv) * 100) : 0;
@@ -2869,9 +2869,9 @@ export default function FinPath(){
                   );
                 })}
                 <div style={{marginTop:8,padding:10,background:T.bg3,borderRadius:8,fontSize:11,color:T.tx2,lineHeight:1.6}}>
-                  {totals2.inmediata >= t.te * 6 
-                    ? <span style={{color:T.gn}}>✅ Tu liquidez inmediata cubre {Math.round(totals2.inmediata / (t.te||1))} meses de gastos. Bien protegido.</span>
-                    : <span style={{color:"#eab308"}}>⚠ Tu liquidez inmediata solo cubre {Math.round(totals2.inmediata / (t.te||1))} meses. Un asesor recomendaría al menos 6 meses en activos líquidos.</span>
+                  {(t.colchonMeses||0) >= 6 
+                    ? <span style={{color:T.gn}}>✅ Tu liquidez cubre {fmtMeses(t.colchonMeses)} de gastos y cuotas. Bien protegido.</span>
+                    : <span style={{color:"#eab308"}}>⚠ Tu liquidez solo cubre {fmtMeses(t.colchonMeses)} de gastos y cuotas. Un asesor recomendaría al menos 6 meses en activos líquidos.</span>
                   }
                   <br/><strong>{((totals2.largo / (grandTotal||1)) * 100).toFixed(0)}%</strong> de tu patrimonio está en activos ilíquidos (no puedes vender rápido).
                 </div>
@@ -3014,7 +3014,7 @@ export default function FinPath(){
           const vehiculos = inv.filter(i => (i.tp||i.tipo) === "Vehículo");
           const vehVal = vehiculos.reduce((s,i) => s + vaCOP(i,trm), 0);
           const vehPct = totalA > 0 ? (vehVal / totalA * 100) : 0;
-          if (vehPct > 5) alerts.push({type:"🟡",title:"Vehículos = "+vehPct.toFixed(1)+"% del patrimonio",msg:"Los vehículos pierden ~15% de valor por año. "+fm(vehVal)+" en activos que se deprecian. Un family office los considera gastos, no inversiones.",cat:"Depreciación"});
+          if (vehPct > 5) alerts.push({type:"🟡",title:"Vehículos = "+fmtPctEs(vehPct)+" del patrimonio",msg:"Los vehículos pierden ~15% de valor por año. "+fm(vehVal)+" en activos que se deprecian. Un family office los considera gastos, no inversiones.",cat:"Depreciación"});
 
           // 7. Positive alerts
           const passR = t.pctIngresoPasivo || 0;
@@ -3463,7 +3463,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             {[
               {l:"Activos",v:fm(totalVal),c:T.gn},
               {l:"Deuda total",v:fm(t.td),c:T.rd},
-              {l:"Valorización",v:(gainPct>=0?"+":"")+gainPct.toFixed(1)+"%",c:gainPct>=0?T.gn:T.rd},
+              {l:"Valorización",v:(gainPct>=0?"+":"")+fmtPctEs(gainPct),c:gainPct>=0?T.gn:T.rd},
               {l:"Ingreso pasivo",v:passR.toFixed(0)+"%",c:passR>=80?T.gn:"#eab308"},
             ].map(k=>(
               <div key={k.l} style={{textAlign:"center",padding:10,background:T.bg3,borderRadius:8}}>

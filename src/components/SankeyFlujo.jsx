@@ -34,6 +34,7 @@ export default function SankeyFlujo({
   gastosCats = [],       // [[categoria, valor]]
   cashFlow = 0,
   subtitulo = "",
+  baseNeta = null,       // ingreso neto de retención: base del % de cada destino (salvo la retención)
   labels = null,
   fmt,
   T,
@@ -101,7 +102,14 @@ export default function SankeyFlujo({
   const hubY = 24;
   const hubH = nF.reduce((s, n) => s + n.h, 0);
   let anclaIn = hubY, anclaOut = hubY;
-  const pct = (v) => ((v / bruto) * 100).toFixed(0);
+  // % de cada destino sobre el ingreso NETO de retención (misma base que ahorro y
+  // carga de deuda en metrics.js); la retención y las fuentes, sobre el bruto.
+  const neto = baseNeta != null && baseNeta > 0 ? baseNeta : bruto;
+  const pctNodo = (n, esDestino) => {
+    const base = esDestino && n.nombre !== L.retencion ? neto : bruto;
+    const v = (n.valor / base) * 100;
+    return v.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + "%";
+  };
 
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: "16px 18px" }}>
@@ -154,7 +162,7 @@ export default function SankeyFlujo({
                 {n.nombre.length > 19 ? n.nombre.slice(0, 18) + "…" : n.nombre}
               </text>
               <text x={xD + NODO_W + 9} y={n.y + n.h / 2 + 13} fontSize="13" fontFamily="monospace" fill={T.tx3}>
-                {fmt(Math.round(n.valor))} <tspan fill={T.tx2}>· {pct(n.valor)}%</tspan>
+                {fmt(Math.round(n.valor))} <tspan fill={T.tx2}>· {pctNodo(n, true)}</tspan>
               </text>
             </g>
           ))}

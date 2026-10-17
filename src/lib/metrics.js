@@ -294,6 +294,9 @@ export const BANDAS_SALUD = [
   { min: 40, nombre: "Frágil" },    { min: 0,  nombre: "Crítica" },
 ];
 export function saludFinanciera(b) {
+  // Sin ingresos ni obligaciones cargados no hay nada que puntuar: antes una cuenta vacía sacaba 40 por
+  // «deuda 0» y «apalancamiento 0».
+  if (b.ingresoNeto != null && !(b.ingresoNeto > 0) && !(b.ob > 0)) return { score: null, banda: "Sin datos", componentes: {}, candado: null };
   // Misma base (ingreso neto de retención) en numerador y denominador.
   const ahorroPct = b.ahorroPct != null ? b.ahorroPct : 0;
   const deudaPct = b.cargaDeudaPct != null ? b.cargaDeudaPct : 0;
@@ -385,4 +388,11 @@ export function gananciaVsInflacion(b, inflacionPct) {
 export function fmtPctEs(n, dec = 1) {
   const v = Number(n);
   return (Number.isFinite(v) ? v : 0).toLocaleString("es-CO", { minimumFractionDigits: dec, maximumFractionDigits: dec }) + "%";
+}
+
+/** Meses con plural correcto y coma es-CO: «1 mes», «1,3 meses», «3 meses». */
+export function fmtMeses(n) {
+  const v = Math.round((Number(n) || 0) * 10) / 10;
+  const txt = v.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  return `${txt} ${v === 1 ? "mes" : "meses"}`;
 }

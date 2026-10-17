@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { fmtPctEs } from "../lib/metrics.js";
 import {
   AreaChart,
   Area,
@@ -308,8 +309,8 @@ export default function ProyeccionPatrimonio({
                     border: `1px solid ${T.border || "rgba(255,255,255,0.08)"}` }}>
                 <div style={{ fontSize: 11, color: T.txt3 || "#71717a", lineHeight: 1.5 }}>
                   Según la composición de tu patrimonio, la valorización esperada es{" "}
-                  <strong style={{ color: T.txt2 || "#a1a1aa" }}>{nominal.toFixed(1)}%</strong>{" "}
-                  nominal ({(mezcla.tasaReal * 100).toFixed(1)}% real).
+                  <strong style={{ color: T.txt2 || "#a1a1aa" }}>{fmtPctEs(nominal)}</strong>{" "}
+                  nominal ({fmtPctEs(mezcla.tasaReal * 100)} real).
                 </div>
                 <div style={{ fontSize: 10, color: T.txt3 || "#71717a", marginTop: 5, lineHeight: 1.6 }}>
                   {mezcla.detalle.map((d) => (
@@ -328,7 +329,7 @@ export default function ProyeccionPatrimonio({
                       background: "transparent", cursor: "pointer", fontSize: 11, fontWeight: 700,
                       color: T.green || "#22c55e",
                       border: `1px solid ${T.green || "#22c55e"}` }}>
-                    Usar {nominal.toFixed(1)}%
+                    Usar {fmtPctEs(nominal)}
                   </button>
                 )}
               </div>

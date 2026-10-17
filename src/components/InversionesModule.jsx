@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
@@ -21,7 +22,7 @@ const T = {
   blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
-const pc = (n) => (n || 0).toFixed(1) + "%";
+const pc = (n) => fmtPctEs(n);
 
 // Get name from item (handles multiple field formats)
 const getName = (i) => i.n || i.nombre || i.name || "Sin nombre";

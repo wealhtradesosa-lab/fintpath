@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
-import { calcularMetricas, NIVELES } from "../lib/metrics.js";
+import { calcularMetricas, NIVELES, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
@@ -82,7 +82,7 @@ const razonMonto0 = (item, año, mes) => {
   if (freq === "variable") return "sin monto este mes";
   return "";
 };
-const pc = (n) => (n || 0).toFixed(1) + "%";
+const pc = (n) => fmtPctEs(n);
 const TT = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 };
 
 // ─── 5 niveles de libertad ───
@@ -755,20 +755,26 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // ═══════════════════════════════════════════════════════════════════════
   const cashFlowPorMes = useMemo(() => {
     const trm = user?.trm || 4200;
-    const { año } = getMesActual();
+    const { año, mes: mesHoy } = getMesActual();
     return Array.from({ length: 12 }, (_, i) => {
       const mes = i + 1;
+      // Meses cumplidos = datos reales; solo los meses que faltan toman el escenario
+      // (mismo criterio que la gráfica `proj`).
+      const ov = (clave, base) => (mes > mesHoy ? getVal(clave, base) : base);
       let ingresosMes = 0;
-      (user.ingresos || []).forEach(ing => {
+      // Los sliders/escenario mueven el ingreso y el gasto: sin pasar por getVal
+      // el «Cierre de {año} · con este escenario» solo reaccionaba a cuotas e
+      // impuesto, y no cambiaba entre Actual / Conservador / Optimista / Crisis.
+      (user.ingresos || []).forEach((ing, ii) => {
         if (ing.sim === false) return;
         const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
-        ingresosMes += montoDelMes({ ...ing, mensual: montoBase }, año, mes);
+        ingresosMes += montoDelMes({ ...ing, mensual: ov(`ing_${ii}`, montoBase) }, año, mes);
       });
       let aportesObl = 0, gastosFam = 0;
       Object.entries(user.gastos || {}).forEach(([cat, items]) => {
-        (items || []).forEach(g => {
+        (items || []).forEach((g, gi) => {
           if (g.sim === false) return;
-          const monto = montoDelMes(g, año, mes);
+          const monto = montoDelMes({ ...g, m: ov(`gf_${cat}_${gi}`, g.m || 0) }, año, mes);
           if (cat === "Seguridad Social") aportesObl += monto;
           else gastosFam += monto;
         });
@@ -793,7 +799,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       let cuotas = 0;
       (user.deudas || []).forEach((d, di) => {
         if (d.sim === false || (d.mt || 0) <= 0) return;
-        cuotas += cuotaDeudaDelMes(d, getVal(`debt_${di}`, d.pago || d.pg || 0), año, mes, trm);
+        cuotas += cuotaDeudaDelMes(d, ov(`debt_${di}`, d.pago || d.pg || 0), año, mes, trm);
       });
       const retencion = retencionDelMes(ingresosMes, simT.brutoTotal || 0, simT.retencionMensual || 0);
       const impNeto = simT.impuestoNeto || 0;
@@ -2262,6 +2268,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                   bruto={simTMes.brutoDelMes}
                   fuentes={fuentes}
                   retencion={simTMes.retencionMes}
+                  baseNeta={(simTMes.brutoDelMes || 0) - (simTMes.retencionMes || 0)}
                   impuesto={simTMes.impuestoNetoMes}
                   aportes={simTMes.aportesObligatoriosMes}
                   cuotas={simTMes.cuotasDeudasMes}
