@@ -301,7 +301,7 @@ export default function EstrategiaTributaria({
       {oportunidades.length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.txt2, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            💡 Formas legales de pagar menos
+            💡 Deducciones y beneficios a revisar
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {oportunidades.map((op, i) => (

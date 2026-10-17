@@ -55,7 +55,7 @@ const SUGGESTIONS_GENERAL = [
   "¿Por qué pago tanto impuesto este año?",
   "¿Qué deducciones legales me faltan?",
   "Compárame estructura natural vs SAS",
-  "Dame un plan de acción para optimizar este año",
+  "Dame un plan de acción para revisar mi impuesto este año",
 ];
 const SUGGESTIONS_NATURAL = [
   "¿Cuánto ahorraría aportando $1M/mes a Pensión Voluntaria?",
@@ -67,7 +67,7 @@ const SUGGESTIONS_JURIDICA = [
   "¿Mi SAS califica para Régimen Simple?",
   "¿Cómo deduzco la depreciación de los inmuebles arrendados?",
   "¿Qué palancas legales me faltan aplicar?",
-  "Dame un escenario de optimización con cifras",
+  "Dame un escenario de ajuste con cifras",
 ];
 
 /**
@@ -311,7 +311,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
             </h3>
             <p style={{ fontSize: 13, color: C.txt2, marginBottom: 24, maxWidth: 480, margin: "0 auto 24px" }}>
               Soy tu contador tributario IA. Conozco todos los datos que cargaste
-              y tengo +20 años de experiencia en optimización fiscal Colombia. Hazme
+              y te ayudo a entender tu situación fiscal en Colombia. Hazme
               cualquier pregunta sobre tu caso.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 580, margin: "0 auto" }}>

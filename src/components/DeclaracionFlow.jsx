@@ -441,7 +441,7 @@ const AREAS_NATURAL = [
         t: "f",
         fiscalCode: "AP_TRIB_SALUD_PREPAGADA",
         m: mensual,
-        fuente: "Plan de Optimización",
+        fuente: "Plan de ajustes",
         _planAhorro: true,
       });
       return newUser;
@@ -564,7 +564,7 @@ const AREAS_NATURAL = [
         t: "f",
         fiscalCode: tipo,
         m: mensual,
-        fuente: "Plan de Optimización",
+        fuente: "Plan de ajustes",
         _planAhorro: true,
       });
       return newUser;
@@ -1104,7 +1104,7 @@ export default function DeclaracionFlow({
       <PageHeader
         label="Impuestos"
         title="Declaración de renta"
-        subtitle={`Borrador, optimización y formulario final · F-110 / F-210 · AG ${DEFAULT_AG} · UVT $${uvtForYear(DEFAULT_AG).toLocaleString("es-CO")}`}
+        subtitle={`Borrador, revisión y formulario final · F-110 / F-210 · AG ${DEFAULT_AG} · UVT $${uvtForYear(DEFAULT_AG).toLocaleString("es-CO")}`}
       />
 
       {/* ───────────────────── SELECTOR DE OWNER (compacto, top) ───────────────────── */}
@@ -1233,7 +1233,7 @@ export default function DeclaracionFlow({
               marginTop: 8,
             }}
           >
-            Continuar al Paso 2: Optimización →
+            Continuar al Paso 2: Ajustes →
           </button>
         )}
       </SeccionEtapa>
@@ -1245,8 +1245,8 @@ export default function DeclaracionFlow({
         <div ref={refEtapa2}>
           <SeccionEtapa
             numero={2}
-            titulo="Optimización"
-            subtitulo="Te hago algunas preguntas para encontrar formas legales de pagar menos"
+            titulo="Ajustes"
+            subtitulo="Te hago algunas preguntas para estimar tu impuesto con tus deducciones"
             activa={etapaActiva === 2}
             completa={etapaActiva > 2}
           >
@@ -1325,8 +1325,8 @@ export default function DeclaracionFlow({
                 }}
               >
                 {todasRevisadas
-                  ? "Ver mi declaración optimizada →"
-                  : `Ver mi declaración optimizada → (${cambiosAplicados.length}/${areas.length} respondidas)`}
+                  ? "Ver mi declaración ajustada →"
+                  : `Ver mi declaración ajustada → (${cambiosAplicados.length}/${areas.length} respondidas)`}
               </button>
             )}
           </SeccionEtapa>
@@ -1341,7 +1341,7 @@ export default function DeclaracionFlow({
           <SeccionEtapa
             numero={3}
             titulo="Tu declaración casi lista"
-            subtitulo="Este es el escenario optimizado, listo para que tu contador valide"
+            subtitulo="Este es el escenario ajustado, listo para que tu contador lo valide"
             activa={true}
             completa={false}
           >
@@ -1358,14 +1358,14 @@ export default function DeclaracionFlow({
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 14, alignItems: "center" }}>
                 <div>
-                  <div style={{ fontSize: 11, color: C.txt3, marginBottom: 4 }}>Antes (sin optimizar)</div>
+                  <div style={{ fontSize: 11, color: C.txt3, marginBottom: 4 }}>Antes (sin ajustes)</div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: C.txt2, textDecoration: ahorroTotal > 0 ? "line-through" : "none", fontFamily: "monospace" }}>
                     {fm(saldoOriginal)}
                   </div>
                 </div>
                 <div style={{ fontSize: 24, color: C.txt3 }}>→</div>
                 <div>
-                  <div style={{ fontSize: 11, color: C.green, marginBottom: 4, fontWeight: 700 }}>Después (optimizado)</div>
+                  <div style={{ fontSize: 11, color: C.green, marginBottom: 4, fontWeight: 700 }}>Después (con ajustes)</div>
                   <div style={{ fontSize: 28, fontWeight: 900, color: C.green, fontFamily: "monospace" }}>
                     {fm(saldoActual)}
                   </div>

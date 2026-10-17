@@ -258,7 +258,7 @@ export default function HeroVariantB({ onGetStarted = () => {} }) {
         }}>
           {[
             { icon: "📊", title: "Vista familiar", desc: "Patrimonio del grupo en un solo dashboard", color: T.green },
-            { icon: "🧾", title: "Impuestos optimizados", desc: "Estrategias del contador, sin contador", color: T.blue },
+            { icon: "🧾", title: "Impuestos estimados", desc: "Calcula y revisa tu impuesto antes de hablar con tu contador", color: T.blue },
             { icon: "🤖", title: "Asesor IA 24/7", desc: "Pregunta lo que sea sobre tu plata", color: T.purple },
             { icon: "🔒", title: "Privacidad total", desc: "Tu información nunca sale de tu cuenta", color: T.cyan },
           ].map(f => (
