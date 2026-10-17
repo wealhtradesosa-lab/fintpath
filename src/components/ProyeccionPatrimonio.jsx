@@ -37,6 +37,8 @@ export default function ProyeccionPatrimonio({
   deudasTotales,
   fmt,
   T = {},
+  inflacionPct: inflacionGlobalProp, // supuesto global (user.inflacionPct)
+  onInflacionChange,
 }) {
   const fm = fmt || ((n) => "$" + Math.round(n || 0).toLocaleString("es-CO"));
   const cfAnualDefault = Math.round((Number(cfMensualSimulado) || 0) * 12);
@@ -45,9 +47,13 @@ export default function ProyeccionPatrimonio({
   const [retornoPct, setRetornoPct] = useState(
     Math.round(DEFAULTS_PROYECCION.retornoExcedente * 1000) / 10 // 6.0
   );
-  const [inflacionPct, setInflacionPct] = useState(
+  // Un solo supuesto de inflación: si viene del usuario (global) manda; si no,
+  // el default (4%). Editarlo acá actualiza el global (misma cifra que el mensaje del portafolio).
+  const [inflacionLocal, setInflacionLocal] = useState(
     Math.round(DEFAULTS_PROYECCION.inflacionAnual * 1000) / 10 // 4.0
   );
+  const inflacionPct = inflacionGlobalProp != null && inflacionGlobalProp !== "" ? inflacionGlobalProp : inflacionLocal;
+  const setInflacionPct = (v) => { setInflacionLocal(v); if (onInflacionChange) onInflacionChange(v === "" ? "" : Number(v)); };
 
   // Si el CF simulado cambia (sliders del sim), resetea el override solo cuando
   // el usuario no ha tocado el input (cfOverride === null).
@@ -587,7 +593,7 @@ export default function ProyeccionPatrimonio({
           CF anual usado: <strong style={{ color: T.txt2 }}>{fm(cfAnual)}</strong>
           {cfOverride == null ? " (del simulador)" : " (override)"}
           {" · "}Valorización patrimonio {Number(retornoPct) || 0}%
-          {" · "}Inflación {Number(inflacionPct) || 0}%
+          {" · "}Inflación {(Number(inflacionPct) || 0).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
         </div>
         <div>
           Amortización de capital estimada: {fm(amortAnual)}/año (reduce pasivo; no se resta del CF).

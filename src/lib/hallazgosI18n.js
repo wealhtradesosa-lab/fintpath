@@ -52,9 +52,9 @@ export const TEXTOS = {
       unidad: "meses de colchón",
       titulo: (meses) => (meses < 1 ? "Sin colchón" : "Colchón corto"),
       detalle: (meses, falta) =>
-        `Con tus egresos actuales, el efectivo disponible alcanza para ${meses.toFixed(1)} meses. ` +
+        `Con tus egresos actuales, tu liquidez disponible alcanza para ${meses.toFixed(1)} meses. ` +
         `Para llegar a tres meses faltan ${money.es(falta)}.`,
-      base: "Efectivo y CDT sobre egresos mensuales",
+      base: "Activos líquidos (caja, cuentas, CDT, fondos a la vista) sobre gastos y cuotas del mes",
       accion: "Ver patrimonio",
     },
     cargaDeuda: {
@@ -67,8 +67,8 @@ export const TEXTOS = {
     colchonSolido: {
       unidad: "meses",
       titulo: "Colchón sólido",
-      detalle: "Tu efectivo cubre bien un período sin ingresos.",
-      base: "Efectivo y CDT sobre egresos mensuales",
+      detalle: "Tu liquidez cubre bien un período sin ingresos.",
+      base: "Activos líquidos (caja, cuentas, CDT, fondos a la vista) sobre gastos y cuotas del mes",
     },
     flujoSano: {
       unidad: "de tu ingreso",
@@ -116,9 +116,9 @@ export const TEXTOS = {
       unidad: "months of runway",
       titulo: (meses) => (meses < 1 ? "No safety net" : "Thin safety net"),
       detalle: (meses, falta) =>
-        `At your current burn, available cash covers ${meses.toFixed(1)} months. ` +
+        `At your current burn, your liquid assets cover ${meses.toFixed(1)} months. ` +
         `You need ${money.en(falta)} more to reach three months.`,
-      base: "Cash and CDs over monthly expenses",
+      base: "Liquid assets (cash, savings, CDs, on-demand funds) over monthly expenses",
       accion: "View assets",
     },
     cargaDeuda: {
@@ -131,8 +131,8 @@ export const TEXTOS = {
     colchonSolido: {
       unidad: "months",
       titulo: "Solid cash cushion",
-      detalle: "Your cash comfortably covers a stretch without income.",
-      base: "Cash and CDs over monthly expenses",
+      detalle: "Your liquid assets comfortably cover a stretch without income.",
+      base: "Liquid assets (cash, savings, CDs, on-demand funds) over monthly expenses",
     },
     flujoSano: {
       unidad: "of your income",

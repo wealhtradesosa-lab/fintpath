@@ -75,7 +75,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
 import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual, mesesLibreDeuda, vaCOP, vcCOP } from "./lib/flowHelpers.js";
-import { calcularMetricas } from "./lib/metrics.js";
+import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, inflacionGlobal, fmtPctEs } from "./lib/metrics.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react";
@@ -393,7 +393,7 @@ const cuentaVacia = (d) => {
   return nInv + nIng + nDeu + nGas === 0;
 };
 
-const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
+const cT=(inv,ds,gf,ing,taxData,trm=4200,inflacionPct)=>{
   let ab=0, aportesObligatorios=0, gastosFamiliares=0;
   (inv||[]).forEach(i=>{if(i.sim!==false)ab+=vaCOP(i,trm)})
   // 26-jul-2026 — DOBLE CONVERSIÓN DE MONEDA (Santiago: "puse el valor en
@@ -469,8 +469,9 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
     egresosTotales, cashFlow, independencia, coberturaTotal,
     // ═══ Base única de métricas (metrics.js) ═══
     met, nivel:met.nivel,
+    salud:saludFinanciera(met), rentaYield:rentaYYield(met), inflacion:gananciaVsInflacion(met,inflacionPct), colchonMeses:met.colchonMeses,
     ingresoPasivo:met.ip, ingresoPasivoBruto:met.ipBruto, pctIngresoPasivo:met.pctIngresoPasivo,
-    ob:met.ob,
+    ob:met.ob, ahorroPct:met.ahorroPct, cargaDeudaPct:met.cargaDeudaPct, ingresoNeto:met.ingresoNeto,
     // ═══ Legacy aliases (compatibilidad) ═══
     ab, td, nw:ab-td,
     ti:brutoTotal, tg:0, ni:disponibleCuenta,
@@ -1308,7 +1309,7 @@ export default function FinPath(){
     const level=t.nivel?.nombre||"Sin datos";
     const fireNum=egresosTotales*12*25;const firePct=fireNum>0?(nw/fireNum*100):0;
     const dta=totalPat>0?(totalDeu/totalPat*100):0;
-    const runway=egresosTotales>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija","Fondo de Inversión"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)/egresosTotales):0;
+    const runway=t.colchonMeses!=null?Math.round(t.colchonMeses*10)/10:0; // colchón único (metrics.js)
     const invRows=inv.map(i=>"<tr><td>"+(i.n||i.nombre||"")+"</td><td>"+(i.tp||i.tipo||"Otro")+"</td><td class=r>"+fm(vaCOP(i,trm))+"</td><td class=r "+(vaCOP(i,trm)>=vcCOP(i,trm)?"style=color:#16a34a":"style=color:#dc2626")+">"+fm(vaCOP(i,trm)-vcCOP(i,trm))+"</td></tr>").join("");
     const ingRows=ing.map(i=>"<tr><td>"+(i.nombre||"")+"</td><td>"+(i.categoria||"")+"</td><td class=r>"+fm(montoPromedioMensual(i)*(i.moneda==="USD"?(u&&u.trm||4200):1))+"</td></tr>").join("");
     const gasRows=gasCats.map(g=>"<tr><td>"+g.cat+(g.esAporte?" <span style='font-size:9px;color:#f59e0b'>(aporte)</span>":"")+"</td><td class=r>"+fm(g.total)+"</td><td class=r>"+(brutoTotal>0?(g.total/brutoTotal*100).toFixed(1)+"%":"—")+"</td></tr>").join("");
@@ -1381,7 +1382,7 @@ export default function FinPath(){
   // Usar este en gates de features. plan==="pro" es solo para "soy plan Pro
   // exacto" (ej. mostrar 'Plan actual' en pricing card del plan Pro).
   const hasProAccess=plan==="pro"||plan==="pro_familiar"||plan==="advisor_pro";
-  const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200):{},[u]);
+  const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200,u.inflacionPct):{},[u]);
   const ib=useMemo(()=>{if(!u?.ibk?.length)return{tc:0,tv:0,pnl:0,pp:0,pos:[]};let tc=0,tv=0;const pos=u.ibk.map(p=>{
     // 26-jul-2026 (Santiago: "¿y si la persona tiene opciones qué hace?").
     // Un contrato de opción representa 100 acciones: su valor es
@@ -1729,7 +1730,7 @@ export default function FinPath(){
     const ingPasivo=t.ingresoPasivoBruto||0;
     const ingActivo=t.met?t.met.iaBruto:0;
     const pctPasivo=t.pctIngresoPasivo||0;
-    const runway=t.te>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)/t.te):0;
+    const runway=t.colchonMeses!=null?Math.round(t.colchonMeses*10)/10:0; // colchón único (metrics.js)
     const fireNum=t.gfm*12*25;
     const firePct=fireNum>0?(t.nw/fireNum*100):0;
     const reVal=inv.filter(i=>(i.tp||i.tipo)==="Real Estate").reduce((s,i)=>s+vaCOP(i,trm),0);
@@ -1905,15 +1906,10 @@ export default function FinPath(){
     // Top income sources
     const topInc=[...((u&&u.ingresos)||[]).filter(i=>i.sim!==false)].sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a)).slice(0,5);
     // Health score (0-100)
-    const healthScore=Math.min(100,Math.round(
-      (t.coberturaTotal>=100?30:t.coberturaTotal*0.3) + // flujo: 30 pts (se reemplaza con la spec de salud financiera)
-      (t.dta<50?25:t.dta<80?15:0) + // debt ratio: 25 pts
-      (t.cf>0?25:t.cf>-1000?10:0) + // cash flow positive: 25 pts
-      (((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>=3?10:(((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>=2?5:0)) + // diversification: 10 pts
-      (((u&&u.inv)||[]).filter(i=>i.sim!==false).length>=3?10:(((u&&u.inv)||[]).filter(i=>i.sim!==false).length>=1?5:0))  // assets: 10 pts
-    ));
-    const healthColor=healthScore>=80?T.gn:healthScore>=50?"#eab308":T.rd;
-    const healthLabel=healthScore>=80?"Excelente":healthScore>=60?"Buena":healthScore>=40?"Regular":"Necesita atención";
+    // Salud financiera: spec Finanzas §2 (metrics.js), 5 componentes con peso.
+    const healthScore=t.salud.score;
+    const healthColor=healthScore>=80?T.gn:healthScore>=60?"#84cc16":healthScore>=40?"#eab308":T.rd;
+    const healthLabel=t.salud.banda;
 
     return<div>
       {/* Greeting con PageHeader (estilo Optimus) — Sesión 2-may-2026 */}
@@ -2374,18 +2370,18 @@ export default function FinPath(){
         const nwUSD = trm > 0 ? t.nw / trm : t.nw / 4200;
         // Liquid assets (cash + investments, not real estate)
         const liquidAssets = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => ["Investment","Fondo de Inversión","CDT","Acciones","Crypto","Renta Fija","Cash"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trm), 0);
-        const runway = t.te > 0 ? Math.round(liquidAssets / t.te) : 999;
+        const runway = t.colchonMeses != null ? Math.round(t.colchonMeses*10)/10 : 999; // colchón único (metrics.js)
         const burnRate = t.nw > 0 ? ((t.te * 12) / t.nw * 100) : 0;
-        const savingsRate = t.ti > 0 ? (t.cf / t.ti * 100) : 0;
+        const savingsRate = t.ahorroPct || 0; // misma cifra que alertas y puntaje (metrics.js, neto de retención)
         const fireNumber = t.gfm * 12 * 25;
         const fireProgress = fireNumber > 0 ? Math.min((t.nw / fireNumber) * 100, 100) : 0;
-        const debtService = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
+        const debtService = t.cargaDeudaPct || 0; // cuotas ÷ ingreso neto de retención (metrics.js)
         // Passive vs active income
         // % del ingreso que es pasivo: misma clasificación que el nivel (metrics.js).
         const passiveRatio = t.pctIngresoPasivo || 0;
         // Yield on cost
         const totalInvested = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vcCOP(i,trm), 0);
-        const yieldOnCost = totalInvested > 0 ? (ingresoInversionAnual(u&&u.ingresos, trm) / totalInvested * 100) : 0;
+        const yieldOnCost = t.rentaYield.yield || 0; // renta neta ÷ costo de activos que rentan (metrics.js)
         // Concentration risk
         const maxAsset = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((max,i) => vaCOP(i,trm) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trm)} : max, {n:"",v:0});
         const concRisk = (t.ab+ib.tv) > 0 ? (maxAsset.v / (t.ab+ib.tv) * 100) : 0;
@@ -2395,7 +2391,7 @@ export default function FinPath(){
             <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:14}}>🏦 Indicadores Family Office</div>
             <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:14}}>
               {[
-                {l:"Runway",v:runway >= 999 ? "∞" : runway + " meses",c:runway>=12?T.gn:runway>=6?"#eab308":T.rd,tip:"Meses que aguantas sin ningún ingreso. Ideal: 12-24.",i:"🛡️"},
+                {l:"Colchón de liquidez",v:runway >= 999 ? "∞" : String(runway).replace(".",",") + " meses",c:runway>=12?T.gn:runway>=6?"#eab308":T.rd,tip:"Activos líquidos (caja, cuentas, CDT, fondos a la vista) ÷ gastos y cuotas del mes. Mínimo 6 meses.",i:"🛡️"},
                 {l:"Burn rate",v:pc(burnRate),c:burnRate<=4?T.gn:burnRate<=8?"#eab308":T.rd,tip:"% del patrimonio que gastas al año. Ideal: <4%.",i:"🔥"},
                 {l:"Tasa de ahorro",v:pc(savingsRate),c:savingsRate>=20?T.gn:savingsRate>=10?"#eab308":T.rd,tip:"% del ingreso que ahorras. Ideal: >20%.",i:"💰"},
                 {l:"Debt service",v:pc(debtService),c:debtService<=30?T.gn:debtService<=50?"#eab308":T.rd,tip:"% del ingreso que va a pagar deudas. Ideal: <30%.",i:"📋"},
@@ -2413,7 +2409,7 @@ export default function FinPath(){
             <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:14}}>
               {[
                 {l:"Ingreso pasivo",v:pc(passiveRatio),c:passiveRatio>=80?T.gn:passiveRatio>=50?"#eab308":T.rd,tip:"% del ingreso que NO depende de tu trabajo.",i:"🔄"},
-                {l:"Yield on cost",v:pc(yieldOnCost),c:yieldOnCost>=8?T.gn:yieldOnCost>=4?"#eab308":T.rd,tip:"Ingreso anual ÷ costo de inversión. Qué tan bien rentan tus activos.",i:"📈"},
+                {l:t.rentaYield.etiqueta,v:t.rentaYield.yield==null?"—":pc(yieldOnCost),c:yieldOnCost>=8?T.gn:yieldOnCost>=4?"#eab308":T.rd,tip:"Renta neta anual ÷ "+(t.rentaYield.sobreValorActual?"valor actual":"costo de adquisición")+" de los activos que rentan.",i:"📈"},
                 {l:"Concentración",v:pc(concRisk),c:concRisk<=30?T.gn:concRisk<=50?"#eab308":T.rd,tip:concRisk>30?"⚠ "+maxAsset.n+" es "+pc(concRisk)+" de tu patrimonio":"Ningún activo supera el 30%. Bien diversificado.",i:"⚠️"},
                 {l:"FIRE progress",v:pc(fireProgress),c:fireProgress>=100?T.gn:fireProgress>=50?"#eab308":T.rd,tip:"Patrimonio ÷ (gastos×25 años). 100% = nunca más necesitas trabajar.",i:"🔥"},
               ].map(k => (
@@ -2648,7 +2644,7 @@ export default function FinPath(){
                 const totalValue = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vaCOP(i,trm), 0);
                 const gain = totalValue - totalInvested;
                 const gainPct = totalInvested > 0 ? ((totalValue / totalInvested) - 1) * 100 : 0;
-                const incomeYield = totalInvested > 0 ? (ingresoInversionAnual(u&&u.ingresos, trm) / totalInvested * 100) : 0;
+                const incomeYield = t.rentaYield.yield || 0;
                 const totalReturn = gainPct + incomeYield;
                 
                 const benchmarks = [
@@ -2656,7 +2652,8 @@ export default function FinPath(){
                   {name:"Tu portafolio (total: valoriz. + renta)",pct:totalReturn,color:totalReturn>=0?T.gn:T.rd},
                   {name:"S&P 500 (promedio 10 años)",pct:12.5,color:"#3b82f6"},
                   {name:"CDT Colombia (promedio)",pct:10.5,color:"#a78bfa"},
-                  {name:"Inflación Colombia 2024",pct:5.2,color:"#f97316"},
+                  {name:"Inflación usada en tus cálculos",pct:inflacionGlobal(u&&u.inflacionPct),color:"#f97316"},
+                  {name:"Inflación Colombia 2024 (solo referencia)",pct:5.2,color:"#a16207"},
                   {name:"Colchón (cuenta de ahorros)",pct:1.5,color:T.tx3},
                 ];
                 const maxPct = Math.max(...benchmarks.map(b => Math.abs(b.pct)), 1);
@@ -2667,7 +2664,7 @@ export default function FinPath(){
                       <div key={i} style={{marginBottom:8}}>
                         <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:8}}>
                           <span style={{color:i<2?T.tx:T.tx2,fontWeight:i<2?700:400}}>{b.name}</span>
-                          <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{b.pct.toFixed(1)}%</span>
+                          <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{fmtPctEs(b.pct)}</span>
                         </div>
                         <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
                           <div style={{height:"100%",width:Math.max((Math.abs(b.pct)/maxPct)*100,2)+"%",background:b.color,borderRadius:3,opacity:i<2?1:0.6}}/>
@@ -2675,13 +2672,16 @@ export default function FinPath(){
                       </div>
                     ))}
                     <div style={{marginTop:8,fontSize:10,color:T.tx3,lineHeight:1.5}}>
-                      {totalReturn > 12.5 
-                        ? <span style={{color:T.gn}}>✅ Tu portafolio supera al S&P 500. Excelente gestión.</span>
-                        : totalReturn > 5.2
-                          ? <span style={{color:"#eab308"}}>📈 Tu portafolio supera la inflación pero está por debajo del S&P 500. Revisa si puedes mejorar la asignación.</span>
-                          : <span style={{color:T.rd}}>⚠ Tu portafolio no supera la inflación. Tu dinero está perdiendo poder adquisitivo.</span>
+                      {t.inflacion
+                        ? <span style={{color:t.inflacion.leGana?T.gn:T.rd}}>{t.inflacion.leGana?"✅":"⚠"} {t.inflacion.mensaje} · nominal {fmtPctEs(t.inflacion.nominal)} vs inflación usada {fmtPctEs(t.inflacion.inflacion)}</span>
+                        : <span style={{color:T.tx3}}>Carga activos para comparar contra la inflación.</span>
                       }
-                      <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%) · Renta anual: {fm(t.ti*12)} ({incomeYield.toFixed(1)}%)
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+                        <label style={{fontSize:10,color:T.tx3}} htmlFor="inflacion-global">Inflación que usa la app (% anual):</label>
+                        <input id="inflacion-global" type="number" step="0.1" min="0" value={(u&&u.inflacionPct)!=null?u.inflacionPct:4} onChange={e=>upd("inflacionPct",e.target.value===""?"":Number(e.target.value))} style={{width:64,background:T.bg3,color:T.tx,border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,padding:"3px 6px",fontSize:11}}/>
+                        <span style={{fontSize:10,color:T.tx3}}>Alimenta también la proyección de patrimonio.</span>
+                      </div>
+                      <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%) · Renta neta anual: {fm(t.rentaYield.rentaAnual)} ({incomeYield.toFixed(1)}% · {t.rentaYield.etiqueta})
                     </div>
                   </>
                 );
@@ -2798,7 +2798,7 @@ export default function FinPath(){
               {(() => {
                 const actions = [];
                 // Check each area
-                const runway2 = t.te > 0 ? Math.round((((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => ["Investment","Fondo de Inversión","CDT","Cash","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trm), 0)) / t.te) : 999;
+                const runway2 = t.colchonMeses != null ? Math.round(t.colchonMeses*10)/10 : 999;
                 if (runway2 < 6) actions.push({pri:"🔴",text:"Fondo de emergencia insuficiente. Necesitas al menos 6 meses de gastos en activos líquidos.",cat:"Liquidez"});
                 else if (runway2 < 12) actions.push({pri:"🟡",text:"Fondo de emergencia aceptable ("+runway2+" meses). Ideal: 12-24 meses.",cat:"Liquidez"});
                 
@@ -2811,7 +2811,7 @@ export default function FinPath(){
                 if (concR > 40) actions.push({pri:"🟡",text:maxA.n + " es " + concR.toFixed(0) + "% de tu patrimonio. Diversifica para reducir riesgo.",cat:"Riesgo"});
                 
                 if (t.cf < 0) actions.push({pri:"🔴",text:"Tu cash flow es negativo. Gastas más de lo que ganas. Revisa gastos o busca más ingresos.",cat:"Cash Flow"});
-                else if (t.ti > 0 && (t.cf/t.ti*100) < 10) actions.push({pri:"🟡",text:"Tu tasa de ahorro es baja (" + (t.cf/t.ti*100).toFixed(0) + "%). Intenta ahorrar al menos el 20%.",cat:"Ahorro"});
+                else if (t.ingresoNeto > 0 && t.ahorroPct < 10) actions.push({pri:"🟡",text:"Tu tasa de ahorro es baja (" + fmtPctEs(t.ahorroPct) + "). Intenta ahorrar al menos el 20%.",cat:"Ahorro"});
                 
                 const passPct = t.pctIngresoPasivo || 0;
                 if (t.ti > 0 && passPct < 50) actions.push({pri:"🟡",text:"Solo el " + passPct.toFixed(0) + "% de tu ingreso es pasivo. Invierte más en activos que generen renta.",cat:"Independencia"});
@@ -3002,12 +3002,12 @@ export default function FinPath(){
           if (maxIngPct > 40) alerts.push({type:"🟡",title:"Dependencia de ingreso: "+maxIng.n,msg:"El "+maxIngPct.toFixed(0)+"% de tus ingresos viene de una sola fuente. Si esa fuente falla, tu cash flow cae "+fm(maxIng.v)+"/mes. Diversifica fuentes de ingreso.",cat:"Riesgo de ingreso"});
 
           // 4. Debt-to-income
-          const dti = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
-          if (dti > 40) alerts.push({type:"🔴",title:"Carga de deuda alta: "+dti.toFixed(0)+"%",msg:"Más del 40% de tu ingreso va a cuotas. Prioriza pagar la deuda de mayor tasa. Meta: bajar a menos del 30%.",cat:"Deuda"});
+          const dti = t.cargaDeudaPct || 0;
+          if (dti > 40) alerts.push({type:"🔴",title:"Carga de deuda alta: "+fmtPctEs(dti),msg:"Más del 40% de tu ingreso va a cuotas. Prioriza pagar la deuda de mayor tasa. Meta: bajar a menos del 30%.",cat:"Deuda"});
 
           // 5. Savings rate
-          const savR = t.ti > 0 ? (t.cf / t.ti * 100) : 0;
-          if (savR < 10 && savR >= 0) alerts.push({type:"🟡",title:"Tasa de ahorro baja: "+savR.toFixed(0)+"%",msg:"Los family offices recomiendan ahorrar al menos 20% del ingreso. Busca reducir gastos variables o incrementar ingresos pasivos.",cat:"Ahorro"});
+          const savR = t.ahorroPct || 0;
+          if (savR < 10 && savR >= 0) alerts.push({type:"🟡",title:"Tasa de ahorro baja: "+fmtPctEs(savR),msg:"Los family offices recomiendan ahorrar al menos 20% del ingreso. Busca reducir gastos variables o incrementar ingresos pasivos.",cat:"Ahorro"});
           if (savR < 0) alerts.push({type:"🔴",title:"Ahorro negativo — estás descapitalizándote",msg:"Gastas "+fm(Math.abs(t.cf))+"/mes más de lo que ganas. Esto erosiona tu patrimonio. Acción urgente: recortar gastos o generar más ingresos.",cat:"Cash Flow"});
 
           // 6. Vehicles depreciating
@@ -3102,7 +3102,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         />
       :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trm||u?.trm||4200} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado si Plan a cero (P0.3) está activo."} onNavigateNorte={()=>setPg("norte")} extraADeudas={extraADeudas}/>;
     case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
-    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} user={{inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
+    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
     case"flujo":return <FlujoAnual user={u} trm={u?.trm||4200} isEN={isEN}/>;
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
     // función serverless (que además valida contra su propia lista de admins).
