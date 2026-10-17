@@ -167,6 +167,11 @@ export function calcularBase(d = {}) {
     costosNeteados += usado; excesoCostos += costoInmuebleSinVinculo - usado;
   }
   const ip = Math.max(0, ipBruto - costosNeteados);
+  // Renta neta mensual por activo vinculado (renta − costos propios, piso 0).
+  const rentaNetaPorActivo = {};
+  Object.keys(rentaPorActivo).forEach((id) => {
+    rentaNetaPorActivo[id] = Math.max(0, rentaPorActivo[id] - (costoPorActivo[id] || 0));
+  });
 
   const retencionMensual = num(d.retencionMensual);
   const impuestoNeto = num(d.impuestoNeto);
@@ -206,7 +211,10 @@ export function calcularBase(d = {}) {
     coberturaPasiva: ob > 0 ? (ip / ob) * 100 : 0,
     activosTotal, deudaTotal, patrimonioNeto,
     liquidos, colchonMeses, invertibles, invertiblesIds: invertiblesLista.map((i) => i.id),
-    rentaPorActivo, detallePasivo,
+    rentaPorActivo, rentaNetaPorActivo, detallePasivo,
+    // Valorización anual declarada (campo opcional `valorizacionPct` del activo).
+    valorizacionAnual: inv.reduce((s, i) => s + valorActivo(i) * (num(i.valorizacionPct) / 100), 0),
+    inv,
   };
 }
 
@@ -260,4 +268,72 @@ const NIVEL_VACIO = { nombre: null, data: null, siguiente: null, faltaIPSiguient
 export function calcularMetricas(d = {}) {
   const base = calcularBase(d);
   return { ...base, nivel: nivelLibertad(base) };
+}
+
+// ─── Salud financiera 0–100 (spec §2) ─────────────────────────────────────
+const interp = (x, x0, x1) => {   // lineal: x0→0, x1→100 (x1<x0 invierte); acotado
+  const t = (x - x0) / (x1 - x0);
+  return Math.max(0, Math.min(1, t)) * 100;
+};
+export const BANDAS_SALUD = [
+  { min: 80, nombre: "Excelente" }, { min: 60, nombre: "Buena" },
+  { min: 40, nombre: "Frágil" },    { min: 0,  nombre: "Crítica" },
+];
+export function saludFinanciera(b) {
+  const ing = b.ingresoTotal || 0;
+  const ahorroPct = ing > 0 ? (b.fl / ing) * 100 : 0;
+  const deudaPct = ing > 0 ? (b.sd / ing) * 100 : 0;
+  const dA = b.activosTotal > 0 ? (b.deudaTotal / b.activosTotal) * 100 : 0;
+  const col = b.colchonMeses == null ? 0 : b.colchonMeses;
+  const cob = b.coberturaPasiva || 0;
+  const comp = {
+    ahorro:       { valor: ahorroPct, puntos: interp(ahorroPct, 0, 20),  peso: 25 },
+    cargaDeuda:   { valor: deudaPct,  puntos: interp(deudaPct, 45, 15),  peso: 25 },
+    colchon:      { valor: col,       puntos: interp(col, 0, 6),         peso: 25 },
+    apalancamiento: { valor: dA,      puntos: interp(dA, 80, 30),        peso: 15 },
+    cobertura:    { valor: cob,       puntos: interp(cob, 0, 50),        peso: 10 },
+  };
+  let score = Object.values(comp).reduce((s, c) => s + (c.puntos * c.peso) / 100, 0);
+  let candado = null;
+  if ((b.fl < 0 || b.patrimonioNeto < 0) && score > 39) { score = 39; candado = b.fl < 0 ? "deficit" : "patrimonio_negativo"; }
+  score = Math.round(score);
+  return { score, banda: BANDAS_SALUD.find((x) => score >= x.min).nombre, componentes: comp, candado };
+}
+
+// ─── Renta anual y yield on cost (spec §4) ────────────────────────────────
+/** Renta anual del portafolio = IP × 12 (neto; sin salario ni valorización). */
+export function rentaYYield(b) {
+  const rentaAnual = b.ip * 12;
+  const ids = Object.keys(b.rentaNetaPorActivo || {});
+  const activos = (b.inv || []).filter((i) => ids.includes(i.id));
+  const fxa = (i) => (i.moneda === "USD" ? b.trm : 1);
+  let costo = 0, sinCosto = false;
+  activos.forEach((i) => {
+    const vc = num(i.vc) * fxa(i);
+    if (vc > 0) costo += vc; else { costo += num(i.va) * fxa(i); sinCosto = true; }
+  });
+  const rentaVinculada = ids.reduce((s, id) => s + b.rentaNetaPorActivo[id], 0) * 12;
+  return {
+    rentaAnual,
+    yield: costo > 0 ? (rentaVinculada / costo) * 100 : null,
+    base: costo,
+    sobreValorActual: sinCosto,
+    etiqueta: sinCosto ? "Rendimiento por renta (sobre valor actual)" : "Yield on cost",
+  };
+}
+
+// ─── Inflación (spec §5) ──────────────────────────────────────────────────
+/** Supuesto de inflación que muestra la app en el benchmark de Patrimonio. */
+export const INFLACION_SUPUESTA_PCT = 5.2;
+export function gananciaVsInflacion(b, inflacionPct = INFLACION_SUPUESTA_PCT) {
+  if (!(b.invertibles > 0)) return null;
+  const nominal = ((b.ip * 12 + b.valorizacionAnual) / b.invertibles) * 100;
+  const real = nominal - inflacionPct;
+  const fmt = (x) => Math.abs(x).toFixed(1).replace(".", ",");
+  return {
+    nominal, real, inflacion: inflacionPct, leGana: real >= 0,
+    mensaje: real >= 0
+      ? `Tu portafolio le gana a la inflación (+${fmt(real)}% real al año)`
+      : `No le gana a la inflación (−${fmt(real)}% real)`,
+  };
 }
