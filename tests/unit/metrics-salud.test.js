@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, INFLACION_SUPUESTA_PCT } from "../../src/lib/metrics.js";
+import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, INFLACION_DEFAULT_PCT, inflacionGlobal } from "../../src/lib/metrics.js";
 
 const qa = JSON.parse(readFileSync(new URL("../fixtures/qa_pro_patrimonio_completo.json", import.meta.url), "utf8"));
 const m = calcularMetricas({ ingresos: qa.ingresos, gastos: qa.gas, deudas: qa.deu, inv: qa.inv, trm: qa.trm });
@@ -48,21 +48,35 @@ describe("renta anual y yield (spec §4)", () => {
   });
 });
 
-describe("inflación (spec §5)", () => {
-  it("QA: nominal 4,4% vs 5,2% → no le gana (−0,8% real)", () => {
-    const g = gananciaVsInflacion(m);
-    expect(g.nominal).toBeCloseTo(4.42, 2);
-    expect(g.real).toBeCloseTo(-0.78, 2);
-    expect(g.mensaje).toBe("No le gana a la inflación (−0,8% real)");
-    expect(g.inflacion).toBe(INFLACION_SUPUESTA_PCT);
+describe("inflación (spec §5) — un solo supuesto global, default 4%", () => {
+  it("default 4% y valores inválidos caen al default", () => {
+    expect(INFLACION_DEFAULT_PCT).toBe(4);
+    expect([inflacionGlobal(undefined), inflacionGlobal(""), inflacionGlobal(-1), inflacionGlobal(6)]).toEqual([4, 4, 4, 6]);
   });
-  it("con valorización declarada suma al nominal y puede ganarle", () => {
+  it("QA Pro con 4%: nominal 4,4% → +0,4% real, le gana POR POCO", () => {
+    const g = gananciaVsInflacion(m, 4);
+    expect(g.nominal).toBeCloseTo(4.42, 2);
+    expect(g.real).toBeCloseTo(0.42, 2);
+    expect(g.inflacion).toBe(4);
+    expect(g.leGana).toBe(true);
+    expect(g.porPoco).toBe(true);
+    expect(g.mensaje).toBe("Tu portafolio le gana a la inflación por poco (+0,4% real al año)");
+    expect(g.mensaje).not.toMatch(/no supera|No le gana/i);
+  });
+  it("sin valor explícito usa el default 4%", () => {
+    expect(gananciaVsInflacion(m).inflacion).toBe(4);
+  });
+  it("cambiar el supuesto cambia el mensaje (5,2% → no le gana)", () => {
+    const g = gananciaVsInflacion(m, 5.2);
+    expect(g.mensaje).toBe("No le gana a la inflación (−0,8% real)");
+  });
+  it("con valorización declarada suma al nominal y le gana con holgura", () => {
     const x = calcularMetricas({
       ingresos: [{ categoria: "Rentas de capital", mensual: 1000000, activoId: "a" }],
       inv: [{ id: "a", tp: "Real Estate", va: 200e6, vc: 150e6, valorizacionPct: 3 }],
     });
-    const g = gananciaVsInflacion(x);
+    const g = gananciaVsInflacion(x, 4);
     expect(g.nominal).toBeCloseTo(9, 5);
-    expect(g.mensaje).toBe("Tu portafolio le gana a la inflación (+3,8% real al año)");
+    expect(g.mensaje).toBe("Tu portafolio le gana a la inflación (+5,0% real al año)");
   });
 });

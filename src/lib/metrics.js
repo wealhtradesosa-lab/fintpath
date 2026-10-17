@@ -323,17 +323,31 @@ export function rentaYYield(b) {
 }
 
 // ─── Inflación (spec §5) ──────────────────────────────────────────────────
-/** Supuesto de inflación que muestra la app en el benchmark de Patrimonio. */
-export const INFLACION_SUPUESTA_PCT = 5.2;
-export function gananciaVsInflacion(b, inflacionPct = INFLACION_SUPUESTA_PCT) {
+/**
+ * Supuesto de inflación GLOBAL (% anual): un solo valor editable por el usuario
+ * (`user.inflacionPct`) que alimenta la proyección y el mensaje del portafolio.
+ * Default 4%. Cualquier cifra externa (p. ej. IPC publicado) es solo referencia.
+ */
+export const INFLACION_DEFAULT_PCT = 4;
+export function inflacionGlobal(v) {
+  const n = Number(v);
+  return v === "" || v == null || !Number.isFinite(n) || n < 0 ? INFLACION_DEFAULT_PCT : n;
+}
+/** Margen real (puntos) bajo el cual "le gana" se dice "por poco". */
+export const MARGEN_POCO_PCT = 1;
+export function gananciaVsInflacion(b, inflacionPct) {
+  inflacionPct = inflacionGlobal(inflacionPct);
   if (!(b.invertibles > 0)) return null;
   const nominal = ((b.ip * 12 + b.valorizacionAnual) / b.invertibles) * 100;
   const real = nominal - inflacionPct;
   const fmt = (x) => Math.abs(x).toFixed(1).replace(".", ",");
   return {
     nominal, real, inflacion: inflacionPct, leGana: real >= 0,
+    porPoco: real >= 0 && real < MARGEN_POCO_PCT,
     mensaje: real >= 0
-      ? `Tu portafolio le gana a la inflación (+${fmt(real)}% real al año)`
+      ? (real < MARGEN_POCO_PCT
+          ? `Tu portafolio le gana a la inflación por poco (+${fmt(real)}% real al año)`
+          : `Tu portafolio le gana a la inflación (+${fmt(real)}% real al año)`)
       : `No le gana a la inflación (−${fmt(real)}% real)`,
   };
 }

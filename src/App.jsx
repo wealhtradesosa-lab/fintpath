@@ -75,7 +75,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
 import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual, mesesLibreDeuda, vaCOP, vcCOP } from "./lib/flowHelpers.js";
-import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, INFLACION_SUPUESTA_PCT } from "./lib/metrics.js";
+import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, inflacionGlobal } from "./lib/metrics.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react";
@@ -393,7 +393,7 @@ const cuentaVacia = (d) => {
   return nInv + nIng + nDeu + nGas === 0;
 };
 
-const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
+const cT=(inv,ds,gf,ing,taxData,trm=4200,inflacionPct)=>{
   let ab=0, aportesObligatorios=0, gastosFamiliares=0;
   (inv||[]).forEach(i=>{if(i.sim!==false)ab+=vaCOP(i,trm)})
   // 26-jul-2026 — DOBLE CONVERSIÓN DE MONEDA (Santiago: "puse el valor en
@@ -469,7 +469,7 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
     egresosTotales, cashFlow, independencia, coberturaTotal,
     // ═══ Base única de métricas (metrics.js) ═══
     met, nivel:met.nivel,
-    salud:saludFinanciera(met), rentaYield:rentaYYield(met), inflacion:gananciaVsInflacion(met), colchonMeses:met.colchonMeses,
+    salud:saludFinanciera(met), rentaYield:rentaYYield(met), inflacion:gananciaVsInflacion(met,inflacionPct), colchonMeses:met.colchonMeses,
     ingresoPasivo:met.ip, ingresoPasivoBruto:met.ipBruto, pctIngresoPasivo:met.pctIngresoPasivo,
     ob:met.ob,
     // ═══ Legacy aliases (compatibilidad) ═══
@@ -1382,7 +1382,7 @@ export default function FinPath(){
   // Usar este en gates de features. plan==="pro" es solo para "soy plan Pro
   // exacto" (ej. mostrar 'Plan actual' en pricing card del plan Pro).
   const hasProAccess=plan==="pro"||plan==="pro_familiar"||plan==="advisor_pro";
-  const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200):{},[u]);
+  const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200,u.inflacionPct):{},[u]);
   const ib=useMemo(()=>{if(!u?.ibk?.length)return{tc:0,tv:0,pnl:0,pp:0,pos:[]};let tc=0,tv=0;const pos=u.ibk.map(p=>{
     // 26-jul-2026 (Santiago: "¿y si la persona tiene opciones qué hace?").
     // Un contrato de opción representa 100 acciones: su valor es
@@ -2652,7 +2652,8 @@ export default function FinPath(){
                   {name:"Tu portafolio (total: valoriz. + renta)",pct:totalReturn,color:totalReturn>=0?T.gn:T.rd},
                   {name:"S&P 500 (promedio 10 años)",pct:12.5,color:"#3b82f6"},
                   {name:"CDT Colombia (promedio)",pct:10.5,color:"#a78bfa"},
-                  {name:"Inflación (supuesto)",pct:INFLACION_SUPUESTA_PCT,color:"#f97316"},
+                  {name:"Inflación usada en tus cálculos",pct:inflacionGlobal(u&&u.inflacionPct),color:"#f97316"},
+                  {name:"Inflación Colombia 2024 (solo referencia)",pct:5.2,color:"#a16207"},
                   {name:"Colchón (cuenta de ahorros)",pct:1.5,color:T.tx3},
                 ];
                 const maxPct = Math.max(...benchmarks.map(b => Math.abs(b.pct)), 1);
@@ -2672,9 +2673,14 @@ export default function FinPath(){
                     ))}
                     <div style={{marginTop:8,fontSize:10,color:T.tx3,lineHeight:1.5}}>
                       {t.inflacion
-                        ? <span style={{color:t.inflacion.leGana?T.gn:T.rd}}>{t.inflacion.leGana?"✅":"⚠"} {t.inflacion.mensaje} · nominal {t.inflacion.nominal.toFixed(1)}% vs inflación {t.inflacion.inflacion.toFixed(1)}%</span>
+                        ? <span style={{color:t.inflacion.leGana?T.gn:T.rd}}>{t.inflacion.leGana?"✅":"⚠"} {t.inflacion.mensaje} · nominal {t.inflacion.nominal.toFixed(1)}% vs inflación usada {t.inflacion.inflacion.toFixed(1)}%</span>
                         : <span style={{color:T.tx3}}>Carga activos para comparar contra la inflación.</span>
                       }
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+                        <label style={{fontSize:10,color:T.tx3}} htmlFor="inflacion-global">Inflación que usa la app (% anual):</label>
+                        <input id="inflacion-global" type="number" step="0.1" min="0" value={(u&&u.inflacionPct)!=null?u.inflacionPct:4} onChange={e=>upd("inflacionPct",e.target.value===""?"":Number(e.target.value))} style={{width:64,background:T.bg3,color:T.tx,border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,padding:"3px 6px",fontSize:11}}/>
+                        <span style={{fontSize:10,color:T.tx3}}>Alimenta también la proyección de patrimonio.</span>
+                      </div>
                       <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%) · Renta anual: {fm(t.rentaYield.rentaAnual)} ({incomeYield.toFixed(1)}% · {t.rentaYield.etiqueta})
                     </div>
                   </>
@@ -3096,7 +3102,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         />
       :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trm||u?.trm||4200} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado si Plan a cero (P0.3) está activo."} onNavigateNorte={()=>setPg("norte")} extraADeudas={extraADeudas}/>;
     case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
-    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} user={{inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
+    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
     case"flujo":return <FlujoAnual user={u} trm={u?.trm||4200} isEN={isEN}/>;
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
     // función serverless (que además valida contra su propia lista de admins).
