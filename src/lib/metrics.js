@@ -140,11 +140,19 @@ export function calcularBase(d = {}) {
   let aportesObligatorios = 0, gastosVida = 0;
   const costoPorActivo = {};
   let costoInmuebleSinVinculo = 0;
+  // Origen de la renta del activo (`rentaOrigen`): 'manual' = el usuario escribió
+  // el % y ya es neta → se usa tal cual: sus gastos vinculados (administración,
+  // predial, mantenimiento) NO se descuentan de nuevo ni van a G (ya están dentro
+  // de la renta neta). 'derivada' o sin indicador (activos viejos) = bruta.
+  const manualIds = new Set(inv.filter((x) => x.rentaOrigen === "manual").map((x) => x.id));
+  let costosAbsorbidosManual = 0;
   Object.entries(gastos || {}).forEach(([cat, items]) => {
     (items || []).forEach((g) => {
       if (!g || g.sim === false) return;
       const m = mensualGasto(g, trm);
-      if (g.activoId && rentaPorActivo[g.activoId] != null) {
+      if (g.activoId && manualIds.has(g.activoId) && rentaPorActivo[g.activoId] != null) {
+        costosAbsorbidosManual += m;
+      } else if (g.activoId && rentaPorActivo[g.activoId] != null) {
         costoPorActivo[g.activoId] = (costoPorActivo[g.activoId] || 0) + m;
       } else if (!g.activoId && esGastoInmuebleArrendado(cat, g) && rentaSinVinculo > 0) {
         costoInmuebleSinVinculo += m;
@@ -201,7 +209,7 @@ export function calcularBase(d = {}) {
   const ingresoTotal = iaBruto + ipBruto; // bruto: base de % sobre ingreso
   return {
     trm,
-    iaBruto, ia, ipBruto, ip, costosNeteados,
+    iaBruto, ia, ipBruto, ip, costosNeteados, costosAbsorbidosManual,
     g, sd, ob, fl,
     aportesObligatorios, gastosVida, impuestoNeto, retencionMensual,
     ingresoTotal,
@@ -335,19 +343,34 @@ export function inflacionGlobal(v) {
 }
 /** Margen real (puntos) bajo el cual "le gana" se dice "por poco". */
 export const MARGEN_POCO_PCT = 1;
+/**
+ * Clasificación del margen real (puntos porcentuales):
+ *   ≥ 1 → "gana" · (0,1) → "gana_poco" · [−1,0] → "no_gana_poco" · < −1 → "no_gana"
+ */
+export function clasificarMargen(real) {
+  const r = Math.round(real * 1e9) / 1e9; // evita ruido de punto flotante en los bordes
+  if (r >= MARGEN_POCO_PCT) return "gana";
+  if (r > 0) return "gana_poco";
+  if (r >= -MARGEN_POCO_PCT) return "no_gana_poco";
+  return "no_gana";
+}
 export function gananciaVsInflacion(b, inflacionPct) {
   inflacionPct = inflacionGlobal(inflacionPct);
   if (!(b.invertibles > 0)) return null;
   const nominal = ((b.ip * 12 + b.valorizacionAnual) / b.invertibles) * 100;
-  const real = nominal - inflacionPct;
-  const fmt = (x) => Math.abs(x).toFixed(1).replace(".", ",");
+  const real = Math.round((nominal - inflacionPct) * 1e9) / 1e9;
+  const clase = clasificarMargen(real);
+  const x = Math.abs(real).toFixed(1).replace(".", ",");
+  const txt = {
+    gana: `Tu portafolio le gana a la inflación (+${x}% real al año)`,
+    gana_poco: `Tu portafolio le gana a la inflación por poco (+${x}% real al año)`,
+    no_gana_poco: `Tu portafolio no le gana a la inflación por poco (${real < 0 ? "−" : ""}${x}% real)`,
+    no_gana: `No le gana a la inflación (−${x}% real)`,
+  }[clase];
   return {
-    nominal, real, inflacion: inflacionPct, leGana: real >= 0,
-    porPoco: real >= 0 && real < MARGEN_POCO_PCT,
-    mensaje: real >= 0
-      ? (real < MARGEN_POCO_PCT
-          ? `Tu portafolio le gana a la inflación por poco (+${fmt(real)}% real al año)`
-          : `Tu portafolio le gana a la inflación (+${fmt(real)}% real al año)`)
-      : `No le gana a la inflación (−${fmt(real)}% real)`,
+    nominal, real, inflacion: inflacionPct, clase,
+    leGana: clase === "gana" || clase === "gana_poco",
+    porPoco: clase === "gana_poco" || clase === "no_gana_poco",
+    mensaje: txt,
   };
 }
