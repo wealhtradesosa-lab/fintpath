@@ -357,6 +357,16 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       const base = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? (user?.trm || 4200) : 1);
       nv[`ing_${ii}`] = Math.round(base * f.i);
     });
+    // Conservador "gas +10%": el factor de gastos (f.g) se calculaba y nunca se
+    // aplicaba, así que el escenario solo bajaba ingresos. Aportes de Seguridad
+    // Social quedan fijos (son por ley sobre el ingreso, no gasto discrecional).
+    Object.entries(user.gastos || {}).forEach(([cat, items]) => {
+      if (cat === "Seguridad Social") return;
+      (items || []).forEach((g, gi) => {
+        if (g.sim === false) return;
+        nv[`gf_${cat}_${gi}`] = Math.round((Number(g.m) || 0) * f.g);
+      });
+    });
     (user.deudas || []).forEach((d, di) => { if ((d.mt||0) > 0) nv[`debt_${di}`] = (d.pago||d.pg||0); });
     // Tax per owner - NOT initialized here, uses getVal fallback to stay fresh
     // Standalone ingresos
