@@ -35,7 +35,9 @@ function buildContext(user, totals) {
 • Cuotas deudas: ${fm(t.tc)}/mes
 • Egresos totales: ${fm(t.te)}/mes
 • Cash flow: ${fm(t.cf)}/mes
-• Índice independencia: ${pc(t.ind)}
+• Ingreso pasivo neto: ${fm(t.ingresoPasivo)}/mes
+• Cobertura pasiva (ingreso pasivo ÷ gastos y cuotas): ${pc(t.ind)}
+• Nivel de libertad: ${t.nivel?.nivel ? t.nivel.nivel + "/5 " + t.nivel.nombre : "sin datos"}
 • Deuda total: ${fm(t.td)}
 • Deuda/Activos: ${pc(t.dta)}
 `;

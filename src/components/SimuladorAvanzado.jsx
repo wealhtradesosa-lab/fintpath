@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import Disclaimer from "./Disclaimer";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
@@ -349,7 +350,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   const applyScenario = (id) => {
     setScenario(id);
     if (id === "actual") { setSimVals({}); return; }
-    const f = { conservador: { i: 0.8, g: 1.1 }, optimista: { i: 1.3, g: 0.85 }, crisis: { i: 0.6, g: 1.05 } }[id] || { i: 1, g: 1 };
+    const f = FACTORES_ESCENARIO[id] || { i: 1, g: 1 };
     const nv = {};
 
 
@@ -357,6 +358,10 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       const base = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? (user?.trm || 4200) : 1);
       nv[`ing_${ii}`] = Math.round(base * f.i);
     });
+    // Conservador "gas +10%": el factor de gastos (f.g) se calculaba y nunca se
+    // aplicaba, así que el escenario solo bajaba ingresos. Aportes de Seguridad
+    // Social quedan fijos (son por ley sobre el ingreso, no gasto discrecional).
+    Object.assign(nv, gastosEscenario(user.gastos, f.g));
     (user.deudas || []).forEach((d, di) => { if ((d.mt||0) > 0) nv[`debt_${di}`] = (d.pago||d.pg||0); });
     // Tax per owner - NOT initialized here, uses getVal fallback to stay fresh
     // Standalone ingresos

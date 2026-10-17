@@ -346,7 +346,11 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
 
   // Cobertura: qué parte de los egresos cubre el ingreso pasivo. Es LA métrica
   // del objetivo "vivir de la renta".
-  const egresos = num(totales.egresosTotales);
+  // 11-oct-2026 — `ingresoPasivo` y `ob` vienen de metrics.js (vía cT). Antes
+  // cT no exponía `ingresoPasivo` y esta cobertura salía siempre 0%.
+  // `ob` = gastos + cuotas con los costos del inmueble arrendado ya neteados
+  // contra su renta; si no viene (llamadores viejos) se usa egresosTotales.
+  const egresos = num(totales.ob != null ? totales.ob : totales.egresosTotales);
   const pasivo = num(totales.ingresoPasivo);
   const cobertura = egresos > 0 ? (pasivo / egresos) * 100 : null;
 
