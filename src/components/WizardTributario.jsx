@@ -397,14 +397,14 @@ function IntroStep({ step, ownerName, cantidadPrecargados = 0, ownerType = "natu
             <>
               <li>Te hago preguntas profesionales, una por vez</li>
               <li>Cada concepto contable explicado en lenguaje claro</li>
-              <li>Detecto automáticamente palancas de optimización (régimen, donaciones, etc)</li>
+              <li>Reviso deducciones y beneficios que podrían aplicar (régimen, donaciones, etc)</li>
               <li>Al final tienes un borrador F-110 para tu contador</li>
             </>
           ) : (
             <>
               <li>Te hago preguntas simples, una por vez</li>
               <li>Traduzco los términos técnicos a lenguaje humano</li>
-              <li>Detecto automáticamente formas de ahorrar impuestos</li>
+              <li>Reviso deducciones y beneficios que podrían aplicarte</li>
               <li>Al final tienes un borrador para mostrarle a tu contador</li>
             </>
           )}
@@ -709,7 +709,7 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
           {saldoFinal > 0 ? (
             <>Esto es <strong style={{ color: C.txt }}>{tasaEfectiva.toFixed(1)}%</strong> de
               tus ingresos totales del año. {tasaEfectiva < 5
-                ? "Pagas muy poco efectivo — tu situación está optimizada."
+                ? "Pagas muy poco efectivo — no se ve espacio adicional de ajuste."
                 : tasaEfectiva < 15
                   ? "Es un nivel típico para alguien con tu perfil."
                   : "Es relativamente alto — vale la pena explorar palancas legales."}</>

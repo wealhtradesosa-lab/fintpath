@@ -177,7 +177,7 @@ const GLOSARIO = {
   },
   holding: {
     termino: "Holding",
-    explicacion: "Una sociedad cuyo único propósito es tener activos (otras empresas, inmuebles) y recibir sus rendimientos. Útil para optimizar impuestos en patrimonios grandes.",
+    explicacion: "Una sociedad cuyo único propósito es tener activos (otras empresas, inmuebles) y recibir sus rendimientos. En algunos patrimonios grandes se usa por razones patrimoniales; consulta con tu contador si te aplica.",
   },
 
   // ── FORMULARIOS DIAN ────────────────────────────────────────────────────

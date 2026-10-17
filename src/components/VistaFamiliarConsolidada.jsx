@@ -205,7 +205,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
           <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.6, margin: 0 }}>
             Solo tienes <strong style={{ color: C.txt }}>{único.owner.name}</strong> cargado. La Vista Familiar Consolidada brilla
             cuando tienes varios titulares fiscales: tu cónyuge, sociedades familiares (SAS, holdings),
-            hijos mayores. Vas a poder ver el patrimonio total del grupo, optimizar impuestos a nivel
+            hijos mayores. Vas a poder ver el patrimonio total del grupo, revisar los impuestos a nivel
             familiar y detectar dobles cargas u oportunidades cruzadas.
           </p>
         </div>

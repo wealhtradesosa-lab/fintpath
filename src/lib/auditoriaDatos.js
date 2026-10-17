@@ -453,7 +453,7 @@ function resumenEjecutivo(errores, advertencias, oportunidadesData, faltantes) {
   }
   return {
     estado: "info",
-    mensaje: `${oportunidadesData.length} oportunidades de optimización detectadas que necesitan más datos.`,
+    mensaje: `${oportunidadesData.length} puntos por revisar que necesitan más datos.`,
   };
 }
 
