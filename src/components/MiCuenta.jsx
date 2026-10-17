@@ -319,7 +319,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             lineHeight: 1.6,
           }}>
             <strong>⚠️ Tu plan {PLAN_LABELS[plan] || plan} fue cancelado.</strong>{" "}
-            Seguís teniendo acceso completo hasta el {new Date(graceUntil).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}.
+            Sigues teniendo acceso completo hasta el {new Date(graceUntil).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}.
             Después, tu cuenta vuelve al plan Free.{" "}
             {isAdmin && (
               <span>Si fue un error, click en "⚙️ Gestionar suscripción" arriba para reactivar.</span>
