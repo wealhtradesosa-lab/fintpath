@@ -11,7 +11,7 @@
 //   responder a su única pregunta real: "¿cuánto tengo que pagar?".
 //
 // PRINCIPIO DE DISEÑO:
-//   "El user viene con UNA pregunta. Respondela primero. El resto es opcional."
+//   "El user viene con UNA pregunta. Respóndela primero. El resto es opcional."
 //
 //   Por eso esta pantalla ELIMINA las tabs y presenta una vista unificada que:
 //
@@ -30,7 +30,7 @@
 // FILOSOFÍA DE LENGUAJE:
 //   - "Tu situación tributaria" en vez de "Auditor IA"
 //   - "Te toca pagar" en vez de "Saldo a cargo"
-//   - "Te ahorrás" en vez de "Beneficio fiscal"
+//   - "Te ahorras" en vez de "Beneficio fiscal"
 //   - "Resolver" en vez de "Auditoría de datos"
 //   - "Ver el detalle técnico" en vez de "Modo experto F-110"
 // ═══════════════════════════════════════════════════════════════════════════
@@ -109,7 +109,7 @@ export default function EstrategiaTributaria({
     [allOwners, selectedOwnerId]
   );
   const isJuridica = selectedOwner?.type === "juridica";
-  const ownerName = selectedOwner?.name || "vos";
+  const ownerName = selectedOwner?.name || "tú";
 
   // ── Datos del motor ─────────────────────────────────────────────────
   const det = useMemo(() => {
@@ -351,7 +351,7 @@ export default function EstrategiaTributaria({
           />
           <AccionSecundaria
             icono="💬"
-            titulo="Preguntale al contador IA"
+            titulo="Pregúntale al contador IA"
             descripcion="Chat sobre tu situación"
             onClick={onAbrirChat}
           />
@@ -452,7 +452,7 @@ function OportunidadCard({ opo, index, onAplicar }) {
         </div>
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <div style={{ fontSize: 11, color: C.txt3 }}>Te ahorrás</div>
+        <div style={{ fontSize: 11, color: C.txt3 }}>Te ahorras</div>
         <div style={{ fontSize: 18, fontWeight: 800, color: C.green, lineHeight: 1 }}>
           {fmShort(ahorro)}
         </div>
