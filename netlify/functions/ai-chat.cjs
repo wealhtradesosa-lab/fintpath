@@ -180,7 +180,7 @@ const KNOWLEDGE_US = `
 - House hacking: live in part of duplex/triplex, deduct rest as rental
 - BRRRR: Buy, Rehab, Rent, Refinance, Repeat
 
-7. TAX OPTIMIZATION STRATEGIES:
+7. TAX PLANNING CONSIDERATIONS (estimates, not promised savings):
 - Tax-loss harvesting: realize losses to offset gains, $3K/year against ordinary income
 - Asset location: tax-inefficient assets (bonds, REITs) in retirement accounts
 - Roth conversion ladder: convert Trad IRA to Roth in low-income years (early retirement)
@@ -312,7 +312,7 @@ REGLAS DE RESPUESTA:
 6. Si mencionas un %, calcula también el monto en pesos
 7. Identifica riesgos que el usuario puede no ver
 8. Si aplica, menciona implicaciones tributarias
-9. Prioriza: liquidez → protección → crecimiento → optimización fiscal
+9. Prioriza: liquidez → protección → crecimiento → revisión fiscal
 10. Si no tienes datos suficientes, di exactamente qué falta
 11. Nunca digas "consulta un asesor" — TÚ eres el asesor
 12. Si el usuario pregunta algo fuera de finanzas, redirige amablemente`;

@@ -148,7 +148,7 @@ export default function AgenteTributarioBienvenida({
         </h1>
         <p style={{ fontSize: 15, color: C.txt2, marginTop: 8, lineHeight: 1.5 }}>
           El auditor IA <strong style={{ color: C.txt }}>revisó tu borrador</strong> y detectó
-          oportunidades de optimización. Acá ves un resumen claro y concreto. Si quieres ver
+          puntos para revisar. Acá ves un resumen claro y concreto. Si quieres ver
           el detalle técnico del formulario, hay un botón abajo.
         </p>
       </div>
@@ -266,7 +266,7 @@ export default function AgenteTributarioBienvenida({
                   ? "Es un nivel típico para alguien con tu perfil."
                   : tasaEfectiva < 25
                     ? "Es alto — puede haber palancas legales para reducirlo (mira abajo)."
-                    : "Es muy alto — vale la pena hablar con un contador para optimizar."}
+                    : "Es muy alto — vale la pena hablar con un contador para revisarlo."}
             </>
           ) : (
             <>No tienes saldo a pagar este año. ¡Buen trabajo!</>
@@ -368,7 +368,7 @@ export default function AgenteTributarioBienvenida({
           borderRadius: 14,
         }}>
           <div style={{ fontSize: 13, color: C.green, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            💡 Detectamos formas de pagar menos
+            💡 Detectamos deducciones y beneficios para revisar
           </div>
           <h3 style={{ fontSize: 22, fontWeight: 800, color: C.txt, margin: "4px 0 6px 0" }}>
             Podrías ahorrar hasta {fm(ahorroPotencial)}
@@ -580,7 +580,7 @@ function OportunidadCard({ rec, numero, onAplicar }) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: C.txt, marginBottom: 4, lineHeight: 1.3 }}>
-          {rec.titulo || rec.title || "Optimización"}
+          {rec.titulo || rec.title || "Para revisar"}
         </div>
         {rec.descripcion && (
           <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5, marginBottom: 6 }}>
