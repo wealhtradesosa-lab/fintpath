@@ -41,8 +41,8 @@ const TEXTOS = {
       p: "Bitcoin ha caído más del 70% en varias ocasiones y puede volver a hacerlo. Esta comparación usa una tasa de crecimiento que vos elegiste: no es una predicción ni una recomendación de invertir. No inviertas dinero que no puedas permitirte perder, y considerá el tratamiento fiscal de las ganancias en tu jurisdicción.",
     },
     ia: {
-      t: "Generado por IA — verificalo",
-      p: "Este análisis lo produce un modelo de inteligencia artificial a partir de tus datos. Puede contener errores, omisiones o interpretaciones incorrectas de la normativa. No constituye asesoría profesional. Tratalo como un punto de partida para tu propia investigación o para una conversación con tu asesor, nunca como una conclusión definitiva.",
+      t: "Generado por IA — verifícalo",
+      p: "Este análisis lo produce un modelo de inteligencia artificial a partir de tus datos. Puede contener errores, omisiones o interpretaciones incorrectas de la normativa. No constituye asesoría profesional ni una recomendación de inversión. Trátalo como un punto de partida para tu propia investigación o para una conversación con tu asesor, nunca como una conclusión definitiva.",
     },
   },
   en: {

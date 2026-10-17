@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
-import { montoPromedioMensual, promedioMesActivo } from "../lib/flowHelpers.js";
+import { buildContext, normalizarMarkdown } from "../lib/asesorIA.js";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
 import PageHeader from "./PageHeader.jsx";
 
@@ -13,81 +13,16 @@ const T = {
   bl: "#3b82f6", rd: "#ef4444",
 };
 
+// 11-oct-2026: sugerencias que se responden con los datos cargados, sin
+// prometer plazos ("independencia en 3 años") ni suponer edad o metas.
 const SUGGESTIONS = [
-  "¿Cómo puedo alcanzar independencia financiera en 3 años?",
-  "¿Dónde tengo más riesgo concentrado?",
+  "¿Qué gasto me está frenando para subir de nivel?",
+  "¿Qué deuda me conviene pagar primero?",
+  "¿Cuántos meses de gastos debería tener ahorrados?",
   "¿Debería pagar deudas o invertir más?",
-  "Genera 3 escenarios para mejorar mi cash flow",
-  "¿Qué gastos puedo recortar para ahorrar $5M/mes?",
-  "¿Cuánto necesito para retirarme a los 55?",
+  "Dame 3 opciones para mejorar mi flujo de caja",
+  "¿Dónde tengo más riesgo concentrado?",
 ];
-
-function buildContext(user, totals) {
-  const u = user || {};
-  const t = totals || {};
-  const fm = n => "$" + Math.round(n || 0).toLocaleString("es-CO");
-  const pc = n => (n || 0).toFixed(1) + "%";
-
-  let ctx = `RESUMEN PATRIMONIAL:
-• Patrimonio neto: ${fm(t.nw)}
-• Ingresos netos: ${fm(t.ni)}/mes
-• Gastos familiares: ${fm(t.gfm)}/mes
-• Cuotas deudas: ${fm(t.tc)}/mes
-• Egresos totales: ${fm(t.te)}/mes
-• Cash flow: ${fm(t.cf)}/mes
-• Índice independencia: ${pc(t.ind)}
-• Deuda total: ${fm(t.td)}
-• Deuda/Activos: ${pc(t.dta)}
-`;
-
-  // Inversiones
-  if ((u.inv || []).length > 0) {
-    ctx += "\nINVERSIONES:\n";
-    (u.inv || []).forEach(i => {
-      ctx += `• ${i.n || i.nombre || "?"}: ${fm(i.va)} (tipo: ${i.tp || i.tipo || "?"})${i.vc ? " costo: " + fm(i.vc) : ""}\n`;
-    });
-  }
-
-  // Ingresos
-  if ((u.ingresos || []).length > 0) {
-    ctx += "\nINGRESOS MENSUALES:\n";
-    (u.ingresos || []).forEach(i => {
-      const mon = i.moneda === "USD" ? " (USD)" : "";
-      ctx += `• ${i.nombre || "?"}: ${fm(promedioMesActivo(i))}/mes${mon} (${i.categoria || "?"})${i.capital ? " capital: " + fm(i.capital) + " tasa: " + i.tasa + "%" : ""}\n`;
-    });
-  }
-
-  // Gastos
-  const gas = u.gas || {};
-  if (Object.keys(gas).length > 0) {
-    ctx += "\nGASTOS POR CATEGORÍA:\n";
-    Object.entries(gas).forEach(([cat, items]) => {
-      // 25-jul-2026 — DOS BUGS EN UNA LÍNEA:
-      //  · sumaba `g.m` crudo y lo rotulaba "/mes". Un gasto ANUAL entraba al
-      //    contexto de la IA con su valor de año entero declarado como mensual
-      //    (caso real: Seguros anuales de $27,6M informados como $30,8M/mes).
-      //    El asesor razonaba y recomendaba sobre cifras infladas hasta 12x.
-      //  · no filtraba sim!==false, así que incluía ítems que el usuario había
-      //    apagado — contra la regla de que lo apagado no existe para ningún
-      //    cálculo, contexto ni análisis.
-      const activos = (items || []).filter(g => g.sim !== false);
-      if (!activos.length) return;
-      const total = activos.reduce((s, g) => s + montoPromedioMensual(g), 0);
-      ctx += `• ${cat}: ${fm(total)}/mes (${activos.length} items)\n`;
-    });
-  }
-
-  // Deudas
-  if ((u.deu || []).length > 0) {
-    ctx += "\nDEUDAS:\n";
-    (u.deu || []).filter(d => (d.mt || 0) > 0).forEach(d => {
-      ctx += `• ${d.n || d.nombre || "?"}: saldo ${fm(d.mt)}, cuota ${fm(d.pg || d.pago)}/mes, tasa ${d.ts || 0}%\n`;
-    });
-  }
-
-  return ctx;
-}
-
 
 /**
  * renderMD — Formato mínimo para las respuestas del asesor.
@@ -96,13 +31,15 @@ function buildContext(user, totals) {
  *   "### 🏠 **VIVIENDA: $18.666.667/mes (29%)**"
  * Se convierten solo encabezados, negritas y viñetas. No se trae una librería
  * de markdown para esto: son tres patrones y el bundle ya pesa bastante.
+ * 11-oct-2026: las tablas y los bloques de código se normalizan antes
+ * (normalizarMarkdown); antes se veían los "| --- |" crudos.
  */
 function renderMD(txt) {
   const negritas = (s) => {
     const partes = String(s).split(/\*\*(.+?)\*\*/g);
     return partes.map((p, i) => (i % 2 ? <strong key={i}>{p}</strong> : p));
   };
-  return String(txt || "").split("\n").map((linea, i) => {
+  return normalizarMarkdown(txt).split("\n").map((linea, i) => {
     const l = linea.trimEnd();
     if (!l.trim()) return <div key={i} style={{ height: 8 }} />;
     if (/^#{1,6}\s/.test(l)) {
@@ -120,31 +57,29 @@ function renderMD(txt) {
   });
 }
 
-export default function AsesorIA({ user, totals, userId }) {
+export default function AsesorIA({ user, totals }) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const DAILY_LIMIT = 15;
-  const getUsage = () => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("fp3_ai_usage") || "{}");
-      const today = new Date().toISOString().split("T")[0];
-      if (stored.date !== today) return { date: today, count: 0 };
-      return stored;
-    } catch { return { date: new Date().toISOString().split("T")[0], count: 0 }; }
-  };
-  const [remaining, setRemaining] = useState(() => {
-    const usage = getUsage();
-    return Math.max(0, DAILY_LIMIT - usage.count);
-  });
-  const trackUsage = () => {
-    const usage = getUsage();
-    usage.count++;
-    localStorage.setItem("fp3_ai_usage", JSON.stringify(usage));
-    setRemaining(Math.max(0, DAILY_LIMIT - usage.count));
-    return usage.count <= DAILY_LIMIT;
-  };
+  // 11-oct-2026: el contador sale del servidor (cuota mensual por plan en
+  // Supabase, compartida con las lecturas de documentos con IA). El de
+  // localStorage ("15 consultas restantes hoy") volvía a 15 al recargar y no
+  // limitaba nada. null = todavía no se sabe: no se muestra.
+  const [restantes, setRestantes] = useState(null);
+  useEffect(() => {
+    try { localStorage.removeItem("fp3_ai_usage"); } catch { /* sin storage */ }
+    let vivo = true;
+    fetchAuth("/api/ai-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accion: "cuota" }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (vivo && typeof d?.restantes === "number") setRestantes(d.restantes); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, []);
   const chatRef = useRef(null);
 
   useEffect(() => {
@@ -158,10 +93,6 @@ export default function AsesorIA({ user, totals, userId }) {
     setError("");
 
     const newMsgs = [...msgs, { role: "user", content: q }];
-    if (remaining <= 0) {
-      setError("Has alcanzado el límite de " + DAILY_LIMIT + " consultas diarias. Se renueva mañana.");
-      return;
-    }
     setMsgs(newMsgs);
     setLoading(true);
 
@@ -177,18 +108,18 @@ export default function AsesorIA({ user, totals, userId }) {
       const res = await fetchAuth("/api/ai-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMsgs, financialContext: ctx, userId: userId || "anon", jurisdiction, taxConfig }),
+        body: JSON.stringify({ messages: apiMsgs, financialContext: ctx, jurisdiction, taxConfig }),
       });
 
       const data = await res.json();
-      trackUsage();
-      if (data.error) {
-        setError(data.mensaje || data.error);
+      if (typeof data?.restantes === "number") setRestantes(data.restantes);
+      if (data.error || !res.ok) {
+        setError(data.mensaje || "Ahora no pude responder. Intenta de nuevo en un momento.");
       } else {
         setMsgs([...newMsgs, { role: "assistant", content: data.reply }]);
       }
     } catch (e) {
-      setError("Error de conexión: " + e.message);
+      setError("No hay conexión. Revisa tu internet e intenta de nuevo.");
     }
     setLoading(false);
   };
@@ -200,7 +131,9 @@ export default function AsesorIA({ user, totals, userId }) {
         title="Conversa con tu family office"
         subtitle="Análisis de tus datos encendidos y recomendaciones personalizadas con datos reales."
         rightSlot={<>
-          <span style={{fontSize:11,color:remaining<=5?"#ef4444":"#71717a",background:"#1e1e24",padding:"6px 12px",borderRadius:999}}>{remaining} consultas restantes hoy</span>
+          {restantes !== null && (
+            <span title="Incluye las preguntas al asesor y las lecturas de documentos con IA. Se renuevan el 1 de cada mes." style={{fontSize:11,color:restantes<=5?"#ef4444":"#71717a",background:"#1e1e24",padding:"6px 12px",borderRadius:999}}>{restantes === 1 ? "1 consulta con IA este mes" : restantes + " consultas con IA este mes"}</span>
+          )}
           {msgs.length > 0 && (
             <button onClick={() => setMsgs([])} style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt3, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontSize: 12 }}>Nueva consulta</button>
           )}
@@ -217,7 +150,7 @@ export default function AsesorIA({ user, totals, userId }) {
             <div style={{ textAlign: "center", marginBottom: 24 }}>
               <div style={{ fontSize: 40, marginBottom: 8 }}>🧠</div>
               <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>¿Qué quieres analizar?</div>
-              <div style={{ fontSize: 13, color: T.txt3 }}>El asesor tiene acceso a todos tus datos financieros</div>
+              <div style={{ fontSize: 13, color: T.txt3 }}>El asesor usa solo los datos que tienes encendidos</div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {SUGGESTIONS.map(s => (
@@ -278,7 +211,7 @@ export default function AsesorIA({ user, totals, userId }) {
             padding: "14px 16px", color: T.txt, fontSize: 14, outline: "none",
           }}
         />
-        <button onClick={() => send()} disabled={loading || !input.trim()} style={{
+        <button onClick={() => send()} disabled={loading || !input.trim() || restantes === 0} style={{
           background: loading ? T.bg3 : T.gn, color: loading ? T.txt3 : "#000",
           border: "none", borderRadius: 12, padding: "14px 24px", cursor: loading ? "default" : "pointer",
           fontWeight: 700, fontSize: 14, transition: "all 0.2s",
