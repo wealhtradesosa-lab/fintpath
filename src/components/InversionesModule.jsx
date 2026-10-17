@@ -378,8 +378,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
           { l: "Patrimonio Total", v: fm(totalValor), c: T.green },
-          { l: "Rinde al mes", v: rendimientoAnual > 0 ? fm(rendimientoAnual / 12) : "—", c: T.blue },
-          { l: "Rinde al año", v: rendimientoAnual > 0 ? fm(rendimientoAnual) : "—", c: T.purple },
+          { l: "Rendimiento bruto al mes", v: rendimientoAnual > 0 ? fm(rendimientoAnual / 12) : "—", c: T.blue },
+          { l: "Rendimiento bruto al año", v: rendimientoAnual > 0 ? fm(rendimientoAnual) : "—", c: T.purple },
           
           { l: "Activos", v: activos.length, c: T.txt },
         ].map((m) => (

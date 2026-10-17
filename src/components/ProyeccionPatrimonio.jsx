@@ -593,7 +593,7 @@ export default function ProyeccionPatrimonio({
           CF anual usado: <strong style={{ color: T.txt2 }}>{fm(cfAnual)}</strong>
           {cfOverride == null ? " (del simulador)" : " (override)"}
           {" · "}Valorización patrimonio {Number(retornoPct) || 0}%
-          {" · "}Inflación {Number(inflacionPct) || 0}%
+          {" · "}Inflación {(Number(inflacionPct) || 0).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
         </div>
         <div>
           Amortización de capital estimada: {fm(amortAnual)}/año (reduce pasivo; no se resta del CF).
