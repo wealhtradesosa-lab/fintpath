@@ -17,6 +17,8 @@
 //   - checkout.session.completed      → activación inicial
 //   - customer.subscription.updated   → cambio de plan o status
 //   - customer.subscription.deleted   → cancelación (downgrade a free)
+//   - invoice.paid                    → renovación: re-sincroniza plan y
+//                                       estado de la cuenta (12-oct-2026)
 //
 // ENV VARS REQUERIDAS:
 //   STRIPE_SECRET_KEY              (test o live)
@@ -60,32 +62,7 @@ const { sendTemplate } = require("./send-email.cjs");
 // SOBRESCRIBEN; si no existen, el webhook igual funciona. audit.py verifica
 // que los IDs de aqui y los de plans.js no se separen.
 // ═══════════════════════════════════════════════════════════════════════════
-const PRICE_FALLBACK = {
-  // Basico
-  "price_1TIGRWKEnhNr9wQd2oEgNin9": "basico",       // mensual
-  "price_1TIGRWKEnhNr9wQdJTMTGfYa": "basico",       // anual
-  // Pro
-  "price_1TIGRXKEnhNr9wQdC8eKj2xS": "pro",          // mensual
-  "price_1TIGRYKEnhNr9wQd7QTFxT6z": "pro",          // anual
-  // Pro Familiar
-  "price_1TRC9mKEnhNr9wQdQr9gsRot": "pro_familiar", // mensual
-  "price_1TRCCaKEnhNr9wQdpWlaXP0r": "pro_familiar", // anual
-};
-
-function buildPriceMap() {
-  const map = { ...PRICE_FALLBACK };
-  const add = (envVar, plan) => {
-    const id = process.env[envVar];
-    if (id) map[id] = plan;
-  };
-  add("STRIPE_PRICE_BASICO_MENSUAL", "basico");
-  add("STRIPE_PRICE_BASICO_ANUAL", "basico");
-  add("STRIPE_PRICE_PRO_MENSUAL", "pro");
-  add("STRIPE_PRICE_PRO_ANUAL", "pro");
-  add("STRIPE_PRICE_PRO_FAMILIAR_MENSUAL", "pro_familiar");
-  add("STRIPE_PRICE_PRO_FAMILIAR_ANUAL", "pro_familiar");
-  return map;
-}
+const { buildPriceMap, resolvePlanFromLineItems, subscriptionIdDeInvoice } = require("../lib/stripePrecios.cjs");
 
 // ── Llamada genérica a Supabase REST (con service_role) ───────────────────
 async function callSupabaseRpc(rpcName, payload) {
@@ -115,25 +92,6 @@ async function callSupabaseRpc(rpcName, payload) {
     throw new Error(`RPC ${rpcName} failed (${res.status}): ${text}`);
   }
   try { return JSON.parse(text); } catch { return text; }
-}
-
-// ── Resolver el plan a partir de un objeto subscription/session ────────────
-function resolvePlanFromLineItems(stripeObject, priceMap) {
-  // Para checkout.session.completed
-  if (stripeObject.line_items?.data?.length) {
-    for (const li of stripeObject.line_items.data) {
-      const priceId = li.price?.id;
-      if (priceId && priceMap[priceId]) return priceMap[priceId];
-    }
-  }
-  // Para subscription objects (subscription.updated/deleted)
-  if (stripeObject.items?.data?.length) {
-    for (const it of stripeObject.items.data) {
-      const priceId = it.price?.id;
-      if (priceId && priceMap[priceId]) return priceMap[priceId];
-    }
-  }
-  return null;
 }
 
 exports.handler = async (event) => {
@@ -298,6 +256,33 @@ exports.handler = async (event) => {
           // Email no es crítico — loggeamos y seguimos
           console.warn(`[stripe-webhook] cancellation email failed:`, mailErr.message);
         }
+        break;
+      }
+
+      case "invoice.paid": {
+        // 12-oct-2026: cada renovación pagada re-sincroniza accounts.plan y el
+        // estado (p. ej. past_due → active) desde el precio de la suscripción.
+        // handle_subscription_updated es idempotente: con el mismo plan no
+        // cambia nada salvo reparar una cuenta desfasada.
+        const inv = stripeEvent.data.object;
+        const subId = subscriptionIdDeInvoice(inv);
+        if (!subId) {
+          console.log("[stripe-webhook] invoice.paid sin suscripción (pago suelto), ignorando");
+          break;
+        }
+        const sub = await stripe.subscriptions.retrieve(subId);
+        const plan = resolvePlanFromLineItems(sub, priceMap);
+        if (!plan) {
+          console.warn(`[stripe-webhook] invoice.paid · precio desconocido, status=${sub.status}. No actualizo.`);
+          break;
+        }
+        const result = await callSupabaseRpc("handle_subscription_updated", {
+          p_stripe_customer_id: sub.customer,
+          p_new_plan: plan,
+          p_status: sub.status,
+        });
+        const accion = Array.isArray(result) ? result.map((r) => r.action).join(",") : "sin_cuenta";
+        console.log(`[stripe-webhook] ✅ invoice.paid · plan=${plan} status=${sub.status} action=${accion || "sin_cuenta"}`);
         break;
       }
 

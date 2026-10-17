@@ -173,7 +173,9 @@ else:
 # ═══════════════════════════════════════════════════════════════════════════
 with open('src/lib/plans.js') as f:
     ids_plans = set(re.findall(r'"(price_[A-Za-z0-9]{14,})"', f.read()))
-with open('netlify/functions/stripe-webhook.cjs') as f:
+# 12-oct-2026: el respaldo vive en netlify/lib/stripePrecios.cjs (lo usan el
+# webhook y stripe-recover-activation).
+with open('netlify/lib/stripePrecios.cjs') as f:
     ids_webhook = set(re.findall(r'"(price_[A-Za-z0-9]{14,})"', f.read()))
 faltan = ids_plans - ids_webhook
 sobran = ids_webhook - ids_plans
