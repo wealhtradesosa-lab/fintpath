@@ -106,3 +106,34 @@ describe("sin doble conteo de gastos del inmueble arrendado", () => {
     expect(r.g).toBe(150000);
   });
 });
+
+describe("casos de QA del simulador (misma fuente que el Dashboard)", () => {
+  const cm = (ingresos, gastos, extra = {}) => calcularMetricas({ ingresos, gastos: { Vida: [{ m: gastos, frecuencia: "mensual" }] }, ...extra });
+  it("salario 5M y gastos 3M: N2 con cobertura 0% (no «Nivel 4 · 166,7%»)", () => {
+    const m = cm([{ categoria: "Salario", mensual: 5e6 }], 3e6);
+    expect(m.coberturaPasiva).toBe(0);
+    expect(m.nivel.nivel).toBe(2);
+  });
+  it("flujo −2M → Nivel 1", () => {
+    const m = cm([{ categoria: "Salario", mensual: 3e6 }], 5e6);
+    expect(m.fl).toBe(-2e6);
+    expect(m.nivel.nivel).toBe(1);
+  });
+  it("patrimonio −100M con cobertura alta → N2 con candado", () => {
+    const m = cm([{ categoria: "Dividendos", mensual: 5e6 }], 2e6, {
+      deudas: [{ mt: 150e6, pg: 0 }], inv: [{ id: "a", tp: "Acciones", va: 50e6, vc: 50e6 }],
+    });
+    expect(m.patrimonioNeto).toBe(-100e6);
+    expect(m.nivel.nivel).toBe(2);
+    expect(m.nivel.candado).toBe("patrimonio_negativo");
+  });
+  it("dividendos 5M y gastos 2M → N5", () => {
+    const m = cm([{ categoria: "Dividendos", mensual: 5e6 }], 2e6);
+    expect(m.nivel.nivel).toBe(5);
+  });
+  it("QA Pro → N2 con 17,35%", () => {
+    const m = qaMetricas();
+    expect(m.nivel.nivel).toBe(2);
+    expect(m.coberturaPasiva).toBeCloseTo(17.35, 2);
+  });
+});

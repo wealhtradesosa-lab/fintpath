@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
+import { calcularMetricas, NIVELES } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
@@ -84,24 +85,15 @@ const razonMonto0 = (item, año, mes) => {
 const pc = (n) => (n || 0).toFixed(1) + "%";
 const TT = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 };
 
-// ─── 5 Levels of Financial Freedom ───
-const LEVELS = [
-  { id: 1, name: "Seguridad", icon: "🛡️", color: "#3b82f6", factor: 0.65,
-    desc: "Pasivos cubren necesidades básicas",
-    detail: "Tus ingresos cubren el 65% de tus gastos totales. Esto cubre vivienda, alimentación, servicios, transporte y seguros básicos. Si perdieras tu trabajo principal, podrías sobrevivir con lo que generan tus activos." },
-  { id: 2, name: "Vitalidad", icon: "⚡", color: "#22d3ee", factor: 0.825,
-    desc: "Seguridad + mitad de tu estilo de vida",
-    detail: "Tus ingresos cubren el 82.5% de tus gastos. Además de las necesidades básicas, puedes mantener la mitad de tu estilo de vida actual: algo de entretenimiento, vacaciones modestas y educación." },
-  { id: 3, name: "Independencia", icon: "🏆", color: "#22c55e", factor: 1.0,
-    desc: "Tus ingresos cubren el 100% de tus gastos",
-    detail: "¡El punto de quiebre! Tus ingresos pasivos y activos cubren TODOS tus gastos actuales. Ya no necesitas un empleo para mantener tu nivel de vida. Podrías dejar de trabajar mañana y seguir viviendo igual." },
-  { id: 4, name: "Libertad", icon: "🚀", color: "#f97316", factor: 1.5,
-    desc: "Independencia + 50% extra para lujos",
-    detail: "Tus ingresos son 1.5 veces tus gastos. Tienes margen para lujos, viajes, hobbies costosos, donar a causas que te importan. Puedes mejorar tu estilo de vida sin preocuparte por el dinero." },
-  { id: 5, name: "Absoluta", icon: "👑", color: "#eab308", factor: 2.5,
-    desc: "Tus ingresos son 2.5 veces tus gastos",
-    detail: "El nivel máximo. Tus ingresos son 2.5 veces tus gastos. Puedes hacer lo que quieras, cuando quieras, donde quieras. Puedes financiar los sueños de tu familia, invertir en negocios, impactar tu comunidad. El dinero dejó de ser una limitación." },
-];
+// ─── 5 niveles de libertad ───
+// Misma fuente que el Dashboard (metrics.js, spec Finanzas): cobertura pasiva
+// = ingreso pasivo neto ÷ (gastos + cuotas). `factor` = umbral de cobertura;
+// `pos` = posición visual en la barra (N1 y N2 comparten umbral 0).
+const POS_NIVEL = [0, 0.1, 0.25, 0.5, 1];
+const LEVELS = NIVELES.map((n, i) => ({
+  id: n.id, name: n.nombre, icon: n.icon, color: n.color,
+  factor: (n.min || 0) / 100, pos: POS_NIVEL[i], desc: n.desc, detail: n.detail,
+}));
 
 const fadeStyle = typeof document !== "undefined" ? (() => { const s = document.createElement("style"); s.textContent = "@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}"; if (!document.querySelector("[data-finpath-anim]")) { s.setAttribute("data-finpath-anim","1"); document.head.appendChild(s); } return null; })() : null;
 
@@ -140,17 +132,15 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
 }
 
 // ─── FREEDOM BAR (inline, reactive) ───
-function FreedomBarLive({ ni, te, cf }) {
+function FreedomBarLive({ ip, ob, fl, nivel }) {
   const [expandedLvl, setExpandedLvl] = useState(null);
-  const ratio = te > 0 ? ni / te : 0;
-  let currentLevel = 0;
-  for (let i = 0; i < LEVELS.length; i++) {
-    if (ratio >= LEVELS[i].factor) currentLevel = i + 1;
-  }
-  const overallProg = Math.min((ratio / LEVELS[4].factor) * 100, 100);
+  const ratio = ob > 0 ? ip / ob : 0;
+  const currentLevel = nivel?.nivel || 0;
+  const overallProg = Math.min(ratio * 100, 100);
+  const te = ob, ni = ip;
   const currentData = currentLevel > 0 ? LEVELS[currentLevel - 1] : null;
   const nextData = currentLevel < 5 ? LEVELS[currentLevel] : null;
-  const monthlyGap = nextData ? Math.max(0, nextData.factor * te - ni) : 0;
+  const monthlyGap = nextData ? (currentLevel === 1 ? Math.max(0, -(fl || 0)) : Math.max(0, nextData.factor * te - ni)) : 0;
 
   return (
     <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 20, padding: 24, marginBottom: 20 }}>
@@ -172,7 +162,7 @@ function FreedomBarLive({ ni, te, cf }) {
         {!currentData && (
           <div style={{ background: T.bg3, borderRadius: 12, padding: "8px 16px" }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: T.txt3 }}>Sin nivel aún</div>
-            <div style={{ fontSize: 10, color: T.txt3 }}>Agrega ingresos</div>
+            <div style={{ fontSize: 10, color: T.txt3 }}>Agrega ingresos y gastos</div>
           </div>
         )}
       </div>
@@ -182,7 +172,7 @@ function FreedomBarLive({ ni, te, cf }) {
         <div style={{ height: 36, background: T.bg3, borderRadius: 16, overflow: "hidden", position: "relative" }}>
           {/* Level markers */}
           {LEVELS.map((l, i) => {
-            const pos = (l.factor / LEVELS[4].factor) * 100;
+            const pos = l.pos * 100;
             return (
               <div key={i} style={{ position: "absolute", left: pos + "%", top: 0, bottom: 0, width: 2, background: "rgba(255,255,255,0.1)", zIndex: 2 }}>
                 <div style={{ position: "absolute", top: -22, left: "50%", transform: "translateX(-50%)", fontSize: 16 }}>{l.icon}</div>
@@ -206,7 +196,7 @@ function FreedomBarLive({ ni, te, cf }) {
         {/* Level labels */}
         <div style={{ display: "flex", position: "relative", height: 20, marginTop: 6 }}>
           {LEVELS.map((l) => {
-            const pos = (l.factor / LEVELS[4].factor) * 100;
+            const pos = l.pos * 100;
             const reached = currentLevel >= l.id;
             return (
               <div key={l.id} style={{ position: "absolute", left: pos + "%", transform: "translateX(-50%)", textAlign: "center" }}>
@@ -255,7 +245,7 @@ function FreedomBarLive({ ni, te, cf }) {
                 <span style={{ fontSize: 24 }}>{l.icon}</span>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: l.color }}>{l.name}</div>
-                  <div style={{ fontSize: 11, color: T.txt3 }}>Nivel {l.id}/5 — Necesitas {fm(needed)}/mes de ingresos</div>
+                  <div style={{ fontSize: 11, color: T.txt3 }}>Nivel {l.id}/5 — Necesitas {fm(needed)}/mes de ingreso pasivo</div>
                 </div>
               </div>
               <button onClick={() => setExpandedLvl(null)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 14 }}>✕</button>
@@ -263,8 +253,8 @@ function FreedomBarLive({ ni, te, cf }) {
             <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.7 }}>{l.detail}</div>
             <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(255,255,255,0.03)", borderRadius: 10, fontSize: 12 }}>
               {reached
-                ? <span style={{ color: l.color, fontWeight: 700 }}>✅ ¡Ya alcanzaste este nivel! Tus ingresos ({fm(ni)}/mes) superan los {fm(needed)}/mes necesarios.</span>
-                : <span style={{ color: T.txt3 }}>📊 Te faltan <strong style={{ color: l.color }}>{fm(needed - ni)}/mes</strong> para alcanzar este nivel. Tus ingresos actuales: {fm(ni)}/mes.</span>
+                ? <span style={{ color: l.color, fontWeight: 700 }}>✅ ¡Ya alcanzaste este nivel! Tu ingreso pasivo ({fm(ni)}/mes) supera los {fm(needed)}/mes necesarios.</span>
+                : <span style={{ color: T.txt3 }}>📊 Te faltan <strong style={{ color: l.color }}>{fm(needed - ni)}/mes</strong> para alcanzar este nivel. Tu ingreso pasivo actual: {fm(ni)}/mes.</span>
               }
             </div>
           </div>
@@ -289,8 +279,8 @@ function FreedomBarLive({ ni, te, cf }) {
       {currentLevel >= 5 && (
         <div style={{ background: "linear-gradient(135deg, rgba(234,179,8,0.1), rgba(234,179,8,0.04))", border: "1px solid rgba(234,179,8,0.25)", borderRadius: 12, padding: 20, textAlign: "center" }}>
           <div style={{ fontSize: 32 }}>👑</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: T.gd }}>¡Libertad Absoluta!</div>
-          <div style={{ fontSize: 13, color: T.txt2 }}>Pasivos = {Math.round(ratio * 100)}% de gastos</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: T.gd }}>¡Independencia!</div>
+          <div style={{ fontSize: 13, color: T.txt2 }}>Ingreso pasivo = {Math.round(ratio * 100)}% de gastos y cuotas</div>
         </div>
       )}
     </div>
@@ -505,9 +495,13 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     const disponibleCuenta = brutoTotal - retencionMensual;
     const egresosTotales = aportesObligatorios + gastosFamiliares + cuotasDeudas + impuestoNeto;
     const cashFlow = disponibleCuenta - egresosTotales;
-    const independencia = egresosTotales > 0 ? (disponibleCuenta / egresosTotales) * 100 : 0;
+    // Índice de independencia = COBERTURA PASIVA (metrics.js), no ingreso total ÷ egresos.
+    // Antes un salario que cubría los gastos aparecía como "Independencia 101%".
+    const met = calcularMetricas({ ingresos: ingSim, gastos: gasSim, deudas: deuSim, inv: user.inv || [], trm, retencionMensual, impuestoNeto });
+    const independencia = met.coberturaPasiva;
 
     return {
+      met, nivel: met.nivel, ip: met.ip, ob: met.ob, fl: met.fl,
       // ═══ NUEVO MODELO EXPLÍCITO ═══
       brutoTotal,
       retencionMensual,
@@ -645,7 +639,6 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   const expT = useMemo(() => {
     const disponible = simTMes.disponibleMes || 0;
     const egresos = simTMes.egresosMes || 0;
-    const indep = egresos > 0 ? (disponible / egresos) * 100 : 0;
     return {
       ...simT,
       brutoTotal: simTMes.brutoDelMes || 0,
@@ -660,8 +653,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       te: egresos,
       ni: disponible,
       cf: simTMes.cashFlowMes || 0,
-      ind: indep,
-      independencia: indep,
+      // ind / independencia: se heredan de simT (cobertura pasiva, metrics.js)
     };
   }, [simT, simTMes]);
 
@@ -983,8 +975,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
               const fecha = new Date().toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
               const scenarioName = simName || "Simulación";
               const scenarioDesc = simDescripcion || "";
-              const niveles = ["Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
-              const nivel = simT.ind >= 250 ? 4 : simT.ind >= 150 ? 3 : simT.ind >= 100 ? 2 : simT.ind >= 75 ? 1 : 0;
+              const niveles = NIVELES.map((n) => n.nombre);
+              const nivel = (simT.nivel?.nivel || 1) - 1;
               
               // Build income rows
               // BUG FIX 4-jul-2026: sesión anterior solo se arregló el PDF del
@@ -1173,8 +1165,8 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               const fecha = new Date().toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
               const scenarioName = simName || "Simulacion";
               const scenarioDesc = simDescripcion || "";
-              const niveles = ["Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
-              const nivel = expT.ind >= 250 ? 4 : expT.ind >= 150 ? 3 : expT.ind >= 100 ? 2 : expT.ind >= 75 ? 1 : 0;
+              const niveles = NIVELES.map((n) => n.nombre);
+              const nivel = (expT.nivel?.nivel || 1) - 1;
 
               const wb = XLSX.utils.book_new();
 
@@ -1299,7 +1291,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
       </div>
 
       {/* ═══ FREEDOM BAR — reacts to simulated values ═══ */}
-      <FreedomBarLive ni={simT.ni} te={simT.te} cf={simT.cf} />
+      <FreedomBarLive ip={simT.ip} ob={simT.ob} fl={simT.fl} nivel={simT.nivel} />
 
       {/* Scenario presets */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 20 }}>
