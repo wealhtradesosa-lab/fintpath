@@ -172,7 +172,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", owner: "", moneda: "COP" });
+  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", valorizacionPct: "", owner: "", moneda: "COP" });
 
   const items = inversiones || [];
   const activos = items.filter((i) => i.sim !== false);
@@ -233,6 +233,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       va: String(getVArw(inv) || ""),
       vc: String(getVCrw(inv) || ""),
       tasa: String(inv.tasa || ""),
+      valorizacionPct: inv.valorizacionPct != null ? String(inv.valorizacionPct) : "",
+      tasaLegacy: !!inv.tasa && inv.tasaBase !== "neta",
       owner: inv.owner || "",
       moneda: inv.moneda || "COP",
     });
@@ -241,7 +243,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   };
 
   const openAdd = () => {
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "", moneda: "COP" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", valorizacionPct: "", owner: "", moneda: "COP" });
     setEditId(null);
     setShowForm(true);
   };
@@ -274,6 +276,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       vc: Math.abs(parseFloat(form.vc)) || 0,
       moneda: form.moneda || "COP",
       tasa,
+      tasaBase: "neta", // desde esta versión el % se declara como renta neta anual
+      valorizacionPct: form.valorizacionPct !== "" && form.valorizacionPct != null ? parseFloat(form.valorizacionPct) || 0 : undefined,
       fiscalCode: form.fiscalCode || undefined,
       pctTerreno: form.pctTerreno !== "" && form.pctTerreno != null ? Math.max(0, Math.min(100, parseFloat(form.pctTerreno))) : undefined,
     };
@@ -291,7 +295,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "", moneda: "COP" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", valorizacionPct: "", owner: "", moneda: "COP" });
   };
 
   // Set de IDs de inversiones sin propietario asignado, para badges en rows.
@@ -481,7 +485,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         )}
                         <span>{name}</span>
                       </div>
-                      <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? inv.tasa + "% anual" : ""].filter(Boolean).join(" • ")}</div>
+                      <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? "renta " + inv.tasa + "% anual" : ""].filter(Boolean).join(" • ")}</div>
                       {(()=>{
                         if(!inv.owner || inv.owner==="") return null;
                         if(inv.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;
@@ -617,11 +621,20 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     const newTasa=va>0&&v?((parseFloat(v)*12/va)*100).toFixed(1):"";
                     setForm((p) => ({ ...p, renta: v, tasa: newTasa }));
                   }} type="number" placeholder="Ej: 4200000" /></div>
-                  <div style={{flex:1}}><In l="% Rendimiento anual" value={form.tasa} onChange={(v) => {
+                  <div style={{flex:1}}><In l="Renta neta anual %" value={form.tasa} onChange={(v) => {
                     const va=parseFloat(form.va)||0;
                     const newRenta=va>0&&v?Math.round(va*parseFloat(v)/100/12):"";
                     setForm((p) => ({ ...p, tasa: v, renta: String(newRenta) }));
                   }} type="number" placeholder="Ej: 12" /></div>
+                </div>
+                {form.tasaLegacy && parseFloat(form.tasa) > 0 && (
+                  <div style={{fontSize:10,color:"#eab308",marginTop:6,lineHeight:1.5}}>
+                    ⓘ Este % se cargó antes como «rendimiento anual»: se interpreta como renta bruta anual. Ahora la renta neta descuenta la administración y el predial vinculados al activo.
+                  </div>
+                )}
+                <div style={{marginTop:8}}>
+                  <In l="Valorización anual % (opcional)" value={form.valorizacionPct} onChange={(v) => setForm((p) => ({ ...p, valorizacionPct: v }))} type="number" placeholder="Ej: 3" />
+                  <div style={{fontSize:10,color:T.txt3,marginTop:4,lineHeight:1.5}}>Cuánto sube el valor del activo al año. No es renta: se suma aparte al comparar contra la inflación.</div>
                 </div>
                 <div style={{fontSize:10,color:T.txt3,marginTop:6,lineHeight:1.5}}>
                   Estimación: escribí uno y el otro se calcula solo. Estos campos

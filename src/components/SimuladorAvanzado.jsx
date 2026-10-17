@@ -300,7 +300,7 @@ function FreedomBarLive({ ni, te, cf }) {
 // ═══════════════════════════════════════
 // MAIN SIMULATOR
 // ═══════════════════════════════════════
-export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onNavigate}) {
+export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onNavigate, onInflacionChange}) {
 
   // 30-ago-2026 — CAUSA RAIZ de "algo salió mal" al abrir el simulador:
   // ReferenceError: trm is not defined.
@@ -2384,6 +2384,8 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
           <ProyeccionPatrimonio
             user={user}
             cfMensualSimulado={simT.cf}
+            inflacionPct={user?.inflacionPct}
+            onInflacionChange={onInflacionChange}
             patrimonioNeto={totals?.nw}
             activos={totals?.ab}
             deudasTotales={totals?.td}
