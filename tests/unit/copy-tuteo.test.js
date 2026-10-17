@@ -211,11 +211,11 @@ const VOSEO = [
 const reVoseo = new RegExp("(?<![\\wáéíóúñ])(" + VOSEO.join("|") + ")(?![\\wáéíóúñ])", "i");
 const reVos = /(?<![\wáéíóúñ])(vos|sos)(?![\wáéíóúñ])/i;
 
-function archivos(dir) {
+function archivosTodos(dir) {
   const out = [];
   for (const f of readdirSync(dir)) {
     const p = join(dir, f);
-    if (statSync(p).isDirectory()) out.push(...archivos(p));
+    if (statSync(p).isDirectory()) out.push(...archivosTodos(p));
     else if (/\.(jsx?|cjs)$/.test(f)) out.push(p);
   }
   return out;
@@ -223,7 +223,7 @@ function archivos(dir) {
 const sinComentarios = (s) => s.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l));
 
 describe("tuteo, nunca voseo", () => {
-  const todos = [...archivos("src"), ...archivos("netlify/functions")].filter((f) => !f.endsWith("taxCO.js"));
+  const todos = [...archivosTodos("src"), ...archivosTodos("netlify/functions")].filter((f) => !f.endsWith("taxCO.js"));
   it("src y netlify/functions no contienen voseo en líneas que no son comentarios", () => {
     const malas = [];
     for (const f of todos)
@@ -255,5 +255,18 @@ describe("copy sin promesas falsas (#38)", () => {
   it("/terminos y la landing coinciden: no vendemos datos y Google/Meta solo miden anuncios con cookies aceptadas", () => {
     const t = readFileSync("src/components/LandingTerminos.jsx", "utf8");
     expect(t).toMatch(/No vendemos tus datos\. Usamos Google y Meta solo para medir nuestros anuncios, y únicamente si aceptas las cookies/);
+  });
+});
+
+describe("sin claims de optimización tributaria en texto visible", () => {
+  // Lo que se pinta o se manda a la IA. Identificadores (planOptimizacion, impOptimizado…) no cuentan.
+  const reClaim = /(optimizar (impuestos?|tu impuesto|tu carga fiscal|la carga fiscal)|optimizaci[oó]n (tributaria|fiscal|de impuestos)|oportunidades de optimizaci[oó]n|recomendaciones de optimizaci[oó]n|palancas? de optimizaci[oó]n|(declaraci[oó]n|situaci[oó]n( fiscal)?) optimizada|Impuestos optimizados|Rebalanceo y Optimizaci[oó]n|Borrador, optimizaci[oó]n|Paso 2: Optimizaci[oó]n|titulo="Optimizaci[oó]n"|Tax Optimi[sz]|TAX OPTIMIZATION|formas (legales )?de (pagar menos|ahorrar impuestos)|Detectamos formas de pagar menos|Fechas clave para optimizar|ver detalle completo y optimizar)/i;
+  const archivos = [...archivosTodos("src"), ...archivosTodos("netlify/functions")].filter((f) => !f.endsWith("taxCO.js") && !f.endsWith("TaxOptimizerUS.jsx"));
+  it("no hay frases que prometan optimizar o ahorrar impuestos", () => {
+    const malas = [];
+    for (const f of archivos)
+      for (const l of sinComentarios(readFileSync(f, "utf8")))
+        if (reClaim.test(l)) malas.push(`${f}: ${l.trim().slice(0, 140)}`);
+    expect(malas).toEqual([]);
   });
 });

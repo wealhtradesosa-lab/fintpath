@@ -151,7 +151,7 @@ export const PLAN_BASE = [
       "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
       isCO
         ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
-        : "🧾 Tax Planning US (federal + state, deductions, optimization)",
+        : "🧾 Tax Planning US (federal + state, deductions, estimates)",
       "📥 Importa Excel/CSV y lee facturas con IA",
       "📈 Resumen ejecutivo del patrimonio en PDF",
       "🚀 Soporte prioritario por email",
@@ -182,7 +182,7 @@ export const PLAN_BASE = [
       "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
       isCO
         ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
-        : "🧾 Tax Planning US (federal + state, deductions, optimization)",
+        : "🧾 Tax Planning US (federal + state, deductions, estimates)",
       "📥 Importa Excel/CSV y lee facturas con IA",
       "📈 Reporte ejecutivo del patrimonio en PDF",
       "🚀 Soporte prioritario con respuesta en 24h",

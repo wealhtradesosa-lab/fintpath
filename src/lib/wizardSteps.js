@@ -528,7 +528,7 @@ export const WIZARD_JURIDICA = [
     question: "¿La sociedad hizo donaciones a entidades sin ánimo de lucro?",
     helpText:
       "Las donaciones a ESAL del Régimen Especial dan derecho a un descuento tributario del 25% del " +
-      "valor donado (con tope). Es una palanca poderosa de optimización.",
+      "valor donado (con tope). Puede reducir tu impuesto si cumples los requisitos.",
     type: "yes_no",
     options: [
       { value: "si", label: "Sí, hicimos donaciones", emoji: "✅" },
