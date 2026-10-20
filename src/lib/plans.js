@@ -335,10 +335,37 @@ export function getPlansForLanding({ trm }) {
   return mainPlans;
 }
 
+// 11-oct-2026: los CTAs decían "Probar 14 días …" como si el plan pago
+// trajera su propia prueba. La única prueba es la de la app (14 días Pro al
+// registrarse); Checkout cobra de inmediato. Por eso "Elegir …".
 function ctaForPlan(name) {
   if (name === "Free") return "Comenzar gratis";
-  if (name === "Básico") return "Probar 14 días";
-  if (name === "Pro") return "Probar 14 días Pro";
-  if (name === "Pro Familiar") return "Probar 14 días Pro Familiar";
+  if (name === "Básico") return "Elegir Básico";
+  if (name === "Pro") return "Elegir Pro";
+  if (name === "Pro Familiar") return "Elegir Pro Familiar";
   return "Contactar";
+}
+
+// ── Precio real que cobra Stripe por plan y ciclo (USD) ────────────────────
+// Mensual = precio del mes. Anual = 12 × el precio mensual del plan anual
+// (es un solo cobro por el año). Devuelve null si el plan no existe o es
+// gratis. Lo usan los eventos de analítica (InitiateCheckout/purchase) para
+// no mandar un valor fijo.
+export function precioCobroUSD(planName, billingCycle) {
+  const base = PLAN_BASE.find(b => b.name === planName);
+  if (!base || !base.priceUSD) return null;
+  const anual = billingCycle === "anual" || billingCycle === "annual" || billingCycle === "yearly";
+  const valor = anual ? base.priceUSD.anual * 12 : base.priceUSD.mensual;
+  return valor > 0 ? valor : null;
+}
+
+// priceId de Stripe → { plan, billingCycle } según STRIPE_PRICE_IDS.
+// null si el priceId no es de ningún plan conocido.
+export function planDesdePriceId(priceId) {
+  if (!priceId) return null;
+  for (const [plan, ids] of Object.entries(STRIPE_PRICE_IDS)) {
+    if (ids.mensual === priceId) return { plan, billingCycle: "mensual" };
+    if (ids.anual === priceId) return { plan, billingCycle: "anual" };
+  }
+  return null;
 }

@@ -51,6 +51,7 @@ import { generarRecomendacionesEstrategicas } from "../lib/recomendacionesEstrat
 import RecomendacionesEstrategicas from "./RecomendacionesEstrategicas.jsx";
 import { estimarImpuesto, UVT, uvtForYear, DEFAULT_AG } from "../lib/taxCO.js";
 import PageHeader from "./PageHeader.jsx";
+import RentaAnoTrasAno from "./RentaAnoTrasAno";
 
 const C = {
   bg: "#0a0a0c",
@@ -942,7 +943,7 @@ export default function DeclaracionFlow({
   user,
   estimacion,
   onUpdateUser,
-  ano = 2025,
+  ano = DEFAULT_AG,
 }) {
   const allOwners = useMemo(() => user?.owners || [], [user]);
 
@@ -1011,8 +1012,14 @@ export default function DeclaracionFlow({
   const saldoOriginal = saldoOriginalRef.current ?? Number(det?.saldoACargo ?? det?.impuesto ?? 0);
   const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
   const ingresoAnual = Number(det?.ingreso) || 0;
-  const impuestoBruto = Number(det?.impuesto) || 0;
-  const retenciones = Number(det?.retefuenteNat ?? det?.retefuenteCalc ?? 0);
+  // 12-oct-2026: antes "Impuesto estimado a cargo" mostraba det.impuesto, que
+  // es el SALDO (después de retenciones), con una "tasa efectiva" calculada
+  // sobre ese saldo. Pedro veía "impuesto $18M · 4.4%" y al lado "ya pagaste
+  // $59M": no cuadraba. El impuesto del año es impuestoACargo (antes de
+  // retenciones); el saldo es lo que falta.
+  const impuestoBruto = Number(det?.impuestoACargo ?? det?.impBruto ?? det?.impuesto ?? 0);
+  const retenciones = Number(det?.pagosPrevios ?? det?.retefuenteNat ?? det?.retefuenteCalc ?? 0);
+  const saldoFinal = impuestoBruto - retenciones;
 
   // Etapa actual (1, 2, o 3) — controla qué se muestra
   const [etapaActiva, setEtapaActiva] = useState(1);
@@ -1195,24 +1202,35 @@ export default function DeclaracionFlow({
           />
           <MiniCard
             icono="🧾"
-            label="Impuesto estimado a cargo"
+            label="Impuesto del año"
             valor={fmShort(impuestoBruto)}
             color={C.orange}
-            sub={ingresoAnual > 0 ? `${(impuestoBruto / ingresoAnual * 100).toFixed(1)}% efectiva` : ""}
+            sub={ingresoAnual > 0 ? `${(impuestoBruto / ingresoAnual * 100).toFixed(1)}% de lo que ganaste` : ""}
           />
           <MiniCard
             icono="✅"
-            label="Ya pagaste"
-            valor={"-" + fmShort(retenciones)}
+            label="Ya retenido"
+            valor={fmShort(retenciones)}
             color={C.blue}
-            sub="retenciones del año"
+            sub="te lo descontaron en el año"
           />
           <MiniCard
             icono="📅"
-            label="Falta pagar"
-            valor={fmShort(Math.max(0, saldoActual))}
-            color={C.purple}
-            sub="se paga en mayo"
+            label={saldoFinal < 0 ? "Te devuelven" : "Te falta pagar"}
+            valor={fmShort(Math.abs(saldoFinal))}
+            color={saldoFinal < 0 ? C.green : C.purple}
+            sub={saldoFinal < 0 ? "saldo a favor al declarar" : "impuesto − retenido · se paga al declarar"}
+          />
+        </div>
+
+        {/* 12-oct-2026: comparación año tras año, en palabras simples, justo
+            debajo del borrador. Es lo primero que la gente quiere saber. */}
+        <div style={{ marginBottom: 14 }}>
+          <RentaAnoTrasAno
+            declaraciones={selectedOwner?.declaraciones || (selectedOwner?.declaracionAnterior ? [selectedOwner.declaracionAnterior] : [])}
+            detalleActual={det}
+            anoActual={ano}
+            compacto
           />
         </div>
 

@@ -164,6 +164,10 @@ const TEMPLATES = {
   },
 
   // ── 2. TRIAL ENDING ── Enviado 3 días antes de que termine el trial
+  // 11-oct-2026: Checkout ya no da una segunda prueba, así que el texto dice
+  // que el primer cobro es inmediato. Antes decía "Cobramos el primer mes"
+  // y describía el plan Free con un límite de 3 inversiones que la app no
+  // aplica.
   trial_ending: ({ name, daysLeft, plan = "Pro" }) => {
     const firstName = (name || "").split(" ")[0] || "";
     const greeting = firstName ? `Hola ${firstName}` : "Hola";
@@ -187,10 +191,10 @@ const TEMPLATES = {
         <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin:24px 0;">
           <div style="font-size:13px;color:#71717a;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px;">¿Qué pasa cuando termina el trial?</div>
           <p style="font-size:14px;color:#a1a1aa;line-height:1.6;margin:0 0 8px;">
-            <strong style="color:#fafafa;">Si activas tu plan:</strong> sigues con acceso completo al Plan ${plan}. Cobramos el primer mes (o el primer año si eliges anual con descuento).
+            <strong style="color:#fafafa;">Si te suscribes:</strong> sigues con el Plan ${plan} sin interrupción. El primer cobro es inmediato (el mes, o el año si eliges el plan anual con descuento) y puedes cancelar cuando quieras.
           </p>
           <p style="font-size:14px;color:#a1a1aa;line-height:1.6;margin:0;">
-            <strong style="color:#fafafa;">Si no haces nada:</strong> tu cuenta vuelve al plan Free (1 usuario, 3 inversiones, sin Asesor IA). Tus datos quedan guardados.
+            <strong style="color:#fafafa;">Si no haces nada:</strong> pasas al plan gratis y conservas tus datos, tu nivel de libertad financiera y el simulador. El Asesor IA, los coaches y el plan de impuestos quedan en Pro.
           </p>
         </div>
 

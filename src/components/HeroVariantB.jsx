@@ -25,7 +25,7 @@ const T = {
 const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 const FONT_BODY = "'Inter', system-ui, sans-serif";
 
-export default function HeroVariantB({ onGetStarted = () => {} }) {
+export default function HeroVariantB({ onGetStarted = () => {}, onLogin }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
 
@@ -110,7 +110,7 @@ export default function HeroVariantB({ onGetStarted = () => {} }) {
           }}>FINPATHIA</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={onGetStarted} style={{
+          <button onClick={onLogin || onGetStarted} style={{
             background: "transparent", border: "none", color: T.txt2,
             padding: "9px 14px", cursor: "pointer", fontSize: 14, fontWeight: 500,
           }}>Iniciar sesión</button>

@@ -67,7 +67,7 @@ describe("tabla Art. 241 ET (AG 2025, UVT $49.799)", () => {
 
 // ─── Borrador F-210: renglón 90 coherente con la RLG mostrada ───────────────
 const renglones = (user, owner) => {
-  const est = estimarImpuesto(user, { incluirPlanOptimizacion: true });
+  const est = estimarImpuesto(user, { incluirPlanOptimizacion: true, añoGravable: 2025 }); // el test es AG 2025 explícito; DEFAULT_AG ya avanza con el calendario
   const r = generarBorradorF210(user, owner, est, 2025);
   const g = (n) => r.find((x) => x.numero === n)?.valor ?? 0;
   return { g, det: est.detalle.find((d) => d.name === owner.name) };

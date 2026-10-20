@@ -1,4 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
+import { DEFAULT_AG } from "../lib/taxCO.js";
 // FINPATHIA · VistaFamiliarConsolidada.jsx
 //
 // PROPÓSITO:
@@ -71,7 +72,7 @@ const fmShort = (v) => {
  *   clickea una tarjeta de owner para ir a su Auditor IA
  * @param {number} ano - Año gravable (default 2025)
  */
-export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwner, ano = 2025 }) {
+export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwner, ano = DEFAULT_AG }) {
   const owners = user?.owners || [];
   // Estado para expandir el detalle de advertencias/errores en el banner.
   // Sesión 1-may-2026 (feedback Santiago): "qué gracia tiene decir que

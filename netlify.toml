@@ -109,6 +109,12 @@
   to = "/index.html"
   status = 200
 
+# 11-oct-2026: la URL de invitación lleva un secreto; nunca como referrer.
+[[headers]]
+  for = "/invite/*"
+  [headers.values]
+    Referrer-Policy = "no-referrer"
+
 [[headers]]
   for = "/"
   [headers.values]

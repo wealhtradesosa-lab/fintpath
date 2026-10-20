@@ -43,7 +43,7 @@ import LandingTerminos from "./components/LandingTerminos";
 import LandingPrivacidad from "./components/LandingPrivacidad";
 import OnboardingTour from "./components/OnboardingTour";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import { track, trackSignup, trackCheckoutStarted, captureUTMs, identifyUser } from "./lib/analytics";
+import { track, trackSignup, trackCheckoutStarted, trackPurchase, captureUTMs, identifyUser } from "./lib/analytics";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "./lib/chartTheme.jsx";
@@ -84,9 +84,9 @@ import { RoleProvider } from "./lib/RoleContext.jsx";
 import RoleBanner from "./components/RoleBanner";
 import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
-import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
+import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre } from "./lib/migrations";
-import { getPlansForApp, STRIPE_PRICE_IDS } from "./lib/plans.js";
+import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
@@ -633,8 +633,9 @@ export default function FinPath(){
   useEffect(()=>{
     captureUTMs();
     track("app_loaded", {
-      pathname: typeof window !== "undefined" ? window.location.pathname : "",
-      referrer: typeof document !== "undefined" ? document.referrer : "",
+      // Sin el token de /invite/<token> y sin query del referrer.
+      pathname: typeof window !== "undefined" ? window.location.pathname.replace(/^\/invite\/[^/]+/, "/invite/_") : "",
+      referrer: typeof document !== "undefined" && document.referrer ? (()=>{try{return new URL(document.referrer).origin}catch{return ""}})() : "",
     });
   },[]);
   // Password recovery: escuchar el evento de Supabase cuando el usuario hace
@@ -718,7 +719,7 @@ export default function FinPath(){
     // Handle Stripe success redirect
     const params=new URLSearchParams(window.location.search);
     const successFlag=params.get('success');
-    const sessionId=params.get('session_id');
+    const sessionId=params.get('session_id')||(typeof window!=="undefined"?window.__fpStripeSessionId:null)||null;
     // ═══ REGRESO DESDE STRIPE ═══════════════════════════════════════════
     // 25-jul-2026. Antes, el momento más delicado del producto era SILENCIO:
     //  · Al volver de un pago exitoso no se mostraba nada. La página se
@@ -743,6 +744,13 @@ export default function FinPath(){
             body:JSON.stringify({userId,sessionId}),
           });
           const data=await r.json();
+          // 11-oct-2026: Checkout ya no da prueba → amount_total > 0 es el
+          // primer cobro real. Purchase (Pixel) + purchase (GA4), una sola
+          // vez por session id; trackPurchase ignora totales en 0 (cupón 100%).
+          if(data?.compra){
+            const pp=planDesdePriceId(data.compra.priceId);
+            trackPurchase({purchaseId:data.compra.purchaseId,amountTotal:data.compra.amountTotal,currency:data.compra.currency,plan:pp?.plan,billingCycle:pp?.billingCycle});
+          }
           if(data.ok){
             setPagoEstado({tipo:"exito",titulo:"¡Listo! Tu plan está activo",msg:"Gracias por confiar en FINPATHIA. Ya tienes acceso completo."});
             setTimeout(()=>window.location.reload(),2500);
@@ -952,7 +960,7 @@ export default function FinPath(){
         if(error){const msg=error.message==="Invalid login credentials"?"Email o contraseña incorrectos":error.message==="Email not confirmed"?"Revisa tu email y confirma tu cuenta":error.message;setAuthError(msg);setAuthLoading(false);return}
         // Sesión 4-may-2026: tracking GA4 — login exitoso con user_id
         // para atribución cross-device.
-        track("login_completed",{ method:"email", user_id: data.user.id });
+        track("login_completed",{ method:"email" });
         identifyUser(data.user.id);
         // Advisor lookup: corre SIEMPRE para saber si la cuenta tiene plan Asesor
         let advData=null;
@@ -1399,8 +1407,9 @@ export default function FinPath(){
     const pathname=typeof window!=="undefined"?window.location.pathname:"";
     const inviteMatch=pathname.match(/^\/invite\/([A-Za-z0-9_-]+)\/?$/);
     if(inviteMatch){
-      const token=inviteMatch[1];
-      return<AcceptInvite token={token} onComplete={()=>{window.location.href="/"}}/>;
+      // index.html saca el token de la URL (queda /invite/_) y lo deja en memoria.
+      const token=inviteMatch[1]==="_"?(window.__fpInviteToken||(()=>{try{return sessionStorage.getItem("fp3_invite_token")||""}catch{return ""}})()):inviteMatch[1];
+      return<AcceptInvite token={token} onComplete={()=>{try{sessionStorage.removeItem("fp3_invite_token")}catch{};window.location.href="/"}}/>;
     }
   }
 
@@ -1445,7 +1454,10 @@ export default function FinPath(){
     if(pathname==="/privacidad"||pathname==="/privacidad/"){
       return<LandingPrivacidad/>;
     }
-    return<><LandingPage onGetStarted={(meta)=>{const from=meta?.source||"home";sAM("signup");track("signup_modal_opened",{from,...(meta?.dias_restantes!=null?{dias_restantes:meta.dias_restantes}:{})});setShowAuth(true)}}/><PWAInstallPrompt/></>;
+    // 12-oct-2026 (Andrés Gómez no podía entrar): el botón "Iniciar sesión" de la
+    // landing abría la pestaña CREAR CUENTA. Un cliente que ya existe ponía su
+    // email y contraseña y recibía "este email ya tiene cuenta". Ahora abre Ingresar.
+    return<><LandingPage onLogin={()=>{sAM("login");track("login_modal_opened",{from:"home"});setShowAuth(true)}} onGetStarted={(meta)=>{const from=meta?.source||"home";sAM("signup");track("signup_modal_opened",{from,...(meta?.dias_restantes!=null?{dias_restantes:meta.dias_restantes}:{})});setShowAuth(true)}}/><PWAInstallPrompt/></>;
   }
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
@@ -1908,35 +1920,32 @@ export default function FinPath(){
             subtitle="Tu patrimonio y salud financiera, de un vistazo."
           />
           {((u?.p?.name)==="Usuario"||!(u?.p?.name))&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"10px 14px",marginTop:10,fontSize:12,color:T.bl,cursor:"pointer"}} onClick={()=>setPg("set")}>👤 Configura tu nombre en <strong>⚙️ Config</strong> para personalizar tu experiencia</div>}
-          {/* Banner Pro Familiar — muestra estado de trial o suscripción activa.
-              Lógica:
-                - Si planAccount === "pro_familiar" Y trialActive (trial 14d Stripe
-                  todavía no expira): "Plan Pro Familiar — Trial gratuito · X días"
-                - Si planAccount === "pro_familiar" Y NO trialActive: "Plan Pro
-                  Familiar activo" (post-trial, suscripción cobrando normal)
-              El campo trialEnd en user_data.p.trialEnd se setea al signup como 14
-              días desde signup. Coincide con el trial 14d de Stripe que damos
-              automáticamente. Si el user pasa los 14 días sin cancelar, Stripe
-              empieza a cobrar y el banner cambia a "activo". */}
+          {/* Banner Pro Familiar — suscripción activa.
+              11-oct-2026: Checkout ya no da prueba. Quien tiene planAccount
+              === "pro_familiar" ya pagó (el primer cobro es inmediato),
+              aunque le queden días de la prueba de la app (trialEnd, 14 días
+              desde el registro, independiente de Stripe). Antes este banner
+              decía "Trial gratuito" y "se cobra $27 USD/mes" mientras
+              trialActive, asumiendo que trialEnd coincidía con un trial de
+              Stripe; ya no es así, así que siempre muestra "activo". */}
           {planAccount==="pro_familiar"&&<div style={{background:trialActive?"linear-gradient(135deg,rgba(167,139,250,0.06),rgba(34,197,94,0.04))":"linear-gradient(135deg,rgba(167,139,250,0.06),rgba(59,130,246,0.04))",border:"1px solid rgba(167,139,250,0.15)",borderRadius:12,padding:"clamp(8px, 2vw, 12px) clamp(10px, 3vw, 16px)",marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}>
               <span style={{fontSize:14,flexShrink:0}}>👨‍👩‍👧</span>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:12,fontWeight:600,color:"#a78bfa"}}>
-                  {trialActive?"Plan Pro Familiar — Trial gratuito":"Plan Pro Familiar activo"}
+                  Plan Pro Familiar activo
                 </div>
                 <div style={{fontSize:10,color:T.tx3,lineHeight:1.4,marginTop:1}}>
-                  {trialActive
-                    ?(trialDays<=1?"⚠️ Tu trial vence HOY · se cobra $27 USD/mes":trialDays<=3?"⏰ Solo "+trialDays+" días · cancela antes":trialDays+" días · hasta 10 personas")
-                    :"Hasta 10 personas pueden compartir esta cuenta"}
+                  Hasta 10 personas pueden compartir esta cuenta
                 </div>
               </div>
             </div>
             <button onClick={()=>setPg("acc")} style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:11,flexShrink:0}}>Mi Cuenta →</button>
           </div>}
           {/* Banner Pro Trial — solo para users que NO compraron Pro Familiar.
-              Mantiene el flow tradicional: signup → 14 días Pro free → upgrade
-              al final del trial. */}
+              Flujo: registro → 14 días Pro gratis en la app (trialEnd) →
+              suscripción. Desde el 11-oct-2026 Checkout cobra de inmediato:
+              no hay una segunda prueba en Stripe. */}
           {trialActive&&planAccount!=="pro_familiar"&&<div style={{background:trialDays<=3?"rgba(239,68,68,0.06)":trialDays<=5?"rgba(234,179,8,0.06)":"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(59,130,246,0.05))",border:"1px solid "+(trialDays<=3?"rgba(239,68,68,0.15)":trialDays<=5?"rgba(234,179,8,0.15)":"rgba(34,197,94,0.15)"),borderRadius:12,padding:"14px 18px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}>
               <span style={{fontSize:18,flexShrink:0}}>⭐</span>
@@ -1954,8 +1963,10 @@ export default function FinPath(){
                 mantiene "tus datos están intactos" — es lo primero que uno
                 teme cuando le cierran una puerta.
                 Las tres opciones a la vista para que elija, con Pro Familiar
-                destacado (único con trial de 14 días en Stripe: el usuario ve
-                $0 hoy, que pesa más que la diferencia de precio). */}
+                destacado. (Antes el motivo era que Pro Familiar tenía 14 días
+                de prueba en Stripe y el usuario veía $0 hoy; desde el
+                11-oct-2026 ningún plan tiene prueba en Checkout: el primer
+                cobro es inmediato.) */}
             <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%"}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                 <span style={{fontSize:18,flexShrink:0}}>🔒</span>
@@ -2670,8 +2681,8 @@ export default function FinPath(){
 
             {/* PLANIFICACIÓN TRIBUTARIA — Usa estimarImpuesto() con propietarios + DIAN */}
             {(()=>{const tx=estimarImpuesto(u);if(tx.total<=0)return null;return<div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:6}}>{`🧾 IMPUESTOS ESTIMADOS — Colombia · UVT $${UVT.toLocaleString("es-CO")} (AG 2025)`}</div>
-              <div style={{fontSize:10,color:T.tx3,marginBottom:14,lineHeight:1.5}}>{`Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria. Temporada DIAN: AG 2025 (UVT $${UVT.toLocaleString("es-CO")}).`}</div>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:6}}>{`🧾 IMPUESTOS ESTIMADOS — Colombia · UVT $${UVT.toLocaleString("es-CO")} (AG ${DEFAULT_AG})`}</div>
+              <div style={{fontSize:10,color:T.tx3,marginBottom:14,lineHeight:1.5}}>{`Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria. Año gravable ${DEFAULT_AG} (UVT $${UVT.toLocaleString("es-CO")}).`}</div>
               {tx.sinClasificar>0&&<div style={{background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:T.orange}}>⚠️ {tx.sinClasificar} ingreso(s) sin clasificación fiscal. Ve a <strong>💰 Ingresos</strong> y asigna propietario + clasificación DIAN para un cálculo más preciso.</div>}
               <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                 <div>
@@ -3141,13 +3152,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         user={u}
         estimacion={estimarImpuesto(u)}
         onUpdateUser={(newUser)=>setU(newUser)}
-        ano={2025}
+        ano={DEFAULT_AG}
       />);
     }
     case"famtax":return gated("tax","Pro",<VistaFamiliarConsolidada
       user={u}
       estimacion={estimarImpuesto(u)}
-      ano={2025}
+      ano={DEFAULT_AG}
       onSelectOwner={()=>{setPg("tax")}}
     />);
     case"taxopt":return gated("tax","Pro",<TaxOptimizerUS user={u}/>);
