@@ -92,7 +92,7 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
 
   // ── Derivados específicos de natural (para UI de optimización) ──
   const benefCon = d.type === "natural"
-    ? (d.exenta25 || 0) + (d.totalDeducciones || 0) + (d.pvMax || 0) + (d.afcMax || 0)
+    ? (d.exenta25 || 0) + (d.totalDeducciones || 0) + (d.pvAfcMax ?? ((d.pvMax || 0) + (d.afcMax || 0)))
     : 0;
   const benAplicCon = d.type === "natural"
     ? Math.min(benefCon, d.lim40 || 0)

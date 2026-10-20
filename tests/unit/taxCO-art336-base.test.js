@@ -47,3 +47,47 @@ describe("Art. 336: base del 40 % = toda la cédula general", () => {
     }
   });
 });
+
+describe("PV + AFC: un solo tope de 30 % / 3.800 UVT (Art. 126-1 / 126-4) antes del 336", () => {
+  const gas = (pvM, afcM = 0) => ({ "Aporte tributario": [
+    ...(pvM ? [{ owner: "o1", fiscalCode: "AP_TRIB_PV", m: pvM }] : []),
+    ...(afcM ? [{ owner: "o1", fiscalCode: "AP_TRIB_AFC", m: afcM }] : []),
+  ] });
+  // Salario 10 M/mes → neto laboral 115,2 M/año → 30 % = 34,56 M/año
+  const NETO = 115_200_000, TOPE = NETO * 0.30;
+
+  it("salario 10 M: un aporte del 35 % se recorta al 30 %", () => {
+    const d = det(user([sal(10e6)], gas((NETO * 0.35) / 12)));
+    expect(d.pvAfcMax).toBeCloseTo(TOPE, 0);
+    expect(d.pvAfcAplicado).toBeCloseTo(TOPE, 0);
+  });
+
+  it("PV 20 % + AFC 15 % = 35 % → el combinado se recorta al 30 %", () => {
+    const d = det(user([sal(10e6)], gas((NETO * 0.20) / 12, (NETO * 0.15) / 12)));
+    expect(d.pvAfcAplicado).toBeCloseTo(TOPE, 0);
+    const soloPv = det(user([sal(10e6)], gas((NETO * 0.35) / 12)));
+    expect(d.impBruto).toBe(soloPv.impBruto);
+  });
+
+  it("ingreso alto: el tope combinado llega a 3.800 UVT", () => {
+    const d = det(user([sal(80e6)], gas(80e6 * 0.35, 0)));
+    expect(d.pvAfcMax).toBeLessThan(d.neto * 0.30);
+    expect(d.pvAfcAplicado).toBe(d.pvAfcMax);
+    expect(d.pvAfcMax / 3800).toBeGreaterThan(40_000); // 3.800 UVT en pesos
+  });
+
+  it("salario 10 M: el impuesto baja con el aporte hasta que se llena el tope (aquí manda el 40 % del 336)", () => {
+    const imp = (m) => Math.round(det(user([sal(10e6)], gas(m))).impBruto);
+    const [a0, a05, a1] = [imp(0), imp(0.5e6), imp(1e6)];
+    expect(a0).toBeGreaterThan(a05);
+    expect(a05).toBeGreaterThan(a1);
+    // A 2,5 / 3 / 3,5 M el bag ya llegó a lim40 (46,08 M): el 336 recorta antes que el 30 %.
+    const d = det(user([sal(10e6)], gas(2.5e6)));
+    expect(d.pctUsado).toBeCloseTo(100, 6);
+    expect(imp(2.5e6)).toBe(imp(3e6));
+    expect(imp(3e6)).toBe(imp(3.5e6));
+    // aporte de 2,5 M queda dentro del 30 %; 3 y 3,5 M se recortan a 34,56 M
+    expect(d.pvAfcAplicado).toBe(30_000_000);
+    expect(det(user([sal(10e6)], gas(3.5e6))).pvAfcAplicado).toBeCloseTo(TOPE, 0);
+  });
+});
