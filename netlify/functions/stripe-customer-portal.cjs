@@ -87,7 +87,7 @@ exports.handler = async (event) => {
         statusCode: 400,
         body: JSON.stringify({
           error: "no_stripe_customer",
-          message: "No tienes una suscripción activa. Andá a /precios para suscribirte.",
+          message: "No tienes una suscripción activa. Ve a /precios para suscribirte.",
         }),
       };
     }
@@ -115,7 +115,7 @@ exports.handler = async (event) => {
         statusCode: 500,
         body: JSON.stringify({
           error: "portal_not_configured",
-          message: "Stripe Customer Portal no configurado. Revisá Stripe Dashboard → Settings → Customer Portal.",
+          message: "Stripe Customer Portal no configurado. Revisa Stripe Dashboard → Settings → Customer Portal.",
         }),
       };
     }

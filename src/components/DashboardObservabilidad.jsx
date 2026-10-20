@@ -131,7 +131,7 @@ export default function DashboardObservabilidad({ onClose }) {
       <div style={{ background: T.bg2, borderRadius: 10, border: "1px solid " + T.border, overflow: "hidden" }}>
         {filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: T.txt3, fontSize: 13 }}>
-            {events.length === 0 ? "Ningún evento en el buffer. Navegá por la app y los eventos aparecerán acá." : "Ningún evento coincide con el filtro."}
+            {events.length === 0 ? "Ningún evento en el buffer. Navega por la app y los eventos aparecerán acá." : "Ningún evento coincide con el filtro."}
           </div>
         ) : (
           filtered.map((e, i) => (

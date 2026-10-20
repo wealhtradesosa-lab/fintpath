@@ -74,7 +74,7 @@ function emailShell(content, { ctaText, ctaUrl, preheader = "" }) {
         <!-- Footer -->
         <tr>
           <td style="padding:24px 40px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:#71717a;line-height:1.6;">
-            <div style="margin-bottom:8px;">¿Dudas o feedback? Respondé a este email — leo todo personalmente.</div>
+            <div style="margin-bottom:8px;">¿Dudas o feedback? Responde a este email — leo todo personalmente.</div>
             <div style="font-size:11px;color:#52525b;">
               FINPATHIA · <a href="https://finpathia.com" style="color:#71717a;text-decoration:none;">finpathia.com</a> ·
               <a href="https://finpathia.com/seguridad" style="color:#71717a;text-decoration:none;">Seguridad</a>
@@ -101,10 +101,10 @@ const TEMPLATES = {
     return {
       subject: isPioneros
         ? "🎁 Bienvenido a FINPATHIA Pioneros — 3.5 meses gratis activados"
-        : "¡Bienvenido a FINPATHIA! Empezá tus 14 días gratis",
+        : "¡Bienvenido a FINPATHIA! Empieza tus 14 días gratis",
       preheader: isPioneros
         ? "Tu acceso Pioneros está activo. Te cuento qué hacer ahora."
-        : "Centralizá tu patrimonio con IA en los próximos 60 segundos.",
+        : "Centraliza tu patrimonio con IA en los próximos 60 segundos.",
       html: emailShell(
         `
         ${isPioneros ? `
@@ -118,8 +118,8 @@ const TEMPLATES = {
         </h1>
 
         <p style="font-size:15px;color:#a1a1aa;line-height:1.7;margin:0 0 16px;">
-          Acabás de unirte a <strong style="color:#fafafa;">FINPATHIA</strong> — el lugar donde
-          centralizás tu patrimonio, planeás tus impuestos y consultás con un asesor IA
+          Acabas de unirte a <strong style="color:#fafafa;">FINPATHIA</strong> — el lugar donde
+          centralizas tu patrimonio, planeas tus impuestos y consultas con un asesor IA
           que ve tus números reales.
         </p>
 
@@ -127,15 +127,15 @@ const TEMPLATES = {
         <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:16px 20px;margin:24px 0;">
           <div style="font-size:13px;color:#22c55e;font-weight:700;margin-bottom:6px;">✓ Tu acceso Pioneros está activo</div>
           <div style="font-size:13px;color:#a1a1aa;line-height:1.6;">
-            Tenés <strong style="color:#fafafa;">14 días de prueba + 3 meses gratis del Plan Pro</strong>.
-            Sin tarjeta para el trial, cancelás cuando quieras.
+            Tienes <strong style="color:#fafafa;">14 días de prueba + 3 meses gratis del Plan Pro</strong>.
+            Sin tarjeta para el trial, cancelas cuando quieras.
           </div>
         </div>
         ` : `
         <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 20px;margin:24px 0;">
           <div style="font-size:13px;color:#fafafa;font-weight:700;margin-bottom:6px;">⏱ 14 días de prueba activos</div>
           <div style="font-size:13px;color:#a1a1aa;line-height:1.6;">
-            Tenés acceso completo al Plan Pro durante tu trial. Sin tarjeta requerida.
+            Tienes acceso completo al Plan Pro durante tu trial. Sin tarjeta requerida.
           </div>
         </div>
         `}
@@ -143,13 +143,13 @@ const TEMPLATES = {
         <h2 style="font-size:17px;font-weight:700;color:#fafafa;margin:32px 0 12px;">¿Por dónde empezar?</h2>
 
         <p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:0 0 8px;">
-          <strong style="color:#fafafa;">1. Importá tu Excel</strong> · si ya manejás tu plata en spreadsheets, importalo en 1 click. Nuestra IA detecta inversiones, ingresos y gastos automáticamente.
+          <strong style="color:#fafafa;">1. Importa tu Excel</strong> · si ya manejas tu plata en spreadsheets, impórtalo en 1 click. Nuestra IA detecta inversiones, ingresos y gastos automáticamente.
         </p>
         <p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:0 0 8px;">
-          <strong style="color:#fafafa;">2. Cargá datos de ejemplo</strong> · si querés ver cómo se siente antes de meter tus datos reales.
+          <strong style="color:#fafafa;">2. Carga datos de ejemplo</strong> · si quieres ver cómo se siente antes de meter tus datos reales.
         </p>
         <p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:0 0 16px;">
-          <strong style="color:#fafafa;">3. Conversá con el Asesor IA</strong> · una vez tengas datos, preguntale "¿en qué deberías enfocarte este mes?" y te da un plan concreto.
+          <strong style="color:#fafafa;">3. Conversa con el Asesor IA</strong> · una vez tengas datos, pregúntale "¿en qué deberías enfocarte este mes?" y te da un plan concreto.
         </p>
         `,
         {
@@ -157,13 +157,17 @@ const TEMPLATES = {
           ctaUrl: "https://finpathia.com",
           preheader: isPioneros
             ? "Tu acceso Pioneros está activo. Te cuento qué hacer ahora."
-            : "Centralizá tu patrimonio con IA en los próximos 60 segundos.",
+            : "Centraliza tu patrimonio con IA en los próximos 60 segundos.",
         }
       ),
     };
   },
 
   // ── 2. TRIAL ENDING ── Enviado 3 días antes de que termine el trial
+  // 11-oct-2026: Checkout ya no da una segunda prueba, así que el texto dice
+  // que el primer cobro es inmediato. Antes decía "Cobramos el primer mes"
+  // y describía el plan Free con un límite de 3 inversiones que la app no
+  // aplica.
   trial_ending: ({ name, daysLeft, plan = "Pro" }) => {
     const firstName = (name || "").split(" ")[0] || "";
     const greeting = firstName ? `Hola ${firstName}` : "Hola";
@@ -172,7 +176,7 @@ const TEMPLATES = {
       subject: daysLeft <= 1
         ? "⏰ Tu trial de FINPATHIA termina mañana"
         : `⏰ Tu trial de FINPATHIA termina en ${daysLeft} días`,
-      preheader: "Mantené tu acceso Pro completo sin interrupción.",
+      preheader: "Mantén tu acceso Pro completo sin interrupción.",
       html: emailShell(
         `
         <h1 style="font-size:26px;font-weight:800;line-height:1.2;margin:0 0 16px;color:#fafafa;letter-spacing:-0.8px;">
@@ -181,27 +185,27 @@ const TEMPLATES = {
 
         <p style="font-size:15px;color:#a1a1aa;line-height:1.7;margin:0 0 16px;">
           Esperamos que estos días te hayan servido para ver el valor que FINPATHIA puede aportarle a tu patrimonio.
-          Antes de que termine el trial, querés decidir si seguís con nosotros.
+          Antes de que termine el trial, quieres decidir si sigues con nosotros.
         </p>
 
         <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin:24px 0;">
           <div style="font-size:13px;color:#71717a;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px;">¿Qué pasa cuando termina el trial?</div>
           <p style="font-size:14px;color:#a1a1aa;line-height:1.6;margin:0 0 8px;">
-            <strong style="color:#fafafa;">Si activás tu plan:</strong> seguís con acceso completo al Plan ${plan}. Cobramos el primer mes (o el primer año si elegís anual con descuento).
+            <strong style="color:#fafafa;">Si te suscribes:</strong> sigues con el Plan ${plan} sin interrupción. El primer cobro es inmediato (el mes, o el año si eliges el plan anual con descuento) y puedes cancelar cuando quieras.
           </p>
           <p style="font-size:14px;color:#a1a1aa;line-height:1.6;margin:0;">
-            <strong style="color:#fafafa;">Si no hacés nada:</strong> tu cuenta vuelve al plan Free (1 usuario, 3 inversiones, sin Asesor IA). Tus datos quedan guardados.
+            <strong style="color:#fafafa;">Si no haces nada:</strong> pasas al plan gratis y conservas tus datos, tu nivel de libertad financiera y el simulador. El Asesor IA, los coaches y el plan de impuestos quedan en Pro.
           </p>
         </div>
 
         <p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:24px 0 0;">
-          ¿Tenés dudas sobre qué plan te conviene? Respondé este email y te ayudo a decidir.
+          ¿Tienes dudas sobre qué plan te conviene? Responde este email y te ayudo a decidir.
         </p>
         `,
         {
           ctaText: "Activar Plan Pro →",
           ctaUrl: "https://finpathia.com",
-          preheader: "Mantené tu acceso Pro completo sin interrupción.",
+          preheader: "Mantén tu acceso Pro completo sin interrupción.",
         }
       ),
     };
@@ -214,15 +218,15 @@ const TEMPLATES = {
 
     // Mensaje específico según razón de cancelación (de Stripe Portal)
     const reasonResponses = {
-      too_expensive: "Entiendo que el precio sea un factor. Si querés, puedo ayudarte a evaluar el Plan Básico que tiene lo esencial a $8/mes.",
-      missing_features: "¿Qué te faltó? Tu feedback nos ayuda a priorizar — respondé este email contándome.",
-      switched_service: "Gracias por probarnos. Si volvés a evaluar herramientas en el futuro, acá estamos.",
-      unused: "Si querés volver a probarlo en el futuro, tu información queda guardada.",
-      customer_service: "Lamento que la experiencia no haya sido buena. Me encantaría saber qué pasó — respondé este email.",
+      too_expensive: "Entiendo que el precio sea un factor. Si quieres, puedo ayudarte a evaluar el Plan Básico que tiene lo esencial a $8/mes.",
+      missing_features: "¿Qué te faltó? Tu feedback nos ayuda a priorizar — responde este email contándome.",
+      switched_service: "Gracias por probarnos. Si vuelves a evaluar herramientas en el futuro, acá estamos.",
+      unused: "Si quieres volver a probarlo en el futuro, tu información queda guardada.",
+      customer_service: "Lamento que la experiencia no haya sido buena. Me encantaría saber qué pasó — responde este email.",
       too_complex: "Tomamos nota. Estamos trabajando en simplificar la experiencia.",
-      low_quality: "Tu feedback me importa mucho — respondé contándome qué encontraste deficiente y cómo podemos mejorar.",
+      low_quality: "Tu feedback me importa mucho — responde contándome qué encontraste deficiente y cómo podemos mejorar.",
     };
-    const customResponse = reason && reasonResponses[reason] ? reasonResponses[reason] : "Si querés contarme qué pasó, respondé este email — todo feedback me ayuda.";
+    const customResponse = reason && reasonResponses[reason] ? reasonResponses[reason] : "Si quieres contarme qué pasó, responde este email — todo feedback me ayuda.";
 
     return {
       subject: "Tu suscripción FINPATHIA — confirmación de cancelación",
@@ -234,7 +238,7 @@ const TEMPLATES = {
         </h1>
 
         <p style="font-size:15px;color:#a1a1aa;line-height:1.7;margin:0 0 16px;">
-          Tu suscripción al Plan ${plan} fue cancelada. ${periodEnd ? `Mantenés acceso completo hasta el <strong style="color:#fafafa;">${periodEnd}</strong>.` : ""}
+          Tu suscripción al Plan ${plan} fue cancelada. ${periodEnd ? `Mantienes acceso completo hasta el <strong style="color:#fafafa;">${periodEnd}</strong>.` : ""}
         </p>
 
         <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin:24px 0;">
@@ -243,10 +247,10 @@ const TEMPLATES = {
             <strong style="color:#fafafa;">No te cobramos más</strong> · ningún cargo recurrente.
           </p>
           <p style="font-size:14px;color:#a1a1aa;line-height:1.6;margin:0 0 8px;">
-            <strong style="color:#fafafa;">Tus datos quedan guardados</strong> · si volvés en el futuro, encontrás todo donde lo dejaste.
+            <strong style="color:#fafafa;">Tus datos quedan guardados</strong> · si vuelves en el futuro, encuentras todo donde lo dejaste.
           </p>
           <p style="font-size:14px;color:#a1a1aa;line-height:1.6;margin:0;">
-            <strong style="color:#fafafa;">Podés exportar todo</strong> · entrá a tu cuenta y descargá un Excel con tu información.
+            <strong style="color:#fafafa;">Puedes exportar todo</strong> · entra a tu cuenta y descarga un Excel con tu información.
           </p>
         </div>
 
@@ -279,36 +283,67 @@ const TEMPLATES = {
 // origen dejaba pasar cualquier petición SIN Origin — o sea, cualquier curl.
 // Ahora las funciones internas importan sendTemplate() y el endpoint HTTP
 // exige un origen permitido, sin excepciones.
-async function sendTemplate({ to, template, vars = {} }) {
+async function sendTemplate({ to, template, vars = {}, headers } = {}) {
   if (!to || !template) return { ok: false, error: "Faltan params: to, template" };
   const tmpl = TEMPLATES[template];
   if (!tmpl) return { ok: false, error: `Template "${template}" no existe. Disponibles: ${Object.keys(TEMPLATES).join(", ")}` };
 
   if (!process.env.RESEND_API_KEY) {
-    console.warn(`[send-email] RESEND_API_KEY ausente — skip envío de "${template}" a ${to}`);
+    console.warn(`[send-email] RESEND_API_KEY ausente — skip envío de "${template}" a ${enmascarar(to)}`);
     return { ok: true, sent: false, reason: "resend_not_configured" };
   }
 
   const { subject, html } = tmpl(vars);
+  return enviarResend({ to, subject, html, headers, etiqueta: template });
+}
+
+// 11-oct-2026 — Envío de un correo YA ARMADO (secuencia de prueba). Solo
+// para uso interno desde otras funciones: NO se expone por HTTP, porque
+// permitiría mandar HTML arbitrario desde finpathia.com.
+// `headers` opcional (ej. List-Unsubscribe); `text` opcional (versión texto).
+// Nunca loguear el email completo: "an***@dominio.com".
+function enmascarar(email) {
+  const s = String(email || "");
+  const [u, d] = s.split("@");
+  if (!d) return "***";
+  return (u.slice(0, 2) || "*") + "***@" + d;
+}
+
+async function sendRendered({ to, subject, html, text, headers, etiqueta = "rendered", idempotencyKey } = {}) {
+  if (!to || !subject || !html) return { ok: false, error: "Faltan params: to, subject, html" };
+  if (!process.env.RESEND_API_KEY) {
+    console.warn(`[send-email] RESEND_API_KEY ausente — skip envío de "${etiqueta}"`);
+    return { ok: true, sent: false, reason: "resend_not_configured" };
+  }
+  return enviarResend({ to, subject, html, text, headers, etiqueta, idempotencyKey });
+}
+
+async function enviarResend({ to, subject, html, text, headers, etiqueta, idempotencyKey }) {
   const from = process.env.RESEND_FROM || "FINPATHIA <soporte@finpathia.com>";
+  const payload = { from, to: [to], subject, html };
+  if (text) payload.text = text;
+  if (headers && typeof headers === "object" && Object.keys(headers).length) payload.headers = headers;
 
   const resp = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
       "Content-Type": "application/json",
+      // Resend descarta un reintento con la misma clave (evita correos dobles).
+      ...(idempotencyKey ? { "Idempotency-Key": String(idempotencyKey).slice(0, 256) } : {}),
     },
-    body: JSON.stringify({ from, to: [to], subject, html }),
+    body: JSON.stringify(payload),
   });
   const data = await resp.json();
   if (!resp.ok) {
     console.error(`[send-email] Resend error (${resp.status}):`, data);
     return { ok: false, error: data.message || "Resend error", status: resp.status };
   }
-  console.log(`[send-email] ✅ template=${template} to=${to} message_id=${data.id}`);
+  console.log(`[send-email] ✅ template=${etiqueta} to=${enmascarar(to)} message_id=${data.id}`);
   return { ok: true, sent: true, message_id: data.id };
 }
 exports.sendTemplate = sendTemplate;
+exports.sendRendered = sendRendered;
 
 exports.handler = async (event) => {
   const cors = {

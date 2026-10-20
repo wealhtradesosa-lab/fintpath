@@ -83,7 +83,7 @@ export default function AgenteTributarioBienvenida({
 }) {
   const allOwners = useMemo(() => user?.owners || [], [user]);
   const isJuridica = selectedOwner?.type === "juridica";
-  const ownerName = selectedOwner?.name || "vos";
+  const ownerName = selectedOwner?.name || "tú";
 
   // State del modal de asignación masiva (abierto cuando hay un hallazgo activo)
   const [hallazgoAsignar, setHallazgoAsignar] = useState(null);
@@ -108,7 +108,7 @@ export default function AgenteTributarioBienvenida({
   if (!selectedOwner || !det) {
     return (
       <div style={{ padding: 40, textAlign: "center", color: C.txt2 }}>
-        Seleccioná un owner fiscal para ver tu resumen.
+        Selecciona un owner fiscal para ver tu resumen.
       </div>
     );
   }
@@ -149,7 +149,7 @@ export default function AgenteTributarioBienvenida({
         </h1>
         <p style={{ fontSize: 15, color: C.txt2, marginTop: 8, lineHeight: 1.5 }}>
           El auditor IA <strong style={{ color: C.txt }}>revisó tu borrador</strong> y detectó
-          oportunidades de optimización. Acá ves un resumen claro y concreto. Si querés ver
+          puntos para revisar. Acá ves un resumen claro y concreto. Si quieres ver
           el detalle técnico del formulario, hay un botón abajo.
         </p>
       </div>
@@ -262,15 +262,15 @@ export default function AgenteTributarioBienvenida({
             <>
               Esto es <strong style={{ color: C.txt }}>{fmtPctEs(tasaEfectiva, 1)}</strong>{" "}
               de tus ingresos (<TerminoTributario clave="tasaEfectiva">tasa efectiva</TerminoTributario>). {tasaEfectiva < 5
-                ? "Está dentro del rango bajo — pagás poco impuesto efectivo."
+                ? "Está dentro del rango bajo — pagas poco impuesto efectivo."
                 : tasaEfectiva < 15
                   ? "Es un nivel típico para alguien con tu perfil."
                   : tasaEfectiva < 25
-                    ? "Es alto — puede haber palancas legales para reducirlo (mirá abajo)."
-                    : "Es muy alto — vale la pena hablar con un contador para optimizar."}
+                    ? "Es alto — puede haber palancas legales para reducirlo (mira abajo)."
+                    : "Es muy alto — vale la pena hablar con un contador para revisarlo."}
             </>
           ) : (
-            <>No tenés saldo a pagar este año. ¡Buen trabajo!</>
+            <>No tienes saldo a pagar este año. ¡Buen trabajo!</>
           )}
         </div>
       </div>
@@ -369,7 +369,7 @@ export default function AgenteTributarioBienvenida({
           borderRadius: 14,
         }}>
           <div style={{ fontSize: 13, color: C.green, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            💡 Detectamos formas de pagar menos
+            💡 Detectamos deducciones y beneficios para revisar
           </div>
           <h3 style={{ fontSize: 22, fontWeight: 800, color: C.txt, margin: "4px 0 6px 0" }}>
             Podrías ahorrar hasta {fm(ahorroPotencial)}
@@ -399,7 +399,7 @@ export default function AgenteTributarioBienvenida({
         borderRadius: 14,
       }}>
         <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 16, textTransform: "uppercase", letterSpacing: 0.5 }}>
-          ¿Qué querés hacer ahora?
+          ¿Qué quieres hacer ahora?
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
           <button
@@ -513,7 +513,7 @@ export default function AgenteTributarioBienvenida({
         <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.6 }}>
           <strong style={{ color: C.orange }}>Importante:</strong> este es un cálculo
           estimado con IA. Antes de presentar cualquier declaración a la DIAN,{" "}
-          <strong style={{ color: C.txt }}>siempre validalo con tu contador</strong>.
+          <strong style={{ color: C.txt }}>siempre valídalo con tu contador</strong>.
           FINPATHIA es una herramienta de apoyo, no reemplaza asesoría profesional.
         </div>
       </div>
@@ -581,7 +581,7 @@ function OportunidadCard({ rec, numero, onAplicar }) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: C.txt, marginBottom: 4, lineHeight: 1.3 }}>
-          {rec.titulo || rec.title || "Optimización"}
+          {rec.titulo || rec.title || "Para revisar"}
         </div>
         {rec.descripcion && (
           <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5, marginBottom: 6 }}>

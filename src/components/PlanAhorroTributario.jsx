@@ -6,7 +6,7 @@
 //    cantidad de secciones con subprocesos. El problema para mí es que no
 //    es ordenado, no es claro, no es práctico. Oriente de sugerencias,
 //    hágalo fácil. Por ejemplo si dice: 'en cartera por cobrar podrías
-//    ahorrar hasta X%, revisá si tu cartera está vencida'."
+//    ahorrar hasta X%, revisa si tu cartera está vencida'."
 //
 // SOLUCIÓN:
 //   Checklist progresivo de 5-7 áreas tributarias relevantes para el owner.
@@ -76,7 +76,7 @@ const AREAS_JURIDICA = [
     icono: "📋",
     titulo: "Cartera por cobrar",
     pregunta: "¿Tu sociedad tiene clientes que le deben dinero?",
-    explicacion: "Si tenés cuentas por cobrar a clientes que llevan más de 90 días sin pagar, podés deducir hasta el 33% como provisión de cartera. Es plata que entra al cálculo como gasto y baja tu impuesto.",
+    explicacion: "Si tienes cuentas por cobrar a clientes que llevan más de 90 días sin pagar, puedes deducir hasta el 33% como provisión de cartera. Es plata que entra al cálculo como gasto y baja tu impuesto.",
     baseLegal: "Art. 145 ET",
     estimarAhorro: (data) => {
       const monto = Number(data.monto) || 0;
@@ -86,10 +86,10 @@ const AREAS_JURIDICA = [
     inputs: [
       {
         key: "monto",
-        label: "¿Cuánta cartera tenés vencida (más de 90 días)?",
+        label: "¿Cuánta cartera tienes vencida (más de 90 días)?",
         type: "currency",
         placeholder: "Ej: 50.000.000",
-        helpText: "Solo cartera con más de 90 días sin pagar. Si tenés mezclada vencida y al día, sumá solo la vencida.",
+        helpText: "Solo cartera con más de 90 días sin pagar. Si tienes mezclada vencida y al día, suma solo la vencida.",
       },
     ],
     aplicar: (user, ownerId, data) => {
@@ -116,7 +116,7 @@ const AREAS_JURIDICA = [
     icono: "❤️",
     titulo: "Donaciones a fundaciones",
     pregunta: "¿Tu sociedad donó a alguna fundación, ONG o entidad sin ánimo de lucro en 2025?",
-    explicacion: "Si donaste a una ESAL (Entidad Sin Ánimo de Lucro) registrada ante la DIAN, podés DESCONTAR el 25% del monto donado directamente del impuesto. No es deducción (que reduce base), es DESCUENTO (resta peso a peso del impuesto final).",
+    explicacion: "Si donaste a una ESAL (Entidad Sin Ánimo de Lucro) registrada ante la DIAN, puedes DESCONTAR el 25% del monto donado directamente del impuesto. No es deducción (que reduce base), es DESCUENTO (resta peso a peso del impuesto final).",
     baseLegal: "Art. 257 ET",
     estimarAhorro: (data) => {
       const monto = Number(data.monto) || 0;
@@ -150,7 +150,7 @@ const AREAS_JURIDICA = [
     icono: "🏛️",
     titulo: "ICA pagado en el año",
     pregunta: "¿Tu sociedad pagó ICA (Industria y Comercio) durante 2025?",
-    explicacion: "El ICA pagado a las alcaldías es 100% deducible. Si lo pagaste pero no lo cargaste, estás pagando impuesto sobre algo que ya pagaste como impuesto. Cargalo y se deduce automáticamente.",
+    explicacion: "El ICA pagado a las alcaldías es 100% deducible. Si lo pagaste pero no lo cargaste, estás pagando impuesto sobre algo que ya pagaste como impuesto. Cárgalo y se deduce automáticamente.",
     baseLegal: "Art. 115 ET",
     estimarAhorro: (data) => {
       const monto = Number(data.monto) || 0;
@@ -163,7 +163,7 @@ const AREAS_JURIDICA = [
         label: "¿Cuánto pagaste de ICA en total durante 2025?",
         type: "currency",
         placeholder: "Ej: 8.000.000",
-        helpText: "Sumá los pagos bimestrales o anuales de ICA + Reteica + Avisos y Tableros.",
+        helpText: "Suma los pagos bimestrales o anuales de ICA + Reteica + Avisos y Tableros.",
       },
     ],
     aplicar: (user, ownerId, data) => {
@@ -189,7 +189,7 @@ const AREAS_JURIDICA = [
     icono: "📉",
     titulo: "Pérdidas de años anteriores",
     pregunta: "¿Tu sociedad tuvo pérdidas fiscales en algún año entre 2017 y 2024?",
-    explicacion: "Si en años anteriores Lagoon registró pérdida fiscal, esa pérdida se puede COMPENSAR contra la utilidad de este año. Tenés 12 años para usarla. Pérdidas anteriores a 2017 ya no son compensables.",
+    explicacion: "Si en años anteriores Lagoon registró pérdida fiscal, esa pérdida se puede COMPENSAR contra la utilidad de este año. Tienes 12 años para usarla. Pérdidas anteriores a 2017 ya no son compensables.",
     baseLegal: "Art. 147 ET",
     estimarAhorro: (data) => {
       const monto = Number(data.monto) || 0;
@@ -199,10 +199,10 @@ const AREAS_JURIDICA = [
     inputs: [
       {
         key: "monto",
-        label: "¿Cuánto tenés acumulado de pérdidas pendientes de compensar?",
+        label: "¿Cuánto tienes acumulado de pérdidas pendientes de compensar?",
         type: "currency",
         placeholder: "Ej: 30.000.000",
-        helpText: "Sumá las pérdidas declaradas en años anteriores que aún no usaste. Si no estás seguro, pedile el dato a tu contador o revisá tu declaración del año pasado renglón 73.",
+        helpText: "Suma las pérdidas declaradas en años anteriores que aún no usaste. Si no estás seguro, pídele el dato a tu contador o revisa tu declaración del año pasado renglón 73.",
       },
     ],
     aplicar: (user, ownerId, data) => {
@@ -262,9 +262,9 @@ const AREAS_NATURAL = [
   {
     id: "dependientes",
     icono: "👨‍👩‍👧",
-    titulo: "Personas que dependen de vos",
-    pregunta: "¿Tenés cónyuge, hijos o padres que dependen económicamente de vos?",
-    explicacion: "Si mantenés económicamente a tu cónyuge sin ingresos, hijos menores de 23 años, hijos con discapacidad o padres que no se pueden mantener solos, podés deducir el 10% de tu salario (con tope ~$20M/año).",
+    titulo: "Personas que dependen de ti",
+    pregunta: "¿Tienes cónyuge, hijos o padres que dependen económicamente de ti?",
+    explicacion: "Si mantienes económicamente a tu cónyuge sin ingresos, hijos menores de 23 años, hijos con discapacidad o padres que no se pueden mantener solos, puedes deducir el 10% de tu salario (con tope ~$20M/año).",
     baseLegal: "Art. 387 parr 2 ET",
     estimarAhorro: (data, det) => {
       const cantidad = Number(data.cantidad) || 0;
@@ -279,7 +279,7 @@ const AREAS_NATURAL = [
     inputs: [
       {
         key: "cantidad",
-        label: "¿Cuántas personas dependen de vos?",
+        label: "¿Cuántas personas dependen de ti?",
         type: "number",
         placeholder: "Ej: 2",
         helpText: "Cónyuge sin ingresos, hijos menores, hijos con discapacidad, padres dependientes.",
@@ -307,8 +307,8 @@ const AREAS_NATURAL = [
     id: "salud_prepagada",
     icono: "🏥",
     titulo: "Medicina prepagada o seguro de salud",
-    pregunta: "¿Pagás Colsanitas, Sura, Medplus u otra medicina prepagada / seguro de salud?",
-    explicacion: "El gasto en medicina prepagada es deducible hasta 16 UVT/mes (tope 16 UVT/mes). Solo necesitás cargar cuánto pagás cada mes.",
+    pregunta: "¿Pagas Colsanitas, Sura, Medplus u otra medicina prepagada / seguro de salud?",
+    explicacion: "El gasto en medicina prepagada es deducible hasta 16 UVT/mes (tope 16 UVT/mes). Solo necesitas cargar cuánto pagas cada mes.",
     baseLegal: "Art. 387 #2 ET",
     estimarAhorro: (data, det) => {
       const mensual = Number(data.gastoMensual) || 0;
@@ -323,10 +323,10 @@ const AREAS_NATURAL = [
     inputs: [
       {
         key: "gastoMensual",
-        label: "¿Cuánto pagás cada mes de medicina prepagada o seguro?",
+        label: "¿Cuánto pagas cada mes de medicina prepagada o seguro?",
         type: "currency",
         placeholder: "Ej: 600.000",
-        helpText: "Si tenés varios seguros/planes, sumalos. El motor topa automáticamente al máximo legal.",
+        helpText: "Si tienes varios seguros/planes, súmalos. El motor topa automáticamente al máximo legal.",
       },
     ],
     aplicar: (user, ownerId, data) => {
@@ -352,7 +352,7 @@ const AREAS_NATURAL = [
     id: "pv_afc",
     icono: "💼",
     titulo: "Aportes a Pensión Voluntaria o AFC",
-    pregunta: "¿Aportás (o querés empezar a aportar) a Pensión Voluntaria o cuenta AFC?",
+    pregunta: "¿Aportas (o quieres empezar a aportar) a Pensión Voluntaria o cuenta AFC?",
     explicacion: "Estos aportes son 100% deducibles dentro del cap del 25% del ingreso (máx 2.500 UVT/año). Es la palanca fiscal más potente para personas con salario alto.",
     baseLegal: "Arts. 126-1 y 126-4 ET",
     estimarAhorro: (data, det) => {
@@ -371,7 +371,7 @@ const AREAS_NATURAL = [
         label: "¿Cuánto vas a aportar al mes?",
         type: "currency",
         placeholder: "Ej: 1.500.000",
-        helpText: "El motor verifica que no te pases del cap legal. Si elegís un monto demasiado alto, se ajusta automáticamente.",
+        helpText: "El motor verifica que no te pases del cap legal. Si eliges un monto demasiado alto, se ajusta automáticamente.",
       },
       {
         key: "tipoCuenta",
@@ -409,7 +409,7 @@ const AREAS_NATURAL = [
     id: "vivienda",
     icono: "🏠",
     titulo: "Intereses de vivienda habitacional",
-    pregunta: "¿Pagás cuotas de un crédito hipotecario sobre tu vivienda principal?",
+    pregunta: "¿Pagas cuotas de un crédito hipotecario sobre tu vivienda principal?",
     explicacion: "Los intereses de tu hipoteca de VIVIENDA HABITACIONAL son deducibles hasta 1.200 UVT/año (tope 1.200 UVT/año). Es deducción directa sobre tu base gravable.",
     baseLegal: "Art. 119 ET",
     estimarAhorro: (data, det) => {
@@ -427,7 +427,7 @@ const AREAS_NATURAL = [
         label: "¿Cuánto pagaste de intereses (no capital) en el año?",
         type: "currency",
         placeholder: "Ej: 25.000.000",
-        helpText: "El banco te entrega un certificado anual con el desglose de intereses pagados. Pediselo o consultalo en la app del banco.",
+        helpText: "El banco te entrega un certificado anual con el desglose de intereses pagados. Pediselo o consúltalo en la app del banco.",
       },
     ],
     aplicar: (user, ownerId, data) => {
@@ -456,7 +456,7 @@ const AREAS_NATURAL = [
 export default function PlanAhorroTributario({ user, selectedOwner, estimacion, onUpdateUser, onClose }) {
   const isJuridica = selectedOwner?.type === "juridica";
   const areas = isJuridica ? AREAS_JURIDICA : AREAS_NATURAL;
-  const ownerName = selectedOwner?.name || "vos";
+  const ownerName = selectedOwner?.name || "tú";
 
   // Datos del owner para mostrar contexto
   const det = useMemo(() => {

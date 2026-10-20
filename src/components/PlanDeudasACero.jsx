@@ -106,7 +106,7 @@ export default function PlanDeudasACero({
           </div>
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, maxWidth: 520 }}>
             El monto extra sale de tu flujo de caja disponible, ya descontadas las
-            cuotas que pagás hoy. La comparación a 3 años asume una valorización
+            cuotas que pagas hoy. La comparación a 3 años asume una valorización
             antes de impuestos; es una comparación, no una recomendación de inversión.
           </div>
         </div>
@@ -429,7 +429,7 @@ export default function PlanDeudasACero({
                 }}
               >
                 <MiniCard
-                  label="Si pagás deudas"
+                  label="Si pagas deudas"
                   value={fm(plan.trade.escenarioA.patrimonio3a)}
                   sub={
                     plan.trade.escenarioA.veredicto === "crece" ? "Crece" : "Se come"
@@ -439,7 +439,7 @@ export default function PlanDeudasACero({
                   }
                 />
                 <MiniCard
-                  label="Si lo dejás invertido"
+                  label="Si lo dejas invertido"
                   value={fm(plan.trade.escenarioB.patrimonio3a)}
                   sub={
                     (plan.trade.escenarioB.veredicto === "crece"

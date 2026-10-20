@@ -244,7 +244,7 @@ export default function ReporteFiscalPrint({
         {/* Sección 5: Recomendaciones */}
         {accionables.length > 0 && (
           <div>
-            <h2>5. Recomendaciones de optimización</h2>
+            <h2>5. Recomendaciones para revisar</h2>
             <div className="rf-meta" style={{ marginBottom: 8 }}>
               Ahorro potencial total estimado: <strong style={{ color: "#15803d" }}>{fm(totalAhorroPotencial)}/año</strong>
             </div>

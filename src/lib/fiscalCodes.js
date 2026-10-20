@@ -213,7 +213,7 @@ export const FISCAL_CODE_META = {
   [SEG_VIDA]:                     { kind: "gasto", scope: "natural", label: "Seguro de vida",             et: "Art. 387 #2 (tope 16 UVT/mes)" },
   [SEG_VEHICULO]:                 { kind: "gasto", scope: "natural", label: "Seguro de vehículo",         et: "NO deducible natural" },
   [SEG_HOGAR]:                    { kind: "gasto", scope: "natural", label: "Seguro de hogar",            et: "NO deducible natural" },
-  [SEG_GENERICO]:                 { kind: "gasto", scope: "natural", label: "Seguro sin clasificar",      et: "NO deducible (especificá tipo)" },
+  [SEG_GENERICO]:                 { kind: "gasto", scope: "natural", label: "Seguro sin clasificar",      et: "NO deducible (especifica tipo)" },
   // Commit 15 Tarea 3: impuesto vehicular (rodamiento)
   [IMP_VEHICULAR_PERSONAL]:       { kind: "gasto", scope: "natural", label: "Impuesto vehicular (personal)", et: "NO deducible natural" },
   [IMP_VEHICULAR_PROFESIONAL]:    { kind: "gasto", scope: "honorarios", label: "Impuesto vehicular (profesional)", et: "Art. 107 (50% conservador)" },

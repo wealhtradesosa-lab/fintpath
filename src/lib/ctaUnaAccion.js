@@ -321,13 +321,13 @@ export function elegirUnaAccion(input = {}) {
       path: "cf_rojo",
       frase:
         cf < 0
-          ? "No aumentes gasto fijo: estabilizá el cash flow"
+          ? "No aumentes gasto fijo: estabiliza el cash flow"
           : "No aumentes gasto fijo: el cash flow está en cero",
       monto: anual !== 0 ? anual : null,
       porQue:
         anual < 0
-          ? `Con CF de ${fmtCop(anual)}/año te comés el patrimonio si sostienes este ritmo.`
-          : "Sin excedente no hay abono extra ni reserva; primero equilibrá ingresos y egresos.",
+          ? `Con CF de ${fmtCop(anual)}/año te comes el patrimonio si sostienes este ritmo.`
+          : "Sin excedente no hay abono extra ni reserva; primero equilibra ingresos y egresos.",
       chip: "CF no alcanza — no aumentes gasto",
       detalle: { cfMensual: cf, cfAnual: anual },
     };
@@ -343,7 +343,7 @@ export function elegirUnaAccion(input = {}) {
       return {
         id: "abono_deuda",
         path: "deuda",
-        frase: `Esta semana: aboná ${fmtCop(x)} extra a ${deuda.nombre}`,
+        frase: `Esta semana: abona ${fmtCop(x)} extra a ${deuda.nombre}`,
         monto: x,
         porQue: `Es tu deuda con mayor tasa (${fmtPctEs(deuda.tasa, 1)} E.A.) y saldo ${fmtCop(deuda.saldo)}.`,
         chip: "Fondeado con tu CF",
@@ -363,7 +363,7 @@ export function elegirUnaAccion(input = {}) {
       return {
         id: "fondear_meta",
         path: "meta",
-        frase: `Apartá ${fmtCop(z)} hacia “${meta.nombre}”`,
+        frase: `Aparta ${fmtCop(z)} hacia “${meta.nombre}”`,
         monto: z,
         porQue: `Te faltan ${fmtCop(meta.gap)} para esa meta; este paso usa parte del CF del período.`,
         chip: "Fondeado con tu CF",
@@ -381,11 +381,11 @@ export function elegirUnaAccion(input = {}) {
     return {
       id: "reserva_colchon",
       path: "reserva",
-      frase: `Apartá ${fmtCop(zReserva)} a reserva (colchón)`,
+      frase: `Aparta ${fmtCop(zReserva)} a reserva (colchón)`,
       monto: zReserva,
       porQue: colchon.sinDatos
-        ? `Sin datos de liquidez suficientes, asumimos colchón corto (<${MESES_COLCHON_OBJETIVO} meses). Priorizá reserva antes de fiscal o norte.`
-        : `Tu colchón líquido cubre ${mesesTxt} (meta ~${MESES_COLCHON_OBJETIVO}). Priorizá reserva antes de fiscal o norte.`,
+        ? `Sin datos de liquidez suficientes, asumimos colchón corto (<${MESES_COLCHON_OBJETIVO} meses). Prioriza reserva antes de fiscal o norte.`
+        : `Tu colchón líquido cubre ${mesesTxt} (meta ~${MESES_COLCHON_OBJETIVO}). Prioriza reserva antes de fiscal o norte.`,
       chip: "Fondeado con tu CF · colchón",
       detalle: {
         cfMensual: cf,
@@ -434,7 +434,7 @@ export function elegirUnaAccion(input = {}) {
   return {
     id: "aporte_norte",
     path: "norte",
-    frase: `Apartá ${fmtCop(zNorte)} a Tu Norte / inversión`,
+    frase: `Aparta ${fmtCop(zNorte)} a Tu Norte / inversión`,
     monto: zNorte,
     porQue: `Colchón ~${mesesTxt} meses (≥${MESES_COLCHON_OBJETIVO}) y sin espacio fiscal prioritario: el excedente del período va a norte patrimonial / inversión — no a reserva ciega.`,
     chip: "Fondeado con tu CF · norte",

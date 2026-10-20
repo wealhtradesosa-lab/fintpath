@@ -27,7 +27,7 @@ export const TEXTOS = {
       unidad: "al año en juego",
       titulo: (nombre, tasa) => `${nombre} al ${fmtPctEs(tasa, 1)}`,
       detalle: (tasa, dif, ahorro) =>
-        `Tenés liquidez disponible mientras pagás una tasa del ${fmtPctEs(tasa, 2)} E.A. ` +
+        `Tienes liquidez disponible mientras pagas una tasa del ${fmtPctEs(tasa, 2)} E.A. ` +
         `Abonar a capital rinde ${fmtNumEs(dif, 2)} puntos más que dejarla quieta: ${money.es(ahorro)} al año.`,
       base: (tasa, rend) =>
         `Tasa del crédito (${fmtPctEs(tasa, 2)} E.A.) vs. rendimiento de tu efectivo y CDT (${fmtPctEs(rend, 2)} E.A.)`,
@@ -42,7 +42,7 @@ export const TEXTOS = {
     },
     flujoNegativo: {
       unidad: "por mes",
-      titulo: "Gastás más de lo que entra",
+      titulo: "Gastas más de lo que entra",
       detalle: (deficit) =>
         `Cada mes salen ${money.es(deficit)} más de los que ingresan. ` +
         `Si no viene de un ahorro, la diferencia sale de deuda.`,
@@ -73,7 +73,7 @@ export const TEXTOS = {
     },
     flujoSano: {
       unidad: "de tu ingreso",
-      titulo: "Ahorrás cada mes",
+      titulo: "Ahorras cada mes",
       detalle: (cf) => `Te quedan ${money.es(cf)} libres al mes.`,
       base: "Flujo de caja sobre ingreso bruto",
     },

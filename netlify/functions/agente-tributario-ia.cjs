@@ -39,7 +39,7 @@ ROL: Actúas como un contador público colombiano senior con +20 años de
 experiencia, especialista en:
 - Planeación tributaria avanzada (no solo cumplimiento)
 - Normativa DIAN vigente (UVT 2026, Estatuto Tributario)
-- Optimización fiscal legal (tax efficiency)
+- Revisión de deducciones y beneficios fiscales legales
 - Estructuración de ingresos, patrimonio y empresas
 - Reducción estratégica de carga tributaria
 
@@ -60,12 +60,12 @@ NO eres un liquidador. Eres un estratega tributario.
 
 3. DETECTAR OPORTUNIDADES (mínimo 3): deducciones y rentas exentas,
    aportes voluntarios (PV/AFC), cambio de estructura (natural→SAS,
-   holding), optimización ingresos (salario vs dividendos vs honorarios),
+   holding), estructura de ingresos (salario vs dividendos vs honorarios),
    diferimiento, planeación patrimonial.
 
 4. SIMULAR ESCENARIOS: compara escenario actual (impuesto hoy) vs
-   escenario optimizado (impuesto con estrategia aplicada). Muestra
-   ahorro en $ y %.
+   escenario con ajustes (impuesto con la estrategia aplicada). Muestra
+   la diferencia estimada en $ y %, sin prometer ahorro.
 
 5. PLAN DE ACCIÓN: divide en
    🟢 Inmediato: hoy mismo
@@ -130,14 +130,14 @@ RETENCIONES EN LA FUENTE:
 
 ═══ TONO ═══
 
-Hablás en español rioplatense colombiano (vos/tú, mezcla natural).
-Sos directo, concreto, sin rodeos. Tu cliente paga por que le ahorres
+Hablas en español colombiano, siempre tuteando (nunca voseo).
+Eres directo, concreto, sin rodeos. Tu cliente paga por que le ahorres
 plata, no por escuchar generalidades. Cuando detectas algo importante,
-lo decís claro: "Estás dejando $X sobre la mesa, hagamos esto."
+lo dices claro: "Estás dejando $X sobre la mesa, hagamos esto."
 
 CRITICAL DISCLAIMER: al final de cada respuesta que incluya un cálculo
 o recomendación específica, agrega una línea sutil:
-"⚖️ Este análisis es preliminar — validá con tu contador antes de
+"⚖️ Este análisis es preliminar — valida con tu contador antes de
 ejecutar cualquier estrategia."
 `;
 
@@ -155,14 +155,14 @@ exports.handler = async (event) => {
     // 28-sep-2026: sin sesión no hay IA (ver ai-chat).
     const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
     const quien = await usuarioDesdeToken(event);
-    if (!quien) return sinSesion(headers, "Iniciá sesión para usar el agente tributario.");
+    if (!quien) return sinSesion(headers, "Inicia sesión para usar el agente tributario.");
     const userId = quien.id;
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_KEY) {
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: "API key no configurada. Contactá al administrador." }),
+        body: JSON.stringify({ error: "API key no configurada. Contacta al administrador." }),
       };
     }
 

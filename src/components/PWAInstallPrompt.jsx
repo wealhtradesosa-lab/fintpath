@@ -149,7 +149,7 @@ export default function PWAInstallPrompt() {
             Hay una versión nueva
           </div>
           <div style={{ fontSize: 12, color: "#a1a1aa", marginTop: 2, lineHeight: 1.5 }}>
-            Recargá para verla. Tus datos están guardados.
+            Recarga para verla. Tus datos están guardados.
           </div>
         </div>
         <button onClick={() => window.location.reload()} style={{
@@ -318,7 +318,7 @@ export default function PWAInstallPrompt() {
                   Paso 1
                 </div>
                 <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5, marginBottom: 10 }}>
-                  Tocá el ícono <strong style={{ color: T.txt }}>Compartir</strong> en la barra inferior de Safari. Se ve así:
+                  Toca el ícono <strong style={{ color: T.txt }}>Compartir</strong> en la barra inferior de Safari. Se ve así:
                 </div>
                 <div
                   style={{
@@ -348,7 +348,7 @@ export default function PWAInstallPrompt() {
                   Paso 2
                 </div>
                 <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
-                  Bajá en la lista que aparece y tocá <strong style={{ color: T.txt }}>"Agregar a inicio"</strong>
+                  Baja en la lista que aparece y toca <strong style={{ color: T.txt }}>"Agregar a inicio"</strong>
                 </div>
               </div>
 
@@ -358,7 +358,7 @@ export default function PWAInstallPrompt() {
                   Paso 3
                 </div>
                 <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
-                  Tocá <strong style={{ color: T.txt }}>"Agregar"</strong> arriba a la derecha. Listo.
+                  Toca <strong style={{ color: T.txt }}>"Agregar"</strong> arriba a la derecha. Listo.
                 </div>
               </div>
 
@@ -373,7 +373,7 @@ export default function PWAInstallPrompt() {
                   marginBottom: 16,
                 }}
               >
-                💡 ¿No ves la barra inferior de Safari? Deslizá un poco hacia abajo en la página y aparece.
+                💡 ¿No ves la barra inferior de Safari? Desliza un poco hacia abajo en la página y aparece.
               </div>
 
               <button

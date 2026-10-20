@@ -120,7 +120,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
       {editando && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: tx2, marginBottom: 10 }}>
-            {isEN ? "1 · What are you after?" : "1 · ¿Qué querés lograr?"}
+            {isEN ? "1 · What are you after?" : "1 · ¿Qué quieres lograr?"}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 10, marginBottom: 18 }}>
             {Object.values(OBJETIVOS).map((o) => {
@@ -285,7 +285,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                     <div style={{ padding: "4px 0 12px 16px" }}>
                       {items.length === 0 ? (
                         <div style={{ fontSize: 12, color: tx3, fontStyle: "italic" }}>
-                          {isEN ? "No assets in this basket." : "No tenés activos en esta canasta."}
+                          {isEN ? "No assets in this basket." : "No tienes activos en esta canasta."}
                         </div>
                       ) : items.map((it, idx) => {
                         const totalPat = diag.porCanasta.proteccion + diag.porCanasta.mercado + diag.porCanasta.aspiracion;
@@ -315,7 +315,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                           {/* Reclasificar. El mapa de tipos es una heuristica
                               sobre una etiqueta elegida para otra cosa: un
                               "Real Estate" puede ser la casa donde vivis o un
-                              lote especulativo. Solo vos sabes cual. */}
+                              lote especulativo. Solo tú sabes cual. */}
                           {onReclasificar && it.id && (
                             <div style={{ display: "flex", gap: 5, marginTop: 6, flexWrap: "wrap" }}>
                               {["proteccion", "mercado", "aspiracion"].map((dest) => (
@@ -394,7 +394,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
           <div style={{ fontSize: 13, color: tx3 }}>
             {isEN
               ? "Add your assets to see how they compare against your goal."
-              : "Cargá tu patrimonio para ver cómo se compara con tu objetivo."}
+              : "Carga tu patrimonio para ver cómo se compara con tu objetivo."}
           </div>
         </div>
       )}
@@ -496,7 +496,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                     {fm(montoCanasta)}
                   </div>
                   <div style={{ fontSize: 11, color: tx3, marginBottom: 10 }}>
-                    {isEN ? "you have" : "tenés"} {fm(actual)}
+                    {isEN ? "you have" : "tienes"} {fm(actual)}
                     <span style={{ color: Math.abs(dif) < diag.total * 0.05 ? tx3 : (dif > 0 ? "#f97316" : "#3b82f6"),
                                    fontWeight: 700, marginLeft: 5 }}>
                       {dif > 0 ? "+" : ""}{fm(dif)}
@@ -522,7 +522,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
           nuevo norte e informar cuáles no cumplen"). Elegir un objetivo y ver
           dos barras no era un norte: faltaba el activo por activo.
           Se muestra QUÉ canasta ocupa cada uno y si aporta al objetivo, pero
-          NO se dice "vendé esto": recomendar operaciones concretas es asesoría
+          NO se dice "vende esto": recomendar operaciones concretas es asesoría
           de inversión. Es la diferencia entre un mapa y un chofer. */}
       {objetivo && !diag.vacio && diag.evaluados?.length > 0 && (
         <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20, marginTop: 16 }}>
@@ -653,7 +653,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                       )}
                       {a.manual && (
                         <span style={{ fontSize: 10, color: gn }}>
-                          {isEN ? "✓ your call" : "✓ lo definiste vos"}
+                          {isEN ? "✓ your call" : "✓ lo definiste tú"}
                         </span>
                       )}
                     </div>
