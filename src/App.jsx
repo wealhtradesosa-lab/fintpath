@@ -1,6 +1,6 @@
 import AvisoVersion from "./components/AvisoVersion";
 import InputDecimalEs from "./components/InputDecimalEs.jsx";
-import { fmtTasaEs } from "./lib/formato.js";
+import { fmtTasaEs, fmtAniosEs } from "./lib/formato.js";
 import LandingPage from "./components/LandingPage";
 import { fetchAuth } from "./lib/apiFetch";
 import BitcoinRetirementUS from "./components/BitcoinRetirementUS";
@@ -2537,7 +2537,7 @@ export default function FinPath(){
                 <span>Meta: {fm(fireNumber)}</span>
               </div>
               {fireProgress<100&&<div style={{fontSize:10,color:T.tx3,marginTop:6}}>
-                Te falta: {fm(fireNumber - t.nw)}. {(()=>{const a=añosParaMeta(t.nw,fireNumber,Math.max(0,t.cf),0.05);return a==null?"Con tu ahorro actual no se proyecta alcanzarlo — genera ahorro mensual positivo.":"Proyectado a 5% real anual"+(t.cf>0?" ("+fm(t.cf)+"/mes de ahorro)":", solo con tu patrimonio actual")+", llegas en ~"+(a<1?"menos de 1":(Math.round(a*10)/10))+" años.";})()}
+                Te falta: {fm(fireNumber - t.nw)}. {(()=>{const a=añosParaMeta(t.nw,fireNumber,Math.max(0,t.cf),0.05);return a==null?"Con tu ahorro actual no se proyecta alcanzarlo — genera ahorro mensual positivo.":"Proyectado a 5% real anual"+(t.cf>0?" ("+fm(t.cf)+"/mes de ahorro)":", solo con tu patrimonio actual")+", llegas en ~"+(a<1?"menos de 1":fmtAniosEs(a))+" años.";})()}
               </div>}
               {fireProgress>=100&&<div style={{fontSize:11,color:T.gn,fontWeight:700,marginTop:6}}>
                 🏆 ¡Ya superaste tu FIRE number! Técnicamente puedes dejar de trabajar y vivir de tu patrimonio por 25+ años.
@@ -2550,7 +2550,7 @@ export default function FinPath(){
               const totalDeuda = deudas.reduce((s,d) => s + d.mt, 0);
               const totalCuota = deudas.reduce((s,d) => s + d.pg, 0);
               const { meses: mesesLibre, algunaNoAmortiza } = mesesLibreDeuda(deudas);
-              const aniosLibre = (mesesLibre / 12).toFixed(1);
+              const aniosLibre = fmtAniosEs(mesesLibre / 12);
               const fechaLibre = new Date();
               fechaLibre.setMonth(fechaLibre.getMonth() + mesesLibre);
               const fechaStr = fechaLibre.toLocaleDateString("es-CO", {month:"long", year:"numeric"});
@@ -2620,7 +2620,7 @@ export default function FinPath(){
                 hitos.push({name:"FIRE number (25× gastos)",target:fireNumber,current:t.nw,icon:"🔥"});
                 // Milestone 5: Absolute freedom (2.5x gastos)
                 const absol = t.gfm * 12 * 62.5;
-                hitos.push({name:"Libertad absoluta (62.5× gastos)",target:absol,current:t.nw,icon:"👑"});
+                hitos.push({name:"Libertad absoluta (62,5× gastos)",target:absol,current:t.nw,icon:"👑"});
                 
                 return hitos.map((h,i) => {
                   const prog = h.target > 0 ? Math.min((h.current / h.target) * 100, 100) : 0;
@@ -3101,7 +3101,7 @@ export default function FinPath(){
           const fireN = t.gfm * 12 * 25;
           const fireP = fireN > 0 ? (t.nw / fireN * 100) : 0;
           if (fireP >= 100) alerts.push({type:"🟢",title:"FIRE alcanzado — libertad financiera",msg:"Tu patrimonio supera tu FIRE number. Técnicamente puedes vivir de tus activos por 25+ años sin trabajar.",cat:"Libertad"});
-          else if (fireP >= 70) { const aF=añosParaMeta(t.nw,fireN,Math.max(0,t.cf),0.05); alerts.push({type:"🟢",title:"FIRE al "+fmtPctEs(fireP, 0)+" — muy cerca",msg:"Te falta "+fm(fireN - t.nw)+" para la independencia total. "+(aF!=null?"Proyectado a 5% real anual, llegas en ~"+(aF<1?"menos de 1":Math.round(aF*10)/10)+" años.":"Genera ahorro mensual positivo para proyectarlo."),cat:"Progreso"}); }
+          else if (fireP >= 70) { const aF=añosParaMeta(t.nw,fireN,Math.max(0,t.cf),0.05); alerts.push({type:"🟢",title:"FIRE al "+fmtPctEs(fireP, 0)+" — muy cerca",msg:"Te falta "+fm(fireN - t.nw)+" para la independencia total. "+(aF!=null?"Proyectado a 5% real anual, llegas en ~"+(aF<1?"menos de 1":fmtAniosEs(aF))+" años.":"Genera ahorro mensual positivo para proyectarlo."),cat:"Progreso"}); }
 
           if (alerts.length === 0) alerts.push({type:"🟢",title:"Sin alertas",msg:"Tu situación financiera está bien balanceada. Sigue monitoreando mensualmente.",cat:"General"});
 
