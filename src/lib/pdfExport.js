@@ -49,7 +49,7 @@ export async function exportarBorradorPDF(user, owner, estimacion, ano = 2025) {
   ]);
 
   if (!owner) {
-    alert("Seleccioná un owner fiscal antes de exportar.");
+    alert("Selecciona un owner fiscal antes de exportar.");
     return;
   }
 

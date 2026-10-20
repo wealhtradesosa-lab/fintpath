@@ -325,6 +325,36 @@
            CompleteRegistration (signup) · InitiateCheckout (upgrade)
          ───────────────────────────────────────────────────────────────── -->
     <script>
+      // 11-oct-2026: nada secreto de la URL puede llegar a GA4, Google Ads,
+      // ccm ni Meta (QA vio el token en top=, dl= y dr=). Antes de cargar
+      // cualquier tracker:
+      //  · /invite/<token>: el token se guarda en memoria y la URL pasa a
+      //    /invite/_ (la app lo lee de window.__fpInviteToken).
+      //  · ?session_id=cs_… (regreso de Stripe): igual, a
+      //    window.__fpStripeSessionId, y se quita de la URL.
+      //  · Retorno de auth de Supabase (?code=, #access_token…): no se puede
+      //    tocar la URL (Supabase la lee), así que en esa carga NO se carga
+      //    ningún tracker.
+      (function () {
+        var l = window.location;
+        var path = l.pathname, q = new URLSearchParams(l.search), cambio = false;
+        var m = path.match(/^\/invite\/([A-Za-z0-9_-]+)\/?$/);
+        if (m && m[1] !== "_") { window.__fpInviteToken = m[1]; try { sessionStorage.setItem("fp3_invite_token", m[1]); } catch (e) {} path = "/invite/_"; cambio = true; }
+        // Fuera de /invite el token viejo no debe sobrevivir en la pestaña.
+        if (!m) { try { sessionStorage.removeItem("fp3_invite_token"); } catch (e) {} }
+        if (q.has("session_id")) { window.__fpStripeSessionId = q.get("session_id"); q.delete("session_id"); cambio = true; }
+        if (cambio) {
+          var qs = q.toString();
+          try { history.replaceState(history.state, "", path + (qs ? "?" + qs : "") + l.hash); } catch (e) {}
+        }
+        var sensible = ["token", "code", "access_token", "refresh_token", "email", "token_hash"].some(function (k) { return q.has(k); })
+          || /access_token|refresh_token|token_hash/.test(l.hash);
+        window.__fpSinTrackers = sensible;
+        window.__fpSinPixel = sensible || path.indexOf("/invite/") === 0;
+      })();
+    </script>
+    <script>
+      if (!window.__fpSinPixel) {
       !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
       n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
       n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
@@ -332,18 +362,24 @@
       document,'script','https://connect.facebook.net/en_US/fbevents.js');
       fbq('init', '1637963763961269');
       fbq('track', 'PageView');
+      }
     </script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-51CV6PWRLT"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-51CV6PWRLT', {
-        // anonymize_ip cumple con GDPR/Ley 1581 Colombia (privacidad)
-        anonymize_ip: true,
-        send_page_view: true,
-      });
-      gtag('config', 'AW-613365221');
+      if (!window.__fpSinTrackers) {
+        var gs = document.createElement("script");
+        gs.async = true;
+        gs.src = "https://www.googletagmanager.com/gtag/js?id=G-51CV6PWRLT";
+        document.head.appendChild(gs);
+        gtag('js', new Date());
+        gtag('config', 'G-51CV6PWRLT', {
+          // anonymize_ip cumple con GDPR/Ley 1581 Colombia (privacidad)
+          anonymize_ip: true,
+          send_page_view: true,
+        });
+        gtag('config', 'AW-613365221');
+      }
     </script>
     <script type="application/ld+json">
     {
@@ -353,7 +389,7 @@
         {"@type": "Question", "name": "¿Qué es FINPATHIA?", "acceptedAnswer": {"@type": "Answer", "text": "FINPATHIA es una plataforma de gestión patrimonial con inteligencia artificial. Centraliza inversiones, ingresos, gastos y deudas en un solo lugar, simula escenarios financieros y ofrece asesoría personalizada con IA para familias que buscan libertad financiera."}},
         {"@type": "Question", "name": "¿Qué es un family office personal?", "acceptedAnswer": {"@type": "Answer", "text": "Un family office personal es un sistema que gestiona todo tu patrimonio como lo hacen las familias más ricas del mundo: consolidación de activos, análisis de rendimiento, simulación de escenarios, optimización tributaria y planificación de retiro. FINPATHIA lo hace accesible con inteligencia artificial."}},
         {"@type": "Question", "name": "¿Cómo funciona el simulador financiero?", "acceptedAnswer": {"@type": "Answer", "text": "El simulador de FINPATHIA toma tus datos reales de ingresos, gastos y patrimonio, y proyecta escenarios a futuro. Puedes simular qué pasa si vendes un activo, si aumentas tus ingresos, si reduces gastos, o si cambias tu estrategia de inversión."}},
-        {"@type": "Question", "name": "¿FINPATHIA es seguro?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. Toda la información está protegida con encriptación. Solo tú puedes acceder a tus datos financieros. No compartimos información con terceros."}},
+        {"@type": "Question", "name": "¿FINPATHIA es seguro?", "acceptedAnswer": {"@type": "Answer", "text": "Tus datos viajan cifrados (HTTPS) y se guardan cifrados en el servidor de nuestro proveedor. No vendemos tus datos. Los compartimos solo con los proveedores que operan el servicio (pagos, base de datos, correo e IA) y usamos Google y Meta para medir nuestros anuncios. El detalle está en finpathia.com/privacidad."}},
         {"@type": "Question", "name": "¿Cuánto cuesta FINPATHIA?", "acceptedAnswer": {"@type": "Answer", "text": "FINPATHIA ofrece 14 días gratis del plan Pro Familiar completo, sin tarjeta de crédito. Después puedes continuar con el plan gratuito o suscribirte a Pro Familiar por 27 USD al mes, o 243 USD al año con 25% de descuento."}},
         {"@type": "Question", "name": "¿Qué son los 5 niveles de libertad financiera?", "acceptedAnswer": {"@type": "Answer", "text": "Los 5 niveles son: Seguridad (cubres lo básico), Vitalidad (tienes margen), Independencia (ingresos superan gastos), Libertad (generas el doble de lo que necesitas) y Libertad Absoluta (más del 250% de cobertura). FINPATHIA calcula tu nivel automáticamente."}}
       ]

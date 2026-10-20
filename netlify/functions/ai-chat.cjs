@@ -39,7 +39,7 @@ const KNOWLEDGE_CO = `
 - FBAR (FinCEN 114): obligatorio reportar si cuentas en exterior >$10,000
 - FATCA (Form 8938): reporte si activos >$200K (soltero) o >$400K (casado)
 - Estate tax USA: aplica a non-residents con activos USA >$60,000. Tarifa hasta 40%
-- Solución: LLC + Trust revocable para propiedades USA = evita probate y reduce estate tax
+- Solución: LLC + Trust revocable para propiedades USA = evita pruébate y reduce estate tax
 - Rental income USA: se reporta en Form 1040-NR
 - Tax treaty Colombia-USA: crédito tributario para evitar doble imposición
 
@@ -180,7 +180,7 @@ const KNOWLEDGE_US = `
 - House hacking: live in part of duplex/triplex, deduct rest as rental
 - BRRRR: Buy, Rehab, Rent, Refinance, Repeat
 
-7. TAX OPTIMIZATION STRATEGIES:
+7. TAX PLANNING CONSIDERATIONS (estimates, not promised savings):
 - Tax-loss harvesting: realize losses to offset gains, $3K/year against ordinary income
 - Asset location: tax-inefficient assets (bonds, REITs) in retirement accounts
 - Roth conversion ladder: convert Trad IRA to Roth in low-income years (early retirement)
@@ -207,7 +207,7 @@ const KNOWLEDGE_US = `
 - Lifetime gift exemption: same as estate ($13.99M, unified)
 - Step-up in basis: heirs receive assets at FMV at death (massive tax benefit on appreciated assets)
 - State estate tax: 12 states + DC have separate estate tax (MA, OR, WA, NY, etc.)
-- Revocable Living Trust: avoids probate, public, doesn't reduce taxes
+- Revocable Living Trust: avoids pruébate, public, doesn't reduce taxes
 - Irrevocable trusts (ILIT, GRAT, IDGT, SLAT): asset protection, gift/estate tax planning
 - 529 plans: not in estate, 5-year forward contribution allowed ($95K/recipient single)
 - Beneficiary designations OVERRIDE will (401k, IRA, life insurance) — must update after divorce
@@ -312,10 +312,52 @@ REGLAS DE RESPUESTA:
 6. Si mencionas un %, calcula también el monto en pesos
 7. Identifica riesgos que el usuario puede no ver
 8. Si aplica, menciona implicaciones tributarias
-9. Prioriza: liquidez → protección → crecimiento → optimización fiscal
+9. Prioriza: liquidez → protección → crecimiento → revisión fiscal
 10. Si no tienes datos suficientes, di exactamente qué falta
 11. Nunca digas "consulta un asesor" — TÚ eres el asesor
 12. Si el usuario pregunta algo fuera de finanzas, redirige amablemente`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// 11-oct-2026 — EVENTO advisor_used (una vez por persona, durante la prueba)
+// La primera vez que alguien en prueba le pregunta al Asesor IA se marca
+// accounts.advisor_first_used_at (solo si estaba vacío) y se emite
+// "advisor_used" por el mismo camino que "activation" (GA4 MP o log).
+// Nunca lleva el texto de la pregunta, montos ni user_id. Corre en paralelo
+// a la llamada a Anthropic y cualquier error se traga: jamás frena ni rompe
+// el chat. Antes de aplicar la migración la columna no existe: el PATCH
+// falla, se loguea y el chat sigue igual.
+// ════════════════════════════════════════════════════════════════════════════
+async function marcarAsesorUsado(userId, cookieHeader) {
+  try {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (!url || !key || !userId) return;
+    const hoy = new Date(Date.now() - 5 * 3600000).toISOString().slice(0, 10); // fecha COT
+    // Solo cuentas en prueba: plan free con trial_end vigente.
+    const r = await fetch(
+      `${url}/rest/v1/accounts?owner_user_id=eq.${encodeURIComponent(userId)}` +
+      `&advisor_first_used_at=is.null&plan=eq.free&trial_end=gte.${hoy}`,
+      {
+        method: "PATCH",
+        headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=representation" },
+        body: JSON.stringify({ advisor_first_used_at: new Date().toISOString() }),
+      }
+    );
+    if (!r.ok) { console.warn("[ai-chat] advisor_used PATCH status", r.status); return; }
+    const filas = await r.json();
+    if (!Array.isArray(filas) || filas.length === 0) return; // ya marcado o no está en prueba
+    const { emitirEvento, clientIdDesdeCookie } = require("../lib/ga4.cjs");
+    const f = filas[0];
+    await emitirEvento({
+      nombre: "advisor_used",
+      clientId: clientIdDesdeCookie(cookieHeader),
+      utm: f.entry_utm || {},
+      angulo: f.entry_angle || null,
+    });
+  } catch (e) {
+    console.warn("[ai-chat] advisor_used falló (no afecta el chat):", e?.message || e);
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -337,7 +379,7 @@ exports.handler = async (event) => {
     // arranque en frío: presupuesto de Anthropic abierto a quien quisiera.
     const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
     const quien = await usuarioDesdeToken(event);
-    if (!quien) return sinSesion(headers, "Iniciá sesión para usar el asesor con IA.");
+    if (!quien) return sinSesion(headers, "Inicia sesión para usar el asesor con IA.");
     const userId = quien.id;
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_KEY) {
@@ -361,6 +403,9 @@ exports.handler = async (event) => {
       return { statusCode: 429, headers, body: JSON.stringify({ error: errMsg, remaining: 0 }) };
     }
 
+    // advisor_used: arranca en paralelo, sin await (ver marcarAsesorUsado).
+    const pAsesorUsado = marcarAsesorUsado(userId, event.headers?.cookie || event.headers?.Cookie).catch(() => {});
+
     // System prompt según jurisdicción
     const systemPrompt = buildSystemPrompt({ jurisdiction, financialContext, taxConfig });
 
@@ -383,6 +428,9 @@ exports.handler = async (event) => {
     if (data.error) return { statusCode: 400, headers, body: JSON.stringify({ error: data.error.message, remaining }) };
 
     const reply = data.content?.map((b) => b.text || "").join("") || "Sin respuesta";
+    // Le damos como mucho 300 ms extra para terminar (normalmente ya terminó
+    // mientras respondía Anthropic). Nunca bloquea la respuesta.
+    await Promise.race([pAsesorUsado, new Promise((r) => setTimeout(r, 300))]);
     return { statusCode: 200, headers, body: JSON.stringify({ reply, remaining }) };
   } catch (e) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };

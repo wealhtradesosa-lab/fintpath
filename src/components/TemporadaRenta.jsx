@@ -119,7 +119,7 @@ export default function TemporadaRenta({ onEmpezar }) {
 
       {/* NOTA PARA SANTIAGO: los textos de abajo son funcionales, escritos
           para que la herramienta se entienda. La voz de la marca es tuya --
-          reemplazá lo que quieras sin tocar la lógica. */}
+          reemplaza lo que quieras sin tocar la lógica. */}
       <div style={{ fontSize: 11, color: T.orange, fontWeight: 700,
         letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 8 }}>
         Declaración de renta 2026
@@ -130,7 +130,7 @@ export default function TemporadaRenta({ onEmpezar }) {
         ¿Cuándo te toca declarar?
       </h3>
       <p style={{ fontSize: 14, color: T.txt2, margin: "0 0 20px", lineHeight: 1.6 }}>
-        Escribí los dos últimos dígitos de tu cédula. No pedimos el número completo,
+        Escribe los dos últimos dígitos de tu cédula. No pedimos el número completo,
         ni tu nombre, ni tu correo: la cuenta se hace en tu navegador.
       </p>
 
@@ -224,7 +224,7 @@ export default function TemporadaRenta({ onEmpezar }) {
         tributario de la DIAN para personas naturales, año gravable 2025. Esta herramienta
         es informativa y no constituye asesoría tributaria, contable ni legal. No verifica
         tu situación particular: no sabe si estás obligado a declarar, ni bajo qué régimen,
-        ni qué otros plazos te aplican. Confirmá siempre tu fecha y tu obligación en{" "}
+        ni qué otros plazos te aplican. Confirma siempre tu fecha y tu obligación en{" "}
         <a href="https://www.dian.gov.co" target="_blank" rel="noopener noreferrer"
            style={{ color: T.green }}>dian.gov.co</a>{" "}
         o con tu contador. La responsabilidad de presentar tu declaración a tiempo es tuya.

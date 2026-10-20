@@ -176,7 +176,7 @@ fintpath/
 
 ## 🔐 Política de privacidad y seguridad
 
-- 🔒 Encriptación E2E de datos sensibles
+- 🔒 Datos cifrados en tránsito (HTTPS) y en reposo (Supabase). Sin cifrado de extremo a extremo: `E2E.encrypt` no se usa.
 - 🛡️ Row-Level Security en Supabase
 - 🔑 Service-role keys solo en serverless functions (nunca en frontend)
 - 💳 PCI compliance via Stripe (no almacenamos tarjetas)

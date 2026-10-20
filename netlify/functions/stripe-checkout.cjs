@@ -2,11 +2,13 @@
 // FINPATHIA · Stripe Checkout (universal — multi-plan)
 //
 // Crea una checkout session para cualquier plan. Recibe priceId del frontend
-// y el resto lo resuelve en el server. Soporta trial 14 días para Pro Familiar
-// vía detección por priceId.
+// y el resto lo resuelve en el server.
+//
+// SIN PRUEBA EN CHECKOUT (11-oct-2026): la prueba de 14 días Pro la da la
+// app al registrarse. Checkout cobra de inmediato el primer periodo.
 //
 // PAYLOAD ESPERADO (POST JSON):
-//   { priceId, email, userId, successUrl, cancelUrl }
+//   { priceId, email, userId, successUrl, cancelUrl, promotionCode? }
 //
 // RESPUESTA:
 //   { url: "https://checkout.stripe.com/..." }   ← redirect del frontend
@@ -14,31 +16,51 @@
 //
 // ENV VARS:
 //   STRIPE_SECRET_KEY              (requerida — sin ella nada funciona)
-//   STRIPE_PRICE_PRO_FAMILIAR_*    (opcional — si están seteadas, esos
-//                                    priceIds reciben trial 14 días auto)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const Stripe = require("stripe");
 
-// Trial period en días para Pro Familiar. Si querés cambiarlo (ej: 7 días),
-// modificá esta constante. Si querés desactivar trial, ponela en 0.
-const TRIAL_DAYS = 14; // aplica a todos los planes desde 25-jul-2026
-const PRO_FAMILIAR_TRIAL_DAYS = TRIAL_DAYS; // compat: usado por isProFamiliarPrice y logs
+// 11-oct-2026 — Sin segunda prueba en Checkout.
+// Todo el que llega a Checkout ya tuvo los 14 días Pro de la app (el trial
+// se da al registrarse; un usuario anónimo no puede abrir Checkout). Antes
+// Checkout sumaba otros 14 días con trial_period_days, así que quien pagaba
+// el día 13 recién se cobraba hacia el día 27. Ahora el primer cobro es
+// inmediato. No se envía trial_period_days, trial_end, trial_settings ni
+// trial_from_plan: sin trial_from_plan, Checkout ignora cualquier prueba
+// configurada a nivel de precio en Stripe.
+//
+// El bloque de trial se agregó el 25-jul-2026 con un comentario que decía
+// que Stripe no da una segunda prueba a la misma tarjeta. Es falso: Stripe
+// no hace esa verificación por defecto. isProFamiliarPrice() solo servía
+// para ese trial y nadie más la usaba, así que también se quitó.
 
-// Detecta si un priceId pertenece a Pro Familiar comparando contra las env vars.
-// Si las env vars no están seteadas (deploy nuevo), detecta por hardcoded
-// fallback de los priceIds conocidos.
-function isProFamiliarPrice(priceId) {
-  // Fallback hardcoded — los priceIds reales de Live mode
-  const fallbackProFamiliar = [
-    "price_1TRC9mKEnhNr9wQdQr9gsRot",  // mensual
-    "price_1TRCCaKEnhNr9wQdpWlaXP0r",  // anual
-  ];
-  if (fallbackProFamiliar.includes(priceId)) return true;
-  // Comprobación dinámica vía env vars (preferido para test/live switch)
-  if (process.env.STRIPE_PRICE_PRO_FAMILIAR_MENSUAL === priceId) return true;
-  if (process.env.STRIPE_PRICE_PRO_FAMILIAR_ANUAL === priceId) return true;
-  return false;
+// Arma los parámetros de la sesión de Checkout. Función pura (sin llamadas
+// a Stripe) para poder testear que nunca lleva prueba.
+function buildSessionParams({ priceId, email, userId, successUrl, cancelUrl }) {
+  // Construcción de la session (sin prueba: el primer cobro es inmediato).
+  // metadata.userId es CRÍTICO — el webhook lo usa para identificar al
+  // usuario y crear la account correcta.
+  return {
+    mode: "subscription",
+    payment_method_types: ["card"],
+    customer_email: email,
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: successUrl || "https://finpathia.com/?success=true",
+    cancel_url: cancelUrl || "https://finpathia.com/?canceled=true",
+    metadata: { userId: userId || "" },
+    // Permite a Stripe enviar el priceId también en el subscription metadata,
+    // útil para el webhook al reintentar / debugging.
+    subscription_data: {
+      metadata: { userId: userId || "", priceId },
+    },
+    // Activa el campo "Add promotion code" en la página de Stripe Checkout.
+    // Cuando un user tiene un código (ej: 10AMPRO-ALPHAS para community),
+    // lo ingresa ahí y Stripe valida automáticamente. Si el código aplica
+    // 100% off por 3 meses, la primera factura es de $0 (no por prueba,
+    // por el descuento) y se le cobra el monto normal a partir del mes 4.
+    // Crear los códigos desde Stripe Dashboard → Coupons → Promotion codes.
+    allow_promotion_codes: true,
+  };
 }
 
 exports.handler = async (event) => {
@@ -76,7 +98,7 @@ exports.handler = async (event) => {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: "email requerido — completá tu perfil antes de suscribirte",
+          error: "email requerido — completa tu perfil antes de suscribirte",
         }),
       };
     }
@@ -88,49 +110,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // Construcción de la session. Trial period solo para Pro Familiar.
-    // metadata.userId es CRÍTICO — el webhook lo usa para identificar al
-    // usuario y crear la account correcta.
-    const sessionParams = {
-      mode: "subscription",
-      payment_method_types: ["card"],
-      customer_email: cleanEmail,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl || "https://finpathia.com/?success=true",
-      cancel_url: cancelUrl || "https://finpathia.com/?canceled=true",
-      metadata: { userId: userId || "" },
-      // Permite a Stripe enviar el priceId también en el subscription metadata,
-      // útil para el webhook al reintentar / debugging.
-      subscription_data: {
-        metadata: { userId: userId || "", priceId },
-      },
-      // Activa el campo "Add promotion code" en la página de Stripe Checkout.
-      // Cuando un user tiene un código (ej: 10AMPRO-ALPHAS para community),
-      // lo ingresa ahí y Stripe valida automáticamente. Si el código aplica
-      // 100% off por 3 meses sobre Pro Familiar, el user ve "$0 today" y
-      // se le cobra el monto normal a partir del mes 4.
-      // Crear los códigos desde Stripe Dashboard → Coupons → Promotion codes.
-      allow_promotion_codes: true,
-    };
-
-    // 25-jul-2026 — Trial de 14 días para TODOS los planes.
-    // Antes solo lo tenía Pro Familiar: quien compraba Pro o Básico pagaba
-    // desde el primer día, mientras toda la app le prometía "probalo gratis".
-    // Incoherente, y castigaba justo a quien elegía el plan más barato.
-    // Nota: si el usuario ya tuvo trial con la misma tarjeta, Stripe lo
-    // detecta y no otorga un segundo trial.
-    if (TRIAL_DAYS > 0) {
-      sessionParams.subscription_data.trial_period_days = TRIAL_DAYS;
-      // Importante: si el trial expira sin método de pago válido, cancelamos
-      // la subscription en lugar de cobrarle a la fuerza al usuario.
-      sessionParams.subscription_data.trial_settings = {
-        end_behavior: { missing_payment_method: "cancel" },
-      };
-      // Si pedimos tarjeta opcional durante el trial, payment_method_collection
-      // = "if_required" evita pedir tarjeta hasta que el trial termine. Pero
-      // ESO requiere un default payment method al final, complicado. Por ahora
-      // pedimos tarjeta upfront (default behavior), que es más simple.
-    }
+    const sessionParams = buildSessionParams({ priceId, email: cleanEmail, userId, successUrl, cancelUrl });
 
     // ─────────────────────────────────────────────────────────────────────
     // Sesión 2-may-2026: campaña Pioneros 2026
@@ -144,7 +124,7 @@ exports.handler = async (event) => {
     //
     // allow_promotion_codes: true Y discounts son MUTUAMENTE EXCLUYENTES en
     // Stripe — si pre-aplicamos un código, el campo input desaparece. Esto
-    // está OK para la flow de Pioneros (ya tenés el código aplicado).
+    // está OK para la flow de Pioneros (ya tienes el código aplicado).
     // ─────────────────────────────────────────────────────────────────────
     const promotionCode = (body.promotionCode || "").trim().toUpperCase();
     if (promotionCode) {
@@ -185,3 +165,5 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
+
+exports.buildSessionParams = buildSessionParams;

@@ -107,7 +107,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
               { icon: "🖥️", title: "Simulador con Sliders", desc: "Ajusta cada ingreso y gasto individualmente. La barra de libertad financiera reacciona en tiempo real.", color: T.purple },
               { icon: "🏛️", title: "Pensiones Colombia", desc: "Cálculo actuarial real: Colpensiones (Ley 797/2003), Fondo Privado, comparador lado a lado.", color: T.cyan },
               { icon: "₿", title: "Ahorro con Bitcoin", desc: "Simulador DCA con CAGR, regla 4% de retiro, proyección año por año. Inspirado en @AndresFelArias.", color: T.orange },
-              { icon: "🤖", title: "Asesor Financiero IA", desc: "Agente inteligente que analiza tu patrimonio real: simula escenarios, optimiza impuestos, identifica riesgos y te da recomendaciones con montos exactos.", color: T.gold },
+              { icon: "🤖", title: "Asesor Financiero IA", desc: "Agente inteligente que analiza tu patrimonio real: simula escenarios, identifica riesgos y te orienta con tus propios números. Es orientación, no una recomendación de inversión.", color: T.gold },
               // 26-jul-2026 — TARJETA DE TRADING REMOVIDA. Prometía "Conecta tu
               // broker favorito", algo que la plataforma NUNCA hizo: las
               // posiciones siempre fueron manuales. La sección además se ocultó
@@ -115,7 +115,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
               // integración inexistente en la portada es la peor clase de
               // promesa: la primera que el usuario intenta y no encuentra.
               { icon: "💳", title: "Gastos & Deudas", desc: "Categorización inteligente, gastos fijos vs variables, deudas vinculadas a activos.", color: T.red },
-              { icon: "🧾", title: "Planeación Tributaria", desc: "Estima impuestos por propietario fiscal. Clasificación DIAN automática y recomendaciones de optimización.", color: T.purple },
+              { icon: "🧾", title: "Planeación Tributaria", desc: "Estima impuestos por propietario fiscal. Clasificación DIAN sugerida que puedes revisar con tu contador.", color: T.purple },
             ].map((f) => (
               <div key={f.title} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 16, padding: 28, transition: "border-color 0.2s" }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: f.color + "12", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>{f.icon}</div>
@@ -189,13 +189,13 @@ export default function LandingPage({ onGetStarted, onLogin }) {
       <Section style={{ padding: "80px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>Tu privacidad es nuestra prioridad</h2>
-          <p style={{ fontSize: 15, color: T.txt2, maxWidth: 480, margin: "0 auto" }}>Construido con los más altos estándares de seguridad financiera</p>
+          <p style={{ fontSize: 15, color: T.txt2, maxWidth: 480, margin: "0 auto" }}>Esto es lo que hacemos, y lo que no, con tus datos</p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, maxWidth: 900, margin: "0 auto" }}>
           {[
-            { i: "🔐", t: "Encriptación End-to-End", d: "Tus datos se encriptan con tu contraseña. Ni nosotros podemos leerlos. Nivel Signal." },
-            { i: "👤", t: "Sin registro obligatorio", d: "Usa la plataforma completa sin crear cuenta. Tus datos nunca salen de tu navegador." },
-            { i: "🚫", t: "No vendemos datos", d: "Cero publicidad, cero tracking financiero, cero venta de información." },
+            { i: "🔐", t: "Datos cifrados", d: "Tus datos viajan por HTTPS y se guardan cifrados en el servidor de nuestro proveedor." },
+            { i: "👤", t: "Prueba sin crear cuenta", d: "Explora sin registrarte. Lo que cargas se guarda en tu navegador hasta que crees una cuenta." },
+            { i: "🚫", t: "No vendemos datos", d: "Sin publicidad dentro de la app y sin venta de información. Usamos Google y Meta para medir nuestros anuncios." },
             { i: "✊", t: "Tú mandas", d: "Exporta, borra o lleva tus datos cuando quieras. Sin contratos." },
           ].map((item) => (
             <div key={item.t} style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 16, padding: "28px 16px", textAlign: "center" }}>
