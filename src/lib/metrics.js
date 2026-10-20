@@ -140,11 +140,19 @@ export function calcularBase(d = {}) {
   let aportesObligatorios = 0, gastosVida = 0;
   const costoPorActivo = {};
   let costoInmuebleSinVinculo = 0;
+  // Origen de la renta del activo (`rentaOrigen`): 'manual' = el usuario escribió
+  // el % y ya es neta → se usa tal cual: sus gastos vinculados (administración,
+  // predial, mantenimiento) NO se descuentan de nuevo ni van a G (ya están dentro
+  // de la renta neta). 'derivada' o sin indicador (activos viejos) = bruta.
+  const manualIds = new Set(inv.filter((x) => x.rentaOrigen === "manual").map((x) => x.id));
+  let costosAbsorbidosManual = 0;
   Object.entries(gastos || {}).forEach(([cat, items]) => {
     (items || []).forEach((g) => {
       if (!g || g.sim === false) return;
       const m = mensualGasto(g, trm);
-      if (g.activoId && rentaPorActivo[g.activoId] != null) {
+      if (g.activoId && manualIds.has(g.activoId) && rentaPorActivo[g.activoId] != null) {
+        costosAbsorbidosManual += m;
+      } else if (g.activoId && rentaPorActivo[g.activoId] != null) {
         costoPorActivo[g.activoId] = (costoPorActivo[g.activoId] || 0) + m;
       } else if (!g.activoId && esGastoInmuebleArrendado(cat, g) && rentaSinVinculo > 0) {
         costoInmuebleSinVinculo += m;
@@ -167,6 +175,11 @@ export function calcularBase(d = {}) {
     costosNeteados += usado; excesoCostos += costoInmuebleSinVinculo - usado;
   }
   const ip = Math.max(0, ipBruto - costosNeteados);
+  // Renta neta mensual por activo vinculado (renta − costos propios, piso 0).
+  const rentaNetaPorActivo = {};
+  Object.keys(rentaPorActivo).forEach((id) => {
+    rentaNetaPorActivo[id] = Math.max(0, rentaPorActivo[id] - (costoPorActivo[id] || 0));
+  });
 
   const retencionMensual = num(d.retencionMensual);
   const impuestoNeto = num(d.impuestoNeto);
@@ -193,20 +206,29 @@ export function calcularBase(d = {}) {
   });
   const invertibles = invertiblesLista.reduce((s, i) => s + valorActivo(i), 0);
 
-  const ingresoTotal = iaBruto + ipBruto; // bruto: base de % sobre ingreso
+  const ingresoTotal = iaBruto + ipBruto; // bruto: solo para la composición activo/pasivo
+  // Ingreso NETO de retención: base única de ahorro y carga de deuda. El flujo
+  // libre (fl) ya es neto de retención, así que el denominador debe serlo también.
+  // La retención no se vuelve a restar en el saldo a pagar de Renta (impuestoNeto ya viene neto).
+  const ingresoNeto = ia + ipBruto;
+  const ahorroPct = ingresoNeto > 0 ? (fl / ingresoNeto) * 100 : 0;
+  const cargaDeudaPct = ingresoNeto > 0 ? (sd / ingresoNeto) * 100 : 0;
   return {
     trm,
-    iaBruto, ia, ipBruto, ip, costosNeteados,
+    iaBruto, ia, ipBruto, ip, costosNeteados, costosAbsorbidosManual,
     g, sd, ob, fl,
     aportesObligatorios, gastosVida, impuestoNeto, retencionMensual,
-    ingresoTotal,
+    ingresoTotal, ingresoNeto, ahorroPct, cargaDeudaPct,
     // % del ingreso que no depende del trabajo (composición, sobre bruto)
     pctIngresoPasivo: ingresoTotal > 0 ? (ipBruto / ingresoTotal) * 100 : 0,
     // Cobertura pasiva = IP / OB (el índice del nivel)
     coberturaPasiva: ob > 0 ? (ip / ob) * 100 : 0,
     activosTotal, deudaTotal, patrimonioNeto,
     liquidos, colchonMeses, invertibles, invertiblesIds: invertiblesLista.map((i) => i.id),
-    rentaPorActivo, detallePasivo,
+    rentaPorActivo, rentaNetaPorActivo, detallePasivo,
+    // Valorización anual declarada (campo opcional `valorizacionPct` del activo).
+    valorizacionAnual: inv.reduce((s, i) => s + valorActivo(i) * (num(i.valorizacionPct) / 100), 0),
+    inv,
   };
 }
 
@@ -260,4 +282,113 @@ const NIVEL_VACIO = { nombre: null, data: null, siguiente: null, faltaIPSiguient
 export function calcularMetricas(d = {}) {
   const base = calcularBase(d);
   return { ...base, nivel: nivelLibertad(base) };
+}
+
+// ─── Salud financiera 0–100 (spec §2) ─────────────────────────────────────
+const interp = (x, x0, x1) => {   // lineal: x0→0, x1→100 (x1<x0 invierte); acotado
+  const t = (x - x0) / (x1 - x0);
+  return Math.max(0, Math.min(1, t)) * 100;
+};
+export const BANDAS_SALUD = [
+  { min: 80, nombre: "Excelente" }, { min: 60, nombre: "Buena" },
+  { min: 40, nombre: "Frágil" },    { min: 0,  nombre: "Crítica" },
+];
+export function saludFinanciera(b) {
+  // Sin ingresos ni obligaciones cargados no hay nada que puntuar: antes una cuenta vacía sacaba 40 por
+  // «deuda 0» y «apalancamiento 0».
+  if (b.ingresoNeto != null && !(b.ingresoNeto > 0) && !(b.ob > 0)) return { score: null, banda: "Sin datos", componentes: {}, candado: null };
+  // Misma base (ingreso neto de retención) en numerador y denominador.
+  const ahorroPct = b.ahorroPct != null ? b.ahorroPct : 0;
+  const deudaPct = b.cargaDeudaPct != null ? b.cargaDeudaPct : 0;
+  const dA = b.activosTotal > 0 ? (b.deudaTotal / b.activosTotal) * 100 : 0;
+  const col = b.colchonMeses == null ? 0 : b.colchonMeses;
+  const cob = b.coberturaPasiva || 0;
+  const comp = {
+    ahorro:       { valor: ahorroPct, puntos: interp(ahorroPct, 0, 20),  peso: 25 },
+    cargaDeuda:   { valor: deudaPct,  puntos: interp(deudaPct, 45, 15),  peso: 25 },
+    colchon:      { valor: col,       puntos: interp(col, 0, 6),         peso: 25 },
+    apalancamiento: { valor: dA,      puntos: interp(dA, 80, 30),        peso: 15 },
+    cobertura:    { valor: cob,       puntos: interp(cob, 0, 50),        peso: 10 },
+  };
+  let score = Object.values(comp).reduce((s, c) => s + (c.puntos * c.peso) / 100, 0);
+  let candado = null;
+  if ((b.fl < 0 || b.patrimonioNeto < 0) && score > 39) { score = 39; candado = b.fl < 0 ? "deficit" : "patrimonio_negativo"; }
+  score = Math.round(score);
+  return { score, banda: BANDAS_SALUD.find((x) => score >= x.min).nombre, componentes: comp, candado };
+}
+
+// ─── Renta anual y yield on cost (spec §4) ────────────────────────────────
+/** Renta anual del portafolio = IP × 12 (neto; sin salario ni valorización). */
+export function rentaYYield(b) {
+  const rentaAnual = b.ip * 12;
+  const ids = Object.keys(b.rentaNetaPorActivo || {});
+  const activos = (b.inv || []).filter((i) => ids.includes(i.id));
+  const fxa = (i) => (i.moneda === "USD" ? b.trm : 1);
+  let costo = 0, sinCosto = false;
+  activos.forEach((i) => {
+    const vc = num(i.vc) * fxa(i);
+    if (vc > 0) costo += vc; else { costo += num(i.va) * fxa(i); sinCosto = true; }
+  });
+  const rentaVinculada = ids.reduce((s, id) => s + b.rentaNetaPorActivo[id], 0) * 12;
+  return {
+    rentaAnual,
+    yield: costo > 0 ? (rentaVinculada / costo) * 100 : null,
+    base: costo,
+    sobreValorActual: sinCosto,
+    etiqueta: sinCosto ? "Rendimiento por renta (sobre valor actual)" : "Yield on cost",
+  };
+}
+
+// ─── Inflación (spec §5) ──────────────────────────────────────────────────
+/**
+ * Supuesto de inflación GLOBAL (% anual): un solo valor editable por el usuario
+ * (`user.inflacionPct`) que alimenta la proyección y el mensaje del portafolio.
+ * Default 4%. Cualquier cifra externa (p. ej. IPC publicado) es solo referencia.
+ */
+export const INFLACION_DEFAULT_PCT = 4;
+export function inflacionGlobal(v) {
+  const n = Number(v);
+  return v === "" || v == null || !Number.isFinite(n) || n < 0 ? INFLACION_DEFAULT_PCT : n;
+}
+/** Margen real (puntos) bajo el cual "le gana" se dice "por poco". */
+export const MARGEN_POCO_PCT = 1;
+/**
+ * Clasificación del margen real (puntos porcentuales):
+ *   ≥ 1 → "gana" · (0,1) → "gana_poco" · [−1,0] → "no_gana_poco" · < −1 → "no_gana"
+ */
+export function clasificarMargen(real) {
+  const r = Math.round(real * 1e9) / 1e9; // evita ruido de punto flotante en los bordes
+  if (r >= MARGEN_POCO_PCT) return "gana";
+  if (r > 0) return "gana_poco";
+  if (r >= -MARGEN_POCO_PCT) return "no_gana_poco";
+  return "no_gana";
+}
+export function gananciaVsInflacion(b, inflacionPct) {
+  inflacionPct = inflacionGlobal(inflacionPct);
+  if (!(b.invertibles > 0)) return null;
+  const nominal = ((b.ip * 12 + b.valorizacionAnual) / b.invertibles) * 100;
+  const real = Math.round((nominal - inflacionPct) * 1e9) / 1e9;
+  const clase = clasificarMargen(real);
+  const x = Math.abs(real).toFixed(1).replace(".", ",");
+  const txt = {
+    gana: `Tu portafolio le gana a la inflación (+${x}% real al año)`,
+    gana_poco: `Tu portafolio le gana a la inflación por poco (+${x}% real al año)`,
+    no_gana_poco: `A tu portafolio le falta poco para ganarle a la inflación (${real < 0 ? "−" : ""}${x}% real)`,
+    no_gana: `No le gana a la inflación (−${x}% real)`,
+  }[clase];
+  return {
+    nominal, real, inflacion: inflacionPct, clase,
+    leGana: clase === "gana" || clase === "gana_poco",
+    porPoco: clase === "gana_poco" || clase === "no_gana_poco",
+    mensaje: txt,
+  };
+}
+
+export { fmtPctEs, fmtNumEs, fmtMilesEs, fmtTasaEs, parseDecimalEs } from "./formato.js";
+
+/** Meses con plural correcto y coma es-CO: «1 mes», «1,3 meses», «3 meses». */
+export function fmtMeses(n) {
+  const v = Math.round((Number(n) || 0) * 10) / 10;
+  const txt = v.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  return `${txt} ${v === 1 ? "mes" : "meses"}`;
 }

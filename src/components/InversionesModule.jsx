@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
+import { fmtTasaEs } from "../lib/formato.js";
+import { fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
@@ -21,8 +23,8 @@ const T = {
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
 };
-const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
-const pc = (n) => (n || 0).toFixed(1) + "%";
+const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
+const pc = (n) => fmtPctEs(n);
 
 // Get name from item (handles multiple field formats)
 const getName = (i) => i.n || i.nombre || i.name || "Sin nombre";
@@ -183,7 +185,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", owner: "", moneda: "COP" });
+  const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", valorizacionPct: "", owner: "", moneda: "COP" });
 
   const items = inversiones || [];
   const activos = items.filter((i) => i.sim !== false);
@@ -244,6 +246,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       va: String(getVArw(inv) || ""),
       vc: String(getVCrw(inv) || ""),
       tasa: String(inv.tasa || ""),
+      valorizacionPct: inv.valorizacionPct != null ? String(inv.valorizacionPct) : "",
+      rentaOrigen: inv.rentaOrigen || "",
+      tasaLegacy: !!inv.tasa && !inv.rentaOrigen,
       owner: inv.owner || "",
       moneda: inv.moneda || "COP",
     });
@@ -252,7 +257,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   };
 
   const openAdd = () => {
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "", moneda: "COP" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", valorizacionPct: "", owner: "", moneda: "COP" });
     setEditId(null);
     setShowForm(true);
   };
@@ -267,7 +272,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     const vcCheck = Math.abs(parseFloat(form.vc)) || 0;
     if (va > 0 && vcCheck > 0 && va < vcCheck * 0.1) {
       const ok = window.confirm(
-        `⚠️ REVISA LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${(100 - (va / vcCheck) * 100).toFixed(0)}%. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usa el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
+        `⚠️ REVISA LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${fmtPctEs((100 - (va / vcCheck) * 100), 0)}. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usa el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
       );
       if (!ok) return;
     }
@@ -285,6 +290,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       vc: Math.abs(parseFloat(form.vc)) || 0,
       moneda: form.moneda || "COP",
       tasa,
+      // Origen de la renta: manual (el usuario escribió el %, ya neta) | derivada (arriendo×12÷valor, bruta).
+      // Un activo viejo sin indicador que se guarda sin tocar el % queda confirmado como bruta.
+      rentaOrigen: tasa > 0 ? (form.rentaOrigen || "derivada") : undefined,
+      valorizacionPct: form.valorizacionPct !== "" && form.valorizacionPct != null ? parseFloat(form.valorizacionPct) || 0 : undefined,
       fiscalCode: form.fiscalCode || undefined,
       pctTerreno: form.pctTerreno !== "" && form.pctTerreno != null ? Math.max(0, Math.min(100, parseFloat(form.pctTerreno))) : undefined,
     };
@@ -302,7 +311,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", owner: "", moneda: "COP" });
+    setForm({ nombre: "", ubicacion: "", tipo: "Real Estate", fiscalCode: "INV_INMUEBLE_HABITACIONAL", pctTerreno: "", va: "", vc: "", tasa: "", valorizacionPct: "", owner: "", moneda: "COP" });
   };
 
   // Set de IDs de inversiones sin propietario asignado, para badges en rows.
@@ -382,8 +391,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
           { l: "Patrimonio Total", v: fm(totalValor), c: T.green },
-          { l: "Rinde al mes", v: rendimientoAnual > 0 ? fm(rendimientoAnual / 12) : "—", c: T.blue },
-          { l: "Rinde al año", v: rendimientoAnual > 0 ? fm(rendimientoAnual) : "—", c: T.purple },
+          { l: "Rendimiento bruto al mes", v: rendimientoAnual > 0 ? fm(rendimientoAnual / 12) : "—", c: T.blue },
+          { l: "Rendimiento bruto al año", v: rendimientoAnual > 0 ? fm(rendimientoAnual) : "—", c: T.purple },
           
           { l: "Activos", v: activos.length, c: T.txt },
         ].map((m) => (
@@ -414,7 +423,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
                 <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: T.txt2 }}>
                   <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
-                  {d.name} <strong style={{ fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                  {d.name} <strong style={{ fontFamily: "monospace" }}>{fmtPctEs(((d.value/tot)*100), 0)}</strong>
                 </span>
               ))}
             </div>
@@ -475,7 +484,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         </span>
                         <span style={{ fontSize: 13, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>
                           {fm(inv.__sub)}
-                          <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{inv.__pct.toFixed(0)}%</span>
+                          <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(inv.__pct, 0)}</span>
                         </span>
                       </div>
                     </td>
@@ -501,7 +510,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         )}
                         <span>{name}</span>
                       </div>
-                      <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? inv.tasa + "% anual" : ""].filter(Boolean).join(" • ")}</div>
+                      <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? "renta " +fmtTasaEs(inv.tasa)+" anual" : ""].filter(Boolean).join(" • ")}</div>
                       {(()=>{
                         if(!inv.owner || inv.owner==="") return null;
                         if(inv.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;
@@ -580,7 +589,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   <select value={form.fiscalCode || "INV_INMUEBLE_HABITACIONAL"} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                     style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer", marginBottom: 10 }}>
                     <option value="INV_INMUEBLE_HABITACIONAL">Habitacional — donde vivo (no se deprecia)</option>
-                    <option value="INV_INMUEBLE_ARRENDADO">Arrendado — genera renta (deprecia construcción 2.22%/año Art. 137)</option>
+                    <option value="INV_INMUEBLE_ARRENDADO">Arrendado — genera renta (deprecia construcción 2,22%/año Art. 137)</option>
                     <option value="INV_INMUEBLE_COMERCIAL_PROPIO">Uso propio comercial (deprecia construcción)</option>
                     <option value="INV_INMUEBLE_VACANTE">Vacante — sin uso productivo (no deprecia)</option>
                   </select>
@@ -649,13 +658,25 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   <div style={{flex:1}}><In l="Renta mensual ($)" value={form.renta} onChange={(v) => {
                     const va=parseFloat(form.va)||0;
                     const newTasa=va>0&&v?((parseFloat(v)*12/va)*100).toFixed(1):"";
-                    setForm((p) => ({ ...p, renta: v, tasa: newTasa }));
+                    setForm((p) => ({ ...p, renta: v, tasa: newTasa, rentaOrigen: "derivada", tasaLegacy: false }));
                   }} type="number" placeholder="Ej: 4200000" /></div>
-                  <div style={{flex:1}}><In l="% Rendimiento anual" value={form.tasa} onChange={(v) => {
+                  <div style={{flex:1}}><In l="Renta neta anual %" value={form.tasa} onChange={(v) => {
                     const va=parseFloat(form.va)||0;
                     const newRenta=va>0&&v?Math.round(va*parseFloat(v)/100/12):"";
-                    setForm((p) => ({ ...p, tasa: v, renta: String(newRenta) }));
+                    setForm((p) => ({ ...p, tasa: v, renta: String(newRenta), rentaOrigen: "manual", tasaLegacy: false }));
                   }} type="number" placeholder="Ej: 12" /></div>
+                </div>
+                <div style={{fontSize:10,color:T.txt3,marginTop:6,lineHeight:1.5}}>
+                  Renta después de administración y predial. Si ya es neta, escríbela tal cual.
+                </div>
+                {form.tasaLegacy && parseFloat(form.tasa) > 0 && (
+                  <div style={{fontSize:10,color:"#eab308",marginTop:6,lineHeight:1.5}}>
+                    ⓘ Este % se cargó antes como «rendimiento anual»: se interpreta como renta bruta anual y ahora se descuentan la administración y el predial vinculados al activo. Si ya es neta, vuelve a escribirla; si es bruta, guarda para confirmarla.
+                  </div>
+                )}
+                <div style={{marginTop:8}}>
+                  <In l="Valorización anual % (opcional)" value={form.valorizacionPct} onChange={(v) => setForm((p) => ({ ...p, valorizacionPct: v }))} type="number" placeholder="Ej: 3" />
+                  <div style={{fontSize:10,color:T.txt3,marginTop:4,lineHeight:1.5}}>Cuánto sube el valor del activo al año. No es renta: se suma aparte al comparar contra la inflación.</div>
                 </div>
                 <div style={{fontSize:10,color:T.txt3,marginTop:6,lineHeight:1.5}}>
                   Estimación: escribe uno y el otro se calcula solo. Estos campos
@@ -735,7 +756,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     {"$" + Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12).toLocaleString("es-CO") + "/mes"}
                   </div>
                   <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                    = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString("es-CO") + "/año"} ({form.tasa}% de {"$" + Math.round(parseFloat(form.va)).toLocaleString("es-CO")})
+                    = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString("es-CO") + "/año"} ({fmtTasaEs(form.tasa)} de {"$" + Math.round(parseFloat(form.va)).toLocaleString("es-CO")})
                   </div>
                   {/* 14-sep-2026 (Santiago: "un activo dije que también
                       rentaba, me dijo que sí lo añadía como rendimiento y no lo

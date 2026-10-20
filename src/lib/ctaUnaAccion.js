@@ -18,6 +18,7 @@
 /** Meses de egresos que definen colchón “suficiente”. */
 export const MESES_COLCHON_OBJETIVO = 6;
 
+import { fmtPctEs } from "./formato.js";
 import { montoPromedioMensual } from "./flowHelpers.js";
 
 /** @param {number} n */
@@ -344,7 +345,7 @@ export function elegirUnaAccion(input = {}) {
         path: "deuda",
         frase: `Esta semana: abona ${fmtCop(x)} extra a ${deuda.nombre}`,
         monto: x,
-        porQue: `Es tu deuda con mayor tasa (${deuda.tasa.toFixed(1)}% E.A.) y saldo ${fmtCop(deuda.saldo)}.`,
+        porQue: `Es tu deuda con mayor tasa (${fmtPctEs(deuda.tasa, 1)} E.A.) y saldo ${fmtCop(deuda.saldo)}.`,
         chip: "Fondeado con tu CF",
         detalle: { ...deuda, cfMensual: cf },
       };

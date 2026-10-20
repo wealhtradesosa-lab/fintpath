@@ -18,6 +18,7 @@
 // igual que antes.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { useMemo, useState, useEffect } from "react";
 import { montoPromedioMensual, totalAnualItem } from "../lib/flowHelpers.js";
 import { estimarImpuesto, UVT } from "../lib/taxCO.js";
@@ -44,8 +45,8 @@ const F = F_CENTRAL;
 
 const fm = (v) => {
   const n = Number(v) || 0;
-  if (Math.abs(n) >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
-  if (Math.abs(n) >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
+  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e9), 2)+"B";
+  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
   return "$" + Math.round(n).toLocaleString("es-CO");
 };
 
@@ -198,7 +199,7 @@ function getHintContextual(det, owner) {
     return {
       tono: "ok",
       icono: "💰",
-      texto: `Según tu estimación, aportes a PV/AFC podrían reducir tu impuesto en ~$${(ahorro / 1_000_000).toFixed(1)}M (${pct}%). Confírmalo con tu contador.`,
+      texto: `Según tu estimación, aportes a PV/AFC podrían reducir tu impuesto en ~$${fmtNumEs((ahorro / 1_000_000), 1)}M (${pct}%). Confírmalo con tu contador.`,
     };
   }
 
@@ -236,7 +237,7 @@ function getTopRecomendaciones(det, owner, n = 4) {
   if ((det.deducDep || 0) > 0) {
     recs.push({
       icono: "👨‍👩‍👧",
-      titulo: `Dependientes: $${(det.deducDep / 1_000_000).toFixed(1)}M/año`,
+      titulo: `Dependientes: $${fmtNumEs((det.deducDep / 1_000_000), 1)}M/año`,
       desc: `Ya se está deduciendo 10% del ingreso por ${fp.dependientes?.cantidad || 1} dependiente(s).`,
       tono: "ok",
     });
@@ -246,7 +247,7 @@ function getTopRecomendaciones(det, owner, n = 4) {
   if ((det.deducVivienda || 0) > 0) {
     recs.push({
       icono: "🏠",
-      titulo: `Intereses vivienda: $${(det.deducVivienda / 1_000_000).toFixed(1)}M/año`,
+      titulo: `Intereses vivienda: $${fmtNumEs((det.deducVivienda / 1_000_000), 1)}M/año`,
       desc: "Los intereses de tu hipoteca ya se deducen automáticamente.",
       tono: "ok",
     });
@@ -776,7 +777,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
               <div style={{ fontSize: 9, color: T.txt3, fontStyle: "italic" }}>{r.art}</div>
               {noElegible && (
                 <div style={{ fontSize: 10, color: T.red, marginTop: 6, fontWeight: 600 }}>
-                  ⚠️ Tus ingresos brutos ({ingresoBrutoEnUVT.toFixed(0)} UVT/año) superan el tope de 100.000 UVT (~${(TOPE_SIMPLE_UVT * UVT / 1_000_000).toFixed(0)}M COP). No eres elegible para Régimen Simple.
+                  ⚠️ Tus ingresos brutos ({ingresoBrutoEnUVT.toFixed(0)} UVT/año) superan el tope de 100.000 UVT (~${fmtNumEs((TOPE_SIMPLE_UVT * UVT / 1_000_000), 0)}M COP). No eres elegible para Régimen Simple.
                 </div>
               )}
             </button>
@@ -819,7 +820,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
                     {grupo.descripcion}
                   </div>
                   <div style={{ fontSize: 9, color: T.txt3, marginTop: 3, fontFamily: "monospace" }}>
-                    Tramos: {grupo.tramos.map(t => `${(t.tarifa * 100).toFixed(1)}%`).join(" → ")}
+                    Tramos: {grupo.tramos.map(t => `${fmtPctEs((t.tarifa * 100), 1)}`).join(" → ")}
                   </div>
                 </button>
               );
@@ -1017,7 +1018,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
   const desglose = det.gastosHonorariosDesglose || {};
 
   // Formato monetario
-  const fmtM = (n) => "$" + (Math.round((Number(n) || 0) / 100_000) / 10).toFixed(1) + "M";
+  const fmtM = (n) => "$" + fmtNumEs((Math.round((Number(n) || 0) / 100_000) / 10), 1)+"M";
   const fmtPct = (n) => Math.round(n * 1000) / 10 + "%";
 
   // Color del banner según alerta
@@ -1212,7 +1213,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       art: "Art. 387 #2 ET",
       topeMensual: `Tope: 10% ingreso, máx 384 UVT/año (~$${Math.round(MAX_DEP / 1_000_000)}M)`,
       valor: det.deducDep || 0,
-      montoMaximoTexto: `Hasta $${(MAX_DEP / 1_000_000).toFixed(1)}M/año si tienes al menos 1 dependiente (10% del ingreso laboral, máx 384 UVT). Sube a $${(MAX_DEP * 2 / 1_000_000).toFixed(1)}M si hay discapacidad certificada.`,
+      montoMaximoTexto: `Hasta $${fmtNumEs((MAX_DEP / 1_000_000), 1)}M/año si tienes al menos 1 dependiente (10% del ingreso laboral, máx 384 UVT). Sube a $${fmtNumEs((MAX_DEP * 2 / 1_000_000), 1)}M si hay discapacidad certificada.`,
       ctaTexto: "→ Declarar dependientes",
       linkTexto: "Modificar dependientes →",
       accion: { tipo: "scroll", target: "ajustes-fiscales" },
@@ -1222,9 +1223,9 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "💊",
       label: "Medicina prepagada / salud / vida",
       art: "Art. 387 #2 ET",
-      topeMensual: `Tope: 16 UVT/mes (~$${Math.round(16 * UVT / 1000)}k/mes, $${(MAX_MEDICINA / 1_000_000).toFixed(1)}M/año)`,
+      topeMensual: `Tope: 16 UVT/mes (~$${Math.round(16 * UVT / 1000)}k/mes, $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año)`,
       valor: det.deducMedicina || 0,
-      montoMaximoTexto: `Hasta $${(MAX_MEDICINA / 1_000_000).toFixed(1)}M/año combinando medicina prepagada + seguros de salud + seguros de vida. Tope conjunto 16 UVT/mes.`,
+      montoMaximoTexto: `Hasta $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año combinando medicina prepagada + seguros de salud + seguros de vida. Tope conjunto 16 UVT/mes.`,
       ctaTexto: "→ Cargar en Egresos",
       linkTexto: "Modificar en Egresos →",
       accion: { tipo: "navigate", target: "egresos" },
@@ -1234,9 +1235,9 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "🏠",
       label: "Intereses de vivienda",
       art: "Art. 119 ET",
-      topeMensual: `Tope: 100 UVT/mes, 1.200 UVT/año (~$${(MAX_VIVIENDA / 1_000_000).toFixed(1)}M)`,
+      topeMensual: `Tope: 100 UVT/mes, 1.200 UVT/año (~$${fmtNumEs((MAX_VIVIENDA / 1_000_000), 1)}M)`,
       valor: det.deducVivienda || 0,
-      montoMaximoTexto: `Hasta $${(MAX_VIVIENDA / 1_000_000).toFixed(1)}M/año de intereses si tienes crédito hipotecario sobre tu vivienda de habitación. El motor lee los intereses pagados según tasa y saldo.`,
+      montoMaximoTexto: `Hasta $${fmtNumEs((MAX_VIVIENDA / 1_000_000), 1)}M/año de intereses si tienes crédito hipotecario sobre tu vivienda de habitación. El motor lee los intereses pagados según tasa y saldo.`,
       ctaTexto: "→ Cargar en Deudas",
       linkTexto: "Modificar deuda →",
       accion: { tipo: "navigate", target: "deudas" },
@@ -1246,9 +1247,9 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "🏛️",
       label: "Pensión Voluntaria (PV)",
       art: "Art. 126-1 ET",
-      topeMensual: `Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año (~$${(MAX_PV_AFC / 1_000_000).toFixed(0)}M)`,
+      topeMensual: `Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M)`,
       valor: det.pensionVol || 0,
-      montoMaximoTexto: `Aportes 100% deducibles, tope conjunto con AFC del 30% del ingreso laboral o $${(MAX_PV_AFC / 1_000_000).toFixed(0)}M/año (lo menor). Si retiras antes de 10 años para algo distinto a vivienda, pierdes el beneficio.`,
+      montoMaximoTexto: `Aportes 100% deducibles, tope conjunto con AFC del 30% del ingreso laboral o $${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M/año (lo menor). Si retiras antes de 10 años para algo distinto a vivienda, pierdes el beneficio.`,
       ctaTexto: "→ Cargar en Egresos",
       linkTexto: "Modificar PV →",
       accion: { tipo: "navigate", target: "egresos" },
@@ -1258,7 +1259,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "💰",
       label: "AFC (Ahorro Fomento Construcción)",
       art: "Art. 126-4 ET",
-      topeMensual: `Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año (~$${(MAX_PV_AFC / 1_000_000).toFixed(0)}M)`,
+      topeMensual: `Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M)`,
       valor: det.afc || 0,
       montoMaximoTexto: `Aportes 100% deducibles, tope conjunto con PV. Si retiras antes de 10 años para algo distinto a vivienda, pierdes el beneficio.`,
       ctaTexto: "→ Cargar en Egresos",
@@ -1561,19 +1562,19 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
           <div style={{ padding: 16, background: T.bg3, border: "2px solid " + T.border, borderRadius: 12, textAlign: "center" }}>
             <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Tu impuesto hoy</div>
             <div style={{ fontSize: 24, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>{fm(impActual)}</div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${((impActual / det.ingreso) * 100).toFixed(1)}% de tus ingresos` : ""}</div>
+            <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${fmtPctEs(((impActual / det.ingreso) * 100), 1)} de tus ingresos` : ""}</div>
           </div>
           <div style={{ padding: 16, background: "rgba(34,197,94,0.08)", border: "2px solid " + T.green, borderRadius: 12, textAlign: "center" }}>
             <div style={{ fontSize: 10, color: T.green, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Si aplicas PV/AFC al máximo</div>
             <div style={{ fontSize: 24, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>{fm(impOpt)}</div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${((impOpt / det.ingreso) * 100).toFixed(1)}% de tus ingresos` : ""}</div>
+            <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${fmtPctEs(((impOpt / det.ingreso) * 100), 1)} de tus ingresos` : ""}</div>
           </div>
         </div>
       ) : (
         <div style={{ padding: 18, background: T.bg3, border: "2px solid " + T.border, borderRadius: 12, textAlign: "center", marginBottom: 14 }}>
           <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Tu impuesto estimado</div>
           <div style={{ fontSize: 32, fontWeight: 800, color: T.txt, fontFamily: "monospace" }}>{fm(impActual)}</div>
-          <div style={{ fontSize: 10, color: T.txt3, marginTop: 6 }}>{det.ingreso > 0 ? `${((impActual / det.ingreso) * 100).toFixed(1)}% de tus ingresos` : ""}</div>
+          <div style={{ fontSize: 10, color: T.txt3, marginTop: 6 }}>{det.ingreso > 0 ? `${fmtPctEs(((impActual / det.ingreso) * 100), 1)} de tus ingresos` : ""}</div>
           <div style={{ fontSize: 11, color: T.txt2, marginTop: 14, lineHeight: 1.5, maxWidth: 480, margin: "14px auto 0", fontStyle: "italic" }}>
             Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos. Para reducir más, revisa el plan de acción abajo.
           </div>
@@ -2117,7 +2118,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                         </span>
                       </div>
                       <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
-                        Si <strong>{owner.name}</strong> cumple los criterios de actividad del grupo <strong>"{mejor.label}"</strong>, podría acogerse al <strong>Régimen Simple (Arts. 903-916 ET)</strong> y pagar <strong>{fm(mejor.impuestoSimple)}</strong> en lugar de <strong>{fm(mejor.impuestoOrdinario)}</strong> al año <span style={{ color: T.green, fontWeight: 700 }}>(ahorro ~{mejor.ahorroPct.toFixed(0)}%)</span>.
+                        Si <strong>{owner.name}</strong> cumple los criterios de actividad del grupo <strong>"{mejor.label}"</strong>, podría acogerse al <strong>Régimen Simple (Arts. 903-916 ET)</strong> y pagar <strong>{fm(mejor.impuestoSimple)}</strong> en lugar de <strong>{fm(mejor.impuestoOrdinario)}</strong> al año <span style={{ color: T.green, fontWeight: 700 }}>(ahorro ~{fmtPctEs(mejor.ahorroPct, 0)})</span>.
                       </div>
                       <div style={{ background: "rgba(0,0,0,0.20)", borderRadius: 6, padding: "6px 10px", fontSize: 9, color: T.txt3, lineHeight: 1.5 }}>
                         ⚠️ <strong>Esto es una sugerencia estratégica, no automática.</strong> Cambiar de régimen requiere validar el grupo CIIU exacto con tu contador, presentar formulario ante DIAN antes del 28 de febrero, y NO se puede deshacer hasta el siguiente año fiscal. Hay también exclusiones (Art. 906 ET) — no todas las actividades califican aunque cumplan el tope de ingresos.

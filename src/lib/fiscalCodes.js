@@ -256,7 +256,7 @@ export const FISCAL_CODE_META = {
 
   // Inversiones
   [INV_INMUEBLE_HABITACIONAL]:     { kind: "inversion", deprecia: false, label: "Inmueble habitacional propio", et: "No depreciable" },
-  [INV_INMUEBLE_ARRENDADO]:        { kind: "inversion", deprecia: true,  label: "Inmueble arrendado",           et: "Art. 137 (2.22%/año construcción)" },
+  [INV_INMUEBLE_ARRENDADO]:        { kind: "inversion", deprecia: true,  label: "Inmueble arrendado",           et: "Art. 137 (2,22%/año construcción)" },
   [INV_INMUEBLE_COMERCIAL_PROPIO]: { kind: "inversion", deprecia: true,  label: "Inmueble comercial propio",    et: "Art. 137" },
   [INV_INMUEBLE_VACANTE]:          { kind: "inversion", deprecia: false, label: "Inmueble vacante",             et: "Sin uso productivo" },
   [INV_CDT]:                       { kind: "inversion", deprecia: false, label: "CDT",                          et: "Genera CAP_INTERESES_BANCARIOS" },

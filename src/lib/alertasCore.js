@@ -1,3 +1,4 @@
+import { fmtPctEs } from "./formato.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // ALERTAS CORE
 // ─────────────────────────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ export function calcPatronesAnomalos(ctx) {
       patrones.push({
         severity: "critical",
         label: "Retenciones inconsistentes con ingresos",
-        sugerencia: `Los ingresos subieron ${deltaIng.toFixed(0)}% pero las retenciones bajaron ${Math.abs(deltaRet).toFixed(0)}%. Normalmente más ingresos = más retenciones. Verifica que tengas TODOS los certificados de retención del año — es muy común olvidar alguno, especialmente si cambiaste de pagador.`,
+        sugerencia: `Los ingresos subieron ${fmtPctEs(deltaIng, 0)} pero las retenciones bajaron ${fmtPctEs(Math.abs(deltaRet), 0)}. Normalmente más ingresos = más retenciones. Verifica que tengas TODOS los certificados de retención del año — es muy común olvidar alguno, especialmente si cambiaste de pagador.`,
       });
     }
   }
@@ -85,7 +86,7 @@ export function calcPatronesAnomalos(ctx) {
       patrones.push({
         severity: "warning",
         label: "Impuesto sube más de lo esperado",
-        sugerencia: `El impuesto subió ${deltaImp.toFixed(0)}% pero los ingresos solo ${deltaIng > 0 ? "+" : ""}${deltaIng.toFixed(0)}%. Revisa si te faltaron deducciones del año pasado: intereses de vivienda, dependientes, medicina prepagada, aportes a pensión voluntaria o AFC. Cada uno vale hasta varios millones en impuesto.`,
+        sugerencia: `El impuesto subió ${fmtPctEs(deltaImp, 0)} pero los ingresos solo ${deltaIng > 0 ? "+" : ""}${fmtPctEs(deltaIng, 0)}. Revisa si te faltaron deducciones del año pasado: intereses de vivienda, dependientes, medicina prepagada, aportes a pensión voluntaria o AFC. Cada uno vale hasta varios millones en impuesto.`,
       });
     }
   }
@@ -235,7 +236,7 @@ export function calcPatronesTendencia({ serie, actual }) {
       patrones.push({
         severity,
         label: `${label}: rompe la tendencia histórica`,
-        sugerencia: `Los últimos ${serie.length} años (${serie[0].anoGravable}–${serie[serie.length-1].anoGravable}) tu ${label.toLowerCase()} venía ${direccionHist === "estable" ? "estable" : direccionHist + " ~" + Math.abs(pendiente).toFixed(0) + "%/año"} y este año ${direccionActual} ${Math.abs(deltaObservado).toFixed(0)}%. Es un cambio de ${Math.abs(desvio).toFixed(0)} puntos vs lo esperado${articulo ? ` (${articulo})` : ""}. Si es correcto, OK. Si no, revisa la captura.`,
+        sugerencia: `Los últimos ${serie.length} años (${serie[0].anoGravable}–${serie[serie.length-1].anoGravable}) tu ${label.toLowerCase()} venía ${direccionHist === "estable" ? "estable" : direccionHist + " ~" + fmtPctEs(Math.abs(pendiente), 0)+"/año"} y este año ${direccionActual} ${fmtPctEs(Math.abs(deltaObservado), 0)}. Es un cambio de ${Math.abs(desvio).toFixed(0)} puntos vs lo esperado${articulo ? ` (${articulo})` : ""}. Si es correcto, OK. Si no, revisa la captura.`,
       });
     }
   };

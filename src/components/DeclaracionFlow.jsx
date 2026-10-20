@@ -39,6 +39,7 @@
 //     lo que se va a declarar.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { useState, useMemo, useEffect, useRef, Component } from "react";
 import NumberInput from "./NumberInput";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
@@ -79,9 +80,9 @@ function fm(n) {
 }
 function fmShort(v) {
   const n = Math.abs(Number(v) || 0);
-  if (n >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
-  if (n >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
-  if (n >= 1e3) return "$" + (n / 1e3).toFixed(0) + "K";
+  if (n >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
+  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + Math.round(n);
 }
 
@@ -1205,7 +1206,7 @@ export default function DeclaracionFlow({
             label="Impuesto del año"
             valor={fmShort(impuestoBruto)}
             color={C.orange}
-            sub={ingresoAnual > 0 ? `${(impuestoBruto / ingresoAnual * 100).toFixed(1)}% de lo que ganaste` : ""}
+            sub={ingresoAnual > 0 ? `${fmtPctEs((impuestoBruto / ingresoAnual * 100), 1)} de lo que ganaste` : ""}
           />
           <MiniCard
             icono="✅"
