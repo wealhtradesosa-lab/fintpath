@@ -69,6 +69,16 @@
   to = "/.netlify/functions/advisor-accept-invite"
   status = 200
 
+[[redirects]]
+  from = "/api/email-unsubscribe"
+  to = "/.netlify/functions/email-unsubscribe"
+  status = 200
+
+[[redirects]]
+  from = "/api/track-activation"
+  to = "/.netlify/functions/track-activation"
+  status = 200
+
 # 11-oct-2026 — Una sola política de privacidad: la de la app (/privacidad).
 # public/privacidad.html era una copia vieja (prometía «ni siquiera nuestro
 # equipo puede ver tus datos» y «no compartimos con terceros») y, con pretty

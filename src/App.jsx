@@ -44,7 +44,7 @@ import LandingTerminos from "./components/LandingTerminos";
 import LandingPrivacidad from "./components/LandingPrivacidad";
 import OnboardingTour from "./components/OnboardingTour";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import { track, trackSignup, trackCheckoutStarted, trackPurchase, captureUTMs, identifyUser, readFirstTouch } from "./lib/analytics";
+import { track, trackSignup, trackCheckoutStarted, trackPurchase, captureUTMs, identifyUser, readFirstTouch, guardarEntrada, leerEntrada } from "./lib/analytics";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "./lib/chartTheme.jsx";
@@ -1058,6 +1058,9 @@ export default function FinPath(){
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);
         // Sesión 4-may-2026: tracking GA4 — signup completed con metadata
         // de promo (Pioneros) y user_id para atribución cross-device.
+        // 11-oct-2026: guardar UTM + ángulo ANTES de trackSignup (que borra
+        // fp3_signup_intent) para el evento "activation" (primer activo) de días después.
+        guardarEntrada();
         trackSignup({ method: "email", userId: data.user.id });
         // 25-jul-2026 (Santiago: "creé una cuenta nueva y me llevó al simulador
         // de Pedro"): setPg solo se reseteaba en logout. Si el visitante venía
@@ -1380,6 +1383,62 @@ export default function FinPath(){
   // exacto" (ej. mostrar 'Plan actual' en pricing card del plan Pro).
   const hasProAccess=plan==="pro"||plan==="pro_familiar"||plan==="advisor_pro";
   const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200):{},[u]);
+  // ═══ 11-oct-2026 — ACTIVACIÓN = «primer activo cargado» (copy v3) ═══
+  // Cuando la persona tiene al menos un activo en Patrimonio (u.inv), el
+  // navegador AVISA a track-activation con solo UTM + ángulo de entrada. El
+  // servidor no le cree: comprueba él mismo en user_data que la lista de
+  // activos no está vacía (sin leer valores) y marca activated_at una sola
+  // vez. Nunca se manda el activo, su valor ni conteos. Como el guardado en
+  // Supabase va con 2 s de espera, si el servidor aún no ve el activo
+  // (activo:false) se reintenta al confirmarse el siguiente guardado
+  // (fp3-save-ok) o en la próxima carga. Solo en la vista personal: un
+  // asesor mirando a un cliente no activa su propia cuenta.
+  const tieneActivo=!!(u&&Array.isArray(u.inv)&&u.inv.length>0);
+  useEffect(()=>{
+    if(!tieneActivo||!authUser?.id||viewMode!=="personal")return;
+    const k="fp3_activacion_"+authUser.id;
+    try{if(localStorage.getItem(k))return;}catch{}
+    let enCurso=false,listo=false;
+    const avisar=()=>{
+      if(enCurso||listo)return;enCurso=true;
+      const ent=leerEntrada();
+      fetchAuth("/api/track-activation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({utm:ent.utm,angle:ent.angle})})
+        .then(r=>r.ok?r.json():null).then(d=>{if(d&&d.ok&&d.activo!==false){listo=true;try{localStorage.setItem(k,"1")}catch{}}}).catch(()=>{}).finally(()=>{enCurso=false;});
+    };
+    avisar();
+    window.addEventListener("fp3-save-ok",avisar);
+    return ()=>window.removeEventListener("fp3-save-ok",avisar);
+  },[tieneActivo,authUser?.id,viewMode]);
+  // ═══ 11-oct-2026 — simulator_used (Analítica: medir la v2 de los correos) ═══
+  // Primera vez que abre el simulador (año en curso "sim" o futuro "simf").
+  // Mismo camino que la activación: solo la bandera + UTM + ángulo, sesión
+  // verificada, el servidor marca simulator_first_used_at una vez. Un solo
+  // intento por carga de página (ref) y bandera en localStorage al lograrlo.
+  // No cuenta cuando un asesor está viendo a un cliente.
+  const simIntentado=useRef(false);
+  useEffect(()=>{
+    if((pg!=="sim"&&pg!=="simf")||simIntentado.current||!authUser?.id||viewMode!=="personal")return;
+    const k="fp3_simulador_"+authUser.id;
+    try{if(localStorage.getItem(k))return;}catch{}
+    simIntentado.current=true;
+    const ent=leerEntrada();
+    fetchAuth("/api/track-activation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:"simulator_used",utm:ent.utm,angle:ent.angle})})
+      .then(r=>r.ok?r.json():null).then(d=>{if(d&&d.ok){try{localStorage.setItem(k,"1")}catch{}}}).catch(()=>{});
+  },[pg,authUser?.id,viewMode]);
+  // ═══ 11-oct-2026 — ENLACES DE LOS CORREOS (?ir=dash|sim|inv|price) ═══
+  // Los botones de los correos de la prueba abren una sección concreta.
+  // Lista cerrada de destinos; se lee una vez cuando ya hay datos cargados.
+  const irAplicado=useRef(false);
+  useEffect(()=>{
+    if(!u||irAplicado.current||typeof window==="undefined")return;
+    irAplicado.current=true;
+    try{
+      const ps=new URLSearchParams(window.location.search);
+      const ir=ps.get("ir");
+      if(ir&&["dash","sim","inv","price"].includes(ir))setPg(ir);
+      if(ir){ps.delete("ir");const q=ps.toString();window.history.replaceState({},"",window.location.pathname+(q?"?"+q:""));}
+    }catch{}
+  },[u]);
   const ib=useMemo(()=>{if(!u?.ibk?.length)return{tc:0,tv:0,pnl:0,pp:0,pos:[]};let tc=0,tv=0;const pos=u.ibk.map(p=>{
     // 26-jul-2026 (Santiago: "¿y si la persona tiene opciones qué hace?").
     // Un contrato de opción representa 100 acciones: su valor es
