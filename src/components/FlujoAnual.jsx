@@ -19,7 +19,7 @@
 //   marcados como pagados).
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtVolatilidadEs } from "../lib/formato.js";
 import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -494,7 +494,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>📊 Volatilidad</div>
           <div style={{ fontSize: 18, fontWeight: 800, color: highlights.volatilidadColor, marginTop: 6 }}>{highlights.volatilidadLabel}</div>
           <div style={{ fontSize: 13, color: T.txt2, marginTop: 2 }}>
-            ±{fmtPctEs((highlights.volatilidadPct * 100), 0)} del promedio
+            ±{fmtVolatilidadEs(highlights.volatilidadPct)} del promedio
           </div>
           <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>
             Meses varían {fm(Math.abs((highlights.mejorMes?.cashFlow || 0) - (highlights.peorMes?.cashFlow || 0)) / 2)} arriba/abajo

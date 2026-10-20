@@ -336,7 +336,7 @@ async function enviarResend({ to, subject, html, text, headers, etiqueta, idempo
   });
   const data = await resp.json();
   if (!resp.ok) {
-    console.error(`[send-email] Resend error (${resp.status}):`, data);
+    console.error(`[send-email] Resend error (${resp.status}):`, { name: data && data.name, message: data && data.message });
     return { ok: false, error: data.message || "Resend error", status: resp.status };
   }
   console.log(`[send-email] ✅ template=${etiqueta} to=${enmascarar(to)} message_id=${data.id}`);
