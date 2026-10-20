@@ -111,8 +111,6 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
   const handleSave = () => {
     if (!guardEdit(role)) return;
     track("descuentos_tributarios_guardados", {
-      owner_id: owner?.id,
-      total_pesos_m: Math.round(total / 1e6),
       campos_capturados: Object.values(d).filter(v => +v > 0).length,
     });
     if (onSave) onSave(d);

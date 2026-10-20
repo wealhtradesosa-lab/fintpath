@@ -84,7 +84,7 @@ import { RoleProvider } from "./lib/RoleContext.jsx";
 import RoleBanner from "./components/RoleBanner";
 import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
-import { UVT, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
+import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre } from "./lib/migrations";
 import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
@@ -633,8 +633,9 @@ export default function FinPath(){
   useEffect(()=>{
     captureUTMs();
     track("app_loaded", {
-      pathname: typeof window !== "undefined" ? window.location.pathname : "",
-      referrer: typeof document !== "undefined" ? document.referrer : "",
+      // Sin el token de /invite/<token> y sin query del referrer.
+      pathname: typeof window !== "undefined" ? window.location.pathname.replace(/^\/invite\/[^/]+/, "/invite/_") : "",
+      referrer: typeof document !== "undefined" && document.referrer ? (()=>{try{return new URL(document.referrer).origin}catch{return ""}})() : "",
     });
   },[]);
   // Password recovery: escuchar el evento de Supabase cuando el usuario hace
@@ -718,7 +719,7 @@ export default function FinPath(){
     // Handle Stripe success redirect
     const params=new URLSearchParams(window.location.search);
     const successFlag=params.get('success');
-    const sessionId=params.get('session_id');
+    const sessionId=params.get('session_id')||(typeof window!=="undefined"?window.__fpStripeSessionId:null)||null;
     // ═══ REGRESO DESDE STRIPE ═══════════════════════════════════════════
     // 25-jul-2026. Antes, el momento más delicado del producto era SILENCIO:
     //  · Al volver de un pago exitoso no se mostraba nada. La página se
@@ -959,7 +960,7 @@ export default function FinPath(){
         if(error){const msg=error.message==="Invalid login credentials"?"Email o contraseña incorrectos":error.message==="Email not confirmed"?"Revisa tu email y confirma tu cuenta":error.message;setAuthError(msg);setAuthLoading(false);return}
         // Sesión 4-may-2026: tracking GA4 — login exitoso con user_id
         // para atribución cross-device.
-        track("login_completed",{ method:"email", user_id: data.user.id });
+        track("login_completed",{ method:"email" });
         identifyUser(data.user.id);
         // Advisor lookup: corre SIEMPRE para saber si la cuenta tiene plan Asesor
         let advData=null;
@@ -1406,8 +1407,9 @@ export default function FinPath(){
     const pathname=typeof window!=="undefined"?window.location.pathname:"";
     const inviteMatch=pathname.match(/^\/invite\/([A-Za-z0-9_-]+)\/?$/);
     if(inviteMatch){
-      const token=inviteMatch[1];
-      return<AcceptInvite token={token} onComplete={()=>{window.location.href="/"}}/>;
+      // index.html saca el token de la URL (queda /invite/_) y lo deja en memoria.
+      const token=inviteMatch[1]==="_"?(window.__fpInviteToken||(()=>{try{return sessionStorage.getItem("fp3_invite_token")||""}catch{return ""}})()):inviteMatch[1];
+      return<AcceptInvite token={token} onComplete={()=>{try{sessionStorage.removeItem("fp3_invite_token")}catch{};window.location.href="/"}}/>;
     }
   }
 
@@ -1452,7 +1454,10 @@ export default function FinPath(){
     if(pathname==="/privacidad"||pathname==="/privacidad/"){
       return<LandingPrivacidad/>;
     }
-    return<><LandingPage onGetStarted={(meta)=>{const from=meta?.source||"home";sAM("signup");track("signup_modal_opened",{from,...(meta?.dias_restantes!=null?{dias_restantes:meta.dias_restantes}:{})});setShowAuth(true)}}/><PWAInstallPrompt/></>;
+    // 12-oct-2026 (Andrés Gómez no podía entrar): el botón "Iniciar sesión" de la
+    // landing abría la pestaña CREAR CUENTA. Un cliente que ya existe ponía su
+    // email y contraseña y recibía "este email ya tiene cuenta". Ahora abre Ingresar.
+    return<><LandingPage onLogin={()=>{sAM("login");track("login_modal_opened",{from:"home"});setShowAuth(true)}} onGetStarted={(meta)=>{const from=meta?.source||"home";sAM("signup");track("signup_modal_opened",{from,...(meta?.dias_restantes!=null?{dias_restantes:meta.dias_restantes}:{})});setShowAuth(true)}}/><PWAInstallPrompt/></>;
   }
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
@@ -2676,8 +2681,8 @@ export default function FinPath(){
 
             {/* PLANIFICACIÓN TRIBUTARIA — Usa estimarImpuesto() con propietarios + DIAN */}
             {(()=>{const tx=estimarImpuesto(u);if(tx.total<=0)return null;return<div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:6}}>{`🧾 IMPUESTOS ESTIMADOS — Colombia · UVT $${UVT.toLocaleString("es-CO")} (AG 2025)`}</div>
-              <div style={{fontSize:10,color:T.tx3,marginBottom:14,lineHeight:1.5}}>{`Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria. Temporada DIAN: AG 2025 (UVT $${UVT.toLocaleString("es-CO")}).`}</div>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:6}}>{`🧾 IMPUESTOS ESTIMADOS — Colombia · UVT $${UVT.toLocaleString("es-CO")} (AG ${DEFAULT_AG})`}</div>
+              <div style={{fontSize:10,color:T.tx3,marginBottom:14,lineHeight:1.5}}>{`Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria. Año gravable ${DEFAULT_AG} (UVT $${UVT.toLocaleString("es-CO")}).`}</div>
               {tx.sinClasificar>0&&<div style={{background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:T.orange}}>⚠️ {tx.sinClasificar} ingreso(s) sin clasificación fiscal. Ve a <strong>💰 Ingresos</strong> y asigna propietario + clasificación DIAN para un cálculo más preciso.</div>}
               <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                 <div>
@@ -3147,13 +3152,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         user={u}
         estimacion={estimarImpuesto(u)}
         onUpdateUser={(newUser)=>setU(newUser)}
-        ano={2025}
+        ano={DEFAULT_AG}
       />);
     }
     case"famtax":return gated("tax","Pro",<VistaFamiliarConsolidada
       user={u}
       estimacion={estimarImpuesto(u)}
-      ano={2025}
+      ano={DEFAULT_AG}
       onSelectOwner={()=>{setPg("tax")}}
     />);
     case"taxopt":return gated("tax","Pro",<TaxOptimizerUS user={u}/>);

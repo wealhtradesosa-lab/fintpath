@@ -30,6 +30,9 @@ import PageHeader from "./PageHeader";
 import { estimarImpuesto } from "../lib/taxCO";
 import { C, Cα, F, R } from "../lib/designTokens";
 import SankeyFlujo from "./SankeyFlujo";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
+import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
+import { snapshotPatrimonio, estimarAmortizacionAnual } from "../lib/proyeccionPatrimonio.js";
 import { montoDelMes, promedioMesActivo, getFrecuencia, MESES, getMesActual, rangoEfectivo } from "../lib/flowHelpers.js";
 import { cuotaDeudaDelMes, retencionDelMes } from "./SimuladorAvanzado";
 
@@ -341,6 +344,27 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
     });
     return ev;
   }, [cambios, filas, base]);
+  // Acumulado del año y curva de patrimonio (12-oct-2026, Santiago: "ver el
+  // acumulado de ingresos, saldo a favor y gastos por año, y la curva de
+  // crecimiento del patrimonio con ese sobrante o pérdida cada mes").
+  const anual = useMemo(() => {
+    const sum = (k) => porMes.reduce((a, m) => a + m[k], 0);
+    return { ingresos: sum("ingresos"), gastos: sum("gastos"), cuotas: sum("cuotas"), impuestos: sum("impuesto") + sum("retencion"), queda: sum("queda"), positivos: porMes.filter((m) => m.queda >= 0).length };
+  }, [porMes]);
+  const anualHoy = { ingresos: hoy.ingresos * 12, gastos: hoy.gastos * 12, cuotas: hoy.cuotas * 12, impuestos: (hoy.impuesto + hoy.retencion) * 12, queda: hoy.queda * 12 };
+  const snap = useMemo(() => snapshotPatrimonio(user), [user]);
+  const amortMes = useMemo(() => estimarAmortizacionAnual(user.deudas, user.trm) / 12, [user]);
+  const curvaPat = useMemo(() => {
+    let pat = snap.patrimonioNeto, acum = 0;
+    const pts = [{ m: "Hoy", pat, queda: 0, amort: 0, acum: 0 }];
+    porMes.forEach((m) => {
+      const amort = Math.min(amortMes, Math.max(0, m.cuotas)); // si ya no hay cuotas, no baja deuda
+      pat += m.queda + amort; acum += m.queda;
+      pts.push({ m: mesL(m.mes).slice(0, 3), pat: Math.round(pat), queda: Math.round(m.queda), amort: Math.round(amort), acum: Math.round(acum) });
+    });
+    return pts;
+  }, [porMes, snap, amortMes]);
+  const patFin = curvaPat[curvaPat.length - 1].pat;
   const mesesIguales = porMes.every((m) => Math.abs(m.queda - porMes[0].queda) < 1 && Math.abs(m.ingresos - porMes[0].ingresos) < 1);
 
   // ─── Cambios: alta / baja ─────────────────────────────────────────────
@@ -712,6 +736,71 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               </div>
             );
           })()}
+          </div>
+        </div>
+
+        {/* ── Acumulado del año y patrimonio ── */}
+        <div style={card}>
+          <div style={F.h2}>Lo que suma {año} y a dónde llega tu patrimonio</div>
+          <div style={F.caption}>Los 12 meses del escenario sumados, comparados con tu vida de hoy llevada a un año completo.</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10, marginTop: 12 }}>
+            {[
+              ["Ingresos del año", anual.ingresos, anualHoy.ingresos, C.ok, true],
+              ["Gastos del año", anual.gastos, anualHoy.gastos, C.danger, false],
+              ["Cuotas del año", anual.cuotas, anualHoy.cuotas, C.warn, false],
+              ["Impuestos del año", anual.impuestos, anualHoy.impuestos, C.purple, false],
+              [anual.queda >= 0 ? "Saldo a favor del año" : "Faltante del año", anual.queda, anualHoy.queda, anual.queda >= 0 ? C.ok : C.danger, true],
+            ].map(([t, v, vh, col, masEsMejor]) => {
+              const d = v - vh, bueno = masEsMejor ? d >= 0 : d <= 0;
+              return (
+                <div key={t} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.md, padding: "10px 12px" }}>
+                  <div style={F.label}>{t}</div>
+                  <div style={{ ...F.mono, fontSize: 18, color: col }}>{fm(v)}</div>
+                  <div style={{ ...F.caption, color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>
+                    {Math.abs(d) < 1 ? "igual que hoy" : `${d > 0 ? "+" : "−"}${fm(Math.abs(d))} vs hoy (${fm(vh)})`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ ...F.caption, marginTop: 8 }}>
+            {anual.positivos === 12 ? "Los 12 meses cierran en positivo." : anual.positivos === 0 ? "Ningún mes cierra en positivo." : `${anual.positivos} meses cierran en positivo y ${12 - anual.positivos} en negativo.`}
+            {" "}Promedio mensual: {fm(anual.queda / 12)}.
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginTop: 20 }}>
+            <div>
+              <div style={F.h3}>Curva del patrimonio en {año}</div>
+              <div style={F.caption}>Arranca en tu patrimonio neto de hoy y cada mes suma lo que queda, más el capital de las cuotas que baja la deuda. Sin valorización de activos: solo tu flujo.</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={F.label}>Hoy → dic {año}</div>
+              <div style={{ ...F.mono, fontSize: 15 }}>
+                <span style={{ color: C.muted }}>{fm(snap.patrimonioNeto)}</span> → <span style={{ color: patFin >= snap.patrimonioNeto ? C.ok : C.danger }}>{fm(patFin)}</span>
+                <span style={{ ...F.caption, marginLeft: 8, color: patFin >= snap.patrimonioNeto ? C.ok : C.danger }}>{patFin >= snap.patrimonioNeto ? "+" : "−"}{fm(Math.abs(patFin - snap.patrimonioNeto))}{snap.patrimonioNeto > 0 ? ` (${((patFin - snap.patrimonioNeto) / snap.patrimonioNeto * 100).toFixed(1)}%)` : ""}</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ height: 240, marginTop: 10 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={curvaPat} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <ChartGradients />
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="m" {...axisProps} />
+                <YAxis {...axisProps} width={64} domain={[(min) => min - Math.max(1, Math.abs(patFin - snap.patrimonioNeto)) * 0.6, (max) => max + Math.max(1, Math.abs(patFin - snap.patrimonioNeto)) * 0.3]} tickFormatter={(v) => fmC(v)} />
+                <YAxis yAxisId="oculto" hide domain={["auto", "auto"]} />
+                <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} />} />
+                <ReferenceLine y={snap.patrimonioNeto} stroke={CHART.txt3} strokeDasharray="4 4" />
+                <Area type="monotone" dataKey="pat" name="Patrimonio neto" stroke={CHART.blue} strokeWidth={2} fill="url(#gradBlue)" dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+                {/* Series invisibles: solo para que el tooltip muestre el detalle del mes */}
+                <Area yAxisId="oculto" type="monotone" dataKey="queda" name="Queda ese mes" stroke="none" fill="none" dot={false} activeDot={false} isAnimationActive={false} />
+                <Area yAxisId="oculto" type="monotone" dataKey="amort" name="Deuda que baja" stroke="none" fill="none" dot={false} activeDot={false} isAnimationActive={false} />
+                <Area yAxisId="oculto" type="monotone" dataKey="acum" name="Sobrante acumulado" stroke="none" fill="none" dot={false} activeDot={false} isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ ...F.caption, marginTop: 6 }}>
+            Patrimonio neto hoy: activos {fm(snap.activos)} − deudas {fm(snap.deudasTotales)} = {fm(snap.patrimonioNeto)}.{amortMes > 0 ? ` Capital que baja la deuda: ${fm(amortMes)}/mes mientras haya cuotas.` : ""} Pásate por la curva para ver cada mes.
           </div>
         </div>
 
