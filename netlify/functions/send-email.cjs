@@ -309,6 +309,12 @@ function enmascarar(email) {
   return (u.slice(0, 2) || "*") + "***@" + d;
 }
 
+// Enmascara cualquier email que aparezca dentro de un texto libre
+// (p. ej. el `message` de Resend o de una excepción).
+function enmascararTexto(texto) {
+  return String(texto == null ? "" : texto).replace(/[^\s@<>"'(),;:]+@[^\s@<>"'(),;:]+/g, (m) => enmascarar(m));
+}
+
 async function sendRendered({ to, subject, html, text, headers, etiqueta = "rendered", idempotencyKey } = {}) {
   if (!to || !subject || !html) return { ok: false, error: "Faltan params: to, subject, html" };
   if (!process.env.RESEND_API_KEY) {
@@ -336,7 +342,7 @@ async function enviarResend({ to, subject, html, text, headers, etiqueta, idempo
   });
   const data = await resp.json();
   if (!resp.ok) {
-    console.error(`[send-email] Resend error (${resp.status}):`, data);
+    console.error(`[send-email] Resend error (${resp.status}):`, { name: data && data.name, message: data && enmascararTexto(data.message) });
     return { ok: false, error: data.message || "Resend error", status: resp.status };
   }
   console.log(`[send-email] ✅ template=${etiqueta} to=${enmascarar(to)} message_id=${data.id}`);
@@ -377,7 +383,7 @@ exports.handler = async (event) => {
     const statusCode = r.ok ? 200 : (r.status ? 500 : 400);
     return { statusCode, headers: cors, body: JSON.stringify(r) };
   } catch (e) {
-    console.error("[send-email] exception:", e);
+    console.error("[send-email] exception:", { name: e && e.name, message: e && enmascararTexto(e.message) });
     return { statusCode: 500, headers: cors, body: JSON.stringify({ ok: false, error: String(e?.message || e) }) };
   }
 };

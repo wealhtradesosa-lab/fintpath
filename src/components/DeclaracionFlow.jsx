@@ -2134,8 +2134,8 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
                       borderRadius: 6,
                       fontSize: 12,
                     }}>
-                      <span style={{ color: C.txt3, fontFamily: "monospace", flexShrink: 0, width: 28 }}>
-                        {r.numero}
+                      <span title={r.casillaDIAN != null ? `Casilla ${r.casillaDIAN} del formulario DIAN` : undefined} style={{ color: C.txt3, fontFamily: "monospace", flexShrink: 0, width: 28 }}>
+                        {r.casillaDIAN ?? r.numero}
                       </span>
                       <span style={{ flex: 1, color: r.destacado ? C.txt : C.txt2, fontWeight: r.destacado ? 700 : 400 }}>
                         {r.concepto}

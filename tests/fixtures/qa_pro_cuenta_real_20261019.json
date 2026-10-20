@@ -1,0 +1,385 @@
+{
+ "deu": [
+  {
+   "n": "Tarjeta de crédito",
+   "id": "d_1791771475041",
+   "la": null,
+   "mt": 4200000,
+   "pg": 350000,
+   "tp": "credit_card",
+   "ts": 28,
+   "owner": "own_1",
+   "fiscalCode": "DEU_NAT_CONSUMO"
+  },
+  {
+   "n": "Crédito vehículo",
+   "id": "d_1791771479987",
+   "la": "i_1791773660700",
+   "mt": 18500000,
+   "pg": 720000,
+   "tp": "vehiculo",
+   "ts": 16,
+   "owner": "own_1",
+   "moneda": "COP",
+   "fiscalCode": "DEU_NAT_CONSUMO",
+   "tipoInteres": "compuesto"
+  },
+  {
+   "n": "Hipoteca apartamento",
+   "id": "d_1791773765802",
+   "la": "i_1791773612352",
+   "mt": 210000000,
+   "pg": 2650000,
+   "tp": "mortgage",
+   "ts": 12.5,
+   "owner": "own_1",
+   "fiscalCode": "DEU_NAT_INVERSION"
+  }
+ ],
+ "gas": {
+  "Vivienda": [
+   {
+    "c": "Arriendo apartamento",
+    "m": 1900000,
+    "t": "f",
+    "freq": "mes",
+    "owner": "",
+    "mesPago": 1,
+    "fiscalCode": "GAS_NAT_PERSONAL",
+    "frecuencia": "mensual"
+   }
+  ],
+  "Servicios": [
+   {
+    "c": "Servicios (luz, agua, internet, gas)",
+    "m": 320000,
+    "t": "f",
+    "freq": "mes",
+    "owner": "",
+    "mesPago": 1,
+    "fiscalCode": "GAS_NAT_PERSONAL",
+    "frecuencia": "mensual"
+   }
+  ],
+  "Transporte": [
+   {
+    "c": "Transporte",
+    "m": 380000,
+    "t": "v",
+    "freq": "mes",
+    "owner": "",
+    "mesPago": 1,
+    "fiscalCode": "GAS_NAT_PERSONAL",
+    "frecuencia": "mensual"
+   }
+  ],
+  "Tecnología": [
+   {
+    "c": "Suscripciones (streaming, apps)",
+    "m": 160000,
+    "t": "f",
+    "freq": "mes",
+    "owner": "",
+    "mesPago": 1,
+    "fiscalCode": "GAS_NAT_PERSONAL",
+    "frecuencia": "mensual"
+   }
+  ],
+  "Alimentación": [
+   {
+    "c": "Mercado",
+    "m": 1100000,
+    "t": "v",
+    "freq": "mes",
+    "owner": "",
+    "mesPago": 1,
+    "fiscalCode": "GAS_NAT_PERSONAL",
+    "frecuencia": "mensual"
+   },
+   {
+    "c": "Domicilios y restaurantes",
+    "m": 750000,
+    "t": "v",
+    "freq": "mes",
+    "owner": "",
+    "mesPago": 1,
+    "fiscalCode": "GAS_NAT_PERSONAL",
+    "frecuencia": "mensual"
+   }
+  ],
+  "Entretenimiento": [
+   {
+    "c": "Entretenimiento",
+    "m": 300000,
+    "t": "v",
+    "freq": "mes",
+    "owner": "",
+    "mesPago": 1,
+    "fiscalCode": "GAS_NAT_PERSONAL",
+    "frecuencia": "mensual"
+   }
+  ],
+  "Inmueble arrendado": [
+   {
+    "c": "Administración apartamento",
+    "m": 350000,
+    "t": "f",
+    "freq": "mes",
+    "owner": "own_1",
+    "mesPago": 1,
+    "activoId": "i_1791773612352",
+    "fiscalCode": "GAS_NAT_PERSONAL",
+    "frecuencia": "mensual"
+   },
+   {
+    "c": "Predial apartamento",
+    "m": 2400000,
+    "t": "f",
+    "freq": "mes",
+    "owner": "own_1",
+    "mesPago": 4,
+    "activoId": "i_1791773612352",
+    "fiscalCode": "GAS_NAT_PERSONAL",
+    "frecuencia": "anual"
+   }
+  ]
+ },
+ "ibk": [],
+ "inv": [
+  {
+   "n": "Cuenta de ahorros",
+   "gs": [],
+   "id": "i_1791771495470",
+   "ig": [],
+   "tp": "Cash",
+   "ub": "Colombia",
+   "va": 3500000,
+   "vc": 3500000,
+   "name": "Cuenta de ahorros",
+   "tasa": 0,
+   "tipo": "Cash",
+   "owner": "own_1",
+   "moneda": "COP",
+   "nombre": "Cuenta de ahorros",
+   "ubicacion": "Colombia",
+   "fiscalCode": "INV_INMUEBLE_HABITACIONAL"
+  },
+  {
+   "n": "CDT",
+   "gs": [],
+   "id": "i_1791771500486",
+   "ig": [],
+   "tp": "CDT",
+   "ub": "Colombia",
+   "va": 8000000,
+   "vc": 8000000,
+   "name": "CDT",
+   "tasa": 9,
+   "tipo": "CDT",
+   "owner": "own_1",
+   "moneda": "COP",
+   "nombre": "CDT",
+   "ubicacion": "Colombia",
+   "fiscalCode": "INV_INMUEBLE_HABITACIONAL"
+  },
+  {
+   "n": "Apartamento",
+   "gs": [],
+   "id": "i_1791773612352",
+   "ig": [],
+   "tp": "Real Estate",
+   "ub": "Bogotá",
+   "va": 380000000,
+   "vc": 380000000,
+   "name": "Apartamento",
+   "tasa": 6,
+   "tipo": "Real Estate",
+   "owner": "own_1",
+   "moneda": "COP",
+   "nombre": "Apartamento",
+   "ubicacion": "Bogotá",
+   "fiscalCode": "INV_INMUEBLE_ARRENDADO"
+  },
+  {
+   "n": "Carro",
+   "gs": [],
+   "id": "i_1791773660700",
+   "ig": [],
+   "tp": "Vehículo",
+   "ub": "Colombia",
+   "va": 62000000,
+   "vc": 62000000,
+   "name": "Carro",
+   "tasa": 0,
+   "tipo": "Vehículo",
+   "owner": "own_1",
+   "moneda": "COP",
+   "nombre": "Carro",
+   "ubicacion": "Colombia",
+   "fiscalCode": "INV_INMUEBLE_HABITACIONAL"
+  },
+  {
+   "n": "Fondo de inversión",
+   "gs": [],
+   "id": "i_1791773665733",
+   "ig": [],
+   "tp": "Fondo de Inversión",
+   "ub": "Colombia",
+   "va": 15000000,
+   "vc": 15000000,
+   "name": "Fondo de inversión",
+   "tasa": 7,
+   "tipo": "Fondo de Inversión",
+   "owner": "own_1",
+   "moneda": "COP",
+   "nombre": "Fondo de inversión",
+   "ubicacion": "Colombia",
+   "fiscalCode": "INV_INMUEBLE_HABITACIONAL"
+  }
+ ],
+ "pen": {
+  "sv": 2500,
+  "age": 35,
+  "cur": 120000,
+  "des": 6000,
+  "inf": 3,
+  "ret": 7,
+  "btcC": 56,
+  "btcP": 50000,
+  "rAge": 60
+ },
+ "trm": 4200,
+ "metas": [],
+ "owners": [
+  {
+   "id": "own_1",
+   "name": "Personal",
+   "type": "natural",
+   "regimen": "ordinario"
+  }
+ ],
+ "ingresos": [
+  {
+   "id": "ing_1791771397072",
+   "tasa": 0,
+   "tipo": "fijo",
+   "owner": "own_1",
+   "fuente": "Empresa",
+   "moneda": "COP",
+   "nombre": "Salario",
+   "aportes": {
+    "salud": 272000,
+    "pension": 272000,
+    "saludModo": "valor",
+    "saludSmmlv": 0,
+    "pensionModo": "valor",
+    "pensionSmmlv": 0
+   },
+   "capital": 0,
+   "mensual": 6800000,
+   "mesPago": 1,
+   "activoId": "",
+   "desdeMes": 1,
+   "hastaMes": 12,
+   "tasaModo": "anual",
+   "categoria": "Salario",
+   "fiscalCode": "LAB_SALARIO",
+   "frecuencia": "mensual",
+   "montosMensuales": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "tipoVinculacion": "no_aplica"
+  },
+  {
+   "id": "ing_1791771410712",
+   "tasa": 0,
+   "tipo": "variable",
+   "owner": "own_1",
+   "fuente": "Proyectos freelance",
+   "moneda": "COP",
+   "nombre": "Freelance",
+   "capital": 0,
+   "mensual": 900000,
+   "mesPago": 1,
+   "activoId": "",
+   "desdeMes": 1,
+   "hastaMes": 12,
+   "tasaModo": "anual",
+   "categoria": "Honorarios",
+   "fiscalCode": "LAB_HONORARIOS_SIN_EMPLEADOS",
+   "frecuencia": "mensual",
+   "montosMensuales": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "ing_1791773683157",
+   "sim": true,
+   "tipo": "fijo",
+   "owner": "own_1",
+   "moneda": "COP",
+   "nombre": "Rendimiento — CDT",
+   "mensual": 60000,
+   "activoId": "i_1791771500486",
+   "categoria": "Rentas de capital",
+   "fiscalCode": "CAP_RENDIMIENTO_GENERICO",
+   "frecuencia": "mensual"
+  },
+  {
+   "id": "ing_1791773694090",
+   "sim": true,
+   "tipo": "fijo",
+   "owner": "own_1",
+   "moneda": "COP",
+   "nombre": "Rendimiento — Fondo de inversión",
+   "mensual": 87500,
+   "activoId": "i_1791773665733",
+   "categoria": "Rentas de capital",
+   "fiscalCode": "CAP_RENDIMIENTO_GENERICO",
+   "frecuencia": "mensual"
+  },
+  {
+   "id": "ing_1791773699317",
+   "sim": true,
+   "tipo": "fijo",
+   "owner": "own_1",
+   "moneda": "COP",
+   "nombre": "Rendimiento — Apartamento",
+   "mensual": 1900000,
+   "activoId": "i_1791773612352",
+   "categoria": "Rentas de capital",
+   "fiscalCode": "CAP_RENDIMIENTO_GENERICO",
+   "frecuencia": "mensual"
+  }
+ ],
+ "inflacionPct": 4,
+ "jurisdiction": "CO",
+ "migratedFiscalCodePV": true,
+ "migratedDeclaracionesV55": true,
+ "componenteInflacionarioPct": 50.88,
+ "migratedDeudaViviendaWizard": true,
+ "migratedAportesVoluntariosV17": true,
+ "migratedPlanOptimizacionNamespace": true
+}
