@@ -270,3 +270,13 @@ describe("sin claims de optimización tributaria en texto visible", () => {
     expect(malas).toEqual([]);
   });
 });
+
+describe("sin promesas de ahorro fijas (renglón 51 F-210)", () => {
+  it("no vuelve a aparecer «te ahorra fácil»", () => {
+    const malas = [];
+    for (const f of [...archivosTodos("src"), ...archivosTodos("netlify/functions")])
+      for (const l of sinComentarios(readFileSync(f, "utf8")))
+        if (/te ahorra f[aá]cil/i.test(l)) malas.push(`${f}: ${l.trim().slice(0, 140)}`);
+    expect(malas).toEqual([]);
+  });
+});

@@ -163,7 +163,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
     { seccion: "capital", numero: 50, concepto: "Intereses y rendimientos financieros", valor: v(50, interesesBanc + rendGenerico), auto: interesesBanc + rendGenerico, tipo: "editable", fuente: "Ingresos CDT, cuentas de ahorro, papeles",
       tip: "🏦 CDT, cuentas remuneradas, bonos. Incluye los rendimientos brutos antes de retención." },
     { seccion: "capital", numero: 51, concepto: "Componente inflacionario excluido", valor: v(51, componenteInflacExcluido), auto: componenteInflacExcluido, tipo: "editable", fuente: "Cálculo automático componente inflacionario 2026 (50.88%)", articulo: "Art. 38-39 ET",
-      tip: "💎 GANANCIA OCULTA: el 50.88% de tus intereses bancarios NO son gravables (Art. 38 ET). El motor lo calcula automáticamente. Esto te ahorra fácil $5-15M en impuesto." },
+      tip: "Estas deducciones pueden bajar tu impuesto. Revisa tu caso con un contador." },
     { seccion: "capital", numero: 52, concepto: "Utilidad FIC", valor: v(52, utilidadFIC), auto: utilidadFIC, tipo: "editable", fuente: "Ingresos tipo FIC",
       tip: "📈 Fondos de Inversión Colectiva — la retención se hace a nivel del fondo, no del partícipe." },
     { seccion: "capital", numero: 53, concepto: "Renta líquida cédula de capital", tipo: "formula",
