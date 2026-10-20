@@ -303,9 +303,18 @@ export function captureUTMs() {
     if (value) utm[key] = value;
   });
 
+  // 20-oct-2026: también fbclid y la ruta de entrada, para atribuir el
+  // registro al anuncio aunque Meta recorte las UTM.
+  try {
+    const fbclid = params.get("fbclid");
+    if (fbclid && !window.sessionStorage.getItem("fp3_fbclid")) window.sessionStorage.setItem("fp3_fbclid", fbclid.slice(0, 200));
+    if (!window.sessionStorage.getItem("fp3_landing_path")) window.sessionStorage.setItem("fp3_landing_path", window.location.pathname.slice(0, 100));
+  } catch { /* noop */ }
+
   if (Object.keys(utm).length > 0) {
     try {
-      window.sessionStorage.setItem("fp3_utm", JSON.stringify(utm));
+      // Primer toque manda: si ya hay UTM en esta sesión, no se pisan.
+      if (!window.sessionStorage.getItem("fp3_utm")) window.sessionStorage.setItem("fp3_utm", JSON.stringify(utm));
     } catch { /* noop */ }
     track("campaign_landed", utm);
   }
@@ -352,9 +361,25 @@ export function readFirstTouch() {
   if (typeof document === "undefined") return null;
   try {
     const m = (document.cookie || "").match(/(?:^|;\s*)fp_ft=([^;]*)/);
-    if (!m) return null;
-    const o = JSON.parse(decodeURIComponent(m[1]));
-    return o && typeof o === "object" ? o : null;
+    if (m) {
+      const o = JSON.parse(decodeURIComponent(m[1]));
+      if (o && typeof o === "object") return o;
+    }
+  } catch { /* noop */ }
+  // 20-oct-2026: la cookie solo la escribe la landing /patrimonio. Los
+  // registros que entran por /libertad o por la home (campaña fp_libertad_2610)
+  // llegaban sin atribución aunque la app sí había capturado las UTM en
+  // sessionStorage. Si no hay cookie, se arma el primer toque con eso.
+  try {
+    let utm = {};
+    try { utm = JSON.parse(window.sessionStorage.getItem("fp3_utm") || "{}") || {}; } catch { utm = {}; }
+    if (!Object.keys(utm).length) {
+      try { utm = (JSON.parse(window.localStorage.getItem("fp3_entrada") || "null") || {}).utm || {}; } catch { utm = {}; }
+    }
+    const fbclid = window.sessionStorage.getItem("fp3_fbclid") || "";
+    const landing = window.sessionStorage.getItem("fp3_landing_path") || "";
+    if (!Object.keys(utm).length && !fbclid && !landing) return null;
+    return { ...utm, ...(fbclid ? { fbclid } : {}), ...(landing ? { landing_path: landing } : {}), ts: Date.now() };
   } catch { return null; }
 }
 
