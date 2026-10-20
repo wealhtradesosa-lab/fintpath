@@ -33,7 +33,7 @@ export default async function handler(req) {
     // parse-declaration: sesión verificada y descuento de la cuota del plan.
     const quien = await usuarioDesdeToken({ headers: { authorization: req.headers.get("authorization") || "" } });
     if (!quien) {
-      return new Response(JSON.stringify({ error: "sesion_requerida", mensaje: "Iniciá sesión para importar con IA." }), { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "sesion_requerida", mensaje: "Inicia sesión para importar con IA." }), { status: 401, headers: corsHeaders });
     }
     const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;

@@ -23,7 +23,7 @@
 //   - Donaciones a ESAL (implica gasto real)
 //   - Cargar gastos del inmueble no documentados (requiere facturas reales)
 // La distinción es clave: "optimizado" debe significar "lo mejor que se puede
-// hacer con los datos actuales" - no "lo mejor si gastás más plata".
+// hacer con los datos actuales" - no "lo mejor si gastas más plata".
 // ═════════════════════════════════════════════════════════════════════════
 
 /**

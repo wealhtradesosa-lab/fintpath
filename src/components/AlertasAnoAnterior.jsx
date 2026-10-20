@@ -11,8 +11,8 @@
 //   Monto mínimo    → \$1.000.000 para no alertar por ruido en cifras chicas
 //
 // Ejemplos de lo que detecta:
-//   · "retenciones bajaron 40% vs año anterior — revisá certificados"
-//   · "ingresos subieron 80% vs año anterior — confirmá si incluyes ingresos
+//   · "retenciones bajaron 40% vs año anterior — revisa certificados"
+//   · "ingresos subieron 80% vs año anterior — confirma si incluyes ingresos
 //      no operacionales que no declarabas antes"
 //   · "impuesto aumentó 65% — puede ser correcto si subieron ingresos, pero
 //      también puede indicar deducciones olvidadas"
@@ -179,7 +179,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
       </div>
 
       <div style={{ fontSize: 10, color: T.txt3, marginTop: 8, lineHeight: 1.4 }}>
-        Estas alertas son informativas — pueden ser cambios legítimos (aumento de ingresos, nuevas deducciones, etc.) o pueden indicar errores de captura. Revisá cada una antes de dar por final el cálculo.
+        Estas alertas son informativas — pueden ser cambios legítimos (aumento de ingresos, nuevas deducciones, etc.) o pueden indicar errores de captura. Revisa cada una antes de dar por final el cálculo.
       </div>
     </div>
   );

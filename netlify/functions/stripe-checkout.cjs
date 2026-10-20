@@ -98,7 +98,7 @@ exports.handler = async (event) => {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: "email requerido — completá tu perfil antes de suscribirte",
+          error: "email requerido — completa tu perfil antes de suscribirte",
         }),
       };
     }
@@ -124,7 +124,7 @@ exports.handler = async (event) => {
     //
     // allow_promotion_codes: true Y discounts son MUTUAMENTE EXCLUYENTES en
     // Stripe — si pre-aplicamos un código, el campo input desaparece. Esto
-    // está OK para la flow de Pioneros (ya tenés el código aplicado).
+    // está OK para la flow de Pioneros (ya tienes el código aplicado).
     // ─────────────────────────────────────────────────────────────────────
     const promotionCode = (body.promotionCode || "").trim().toUpperCase();
     if (promotionCode) {

@@ -42,7 +42,7 @@ async function usuarioDesdeToken(event) {
 const ADMINS = ["santiagososa1@me.com"];
 const esAdmin = (u) => !!u && ADMINS.includes(u.email);
 
-const sinSesion = (headers, mensaje = "Iniciá sesión para usar esta función.") => ({
+const sinSesion = (headers, mensaje = "Inicia sesión para usar esta función.") => ({
   statusCode: 401, headers,
   body: JSON.stringify({ error: "sesion_requerida", mensaje }),
 });
