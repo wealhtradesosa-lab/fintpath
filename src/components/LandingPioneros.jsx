@@ -245,7 +245,7 @@ export default function LandingPioneros({ onGetStarted = () => {} }) {
           fontWeight: 400,
           opacity: mounted ? 1 : 0,
         }}>
-          Sos parte del primer grupo de 100 personas que recibe acceso temprano al Plan Pro. Tres meses gratis. Tu feedback construye el producto. Cero compromiso a futuro.
+          Eres parte del primer grupo de 100 personas que recibe acceso temprano al Plan Pro. Tres meses gratis. Tu feedback construye el producto. Cero compromiso a futuro.
         </p>
 
         {/* Card del código */}
@@ -405,7 +405,7 @@ export default function LandingPioneros({ onGetStarted = () => {} }) {
             lineHeight: 1.65,
             maxWidth: 640,
           }}>
-            Sos de los primeros que prueba FINPATHIA en serio. Tu uso real, tus preguntas, lo que te frustra y lo que te encanta — todo eso construye el producto que la siguiente generación de familias va a usar. A cambio te damos acceso temprano sin costo y línea directa con el equipo.
+            Eres de los primeros que prueba FINPATHIA en serio. Tu uso real, tus preguntas, lo que te frustra y lo que te encanta — todo eso construye el producto que la siguiente generación de familias va a usar. A cambio te damos acceso temprano sin costo y línea directa con el equipo.
           </p>
         </div>
       </div>

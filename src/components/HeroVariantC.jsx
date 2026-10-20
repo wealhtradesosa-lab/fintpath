@@ -30,7 +30,7 @@ const FONT_BODY = "'Inter', system-ui, sans-serif";
 // preservar legibilidad del texto blanco sobre la imagen.
 // ─────────────────────────────────────────────────────────────────────────
 
-export default function HeroVariantC({ onGetStarted = () => {} }) {
+export default function HeroVariantC({ onGetStarted = () => {}, onLogin }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
 
@@ -164,7 +164,7 @@ export default function HeroVariantC({ onGetStarted = () => {} }) {
         </div>
 
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-          <button onClick={onGetStarted} style={{
+          <button onClick={onLogin || onGetStarted} style={{
             background: "transparent",
             border: "none",
             color: T.txt2,

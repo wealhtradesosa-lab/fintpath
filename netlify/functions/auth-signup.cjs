@@ -1,3 +1,13 @@
+const FT_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "gclid", "landing_path"];
+function cleanFirstTouch(a) {
+  if (!a || typeof a !== "object") return null;
+  const o = {};
+  for (const k of FT_KEYS) if (typeof a[k] === "string" && a[k]) o[k] = a[k].slice(0, 200);
+  if (Number.isFinite(a.ts)) o.ts = a.ts;
+  return Object.keys(o).length ? o : null;
+}
+exports.cleanFirstTouch = cleanFirstTouch;
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -8,7 +18,7 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method not allowed" };
 
   try {
-    const { email, password, name } = JSON.parse(event.body);
+    const { email, password, name, attribution } = JSON.parse(event.body);
     if (!email || !password) return { statusCode: 400, headers, body: JSON.stringify({ error: "Email y contraseña requeridos" }) };
 
     // Sesión 4-may-2026: validación de password en backend (defense in depth).
@@ -30,6 +40,9 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid email" }) };
     }
 
+    // Primer toque (brief /patrimonio): solo claves permitidas, cadenas cortas.
+    const firstTouch = cleanFirstTouch(attribution);
+
     const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -45,7 +58,7 @@ exports.handler = async (event) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: { name: name || "" },
+        user_metadata: { name: name || "", ...(firstTouch ? { first_touch: firstTouch } : {}) },
       }),
     });
 

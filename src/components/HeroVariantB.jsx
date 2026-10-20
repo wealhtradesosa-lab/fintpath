@@ -25,7 +25,7 @@ const T = {
 const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 const FONT_BODY = "'Inter', system-ui, sans-serif";
 
-export default function HeroVariantB({ onGetStarted = () => {} }) {
+export default function HeroVariantB({ onGetStarted = () => {}, onLogin }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
 
@@ -110,7 +110,7 @@ export default function HeroVariantB({ onGetStarted = () => {} }) {
           }}>FINPATHIA</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={onGetStarted} style={{
+          <button onClick={onLogin || onGetStarted} style={{
             background: "transparent", border: "none", color: T.txt2,
             padding: "9px 14px", cursor: "pointer", fontSize: 14, fontWeight: 500,
           }}>Iniciar sesión</button>
@@ -243,7 +243,7 @@ export default function HeroVariantB({ onGetStarted = () => {} }) {
           fontSize: 13, color: T.txt3,
           opacity: mounted ? 1 : 0,
         }}>
-          Sin tarjeta · Datos cifrados · Cancelas cuando quieras
+          Sin tarjeta · Conexión cifrada · Cancelas cuando quieras
         </p>
 
         {/* TARJETAS FLOTANTES — micro-features ─────────────────────────── */}
@@ -258,7 +258,7 @@ export default function HeroVariantB({ onGetStarted = () => {} }) {
         }}>
           {[
             { icon: "📊", title: "Vista familiar", desc: "Patrimonio del grupo en un solo dashboard", color: T.green },
-            { icon: "🧾", title: "Impuestos optimizados", desc: "Estrategias del contador, sin contador", color: T.blue },
+            { icon: "🧾", title: "Impuestos estimados", desc: "Calcula y revisa tu impuesto antes de hablar con tu contador", color: T.blue },
             { icon: "🤖", title: "Asesor IA 24/7", desc: "Pregunta lo que sea sobre tu plata", color: T.purple },
             { icon: "🔒", title: "Privacidad total", desc: "Tu información nunca sale de tu cuenta", color: T.cyan },
           ].map(f => (

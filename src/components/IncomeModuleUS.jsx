@@ -86,7 +86,7 @@ export const US_INCOME_TYPES = [
     desc:"Dividends from domestic corporations held 60+ days. Preferential rate.",
     taxed:"Same rates as long-term capital gains: 0%, 15%, or 20%. Plus 3.8% NIIT if applicable.",
     irc:"IRC § 1(h)(11)",
-    planning:"Hold dividend stocks 60+ days around ex-dividend date. Hold in Roth IRA to eliminate tax entirely. Municipal bond interest is federal tax-exempt.",
+    planning:"Hold dividend stocks 60+ days around ex-dividend date. Hold in Roth IRA to elimínate tax entirely. Municipal bond interest is federal tax-exempt.",
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {

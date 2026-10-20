@@ -251,8 +251,8 @@ export function useAccount(authUser, supabase) {
 
 /**
  * Helper sincrónico: ¿el usuario actual es admin?
- * Útil cuando ya tenés el state del hook arriba en el árbol de componentes
- * y querés derivar permisos sin volver a hacer el query.
+ * Útil cuando ya tienes el state del hook arriba en el árbol de componentes
+ * y quieres derivar permisos sin volver a hacer el query.
  */
 export function isAdmin(accountState) {
   return !accountState || accountState.role === "admin";

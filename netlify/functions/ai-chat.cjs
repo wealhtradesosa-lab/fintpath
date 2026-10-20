@@ -39,7 +39,7 @@ const KNOWLEDGE_CO = `
 - FBAR (FinCEN 114): obligatorio reportar si cuentas en exterior >$10,000
 - FATCA (Form 8938): reporte si activos >$200K (soltero) o >$400K (casado)
 - Estate tax USA: aplica a non-residents con activos USA >$60,000. Tarifa hasta 40%
-- Solución: LLC + Trust revocable para propiedades USA = evita probate y reduce estate tax
+- Solución: LLC + Trust revocable para propiedades USA = evita pruébate y reduce estate tax
 - Rental income USA: se reporta en Form 1040-NR
 - Tax treaty Colombia-USA: crédito tributario para evitar doble imposición
 
@@ -180,7 +180,7 @@ const KNOWLEDGE_US = `
 - House hacking: live in part of duplex/triplex, deduct rest as rental
 - BRRRR: Buy, Rehab, Rent, Refinance, Repeat
 
-7. TAX OPTIMIZATION STRATEGIES:
+7. TAX PLANNING CONSIDERATIONS (estimates, not promised savings):
 - Tax-loss harvesting: realize losses to offset gains, $3K/year against ordinary income
 - Asset location: tax-inefficient assets (bonds, REITs) in retirement accounts
 - Roth conversion ladder: convert Trad IRA to Roth in low-income years (early retirement)
@@ -207,7 +207,7 @@ const KNOWLEDGE_US = `
 - Lifetime gift exemption: same as estate ($13.99M, unified)
 - Step-up in basis: heirs receive assets at FMV at death (massive tax benefit on appreciated assets)
 - State estate tax: 12 states + DC have separate estate tax (MA, OR, WA, NY, etc.)
-- Revocable Living Trust: avoids probate, public, doesn't reduce taxes
+- Revocable Living Trust: avoids pruébate, public, doesn't reduce taxes
 - Irrevocable trusts (ILIT, GRAT, IDGT, SLAT): asset protection, gift/estate tax planning
 - 529 plans: not in estate, 5-year forward contribution allowed ($95K/recipient single)
 - Beneficiary designations OVERRIDE will (401k, IRA, life insurance) — must update after divorce
@@ -312,7 +312,7 @@ REGLAS DE RESPUESTA:
 6. Si mencionas un %, calcula también el monto en pesos
 7. Identifica riesgos que el usuario puede no ver
 8. Si aplica, menciona implicaciones tributarias
-9. Prioriza: liquidez → protección → crecimiento → optimización fiscal
+9. Prioriza: liquidez → protección → crecimiento → revisión fiscal
 10. Si no tienes datos suficientes, di exactamente qué falta
 11. Nunca digas "consulta un asesor" — TÚ eres el asesor
 12. Si el usuario pregunta algo fuera de finanzas, redirige amablemente`;
@@ -379,7 +379,7 @@ exports.handler = async (event) => {
     // arranque en frío: presupuesto de Anthropic abierto a quien quisiera.
     const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
     const quien = await usuarioDesdeToken(event);
-    if (!quien) return sinSesion(headers, "Iniciá sesión para usar el asesor con IA.");
+    if (!quien) return sinSesion(headers, "Inicia sesión para usar el asesor con IA.");
     const userId = quien.id;
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_KEY) {
