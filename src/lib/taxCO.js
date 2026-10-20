@@ -796,8 +796,20 @@ export const estimarImpuesto = (u, options = {}) => {
       const exenta25Bruta = Math.min(baseExenta * 0.25, TOPE_EXENTA25_UVT * uvt);
       const exenta25 = options.omitirExenta25 ? 0 : exenta25Bruta;
 
-      // Art. 336 ET: rentas exentas + deducciones ≤ min(40% del neto de la cédula, 1340 UVT).
-      const lim40Pct = netoLaboral * 0.40;
+      // Art. 336 ET: rentas exentas + deducciones ≤ min(40 %, 1340 UVT). El 40 %
+      // se calcula sobre el total de la cédula general (rentas de trabajo, de
+      // capital y no laborales) menos los ingresos no constitutivos de renta
+      // (aportes obligatorios, componente inflacionario). El tope de 1340 UVT es
+      // uno solo para toda la cédula. Solo la exenta del 25 % (Art. 206-10, tope
+      // 790 UVT) sigue calculándose únicamente sobre lo laboral (ver arriba).
+      // Pensiones (cédula propia, Art. 337) y dividendos (Art. 242) no entran.
+      const pctInflacBase336 = ((u.componenteInflacionarioPct != null ? u.componenteInflacionarioPct : 50.88) / 100);
+      const rendBase336 = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual;
+      const incrngoCapital336 = ow.fiscalProfile?.obligadoContabilidad ? 0 : rendBase336 * pctInflacBase336;
+      const baseCapital336 = Math.max(0, rendBase336 - incrngoCapital336 + inversionAnual + arrendamientoAnual);
+      const baseNoLaboral336 = Math.max(0, ingNoLaboral);
+      const baseArt336 = Math.max(0, netoLaboral) + baseCapital336 + baseNoLaboral336;
+      const lim40Pct = baseArt336 * 0.40;
       const lim1340 = TOPE_ART336_UVT * uvt;
       const lim40 = Math.min(lim40Pct, lim1340);
       // Pensión voluntaria + AFC (Art. 126-1 y 126-4 ET): renta exenta bajo el cap
@@ -1108,7 +1120,7 @@ export const estimarImpuesto = (u, options = {}) => {
         reteEstimadaAuto,
         anticiposRenta,
         pagosPrevios,
-        lim40, lim40Pct, lim1340,
+        lim40, lim40Pct, lim1340, baseArt336,
         tope336: lim40,
         topeExenta25UVT: TOPE_EXENTA25_UVT,
         topeArt336UVT: TOPE_ART336_UVT,
