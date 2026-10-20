@@ -54,7 +54,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
     const recs = [];
     if (fiscalData.type === "juridica") {
       const gbc = fiscalData.gastosByCat || {};
-      if (!gbc["Nómina"]) recs.push({ icon: "👥", title: "Nómina y empleados", desc: "Salarios y prestaciones son 100% deducibles. Cada $1M en nómina ahorra $350K en impuestos.", impact: 0, color: T.blue });
+      if (!gbc["Nómina"]) recs.push({ icon: "👥", title: "Nómina y empleados", desc: "Salarios y prestaciones pueden ser deducibles si cumplen los requisitos. Registra la nómina para que el cálculo la tenga en cuenta.", impact: 0, color: T.blue });
       if (!gbc["Honorarios"]) recs.push({ icon: "📋", title: "Honorarios profesionales", desc: "Contador, abogado, revisor fiscal. Registra estos gastos como deducibles.", impact: 0, color: T.blue });
       if (!gbc["Mantenimiento"]) recs.push({ icon: "🔧", title: "Mantenimiento de propiedades", desc: "Reparaciones, pintura, plomería — todo deducible para inmuebles de la empresa.", impact: 0, color: T.blue });
       if (!gbc["Impuesto"] && !gbc["Predial"]) recs.push({ icon: "🏛️", title: "Impuestos locales (predial, ICA, rodamiento)", desc: "Predial, ICA, contribuciones, rodamiento — impuestos pagados son deducibles.", impact: 0, color: T.blue });
@@ -65,7 +65,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         recs.push({ icon: "📋", title: "Provisión de cartera (Art. 145 ET)", desc: "Provisión individual por deterioro de cartera: aplica si tienes cuentas por cobrar con más de 90 días. El monto deducible depende de tu cartera real — no hay porcentaje automático.", impact: 0, color: T.purple });
         recs.push({ icon: "🏗️", title: "Depreciación acelerada (Art. 137 ET)", desc: "Evalúa con tu contador aplicar depreciación acelerada en activos productivos. Reduce utilidad gravable hoy, difiere impuesto. Aplica solo a ciertos activos y tasas definidas por reglamento.", impact: 0, color: T.purple });
         recs.push({ icon: "🏦", title: "Apalancamiento financiero (Art. 117 ET)", desc: "Crédito para inversión productiva: los intereses son deducibles sujetos a subcapitalización. Consulta con tu contador antes de endeudarte solo por el beneficio fiscal.", impact: 0, color: T.purple });
-        recs.push({ icon: "📈", title: "Reinvertir utilidades en activos productivos", desc: "Comprar equipos/vehículos genera depreciación deducible futura. Cada $100M en activos puede generar $20-33M/año en depreciación según vida útil.", impact: 0, color: T.purple });
+        recs.push({ icon: "📈", title: "Reinvertir utilidades en activos productivos", desc: "Comprar equipos o vehículos genera depreciación deducible en los años siguientes, según su vida útil. Revisa con tu contador si te conviene.", impact: 0, color: T.purple });
         recs.push({ icon: "💰", title: "Distribuir dividendos estratégicamente", desc: "En vez de dejar utilidad en la empresa (35%), distribuir dividendos al socio tributa al 15% (>300 UVT). Si la persona natural tiene tasa efectiva menor al 35%, conviene distribuir.", impact: 0, color: T.purple });
       }
       if ((fiscalData.descuentoICA || 0) > 0) recs.push({ icon: "🏛️", title: "Descuento 50% del ICA: " + fm(fiscalData.descuentoICA), desc: "El 50% del ICA pagado se descuenta directamente del impuesto de renta (Art. 115 ET). No es deducción, es descuento — se resta del impuesto calculado.", impact: 0, color: T.green });

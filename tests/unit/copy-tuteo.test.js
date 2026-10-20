@@ -280,3 +280,21 @@ describe("sin promesas de ahorro fijas (renglón 51 F-210)", () => {
     expect(malas).toEqual([]);
   });
 });
+
+describe("sin promesas de ahorro con monto", () => {
+  // «ahorra hasta $113M», «te ahorra $200K», «puede ahorrar entre $1M», «Cada $1M … ahorra $350K», «ahorra hasta $0.39»…
+  const reAhorroMonto = /(ahorra(r|s)?|ahorro de)\s+(hasta|entre|f[aá]cil|unos|aprox\.?)?\s*\$\s?\d|te ahorra\s+\$|Cada \$[\d.,]+\s*[MK]?[^.]{0,40}ahorra/i;
+  const archivos = [...archivosTodos("src"), ...archivosTodos("netlify/functions")].filter((f) => !f.endsWith("taxCO.js") && !/US\.jsx?$/.test(f));
+  it("ningún texto promete un ahorro con monto fijo", () => {
+    const malas = [];
+    for (const f of archivos)
+      for (const l of sinComentarios(readFileSync(f, "utf8")))
+        if (reAhorroMonto.test(l) && !/para ahorrar \$5M\/mes\?/.test(l)) malas.push // meta de ahorro del usuario en AsesorIA, no promesa(`${f}: ${l.trim().slice(0, 140)}`);
+    expect(malas).toEqual([]);
+  });
+  it("el patrón detecta los casos conocidos", () => {
+    for (const t of ["ahorra hasta $113M/año", "te ahorra $200K", "puede ahorrar entre $1M y $8M", "Cada $1M en nómina ahorra $350K", "Cada $1 aportado ahorra hasta $0.39"])
+      expect(reAhorroMonto.test(t)).toBe(true);
+    expect(reAhorroMonto.test("Estas deducciones pueden bajar tu impuesto.")).toBe(false);
+  });
+});

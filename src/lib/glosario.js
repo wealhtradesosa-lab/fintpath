@@ -112,12 +112,12 @@ const GLOSARIO = {
     termino: "Pensión Voluntaria",
     nombreCompleto: "Aportes voluntarios al fondo de pensión",
     explicacion: "Aportes EXTRA (más allá del 4% obligatorio) a tu fondo de pensión. Son renta exenta y reducen tu impuesto significativamente.",
-    ejemplo: "Es la palanca más poderosa para reducir impuesto: por cada $1 que aportas, ahorras hasta $0.39 de impuesto.",
+    ejemplo: "Es una de las formas más usadas de bajar la base gravable. Cuánto baja tu impuesto depende de tu tarifa y de los topes.",
   },
   dependientes: {
     termino: "Deducción por dependientes",
     explicacion: "Si tienes hijos menores de 23 años, padres mayores que dependen de ti, o cónyuge sin ingresos, puedes deducir el 10% de tu salario (hasta cierto tope).",
-    ejemplo: "Con dependientes puedes ahorrar entre $1M-$8M de impuesto al año.",
+    ejemplo: "Si tienes dependientes, esta deducción puede bajar tu impuesto según tu caso.",
   },
 
   // ── IMPUESTOS Y TARIFAS ─────────────────────────────────────────────────
