@@ -26,6 +26,7 @@
  * retornos. Calcula una brecha entre dónde estás y dónde dijiste que quieres
  * estar. La decisión es del usuario y su asesor.
  */
+import { fmtPctEs } from "./formato.js";
 import { claseDeActivo } from "./taxonomiaActivos.js";
 
 // ─── Clasificación de activos en canastas ─────────────────────────────────
@@ -346,7 +347,11 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
 
   // Cobertura: qué parte de los egresos cubre el ingreso pasivo. Es LA métrica
   // del objetivo "vivir de la renta".
-  const egresos = num(totales.egresosTotales);
+  // 11-oct-2026 — `ingresoPasivo` y `ob` vienen de metrics.js (vía cT). Antes
+  // cT no exponía `ingresoPasivo` y esta cobertura salía siempre 0%.
+  // `ob` = gastos + cuotas con los costos del inmueble arrendado ya neteados
+  // contra su renta; si no viene (llamadores viejos) se usa egresosTotales.
+  const egresos = num(totales.ob != null ? totales.ob : totales.egresosTotales);
   const pasivo = num(totales.ingresoPasivo);
   const cobertura = egresos > 0 ? (pasivo / egresos) * 100 : null;
 
@@ -354,7 +359,7 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
   if (concentracion >= 40 && mayor) {
     hallazgos.push({
       tono: "riesgo",
-      titulo: `${mayor.nombre} concentra el ${concentracion.toFixed(0)}% de tu patrimonio`,
+      titulo: `${mayor.nombre} concentra el ${fmtPctEs(concentracion, 0)} de tu patrimonio`,
       detalle: "Un solo activo que pesa tanto ata tu bienestar a un mercado específico. No es un error si es deliberado, pero conviene saberlo.",
     });
   }
@@ -369,7 +374,7 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
         titulo: b.puntos > 0
           ? `Tienes más en ${nombres[b.canasta]} de lo que tu objetivo pide`
           : `Te falta exposición a ${nombres[b.canasta]}`,
-        detalle: `${b.actual.toFixed(0)}% actual contra ${b.objetivo}% objetivo — una diferencia de ${Math.abs(b.puntos).toFixed(0)} puntos.`,
+        detalle: `${fmtPctEs(b.actual, 0)} actual contra ${b.objetivo}% objetivo — una diferencia de ${Math.abs(b.puntos).toFixed(0)} puntos.`,
       });
     });
   if (cobertura !== null && objetivo === "renta") {
@@ -377,7 +382,7 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
       tono: cobertura >= 100 ? "logro" : "atencion",
       titulo: cobertura >= 100
         ? "Tu ingreso pasivo ya cubre tus egresos"
-        : `Tu ingreso pasivo cubre el ${cobertura.toFixed(0)}% de tus egresos`,
+        : `Tu ingreso pasivo cubre el ${fmtPctEs(cobertura, 0)} de tus egresos`,
       detalle: cobertura >= 100
         ? "Alcanzaste la independencia por flujo. El trabajo ahora es sostenerla."
         : "Ese porcentaje es el que define si puedes dejar de depender del salario.",
@@ -406,7 +411,7 @@ export function diagnosticar({ inversiones = [], objetivo = "equilibrio", trm = 
       let estado, razon;
       if (peso >= 40) {
         estado = "revisar";
-        razon = `Concentra el ${peso.toFixed(0)}% de tu patrimonio. Sea cual sea el objetivo, un solo activo con ese peso es tu mayor riesgo.`;
+        razon = `Concentra el ${fmtPctEs(peso, 0)} de tu patrimonio. Sea cual sea el objetivo, un solo activo con ese peso es tu mayor riesgo.`;
       } else if (exceso >= 15) {
         estado = "revisar";
         razon = `Está en una canasta que tu objetivo pide reducir (${brechaDe[canasta] > 0 ? "+" : ""}${exceso.toFixed(0)} puntos sobre el objetivo).`;

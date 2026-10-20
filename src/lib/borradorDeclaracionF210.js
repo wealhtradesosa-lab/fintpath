@@ -164,22 +164,24 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
       tip: "✨ Sólo aplica si tienes salarios. 25% de tus ingresos laborales netos quedan exentos, hasta 790 UVT/año." },
 
     // ── CÉDULA DE CAPITAL ─────────────────────────────────────────────────
-    { seccion: "capital", numero: 50, concepto: "Intereses y rendimientos financieros", valor: v(50, interesesBanc + rendGenerico), auto: interesesBanc + rendGenerico, tipo: "editable", fuente: "Ingresos CDT, cuentas de ahorro, papeles",
+    { seccion: "capital", numero: 50, casillaDIAN: 58, concepto: "Intereses y rendimientos financieros", valor: v(50, interesesBanc + rendGenerico), auto: interesesBanc + rendGenerico, tipo: "editable", fuente: "Ingresos CDT, cuentas de ahorro, papeles",
       tip: "🏦 CDT, cuentas remuneradas, bonos. Incluye los rendimientos brutos antes de retención." },
-    { seccion: "capital", numero: 51, concepto: "Componente inflacionario excluido", valor: v(51, componenteInflacExcluido), auto: componenteInflacExcluido, tipo: "editable", fuente: "Cálculo automático componente inflacionario 2026 (50.88%)", articulo: "Art. 38-39 ET",
+    { seccion: "capital", numero: 51, casillaDIAN: 59, concepto: "Componente inflacionario excluido", valor: v(51, componenteInflacExcluido), auto: componenteInflacExcluido, tipo: "editable", fuente: "Cálculo automático componente inflacionario 2026 (50.88%)", articulo: "Art. 38-39 ET",
       tip: "💎 GANANCIA OCULTA: el 50.88% de tus intereses bancarios NO son gravables (Art. 38 ET). El motor lo calcula automáticamente. Esto te ahorra fácil $5-15M en impuesto." },
-    { seccion: "capital", numero: 52, concepto: "Utilidad FIC", valor: v(52, utilidadFIC), auto: utilidadFIC, tipo: "editable", fuente: "Ingresos tipo FIC",
+    { seccion: "capital", numero: 52, casillaDIAN: 58, concepto: "Utilidad FIC", valor: v(52, utilidadFIC), auto: utilidadFIC, tipo: "editable", fuente: "Ingresos tipo FIC",
       tip: "📈 Fondos de Inversión Colectiva — la retención se hace a nivel del fondo, no del partícipe." },
-    { seccion: "capital", numero: 54, concepto: "Arrendamientos de inmuebles (renta de capital)", valor: v(54, arrendamientoInmuebles), auto: arrendamientoInmuebles, tipo: "editable", fuente: "Ingresos de arriendo de inmuebles", articulo: "Art. 338 ET",
+    { seccion: "capital", numero: 54, casillaDIAN: 58, concepto: "Arrendamientos de inmuebles (renta de capital)", valor: v(54, arrendamientoInmuebles), auto: arrendamientoInmuebles, tipo: "editable", fuente: "Ingresos de arriendo de inmuebles", articulo: "Art. 338 ET",
       tip: "🏠 Arriendos brutos cobrados en el año. Van en las rentas de capital de la cédula general. Si el arrendatario te retuvo, esa retención va en la sección Liquidación." },
-    { seccion: "capital", numero: 55, concepto: "Costos y gastos del inmueble arrendado", valor: v(55, costosArrendamiento), auto: costosArrendamiento, tipo: "editable", fuente: "Predial, administración, mantenimiento, intereses y depreciación que registraste",
+    { seccion: "capital", numero: 55, casillaDIAN: 60, concepto: "Costos y gastos del inmueble arrendado", valor: v(55, costosArrendamiento), auto: costosArrendamiento, tipo: "editable", fuente: "Predial, administración, mantenimiento, intereses y depreciación que registraste",
       tip: "Solo lo que registraste para el inmueble. Si no registraste nada, queda en $0." },
-    { seccion: "capital", numero: 53, concepto: "Renta líquida cédula de capital", tipo: "formula",
-      calc: (vals) => Math.max(0, (vals[50] || 0) + (vals[52] || 0) - (vals[51] || 0)) + Math.max(0, (vals[54] || 0) - (vals[55] || 0)) },
+    { seccion: "capital", numero: 53, casillaDIAN: 61, concepto: "Renta líquida cédula de capital", tipo: "formula",
+      // F-210 AG 2025 (DIAN, instructivo): casilla 61 = 58 ingresos brutos − 59 INCRNGO − 60 costos y deducciones, solo positivo.
+      // `numero` es la numeración interna del borrador; `casillaDIAN` es la casilla oficial.
+      calc: (vals) => Math.max(0, (vals[50] || 0) + (vals[52] || 0) + (vals[54] || 0) - (vals[51] || 0) - (vals[55] || 0)) },
 
     // ── CÉDULA NO LABORAL ────────────────────────────────────────────────
     { seccion: "noLaboral", numero: 60, concepto: "Arrendamientos de bienes muebles", valor: v(60, ingArriendos), auto: ingArriendos, tipo: "editable", fuente: "Ingresos tipo NOL_ARRIENDO_BIENES_MUEBLES",
-      tip: "Arriendo de vehículos, maquinaria u otros bienes muebles. El arriendo de inmuebles va en la cédula de capital (renglón 54)." },
+      tip: "Arriendo de vehículos, maquinaria u otros bienes muebles. El arriendo de inmuebles va en las rentas de capital (casilla 58 del F-210)." },
     { seccion: "noLaboral", numero: 61, concepto: "Otros ingresos no laborales", valor: v(61, 0), auto: 0, tipo: "editable", fuente: "Manual",
       tip: "Indemnizaciones, premios, herencias. La mayoría va a Ganancias Ocasionales (sección aparte)." },
     { seccion: "noLaboral", numero: 62, concepto: "Renta líquida cédula no laboral", tipo: "formula",

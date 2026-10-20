@@ -1,4 +1,6 @@
 import AvisoVersion from "./components/AvisoVersion";
+import InputDecimalEs from "./components/InputDecimalEs.jsx";
+import { fmtTasaEs } from "./lib/formato.js";
 import LandingPage from "./components/LandingPage";
 import { fetchAuth } from "./lib/apiFetch";
 import BitcoinRetirementUS from "./components/BitcoinRetirementUS";
@@ -44,7 +46,7 @@ import LandingTerminos from "./components/LandingTerminos";
 import LandingPrivacidad from "./components/LandingPrivacidad";
 import OnboardingTour from "./components/OnboardingTour";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import { track, trackSignup, trackCheckoutStarted, trackPurchase, captureUTMs, identifyUser, readFirstTouch } from "./lib/analytics";
+import { track, trackSignup, trackCheckoutStarted, trackPurchase, captureUTMs, identifyUser, readFirstTouch, guardarEntrada, leerEntrada } from "./lib/analytics";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "./lib/chartTheme.jsx";
@@ -76,6 +78,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
 import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual, mesesLibreDeuda, vaCOP, vcCOP } from "./lib/flowHelpers.js";
+import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, inflacionGlobal, fmtPctEs, fmtMeses } from "./lib/metrics.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react";
@@ -119,7 +122,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 // ═══════════════════════════════════════════════════════════════════════════
 const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(255,255,255,0.08)",borderL:"rgba(255,255,255,0.15)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f97316",gd:"#eab308",ch:["#22c55e","#3b82f6","#f97316","#a78bfa","#ec4899","#06b6d4","#eab308"]};
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
-const pc=n=>(n||0).toFixed(1)+"%";
+const pc=n=>fmtPctEs(n);
 const SK="fp3";
 const sL=async(uid,accountId)=>{
   try{
@@ -393,7 +396,7 @@ const cuentaVacia = (d) => {
   return nInv + nIng + nDeu + nGas === 0;
 };
 
-const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
+const cT=(inv,ds,gf,ing,taxData,trm=4200,inflacionPct)=>{
   let ab=0, aportesObligatorios=0, gastosFamiliares=0;
   (inv||[]).forEach(i=>{if(i.sim!==false)ab+=vaCOP(i,trm)})
   // 26-jul-2026 — DOBLE CONVERSIÓN DE MONEDA (Santiago: "puse el valor en
@@ -452,13 +455,26 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
   const disponibleCuenta=brutoTotal-retencionMensual;
   const egresosTotales=aportesObligatorios+gastosFamiliares+cuotasDeudas+impuestoNeto;
   const cashFlow=disponibleCuenta-egresosTotales;
-  const independencia=egresosTotales>0?(disponibleCuenta/egresosTotales)*100:0;
+  // 11-oct-2026 — El índice de independencia es COBERTURA PASIVA (ingreso
+  // pasivo neto ÷ obligaciones), no ingreso total ÷ egresos. Antes un
+  // asalariado sin activos salía "Independencia" solo porque su sueldo cubría
+  // sus gastos. La base vive en src/lib/metrics.js (spec Finanzas); acá solo
+  // se expone. `coberturaTotal` conserva el ratio viejo (ingreso total ÷
+  // egresos) para los textos que hablan de "tus ingresos cubren tus gastos".
+  const coberturaTotal=egresosTotales>0?(disponibleCuenta/egresosTotales)*100:0;
+  const met=calcularMetricas({ingresos:ing,gastos:gf,deudas:ds,inv,trm,retencionMensual,impuestoNeto});
+  const independencia=met.coberturaPasiva;
   return{
     // ═══ Nuevo modelo explícito ═══
     brutoTotal, retencionMensual, disponibleCuenta,
     aportesObligatorios, gastosFamiliares, cuotasDeudas,
     impuestoBrutoMensual, impuestoNeto,
-    egresosTotales, cashFlow, independencia,
+    egresosTotales, cashFlow, independencia, coberturaTotal,
+    // ═══ Base única de métricas (metrics.js) ═══
+    met, nivel:met.nivel,
+    salud:saludFinanciera(met), rentaYield:rentaYYield(met), inflacion:gananciaVsInflacion(met,inflacionPct), colchonMeses:met.colchonMeses,
+    ingresoPasivo:met.ip, ingresoPasivoBruto:met.ipBruto, pctIngresoPasivo:met.pctIngresoPasivo,
+    ob:met.ob, ahorroPct:met.ahorroPct, cargaDeudaPct:met.cargaDeudaPct, ingresoNeto:met.ingresoNeto,
     // ═══ Legacy aliases (compatibilidad) ═══
     ab, td, nw:ab-td,
     ti:brutoTotal, tg:0, ni:disponibleCuenta,
@@ -1058,6 +1074,9 @@ export default function FinPath(){
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);
         // Sesión 4-may-2026: tracking GA4 — signup completed con metadata
         // de promo (Pioneros) y user_id para atribución cross-device.
+        // 11-oct-2026: guardar UTM + ángulo ANTES de trackSignup (que borra
+        // fp3_signup_intent) para el evento "activation" (primer activo) de días después.
+        guardarEntrada();
         trackSignup({ method: "email", userId: data.user.id });
         // 25-jul-2026 (Santiago: "creé una cuenta nueva y me llevó al simulador
         // de Pedro"): setPg solo se reseteaba en logout. Si el visitante venía
@@ -1302,15 +1321,16 @@ export default function FinPath(){
     const egresosTotales=aportesObligatorios+gastosFamiliares+totalCuotas+impuestoNeto;
     const nw=totalPat-totalDeu;
     const cf=disponibleCuenta-egresosTotales;
-    const ind=egresosTotales>0?((disponibleCuenta/egresosTotales)*100):0;
-    const level=ind>=250?"Libertad Absoluta":ind>=150?"Libertad":ind>=100?"Independencia":ind>=82.5?"Vitalidad":ind>=65?"Seguridad":"Pre-Seguridad";
+    // Nivel e índice: misma base que el Dashboard y el Simulador (metrics.js).
+    const ind=t.independencia||0;
+    const level=t.nivel?.nombre||"Sin datos";
     const fireNum=egresosTotales*12*25;const firePct=fireNum>0?(nw/fireNum*100):0;
     const dta=totalPat>0?(totalDeu/totalPat*100):0;
-    const runway=egresosTotales>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija","Fondo de Inversión"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)/egresosTotales):0;
+    const runway=t.colchonMeses!=null?Math.round(t.colchonMeses*10)/10:0; // colchón único (metrics.js)
     const invRows=inv.map(i=>"<tr><td>"+(i.n||i.nombre||"")+"</td><td>"+(i.tp||i.tipo||"Otro")+"</td><td class=r>"+fm(vaCOP(i,trm))+"</td><td class=r "+(vaCOP(i,trm)>=vcCOP(i,trm)?"style=color:#16a34a":"style=color:#dc2626")+">"+fm(vaCOP(i,trm)-vcCOP(i,trm))+"</td></tr>").join("");
     const ingRows=ing.map(i=>"<tr><td>"+(i.nombre||"")+"</td><td>"+(i.categoria||"")+"</td><td class=r>"+fm(montoPromedioMensual(i)*(i.moneda==="USD"?(u&&u.trm||4200):1))+"</td></tr>").join("");
-    const gasRows=gasCats.map(g=>"<tr><td>"+g.cat+(g.esAporte?" <span style='font-size:9px;color:#f59e0b'>(aporte)</span>":"")+"</td><td class=r>"+fm(g.total)+"</td><td class=r>"+(brutoTotal>0?(g.total/brutoTotal*100).toFixed(1)+"%":"—")+"</td></tr>").join("");
-    const deuRows=deu.map(d=>"<tr><td>"+(d.n||"")+"</td><td class=r>"+fm(d.mt||0)+"</td><td class=r>"+fm(d.pg||0)+"</td><td class=r>"+(d.ts||0)+"%</td></tr>").join("");
+    const gasRows=gasCats.map(g=>"<tr><td>"+g.cat+(g.esAporte?" <span style='font-size:9px;color:#f59e0b'>(aporte)</span>":"")+"</td><td class=r>"+fm(g.total)+"</td><td class=r>"+(brutoTotal>0?fmtPctEs((g.total/brutoTotal*100), 1):"—")+"</td></tr>").join("");
+    const deuRows=deu.map(d=>"<tr><td>"+(d.n||"")+"</td><td class=r>"+fm(d.mt||0)+"</td><td class=r>"+fm(d.pg||0)+"</td><td class=r>"+fmtTasaEs(d.ts||0)+"</td></tr>").join("");
     // Bloque desglose family office (nuevo Fase 4)
     const desgloseFlujo="<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0 18px'>"
       +"<div style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px'>"
@@ -1330,15 +1350,15 @@ export default function FinPath(){
     +"</div>";
     const html="<!DOCTYPE html><html><head><title>Reporte FINPATHIA</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;color:#1a1a1a;padding:32px 40px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.6}h1{font-size:22px;font-weight:800}h2{font-size:15px;font-weight:700;margin:24px 0 8px;padding-bottom:4px;border-bottom:2px solid #22c55e}.hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #22c55e}.logo{font-size:18px;font-weight:800;color:#22c55e}.dt{font-size:11px;color:#888}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:10px 0}.k{background:#f8f8f8;border-radius:8px;padding:10px;border-left:3px solid #22c55e}.kr{border-left-color:#ef4444}.kl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px}.kv{font-size:18px;font-weight:700;margin-top:2px}.ks{font-size:9px;color:#888;margin-top:2px}table{width:100%;border-collapse:collapse;margin:8px 0;font-size:11px}th{text-align:left;padding:5px 8px;background:#f0f0f0;font-weight:600;font-size:9px;text-transform:uppercase;color:#666}td{padding:5px 8px;border-bottom:1px solid #eee}.r{text-align:right}.lb{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;text-align:center;margin:10px 0}.lt{font-size:18px;font-weight:700;color:#16a34a}.ft{margin-top:28px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#aaa;text-align:center}.ds{font-size:8px;color:#ccc;margin-top:16px;text-align:center;line-height:1.4}@media print{body{padding:20px}@page{size:letter;margin:12mm}}</style></head><body>"
     +"<div class=hd><div><div class=logo>FINPATHIA</div><h1>Reporte Financiero Personal</h1></div><div style=text-align:right><div class=dt>"+fecha+"</div><div class=dt>"+(u?.p?.name||"Usuario")+"</div></div></div>"
-    +"<div class=lb><div style=font-size:11px;color:#666>NIVEL DE LIBERTAD FINANCIERA</div><div class=lt>"+level+"</div><div style=font-size:13px;color:#333;margin-top:4px>Índice: "+ind.toFixed(1)+"%</div></div>"
+    +"<div class=lb><div style=font-size:11px;color:#666>NIVEL DE LIBERTAD FINANCIERA</div><div class=lt>"+level+"</div><div style=font-size:13px;color:#333;margin-top:4px>Índice: "+fmtPctEs(ind, 1)+"</div></div>"
     +desgloseFlujo
-    +"<div class=g4><div class=k><div class=kl>Patrimonio Neto</div><div class=kv>"+fm(nw)+"</div></div><div class=k><div class=kl>Disponible/mes</div><div class=kv>"+fm(disponibleCuenta)+"</div></div><div class='k "+(cf<0?"kr":"")+"'><div class=kl>Cash Flow/mes</div><div class=kv style=color:"+(cf>=0?"#16a34a":"#dc2626")+">"+fm(cf)+"</div></div><div class=k><div class=kl>FIRE Progress</div><div class=kv>"+firePct.toFixed(0)+"%</div><div class=ks>Meta: "+fm(fireNum)+"</div></div></div>"
+    +"<div class=g4><div class=k><div class=kl>Patrimonio Neto</div><div class=kv>"+fm(nw)+"</div></div><div class=k><div class=kl>Disponible/mes</div><div class=kv>"+fm(disponibleCuenta)+"</div></div><div class='k "+(cf<0?"kr":"")+"'><div class=kl>Cash Flow/mes</div><div class=kv style=color:"+(cf>=0?"#16a34a":"#dc2626")+">"+fm(cf)+"</div></div><div class=k><div class=kl>FIRE Progress</div><div class=kv>"+fmtPctEs(firePct, 0)+"</div><div class=ks>Meta: "+fm(fireNum)+"</div></div></div>"
     +"<h2>Patrimonio ("+inv.length+" activos)</h2><div class=g3><div class=k><div class=kl>Activos</div><div class=kv>"+fm(totalPat)+"</div></div><div class='k kr'><div class=kl>Deudas</div><div class=kv>"+fm(totalDeu)+"</div></div><div class=k><div class=kl>Neto</div><div class=kv>"+fm(nw)+"</div></div></div>"
     +"<table><thead><tr><th>Activo</th><th>Tipo</th><th class=r>Valor</th><th class=r>Ganancia</th></tr></thead><tbody>"+invRows+"</tbody></table>"
     +"<h2>Ingresos ("+ing.length+" fuentes)</h2><table><thead><tr><th>Fuente</th><th>Categoría</th><th class=r>Bruto/mes</th></tr></thead><tbody>"+ingRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td colspan=2>Total Bruto</td><td class=r>"+fm(brutoTotal)+"</td></tr></tbody></table>"
-    +"<h2>Gastos ("+gasCats.length+" categorías)</h2><table><thead><tr><th>Categoría</th><th class=r>Monto/mes</th><th class=r>% Bruto</th></tr></thead><tbody>"+gasRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td>Total</td><td class=r>"+fm(totalGas)+"</td><td class=r>"+(brutoTotal>0?(totalGas/brutoTotal*100).toFixed(0)+"%":"—")+"</td></tr></tbody></table>"
+    +"<h2>Gastos ("+gasCats.length+" categorías)</h2><table><thead><tr><th>Categoría</th><th class=r>Monto/mes</th><th class=r>% Bruto</th></tr></thead><tbody>"+gasRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td>Total</td><td class=r>"+fm(totalGas)+"</td><td class=r>"+(brutoTotal>0?fmtPctEs((totalGas/brutoTotal*100), 0):"—")+"</td></tr></tbody></table>"
     +(deu.length>0?"<h2>Deudas ("+deu.length+")</h2><table><thead><tr><th>Deuda</th><th class=r>Saldo</th><th class=r>Cuota/mes</th><th class=r>Tasa</th></tr></thead><tbody>"+deuRows+"<tr style=font-weight:700;border-top:2px+solid+#333><td>Total</td><td class=r>"+fm(totalDeu)+"</td><td class=r>"+fm(totalCuotas)+"</td><td></td></tr></tbody></table>":"")
-    +"<h2>Indicadores</h2><div class=g3><div class=k><div class=kl>Independencia</div><div class=kv>"+ind.toFixed(1)+"%</div><div class=ks>Meta: 100%+</div></div><div class=k><div class=kl>Deuda/Activos</div><div class=kv>"+dta.toFixed(1)+"%</div><div class=ks>Ideal: &lt;30%</div></div><div class=k><div class=kl>Runway</div><div class=kv>"+runway+" meses</div><div class=ks>Sin ingresos</div></div></div>"
+    +"<h2>Indicadores</h2><div class=g3><div class=k><div class=kl>Independencia</div><div class=kv>"+fmtPctEs(ind)+"</div><div class=ks>Meta: 100%+</div></div><div class=k><div class=kl>Deuda/Activos</div><div class=kv>"+fmtPctEs(dta, 1)+"</div><div class=ks>Ideal: &lt;30%</div></div><div class=k><div class=kl>Runway</div><div class=kv>"+runway+" meses</div><div class=ks>Sin ingresos</div></div></div>"
     +"<div class=ds>Este reporte es generado por FINPATHIA con fines informativos. No constituye asesoría financiera profesional.</div>"
     +"<div class=ft>FINPATHIA — finpathia.com — "+fecha+"</div></body></html>";
     const w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
@@ -1346,7 +1366,7 @@ export default function FinPath(){
 
   const handleImport=(key,rows,isGastos)=>{if(isGastos){const g={...(u&&u.gas||{})};rows.forEach(r=>{const cat=r.cat||"Otro";if(!g[cat])g[cat]=[];g[cat].push({c:r.c,m:r.m,t:r.t})});upd("gas",g)}else{upd(key,[...((u&&u[key])||[]),...rows])}};
 
-  const fm=n=>{if(masked)return"$•••••";if(n==null||isNaN(n))return"$0";const v=cur==="USD"?(n/trm):n;if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M";return"$"+Math.round(v).toLocaleString("en-US")};
+  const fm=n=>{if(masked)return"$•••••";if(n==null||isNaN(n))return"$0";const v=cur==="USD"?(n/trm):n;const loc=cur==="USD"?"en-US":"es-CO";if(Math.abs(v)>=1e9)return"$"+(v/1e9).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"M";return"$"+Math.round(v).toLocaleString(loc)};
   // Commit 23 Tarea 3: feedback honesto del estado de guardado.
   // Antes 'showToast' decia '✅ Guardado' inmediato, pero tecnicamente solo
   // era localStorage — el upsert a Supabase tenia debounce de 2s y podia
@@ -1379,7 +1399,63 @@ export default function FinPath(){
   // Usar este en gates de features. plan==="pro" es solo para "soy plan Pro
   // exacto" (ej. mostrar 'Plan actual' en pricing card del plan Pro).
   const hasProAccess=plan==="pro"||plan==="pro_familiar"||plan==="advisor_pro";
-  const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200):{},[u]);
+  const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200,u.inflacionPct):{},[u]);
+  // ═══ 11-oct-2026 — ACTIVACIÓN = «primer activo cargado» (copy v3) ═══
+  // Cuando la persona tiene al menos un activo en Patrimonio (u.inv), el
+  // navegador AVISA a track-activation con solo UTM + ángulo de entrada. El
+  // servidor no le cree: comprueba él mismo en user_data que la lista de
+  // activos no está vacía (sin leer valores) y marca activated_at una sola
+  // vez. Nunca se manda el activo, su valor ni conteos. Como el guardado en
+  // Supabase va con 2 s de espera, si el servidor aún no ve el activo
+  // (activo:false) se reintenta al confirmarse el siguiente guardado
+  // (fp3-save-ok) o en la próxima carga. Solo en la vista personal: un
+  // asesor mirando a un cliente no activa su propia cuenta.
+  const tieneActivo=!!(u&&Array.isArray(u.inv)&&u.inv.length>0);
+  useEffect(()=>{
+    if(!tieneActivo||!authUser?.id||viewMode!=="personal")return;
+    const k="fp3_activacion_"+authUser.id;
+    try{if(localStorage.getItem(k))return;}catch{}
+    let enCurso=false,listo=false;
+    const avisar=()=>{
+      if(enCurso||listo)return;enCurso=true;
+      const ent=leerEntrada();
+      fetchAuth("/api/track-activation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({utm:ent.utm,angle:ent.angle})})
+        .then(r=>r.ok?r.json():null).then(d=>{if(d&&d.ok&&d.activo!==false){listo=true;try{localStorage.setItem(k,"1")}catch{}}}).catch(()=>{}).finally(()=>{enCurso=false;});
+    };
+    avisar();
+    window.addEventListener("fp3-save-ok",avisar);
+    return ()=>window.removeEventListener("fp3-save-ok",avisar);
+  },[tieneActivo,authUser?.id,viewMode]);
+  // ═══ 11-oct-2026 — simulator_used (Analítica: medir la v2 de los correos) ═══
+  // Primera vez que abre el simulador (año en curso "sim" o futuro "simf").
+  // Mismo camino que la activación: solo la bandera + UTM + ángulo, sesión
+  // verificada, el servidor marca simulator_first_used_at una vez. Un solo
+  // intento por carga de página (ref) y bandera en localStorage al lograrlo.
+  // No cuenta cuando un asesor está viendo a un cliente.
+  const simIntentado=useRef(false);
+  useEffect(()=>{
+    if((pg!=="sim"&&pg!=="simf")||simIntentado.current||!authUser?.id||viewMode!=="personal")return;
+    const k="fp3_simulador_"+authUser.id;
+    try{if(localStorage.getItem(k))return;}catch{}
+    simIntentado.current=true;
+    const ent=leerEntrada();
+    fetchAuth("/api/track-activation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:"simulator_used",utm:ent.utm,angle:ent.angle})})
+      .then(r=>r.ok?r.json():null).then(d=>{if(d&&d.ok){try{localStorage.setItem(k,"1")}catch{}}}).catch(()=>{});
+  },[pg,authUser?.id,viewMode]);
+  // ═══ 11-oct-2026 — ENLACES DE LOS CORREOS (?ir=dash|sim|inv|price) ═══
+  // Los botones de los correos de la prueba abren una sección concreta.
+  // Lista cerrada de destinos; se lee una vez cuando ya hay datos cargados.
+  const irAplicado=useRef(false);
+  useEffect(()=>{
+    if(!u||irAplicado.current||typeof window==="undefined")return;
+    irAplicado.current=true;
+    try{
+      const ps=new URLSearchParams(window.location.search);
+      const ir=ps.get("ir");
+      if(ir&&["dash","sim","inv","price"].includes(ir))setPg(ir);
+      if(ir){ps.delete("ir");const q=ps.toString();window.history.replaceState({},"",window.location.pathname+(q?"?"+q:""));}
+    }catch{}
+  },[u]);
   const ib=useMemo(()=>{if(!u?.ibk?.length)return{tc:0,tv:0,pnl:0,pp:0,pos:[]};let tc=0,tv=0;const pos=u.ibk.map(p=>{
     // 26-jul-2026 (Santiago: "¿y si la persona tiene opciones qué hace?").
     // Un contrato de opción representa 100 acciones: su valor es
@@ -1728,12 +1804,12 @@ export default function FinPath(){
     const topA=inv.map(i=>({...i,...iM(i,deu)})).sort((a,b)=>b.noi-a.noi);
     const hiDebt=deu.filter(d=>(d.mt||0)>0).sort((a,b)=>b.ts-a.ts);
     const gasCats=Object.entries(gas).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+montoPromedioMensual(g),0),items}))/* frecuencia: un gasto anual no es un gasto mensual (fix 25-jul-2026) */.sort((a,b)=>b.total-a.total);
-    const pasivos=ing.filter(i=>["Arriendo","Rendimiento","Dividendos","Inversión"].includes(i.categoria));
-    const activos=ing.filter(i=>!["Arriendo","Rendimiento","Dividendos","Inversión"].includes(i.categoria));
-    const ingPasivo=pasivos.reduce((s,i)=>s+(montoPromedioMensual(i)*(i.moneda==="USD"?4200:1)),0);
-    const ingActivo=activos.reduce((s,i)=>s+(montoPromedioMensual(i)*(i.moneda==="USD"?4200:1)),0);
-    const pctPasivo=t.ni>0?(ingPasivo/t.ni*100):0;
-    const runway=t.te>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)/t.te):0;
+    // Clasificación pasivo/activo: la misma de metrics.js (antes cada pantalla
+    // tenía su lista y ninguna reconocía "Rentas de capital").
+    const ingPasivo=t.ingresoPasivoBruto||0;
+    const ingActivo=t.met?t.met.iaBruto:0;
+    const pctPasivo=t.pctIngresoPasivo||0;
+    const runway=t.colchonMeses!=null?Math.round(t.colchonMeses*10)/10:0; // colchón único (metrics.js)
     const fireNum=t.gfm*12*25;
     const firePct=fireNum>0?(t.nw/fireNum*100):0;
     const reVal=inv.filter(i=>(i.tp||i.tipo)==="Real Estate").reduce((s,i)=>s+vaCOP(i,trm),0);
@@ -1746,25 +1822,29 @@ export default function FinPath(){
     const usdPct=t.ni>0?(currencies.USD/t.ni*100):0;
 
     if(id==="cashflow"){
-      msgs.push({t:"💰 Cuadrante de Ingresos",c:"Ingresos activos (trabajo): "+fm(ingActivo)+"/mes ("+(100-pctPasivo).toFixed(0)+"%)\nIngresos pasivos (activos): "+fm(ingPasivo)+"/mes ("+pctPasivo.toFixed(0)+"%)\n\n"+(pctPasivo>=70?"🟢 EXCELENTE: Más del 70% es pasivo. Eres inversionista.":pctPasivo>=40?"🟡 EN TRANSICIÓN: "+pctPasivo.toFixed(0)+"% pasivo. Aún dependes del trabajo.":"🔴 DEPENDIENTE: Solo "+pctPasivo.toFixed(0)+"% pasivo. Si dejas de trabajar, pierdes el "+(100-pctPasivo).toFixed(0)+"%.")});
+      msgs.push({t:"💰 Cuadrante de Ingresos",c:"Ingresos activos (trabajo): "+fm(ingActivo)+"/mes ("+fmtPctEs((100-pctPasivo), 0)+")\nIngresos pasivos (activos): "+fm(ingPasivo)+"/mes ("+fmtPctEs(pctPasivo, 0)+")\n\n"+(pctPasivo>=70?"🟢 EXCELENTE: Más del 70% es pasivo. Eres inversionista.":pctPasivo>=40?"🟡 EN TRANSICIÓN: "+fmtPctEs(pctPasivo, 0)+" pasivo. Aún dependes del trabajo.":"🔴 DEPENDIENTE: Solo "+fmtPctEs(pctPasivo, 0)+" pasivo. Si dejas de trabajar, pierdes el "+fmtPctEs((100-pctPasivo), 0)+".")});
       const prodA=inv.filter(i=>iM(i,deu).noi>0);
       const valorA=inv.filter(i=>{const va=+i.va||0,vc=+i.vc||0;return iM(i,deu).noi<=0&&va>vc*1.1});
       const deadA=inv.filter(i=>{const va=+i.va||0,vc=+i.vc||0;return iM(i,deu).noi<=0&&va<=vc*1.1&&va>0});
       let clasif="Generan renta ("+prodA.length+"):\n"+prodA.slice(0,5).map(a=>"  💰 "+(a.n||a.nombre||"Sin nombre")+": +"+fm(iM(a,deu).noi)+"/mes").join("\n");
-      if(valorA.length>0)clasif+="\n\nSolo valorización ("+valorA.length+"):\n"+valorA.slice(0,3).map(a=>{const g=+a.vc>0?((+a.va-a.vc)/a.vc*100):0;return"  📈 "+(a.n||a.nombre||"Sin nombre")+": +"+g.toFixed(0)+"% plusvalía (no renta)"}).join("\n");
+      if(valorA.length>0)clasif+="\n\nSolo valorización ("+valorA.length+"):\n"+valorA.slice(0,3).map(a=>{const g=+a.vc>0?((+a.va-a.vc)/a.vc*100):0;return"  📈 "+(a.n||a.nombre||"Sin nombre")+": +"+fmtPctEs(g, 0)+" plusvalía (no renta)"}).join("\n");
       if(deadA.length>0)clasif+="\n\nSin renta ni valorización ("+deadA.length+"):\n"+deadA.slice(0,3).map(a=>"  ⚠️ "+(a.n||a.nombre||"Sin nombre")+": "+fm(a.va)).join("\n");
       if(deadA.length===0&&valorA.length===0)clasif+="\n\n✅ Todos tus activos generan renta.";
       msgs.push({t:"📦 Clasificación de Activos",c:clasif});
-      msgs.push({t:"🎯 Plan de Acción",c:"1. Convertir "+fm(deadA.reduce((s,i)=>s+vaCOP(i,trm),0))+" improductivos en productivos\n2. Reinvertir cash flow "+fm(t.cf)+"/mes en activos que generen ingreso\n3. Meta: ingreso pasivo > "+fm(t.te)+"/mes (hoy: "+fm(ingPasivo)+")\n4. Cada "+fm(Math.abs(t.cf)*12)+" ahorrado/año te acerca "+((t.te>0?Math.abs(t.cf)*12/t.te*100:0)).toFixed(0)+"% más"});
+      msgs.push({t:"🎯 Plan de Acción",c:"1. Convertir "+fm(deadA.reduce((s,i)=>s+vaCOP(i,trm),0))+" improductivos en productivos\n2. Reinvertir cash flow "+fm(t.cf)+"/mes en activos que generen ingreso\n3. Meta: ingreso pasivo > "+fm(t.te)+"/mes (hoy: "+fm(ingPasivo)+")\n4. Cada "+fm(Math.abs(t.cf)*12)+" ahorrado/año te acerca "+fmtPctEs(((t.te>0?Math.abs(t.cf)*12/t.te*100:0)), 0)+" más"});
     }
     else if(id==="estratega"){
-      const level=t.ind>=250?5:t.ind>=150?4:t.ind>=100?3:t.ind>=82.5?2:t.ind>=65?1:0;
-      const names=["Pre-Seguridad","Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
-      const factors=[0.65,0.825,1.0,1.5,2.5];
-      const nextNeeded=t.te*(factors[Math.min(level,4)]||1);
-      const gap=Math.max(0,nextNeeded-t.ni);
-      msgs.push({t:"🏔️ Nivel "+level+"/5: "+names[level],c:"Independencia: "+pc(t.ind)+"\nIngresos: "+fm(t.ni)+"/mes vs Egresos: "+fm(t.te)+"/mes\n\n"+(level>=3?"🟢 ¡Independencia alcanzada! Tus ingresos cubren 100% de gastos.":"Siguiente: "+names[Math.min(level+1,5)]+" → necesitas "+fm(nextNeeded)+"/mes\nTe faltan: "+fm(gap)+"/mes de ingreso adicional")});
-      msgs.push({t:"📅 Proyección FIRE",c:"FIRE Number: "+fm(fireNum)+"\nProgreso: "+firePct.toFixed(0)+"% ("+fm(t.nw)+" / "+fm(fireNum)+")\n\n"+(firePct>=100?"🟢 Tu patrimonio ya supera tu FIRE number.":"Necesitas acumular "+fm(Math.max(fireNum-t.nw,0))+" más.")});
+      // Nivel desde la base única (metrics.js): cobertura pasiva = IP ÷ OB.
+      const nv=t.nivel||{};
+      const sig=nv.siguiente;
+      const nvTxt=nv.nivel?("Nivel "+nv.nivel+"/5: "+nv.nombre):"Nivel: sin datos";
+      const nvCuerpo="Cobertura pasiva: "+pc(t.ind)+"\nIngreso pasivo neto: "+fm(t.ingresoPasivo)+"/mes vs Gastos + cuotas: "+fm(t.ob)+"/mes\n\n"+
+        (nv.nivel===5?"🟢 ¡Independencia alcanzada! Tu ingreso pasivo cubre el 100% de tus gastos y cuotas."
+        :nv.candado==="deficit"?"🔴 Tu flujo del mes es negativo ("+fm(t.cf)+"/mes). El primer paso es que tus ingresos cubran tus gastos y cuotas."
+        :nv.candado==="patrimonio_negativo"?"🟡 Tu patrimonio neto es negativo: el nivel queda en "+nv.nombre+" hasta que tus activos superen tus deudas."
+        :sig?"Siguiente: "+sig.nombre+" → necesitas "+fm((sig.min/100)*t.ob)+"/mes de ingreso pasivo\nTe faltan: "+fm(nv.faltaIPSiguiente)+"/mes de ingreso pasivo":"");
+      msgs.push({t:"🏔️ "+nvTxt,c:nvCuerpo});
+      msgs.push({t:"📅 Proyección FIRE",c:"FIRE Number: "+fm(fireNum)+"\nProgreso: "+fmtPctEs(firePct, 0)+" ("+fm(t.nw)+" / "+fm(fireNum)+")\n\n"+(firePct>=100?"🟢 Tu patrimonio ya supera tu FIRE number.":"Necesitas acumular "+fm(Math.max(fireNum-t.nw,0))+" más.")});
       if(topGasto)msgs.push({t:"✂️ Aceleradores",c:"Mayor gasto: "+topGasto.cat+" ("+fm(topGasto.total)+"/mes)\n\nSi reduces gastos 15%: cash flow sube a "+fm(t.cf+t.gfm*0.15)+"/mes\nSi aumentas ingreso 20%: cash flow sube a "+fm(t.cf+t.ni*0.2)+"/mes\n\n💡 Combinar ambos te acelera al doble."});
     }
     else if(id==="riesgo"){
@@ -1772,31 +1852,31 @@ export default function FinPath(){
           const types={};inv.forEach(i=>{const tp=inferType(i);types[tp]=(types[tp]||0)+vaCOP(i,trm)});
       const te=Object.entries(types).sort((a,b)=>b[1]-a[1]);
       const mx=te[0]||["",0];const mxP=t.nw>0?(mx[1]/t.nw*100):0;
-      msgs.push({t:"🔬 Concentración",c:te.map(([tp,v])=>"• "+tp+": "+fm(v)+" ("+((v/(t.nw||1))*100).toFixed(0)+"%)").join("\n")+"\n\n"+(mxP>50?"🔴 "+mx[0]+" = "+mxP.toFixed(0)+"%. Riesgo extremo.":mxP>35?"🟡 "+mx[0]+" = "+mxP.toFixed(0)+"%. Cerca del límite.":"🟢 Diversificación aceptable.")});
+      msgs.push({t:"🔬 Concentración",c:te.map(([tp,v])=>"• "+tp+": "+fm(v)+" ("+fmtPctEs(((v/(t.nw||1))*100), 0)+")").join("\n")+"\n\n"+(mxP>50?"🔴 "+mx[0]+" = "+fmtPctEs(mxP, 0)+". Riesgo extremo.":mxP>35?"🟡 "+mx[0]+" = "+fmtPctEs(mxP, 0)+". Cerca del límite.":"🟢 Diversificación aceptable.")});
       msgs.push({t:"⚡ Stress Test",c:"Caída inmobiliaria -20%:\n• Pierdes: "+fm(reVal*0.2)+"\n• Patrimonio: "+fm(t.nw-reVal*0.2)+"\n\nPierdes mayor ingreso"+(ing.length>0?" ("+ing.sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a))[0].nombre+")":"")+":\n• Cash flow: "+fm(t.cf-(ing.length>0?(ing.sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a))[0].mensual||0)*(ing.sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a))[0].moneda==="USD"?4200:1):0))+"/mes\n\nRunway sin ingresos: "+runway+" meses "+(runway<6?"🔴":"🟢")});
-      msgs.push({t:"🌐 Moneda",c:"COP: "+fm(currencies.COP)+"/mes ("+(100-usdPct).toFixed(0)+"%)\nUSD: "+fm(currencies.USD)+"/mes ("+usdPct.toFixed(0)+"%)\n\n"+(usdPct<15?"🟡 Muy expuesto al COP. Recomendación: 30%+ en USD.":usdPct>70?"🟡 Muy dolarizado.":"🟢 Buena diversificación.")});
+      msgs.push({t:"🌐 Moneda",c:"COP: "+fm(currencies.COP)+"/mes ("+fmtPctEs((100-usdPct), 0)+")\nUSD: "+fm(currencies.USD)+"/mes ("+fmtPctEs(usdPct, 0)+")\n\n"+(usdPct<15?"🟡 Muy expuesto al COP. Recomendación: 30%+ en USD.":usdPct>70?"🟡 Muy dolarizado.":"🟢 Buena diversificación.")});
     }
     else if(id==="valor"){
       const ranked=topA.map(a=>{const m=iM(a,deu);const va=+a.va||0,vc=+a.vc||0;const aprec=vc>0?((va-vc)/vc*100):0;const yld=va>0?(m.noi*12/va*100):0;const tasa=+(a.tasa||0);const bestYld=Math.max(yld,tasa);const total=aprec+bestYld;const nm=(a.n||a.nombre||"Sin nombre");const tipo=bestYld>aprec?"💰 Renta":"📈 Valorización";return{nm,aprec,bestYld,total,tipo,m,va}}).sort((a,b)=>b.total-a.total);
-      msgs.push({t:"📊 Ranking por Retorno Total",c:ranked.slice(0,8).map((a,i)=>(i+1)+". "+a.nm+"\n   "+a.tipo+": "+(a.aprec>0?"+"+a.aprec.toFixed(0)+"% valorización":"sin valorización")+(a.bestYld>0?" + "+a.bestYld.toFixed(1)+"% renta/año":"")+"\n   Retorno total: "+a.total.toFixed(1)+"%").join("\n\n")+"\n\n💡 Retorno = valorización + renta. Edita cada activo en Patrimonio para agregar su renta y gastos."});
+      msgs.push({t:"📊 Ranking por Retorno Total",c:ranked.slice(0,8).map((a,i)=>(i+1)+". "+a.nm+"\n   "+a.tipo+": "+(a.aprec>0?"+"+fmtPctEs(a.aprec, 0)+" valorización":"sin valorización")+(a.bestYld>0?" + "+fmtPctEs(a.bestYld, 1)+" renta/año":"")+"\n   Retorno total: "+fmtPctEs(a.total, 1)).join("\n\n")+"\n\n💡 Retorno = valorización + renta. Edita cada activo en Patrimonio para agregar su renta y gastos."});
       const poor=ranked.filter(a=>a.total<5&&a.va>50000000);
       const stars=ranked.filter(a=>a.total>15);
-      msgs.push({t:"🔍 Optimización",c:(poor.length>0?"Bajo rendimiento (<5% total):\n"+poor.map(a=>"  ⚠ "+a.nm+": "+a.total.toFixed(1)+"% (val "+a.aprec.toFixed(0)+"% + renta "+a.bestYld.toFixed(1)+"%)\n    → En CDT al 10% generaría "+fm(a.va*0.1/12)+"/mes").join("\n")+"\n\n":"")+(stars.length>0?"Estrellas (>15% total):\n"+stars.map(a=>"  ⭐ "+a.nm+": "+a.total.toFixed(1)+"% ("+a.tipo+")").join("\n"):"Todo en rango normal.")});
-      msgs.push({t:"💎 Margen de Seguridad",c:"Deuda/Activos: "+pc(t.dta)+"\n\n"+(t.dta<20?"🟢 Excelente margen. Puedes apalancarte.":t.dta<40?"🟡 Aceptable. No más deuda.":"🔴 Riesgo alto. Paga deuda primero.")+(worstDebt?"\n\nDeuda más cara: "+worstDebt.n+" al "+worstDebt.ts+"%. Pagarla = invertir al "+worstDebt.ts+"% garantizado.":"")});
+      msgs.push({t:"🔍 Optimización",c:(poor.length>0?"Bajo rendimiento (<5% total):\n"+poor.map(a=>"  ⚠ "+a.nm+": "+fmtPctEs(a.total, 1)+" (val "+fmtPctEs(a.aprec, 0)+" + renta "+fmtPctEs(a.bestYld, 1)+")\n    → En CDT al 10% generaría "+fm(a.va*0.1/12)+"/mes").join("\n")+"\n\n":"")+(stars.length>0?"Estrellas (>15% total):\n"+stars.map(a=>"  ⭐ "+a.nm+": "+fmtPctEs(a.total, 1)+" ("+a.tipo+")").join("\n"):"Todo en rango normal.")});
+      msgs.push({t:"💎 Margen de Seguridad",c:"Deuda/Activos: "+pc(t.dta)+"\n\n"+(t.dta<20?"🟢 Excelente margen. Puedes apalancarte.":t.dta<40?"🟡 Aceptable. No más deuda.":"🔴 Riesgo alto. Paga deuda primero.")+(worstDebt?"\n\nDeuda más cara: "+worstDebt.n+" al "+fmtTasaEs(worstDebt.ts)+". Pagarla = invertir al "+fmtTasaEs(worstDebt.ts)+" garantizado.":"")});
     }
     else if(id==="contrarian"){
       const err=[];
-      if(rePct>60)err.push("🏠 Concentración inmobiliaria "+rePct.toFixed(0)+"% — No compres más inmuebles.");
-      if((100-pctPasivo)>80)err.push("💼 "+(100-pctPasivo).toFixed(0)+"% depende de trabajo — Si te enfermas, pierdes casi todo.");
-      if(runway<6)err.push("⏰ Solo "+runway+" meses de runway — Mínimo necesitas 6 meses líquidos.");
-      if(worstDebt&&worstDebt.ts>15)err.push("🔥 Deuda al "+worstDebt.ts+"% ("+worstDebt.n+") — Nada rinde eso consistentemente. Paga primero.");
+      if(rePct>60)err.push("🏠 Concentración inmobiliaria "+fmtPctEs(rePct, 0)+" — No compres más inmuebles.");
+      if((100-pctPasivo)>80)err.push("💼 "+fmtPctEs((100-pctPasivo), 0)+" depende de trabajo — Si te enfermas, pierdes casi todo.");
+      if(runway<6)err.push("⏰ Solo "+fmtMeses(runway)+" de colchón de liquidez — Mínimo necesitas 6 meses líquidos.");
+      if(worstDebt&&worstDebt.ts>15)err.push("🔥 Deuda al "+fmtTasaEs(worstDebt.ts)+" ("+worstDebt.n+") — Nada rinde eso consistentemente. Paga primero.");
       const bigG=gasCats.find(g=>t.ni>0&&g.total>t.ni*0.25);
-      if(bigG)err.push("💸 "+bigG.cat+" = "+((bigG.total/t.ni)*100).toFixed(0)+"% del ingreso — Máx recomendado: 25%.");
+      if(bigG)err.push("💸 "+bigG.cat+" = "+fmtPctEs(((bigG.total/t.ni)*100), 0)+" del ingreso — Máx recomendado: 25%.");
       if(t.dta>50)err.push("📉 Deuda/Activos "+pc(t.dta)+" — Más de la mitad está financiada con deuda.");
       msgs.push({t:"🧠 ¿Qué Errores Estoy Cometiendo?",c:err.length>0?err.map(e=>"❌ "+e).join("\n\n"):"✅ No encuentro errores graves. Eso ya es mucho."});
       const worstTotal=worstAsset?(()=>{const wm=iM(worstAsset,deu);const wva=+worstAsset.va||0,wvc=+worstAsset.vc||0;return (wvc>0?((wva-wvc)/wvc*100):0)+(wva>0?(wm.noi*12/wva*100):0)})():99;
-      msgs.push({t:"🚫 Antes de Agregar, Elimina",c:(hiDebt.length>0?"1. Pagar "+hiDebt[0].n+" ("+hiDebt[0].ts+"%) = invertir al "+hiDebt[0].ts+"% garantizado\n":"")+(worstAsset&&worstTotal<5?"2. Evaluar "+(worstAsset.n||worstAsset.nombre||"activo")+": retorno total "+worstTotal.toFixed(1)+"% — ¿vale el capital atrapado?\n":"")+(topGasto?"3. Recortar "+topGasto.cat+" 10% = +"+fm(topGasto.total*0.1)+"/mes\n":"")+"\n💡 Eliminar lo malo > agregar algo nuevo."});
-      msgs.push({t:"⚖️ La Pregunta Clave",c:t.dta>30?"¿Pagar deuda o invertir?\n→ Deuda más cara: "+(worstDebt?worstDebt.ts:0)+"%. Si no encuentras inversiones >"+((worstDebt||{}).ts||0)+"% consistentes, PAGA DEUDA.":"¿Dónde poner "+fm(t.cf>0?t.cf*6:0)+" (ahorro 6 meses)?\n→ Con deuda baja, invierte en lo que entiendas y puedas monitorear."});
+      msgs.push({t:"🚫 Antes de Agregar, Elimina",c:(hiDebt.length>0?"1. Pagar "+hiDebt[0].n+" ("+fmtTasaEs(hiDebt[0].ts)+") = invertir al "+fmtTasaEs(hiDebt[0].ts)+" garantizado\n":"")+(worstAsset&&worstTotal<5?"2. Evaluar "+(worstAsset.n||worstAsset.nombre||"activo")+": retorno total "+fmtPctEs(worstTotal, 1)+" — ¿vale el capital atrapado?\n":"")+(topGasto?"3. Recortar "+topGasto.cat+" 10% = +"+fm(topGasto.total*0.1)+"/mes\n":"")+"\n💡 Eliminar lo malo > agregar algo nuevo."});
+      msgs.push({t:"⚖️ La Pregunta Clave",c:t.dta>30?"¿Pagar deuda o invertir?\n→ Deuda más cara: "+fmtTasaEs(worstDebt?worstDebt.ts:0)+". Si no encuentras inversiones >"+fmtTasaEs((worstDebt||{}).ts||0)+" consistentes, PAGA DEUDA.":"¿Dónde poner "+fm(t.cf>0?t.cf*6:0)+" (ahorro 6 meses)?\n→ Con deuda baja, invierte en lo que entiendas y puedas monitorear."});
     }
     // Contextual quote based on situation
     const quotes = {
@@ -1806,8 +1886,8 @@ export default function FinPath(){
         {cond:pctPasivo>=70, q:"\u00ABLa verdadera riqueza se mide en tiempo: ¿cuántos meses puedes vivir sin trabajar?\u00BB", a:"\u2014 Definición de libertad financiera"},
       ],
       estratega: [
-        {cond:t.ind<65, q:"\u00ABEl viaje de mil millas comienza con un solo paso. Tu primer paso es cubrir lo básico.\u00BB", a:"\u2014 Principio de seguridad financiera"},
-        {cond:t.ind>=65&&t.ind<100, q:"\u00ABNo se trata de ser rico, se trata de tener opciones. Estás construyendo opciones.\u00BB", a:"\u2014 Filosofía de la vitalidad financiera"},
+        {cond:t.ind<25, q:"\u00ABEl viaje de mil millas comienza con un solo paso. Tu primer paso es cubrir lo básico.\u00BB", a:"\u2014 Principio de seguridad financiera"},
+        {cond:t.ind>=25&&t.ind<100, q:"\u00ABNo se trata de ser rico, se trata de tener opciones. Estás construyendo opciones.\u00BB", a:"\u2014 Filosofía de la vitalidad financiera"},
         {cond:t.ind>=100&&t.ind<150, q:"\u00ABLa independencia no es tener millones, es que tus activos paguen tus cuentas.\u00BB", a:"\u2014 Definición de independencia"},
         {cond:t.ind>=150, q:"\u00ABEl dinero es un terrible amo pero un excelente sirviente. El tuyo ya trabaja para ti.\u00BB", a:"\u2014 Sabiduría financiera clásica"},
       ],
@@ -1905,15 +1985,10 @@ export default function FinPath(){
     // Top income sources
     const topInc=[...((u&&u.ingresos)||[]).filter(i=>i.sim!==false)].sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a)).slice(0,5);
     // Health score (0-100)
-    const healthScore=Math.min(100,Math.round(
-      (t.ind>=100?30:t.ind*0.3) + // independence: 30 pts
-      (t.dta<50?25:t.dta<80?15:0) + // debt ratio: 25 pts
-      (t.cf>0?25:t.cf>-1000?10:0) + // cash flow positive: 25 pts
-      (((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>=3?10:(((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>=2?5:0)) + // diversification: 10 pts
-      (((u&&u.inv)||[]).filter(i=>i.sim!==false).length>=3?10:(((u&&u.inv)||[]).filter(i=>i.sim!==false).length>=1?5:0))  // assets: 10 pts
-    ));
-    const healthColor=healthScore>=80?T.gn:healthScore>=50?"#eab308":T.rd;
-    const healthLabel=healthScore>=80?"Excelente":healthScore>=60?"Buena":healthScore>=40?"Regular":"Necesita atención";
+    // Salud financiera: spec Finanzas §2 (metrics.js), 5 componentes con peso.
+    const healthScore=t.salud.score;
+    const healthColor=healthScore==null?T.tx3:healthScore>=80?T.gn:healthScore>=60?"#84cc16":healthScore>=40?"#eab308":T.rd;
+    const healthLabel=t.salud.banda;
 
     return<div>
       {/* Greeting con PageHeader (estilo Optimus) — Sesión 2-may-2026 */}
@@ -2100,7 +2175,7 @@ export default function FinPath(){
             marginBottom:14,
             boxShadow:`0 0 24px ${healthColor}30, inset 0 0 24px ${healthColor}10`,
           }}>
-            <div style={{fontFamily:CHART.fontDisplay,fontSize:32,fontWeight:800,color:healthColor,fontVariantNumeric:"tabular-nums"}}>{healthScore}</div>
+            <div style={{fontFamily:CHART.fontDisplay,fontSize:32,fontWeight:800,color:healthColor,fontVariantNumeric:"tabular-nums"}}>{healthScore==null?"—":healthScore}</div>
           </div>
           <div style={{fontSize:13,fontWeight:700,color:healthColor,fontFamily:CHART.fontDisplay}}>{healthLabel}</div>
           <div style={{fontSize:10,color:CHART.txt3,marginTop:4,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>Salud Financiera</div>
@@ -2235,7 +2310,7 @@ export default function FinPath(){
           {tx.detalle.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid "+T.border,fontSize:11}}>
             <span style={{color:T.tx2}}>{d.type==="juridica"?"🏢":"👤"} {d.name}</span>
             <div style={{textAlign:"right"}}>
-                    <span style={{color:T.tx2}}>{fm(d.impuesto)} <span style={{color:T.tx3}}>({d.tasa.toFixed(1)}%)</span></span>
+                    <span style={{color:T.tx2}}>{fm(d.impuesto)} <span style={{color:T.tx3}}>({fmtPctEs(d.tasa)})</span></span>
                     <div style={{fontSize:9,color:T.tx3}}>Ingresos: {fm(d.ingreso)}/año</div>
                     {d.ahorroOptimo>100000&&<div style={{fontSize:9,color:T.gn}}>Ajuste posible: -{fm(d.ahorroOptimo)}</div>}
                   </div>
@@ -2272,7 +2347,7 @@ export default function FinPath(){
               </div>
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
                 <span style={{fontWeight:700,fontFamily:"monospace",color:T.tx}}>{fm(p.value)}</span>
-                <span style={{color:T.tx3,fontSize:11,minWidth:34,textAlign:"right"}}>{totalPat>0?((p.value/totalPat)*100).toFixed(1)+"%":""}</span>
+                <span style={{color:T.tx3,fontSize:11,minWidth:34,textAlign:"right"}}>{totalPat>0?fmtPctEs((p.value/totalPat)*100):""}</span>
               </div>
             </div>)}
           </div>}
@@ -2296,7 +2371,7 @@ export default function FinPath(){
               {/* Punto de color: la lista de gastos ya lo tenía y la de
                   ingresos no. Ata cada fila con su bloque del treemap. */}
               <div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length],flexShrink:0}}/>
-              <div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600}}>{inc.nombre||"—"}</div><div style={{fontSize:10,color:T.tx3}}>{inc.categoria}{inc.capital>0?" • Capital: "+fm(inc.capital):""}{inc.tasa?" • "+inc.tasa+"%":""}</div></div>
+              <div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600}}>{inc.nombre||"—"}</div><div style={{fontSize:10,color:T.tx3}}>{inc.categoria}{inc.capital>0?" • Capital: "+fm(inc.capital):""}{inc.tasa?" • "+fmtTasaEs(inc.tasa)+"":""}</div></div>
             </div>
             <div style={{fontWeight:700,fontFamily:"monospace",color:T.gn}}>{fm(inc.mensual||0)}</div>
           </div>):<div style={{padding:28,textAlign:"center",color:T.tx3,fontSize:13}}>Agrega ingresos</div>}
@@ -2357,7 +2432,7 @@ export default function FinPath(){
                 <div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length],flexShrink:0}}/>
                 <div style={{minWidth:0}}>
                   <div style={{fontSize:13,fontWeight:600}}>{d.name}</div>
-                  <div style={{fontSize:10,color:T.tx3}}>{d.tasa>0?d.tasa+"% E.A. · ":""}saldo {fm(d.saldo)}</div>
+                  <div style={{fontSize:10,color:T.tx3}}>{d.tasa>0?fmtTasaEs(d.tasa)+" E.A. · ":""}saldo {fm(d.saldo)}</div>
                 </div>
               </div>
               <div style={{fontWeight:700,fontFamily:"monospace",color:"#f97316",position:"relative"}}>{fm(d.value)}</div>
@@ -2373,19 +2448,18 @@ export default function FinPath(){
         const nwUSD = trm > 0 ? t.nw / trm : t.nw / 4200;
         // Liquid assets (cash + investments, not real estate)
         const liquidAssets = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => ["Investment","Fondo de Inversión","CDT","Acciones","Crypto","Renta Fija","Cash"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trm), 0);
-        const runway = t.te > 0 ? Math.round(liquidAssets / t.te) : 999;
+        const runway = t.colchonMeses != null ? Math.round(t.colchonMeses*10)/10 : 999; // colchón único (metrics.js)
         const burnRate = t.nw > 0 ? ((t.te * 12) / t.nw * 100) : 0;
-        const savingsRate = t.ti > 0 ? (t.cf / t.ti * 100) : 0;
+        const savingsRate = t.ahorroPct || 0; // misma cifra que alertas y puntaje (metrics.js, neto de retención)
         const fireNumber = t.gfm * 12 * 25;
         const fireProgress = fireNumber > 0 ? Math.min((t.nw / fireNumber) * 100, 100) : 0;
-        const debtService = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
+        const debtService = t.cargaDeudaPct || 0; // cuotas ÷ ingreso neto de retención (metrics.js)
         // Passive vs active income
-        const passCats = ["Arriendo","Rendimiento","Dividendos","Inversión"];
-        const passiveInc = ((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i => passCats.includes(i.categoria)).reduce((s,i) => s + montoPromedioMensual(i), 0);
-        const passiveRatio = t.ti > 0 ? (passiveInc / t.ti * 100) : 0;
+        // % del ingreso que es pasivo: misma clasificación que el nivel (metrics.js).
+        const passiveRatio = t.pctIngresoPasivo || 0;
         // Yield on cost
         const totalInvested = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vcCOP(i,trm), 0);
-        const yieldOnCost = totalInvested > 0 ? (ingresoInversionAnual(u&&u.ingresos, trm) / totalInvested * 100) : 0;
+        const yieldOnCost = t.rentaYield.yield || 0; // renta neta ÷ costo de activos que rentan (metrics.js)
         // Concentration risk
         const maxAsset = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((max,i) => vaCOP(i,trm) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trm)} : max, {n:"",v:0});
         const concRisk = (t.ab+ib.tv) > 0 ? (maxAsset.v / (t.ab+ib.tv) * 100) : 0;
@@ -2395,7 +2469,7 @@ export default function FinPath(){
             <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:14}}>🏦 Indicadores Family Office</div>
             <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:14}}>
               {[
-                {l:"Runway",v:runway >= 999 ? "∞" : runway + " meses",c:runway>=12?T.gn:runway>=6?"#eab308":T.rd,tip:"Meses que aguantas sin ningún ingreso. Ideal: 12-24.",i:"🛡️"},
+                {l:"Colchón de liquidez",v:runway >= 999 ? "∞" : fmtMeses(runway),c:runway>=12?T.gn:runway>=6?"#eab308":T.rd,tip:"Activos líquidos (caja, cuentas, CDT, fondos a la vista) ÷ gastos y cuotas del mes. Mínimo 6 meses.",i:"🛡️"},
                 {l:"Burn rate",v:pc(burnRate),c:burnRate<=4?T.gn:burnRate<=8?"#eab308":T.rd,tip:"% del patrimonio que gastas al año. Ideal: <4%.",i:"🔥"},
                 {l:"Tasa de ahorro",v:pc(savingsRate),c:savingsRate>=20?T.gn:savingsRate>=10?"#eab308":T.rd,tip:"% del ingreso que ahorras. Ideal: >20%.",i:"💰"},
                 {l:"Debt service",v:pc(debtService),c:debtService<=30?T.gn:debtService<=50?"#eab308":T.rd,tip:"% del ingreso que va a pagar deudas. Ideal: <30%.",i:"📋"},
@@ -2413,7 +2487,7 @@ export default function FinPath(){
             <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:14}}>
               {[
                 {l:"Ingreso pasivo",v:pc(passiveRatio),c:passiveRatio>=80?T.gn:passiveRatio>=50?"#eab308":T.rd,tip:"% del ingreso que NO depende de tu trabajo.",i:"🔄"},
-                {l:"Yield on cost",v:pc(yieldOnCost),c:yieldOnCost>=8?T.gn:yieldOnCost>=4?"#eab308":T.rd,tip:"Ingreso anual ÷ costo de inversión. Qué tan bien rentan tus activos.",i:"📈"},
+                {l:t.rentaYield.etiqueta,v:t.rentaYield.yield==null?"—":pc(yieldOnCost),c:yieldOnCost>=8?T.gn:yieldOnCost>=4?"#eab308":T.rd,tip:"Renta neta anual ÷ "+(t.rentaYield.sobreValorActual?"valor actual":"costo de adquisición")+" de los activos que rentan.",i:"📈"},
                 {l:"Concentración",v:pc(concRisk),c:concRisk<=30?T.gn:concRisk<=50?"#eab308":T.rd,tip:concRisk>30?"⚠ "+maxAsset.n+" es "+pc(concRisk)+" de tu patrimonio":"Ningún activo supera el 30%. Bien diversificado.",i:"⚠️"},
                 {l:"FIRE progress",v:pc(fireProgress),c:fireProgress>=100?T.gn:fireProgress>=50?"#eab308":T.rd,tip:"Patrimonio ÷ (gastos×25 años). 100% = nunca más necesitas trabajar.",i:"🔥"},
               ].map(k => (
@@ -2504,7 +2578,7 @@ export default function FinPath(){
                       {avalancha.slice(0,4).map((d,i) => (
                         <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                           <span style={{color:i===0?T.rd:T.tx2}}>{i+1}. {d.n||d.nombre||"Deuda"}</span>
-                          <span style={{color:T.tx3,fontFamily:"monospace"}}>{d.ts||0}% → {fm(d.pg)}/mes</span>
+                          <span style={{color:T.tx3,fontFamily:"monospace"}}>{fmtTasaEs(d.ts||0)} → {fm(d.pg)}/mes</span>
                         </div>
                       ))}
                     </div>
@@ -2600,7 +2674,7 @@ export default function FinPath(){
                             <div key={i} style={{marginBottom:8}}>
                               <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:8}}>
                                 <span style={{color:risk?T.rd:T.tx2}}>{risk?"⚠ ":""}{a.name}</span>
-                                <span style={{color:risk?T.rd:T.tx3,fontWeight:600}}>{pct.toFixed(1)}% — {fm(a.value)}</span>
+                                <span style={{color:risk?T.rd:T.tx3,fontWeight:600}}>{fmtPctEs(pct)} — {fm(a.value)}</span>
                               </div>
                               <div style={{height:6,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
                                 <div style={{height:"100%",width:pct+"%",background:pct>40?T.rd:pct>25?"#eab308":T.gn,borderRadius:3}}/>
@@ -2619,7 +2693,7 @@ export default function FinPath(){
                                 <div style={{width:8,height:8,borderRadius:3,background:T.ch[i%T.ch.length]}}/>
                                 <span style={{color:T.tx2}}>{type}</span>
                               </div>
-                              <span style={{color:T.tx3,fontFamily:"monospace"}}>{pct.toFixed(1)}% ({fm(val)})</span>
+                              <span style={{color:T.tx3,fontFamily:"monospace"}}>{fmtPctEs(pct)} ({fm(val)})</span>
                             </div>
                           );
                         })}
@@ -2632,7 +2706,7 @@ export default function FinPath(){
                     </div>
                     {sorted.filter(a => (a.value/totalA*100) > 30).length > 0 && (
                       <div style={{marginTop:10,background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.15)",borderRadius:8,padding:10,fontSize:11,color:T.rd}}>
-                        <strong>⚠ Alerta de concentración:</strong> {sorted.filter(a => (a.value/totalA*100) > 30).map(a => a.name + " (" + (a.value/totalA*100).toFixed(0) + "%)").join(", ")} representan más del 30% de tu patrimonio. Un family office recomendaría diversificar para reducir riesgo.
+                        <strong>⚠ Alerta de concentración:</strong> {sorted.filter(a => (a.value/totalA*100) > 30).map(a => a.name + " (" + fmtPctEs((a.value/totalA*100), 0)+")").join(", ")} representan más del 30% de tu patrimonio. Un family office recomendaría diversificar para reducir riesgo.
                       </div>
                     )}
                   </>
@@ -2648,7 +2722,7 @@ export default function FinPath(){
                 const totalValue = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vaCOP(i,trm), 0);
                 const gain = totalValue - totalInvested;
                 const gainPct = totalInvested > 0 ? ((totalValue / totalInvested) - 1) * 100 : 0;
-                const incomeYield = totalInvested > 0 ? (ingresoInversionAnual(u&&u.ingresos, trm) / totalInvested * 100) : 0;
+                const incomeYield = t.rentaYield.yield || 0;
                 const totalReturn = gainPct + incomeYield;
                 
                 const benchmarks = [
@@ -2656,7 +2730,8 @@ export default function FinPath(){
                   {name:"Tu portafolio (total: valoriz. + renta)",pct:totalReturn,color:totalReturn>=0?T.gn:T.rd},
                   {name:"S&P 500 (promedio 10 años)",pct:12.5,color:"#3b82f6"},
                   {name:"CDT Colombia (promedio)",pct:10.5,color:"#a78bfa"},
-                  {name:"Inflación Colombia 2024",pct:5.2,color:"#f97316"},
+                  {name:"Inflación usada en tus cálculos",pct:inflacionGlobal(u&&u.inflacionPct),color:"#f97316"},
+                  {name:"Inflación Colombia 2024 (solo referencia)",pct:5.2,color:"#a16207"},
                   {name:"Colchón (cuenta de ahorros)",pct:1.5,color:T.tx3},
                 ];
                 const maxPct = Math.max(...benchmarks.map(b => Math.abs(b.pct)), 1);
@@ -2667,7 +2742,7 @@ export default function FinPath(){
                       <div key={i} style={{marginBottom:8}}>
                         <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:8}}>
                           <span style={{color:i<2?T.tx:T.tx2,fontWeight:i<2?700:400}}>{b.name}</span>
-                          <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{b.pct.toFixed(1)}%</span>
+                          <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{fmtPctEs(b.pct)}</span>
                         </div>
                         <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
                           <div style={{height:"100%",width:Math.max((Math.abs(b.pct)/maxPct)*100,2)+"%",background:b.color,borderRadius:3,opacity:i<2?1:0.6}}/>
@@ -2675,13 +2750,16 @@ export default function FinPath(){
                       </div>
                     ))}
                     <div style={{marginTop:8,fontSize:10,color:T.tx3,lineHeight:1.5}}>
-                      {totalReturn > 12.5 
-                        ? <span style={{color:T.gn}}>✅ Tu portafolio supera al S&P 500. Excelente gestión.</span>
-                        : totalReturn > 5.2
-                          ? <span style={{color:"#eab308"}}>📈 Tu portafolio supera la inflación pero está por debajo del S&P 500. Revisa si puedes mejorar la asignación.</span>
-                          : <span style={{color:T.rd}}>⚠ Tu portafolio no supera la inflación. Tu dinero está perdiendo poder adquisitivo.</span>
+                      {t.inflacion
+                        ? <span style={{color:t.inflacion.leGana?T.gn:T.rd}}>{t.inflacion.leGana?"✅":"⚠"} {t.inflacion.mensaje} · nominal {fmtPctEs(t.inflacion.nominal)} vs inflación usada {fmtPctEs(t.inflacion.inflacion)}</span>
+                        : <span style={{color:T.tx3}}>Carga activos para comparar contra la inflación.</span>
                       }
-                      <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%) · Renta anual: {fm(t.ti*12)} ({incomeYield.toFixed(1)}%)
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+                        <label style={{fontSize:10,color:T.tx3}} htmlFor="inflacion-global">Inflación que usa la app (% anual):</label>
+                        <InputDecimalEs id="inflacion-global" value={(u&&u.inflacionPct)!=null?u.inflacionPct:4} onChange={v=>upd("inflacionPct",v)} style={{width:64,background:T.bg3,color:T.tx,border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,padding:"3px 6px",fontSize:11}}/>
+                        <span style={{fontSize:10,color:T.tx3}}>Alimenta también la proyección de patrimonio.</span>
+                      </div>
+                      <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{fmtPctEs(gainPct)}) · Renta neta anual: {fm(t.rentaYield.rentaAnual)} ({fmtPctEs(incomeYield)} · {t.rentaYield.etiqueta})
                     </div>
                   </>
                 );
@@ -2703,7 +2781,7 @@ export default function FinPath(){
                     </div>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:13,fontWeight:700,color:T.rd,fontFamily:"monospace"}}>{fm(aCargo)}</div>
-                      <div style={{fontSize:10,color:T.tx3}}>Tasa: {d.tasa.toFixed(1)}%</div>
+                      <div style={{fontSize:10,color:T.tx3}}>Tasa: {fmtPctEs(d.tasa)}</div>
                     </div>
                   </div>})}
                   {(()=>{const aCargo=tx.detalle.reduce((s,d)=>s+(d.impuestoACargo??d.impBruto??0),0);const rete=tx.detalle.reduce((s,d)=>s+(d.reteN||0),0);const saldo=tx.detalle.reduce((s,d)=>s+(d.saldoAPagar??d.impuesto??0),0);return<>
@@ -2735,7 +2813,7 @@ export default function FinPath(){
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                     <span style={{color:T.tx2}}>Tasa efectiva global</span>
-                    <span style={{fontFamily:"monospace",color:T.rd}}>{(tx.detalle.reduce((s,d)=>s+d.ingreso,0)>0?(tx.total/tx.detalle.reduce((s,d)=>s+d.ingreso,0)*100):0).toFixed(1)}%</span>
+                    <span style={{fontFamily:"monospace",color:T.rd}}>{fmtPctEs((tx.detalle.reduce((s,d)=>s+d.ingreso,0)>0?(tx.total/tx.detalle.reduce((s,d)=>s+d.ingreso,0)*100):0), 1)}</span>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                     <span style={{color:T.tx2}}>Neto después de impuestos</span>
@@ -2798,23 +2876,23 @@ export default function FinPath(){
               {(() => {
                 const actions = [];
                 // Check each area
-                const runway2 = t.te > 0 ? Math.round((((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => ["Investment","Fondo de Inversión","CDT","Cash","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trm), 0)) / t.te) : 999;
+                const runway2 = t.colchonMeses != null ? Math.round(t.colchonMeses*10)/10 : 999;
                 if (runway2 < 6) actions.push({pri:"🔴",text:"Fondo de emergencia insuficiente. Necesitas al menos 6 meses de gastos en activos líquidos.",cat:"Liquidez"});
-                else if (runway2 < 12) actions.push({pri:"🟡",text:"Fondo de emergencia aceptable ("+runway2+" meses). Ideal: 12-24 meses.",cat:"Liquidez"});
+                else if (runway2 < 12) actions.push({pri:"🟡",text:"Fondo de emergencia aceptable ("+fmtMeses(runway2)+"). Ideal: 12-24 meses.",cat:"Liquidez"});
                 
-                const debtSrv = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
+                const debtSrv = t.cargaDeudaPct || 0; // cuotas ÷ ingreso neto de retención (metrics.js)
                 if (debtSrv > 50) actions.push({pri:"🔴",text:"Más del 50% de tu ingreso va a deudas. Prioriza pagar la de mayor tasa.",cat:"Deuda"});
-                else if (debtSrv > 30) actions.push({pri:"🟡",text:"El " + debtSrv.toFixed(0) + "% de tu ingreso va a deudas. Busca reducirlo debajo del 30%.",cat:"Deuda"});
+                else if (debtSrv > 30) actions.push({pri:"🟡",text:"El " + fmtPctEs(debtSrv) + " de tu ingreso neto va a deudas. Busca reducirlo debajo del 30%.",cat:"Deuda"});
                 
                 const maxA = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((max,i) => vaCOP(i,trm) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trm)} : max, {n:"",v:0});
                 const concR = (t.ab+ib.tv) > 0 ? (maxA.v / (t.ab+ib.tv) * 100) : 0;
-                if (concR > 40) actions.push({pri:"🟡",text:maxA.n + " es " + concR.toFixed(0) + "% de tu patrimonio. Diversifica para reducir riesgo.",cat:"Riesgo"});
+                if (concR > 40) actions.push({pri:"🟡",text:maxA.n + " es " + fmtPctEs(concR, 0)+" de tu patrimonio. Diversifica para reducir riesgo.",cat:"Riesgo"});
                 
                 if (t.cf < 0) actions.push({pri:"🔴",text:"Tu cash flow es negativo. Gastas más de lo que ganas. Revisa gastos o busca más ingresos.",cat:"Cash Flow"});
-                else if (t.ti > 0 && (t.cf/t.ti*100) < 10) actions.push({pri:"🟡",text:"Tu tasa de ahorro es baja (" + (t.cf/t.ti*100).toFixed(0) + "%). Intenta ahorrar al menos el 20%.",cat:"Ahorro"});
+                else if (t.ingresoNeto > 0 && t.ahorroPct < 10) actions.push({pri:"🟡",text:"Tu tasa de ahorro es baja (" + fmtPctEs(t.ahorroPct) + "). Intenta ahorrar al menos el 20%.",cat:"Ahorro"});
                 
-                const passI = ((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i => ["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i) => s + montoPromedioMensual(i), 0);
-                if (t.ti > 0 && (passI/t.ti*100) < 50) actions.push({pri:"🟡",text:"Solo el " + (passI/t.ti*100).toFixed(0) + "% de tu ingreso es pasivo. Invierte más en activos que generen renta.",cat:"Independencia"});
+                const passPct = t.pctIngresoPasivo || 0;
+                if (t.ti > 0 && passPct < 50) actions.push({pri:"🟡",text:"Solo el " + fmtPctEs(passPct, 0)+" de tu ingreso es pasivo. Invierte más en activos que generen renta.",cat:"Independencia"});
                 
                 if (actions.length === 0) actions.push({pri:"🟢",text:"¡Excelente situación financiera! Mantén tu estrategia actual y sigue diversificando.",cat:"General"});
                 
@@ -2860,7 +2938,7 @@ export default function FinPath(){
                     <div key={key} style={{marginBottom:14}}>
                       <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
                         <span style={{color:T.tx2}}>{cat.icon} {cat.label}</span>
-                        <span style={{fontWeight:700,color:cat.color,fontFamily:"monospace"}}>{fm(val)} <span style={{fontWeight:400,fontSize:10}}>({pct.toFixed(0)}%)</span></span>
+                        <span style={{fontWeight:700,color:cat.color,fontFamily:"monospace"}}>{fm(val)} <span style={{fontWeight:400,fontSize:10}}>({fmtPctEs(pct, 0)})</span></span>
                       </div>
                       <div style={{height:8,background:T.bg3,borderRadius:3,overflow:"hidden"}}>
                         <div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3}}/>
@@ -2869,11 +2947,11 @@ export default function FinPath(){
                   );
                 })}
                 <div style={{marginTop:8,padding:10,background:T.bg3,borderRadius:8,fontSize:11,color:T.tx2,lineHeight:1.6}}>
-                  {totals2.inmediata >= t.te * 6 
-                    ? <span style={{color:T.gn}}>✅ Tu liquidez inmediata cubre {Math.round(totals2.inmediata / (t.te||1))} meses de gastos. Bien protegido.</span>
-                    : <span style={{color:"#eab308"}}>⚠ Tu liquidez inmediata solo cubre {Math.round(totals2.inmediata / (t.te||1))} meses. Un asesor recomendaría al menos 6 meses en activos líquidos.</span>
+                  {(t.colchonMeses||0) >= 6 
+                    ? <span style={{color:T.gn}}>✅ Tu liquidez cubre {fmtMeses(t.colchonMeses)} de gastos y cuotas. Bien protegido.</span>
+                    : <span style={{color:"#eab308"}}>⚠ Tu liquidez solo cubre {fmtMeses(t.colchonMeses)} de gastos y cuotas. Un asesor recomendaría al menos 6 meses en activos líquidos.</span>
                   }
-                  <br/><strong>{((totals2.largo / (grandTotal||1)) * 100).toFixed(0)}%</strong> de tu patrimonio está en activos ilíquidos (no puedes vender rápido).
+                  <br/><strong>{fmtPctEs(((totals2.largo / (grandTotal||1)) * 100), 0)}</strong> de tu patrimonio está en activos ilíquidos (no puedes vender rápido).
                 </div>
               </>
             );
@@ -2966,14 +3044,12 @@ export default function FinPath(){
           </div>
           <div style={{marginTop:16,fontSize:12,color:T.tx2,lineHeight:1.6}}>
             {t.ind>=100
-              ?<span style={{color:T.gn}}>🏆 ¡Tus ingresos cubren todos tus gastos y deudas!</span>
-              :t.ind>=60
-                ?<span>📈 Te falta {fm(t.te-t.ni)}/mes para cubrir todos tus gastos.</span>
-                :<span style={{color:T.rd}}>⚠ Tus gastos superan tus ingresos en {fm(t.te-t.ni)}/mes.</span>
+              ?<span style={{color:T.gn}}>🏆 ¡Tu ingreso pasivo cubre todos tus gastos y cuotas!</span>
+              :<span>📈 Tu ingreso pasivo ({fm(t.ingresoPasivo)}/mes) cubre el {pc(t.ind)} de tus gastos y cuotas. Te faltan {fm(Math.max(0,(t.ob||0)-(t.ingresoPasivo||0)))}/mes de ingreso pasivo.</span>
             }
           </div>
-          {t.ind<100&&t.cf!==0&&<div style={{marginTop:8,fontSize:11,color:T.tx3}}>
-            Meta: necesitas {fm(t.te)}/mes de ingresos para ser independiente.
+          {t.ind<100&&<div style={{marginTop:8,fontSize:11,color:T.tx3}}>
+            Meta: {fm(t.ob)}/mes de ingreso pasivo (arriendos netos, intereses, dividendos) para ser independiente.
           </div>}
         </Cd>
       </div>
@@ -2990,43 +3066,42 @@ export default function FinPath(){
           // 1. Real estate concentration
           const reVal = inv.filter(i => ["Real Estate","Bodega","Lote","Local Comercial"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trm), 0);
           const rePct = totalA > 0 ? (reVal / totalA * 100) : 0;
-          if (rePct > 60) alerts.push({type:"🔴",title:"Concentración inmobiliaria extrema",msg:"El "+rePct.toFixed(0)+"% de tu patrimonio está en inmuebles. Si el mercado inmobiliario cae, tu patrimonio se impacta fuertemente. Considera diversificar al menos "+fm(reVal*0.15)+" hacia renta fija, fondos o acciones internacionales.",cat:"Diversificación"});
-          else if (rePct > 45) alerts.push({type:"🟡",title:"Alta exposición inmobiliaria",msg:"El "+rePct.toFixed(0)+"% está en inmuebles. Es común en Colombia pero te expone a riesgo de liquidez. Un portafolio balanceado tiene máximo 40% en un solo tipo de activo.",cat:"Diversificación"});
+          if (rePct > 60) alerts.push({type:"🔴",title:"Concentración inmobiliaria extrema",msg:"El "+fmtPctEs(rePct, 0)+" de tu patrimonio está en inmuebles. Si el mercado inmobiliario cae, tu patrimonio se impacta fuertemente. Considera diversificar al menos "+fm(reVal*0.15)+" hacia renta fija, fondos o acciones internacionales.",cat:"Diversificación"});
+          else if (rePct > 45) alerts.push({type:"🟡",title:"Alta exposición inmobiliaria",msg:"El "+fmtPctEs(rePct, 0)+" está en inmuebles. Es común en Colombia pero te expone a riesgo de liquidez. Un portafolio balanceado tiene máximo 40% en un solo tipo de activo.",cat:"Diversificación"});
 
           // 2. Single asset risk
           const maxAsset = inv.reduce((max,i) => vaCOP(i,trm) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trm)} : max, {n:"",v:0});
           const maxPct = totalA > 0 ? (maxAsset.v / totalA * 100) : 0;
-          if (maxPct > 35) alerts.push({type:"🟡",title:maxAsset.n+" = "+maxPct.toFixed(0)+"% del patrimonio",msg:"Ningún activo debería superar el 30%. Considera vender una porción o no seguir incrementando esta posición. Mover "+fm(maxAsset.v*0.1)+" a otros activos reduciría tu riesgo.",cat:"Concentración"});
+          if (maxPct > 35) alerts.push({type:"🟡",title:maxAsset.n+" = "+fmtPctEs(maxPct, 0)+" del patrimonio",msg:"Ningún activo debería superar el 30%. Considera vender una porción o no seguir incrementando esta posición. Mover "+fm(maxAsset.v*0.1)+" a otros activos reduciría tu riesgo.",cat:"Concentración"});
 
           // 3. Income dependency
           const maxIng = ing.reduce((max,i) => montoPromedioMensual(i) > max.v ? {n:i.nombre||"",v:montoPromedioMensual(i)} : max, {n:"",v:0});
           const maxIngPct = t.ti > 0 ? (maxIng.v / t.ti * 100) : 0;
-          if (maxIngPct > 40) alerts.push({type:"🟡",title:"Dependencia de ingreso: "+maxIng.n,msg:"El "+maxIngPct.toFixed(0)+"% de tus ingresos viene de una sola fuente. Si esa fuente falla, tu cash flow cae "+fm(maxIng.v)+"/mes. Diversifica fuentes de ingreso.",cat:"Riesgo de ingreso"});
+          if (maxIngPct > 40) alerts.push({type:"🟡",title:"Dependencia de ingreso: "+maxIng.n,msg:"El "+fmtPctEs(maxIngPct, 0)+" de tus ingresos viene de una sola fuente. Si esa fuente falla, tu cash flow cae "+fm(maxIng.v)+"/mes. Diversifica fuentes de ingreso.",cat:"Riesgo de ingreso"});
 
           // 4. Debt-to-income
-          const dti = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
-          if (dti > 40) alerts.push({type:"🔴",title:"Carga de deuda alta: "+dti.toFixed(0)+"%",msg:"Más del 40% de tu ingreso va a cuotas. Prioriza pagar la deuda de mayor tasa. Meta: bajar a menos del 30%.",cat:"Deuda"});
+          const dti = t.cargaDeudaPct || 0;
+          if (dti > 40) alerts.push({type:"🔴",title:"Carga de deuda alta: "+fmtPctEs(dti),msg:"Más del 40% de tu ingreso va a cuotas. Prioriza pagar la deuda de mayor tasa. Meta: bajar a menos del 30%.",cat:"Deuda"});
 
           // 5. Savings rate
-          const savR = t.ti > 0 ? (t.cf / t.ti * 100) : 0;
-          if (savR < 10 && savR >= 0) alerts.push({type:"🟡",title:"Tasa de ahorro baja: "+savR.toFixed(0)+"%",msg:"Los family offices recomiendan ahorrar al menos 20% del ingreso. Busca reducir gastos variables o incrementar ingresos pasivos.",cat:"Ahorro"});
+          const savR = t.ahorroPct || 0;
+          if (savR < 10 && savR >= 0) alerts.push({type:"🟡",title:"Tasa de ahorro baja: "+fmtPctEs(savR),msg:"Los family offices recomiendan ahorrar al menos 20% del ingreso. Busca reducir gastos variables o incrementar ingresos pasivos.",cat:"Ahorro"});
           if (savR < 0) alerts.push({type:"🔴",title:"Ahorro negativo — estás descapitalizándote",msg:"Gastas "+fm(Math.abs(t.cf))+"/mes más de lo que ganas. Esto erosiona tu patrimonio. Acción urgente: recortar gastos o generar más ingresos.",cat:"Cash Flow"});
 
           // 6. Vehicles depreciating
           const vehiculos = inv.filter(i => (i.tp||i.tipo) === "Vehículo");
           const vehVal = vehiculos.reduce((s,i) => s + vaCOP(i,trm), 0);
           const vehPct = totalA > 0 ? (vehVal / totalA * 100) : 0;
-          if (vehPct > 5) alerts.push({type:"🟡",title:"Vehículos = "+vehPct.toFixed(1)+"% del patrimonio",msg:"Los vehículos pierden ~15% de valor por año. "+fm(vehVal)+" en activos que se deprecian. Un family office los considera gastos, no inversiones.",cat:"Depreciación"});
+          if (vehPct > 5) alerts.push({type:"🟡",title:"Vehículos = "+fmtPctEs(vehPct)+" del patrimonio",msg:"Los vehículos pierden ~15% de valor por año. "+fm(vehVal)+" en activos que se deprecian. Un family office los considera gastos, no inversiones.",cat:"Depreciación"});
 
           // 7. Positive alerts
-          const passI = ing.filter(i => ["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i) => s + montoPromedioMensual(i), 0);
-          const passR = t.ti > 0 ? (passI / t.ti * 100) : 0;
-          if (passR >= 80) alerts.push({type:"🟢",title:"Ingreso pasivo "+passR.toFixed(0)+"% — excelente",msg:"La mayoría de tu ingreso no depende de tu trabajo. Esto te da libertad y reduce riesgo. Mantén esta estructura.",cat:"Independencia"});
+          const passR = t.pctIngresoPasivo || 0;
+          if (passR >= 80) alerts.push({type:"🟢",title:"Ingreso pasivo "+fmtPctEs(passR, 0)+" — excelente",msg:"La mayoría de tu ingreso no depende de tu trabajo. Esto te da libertad y reduce riesgo. Mantén esta estructura.",cat:"Independencia"});
 
           const fireN = t.gfm * 12 * 25;
           const fireP = fireN > 0 ? (t.nw / fireN * 100) : 0;
           if (fireP >= 100) alerts.push({type:"🟢",title:"FIRE alcanzado — libertad financiera",msg:"Tu patrimonio supera tu FIRE number. Técnicamente puedes vivir de tus activos por 25+ años sin trabajar.",cat:"Libertad"});
-          else if (fireP >= 70) { const aF=añosParaMeta(t.nw,fireN,Math.max(0,t.cf),0.05); alerts.push({type:"🟢",title:"FIRE al "+fireP.toFixed(0)+"% — muy cerca",msg:"Te falta "+fm(fireN - t.nw)+" para la independencia total. "+(aF!=null?"Proyectado a 5% real anual, llegas en ~"+(aF<1?"menos de 1":Math.round(aF*10)/10)+" años.":"Genera ahorro mensual positivo para proyectarlo."),cat:"Progreso"}); }
+          else if (fireP >= 70) { const aF=añosParaMeta(t.nw,fireN,Math.max(0,t.cf),0.05); alerts.push({type:"🟢",title:"FIRE al "+fmtPctEs(fireP, 0)+" — muy cerca",msg:"Te falta "+fm(fireN - t.nw)+" para la independencia total. "+(aF!=null?"Proyectado a 5% real anual, llegas en ~"+(aF<1?"menos de 1":Math.round(aF*10)/10)+" años.":"Genera ahorro mensual positivo para proyectarlo."),cat:"Progreso"}); }
 
           if (alerts.length === 0) alerts.push({type:"🟢",title:"Sin alertas",msg:"Tu situación financiera está bien balanceada. Sigue monitoreando mensualmente.",cat:"General"});
 
@@ -3105,12 +3180,12 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         />
       :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trm||u?.trm||4200} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado si Plan a cero (P0.3) está activo."} onNavigateNorte={()=>setPg("norte")} extraADeudas={extraADeudas}/>;
     case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
-    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} user={{inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
+    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
     case"flujo":return <FlujoAnual user={u} trm={u?.trm||4200} isEN={isEN}/>;
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
     // función serverless (que además valida contra su propia lista de admins).
     case"metrics":return isAdmin?<AdminMetrics email={u?.p?.email} fmt={fm} T={T}/>:<div style={{padding:40,textAlign:"center",color:T.tx3}}>No disponible.</div>;
-    case"pat":{const bc={};((u&&u.inv)||[]).filter(i=>i.sim!==false).forEach(i=>{const tp=inferType(i);bc[tp]=(bc[tp]||0)+vaCOP(i,trm)});if(ib.tv>0)bc.Trading=ib.tv*(trm||4200)/*💱 26-jul-2026: ib.tv está en USD porque las posiciones se cargan en dólares, pero se sumaba tal cual a una distribución donde todo lo demás pasó por vaCOP y está en pesos. Categoría en dólares mezclada entre categorías en pesos, y ~3.262 veces más chica de lo real.*/;const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);const gr=t.ab+ib.tv;return<div><PageHeader label="Patrimonio" title="Tus activos" subtitle="Distribución y rendimiento real."/><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:14,marginBottom:18}}><StatCard label="ACTIVOS TOTALES" value={fm(gr)} accent={CHART.green}/><StatCard label="PASIVOS" value={fm(t.td)} accent={CHART.red}/><StatCard label="PATRIMONIO NETO" value={fm(t.nw)} accent={CHART.blue} highlight/></div><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14}}><div style={{background:"rgba(255,255,255,0.02)",border:`1px solid ${CHART.border}`,borderRadius:16,padding:24,backgroundImage:`radial-gradient(circle at 0% 0%, ${CHART.green}08 0%, transparent 50%)`}}><div style={{fontSize:11,fontWeight:700,color:CHART.txt3,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>Distribución</div>{pie.length>0?<ResponsiveContainer width="100%" height={240}><PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={56} outerRadius={92} paddingAngle={3} stroke="none">{pie.map((_,i)=><Cell key={i} fill={CHART.series[i%CHART.series.length]}/>)}</Pie><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/></PieChart></ResponsiveContainer>:<div style={{height:240,display:"flex",alignItems:"center",justifyContent:"center",color:CHART.txt3}}>Agrega datos</div>}</div><div style={{background:"rgba(255,255,255,0.02)",border:`1px solid ${CHART.border}`,borderRadius:16,padding:24}}><div style={{fontSize:11,fontWeight:700,color:CHART.txt3,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>Desglose por categoría</div>{pie.map((a,i)=>{const pct=(a.value/gr)*100;return<div key={a.name} style={{padding:"10px 0",borderBottom:i<pie.length-1?`1px solid ${CHART.border}`:"none"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:10,height:10,borderRadius:3,background:CHART.series[i%CHART.series.length],boxShadow:`0 0 8px ${CHART.series[i%CHART.series.length]}40`}}/><span style={{fontSize:13,fontWeight:500,color:CHART.txt}}>{a.name}</span></div><div style={{fontFamily:CHART.fontMono,fontVariantNumeric:"tabular-nums",display:"flex",alignItems:"baseline",gap:8}}><span style={{fontWeight:700,fontSize:13,color:CHART.txt}}>{fm(a.value)}</span><span style={{fontSize:11,color:CHART.txt3,minWidth:42,textAlign:"right"}}>{pct.toFixed(1)}%</span></div></div><div style={{height:3,background:CHART.border,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:CHART.series[i%CHART.series.length],borderRadius:999,transition:"width 0.4s"}}/></div></div>})}</div></div></div>}
+    case"pat":{const bc={};((u&&u.inv)||[]).filter(i=>i.sim!==false).forEach(i=>{const tp=inferType(i);bc[tp]=(bc[tp]||0)+vaCOP(i,trm)});if(ib.tv>0)bc.Trading=ib.tv*(trm||4200)/*💱 26-jul-2026: ib.tv está en USD porque las posiciones se cargan en dólares, pero se sumaba tal cual a una distribución donde todo lo demás pasó por vaCOP y está en pesos. Categoría en dólares mezclada entre categorías en pesos, y ~3.262 veces más chica de lo real.*/;const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);const gr=t.ab+ib.tv;return<div><PageHeader label="Patrimonio" title="Tus activos" subtitle="Distribución y rendimiento real."/><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:14,marginBottom:18}}><StatCard label="ACTIVOS TOTALES" value={fm(gr)} accent={CHART.green}/><StatCard label="PASIVOS" value={fm(t.td)} accent={CHART.red}/><StatCard label="PATRIMONIO NETO" value={fm(t.nw)} accent={CHART.blue} highlight/></div><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14}}><div style={{background:"rgba(255,255,255,0.02)",border:`1px solid ${CHART.border}`,borderRadius:16,padding:24,backgroundImage:`radial-gradient(circle at 0% 0%, ${CHART.green}08 0%, transparent 50%)`}}><div style={{fontSize:11,fontWeight:700,color:CHART.txt3,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>Distribución</div>{pie.length>0?<ResponsiveContainer width="100%" height={240}><PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={56} outerRadius={92} paddingAngle={3} stroke="none">{pie.map((_,i)=><Cell key={i} fill={CHART.series[i%CHART.series.length]}/>)}</Pie><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/></PieChart></ResponsiveContainer>:<div style={{height:240,display:"flex",alignItems:"center",justifyContent:"center",color:CHART.txt3}}>Agrega datos</div>}</div><div style={{background:"rgba(255,255,255,0.02)",border:`1px solid ${CHART.border}`,borderRadius:16,padding:24}}><div style={{fontSize:11,fontWeight:700,color:CHART.txt3,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>Desglose por categoría</div>{pie.map((a,i)=>{const pct=(a.value/gr)*100;return<div key={a.name} style={{padding:"10px 0",borderBottom:i<pie.length-1?`1px solid ${CHART.border}`:"none"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:10,height:10,borderRadius:3,background:CHART.series[i%CHART.series.length],boxShadow:`0 0 8px ${CHART.series[i%CHART.series.length]}40`}}/><span style={{fontSize:13,fontWeight:500,color:CHART.txt}}>{a.name}</span></div><div style={{fontFamily:CHART.fontMono,fontVariantNumeric:"tabular-nums",display:"flex",alignItems:"baseline",gap:8}}><span style={{fontWeight:700,fontSize:13,color:CHART.txt}}>{fm(a.value)}</span><span style={{fontSize:11,color:CHART.txt3,minWidth:42,textAlign:"right"}}>{fmtPctEs(pct, 1)}</span></div></div><div style={{height:3,background:CHART.border,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:CHART.series[i%CHART.series.length],borderRadius:999,transition:"width 0.4s"}}/></div></div>})}</div></div></div>}
     case"pen":return isUS?<RetirementModuleUS user={u}/>:gated("pen","Básico",<PensionesColpensiones trm={(u&&u.trm)||4200}/>);
     case"tax":{
       if(isUS)return<TaxPlanningUS user={u} fmt={fm} onUpdateUser={setU}/>;
@@ -3345,8 +3420,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // BUG FIX 13-jun-2026: mismo bug del PDF — esta vista también sumaba
       // items con sim===false. Ahora filtramos igual que en cT() para que la
       // vista sea consistente con los KPIs del Dashboard.
-      const passI=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i=>i.sim!==false&&["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i)=>s+montoPromedioMensual(i),0);
-      const passR=t.ti>0?(passI/t.ti*100):0;
+      const passR=t.pctIngresoPasivo||0;
       const totalInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i)=>s+vcCOP(i,trm),0);
       const totalVal=((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i)=>s+vaCOP(i,trm),0);
       const gainPct=totalInv>0?((totalVal/totalInv)-1)*100:0;
@@ -3386,9 +3460,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             </div>
             <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
               <div style={{fontSize:10,color:T.tx3,letterSpacing:1,fontWeight:600}}>INDEPENDENCIA</div>
-              <div style={{fontSize:24,fontWeight:800,color:t.ind>=100?T.gn:"#eab308",marginTop:4}}>{(t.ind).toFixed(0)}%</div>
-              <div style={{fontSize:9,color:T.tx3}}>flujo: ingresos vs gastos hoy</div>
-              <div style={{fontSize:10,color:T.tx3,marginTop:3}}>FIRE: {fireProg.toFixed(0)}% · capital para no trabajar</div>
+              <div style={{fontSize:24,fontWeight:800,color:t.ind>=100?T.gn:"#eab308",marginTop:4}}>{fmtPctEs((t.ind), 0)}</div>
+              <div style={{fontSize:9,color:T.tx3}}>ingreso pasivo vs gastos y cuotas</div>
+              <div style={{fontSize:10,color:T.tx3,marginTop:3}}>FIRE: {fmtPctEs(fireProg, 0)} · capital para no trabajar</div>
             </div>
           </div>
 
@@ -3467,8 +3541,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             {[
               {l:"Activos",v:fm(totalVal),c:T.gn},
               {l:"Deuda total",v:fm(t.td),c:T.rd},
-              {l:"Valorización",v:(gainPct>=0?"+":"")+gainPct.toFixed(1)+"%",c:gainPct>=0?T.gn:T.rd},
-              {l:"Ingreso pasivo",v:passR.toFixed(0)+"%",c:passR>=80?T.gn:"#eab308"},
+              {l:"Valorización",v:(gainPct>=0?"+":"")+fmtPctEs(gainPct),c:gainPct>=0?T.gn:T.rd},
+              {l:"Ingreso pasivo",v:fmtPctEs(passR, 0),c:passR>=80?T.gn:"#eab308"},
             ].map(k=>(
               <div key={k.l} style={{textAlign:"center",padding:10,background:T.bg3,borderRadius:8}}>
                 <div style={{fontSize:9,color:T.tx3}}>{k.l}</div>
@@ -3490,7 +3564,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     <div style={{width:120,height:6,background:T.bg3,borderRadius:3,overflow:"hidden"}}>
                       <div style={{height:"100%",width:pct+"%",background:T.ch[idx%T.ch.length],borderRadius:3}}/>
                     </div>
-                    <span style={{fontSize:11,color:T.tx3,minWidth:70,textAlign:"right",fontFamily:"monospace"}}>{fm(val)} ({pct.toFixed(0)}%)</span>
+                    <span style={{fontSize:11,color:T.tx3,minWidth:70,textAlign:"right",fontFamily:"monospace"}}>{fm(val)} ({fmtPctEs(pct, 0)})</span>
                   </div>
                 );
               });
@@ -3501,7 +3575,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>📋 Obligaciones financieras</div>
             {((u&&u.deu)||[]).filter(d=>d.sim!==false).map((d,i)=>(
               <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid "+T.border}}>
-                <span style={{color:T.tx2}}>{d.n||d.nombre||"Deuda"} <span style={{color:T.tx3}}>({d.ts||0}%)</span></span>
+                <span style={{color:T.tx2}}>{d.n||d.nombre||"Deuda"} <span style={{color:T.tx3}}>({fmtTasaEs(d.ts||0)})</span></span>
                 <div><span style={{color:T.rd,fontFamily:"monospace"}}>{fm(d.mt||0)}</span><span style={{color:T.tx3,marginLeft:8}}>cuota: {fm(d.pg||0)}</span></div>
               </div>
             ))}
@@ -3510,10 +3584,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <div style={{background:"linear-gradient(135deg,rgba(34,197,94,0.06),rgba(59,130,246,0.03))",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:16}}>
             <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:8}}>📌 Diagnóstico</div>
             <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
-              {t.ind>=100?"✅ Tus ingresos cubren el 100% de tus gastos y deudas. Estás en nivel de independencia financiera.":"⚠ Tus ingresos cubren el "+t.ind.toFixed(0)+"% de tus gastos. Te falta "+fm(t.te-t.ni)+"/mes para independencia total."}
+              {t.ind>=100?"✅ Tu ingreso pasivo cubre el 100% de tus gastos y cuotas. Estás en nivel de independencia financiera.":"⚠ Tu ingreso pasivo cubre el "+fmtPctEs(t.ind, 0)+" de tus gastos y cuotas. Te faltan "+fm(Math.max(0,(t.ob||0)-(t.ingresoPasivo||0)))+"/mes de ingreso pasivo para la independencia."}
               <br/>{t.cf>=0?"✅ Cash flow positivo de "+fm(t.cf)+"/mes disponible para inversión.":"❌ Cash flow negativo. Gastas "+fm(Math.abs(t.cf))+"/mes más de lo que ganas."}
-              <br/>{passR>=80?"✅ El "+passR.toFixed(0)+"% de tus ingresos son pasivos. Excelente independencia.":"📈 Solo el "+passR.toFixed(0)+"% es ingreso pasivo. Meta: superar 80%."}
-              <br/>{fireProg>=100?"🏆 Ya superaste tu FIRE number. Puedes vivir de tu patrimonio 25+ años.":"🔥 FIRE progress: "+fireProg.toFixed(0)+"%. Meta: "+fm(fireN)+". Te falta: "+fm(Math.max(0,fireN-t.nw))+"."}
+              <br/>{passR>=80?"✅ El "+fmtPctEs(passR, 0)+" de tus ingresos son pasivos. Excelente independencia.":"📈 Solo el "+fmtPctEs(passR, 0)+" es ingreso pasivo. Meta: superar 80%."}
+              <br/>{fireProg>=100?"🏆 Ya superaste tu FIRE number. Puedes vivir de tu patrimonio 25+ años.":"🔥 FIRE progress: "+fmtPctEs(fireProg, 0)+". Meta: "+fm(fireN)+". Te falta: "+fm(Math.max(0,fireN-t.nw))+"."}
             </div>
           </div>
 

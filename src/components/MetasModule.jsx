@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import NumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import Disclaimer from "./Disclaimer.jsx";
@@ -21,8 +22,8 @@ const T = {
   ch: ["#22c55e","#3b82f6","#f97316","#a78bfa","#22d3ee","#eab308","#ef4444","#ec4899"],
 };
 const _fm = (n) => {
-  if (Math.abs(n) >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
-  if (Math.abs(n) >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
+  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
+  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
   return "$" + Math.round(n).toLocaleString("es-CO");
 };
 const ICONS = ["🏠","🚗","🎓","✈️","💼","🏖️","💰","🏥","👶","📱","🎯","🏆"];
@@ -594,7 +595,7 @@ export default function MetasModule({
                         fontWeight: 700,
                       }}
                     >
-                      {fondeo.pctAvance.toFixed(0)}%
+                      {fmtPctEs(fondeo.pctAvance, 0)}
                     </span>
                   </div>
                   <div

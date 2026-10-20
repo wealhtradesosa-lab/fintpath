@@ -1,4 +1,6 @@
 import { t as textos } from "./hallazgosI18n.js";
+import { fmtPctEs, fmtNumEs } from "./formato.js";
+import { calcularBase } from "./metrics.js";
 // ════════════════════════════════════════════════════════════════════════════
 // hallazgos.js — Lo que el asesor VE sin que se lo pregunten.
 //
@@ -108,7 +110,7 @@ function deudaCaraVsAhorro(user, trm, L = textos("es")) {
     titulo: L.deudaCara.titulo(cara.nombre, cara.tasa),
     detalle: L.deudaCara.detalle(cara.tasa, diferencial, impacto),
     impactoAnual: impacto,
-    base: `Tasa del crédito (${cara.tasa.toFixed(2)}% E.A.) vs. rendimiento de tu efectivo y CDT (${RENDIMIENTO_TIPICO.toFixed(2)}% E.A.), ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.`,
+    base: `Tasa del crédito (${fmtPctEs(cara.tasa, 2)} E.A.) vs. rendimiento de tu efectivo y CDT (${fmtPctEs(RENDIMIENTO_TIPICO, 2)} E.A.), ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.`,
     accion: { label: L.deudaCara.accion, pagina: "deu" },
     tono: "oportunidad",
   };
@@ -132,7 +134,7 @@ function concentracion(user, trm, patrimonioTotal, L = textos("es")) {
 
   return {
     id: "concentracion",
-    metrica: pct.toFixed(0) + "%",
+    metrica: fmtPctEs(pct, 0),
     unidad: L.concentracion.unidad,
     titulo: mayor.nombre,
     detalle: L.concentracion.detalle,
@@ -172,33 +174,34 @@ function flujoNegativo(t, L = textos("es")) {
 }
 
 /**
+ * Colchón ÚNICO de liquidez (metrics.js): activos líquidos ÷ (gastos + cuotas).
+ * Si los totales ya traen `met` (cT de App) se usa tal cual; si no (dashboard US),
+ * se calcula con la misma función desde los datos del usuario.
+ */
+function colchonUnico(user, t, trm) {
+  const b = t?.met || calcularBase({ ingresos: user?.ingresos, gastos: user?.gas || user?.gastos, deudas: user?.deu || user?.deudas, inv: user?.inv, trm });
+  return { meses: b.colchonMeses, liquidos: b.liquidos, ob: b.ob };
+}
+
+/**
  * Fondo de emergencia: cuántos meses aguanta el efectivo disponible.
  * Umbral de 3 meses — convención de planeación financiera, no norma legal.
  * Se declara como tal en `base`: es un criterio, no un artículo.
  */
 function fondoEmergencia(user, t, trm, L = textos("es")) {
-  const egresos = num(t?.egresosTotales);
-  if (egresos <= 0) return null;
-
-  const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro"];
-  const liquidez = activos(user?.inv)
-    // 02-ago-2026 — leía solo `i.tipo`; los activos US guardan el tipo en `i.tp`.
-    // El demo US con $85.000 en HYSA mostraba "No safety net".
-    .filter((i) => LIQUIDOS.some((x) => String(i.tipo || i.tp || "").toLowerCase().includes(x)))
-    .reduce((s, i) => s + (i.moneda === "USD" ? num(i.va) * trm : num(i.va)), 0);
-
-  const meses = liquidez / egresos;
+  const { meses, liquidos: liquidez, ob: egresos } = colchonUnico(user, t, trm);
+  if (meses == null || !(egresos > 0)) return null;
   if (meses >= 3) return null;
 
   const faltante = egresos * 3 - liquidez;
   return {
     id: "fondo_emergencia",
-    metrica: meses.toFixed(1),
+    metrica: fmtNumEs(meses, 1),
     unidad: L.fondoEmergencia.unidad,
     titulo: L.fondoEmergencia.titulo(meses),
     detalle: L.fondoEmergencia.detalle(meses, faltante),
     impactoAnual: 0,
-    base: "Efectivo y CDT sobre egresos mensuales. El umbral de 3 meses es una convención de planeación financiera, no una norma",
+    base: "Activos líquidos (caja, cuentas, CDT, fondos a la vista) sobre gastos y cuotas del mes. El umbral de 3 meses es una convención de planeación financiera, no una norma",
     accion: { label: "Ver patrimonio", pagina: "inv" },
     tono: "riesgo",
   };
@@ -209,18 +212,20 @@ function fondoEmergencia(user, t, trm, L = textos("es")) {
  * capacidad de endeudamiento, declarada como tal.
  */
 function cargaDeuda(t, L = textos("es")) {
-  const cuotas = num(t?.cuotasDeudas), bruto = num(t?.brutoTotal);
-  if (bruto <= 0 || cuotas <= 0) return null;
-  const pct = (cuotas / bruto) * 100;
+  // Misma cifra que la tarjeta y el puntaje: cuotas ÷ ingreso neto de retención (metrics.js).
+  const cuotas = num(t?.cuotasDeudas);
+  const neto = num(t?.ingresoNeto) || num(t?.brutoTotal);
+  if (neto <= 0 || cuotas <= 0) return null;
+  const pct = t?.cargaDeudaPct != null ? t.cargaDeudaPct : (cuotas / neto) * 100;
   if (pct < 35) return null;
   return {
     id: "carga_deuda",
-    metrica: pct.toFixed(0) + "%",
+    metrica: fmtPctEs(pct, 0),
     unidad: "de tu ingreso",
     titulo: L.cargaDeuda.titulo,
     detalle: L.cargaDeuda.detalle,
     impactoAnual: 0,
-    base: "Cuotas de deudas sobre ingreso bruto. El umbral de 35% es el criterio habitual de la banca para capacidad de endeudamiento",
+    base: "Cuotas de deudas sobre ingreso neto de retención. El umbral de 35% es el criterio habitual de la banca para capacidad de endeudamiento",
     accion: { label: L.cargaDeuda.accion, pagina: "deu" },
     tono: "riesgo",
   };
@@ -236,15 +241,8 @@ function cargaDeuda(t, L = textos("es")) {
 // ════════════════════════════════════════════════════════════════════════════
 
 function colchonSolido(user, t, trm, L = textos("es")) {
-  const egresos = num(t?.egresosTotales);
-  if (egresos <= 0) return null;
-  const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro"];
-  const liquidez = activos(user?.inv)
-    // 02-ago-2026 — leía solo `i.tipo`; los activos US guardan el tipo en `i.tp`.
-    // El demo US con $85.000 en HYSA mostraba "No safety net".
-    .filter((i) => LIQUIDOS.some((x) => String(i.tipo || i.tp || "").toLowerCase().includes(x)))
-    .reduce((s, i) => s + (i.moneda === "USD" ? num(i.va) * trm : num(i.va)), 0);
-  const meses = liquidez / egresos;
+  const { meses, ob: egresos } = colchonUnico(user, t, trm);
+  if (meses == null || !(egresos > 0)) return null;
   if (meses < 6) return null;
   return {
     id: "colchon_solido", bueno: true, tono: "bueno",
@@ -264,7 +262,7 @@ function flujoSano(t, L = textos("es")) {
   if (tasa < 15) return null;
   return {
     id: "flujo_sano", bueno: true, tono: "bueno",
-    metrica: tasa.toFixed(0) + "%",
+    metrica: fmtPctEs(tasa, 0),
     unidad: "de tu ingreso",
     titulo: L.flujoSano.titulo,
     detalle: L.flujoSano.detalle(cf),
@@ -280,7 +278,7 @@ function deudaControlada(t, L = textos("es")) {
   if (pct >= 25) return null;
   return {
     id: "deuda_controlada", bueno: true, tono: "bueno",
-    metrica: pct.toFixed(0) + "%",
+    metrica: fmtPctEs(pct, 0),
     unidad: "de tu ingreso",
     titulo: L.deudaControlada.titulo,
     detalle: L.deudaControlada.detalle,

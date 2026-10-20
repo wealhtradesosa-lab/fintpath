@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { valorOpcion, etiquetaOpcion } from "../lib/patrimonioUI.js";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
@@ -28,7 +29,7 @@ const T = {
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", orange: "#f97316",
 };
-const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
+const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
@@ -640,7 +641,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
                   <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: T.txt2 }}>
                     <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
-                    {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                    {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{fmtPctEs(((d.value/tot)*100), 0)}</strong>
                   </span>
                 ))}
               </div>
@@ -691,7 +692,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>
                             {fm(item.__sub)}/mes
-                            <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{item.__pct.toFixed(0)}%</span>
+                            <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(item.__pct, 0)}</span>
                           </span>
                         </div>
                       </td>
@@ -1195,14 +1196,14 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     if (altoRojo) {
                       return (
                         <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 11, color: T.red, lineHeight: 1.5 }}>
-                          ⚠️ Tasa muy alta: {tas}% {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
+                          ⚠️ Tasa muy alta: {fmtTasaEs(tas)} {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
                         </div>
                       );
                     }
                     if (altoNaranja) {
                       return (
                         <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.25)", borderRadius: 8, fontSize: 11, color: "#f97316", lineHeight: 1.5 }}>
-                          🟠 Tasa alta: {tas}% {tm}. Verifica que la periodicidad ({tm}) sea correcta.
+                          🟠 Tasa alta: {fmtTasaEs(tas)} {tm}. Verifica que la periodicidad ({tm}) sea correcta.
                         </div>
                       );
                     }

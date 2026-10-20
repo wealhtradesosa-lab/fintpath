@@ -25,6 +25,7 @@
 //   />
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { useEffect } from "react";
 import { track } from "../lib/analytics.js";
 
@@ -36,9 +37,9 @@ const T = {
 
 const fmMoney = (v) => {
   const n = Math.round(Number(v) || 0);
-  if (n >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
-  if (n >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
-  if (n >= 1e3) return "$" + (n / 1e3).toFixed(0) + "K";
+  if (n >= 1e9) return "$" + fmtNumEs((n / 1e9), 2)+"B";
+  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + n.toLocaleString("es-CO");
 };
 
@@ -114,7 +115,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
                 <span style={{ color: T.txt, fontWeight: 600 }}>{a.label}</span>
                 <span style={{ color: color, fontWeight: 700, fontFamily: "monospace" }}>
-                  {icon} {a.deltaAbs.toFixed(0)}%
+                  {icon} {fmtPctEs(a.deltaAbs, 0)}
                 </span>
               </div>
               <div style={{ color: T.txt3, marginTop: 2, fontFamily: "monospace", fontSize: 10 }}>

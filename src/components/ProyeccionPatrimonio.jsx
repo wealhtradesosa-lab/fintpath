@@ -1,4 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
+import InputDecimalEs from "./InputDecimalEs.jsx";
+import { fmtNumEs } from "../lib/formato.js";
+import { fmtPctEs } from "../lib/metrics.js";
 import {
   AreaChart,
   Area,
@@ -37,6 +40,8 @@ export default function ProyeccionPatrimonio({
   deudasTotales,
   fmt,
   T = {},
+  inflacionPct: inflacionGlobalProp, // supuesto global (user.inflacionPct)
+  onInflacionChange,
 }) {
   const fm = fmt || ((n) => "$" + Math.round(n || 0).toLocaleString("es-CO"));
   const cfAnualDefault = Math.round((Number(cfMensualSimulado) || 0) * 12);
@@ -45,9 +50,13 @@ export default function ProyeccionPatrimonio({
   const [retornoPct, setRetornoPct] = useState(
     Math.round(DEFAULTS_PROYECCION.retornoExcedente * 1000) / 10 // 6.0
   );
-  const [inflacionPct, setInflacionPct] = useState(
+  // Un solo supuesto de inflación: si viene del usuario (global) manda; si no,
+  // el default (4%). Editarlo acá actualiza el global (misma cifra que el mensaje del portafolio).
+  const [inflacionLocal, setInflacionLocal] = useState(
     Math.round(DEFAULTS_PROYECCION.inflacionAnual * 1000) / 10 // 4.0
   );
+  const inflacionPct = inflacionGlobalProp != null && inflacionGlobalProp !== "" ? inflacionGlobalProp : inflacionLocal;
+  const setInflacionPct = (v) => { setInflacionLocal(v); if (onInflacionChange) onInflacionChange(v === "" ? "" : Number(v)); };
 
   // Si el CF simulado cambia (sliders del sim), resetea el override solo cuando
   // el usuario no ha tocado el input (cfOverride === null).
@@ -302,15 +311,15 @@ export default function ProyeccionPatrimonio({
                     border: `1px solid ${T.border || "rgba(255,255,255,0.08)"}` }}>
                 <div style={{ fontSize: 11, color: T.txt3 || "#71717a", lineHeight: 1.5 }}>
                   Según la composición de tu patrimonio, la valorización esperada es{" "}
-                  <strong style={{ color: T.txt2 || "#a1a1aa" }}>{nominal.toFixed(1)}%</strong>{" "}
-                  nominal ({(mezcla.tasaReal * 100).toFixed(1)}% real).
+                  <strong style={{ color: T.txt2 || "#a1a1aa" }}>{fmtPctEs(nominal)}</strong>{" "}
+                  nominal ({fmtPctEs(mezcla.tasaReal * 100)} real).
                 </div>
                 <div style={{ fontSize: 10, color: T.txt3 || "#71717a", marginTop: 5, lineHeight: 1.6 }}>
                   {mezcla.detalle.map((d) => (
                     <span key={d.clase} style={{ marginRight: 10, whiteSpace: "nowrap" }}>
-                      {d.label} {(d.peso * 100).toFixed(0)}%
+                      {d.label} {fmtPctEs((d.peso * 100), 0)}
                       <span style={{ color: d.r < 0 ? "#ef4444" : T.txt3, marginLeft: 3 }}>
-                        ({d.r > 0 ? "+" : ""}{(d.r * 100).toFixed(0)}%)
+                        ({d.r > 0 ? "+" : ""}{fmtPctEs((d.r * 100), 0)})
                       </span>
                     </span>
                   ))}
@@ -322,7 +331,7 @@ export default function ProyeccionPatrimonio({
                       background: "transparent", cursor: "pointer", fontSize: 11, fontWeight: 700,
                       color: T.green || "#22c55e",
                       border: `1px solid ${T.green || "#22c55e"}` }}>
-                    Usar {nominal.toFixed(1)}%
+                    Usar {fmtPctEs(nominal)}
                   </button>
                 )}
               </div>
@@ -331,11 +340,9 @@ export default function ProyeccionPatrimonio({
         </div>
         <div>
           <div style={labelStyle}>Inflación %</div>
-          <input
-            type="number"
-            step="0.1"
+          <InputDecimalEs
             value={inflacionPct}
-            onChange={(e) => setInflacionPct(e.target.value)}
+            onChange={(v) => setInflacionPct(v)}
             style={inputStyle}
             aria-label="Inflación anual"
           />
@@ -480,9 +487,9 @@ export default function ProyeccionPatrimonio({
           <YAxis
             {...axisProps}
             tickFormatter={(v) => {
-              if (Math.abs(v) >= 1e9) return "$" + (v / 1e9).toFixed(1) + "B";
-              if (Math.abs(v) >= 1e6) return "$" + (v / 1e6).toFixed(0) + "M";
-              if (Math.abs(v) >= 1e3) return "$" + (v / 1e3).toFixed(0) + "K";
+              if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e9), 1)+"B";
+              if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 0)+"M";
+              if (Math.abs(v) >= 1e3) return "$" + fmtNumEs((v / 1e3), 0)+"K";
               return "$" + v;
             }}
           />
@@ -587,7 +594,7 @@ export default function ProyeccionPatrimonio({
           CF anual usado: <strong style={{ color: T.txt2 }}>{fm(cfAnual)}</strong>
           {cfOverride == null ? " (del simulador)" : " (override)"}
           {" · "}Valorización patrimonio {Number(retornoPct) || 0}%
-          {" · "}Inflación {Number(inflacionPct) || 0}%
+          {" · "}Inflación {(Number(inflacionPct) || 0).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
         </div>
         <div>
           Amortización de capital estimada: {fm(amortAnual)}/año (reduce pasivo; no se resta del CF).

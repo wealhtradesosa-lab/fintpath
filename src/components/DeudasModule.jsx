@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
 import { separarPorLimite } from "../lib/limitePlan.js";
@@ -24,8 +25,8 @@ const T = {
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
 };
-const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
-const pc = (n) => (n || 0).toFixed(1) + "%";
+const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
+const pc = (n) => fmtPctEs((n || 0), 1);
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
@@ -94,7 +95,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             leido.n  ? ok.push("Nombre: " + leido.n)        : falta.push("nombre");
             leido.mt ? ok.push("Saldo: " + cop(leido.mt))   : falta.push("saldo");
             leido.pg ? ok.push("Cuota: " + cop(leido.pg))   : falta.push("cuota");
-            leido.ts ? ok.push("Tasa: " + leido.ts + "% E.A.") : falta.push("tasa");
+            leido.ts ? ok.push("Tasa: " +fmtTasaEs(leido.ts)+" E.A.") : falta.push("tasa");
             alert(
               "✅ Documento leído" + (d.confianza === "alta" ? "" : " (confianza " + (d.confianza || "media") + " — revisa los datos)") +
               "\n\n" + ok.join("\n") +
@@ -361,7 +362,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
                 <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: T.txt2 }}>
                   <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
-                  {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                  {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{fmtPctEs(((d.value/tot)*100), 0)}</strong>
                 </span>
               ))}
             </div>
@@ -412,7 +413,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>
                             {fm(d.__sub)}
-                            <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{d.__pct.toFixed(0)}%</span>
+                            <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(d.__pct, 0)}</span>
                           </span>
                         </div>
                       </td>
@@ -459,7 +460,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                     </td>
                     <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.red, fontFamily: "monospace" }}>{fm(d.mt)}</td>
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>{fm(d.pg)}</td>
-                    <td style={{ padding: "10px 14px", textAlign: "right" }}>{d.ts}%</td>
+                    <td style={{ padding: "10px 14px", textAlign: "right" }}>{fmtTasaEs(d.ts)}</td>
                     {(() => {
                       const cc = costoCredito(d);
                       return (
@@ -681,7 +682,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       if (t!==null && t>0) acciones.push(
                         <button key="t" type="button" onClick={()=>setForm(p=>({...p,ts:String(Number(t.toFixed(2)))}))}
                           style={{background:T.bg2,color:T.txt,border:`1px solid ${T.border}`,padding:"9px 13px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>
-                          Tasa = {t.toFixed(2)}%
+                          Tasa = {fmtPctEs(t, 2)}
                         </button>);
                     }
                     return acciones.length ? <div style={{display:"flex",gap:8,flexWrap:"wrap",flex:"2 1 200px"}}>{acciones}</div>
@@ -718,8 +719,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   </div>
                   <div style={{fontSize:11,color:T.txt3,lineHeight:1.5,marginBottom:yaEsIgual?0:8}}>
                     {esSimple
-                      ? <>{fm(Number(form.mt))} × {form.ts}% ÷ 12. Si solo pagas intereses, esa es tu cuota.</>
-                      : <>Interés del primer mes con tasa {form.ts}% E.A. Tu cuota debe superarlo para que la deuda baje.</>}
+                      ? <>{fm(Number(form.mt))} × {fmtTasaEs(form.ts)} ÷ 12. Si solo pagas intereses, esa es tu cuota.</>
+                      : <>Interés del primer mes con tasa {fmtTasaEs(form.ts)} E.A. Tu cuota debe superarlo para que la deuda baje.</>}
                   </div>
                   {/* 26-jul-2026: si la cuota está VACÍA se llena sola —no hay
                       nada que pisar, así que es ayuda pura. Con un valor ya
@@ -765,7 +766,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 —se avisa y se ofrece la lectura probable. */}
             {Number(form.ts) >= 100 && (
               <div style={{gridColumn:"1/-1",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.35)",borderRadius:10,padding:"11px 14px",marginBottom:12}}>
-                <div style={{fontSize:12,fontWeight:700,color:"#ef4444",marginBottom:3}}>⚠️ Revisa esta tasa: {form.ts}% anual</div>
+                <div style={{fontSize:12,fontWeight:700,color:"#ef4444",marginBottom:3}}>⚠️ Revisa esta tasa: {fmtTasaEs(form.ts)} anual</div>
                 <div style={{fontSize:11,color:T.txt3,lineHeight:1.5,marginBottom:8}}>
                   Es inusualmente alta. ¿Quisiste escribir {String(form.ts).slice(0,-1)},{String(form.ts).slice(-1)}%?
                 </div>
@@ -814,10 +815,10 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       {previo > 0 && (
                         <div style={{ marginTop: 6, fontSize: 11, color: dif == null ? T.txt3 : dif <= 1.5 ? "#4ade80" : "#fca5a5" }}>
                           {dif == null
-                            ? <>Tasa implícita de este extracto: <strong>{eaImp.toFixed(2)}% E.A.</strong> — puedes usarla arriba.</>
+                            ? <>Tasa implícita de este extracto: <strong>{fmtPctEs(eaImp, 2)} E.A.</strong> — puedes usarla arriba.</>
                             : dif <= 1.5
-                              ? <>✅ Cuadra: el interés cobrado equivale a {eaImp.toFixed(2)}% E.A., consistente con el {tsForm}% que pusiste.</>
-                              : <>⚠️ No cuadra: el interés cobrado equivale a <strong>{eaImp.toFixed(2)}% E.A.</strong>, pero arriba pusiste {tsForm}%. Revisa la tasa o el saldo.</>}
+                              ? <>✅ Cuadra: el interés cobrado equivale a {fmtPctEs(eaImp, 2)} E.A., consistente con el {fmtTasaEs(tsForm)} que pusiste.</>
+                              : <>⚠️ No cuadra: el interés cobrado equivale a <strong>{fmtPctEs(eaImp, 2)} E.A.</strong>, pero arriba pusiste {fmtTasaEs(tsForm)}. Revisa la tasa o el saldo.</>}
                         </div>
                       )}
                     </div>

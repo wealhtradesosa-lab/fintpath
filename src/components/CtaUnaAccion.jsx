@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { fmtPctEs } from "../lib/formato.js";
 import { elegirUnaAccion, MESES_COLCHON_OBJETIVO } from "../lib/ctaUnaAccion.js";
 
 /**
@@ -222,7 +223,7 @@ export default function CtaUnaAccion({
           {accion.path === "deuda" && accion.detalle && (
             <div style={{ marginTop: 4 }}>
               Monto = min(50% CF, 1 cuota o sugerido, saldo). Tasa{" "}
-              {Number(accion.detalle.tasa || 0).toFixed(1)}% E.A.
+              {fmtPctEs(Number(accion.detalle.tasa || 0), 1)} E.A.
             </div>
           )}
           {accion.path === "meta" && accion.detalle && (
