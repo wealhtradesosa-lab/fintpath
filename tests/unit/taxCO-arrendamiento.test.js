@@ -100,7 +100,7 @@ describe("arriendo de inmueble = renta de capital (Art. 338 ET)", () => {
     expect(sinRet.saldoAPagar - conRet.saldoAPagar).toBeCloseTo(798_000, 6);
   });
 
-  it("F-210: va en rentas de capital (renglones 54/55/53), no en no laborales ni dividendos", () => {
+  it("F-210: va en rentas de capital (casillas 58/60/61), no en no laborales ni dividendos", () => {
     const u = user({
       ingresos: [arriendo()],
       gas: { Predial: [{ owner: "o1", fiscalCode: "GAS_INMUEBLE_PREDIAL", m: 250_000 }] }, // 3 M/año
@@ -115,5 +115,18 @@ describe("arriendo de inmueble = renta de capital (Art. 338 ET)", () => {
     expect(val(71).valor).toBe(0);
     const vals = {}; r.forEach(x => { if (x.valor != null) vals[x.numero] = x.valor; });
     expect(val(53).calc(vals)).toBe(19_800_000);
+  });
+
+  it("F-210 AG 2025: casillas oficiales 58 brutos / 59 INCRNGO / 60 costos / 61 renta líquida", () => {
+    const u = user({ ingresos: [arriendo()] });
+    const r = generarBorradorF210(u, u.owners[0], estimarImpuesto(u, { ag: 2025 }), 2025);
+    const val = (n) => r.find(x => x.numero === n);
+    expect(val(54).casillaDIAN).toBe(58);
+    expect(val(51).casillaDIAN).toBe(59);
+    expect(val(55).casillaDIAN).toBe(60);
+    expect(val(53).casillaDIAN).toBe(61);
+    // 61 = brutos − INCRNGO − costos (todo junto, solo positivo)
+    expect(val(53).calc({ 50: 1_000_000, 51: 500_000, 52: 0, 54: 22_800_000, 55: 3_000_000 })).toBe(20_300_000);
+    expect(val(53).calc({ 50: 0, 51: 0, 52: 0, 54: 1_000_000, 55: 3_000_000 })).toBe(0);
   });
 });

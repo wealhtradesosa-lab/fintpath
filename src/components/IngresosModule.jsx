@@ -1665,7 +1665,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       </label>
                       <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, lineHeight: 1.5 }}>
                         Márcalo solo si tu arrendatario es agente retenedor y te descuenta el 3,5 % (Art. 401 ET). Si no lo marcas, no suponemos retención.
-                        {form.meRetienen === true && retArr > 0 && <> Retención estimada: <strong style={{ color: T.txt }}>{fm(retArr)}</strong> al año, que se resta del saldo a pagar.</>}
+                        {form.meRetienen === true && retArr > 0 && <> Retención estimada: <strong style={{ color: T.txt }}>{_fm(retArr)}</strong> al año, que se resta del saldo a pagar.</>}
                       </div>
                     </div>
                   );
