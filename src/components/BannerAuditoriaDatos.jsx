@@ -232,7 +232,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, on
           {/* Oportunidades de mejorar la data */}
           {oportunidadesData.length > 0 && (
             <Seccion
-              titulo="Oportunidades de optimización (necesitan más data)"
+              titulo="Puntos por revisar (necesitan más datos)"
               color={C.blue}
               icon="💡"
               hallazgos={oportunidadesData}

@@ -432,7 +432,7 @@ export default function TaxOptimizerUS({ user }) {
       <div>
         <div style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px", fontFamily: FONT_DISPLAY }}>
-            🎯 Tax Optimizer
+            🎯 Tax Review
           </h2>
           <p style={{ color: T.txt3, fontSize: 13, margin: 0 }}>
             IRS-grade analysis of your situation — finds legal tax savings opportunities
@@ -455,7 +455,7 @@ export default function TaxOptimizerUS({ user }) {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px", fontFamily: FONT_DISPLAY }}>
-          🎯 Tax Optimizer
+          🎯 Tax Review
         </h2>
         <p style={{ color: T.txt3, fontSize: 13, margin: 0 }}>
           IRS-grade analysis of your situation — every strategy below is 100% legal and cites IRC code.

@@ -45,7 +45,7 @@ exports.handler = async (event) => {
     if (!userId) {
       return { statusCode: 401, headers, body: JSON.stringify({
         error: "sesion_requerida",
-        mensaje: "Iniciá sesión para leer documentos con IA.",
+        mensaje: "Inicia sesión para leer documentos con IA.",
       }) };
     }
     if (SUPA_URL && SERVICE_KEY) {
@@ -96,7 +96,7 @@ Formato de respuesta para F-210 (natural):
     "patrimonioLiquido": número,
     "impuestoCalculado": número (renglón impuesto sobre renta líquida gravable),
     "retefuente": número (retenciones practicadas al contribuyente),
-    "saldoPagar": número (si positivo: pagar; si saldo a favor, ponelo en negativo),
+    "saldoPagar": número (si positivo: pagar; si saldo a favor, ponlo en negativo),
     "descDonaciones": número (descuentos por donaciones art 257 ET),
     "descCTI": número (ciencia/tecnología/innovación art 256 ET)
   },
@@ -138,7 +138,7 @@ Reglas adicionales:
   { "error": "Formulario no soportado: <tipo>" }
 - El campo "confianza" debe ser "baja" si más de 5 renglones están en 0 (probable mala lectura),
   "media" si hay algunos en 0, "alta" si todo se lee bien.
-${tipoHint && tipoHint !== "auto" ? `\n- El usuario indicó que el formulario es: ${tipoHint}. Usá ese formato si es consistente con el documento.` : ""}`;
+${tipoHint && tipoHint !== "auto" ? `\n- El usuario indicó que el formulario es: ${tipoHint}. Usa ese formato si es consistente con el documento.` : ""}`;
 
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

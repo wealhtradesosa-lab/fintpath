@@ -226,7 +226,7 @@ export function simularPlanACero(deudasOrdenadas = [], extraMensual = 0) {
     const m = meses % 12;
     // 16-sep-2026 (Santiago: "3a es que 3 años?"). Si hay que preguntarlo, la
     // abreviatura no está ahorrando nada. "2a 8m" se lee rápido solo si ya
-    // sabés qué significa; escrito completo no necesita traducción.
+    // sabes qué significa; escrito completo no necesita traducción.
     const añosTxt = `${y} ${y === 1 ? "año" : "años"}`;
     labelMeses =
       m === 0
@@ -331,7 +331,7 @@ export function tradeOffVsInvertir({
 
 /**
  * Copy duro del trade-off (ES).
- * Escenario B = supuesto #19 (valorización pre-impuestos), nunca “invertí al X%” / AFC/PV.
+ * Escenario B = supuesto #19 (valorización pre-impuestos), nunca “invierte al X%” / AFC/PV.
  */
 export function fraseTradeOff({
   extraMensual,
@@ -363,9 +363,9 @@ export function fraseTradeOff({
   const dif = fm(Math.abs(difA));
 
   return (
-    `Si destinás ${fm(x)} al mes a pagar deudas: quedás en cero en ${labelMeses}, ` +
+    `Si destinas ${fm(x)} al mes a pagar deudas: quedas en cero en ${labelMeses}, ` +
     `y a 3 años tu patrimonio sería ${fm(trade.escenarioA.patrimonio3a)}.\n` +
-    `Si en cambio dejás esa plata invertida: a 3 años tu patrimonio sería ` +
+    `Si en cambio dejas esa plata invertida: a 3 años tu patrimonio sería ` +
     `${fm(trade.escenarioB.patrimonio3a)}, pero seguirías debiendo ` +
     `${fm(trade.escenarioB.deudasRestantes3a)}.\n` +
     `A 3 años conviene ${gana}, por una diferencia de ${dif}. ` +
@@ -457,4 +457,4 @@ export const FUENTE_CF_PLAN =
 export const COPY_CF_NO_POSITIVO =
   "Sin CF positivo el plan es solo cuotas mínimas.";
 
-export const CHIP_NO_AMORTIZA = "No amortiza — revisá cuota/tasa";
+export const CHIP_NO_AMORTIZA = "No amortiza — revisa cuota/tasa";

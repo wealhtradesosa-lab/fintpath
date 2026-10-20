@@ -25,7 +25,7 @@ const T = {
 const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 const FONT_BODY = "'Inter', system-ui, sans-serif";
 
-export default function HeroVariantA({ onGetStarted = () => {} }) {
+export default function HeroVariantA({ onGetStarted = () => {}, onLogin }) {
   // Animación sutil de aparición progresiva
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
@@ -95,7 +95,7 @@ export default function HeroVariantA({ onGetStarted = () => {} }) {
           </span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onGetStarted} style={{
+          <button onClick={onLogin || onGetStarted} style={{
             background: "transparent", border: `1px solid ${T.borderStrong}`, color: T.txt2,
             padding: "9px 18px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500,
           }}>Iniciar sesión</button>

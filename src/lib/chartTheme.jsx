@@ -63,7 +63,7 @@ export const CHART = {
 
 // ─────────────────────────────────────────────────────────────────────────
 // ChartGradients · linearGradients reusables para Area/Bar charts
-// Drop-in: <ChartGradients /> dentro de cualquier chart, después accedés
+// Drop-in: <ChartGradients /> dentro de cualquier chart, después accedes
 // con fill="url(#gradGreen)" etc.
 // ─────────────────────────────────────────────────────────────────────────
 export function ChartGradients() {

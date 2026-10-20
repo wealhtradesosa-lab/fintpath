@@ -1370,7 +1370,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               // opacidad. Sin contorno punteado.
               //
               // Diferencia propia del simulador: acá el cierre NO es "con lo
-              // que tenés cargado" sino "con este escenario" — se mueve con los
+              // que tienes cargado" sino "con este escenario" — se mueve con los
               // sliders y con el preset elegido. Decirlo evita que se lea como
               // un pronóstico fijo.
               // La etiqueta decía "Ejecutado" a secas y debajo iban las 12
@@ -1735,8 +1735,8 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
       {/* Layout de 2 columnas (25-jul-2026, Santiago: "no dejar tantos vacíos").
           La columna de sliders es mucho más alta que la de resultados, así que
           antes quedaba un hueco largo a la derecha. En vez de rellenarlo con
-          contenido, la columna derecha ACOMPAÑA el scroll: movés un slider de
-          deudas abajo y seguís viendo el gráfico y el Sankey cambiar. Se apaga
+          contenido, la columna derecha ACOMPAÑA el scroll: mueves un slider de
+          deudas abajo y sigues viendo el gráfico y el Sankey cambiar. Se apaga
           en móvil, donde el grid colapsa a una sola columna. */}
       <style>{`
         /* 14-sep-2026 (Santiago: "no me gusta que se oculte al hacer scroll").
@@ -2129,7 +2129,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                                 <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoActualMes*12)}/año</span>
                               </button>
                               <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(255,255,255,0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
-                                <span>Si aplicás PV/AFC</span>
+                                <span>Si aplicas PV/AFC</span>
                                 <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoOptAnualToggle)}/año</span>
                                 <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoOptMes*12)}/año</span>
                               </button>
@@ -2140,7 +2140,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           {!mostrarComparativo && (
                             <div style={{marginBottom:8,padding:"10px 12px",background:"rgba(167,139,250,0.06)",border:"1px solid rgba(167,139,250,0.15)",borderRadius:8,fontSize:10,color:T.txt2,lineHeight:1.5}}>
                               <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:4}}>📋 Tu impuesto estimado</div>
-                              <div style={{lineHeight:1.5}}>Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos {isJuridica ? "(35% utilidad, ICA, retenciones)" : "(Art. 119, 206, 387, 336 ET)"}. Las palancas estándar (PV/AFC) no aportan ahorro adicional en tu caso. Si querés simular estrategias por fuera del modelo, usá el slider manual abajo.</div>
+                              <div style={{lineHeight:1.5}}>Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos {isJuridica ? "(35% utilidad, ICA, retenciones)" : "(Art. 119, 206, 387, 336 ET)"}. Las palancas estándar (PV/AFC) no aportan ahorro adicional en tu caso. Si quieres simular estrategias por fuera del modelo, usa el slider manual abajo.</div>
                             </div>
                           )}
                           <div style={{background:isOptEffectivo?"rgba(34,197,94,0.06)":"rgba(167,139,250,0.06)",borderRadius:10,padding:"12px 14px",border:"1px solid "+(isOptEffectivo?"rgba(34,197,94,0.15)":"rgba(167,139,250,0.15)"),marginBottom:8}}>
@@ -2166,7 +2166,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                               </>}
                             </div>
                             {/* Hint solo aplica en modo comparativo cuando el usuario esta en Actual y hay ahorro real disponible */}
-                            {mostrarComparativo && ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Aplicar PV/AFC ahorra {fm(ahorroOpt)}/año → activá el toggle para ver el impacto en cash flow</div>}
+                            {mostrarComparativo && ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Aplicar PV/AFC ahorra {fm(ahorroOpt)}/año → activa el toggle para ver el impacto en cash flow</div>}
                           </div>
                           {/* Commit 10 Tarea 3: el slider ahora opera sobre el SALDO A PAGAR
                               (lo que el usuario efectivamente desembolsa), no sobre el impuesto
@@ -2192,7 +2192,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                               <div style={{background:(isOptEffectivo?T.gn:"#a78bfa")+"08",border:"1px solid "+(isOptEffectivo?T.gn:"#a78bfa")+"20",borderRadius:10,padding:"10px 12px"}}>
                                 <div style={{fontSize:10,fontWeight:700,color:isOptEffectivo?T.gn:"#a78bfa",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — saldo a pagar</div>
                                 <div style={{fontSize:10,color:T.txt3,marginBottom:8,lineHeight:1.5}}>
-                                  El slider arranca en tu <strong>saldo real</strong>. Movelo hacia arriba para simular escenarios más conservadores, o si lográs <strong>estrategias adicionales</strong> que el sistema no modela (donaciones, depreciación agresiva, créditos fiscales especiales) que cambien el saldo final.
+                                  El slider arranca en tu <strong>saldo real</strong>. Muévelo hacia arriba para simular escenarios más conservadores, o si logras <strong>estrategias adicionales</strong> que el sistema no modela (donaciones, depreciación agresiva, créditos fiscales especiales) que cambien el saldo final.
                                 </div>
                                 <Slider label="" value={saldoMesEff} base={saldoMesBase}
                                   max={saldoMesMax} color={isOptEffectivo ? T.gn : "#a78bfa"}
@@ -2219,10 +2219,10 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           })()}
                           <div style={{marginTop:6,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4,lineHeight:1.5}}>
                             {saldoAnualEffectivo === 0 && simImpAnualEffectivo > 0
-                              ? "ℹ️ Tu saldo es $0 porque la retención ya cubre tu impuesto. Si subís el slider, simulás un escenario con menos retenciones del año (ej: cambio de empleador, freelance) o más impuesto causado."
+                              ? "ℹ️ Tu saldo es $0 porque la retención ya cubre tu impuesto. Si subes el slider, simulas un escenario con menos retenciones del año (ej: cambio de empleador, freelance) o más impuesto causado."
                               : isJuridica
                                 ? "El saldo a pagar es el desembolso real al presentar la declaración: impuesto bruto menos retenciones recibidas."
-                                : "El saldo a pagar es lo que efectivamente desembolsás al presentar la declaración (impuesto causado menos retención del año)."}
+                                : "El saldo a pagar es lo que efectivamente desembolsas al presentar la declaración (impuesto causado menos retención del año)."}
                           </div>
                         </div>;
                       })()}
