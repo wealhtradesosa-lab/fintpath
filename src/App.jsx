@@ -76,6 +76,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
 import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual, mesesLibreDeuda, vaCOP, vcCOP } from "./lib/flowHelpers.js";
+import { calcularMetricas } from "./lib/metrics.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react";
@@ -452,13 +453,25 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200)=>{
   const disponibleCuenta=brutoTotal-retencionMensual;
   const egresosTotales=aportesObligatorios+gastosFamiliares+cuotasDeudas+impuestoNeto;
   const cashFlow=disponibleCuenta-egresosTotales;
-  const independencia=egresosTotales>0?(disponibleCuenta/egresosTotales)*100:0;
+  // 11-oct-2026 — El índice de independencia es COBERTURA PASIVA (ingreso
+  // pasivo neto ÷ obligaciones), no ingreso total ÷ egresos. Antes un
+  // asalariado sin activos salía "Independencia" solo porque su sueldo cubría
+  // sus gastos. La base vive en src/lib/metrics.js (spec Finanzas); acá solo
+  // se expone. `coberturaTotal` conserva el ratio viejo (ingreso total ÷
+  // egresos) para los textos que hablan de "tus ingresos cubren tus gastos".
+  const coberturaTotal=egresosTotales>0?(disponibleCuenta/egresosTotales)*100:0;
+  const met=calcularMetricas({ingresos:ing,gastos:gf,deudas:ds,inv,trm,retencionMensual,impuestoNeto});
+  const independencia=met.coberturaPasiva;
   return{
     // ═══ Nuevo modelo explícito ═══
     brutoTotal, retencionMensual, disponibleCuenta,
     aportesObligatorios, gastosFamiliares, cuotasDeudas,
     impuestoBrutoMensual, impuestoNeto,
-    egresosTotales, cashFlow, independencia,
+    egresosTotales, cashFlow, independencia, coberturaTotal,
+    // ═══ Base única de métricas (metrics.js) ═══
+    met, nivel:met.nivel,
+    ingresoPasivo:met.ip, ingresoPasivoBruto:met.ipBruto, pctIngresoPasivo:met.pctIngresoPasivo,
+    ob:met.ob,
     // ═══ Legacy aliases (compatibilidad) ═══
     ab, td, nw:ab-td,
     ti:brutoTotal, tg:0, ni:disponibleCuenta,
@@ -1305,8 +1318,9 @@ export default function FinPath(){
     const egresosTotales=aportesObligatorios+gastosFamiliares+totalCuotas+impuestoNeto;
     const nw=totalPat-totalDeu;
     const cf=disponibleCuenta-egresosTotales;
-    const ind=egresosTotales>0?((disponibleCuenta/egresosTotales)*100):0;
-    const level=ind>=250?"Libertad Absoluta":ind>=150?"Libertad":ind>=100?"Independencia":ind>=82.5?"Vitalidad":ind>=65?"Seguridad":"Pre-Seguridad";
+    // Nivel e índice: misma base que el Dashboard y el Simulador (metrics.js).
+    const ind=t.independencia||0;
+    const level=t.nivel?.nombre||"Sin datos";
     const fireNum=egresosTotales*12*25;const firePct=fireNum>0?(nw/fireNum*100):0;
     const dta=totalPat>0?(totalDeu/totalPat*100):0;
     const runway=egresosTotales>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija","Fondo de Inversión"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)/egresosTotales):0;
@@ -1787,11 +1801,11 @@ export default function FinPath(){
     const topA=inv.map(i=>({...i,...iM(i,deu)})).sort((a,b)=>b.noi-a.noi);
     const hiDebt=deu.filter(d=>(d.mt||0)>0).sort((a,b)=>b.ts-a.ts);
     const gasCats=Object.entries(gas).map(([cat,items])=>({cat,total:items.reduce((s,g)=>s+montoPromedioMensual(g),0),items}))/* frecuencia: un gasto anual no es un gasto mensual (fix 25-jul-2026) */.sort((a,b)=>b.total-a.total);
-    const pasivos=ing.filter(i=>["Arriendo","Rendimiento","Dividendos","Inversión"].includes(i.categoria));
-    const activos=ing.filter(i=>!["Arriendo","Rendimiento","Dividendos","Inversión"].includes(i.categoria));
-    const ingPasivo=pasivos.reduce((s,i)=>s+(montoPromedioMensual(i)*(i.moneda==="USD"?4200:1)),0);
-    const ingActivo=activos.reduce((s,i)=>s+(montoPromedioMensual(i)*(i.moneda==="USD"?4200:1)),0);
-    const pctPasivo=t.ni>0?(ingPasivo/t.ni*100):0;
+    // Clasificación pasivo/activo: la misma de metrics.js (antes cada pantalla
+    // tenía su lista y ninguna reconocía "Rentas de capital").
+    const ingPasivo=t.ingresoPasivoBruto||0;
+    const ingActivo=t.met?t.met.iaBruto:0;
+    const pctPasivo=t.pctIngresoPasivo||0;
     const runway=t.te>0?Math.round(inv.filter(i=>["Cash","CDT","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)/t.te):0;
     const fireNum=t.gfm*12*25;
     const firePct=fireNum>0?(t.nw/fireNum*100):0;
@@ -1817,12 +1831,16 @@ export default function FinPath(){
       msgs.push({t:"🎯 Plan de Acción",c:"1. Convertir "+fm(deadA.reduce((s,i)=>s+vaCOP(i,trm),0))+" improductivos en productivos\n2. Reinvertir cash flow "+fm(t.cf)+"/mes en activos que generen ingreso\n3. Meta: ingreso pasivo > "+fm(t.te)+"/mes (hoy: "+fm(ingPasivo)+")\n4. Cada "+fm(Math.abs(t.cf)*12)+" ahorrado/año te acerca "+((t.te>0?Math.abs(t.cf)*12/t.te*100:0)).toFixed(0)+"% más"});
     }
     else if(id==="estratega"){
-      const level=t.ind>=250?5:t.ind>=150?4:t.ind>=100?3:t.ind>=82.5?2:t.ind>=65?1:0;
-      const names=["Pre-Seguridad","Seguridad","Vitalidad","Independencia","Libertad","Absoluta"];
-      const factors=[0.65,0.825,1.0,1.5,2.5];
-      const nextNeeded=t.te*(factors[Math.min(level,4)]||1);
-      const gap=Math.max(0,nextNeeded-t.ni);
-      msgs.push({t:"🏔️ Nivel "+level+"/5: "+names[level],c:"Independencia: "+pc(t.ind)+"\nIngresos: "+fm(t.ni)+"/mes vs Egresos: "+fm(t.te)+"/mes\n\n"+(level>=3?"🟢 ¡Independencia alcanzada! Tus ingresos cubren 100% de gastos.":"Siguiente: "+names[Math.min(level+1,5)]+" → necesitas "+fm(nextNeeded)+"/mes\nTe faltan: "+fm(gap)+"/mes de ingreso adicional")});
+      // Nivel desde la base única (metrics.js): cobertura pasiva = IP ÷ OB.
+      const nv=t.nivel||{};
+      const sig=nv.siguiente;
+      const nvTxt=nv.nivel?("Nivel "+nv.nivel+"/5: "+nv.nombre):"Nivel: sin datos";
+      const nvCuerpo="Cobertura pasiva: "+pc(t.ind)+"\nIngreso pasivo neto: "+fm(t.ingresoPasivo)+"/mes vs Gastos + cuotas: "+fm(t.ob)+"/mes\n\n"+
+        (nv.nivel===5?"🟢 ¡Independencia alcanzada! Tu ingreso pasivo cubre el 100% de tus gastos y cuotas."
+        :nv.candado==="deficit"?"🔴 Tu flujo del mes es negativo ("+fm(t.cf)+"/mes). El primer paso es que tus ingresos cubran tus gastos y cuotas."
+        :nv.candado==="patrimonio_negativo"?"🟡 Tu patrimonio neto es negativo: el nivel queda en "+nv.nombre+" hasta que tus activos superen tus deudas."
+        :sig?"Siguiente: "+sig.nombre+" → necesitas "+fm((sig.min/100)*t.ob)+"/mes de ingreso pasivo\nTe faltan: "+fm(nv.faltaIPSiguiente)+"/mes de ingreso pasivo":"");
+      msgs.push({t:"🏔️ "+nvTxt,c:nvCuerpo});
       msgs.push({t:"📅 Proyección FIRE",c:"FIRE Number: "+fm(fireNum)+"\nProgreso: "+firePct.toFixed(0)+"% ("+fm(t.nw)+" / "+fm(fireNum)+")\n\n"+(firePct>=100?"🟢 Tu patrimonio ya supera tu FIRE number.":"Necesitas acumular "+fm(Math.max(fireNum-t.nw,0))+" más.")});
       if(topGasto)msgs.push({t:"✂️ Aceleradores",c:"Mayor gasto: "+topGasto.cat+" ("+fm(topGasto.total)+"/mes)\n\nSi reduces gastos 15%: cash flow sube a "+fm(t.cf+t.gfm*0.15)+"/mes\nSi aumentas ingreso 20%: cash flow sube a "+fm(t.cf+t.ni*0.2)+"/mes\n\n💡 Combinar ambos te acelera al doble."});
     }
@@ -1865,8 +1883,8 @@ export default function FinPath(){
         {cond:pctPasivo>=70, q:"\u00ABLa verdadera riqueza se mide en tiempo: ¿cuántos meses puedes vivir sin trabajar?\u00BB", a:"\u2014 Definición de libertad financiera"},
       ],
       estratega: [
-        {cond:t.ind<65, q:"\u00ABEl viaje de mil millas comienza con un solo paso. Tu primer paso es cubrir lo básico.\u00BB", a:"\u2014 Principio de seguridad financiera"},
-        {cond:t.ind>=65&&t.ind<100, q:"\u00ABNo se trata de ser rico, se trata de tener opciones. Estás construyendo opciones.\u00BB", a:"\u2014 Filosofía de la vitalidad financiera"},
+        {cond:t.ind<25, q:"\u00ABEl viaje de mil millas comienza con un solo paso. Tu primer paso es cubrir lo básico.\u00BB", a:"\u2014 Principio de seguridad financiera"},
+        {cond:t.ind>=25&&t.ind<100, q:"\u00ABNo se trata de ser rico, se trata de tener opciones. Estás construyendo opciones.\u00BB", a:"\u2014 Filosofía de la vitalidad financiera"},
         {cond:t.ind>=100&&t.ind<150, q:"\u00ABLa independencia no es tener millones, es que tus activos paguen tus cuentas.\u00BB", a:"\u2014 Definición de independencia"},
         {cond:t.ind>=150, q:"\u00ABEl dinero es un terrible amo pero un excelente sirviente. El tuyo ya trabaja para ti.\u00BB", a:"\u2014 Sabiduría financiera clásica"},
       ],
@@ -1965,7 +1983,7 @@ export default function FinPath(){
     const topInc=[...((u&&u.ingresos)||[]).filter(i=>i.sim!==false)].sort((a,b)=>montoPromedioMensual(b)-montoPromedioMensual(a)).slice(0,5);
     // Health score (0-100)
     const healthScore=Math.min(100,Math.round(
-      (t.ind>=100?30:t.ind*0.3) + // independence: 30 pts
+      (t.coberturaTotal>=100?30:t.coberturaTotal*0.3) + // flujo: 30 pts (se reemplaza con la spec de salud financiera)
       (t.dta<50?25:t.dta<80?15:0) + // debt ratio: 25 pts
       (t.cf>0?25:t.cf>-1000?10:0) + // cash flow positive: 25 pts
       (((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>=3?10:(((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>=2?5:0)) + // diversification: 10 pts
@@ -2439,9 +2457,8 @@ export default function FinPath(){
         const fireProgress = fireNumber > 0 ? Math.min((t.nw / fireNumber) * 100, 100) : 0;
         const debtService = t.ti > 0 ? (t.tc / t.ti * 100) : 0;
         // Passive vs active income
-        const passCats = ["Arriendo","Rendimiento","Dividendos","Inversión"];
-        const passiveInc = ((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i => passCats.includes(i.categoria)).reduce((s,i) => s + montoPromedioMensual(i), 0);
-        const passiveRatio = t.ti > 0 ? (passiveInc / t.ti * 100) : 0;
+        // % del ingreso que es pasivo: misma clasificación que el nivel (metrics.js).
+        const passiveRatio = t.pctIngresoPasivo || 0;
         // Yield on cost
         const totalInvested = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vcCOP(i,trm), 0);
         const yieldOnCost = totalInvested > 0 ? (ingresoInversionAnual(u&&u.ingresos, trm) / totalInvested * 100) : 0;
@@ -2872,8 +2889,8 @@ export default function FinPath(){
                 if (t.cf < 0) actions.push({pri:"🔴",text:"Tu cash flow es negativo. Gastas más de lo que ganas. Revisa gastos o busca más ingresos.",cat:"Cash Flow"});
                 else if (t.ti > 0 && (t.cf/t.ti*100) < 10) actions.push({pri:"🟡",text:"Tu tasa de ahorro es baja (" + (t.cf/t.ti*100).toFixed(0) + "%). Intenta ahorrar al menos el 20%.",cat:"Ahorro"});
                 
-                const passI = ((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i => ["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i) => s + montoPromedioMensual(i), 0);
-                if (t.ti > 0 && (passI/t.ti*100) < 50) actions.push({pri:"🟡",text:"Solo el " + (passI/t.ti*100).toFixed(0) + "% de tu ingreso es pasivo. Invierte más en activos que generen renta.",cat:"Independencia"});
+                const passPct = t.pctIngresoPasivo || 0;
+                if (t.ti > 0 && passPct < 50) actions.push({pri:"🟡",text:"Solo el " + passPct.toFixed(0) + "% de tu ingreso es pasivo. Invierte más en activos que generen renta.",cat:"Independencia"});
                 
                 if (actions.length === 0) actions.push({pri:"🟢",text:"¡Excelente situación financiera! Mantén tu estrategia actual y sigue diversificando.",cat:"General"});
                 
@@ -3025,14 +3042,12 @@ export default function FinPath(){
           </div>
           <div style={{marginTop:16,fontSize:12,color:T.tx2,lineHeight:1.6}}>
             {t.ind>=100
-              ?<span style={{color:T.gn}}>🏆 ¡Tus ingresos cubren todos tus gastos y deudas!</span>
-              :t.ind>=60
-                ?<span>📈 Te falta {fm(t.te-t.ni)}/mes para cubrir todos tus gastos.</span>
-                :<span style={{color:T.rd}}>⚠ Tus gastos superan tus ingresos en {fm(t.te-t.ni)}/mes.</span>
+              ?<span style={{color:T.gn}}>🏆 ¡Tu ingreso pasivo cubre todos tus gastos y cuotas!</span>
+              :<span>📈 Tu ingreso pasivo ({fm(t.ingresoPasivo)}/mes) cubre el {pc(t.ind)} de tus gastos y cuotas. Te faltan {fm(Math.max(0,(t.ob||0)-(t.ingresoPasivo||0)))}/mes de ingreso pasivo.</span>
             }
           </div>
-          {t.ind<100&&t.cf!==0&&<div style={{marginTop:8,fontSize:11,color:T.tx3}}>
-            Meta: necesitas {fm(t.te)}/mes de ingresos para ser independiente.
+          {t.ind<100&&<div style={{marginTop:8,fontSize:11,color:T.tx3}}>
+            Meta: {fm(t.ob)}/mes de ingreso pasivo (arriendos netos, intereses, dividendos) para ser independiente.
           </div>}
         </Cd>
       </div>
@@ -3078,8 +3093,7 @@ export default function FinPath(){
           if (vehPct > 5) alerts.push({type:"🟡",title:"Vehículos = "+vehPct.toFixed(1)+"% del patrimonio",msg:"Los vehículos pierden ~15% de valor por año. "+fm(vehVal)+" en activos que se deprecian. Un family office los considera gastos, no inversiones.",cat:"Depreciación"});
 
           // 7. Positive alerts
-          const passI = ing.filter(i => ["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i) => s + montoPromedioMensual(i), 0);
-          const passR = t.ti > 0 ? (passI / t.ti * 100) : 0;
+          const passR = t.pctIngresoPasivo || 0;
           if (passR >= 80) alerts.push({type:"🟢",title:"Ingreso pasivo "+passR.toFixed(0)+"% — excelente",msg:"La mayoría de tu ingreso no depende de tu trabajo. Esto te da libertad y reduce riesgo. Mantén esta estructura.",cat:"Independencia"});
 
           const fireN = t.gfm * 12 * 25;
@@ -3404,8 +3418,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // BUG FIX 13-jun-2026: mismo bug del PDF — esta vista también sumaba
       // items con sim===false. Ahora filtramos igual que en cT() para que la
       // vista sea consistente con los KPIs del Dashboard.
-      const passI=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).filter(i=>i.sim!==false&&["Arriendo","Rendimiento","Dividendos"].includes(i.categoria)).reduce((s,i)=>s+montoPromedioMensual(i),0);
-      const passR=t.ti>0?(passI/t.ti*100):0;
+      const passR=t.pctIngresoPasivo||0;
       const totalInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i)=>s+vcCOP(i,trm),0);
       const totalVal=((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i)=>s+vaCOP(i,trm),0);
       const gainPct=totalInv>0?((totalVal/totalInv)-1)*100:0;
@@ -3446,7 +3459,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
               <div style={{fontSize:10,color:T.tx3,letterSpacing:1,fontWeight:600}}>INDEPENDENCIA</div>
               <div style={{fontSize:24,fontWeight:800,color:t.ind>=100?T.gn:"#eab308",marginTop:4}}>{(t.ind).toFixed(0)}%</div>
-              <div style={{fontSize:9,color:T.tx3}}>flujo: ingresos vs gastos hoy</div>
+              <div style={{fontSize:9,color:T.tx3}}>ingreso pasivo vs gastos y cuotas</div>
               <div style={{fontSize:10,color:T.tx3,marginTop:3}}>FIRE: {fireProg.toFixed(0)}% · capital para no trabajar</div>
             </div>
           </div>
@@ -3569,7 +3582,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <div style={{background:"linear-gradient(135deg,rgba(34,197,94,0.06),rgba(59,130,246,0.03))",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:16}}>
             <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:8}}>📌 Diagnóstico</div>
             <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
-              {t.ind>=100?"✅ Tus ingresos cubren el 100% de tus gastos y deudas. Estás en nivel de independencia financiera.":"⚠ Tus ingresos cubren el "+t.ind.toFixed(0)+"% de tus gastos. Te falta "+fm(t.te-t.ni)+"/mes para independencia total."}
+              {t.ind>=100?"✅ Tu ingreso pasivo cubre el 100% de tus gastos y cuotas. Estás en nivel de independencia financiera.":"⚠ Tu ingreso pasivo cubre el "+t.ind.toFixed(0)+"% de tus gastos y cuotas. Te faltan "+fm(Math.max(0,(t.ob||0)-(t.ingresoPasivo||0)))+"/mes de ingreso pasivo para la independencia."}
               <br/>{t.cf>=0?"✅ Cash flow positivo de "+fm(t.cf)+"/mes disponible para inversión.":"❌ Cash flow negativo. Gastas "+fm(Math.abs(t.cf))+"/mes más de lo que ganas."}
               <br/>{passR>=80?"✅ El "+passR.toFixed(0)+"% de tus ingresos son pasivos. Excelente independencia.":"📈 Solo el "+passR.toFixed(0)+"% es ingreso pasivo. Meta: superar 80%."}
               <br/>{fireProg>=100?"🏆 Ya superaste tu FIRE number. Puedes vivir de tu patrimonio 25+ años.":"🔥 FIRE progress: "+fireProg.toFixed(0)+"%. Meta: "+fm(fireN)+". Te falta: "+fm(Math.max(0,fireN-t.nw))+"."}
