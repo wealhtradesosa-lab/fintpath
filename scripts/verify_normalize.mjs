@@ -8,7 +8,7 @@ import { normalizeFiscalData, getFiscalWarnings } from "../src/lib/normalize.js"
 import {
   LAB_SALARIO, LAB_HONORARIOS_CON_EMPLEADOS, LAB_HONORARIOS_SIN_EMPLEADOS,
   CAP_INTERESES_BANCARIOS, CAP_FIC, CAP_RENDIMIENTO_GENERICO, CAP_VENTA_ACTIVOS,
-  NOL_ARRIENDO_INMUEBLE, NOL_OTROS,
+  NOL_ARRIENDO_INMUEBLE, CAP_ARRENDAMIENTO, NOL_OTROS,
   DIV_ART49_GRAVADOS, DIV_INTERSOCIETARIOS, PEN_JUBILACION,
   GAS_NAT_SALUD_MEDICINA, GAS_INMUEBLE_PREDIAL, GAS_INMUEBLE_MANTENIMIENTO,
   GAS_JUR_NOMINA, GAS_JUR_OPERATIVO, GAS_JUR_NO_DEDUCIBLE, GAS_JUR_CAPACITACION,
@@ -62,7 +62,7 @@ console.log("\n— Ingresos:");
   const { data } = normalizeFiscalData(u);
   check("Salario → LAB_SALARIO", data.ingresos[0].fiscalCode, LAB_SALARIO);
   check("Honorarios (sin regimenHonorarios) → LAB_HONORARIOS_SIN_EMPLEADOS", data.ingresos[1].fiscalCode, LAB_HONORARIOS_SIN_EMPLEADOS);
-  check("Arriendo → NOL_ARRIENDO_INMUEBLE", data.ingresos[2].fiscalCode, NOL_ARRIENDO_INMUEBLE);
+  check("Arriendo → CAP_ARRENDAMIENTO (Art. 338 ET)", data.ingresos[2].fiscalCode, CAP_ARRENDAMIENTO);
   check("Intereses bancarios → CAP_INTERESES_BANCARIOS", data.ingresos[3].fiscalCode, CAP_INTERESES_BANCARIOS);
   check("Utilidad FIC → CAP_FIC", data.ingresos[4].fiscalCode, CAP_FIC);
   check("Rendimiento → CAP_RENDIMIENTO_GENERICO", data.ingresos[5].fiscalCode, CAP_RENDIMIENTO_GENERICO);

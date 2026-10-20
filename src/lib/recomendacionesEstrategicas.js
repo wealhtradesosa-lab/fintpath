@@ -51,7 +51,9 @@ function analizarPerfil(owner, det, user) {
   const ingresoAnual = Number(det.ingreso) || 0;
   const saldoACargo = Number(det.impuesto) || 0;
   const ingLaboral = Number(det.ingLaboral) || 0;
-  const ingNoLaboral = Number(det.ingNoLaboral) || 0;
+  // El arriendo de inmuebles ahora es renta de capital (Art. 338 ET); para
+  // estas recomendaciones sigue contando como ingreso no laboral/pasivo.
+  const ingNoLaboral = (Number(det.ingNoLaboral) || 0) + (Number(det.arrendamientoAnual) || 0);
   const divAnual = Number(det.divAnual) || 0;
 
   // Patrimonio (suma de inversiones del owner)

@@ -25,7 +25,7 @@ import {
   // Commit 3 Tarea 3: cesantías y prima como rentas de trabajo (Art. 206 #4 ET)
   LAB_PRESTACIONES_CESANTIAS, LAB_PRESTACIONES_PRIMA,
   CAP_INTERESES_BANCARIOS, CAP_FIC, CAP_RENDIMIENTO_GENERICO, CAP_VENTA_ACTIVOS,
-  NOL_ARRIENDO_INMUEBLE,
+  NOL_ARRIENDO_INMUEBLE, CAP_ARRENDAMIENTO, GASTOS_INMUEBLE_ARRENDADO,
   DIV_ART49_GRAVADOS, DIV_INTERSOCIETARIOS,
   PEN_JUBILACION,
   DEU_NAT_VIVIENDA_HABITACIONAL,
@@ -127,6 +127,33 @@ export function cesantiasExentasArt206_4(cesantiasAnual, salarioMensualPromedio,
 export const TABLA_IMP = TABLA_ART_241;
 export const calcImpRenta = (uvtBase) => calcImpRentaCore(uvtBase, UVT);
 
+// ── Arrendamiento de inmuebles (Art. 338 ET) ──
+// Un ingreso es arriendo de inmueble si su código es CAP_ARRENDAMIENTO (o el
+// legacy NOL_ARRIENDO_INMUEBLE), o si es un CAP_RENDIMIENTO_GENERICO vinculado
+// por activoId a un inmueble de Patrimonio (así lo crea el botón «Registrar
+// este rendimiento como ingreso»). Esos rendimientos eran arriendo y no deben
+// recibir el componente inflacionario.
+const RE_INMUEBLE = /real estate|inmueble|apartamento|apto|casa|bodega|local|lote|oficina|finca/i;
+export function esActivoInmueble(a) {
+  if (!a) return false;
+  if (a.fiscalCode === "INV_INMUEBLE_ARRENDADO" || a.fiscalCode === "INV_INMUEBLE_COMERCIAL_PROPIO") return true;
+  return RE_INMUEBLE.test(String(a.tp || a.tipo || ""));
+}
+export function esIngresoArrendamiento(i, inmueblesIds) {
+  if (!i) return false;
+  if (i.fiscalCode === CAP_ARRENDAMIENTO || i.fiscalCode === NOL_ARRIENDO_INMUEBLE) return true;
+  return i.fiscalCode === CAP_RENDIMIENTO_GENERICO && !!i.activoId && !!inmueblesIds?.has(i.activoId);
+}
+// Retención por arriendo: solo si el usuario marcó «me retienen» (Art. 401 ET,
+// 3,5 % cuando el arrendatario es agente retenedor). No se supone por defecto.
+export const TASA_RETENCION_ARRIENDO = 0.035;
+export function retencionArriendoItem(i, montoAnual) {
+  if (!i || i.meRetienen !== true) return 0;
+  const custom = i.retencionConfig?.tasaCustom; // decimal (0.035), como lo guarda Ingresos
+  const tasa = custom != null && Number.isFinite(Number(custom)) && Number(custom) >= 0 ? Number(custom) : TASA_RETENCION_ARRIENDO;
+  return montoAnual * tasa;
+}
+
 export const estimarImpuesto = (u, options = {}) => {
   if (!u) return { total: 0, mes: 0, detalle: [], sinClasificar: 0 };
   const ag = options.añoGravable ?? options.ag ?? DEFAULT_AG;
@@ -142,6 +169,17 @@ export const estimarImpuesto = (u, options = {}) => {
   // Normalizar: asegurar que todos los items tengan fiscalCode (inferir si es
   // legacy). Los warnings no se consumen aquí; la UI los obtiene con
   // getFiscalWarnings() por separado.
+  // Arrendamiento: marcar qué gastos traían fiscalCode propio ANTES de
+  // normalizar. normalize infiere GAS_INMUEBLE_* para cualquier gasto de
+  // vivienda/predial de una persona natural; esa inferencia no es un costo
+  // del inmueble arrendado registrado por el usuario (sin presunción).
+  if (u.gas && typeof u.gas === "object") {
+    const gasMarcado = {};
+    Object.entries(u.gas).forEach(([cat, items]) => {
+      gasMarcado[cat] = Array.isArray(items) ? items.map(g => (g && typeof g === "object" ? { ...g, _fcExplicito: !!g.fiscalCode } : g)) : items;
+    });
+    u = { ...u, gas: gasMarcado };
+  }
   const { data: norm } = normalizeFiscalData(u);
   u = norm;
   const owners = (u.owners || [{ id: "own_1", name: "Personal", type: "natural" }]);
@@ -158,6 +196,7 @@ export const estimarImpuesto = (u, options = {}) => {
     if (filtered.length > 0) gas[cat] = filtered;
   });
   const deu = (u.deu || []).filter(d => d.sim !== false && !d.excluirDeclaracion);
+  const inmueblesIds = new Set((u.inv || []).filter(esActivoInmueble).map(a => a.id).filter(Boolean));
   let totalImp = 0;
   const detalle = [];
   const sinClasificar = ing.filter(i => !i.owner || i.owner === "").length;
@@ -491,7 +530,10 @@ export const estimarImpuesto = (u, options = {}) => {
       const cesantiasAnual = oIng.filter(i => i.fiscalCode === LAB_PRESTACIONES_CESANTIAS).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
       const primaAnual = oIng.filter(i => i.fiscalCode === LAB_PRESTACIONES_PRIMA).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
       const honAnual = oIng.filter(i => i.fiscalCode === LAB_HONORARIOS_CON_EMPLEADOS || i.fiscalCode === LAB_HONORARIOS_SIN_EMPLEADOS).reduce((s, i) => s + totalAnualItem(i), 0);
-      const rentasAnual = oIng.filter(i => i.fiscalCode === NOL_ARRIENDO_INMUEBLE).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
+      // Art. 338 ET: arriendo de inmuebles = renta de capital (cédula general).
+      const ingresosArriendo = oIng.filter(i => esIngresoArrendamiento(i, inmueblesIds));
+      const setArriendo = new Set(ingresosArriendo);
+      const arrendamientoAnual = ingresosArriendo.reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
       // Sub-tipos de rendimientos con tratamiento diferenciado:
       // - Intereses bancarios/CDT: aplica componente inflacionario Art. 38 ET
       // - Utilidad FIC: aplica componente inflacionario Art. 39 ET
@@ -499,7 +541,7 @@ export const estimarImpuesto = (u, options = {}) => {
       // - Inversión: NO aplica componente inflacionario (típicamente venta de activos)
       const interesesBancAnual = oIng.filter(i => i.fiscalCode === CAP_INTERESES_BANCARIOS).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
       const utilidadFICAnual = oIng.filter(i => i.fiscalCode === CAP_FIC).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
-      const rendimientoGenAnual = oIng.filter(i => i.fiscalCode === CAP_RENDIMIENTO_GENERICO).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
+      const rendimientoGenAnual = oIng.filter(i => i.fiscalCode === CAP_RENDIMIENTO_GENERICO && !setArriendo.has(i)).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
       const inversionAnual = oIng.filter(i => i.fiscalCode === CAP_VENTA_ACTIVOS).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
       const rendAnual = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual + inversionAnual;
       const divAnualManual = oIng.filter(i => i.fiscalCode === DIV_ART49_GRAVADOS).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
@@ -538,14 +580,14 @@ export const estimarImpuesto = (u, options = {}) => {
         LAB_SALARIO, LAB_HONORARIOS_CON_EMPLEADOS, LAB_HONORARIOS_SIN_EMPLEADOS,
         // Commit 3 Tarea 3: prestaciones laborales son cédula laboral, no NOL_OTROS
         LAB_PRESTACIONES_CESANTIAS, LAB_PRESTACIONES_PRIMA,
-        NOL_ARRIENDO_INMUEBLE, CAP_INTERESES_BANCARIOS, CAP_FIC,
+        NOL_ARRIENDO_INMUEBLE, CAP_ARRENDAMIENTO, CAP_INTERESES_BANCARIOS, CAP_FIC,
         CAP_RENDIMIENTO_GENERICO, CAP_VENTA_ACTIVOS, DIV_ART49_GRAVADOS, PEN_JUBILACION,
       ]);
       const otrosAnual = oIng.filter(i => !categorizadas.has(i.fiscalCode)).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
 
       const ingLaboral = salAnual + honAnual + cesantiasAnual + primaAnual;
-      const ingCapital = rendAnual;
-      const ingNoLaboral = rentasAnual + otrosAnual;
+      const ingCapital = rendAnual + arrendamientoAnual;
+      const ingNoLaboral = otrosAnual;
       const ingAnual = ingLaboral + ingCapital + ingNoLaboral + divAnual + pensAnual;
       // Bug #7: si el owner tiene solo eventos de ganancia ocasional (sin ingresos
       // ordinarios), procesarlo en rama especial — calcular solo impGO y empujar
@@ -801,7 +843,7 @@ export const estimarImpuesto = (u, options = {}) => {
       const obligadoContabilidad = !!(ow.fiscalProfile?.obligadoContabilidad);
       const componenteInflacExcluido = obligadoContabilidad ? 0 : (rendCompInflacAplicable * pctComponenteInflac);
       const rendGravable = rendCompInflacAplicable - componenteInflacExcluido + inversionAnual;
-      const rentaLiqCapital = Math.max(0, rendGravable);
+      const rentaLiqRendimientos = Math.max(0, rendGravable);
 
       // ── 4. RENTAS NO LABORALES ──
       // Gastos del inmueble arrendado: deducibles al 100% cuando cumplen
@@ -821,7 +863,33 @@ export const estimarImpuesto = (u, options = {}) => {
       const planOpt = (incluirPlan && ow.fiscalProfile?.planOptimizacion) || {};
       const gastosArriendoManual = Number(planOpt.gastosArriendoAnuales) || 0;
       const gastosInmueble = gastosInmuebleBase + gastosInmuebleSeguros + gastosArriendoManual;
-      const rentaLiqNoLaboral = Math.max(0, ingNoLaboral - gastosInmueble);
+
+      // ── 3b. ARRENDAMIENTO DE INMUEBLES (renta de capital, Art. 338 ET) ──
+      // Ingreso bruto completo, menos los costos y gastos que el usuario
+      // registró para el inmueble: predial, administración, mantenimiento,
+      // servicios, seguros y depreciación (fiscalCode GAS_INMUEBLE_*), los
+      // gastos vinculados por activoId al inmueble arrendado, los intereses de
+      // las deudas vinculadas a ese inmueble y el monto manual del Plan. Sin
+      // presunción: si no hay nada registrado, los costos son $0. Sin exenta
+      // del 25 % (Art. 206-10 es solo laboral) y sin componente inflacionario.
+      const activosArriendo = new Set(ingresosArriendo.map(i => i.activoId).filter(Boolean));
+      const CATS_COSTO_INMUEBLE = ["Predial", "Impuesto", "Administración", "Mantenimiento", "Seguros", "Depreciación", "Servicios"];
+      const costosArrGastos = oGas.filter(g =>
+        (g._fcExplicito === true && GASTOS_INMUEBLE_ARRENDADO.includes(g.fiscalCode)) ||
+        (g.activoId && activosArriendo.has(g.activoId) && CATS_COSTO_INMUEBLE.includes(g.cat))
+      ).reduce((s, g) => s + totalAnualItem(g), 0);
+      const costosArrIntereses = oDeu.filter(d =>
+        d.activoId && activosArriendo.has(d.activoId) && d.fiscalCode !== DEU_NAT_VIVIENDA_HABITACIONAL
+      ).reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
+      const costosArrendamiento = arrendamientoAnual > 0 ? costosArrGastos + costosArrIntereses + gastosArriendoManual : 0;
+      const rentaLiqArrendamiento = Math.max(0, arrendamientoAnual - costosArrendamiento);
+      const rentaLiqCapital = rentaLiqRendimientos + rentaLiqArrendamiento;
+
+      // Sin arriendo, la cédula no laboral conserva el cálculo anterior.
+      // Con arriendo, los gastos del inmueble ya se restaron arriba.
+      const rentaLiqNoLaboral = arrendamientoAnual > 0
+        ? Math.max(0, ingNoLaboral)
+        : Math.max(0, ingNoLaboral - gastosInmueble);
 
       // ── 5. DIVIDENDOS (tarifa especial Art. 242 ET) ──
       // Dividendos no gravados Art. 49 ET: solo desde Plan de Optimización
@@ -870,7 +938,7 @@ export const estimarImpuesto = (u, options = {}) => {
         const fc = i.fiscalCode;
         if (fc === LAB_SALARIO) { const mUVT = m / 12 / uvt; reteN += m * (mUVT > 360 ? 0.19 : mUVT > 150 ? 0.10 : mUVT > 95 ? 0.04 : 0); }
         else if (fc === LAB_HONORARIOS_CON_EMPLEADOS || fc === LAB_HONORARIOS_SIN_EMPLEADOS) reteN += m * 0.11;
-        else if (fc === NOL_ARRIENDO_INMUEBLE) reteN += m * 0.035;
+        else if (setArriendo.has(i)) reteN += retencionArriendoItem(i, m);
         else if (fc === CAP_RENDIMIENTO_GENERICO || fc === DIV_ART49_GRAVADOS || fc === CAP_INTERESES_BANCARIOS || fc === CAP_VENTA_ACTIVOS) reteN += m * 0.07;
       });
       const reteEstimadaAuto = reteN;
@@ -1050,7 +1118,10 @@ export const estimarImpuesto = (u, options = {}) => {
         // Desglose de rendimientos + componente inflacionario (Art. 38-39 ET)
         interesesBancAnual, utilidadFICAnual, rendimientoGenAnual, inversionAnual,
         componenteInflacExcluido, pctComponenteInflac: pctComponenteInflac * 100,
-        rentaLiqCapital,
+        rentaLiqCapital, rentaLiqRendimientos,
+        // Arrendamiento de inmuebles (Art. 338 ET): renta de capital
+        arrendamientoAnual, costosArrendamiento, rentaLiqArrendamiento,
+        retencionArrendamiento: ingresosArriendo.reduce((s, i) => s + retencionArriendoItem(i, totalAnualItem(i) * (i.moneda === "USD" ? trm : 1)), 0),
         // impuesto/impOptimizado = SALDO a pagar (después de retenciones/anticipos).
         impuesto: impActualNat,
         saldoAPagar: impActualNat,

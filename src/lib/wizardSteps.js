@@ -682,7 +682,7 @@ export function mapearRespuestasAUser(answers, user, ownerId) {
       id: "ing_wzd_arr_" + Date.now(),
       owner: ownerId,
       mensual: Number(answers.arriendosMensual),
-      fiscalCode: "NOL_ARRIENDO_INMUEBLE",
+      fiscalCode: "CAP_ARRENDAMIENTO",
       fuente: "Arriendos (wizard)",
       moneda: "COP",
       _wizard: true,
@@ -1075,7 +1075,8 @@ function precargarRespuestasJuridica(user, owner) {
     sumaAnual("CAP_INTERESES_BANCARIOS") +
     sumaAnual("CAP_RENDIMIENTO_GENERICO") +
     sumaAnual("CAP_FIC") +
-    sumaAnual("NOL_ARRIENDO_INMUEBLE");
+    sumaAnual("NOL_ARRIENDO_INMUEBLE") +
+    sumaAnual("CAP_ARRENDAMIENTO");
   if (noOpAnual > 0) {
     answers.tieneIngresosNoOp = "si";
     answers.ingresosNoOpAnual = Math.round(noOpAnual);
@@ -1331,10 +1332,10 @@ function precargarRespuestasNatural(user, owner) {
 
   // ── Arriendos recibidos ─────────────────────────────────────────────────
   const tieneArriendos = ingresosOwner.some(i =>
-    i.fiscalCode === "NOL_ARRIENDO_INMUEBLE" || i.fiscalCode === "NOL_ARRIENDO_BIENES_MUEBLES"
+    i.fiscalCode === "NOL_ARRIENDO_INMUEBLE" || i.fiscalCode === "CAP_ARRENDAMIENTO" || i.fiscalCode === "NOL_ARRIENDO_BIENES_MUEBLES"
   );
   if (tieneArriendos) {
-    const mensualArr = sumaMensual("NOL_ARRIENDO_INMUEBLE") + sumaMensual("NOL_ARRIENDO_BIENES_MUEBLES");
+    const mensualArr = sumaMensual("NOL_ARRIENDO_INMUEBLE") + sumaMensual("CAP_ARRENDAMIENTO") + sumaMensual("NOL_ARRIENDO_BIENES_MUEBLES");
     answers.recibeArriendos = "si";
     answers.arriendosMensual = Math.round(mensualArr);
     precargados.add("recibeArriendos");
@@ -1429,6 +1430,7 @@ export function precargarRespuestasJuridicaDesdeUser(user, ownerId) {
   const ingNoOp = sumaAnualIng("CAP_INTERESES_BANCARIOS")
     + sumaAnualIng("CAP_RENDIMIENTO_GENERICO")
     + sumaAnualIng("NOL_ARRIENDO_INMUEBLE")
+    + sumaAnualIng("CAP_ARRENDAMIENTO")
     + sumaAnualIng("CAP_DIVIDENDOS_RECIBIDOS");
   if (ingNoOp > 0) {
     answers.tieneIngresosNoOp = "si";

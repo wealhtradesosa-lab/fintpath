@@ -24,6 +24,9 @@ export const CAP_RENDIMIENTO_GENERICO        = "CAP_RENDIMIENTO_GENERICO";
 export const CAP_REGALIAS_PI                 = "CAP_REGALIAS_PI";
 export const CAP_ARRIENDO_MUEBLE             = "CAP_ARRIENDO_MUEBLE";
 export const CAP_VENTA_ACTIVOS               = "CAP_VENTA_ACTIVOS";
+// Arriendo de inmuebles: renta de capital de la cédula general (Art. 338 ET).
+// Sin componente inflacionario (no es rendimiento financiero).
+export const CAP_ARRENDAMIENTO               = "CAP_ARRENDAMIENTO";
 
 // No Laborales (NOL → Cédula General)
 export const NOL_ARRIENDO_INMUEBLE           = "NOL_ARRIENDO_INMUEBLE";
@@ -186,6 +189,7 @@ export const FISCAL_CODE_META = {
   [CAP_REGALIAS_PI]:              { kind: "ingreso", cedula: "capital",  label: "Regalías propiedad intelectual",     et: "Art. 235-2" },
   [CAP_ARRIENDO_MUEBLE]:          { kind: "ingreso", cedula: "capital",  label: "Arriendo de muebles/equipos",        et: "Cédula capital" },
   [CAP_VENTA_ACTIVOS]:            { kind: "ingreso", cedula: "capital",  label: "Venta activos <2 años",              et: "Renta ordinaria" },
+  [CAP_ARRENDAMIENTO]:            { kind: "ingreso", cedula: "capital",  label: "Arriendo de inmueble",               et: "Art. 338 (renta de capital)" },
   // No laborales
   [NOL_ARRIENDO_INMUEBLE]:        { kind: "ingreso", cedula: "no_laboral", label: "Arriendo de inmueble",             et: "Art. 107 (gastos 100% deducibles)" },
   [NOL_HONORARIOS_INDEP]:         { kind: "ingreso", cedula: "no_laboral", label: "Honorarios independiente",         et: "Cédula no laboral" },
@@ -284,7 +288,7 @@ export const FISCAL_CODE_META = {
 // ═════════════════════════════════════════════════════════════════════════
 
 export const INGRESOS_LABORALES = [LAB_SALARIO, LAB_HONORARIOS_CON_EMPLEADOS, LAB_HONORARIOS_SIN_EMPLEADOS, LAB_PRESTACIONES_CESANTIAS, LAB_PRESTACIONES_PRIMA];
-export const INGRESOS_CAPITAL   = [CAP_INTERESES_BANCARIOS, CAP_FIC, CAP_RENDIMIENTO_GENERICO, CAP_REGALIAS_PI, CAP_ARRIENDO_MUEBLE, CAP_VENTA_ACTIVOS];
+export const INGRESOS_CAPITAL   = [CAP_INTERESES_BANCARIOS, CAP_FIC, CAP_RENDIMIENTO_GENERICO, CAP_REGALIAS_PI, CAP_ARRIENDO_MUEBLE, CAP_VENTA_ACTIVOS, CAP_ARRENDAMIENTO];
 export const INGRESOS_NO_LABORAL = [NOL_ARRIENDO_INMUEBLE, NOL_HONORARIOS_INDEP, NOL_NEGOCIO, NOL_OTROS];
 export const INGRESOS_DIVIDENDOS = [DIV_ART49_NO_GRAVADOS, DIV_ART49_GRAVADOS, DIV_EXTERIOR, DIV_INTERSOCIETARIOS];
 export const INGRESOS_APLICA_COMPONENTE_INFLACIONARIO = [CAP_INTERESES_BANCARIOS, CAP_FIC, CAP_RENDIMIENTO_GENERICO];

@@ -53,7 +53,7 @@ const uid = () => "c_" + Math.random().toString(36).slice(2, 9);
 
 const CATS_ING = ["Salario", "Honorarios", "Arriendo", "Dividendos", "Intereses bancarios", "Rendimiento", "Pensión", "Negocio", "Otro"];
 const FISCAL_ING = {
-  "Salario": "LAB_SALARIO", "Honorarios": "LAB_HONORARIOS_SIN_EMPLEADOS", "Arriendo": "NOL_ARRIENDO_INMUEBLE",
+  "Salario": "LAB_SALARIO", "Honorarios": "LAB_HONORARIOS_SIN_EMPLEADOS", "Arriendo": "CAP_ARRENDAMIENTO",
   "Dividendos": "DIV_ART49_GRAVADOS", "Intereses bancarios": "CAP_INTERESES_BANCARIOS",
   "Rendimiento": "CAP_RENDIMIENTO_GENERICO", "Pensión": "PEN_JUBILACION", "Negocio": "NOL_NEGOCIO", "Otro": "NOL_OTROS",
 };

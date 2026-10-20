@@ -69,8 +69,12 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
 
   // No laboral (arrendamientos típicamente)
   const oIng = (user.ingresos || []).filter(i => i.owner === owner.id && i.sim !== false && !i.excluirDeclaracion);
+  // Arriendo de inmuebles: renta de capital (Art. 338 ET), viene del motor.
+  const arrendamientoInmuebles = det.arrendamientoAnual || 0;
+  const costosArrendamiento = det.costosArrendamiento || 0;
+  // En no laborales solo queda el arriendo de bienes muebles legacy.
   const ingArriendos = oIng
-    .filter(i => i.fiscalCode === "NOL_ARRIENDO_INMUEBLE" || i.fiscalCode === "NOL_ARRIENDO_BIENES_MUEBLES")
+    .filter(i => i.fiscalCode === "NOL_ARRIENDO_BIENES_MUEBLES")
     .reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
 
   // Gastos generales (informativos para la persona natural)
@@ -166,12 +170,16 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
       tip: "💎 GANANCIA OCULTA: el 50.88% de tus intereses bancarios NO son gravables (Art. 38 ET). El motor lo calcula automáticamente. Esto te ahorra fácil $5-15M en impuesto." },
     { seccion: "capital", numero: 52, concepto: "Utilidad FIC", valor: v(52, utilidadFIC), auto: utilidadFIC, tipo: "editable", fuente: "Ingresos tipo FIC",
       tip: "📈 Fondos de Inversión Colectiva — la retención se hace a nivel del fondo, no del partícipe." },
+    { seccion: "capital", numero: 54, concepto: "Arrendamientos de inmuebles (renta de capital)", valor: v(54, arrendamientoInmuebles), auto: arrendamientoInmuebles, tipo: "editable", fuente: "Ingresos de arriendo de inmuebles", articulo: "Art. 338 ET",
+      tip: "🏠 Arriendos brutos cobrados en el año. Van en las rentas de capital de la cédula general. Si el arrendatario te retuvo, esa retención va en la sección Liquidación." },
+    { seccion: "capital", numero: 55, concepto: "Costos y gastos del inmueble arrendado", valor: v(55, costosArrendamiento), auto: costosArrendamiento, tipo: "editable", fuente: "Predial, administración, mantenimiento, intereses y depreciación que registraste",
+      tip: "Solo lo que registraste para el inmueble. Si no registraste nada, queda en $0." },
     { seccion: "capital", numero: 53, concepto: "Renta líquida cédula de capital", tipo: "formula",
-      calc: (vals) => Math.max(0, (vals[50] || 0) + (vals[52] || 0) - (vals[51] || 0)) },
+      calc: (vals) => Math.max(0, (vals[50] || 0) + (vals[52] || 0) - (vals[51] || 0)) + Math.max(0, (vals[54] || 0) - (vals[55] || 0)) },
 
     // ── CÉDULA NO LABORAL ────────────────────────────────────────────────
-    { seccion: "noLaboral", numero: 60, concepto: "Arrendamientos de inmuebles", valor: v(60, ingArriendos), auto: ingArriendos, tipo: "editable", fuente: "Ingresos tipo NOL_ARRIENDO_INMUEBLE",
-      tip: "🏠 Arriendos brutos cobrados durante el año. Si el inquilino retiene 3.5%, esa retención va a la sección Liquidación abajo." },
+    { seccion: "noLaboral", numero: 60, concepto: "Arrendamientos de bienes muebles", valor: v(60, ingArriendos), auto: ingArriendos, tipo: "editable", fuente: "Ingresos tipo NOL_ARRIENDO_BIENES_MUEBLES",
+      tip: "Arriendo de vehículos, maquinaria u otros bienes muebles. El arriendo de inmuebles va en la cédula de capital (renglón 54)." },
     { seccion: "noLaboral", numero: 61, concepto: "Otros ingresos no laborales", valor: v(61, 0), auto: 0, tipo: "editable", fuente: "Manual",
       tip: "Indemnizaciones, premios, herencias. La mayoría va a Ganancias Ocasionales (sección aparte)." },
     { seccion: "noLaboral", numero: 62, concepto: "Renta líquida cédula no laboral", tipo: "formula",
