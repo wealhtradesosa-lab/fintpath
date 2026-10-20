@@ -77,7 +77,7 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
   const proyIng = proyectarSiguienteAno([...serie, { ingresos: valoresActuales?.ingresos }].filter(s => s.ingresos > 0), "ingresos");
 
   const tooltipStyle = {
-    background: "#1a1d24",
+    background: "#1e1e24",
     border: "1px solid " + T.border,
     borderRadius: 8,
     fontSize: 11,

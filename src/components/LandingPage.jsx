@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { getPlansForLanding } from "../lib/plans.js";
 import HeroVariantC from "./HeroVariantC.jsx";
 import LandingAIAdvisorSection from "./LandingAIAdvisorSection.jsx";
-import TemporadaRenta from "./TemporadaRenta";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -81,9 +80,9 @@ export default function LandingPage({ onGetStarted, onLogin }) {
       {/* 01-sep-2026 — Temporada de renta. Va ANTES de features, apenas debajo
           del hero: es la sección con fecha de vencimiento y la única razón por
           la que alguien busca esto hoy. La grilla de features puede esperar. */}
-      <div style={{ background: T.bg, padding: "0 24px 64px" }}>
-        <TemporadaRenta onEmpezar={onGetStarted} />
-      </div>
+      {/* 20-oct-2026 (Santiago: "esta sección confunde, nosotros no somos una
+          plataforma para declarar"). La calculadora de fecha de la DIAN sale del
+          home. El componente TemporadaRenta queda para la página de impuestos. */}
 
       <div id="features" style={{ background: T.bg, padding: "0 0 80px" }}>
         <div className="fp-showcase">

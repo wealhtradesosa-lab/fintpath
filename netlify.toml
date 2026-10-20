@@ -118,6 +118,18 @@
   to = "/patrimonio.html"
   status = 200
 
+# 20-oct-2026 — Landing de anuncios /libertad (campaña fp_libertad_2610).
+# Antes caía en la home genérica. Mismo patrón que /patrimonio.
+[[redirects]]
+  from = "/libertad"
+  to = "/libertad.html"
+  status = 200
+
+[[redirects]]
+  from = "/libertad/"
+  to = "/libertad.html"
+  status = 200
+
 # 9-oct-2026 — Un archivo de código que no existe responde 404 de verdad.
 # Antes caía en el fallback del SPA y volvía como index.html con 200: el
 # navegador recibía HTML donde esperaba JavaScript y la app quedaba en blanco

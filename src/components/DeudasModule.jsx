@@ -785,7 +785,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   permite VERIFICAR la tasa contra el interés realmente cobrado.
                   La cuota se arma por SUMA (capital + interés), que es un dato,
                   no una identidad inventada como el auto-cálculo anterior. */}
-              <div style={{ gridColumn: "1/-1", background: "#17171c", border: `1px dashed ${T.border}`, borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ gridColumn: "1/-1", background: "#141418", border: `1px dashed ${T.border}`, borderRadius: 10, padding: "12px 14px" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.txt2, marginBottom: 2 }}>📄 Desglose del extracto <span style={{ fontWeight: 400, color: T.txt3 }}>(opcional)</span></div>
                 <div style={{ fontSize: 10, color: T.txt3, marginBottom: 10 }}>Copia los dos renglones tal cual salen en tu extracto. Con eso se arma la cuota y se verifica la tasa.</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -875,7 +875,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       <span>Interés <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesMes))}</strong></span>
                       <span>Capital <strong style={{color:"#22c55e"}}>{fmt(Math.round(cc.capitalMes))}</strong></span>
                     </div>
-                    <div style={{display:"flex",height:8,borderRadius:999,overflow:"hidden",background:"#0f0f13",marginBottom:6}}>
+                    <div style={{display:"flex",height:8,borderRadius:999,overflow:"hidden",background:"#0c0c0f",marginBottom:6}}>
                       <div style={{width:(100-cc.pctCapital)+"%",background:"#f59e0b"}} title="Intereses" />
                       <div style={{width:cc.pctCapital+"%",background:"#22c55e"}} title="Abono a capital" />
                     </div>

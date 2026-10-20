@@ -41,6 +41,7 @@ import HeroVariantB from "./components/HeroVariantB";
 import HeroVariantC from "./components/HeroVariantC";
 import LandingPioneros from "./components/LandingPioneros";
 import LandingPatrimonio from "./components/LandingPatrimonio";
+const LandingLibertad = lazy(() => import("./components/LandingLibertad"));
 import LandingSeguridad from "./components/LandingSeguridad";
 import LandingTerminos from "./components/LandingTerminos";
 import LandingPrivacidad from "./components/LandingPrivacidad";
@@ -89,6 +90,7 @@ import RoleBanner from "./components/RoleBanner";
 import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
+import { leerNorte, borrarNorte, itemsDesdeNorte } from "./lib/norteUnMinuto.js";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre } from "./lib/migrations";
 import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
@@ -1005,7 +1007,14 @@ export default function FinPath(){
             new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout cargando datos")),10000))
           ]);
           if(d){const __sd=sanitize(d);setU(__sd);setPg("dash");if(cuentaVacia(__sd))setShowOnboarding(true);}
-          else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);setShowOnboarding(true)}
+          else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";
+            // 20-oct-2026: si viene de /libertad con el norte calculado, las tres
+            // cifras entran como ítems reales. Nada que repetir; el dashboard
+            // muestra el nivel desde el primer segundo y el tour no hace falta.
+            const __norte=leerNorte();let __conNorte=false;
+            if(__norte){const it=itemsDesdeNorte(__norte,"own_1");if(it.ingresos.length||Object.keys(it.gas).length||it.inv.length){nd.owners=[{id:"own_1",name:aF.n||"Yo",type:"natural"}];nd.ingresos=it.ingresos;nd.gas=it.gas;nd.inv=it.inv;nd.deu=it.deu;__conNorte=true;}}
+            setU(nd);await sS(nd,data.user.id);
+            if(__conNorte){borrarNorte();track("norte_guardado",{nivel:undefined});sessionStorage.setItem("fp3_norte_recien","1");}else{setShowOnboarding(true)}}
         }catch(loadErr){
           // Si falla la carga de datos: limpiamos el estado a medio-loguear para no
           // dejar al usuario atrapado con authUser seteado pero sin data (lo que
@@ -1087,7 +1096,8 @@ export default function FinPath(){
         // Mostrar onboarding tour después del signup exitoso. Sin este paso,
         // ~40% de los users nuevos quedan mirando un dashboard vacío sin saber
         // qué hacer. El tour los lleva a su primer momento de valor en 60s.
-        setShowOnboarding(true);
+        // 20-oct-2026: salvo que venga de /libertad con su norte ya cargado.
+        if(sessionStorage.getItem("fp3_norte_recien")){sessionStorage.removeItem("fp3_norte_recien");setShowOnboarding(false);showToast("🧭 Tu norte quedó guardado. Esto es lo que tienes hoy.")}else{setShowOnboarding(true)}
         // Enviar welcome email (fire-and-forget — si falla no bloquea el flow).
         // Detecta si el user vino con cupón Pioneros para personalizar el copy.
         const __isPioneros = sessionStorage.getItem("fp3_promo_code") === "PIONEROS2026";
@@ -1520,6 +1530,11 @@ export default function FinPath(){
     // "Iniciar sesión" abre la pestaña Ingresar.
     if(pathname==="/patrimonio"||pathname==="/patrimonio/"){
       return<><LandingPatrimonio onLogin={()=>{sAM("login");track("login_modal_opened",{from:"patrimonio"});setShowAuth(true)}} onGetStarted={(ctaId)=>{sAM("signup");track("cta_click",{cta_id:ctaId});track("signup_modal_opened",{from:"patrimonio"});setShowAuth(true)}}/></>;
+    }
+    // 20-oct-2026: landing /libertad. El norte en un minuto, sin cuenta; el
+    // registro hereda las tres cifras (fp3_norte).
+    if(pathname==="/libertad"||pathname==="/libertad/"){
+      return<Suspense fallback={null}><LandingLibertad onLogin={()=>{sAM("login");track("login_modal_opened",{from:"libertad"});setShowAuth(true)}} onGetStarted={(ctaId)=>{sAM("signup");track("cta_click",{cta_id:ctaId});track("signup_modal_opened",{from:"libertad"});setShowAuth(true)}}/></Suspense>;
     }
     if(pathname==="/pioneros"||pathname==="/pioneros/"){
       return<LandingPioneros onGetStarted={()=>{track("signup_modal_opened",{from:"pioneros"});sAM("signup");setShowAuth(true)}}/>;

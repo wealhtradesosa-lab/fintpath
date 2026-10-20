@@ -38,7 +38,7 @@ export default function LandingPatrimonio({ onGetStarted = () => {}, onLogin = (
   const cta = (id) => onGetStarted(id);
 
   const wrap = { maxWidth: 1040, margin: "0 auto", padding: "0 20px" };
-  const btn = { background: T.green, color: "#000", border: "none", borderRadius: 12, padding: "16px 28px", fontWeight: 800, fontSize: 17, cursor: "pointer", fontFamily: BODY };
+  const btn = { background: T.green, color: "#000", border: "none", borderRadius: 12, padding: "16px 28px", fontWeight: 800, fontSize: 16, cursor: "pointer", fontFamily: BODY };
   const h2 = { fontFamily: DISPLAY, fontSize: "clamp(24px,4vw,34px)", fontWeight: 800, margin: "0 0 14px" };
 
   return (
@@ -51,7 +51,7 @@ export default function LandingPatrimonio({ onGetStarted = () => {}, onLogin = (
       <main>
         <section style={{ ...wrap, textAlign: "center", padding: "48px 20px 32px" }}>
           <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(34px,6vw,56px)", fontWeight: 900, lineHeight: 1.1, margin: "0 0 18px" }}>¿Cuánto vale todo lo que tienes?</h1>
-          <p style={{ fontSize: 19, color: T.txt2, maxWidth: 640, margin: "0 auto 28px", lineHeight: 1.5 }}>Cuentas, inversiones, propiedades y deudas en un solo lugar, con tu patrimonio neto a la vista.</p>
+          <p style={{ fontSize: 18, color: T.txt2, maxWidth: 640, margin: "0 auto 28px", lineHeight: 1.5 }}>Cuentas, inversiones, propiedades y deudas en un solo lugar, con tu patrimonio neto a la vista.</p>
           <button type="button" style={btn} onClick={() => cta("hero")}>Ver mi patrimonio</button>
           <p style={{ fontSize: 13, color: T.txt3, margin: "12px 0 32px" }}>14 días Pro sin tarjeta. Después sigues gratis o eliges un plan.</p>
           <figure style={{ margin: 0 }}>
@@ -65,7 +65,7 @@ export default function LandingPatrimonio({ onGetStarted = () => {}, onLogin = (
 
         <section style={{ ...wrap, padding: "40px 20px" }}>
           <h2 style={h2}>Activo por activo</h2>
-          <p style={{ color: T.txt2, fontSize: 17, lineHeight: 1.5, maxWidth: 680, margin: "0 0 22px" }}>Ve cuánto vale cada activo, cuánto ha ganado y cuánta deuda tiene encima, todo en un vistazo.</p>
+          <p style={{ color: T.txt2, fontSize: 16, lineHeight: 1.5, maxWidth: 680, margin: "0 0 22px" }}>Ve cuánto vale cada activo, cuánto ha ganado y cuánta deuda tiene encima, todo en un vistazo.</p>
           <figure style={{ margin: 0 }}>
             <img src="/patrimonio/tabla-activos.webp" alt="Tabla de activos con columnas Valor, Ganancia y Deuda" width="1600" height="629" loading="lazy" style={{ width: "100%", height: "auto", borderRadius: 16, border: `1px solid ${T.border}` }} />
             <figcaption style={{ fontSize: 12, color: T.txt3, marginTop: 8 }}>Datos ilustrativos</figcaption>
@@ -86,7 +86,7 @@ export default function LandingPatrimonio({ onGetStarted = () => {}, onLogin = (
 
         <section style={{ ...wrap, padding: "40px 20px" }}>
           <h2 style={h2}>Planes</h2>
-          <p style={{ color: T.txt2, fontSize: 17, lineHeight: 1.55, maxWidth: 680, margin: 0 }}>{PLANES_TEXTO}</p>
+          <p style={{ color: T.txt2, fontSize: 16, lineHeight: 1.55, maxWidth: 680, margin: 0 }}>{PLANES_TEXTO}</p>
         </section>
 
         <section style={{ ...wrap, padding: "40px 20px", maxWidth: 760 }}>

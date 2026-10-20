@@ -16,6 +16,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         pioneros: resolve(__dirname, 'pioneros.html'),
         patrimonio: resolve(__dirname, 'patrimonio.html'),
+        libertad: resolve(__dirname, 'libertad.html'),
       },
     },
   },

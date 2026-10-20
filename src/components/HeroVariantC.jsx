@@ -272,7 +272,10 @@ export default function HeroVariantC({ onGetStarted = () => {}, onLogin }) {
             margin: 0,
             fontWeight: 400,
           }}>
-            El Family Office con IA que centraliza toda tu información financiera para ayudarte a tomar mejores decisiones, proteger tu patrimonio y construir el bienestar financiero de tu familia.
+            {/* 20-oct-2026 (Santiago): "nosotros ayudamos a las personas a organizar,
+                a planear su bienestar". La frase anterior ("El Family Office con IA
+                que centraliza…") prometía privilegio y pedía trabajo. */}
+            Te ayudamos a organizar y planear tu bienestar financiero: ver dónde estás, a dónde vas y qué mover para llegar.
           </p>
 
           <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
