@@ -51,3 +51,10 @@ export function fmtVolatilidadEs(ratio) {
   if (v > 1) return ">100%";
   return fmtPctEs(v * 100, 0);
 }
+
+// Texto completo de la card de volatilidad.
+export function fmtVolatilidadTextoEs(ratio) {
+  const v = Math.abs(Number(ratio) || 0);
+  if (v > 1) return "más de ±100 % del promedio";
+  return `±${fmtVolatilidadEs(v)} del promedio`;
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { fmtAniosEs, fmtVolatilidadEs } from "../../src/lib/formato.js";
+import { fmtAniosEs, fmtVolatilidadEs, fmtVolatilidadTextoEs } from "../../src/lib/formato.js";
 
 describe("smoke 2026-10-19: decimales es-CO", () => {
   it("años con coma decimal", () => {
@@ -23,5 +23,14 @@ describe("smoke 2026-10-19: decimales es-CO", () => {
   it("send-email no loguea el objeto de Resend completo", () => {
     const src = readFileSync("netlify/functions/send-email.cjs", "utf8");
     expect(src).not.toMatch(/console\.(log|error)\([^\n]*,\s*data\);/);
+    expect(src).toContain("message: data && enmascararTexto(data.message)");
+    expect(src).not.toMatch(/console\.error\([^\n]*,\s*e\);/);
+    expect(src).toContain("message: e && enmascararTexto(e.message)");
+  });
+  it("volatilidad: texto de la card", () => {
+    expect(fmtVolatilidadTextoEs(12.47)).toBe("más de ±100 % del promedio");
+    expect(fmtVolatilidadTextoEs(0.25)).toBe("±25% del promedio");
+    const fa = readFileSync("src/components/FlujoAnual.jsx", "utf8");
+    expect(fa).not.toContain("±{fmtVolatilidadEs");
   });
 });
