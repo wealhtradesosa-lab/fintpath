@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
@@ -21,12 +22,12 @@ const T = {
 };
 const SM_2026 = 1_750_905;
 const fCOP = (v) => {
-  if (Math.abs(v) >= 1e9) return "$" + (v / 1e9).toFixed(2) + "B";
-  if (Math.abs(v) >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
+  if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e9), 2)+"B";
+  if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+"M";
   return "$" + Math.round(v).toLocaleString("es-CO");
 };
 const fUSD = (v, trm) => "$" + Math.round(v / (trm || 4200)).toLocaleString("en-US") + " USD";
-const pc = (v) => (v || 0).toFixed(1) + "%";
+const pc = (v) => fmtPctEs((v || 0), 1);
 const TT = { background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 };
 
 const Cd = ({ children, style: s, glow }) => (
@@ -513,8 +514,8 @@ export default function PensionesColpensiones({ trm }) {
                         <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: esActual ? 800 : 600, color: esActual ? T.blue : T.txt }}>{sem.toLocaleString("es-CO")}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", color: T.txt3 }}>{extras > 0 ? "+" + extras : "—"}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", color: T.green }}>{bloques}</td>
-                        <td style={{ padding: "8px 6px", textAlign: "right", color: T.green, fontWeight: 600 }}>+{bonus.toFixed(1)}%</td>
-                        <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: esTope ? T.green : T.blue, fontSize: 13 }}>{tasaT.toFixed(1)}%</td>
+                        <td style={{ padding: "8px 6px", textAlign: "right", color: T.green, fontWeight: 600 }}>+{fmtPctEs(bonus, 1)}</td>
+                        <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: esTope ? T.green : T.blue, fontSize: 13 }}>{fmtPctEs(tasaT, 1)}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", fontFamily: "monospace" }}>{fCOP(bruta)}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: T.blue }}>{fCOP(neta)}</td>
                         <td style={{ padding: "8px 6px", fontSize: 11, color: yaAlcanzo ? T.green : esAlcanzable ? T.orange : T.txt3 }}>

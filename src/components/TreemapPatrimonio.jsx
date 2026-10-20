@@ -1,3 +1,4 @@
+import { fmtPctEs } from "../lib/formato.js";
 import { useId } from "react";
 
 /**
@@ -180,7 +181,7 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
                   {fmt ? fmt(b.value) : b.value}
                 </text>
               )}
-              <title>{`${b.name} · ${fmt ? fmt(b.value) : b.value} · ${pct.toFixed(1)}%`}</title>
+              <title>{`${b.name} · ${fmt ? fmt(b.value) : b.value} · ${fmtPctEs(pct, 1)}`}</title>
             </g>
           );
         })}
@@ -194,7 +195,7 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
             return (
               <div key={b.name + i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.tx3 }}>
                 <span style={{ width: 8, height: 8, borderRadius: 3, background: COLORES[idx % COLORES.length], display: "inline-block" }} />
-                {b.name} · {((b.value / base) * 100).toFixed(1)}%
+                {b.name} · {fmtPctEs(((b.value / base) * 100), 1)}
               </div>
             );
           })}

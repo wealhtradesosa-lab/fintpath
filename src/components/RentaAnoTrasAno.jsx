@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { fmtPctEs } from "../lib/formato.js";
 import { C, Cα, F, R } from "../lib/designTokens";
 
 /**
@@ -78,8 +79,8 @@ export default function RentaAnoTrasAno({ declaraciones = [], detalleActual = nu
       const igual = Math.abs(dPts) < 0.5;
       return (
         <>
-          En <b>{ultimaDecl.ano}</b> el impuesto fue <b>{fm(ultimaDecl.impuesto)}</b>, el <b>{ultimaDecl.tasa.toFixed(1)}%</b> de lo que ganaste.
-          {" "}Para <b>{actual.ano}</b> va en <b>{fm(actual.impuesto)}</b> ({actual.tasa.toFixed(1)}%):{" "}
+          En <b>{ultimaDecl.ano}</b> el impuesto fue <b>{fm(ultimaDecl.impuesto)}</b>, el <b>{fmtPctEs(ultimaDecl.tasa, 1)}</b> de lo que ganaste.
+          {" "}Para <b>{actual.ano}</b> va en <b>{fm(actual.impuesto)}</b> ({fmtPctEs(actual.tasa, 1)}):{" "}
           <span style={{ color: igual ? C.muted : dPts < 0 ? C.ok : C.danger, fontWeight: 700 }}>
             {igual ? "misma proporción" : `${Math.abs(dPts).toFixed(1)} puntos ${dPts < 0 ? "menos" : "más"} de tu ingreso`}
           </span>
@@ -146,12 +147,12 @@ export default function RentaAnoTrasAno({ declaraciones = [], detalleActual = nu
 
               {/* El número que importa */}
               <div style={{ marginTop: 8 }}>
-                <div style={{ ...F.monoXl, color: f.tasa >= 25 ? C.danger : f.tasa >= 15 ? C.warn : C.ok }}>{f.tasa.toFixed(1)}%</div>
+                <div style={{ ...F.monoXl, color: f.tasa >= 25 ? C.danger : f.tasa >= 15 ? C.warn : C.ok }}>{fmtPctEs(f.tasa, 1)}</div>
                 <div style={F.caption}>de cada $100 que ganaste, <b style={{ color: C.text }}>${f.tasa.toFixed(0)}</b> {est ? "serían" : "fueron"} impuesto</div>
               </div>
 
               {/* Barra: ingreso completo; adentro, lo retenido y lo que faltó pagar */}
-              <div style={{ marginTop: 10, height: 10, borderRadius: R.sm, background: Cα.ok15, overflow: "hidden", display: "flex" }} title={`Retenido ${pctRet.toFixed(1)}% · saldo ${pctSaldo.toFixed(1)}% de lo ganado`}>
+              <div style={{ marginTop: 10, height: 10, borderRadius: R.sm, background: Cα.ok15, overflow: "hidden", display: "flex" }} title={`Retenido ${fmtPctEs(pctRet, 1)} · saldo ${fmtPctEs(pctSaldo, 1)} de lo ganado`}>
                 <div style={{ width: `${pctRet}%`, background: C.accent }} />
                 <div style={{ width: `${pctSaldo}%`, background: C.warn }} />
               </div>
@@ -191,7 +192,7 @@ export default function RentaAnoTrasAno({ declaraciones = [], detalleActual = nu
               {[
                 ["Ganaste", (f) => fm(f.ingresos), C.ok],
                 ["Impuesto del año", (f) => fm(f.impuesto), C.danger],
-                ["% de lo ganado", (f) => f.tasa.toFixed(1) + "%", C.text],
+                ["% de lo ganado", (f) => fmtPctEs(f.tasa, 1), C.text],
                 ["Ya retenido", (f) => fm(f.retenido), C.accent],
                 ["Saldo al declarar", (f) => (f.saldo < 0 ? "a favor " : "") + fm(Math.abs(f.saldo)), C.warn],
               ].map(([t, g, col]) => (

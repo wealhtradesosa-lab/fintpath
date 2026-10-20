@@ -18,6 +18,7 @@
 //   />
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine, CartesianGrid } from "recharts";
 import { useEffect } from "react";
 import { proyectarSiguienteAno } from "./AlertasAnoAnterior.jsx";
@@ -33,9 +34,9 @@ const T = {
 
 const fmM = (v) => {
   const n = Number(v) || 0;
-  if (n >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
-  if (n >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
-  if (n >= 1e3) return "$" + (n / 1e3).toFixed(0) + "K";
+  if (n >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
+  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + Math.round(n).toLocaleString("es-CO");
 };
 
@@ -123,8 +124,8 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
           </div>
           <div style={{ color: T.txt2, fontSize: 10, lineHeight: 1.5 }}>
             Basado en la pendiente histórica, el año que viene podría rondar:
-            {proyImp && <div style={{ marginTop: 2 }}>· Impuesto: <strong style={{ color: T.txt }}>{fmM(proyImp.valor)}</strong> ({proyImp.pendientePct > 0 ? "+" : ""}{proyImp.pendientePct.toFixed(1)}%/año promedio)</div>}
-            {proyIng && <div style={{ marginTop: 2 }}>· Ingresos: <strong style={{ color: T.txt }}>{fmM(proyIng.valor)}</strong> ({proyIng.pendientePct > 0 ? "+" : ""}{proyIng.pendientePct.toFixed(1)}%/año promedio)</div>}
+            {proyImp && <div style={{ marginTop: 2 }}>· Impuesto: <strong style={{ color: T.txt }}>{fmM(proyImp.valor)}</strong> ({proyImp.pendientePct > 0 ? "+" : ""}{fmtPctEs(proyImp.pendientePct, 1)}/año promedio)</div>}
+            {proyIng && <div style={{ marginTop: 2 }}>· Ingresos: <strong style={{ color: T.txt }}>{fmM(proyIng.valor)}</strong> ({proyIng.pendientePct > 0 ? "+" : ""}{fmtPctEs(proyIng.pendientePct, 1)}/año promedio)</div>}
           </div>
           <div style={{ color: T.txt3, fontSize: 9, marginTop: 4, fontStyle: "italic" }}>
             Esto es solo una proyección estadística simple. Tu realidad dependerá de ingresos puntuales, cambios normativos y decisiones personales.

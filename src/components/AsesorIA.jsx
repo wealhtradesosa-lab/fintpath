@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import { fmtTasaEs } from "../lib/formato.js";
+import { fmtPctEs } from "../lib/metrics.js";
+import { bloqueNivelLibertad } from "../lib/asesorNivel.js";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
 import { montoPromedioMensual, promedioMesActivo } from "../lib/flowHelpers.js";
@@ -26,7 +29,7 @@ function buildContext(user, totals) {
   const u = user || {};
   const t = totals || {};
   const fm = n => "$" + Math.round(n || 0).toLocaleString("es-CO");
-  const pc = n => (n || 0).toFixed(1) + "%";
+  const pc = n => fmtPctEs(n);
 
   let ctx = `RESUMEN PATRIMONIAL:
 • Patrimonio neto: ${fm(t.nw)}
@@ -35,10 +38,12 @@ function buildContext(user, totals) {
 • Cuotas deudas: ${fm(t.tc)}/mes
 • Egresos totales: ${fm(t.te)}/mes
 • Cash flow: ${fm(t.cf)}/mes
-• Índice independencia: ${pc(t.ind)}
+• Ingreso pasivo neto: ${fm(t.ingresoPasivo)}/mes
 • Deuda total: ${fm(t.td)}
 • Deuda/Activos: ${pc(t.dta)}
 `;
+
+  ctx += bloqueNivelLibertad(t);
 
   // Inversiones
   if ((u.inv || []).length > 0) {
@@ -53,7 +58,7 @@ function buildContext(user, totals) {
     ctx += "\nINGRESOS MENSUALES:\n";
     (u.ingresos || []).forEach(i => {
       const mon = i.moneda === "USD" ? " (USD)" : "";
-      ctx += `• ${i.nombre || "?"}: ${fm(promedioMesActivo(i))}/mes${mon} (${i.categoria || "?"})${i.capital ? " capital: " + fm(i.capital) + " tasa: " + i.tasa + "%" : ""}\n`;
+      ctx += `• ${i.nombre || "?"}: ${fm(promedioMesActivo(i))}/mes${mon} (${i.categoria || "?"})${i.capital ? " capital: " + fm(i.capital) + " tasa: " +fmtTasaEs(i.tasa)+"" : ""}\n`;
     });
   }
 

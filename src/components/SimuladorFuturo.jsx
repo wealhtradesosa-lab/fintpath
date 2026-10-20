@@ -25,6 +25,7 @@
 // Los datos reales NO se tocan. Los escenarios viven en user.escenarios y se
 // guardan con la cuenta.
 // ═══════════════════════════════════════════════════════════════════════════
+import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { useState, useMemo, useEffect, useRef } from "react";
 import PageHeader from "./PageHeader";
 import { estimarImpuesto } from "../lib/taxCO";
@@ -393,7 +394,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   const editando = form && form.tipo !== "nuevo" && form.ref === f.key;
                   const estado = !c ? null
                     : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
-                    : c.tipo === "cambia" ? `pasa a ${fm(c.monto)}/mes desde ${mesL(c.desdeMes).toLowerCase()}${c.modo === "capital" && rentaDe(c.capital, c.tasa, c.tasaModo) > 0 ? ` (${fm(Number(c.capital))} × ${c.tasa}% ${c.tasaModo === "mensual" ? "mensual" : "anual"})` : ""}`
+                    : c.tipo === "cambia" ? `pasa a ${fm(c.monto)}/mes desde ${mesL(c.desdeMes).toLowerCase()}${c.modo === "capital" && rentaDe(c.capital, c.tasa, c.tasaModo) > 0 ? ` (${fm(Number(c.capital))} × ${fmtTasaEs(c.tasa)} ${c.tasaModo === "mensual" ? "mensual" : "anual"})` : ""}`
                     : c.tipo === "continua" ? `sigue en ${año}` : "";
                   return (
                     <div key={f.key} style={{ padding: "8px 0", borderTop: `1px solid ${C.border}`, background: editando ? Cα.accent08 : "transparent", borderRadius: editando ? R.md : 0, paddingLeft: editando ? 8 : 0, paddingRight: editando ? 8 : 0 }}>
@@ -410,7 +411,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                             </div>
                           ) : (
                             <div style={F.caption}>
-                              {f.capital > 0 && f.tasa > 0 ? `Capital ${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"} → ` : ""}
+                              {f.capital > 0 && f.tasa > 0 ? `Capital ${fm(f.capital)} × ${fmtTasaEs(f.tasa)} ${f.tasaModo === "mensual" ? "mensual" : "anual"} → ` : ""}
                               {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{f.supuesto ? ` · ${f.supuesto}` : ""}
                             </div>
                           )}
@@ -467,7 +468,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                               </div>
                               <div style={{ flex: "1 1 100%", ...F.caption }}>
                                 {rentaDe(form.capital, form.tasa, form.tasaModo) > 0
-                                  ? <>{fm(Number(form.capital))} × {form.tasa}% {form.tasaModo === "mensual" ? "mensual" : "anual"} = <b style={{ color: C.text }}>{fm(rentaDe(form.capital, form.tasa, form.tasaModo))}/mes</b> · {fm(rentaDe(form.capital, form.tasa, form.tasaModo) * 12)} al año{f.capital > 0 ? ` · hoy: ${fm(f.capital)} × ${f.tasa}% = ${fm(f.montoTipico)}/mes` : ""}</>
+                                  ? <>{fm(Number(form.capital))} × {fmtTasaEs(form.tasa)} {form.tasaModo === "mensual" ? "mensual" : "anual"} = <b style={{ color: C.text }}>{fm(rentaDe(form.capital, form.tasa, form.tasaModo))}/mes</b> · {fm(rentaDe(form.capital, form.tasa, form.tasaModo) * 12)} al año{f.capital > 0 ? ` · hoy: ${fm(f.capital)} × ${fmtTasaEs(f.tasa)} = ${fm(f.montoTipico)}/mes` : ""}</>
                                   : "Pon capital y tasa y el monto mensual sale solo."}
                               </div>
                             </>) : (
@@ -720,7 +721,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                                 {f.nombre}{f.origen === "nuevo" ? " · nuevo" : f.cambio ? " · con cambio" : ""}
                               </div>
                               <div style={{ ...F.caption, fontSize: 10 }}>
-                                {f.capital > 0 && f.tasa > 0 ? `${fm(f.capital)} × ${f.tasa}% ${f.tasaModo === "mensual" ? "mensual" : "anual"}` : f.cat}
+                                {f.capital > 0 && f.tasa > 0 ? `${fm(f.capital)} × ${fmtTasaEs(f.tasa)} ${f.tasaModo === "mensual" ? "mensual" : "anual"}` : f.cat}
                               </div>
                             </div>
                             <span style={{ ...F.mono, fontSize: 12, color: C.text, flexShrink: 0 }}>{fm(f.v)}</span>
@@ -777,7 +778,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               <div style={F.label}>Hoy → dic {año}</div>
               <div style={{ ...F.mono, fontSize: 15 }}>
                 <span style={{ color: C.muted }}>{fm(snap.patrimonioNeto)}</span> → <span style={{ color: patFin >= snap.patrimonioNeto ? C.ok : C.danger }}>{fm(patFin)}</span>
-                <span style={{ ...F.caption, marginLeft: 8, color: patFin >= snap.patrimonioNeto ? C.ok : C.danger }}>{patFin >= snap.patrimonioNeto ? "+" : "−"}{fm(Math.abs(patFin - snap.patrimonioNeto))}{snap.patrimonioNeto > 0 ? ` (${((patFin - snap.patrimonioNeto) / snap.patrimonioNeto * 100).toFixed(1)}%)` : ""}</span>
+                <span style={{ ...F.caption, marginLeft: 8, color: patFin >= snap.patrimonioNeto ? C.ok : C.danger }}>{patFin >= snap.patrimonioNeto ? "+" : "−"}{fm(Math.abs(patFin - snap.patrimonioNeto))}{snap.patrimonioNeto > 0 ? ` (${fmtPctEs(((patFin - snap.patrimonioNeto) / snap.patrimonioNeto * 100), 1)})` : ""}</span>
               </div>
             </div>
           </div>
@@ -828,7 +829,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             const texto = c.tipo === "continua" ? `sigue en ${año} aunque en ${añoHoy} terminó en ${mesL(base.find((b) => b.key === c.ref)?.vig?.hasta || 12).toLowerCase()}`
               : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
               : c.tipo === "cambia" ? `pasa a ${fm(c.monto)} desde ${mesL(c.desdeMes).toLowerCase()}`
-              : `entra ${fm(c.monto)}/mes de ${mesL(c.desdeMes).toLowerCase()} a ${mesL(c.hastaMes || 12).toLowerCase()}${Number(c.capital) > 0 && Number(c.tasa) > 0 ? ` (${fm(Number(c.capital))} × ${c.tasa}% ${c.tasaModo === "mensual" ? "mensual" : "anual"})` : ""}`;
+              : `entra ${fm(c.monto)}/mes de ${mesL(c.desdeMes).toLowerCase()} a ${mesL(c.hastaMes || 12).toLowerCase()}${Number(c.capital) > 0 && Number(c.tasa) > 0 ? ` (${fm(Number(c.capital))} × ${fmtTasaEs(c.tasa)} ${c.tasaModo === "mensual" ? "mensual" : "anual"})` : ""}`;
             return (
               <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `1px solid ${C.border}`, marginTop: 8 }}>
                 <span style={{ ...F.label, color: colorK[c.kind], minWidth: 56 }}>{kindL[c.kind]}</span>
@@ -884,7 +885,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   <div><div style={F.label}>{form.kind === "deu" ? "Cuota mensual" : "Monto mensual (COP)"}</div><input style={input} type="number" value={form.monto || ""} onChange={(e) => setForm({ ...form, monto: e.target.value })} />
                     {form.kind === "ing" && Number(form.capital) > 0 && Number(form.tasa) > 0 && (
                       <div style={{ ...F.caption, color: C.ok, marginTop: 4 }}>
-                        {fm(Number(form.capital))} × {form.tasa}% {form.tasaModo === "mensual" ? "mensual" : "anual"} = {fm(Number(form.monto) || 0)}/mes · {fm((Number(form.monto) || 0) * 12)} al año
+                        {fm(Number(form.capital))} × {fmtTasaEs(form.tasa)} {form.tasaModo === "mensual" ? "mensual" : "anual"} = {fm(Number(form.monto) || 0)}/mes · {fm((Number(form.monto) || 0) * 12)} al año
                       </div>
                     )}
                   </div>

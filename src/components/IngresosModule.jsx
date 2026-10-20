@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
 import BuscadorLista, { filtrarPorTexto } from "./BuscadorLista";
@@ -64,7 +65,7 @@ const T = {
   blue: C.accent, orange: C.warn,
   ch: [C.ok, C.accent, C.warn, C.purple, "#ec4899", "#22d3ee", "#eab308"],
 };
-const _fm = (n) => "$" + Math.round(n||0).toLocaleString("en-US");
+const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Cesantías",l:"💵 Cesantías / Intereses cesantías"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
 
 // Sub-opciones de fiscalCode por categoría ambigua. Si la categoría no está
@@ -822,7 +823,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
                       <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: T.txt2 }}>
                         <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
-                        {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{((d.value/tot)*100).toFixed(0)}%</strong>
+                        {d.name} <strong style={{ color: T.txt2, fontFamily: "monospace" }}>{fmtPctEs(((d.value/tot)*100), 0)}</strong>
                       </span>
                     ))}
                   </div>
@@ -871,7 +872,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>
                             {fm(item.__sub)}/mes
-                            <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{item.__pct.toFixed(0)}%</span>
+                            <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(item.__pct, 0)}</span>
                           </span>
                         </div>
                       </td>
@@ -1003,7 +1004,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         );
                       })()}
                     </td>
-                    <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString("es-CO") + (item.tasa ? " • " + item.tasa + "%" : "") : item.fuente || "—"}</td>
+                    <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString("es-CO") + (item.tasa ? " • " +fmtTasaEs(item.tasa)+"" : "") : item.fuente || "—"}</td>
                     <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
                       <button onClick={() => { if (!guardEdit(role)) return; const upd = items.map(x => x.id === item.id ? {...x, sim: !(item.sim!==false)} : x); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{item.sim===false?"⬜":"✅"}</button>
                       <button onClick={() => handleEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
@@ -1374,7 +1375,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   }} options={[{ v: "anual", l: "📅 Anual (ej: 24% al año)" }, { v: "mensual", l: "📅 Mensual (ej: 1% al mes)" }]} />
                   {Number(form.capital) > 0 && Number(form.tasa) > 0 && Number(form.mensual) > 0 && (
                     <div style={{marginTop:4,padding:"10px 12px",background:"rgba(34,197,94,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.6}}>
-                      💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")} × {form.tasa}% {form.tasaModo === "mensual" ? "mensual" : "anual"} = {"$" + Math.round(form.tasaModo === "mensual" ? Number(form.capital) * Number(form.tasa) / 100 : Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString("es-CO")}/mes
+                      💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")} × {fmtTasaEs(form.tasa)} {form.tasaModo === "mensual" ? "mensual" : "anual"} = {"$" + Math.round(form.tasaModo === "mensual" ? Number(form.capital) * Number(form.tasa) / 100 : Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString("es-CO")}/mes
                     </div>
                   )}
                   {/* Fix: warning si el capital guardado es sospechosamente bajo (<$10K) */}
@@ -1395,14 +1396,14 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     if (altoRojo) {
                       return (
                         <div style={{marginTop:10,padding:"10px 12px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,fontSize:11,color:T.red,lineHeight:1.5}}>
-                          ⚠️ Tasa muy alta: {tas}% {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
+                          ⚠️ Tasa muy alta: {fmtTasaEs(tas)} {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
                         </div>
                       );
                     }
                     if (altoNaranja) {
                       return (
                         <div style={{marginTop:10,padding:"10px 12px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.25)",borderRadius:8,fontSize:11,color:T.orange,lineHeight:1.5}}>
-                          🟠 Rentabilidad alta: {tas}% {tm}. Verifica que la periodicidad ({tm}) sea correcta. Rentabilidades de mercado típicas: 8-20% anual.
+                          🟠 Rentabilidad alta: {fmtTasaEs(tas)} {tm}. Verifica que la periodicidad ({tm}) sea correcta. Rentabilidades de mercado típicas: 8-20% anual.
                         </div>
                       );
                     }
@@ -1547,7 +1548,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                             <div style={{marginTop:6,padding:"8px 10px",background:supera?"rgba(239,68,68,0.06)":"rgba(168,85,247,0.06)",borderRadius:6,fontSize:10,color:supera?T.red:T.txt2,lineHeight:1.5}}>
                               {supera ? <strong>⚠️ Excede tope IBC (25 SMMLV — Art. 18 Ley 100). El sistema lo cuenta como ingresaste pero verifica que sea correcto.</strong> : <>
                                 {n} SMMLV × {fm(SMMLV_2026)} = IBC <strong>{fm(ibc)}</strong>/mes<br/>
-                                Aporte: 4% {fs > 0 && `+ ${(fs*100).toFixed(1)}% (Fondo Solidaridad)`} = <strong style={{color:"#a855f7"}}>{fm(valor)}</strong>/mes
+                                Aporte: 4% {fs > 0 && `+ ${fmtPctEs((fs*100), 1)} (Fondo Solidaridad)`} = <strong style={{color:"#a855f7"}}>{fm(valor)}</strong>/mes
                               </>}
                             </div>
                           );
@@ -1688,7 +1689,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     ) : (
                       <>
                         <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6, marginBottom: 10 }}>
-                          <strong style={{ color: T.txt }}>Tasa default: {(info.tasa * 100).toFixed(1)}%</strong> ({info.articulo})
+                          <strong style={{ color: T.txt }}>Tasa default: {fmtPctEs((info.tasa * 100), 1)}</strong> ({info.articulo})
                           {info.retenedor && <span style={{ color: T.txt3 }}> · Retiene: {info.retenedor}</span>}
                         </div>
                         {info.advertencia && (
@@ -1736,7 +1737,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           <div style={{ fontSize: 12, color: form.retencionAplica === false ? T.txt3 : "#22c55e", fontWeight: 600, marginTop: 4 }}>
                             {form.retencionAplica === false
                               ? "🚫 No se calculará retención para este ingreso."
-                              : `💰 Retención estimada: ${"$" + Math.round(retencionAnual).toLocaleString("es-CO")}/año (${(tasaUsada * 100).toFixed(1)}% de ${"$" + Math.round(monto * 12).toLocaleString("es-CO")})`}
+                              : `💰 Retención estimada: ${"$" + Math.round(retencionAnual).toLocaleString("es-CO")}/año (${fmtPctEs((tasaUsada * 100), 1)} de ${"$" + Math.round(monto * 12).toLocaleString("es-CO")})`}
                           </div>
                         )}
                         <div style={{ fontSize: 10, color: T.txt3, marginTop: 8, lineHeight: 1.4, fontStyle: "italic" }}>

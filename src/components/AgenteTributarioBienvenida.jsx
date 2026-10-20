@@ -20,6 +20,7 @@
 //   5. Acompañamiento: explicación de "qué significa esto" en cada bloque
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtPctEs } from "../lib/formato.js";
 import { useMemo, useState } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
@@ -259,7 +260,7 @@ export default function AgenteTributarioBienvenida({
         <div style={{ fontSize: 14, color: C.txt2, lineHeight: 1.6 }}>
           {saldoFinal > 0 ? (
             <>
-              Esto es <strong style={{ color: C.txt }}>{tasaEfectiva.toFixed(1)}%</strong>{" "}
+              Esto es <strong style={{ color: C.txt }}>{fmtPctEs(tasaEfectiva, 1)}</strong>{" "}
               de tus ingresos (<TerminoTributario clave="tasaEfectiva">tasa efectiva</TerminoTributario>). {tasaEfectiva < 5
                 ? "Está dentro del rango bajo — pagas poco impuesto efectivo."
                 : tasaEfectiva < 15

@@ -16,6 +16,7 @@
 //   - Prioridad alta destaca en verde
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { useState } from "react";
 
 // Paleta consistente con DeclaracionFlow
@@ -38,9 +39,9 @@ const PRIORIDAD_META = {
 
 function fmShort(n) {
   if (!n) return "$0";
-  if (n >= 1_000_000_000) return "$" + (n / 1_000_000_000).toFixed(1) + "B";
-  if (n >= 1_000_000) return "$" + (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return "$" + (n / 1_000).toFixed(0) + "K";
+  if (n >= 1_000_000_000) return "$" + fmtNumEs((n / 1_000_000_000), 1)+"B";
+  if (n >= 1_000_000) return "$" + fmtNumEs((n / 1_000_000), 1)+"M";
+  if (n >= 1_000) return "$" + fmtNumEs((n / 1_000), 0)+"K";
   return "$" + Math.round(n).toLocaleString("es-CO");
 }
 
@@ -124,7 +125,7 @@ function RecomendacionCard({ rec, indice }) {
             )}
             {roiPct > 0 && (
               <span style={{ fontSize: 12, color: C.blue }}>
-                · ROI: {roiPct.toFixed(0)}%
+                · ROI: {fmtPctEs(roiPct, 0)}
               </span>
             )}
           </div>
@@ -196,7 +197,7 @@ function RecomendacionCard({ rec, indice }) {
                     ROI fiscal
                   </div>
                   <div style={{ fontSize: 16, color: C.blue, fontWeight: 700, marginTop: 2 }}>
-                    {roiPct.toFixed(1)}%
+                    {fmtPctEs(roiPct, 1)}
                   </div>
                   {rec.roi?.descripcion && (
                     <div style={{ fontSize: 11, color: C.txt3, marginTop: 4 }}>
