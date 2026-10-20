@@ -45,13 +45,19 @@ import { GRUPOS_SIMPLE as SIMPLE_GRUPOS, calcularImpuestoSimple as calcularImpSi
 import { calcularRetencionOwner } from "./retencionesTax.js";
 
 // UVT por año gravable (fuente Tributario / DIAN).
-// Temporada actual: AG 2025 → $49.799. NO tratar 52374 como AG 2025 (eso es AG 2026).
+// AG 2025 → $49.799 · AG 2026 → $52.374. Agregar aquí la UVT de cada año nuevo en enero.
 export const UVT_BY_AG = {
   2024: 47065,
   2025: 49799,
   2026: 52374,
 };
-export const DEFAULT_AG = 2025;
+// 12-oct-2026: el año que la app planea es el año calendario en curso (lo que
+// estás ganando ahora, que declaras el año siguiente). Antes era un 2025 fijo:
+// en octubre de 2026 Santiago subió su declaración AG 2025 ya presentada y la
+// app seguía tratando 2025 como "borrador". Se toma el año actual, limitado al
+// último AG con UVT conocida para no inventar una UVT.
+const _MAX_AG_CONOCIDO = Math.max(...Object.keys(UVT_BY_AG).map(Number));
+export const DEFAULT_AG = Math.min(new Date().getFullYear(), _MAX_AG_CONOCIDO);
 
 /**
  * Valor UVT (COP) para un año gravable.

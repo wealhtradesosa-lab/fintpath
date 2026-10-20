@@ -13,7 +13,7 @@ const T = {
   grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
 };
 
-export default function LandingPage({ onGetStarted }) {
+export default function LandingPage({ onGetStarted, onLogin }) {
   const [email, setEmail] = useState("");
   // TRM dinámica: fetch al montar el componente. Fallback a 4200 si falla.
   // Coherente con la lógica del app autenticado (App.jsx línea ~462).
@@ -73,7 +73,7 @@ export default function LandingPage({ onGetStarted }) {
            inspirado en Optimus de v0.dev. Estilo editorial minimalista
            con typography masiva y candlestick chart de fondo. Las rutas
            /hero-a, /hero-b y /hero-c siguen disponibles para preview.) */}
-      <HeroVariantC onGetStarted={onGetStarted} />
+      <HeroVariantC onGetStarted={onGetStarted} onLogin={onLogin} />
 
       {/* ─── FEATURES ─── */}
       {/* Sin franja gris ni bordes: el fondo es el mismo negro de la imagen,
