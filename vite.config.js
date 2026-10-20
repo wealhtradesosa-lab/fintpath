@@ -15,6 +15,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         pioneros: resolve(__dirname, 'pioneros.html'),
+        patrimonio: resolve(__dirname, 'patrimonio.html'),
       },
     },
   },
