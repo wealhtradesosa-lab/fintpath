@@ -35,3 +35,26 @@ export function fmtTasaEs(n) {
   if (!Number.isFinite(v)) return String(n) + "%";
   return v.toLocaleString(ES, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + "%";
 }
+
+/** Años con coma decimal y 1 decimal: 37.94 → "37,9"; 13 → "13,0". */
+export function fmtAniosEs(n) {
+  return fmtNumEs(n, 1);
+}
+
+/**
+ * Volatilidad (desviación estándar ÷ |promedio|, como razón: 0.25 = 25%) para la UI.
+ * Si el promedio está cerca de 0 la razón explota (p. ej. 12.47 → "1.247%"), así que
+ * por encima de 100% se muestra ">100%" en vez de una cifra sin sentido.
+ */
+export function fmtVolatilidadEs(ratio) {
+  const v = Math.abs(Number(ratio) || 0);
+  if (v > 1) return ">100%";
+  return fmtPctEs(v * 100, 0);
+}
+
+// Texto completo de la card de volatilidad.
+export function fmtVolatilidadTextoEs(ratio) {
+  const v = Math.abs(Number(ratio) || 0);
+  if (v > 1) return "más de ±100 % del promedio";
+  return `±${fmtVolatilidadEs(v)} del promedio`;
+}
