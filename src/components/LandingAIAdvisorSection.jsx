@@ -146,19 +146,19 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
             {[
               {
                 title: "Analiza tu patrimonio real",
-                desc: "Lee tus ingresos, gastos, deudas, propiedades. No genérico — específico a vos.",
+                desc: "Lee tus ingresos, gastos, deudas, propiedades. No genérico: específico para ti.",
                 icon: "📊",
                 color: T.green,
               },
               {
-                title: "Recomienda con números exactos",
-                desc: "No dice 'considera invertir más'. Dice: 'aporta $4.2M a AFC y ahorra $1.6M de impuesto'.",
+                title: "Responde con tus números",
+                desc: "No te da respuestas genéricas: te muestra cómo cambia tu situación en cada escenario, con tus propias cifras.",
                 icon: "🎯",
                 color: T.blue,
               },
               {
-                title: "Estrategias del contador, sin contador",
-                desc: "Detecta palancas tributarias legales que un contador experto encontraría — pero a la mitad de costo.",
+                title: "Llega preparado a tu contador",
+                desc: "Te ayuda a entender tus números y a ordenar las preguntas para tu contador. No reemplaza su asesoría.",
                 icon: "🧾",
                 color: T.purple,
               },

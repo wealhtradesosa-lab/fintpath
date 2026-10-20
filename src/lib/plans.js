@@ -78,7 +78,7 @@ export function usdToCop(usd, trm) {
 export const PLAN_BASE = [
   {
     name: "Free",
-    tag: "Empezá a ordenar tu vida financiera",
+    tag: "Empieza a ordenar tu vida financiera",
     priceUSD: { mensual: 0, anual: 0 },
     users: "1 usuario",
     usersDetail: "1 usuario",
@@ -91,12 +91,12 @@ export const PLAN_BASE = [
     features: [
       "👤 1 usuario",
       "📊 Dashboard con resumen de tu patrimonio",
-      "💰 Registrá ingresos, gastos y deudas",
+      "💰 Registra ingresos, gastos y deudas",
       "📈 Hasta 3 inversiones y 1 meta financiera",
-      "🔒 Encriptación E2E de tus datos",
+      "🖥️ Simulador financiero",
+      "🔒 Datos cifrados en tránsito y en reposo",
     ],
     notFeatures: [
-      "Simulador financiero",
       "Pensiones",
       "Ahorro BTC",
         "Plan Tributario",
@@ -118,13 +118,13 @@ export const PLAN_BASE = [
       "👤 1 usuario · sin límites en inversiones ni metas",
       "📊 Dashboard con resumen patrimonial",
       "💰 Ingresos, gastos y deudas ilimitados",
-      "🖥️ Simulador financiero con palancas (cambiá ingresos/gastos y simulá)",
+      "🖥️ Simulador financiero con palancas (cambia ingresos/gastos y simula)",
       isUS
         ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
         : "🏛️ Pensión Colombia: Colpensiones (RPM) + RAIS",
       isCO ? "💰 Aportes obligatorios (4%+4%) y voluntarios calculados" : null,
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "📥 Importá Excel/CSV con IA",
+      "📥 Importa Excel/CSV con IA",
       "📸 Lectura de facturas con IA",
     ].filter(Boolean),
     notFeatures: ["Asesor IA", "5 Coaches IA", "Plan Tributario completo", "Multi-usuario"],
@@ -134,12 +134,12 @@ export const PLAN_BASE = [
     tag: "Como tener un asesor financiero personal",
     priceUSD: { mensual: 16, anual: 12 },
     users: "Hasta 3 usuarios",
-    usersDetail: "Hasta 3 usuarios (vos + pareja + contador)",
+    usersDetail: "Hasta 3 usuarios (tú + pareja + contador)",
     maxMembers: 3,
     accent: true, // MÁS POPULAR badge
     save: "Ahorra 25%",
     features: ({ isCO, isUS }) => [
-      "👥 Hasta 3 usuarios (vos + pareja + contador)",
+      "👥 Hasta 3 usuarios (tú + pareja + contador)",
       "📊 Dashboard con resumen patrimonial",
       "💰 Ingresos, gastos y deudas ilimitados",
       "🖥️ Simulador financiero con palancas",
@@ -151,8 +151,8 @@ export const PLAN_BASE = [
       "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
       isCO
         ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
-        : "🧾 Tax Planning US (federal + state, deductions, optimization)",
-      "📥 Importá Excel/CSV y leé facturas con IA",
+        : "🧾 Tax Planning US (federal + state, deductions, estimates)",
+      "📥 Importa Excel/CSV y lee facturas con IA",
       "📈 Resumen ejecutivo del patrimonio en PDF",
       "🚀 Soporte prioritario por email",
     ],
@@ -177,13 +177,13 @@ export const PLAN_BASE = [
         ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
         : "🏛️ Pensión Colombia: Colpensiones + RAIS",
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "🎯 Simulá escenarios para alcanzar tu libertad financiera",
+      "🎯 Simula escenarios para alcanzar tu libertad financiera",
       "🤖 Asesor IA que analiza el patrimonio consolidado",
       "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
       isCO
         ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
-        : "🧾 Tax Planning US (federal + state, deductions, optimization)",
-      "📥 Importá Excel/CSV y leé facturas con IA",
+        : "🧾 Tax Planning US (federal + state, deductions, estimates)",
+      "📥 Importa Excel/CSV y lee facturas con IA",
       "📈 Reporte ejecutivo del patrimonio en PDF",
       "🚀 Soporte prioritario con respuesta en 24h",
     ],
@@ -335,10 +335,37 @@ export function getPlansForLanding({ trm }) {
   return mainPlans;
 }
 
+// 11-oct-2026: los CTAs decían "Probar 14 días …" como si el plan pago
+// trajera su propia prueba. La única prueba es la de la app (14 días Pro al
+// registrarse); Checkout cobra de inmediato. Por eso "Elegir …".
 function ctaForPlan(name) {
   if (name === "Free") return "Comenzar gratis";
-  if (name === "Básico") return "Probar 14 días";
-  if (name === "Pro") return "Probar 14 días Pro";
-  if (name === "Pro Familiar") return "Probar 14 días Pro Familiar";
+  if (name === "Básico") return "Elegir Básico";
+  if (name === "Pro") return "Elegir Pro";
+  if (name === "Pro Familiar") return "Elegir Pro Familiar";
   return "Contactar";
+}
+
+// ── Precio real que cobra Stripe por plan y ciclo (USD) ────────────────────
+// Mensual = precio del mes. Anual = 12 × el precio mensual del plan anual
+// (es un solo cobro por el año). Devuelve null si el plan no existe o es
+// gratis. Lo usan los eventos de analítica (InitiateCheckout/purchase) para
+// no mandar un valor fijo.
+export function precioCobroUSD(planName, billingCycle) {
+  const base = PLAN_BASE.find(b => b.name === planName);
+  if (!base || !base.priceUSD) return null;
+  const anual = billingCycle === "anual" || billingCycle === "annual" || billingCycle === "yearly";
+  const valor = anual ? base.priceUSD.anual * 12 : base.priceUSD.mensual;
+  return valor > 0 ? valor : null;
+}
+
+// priceId de Stripe → { plan, billingCycle } según STRIPE_PRICE_IDS.
+// null si el priceId no es de ningún plan conocido.
+export function planDesdePriceId(priceId) {
+  if (!priceId) return null;
+  for (const [plan, ids] of Object.entries(STRIPE_PRICE_IDS)) {
+    if (ids.mensual === priceId) return { plan, billingCycle: "mensual" };
+    if (ids.anual === priceId) return { plan, billingCycle: "anual" };
+  }
+  return null;
 }

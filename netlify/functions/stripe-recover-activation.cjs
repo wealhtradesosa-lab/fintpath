@@ -26,6 +26,14 @@
 //   - Verificamos en Stripe que la subscription es activa + plan correcto
 //   - Llamamos a recover_pending_activation()
 //   - Retornamos { recovered: true|false, account_id, message }
+//
+// COMPRA PARA ANALÍTICA (11-oct-2026):
+//   Si llega sessionId y la sesión es de este usuario, está completa y
+//   pagada, toda respuesta incluye `compra: { sessionId, amountTotal,
+//   currency, priceId }` (sin PII: ni email ni customer). El cliente la usa
+//   para disparar Purchase (Pixel) y purchase (GA4) una sola vez. Como
+//   Checkout ya no da prueba, amount_total > 0 es el primer cobro real. Se
+//   devuelve también para Pro y Básico (que responden not_pro_familiar).
 // ═══════════════════════════════════════════════════════════════════════════
 
 const Stripe = require("stripe");
@@ -45,6 +53,30 @@ function buildPriceMap() {
   map["price_1TRC9mKEnhNr9wQdQr9gsRot"] = "pro_familiar"; // mensual
   map["price_1TRCCaKEnhNr9wQdpWlaXP0r"] = "pro_familiar"; // anual
   return map;
+}
+
+// Extrae de una Checkout Session solo lo que la analítica necesita, sin PII.
+// Devuelve null si la sesión no es de este usuario o no está pagada.
+// metadata.userId lo pone stripe-checkout.cjs al crear la sesión.
+const crypto = require("crypto");
+
+// Id opaco de la compra para analítica: el id de la sesión de Stripe (cs_…)
+// no debe llegar a GA4 ni a Meta. SHA-256 truncado, estable por sesión.
+function purchaseIdDe(sessionId) {
+  return "fp_" + crypto.createHash("sha256").update(String(sessionId)).digest("hex").slice(0, 24);
+}
+
+function compraParaAnalitica(session, userId) {
+  if (!session || !userId) return null;
+  if (session.metadata?.userId !== userId) return null;
+  if (session.status !== "complete" || session.payment_status !== "paid") return null;
+  if (typeof session.amount_total !== "number") return null;
+  return {
+    purchaseId: purchaseIdDe(session.id),
+    amountTotal: session.amount_total, // centavos
+    currency: session.currency || "usd",
+    priceId: session.line_items?.data?.[0]?.price?.id || null,
+  };
 }
 
 exports.handler = async (event) => {
@@ -78,6 +110,7 @@ exports.handler = async (event) => {
 
     // 1. Obtener stripe_customer_id (de la session si la pasaron, o del user_data)
     let stripeCustomerId = null;
+    let compra = null; // datos de la compra para analítica (sin PII)
 
     if (sessionId) {
       // Usamos session.id para obtener customer_id (más confiable, recién creado)
@@ -85,6 +118,7 @@ exports.handler = async (event) => {
         expand: ["line_items", "subscription"],
       });
       stripeCustomerId = session.customer;
+      compra = compraParaAnalitica(session, userId);
 
       // Verificar que el plan es Pro Familiar desde line_items
       let isProFamiliar = false;
@@ -104,6 +138,7 @@ exports.handler = async (event) => {
           body: JSON.stringify({
             error: "not_pro_familiar",
             message: "Esta sesión no corresponde a Pro Familiar.",
+            compra,
           }),
         };
       }
@@ -128,7 +163,7 @@ exports.handler = async (event) => {
           statusCode: 400,
           body: JSON.stringify({
             error: "no_stripe_customer",
-            message: "No encontramos un customer asociado. Si pagaste recién, esperá unos minutos y volvé a intentar.",
+            message: "No encontramos un customer asociado. Si pagaste recién, espera unos minutos y vuelve a intentar.",
           }),
         };
       }
@@ -153,6 +188,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           error: "no_active_subscription",
           message: "No encontramos una suscripción activa de Pro Familiar para este usuario.",
+          compra,
         }),
       };
     }
@@ -176,7 +212,7 @@ exports.handler = async (event) => {
     const rpcText = await rpcRes.text();
     if (!rpcRes.ok) {
       console.error(`[stripe-recover-activation] RPC failed: ${rpcText}`);
-      return { statusCode: 500, body: JSON.stringify({ error: "rpc failed", detail: rpcText }) };
+      return { statusCode: 500, body: JSON.stringify({ error: "rpc failed", detail: rpcText, compra }) };
     }
 
     const result = JSON.parse(rpcText);
@@ -187,6 +223,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         ok: true,
         result: Array.isArray(result) ? result[0] : result,
+        compra,
       }),
     };
   } catch (err) {
@@ -194,3 +231,6 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
+
+exports.compraParaAnalitica = compraParaAnalitica;
+exports.purchaseIdDe = purchaseIdDe;
