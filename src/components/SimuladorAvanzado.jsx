@@ -2170,7 +2170,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                               </>}
                             </div>
                             {/* Hint solo aplica en modo comparativo cuando el usuario esta en Actual y hay ahorro real disponible */}
-                            {mostrarComparativo && ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Aplicar PV/AFC ahorra {fm(ahorroOpt)}/año → activa el toggle para ver el impacto en cash flow</div>}
+                            {mostrarComparativo && ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Aplicar PV/AFC podría bajar tu impuesto estimado en {fm(ahorroOpt)}/año (estimación, confírmalo con tu contador) → activa el toggle para ver el impacto en cash flow</div>}
                           </div>
                           {/* Commit 10 Tarea 3: el slider ahora opera sobre el SALDO A PAGAR
                               (lo que el usuario efectivamente desembolsa), no sobre el impuesto
