@@ -47,18 +47,26 @@ describe("candados y umbrales", () => {
     expect([1, 2]).toContain(m.nivel.nivel);
   });
   it("cobertura alta con patrimonio negativo se topa en N2", () => {
-    const r = nivelLibertad({ ip: 8000000, ob: 10000000, fl: 1000000, patrimonioNeto: -1 });
+    // IP cubre lo esencial (8M ≥ 6M) → sería N3, pero el patrimonio negativo lo topa en N2.
+    const r = nivelLibertad({ ip: 8000000, ob: 10000000, obEsencial: 6000000, fl: 1000000, patrimonioNeto: -1 });
     expect(r.nivel).toBe(2);
     expect(r.candado).toBe("patrimonio_negativo");
   });
   it("FL < 0 → N1 Déficit", () => {
     expect(nivelLibertad({ ip: 1, ob: 10, fl: -5, patrimonioNeto: 1e6 }).nivel).toBe(1);
   });
-  it("umbrales 24,9 / 25 / 50 / 99,9 / 100", () => {
-    const n = (c) => nivelLibertad({ ip: c, ob: 100, fl: 1, patrimonioNeto: 1 }).nivel;
-    expect([n(24.9), n(25), n(50), n(99.9), n(100)]).toEqual([2, 3, 4, 4, 5]);
+  // 21-oct-2026 — Los escalones ya no son fracciones inventadas (25%/50%): se
+  // anclan a lo esencial y al total. Con esencial = 60 de un total de 100:
+  // bajo 60 es Estabilidad, 60 da Seguridad, 100 Independencia, 130 Abundancia.
+  it("umbrales: esencial / total / 1,3× total", () => {
+    const n = (c) => nivelLibertad({ ip: c, ob: 100, obEsencial: 60, fl: 1, patrimonioNeto: 1 }).nivel;
+    expect([n(59.9), n(60), n(99.9), n(100), n(129.9), n(130)]).toEqual([2, 3, 3, 4, 4, 5]);
   });
-  it("caso independiente: IP ≥ OB → N5 Independencia", () => {
+  it("sin gastos clasificados, Seguridad es tan exigente como Independencia", () => {
+    const n = (c) => nivelLibertad({ ip: c, ob: 100, fl: 1, patrimonioNeto: 1 }).nivel;
+    expect([n(99.9), n(100)]).toEqual([2, 4]);
+  });
+  it("caso independiente: IP ≥ 1,3× OB → N5 Abundancia", () => {
     const m = calcularMetricas({
       ingresos: [{ nombre: "Arriendo", categoria: "Arriendo", mensual: 12000000 }],
       gastos: { Vida: [{ m: 5000000, frecuencia: "mensual" }] },
@@ -67,7 +75,7 @@ describe("candados y umbrales", () => {
     });
     expect(m.coberturaPasiva).toBeCloseTo(240, 0);
     expect(m.nivel.nivel).toBe(5);
-    expect(m.nivel.nombre).toBe("Independencia");
+    expect(m.nivel.nombre).toBe("Abundancia");
   });
   it("asalariado sin activos no es Independencia aunque su sueldo cubra los gastos", () => {
     const m = calcularMetricas({

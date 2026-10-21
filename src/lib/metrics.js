@@ -62,6 +62,23 @@ export function tipoIngreso(i) {
   return "activo";
 }
 
+// ─── Gasto esencial vs. prescindible ──────────────────────────────────────
+// 21-oct-2026. Santiago: "jamás 20 mm son seguridad en mi caso". Los escalones
+// se definían por fracciones inventadas de los gastos (25%, 50%); "Seguridad"
+// era el 25% y con gastos de ~$104M/mes eso rotulaba Seguridad a $26M. Nadie
+// está seguro con la cuarta parte de lo que necesita. Seguridad pasa a medirse
+// contra lo ESENCIAL: lo que uno no puede apagar si deja de trabajar.
+const CATS_ESENCIALES = new Set([
+  "Vivienda", "Arrendamiento", "Alimentación", "Alimentacion", "Mercado",
+  "Servicios", "Servicios públicos", "Salud", "Seguros", "Educación", "Educacion",
+  "Transporte", "Mantenimiento", "Seguridad Social", "Impuesto", "Impuestos",
+]);
+/** ¿Es un gasto que no se puede apagar? Manda la marca del item si existe. */
+export function esGastoEsencial(cat, g) {
+  if (g && typeof g.esencial === "boolean") return g.esencial;
+  return CATS_ESENCIALES.has(String(cat || "").trim());
+}
+
 /** Gasto propio de un inmueble arrendado (admin, predial, mantenimiento...). */
 export function esGastoInmuebleArrendado(cat, g) {
   const fc = String(g?.fiscalCode || "");
@@ -181,7 +198,7 @@ export function calcularBase(d = {}, opts = {}) {
   });
 
   // 2) Gastos: los costos de un activo que renta se netean contra su renta.
-  let aportesObligatorios = 0, gastosVida = 0;
+  let aportesObligatorios = 0, gastosVida = 0, gastosVidaEsencial = 0;
   const costoPorActivo = {};
   let costoInmuebleSinVinculo = 0;
   // Origen de la renta del activo (`rentaOrigen`): 'manual' = el usuario escribió
@@ -204,6 +221,7 @@ export function calcularBase(d = {}, opts = {}) {
         aportesObligatorios += m;
       } else {
         gastosVida += m;
+        if (esGastoEsencial(cat, g)) gastosVidaEsencial += m;
       }
     });
   });
@@ -235,6 +253,14 @@ export function calcularBase(d = {}, opts = {}) {
   // Ahora manda la cuota: si este mes hay que pagarla, cuenta.
   const sd = deudas.reduce((s, x) => s + cuotaDeuda(x, trm, mens), 0);
   const ob = g + sd;
+  // Obligación esencial: el piso. Los aportes obligatorios y las cuotas de deuda
+  // entran siempre (no son opcionales). Si los gastos no están clasificados no se
+  // inventa una fracción: obEsencial = ob, y "Seguridad" queda tan exigente como
+  // "Independencia". Mejor exigir de más que prometer una seguridad que no es.
+  const esencialesClasificados = gastosVidaEsencial > 0;
+  const obEsencial = esencialesClasificados
+    ? gastosVidaEsencial + aportesObligatorios + excesoCostos + impuestoNeto + sd
+    : ob;
   const fl = ia + ip - ob;
 
   // 3) Balance
@@ -264,7 +290,7 @@ export function calcularBase(d = {}, opts = {}) {
   return {
     trm, base, anioMedido: aMed, mesMedido: mMed, ocultos,
     iaBruto, ia, ipBruto, ip, costosNeteados, costosAbsorbidosManual,
-    g, sd, ob, fl,
+    g, sd, ob, fl, obEsencial, gastosVidaEsencial, esencialesClasificados,
     aportesObligatorios, gastosVida, impuestoNeto, retencionMensual,
     ingresoTotal, ingresoNeto, ahorroPct, cargaDeudaPct,
     // % del ingreso que no depende del trabajo (composición, sobre bruto)
@@ -280,51 +306,75 @@ export function calcularBase(d = {}, opts = {}) {
   };
 }
 
-// ─── Nivel de libertad (spec §1) ──────────────────────────────────────────
+// ─── Nivel de libertad ────────────────────────────────────────────────────
+// 21-oct-2026 — Los escalones eran fracciones inventadas de los gastos: 25% se
+// llamaba "Seguridad" y 50% "Libertad parcial". Santiago, cinco veces: "jamás
+// 20 mm son seguridad en mi caso", "ni en libertad parcial con 42mm". Tenía
+// razón: con el 25% de lo que uno necesita no hay ninguna seguridad, y con la
+// mitad no se es libre ni a medias — se sigue trabajando exactamente igual.
+//
+// Ahora cada escalón se mide contra una plata REAL, no contra un porcentaje:
+//   N1 Déficit       gastas más de lo que entra
+//   N2 Estabilidad   el flujo da, pero tus activos no pagan ni lo esencial
+//   N3 Seguridad     tus activos pagan LO ESENCIAL + las cuotas
+//   N4 Independencia tus activos pagan TODO tu nivel de vida
+//   N5 Abundancia    lo pagan con 30% de margen
+//
+// `umbral` dice contra qué se compara el ingreso pasivo: "esencial", "total", o
+// null cuando el escalón lo decide el flujo y no el ingreso pasivo.
 export const NIVELES = [
-  { id: 1, clave: "deficit",     nombre: "Déficit",          min: null, icon: "⚠️", color: "#ef4444",
-    desc: "Tu flujo del mes es negativo",
-    detail: "Gastas más de lo que entra. Antes de pensar en ingreso pasivo, el primer paso es que tu flujo libre (ingresos menos gastos y cuotas) sea positivo." },
-  { id: 2, clave: "estabilidad", nombre: "Estabilidad",      min: 0,    icon: "🛡️", color: "#3b82f6",
-    desc: "Flujo positivo; pasivos < 25% de tus gastos",
-    detail: "Tu flujo es positivo: cubres tus gastos y cuotas con lo que ganas. Tu ingreso pasivo (arriendos netos, intereses, dividendos) cubre menos del 25% de tus gastos y cuotas." },
-  { id: 3, clave: "seguridad",   nombre: "Seguridad",        min: 25,   icon: "⚡", color: "#22d3ee",
-    desc: "Pasivos cubren 25–50% de tus gastos",
-    detail: "Tus activos ya pagan entre el 25% y el 50% de tus gastos y cuotas. Si tu ingreso por trabajo bajara, tus activos amortiguan una parte importante." },
-  { id: 4, clave: "libertad_parcial", nombre: "Libertad parcial", min: 50, icon: "🚀", color: "#f97316",
-    desc: "Pasivos cubren 50–100% de tus gastos",
-    detail: "Tus activos pagan al menos la mitad de tus gastos y cuotas. Trabajar empieza a ser una elección parcial." },
-  { id: 5, clave: "independencia", nombre: "Independencia",  min: 100,  icon: "👑", color: "#eab308",
-    desc: "Pasivos cubren el 100% de tus gastos",
-    detail: "Tu ingreso pasivo neto cubre todos tus gastos y cuotas. Podrías dejar de trabajar y mantener tu nivel de vida con lo que generan tus activos." },
+  { id: 1, clave: "deficit", nombre: "Déficit", umbral: null, factor: 0, icon: "⚠️", color: "#ef4444",
+    desc: "Gastas más de lo que entra",
+    detail: "Tu flujo del mes es negativo. Antes de pensar en ingreso pasivo, el primer paso es que lo que entra cubra lo que sale." },
+  { id: 2, clave: "estabilidad", nombre: "Estabilidad", umbral: null, factor: 0, icon: "🛡️", color: "#3b82f6",
+    desc: "Te alcanza, pero trabajando",
+    detail: "Cubres tus gastos y cuotas con lo que ganas. Si dejaras de trabajar, tu ingreso pasivo todavía no paga ni lo esencial." },
+  { id: 3, clave: "seguridad", nombre: "Seguridad", umbral: "esencial", factor: 1, icon: "⚡", color: "#22d3ee",
+    desc: "Tus activos pagan lo que no puedes apagar",
+    detail: "Tu ingreso pasivo cubre lo esencial: techo, comida, servicios, salud, educación, transporte, seguros, aportes y las cuotas de tus deudas. Si tu ingreso por trabajo desapareciera, recortarías lo demás, pero no pierdes el piso." },
+  { id: 4, clave: "independencia", nombre: "Independencia", umbral: "total", factor: 1, icon: "🚀", color: "#f97316",
+    desc: "Tus activos pagan todo tu nivel de vida",
+    detail: "Tu ingreso pasivo neto cubre el 100% de tus gastos y cuotas, sin recortar nada. Trabajar pasa a ser una elección." },
+  { id: 5, clave: "abundancia", nombre: "Abundancia", umbral: "total", factor: 1.3, icon: "👑", color: "#eab308",
+    desc: "Lo pagan con margen de sobra",
+    detail: "Tu ingreso pasivo supera en 30% tus gastos y cuotas. Ese margen es lo que absorbe la inflación, un año malo de rentas o un gasto grande sin tener que tocar el capital." },
 ];
 
+/** Ingreso pasivo mensual que exige un escalón. null si no se mide así. */
+export function umbralNivel(nivelDef, { ob = 0, obEsencial = 0 } = {}) {
+  if (!nivelDef || !nivelDef.umbral) return null;
+  const base = nivelDef.umbral === "esencial" ? (obEsencial || ob) : ob;
+  return base * (nivelDef.factor || 1);
+}
+
 /**
- * Nivel 1–5, o null si no hay obligaciones cargadas (sin datos).
- *   N1 FL < 0 · N2 < 25% · N3 25–50% · N4 50–100% · N5 ≥ 100%
+ * Nivel 1–5, o null si no hay obligaciones cargadas.
+ *   N1 FL < 0 · N2 IP < esencial · N3 IP ≥ esencial · N4 IP ≥ total · N5 IP ≥ 1,3× total
  *   Candado: patrimonio neto < 0 → máximo N2.
  */
-export function nivelLibertad({ ip = 0, ob = 0, fl = 0, patrimonioNeto = 0 } = {}) {
+export function nivelLibertad({ ip = 0, ob = 0, obEsencial = null, fl = 0, patrimonioNeto = 0 } = {}) {
   if (!(ob > 0)) return { nivel: null, cobertura: 0, candado: null, ...NIVEL_VACIO };
+  const obEs = obEsencial > 0 ? obEsencial : ob;
+  const ctx = { ob, obEsencial: obEs };
   const cobertura = (ip / ob) * 100;
   let nivel, candado = null;
   if (fl < 0) { nivel = 1; candado = "deficit"; }
-  else if (cobertura >= 100) nivel = 5;
-  else if (cobertura >= 50) nivel = 4;
-  else if (cobertura >= 25) nivel = 3;
+  else if (ip >= ob * 1.3) nivel = 5;
+  else if (ip >= ob) nivel = 4;
+  else if (ip >= obEs) nivel = 3;
   else nivel = 2;
   if (patrimonioNeto < 0 && nivel > 2) { nivel = 2; candado = "patrimonio_negativo"; }
   const data = NIVELES[nivel - 1];
   const sig = nivel < 5 ? NIVELES[nivel] : null;
-  // Lo que falta de ingreso pasivo para el siguiente umbral (si aplica).
-  const ipNecesarioSiguiente = sig && sig.min != null ? (sig.min / 100) * ob : null;
+  const ipNecesarioSiguiente = umbralNivel(sig, ctx);
   return {
-    nivel, cobertura, candado, nombre: data.nombre, data,
-    siguiente: sig,
+    nivel, cobertura, candado, nombre: data.nombre, data, siguiente: sig,
+    obEsencial: obEs,
+    coberturaEsencial: obEs > 0 ? (ip / obEs) * 100 : 0,
     faltaIPSiguiente: ipNecesarioSiguiente != null ? Math.max(0, ipNecesarioSiguiente - ip) : null,
   };
 }
-const NIVEL_VACIO = { nombre: null, data: null, siguiente: null, faltaIPSiguiente: null };
+const NIVEL_VACIO = { nombre: null, data: null, siguiente: null, faltaIPSiguiente: null, obEsencial: 0, coberturaEsencial: 0 };
 
 /**
  * Atajo: base + nivel, SIEMPRE en la misma base. Quien quiera medir contra lo

@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
-import { calcularMetricas, NIVELES, fmtPctEs } from "../lib/metrics.js";
+import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
@@ -97,14 +97,17 @@ const TT = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 1
 // Estabilidad no tienen umbral de ingreso pasivo (dependen del flujo del mes) y
 // mostraban "$0/m", que era falso. `porCobertura` distingue los dos casos y
 // `requisito` guarda el criterio real de los dos primeros.
+// Cada escalón trae su propio umbral en plata (metrics.js → umbralNivel):
+// Seguridad se mide contra lo ESENCIAL, Independencia y Abundancia contra el
+// total. Déficit y Estabilidad no se miden con ingreso pasivo sino con el flujo
+// del mes: ahí va `requisito` en vez de una cifra.
 const REQUISITO = {
-  deficit: "Si tu flujo del mes es negativo",
-  estabilidad: "Flujo positivo; no exige ingreso pasivo",
+  deficit: "Si gastas más de lo que entra",
+  estabilidad: "Te alcanza, pero trabajando",
 };
 const LEVELS = NIVELES.map((n) => ({
-  id: n.id, name: n.nombre, icon: n.icon, color: n.color,
-  factor: (n.min || 0) / 100, desc: n.desc, detail: n.detail,
-  porCobertura: (n.min || 0) > 0,
+  id: n.id, name: n.nombre, icon: n.icon, color: n.color, def: n,
+  porCobertura: !!n.umbral, desc: n.desc, detail: n.detail,
   requisito: REQUISITO[n.clave] || null,
 }));
 
@@ -147,13 +150,22 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
 // ─── FREEDOM BAR (inline, reactive) ───
 function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
   const [expandedLvl, setExpandedLvl] = useState(null);
+  const te = ob, ni = ip;
+  const obEsencial = nivel?.obEsencial || ob;
+  const ctx = { ob, obEsencial };
+  const umbral = (l) => umbralNivel(l.def, ctx);
   const ratio = ob > 0 ? ip / ob : 0;
   const currentLevel = nivel?.nivel || 0;
-  const overallProg = Math.min(ratio * 100, 100);
-  const te = ob, ni = ip;
+  // La barra llega hasta Abundancia (1,3x), no hasta Independencia: si topara en
+  // 100% el último escalón no tendría dónde dibujarse.
+  const TOPE = 1.3;
+  const overallProg = Math.min((ratio / TOPE) * 100, 100);
+  const pos = (l) => Math.min((umbral(l) / (ob * TOPE)) * 100, 100);
   const currentData = currentLevel > 0 ? LEVELS[currentLevel - 1] : null;
   const nextData = currentLevel < 5 ? LEVELS[currentLevel] : null;
-  const monthlyGap = nextData ? (currentLevel === 1 ? Math.max(0, -(fl || 0)) : Math.max(0, nextData.factor * te - ni)) : 0;
+  const monthlyGap = nextData
+    ? (currentLevel === 1 ? Math.max(0, -(fl || 0)) : Math.max(0, (umbral(nextData) || 0) - ni))
+    : 0;
 
   return (
     <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 20, padding: 24, marginBottom: 20 }}>
@@ -189,9 +201,8 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
         <div style={{ height: 36, background: T.bg3, borderRadius: 16, overflow: "hidden", position: "relative" }}>
           {/* Level markers */}
           {LEVELS.filter((l) => l.porCobertura).map((l) => {
-            const pos = l.factor * 100;
             return (
-              <div key={l.id} style={{ position: "absolute", left: pos + "%", top: 0, bottom: 0, width: 2, background: "rgba(255,255,255,0.1)", zIndex: 2 }}>
+              <div key={l.id} style={{ position: "absolute", left: pos(l) + "%", top: 0, bottom: 0, width: 2, background: "rgba(255,255,255,0.1)", zIndex: 2 }}>
                 <div style={{ position: "absolute", top: -22, left: "50%", transform: "translateX(-50%)", fontSize: 16 }}>{l.icon}</div>
               </div>
             );
@@ -226,10 +237,9 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
             </div>
           </div>
           {LEVELS.filter((l) => l.porCobertura).map((l) => {
-            const pos = l.factor * 100;
             const reached = currentLevel >= l.id;
             return (
-              <div key={l.id} style={{ position: "absolute", left: pos + "%", transform: "translateX(-50%)", textAlign: "center" }}>
+              <div key={l.id} style={{ position: "absolute", left: pos(l) + "%", transform: "translateX(-50%)", textAlign: "center" }}>
                 <div style={{ fontSize: 9, fontWeight: reached ? 700 : 500, color: reached ? l.color : T.txt3 }}>{l.name}</div>
               </div>
             );
@@ -255,7 +265,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
         {LEVELS.map((l) => {
           const reached = currentLevel >= l.id;
           const current = currentLevel === l.id;
-          const needed = l.factor * te;
+          const needed = umbral(l);
           return (
             <div key={l.id} onClick={() => setExpandedLvl(expandedLvl === l.id ? null : l.id)} style={{
               background: current ? l.color + "12" : reached ? "rgba(255,255,255,0.02)" : T.bg3,
@@ -272,7 +282,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
                     {fm(needed)}<span style={{ fontSize: 9 }}>/m</span>
                   </div>
                   <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
-                    de ingreso pasivo<br />= {fmtPctEs(l.factor * 100, 0)} de tus gastos
+                    de ingreso pasivo<br />{l.def.umbral === "esencial" ? "paga lo esencial" : l.def.factor > 1 ? "paga todo, con margen" : "paga todo"}
                   </div>
                 </>
               ) : (
@@ -288,7 +298,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
       {expandedLvl && (() => {
         const l = LEVELS.find(x => x.id === expandedLvl);
         if (!l) return null;
-        const needed = l.factor * te;
+        const needed = umbral(l);
         const reached = currentLevel >= l.id;
         return (
           <div style={{ background: l.color + "08", border: "1px solid " + l.color + "20", borderRadius: 14, padding: "16px 20px", marginBottom: 16, animation: "fadeIn 0.2s ease" }}>
@@ -299,7 +309,11 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
                   <div style={{ fontSize: 15, fontWeight: 800, color: l.color }}>{l.name}</div>
                   <div style={{ fontSize: 11, color: T.txt3 }}>
                     Nivel {l.id}/5 — {l.porCobertura
-                      ? <>Necesitas {fm(needed)}/mes de ingreso pasivo ({fmtPctEs(l.factor * 100, 0)} de tus {fm(te)}/mes de gastos y cuotas)</>
+                      ? <>Necesitas {fm(needed)}/mes de ingreso pasivo — {l.def.umbral === "esencial"
+                          ? <>lo esencial de tu mes, dentro de {fm(te)} de gastos y cuotas</>
+                          : l.def.factor > 1
+                          ? <>tus {fm(te)}/mes de gastos y cuotas, con 30% de margen</>
+                          : <>tus {fm(te)}/mes de gastos y cuotas completos</>}</>
                       : l.requisito}
                   </div>
                 </div>

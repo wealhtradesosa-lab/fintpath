@@ -7,14 +7,19 @@ const fm = (n) => "$" + Math.round(Number(n) || 0).toLocaleString("es-CO");
 
 /** Escala oficial en una línea (nombres y umbrales de metrics.js). */
 export function escalaNiveles() {
-  const rango = (n, i) => {
-    if (n.id === 1) return "flujo libre negativo";
-    if (n.id === 5) return "≥ 100%";
-    const sig = NIVELES[i + 1];
-    return n.min === 0 ? `< ${sig.min}%` : `${n.min}–${sig.min}%`;
+  // 21-oct-2026 — Antes la escala se dictaba en porcentajes (25/50/100) porque
+  // los escalones ERAN porcentajes. Ya no: Seguridad se mide contra lo esencial
+  // del mes y los dos primeros contra el flujo. Ver metrics.js → NIVELES.
+  const rango = (n) => {
+    if (!n.umbral) return n.id === 1 ? "flujo libre negativo" : "flujo positivo, sin cubrir lo esencial";
+    if (n.umbral === "esencial") return "ingreso pasivo ≥ gastos esenciales + cuotas";
+    return n.factor > 1
+      ? `ingreso pasivo ≥ ${n.factor}× (gastos + cuotas)`
+      : "ingreso pasivo ≥ gastos + cuotas";
   };
-  return NIVELES.map((n, i) => `N${n.id} ${n.nombre} (${rango(n, i)})`).join(" · ");
+  return NIVELES.map((n) => `N${n.id} ${n.nombre} (${rango(n)})`).join(" · ");
 }
+
 
 /**
  * @param {object} t totales de cT (con `met` = calcularMetricas y `salud`).
