@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><rect width="1000" height="1000" rx="180" fill="#09090b"/><defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9ff6fc"/>
+      <stop offset="0.55" stop-color="#5ee3f1"/>
+      <stop offset="1" stop-color="#2ec4d8"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3fcfe0"/>
+      <stop offset="1" stop-color="#1f9fb3"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(-160,-50)">
+  <!-- barra superior -->
+  <polygon fill="url(#g)" points="515,230 920,230 805,350 400,350"/>
+  <!-- barra media -->
+  <polygon fill="url(#g)" points="500,405 790,405 690,520 400,520"/>
+  <!-- asta -->
+  <polygon fill="url(#g)" points="400,520 492,520 492,780 400,870"/>
+  <!-- pliegue (brazo corto, en sombra) -->
+  <polygon fill="url(#g2)" points="492,560 615,560 492,690"/>
+  </g>
+</svg>
