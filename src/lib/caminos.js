@@ -141,11 +141,28 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
     if (esArriendoCat(i)) { flujos.push({ id: `ing_${i.id}`, nombre: i.nombre || "Arriendo", tipo: "ingreso", monto: m, posicionId: activoDeArriendo(i)?.id, indexa: true, origenId: i.id }); return; }
     const cap = num(i.capital) * fx(i), tasa = num(i.tasa);
     if (esRendimientoCat(i) && cap > 0 && tasa > 0) {
+      // 21-oct-2026 — La posición se armaba con `capital × tasa NOMINAL`, que
+      // ignora la vigencia que la persona cargó. Un ingreso de $122,5M que solo
+      // corre en diciembre aparecía como $122,5M TODOS los meses. En la cuenta
+      // real eran siete renglones y $193,8M/mes de más ($258,1M mostrados
+      // contra $64,2M que de verdad entran).
+      //
+      // Ahora manda la plata, no la tasa escrita: la tasa de la posición se
+      // deriva del monto que de verdad entra (`m`, que ya pasó por
+      // montoPromedioMensual y respeta vigencia, frecuencia y montos por mes).
+      // Se guarda `tasaDeclarada` para poder decirlo en pantalla en vez de
+      // cambiar el número a espaldas de quien lo escribió.
+      // Solo manda cuando de verdad cambia algo: una diferencia de centésimas
+      // (un monto redondeado a mano) no tiene por qué reescribir la tasa que
+      // la persona escribió ni ensuciar la pantalla con 9,996%.
+      const difiere = Math.abs((m * 12 / cap) * 100 - tasa) > 0.1;
+      const tasaReal = difiere ? (m * 12 / cap) * 100 : tasa;
+      const declarada = difiere ? tasa : null;
       // Rendimiento de un capital: si el activo ya está en Patrimonio, se usa su ficha real
       const f = norm(i.fuente || i.nombre);
       const a = inv.find((x) => !TIPOS_INMUEBLE.has(x.tp) && !usados.has(x.id) && ((f && (norm(nombreActivo(x)).includes(f) || f.includes(norm(nombreActivo(x))))) || Math.abs(num(x.va) * fx(x) - cap) / Math.max(1, cap) < 0.02));
-      if (a) { usados.add(a.id); const p = posiciones.find((x) => x.id === a.id); if (p && !fichas[a.id]) { p.bolsillo = "sustento"; p.tasa = tasa; p.pagaPct = 100; p.valorizacion = 0; } return; }
-      posiciones.push({ id: `cap_${i.id}`, nombre: i.nombre || "Inversión", bolsillo: "sustento", capital: cap, tasa, pagaPct: 100, valorizacion: 0, tipo: "Capital", owner: i.owner, soloIngreso: true, ...(fichas[`cap_${i.id}`] || {}) });
+      if (a) { usados.add(a.id); const p = posiciones.find((x) => x.id === a.id); if (p && !fichas[a.id]) { p.bolsillo = "sustento"; p.tasa = tasaReal; p.tasaDeclarada = declarada; p.pagaPct = 100; p.valorizacion = 0; } return; }
+      posiciones.push({ id: `cap_${i.id}`, nombre: i.nombre || "Inversión", bolsillo: "sustento", capital: cap, tasa: tasaReal, tasaDeclarada: declarada, pagaPct: 100, valorizacion: 0, tipo: "Capital", owner: i.owner, soloIngreso: true, ...(fichas[`cap_${i.id}`] || {}) });
       return;
     }
     const trabajo = esTrabajoCat(i);
