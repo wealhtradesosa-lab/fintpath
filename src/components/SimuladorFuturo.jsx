@@ -406,12 +406,25 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                               futuro; el supuesto anterior, tachado y en pequeño. */}
                           {c && c.tipo !== "continua" ? (
                             <div style={F.caption}>
+                              {/* 21-oct-2026 (Santiago: "no vemos el capital de esa inversión").
+                                  Con cambio aplicado también se ve el capital: el del cambio si
+                                  se cambió por capital × tasa; si no, el del ítem con la tasa
+                                  implícita del nuevo monto. */}
+                              {(() => {
+                                const capC = c.tipo === "cambia" && c.modo === "capital" && Number(c.capital) > 0 ? Number(c.capital) : 0;
+                                const cap = capC || Number(f.capital) || 0;
+                                if (!(cap > 0)) return null;
+                                const mensual = anual / 12;
+                                const tasaImpl = cap > 0 && mensual > 0 ? (mensual * 12 / cap) * 100 : 0;
+                                const tasaTxt = capC ? `${fmtTasaEs(c.tasa)} ${c.tasaModo === "mensual" ? "mensual" : "anual"}` : `${fmtTasaEs(tasaImpl)} anual implícito`;
+                                return <>Capital <b style={{ color: C.text }}>{fm(cap)}</b> × {tasaTxt} → </>;
+                              })()}
                               <b style={{ color: C.text }}>{fm(anual / 12)}/mes en {año}</b> · {fm(anual)} en el año
                               <span style={{ marginLeft: 8, textDecoration: "line-through", opacity: 0.7 }}>antes {fm(f.montoTipico)}/mes</span>
                             </div>
                           ) : (
                             <div style={F.caption}>
-                              {f.capital > 0 && f.tasa > 0 ? `Capital ${fm(f.capital)} × ${fmtTasaEs(f.tasa)} ${f.tasaModo === "mensual" ? "mensual" : "anual"} → ` : ""}
+                              {f.capital > 0 && f.tasa > 0 ? <>Capital <b style={{ color: C.text }}>{fm(f.capital)}</b> × {fmtTasaEs(f.tasa)} {f.tasaModo === "mensual" ? "mensual" : "anual"} → </> : ""}
                               {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{f.supuesto ? ` · ${f.supuesto}` : ""}
                             </div>
                           )}
@@ -937,12 +950,15 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                 {(() => {
                   const porCat = {};
                   grupo.forEach((f) => { const cat = f.cat || "Sin categoría"; (porCat[cat] = porCat[cat] || []).push(f); });
-                  const cats = Object.entries(porCat).map(([cat, fs]) => ({ cat, fs, anual: fs.reduce((a, f) => a + f.meses.reduce((x, v) => x + v, 0), 0) })).sort((a, b) => b.anual - a.anual);
-                  return cats.map(({ cat, fs, anual: anualCat }) => (
+                  // 21-oct-2026 (Santiago: "lo más importante, saber cuánto invertí, no se ve").
+                  // Capital por categoría: el del cambio si se cambió por capital, si no el del ítem.
+                  const capitalDe = (f) => { const c = f.cambio; return (c && c.tipo === "cambia" && c.modo === "capital" && Number(c.capital) > 0) ? Number(c.capital) : (Number(f.capital) || 0); };
+                  const cats = Object.entries(porCat).map(([cat, fs]) => ({ cat, fs, anual: fs.reduce((a, f) => a + f.meses.reduce((x, v) => x + v, 0), 0), capital: fs.reduce((a, f) => a + capitalDe(f), 0) })).sort((a, b) => b.anual - a.anual);
+                  return cats.map(({ cat, fs, anual: anualCat, capital: capCat }) => (
                     <div key={cat} style={{ marginTop: 6 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "6px 8px", background: C.raised, borderRadius: R.sm, marginBottom: 2 }}>
-                        <span style={{ ...F.h3, fontSize: 12 }}>{cat} <span style={F.caption}>· {fs.length}</span></span>
-                        <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(anualCat / 12)}/mes</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "6px 8px", background: C.raised, borderRadius: R.sm, marginBottom: 2, gap: 10, flexWrap: "wrap" }}>
+                        <span style={{ ...F.h3, fontSize: 12 }}>{cat} <span style={F.caption}>· {fs.length}</span>{capCat > 0 && <span style={{ ...F.caption, marginLeft: 8 }}>capital invertido <b style={{ color: C.text }}>{fm(capCat)}</b></span>}</span>
+                        <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(anualCat / 12)}/mes{capCat > 0 && anualCat > 0 && <span style={{ ...F.caption, marginLeft: 6 }}>· {fmtTasaEs((anualCat / capCat) * 100)} anual</span>}</span>
                       </div>
                       {fs.map((f) => renderFila(f))}
                     </div>
