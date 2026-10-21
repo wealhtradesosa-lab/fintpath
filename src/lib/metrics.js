@@ -29,7 +29,7 @@
  *   SD  servicio de deuda (cuotas, capital + interés).
  *   FL = IA + IP − G − SD      OB = G + SD
  */
-import { montoPromedioMensual } from "./flowHelpers.js";
+import { montoPromedioMensual, montoDelMes, getMesActual } from "./flowHelpers.js";
 
 // ─── Clasificación de ingresos ─────────────────────────────────────────────
 const CATS_PASIVAS = new Set([
@@ -68,11 +68,28 @@ export function esGastoInmuebleArrendado(cat, g) {
   return fc.startsWith("GAS_INMUEBLE_") || /inmueble arrendado/i.test(String(cat || ""));
 }
 
+// Mes que se está midiendo (lo fija calcularBase antes de sumar). Module-level
+// porque cuotaDeuda necesita saberlo para su respaldo de vigencia.
+const mensContexto = { anio: null, mes: null };
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const fx = (item, trm) => (item?.moneda === "USD" ? trm : 1);
-const mensualIngreso = (i, trm) => montoPromedioMensual({ ...i, mensual: num(i?.mensual) * fx(i, trm) });
-const mensualGasto = (g, trm) => montoPromedioMensual(g) * fx(g, trm);
-const cuotaDeuda = (d, trm) => montoPromedioMensual({ ...d, mensual: num(d?.pg ?? d?.pago) * fx(d, trm) });
+// `mens` mensualiza un item. Dos bases, MISMO motor (ver calcularBase):
+//   "promedio" — el promedio del año (lo de siempre)
+//   "mes"      — lo que de verdad se paga en un mes concreto
+const mensualIngreso = (i, trm, mens) => mens({ ...i, mensual: num(i?.mensual) * fx(i, trm) });
+const mensualGasto = (g, trm, mens) => mens(g) * fx(g, trm);
+// Una cuota de deuda NO es un gasto variable: se paga igual todos los meses de
+// su vigencia. Si quedó marcada "variable" sin montos cargados, la base "mes"
+// la leía como $0 y la deuda desaparecía (en la cuenta de Santiago, $7,4M/mes
+// en dos créditos). Dentro de su vigencia, la cuota guardada manda.
+const cuotaDeuda = (d, trm, mens) => {
+  const cuota = num(d?.pg ?? d?.pago) * fx(d, trm);
+  const v = mens({ ...d, mensual: cuota });
+  if (v > 0 || cuota <= 0) return v;
+  const desde = num(d?.desdeMes) || 1, hasta = num(d?.hastaMes) || 12;
+  const { mes } = mensContexto;
+  return mes >= desde && mes <= hasta ? cuota : 0;
+};
 
 // ─── Clasificación de activos (liquidez / invertibles) ─────────────────────
 const TYPE_MAP = { Other: "Otro", Investment: "Fondo de Inversión", Income: "Otro", Trading: "Acciones", Lote: "Real Estate" };
@@ -111,13 +128,40 @@ export function esLiquido(i) {
  * @param {object} d
  *   ingresos[], gastos{cat:[items]} (acepta también `gas`), deudas[] (o `deu`),
  *   inv[], trm, retencionMensual, impuestoNeto
+ * @param {object} opts
+ *   base: "promedio" (default, el promedio del año) | "mes" (lo que se paga en
+ *         un mes concreto). 21-oct-2026 — el nivel de libertad se medía contra
+ *         el promedio y eso mentía: la Seguridad Social de Santiago, $27,6M que
+ *         paga HOY, entraba como $6,9M porque arranca en octubre y se repartía
+ *         sobre 12 meses. La barra ahora mide contra el mes.
+ *   anio, mes: el mes a medir cuando base = "mes" (default: el mes en curso).
  */
-export function calcularBase(d = {}) {
+export function calcularBase(d = {}, opts = {}) {
+  const { base = "promedio", anio, mes } = opts;
+  const hoy = getMesActual();
+  const aMed = anio || hoy.año, mMed = mes || hoy.mes;
+  const mens = base === "mes" ? (it) => montoDelMes(it, aMed, mMed) : montoPromedioMensual;
+  mensContexto.anio = aMed; mensContexto.mes = base === "mes" ? mMed : null;
   const trm = num(d.trm) || 4200;
-  const ingresos = (d.ingresos || []).filter((i) => i && i.sim !== false);
+  const visible = (x) => x && x.sim !== false;
+  const ingresos = (d.ingresos || []).filter(visible);
   const gastos = d.gastos || d.gas || {};
-  const deudas = (d.deudas || d.deu || []).filter((x) => x && x.sim !== false);
-  const inv = (d.inv || []).filter((x) => x && x.sim !== false);
+  const deudas = (d.deudas || d.deu || []).filter(visible);
+  const inv = (d.inv || []).filter(visible);
+
+  // Lo que el ojo ⬜ de las listas dejó fuera. No se suma (ocultar es una
+  // decisión del usuario y esconder ingresos a la vez que gastos desbalancearía
+  // la cobertura), pero se devuelve para que la UI pueda decirlo en voz alta en
+  // vez de que la plata desaparezca sin rastro.
+  const ocultos = { gastos: 0, nGastos: 0, ingresos: 0, nIngresos: 0 };
+  Object.entries(d.gastos || d.gas || {}).forEach(([, items]) => {
+    (items || []).forEach((g) => {
+      if (g && g.sim === false) { ocultos.gastos += mensualGasto(g, trm, mens); ocultos.nGastos++; }
+    });
+  });
+  (d.ingresos || []).forEach((i) => {
+    if (i && i.sim === false) { ocultos.ingresos += mensualIngreso(i, trm, mens); ocultos.nIngresos++; }
+  });
 
   // 1) Ingresos brutos por tipo; el pasivo, agrupado por activo vinculado.
   let iaBruto = 0, ipBruto = 0;
@@ -125,7 +169,7 @@ export function calcularBase(d = {}) {
   let rentaSinVinculo = 0;        // arriendos sin activoId
   const detallePasivo = [];
   ingresos.forEach((i) => {
-    const m = mensualIngreso(i, trm);
+    const m = mensualIngreso(i, trm, mens);
     if (tipoIngreso(i) === "pasivo") {
       ipBruto += m;
       detallePasivo.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: m, activoId: i.activoId || null });
@@ -149,7 +193,7 @@ export function calcularBase(d = {}) {
   Object.entries(gastos || {}).forEach(([cat, items]) => {
     (items || []).forEach((g) => {
       if (!g || g.sim === false) return;
-      const m = mensualGasto(g, trm);
+      const m = mensualGasto(g, trm, mens);
       if (g.activoId && manualIds.has(g.activoId) && rentaPorActivo[g.activoId] != null) {
         costosAbsorbidosManual += m;
       } else if (g.activoId && rentaPorActivo[g.activoId] != null) {
@@ -185,7 +229,11 @@ export function calcularBase(d = {}) {
   const impuestoNeto = num(d.impuestoNeto);
   const ia = iaBruto - retencionMensual;
   const g = aportesObligatorios + gastosVida + excesoCostos + impuestoNeto;
-  const sd = deudas.filter((x) => num(x.mt) > 0).reduce((s, x) => s + cuotaDeuda(x, trm), 0);
+  // 21-oct-2026 — El filtro era `num(x.mt) > 0`: una deuda cuya cuota se sigue
+  // pagando, pero a la que nadie le cargó el saldo, perdía su cuota ENTERA de
+  // la obligación del mes. En la cuenta de Santiago eran $2,5M/mes invisibles.
+  // Ahora manda la cuota: si este mes hay que pagarla, cuenta.
+  const sd = deudas.reduce((s, x) => s + cuotaDeuda(x, trm, mens), 0);
   const ob = g + sd;
   const fl = ia + ip - ob;
 
@@ -214,7 +262,7 @@ export function calcularBase(d = {}) {
   const ahorroPct = ingresoNeto > 0 ? (fl / ingresoNeto) * 100 : 0;
   const cargaDeudaPct = ingresoNeto > 0 ? (sd / ingresoNeto) * 100 : 0;
   return {
-    trm,
+    trm, base, anioMedido: aMed, mesMedido: mMed, ocultos,
     iaBruto, ia, ipBruto, ip, costosNeteados, costosAbsorbidosManual,
     g, sd, ob, fl,
     aportesObligatorios, gastosVida, impuestoNeto, retencionMensual,
@@ -278,9 +326,13 @@ export function nivelLibertad({ ip = 0, ob = 0, fl = 0, patrimonioNeto = 0 } = {
 }
 const NIVEL_VACIO = { nombre: null, data: null, siguiente: null, faltaIPSiguiente: null };
 
-/** Atajo: base + nivel. */
-export function calcularMetricas(d = {}) {
-  const base = calcularBase(d);
+/**
+ * Atajo: base + nivel, SIEMPRE en la misma base. Quien quiera medir contra lo
+ * que se paga este mes pide `{ base: "mes" }` y recibe todo en esa base: mezclar
+ * una cobertura del promedio con un nivel del mes da textos que se contradicen.
+ */
+export function calcularMetricas(d = {}, opts = {}) {
+  const base = calcularBase(d, opts);
   return { ...base, nivel: nivelLibertad(base) };
 }
 

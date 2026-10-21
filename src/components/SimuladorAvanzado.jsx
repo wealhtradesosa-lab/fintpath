@@ -145,7 +145,7 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
 }
 
 // ─── FREEDOM BAR (inline, reactive) ───
-function FreedomBarLive({ ip, ob, fl, nivel }) {
+function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
   const [expandedLvl, setExpandedLvl] = useState(null);
   const ratio = ob > 0 ? ip / ob : 0;
   const currentLevel = nivel?.nivel || 0;
@@ -163,7 +163,7 @@ function FreedomBarLive({ ip, ob, fl, nivel }) {
           <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Tu Nivel de Libertad Financiera</h3>
           <p style={{ fontSize: 12, color: T.txt3, margin: "3px 0 0" }}>
             {te > 0
-              ? <>Cuánto de tus <b style={{ color: T.txt2 }}>{fm(te)}/mes</b> de gastos y cuotas pagan tus activos</>
+              ? <>Cuánto de los <b style={{ color: T.txt2 }}>{fm(te)}</b> que pagas en {MESES[(mesMedido || 1) - 1]?.l?.toLowerCase() || "el mes"} cubren tus activos</>
               : "5 niveles de libertad • Reacciona en tiempo real"}
           </p>
         </div>
@@ -236,6 +236,19 @@ function FreedomBarLive({ ip, ob, fl, nivel }) {
           })}
         </div>
       </div>
+
+      {/* Lo que el ojo ⬜ de Gastos/Ingresos dejó fuera de esta cuenta. Ocultar
+          es un botón de VER (dice "Ocultar"/"Mostrar"), pero la plata oculta
+          desaparecía del nivel sin que nada lo dijera. */}
+      {ocultos && (ocultos.nGastos > 0 || ocultos.nIngresos > 0) && (
+        <div style={{ background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 10, padding: "9px 14px", marginBottom: 12, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+          👁️ Esta cuenta <b>no incluye</b> lo que tienes oculto:
+          {ocultos.nGastos > 0 && <> {ocultos.nGastos} gasto{ocultos.nGastos > 1 ? "s" : ""} por <b>{fm(ocultos.gastos)}/mes</b></>}
+          {ocultos.nGastos > 0 && ocultos.nIngresos > 0 && " y"}
+          {ocultos.nIngresos > 0 && <> {ocultos.nIngresos} ingreso{ocultos.nIngresos > 1 ? "s" : ""} por <b>{fm(ocultos.ingresos)}/mes</b></>}
+          . Si eso lo sigues pagando o cobrando, vuelve a mostrarlo en su sección para que el nivel sea real.
+        </div>
+      )}
 
       {/* 5 Level mini-cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 6, marginBottom: 16 }}>
@@ -542,11 +555,19 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     const cashFlow = disponibleCuenta - egresosTotales;
     // Índice de independencia = COBERTURA PASIVA (metrics.js), no ingreso total ÷ egresos.
     // Antes un salario que cubría los gastos aparecía como "Independencia 101%".
-    const met = calcularMetricas({ ingresos: ingSim, gastos: gasSim, deudas: deuSim, inv: user.inv || [], trm, retencionMensual, impuestoNeto });
+    const argsMet = { ingresos: ingSim, gastos: gasSim, deudas: deuSim, inv: user.inv || [], trm, retencionMensual, impuestoNeto };
+    const met = calcularMetricas(argsMet);
+    // 21-oct-2026 — El nivel de libertad se mide contra lo que se paga ESTE mes,
+    // no contra el promedio del año. Santiago: "según su información mi
+    // independencia financiera se logra con 82 mm, eso no cubre ni mis gastos".
+    // No cubría: su Seguridad Social ($27,6M, que arranca en octubre) entraba
+    // promediada como $6,9M, y la cuota de una deuda sin saldo cargado ($2,5M)
+    // no entraba. Ver metrics.js → calcularBase({ base: "mes" }).
+    const metMes = calcularMetricas(argsMet, { base: "mes" });
     const independencia = met.coberturaPasiva;
 
     return {
-      met, nivel: met.nivel, ip: met.ip, ob: met.ob, fl: met.fl,
+      met, metMes, nivel: metMes.nivel, ip: met.ip, ob: met.ob, fl: met.fl,
       // ═══ NUEVO MODELO EXPLÍCITO ═══
       brutoTotal,
       retencionMensual,
@@ -1342,7 +1363,11 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
       </div>
 
       {/* ═══ FREEDOM BAR — reacts to simulated values ═══ */}
-      <FreedomBarLive ip={simT.ip} ob={simT.ob} fl={simT.fl} nivel={simT.nivel} />
+      {/* 21-oct-2026 — La barra mide contra la obligación del MES (met.mes),
+          no contra el promedio del año (simT.ob). Ver metrics.js. */}
+      <FreedomBarLive ip={simT.metMes?.ip ?? simT.ip} ob={simT.metMes?.ob ?? simT.ob}
+        fl={simT.metMes?.fl ?? simT.fl} nivel={simT.metMes?.nivel ?? simT.nivel}
+        ocultos={simT.metMes?.ocultos} mesMedido={simT.metMes?.mesMedido} />
 
       {/* Scenario presets */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 20 }}>
