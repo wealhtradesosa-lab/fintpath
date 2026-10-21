@@ -458,7 +458,17 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
         mensualFinal = Math.round(mensualFinal / Math.max(1, activos));
       }
     }
-    const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal, montosMensuales: frecuenciaFinal === "variable" ? montosFinales : form.montosMensuales };
+    // 21-oct-2026 — Si el ingreso NO es variable, el arreglo de 12 meses se
+    // borra. Gastos (GastosModule) y Deudas (DeudasModule) ya lo hacían;
+    // Ingresos era el único que lo dejaba puesto, y por eso los renglones
+    // terminaban cargando DOS verdades que no coinciden. En la cuenta real hay
+    // uno con monto fijo $122,5M y vigencia solo diciembre cuyo arreglo trae
+    // $122,5M en los 12 meses: hoy vale $122,5M una vez porque el motor lee el
+    // fijo, pero un clic en "Variable" lo pasa a $1.470M al año. Y
+    // migrarAlCambiar no puede defenderlo: su guarda es "si ya hay montos,
+    // respétalos", creyendo que el arreglo es un dato bueno.
+    // `undefined` desaparece al serializar a JSON, así que el dato queda limpio.
+    const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal, montosMensuales: frecuenciaFinal === "variable" ? montosFinales : undefined };
     // Commit 1.5: persistir aportes obligatorios en shape anidado, sólo para Salario
     if (isSalario) {
       item.aportes = {
