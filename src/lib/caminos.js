@@ -22,7 +22,7 @@
  * Puro: sin React, sin storage. Todo en COP; montos mensuales salvo capital.
  */
 import { simularCamino, estresar, cienMillones } from "./planes.js";
-import { montoPromedioMensual } from "./flowHelpers.js";
+import { montoPromedioMensual, rangoEfectivo } from "./flowHelpers.js";
 import { calcularBase } from "./metrics.js";
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -46,6 +46,28 @@ export const PERFIL_DEFAULT = {
 
 export const CANASTAS = ["proteccion", "rentas", "crecimiento", "uso"];
 export const CANASTA_LABEL = { proteccion: "Protección", rentas: "Rentas", crecimiento: "Crecimiento", uso: "Uso" };
+// 21-oct-2026 (Santiago: "no sé cómo explicar a un nuevo usuario qué es
+// protección, rentas o crecimiento"). Es la segunda vez que pasa: el 3-ago fue
+// con las canastas de Tu Norte y se resolvió con CANASTAS_EXPLICADAS
+// (norte.js). Acá la palabra "canasta" se usaba sin definirse nunca, y la
+// definición vivía solo en el comentario de cabecera de este archivo.
+// La de Protección es la línea que ya se escribió en agosto.
+export const CANASTA_CORTO = {
+  proteccion: "Lo que te sostiene si todo sale mal",
+  rentas: "Lo que paga tu vida cada mes",
+  crecimiento: "Lo que se multiplica, pero hoy no te paga",
+  uso: "Ni te paga ni crece: lo tienes porque lo usas",
+};
+/** Por qué una posición cayó en su canasta. Se deduce de lo que produce. */
+export function porQueCanasta(p) {
+  if (p.vivienda) return "vives aquí";
+  switch (canastaDe(p)) {
+    case "proteccion": return p.liquido ? "líquido, es tu colchón" : "lo guardas, no lo arriesgas";
+    case "rentas": return "te paga cada mes";
+    case "crecimiento": return "crece adentro, no te paga";
+    default: return p.vehiculo ? "pierde valor con el uso" : p.valorizacion > 0 ? "solo valoriza" : "ni renta ni crece";
+  }
+}
 
 const TIPOS_LIQUIDOS = new Set(["Cash", "CDT", "Renta Fija"]);
 const TIPOS_CRECIMIENTO = new Set(["Acciones", "ETF", "Crypto"]);
@@ -130,12 +152,13 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
   // Renta mensual ya cargada por inmueble (activoId o por nombre)
   const rentaDeActivo = {};
   const activoDeArriendo = (i) => (i.activoId ? inv.find((x) => x.id === i.activoId) : null) || busca(inv, i.fuente || i.nombre, (x) => TIPOS_INMUEBLE.has(x.tp));
-  ingresos.filter(esArriendoCat).forEach((i) => { const a = activoDeArriendo(i); if (a) rentaDeActivo[a.id] = (rentaDeActivo[a.id] || 0) + montoPromedioMensual(i) * fx(i); });
+  const ventanaDeActivo = {};
+  ingresos.filter(esArriendoCat).forEach((i) => { const a = activoDeArriendo(i); if (a) { rentaDeActivo[a.id] = (rentaDeActivo[a.id] || 0) + montoPromedioMensual(i) * fx(i); ventanaDeActivo[a.id] = ventanaDeActivo[a.id] || rangoEfectivo(i); } });
 
   const posiciones = inv.map((a) => {
     const renta = rentaDeActivo[a.id] || 0;
     const ficha = conCanasta({ ...fichaPorDefecto(a, perfil, renta), ...(fichas[a.id] || {}) }, perfil, a.tp);
-    return { id: a.id, nombre: nombreActivo(a), capital: num(a.va) * fx(a), tipo: a.tp, owner: a.owner, renta, ...ficha, sale: fichas[a.id]?.estado === "sale" };
+    return { id: a.id, nombre: nombreActivo(a), capital: num(a.va) * fx(a), tipo: a.tp, owner: a.owner, renta, ventana: ventanaDeActivo[a.id], ...ficha, sale: fichas[a.id]?.estado === "sale" };
   });
   // Vivienda hay UNA. `esViviendaNombre` puede pegarle a varios ("casa X",
   // "casa Y"); si pasa, manda el de mayor capital y el resto deja de serlo.
@@ -166,14 +189,19 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
       // Solo manda cuando de verdad cambia algo: una diferencia de centésimas
       // (un monto redondeado a mano) no tiene por qué reescribir la tasa que
       // la persona escribió ni ensuciar la pantalla con 9,996%.
+      // 21-oct-2026 — "hasta cuando" era la unica celda de la rejilla sin campo
+      // (qué es · cuándo · cuánto vale · cuánto renta). La ventana ya existe en
+      // el ingreso; se arrastra a la posición para poder decirla en la fila en
+      // vez de dejar al usuario adivinando por qué el monto bajó.
+      const ventana = rangoEfectivo(i);
       const difiere = Math.abs((m * 12 / cap) * 100 - tasa) > 0.1;
       const tasaReal = difiere ? (m * 12 / cap) * 100 : tasa;
       const declarada = difiere ? tasa : null;
       // Rendimiento de un capital: si el activo ya está en Patrimonio, se usa su ficha real
       const f = norm(i.fuente || i.nombre);
       const a = inv.find((x) => !TIPOS_INMUEBLE.has(x.tp) && !usados.has(x.id) && ((f && (norm(nombreActivo(x)).includes(f) || f.includes(norm(nombreActivo(x))))) || Math.abs(num(x.va) * fx(x) - cap) / Math.max(1, cap) < 0.02));
-      if (a) { usados.add(a.id); const p = posiciones.find((x) => x.id === a.id); if (p && !fichas[a.id]) { p.bolsillo = "sustento"; p.tasa = tasaReal; p.tasaDeclarada = declarada; p.pagaPct = 100; p.valorizacion = 0; } return; }
-      posiciones.push({ id: `cap_${i.id}`, nombre: i.nombre || "Inversión", bolsillo: "sustento", capital: cap, tasa: tasaReal, tasaDeclarada: declarada, pagaPct: 100, valorizacion: 0, tipo: "Capital", owner: i.owner, soloIngreso: true, ...(fichas[`cap_${i.id}`] || {}) });
+      if (a) { usados.add(a.id); const p = posiciones.find((x) => x.id === a.id); if (p && !fichas[a.id]) { p.bolsillo = "sustento"; p.tasa = tasaReal; p.tasaDeclarada = declarada; p.pagaPct = 100; p.valorizacion = 0; p.ventana = ventana; } return; }
+      posiciones.push({ id: `cap_${i.id}`, nombre: i.nombre || "Inversión", bolsillo: "sustento", capital: cap, tasa: tasaReal, tasaDeclarada: declarada, pagaPct: 100, valorizacion: 0, tipo: "Capital", owner: i.owner, soloIngreso: true, ventana, ...(fichas[`cap_${i.id}`] || {}) });
       return;
     }
     const trabajo = esTrabajoCat(i);

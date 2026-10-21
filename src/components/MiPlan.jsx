@@ -24,12 +24,22 @@ import PageHeader from "./PageHeader";
 import { C, F } from "../lib/designTokens";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
-import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
+import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
 
 const fmM = (n) => { const v = Number(n) || 0; const a = Math.abs(v); if (a >= 1e9) return (v < 0 ? "−" : "") + "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M"; return (v < 0 ? "−" : "") + "$" + Math.round(a / 1e6).toLocaleString("es-CO") + " M"; };
 const fmMes = (n) => { const v = Number(n) || 0; const a = Math.abs(v); return (v < 0 ? "−" : "") + "$" + (a >= 1e6 ? (a / 1e6).toFixed(1).replace(".0", "").replace(".", ",") + " M" : Math.round(a / 1e3) + " K"); };
 const pct = (n) => `${Math.round(Number(n) || 0)}%`;
 const CANASTA_COLOR = { proteccion: C.accent, rentas: C.ok, crecimiento: C.warn, uso: C.subtle };
+const MES_CORTO = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+// 21-oct-2026 — "hasta cuándo" era la celda que faltaba de la rejilla
+// (qué es · cuándo · cuánto vale · cuánto renta). Sin ella, un ingreso que
+// solo corre en diciembre se veía igual que uno de todo el año.
+const ventanaTexto = (p) => {
+  const v = p.ventana;
+  if (!v || !(v.hasta >= v.desde)) return null;
+  if (v.desde <= 1 && v.hasta >= 12) return null;
+  return v.desde === v.hasta ? `solo ${MES_CORTO[v.desde - 1]}` : `${MES_CORTO[v.desde - 1]}–${MES_CORTO[v.hasta - 1]}`;
+};
 const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 20, minWidth: 0 };
 const sub = { background: C.raised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, minWidth: 0 };
 const inputS = { background: C.bg, border: `1px solid ${C.borderStrong}`, borderRadius: 8, color: C.text, padding: "8px 10px", fontSize: 13, width: "100%", boxSizing: "border-box" };
@@ -115,8 +125,9 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
                   <td style={td}>{p.nombre}<div style={F.caption}>{p.tipo} · {notaDe(p)}</div></td>
                   <td style={tdNum}>{fmM(p.capital)}</td>
                   <td style={{ ...tdNum, color: x.recibe > 0 ? C.ok : C.subtle }}>{x.recibe > 0 ? fmMes(x.recibe) : "—"}</td>
+                  <td style={td}>{ventanaTexto(p) ? <span style={chip(C.warn)}>{ventanaTexto(p)}</span> : <span style={{ color: C.subtle }}>todo el año</span>}</td>
                   <td style={{ ...tdNum, color: x.crece > 0 ? C.warn : x.crece < 0 ? C.danger : C.subtle }}>{x.crece !== 0 ? fmMes(x.crece) : "—"}</td>
-                  <td style={td}><select value={k} onChange={(e) => setF(p.id, { canasta: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 112, color: CANASTA_COLOR[k] }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select></td>
+                  <td style={td}><select value={k} onChange={(e) => setF(p.id, { canasta: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 112, color: CANASTA_COLOR[k] }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select><div style={{ ...F.caption, marginTop: 2 }}>{p.canasta ? "lo decidiste tú" : porQueCanasta(p)}</div></td>
                   <td style={tdNum}><input type="number" step={0.5} value={p.tasa} onChange={(e) => setF(p.id, { tasa: Number(e.target.value) })} style={inp} />%</td>
                   <td style={tdNum}><input type="number" step={10} min={0} max={100} value={p.pagaPct} onChange={(e) => setF(p.id, { pagaPct: Number(e.target.value) })} style={inp} />%</td>
                   <td style={tdNum}><input type="number" step={0.5} value={p.valorizacion} onChange={(e) => setF(p.id, { valorizacion: Number(e.target.value) })} style={inp} />%</td>
@@ -132,21 +143,28 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
         <div style={F.h2}>1 · Hoy: qué tienes, qué produce y qué sigue en el plan</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Este es tu punto de partida. Para cada activo decide dos cosas: en qué <b style={{ color: C.text }}>canasta</b> está, y si <b style={{ color: C.text }}>continúa</b> en el futuro o <b style={{ color: C.text }}>sale del plan</b> (se vende hoy). Lo que sale libera plata que vas a desplegar en cada escenario; las deudas que marques se pagan con eso. Lo que decidas aquí vale para todos los escenarios.</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Este es tu punto de partida: <b style={{ color: C.text }}>qué tienes</b>, <b style={{ color: C.text }}>cuánto vale</b>, <b style={{ color: C.text }}>cuánto te renta</b> y <b style={{ color: C.text }}>hasta cuándo</b>. Ya clasificamos cada cosa según lo que produce — revisa que esté bien y corrige lo que no cuadre. Lo único que tienes que decidir es si cada activo <b style={{ color: C.text }}>continúa</b> o <b style={{ color: C.text }}>sale del plan</b> (se vende hoy): lo que sale libera plata para desplegar en cada escenario, y las deudas que marques se pagan con eso. Lo que decidas aquí vale para todos los escenarios.</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginTop: 14 }}>
           {tiles.map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
         </div>
         <div style={{ marginTop: 14 }}><BarraCanastas c={c} alto={16} /></div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>{["proteccion", "rentas", "crecimiento", "uso"].map((k) => <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption }}><span style={{ width: 8, height: 8, borderRadius: 999, background: CANASTA_COLOR[k] }} /><b style={{ color: C.text }}>{CANASTA_LABEL[k]}</b> {fmM(c[k])}</div>)}</div>
+        {/* 21-oct-2026 — La palabra "canasta" se usaba sin definirse nunca: la
+            definición vivía solo en el comentario de cabecera de caminos.js.
+            Es la segunda vez que pasa (el 3-ago, con las de Tu Norte) y la
+            solución de entonces fue la misma: una línea por canasta, donde ya
+            está la palabra. Van en orden de propósito, que es lo que las
+            explica: primero no perder, después vivir, después crecer. */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10, marginTop: 10 }}>{["proteccion", "rentas", "crecimiento", "uso"].map((k) => <div key={k} style={{ borderLeft: `3px solid ${CANASTA_COLOR[k]}`, paddingLeft: 8 }}><div style={{ ...F.caption }}><b style={{ color: C.text }}>{CANASTA_LABEL[k]}</b> · {fmM(c[k])}</div><div style={{ ...F.caption, marginTop: 1 }}>{CANASTA_CORTO[k]}</div></div>)}</div>
+        <div style={{ ...F.caption, marginTop: 8 }}>Las tres primeras son papeles que cumple tu plata. <b style={{ color: C.text }}>Uso</b> es el resto: no está mal tenerlo, está mal no saber cuánto pesa.</div>
       </div>
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}><div style={F.h3}>Producción por activo</div><div style={F.caption}>Rinde = % anual sobre el capital · Recibes = qué parte del rendimiento te llega cada mes (el resto se reinvierte) · Valoriza = % anual del valor</div></div>
         <div style={{ overflowX: "auto", marginTop: 8 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
-            <thead><tr><th style={th}>Activo</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Recibes / mes</th><th style={{ ...th, textAlign: "right" }}>Crece / mes</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Rinde</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>En el plan</th></tr></thead>
+            <thead><tr><th style={th}>Activo</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Recibes / mes</th><th style={th}>Hasta cuándo</th><th style={{ ...th, textAlign: "right" }}>Crece / mes</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Rinde</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>En el plan</th></tr></thead>
             <tbody>
               {[...activos].sort((a, b2) => b2.capital - a.capital).map(fila)}
-              <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}><td style={{ ...td, fontWeight: 700 }}>Lo que continúa</td><td style={{ ...tdNum, fontWeight: 700 }}>{fmM(vivos.reduce((s2, p) => s2 + p.capital, 0))}</td><td style={{ ...tdNum, fontWeight: 700, color: C.ok }}>{fmMes(tot.recibe)}</td><td style={{ ...tdNum, fontWeight: 700, color: C.warn }}>{fmMes(tot.crece)}</td><td colSpan={5} style={{ ...td, color: C.muted }}>Te paga {fmMes(tot.recibe)} al mes · se queda adentro {fmMes(tot.crece)} (se reinvierte o valoriza, no entra a la cuenta)</td></tr>
+              <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}><td style={{ ...td, fontWeight: 700 }}>Lo que continúa</td><td style={{ ...tdNum, fontWeight: 700 }}>{fmM(vivos.reduce((s2, p) => s2 + p.capital, 0))}</td><td style={{ ...tdNum, fontWeight: 700, color: C.ok }}>{fmMes(tot.recibe)}</td><td style={{ ...tdNum, fontWeight: 700, color: C.warn }}>{fmMes(tot.crece)}</td><td colSpan={6} style={{ ...td, color: C.muted }}>Te paga {fmMes(tot.recibe)} al mes · se queda adentro {fmMes(tot.crece)} (se reinvierte o valoriza, no entra a la cuenta)</td></tr>
             </tbody>
           </table>
         </div>
@@ -160,7 +178,7 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
         </div>
         <div style={{ overflowX: "auto", marginTop: 10 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
-            <thead><tr><th style={th}>De este ingreso</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Recibes / mes</th><th style={{ ...th, textAlign: "right" }}>Crece / mes</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Rinde</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>En el plan</th></tr></thead>
+            <thead><tr><th style={th}>De este ingreso</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Recibes / mes</th><th style={th}>Hasta cuándo</th><th style={{ ...th, textAlign: "right" }}>Crece / mes</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Rinde</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>En el plan</th></tr></thead>
             <tbody>{[...deIngresos].sort((a, b2) => b2.capital - a.capital).map(fila)}</tbody>
           </table>
         </div>
@@ -189,9 +207,27 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
 }
 
 // ─── Editor de un movimiento (evento) ────────────────────────────────────────
-const TIPOS_MOV = [
-  { v: "flujo_inicia_ingreso", l: "Entra un ingreso nuevo (pensión, renta, contrato)" }, { v: "flujo_inicia_gasto", l: "Entra un gasto nuevo (colegio, arriendo)" }, { v: "flujo_termina", l: "Termina un ingreso o gasto" }, { v: "flujo_cambia", l: "Cambia el monto de un ingreso o gasto" },
-  { v: "comprar", l: "Compras un activo (casa, bodega, lote)" }, { v: "vender", l: "Vendes un activo" }, { v: "aportar", l: "Mueves capital a una inversión" }, { v: "revaluar", l: "Un activo cambia de valor (obra terminada, avalúo)" },
+// 21-oct-2026 (Santiago, armando la lógica de la sección: "qué viene nuevo y
+// cuándo… y qué valor y cuánto renta"). Eran ocho opciones planas, con
+// vocabulario del motor ("flujo inicia ingreso"), y la que venía
+// preseleccionada no era la que uno piensa primero. Se agrupan en los tres
+// tiempos de la sección —viene / ya no va / cambia— y arranca en "compro
+// algo", que es el caso que la gente trae en la cabeza.
+const GRUPOS_MOV = [
+  { g: "Viene algo nuevo", items: [
+    { v: "comprar", l: "Compro algo (casa, bodega, lote)" },
+    { v: "flujo_inicia_ingreso", l: "Empieza a entrar plata (pensión, renta, contrato)" },
+    { v: "flujo_inicia_gasto", l: "Empieza un gasto (colegio, arriendo)" },
+  ] },
+  { g: "Ya no va", items: [
+    { v: "vender", l: "Vendo un activo" },
+    { v: "flujo_termina", l: "Se acaba un ingreso o un gasto" },
+  ] },
+  { g: "Cambia algo que ya tengo", items: [
+    { v: "flujo_cambia", l: "Un ingreso o gasto pasa a otro monto" },
+    { v: "aportar", l: "Muevo capital a una inversión" },
+    { v: "revaluar", l: "Un activo pasa a valer otra cosa (obra, avalúo)" },
+  ] },
 ];
 function describirMov(m, posiciones, flujos) {
   const p = posiciones.find((x) => x.id === m.posicionId)?.nombre || m.posicionId;
@@ -208,7 +244,7 @@ function describirMov(m, posiciones, flujos) {
   }
 }
 function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) {
-  const [f, setF] = useState({ tipo: "flujo_inicia_ingreso", cuando: 12, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "" });
+  const [f, setF] = useState({ tipo: "comprar", cuando: 12, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "" });
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const mes = Math.max(0, Number(f.cuando) || 0);
   const guardar = () => {
@@ -229,14 +265,14 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
     <div style={{ ...sub, display: "grid", gap: 10 }}>
       {ejemplo && <div style={F.caption}>{ejemplo}</div>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, alignItems: "end" }}>
-        <Campo l="Qué pasa" style={{ gridColumn: "1 / -1" }}><select value={f.tipo} onChange={(e) => set("tipo", e.target.value)} style={inputS}>{TIPOS_MOV.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</select></Campo>
+        <Campo l="Qué pasa" style={{ gridColumn: "1 / -1" }}><select value={f.tipo} onChange={(e) => set("tipo", e.target.value)} style={inputS}>{GRUPOS_MOV.map((g) => <optgroup key={g.g} label={g.g}>{g.items.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</optgroup>)}</select></Campo>
         <Campo l="Cuándo" style={{ gridColumn: "span 2" }}><div style={{ paddingTop: 4 }}><Cuando mes={f.cuando} onChange={(v) => set("cuando", v)} /></div></Campo>
         {(f.tipo === "vender" || f.tipo === "aportar" || f.tipo === "revaluar") && <Campo l={f.tipo === "aportar" ? "Destino" : "Activo"}>{selPos("posicionId")}</Campo>}
         {(f.tipo === "comprar" || f.tipo.startsWith("flujo_inicia")) && <Campo l="Nombre"><input value={f.nombre} onChange={(e) => set("nombre", e.target.value)} style={inputS} placeholder={f.tipo === "comprar" ? "Bodega, finca, apartamento…" : "Pensión, arriendo bodega, colegio…"} /></Campo>}
         {(f.tipo === "flujo_termina" || f.tipo === "flujo_cambia") && <Campo l="Cuál"><select value={f.flujoId} onChange={(e) => set("flujoId", e.target.value)} style={inputS}>{flujos.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {fmMes(x.monto)}</option>)}</select></Campo>}
-        {f.tipo !== "vender" && f.tipo !== "flujo_termina" && <Campo l={esFlujo ? "Monto al mes (pesos)" : f.tipo === "revaluar" ? "Nuevo valor (pesos)" : "Monto (pesos)"}><NumPesos value={f.monto} onChange={(v) => set("monto", v)} /></Campo>}
+        {f.tipo !== "vender" && f.tipo !== "flujo_termina" && <Campo l={esFlujo ? "Cuánto al mes (pesos)" : f.tipo === "revaluar" ? "Nuevo valor (pesos)" : f.tipo === "comprar" ? "Cuánto vale (pesos)" : "Monto (pesos)"}><NumPesos value={f.monto} onChange={(v) => set("monto", v)} /></Campo>}
         {f.tipo === "comprar" && <Campo l="Para qué"><select value={f.canasta} onChange={(e) => set("canasta", e.target.value)} style={inputS}><option value="rentas">Rentar (paga cada mes)</option><option value="proteccion">Vivir ahí</option><option value="crecimiento">Crecimiento</option><option value="uso">Uso</option></select></Campo>}
-        {f.tipo === "comprar" && f.canasta === "rentas" && <><Campo l="Renta al mes (pesos)"><NumPesos value={f.renta} onChange={(v) => set("renta", v)} /></Campo><Campo l="Renta desde (meses después)"><Num value={f.rentaDesde} min={0} onChange={(v) => set("rentaDesde", v)} /></Campo></>}
+        {f.tipo === "comprar" && f.canasta === "rentas" && <><Campo l="Cuánto renta al mes (pesos)"><NumPesos value={f.renta} onChange={(v) => set("renta", v)} /></Campo><Campo l="Empieza a rentar (meses después)"><Num value={f.rentaDesde} min={0} onChange={(v) => set("rentaDesde", v)} /></Campo></>}
         {(f.tipo === "comprar" || f.tipo === "aportar") && <Campo l="Con plata de">{selPos("origenId")}</Campo>}
       </div>
       <div style={{ display: "flex", gap: 8 }}><button style={btn(true)} onClick={guardar}>Agregar</button><button style={btn(false)} onClick={onCerrar}>Cancelar</button></div>
