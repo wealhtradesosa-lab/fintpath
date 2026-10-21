@@ -37,7 +37,7 @@ const fmC = (n) => {
 const años = (y) => y == null ? "más de 60 años" : y < 1 / 12 ? "ya" : y < 1 ? `${Math.max(1, Math.round(y * 12))} meses` : y < 1.5 ? "1 año" : `${Math.round(y)} años`;
 
 // Campo de pesos: solo dígitos, con separador de miles al escribir.
-function Pesos({ label, hint, value, onChange, placeholder }) {
+function Pesos({ label, hint, value, onChange, placeholder, id }) {
   const show = value ? Number(value).toLocaleString("es-CO") : "";
   return (
     <label style={{ display: "block" }}>
@@ -45,7 +45,7 @@ function Pesos({ label, hint, value, onChange, placeholder }) {
       {hint && <div style={{ fontSize: 12, color: T.txt3, marginBottom: 8, lineHeight: 1.4 }}>{hint}</div>}
       <div style={{ position: "relative" }}>
         <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.txt3, fontFamily: MONO, fontSize: 16 }}>$</span>
-        <input inputMode="numeric" autoComplete="off" placeholder={placeholder} value={show}
+        <input id={id} inputMode="numeric" autoComplete="off" placeholder={placeholder} value={show}
           onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, "").slice(0, 13))}
           style={{ width: "100%", boxSizing: "border-box", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 12, color: T.txt, padding: "14px 14px 14px 30px", fontSize: 16, fontFamily: MONO, outline: "none" }} />
       </div>
@@ -58,7 +58,7 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
   useEffect(() => { setC(initConsent()); }, []);
   const decidir = (v) => { setConsent(v); setC(v); if (v === "granted") loadTrackers(); };
 
-  const [f, setF] = useState({ ingresoTrabajo: "", gastos: "", ahorrado: "", ingresoPasivo: "", deudas: "" });
+  const [f, setF] = useState({ ingresoTrabajo: "", gastos: "", ahorrado: "", ingresoPasivo: "", deudas: "", gastosEsenciales: "" });
   const [mas, setMas] = useState(false);
   const [visto, setVisto] = useState(false);
   const set = (k) => (v) => setF((p) => ({ ...p, [k]: v }));
@@ -68,6 +68,18 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
   useEffect(() => {
     if (r && !visto) { setVisto(true); track("norte_calculado", { nivel: r.nivel }); }
   }, [r, visto]);
+
+  // Abrir el desplegable no basta: el campo queda fuera de pantalla desde la
+  // escalera, y un botón que no se ve hacer nada es peor que no tenerlo.
+  const abrirEsencial = () => {
+    setMas(true);
+    setTimeout(() => {
+      const el = document.getElementById("campo-esencial");
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus({ preventScroll: true });
+    }, 60);
+  };
 
   const guardar = (ctaId) => {
     if (r) guardarNorte(f);
@@ -109,12 +121,17 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
                 <Pesos label="¿Cuánto tienes ahorrado o invertido?" hint="Cuentas, CDT, fondos, acciones, cripto. Sin contar la casa donde vives." value={f.ahorrado} onChange={set("ahorrado")} placeholder="20.000.000" />
                 {!mas ? (
                   <button type="button" onClick={() => setMas(true)} style={{ background: "transparent", border: "none", color: T.blue, cursor: "pointer", fontSize: 13, textAlign: "left", padding: 0, fontFamily: BODY }}>
-                    + Tengo arriendos, intereses o dividendos, o deudas grandes
+                    + Tengo arriendos, intereses o dividendos, deudas, o quiero separar lo esencial
                   </button>
                 ) : (
                   <>
                     <Pesos label="¿Cuánto te pagan tus activos al mes?" hint="Arriendos netos, intereses, dividendos. Lo que entra sin trabajar." value={f.ingresoPasivo} onChange={set("ingresoPasivo")} placeholder="0" />
                     <Pesos label="¿Cuánto debes en total?" hint="Saldo de créditos, hipoteca, tarjetas." value={f.deudas} onChange={set("deudas")} placeholder="0" />
+                    {/* 21-oct-2026 — Sin este dato el escalón 3 (Seguridad) no se
+                        puede medir y la escalera salta de 2 a 4. No se estima
+                        con una fracción del gasto: eso es lo que se eliminó hoy
+                        del motor. Se pregunta, y si no lo dan se dice. */}
+                    <Pesos label="¿Cuánto de esos gastos no puedes apagar?" hint="Techo, comida, servicios, salud, transporte, educación, seguros y las cuotas de tus créditos. Lo que seguirías pagando si dejaras de trabajar." value={f.gastosEsenciales} onChange={set("gastosEsenciales")} placeholder="0" id="campo-esencial" />
                   </>
                 )}
               </div>
@@ -127,7 +144,7 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
                   <div style={{ fontSize: 15, lineHeight: 1.5 }}>Escribe cuánto ganas y cuánto gastas.<br />Tu norte aparece aquí al instante.</div>
                 </div>
               ) : (
-                <Resultado r={r} onGuardar={() => guardar("resultado")} btn={btn} />
+                <Resultado r={r} onGuardar={() => guardar("resultado")} btn={btn} onAfinar={abrirEsencial} />
               )}
             </div>
           </div>
@@ -146,6 +163,13 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
                 <div style={{ fontWeight: 800, marginTop: 6 }}>{n.id}. {n.nombre}</div>
                 <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{n.desc}</div>
                 {r && r.nivel === n.id && <div style={{ fontSize: 11, fontWeight: 700, color: n.color, marginTop: 8 }}>AQUÍ ESTÁS</div>}
+                {/* Sin el dato de lo esencial este escalón no se puede medir y
+                    la escalera salta de 2 a 4. Se dice, no se disimula. */}
+                {r && n.clave === "seguridad" && !r.esencialDeclarado && (
+                  <button type="button" onClick={abrirEsencial} style={{ background: "transparent", border: "none", padding: 0, marginTop: 8, textAlign: "left", cursor: "pointer", fontFamily: BODY, color: n.color, fontSize: 11, fontWeight: 700, lineHeight: 1.4 }}>
+                    Para medir este escalón falta un dato: cuánto de tus gastos no puedes apagar. →
+                  </button>
+                )}
               </li>
             ))}
           </ol>
@@ -212,7 +236,7 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
   );
 }
 
-function Resultado({ r, onGuardar, btn }) {
+function Resultado({ r, onGuardar, btn, onAfinar = () => {} }) {
   const n = r.data;
   const sig = r.siguiente;
   const deficit = r.fl < 0;
@@ -244,6 +268,16 @@ function Resultado({ r, onGuardar, btn }) {
           <div style={{ fontSize: 11, color: T.txt3 }}>de tus gastos{r.ipFuente === "estimado" ? ` (estimado al ${Math.round(r.retorno * 100)}%)` : ""}</div>
         </div>
       </div>
+
+      {/* 21-oct-2026 — Estabilidad es el ÚNICO escalón desde donde el dato que
+          falta puede estar escondiendo uno mejor: si sus activos ya pagan lo
+          esencial, está en Seguridad y no lo sabe. Se ofrece justo acá, que es
+          donde importa, en vez de cargar el formulario de entrada. */}
+      {r.nivel === 2 && !r.esencialDeclarado && (
+        <button type="button" onClick={onAfinar} style={{ width: "100%", textAlign: "left", marginTop: 14, background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.28)", borderRadius: 12, padding: "11px 13px", cursor: "pointer", fontFamily: BODY, color: T.txt2, fontSize: 12.5, lineHeight: 1.5 }}>
+          ⚡ <b style={{ color: "#22d3ee" }}>¿Ya estás en Seguridad y no lo sabes?</b> Ese nivel se gana cuando tus activos pagan lo que no puedes apagar. Dinos cuánto de tus gastos es eso y lo medimos. →
+        </button>
+      )}
 
       <div style={{ marginTop: 16, fontSize: 15, lineHeight: 1.55, color: T.txt }}>
         {deficit ? (

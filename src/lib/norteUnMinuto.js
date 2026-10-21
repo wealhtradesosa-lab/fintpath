@@ -40,9 +40,23 @@ export function añosHastaRenta({ capital = 0, aporteMensual = 0, rentaObjetivo 
  * @param {number} d.gastos          gastos + cuotas del mes
  * @param {number} d.ahorrado        lo que tienes ahorrado o invertido (sin la casa donde vives)
  * @param {number} [d.deudas]        saldo total de deudas (opcional; afecta patrimonio neto)
+ * @param {number} [d.gastosEsenciales] la parte de `gastos` que no se puede apagar,
+ *   cuotas incluidas. Opcional: sin ella el escalón Seguridad no se puede medir.
  */
 export function calcularNorte(d = {}) {
   const ia = num(d.ingresoTrabajo), ipDeclarado = num(d.ingresoPasivo), ob = num(d.gastos), ahorrado = num(d.ahorrado), deudas = num(d.deudas);
+  // 21-oct-2026 — Sin esto el escalón 3 no existía en la landing. `nivelLibertad`
+  // cae en obEsencial = ob cuando no se le dice cuál es el piso, y entonces la
+  // condición de Seguridad (ip >= esencial) queda IDÉNTICA a la de Independencia
+  // (ip >= total): N4 dispara primero y N3 no se alcanza nunca. La página
+  // titula "Los 5 niveles" y pinta los cinco, pero el visitante saltaba de
+  // Estabilidad a Independencia. Se pide el dato en vez de inventar una
+  // fracción del gasto, que es justo lo que se eliminó el 21-oct en metrics.js.
+  const esencialCrudo = num(d.gastosEsenciales);
+  const esencialDeclarado = esencialCrudo > 0 && ob > 0;
+  // Tope en `ob`: si alguien dice que TODO es esencial, Seguridad queda tan
+  // exigente como Independencia. Es la misma regla del motor y no miente.
+  const obEsencial = esencialDeclarado ? Math.min(esencialCrudo, ob) : null;
   // Si no declara ingreso pasivo pero sí tiene capital, se estima lo que ese
   // capital puede rendir: así alguien con $100M en un CDT no sale en "cero".
   const ipEstimado = ahorrado * RETORNO_SUPUESTO / 12;
@@ -50,7 +64,7 @@ export function calcularNorte(d = {}) {
   const ipFuente = ipDeclarado > 0 ? "declarado" : (ahorrado > 0 ? "estimado" : "ninguno");
   const fl = ia + ip - ob;
   const patrimonioNeto = ahorrado - deudas;
-  const nivel = nivelLibertad({ ip, ob, fl, patrimonioNeto });
+  const nivel = nivelLibertad({ ip, ob, obEsencial, fl, patrimonioNeto });
   const mesesCubiertos = ob > 0 ? ahorrado / ob : null;
   const cobertura = ob > 0 ? (ip / ob) * 100 : 0;
 
@@ -69,8 +83,9 @@ export function calcularNorte(d = {}) {
   const añosIndependencia = añosHastaRenta({ capital: ahorrado, aporteMensual: sobrante, rentaObjetivo: ob });
 
   return {
-    entradas: { ingresoTrabajo: ia, ingresoPasivo: ipDeclarado, gastos: ob, ahorrado, deudas },
+    entradas: { ingresoTrabajo: ia, ingresoPasivo: ipDeclarado, gastos: ob, ahorrado, deudas, gastosEsenciales: esencialCrudo },
     ia, ip, ipFuente, ob, fl, sobrante, patrimonioNeto, cobertura, mesesCubiertos,
+    obEsencial: nivel.obEsencial, esencialDeclarado,
     nivel: nivel.nivel, nombre: nivel.nombre, candado: nivel.candado, data: nivel.data,
     siguiente: sig, rentaFalta, añosConSobrante, extra, añosConExtra, añosIndependencia,
     niveles: NIVELES,
@@ -97,11 +112,28 @@ export function borrarNorte() {
 export function itemsDesdeNorte(entradas, ownerId = "own_1") {
   const e = entradas || {};
   const ia = num(e.ingresoTrabajo), ip = num(e.ingresoPasivo), ob = num(e.gastos), ahorrado = num(e.ahorrado), deudas = num(e.deudas);
+  // 21-oct-2026 — Si en la landing separó lo esencial, el gasto entra PARTIDO y
+  // marcado con `esencial` (metrics.js → esGastoEsencial: la marca del item
+  // manda sobre la categoría). Sin esto, la landing le mostraba un nivel y el
+  // dashboard otro en el primer segundo: una sola fila "Personal" no es
+  // esencial para el motor, así que obEsencial volvía a ser el gasto entero y
+  // Seguridad se perdía otra vez. Mismo error de dos pantallas con dos
+  // cuentas que se arregló hoy en App.jsx.
+  const esencial = Math.min(num(e.gastosEsenciales), ob);
   const id = (p) => p + "_" + Math.random().toString(36).slice(2, 8);
   const ingresos = [];
   if (ia > 0) ingresos.push({ id: id("n_ing"), nombre: "Mi ingreso mensual", categoria: "Salario", mensual: ia, tipo: "fijo", fuente: "", owner: ownerId, moneda: "COP" });
   if (ip > 0) ingresos.push({ id: id("n_ip"), nombre: "Lo que me pagan mis activos", categoria: "Rendimiento", mensual: ip, tipo: "fijo", fuente: "", owner: ownerId, moneda: "COP" });
-  const gas = ob > 0 ? { "Personal": [{ c: "Mis gastos y cuotas del mes", m: ob, t: "f", owner: ownerId }] } : {};
+  const filasGasto = [];
+  if (ob > 0) {
+    if (esencial > 0) {
+      filasGasto.push({ c: "Lo que no puedo apagar (incluye cuotas)", m: esencial, t: "f", owner: ownerId, esencial: true });
+      if (ob - esencial > 0) filasGasto.push({ c: "El resto de mis gastos", m: ob - esencial, t: "f", owner: ownerId, esencial: false });
+    } else {
+      filasGasto.push({ c: "Mis gastos y cuotas del mes", m: ob, t: "f", owner: ownerId });
+    }
+  }
+  const gas = filasGasto.length ? { "Personal": filasGasto } : {};
   const inv = ahorrado > 0 ? [{ id: id("n_inv"), n: "Mis ahorros e inversiones", ub: "Colombia", tp: "Cash", va: ahorrado, vc: ahorrado, tasa: "", owner: ownerId }] : [];
   const deu = deudas > 0 ? [{ id: id("n_deu"), n: "Mis deudas", tp: "loan", mt: deudas, pg: 0, ts: 0, owner: ownerId }] : [];
   return { ingresos, gas, inv, deu };

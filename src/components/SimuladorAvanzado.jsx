@@ -610,10 +610,16 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // reclamo del 10-oct sobre el PDF ("si estoy analizando dic por qué me sale
     // arriendo hasta sept"), en la tarjeta.
     const metMes = calcularMetricas(argsMet, { base: "mes", mes: mesVisualizado });
-    const independencia = met.coberturaPasiva;
+    // La cobertura sale de la MISMA base que el nivel. Quedaba en el promedio
+    // del año mientras el nivel ya era del mes, así que el KPI "Independencia"
+    // de esta misma pantalla contradecía a la tarjeta de abajo.
+    const independencia = metMes.coberturaPasiva;
 
     return {
-      met, metMes, nivel: metMes.nivel, ip: met.ip, ob: met.ob, fl: met.fl,
+      // ip/ob/fl son las cifras de la cuenta de libertad: van en la base del
+      // nivel (el mes). El flujo del AÑO tiene sus propios campos más abajo
+      // (brutoTotal, egresosTotales, cashFlow, ni, te, cf) y sigue en promedio.
+      met, metMes, nivel: metMes.nivel, ip: metMes.ip, ob: metMes.ob, fl: metMes.fl,
       // ═══ NUEVO MODELO EXPLÍCITO ═══
       brutoTotal,
       retencionMensual,
