@@ -84,7 +84,14 @@ export function conCanasta(ficha, perfil = PERFIL_DEFAULT, tipo = "") {
   const k = ficha.canasta;
   if (!k) return ficha;
   const inmueble = TIPOS_INMUEBLE.has(tipo) || ficha.inmueble;
-  if (k === "proteccion") return inmueble ? { ...ficha, vivienda: true, bolsillo: "uso", tasa: 0, pagaPct: 0 } : { ...ficha, vivienda: false, liquido: true, bolsillo: "sustento", pagaPct: 100, valorizacion: 0 };
+  // 21-oct-2026 — Protección NO es "donde vivo". Poner un inmueble en
+  // Protección lo marcaba como la vivienda, así que en la cuenta real dos
+  // filas decían "Tu vivienda: protege, no produce" (Puerto madero y orlando)
+  // y `medirCanastas` contaba dos casas donde hay una. Un segundo inmueble
+  // puede estar en Protección sin que uno viva ahí. La vivienda se detecta
+  // por su nombre o por el respaldo del mayor inmueble sin renta; acá solo se
+  // conserva, no se inventa.
+  if (k === "proteccion") return inmueble ? { ...ficha, vivienda: ficha.vivienda === true, bolsillo: "uso", tasa: 0, pagaPct: 0 } : { ...ficha, vivienda: false, liquido: true, bolsillo: "sustento", pagaPct: 100, valorizacion: 0 };
   if (k === "rentas") return { ...ficha, vivienda: false, bolsillo: "sustento", pagaPct: 100, tasa: inmueble ? 0 : (ficha.tasa > 0 ? ficha.tasa : perfil.tasaRentaEstable) };
   if (k === "crecimiento") return { ...ficha, vivienda: false, liquido: false, bolsillo: "crecimiento", pagaPct: 0, tasa: inmueble ? 0 : (ficha.tasa > 0 ? ficha.tasa : perfil.tasaCrecimiento) };
   return { ...ficha, vivienda: false, liquido: false, bolsillo: "uso", pagaPct: 0 };
@@ -130,6 +137,10 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
     const ficha = conCanasta({ ...fichaPorDefecto(a, perfil, renta), ...(fichas[a.id] || {}) }, perfil, a.tp);
     return { id: a.id, nombre: nombreActivo(a), capital: num(a.va) * fx(a), tipo: a.tp, owner: a.owner, renta, ...ficha, sale: fichas[a.id]?.estado === "sale" };
   });
+  // Vivienda hay UNA. `esViviendaNombre` puede pegarle a varios ("casa X",
+  // "casa Y"); si pasa, manda el de mayor capital y el resto deja de serlo.
+  const casas = posiciones.filter((p) => p.vivienda).sort((a, b2) => b2.capital - a.capital);
+  casas.slice(1).forEach((p) => { p.vivienda = false; });
   // Si ningún inmueble quedó como vivienda, el mayor inmueble sin renta lo es.
   if (!posiciones.some((p) => p.vivienda)) { const cand = posiciones.filter((p) => p.inmueble && p.bolsillo === "uso" && !esLote(p)).sort((a, b) => b.capital - a.capital)[0]; if (cand && fichas[cand.id]?.vivienda !== false) cand.vivienda = true; }
 

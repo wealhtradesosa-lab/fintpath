@@ -72,7 +72,7 @@ const produce = (p) => {
   const crece = p.capital * (Math.pow(1 + (Number(p.tasa) || 0) / 100, 1 / 12) - 1) * (1 - (p.pagaPct ?? 0) / 100) + p.capital * (Math.pow(1 + (Number(p.valorizacion) || 0) / 100, 1 / 12) - 1);
   return { recibe, crece };
 };
-const notaDe = (p) => p.tasaDeclarada ? `Declaraste ${p.tasaDeclarada}% sobre el capital · con la vigencia que cargaste entra el ${p.tasa.toFixed(1)}%` : p.vivienda ? "Tu vivienda: protege, no produce" : p.renta > 0 ? `Renta ${fmMes(p.renta)} al mes${p.valorizacion ? ` · valoriza ${p.valorizacion}%` : ""}` : p.bolsillo === "crecimiento" ? `Reinvierte al ${p.tasa}%` : p.tasa > 0 ? `Paga el ${p.pagaPct}% de ${p.tasa}% cada mes` : p.vehiculo ? "Pierde valor" : p.valorizacion > 0 ? `Solo valoriza ${p.valorizacion}%` : "Quieto";
+const notaDe = (p) => p.tasaDeclarada ? `Declaraste ${p.tasaDeclarada}% sobre el capital · con la vigencia que cargaste entra el ${p.tasa.toFixed(1)}%` : p.vivienda && !(p.renta > 0) ? "Tu vivienda: protege, no produce" : p.renta > 0 ? `Renta ${fmMes(p.renta)} al mes${p.valorizacion ? ` · valoriza ${p.valorizacion}%` : ""}` : p.bolsillo === "crecimiento" ? `Reinvierte al ${p.tasa}%` : p.tasa > 0 ? `Paga el ${p.pagaPct}% de ${p.tasa}% cada mes` : p.vehiculo ? "Pierde valor" : p.valorizacion > 0 ? `Solo valoriza ${p.valorizacion}%` : "Quieto";
 
 // ─── Barra de canastas ───────────────────────────────────────────────────────
 function BarraCanastas({ c, alto = 14 }) {
