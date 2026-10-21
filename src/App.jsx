@@ -1964,14 +1964,13 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:isUS||((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Declaraciones anteriores",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador · año actual"},{id:"plan",i:"🧭",l:isEN?"My Plan":"Mi plan",hidden:isUS},
-      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:isUS||((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Declaraciones anteriores",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
       // datos siguen vivos) y los absorbe Mi plan. Flujo Anual (el desempeño
       // del año completo) y el Simulador del año siguiente se quedan: son el
       // corto plazo y complementan a Mi plan (10 años). Santiago: "me quitó el
       // año que viene, si era útil"; "son complementarias".
       // Santiago: "no quiero llenar a FINPATHIA de secciones; menos es más".
-      {id:"simf",i:"🔮",l:"Simulador · año siguiente",hidden:isUS},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"flujo",i:"📅",l:isEN?"Annual Flow":"Flujo Anual"},{id:"met",i:"🎯",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"💹",l:"Trading",
+      {id:"flujo",i:"📅",l:isEN?"Annual Flow":"Flujo Anual"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador · año actual"},{id:"simf",i:"🔮",l:"Simulador · año siguiente",hidden:isUS},{id:"plan",i:"🧭",l:isEN?"My Plan":"Mi plan",hidden:isUS},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"met",i:"🎯",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"💹",l:"Trading",
       // 26-jul-2026 — OCULTO DEL MENÚ, NO ELIMINADO.
       // Uso real medido en la base: 2 de 86 cuentas tienen posiciones
       // cargadas, y una es la de Santiago. Contra 31 en Ingresos y 21 en
