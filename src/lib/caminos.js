@@ -151,8 +151,21 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
     const trabajo = esTrabajoCat(i);
     flujos.push({ id: `ing_${i.id}`, nombre: i.nombre || i.categoria || "Ingreso", tipo: "ingreso", monto: m, indexa: trabajo, trabajo, origenId: i.id, owner: i.owner });
   });
-  // Gastos de vida sin cuotas: la base única ya netea costos de inmuebles arrendados.
-  flujos.push({ id: "gastos_vida", nombre: "Gastos de vida", tipo: "gasto", monto: base.g, indexa: true });
+  // Gastos de vida por categoría (sin cuotas), para que cada uno pueda
+  // terminar o cambiar en el tiempo. La base única (base.g) ya netea los
+  // costos de los inmuebles arrendados y suma seguridad social e impuesto;
+  // lo que no cae en una categoría visible va a "Otros gastos" para que el
+  // total sea exactamente base.g.
+  const porCat = {};
+  Object.entries(user.gas || user.gastos || {}).forEach(([cat, items]) => (items || []).forEach((g) => {
+    if (!g || g.sim === false || g.activoId || cat === "Inmueble arrendado") return;
+    porCat[cat] = (porCat[cat] || 0) + montoPromedioMensual(g) * fx(g);
+  }));
+  let sumaCats = 0;
+  Object.entries(porCat).filter(([, m]) => m > 0).forEach(([cat, m]) => { sumaCats += m; flujos.push({ id: `gas_${norm(cat).replace(/ /g, "_")}`, nombre: `Gastos · ${cat}`, tipo: "gasto", monto: m, indexa: true, categoria: cat }); });
+  const resto = base.g - sumaCats;
+  if (resto > 1) flujos.push({ id: "gastos_otros", nombre: "Otros gastos (impuestos, costos netos de inmuebles)", tipo: "gasto", monto: resto, indexa: true });
+  else if (resto < -1) { const mayor = flujos.filter((f) => f.tipo === "gasto").sort((a, b) => b.monto - a.monto)[0]; if (mayor) mayor.monto = Math.max(0, mayor.monto + resto); }
 
   const deudasCfg = deudas.map((d) => ({ id: d.id, nombre: d.n || d.nombre || "Deuda", saldo: num(d.mt) * fx(d), tasa: num(d.ts), cuota: num(d.pg) * fx(d), hipoteca: d.tp === "mortgage", hastaMes: d.hastaMes ? num(d.hastaMes) - 1 : undefined, pagar: !!fichas[`deu_${d.id}`]?.pagar }));
 

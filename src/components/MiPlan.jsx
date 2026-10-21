@@ -218,17 +218,83 @@ function ListaEventos({ eventos, posiciones, flujos, onChange, ejemplo, vacio })
 }
 
 // ─── Paso 2 · Lo que viene ───────────────────────────────────────────────────
+// Una fila por ingreso o gasto de hoy: sigue igual · termina en… · cambia a… desde…
+function FilaFlujo({ f, eventos, onChange }) {
+  const ev = eventos.find((e) => e.flujoId === f.id && (e.tipo === "flujo_termina" || e.tipo === "flujo_cambia"));
+  const estado = ev ? ev.tipo : "sigue";
+  const anio = ev ? anioDe(ev.mes) : 2, mesDelAnio = ev ? (ev.mes % 12) + 1 : 1;
+  const setEv = (patch) => {
+    const otros = eventos.filter((e) => e !== ev);
+    if (patch.estado === "sigue") return onChange(otros);
+    const tipo = patch.estado || estado;
+    const a = patch.anio ?? anio, m = patch.mes ?? mesDelAnio;
+    const mes = (Math.max(1, Number(a) || 1) - 1) * 12 + Math.min(11, Math.max(0, (Number(m) || 1) - 1));
+    const nuevo = { id: ev?.id || "fx_" + Math.random().toString(36).slice(2, 8), mes, tipo: tipo === "sigue" ? "flujo_termina" : tipo, flujoId: f.id, monto: tipo === "flujo_cambia" ? (patch.monto ?? ev?.monto ?? f.monto) : undefined };
+    onChange([...otros, nuevo]);
+  };
+  const esIng = f.tipo === "ingreso";
+  const selS = { ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: estado === "sigue" ? C.ok : estado === "flujo_termina" ? C.danger : C.warn };
+  const inp = { ...inputS, padding: "4px 6px", fontSize: 12, width: 56, textAlign: "right" };
+  return (
+    <tr style={{ borderTop: `1px solid ${C.border}`, opacity: estado === "flujo_termina" ? 0.75 : 1 }}>
+      <td style={td}>{f.nombre}<div style={F.caption}>{esIng ? (f.trabajo ? "ingreso de trabajo" : f.posicionId ? "renta de un activo" : "ingreso") : "gasto"}</div></td>
+      <td style={{ ...tdNum, color: esIng ? C.ok : C.danger }}>{fmMes(f.monto)}</td>
+      <td style={td}><select value={estado} onChange={(e) => setEv({ estado: e.target.value })} style={selS}><option value="sigue">Sigue igual</option><option value="flujo_termina">Termina en…</option><option value="flujo_cambia">Cambia a…</option></select></td>
+      <td style={td}>{estado !== "sigue" && <div style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption, flexWrap: "wrap" }}>
+        {estado === "flujo_cambia" && <><NumPesos value={ev?.monto ?? f.monto} onChange={(v) => setEv({ monto: v || 0 })} w={140} /><span>al mes, desde</span></>}
+        <span>año</span><input type="number" min={1} max={10} value={anio} onChange={(e) => setEv({ anio: Number(e.target.value) })} style={inp} /><span>mes</span><input type="number" min={1} max={12} value={mesDelAnio} onChange={(e) => setEv({ mes: Number(e.target.value) })} style={inp} />
+      </div>}</td>
+    </tr>
+  );
+}
+
 function PasoViene({ base, perfil, onPerfil, onNext }) {
   const set = (k, v) => onPerfil({ ...perfil, [k]: v });
   const pens = perfil.pensiones || [];
   const setPens = (lista) => set("pensiones", lista);
+  const eventos = perfil.eventos || [];
   const [supuestos, setSupuestos] = useState(false);
+  const ingresos = base.flujos.filter((f) => f.tipo === "ingreso").sort((a, b) => b.monto - a.monto);
+  const gastos = base.flujos.filter((f) => f.tipo === "gasto").sort((a, b) => b.monto - a.monto);
+  const nuevos = eventos.filter((e) => e.tipo !== "flujo_termina" && e.tipo !== "flujo_cambia");
+  const setNuevos = (lista) => set("eventos", [...eventos.filter((e) => e.tipo === "flujo_termina" || e.tipo === "flujo_cambia"), ...lista]);
+  const setCambios = (lista) => set("eventos", [...nuevos, ...lista]);
+  const cambios = eventos.filter((e) => e.tipo === "flujo_termina" || e.tipo === "flujo_cambia");
+  const deudasVivas = base.deudas.filter((d) => !d.pagar);
+  const mesesDeuda = (d) => { const i = d.tasa / 100 / 12; if (d.cuota <= d.saldo * i) return null; return Math.ceil(Math.log(d.cuota / (d.cuota - d.saldo * i)) / Math.log(1 + i)); };
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
         <div style={F.h2}>2 · Lo que ya viene, pase lo que pase</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Lo seguro, que entra en todos los escenarios: la pensión que llega en el año 4, la bodega que empieza a rentar en 2 años, el contrato que termina, el colegio que se acaba. Después, en cada escenario, decides lo que es opcional.</div>
-        <div style={{ ...sub, marginTop: 14 }}>
+        <div style={{ ...F.body, marginTop: 4 }}>Aquí está listado lo que tienes hoy. Sobre cada cosa decide si <b style={{ color: C.text }}>sigue igual</b>, <b style={{ color: C.text }}>termina</b> (el contrato, el colegio) o <b style={{ color: C.text }}>cambia</b> de monto desde un año. Abajo agregas lo nuevo que llega seguro: la pensión en el año 4, la bodega que renta desde el año 2. Todo esto entra en todos los escenarios; lo opcional lo decides en cada uno.</div>
+      </div>
+      <div style={card}>
+        <div style={F.h3}>Tus ingresos de hoy</div>
+        <div style={{ overflowX: "auto", marginTop: 8 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+            <thead><tr><th style={th}>Ingreso</th><th style={{ ...th, textAlign: "right" }}>Hoy al mes</th><th style={th}>En el futuro</th><th style={th}>Cuándo / cuánto</th></tr></thead>
+            <tbody>{ingresos.map((f) => <FilaFlujo key={f.id} f={f} eventos={cambios} onChange={setCambios} />)}
+            {ingresos.length === 0 && <tr><td colSpan={4} style={{ ...td, color: C.subtle, fontStyle: "italic" }}>Sin ingresos cargados.</td></tr>}</tbody>
+          </table>
+        </div>
+        <div style={{ ...F.caption, marginTop: 6 }}>Las rentas de los activos que salen del plan (paso 1) terminan solas al venderse.</div>
+      </div>
+      <div style={card}>
+        <div style={F.h3}>Tus gastos de hoy</div>
+        <div style={{ overflowX: "auto", marginTop: 8 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+            <thead><tr><th style={th}>Gasto</th><th style={{ ...th, textAlign: "right" }}>Hoy al mes</th><th style={th}>En el futuro</th><th style={th}>Cuándo / cuánto</th></tr></thead>
+            <tbody>{gastos.map((f) => <FilaFlujo key={f.id} f={f} eventos={cambios} onChange={setCambios} />)}</tbody>
+          </table>
+        </div>
+        {deudasVivas.length > 0 && <div style={{ marginTop: 12 }}>
+          <div style={F.label}>Cuotas de deuda (terminan solas cuando se paga el saldo)</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>{deudasVivas.map((d) => { const n = mesesDeuda(d); return <div key={d.id} style={{ ...sub, padding: "6px 10px", ...F.caption }}><b style={{ color: C.text }}>{d.nombre}</b> · {fmMes(d.cuota)}/mes · {n == null ? "la cuota no cubre el interés" : n > 120 ? "más de 10 años" : `termina en el año ${Math.ceil(n / 12)}`}</div>; })}</div>
+        </div>}
+      </div>
+      <div style={card}>
+        <div style={F.h3}>Lo nuevo que llega seguro</div>
+        <div style={{ ...sub, marginTop: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><div><div style={F.h3}>Pensiones</div><div style={F.caption}>Cuándo llega cada una y de cuánto.</div></div><button style={btn(false)} onClick={() => setPens([...pens, { nombre: `Pensión ${pens.length + 1}`, mes: 48, monto: 3e6 }])}>+ Pensión</button></div>
           {pens.map((p, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 8, marginTop: 8, alignItems: "end" }}>
             <Campo l="De quién / cuál"><input value={p.nombre} onChange={(e) => setPens(pens.map((x, k) => (k === i ? { ...x, nombre: e.target.value } : x)))} style={inputS} /></Campo>
@@ -236,26 +302,26 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
             <Campo l="Al mes (pesos)"><NumPesos value={p.monto} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, monto: v || 0 } : x)))} /></Campo>
             <button style={{ ...btn(false), color: C.subtle }} onClick={() => setPens(pens.filter((_, k) => k !== i))}>quitar</button>
           </div>)}
-          {pens.length === 0 && <div style={{ ...F.body, marginTop: 8, fontStyle: "italic" }}>Sin pensiones todavía. Las edades que dejes en el ejercicio de Pensiones también llegan aquí.</div>}
+          {pens.length === 0 && <div style={{ ...F.body, marginTop: 8, fontStyle: "italic" }}>Sin pensiones todavía.</div>}
         </div>
         <div style={{ ...sub, marginTop: 10 }}>
-          <div style={F.h3}>Otros hechos seguros</div>
-          <div style={{ ...F.caption, marginBottom: 8 }}>Ingresos que empiezan o terminan, gastos que cambian, obras que se terminan, compras ya decididas.</div>
-          <ListaEventos eventos={perfil.eventos || []} posiciones={base.posiciones} flujos={base.flujos} onChange={(l) => set("eventos", l)} vacio="Nada seguro todavía. Ejemplo: «Año 2: entra Arriendo bodega, $8 M/mes» o «Año 3: termina Contrato empresa»." ejemplo="Ejemplo: la bodega empieza a rentar en el año 2 → «Entra un ingreso nuevo», año 2, Arriendo bodega, 8 M." />
+          <div style={F.h3}>Otros ingresos, gastos o compras ya decididas</div>
+          <div style={{ ...F.caption, marginBottom: 8 }}>La bodega que empieza a rentar en el año 2, el gasto nuevo, la obra que se termina, la compra que ya está cerrada.</div>
+          <ListaEventos eventos={nuevos} posiciones={base.posiciones} flujos={base.flujos} onChange={setNuevos} vacio="Nada nuevo todavía. Ejemplo: «Año 2: entra Arriendo bodega, $8.000.000/mes»." ejemplo="Ejemplo: la bodega empieza a rentar en el año 2 → «Entra un ingreso nuevo», año 2, Arriendo bodega, 8.000.000." />
         </div>
-        <div style={{ ...sub, marginTop: 10 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><div><div style={F.h3}>Supuestos</div><div style={F.caption}>Inflación {perfil.inflacion}% · crecimiento {perfil.tasaCrecimiento}% · renta estable {perfil.tasaRentaEstable}% · BTC {perfil.tasaBtc}% · inmuebles {perfil.valorizacionInmueble}% · cobertura mínima {perfil.coberturaMin}%</div></div><button style={btn(false)} onClick={() => setSupuestos((v) => !v)}>{supuestos ? "Cerrar" : "Cambiar"}</button></div>
-          {supuestos && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginTop: 10 }}>
-            <Campo l="Inflación anual"><Num value={perfil.inflacion} step={0.5} onChange={(v) => set("inflacion", v)} suffix="%" /></Campo>
-            <Campo l="Crecimiento (bolsa, ETF)"><Num value={perfil.tasaCrecimiento} step={0.5} onChange={(v) => set("tasaCrecimiento", v)} suffix="%" /></Campo>
-            <Campo l="Renta estable (CDT)"><Num value={perfil.tasaRentaEstable} step={0.5} onChange={(v) => set("tasaRentaEstable", v)} suffix="%" /></Campo>
-            <Campo l="Bitcoin"><Num value={perfil.tasaBtc} step={1} onChange={(v) => set("tasaBtc", v)} suffix="%" /></Campo>
-            <Campo l="Valorización inmuebles"><Num value={perfil.valorizacionInmueble} step={0.5} onChange={(v) => set("valorizacionInmueble", v)} suffix="%" /></Campo>
-            <Campo l="Valorización lotes"><Num value={perfil.valorizacionLote} step={0.5} onChange={(v) => set("valorizacionLote", v)} suffix="%" /></Campo>
-            <Campo l="Arriendo si vives arrendado (% del valor al mes)"><Num value={perfil.arriendoPctMensual} step={0.1} onChange={(v) => set("arriendoPctMensual", v)} suffix="%" /></Campo>
-            <Campo l="Cobertura mínima"><Num value={perfil.coberturaMin} step={5} onChange={(v) => set("coberturaMin", v)} suffix="%" /></Campo>
-          </div>}
-        </div>
+      </div>
+      <div style={card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><div><div style={F.h3}>Supuestos</div><div style={F.caption}>Inflación {perfil.inflacion}% · crecimiento {perfil.tasaCrecimiento}% · renta estable {perfil.tasaRentaEstable}% · BTC {perfil.tasaBtc}% · inmuebles {perfil.valorizacionInmueble}% · cobertura mínima {perfil.coberturaMin}%</div></div><button style={btn(false)} onClick={() => setSupuestos((v) => !v)}>{supuestos ? "Cerrar" : "Cambiar"}</button></div>
+        {supuestos && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginTop: 10 }}>
+          <Campo l="Inflación anual"><Num value={perfil.inflacion} step={0.5} onChange={(v) => set("inflacion", v)} suffix="%" /></Campo>
+          <Campo l="Crecimiento (bolsa, ETF)"><Num value={perfil.tasaCrecimiento} step={0.5} onChange={(v) => set("tasaCrecimiento", v)} suffix="%" /></Campo>
+          <Campo l="Renta estable (CDT)"><Num value={perfil.tasaRentaEstable} step={0.5} onChange={(v) => set("tasaRentaEstable", v)} suffix="%" /></Campo>
+          <Campo l="Bitcoin"><Num value={perfil.tasaBtc} step={1} onChange={(v) => set("tasaBtc", v)} suffix="%" /></Campo>
+          <Campo l="Valorización inmuebles"><Num value={perfil.valorizacionInmueble} step={0.5} onChange={(v) => set("valorizacionInmueble", v)} suffix="%" /></Campo>
+          <Campo l="Valorización lotes"><Num value={perfil.valorizacionLote} step={0.5} onChange={(v) => set("valorizacionLote", v)} suffix="%" /></Campo>
+          <Campo l="Arriendo si vives arrendado (% del valor al mes)"><Num value={perfil.arriendoPctMensual} step={0.1} onChange={(v) => set("arriendoPctMensual", v)} suffix="%" /></Campo>
+          <Campo l="Cobertura mínima"><Num value={perfil.coberturaMin} step={5} onChange={(v) => set("coberturaMin", v)} suffix="%" /></Campo>
+        </div>}
       </div>
       <Siguiente onClick={onNext}>Siguiente: construye tu escenario</Siguiente>
     </div>
