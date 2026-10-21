@@ -1970,7 +1970,7 @@ export default function FinPath(){
       // corto plazo y complementan a Mi plan (10 años). Santiago: "me quitó el
       // año que viene, si era útil"; "son complementarias".
       // Santiago: "no quiero llenar a FINPATHIA de secciones; menos es más".
-      {id:"flujo",i:"📅",l:isEN?"Annual Flow":"Flujo Anual"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador · año actual"},{id:"simf",i:"🔮",l:"Simulador · año siguiente",hidden:isUS},{id:"plan",i:"🧭",l:isEN?"My Plan":"Mi plan",hidden:isUS},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"met",i:"🎯",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"💹",l:"Trading",
+      {id:"flujo",i:"📅",l:isEN?"Annual Flow":"Flujo Anual"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador · año actual"},{id:"simf",i:"🔮",l:"Simulador · año siguiente",hidden:isUS},{id:"plan",i:"🧭",l:isEN?"Project Scenarios":"Proyecta escenarios",hidden:isUS},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"met",i:"🎯",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"💹",l:"Trading",
       // 26-jul-2026 — OCULTO DEL MENÚ, NO ELIMINADO.
       // Uso real medido en la base: 2 de 86 cuentas tienen posiciones
       // cargadas, y una es la de Santiago. Contra 31 en Ingresos y 21 en
@@ -1987,7 +1987,7 @@ export default function FinPath(){
       // Revisar en un mes. Volver a mostrarlo es quitar este hidden.
       hidden:true},{id:"pen",i:"🏛️",l:isEN?"Retirement":"Pensiones"},{id:"btc",i:"₿",l:isEN?"Bitcoin vs 401(k)":"Ahorro BTC"},{id:"buyvsinvest",i:"🏠",l:isEN?"Buy vs Invest":"Comprar o arrendar"},{id:"aportes",i:"💰",l:"Calcula tus aportes",hidden:isUS},{id:"glosario",i:"📚",l:isEN?"Glossary":"Glosario",hidden:isUS},{id:"_sep3",sep:true,l:isEN?"ARTIFICIAL INTELLIGENCE":"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:isEN?"AI Advisor":"Asesor IA"},{id:"coach",i:"🧠",l:isEN?"AI Coaches":"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:isEN?"Plans":"Planes"},{id:"cuenta",i:"⚙️",l:isEN?"My Account":"Mi cuenta"},{id:"metrics",i:"📈",l:"Cómo va el negocio",hidden:!isAdmin}];
 
-  const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",plan:"Mi plan",pen:"Pensiones",tax:"Planeación Tributaria",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",cuenta:"Mi cuenta"};
+  const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",plan:"Proyecta escenarios",pen:"Pensiones",tax:"Planeación Tributaria",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",cuenta:"Mi cuenta"};
   if(typeof document!=="undefined")document.title="FINPATHIA"+(secNames[pg]?" — "+secNames[pg]:"");
   const rp=()=>{if(!u)return null;switch(pg){
     case"dash":{

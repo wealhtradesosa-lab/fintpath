@@ -608,9 +608,9 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
 
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0, 1fr)" }}>
-      <PageHeader label="—— Mi plan" title="Tu plan patrimonial a 10 años" accent="10 años" subtitle="Paso a paso: qué tienes, qué viene, qué mueves, cómo queda y cómo se compara." compact />
+      <PageHeader label="—— Proyecta escenarios" title="Tus escenarios a 10 años" accent="10 años" subtitle="Paso a paso: qué tienes, qué viene, qué mueves, cómo queda cada escenario y cómo se comparan para decidir." compact />
       {sinDatos ? (
-        <div style={card}><div style={F.h2}>Para trazar tu plan hace falta tu punto de partida</div><div style={{ ...F.body, marginTop: 6 }}>Carga tus activos, ingresos, gastos y deudas: con eso FINPATHIA arma el paso 1 solo.</div><div style={{ marginTop: 12, display: "flex", gap: 8 }}><button style={btn(true)} onClick={() => onNavigate?.("inv")}>Ir a Patrimonio</button><button style={btn(false)} onClick={() => onNavigate?.("ing")}>Ir a Ingresos</button></div></div>
+        <div style={card}><div style={F.h2}>Para proyectar escenarios hace falta tu punto de partida</div><div style={{ ...F.body, marginTop: 6 }}>Carga tus activos, ingresos, gastos y deudas: con eso FINPATHIA arma el paso 1 solo.</div><div style={{ marginTop: 12, display: "flex", gap: 8 }}><button style={btn(true)} onClick={() => onNavigate?.("inv")}>Ir a Patrimonio</button><button style={btn(false)} onClick={() => onNavigate?.("ing")}>Ir a Ingresos</button></div></div>
       ) : (<>
         <Stepper paso={paso} setPaso={ir} />
         {paso === 1 && <PasoHoy base={base} fichas={fichas} onFichas={onFichas} onNext={() => ir(2)} />}
