@@ -29,7 +29,6 @@ import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canasta
 const fmM = (n) => { const v = Number(n) || 0; const a = Math.abs(v); if (a >= 1e9) return (v < 0 ? "−" : "") + "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M"; return (v < 0 ? "−" : "") + "$" + Math.round(a / 1e6).toLocaleString("es-CO") + " M"; };
 const fmMes = (n) => { const v = Number(n) || 0; const a = Math.abs(v); return (v < 0 ? "−" : "") + "$" + (a >= 1e6 ? (a / 1e6).toFixed(1).replace(".0", "").replace(".", ",") + " M" : Math.round(a / 1e3) + " K"); };
 const pct = (n) => `${Math.round(Number(n) || 0)}%`;
-const enM = (n) => Math.round((Number(n) || 0) / 1e5) / 10;
 const CANASTA_COLOR = { proteccion: C.accent, rentas: C.ok, crecimiento: C.warn, uso: C.subtle };
 const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 20, minWidth: 0 };
 const sub = { background: C.raised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, minWidth: 0 };
@@ -45,6 +44,11 @@ const Num = ({ value, onChange, step = 1, min, max, suffix, w }) => (
     {suffix && <span style={{ position: "absolute", right: 8, top: 9, fontSize: 11, color: C.subtle }}>{suffix}</span>}
   </div>
 );
+// Pesos completos con separador de miles (22.000.000). Guarda el número; muestra el formato.
+const NumPesos = ({ value, onChange, w, placeholder }) => {
+  const txt = value == null || value === "" ? "" : Math.round(Number(value)).toLocaleString("es-CO");
+  return <input type="text" inputMode="numeric" value={txt} placeholder={placeholder || "0"} onChange={(e) => { const d = e.target.value.replace(/[^\d]/g, ""); onChange(d === "" ? "" : Number(d)); }} style={{ ...inputS, width: w || "100%", textAlign: "right", fontFamily: F.mono.fontFamily, fontWeight: 500 }} />;
+};
 const Campo = ({ l, children, style }) => (<label style={{ display: "block", ...style }}><div style={{ ...F.label, marginBottom: 4 }}>{l}</div>{children}</label>);
 const useAncho = () => { const [w, setW] = useState(typeof window === "undefined" ? 1200 : window.innerWidth); useEffect(() => { const f = () => setW(window.innerWidth); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []); return w; };
 const anioDe = (mes) => Math.floor((Number(mes) || 0) / 12) + 1;
@@ -80,17 +84,20 @@ const Siguiente = ({ onClick, children }) => <div style={{ display: "flex", just
 
 // ─── Paso 1 · Hoy ────────────────────────────────────────────────────────────
 function PasoHoy({ base, fichas, onFichas, onNext }) {
-  const c = base.canastasHoy, b = base.base;
+  const c = base.canastasHoy, b = base.base, hoy = base.hoy || {};
   const entra = (b?.ia || 0) + (b?.ip || 0), sale = base.gastosMes, queda = entra - sale, cob = sale > 0 ? (entra / sale) * 100 : 0;
   const meses = sale > 0 ? c.colchon / sale : 0;
-  const mover = (p, k) => onFichas({ ...fichas, [p.id]: { ...(fichas[p.id] || {}), canasta: k } });
+  const setF = (id, patch) => onFichas({ ...fichas, [id]: { ...(fichas[id] || {}), ...patch } });
   const tiles = [["Entra al mes", fmMes(entra), "trabajo + rentas"], ["Sale al mes", fmMes(sale), "gastos + cuotas"], ["Queda", fmMes(queda), queda >= 0 ? "excedente" : "déficit"], ["Cobertura", pct(cob), "entra ÷ sale"], ["Patrimonio neto", fmM(b?.patrimonioNeto ?? c.total), `${fmM(c.total)} bruto`], ["Colchón", `${Math.round(meses)} meses`, "líquido ÷ gastos"]];
-  const tot = base.posiciones.reduce((s, p) => { const x = produce(p); return { recibe: s.recibe + x.recibe, crece: s.crece + x.crece }; }, { recibe: 0, crece: 0 });
+  const vivos = base.posiciones.filter((p) => !p.sale);
+  const tot = vivos.reduce((s, p) => { const x = produce(p); return { recibe: s.recibe + x.recibe, crece: s.crece + x.crece }; }, { recibe: 0, crece: 0 });
+  const salen = base.posiciones.filter((p) => p.sale);
+  const inp = { ...inputS, padding: "4px 6px", fontSize: 12, width: 64, textAlign: "right" };
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
-        <div style={F.h2}>1 · Hoy: qué tienes y qué produce cada peso</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Este es tu punto de partida. Todo escenario arranca de aquí. Revisa que cada activo esté en la canasta correcta: FINPATHIA la propone por tipo, tú decides.</div>
+        <div style={F.h2}>1 · Hoy: qué tienes, qué produce y qué sigue en el plan</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Este es tu punto de partida. Para cada activo decide dos cosas: en qué <b style={{ color: C.text }}>canasta</b> está, y si <b style={{ color: C.text }}>continúa</b> en el futuro o <b style={{ color: C.text }}>sale del plan</b> (se vende hoy). Lo que sale libera plata que vas a desplegar en cada escenario; las deudas que marques se pagan con eso. Lo que decidas aquí vale para todos los escenarios.</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginTop: 14 }}>
           {tiles.map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
         </div>
@@ -98,28 +105,45 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>{["proteccion", "rentas", "crecimiento", "uso"].map((k) => <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption }}><span style={{ width: 8, height: 8, borderRadius: 999, background: CANASTA_COLOR[k] }} /><b style={{ color: C.text }}>{CANASTA_LABEL[k]}</b> {fmM(c[k])}</div>)}</div>
       </div>
       <div style={card}>
-        <div style={F.h3}>Producción por activo</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}><div style={F.h3}>Producción por activo</div><div style={F.caption}>Rinde = % anual sobre el capital · Recibes = qué parte del rendimiento te llega cada mes (el resto se reinvierte) · Valoriza = % anual del valor</div></div>
         <div style={{ overflowX: "auto", marginTop: 8 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}>
-            <thead><tr><th style={th}>Activo</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Recibes / mes</th><th style={{ ...th, textAlign: "right" }}>Crece / mes</th><th style={th}>Canasta</th><th style={th}>Nota</th></tr></thead>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+            <thead><tr><th style={th}>Activo</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Recibes / mes</th><th style={{ ...th, textAlign: "right" }}>Crece / mes</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Rinde</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>En el plan</th></tr></thead>
             <tbody>
-              {[...base.posiciones].sort((a, b2) => b2.capital - a.capital).map((p) => { const x = produce(p); const k = canastaDe(p); return (
-                <tr key={p.id} style={{ borderTop: `1px solid ${C.border}` }}>
-                  <td style={td}>{p.nombre}<div style={F.caption}>{p.tipo}</div></td>
+              {[...base.posiciones].sort((a, b2) => b2.capital - a.capital).map((p) => { const x = produce(p); const k = canastaDe(p); const off = p.sale; return (
+                <tr key={p.id} style={{ borderTop: `1px solid ${C.border}`, opacity: off ? 0.55 : 1 }}>
+                  <td style={td}>{p.nombre}<div style={F.caption}>{p.tipo} · {notaDe(p)}</div></td>
                   <td style={tdNum}>{fmM(p.capital)}</td>
                   <td style={{ ...tdNum, color: x.recibe > 0 ? C.ok : C.subtle }}>{x.recibe > 0 ? fmMes(x.recibe) : "—"}</td>
                   <td style={{ ...tdNum, color: x.crece > 0 ? C.warn : x.crece < 0 ? C.danger : C.subtle }}>{x.crece !== 0 ? fmMes(x.crece) : "—"}</td>
-                  <td style={td}><select value={k} onChange={(e) => mover(p, e.target.value)} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 118, color: CANASTA_COLOR[k] }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select></td>
-                  <td style={{ ...td, color: C.muted }}>{notaDe(p)}</td>
+                  <td style={td}><select value={k} onChange={(e) => setF(p.id, { canasta: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 112, color: CANASTA_COLOR[k] }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select></td>
+                  <td style={tdNum}><input type="number" step={0.5} value={p.tasa} onChange={(e) => setF(p.id, { tasa: Number(e.target.value) })} style={inp} />%</td>
+                  <td style={tdNum}><input type="number" step={10} min={0} max={100} value={p.pagaPct} onChange={(e) => setF(p.id, { pagaPct: Number(e.target.value) })} style={inp} />%</td>
+                  <td style={tdNum}><input type="number" step={0.5} value={p.valorizacion} onChange={(e) => setF(p.id, { valorizacion: Number(e.target.value) })} style={inp} />%</td>
+                  <td style={td}><button onClick={() => setF(p.id, { estado: off ? "continua" : "sale" })} style={{ ...btn(false), padding: "4px 10px", color: off ? C.danger : C.ok, borderColor: off ? C.danger : C.ok, whiteSpace: "nowrap" }}>{off ? "Sale del plan" : "Continúa"}</button></td>
                 </tr>); })}
-              <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}><td style={{ ...td, fontWeight: 700 }}>Total</td><td style={{ ...tdNum, fontWeight: 700 }}>{fmM(c.total)}</td><td style={{ ...tdNum, fontWeight: 700, color: C.ok }}>{fmMes(tot.recibe)}</td><td style={{ ...tdNum, fontWeight: 700, color: C.warn }}>{fmMes(tot.crece)}</td><td style={td} /><td style={{ ...td, color: C.muted }}>Produce {fmMes(tot.recibe + tot.crece)} al mes en total</td></tr>
+              <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}><td style={{ ...td, fontWeight: 700 }}>Lo que continúa</td><td style={{ ...tdNum, fontWeight: 700 }}>{fmM(vivos.reduce((s2, p) => s2 + p.capital, 0))}</td><td style={{ ...tdNum, fontWeight: 700, color: C.ok }}>{fmMes(tot.recibe)}</td><td style={{ ...tdNum, fontWeight: 700, color: C.warn }}>{fmMes(tot.crece)}</td><td colSpan={5} style={{ ...td, color: C.muted }}>Produce {fmMes(tot.recibe + tot.crece)} al mes en total</td></tr>
             </tbody>
           </table>
         </div>
-        {base.deudas.length > 0 && <div style={{ marginTop: 14 }}>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 14 }}>
+        {base.deudas.length > 0 && <div style={card}>
           <div style={F.h3}>Deudas</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>{base.deudas.map((d) => <div key={d.id} style={{ ...sub, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}</div>)}</div>
+          <div style={{ ...F.caption, marginBottom: 8 }}>Marca las que se pagan hoy con lo que sale del plan.</div>
+          <div style={{ display: "grid", gap: 6 }}>{base.deudas.map((d) => <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", borderTop: `1px solid ${C.border}`, paddingTop: 6, flexWrap: "wrap" }}><input type="checkbox" checked={!!d.pagar} onChange={(e) => setF(`deu_${d.id}`, { pagar: e.target.checked })} /><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}{d.pagar && <span style={chip(C.ok)}>se paga hoy</span>}</label>)}</div>
         </div>}
+        <div style={{ ...card, borderColor: salen.length ? C.accent : C.border }}>
+          <div style={F.h3}>Lo decidido hoy, para todos los escenarios</div>
+          {salen.length === 0 && !base.deudas.some((d) => d.pagar) ? <div style={{ ...F.body, marginTop: 6 }}>Todo continúa tal como está. Si algo va a salir del plan (un inmueble que vendes, un lote), márcalo arriba como <b style={{ color: C.text }}>Sale del plan</b>.</div> : (
+            <div style={{ marginTop: 6, display: "grid", gap: 6 }}>
+              {salen.length > 0 && <div style={F.body}>Sale: <b style={{ color: C.text }}>{salen.map((p) => p.nombre).join(", ")}</b> → liberas <b style={{ color: C.text }}>{fmM(hoy.liberado)}</b>{hoy.costoVentaPct > 0 ? ` (neto de ${hoy.costoVentaPct}% de costos de venta)` : ""}.</div>}
+              {hoy.pagado > 0 && <div style={F.body}>Se paga: <b style={{ color: C.text }}>{base.deudas.filter((d) => d.pagar).map((d) => d.nombre).join(", ")}</b> → <b style={{ color: C.text }}>{fmM(hoy.pagado)}</b>, y dejas de pagar {fmMes(hoy.cuotasQueSalen)} de cuotas al mes.</div>}
+              <div style={{ ...F.body, color: hoy.porDesplegar >= 0 ? C.ok : C.danger }}>Quedan <b>{fmM(hoy.porDesplegar)}</b> por desplegar en cada escenario (paso 3).</div>
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, ...F.caption }}>Costos de venta (comisión, impuestos)<input type="number" step={0.5} min={0} max={30} value={fichas.__costoVentaPct ?? 0} onChange={(e) => onFichas({ ...fichas, __costoVentaPct: Number(e.target.value) })} style={inp} />% de lo vendido</div>
+        </div>
       </div>
       <Siguiente onClick={onNext}>Siguiente: lo que ya viene</Siguiente>
     </div>
@@ -151,9 +175,9 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
   const mes = (Math.max(1, Number(f.anio) || 1) - 1) * 12 + Math.min(11, Math.max(0, (Number(f.mes) || 1) - 1));
   const guardar = () => {
     const base = { id: "mv_" + Math.random().toString(36).slice(2, 8), mes };
-    const monto = Number(f.monto) * 1e6; let m = null;
+    const monto = Number(f.monto) || 0; let m = null;
     if (f.tipo === "vender") m = { ...base, tipo: "vender", posicionId: f.posicionId };
-    if (f.tipo === "comprar" && f.nombre && monto > 0) m = { ...base, tipo: "comprar", nombre: f.nombre, costo: monto, bolsillo: f.canasta === "crecimiento" ? "crecimiento" : f.canasta === "rentas" ? "sustento" : "uso", pagaPct: f.canasta === "rentas" ? 100 : 0, valorizacion: f.canasta === "crecimiento" ? 0 : 5, origen: [{ posicionId: f.origenId }], renta: Number(f.renta) > 0 ? Number(f.renta) * 1e6 : undefined, rentaDesde: Number(f.rentaDesde) || 0 };
+    if (f.tipo === "comprar" && f.nombre && monto > 0) m = { ...base, tipo: "comprar", nombre: f.nombre, costo: monto, bolsillo: f.canasta === "crecimiento" ? "crecimiento" : f.canasta === "rentas" ? "sustento" : "uso", pagaPct: f.canasta === "rentas" ? 100 : 0, valorizacion: f.canasta === "crecimiento" ? 0 : 5, origen: [{ posicionId: f.origenId }], renta: Number(f.renta) > 0 ? Number(f.renta) : undefined, rentaDesde: Number(f.rentaDesde) || 0 };
     if (f.tipo === "aportar" && monto > 0) m = { ...base, tipo: "aportar", posicionId: f.posicionId, monto, origen: [{ posicionId: f.origenId }] };
     if (f.tipo === "revaluar" && monto > 0) m = { ...base, tipo: "revaluar", posicionId: f.posicionId, valor: monto };
     if ((f.tipo === "flujo_inicia_ingreso" || f.tipo === "flujo_inicia_gasto") && f.nombre && monto > 0) m = { ...base, tipo: "flujo_inicia", flujo: { id: base.id + "_f", nombre: f.nombre, tipo: f.tipo.endsWith("gasto") ? "gasto" : "ingreso", monto, indexa: true } };
@@ -173,9 +197,9 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
         {(f.tipo === "vender" || f.tipo === "aportar" || f.tipo === "revaluar") && <Campo l={f.tipo === "aportar" ? "Destino" : "Activo"}>{selPos("posicionId")}</Campo>}
         {(f.tipo === "comprar" || f.tipo.startsWith("flujo_inicia")) && <Campo l="Nombre"><input value={f.nombre} onChange={(e) => set("nombre", e.target.value)} style={inputS} placeholder={f.tipo === "comprar" ? "Bodega, finca, apartamento…" : "Pensión, arriendo bodega, colegio…"} /></Campo>}
         {(f.tipo === "flujo_termina" || f.tipo === "flujo_cambia") && <Campo l="Cuál"><select value={f.flujoId} onChange={(e) => set("flujoId", e.target.value)} style={inputS}>{flujos.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {fmMes(x.monto)}</option>)}</select></Campo>}
-        {f.tipo !== "vender" && f.tipo !== "flujo_termina" && <Campo l={esFlujo ? "Monto al mes" : f.tipo === "revaluar" ? "Nuevo valor" : "Monto"}><Num value={f.monto} step={esFlujo ? 0.1 : 1} onChange={(v) => set("monto", v)} suffix="M" /></Campo>}
+        {f.tipo !== "vender" && f.tipo !== "flujo_termina" && <Campo l={esFlujo ? "Monto al mes (pesos)" : f.tipo === "revaluar" ? "Nuevo valor (pesos)" : "Monto (pesos)"}><NumPesos value={f.monto} onChange={(v) => set("monto", v)} /></Campo>}
         {f.tipo === "comprar" && <Campo l="Para qué"><select value={f.canasta} onChange={(e) => set("canasta", e.target.value)} style={inputS}><option value="rentas">Rentar (paga cada mes)</option><option value="proteccion">Vivir ahí</option><option value="crecimiento">Crecimiento</option><option value="uso">Uso</option></select></Campo>}
-        {f.tipo === "comprar" && f.canasta === "rentas" && <><Campo l="Renta al mes"><Num value={f.renta} step={0.1} onChange={(v) => set("renta", v)} suffix="M" /></Campo><Campo l="Renta desde (meses después)"><Num value={f.rentaDesde} min={0} onChange={(v) => set("rentaDesde", v)} /></Campo></>}
+        {f.tipo === "comprar" && f.canasta === "rentas" && <><Campo l="Renta al mes (pesos)"><NumPesos value={f.renta} onChange={(v) => set("renta", v)} /></Campo><Campo l="Renta desde (meses después)"><Num value={f.rentaDesde} min={0} onChange={(v) => set("rentaDesde", v)} /></Campo></>}
         {(f.tipo === "comprar" || f.tipo === "aportar") && <Campo l="Con plata de">{selPos("origenId")}</Campo>}
       </div>
       <div style={{ display: "flex", gap: 8 }}><button style={btn(true)} onClick={guardar}>Agregar</button><button style={btn(false)} onClick={onCerrar}>Cancelar</button></div>
@@ -209,7 +233,7 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
           {pens.map((p, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 8, marginTop: 8, alignItems: "end" }}>
             <Campo l="De quién / cuál"><input value={p.nombre} onChange={(e) => setPens(pens.map((x, k) => (k === i ? { ...x, nombre: e.target.value } : x)))} style={inputS} /></Campo>
             <Campo l="Desde el año"><Num value={anioDe(p.mes)} min={1} max={10} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, mes: (Math.max(1, v || 1) - 1) * 12 } : x)))} /></Campo>
-            <Campo l="Al mes"><Num value={enM(p.monto)} step={0.1} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, monto: (v || 0) * 1e6 } : x)))} suffix="M" /></Campo>
+            <Campo l="Al mes (pesos)"><NumPesos value={p.monto} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, monto: v || 0 } : x)))} /></Campo>
             <button style={{ ...btn(false), color: C.subtle }} onClick={() => setPens(pens.filter((_, k) => k !== i))}>quitar</button>
           </div>)}
           {pens.length === 0 && <div style={{ ...F.body, marginTop: 8, fontStyle: "italic" }}>Sin pensiones todavía. Las edades que dejes en el ejercicio de Pensiones también llegan aquí.</div>}
@@ -239,7 +263,7 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
 }
 
 // ─── Paso 3 · Tu escenario ───────────────────────────────────────────────────
-function ResultadoVivo({ r, base, onElegir, elegido }) {
+function ResultadoVivo({ r, base, onElegir, elegido, onVer, onComparar }) {
   const p = r.puntos, ok = r.vigilancia.cumple;
   const data = [{ a: 0, v: p.patrimonioInicial }, ...r.resultado.anual.map((x) => ({ a: x.anio, v: x.patrimonioFin }))];
   return (
@@ -255,12 +279,13 @@ function ResultadoVivo({ r, base, onElegir, elegido }) {
         <ResponsiveContainer><LineChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}><XAxis dataKey="a" {...axisProps} tickFormatter={(a) => (a === 0 ? "hoy" : a)} /><YAxis hide domain={["auto", "auto"]} /><Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} labelFormatter={(a) => (a === 0 ? "Hoy" : `Año ${a}`)} />} /><Line type="monotone" dataKey="v" name="Patrimonio" stroke={r.color} strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer>
       </div>
       <div style={{ marginTop: 10, display: "grid", gap: 4 }}>{narrar(r, base).slice(1, 4).map((t, i) => <div key={i} style={{ ...F.caption, color: C.muted }}>{t}</div>)}</div>
-      {!elegido && <div style={{ marginTop: 12 }}><button style={{ ...btn(true), width: "100%" }} onClick={onElegir}>Elegir este camino</button></div>}
-      {elegido && <div style={{ marginTop: 12, textAlign: "center" }}><span style={chip(C.accent)}>Tu camino</span></div>}
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button style={{ ...btn(false), flex: 1 }} onClick={onVer}>Ver completo →</button><button style={{ ...btn(false), flex: 1 }} onClick={onComparar}>Comparar →</button></div>
+      {!elegido && <div style={{ marginTop: 8 }}><button style={{ ...btn(true), width: "100%" }} onClick={onElegir}>Elegir este camino</button></div>}
+      {elegido && <div style={{ marginTop: 8, textAlign: "center" }}><span style={chip(C.accent)}>Tu camino</span></div>}
     </div>
   );
 }
-function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuardar, onNuevo, onDuplicar, onRestablecer, onBorrar, caminoElegido, onElegir, onNext }) {
+function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuardar, onNuevo, onDuplicar, onRestablecer, onBorrar, caminoElegido, onElegir, onNext, onComparar }) {
   const ancho = useAncho();
   const esc = todos.find((e) => e.id === activoId) || todos[0];
   const r = res.find((x) => x.id === esc?.id);
@@ -269,7 +294,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   const liq = liquidezEscenario(base, esc);
   const ventaDe = (id) => (esc.ventas || []).find((v) => v.posicionId === id);
   const toggleVenta = (p) => { const v = ventaDe(p.id); upd({ ventas: v ? esc.ventas.filter((x) => x.posicionId !== p.id) : [...(esc.ventas || []), { posicionId: p.id, monto: null }] }); };
-  const parcial = (p, monto) => upd({ ventas: esc.ventas.map((x) => (x.posicionId === p.id ? { ...x, monto: monto === "" || monto == null ? null : Math.min(monto * 1e6, p.capital) } : x)) });
+  const parcial = (p, monto) => upd({ ventas: esc.ventas.map((x) => (x.posicionId === p.id ? { ...x, monto: monto === "" || monto == null ? null : Math.min(monto, p.capital) } : x)) });
   const togglePago = (id) => upd({ pagos: (esc.pagos || []).includes(id) ? esc.pagos.filter((x) => x !== id) : [...(esc.pagos || []), id] });
   const setD = (id, patch) => upd({ despliegue: esc.despliegue.map((d) => (d.id === id ? { ...d, ...patch } : d)) });
   const addD = (destinoId) => { const p = destinoId ? base.posiciones.find((x) => x.id === destinoId) : null; upd({ despliegue: [...(esc.despliegue || []), p ? { id: "d_" + Math.random().toString(36).slice(2, 8), destinoId: p.id, nombre: p.nombre, canasta: canastaDe(p), capital: Math.max(0, liq.porAsignar), tasa: p.tasa, pagaPct: p.pagaPct, valorizacion: p.valorizacion, regla: p.pagaPct === 100 ? "Paga el 100% del rendimiento cada mes" : "Todo se reinvierte" } : { id: "d_" + Math.random().toString(36).slice(2, 8), destinoId: null, nombre: "Nueva inversión", canasta: "rentas", capital: Math.max(0, liq.porAsignar), tasa: perfil.tasaRentaEstable, pagaPct: 100, valorizacion: 0, regla: "Paga el 100% del rendimiento cada mes" }] }); };
@@ -288,6 +313,11 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
           <button style={btn(false)} onClick={onNuevo}>+ Nuevo desde cero</button>
           <button style={btn(false)} onClick={() => onDuplicar(esc)}>Duplicar este</button>
         </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+          <span style={F.caption}>Estás editando <b style={{ color: esc.color }}>{esc.nombre}</b>. Cuando quieras:</span>
+          <button style={btn(true)} onClick={onNext}>Ver este escenario modelado (paso 4) →</button>
+          <button style={btn(false)} onClick={onComparar}>Comparar todos (paso 5) →</button>
+        </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: dos ? "minmax(0, 1fr) 340px" : "minmax(0, 1fr)", gap: 14, alignItems: "start" }}>
         <div style={{ display: "grid", gap: 12 }}>
@@ -302,17 +332,18 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
           <div style={card}>
             <H n="B" t="¿Qué vendes o transformas hoy?" d="Marca lo que sale. Puedes vender todo o solo una parte." />
             <div style={{ display: "grid", gap: 6 }}>
-              {[...base.posiciones].sort((a, b) => b.capital - a.capital).map((p) => { const v = ventaDe(p.id); return (
+              {base.posiciones.filter((p) => p.sale).map((p) => <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: 0.7 }}><input type="checkbox" checked disabled /><span style={{ ...F.caption, color: C.text }}>{p.nombre}</span><span style={F.caption}>{fmM(p.capital)}</span><span style={chip(C.accent)}>sale · decidido en Hoy</span></div>)}
+              {base.posiciones.filter((p) => !p.sale).sort((a, b) => b.capital - a.capital).map((p) => { const v = ventaDe(p.id); return (
                 <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 6, flexWrap: "wrap" }}>
                   <label style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200, cursor: "pointer" }}><input type="checkbox" checked={!!v} onChange={() => toggleVenta(p)} /><span style={{ ...F.caption, color: C.text }}>{p.nombre}</span><span style={F.caption}>{fmM(p.capital)}{p.vivienda ? " · vivienda" : ""}{p.renta > 0 ? ` · renta ${fmMes(p.renta)}` : ""}</span></label>
-                  {v && <div style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption }}><span>{v.monto == null ? "todo" : "solo"}</span><Num value={v.monto == null ? "" : enM(v.monto)} step={1} onChange={(x) => parcial(p, x)} suffix="M" w={110} /></div>}
+                  {v && <div style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption }}><span>{v.monto == null ? "todo · o solo" : "solo"}</span><NumPesos value={v.monto == null ? "" : v.monto} onChange={(x) => parcial(p, x)} w={150} placeholder="una parte" /></div>}
                 </div>); })}
             </div>
             <div style={{ marginTop: 10 }}><Saldo /></div>
           </div>
           {base.deudas.length > 0 && <div style={card}>
             <H n="C" t="¿Qué deudas pagas con eso?" d="Lo que pagues deja de costar cuota cada mes." />
-            <div style={{ display: "grid", gap: 6 }}>{base.deudas.map((d) => <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", borderTop: `1px solid ${C.border}`, paddingTop: 6 }}><input type="checkbox" checked={(esc.pagos || []).includes(d.id)} onChange={() => togglePago(d.id)} /><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}</label>)}</div>
+            <div style={{ display: "grid", gap: 6 }}>{base.deudas.map((d) => <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: d.pagar ? "default" : "pointer", borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: d.pagar ? 0.7 : 1, flexWrap: "wrap" }}><input type="checkbox" checked={d.pagar || (esc.pagos || []).includes(d.id)} disabled={d.pagar} onChange={() => togglePago(d.id)} /><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}{d.pagar && <span style={chip(C.accent)}>se paga · decidido en Hoy</span>}</label>)}</div>
           </div>}
           <div style={card}>
             <H n="D" t="¿A dónde va la plata y con qué regla?" d="El despliegue: cada destino con su capital, su tasa y la regla con la que trabaja." />
@@ -323,7 +354,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                   {(esc.despliegue || []).map((d) => <tr key={d.id} style={{ borderTop: `1px solid ${C.border}` }}>
                     <td style={{ ...td, minWidth: 150 }}>{d.destinoId ? <span>{d.nombre}<div style={F.caption}>ya existe</div></span> : <input value={d.nombre} onChange={(e) => setD(d.id, { nombre: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }} />}</td>
                     <td style={td}>{d.destinoId ? <span style={chip(CANASTA_COLOR[d.canasta])}>{CANASTA_LABEL[d.canasta]}</span> : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 112 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
-                    <td style={tdNum}><Num value={enM(d.capital)} step={1} onChange={(v) => setD(d.id, { capital: (v || 0) * 1e6 })} suffix="M" w={110} /></td>
+                    <td style={tdNum}><NumPesos value={d.capital} onChange={(v) => setD(d.id, { capital: v || 0 })} w={150} /></td>
                     <td style={tdNum}><Num value={d.tasa} step={0.5} onChange={(v) => setD(d.id, { tasa: v || 0 })} suffix="%" w={80} /></td>
                     <td style={tdNum}><Num value={d.pagaPct} step={10} min={0} max={100} onChange={(v) => setD(d.id, { pagaPct: v || 0, regla: v >= 100 ? "Paga el 100% del rendimiento cada mes" : v <= 0 ? "Todo se reinvierte" : `Recibe el ${v}%, reinvierte el resto` })} suffix="%" w={80} /></td>
                     <td style={tdNum}><Num value={d.valorizacion} step={0.5} onChange={(v) => setD(d.id, { valorizacion: v || 0 })} suffix="%" w={80} /></td>
@@ -368,7 +399,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             <Siguiente onClick={onNext}>Ver el resultado completo</Siguiente>
           </div>
         </div>
-        <div style={{ position: dos ? "sticky" : "static", top: 12 }}><ResultadoVivo r={r} base={base} elegido={caminoElegido === esc.id} onElegir={() => onElegir(esc.id)} /></div>
+        <div style={{ position: dos ? "sticky" : "static", top: 12 }}><ResultadoVivo r={r} base={base} elegido={caminoElegido === esc.id} onElegir={() => onElegir(esc.id)} onVer={onNext} onComparar={onComparar} /></div>
       </div>
     </div>
   );
@@ -518,7 +549,7 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
         <Stepper paso={paso} setPaso={ir} />
         {paso === 1 && <PasoHoy base={base} fichas={fichas} onFichas={onFichas} onNext={() => ir(2)} />}
         {paso === 2 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(3)} />}
-        {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} />}
+        {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => ir(5)} />}
         {paso === 4 && <PasoResultado base={base} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => ir(5)} onVolver={() => ir(3)} />}
         {paso === 5 && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); ir(4); }} caminoElegido={caminoElegido} onElegir={onElegir} />}
         <div style={{ ...F.caption, textAlign: "center" }}>Lo que simulas aquí no toca tus datos reales. Los ejercicios (Pensiones, Ahorro BTC, Comprar o arrendar) alimentan los supuestos, no las decisiones.</div>

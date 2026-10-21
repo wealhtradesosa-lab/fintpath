@@ -128,7 +128,7 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
   const posiciones = inv.map((a) => {
     const renta = rentaDeActivo[a.id] || 0;
     const ficha = conCanasta({ ...fichaPorDefecto(a, perfil, renta), ...(fichas[a.id] || {}) }, perfil, a.tp);
-    return { id: a.id, nombre: nombreActivo(a), capital: num(a.va) * fx(a), tipo: a.tp, owner: a.owner, renta, ...ficha };
+    return { id: a.id, nombre: nombreActivo(a), capital: num(a.va) * fx(a), tipo: a.tp, owner: a.owner, renta, ...ficha, sale: fichas[a.id]?.estado === "sale" };
   });
   // Si ningún inmueble quedó como vivienda, el mayor inmueble sin renta lo es.
   if (!posiciones.some((p) => p.vivienda)) { const cand = posiciones.filter((p) => p.inmueble && p.bolsillo === "uso" && !esLote(p)).sort((a, b) => b.capital - a.capital)[0]; if (cand && fichas[cand.id]?.vivienda !== false) cand.vivienda = true; }
@@ -154,9 +154,25 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
   // Gastos de vida sin cuotas: la base única ya netea costos de inmuebles arrendados.
   flujos.push({ id: "gastos_vida", nombre: "Gastos de vida", tipo: "gasto", monto: base.g, indexa: true });
 
-  const deudasCfg = deudas.map((d) => ({ id: d.id, nombre: d.n || d.nombre || "Deuda", saldo: num(d.mt) * fx(d), tasa: num(d.ts), cuota: num(d.pg) * fx(d), hipoteca: d.tp === "mortgage", hastaMes: d.hastaMes ? num(d.hastaMes) - 1 : undefined }));
+  const deudasCfg = deudas.map((d) => ({ id: d.id, nombre: d.n || d.nombre || "Deuda", saldo: num(d.mt) * fx(d), tasa: num(d.ts), cuota: num(d.pg) * fx(d), hipoteca: d.tp === "mortgage", hastaMes: d.hastaMes ? num(d.hastaMes) - 1 : undefined, pagar: !!fichas[`deu_${d.id}`]?.pagar }));
 
-  return { posiciones, flujos, deudas: deudasCfg, caja: 0, gastosMes: base.g + base.sd, base, trm };
+  // Lo decidido en HOY, común a todos los escenarios: lo que sale del plan se
+  // vende hoy y libera plata; las deudas marcadas se pagan con eso.
+  const costoVenta = num(fichas.__costoVentaPct);
+  const liberado = posiciones.filter((p) => p.sale).reduce((s, p) => s + p.capital * (1 - costoVenta / 100), 0);
+  const pagado = deudasCfg.filter((d) => d.pagar).reduce((s, d) => s + d.saldo, 0);
+  const hoy = { liberado, pagado, porDesplegar: liberado - pagado, costoVentaPct: costoVenta, cuotasQueSalen: deudasCfg.filter((d) => d.pagar).reduce((s, d) => s + d.cuota, 0) };
+
+  return { posiciones, flujos, deudas: deudasCfg, caja: 0, gastosMes: base.g + base.sd, base, trm, hoy };
+}
+
+/** Movimientos de mes 0 que vienen de HOY (comunes a todos los escenarios). */
+export function movimientosHoy(baseCfg) {
+  const out = [];
+  const costo = num(baseCfg.hoy?.costoVentaPct);
+  baseCfg.posiciones.filter((p) => p.sale && p.capital > 0).forEach((p) => out.push({ mes: 0, tipo: "vender", posicionId: p.id, netoPct: 100 - costo, hoy: true }));
+  baseCfg.deudas.filter((d) => d.pagar).forEach((d) => out.push({ mes: 0, tipo: "pagar_deuda", deudaId: d.id, origen: [{ posicionId: "caja", monto: d.saldo }], hoy: true }));
+  return out;
 }
 
 // ─── Canastas: medir ─────────────────────────────────────────────────────────
@@ -271,6 +287,17 @@ export function ajustarAlCamino(baseCfg, camino, perfil = PERFIL_DEFAULT) {
   const cond = new Set(camino.condiciones || []);
   const gastosMes = num(baseCfg.gastosMes);
   const colchonMeta = num(C.colchonMeses) * gastosMes;
+
+  // 0) Lo decidido en HOY: lo que sale ya está vendido y las deudas marcadas
+  //    pagadas (eso lo aplica el motor); aquí queda la plata por desplegar.
+  let caja = Math.max(0, num(baseCfg.hoy?.porDesplegar));
+  pos.filter((p) => p.sale).forEach((p) => { p.capital = 0; });
+  const deudasVivas = baseCfg.deudas.filter((d) => !d.pagar);
+  const desdeCaja = (destino, monto, texto) => {
+    const t = Math.min(caja, Math.max(0, monto)); if (t <= 0) return 0;
+    movimientos.push({ mes: 0, tipo: "aportar", posicionId: destino.id, monto: t, origen: [{ posicionId: "caja", monto: t }] });
+    destino.capital += t; caja -= t; if (texto) notas.push(texto(t)); return t;
+  };
   const aportar = (destino, lista, monto, texto) => {
     const { out, conseguido } = origenes(lista, monto, colchonMeta);
     if (conseguido <= 0) return 0;
@@ -315,13 +342,24 @@ export function ajustarAlCamino(baseCfg, camino, perfil = PERFIL_DEFAULT) {
 
   // 3) Deuda cara
   if (cond.has("sin_deuda_cara")) {
-    baseCfg.deudas.filter((d) => d.tasa >= DEUDA_CARA).forEach((d) => {
-      // Con lo líquido primero (sin tocar el colchón), después crecimiento, después el resto de rentas
+    deudasVivas.filter((d) => d.tasa >= DEUDA_CARA).forEach((d) => {
+      // Primero la plata liberada en HOY; después lo líquido (sin tocar el colchón), crecimiento y el resto de rentas
+      const deCaja = Math.min(caja, d.saldo);
       const fuentes = [...porCapital(pos.filter((p) => p.liquido && !p.nuevo)), ...porCapital(pos.filter((p) => canastaDe(p) === "crecimiento" && !p.nuevo)), ...porCapital(pos.filter((p) => canastaDe(p) === "rentas" && !p.liquido && !p.inmueble && !p.nuevo))];
-      const { out, conseguido } = origenes(fuentes, d.saldo, colchonMeta);
-      if (conseguido > 0) { movimientos.push({ mes: 0, tipo: "pagar_deuda", deudaId: d.id, origen: out }); notas.push(`Se paga ${d.nombre} (${d.tasa}%) con ${M(conseguido)}.`); }
+      const { out, conseguido } = origenes(fuentes, d.saldo - deCaja, colchonMeta);
+      const total = deCaja + conseguido;
+      if (total > 0) { caja -= deCaja; movimientos.push({ mes: 0, tipo: "pagar_deuda", deudaId: d.id, origen: [...(deCaja > 0 ? [{ posicionId: "caja", monto: deCaja }] : []), ...out] }); notas.push(`Se paga ${d.nombre} (${d.tasa}%) con ${M(total)}.`); }
       else notas.push(`${d.nombre} está al ${d.tasa}% y no hay con qué pagarla hoy.`);
     });
+  }
+
+  // 3b) Colchón: lo liberado en HOY lo llena primero
+  if (colchonMeta > 0 && caja > 0) { const m0 = medirCanastas(pos, 0); if (m0.colchon < colchonMeta) desdeCaja(destinoDe("rentas", pos, perfil), colchonMeta - m0.colchon, (x) => `${M(x)} de lo liberado van al colchón líquido (meta ${C.colchonMeses} meses de gastos).`); }
+  // 3c) El resto de lo liberado se despliega como reparte el camino su excedente
+  if (caja > 0) {
+    const reparto = (camino.excedente || []).filter((e) => num(e.pct) > 0);
+    const total = caja;
+    reparto.forEach((e) => { const d = destinoDe(e.canasta, pos, perfil); desdeCaja(d, total * num(e.pct) / 100, (x) => `${M(x)} de lo liberado van a ${d.nombre}${d.tasa > 0 ? ` al ${d.tasa}%` : ""}.`); });
   }
 
   // 4) Rangos rentas / crecimiento sobre lo invertible
@@ -385,7 +423,7 @@ export function configurarCamino(baseCfg, camino, perfil = PERFIL_DEFAULT) {
     ajuste,
     cfg: {
       meses: H, caja: baseCfg.caja, posiciones: originales, flujos: baseCfg.flujos, deudas: baseCfg.deudas,
-      movimientos: [...ajuste.movimientos, ...movimientosPerfil(perfil), ...propios],
+      movimientos: [...movimientosHoy(baseCfg), ...ajuste.movimientos, ...movimientosPerfil(perfil), ...propios],
       reglas: { excedente, deficitDesde, colchon, rebalanceo, inflacion: num(perfil.inflacion), indexarGastos: true, indexarSustento: false, coberturaMin: num(perfil.coberturaMin) || 120 },
     },
   };
@@ -466,10 +504,11 @@ export function escenarioDesdeCamino(baseCfg, camino, perfil = PERFIL_DEFAULT) {
 /** Cuánto libera, paga y asigna un escenario; lo que queda sin asignar va a caja. */
 export function liquidezEscenario(baseCfg, esc) {
   const byId = Object.fromEntries(baseCfg.posiciones.map((p) => [p.id, p]));
-  const liberado = (esc.ventas || []).reduce((s, v) => { const p = byId[v.posicionId]; if (!p) return s; return s + (v.monto != null ? Math.min(num(v.monto), p.capital) : p.capital * (1 - num(esc.costoVentaPct || 0) / 100)); }, 0);
-  const pagado = (esc.pagos || []).reduce((s, id) => s + (baseCfg.deudas.find((d) => d.id === id)?.saldo || 0), 0);
+  const liberadoHoy = num(baseCfg.hoy?.liberado), pagadoHoy = num(baseCfg.hoy?.pagado);
+  const liberado = liberadoHoy + (esc.ventas || []).reduce((s, v) => { const p = byId[v.posicionId]; if (!p || p.sale) return s; return s + (v.monto != null ? Math.min(num(v.monto), p.capital) : p.capital * (1 - num(esc.costoVentaPct || 0) / 100)); }, 0);
+  const pagado = pagadoHoy + (esc.pagos || []).reduce((s, id) => { const d = baseCfg.deudas.find((x) => x.id === id); return s + (d && !d.pagar ? d.saldo : 0); }, 0);
   const asignado = (esc.despliegue || []).reduce((s, d) => s + num(d.capital), 0);
-  return { liberado, pagado, asignado, porAsignar: liberado - pagado - asignado };
+  return { liberado, pagado, asignado, porAsignar: liberado - pagado - asignado, liberadoHoy, pagadoHoy };
 }
 
 /** Escenario → configuración para simularCamino. */
@@ -480,12 +519,12 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   const movimientos = [];
   // 1) Ventas (hoy)
   (esc.ventas || []).forEach((v) => {
-    const p = byId[v.posicionId]; if (!p) return;
+    const p = byId[v.posicionId]; if (!p || p.sale) return;
     if (v.monto != null) movimientos.push({ mes: 0, tipo: "retirar", posicionId: p.id, monto: Math.min(num(v.monto), p.capital) });
     else movimientos.push({ mes: 0, tipo: "vender", posicionId: p.id, netoPct: 100 - num(esc.costoVentaPct || 0) });
   });
   // 2) Pagos (hoy, con lo liberado)
-  (esc.pagos || []).forEach((id) => { const d = baseCfg.deudas.find((x) => x.id === id); if (d) movimientos.push({ mes: 0, tipo: "pagar_deuda", deudaId: id, origen: [{ posicionId: "caja", monto: d.saldo }] }); });
+  (esc.pagos || []).forEach((id) => { const d = baseCfg.deudas.find((x) => x.id === id); if (d && !d.pagar) movimientos.push({ mes: 0, tipo: "pagar_deuda", deudaId: id, origen: [{ posicionId: "caja", monto: d.saldo }] }); });
   // 3) Despliegue (hoy)
   (esc.despliegue || []).forEach((d) => {
     const cap = num(d.capital); if (cap <= 0) return;
@@ -528,15 +567,19 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   const liq = liquidezEscenario(baseCfg, esc);
   const notas = [];
   const nom = (id) => byId[id]?.nombre || id;
-  const vendidas = (esc.ventas || []).map((v) => `${nom(v.posicionId)}${v.monto != null ? ` (${M(v.monto)})` : ""}`);
-  if (vendidas.length) notas.push(`Vendes ${vendidas.join(", ")}: liberas ${M(liq.liberado)}.`);
-  if ((esc.pagos || []).length) notas.push(`Pagas ${(esc.pagos || []).map((id) => baseCfg.deudas.find((d) => d.id === id)?.nombre || id).join(", ")}: ${M(liq.pagado)}.`);
+  const salen = baseCfg.posiciones.filter((p) => p.sale).map((p) => p.nombre);
+  const pagadasHoy = baseCfg.deudas.filter((d) => d.pagar).map((d) => d.nombre);
+  if (salen.length) notas.push(`Sale del plan (decidido en Hoy): ${salen.join(", ")}${pagadasHoy.length ? `; se paga ${pagadasHoy.join(", ")}` : ""}: quedan ${M(num(baseCfg.hoy?.porDesplegar))} por desplegar.`);
+  const vendidas = (esc.ventas || []).filter((v) => !byId[v.posicionId]?.sale).map((v) => `${nom(v.posicionId)}${v.monto != null ? ` (${M(v.monto)})` : ""}`);
+  if (vendidas.length) notas.push(`Vendes ${vendidas.join(", ")}: liberas ${M(liq.liberado - liq.liberadoHoy)}.`);
+  const pagosEsc = (esc.pagos || []).filter((id) => !baseCfg.deudas.find((d) => d.id === id)?.pagar);
+  if (pagosEsc.length) notas.push(`Pagas ${pagosEsc.map((id) => baseCfg.deudas.find((d) => d.id === id)?.nombre || id).join(", ")}: ${M(liq.pagado - liq.pagadoHoy)}.`);
   (esc.despliegue || []).filter((d) => num(d.capital) > 0).forEach((d) => notas.push(`${M(d.capital)} a ${d.nombre}${num(d.tasa) > 0 ? ` al ${d.tasa}%` : ""}${d.regla ? ` · ${d.regla}` : ""}.`));
   if (liq.porAsignar > 1e6) notas.push(`Quedan ${M(liq.porAsignar)} sin asignar (se quedan en caja, sin rendir).`);
   if (liq.porAsignar < -1e6) notas.push(`Falta plata: asignas ${M(-liq.porAsignar)} más de lo que liberas.`);
   return {
     ...esc, ajuste: { notas, movimientos }, liquidez: liq,
-    cfg: { meses: H, caja: baseCfg.caja, posiciones: finales, flujos: baseCfg.flujos, deudas: baseCfg.deudas, movimientos: [...movimientos, ...movimientosPerfil(perfil), ...eventos],
+    cfg: { meses: H, caja: baseCfg.caja, posiciones: finales, flujos: baseCfg.flujos, deudas: baseCfg.deudas, movimientos: [...movimientosHoy(baseCfg), ...movimientos, ...movimientosPerfil(perfil), ...eventos],
       reglas: { excedente, deficitDesde, colchon, rebalanceo, inflacion: num(perfil.inflacion), indexarGastos: true, indexarSustento: false, coberturaMin: num(perfil.coberturaMin) || 120 } },
   };
 }
