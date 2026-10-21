@@ -90,10 +90,22 @@ const TT = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 1
 // Misma fuente que el Dashboard (metrics.js, spec Finanzas): cobertura pasiva
 // = ingreso pasivo neto ÷ (gastos + cuotas). `factor` = umbral de cobertura;
 // `pos` = posición visual en la barra (N1 y N2 comparten umbral 0).
-const POS_NIVEL = [0, 0.1, 0.25, 0.5, 1];
-const LEVELS = NIVELES.map((n, i) => ({
+// 21-oct-2026 — La cifra de cada nivel es el INGRESO PASIVO que hace falta
+// para alcanzarlo (factor x gastos+cuotas), NO el dinero con el que se vive en
+// ese nivel. Se leia al reves: "Seguridad $20.700.963/m" parecia decir que uno
+// vive en seguridad con 20,7M cuando sus gastos son 82,8M. Ademas Deficit y
+// Estabilidad no tienen umbral de ingreso pasivo (dependen del flujo del mes) y
+// mostraban "$0/m", que era falso. `porCobertura` distingue los dos casos y
+// `requisito` guarda el criterio real de los dos primeros.
+const REQUISITO = {
+  deficit: "Si tu flujo del mes es negativo",
+  estabilidad: "Flujo positivo; no exige ingreso pasivo",
+};
+const LEVELS = NIVELES.map((n) => ({
   id: n.id, name: n.nombre, icon: n.icon, color: n.color,
-  factor: (n.min || 0) / 100, pos: POS_NIVEL[i], desc: n.desc, detail: n.detail,
+  factor: (n.min || 0) / 100, desc: n.desc, detail: n.detail,
+  porCobertura: (n.min || 0) > 0,
+  requisito: REQUISITO[n.clave] || null,
 }));
 
 const fadeStyle = typeof document !== "undefined" ? (() => { const s = document.createElement("style"); s.textContent = "@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}"; if (!document.querySelector("[data-finpath-anim]")) { s.setAttribute("data-finpath-anim","1"); document.head.appendChild(s); } return null; })() : null;
@@ -149,7 +161,11 @@ function FreedomBarLive({ ip, ob, fl, nivel }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
           <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Tu Nivel de Libertad Financiera</h3>
-          <p style={{ fontSize: 12, color: T.txt3, margin: "3px 0 0" }}>5 niveles de libertad • Reacciona en tiempo real</p>
+          <p style={{ fontSize: 12, color: T.txt3, margin: "3px 0 0" }}>
+            {te > 0
+              ? <>Cuánto de tus <b style={{ color: T.txt2 }}>{fm(te)}/mes</b> de gastos y cuotas pagan tus activos</>
+              : "5 niveles de libertad • Reacciona en tiempo real"}
+          </p>
         </div>
         {currentData && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: currentData.color + "15", border: "1px solid " + currentData.color + "25", borderRadius: 12, padding: "8px 16px" }}>
@@ -172,10 +188,10 @@ function FreedomBarLive({ ip, ob, fl, nivel }) {
       <div style={{ marginBottom: 16 }}>
         <div style={{ height: 36, background: T.bg3, borderRadius: 16, overflow: "hidden", position: "relative" }}>
           {/* Level markers */}
-          {LEVELS.map((l, i) => {
-            const pos = l.pos * 100;
+          {LEVELS.filter((l) => l.porCobertura).map((l) => {
+            const pos = l.factor * 100;
             return (
-              <div key={i} style={{ position: "absolute", left: pos + "%", top: 0, bottom: 0, width: 2, background: "rgba(255,255,255,0.1)", zIndex: 2 }}>
+              <div key={l.id} style={{ position: "absolute", left: pos + "%", top: 0, bottom: 0, width: 2, background: "rgba(255,255,255,0.1)", zIndex: 2 }}>
                 <div style={{ position: "absolute", top: -22, left: "50%", transform: "translateX(-50%)", fontSize: 16 }}>{l.icon}</div>
               </div>
             );
@@ -194,10 +210,23 @@ function FreedomBarLive({ ip, ob, fl, nivel }) {
           </div>
         </div>
 
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.txt3, marginTop: 4 }}>
+          <span>0% de tus gastos cubierto</span>
+          <span>{ratio > 1 ? `la barra topa en 100% — vas en ${fmtPctEs(ratio * 100, 0)}` : "100% = tus gastos cubiertos"}</span>
+        </div>
+
         {/* Level labels */}
         <div style={{ display: "flex", position: "relative", height: 20, marginTop: 6 }}>
-          {LEVELS.map((l) => {
-            const pos = l.pos * 100;
+          {/* 0-25% no es un punto: es la franja donde estas en Deficit o en
+              Estabilidad segun tu flujo del mes. Antes se dibujaban como dos
+              marcas (0% y un 10% inventado) y la escala no cuadraba. */}
+          <div style={{ position: "absolute", left: "12.5%", transform: "translateX(-50%)", textAlign: "center" }}>
+            <div style={{ fontSize: 9, fontWeight: currentLevel <= 2 ? 700 : 500, color: currentLevel === 1 ? LEVELS[0].color : currentLevel === 2 ? LEVELS[1].color : T.txt3 }}>
+              {currentLevel === 1 ? "Déficit" : currentLevel === 2 ? "Estabilidad" : "Déficit · Estabilidad"}
+            </div>
+          </div>
+          {LEVELS.filter((l) => l.porCobertura).map((l) => {
+            const pos = l.factor * 100;
             const reached = currentLevel >= l.id;
             return (
               <div key={l.id} style={{ position: "absolute", left: pos + "%", transform: "translateX(-50%)", textAlign: "center" }}>
@@ -224,9 +253,18 @@ function FreedomBarLive({ ip, ob, fl, nivel }) {
               {reached && <div style={{ position: "absolute", top: 5, right: 5, width: 6, height: 6, borderRadius: "50%", background: l.color }} />}
               <div style={{ fontSize: 18, marginBottom: 4 }}>{l.icon}</div>
               <div style={{ fontSize: 10, fontWeight: 700, color: reached ? l.color : T.txt3, lineHeight: 1.2 }}>{l.name}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                {fm(needed)}<span style={{ fontSize: 9 }}>/m</span>
-              </div>
+              {l.porCobertura ? (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
+                    {fm(needed)}<span style={{ fontSize: 9 }}>/m</span>
+                  </div>
+                  <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
+                    de ingreso pasivo<br />= {fmtPctEs(l.factor * 100, 0)} de tus gastos
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 9, color: T.txt3, marginTop: 4, lineHeight: 1.35, minHeight: 38, display: "flex", alignItems: "center", justifyContent: "center" }}>{l.requisito}</div>
+              )}
               <div style={{ fontSize: 9, color: T.txt3, marginTop: 3 }}>click para info ▾</div>
             </div>
           );
@@ -246,14 +284,20 @@ function FreedomBarLive({ ip, ob, fl, nivel }) {
                 <span style={{ fontSize: 24 }}>{l.icon}</span>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: l.color }}>{l.name}</div>
-                  <div style={{ fontSize: 11, color: T.txt3 }}>Nivel {l.id}/5 — Necesitas {fm(needed)}/mes de ingreso pasivo</div>
+                  <div style={{ fontSize: 11, color: T.txt3 }}>
+                    Nivel {l.id}/5 — {l.porCobertura
+                      ? <>Necesitas {fm(needed)}/mes de ingreso pasivo ({fmtPctEs(l.factor * 100, 0)} de tus {fm(te)}/mes de gastos y cuotas)</>
+                      : l.requisito}
+                  </div>
                 </div>
               </div>
               <button onClick={() => setExpandedLvl(null)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 14 }}>✕</button>
             </div>
             <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.7 }}>{l.detail}</div>
             <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(255,255,255,0.03)", borderRadius: 10, fontSize: 12 }}>
-              {reached
+              {!l.porCobertura
+                ? <span style={{ color: T.txt3 }}>📊 Este nivel no se mide con ingreso pasivo sino con tu flujo del mes. Tu ingreso pasivo actual: {fm(ni)}/mes.</span>
+                : reached
                 ? <span style={{ color: l.color, fontWeight: 700 }}>✅ ¡Ya alcanzaste este nivel! Tu ingreso pasivo ({fm(ni)}/mes) supera los {fm(needed)}/mes necesarios.</span>
                 : <span style={{ color: T.txt3 }}>📊 Te faltan <strong style={{ color: l.color }}>{fm(needed - ni)}/mes</strong> para alcanzar este nivel. Tu ingreso pasivo actual: {fm(ni)}/mes.</span>
               }
