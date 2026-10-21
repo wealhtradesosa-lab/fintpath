@@ -658,7 +658,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             );
           })()}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 16, marginTop: 16, alignItems: "stretch" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(380px, 100%), 1fr))", gap: 16, marginTop: 16, alignItems: "stretch" }}>
         {(() => {
           const idx = foco ? [foco.mes - 1] : idxRegimen;
           const prom = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / (idx.length || 1);
@@ -703,7 +703,12 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: R.lg, padding: 16, display: "flex", flexDirection: "column", minHeight: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>🧾 De dónde sale cada número</div>
                 <div style={{ ...F.caption, marginBottom: 10 }}>{foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`} · ítem por ítem, ordenado de mayor a menor.</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", maxHeight: 400, paddingRight: 4 }}>
+                {/* 21-oct-2026 (Santiago, en el celular: "esta sección no se deja
+                    recorrer"): el scroll interno de 400 px peleaba con el scroll de la
+                    página en el móvil y la tarjeta desbordaba a lo ancho (minmax 380px
+                    en una pantalla de 390). En pantallas angostas la lista va completa,
+                    sin scroll propio; el límite de alto queda solo para escritorio. */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, ...(typeof window !== "undefined" && window.innerWidth >= 900 ? { overflowY: "auto", maxHeight: 400, paddingRight: 4 } : {}) }}>
                   {grupos.map(([k, titulo, color]) => {
                     const lista = filas.filter((f) => f.kind === k).map((f) => ({ ...f, v: valor(f) })).filter((f) => f.v !== 0).sort((a, b) => b.v - a.v);
                     const total = lista.reduce((a, f) => a + f.v, 0);
