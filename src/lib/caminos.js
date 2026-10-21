@@ -79,8 +79,8 @@ export function fichaPorDefecto(activo, perfil = PERFIL_DEFAULT, renta = 0) {
 export function canastaDe(p) {
   if (p.vivienda) return "proteccion";
   if (p.bolsillo === "crecimiento") return "crecimiento";
+  if (p.bolsillo === "caja" || (p.liquido && !(p.tasa > 0))) return "proteccion"; // efectivo: colchón, nunca "quieto"
   if (p.bolsillo === "sustento" && (p.tasa > 0 || p.renta > 0 || p.inmueble)) return "rentas";
-  if (p.bolsillo === "caja") return "proteccion";
   return "uso";
 }
 
@@ -155,8 +155,13 @@ export function medirCanastas(posiciones, caja = 0, capitalDe = (p) => p.capital
     if (p.liquido || p.bolsillo === "caja") c.colchon += k;
   });
   c.proteccion += caja;
-  const invertible = c.rentas + c.crecimiento;
-  c.rentasPct = invertible > 0 ? (c.rentas / invertible) * 100 : 0;
+  // Los rangos se miden sobre lo MOVIBLE: rentas financieras + crecimiento.
+  // Los inmuebles que rentan son rentas, pero ningún camino pide venderlos
+  // para cuadrar un porcentaje; se muestran aparte (rentasInmuebles).
+  c.rentasInmuebles = posiciones.filter((p) => canastaDe(p) === "rentas" && p.inmueble).reduce((s, p) => s + Math.max(0, capitalDe(p)), 0);
+  c.rentasMovibles = c.rentas - c.rentasInmuebles;
+  const invertible = c.rentasMovibles + c.crecimiento;
+  c.rentasPct = invertible > 0 ? (c.rentasMovibles / invertible) * 100 : 0;
   c.crecimientoPct = invertible > 0 ? (c.crecimiento / invertible) * 100 : 0;
   c.invertible = invertible;
   c.total = c.proteccion + c.rentas + c.crecimiento + c.uso;
@@ -266,7 +271,12 @@ export function ajustarAlCamino(baseCfg, camino, perfil = PERFIL_DEFAULT) {
     const arriendo = vivienda.capital * num(perfil.arriendoPctMensual) / 100;
     movimientos.push({ mes: 0, tipo: "flujo_inicia", flujo: { id: "arriendo_vivienda", nombre: "Arriendo de vivienda", tipo: "gasto", monto: arriendo, indexa: true } });
     let libre = vivienda.capital;
-    const hip = baseCfg.deudas.find((d) => d.hipoteca);
+    const palabras = norm(vivienda.nombre).split(" ").filter((w) => w.length > 3 && !/^(casa|apto|apartamento|vivienda|donde|vivo)$/.test(w));
+    // La hipoteca de la vivienda: la que comparte nombre con ella; si hay una sola y no es claramente de otro inmueble, esa.
+    const hipotecas = baseCfg.deudas.filter((d) => d.hipoteca);
+    const palabrasDe = (n) => norm(n).split(" ").filter((w) => w.length > 3 && !/^(casa|apto|apartamento|vivienda|donde|vivo|hipoteca|credito|crédito)$/.test(w));
+    const deOtro = (d) => pos.some((p) => p.inmueble && p.id !== vivienda.id && palabrasDe(p.nombre).some((w) => norm(d.nombre).includes(w)));
+    const hip = hipotecas.find((d) => palabras.some((w) => norm(d.nombre).includes(w))) || (hipotecas.length === 1 && !deOtro(hipotecas[0]) ? hipotecas[0] : null);
     if (hip) { movimientos.push({ mes: 0, tipo: "pagar_deuda", deudaId: hip.id, origen: [{ posicionId: "caja", monto: hip.saldo }] }); libre -= hip.saldo; }
     const d = destinoDe("crecimiento", pos, perfil);
     movimientos.push({ mes: 0, tipo: "aportar", posicionId: d.id, monto: Math.max(0, libre), origen: [{ posicionId: "caja", monto: Math.max(0, libre) }] });
@@ -304,9 +314,9 @@ export function ajustarAlCamino(baseCfg, camino, perfil = PERFIL_DEFAULT) {
   const crecMax = C.crecimiento?.max, crecMin = C.crecimiento?.min, rentMin = C.rentas?.min, rentMax = C.rentas?.max;
   const deCrecimiento = () => porCapital(pos.filter((p) => canastaDe(p) === "crecimiento"));
   if (crecMax != null && m.crecimientoPct > crecMax) { aportar(destinoDe("rentas", pos, perfil), deCrecimiento(), m.crecimiento - m.invertible * crecMax / 100, (x) => `${M(x)} salen de crecimiento a rentas estables (máximo ${crecMax}% en crecimiento).`); m = med(); }
-  if (rentMin != null && m.rentasPct < rentMin) { aportar(destinoDe("rentas", pos, perfil), deCrecimiento(), m.invertible * rentMin / 100 - m.rentas, (x) => `${M(x)} pasan a rentas (mínimo ${rentMin}%).`); m = med(); }
+  if (rentMin != null && m.rentasPct < rentMin) { aportar(destinoDe("rentas", pos, perfil), deCrecimiento(), m.invertible * rentMin / 100 - m.rentasMovibles, (x) => `${M(x)} pasan a rentas (mínimo ${rentMin}%).`); m = med(); }
   if (crecMin != null && m.crecimientoPct < crecMin) { aportar(destinoDe("crecimiento", pos, perfil), rentasMovibles(pos), m.invertible * crecMin / 100 - m.crecimiento, (x) => `${M(x)} pasan de rentas a crecimiento (mínimo ${crecMin}%).`); m = med(); }
-  if (rentMax != null && m.rentasPct > rentMax) { aportar(destinoDe("crecimiento", pos, perfil), rentasMovibles(pos), m.rentas - m.invertible * rentMax / 100, (x) => `${M(x)} salen de rentas a crecimiento (máximo ${rentMax}% en rentas).`); m = med(); }
+  if (rentMax != null && m.rentasPct > rentMax) { aportar(destinoDe("crecimiento", pos, perfil), rentasMovibles(pos), m.rentasMovibles - m.invertible * rentMax / 100, (x) => `${M(x)} salen de rentas a crecimiento (máximo ${rentMax}% en rentas).`); m = med(); }
 
   // 5) Colchón líquido (meses de gastos): se llena desde crecimiento salvo que el camino exija crecimiento mínimo
   if (colchonMeta > 0 && m.colchon < colchonMeta) {
@@ -347,7 +357,8 @@ export function configurarCamino(baseCfg, camino, perfil = PERFIL_DEFAULT) {
   const idsCrec = pos.filter((p) => canastaDe(p) === "crecimiento").map((p) => p.id);
   const idsRentas = pos.filter((p) => canastaDe(p) === "rentas" && !p.inmueble).map((p) => p.id);
   const rebalanceo = (C.crecimiento?.max != null || C.crecimiento?.min != null) && idsCrec.length && idsRentas.length
-    ? { a: { ids: idsCrec, destinoId: destinoDe("crecimiento", pos, perfil).id }, b: { ids: idsRentas, destinoId: destinoDe("rentas", pos, perfil).id }, aMin: C.crecimiento?.min ?? null, aMax: C.crecimiento?.max ?? null }
+    ? { a: { ids: idsCrec, destinoId: destinoDe("crecimiento", pos, perfil).id }, b: { ids: idsRentas, destinoId: destinoDe("rentas", pos, perfil).id }, aMin: C.crecimiento?.min ?? null, aMax: C.crecimiento?.max ?? null,
+        aMeta: C.crecimiento?.min != null && C.crecimiento?.max != null ? (num(C.crecimiento.min) + num(C.crecimiento.max)) / 2 : C.crecimiento?.max != null ? Math.max(0, num(C.crecimiento.max) - 5) : Math.min(100, num(C.crecimiento.min) + 5) }
     : null;
   // El motor recibe las posiciones ORIGINALES (más las nuevas en cero): los movimientos de ajuste mueven el capital.
   const originales = baseCfg.posiciones.map((p) => ({ ...p }));

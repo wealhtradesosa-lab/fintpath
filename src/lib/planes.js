@@ -36,8 +36,8 @@
  *   reglas     {excedente:[{posicionId, pct}], deficitDesde:[posicionId...], inflacion (% anual),
  *               indexarGastos (bool), indexarSustento (bool), coberturaMin (%),
  *               colchon:{posicionId, meta}            el excedente llena esto antes de repartirse
- *               rebalanceo:{a:{ids,destinoId}, b:{ids,destinoId}, aMin, aMax}
- *                                                     cada enero, A/(A+B) vuelve al rango}
+ *               rebalanceo:{a:{ids,destinoId}, b:{ids,destinoId}, aMin, aMax, aMeta, cada}
+ *                                                     A/(A+B) vuelve a la meta cuando sale del rango}
  *
  * SALIDA por mes: entra (sustento recibido + flujos de ingreso), sale (gastos +
  * cuotas), queda, cobertura = entra/sale, crece (lo reinvertido + valorización),
@@ -114,28 +114,15 @@ export function simularCamino(cfg = {}) {
     }
   };
 
-  let mi = 0;
+  let mi = 0, rbAcum = 0;
   for (let mes = 0; mes < H; mes++) {
     // 1) Movimientos de este mes
     while (mi < movs.length && num(movs[mi].mes) <= mes) { aplicar(movs[mi], mes); mi++; }
-    // 2) Cada enero (mes 12, 24, …): indexación y rebalanceo entre canastas
+    // 2) Cada enero (mes 12, 24, …): indexación
     if (mes > 0 && mes % 12 === 0) {
       if (infl > 0) {
         flujos.forEach((f) => { if ((f.tipo === "gasto" && R.indexarGastos) || (f.tipo === "ingreso" && (f.indexa || R.indexarSustento))) f.monto *= 1 + infl; });
         if (R.colchon && R.indexarGastos) R.colchon = { ...R.colchon, meta: num(R.colchon.meta) * (1 + infl) };
-      }
-      // rebalanceo: {a:{ids,destinoId}, b:{ids,destinoId}, aMin, aMax} → pct de A sobre A+B
-      const RB = R.rebalanceo;
-      if (RB && RB.a && RB.b) {
-        const suma = (ids) => pos.filter((p) => ids.includes(p.id)).reduce((s, p) => s + Math.max(0, p.capital), 0);
-        const A = suma(RB.a.ids || []), B = suma(RB.b.ids || []), T = A + B;
-        const mover = (deIds, monto, destinoId, texto) => {
-          const dest = pos.find((p) => p.id === destinoId); if (!dest || monto <= 0) return;
-          const t = tomarDe(pos.filter((p) => deIds.includes(p.id) && p.id !== destinoId).sort((x, y) => y.capital - x.capital).map((p) => ({ posicionId: p.id })), monto, pos, caja);
-          dest.capital += t; if (t > 0) log.push({ mes, texto: `${texto}: ${Math.round(t)}` });
-        };
-        if (T > 0 && RB.aMax != null && A / T * 100 > num(RB.aMax) + 0.5) mover(RB.a.ids, A - T * num(RB.aMax) / 100, RB.b.destinoId, "Rebalanceo a rentas");
-        else if (T > 0 && RB.aMin != null && A / T * 100 < num(RB.aMin) - 0.5) mover(RB.b.ids, T * num(RB.aMin) / 100 - A, RB.a.destinoId, "Rebalanceo a crecimiento");
       }
     }
     // 3) Rendimiento de cada posición
@@ -188,6 +175,23 @@ export function simularCamino(cfg = {}) {
       const t = Math.min(falta, caja.valor); caja.valor -= t; falta -= t;
       for (const id of (R.deficitDesde || [])) { if (falta <= 0) break; const p = pos.find((x) => x.id === id); if (p) { const u = Math.min(falta, p.capital); p.capital -= u; falta -= u; } }
       if (falta > 0) caja.valor -= falta; // queda negativa: señal de que el camino no se sostiene
+    }
+    // 6) Rebalanceo: {a:{ids,destinoId}, b:{ids,destinoId}, aMin, aMax, aMeta, cada}
+    //    pct de A sobre A+B. Se revisa cada `cada` meses (1 = continuo); al salirse
+    //    del rango vuelve a la META (centro), no al borde. Se registra una vez al año.
+    const RB = R.rebalanceo;
+    if (RB && RB.a && RB.b && (mes + 1) % (num(RB.cada) || 1) === 0) {
+      const suma = (ids) => pos.filter((p) => ids.includes(p.id)).reduce((s, p) => s + Math.max(0, p.capital), 0);
+      const A = suma(RB.a.ids || []), B = suma(RB.b.ids || []), T = A + B;
+      const metaA = (hacia) => num(RB.aMeta != null ? RB.aMeta : hacia);
+      const mover = (deIds, monto, destinoId, signo) => {
+        const dest = pos.find((p) => p.id === destinoId); if (!dest || monto <= 0) return;
+        const t = tomarDe(pos.filter((p) => deIds.includes(p.id) && p.id !== destinoId).sort((x, y) => y.capital - x.capital).map((p) => ({ posicionId: p.id })), monto, pos, caja);
+        dest.capital += t; rbAcum += signo * t;
+      };
+      if (T > 0 && RB.aMax != null && A / T * 100 > num(RB.aMax) + 0.5) mover(RB.a.ids, A - T * metaA(RB.aMax) / 100, RB.b.destinoId, -1);
+      else if (T > 0 && RB.aMin != null && A / T * 100 < num(RB.aMin) - 0.5) mover(RB.b.ids, T * metaA(RB.aMin) / 100 - A, RB.a.destinoId, +1);
+      if (mes % 12 === 11 && Math.abs(rbAcum) > 0) { log.push({ mes, texto: `Rebalanceo ${rbAcum < 0 ? "a rentas" : "a crecimiento"}: ${Math.round(Math.abs(rbAcum))}` }); rbAcum = 0; }
     }
     // El detalle refleja el capital al CIERRE del mes (ya con excedente o déficit aplicado)
     pos.forEach((p) => { if (detalle[p.id]) detalle[p.id].capital = p.capital; });

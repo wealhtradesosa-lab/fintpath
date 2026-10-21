@@ -24,6 +24,7 @@ const CsvImport = lazy(() => import("./components/CsvImport"));
 const CalculadoraWizard = lazy(() => import("./components/CalculadoraWizard"));
 const SimuladorAvanzado = lazy(() => import("./components/SimuladorAvanzado"));
 const SimuladorFuturo = lazy(() => import("./components/SimuladorFuturo"));
+const MiPlan = lazy(() => import("./components/MiPlan"));
 const DeclaracionFlow = lazy(() => import("./components/DeclaracionFlow"));
 const PensionesColpensiones = lazy(() => import("./components/PensionesColpensiones"));
 const BorradorDeclaracionF110 = lazy(() => import("./components/BorradorDeclaracionF110"));
@@ -1963,7 +1964,11 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:isUS||((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Declaraciones anteriores",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador · año actual"},{id:"simf",i:"🔮",l:"Simulador · futuro",hidden:isUS},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte"},{id:"flujo",i:"📅",l:isEN?"Annual Flow":"Flujo Anual"},{id:"met",i:"🎯",l:isEN?"Goals":"Metas"},{id:"trd",i:"💹",l:"Trading",
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:isUS||((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Declaraciones anteriores",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Simulador · año actual"},{id:"plan",i:"🧭",l:isEN?"My Plan":"Mi plan",hidden:isUS},
+      // 21-oct-2026: Simulador futuro, Tu Norte, Flujo Anual y Metas salen del
+      // menú (no se borran: rutas y datos siguen vivos) y los absorbe Mi plan.
+      // Santiago: "no quiero llenar a FINPATHIA de secciones; menos es más".
+      {id:"simf",i:"🔮",l:"Simulador · futuro",hidden:true},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"flujo",i:"📅",l:isEN?"Annual Flow":"Flujo Anual",hidden:true},{id:"met",i:"🎯",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"💹",l:"Trading",
       // 26-jul-2026 — OCULTO DEL MENÚ, NO ELIMINADO.
       // Uso real medido en la base: 2 de 86 cuentas tienen posiciones
       // cargadas, y una es la de Santiago. Contra 31 en Ingresos y 21 en
@@ -1980,7 +1985,7 @@ export default function FinPath(){
       // Revisar en un mes. Volver a mostrarlo es quitar este hidden.
       hidden:true},{id:"pen",i:"🏛️",l:isEN?"Retirement":"Pensiones"},{id:"btc",i:"₿",l:isEN?"Bitcoin vs 401(k)":"Ahorro BTC"},{id:"buyvsinvest",i:"🏠",l:isEN?"Buy vs Invest":"Comprar o arrendar"},{id:"aportes",i:"💰",l:"Calcula tus aportes",hidden:isUS},{id:"glosario",i:"📚",l:isEN?"Glossary":"Glosario",hidden:isUS},{id:"_sep3",sep:true,l:isEN?"ARTIFICIAL INTELLIGENCE":"INTELIGENCIA ARTIFICIAL"},{id:"asesor",i:"🤖",l:isEN?"AI Advisor":"Asesor IA"},{id:"coach",i:"🧠",l:isEN?"AI Coaches":"Coaches IA"},{id:"_sep4",sep:true},{id:"price",i:"⭐",l:isEN?"Plans":"Planes"},{id:"cuenta",i:"⚙️",l:isEN?"My Account":"Mi cuenta"},{id:"metrics",i:"📈",l:"Cómo va el negocio",hidden:!isAdmin}];
 
-  const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",pen:"Pensiones",tax:"Planeación Tributaria",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",cuenta:"Mi cuenta"};
+  const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",plan:"Mi plan",pen:"Pensiones",tax:"Planeación Tributaria",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",cuenta:"Mi cuenta"};
   if(typeof document!=="undefined")document.title="FINPATHIA"+(secNames[pg]?" — "+secNames[pg]:"");
   const rp=()=>{if(!u)return null;switch(pg){
     case"dash":{
@@ -3226,6 +3231,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
     case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
     case"flujo":return <FlujoAnual user={u} trm={u?.trm||4200} isEN={isEN}/>;
+    case"plan":return <MiPlan user={u||{}} perfil={u?.perfilPlan||null} fichas={u?.fichasPlan||{}} caminos={u?.caminos||[]} caminoElegido={u?.caminoElegido||null} onPerfil={v=>upd("perfilPlan",v)} onFichas={v=>upd("fichasPlan",v)} onCaminos={v=>upd("caminos",v)} onElegir={v=>upd("caminoElegido",v)} onNavigate={setPg}/>;
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
     // función serverless (que además valida contra su propia lista de admins).
     case"metrics":return isAdmin?<AdminMetrics email={u?.p?.email} fmt={fm} T={T}/>:<div style={{padding:40,textAlign:"center",color:T.tx3}}>No disponible.</div>;
