@@ -1,418 +1,526 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// FINPATHIA · MiPlan — "¿Por qué camino llego, y se cumple?"
+// FINPATHIA · MiPlan — el plan patrimonial a 10 años, paso a paso
 //
-// 21-oct-2026, Santiago: "quiero una metodología: 5 caminos a 10 años, los
-// mismos puntos para compararlos lado a lado, y que cada camino tenga
-// condiciones: nada hago en llamarme conservador si muevo eso como me dé la
-// gana. Aplicar mucho la teoría de las canastas."
+// 21-oct-2026, Santiago: "esto debería ser un proceso guiado que lo lleva a
+// uno paso a paso, considerando lo que se tiene, lo que se va a transformar o
+// vender para reinvertir, lo que viene por ingresos adicionales —la bodega
+// empieza en 2 años, la pensión en 4— y todo esto entonces le muestra a uno y
+// le modela el escenario; además los puede uno revisar cada uno y compararlos."
 //
-// Esta pantalla reemplaza Simulador futuro, Tu Norte, Flujo Anual y Metas
-// (las rutas viejas siguen vivas; nada se borra). Orden de lectura:
+//   1 · HOY            qué tienes y qué produce cada peso
+//   2 · LO QUE VIENE   lo seguro, en todos los escenarios: pensión, obra, contrato
+//   3 · TU ESCENARIO   qué vendes, qué pagas, a dónde va la plata y con qué regla
+//   4 · EL RESULTADO   el escenario modelado y contado, año a año
+//   5 · COMPARA        todos lado a lado, estrés y $100 M en cada inversión
 //
-//   HOY         tu patrimonio por canastas (Protección · Rentas · Crecimiento · Uso)
-//   CAMINOS     tres por defecto + los tuyos; cada uno dice qué cambia hoy
-//   LADO A LADO los mismos puntos y la curva de patrimonio superpuesta
-//   TU CAMINO   el elegido en detalle: año a año, movimientos, si se cumple
-//   SUPUESTOS   inflación, tasas, pensiones: una vez, para todos los caminos
-//
-// El motor (lib/planes.js) calcula; lib/caminos.js traduce tus datos a
-// posiciones y vigila que cada camino cumpla sus condiciones.
+// Seguridad, Balance y Crecimiento son plantillas: llenan el paso 3 con un
+// despliegue concreto que se puede editar. El motor es lib/planes.js; la
+// traducción de datos y plantillas es lib/caminos.js. Se guarda en
+// user.caminos (escenarios), perfilPlan (supuestos y lo que viene),
+// fichasPlan (canasta por activo) y caminoElegido.
 // ═══════════════════════════════════════════════════════════════════════════
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import PageHeader from "./PageHeader";
-import { C, Cα, F } from "../lib/designTokens";
+import { C, F } from "../lib/designTokens";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
-import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, nuevoCamino, canastaDe, CANASTA_LABEL, CONDICION_LABEL, PERFIL_DEFAULT } from "../lib/caminos.js";
+import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
 
 const fmM = (n) => { const v = Number(n) || 0; const a = Math.abs(v); if (a >= 1e9) return (v < 0 ? "−" : "") + "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M"; return (v < 0 ? "−" : "") + "$" + Math.round(a / 1e6).toLocaleString("es-CO") + " M"; };
 const fmMes = (n) => { const v = Number(n) || 0; const a = Math.abs(v); return (v < 0 ? "−" : "") + "$" + (a >= 1e6 ? (a / 1e6).toFixed(1).replace(".0", "").replace(".", ",") + " M" : Math.round(a / 1e3) + " K"); };
 const pct = (n) => `${Math.round(Number(n) || 0)}%`;
+const enM = (n) => Math.round((Number(n) || 0) / 1e5) / 10;
 const CANASTA_COLOR = { proteccion: C.accent, rentas: C.ok, crecimiento: C.warn, uso: C.subtle };
 const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 20, minWidth: 0 };
 const sub = { background: C.raised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, minWidth: 0 };
 const inputS = { background: C.bg, border: `1px solid ${C.borderStrong}`, borderRadius: 8, color: C.text, padding: "8px 10px", fontSize: 13, width: "100%", boxSizing: "border-box" };
 const btn = (primary) => ({ background: primary ? C.accent : "transparent", color: primary ? "#fff" : C.text, border: `1px solid ${primary ? C.accent : C.borderStrong}`, borderRadius: 999, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" });
-const chip = (color) => ({ display: "inline-block", padding: "3px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, color, background: `${color}20`, border: `1px solid ${color}40` });
-const Num = ({ value, onChange, step = 1, min, max, suffix }) => (
-  <div style={{ position: "relative" }}>
-    <input type="number" step={step} min={min} max={max} value={value ?? ""} onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))} style={inputS} />
-    {suffix && <span style={{ position: "absolute", right: 10, top: 9, fontSize: 11, color: C.subtle }}>{suffix}</span>}
+const chip = (color) => ({ display: "inline-block", padding: "3px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, color, background: `${color}20`, border: `1px solid ${color}40`, whiteSpace: "nowrap" });
+const th = { ...F.label, textAlign: "left", padding: "8px 6px", whiteSpace: "nowrap" };
+const td = { padding: "7px 6px", color: C.text, fontSize: 12, verticalAlign: "middle" };
+const tdNum = { ...td, textAlign: "right", fontFamily: F.mono.fontFamily, whiteSpace: "nowrap" };
+const Num = ({ value, onChange, step = 1, min, max, suffix, w }) => (
+  <div style={{ position: "relative", width: w }}>
+    <input type="number" step={step} min={min} max={max} value={value ?? ""} onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))} style={{ ...inputS, paddingRight: suffix ? 26 : 10 }} />
+    {suffix && <span style={{ position: "absolute", right: 8, top: 9, fontSize: 11, color: C.subtle }}>{suffix}</span>}
   </div>
 );
-const Campo = ({ l, children }) => (<label style={{ display: "block" }}><div style={{ ...F.label, marginBottom: 4 }}>{l}</div>{children}</label>);
+const Campo = ({ l, children, style }) => (<label style={{ display: "block", ...style }}><div style={{ ...F.label, marginBottom: 4 }}>{l}</div>{children}</label>);
+const useAncho = () => { const [w, setW] = useState(typeof window === "undefined" ? 1200 : window.innerWidth); useEffect(() => { const f = () => setW(window.innerWidth); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []); return w; };
+const anioDe = (mes) => Math.floor((Number(mes) || 0) / 12) + 1;
 
-// ─── HOY: canastas ───────────────────────────────────────────────────────────
+// Producción mensual de una posición hoy: lo que recibes y lo que crece
+const produce = (p) => {
+  const recibe = p.capital * (Number(p.tasa) || 0) / 100 / 12 * ((p.pagaPct ?? 0) / 100) + (p.renta || 0);
+  const crece = p.capital * (Math.pow(1 + (Number(p.tasa) || 0) / 100, 1 / 12) - 1) * (1 - (p.pagaPct ?? 0) / 100) + p.capital * (Math.pow(1 + (Number(p.valorizacion) || 0) / 100, 1 / 12) - 1);
+  return { recibe, crece };
+};
+const notaDe = (p) => p.vivienda ? "Tu vivienda: protege, no produce" : p.renta > 0 ? `Renta ${fmMes(p.renta)} al mes${p.valorizacion ? ` · valoriza ${p.valorizacion}%` : ""}` : p.bolsillo === "crecimiento" ? `Reinvierte al ${p.tasa}%` : p.tasa > 0 ? `Paga el ${p.pagaPct}% de ${p.tasa}% cada mes` : p.vehiculo ? "Pierde valor" : p.valorizacion > 0 ? `Solo valoriza ${p.valorizacion}%` : "Quieto";
+
+// ─── Barra de canastas ───────────────────────────────────────────────────────
 function BarraCanastas({ c, alto = 14 }) {
   const total = c.total || 1;
+  return <div style={{ display: "flex", height: alto, borderRadius: 999, overflow: "hidden", background: C.raised }}>{["proteccion", "rentas", "crecimiento", "uso"].map((k) => c[k] > 0 && <div key={k} title={`${CANASTA_LABEL[k]} ${fmM(c[k])}`} style={{ width: `${(c[k] / total) * 100}%`, background: CANASTA_COLOR[k] }} />)}</div>;
+}
+
+// ─── Stepper ─────────────────────────────────────────────────────────────────
+const PASOS = [["Hoy", "Qué tienes"], ["Lo que viene", "Lo seguro"], ["Tu escenario", "Qué mueves"], ["El resultado", "Modelado"], ["Compara", "Lado a lado"]];
+function Stepper({ paso, setPaso }) {
   return (
-    <div>
-      <div style={{ display: "flex", height: alto, borderRadius: 999, overflow: "hidden", background: C.raised }}>
-        {["proteccion", "rentas", "crecimiento", "uso"].map((k) => c[k] > 0 && <div key={k} title={`${CANASTA_LABEL[k]} ${fmM(c[k])}`} style={{ width: `${(c[k] / total) * 100}%`, background: CANASTA_COLOR[k] }} />)}
-      </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 6 }}>
+      {PASOS.map(([t, s], i) => { const n = i + 1, on = paso === n, done = paso > n; return (
+        <button key={t} onClick={() => setPaso(n)} style={{ background: on ? C.accent : C.surface, border: `1px solid ${on ? C.accent : C.border}`, borderRadius: 12, padding: "10px 8px", cursor: "pointer", textAlign: "left", minWidth: 0 }}>
+          <div style={{ ...F.label, color: on ? "#fff" : done ? C.ok : C.subtle }}>{done ? "✓" : n} · {s}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: on ? "#fff" : C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t}</div>
+        </button>); })}
     </div>
   );
 }
-function Hoy({ base, fichas, onFichas }) {
-  const c = base.canastasHoy;
-  const meses = base.gastosMes > 0 ? c.colchon / base.gastosMes : 0;
+const Siguiente = ({ onClick, children }) => <div style={{ display: "flex", justifyContent: "flex-end" }}><button style={btn(true)} onClick={onClick}>{children} →</button></div>;
+
+// ─── Paso 1 · Hoy ────────────────────────────────────────────────────────────
+function PasoHoy({ base, fichas, onFichas, onNext }) {
+  const c = base.canastasHoy, b = base.base;
+  const entra = (b?.ia || 0) + (b?.ip || 0), sale = base.gastosMes, queda = entra - sale, cob = sale > 0 ? (entra / sale) * 100 : 0;
+  const meses = sale > 0 ? c.colchon / sale : 0;
   const mover = (p, k) => onFichas({ ...fichas, [p.id]: { ...(fichas[p.id] || {}), canasta: k } });
-  const grupos = ["proteccion", "rentas", "crecimiento", "uso"].map((k) => ({ k, items: base.posiciones.filter((p) => canastaDe(p) === k).sort((a, b) => b.capital - a.capital) }));
-  const desc = { proteccion: `Vivienda y colchón · ${Math.round(meses)} meses de gastos líquidos`, rentas: `Pagan la vida cada mes · ${pct(c.rentasPct)} de lo movible`, crecimiento: `Se multiplican · ${pct(c.crecimientoPct)} de lo movible`, uso: "Ni rentan ni crecen" };
+  const tiles = [["Entra al mes", fmMes(entra), "trabajo + rentas"], ["Sale al mes", fmMes(sale), "gastos + cuotas"], ["Queda", fmMes(queda), queda >= 0 ? "excedente" : "déficit"], ["Cobertura", pct(cob), "entra ÷ sale"], ["Patrimonio neto", fmM(b?.patrimonioNeto ?? c.total), `${fmM(c.total)} bruto`], ["Colchón", `${Math.round(meses)} meses`, "líquido ÷ gastos"]];
+  const tot = base.posiciones.reduce((s, p) => { const x = produce(p); return { recibe: s.recibe + x.recibe, crece: s.crece + x.crece }; }, { recibe: 0, crece: 0 });
   return (
-    <div style={card}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
-        <div><div style={F.h2}>Hoy: tu patrimonio por canastas</div><div style={F.caption}>FINPATHIA propone la canasta de cada activo según su tipo. Tú decides: cambia cualquiera con su selector y los caminos se recalculan.</div></div>
-        <div style={{ ...F.caption }}>Patrimonio bruto <b style={{ color: C.text }}>{fmM(c.total)}</b> · gastos del mes <b style={{ color: C.text }}>{fmMes(base.gastosMes)}</b></div>
+    <div style={{ display: "grid", gap: 14 }}>
+      <div style={card}>
+        <div style={F.h2}>1 · Hoy: qué tienes y qué produce cada peso</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Este es tu punto de partida. Todo escenario arranca de aquí. Revisa que cada activo esté en la canasta correcta: FINPATHIA la propone por tipo, tú decides.</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginTop: 14 }}>
+          {tiles.map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
+        </div>
+        <div style={{ marginTop: 14 }}><BarraCanastas c={c} alto={16} /></div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>{["proteccion", "rentas", "crecimiento", "uso"].map((k) => <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption }}><span style={{ width: 8, height: 8, borderRadius: 999, background: CANASTA_COLOR[k] }} /><b style={{ color: C.text }}>{CANASTA_LABEL[k]}</b> {fmM(c[k])}</div>)}</div>
       </div>
-      <div style={{ marginTop: 14 }}><BarraCanastas c={c} alto={18} /></div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(230px, 100%), 1fr))", gap: 10, marginTop: 14 }}>
-        {grupos.map(({ k, items }) => (
-          <div key={k} style={sub}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: CANASTA_COLOR[k] }} /><span style={F.label}>{CANASTA_LABEL[k]}</span></div>
-            <div style={{ ...F.monoLg, color: C.text, marginTop: 4 }}>{fmM(c[k])}</div>
-            <div style={{ ...F.caption, marginTop: 2 }}>{desc[k]}</div>
-            <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
-              {items.length === 0 && <div style={{ ...F.caption, fontStyle: "italic" }}>Nada aquí todavía.</div>}
-              {items.map((p) => (
-                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ ...F.caption, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nombre}</div>
-                    <div style={F.caption}>{fmM(p.capital)}{p.renta > 0 ? ` · renta ${fmMes(p.renta)}` : p.tasa > 0 && p.bolsillo !== "uso" ? ` · ${p.tasa}%` : ""}{p.vivienda ? " · vivienda" : ""}</div>
-                  </div>
-                  <select value={k} onChange={(e) => mover(p, e.target.value)} title="Mover a otra canasta" style={{ ...inputS, width: 34, padding: "4px 2px", fontSize: 11, color: C.subtle, textAlignLast: "center", cursor: "pointer" }}>
-                    {["proteccion", "rentas", "crecimiento", "uso"].map((x) => <option key={x} value={x}>{x === k ? "⇄" : CANASTA_LABEL[x]}</option>)}
-                  </select>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div style={card}>
+        <div style={F.h3}>Producción por activo</div>
+        <div style={{ overflowX: "auto", marginTop: 8 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}>
+            <thead><tr><th style={th}>Activo</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Recibes / mes</th><th style={{ ...th, textAlign: "right" }}>Crece / mes</th><th style={th}>Canasta</th><th style={th}>Nota</th></tr></thead>
+            <tbody>
+              {[...base.posiciones].sort((a, b2) => b2.capital - a.capital).map((p) => { const x = produce(p); const k = canastaDe(p); return (
+                <tr key={p.id} style={{ borderTop: `1px solid ${C.border}` }}>
+                  <td style={td}>{p.nombre}<div style={F.caption}>{p.tipo}</div></td>
+                  <td style={tdNum}>{fmM(p.capital)}</td>
+                  <td style={{ ...tdNum, color: x.recibe > 0 ? C.ok : C.subtle }}>{x.recibe > 0 ? fmMes(x.recibe) : "—"}</td>
+                  <td style={{ ...tdNum, color: x.crece > 0 ? C.warn : x.crece < 0 ? C.danger : C.subtle }}>{x.crece !== 0 ? fmMes(x.crece) : "—"}</td>
+                  <td style={td}><select value={k} onChange={(e) => mover(p, e.target.value)} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 118, color: CANASTA_COLOR[k] }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select></td>
+                  <td style={{ ...td, color: C.muted }}>{notaDe(p)}</td>
+                </tr>); })}
+              <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}><td style={{ ...td, fontWeight: 700 }}>Total</td><td style={{ ...tdNum, fontWeight: 700 }}>{fmM(c.total)}</td><td style={{ ...tdNum, fontWeight: 700, color: C.ok }}>{fmMes(tot.recibe)}</td><td style={{ ...tdNum, fontWeight: 700, color: C.warn }}>{fmMes(tot.crece)}</td><td style={td} /><td style={{ ...td, color: C.muted }}>Produce {fmMes(tot.recibe + tot.crece)} al mes en total</td></tr>
+            </tbody>
+          </table>
+        </div>
+        {base.deudas.length > 0 && <div style={{ marginTop: 14 }}>
+          <div style={F.h3}>Deudas</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>{base.deudas.map((d) => <div key={d.id} style={{ ...sub, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}</div>)}</div>
+        </div>}
       </div>
+      <Siguiente onClick={onNext}>Siguiente: lo que ya viene</Siguiente>
     </div>
   );
 }
 
-// ─── Tarjeta de camino ───────────────────────────────────────────────────────
-function TarjetaCamino({ r, elegido, activo, onVer, onElegir }) {
-  const p = r.puntos, ok = r.vigilancia.cumple;
-  return (
-    <div onClick={onVer} style={{ ...card, cursor: "pointer", borderColor: activo ? r.color : C.border, boxShadow: activo ? `0 0 0 1px ${r.color}` : "none", display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 999, background: r.color }} /><span style={F.h2}>{r.nombre}</span>{r.propio && <span style={chip(C.purple)}>tuyo</span>}</div>
-        <div style={{ display: "flex", gap: 6 }}>{elegido && <span style={chip(C.accent)}>Tu camino</span>}<span style={chip(ok ? C.ok : C.danger)}>{ok ? "se cumple" : `se rompe · año ${r.vigilancia.roturas[0].anio}`}</span></div>
-      </div>
-      <div style={{ ...F.body, minHeight: 36 }}>{r.tesis}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <div><div style={F.label}>Patrimonio año 10</div><div style={{ ...F.monoLg, color: C.text }}>{fmM(p.patrimonioFinal)}</div><div style={F.caption}>{fmM(p.patrimonioFinalReal)} en plata de hoy</div></div>
-        <div><div style={F.label}>Mes del año 10</div><div style={{ ...F.monoLg, color: C.text }}>{fmMes(p.quedaMes)}</div><div style={F.caption}>entra {fmMes(p.entraMes)} · cobertura {pct(p.cobertura)}</div></div>
-      </div>
-      <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
-        <div style={F.label}>Qué cambia hoy</div>
-        {r.ajuste.notas.length ? r.ajuste.notas.slice(0, 2).map((n, i) => <div key={i} style={{ ...F.caption, color: C.muted, marginTop: 3 }}>· {n}</div>) : <div style={{ ...F.caption, marginTop: 3 }}>· Nada: ya estás dentro de los rangos de este camino.</div>}
-        {r.ajuste.notas.length > 2 && <div style={{ ...F.caption, marginTop: 3 }}>+{r.ajuste.notas.length - 2} más</div>}
-      </div>
-      <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
-        <button style={btn(false)} onClick={(e) => { e.stopPropagation(); onVer(); }}>Ver en detalle</button>
-        {!elegido && <button style={btn(true)} onClick={(e) => { e.stopPropagation(); onElegir(); }}>Elegir este camino</button>}
-      </div>
-    </div>
-  );
-}
-
-// ─── Lado a lado ─────────────────────────────────────────────────────────────
-function LadoALado({ res, activoId, onVer }) {
-  const data = useMemo(() => {
-    const H = Math.max(...res.map((r) => r.resultado.anual.length));
-    return Array.from({ length: H + 1 }, (_, a) => { const row = { anio: a }; res.forEach((r) => { row[r.id] = a === 0 ? r.puntos.patrimonioInicial : r.resultado.anual[a - 1]?.patrimonioFin; }); return row; });
-  }, [res]);
-  const filas = [
-    ["Patrimonio año 10", (p) => fmM(p.patrimonioFinal)],
-    ["En plata de hoy", (p) => fmM(p.patrimonioFinalReal)],
-    ["Crece al año (real)", (p) => (p.crecimientoRealAnual == null ? "—" : p.crecimientoRealAnual.toFixed(1).replace(".", ",") + "%")],
-    ["Entra al mes (año 10)", (p) => fmMes(p.entraMes)],
-    ["Sale al mes (año 10)", (p) => fmMes(p.saleMes)],
-    ["Cobertura", (p) => pct(p.cobertura)],
-    ["Produce al mes (recibido + reinvertido)", (p) => fmMes(p.produceMes)],
-    ["Mes más apretado", (p) => (p.mesApretado ? `año ${Math.floor(p.mesApretado.mes / 12) + 1} · ${pct(p.mesApretado.cobertura)}` : "—")],
-    ["Si crecimiento rinde menos", (p) => fmM(p.estres.patrimonioFinal)],
-    ["Sin la mayor renta", (p) => (p.sinMayorFuente ? `${pct(p.sinMayorFuente.cobertura)} · ${p.sinMayorFuente.seSostiene ? "aguanta" : "no aguanta"}` : "—")],
-  ];
-  return (
-    <div style={card}>
-      <div style={F.h2}>Lado a lado</div>
-      <div style={{ ...F.caption, marginTop: 2 }}>Los mismos puntos para cada camino. Patrimonio neto al cierre de cada año.</div>
-      <div style={{ height: 240, marginTop: 14 }}>
-        <ResponsiveContainer>
-          <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid {...gridProps} />
-            <XAxis dataKey="anio" {...axisProps} tickFormatter={(a) => (a === 0 ? "hoy" : `año ${a}`)} />
-            <YAxis {...axisProps} width={56} tickFormatter={(v) => fmM(v).replace("$", "")} />
-            <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} labelFormatter={(a) => (a === 0 ? "Hoy" : `Año ${a}`)} />} />
-            <Legend wrapperStyle={{ fontSize: 11, color: CHART.txt2 }} />
-            {res.map((r) => <Line key={r.id} type="monotone" dataKey={r.id} name={r.nombre} stroke={r.color} strokeWidth={r.id === activoId ? 3 : 1.5} dot={false} strokeOpacity={activoId && r.id !== activoId ? 0.5 : 1} />)}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-      <div style={{ overflowX: "auto", marginTop: 10 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 520 }}>
-          <thead><tr><th style={{ textAlign: "left", padding: "8px 6px", ...F.label }}>Punto</th>{res.map((r) => <th key={r.id} onClick={() => onVer(r.id)} style={{ textAlign: "right", padding: "8px 6px", cursor: "pointer", color: r.color, fontWeight: 700, borderBottom: r.id === activoId ? `2px solid ${r.color}` : "none" }}>{r.nombre}</th>)}</tr></thead>
-          <tbody>
-            {filas.map(([l, f]) => <tr key={l} style={{ borderTop: `1px solid ${C.border}` }}><td style={{ padding: "7px 6px", color: C.muted }}>{l}</td>{res.map((r) => <td key={r.id} style={{ padding: "7px 6px", textAlign: "right", color: C.text, fontFamily: F.mono.fontFamily }}>{f(r.puntos)}</td>)}</tr>)}
-            <tr style={{ borderTop: `1px solid ${C.border}` }}><td style={{ padding: "7px 6px", color: C.muted }}>Se cumple</td>{res.map((r) => <td key={r.id} style={{ padding: "7px 6px", textAlign: "right" }}><span style={chip(r.vigilancia.cumple ? C.ok : C.danger)}>{r.vigilancia.cumple ? "sí" : `no · año ${r.vigilancia.roturas[0].anio}`}</span></td>)}</tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ─── Movimientos propios ─────────────────────────────────────────────────────
+// ─── Editor de un movimiento (evento) ────────────────────────────────────────
 const TIPOS_MOV = [
-  { v: "vender", l: "Vender un activo" }, { v: "comprar", l: "Comprar un activo" }, { v: "aportar", l: "Mover capital a" },
-  { v: "flujo_inicia_ingreso", l: "Entra un ingreso nuevo" }, { v: "flujo_inicia_gasto", l: "Entra un gasto nuevo" }, { v: "flujo_termina", l: "Termina un ingreso o gasto" },
+  { v: "flujo_inicia_ingreso", l: "Entra un ingreso nuevo (pensión, renta, contrato)" }, { v: "flujo_inicia_gasto", l: "Entra un gasto nuevo (colegio, arriendo)" }, { v: "flujo_termina", l: "Termina un ingreso o gasto" }, { v: "flujo_cambia", l: "Cambia el monto de un ingreso o gasto" },
+  { v: "comprar", l: "Compras un activo (casa, bodega, lote)" }, { v: "vender", l: "Vendes un activo" }, { v: "aportar", l: "Mueves capital a una inversión" }, { v: "revaluar", l: "Un activo cambia de valor (obra terminada, avalúo)" },
 ];
 function describirMov(m, posiciones, flujos) {
   const p = posiciones.find((x) => x.id === m.posicionId)?.nombre || m.posicionId;
-  const anio = Math.floor((Number(m.mes) || 0) / 12) + 1;
+  const a = `Año ${anioDe(m.mes)}${m.mes % 12 ? `, mes ${(m.mes % 12) + 1}` : ""}`;
   switch (m.tipo) {
-    case "vender": return `Año ${anio}: vender ${p}`;
-    case "comprar": return `Año ${anio}: comprar ${m.nombre} por ${fmM(m.costo)} (${m.bolsillo === "uso" ? "uso" : m.bolsillo === "crecimiento" ? "crecimiento" : "renta"})${m.renta ? ` que renta ${fmMes(m.renta)}` : ""}`;
-    case "aportar": return `Año ${anio}: mover ${fmM(m.monto)} a ${p}`;
-    case "flujo_inicia": return `Año ${anio}: ${m.flujo?.tipo === "gasto" ? "nuevo gasto" : "nuevo ingreso"} ${m.flujo?.nombre} de ${fmMes(m.flujo?.monto)}/mes`;
-    case "flujo_termina": return `Año ${anio}: termina ${flujos.find((f) => f.id === m.flujoId)?.nombre || m.flujoId}`;
-    default: return `${m.tipo}`;
+    case "vender": return `${a}: vendes ${p}`;
+    case "comprar": return `${a}: compras ${m.nombre} por ${fmM(m.costo)}${m.renta ? `, renta ${fmMes(m.renta)}/mes${m.rentaDesde ? ` desde ${m.rentaDesde} meses después` : ""}` : ""}`;
+    case "aportar": return `${a}: mueves ${fmM(m.monto)} a ${p}`;
+    case "revaluar": return `${a}: ${p} pasa a valer ${fmM(m.valor)}`;
+    case "flujo_inicia": return `${a}: ${m.flujo?.tipo === "gasto" ? "entra el gasto" : "entra"} ${m.flujo?.nombre}, ${fmMes(m.flujo?.monto)}/mes`;
+    case "flujo_termina": return `${a}: termina ${flujos.find((f) => f.id === m.flujoId)?.nombre || m.flujoId}`;
+    case "flujo_cambia": return `${a}: ${flujos.find((f) => f.id === m.flujoId)?.nombre || m.flujoId} pasa a ${fmMes(m.monto)}/mes`;
+    default: return `${a}: ${m.tipo}`;
   }
 }
-function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar }) {
-  const [f, setF] = useState({ tipo: "vender", anio: 2, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", bolsillo: "sustento", renta: "", flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "" });
+function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) {
+  const [f, setF] = useState({ tipo: "flujo_inicia_ingreso", anio: 2, mes: 1, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "" });
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  const mes = (Math.max(1, Number(f.anio) || 1) - 1) * 12;
+  const mes = (Math.max(1, Number(f.anio) || 1) - 1) * 12 + Math.min(11, Math.max(0, (Number(f.mes) || 1) - 1));
   const guardar = () => {
     const base = { id: "mv_" + Math.random().toString(36).slice(2, 8), mes };
-    let m = null;
+    const monto = Number(f.monto) * 1e6; let m = null;
     if (f.tipo === "vender") m = { ...base, tipo: "vender", posicionId: f.posicionId };
-    if (f.tipo === "comprar" && f.nombre && Number(f.monto) > 0) m = { ...base, tipo: "comprar", nombre: f.nombre, costo: Number(f.monto) * 1e6, bolsillo: f.bolsillo, pagaPct: f.bolsillo === "sustento" ? 100 : 0, valorizacion: f.bolsillo === "crecimiento" ? 0 : 5, origen: [{ posicionId: f.origenId }], renta: Number(f.renta) > 0 ? Number(f.renta) * 1e6 : undefined };
-    if (f.tipo === "aportar" && Number(f.monto) > 0) m = { ...base, tipo: "aportar", posicionId: f.posicionId, monto: Number(f.monto) * 1e6, origen: [{ posicionId: f.origenId }] };
-    if ((f.tipo === "flujo_inicia_ingreso" || f.tipo === "flujo_inicia_gasto") && f.nombre && Number(f.monto) > 0) m = { ...base, tipo: "flujo_inicia", flujo: { id: base.id + "_f", nombre: f.nombre, tipo: f.tipo.endsWith("gasto") ? "gasto" : "ingreso", monto: Number(f.monto) * 1e6, indexa: true } };
+    if (f.tipo === "comprar" && f.nombre && monto > 0) m = { ...base, tipo: "comprar", nombre: f.nombre, costo: monto, bolsillo: f.canasta === "crecimiento" ? "crecimiento" : f.canasta === "rentas" ? "sustento" : "uso", pagaPct: f.canasta === "rentas" ? 100 : 0, valorizacion: f.canasta === "crecimiento" ? 0 : 5, origen: [{ posicionId: f.origenId }], renta: Number(f.renta) > 0 ? Number(f.renta) * 1e6 : undefined, rentaDesde: Number(f.rentaDesde) || 0 };
+    if (f.tipo === "aportar" && monto > 0) m = { ...base, tipo: "aportar", posicionId: f.posicionId, monto, origen: [{ posicionId: f.origenId }] };
+    if (f.tipo === "revaluar" && monto > 0) m = { ...base, tipo: "revaluar", posicionId: f.posicionId, valor: monto };
+    if ((f.tipo === "flujo_inicia_ingreso" || f.tipo === "flujo_inicia_gasto") && f.nombre && monto > 0) m = { ...base, tipo: "flujo_inicia", flujo: { id: base.id + "_f", nombre: f.nombre, tipo: f.tipo.endsWith("gasto") ? "gasto" : "ingreso", monto, indexa: true } };
     if (f.tipo === "flujo_termina") m = { ...base, tipo: "flujo_termina", flujoId: f.flujoId };
+    if (f.tipo === "flujo_cambia" && monto >= 0) m = { ...base, tipo: "flujo_cambia", flujoId: f.flujoId, monto };
     if (m) { onAgregar(m); onCerrar(); }
   };
   const selPos = (k) => <select value={f[k]} onChange={(e) => set(k, e.target.value)} style={inputS}>{posiciones.map((p) => <option key={p.id} value={p.id}>{p.nombre} · {fmM(p.capital)}</option>)}</select>;
+  const esFlujo = f.tipo.startsWith("flujo_inicia") || f.tipo === "flujo_cambia";
   return (
-    <div style={{ ...sub, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, alignItems: "end" }}>
-      <Campo l="Qué pasa"><select value={f.tipo} onChange={(e) => set("tipo", e.target.value)} style={inputS}>{TIPOS_MOV.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</select></Campo>
-      <Campo l="En el año"><Num value={f.anio} min={1} max={10} onChange={(v) => set("anio", v)} /></Campo>
-      {(f.tipo === "vender" || f.tipo === "aportar") && <Campo l={f.tipo === "vender" ? "Activo" : "Destino"}>{selPos("posicionId")}</Campo>}
-      {(f.tipo === "comprar" || f.tipo.startsWith("flujo_inicia")) && <Campo l="Nombre"><input value={f.nombre} onChange={(e) => set("nombre", e.target.value)} style={inputS} placeholder={f.tipo === "comprar" ? "Finca, apartamento…" : "Pensión, colegio…"} /></Campo>}
-      {f.tipo !== "vender" && f.tipo !== "flujo_termina" && <Campo l={f.tipo.startsWith("flujo") ? "Monto al mes (millones)" : "Monto (millones)"}><Num value={f.monto} step={f.tipo.startsWith("flujo") ? 0.1 : 1} onChange={(v) => set("monto", v)} suffix="M" /></Campo>}
-      {f.tipo === "comprar" && <Campo l="Papel"><select value={f.bolsillo} onChange={(e) => set("bolsillo", e.target.value)} style={inputS}><option value="uso">Uso (vivienda, finca)</option><option value="sustento">Renta (paga cada mes)</option><option value="crecimiento">Crecimiento</option></select></Campo>}
-      {f.tipo === "comprar" && f.bolsillo === "sustento" && <Campo l="Renta al mes (millones)"><Num value={f.renta} step={0.1} onChange={(v) => set("renta", v)} suffix="M" /></Campo>}
-      {(f.tipo === "comprar" || f.tipo === "aportar") && <Campo l="Con plata de">{selPos("origenId")}</Campo>}
-      {f.tipo === "flujo_termina" && <Campo l="Cuál"><select value={f.flujoId} onChange={(e) => set("flujoId", e.target.value)} style={inputS}>{flujos.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {fmMes(x.monto)}</option>)}</select></Campo>}
+    <div style={{ ...sub, display: "grid", gap: 10 }}>
+      {ejemplo && <div style={F.caption}>{ejemplo}</div>}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, alignItems: "end" }}>
+        <Campo l="Qué pasa" style={{ gridColumn: "1 / -1" }}><select value={f.tipo} onChange={(e) => set("tipo", e.target.value)} style={inputS}>{TIPOS_MOV.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</select></Campo>
+        <Campo l="En el año"><Num value={f.anio} min={1} max={10} onChange={(v) => set("anio", v)} /></Campo>
+        <Campo l="Mes del año"><Num value={f.mes} min={1} max={12} onChange={(v) => set("mes", v)} /></Campo>
+        {(f.tipo === "vender" || f.tipo === "aportar" || f.tipo === "revaluar") && <Campo l={f.tipo === "aportar" ? "Destino" : "Activo"}>{selPos("posicionId")}</Campo>}
+        {(f.tipo === "comprar" || f.tipo.startsWith("flujo_inicia")) && <Campo l="Nombre"><input value={f.nombre} onChange={(e) => set("nombre", e.target.value)} style={inputS} placeholder={f.tipo === "comprar" ? "Bodega, finca, apartamento…" : "Pensión, arriendo bodega, colegio…"} /></Campo>}
+        {(f.tipo === "flujo_termina" || f.tipo === "flujo_cambia") && <Campo l="Cuál"><select value={f.flujoId} onChange={(e) => set("flujoId", e.target.value)} style={inputS}>{flujos.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {fmMes(x.monto)}</option>)}</select></Campo>}
+        {f.tipo !== "vender" && f.tipo !== "flujo_termina" && <Campo l={esFlujo ? "Monto al mes" : f.tipo === "revaluar" ? "Nuevo valor" : "Monto"}><Num value={f.monto} step={esFlujo ? 0.1 : 1} onChange={(v) => set("monto", v)} suffix="M" /></Campo>}
+        {f.tipo === "comprar" && <Campo l="Para qué"><select value={f.canasta} onChange={(e) => set("canasta", e.target.value)} style={inputS}><option value="rentas">Rentar (paga cada mes)</option><option value="proteccion">Vivir ahí</option><option value="crecimiento">Crecimiento</option><option value="uso">Uso</option></select></Campo>}
+        {f.tipo === "comprar" && f.canasta === "rentas" && <><Campo l="Renta al mes"><Num value={f.renta} step={0.1} onChange={(v) => set("renta", v)} suffix="M" /></Campo><Campo l="Renta desde (meses después)"><Num value={f.rentaDesde} min={0} onChange={(v) => set("rentaDesde", v)} /></Campo></>}
+        {(f.tipo === "comprar" || f.tipo === "aportar") && <Campo l="Con plata de">{selPos("origenId")}</Campo>}
+      </div>
       <div style={{ display: "flex", gap: 8 }}><button style={btn(true)} onClick={guardar}>Agregar</button><button style={btn(false)} onClick={onCerrar}>Cancelar</button></div>
     </div>
   );
 }
-
-// ─── Editor de camino propio ─────────────────────────────────────────────────
-function EditorCamino({ camino, onChange, onBorrar }) {
-  const c = camino.canastas || {};
-  const setC = (k, v) => onChange({ ...camino, canastas: { ...c, [k]: v } });
-  const rango = (k, campo, v) => setC(k, { ...(c[k] || {}), [campo]: v === "" ? undefined : v });
-  const crecPct = (camino.excedente || []).find((e) => e.canasta === "crecimiento")?.pct ?? 50;
-  const toggleCond = (id) => { const s = new Set(camino.condiciones || []); s.has(id) ? s.delete(id) : s.add(id); onChange({ ...camino, condiciones: [...s] }); };
-  return (
-    <div style={{ ...sub, display: "grid", gap: 12 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
-        <Campo l="Nombre"><input value={camino.nombre} onChange={(e) => onChange({ ...camino, nombre: e.target.value })} style={inputS} /></Campo>
-        <Campo l="Tesis (una frase)"><input value={camino.tesis} onChange={(e) => onChange({ ...camino, tesis: e.target.value })} style={inputS} placeholder="Qué persigue este camino" /></Campo>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
-        <Campo l="Rentas mín."><Num value={c.rentas?.min ?? ""} onChange={(v) => rango("rentas", "min", v)} suffix="%" /></Campo>
-        <Campo l="Rentas máx."><Num value={c.rentas?.max ?? ""} onChange={(v) => rango("rentas", "max", v)} suffix="%" /></Campo>
-        <Campo l="Crecimiento mín."><Num value={c.crecimiento?.min ?? ""} onChange={(v) => rango("crecimiento", "min", v)} suffix="%" /></Campo>
-        <Campo l="Crecimiento máx."><Num value={c.crecimiento?.max ?? ""} onChange={(v) => rango("crecimiento", "max", v)} suffix="%" /></Campo>
-        <Campo l="Colchón (meses)"><Num value={c.colchonMeses ?? ""} onChange={(v) => setC("colchonMeses", v)} /></Campo>
-        <Campo l="Vivienda"><select value={c.vivienda || "indiferente"} onChange={(e) => setC("vivienda", e.target.value)} style={inputS}><option value="propia">Propia, no se vende</option><option value="indiferente">Como esté</option><option value="arrendado">Vivir arrendado</option></select></Campo>
-      </div>
-      <div>
-        <div style={F.label}>Lo que sobra cada mes · {100 - crecPct}% a rentas, {crecPct}% a crecimiento</div>
-        <input type="range" min={0} max={100} step={5} value={crecPct} onChange={(e) => { const v = Number(e.target.value); onChange({ ...camino, excedente: [{ canasta: "rentas", pct: 100 - v }, { canasta: "crecimiento", pct: v }] }); }} style={{ width: "100%" }} />
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {Object.entries(CONDICION_LABEL).map(([id, l]) => <label key={id} style={{ ...F.caption, color: C.muted, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}><input type="checkbox" checked={(camino.condiciones || []).includes(id)} onChange={() => toggleCond(id)} />{l}</label>)}
-      </div>
-      <div><button style={{ ...btn(false), color: C.danger, borderColor: C.danger }} onClick={onBorrar}>Borrar este camino</button></div>
-    </div>
-  );
-}
-
-// ─── Detalle del camino ──────────────────────────────────────────────────────
-function Detalle({ r, base, elegido, onElegir, onCambiarCamino, onBorrarCamino }) {
-  const [verMov, setVerMov] = useState(false);
-  const [editar, setEditar] = useState(false);
-  const movs = r.movimientos || [];
-  const posiciones = r.cfg.posiciones.filter((p) => !p.nuevo || p.capital > 0);
-  const flujos = r.cfg.flujos;
-  const setMovs = (lista) => onCambiarCamino({ ...r, movimientos: lista });
-  return (
-    <div style={{ ...card, borderColor: r.color }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 999, background: r.color }} /><span style={F.h1}>{r.nombre}</span>{elegido && <span style={chip(C.accent)}>Tu camino</span>}</div>
-        <div style={{ display: "flex", gap: 8 }}>{r.propio && <button style={btn(false)} onClick={() => setEditar((v) => !v)}>{editar ? "Cerrar" : "Editar rangos"}</button>}{!elegido && <button style={btn(true)} onClick={onElegir}>Elegir este camino</button>}</div>
-      </div>
-      <div style={{ ...F.body, marginTop: 6 }}>{r.tesis}</div>
-      {editar && r.propio && <div style={{ marginTop: 12 }}><EditorCamino camino={r} onChange={onCambiarCamino} onBorrar={onBorrarCamino} /></div>}
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 14, marginTop: 16 }}>
-        <div style={sub}>
-          <div style={F.h3}>Canastas: hoy → año 10</div>
-          <div style={{ marginTop: 10 }}><div style={F.caption}>Hoy</div><BarraCanastas c={r.canastasHoy} /></div>
-          <div style={{ marginTop: 10 }}><div style={F.caption}>Año 10</div><BarraCanastas c={r.canastasFin} /></div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 10 }}>
-            {["proteccion", "rentas", "crecimiento"].map((k) => <div key={k}><div style={{ ...F.label, color: CANASTA_COLOR[k] }}>{CANASTA_LABEL[k]}</div><div style={{ ...F.caption, color: C.text }}>{fmM(r.canastasHoy[k])} → {fmM(r.canastasFin[k])}</div></div>)}
-          </div>
-          <div style={{ ...F.caption, marginTop: 10 }}>Rangos: {r.canastas?.rentas?.min != null && `rentas ≥ ${r.canastas.rentas.min}% · `}{r.canastas?.rentas?.max != null && `rentas ≤ ${r.canastas.rentas.max}% · `}{r.canastas?.crecimiento?.min != null && `crecimiento ≥ ${r.canastas.crecimiento.min}% · `}{r.canastas?.crecimiento?.max != null && `crecimiento ≤ ${r.canastas.crecimiento.max}% · `}colchón {r.canastas?.colchonMeses} meses · vivienda {r.canastas?.vivienda === "propia" ? "propia" : r.canastas?.vivienda === "arrendado" ? "arrendado" : "como esté"}</div>
-          {(r.condiciones || []).length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>{r.condiciones.map((id) => <span key={id} style={chip(C.muted)}>{CONDICION_LABEL[id] || id}</span>)}</div>}
-        </div>
-        <div style={sub}>
-          <div style={F.h3}>Qué cambia hoy</div>
-          {r.ajuste.notas.length ? r.ajuste.notas.map((n, i) => <div key={i} style={{ ...F.body, marginTop: 6 }}>· {n}</div>) : <div style={{ ...F.body, marginTop: 6 }}>Nada: ya estás dentro de los rangos.</div>}
-          <div style={{ ...F.h3, marginTop: 14 }}>¿Se cumple?</div>
-          {r.vigilancia.cumple ? <div style={{ ...F.body, color: C.ok, marginTop: 6 }}>Sí: los 10 años dentro de rango y sin romper condiciones.</div> : r.vigilancia.roturas.slice(0, 5).map((x, i) => <div key={i} style={{ ...F.body, color: C.danger, marginTop: 6 }}>· Año {x.anio}: {x.detalle}</div>)}
-          {r.vigilancia.roturas.length > 5 && <div style={F.caption}>+{r.vigilancia.roturas.length - 5} más</div>}
-        </div>
-      </div>
-
-      <div style={{ ...sub, marginTop: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <div><div style={F.h3}>Tus movimientos en este camino</div><div style={F.caption}>Lo que decides hacer y cuándo. El camino te dice si lo respeta.</div></div>
-          {!verMov && <button style={btn(false)} onClick={() => setVerMov(true)}>+ Agregar movimiento</button>}
-        </div>
-        {verMov && <div style={{ marginTop: 10 }}><EditorMovimiento posiciones={posiciones} flujos={flujos} onAgregar={(m) => setMovs([...movs, m])} onCerrar={() => setVerMov(false)} /></div>}
-        {movs.length > 0 && <div style={{ marginTop: 10, display: "grid", gap: 6 }}>{movs.map((m) => <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, ...F.body, color: C.text }}><span>· {describirMov(m, r.cfg.posiciones, flujos)}</span><button style={{ ...btn(false), padding: "3px 10px", color: C.subtle }} onClick={() => setMovs(movs.filter((x) => x.id !== m.id))}>quitar</button></div>)}</div>}
-      </div>
-
-      <div style={{ overflowX: "auto", marginTop: 14 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 560 }}>
-          <thead><tr>{["Año", "Entra/mes", "Sale/mes", "Queda/mes", "Cobertura", "Patrimonio", "Qué pasa"].map((h, i) => <th key={h} style={{ ...F.label, textAlign: i === 6 ? "left" : "right", padding: "8px 6px" }}>{h}</th>)}</tr></thead>
-          <tbody>{r.resultado.anual.map((a) => <tr key={a.anio} style={{ borderTop: `1px solid ${C.border}` }}>
-            <td style={{ padding: "7px 6px", textAlign: "right", color: C.muted }}>{a.anio}</td>
-            <td style={{ padding: "7px 6px", textAlign: "right", color: C.text, fontFamily: F.mono.fontFamily }}>{fmMes(a.entraMes)}</td>
-            <td style={{ padding: "7px 6px", textAlign: "right", color: C.text, fontFamily: F.mono.fontFamily }}>{fmMes(a.saleMes)}</td>
-            <td style={{ padding: "7px 6px", textAlign: "right", color: a.quedaMes >= 0 ? C.ok : C.danger, fontFamily: F.mono.fontFamily }}>{fmMes(a.quedaMes)}</td>
-            <td style={{ padding: "7px 6px", textAlign: "right", color: C.text }}>{a.cobertura == null ? "—" : pct(a.cobertura)}</td>
-            <td style={{ padding: "7px 6px", textAlign: "right", color: C.text, fontFamily: F.mono.fontFamily }}>{fmM(a.patrimonioFin)}</td>
-            <td style={{ padding: "7px 6px", color: C.muted, maxWidth: 320 }}>{a.cambios.slice(0, 3).map((t) => t.replace(/(\d{6,})\/mes/g, (_, n) => fmMes(Number(n)) + "/mes").replace(/\b(\d{6,})\b/g, (_, n) => fmM(Number(n)))).join(" · ") || ""}</td>
-          </tr>)}</tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ─── Fichas: tus activos en canastas ─────────────────────────────────────────
-function Fichas({ base, fichas, onFichas }) {
+function ListaEventos({ eventos, posiciones, flujos, onChange, ejemplo, vacio }) {
   const [abierto, setAbierto] = useState(false);
-  const set = (id, k, v) => onFichas({ ...fichas, [id]: { ...(fichas[id] || {}), [k]: v } });
   return (
-    <div style={card}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <div><div style={F.h2}>Tasas y detalle por activo</div><div style={F.caption}>Cuánto rinde cada activo, qué parte recibes y cuánto valoriza. La canasta se decide arriba.</div></div>
-        <button style={btn(false)} onClick={() => setAbierto((v) => !v)}>{abierto ? "Cerrar" : "Revisar"}</button>
-      </div>
-      {abierto && <div style={{ overflowX: "auto", marginTop: 12 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 640 }}>
-          <thead><tr>{["Activo", "Valor", "Canasta", "Rinde al año", "Recibe (%)", "Valoriza al año"].map((h) => <th key={h} style={{ ...F.label, textAlign: "left", padding: "6px" }}>{h}</th>)}</tr></thead>
-          <tbody>{base.posiciones.map((p) => <tr key={p.id} style={{ borderTop: `1px solid ${C.border}` }}>
-            <td style={{ padding: 6, color: C.text }}>{p.nombre}<div style={F.caption}>{p.tipo}{p.renta > 0 ? ` · renta ${fmMes(p.renta)}` : ""}</div></td>
-            <td style={{ padding: 6, color: C.text, fontFamily: F.mono.fontFamily }}>{fmM(p.capital)}</td>
-            <td style={{ padding: 6 }}><span style={chip(CANASTA_COLOR[canastaDe(p)])}>{CANASTA_LABEL[canastaDe(p)]}</span></td>
-            <td style={{ padding: 6 }}><input type="number" step={0.5} value={p.tasa} onChange={(e) => set(p.id, "tasa", Number(e.target.value))} style={{ ...inputS, padding: "5px 8px", width: 70 }} /></td>
-            <td style={{ padding: 6 }}><input type="number" step={10} min={0} max={100} value={p.pagaPct} onChange={(e) => set(p.id, "pagaPct", Number(e.target.value))} style={{ ...inputS, padding: "5px 8px", width: 64 }} /></td>
-            <td style={{ padding: 6 }}><input type="number" step={0.5} value={p.valorizacion} onChange={(e) => set(p.id, "valorizacion", Number(e.target.value))} style={{ ...inputS, padding: "5px 8px", width: 70 }} /></td>
-          </tr>)}</tbody>
-        </table>
-      </div>}
+    <div>
+      {eventos.length === 0 && !abierto && <div style={{ ...F.body, fontStyle: "italic" }}>{vacio}</div>}
+      {eventos.length > 0 && <div style={{ display: "grid", gap: 6 }}>{[...eventos].sort((a, b) => a.mes - b.mes).map((m) => <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, ...F.body, color: C.text }}><span>· {describirMov(m, posiciones, flujos)}{m.plantilla && <span style={{ ...chip(C.subtle), marginLeft: 6 }}>plantilla</span>}</span><button style={{ ...btn(false), padding: "3px 10px", color: C.subtle }} onClick={() => onChange(eventos.filter((x) => x.id !== m.id))}>quitar</button></div>)}</div>}
+      {abierto ? <div style={{ marginTop: 10 }}><EditorMovimiento posiciones={posiciones} flujos={flujos} ejemplo={ejemplo} onAgregar={(m) => onChange([...eventos, m])} onCerrar={() => setAbierto(false)} /></div> : <div style={{ marginTop: 10 }}><button style={btn(false)} onClick={() => setAbierto(true)}>+ Agregar</button></div>}
     </div>
   );
 }
 
-// ─── Supuestos del perfil ────────────────────────────────────────────────────
-function Supuestos({ perfil, onPerfil }) {
-  const [abierto, setAbierto] = useState(false);
+// ─── Paso 2 · Lo que viene ───────────────────────────────────────────────────
+function PasoViene({ base, perfil, onPerfil, onNext }) {
   const set = (k, v) => onPerfil({ ...perfil, [k]: v });
   const pens = perfil.pensiones || [];
   const setPens = (lista) => set("pensiones", lista);
+  const [supuestos, setSupuestos] = useState(false);
   return (
-    <div style={card}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <div><div style={F.h2}>Supuestos</div><div style={F.caption}>Inflación {perfil.inflacion}% · crecimiento {perfil.tasaCrecimiento}% · renta estable {perfil.tasaRentaEstable}% · BTC {perfil.tasaBtc}% · {pens.length ? `${pens.length} pensión${pens.length > 1 ? "es" : ""}` : "sin pensiones"}. Aplican a todos los caminos.</div></div>
-        <button style={btn(false)} onClick={() => setAbierto((v) => !v)}>{abierto ? "Cerrar" : "Cambiar"}</button>
-      </div>
-      {abierto && <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-          <Campo l="Inflación anual"><Num value={perfil.inflacion} step={0.5} onChange={(v) => set("inflacion", v)} suffix="%" /></Campo>
-          <Campo l="Crecimiento (bolsa, ETF)"><Num value={perfil.tasaCrecimiento} step={0.5} onChange={(v) => set("tasaCrecimiento", v)} suffix="%" /></Campo>
-          <Campo l="Renta estable (CDT)"><Num value={perfil.tasaRentaEstable} step={0.5} onChange={(v) => set("tasaRentaEstable", v)} suffix="%" /></Campo>
-          <Campo l="Bitcoin"><Num value={perfil.tasaBtc} step={1} onChange={(v) => set("tasaBtc", v)} suffix="%" /></Campo>
-          <Campo l="Valorización inmuebles"><Num value={perfil.valorizacionInmueble} step={0.5} onChange={(v) => set("valorizacionInmueble", v)} suffix="%" /></Campo>
-          <Campo l="Valorización lotes"><Num value={perfil.valorizacionLote} step={0.5} onChange={(v) => set("valorizacionLote", v)} suffix="%" /></Campo>
-          <Campo l="Arriendo si vives arrendado (% del valor al mes)"><Num value={perfil.arriendoPctMensual} step={0.1} onChange={(v) => set("arriendoPctMensual", v)} suffix="%" /></Campo>
-          <Campo l="Cobertura mínima"><Num value={perfil.coberturaMin} step={5} onChange={(v) => set("coberturaMin", v)} suffix="%" /></Campo>
-        </div>
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={F.h3}>Pensiones que entran</div><button style={btn(false)} onClick={() => setPens([...pens, { nombre: "Pensión", mes: 60, monto: 3e6 }])}>+ Pensión</button></div>
+    <div style={{ display: "grid", gap: 14 }}>
+      <div style={card}>
+        <div style={F.h2}>2 · Lo que ya viene, pase lo que pase</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Lo seguro, que entra en todos los escenarios: la pensión que llega en el año 4, la bodega que empieza a rentar en 2 años, el contrato que termina, el colegio que se acaba. Después, en cada escenario, decides lo que es opcional.</div>
+        <div style={{ ...sub, marginTop: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><div><div style={F.h3}>Pensiones</div><div style={F.caption}>Cuándo llega cada una y de cuánto.</div></div><button style={btn(false)} onClick={() => setPens([...pens, { nombre: `Pensión ${pens.length + 1}`, mes: 48, monto: 3e6 }])}>+ Pensión</button></div>
           {pens.map((p, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 8, marginTop: 8, alignItems: "end" }}>
-            <Campo l="Nombre"><input value={p.nombre} onChange={(e) => setPens(pens.map((x, k) => (k === i ? { ...x, nombre: e.target.value } : x)))} style={inputS} /></Campo>
-            <Campo l="Desde el año"><Num value={Math.floor((p.mes || 0) / 12) + 1} min={1} max={10} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, mes: (Math.max(1, v || 1) - 1) * 12 } : x)))} /></Campo>
-            <Campo l="Al mes (millones)"><Num value={Math.round((p.monto || 0) / 1e5) / 10} step={0.1} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, monto: (v || 0) * 1e6 } : x)))} suffix="M" /></Campo>
+            <Campo l="De quién / cuál"><input value={p.nombre} onChange={(e) => setPens(pens.map((x, k) => (k === i ? { ...x, nombre: e.target.value } : x)))} style={inputS} /></Campo>
+            <Campo l="Desde el año"><Num value={anioDe(p.mes)} min={1} max={10} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, mes: (Math.max(1, v || 1) - 1) * 12 } : x)))} /></Campo>
+            <Campo l="Al mes"><Num value={enM(p.monto)} step={0.1} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, monto: (v || 0) * 1e6 } : x)))} suffix="M" /></Campo>
             <button style={{ ...btn(false), color: C.subtle }} onClick={() => setPens(pens.filter((_, k) => k !== i))}>quitar</button>
           </div>)}
-          <div style={{ ...F.caption, marginTop: 8 }}>Las edades y tasas que dejes en el ejercicio de Pensiones también llegan aquí.</div>
+          {pens.length === 0 && <div style={{ ...F.body, marginTop: 8, fontStyle: "italic" }}>Sin pensiones todavía. Las edades que dejes en el ejercicio de Pensiones también llegan aquí.</div>}
         </div>
-      </div>}
+        <div style={{ ...sub, marginTop: 10 }}>
+          <div style={F.h3}>Otros hechos seguros</div>
+          <div style={{ ...F.caption, marginBottom: 8 }}>Ingresos que empiezan o terminan, gastos que cambian, obras que se terminan, compras ya decididas.</div>
+          <ListaEventos eventos={perfil.eventos || []} posiciones={base.posiciones} flujos={base.flujos} onChange={(l) => set("eventos", l)} vacio="Nada seguro todavía. Ejemplo: «Año 2: entra Arriendo bodega, $8 M/mes» o «Año 3: termina Contrato empresa»." ejemplo="Ejemplo: la bodega empieza a rentar en el año 2 → «Entra un ingreso nuevo», año 2, Arriendo bodega, 8 M." />
+        </div>
+        <div style={{ ...sub, marginTop: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><div><div style={F.h3}>Supuestos</div><div style={F.caption}>Inflación {perfil.inflacion}% · crecimiento {perfil.tasaCrecimiento}% · renta estable {perfil.tasaRentaEstable}% · BTC {perfil.tasaBtc}% · inmuebles {perfil.valorizacionInmueble}% · cobertura mínima {perfil.coberturaMin}%</div></div><button style={btn(false)} onClick={() => setSupuestos((v) => !v)}>{supuestos ? "Cerrar" : "Cambiar"}</button></div>
+          {supuestos && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginTop: 10 }}>
+            <Campo l="Inflación anual"><Num value={perfil.inflacion} step={0.5} onChange={(v) => set("inflacion", v)} suffix="%" /></Campo>
+            <Campo l="Crecimiento (bolsa, ETF)"><Num value={perfil.tasaCrecimiento} step={0.5} onChange={(v) => set("tasaCrecimiento", v)} suffix="%" /></Campo>
+            <Campo l="Renta estable (CDT)"><Num value={perfil.tasaRentaEstable} step={0.5} onChange={(v) => set("tasaRentaEstable", v)} suffix="%" /></Campo>
+            <Campo l="Bitcoin"><Num value={perfil.tasaBtc} step={1} onChange={(v) => set("tasaBtc", v)} suffix="%" /></Campo>
+            <Campo l="Valorización inmuebles"><Num value={perfil.valorizacionInmueble} step={0.5} onChange={(v) => set("valorizacionInmueble", v)} suffix="%" /></Campo>
+            <Campo l="Valorización lotes"><Num value={perfil.valorizacionLote} step={0.5} onChange={(v) => set("valorizacionLote", v)} suffix="%" /></Campo>
+            <Campo l="Arriendo si vives arrendado (% del valor al mes)"><Num value={perfil.arriendoPctMensual} step={0.1} onChange={(v) => set("arriendoPctMensual", v)} suffix="%" /></Campo>
+            <Campo l="Cobertura mínima"><Num value={perfil.coberturaMin} step={5} onChange={(v) => set("coberturaMin", v)} suffix="%" /></Campo>
+          </div>}
+        </div>
+      </div>
+      <Siguiente onClick={onNext}>Siguiente: construye tu escenario</Siguiente>
+    </div>
+  );
+}
+
+// ─── Paso 3 · Tu escenario ───────────────────────────────────────────────────
+function ResultadoVivo({ r, base, onElegir, elegido }) {
+  const p = r.puntos, ok = r.vigilancia.cumple;
+  const data = [{ a: 0, v: p.patrimonioInicial }, ...r.resultado.anual.map((x) => ({ a: x.anio, v: x.patrimonioFin }))];
+  return (
+    <div style={{ ...card, borderColor: r.color }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><div style={F.h3}>Resultado en vivo</div><span style={chip(ok ? C.ok : C.danger)}>{ok ? "se cumple" : `se rompe · año ${r.vigilancia.roturas[0].anio}`}</span></div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+        <div><div style={F.label}>Patrimonio año 10</div><div style={{ ...F.monoLg, color: C.text }}>{fmM(p.patrimonioFinal)}</div><div style={F.caption}>{fmM(p.patrimonioFinalReal)} de hoy</div></div>
+        <div><div style={F.label}>Queda al mes · año 10</div><div style={{ ...F.monoLg, color: p.quedaMes >= 0 ? C.ok : C.danger }}>{fmMes(p.quedaMes)}</div><div style={F.caption}>cobertura {pct(p.cobertura)}</div></div>
+        <div><div style={F.label}>Entra / sale · año 10</div><div style={{ ...F.caption, color: C.text }}>{fmMes(p.entraMes)} / {fmMes(p.saleMes)}</div></div>
+        <div><div style={F.label}>Mes más apretado</div><div style={{ ...F.caption, color: p.seSostiene ? C.text : C.danger }}>{p.mesApretado ? `año ${anioDe(p.mesApretado.mes)} · ${pct(p.mesApretado.cobertura)}` : "—"}</div></div>
+      </div>
+      <div style={{ height: 110, marginTop: 10 }}>
+        <ResponsiveContainer><LineChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}><XAxis dataKey="a" {...axisProps} tickFormatter={(a) => (a === 0 ? "hoy" : a)} /><YAxis hide domain={["auto", "auto"]} /><Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} labelFormatter={(a) => (a === 0 ? "Hoy" : `Año ${a}`)} />} /><Line type="monotone" dataKey="v" name="Patrimonio" stroke={r.color} strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer>
+      </div>
+      <div style={{ marginTop: 10, display: "grid", gap: 4 }}>{narrar(r, base).slice(1, 4).map((t, i) => <div key={i} style={{ ...F.caption, color: C.muted }}>{t}</div>)}</div>
+      {!elegido && <div style={{ marginTop: 12 }}><button style={{ ...btn(true), width: "100%" }} onClick={onElegir}>Elegir este camino</button></div>}
+      {elegido && <div style={{ marginTop: 12, textAlign: "center" }}><span style={chip(C.accent)}>Tu camino</span></div>}
+    </div>
+  );
+}
+function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuardar, onNuevo, onDuplicar, onRestablecer, onBorrar, caminoElegido, onElegir, onNext }) {
+  const ancho = useAncho();
+  const esc = todos.find((e) => e.id === activoId) || todos[0];
+  const r = res.find((x) => x.id === esc?.id);
+  if (!esc || !r) return null;
+  const upd = (patch) => onGuardar({ ...esc, ...patch });
+  const liq = liquidezEscenario(base, esc);
+  const ventaDe = (id) => (esc.ventas || []).find((v) => v.posicionId === id);
+  const toggleVenta = (p) => { const v = ventaDe(p.id); upd({ ventas: v ? esc.ventas.filter((x) => x.posicionId !== p.id) : [...(esc.ventas || []), { posicionId: p.id, monto: null }] }); };
+  const parcial = (p, monto) => upd({ ventas: esc.ventas.map((x) => (x.posicionId === p.id ? { ...x, monto: monto === "" || monto == null ? null : Math.min(monto * 1e6, p.capital) } : x)) });
+  const togglePago = (id) => upd({ pagos: (esc.pagos || []).includes(id) ? esc.pagos.filter((x) => x !== id) : [...(esc.pagos || []), id] });
+  const setD = (id, patch) => upd({ despliegue: esc.despliegue.map((d) => (d.id === id ? { ...d, ...patch } : d)) });
+  const addD = (destinoId) => { const p = destinoId ? base.posiciones.find((x) => x.id === destinoId) : null; upd({ despliegue: [...(esc.despliegue || []), p ? { id: "d_" + Math.random().toString(36).slice(2, 8), destinoId: p.id, nombre: p.nombre, canasta: canastaDe(p), capital: Math.max(0, liq.porAsignar), tasa: p.tasa, pagaPct: p.pagaPct, valorizacion: p.valorizacion, regla: p.pagaPct === 100 ? "Paga el 100% del rendimiento cada mes" : "Todo se reinvierte" } : { id: "d_" + Math.random().toString(36).slice(2, 8), destinoId: null, nombre: "Nueva inversión", canasta: "rentas", capital: Math.max(0, liq.porAsignar), tasa: perfil.tasaRentaEstable, pagaPct: 100, valorizacion: 0, regla: "Paga el 100% del rendimiento cada mes" }] }); };
+  const crecPct = (esc.excedente || []).find((e) => e.canasta === "crecimiento")?.pct ?? 50;
+  const destinosPosibles = base.posiciones.filter((p) => !p.vivienda && !p.vehiculo && !(ventaDe(p.id) && ventaDe(p.id).monto == null));
+  const dos = ancho >= 980;
+  const H = ({ n, t, d }) => <div style={{ marginBottom: 8 }}><div style={F.h3}><span style={{ color: esc.color }}>{n}</span> {t}</div>{d && <div style={F.caption}>{d}</div>}</div>;
+  const Saldo = () => <div style={{ display: "flex", flexWrap: "wrap", gap: 12, ...F.caption, alignItems: "center" }}><span>Liberas <b style={{ color: C.text }}>{fmM(liq.liberado)}</b></span><span>− pagas <b style={{ color: C.text }}>{fmM(liq.pagado)}</b></span><span>− asignas <b style={{ color: C.text }}>{fmM(liq.asignado)}</b></span><span style={chip(Math.abs(liq.porAsignar) < 1e6 ? C.ok : liq.porAsignar > 0 ? C.warn : C.danger)}>{Math.abs(liq.porAsignar) < 1e6 ? "todo asignado" : liq.porAsignar > 0 ? `por asignar ${fmM(liq.porAsignar)}` : `falta ${fmM(-liq.porAsignar)}`}</span></div>;
+  return (
+    <div style={{ display: "grid", gap: 14 }}>
+      <div style={card}>
+        <div style={F.h2}>3 · Tu escenario: qué transformas y a dónde va la plata</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Parte de una plantilla o arma el tuyo. Un escenario es una decisión concreta: qué vendes, qué pagas, a dónde va cada peso y con qué regla, y qué haces después.</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}>
+          {todos.map((e) => { const rr = res.find((x) => x.id === e.id); return <button key={e.id} onClick={() => setActivoId(e.id)} style={{ ...btn(false), borderColor: e.id === esc.id ? e.color : C.borderStrong, background: e.id === esc.id ? `${e.color}20` : "transparent", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: e.color }} />{e.nombre}{caminoElegido === e.id && " ★"}{rr && !rr.vigilancia.cumple && <span style={{ color: C.danger }}>!</span>}</button>; })}
+          <button style={btn(false)} onClick={onNuevo}>+ Nuevo desde cero</button>
+          <button style={btn(false)} onClick={() => onDuplicar(esc)}>Duplicar este</button>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: dos ? "minmax(0, 1fr) 340px" : "minmax(0, 1fr)", gap: 14, alignItems: "start" }}>
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={card}>
+            <H n="A" t="Nombre y tesis" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+              <Campo l="Nombre"><input value={esc.nombre} onChange={(e) => upd({ nombre: e.target.value })} style={inputS} /></Campo>
+              <Campo l="Tesis (una frase)"><input value={esc.tesis || ""} onChange={(e) => upd({ tesis: e.target.value })} style={inputS} placeholder="Qué persigue este escenario" /></Campo>
+            </div>
+            {esc.plantilla && <div style={{ ...F.caption, marginTop: 8 }}>Plantilla {CAMINOS_BASE.find((c) => c.id === esc.plantilla)?.nombre}: {CAMINOS_BASE.find((c) => c.id === esc.plantilla)?.tesis} {esc.editado && <button style={{ ...btn(false), padding: "2px 8px", marginLeft: 6 }} onClick={() => onRestablecer(esc)}>Restablecer plantilla</button>}</div>}
+          </div>
+          <div style={card}>
+            <H n="B" t="¿Qué vendes o transformas hoy?" d="Marca lo que sale. Puedes vender todo o solo una parte." />
+            <div style={{ display: "grid", gap: 6 }}>
+              {[...base.posiciones].sort((a, b) => b.capital - a.capital).map((p) => { const v = ventaDe(p.id); return (
+                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 6, flexWrap: "wrap" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200, cursor: "pointer" }}><input type="checkbox" checked={!!v} onChange={() => toggleVenta(p)} /><span style={{ ...F.caption, color: C.text }}>{p.nombre}</span><span style={F.caption}>{fmM(p.capital)}{p.vivienda ? " · vivienda" : ""}{p.renta > 0 ? ` · renta ${fmMes(p.renta)}` : ""}</span></label>
+                  {v && <div style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption }}><span>{v.monto == null ? "todo" : "solo"}</span><Num value={v.monto == null ? "" : enM(v.monto)} step={1} onChange={(x) => parcial(p, x)} suffix="M" w={110} /></div>}
+                </div>); })}
+            </div>
+            <div style={{ marginTop: 10 }}><Saldo /></div>
+          </div>
+          {base.deudas.length > 0 && <div style={card}>
+            <H n="C" t="¿Qué deudas pagas con eso?" d="Lo que pagues deja de costar cuota cada mes." />
+            <div style={{ display: "grid", gap: 6 }}>{base.deudas.map((d) => <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", borderTop: `1px solid ${C.border}`, paddingTop: 6 }}><input type="checkbox" checked={(esc.pagos || []).includes(d.id)} onChange={() => togglePago(d.id)} /><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}</label>)}</div>
+          </div>}
+          <div style={card}>
+            <H n="D" t="¿A dónde va la plata y con qué regla?" d="El despliegue: cada destino con su capital, su tasa y la regla con la que trabaja." />
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
+                <thead><tr><th style={th}>Destino</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Tasa</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>Regla</th><th style={th} /></tr></thead>
+                <tbody>
+                  {(esc.despliegue || []).map((d) => <tr key={d.id} style={{ borderTop: `1px solid ${C.border}` }}>
+                    <td style={{ ...td, minWidth: 150 }}>{d.destinoId ? <span>{d.nombre}<div style={F.caption}>ya existe</div></span> : <input value={d.nombre} onChange={(e) => setD(d.id, { nombre: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }} />}</td>
+                    <td style={td}>{d.destinoId ? <span style={chip(CANASTA_COLOR[d.canasta])}>{CANASTA_LABEL[d.canasta]}</span> : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 112 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
+                    <td style={tdNum}><Num value={enM(d.capital)} step={1} onChange={(v) => setD(d.id, { capital: (v || 0) * 1e6 })} suffix="M" w={110} /></td>
+                    <td style={tdNum}><Num value={d.tasa} step={0.5} onChange={(v) => setD(d.id, { tasa: v || 0 })} suffix="%" w={80} /></td>
+                    <td style={tdNum}><Num value={d.pagaPct} step={10} min={0} max={100} onChange={(v) => setD(d.id, { pagaPct: v || 0, regla: v >= 100 ? "Paga el 100% del rendimiento cada mes" : v <= 0 ? "Todo se reinvierte" : `Recibe el ${v}%, reinvierte el resto` })} suffix="%" w={80} /></td>
+                    <td style={tdNum}><Num value={d.valorizacion} step={0.5} onChange={(v) => setD(d.id, { valorizacion: v || 0 })} suffix="%" w={80} /></td>
+                    <td style={{ ...td, minWidth: 180 }}><input value={d.regla || ""} onChange={(e) => setD(d.id, { regla: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 11 }} placeholder="Regla" /></td>
+                    <td style={td}><button style={{ ...btn(false), padding: "3px 8px", color: C.subtle }} onClick={() => upd({ despliegue: esc.despliegue.filter((x) => x.id !== d.id) })}>quitar</button></td>
+                  </tr>)}
+                  {(esc.despliegue || []).length === 0 && <tr><td colSpan={8} style={{ ...td, color: C.subtle, fontStyle: "italic" }}>Nada desplegado: lo liberado se quedaría en caja sin rendir.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, alignItems: "center" }}>
+              <select value="" onChange={(e) => { if (e.target.value) addD(e.target.value === "__nueva" ? null : e.target.value); }} style={{ ...inputS, width: "auto", minWidth: 220 }}>
+                <option value="">+ Agregar destino…</option>
+                <option value="__nueva">Nueva inversión (la defines tú)</option>
+                {destinosPosibles.map((p) => <option key={p.id} value={p.id}>{p.nombre} · {CANASTA_LABEL[canastaDe(p)]} · {p.tasa > 0 ? `${p.tasa}%` : "sin tasa"}</option>)}
+              </select>
+              <Saldo />
+            </div>
+          </div>
+          <div style={card}>
+            <H n="E" t="¿Qué pasa después, en este escenario?" d="Lo que decides para los próximos años: compras, ventas, obras, gastos que entran. (Lo seguro ya está en el paso 2.)" />
+            <ListaEventos eventos={esc.eventos || []} posiciones={[...base.posiciones, ...(esc.despliegue || []).filter((d) => !d.destinoId).map((d) => ({ id: d.id, nombre: d.nombre, capital: d.capital }))]} flujos={base.flujos} onChange={(l) => upd({ eventos: l })} vacio="Nada después todavía. Ejemplo: «Año 5: compras Casa finca por 900 M con plata del Fondo»." ejemplo="Ejemplo: en el año 5 compras una casa de 900 M con la plata del fondo." />
+          </div>
+          <div style={card}>
+            <H n="F" t="Lo que sobra cada mes" d="A dónde va el excedente, y cuánto colchón líquido mantienes." />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, alignItems: "end" }}>
+              <div><div style={F.label}>{100 - crecPct}% a rentas · {crecPct}% a crecimiento</div><input type="range" min={0} max={100} step={5} value={crecPct} onChange={(e) => { const v = Number(e.target.value); upd({ excedente: [{ canasta: "rentas", pct: 100 - v }, { canasta: "crecimiento", pct: v }] }); }} style={{ width: "100%" }} /></div>
+              <Campo l="Colchón líquido (meses de gastos)"><Num value={esc.colchonMeses} min={0} max={60} onChange={(v) => upd({ colchonMeses: v })} /></Campo>
+            </div>
+            <details style={{ marginTop: 10 }}>
+              <summary style={{ ...F.caption, cursor: "pointer" }}>Reglas que este escenario se obliga a cumplir (opcional)</summary>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 10 }}>
+                <Campo l="Rentas mín."><Num value={esc.canastas?.rentas?.min ?? ""} onChange={(v) => upd({ canastas: { ...(esc.canastas || {}), rentas: { ...(esc.canastas?.rentas || {}), min: v === "" ? undefined : v } } })} suffix="%" /></Campo>
+                <Campo l="Crecimiento mín."><Num value={esc.canastas?.crecimiento?.min ?? ""} onChange={(v) => upd({ canastas: { ...(esc.canastas || {}), crecimiento: { ...(esc.canastas?.crecimiento || {}), min: v === "" ? undefined : v } } })} suffix="%" /></Campo>
+                <Campo l="Crecimiento máx."><Num value={esc.canastas?.crecimiento?.max ?? ""} onChange={(v) => upd({ canastas: { ...(esc.canastas || {}), crecimiento: { ...(esc.canastas?.crecimiento || {}), max: v === "" ? undefined : v } } })} suffix="%" /></Campo>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>{Object.entries(CONDICION_LABEL).map(([id, l]) => <label key={id} style={{ ...F.caption, color: C.muted, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}><input type="checkbox" checked={(esc.condiciones || []).includes(id)} onChange={() => { const s = new Set(esc.condiciones || []); s.has(id) ? s.delete(id) : s.add(id); upd({ condiciones: [...s] }); }} />{l}</label>)}</div>
+            </details>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+            <div>{esc.propio && <button style={{ ...btn(false), color: C.danger, borderColor: C.danger }} onClick={() => onBorrar(esc)}>Borrar escenario</button>}</div>
+            <Siguiente onClick={onNext}>Ver el resultado completo</Siguiente>
+          </div>
+        </div>
+        <div style={{ position: dos ? "sticky" : "static", top: 12 }}><ResultadoVivo r={r} base={base} elegido={caminoElegido === esc.id} onElegir={() => onElegir(esc.id)} /></div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Paso 4 · El resultado ───────────────────────────────────────────────────
+function PasoResultado({ base, r, elegido, onElegir, onNext, onVolver }) {
+  if (!r) return null;
+  const p = r.puntos;
+  const eventos = [...r.cfg.movimientos].filter((m) => m.mes > 0 || m.tipo === "flujo_inicia" || m.tipo === "comprar").sort((a, b) => a.mes - b.mes);
+  const fmtCambio = (t) => t.replace(/(\d{6,})\/mes/g, (_, n) => fmMes(Number(n)) + "/mes").replace(/\b(\d{6,})\b/g, (_, n) => fmM(Number(n)));
+  return (
+    <div style={{ display: "grid", gap: 14 }}>
+      <div style={{ ...card, borderColor: r.color }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 999, background: r.color }} /><span style={F.h1}>{r.nombre}</span>{elegido && <span style={chip(C.accent)}>Tu camino</span>}<span style={chip(r.vigilancia.cumple ? C.ok : C.danger)}>{r.vigilancia.cumple ? "se cumple" : `se rompe · año ${r.vigilancia.roturas[0].anio}`}</span></div>
+          <div style={{ display: "flex", gap: 8 }}><button style={btn(false)} onClick={onVolver}>← Editar</button>{!elegido && <button style={btn(true)} onClick={onElegir}>Elegir este camino</button>}</div>
+        </div>
+        {r.tesis && <div style={{ ...F.body, marginTop: 6, fontStyle: "italic" }}>{r.tesis}</div>}
+        <div style={{ ...sub, marginTop: 12 }}><div style={F.h3}>4 · Así se cuenta este escenario</div>{narrar(r, base).map((t, i) => <div key={i} style={{ ...F.body, color: C.text, marginTop: 6 }}>{t}</div>)}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
+          {[["Patrimonio año 10", fmM(p.patrimonioFinal), `${fmM(p.patrimonioFinalReal)} de hoy`], ["Crece al año (real)", p.crecimientoRealAnual == null ? "—" : p.crecimientoRealAnual.toFixed(1).replace(".", ",") + "%", "descontando inflación"], ["Entra · año 10", fmMes(p.entraMes), "al mes"], ["Sale · año 10", fmMes(p.saleMes), "gastos + cuotas"], ["Cobertura · año 10", pct(p.cobertura), "entra ÷ sale"], ["Produce al mes", fmMes(p.produceMes), "recibido + reinvertido"], ["Mes más apretado", p.mesApretado ? `año ${anioDe(p.mesApretado.mes)}` : "—", p.mesApretado ? `cobertura ${pct(p.mesApretado.cobertura)}` : ""], ["Si crecimiento rinde menos", fmM(p.estres.patrimonioFinal), `al ${String(Math.round(p.estres.tasa * 10) / 10).replace(".", ",")}%`]].map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 14 }}>
+        <div style={card}>
+          <div style={F.h3}>El despliegue de hoy</div>
+          {r.ajuste.notas.length ? r.ajuste.notas.map((n, i) => <div key={i} style={{ ...F.body, marginTop: 6 }}>· {n}</div>) : <div style={{ ...F.body, marginTop: 6 }}>Nada cambia hoy: el escenario parte tal como estás.</div>}
+          <div style={{ marginTop: 12 }}><div style={F.caption}>Canastas hoy</div><BarraCanastas c={r.canastasHoy} /><div style={{ ...F.caption, marginTop: 8 }}>Canastas año 10</div><BarraCanastas c={r.canastasFin} /></div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 8 }}>{["proteccion", "rentas", "crecimiento"].map((k) => <div key={k}><div style={{ ...F.label, color: CANASTA_COLOR[k] }}>{CANASTA_LABEL[k]}</div><div style={{ ...F.caption, color: C.text }}>{fmM(r.canastasHoy[k])} → {fmM(r.canastasFin[k])}</div></div>)}</div>
+        </div>
+        <div style={card}>
+          <div style={F.h3}>Lo que pasa en el tiempo</div>
+          {eventos.length === 0 && <div style={{ ...F.body, marginTop: 6 }}>Nada programado después de hoy.</div>}
+          <div style={{ display: "grid", gap: 6, marginTop: 6 }}>{eventos.map((m, i) => <div key={i} style={{ display: "flex", gap: 10, ...F.body, color: C.text }}><span style={{ ...chip(r.color), minWidth: 56, textAlign: "center" }}>año {anioDe(m.mes)}</span><span>{describirMov(m, r.cfg.posiciones, r.cfg.flujos).replace(/^Año \d+(, mes \d+)?: /, "")}</span></div>)}</div>
+          {!r.vigilancia.cumple && <div style={{ marginTop: 12 }}><div style={{ ...F.h3, color: C.danger }}>Dónde se rompe</div>{r.vigilancia.roturas.slice(0, 5).map((x, i) => <div key={i} style={{ ...F.body, color: C.danger, marginTop: 4 }}>· Año {x.anio}: {x.detalle}</div>)}</div>}
+        </div>
+      </div>
+      <div style={card}>
+        <div style={F.h3}>Año a año</div>
+        <div style={{ overflowX: "auto", marginTop: 8 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+            <thead><tr>{["Año", "Entra/mes", "Sale/mes", "Queda/mes", "Cobertura", "Patrimonio", "Qué pasa"].map((h, i) => <th key={h} style={{ ...th, textAlign: i === 0 || i === 6 ? "left" : "right" }}>{h}</th>)}</tr></thead>
+            <tbody>{r.resultado.anual.map((a) => <tr key={a.anio} style={{ borderTop: `1px solid ${C.border}` }}><td style={{ ...td, color: C.muted }}>{a.anio}</td><td style={tdNum}>{fmMes(a.entraMes)}</td><td style={tdNum}>{fmMes(a.saleMes)}</td><td style={{ ...tdNum, color: a.quedaMes >= 0 ? C.ok : C.danger }}>{fmMes(a.quedaMes)}</td><td style={tdNum}>{a.cobertura == null ? "—" : pct(a.cobertura)}</td><td style={tdNum}>{fmM(a.patrimonioFin)}</td><td style={{ ...td, color: C.muted, maxWidth: 360 }}>{a.cambios.slice(0, 3).map(fmtCambio).join(" · ")}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </div>
+      <Siguiente onClick={onNext}>Siguiente: compara todos los escenarios</Siguiente>
+    </div>
+  );
+}
+
+// ─── Paso 5 · Compara ────────────────────────────────────────────────────────
+function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onElegir }) {
+  const data = useMemo(() => { const H = Math.max(...res.map((r) => r.resultado.anual.length)); return Array.from({ length: H + 1 }, (_, a) => { const row = { anio: a }; res.forEach((r) => { row[r.id] = a === 0 ? r.puntos.patrimonioInicial : r.resultado.anual[a - 1]?.patrimonioFin; }); return row; }); }, [res]);
+  const hoy = useMemo(() => { const entra = (base.base?.ia || 0) + (base.base?.ip || 0), sale = base.gastosMes; const crece = base.posiciones.reduce((s, p) => s + produce(p).crece, 0); return { entra, sale, queda: entra - sale, cobertura: sale > 0 ? (entra / sale) * 100 : 0, produce: entra + crece }; }, [base]);
+  const fila = (l, f, hoyV) => [l, f, hoyV];
+  const filas = [
+    fila("Ingreso mensual (lo que recibes)", (r) => fmMes(r.puntos.entraMes), hoy && fmMes(hoy.entra)),
+    fila("Egresos mensuales (gastos + cuotas)", (r) => fmMes(r.puntos.saleMes), hoy && fmMes(hoy.sale)),
+    fila("Excedente mensual", (r) => fmMes(r.puntos.quedaMes), hoy && fmMes(hoy.queda)),
+    fila("Cobertura", (r) => pct(r.puntos.cobertura), hoy && pct(hoy.cobertura)),
+    fila("Produce al mes (recibido + reinvertido)", (r) => fmMes(r.puntos.produceMes), hoy && fmMes(hoy.produce)),
+    fila("Patrimonio año 10", (r) => fmM(r.puntos.patrimonioFinal), fmM(res[0]?.puntos.patrimonioInicial)),
+    fila("En plata de hoy", (r) => fmM(r.puntos.patrimonioFinalReal), "—"),
+    fila("Crece al año (real)", (r) => (r.puntos.crecimientoRealAnual == null ? "—" : r.puntos.crecimientoRealAnual.toFixed(1).replace(".", ",") + "%"), "—"),
+    fila("En rentas (año 10)", (r) => fmM(r.canastasFin.rentas), fmM(base.canastasHoy.rentas)),
+    fila("En crecimiento (año 10)", (r) => fmM(r.canastasFin.crecimiento), fmM(base.canastasHoy.crecimiento)),
+    fila("Vivienda y colchón (año 10)", (r) => fmM(r.canastasFin.proteccion), fmM(base.canastasHoy.proteccion)),
+    fila("Colchón líquido (año 10)", (r) => fmM(r.canastasFin.colchon), fmM(base.canastasHoy.colchon)),
+    fila("Mes más apretado", (r) => (r.puntos.mesApretado ? `año ${anioDe(r.puntos.mesApretado.mes)} · ${pct(r.puntos.mesApretado.cobertura)}` : "—"), "—"),
+    fila("Meses en rojo", (r) => String(r.puntos.mesesNegativos), "—"),
+    fila("Si crecimiento rinde menos", (r) => fmM(r.puntos.estres.patrimonioFinal), "—"),
+    fila("Sin la mayor renta", (r) => (r.puntos.sinMayorFuente ? `${pct(r.puntos.sinMayorFuente.cobertura)} · ${r.puntos.sinMayorFuente.seSostiene ? "aguanta" : "no aguanta"}` : "—"), "—"),
+    fila("Vendes hoy", (r) => (r.liquidez ? fmM(r.liquidez.liberado) : "—"), "—"),
+    fila("Pagas deuda hoy", (r) => (r.liquidez ? fmM(r.liquidez.pagado) : "—"), "—"),
+  ];
+  const cien = useMemo(() => cienEnCada(base, perfil), [base, perfil]);
+  return (
+    <div style={{ display: "grid", gap: 14 }}>
+      <div style={card}>
+        <div style={F.h2}>5 · Todos los escenarios, lado a lado</div>
+        <div style={{ ...F.caption, marginTop: 2 }}>Los mismos indicadores para cada uno, con hoy como referencia. Toca un nombre para abrirlo.</div>
+        <div style={{ height: 260, marginTop: 14 }}>
+          <ResponsiveContainer>
+            <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid {...gridProps} /><XAxis dataKey="anio" {...axisProps} tickFormatter={(a) => (a === 0 ? "hoy" : `año ${a}`)} /><YAxis {...axisProps} width={60} tickFormatter={(v) => fmM(v).replace("$", "")} />
+              <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} labelFormatter={(a) => (a === 0 ? "Hoy" : `Año ${a}`)} />} /><Legend wrapperStyle={{ fontSize: 11, color: CHART.txt2 }} />
+              {res.map((r) => <Line key={r.id} type="monotone" dataKey={r.id} name={r.nombre} stroke={r.color} strokeWidth={r.id === activoId ? 3 : 1.5} dot={false} strokeOpacity={activoId && r.id !== activoId ? 0.55 : 1} />)}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ overflowX: "auto", marginTop: 10 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+            <thead><tr><th style={th}>Indicador</th><th style={{ ...th, textAlign: "right" }}>Hoy</th>{res.map((r) => <th key={r.id} onClick={() => onVer(r.id)} style={{ ...th, textAlign: "right", cursor: "pointer", color: r.color, fontSize: 12, textTransform: "none", letterSpacing: 0, borderBottom: r.id === activoId ? `2px solid ${r.color}` : "none" }}>{r.nombre}{caminoElegido === r.id ? " ★" : ""}</th>)}</tr></thead>
+            <tbody>
+              {filas.map(([l, f, h]) => <tr key={l} style={{ borderTop: `1px solid ${C.border}` }}><td style={{ ...td, color: C.muted }}>{l}</td><td style={{ ...tdNum, color: C.subtle }}>{h || "—"}</td>{res.map((r) => <td key={r.id} style={tdNum}>{f(r)}</td>)}</tr>)}
+              <tr style={{ borderTop: `1px solid ${C.border}` }}><td style={{ ...td, color: C.muted }}>Se cumple</td><td style={td} />{res.map((r) => <td key={r.id} style={{ ...td, textAlign: "right" }}><span style={chip(r.vigilancia.cumple ? C.ok : C.danger)}>{r.vigilancia.cumple ? "sí" : `no · año ${r.vigilancia.roturas[0].anio}`}</span></td>)}</tr>
+              <tr style={{ borderTop: `1px solid ${C.border}` }}><td style={td} /><td style={td} />{res.map((r) => <td key={r.id} style={{ ...td, textAlign: "right" }}>{caminoElegido === r.id ? <span style={chip(C.accent)}>Tu camino</span> : <button style={{ ...btn(false), padding: "4px 10px" }} onClick={() => onElegir(r.id)}>Elegir</button>}</td>)}</tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style={card}>
+        <div style={F.h3}>$100 M en cada inversión, en igualdad de condiciones</div>
+        <div style={F.caption}>Qué serían $100 M a 3, 5 y 10 años en cada tipo de inversión que tienes o podrías tener, con todo reinvertido y neto de impuestos (35% sobre rendimiento pagado, 15% al vender).</div>
+        <div style={{ overflowX: "auto", marginTop: 8 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+            <thead><tr><th style={th}>Inversión</th><th style={th}>Supuesto</th><th style={{ ...th, textAlign: "right" }}>3 años</th><th style={{ ...th, textAlign: "right" }}>5 años</th><th style={{ ...th, textAlign: "right" }}>10 años</th><th style={th}>Nota</th></tr></thead>
+            <tbody>{cien.map((f) => <tr key={f.inversion} style={{ borderTop: `1px solid ${C.border}` }}><td style={td}>{f.inversion}<div style={F.caption}>{f.grupo}</div></td><td style={{ ...td, color: C.muted }}>{f.supuesto}</td><td style={tdNum}>${Math.round(f.a3)} M</td><td style={tdNum}>${Math.round(f.a5)} M</td><td style={{ ...tdNum, fontWeight: 700 }}>${Math.round(f.a10)} M</td><td style={{ ...td, color: C.muted }}>{f.nota}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
 // ─── Pantalla ────────────────────────────────────────────────────────────────
-export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, caminos: propios = [], caminoElegido, onPerfil, onFichas, onCaminos, onElegir, onNavigate }) {
+export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, caminos: guardados = [], caminoElegido, onPerfil, onFichas, onCaminos, onElegir, onNavigate }) {
   const perfil = { ...PERFIL_DEFAULT, ...(perfilGuardado || {}) };
+  const [paso, setPaso] = useState(1);
   const [activoId, setActivoId] = useState(caminoElegido || "balance");
   const base = useMemo(() => { const b = baseDesdeUsuario(user, perfil, fichas); return { ...b, canastasHoy: medirCanastas(b.posiciones, b.caja) }; }, [user, perfilGuardado, fichas]);
-  const todos = useMemo(() => [...CAMINOS_BASE, ...propios.map((c) => ({ ...c, propio: true }))], [propios]);
+  // Plantillas (recalculadas con tus datos de hoy) + las que editaste + las tuyas
+  const todos = useMemo(() => {
+    const plantillas = CAMINOS_BASE.map((c) => escenarioDesdeCamino(base, c, perfil));
+    const porId = Object.fromEntries(guardados.map((g) => [g.id, g]));
+    return [...plantillas.map((p) => (porId[p.id] ? { ...p, ...porId[p.id], editado: true } : p)), ...guardados.filter((g) => !plantillas.some((p) => p.id === g.id))];
+  }, [base, guardados, perfilGuardado]);
   const res = useMemo(() => compararCaminos(todos, base, perfil), [todos, base, perfilGuardado]);
-  const activo = res.find((r) => r.id === activoId) || res[0];
   const sinDatos = base.posiciones.length === 0 && base.flujos.filter((f) => f.tipo === "ingreso").length === 0;
-
-  const crear = () => { const c = nuevoCamino({ nombre: `Mi camino ${propios.length + 1}` }); onCaminos([...propios, c]); setActivoId(c.id); };
-  const cambiar = (c) => onCaminos(propios.map((x) => (x.id === c.id ? { id: c.id, nombre: c.nombre, tesis: c.tesis, color: c.color, canastas: c.canastas, excedente: c.excedente, condiciones: c.condiciones, movimientos: c.movimientos || [] } : x)));
-  const borrar = (id) => { onCaminos(propios.filter((x) => x.id !== id)); if (caminoElegido === id) onElegir(null); setActivoId("balance"); };
-  // Los caminos base también aceptan movimientos propios: se guardan como camino propio derivado
-  const cambiarCualquiera = (c) => { if (c.propio) return cambiar(c); const copia = nuevoCamino({ ...c, id: `${c.id}_mio`, nombre: `${c.nombre} (con mis movimientos)`, movimientos: c.movimientos || [] }); onCaminos([...propios.filter((x) => x.id !== copia.id), copia]); setActivoId(copia.id); };
+  const guardar = (esc) => { const limpio = { id: esc.id, nombre: esc.nombre, tesis: esc.tesis, color: esc.color, plantilla: esc.plantilla || null, propio: !!esc.propio, ventas: esc.ventas || [], pagos: esc.pagos || [], despliegue: esc.despliegue || [], eventos: esc.eventos || [], excedente: esc.excedente, colchonMeses: esc.colchonMeses, canastas: esc.canastas || null, condiciones: esc.condiciones || [] }; onCaminos(guardados.some((g) => g.id === esc.id) ? guardados.map((g) => (g.id === esc.id ? limpio : g)) : [...guardados, limpio]); };
+  const colorNuevo = () => [CHART.purple, CHART.cyan, CHART.pink, CHART.gold][guardados.filter((g) => g.propio).length % 4];
+  const nuevo = () => { const e = escenarioVacio({ nombre: `Mi escenario ${guardados.filter((g) => g.propio).length + 1}`, colchonMeses: 6, color: colorNuevo() }); guardar(e); setActivoId(e.id); };
+  const duplicar = (esc) => { const e = { ...esc, id: "esc_" + Math.random().toString(36).slice(2, 8), nombre: `${esc.nombre} (copia)`, plantilla: null, propio: true, color: colorNuevo(), editado: false }; guardar(e); setActivoId(e.id); };
+  const restablecer = (esc) => onCaminos(guardados.filter((g) => g.id !== esc.id));
+  const borrar = (esc) => { onCaminos(guardados.filter((g) => g.id !== esc.id)); if (caminoElegido === esc.id) onElegir(null); setActivoId("balance"); };
+  const rActivo = res.find((r) => r.id === activoId) || res[0];
+  const ir = (n) => { setPaso(n); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
 
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0, 1fr)" }}>
-      <PageHeader label="—— Mi plan" title="Tu patrimonio a 10 años, por caminos" accent="caminos" subtitle="Tres caminos con condiciones que se cumplen, los mismos puntos para compararlos, y el tuyo con tus propios movimientos." />
+      <PageHeader label="—— Mi plan" title="Tu plan patrimonial a 10 años" accent="10 años" subtitle="Paso a paso: qué tienes, qué viene, qué mueves, cómo queda y cómo se compara." compact />
       {sinDatos ? (
-        <div style={card}><div style={F.h2}>Para trazar caminos hace falta tu punto de partida</div><div style={{ ...F.body, marginTop: 6 }}>Carga tus activos, ingresos, gastos y deudas: con eso FINPATHIA arma las canastas y los tres caminos solos.</div><div style={{ marginTop: 12, display: "flex", gap: 8 }}><button style={btn(true)} onClick={() => onNavigate?.("inv")}>Ir a Patrimonio</button><button style={btn(false)} onClick={() => onNavigate?.("ing")}>Ir a Ingresos</button></div></div>
+        <div style={card}><div style={F.h2}>Para trazar tu plan hace falta tu punto de partida</div><div style={{ ...F.body, marginTop: 6 }}>Carga tus activos, ingresos, gastos y deudas: con eso FINPATHIA arma el paso 1 solo.</div><div style={{ marginTop: 12, display: "flex", gap: 8 }}><button style={btn(true)} onClick={() => onNavigate?.("inv")}>Ir a Patrimonio</button><button style={btn(false)} onClick={() => onNavigate?.("ing")}>Ir a Ingresos</button></div></div>
       ) : (<>
-        <Hoy base={base} fichas={fichas} onFichas={onFichas} />
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-            <div><div style={F.h2}>Los caminos</div><div style={F.caption}>Cada uno es un juego de rangos por canasta y condiciones. Un camino que no se cumple te lo dice.</div></div>
-            <button style={btn(false)} onClick={crear}>+ Crear mi camino</button>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 12 }}>
-            {res.map((r) => <TarjetaCamino key={r.id} r={r} elegido={caminoElegido === r.id} activo={activo?.id === r.id} onVer={() => setActivoId(r.id)} onElegir={() => onElegir(r.id)} />)}
-          </div>
-        </div>
-        <LadoALado res={res} activoId={activo?.id} onVer={setActivoId} />
-        {activo && <Detalle r={activo} base={base} elegido={caminoElegido === activo.id} onElegir={() => onElegir(activo.id)} onCambiarCamino={cambiarCualquiera} onBorrarCamino={() => borrar(activo.id)} />}
-        <Fichas base={base} fichas={fichas} onFichas={onFichas} />
-        <Supuestos perfil={perfil} onPerfil={onPerfil} />
+        <Stepper paso={paso} setPaso={ir} />
+        {paso === 1 && <PasoHoy base={base} fichas={fichas} onFichas={onFichas} onNext={() => ir(2)} />}
+        {paso === 2 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(3)} />}
+        {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} />}
+        {paso === 4 && <PasoResultado base={base} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => ir(5)} onVolver={() => ir(3)} />}
+        {paso === 5 && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); ir(4); }} caminoElegido={caminoElegido} onElegir={onElegir} />}
         <div style={{ ...F.caption, textAlign: "center" }}>Lo que simulas aquí no toca tus datos reales. Los ejercicios (Pensiones, Ahorro BTC, Comprar o arrendar) alimentan los supuestos, no las decisiones.</div>
       </>)}
     </div>

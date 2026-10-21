@@ -21,7 +21,7 @@
  *
  * Puro: sin React, sin storage. Todo en COP; montos mensuales salvo capital.
  */
-import { simularCamino, estresar } from "./planes.js";
+import { simularCamino, estresar, cienMillones } from "./planes.js";
 import { montoPromedioMensual } from "./flowHelpers.js";
 import { calcularBase } from "./metrics.js";
 
@@ -257,7 +257,7 @@ const porCapital = (arr) => [...arr].sort((a, b) => b.capital - a.capital);
 /** Rentas de las que se puede sacar: primero lo líquido que sobra del colchón (rinde menos), después de menor a mayor tasa. */
 const rentasMovibles = (pos) => [...porCapital(pos.filter((p) => canastaDe(p) === "rentas" && p.liquido)), ...pos.filter((p) => canastaDe(p) === "rentas" && !p.inmueble && !p.liquido).sort((a, b) => a.tasa - b.tasa)];
 
-const M = (x) => `${Math.round(x / 1e6)} M`;
+const M = (x) => { const a = Math.abs(Number(x) || 0); return (x < 0 ? "−" : "") + (a >= 1e9 ? "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M" : "$" + Math.round(a / 1e6).toLocaleString("es-CO") + " M"); };
 
 /**
  * Ajuste inicial: los movimientos de mes 0 que llevan el punto de partida a
@@ -397,6 +397,184 @@ export function nuevoCamino(parcial = {}) {
   return { id: parcial.id || `camino_${Date.now()}`, nombre: parcial.nombre || "Mi camino", color: parcial.color || "#a855f7", tesis: parcial.tesis || "", canastas: { ...plantilla.canastas, ...(parcial.canastas || {}) }, excedente: parcial.excedente || plantilla.excedente, condiciones: parcial.condiciones || [], movimientos: parcial.movimientos || [], propio: true };
 }
 
+
+// ─── Escenarios: el despliegue concreto ──────────────────────────────────────
+//
+// Un escenario es lo que la persona DECIDE, en sus palabras (así está armado
+// el plan patrimonial que inspiró esto): qué vendo, qué pago, a dónde va cada
+// peso y con qué regla, qué pasa después en el tiempo, y a dónde va lo que
+// sobra cada mes. Los tres caminos base son plantillas que llenan esto; la
+// persona lo edita o arma el suyo desde cero.
+//
+//   ventas:     [{posicionId, monto?}]            todo el activo, o una parte
+//   pagos:      [deudaId]                         deudas que se pagan con lo liberado
+//   despliegue: [{id, destinoId?, nombre, canasta, capital, tasa, pagaPct,
+//                 valorizacion, renta, rentaDesde, regla}]
+//   eventos:    [movimiento de planes.js]         lo que pasa después (año X: …)
+//   excedente:  [{canasta, pct}]                  a dónde va lo que sobra cada mes
+//   colchonMeses, canastas, condiciones           opcionales (vigilancia)
+
+const uid = (pref) => `${pref}_${Math.random().toString(36).slice(2, 8)}`;
+
+export function escenarioVacio(parcial = {}) {
+  return { id: parcial.id || uid("esc"), nombre: parcial.nombre || "Mi escenario", tesis: parcial.tesis || "", color: parcial.color || "#a855f7", plantilla: parcial.plantilla || null,
+    ventas: parcial.ventas || [], pagos: parcial.pagos || [], despliegue: parcial.despliegue || [], eventos: parcial.eventos || [],
+    excedente: parcial.excedente || [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }], colchonMeses: parcial.colchonMeses ?? 6,
+    canastas: parcial.canastas || null, condiciones: parcial.condiciones || [], propio: true };
+}
+
+/** Papel en el motor a partir de la canasta elegida para un destino nuevo. */
+function papelDeCanasta(canasta, item, perfil) {
+  if (canasta === "crecimiento") return { bolsillo: "crecimiento", pagaPct: 0, tasa: num(item.tasa) || perfil.tasaCrecimiento, valorizacion: num(item.valorizacion) };
+  if (canasta === "rentas") return { bolsillo: "sustento", pagaPct: item.pagaPct == null ? 100 : num(item.pagaPct), tasa: num(item.tasa), valorizacion: num(item.valorizacion) };
+  if (canasta === "proteccion") return { bolsillo: "uso", pagaPct: 0, tasa: 0, valorizacion: num(item.valorizacion), vivienda: true };
+  return { bolsillo: "uso", pagaPct: 0, tasa: 0, valorizacion: num(item.valorizacion) };
+}
+
+/**
+ * Plantilla → escenario editable: corre el ajuste del camino y lo traduce a
+ * ventas, pagos y despliegue con nombres, para que la persona lo vea y lo cambie.
+ */
+export function escenarioDesdeCamino(baseCfg, camino, perfil = PERFIL_DEFAULT) {
+  const aj = ajustarAlCamino(baseCfg, camino, perfil);
+  const byId = Object.fromEntries(aj.posiciones.map((p) => [p.id, p]));
+  const esc = escenarioVacio({ id: camino.id, nombre: camino.nombre, tesis: camino.tesis, color: camino.color, plantilla: camino.id, excedente: camino.excedente, colchonMeses: camino.canastas?.colchonMeses ?? 6, canastas: camino.canastas || null, condiciones: camino.condiciones || [] });
+  esc.propio = false;
+  const venta = (posicionId, monto) => {
+    if (posicionId === "caja" || !posicionId) return;
+    const v = esc.ventas.find((x) => x.posicionId === posicionId);
+    if (!v) esc.ventas.push({ posicionId, monto: monto == null ? null : monto });
+    else if (v.monto != null && monto != null) v.monto += monto; else v.monto = null;
+  };
+  const desplegar = (destinoId, capital) => {
+    const d = byId[destinoId]; if (!d) return;
+    const item = esc.despliegue.find((x) => (d.nuevo ? x.nombre === d.nombre && !x.destinoId : x.destinoId === destinoId));
+    if (item) { item.capital += capital; return; }
+    esc.despliegue.push(d.nuevo ? { id: uid("d"), destinoId: null, nombre: d.nombre.replace(" (nueva)", "").replace(" (nuevo)", ""), canasta: canastaDe(d), capital, tasa: d.tasa, pagaPct: d.pagaPct, valorizacion: d.valorizacion, regla: d.pagaPct === 100 ? "Paga el 100% del rendimiento cada mes" : "Todo se reinvierte" }
+      : { id: uid("d"), destinoId, nombre: d.nombre, canasta: canastaDe(d), capital, tasa: d.tasa, pagaPct: d.pagaPct, valorizacion: d.valorizacion, regla: d.pagaPct === 100 ? "Paga el 100% del rendimiento cada mes" : d.bolsillo === "crecimiento" ? "Todo se reinvierte" : "" });
+  };
+  aj.movimientos.forEach((m) => {
+    if (m.tipo === "vender") venta(m.posicionId, null);
+    else if (m.tipo === "aportar") { (m.origen || []).forEach((o) => venta(o.posicionId, o.monto)); desplegar(m.posicionId, num(m.monto)); }
+    else if (m.tipo === "pagar_deuda") { (m.origen || []).forEach((o) => venta(o.posicionId, o.monto)); if (!esc.pagos.includes(m.deudaId)) esc.pagos.push(m.deudaId); }
+    else if (m.tipo === "flujo_inicia" || m.tipo === "comprar") esc.eventos.push({ ...m, id: uid("ev"), plantilla: true });
+  });
+  esc.notas = aj.notas;
+  return esc;
+}
+
+/** Cuánto libera, paga y asigna un escenario; lo que queda sin asignar va a caja. */
+export function liquidezEscenario(baseCfg, esc) {
+  const byId = Object.fromEntries(baseCfg.posiciones.map((p) => [p.id, p]));
+  const liberado = (esc.ventas || []).reduce((s, v) => { const p = byId[v.posicionId]; if (!p) return s; return s + (v.monto != null ? Math.min(num(v.monto), p.capital) : p.capital * (1 - num(esc.costoVentaPct || 0) / 100)); }, 0);
+  const pagado = (esc.pagos || []).reduce((s, id) => s + (baseCfg.deudas.find((d) => d.id === id)?.saldo || 0), 0);
+  const asignado = (esc.despliegue || []).reduce((s, d) => s + num(d.capital), 0);
+  return { liberado, pagado, asignado, porAsignar: liberado - pagado - asignado };
+}
+
+/** Escenario → configuración para simularCamino. */
+export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
+  const H = (num(perfil.horizonteAnios) || 10) * 12;
+  const byId = Object.fromEntries(baseCfg.posiciones.map((p) => [p.id, p]));
+  const posiciones = baseCfg.posiciones.map((p) => ({ ...p }));
+  const movimientos = [];
+  // 1) Ventas (hoy)
+  (esc.ventas || []).forEach((v) => {
+    const p = byId[v.posicionId]; if (!p) return;
+    if (v.monto != null) movimientos.push({ mes: 0, tipo: "retirar", posicionId: p.id, monto: Math.min(num(v.monto), p.capital) });
+    else movimientos.push({ mes: 0, tipo: "vender", posicionId: p.id, netoPct: 100 - num(esc.costoVentaPct || 0) });
+  });
+  // 2) Pagos (hoy, con lo liberado)
+  (esc.pagos || []).forEach((id) => { const d = baseCfg.deudas.find((x) => x.id === id); if (d) movimientos.push({ mes: 0, tipo: "pagar_deuda", deudaId: id, origen: [{ posicionId: "caja", monto: d.saldo }] }); });
+  // 3) Despliegue (hoy)
+  (esc.despliegue || []).forEach((d) => {
+    const cap = num(d.capital); if (cap <= 0) return;
+    if (d.destinoId && byId[d.destinoId]) { movimientos.push({ mes: 0, tipo: "aportar", posicionId: d.destinoId, monto: cap, origen: [{ posicionId: "caja", monto: cap }] }); if (num(d.tasa) > 0 && num(d.tasa) !== byId[d.destinoId].tasa) movimientos.push({ mes: 0, tipo: "tasa_cambia", posicionId: d.destinoId, tasa: num(d.tasa) }); return; }
+    const papel = papelDeCanasta(d.canasta || "rentas", d, perfil);
+    const id = d.id || uid("d");
+    posiciones.push({ id, nombre: d.nombre || "Nueva inversión", capital: 0, tipo: d.canasta === "crecimiento" ? "ETF" : d.canasta === "rentas" ? (d.inmueble ? "Real Estate" : "CDT") : "Real Estate", liquido: d.canasta === "rentas" && !d.inmueble, inmueble: !!d.inmueble || d.canasta === "proteccion", nuevo: true, ...papel, desdeMes: 0 });
+    movimientos.push({ mes: 0, tipo: "aportar", posicionId: id, monto: cap, origen: [{ posicionId: "caja", monto: cap }] });
+    if (num(d.renta) > 0) movimientos.push({ mes: Math.max(0, num(d.rentaDesde) || 0), tipo: "flujo_inicia", flujo: { id: `${id}_renta`, nombre: `Renta ${d.nombre}`, tipo: "ingreso", monto: num(d.renta), indexa: true, posicionId: id } });
+  });
+  // 4) Lo que pasa después: eventos del escenario + comunes del perfil + pensiones
+  const eventos = [...(perfil.eventos || []), ...(esc.eventos || [])].map((m) => ({ ...m }));
+  // 5) Reglas: excedente y colchón por canasta, sobre el conjunto final de posiciones
+  const finales = posiciones;
+  const destino = (canasta) => {
+    const lista = finales.filter((p) => canastaDe(p) === canasta && (canasta !== "rentas" || (!p.inmueble && p.tasa > 0)) && (canasta !== "crecimiento" || p.tipo !== "Crypto"));
+    const cap = (p) => p.capital + (esc.despliegue || []).filter((d) => d.destinoId === p.id || d.id === p.id).reduce((s, d) => s + num(d.capital), 0);
+    const best = [...lista].sort((a, b) => cap(b) - cap(a))[0];
+    if (best) return best.id;
+    const n = canasta === "crecimiento" ? { id: "nuevo_crecimiento", nombre: "Portafolio de crecimiento (nuevo)", bolsillo: "crecimiento", capital: 0, tasa: perfil.tasaCrecimiento, pagaPct: 0, valorizacion: 0, tipo: "ETF", nuevo: true } : { id: "nuevo_rentas", nombre: "Renta estable (nueva)", bolsillo: "sustento", capital: 0, tasa: perfil.tasaRentaEstable, pagaPct: 100, valorizacion: 0, tipo: "CDT", liquido: true, nuevo: true };
+    if (!finales.some((p) => p.id === n.id)) finales.push(n);
+    return n.id;
+  };
+  const excedente = (esc.excedente || []).filter((e) => num(e.pct) > 0).map((e) => ({ posicionId: destino(e.canasta), pct: num(e.pct) }));
+  const deficitDesde = finales.filter((p) => canastaDe(p) === "rentas" && !p.inmueble).sort((a, b) => (b.liquido ? 1 : 0) - (a.liquido ? 1 : 0)).map((p) => p.id);
+  let colchon = null;
+  if (num(esc.colchonMeses) > 0) {
+    // El colchón vive en la mayor posición líquida (o en una nueva en cero)
+    let liq = [...finales].filter((p) => p.liquido && !(esc.ventas || []).some((v) => v.posicionId === p.id && v.monto == null)).sort((a, b) => b.capital - a.capital)[0];
+    if (!liq) { liq = { id: "nuevo_colchon", nombre: "Colchón líquido (nuevo)", bolsillo: "sustento", capital: 0, tasa: perfil.tasaRentaEstable, pagaPct: 100, valorizacion: 0, tipo: "CDT", liquido: true, nuevo: true }; finales.push(liq); }
+    const otros = finales.filter((p) => p.liquido && p.id !== liq.id).reduce((s, p) => s + p.capital, 0);
+    colchon = { posicionId: liq.id, meta: Math.max(0, num(esc.colchonMeses) * num(baseCfg.gastosMes) - otros) };
+  }
+  const C = esc.canastas || {};
+  const idsCrec = finales.filter((p) => canastaDe(p) === "crecimiento").map((p) => p.id);
+  const idsRentas = finales.filter((p) => canastaDe(p) === "rentas" && !p.inmueble).map((p) => p.id);
+  const rebalanceo = (C.crecimiento?.max != null || C.crecimiento?.min != null) && idsCrec.length && idsRentas.length
+    ? { a: { ids: idsCrec, destinoId: destino("crecimiento") }, b: { ids: idsRentas, destinoId: destino("rentas") }, aMin: C.crecimiento?.min ?? null, aMax: C.crecimiento?.max ?? null, aMeta: C.crecimiento?.min != null && C.crecimiento?.max != null ? (num(C.crecimiento.min) + num(C.crecimiento.max)) / 2 : C.crecimiento?.max != null ? Math.max(0, num(C.crecimiento.max) - 5) : Math.min(100, num(C.crecimiento.min) + 5) }
+    : null;
+  const liq = liquidezEscenario(baseCfg, esc);
+  const notas = [];
+  const nom = (id) => byId[id]?.nombre || id;
+  const vendidas = (esc.ventas || []).map((v) => `${nom(v.posicionId)}${v.monto != null ? ` (${M(v.monto)})` : ""}`);
+  if (vendidas.length) notas.push(`Vendes ${vendidas.join(", ")}: liberas ${M(liq.liberado)}.`);
+  if ((esc.pagos || []).length) notas.push(`Pagas ${(esc.pagos || []).map((id) => baseCfg.deudas.find((d) => d.id === id)?.nombre || id).join(", ")}: ${M(liq.pagado)}.`);
+  (esc.despliegue || []).filter((d) => num(d.capital) > 0).forEach((d) => notas.push(`${M(d.capital)} a ${d.nombre}${num(d.tasa) > 0 ? ` al ${d.tasa}%` : ""}${d.regla ? ` · ${d.regla}` : ""}.`));
+  if (liq.porAsignar > 1e6) notas.push(`Quedan ${M(liq.porAsignar)} sin asignar (se quedan en caja, sin rendir).`);
+  if (liq.porAsignar < -1e6) notas.push(`Falta plata: asignas ${M(-liq.porAsignar)} más de lo que liberas.`);
+  return {
+    ...esc, ajuste: { notas, movimientos }, liquidez: liq,
+    cfg: { meses: H, caja: baseCfg.caja, posiciones: finales, flujos: baseCfg.flujos, deudas: baseCfg.deudas, movimientos: [...movimientos, ...movimientosPerfil(perfil), ...eventos],
+      reglas: { excedente, deficitDesde, colchon, rebalanceo, inflacion: num(perfil.inflacion), indexarGastos: true, indexarSustento: false, coberturaMin: num(perfil.coberturaMin) || 120 } },
+  };
+}
+
+/** Texto que cuenta un camino con nombres y cifras. */
+export function narrar(r, baseCfg) {
+  const hoy = r.resultado.meses[0];
+  const p = r.puntos, fin = r.resultado.anual[r.resultado.anual.length - 1];
+  const frases = [];
+  frases.push(`Hoy entran ${M(baseCfg.base?.ia + baseCfg.base?.ip || hoy.entra)} al mes y salen ${M(baseCfg.gastosMes)}.`);
+  if (r.ajuste?.notas?.length) frases.push(r.ajuste.notas.join(" "));
+  const ev = (r.eventos || []).filter((e) => !e.plantilla);
+  if (ev.length) frases.push("Después: " + ev.map((e) => `año ${Math.floor(num(e.mes) / 12) + 1}, ${e.tipo === "comprar" ? `compras ${e.nombre}` : e.tipo === "vender" ? `vendes ${baseCfg.posiciones.find((x) => x.id === e.posicionId)?.nombre || ""}` : e.tipo === "flujo_inicia" ? `${e.flujo?.tipo === "gasto" ? "entra el gasto" : "entra"} ${e.flujo?.nombre}` : e.tipo}`).join("; ") + ".");
+  frases.push(`En el año 10 entran ${M(fin.entraMes)} al mes contra ${M(fin.saleMes)} de gastos y cuotas: cobertura ${Math.round(fin.cobertura || 0)}%. El patrimonio pasa de ${M(p.patrimonioInicial)} a ${M(p.patrimonioFinal)} (${M(p.patrimonioFinalReal)} en plata de hoy, ${p.crecimientoRealAnual == null ? "" : p.crecimientoRealAnual.toFixed(1).replace(".", ",") + "% real al año"}).`);
+  if (p.mesApretado) frases.push(`El mes más apretado es en el año ${Math.floor(p.mesApretado.mes / 12) + 1}, con cobertura ${Math.round(p.mesApretado.cobertura)}%${p.seSostiene ? ": se sostiene." : ": ahí no alcanza."}`);
+  if (p.estres) frases.push(`Si crecimiento rinde ${String(Math.round(p.estres.tasa * 10) / 10).replace(".", ",")}% en vez de lo supuesto, el patrimonio termina en ${M(p.estres.patrimonioFinal)}.`);
+  if (p.sinMayorFuente) frases.push(`Sin ${p.sinMayorFuente.nombre}, la cobertura baja a ${Math.round(p.sinMayorFuente.cobertura)}%${p.sinMayorFuente.seSostiene ? " y aguanta." : " y no aguanta."}`);
+  if (r.vigilancia && !r.vigilancia.cumple) frases.push(`Ojo: ${r.vigilancia.roturas[0].detalle.toLowerCase()} (año ${r.vigilancia.roturas[0].anio}).`);
+  return frases;
+}
+
+/** $100 M en cada tipo de inversión que la persona tiene o podría tener, a 3, 5 y 10 años. */
+export function cienEnCada(baseCfg, perfil = PERFIL_DEFAULT) {
+  const filas = [];
+  const vistos = new Set();
+  const add = (nombre, grupo, supuesto, tasa, valorizacion, impR, impV, nota) => { const k = `${nombre}`; if (vistos.has(k)) return; vistos.add(k); filas.push({ inversion: nombre, grupo, supuesto, ...cienMillones({ tasa, valorizacion, impuestoRendimientoPct: impR, impuestoVentaPct: impV }), nota }); };
+  baseCfg.posiciones.forEach((p) => {
+    if (p.vivienda || p.vehiculo) return;
+    const rentaPct = p.inmueble && p.capital > 0 ? (p.renta * 12 / p.capital) * 100 : 0;
+    if (p.inmueble) add(p.nombre, "Inmuebles", `${rentaPct.toFixed(1).replace(".", ",")}% de renta + ${p.valorizacion}% de valorización`, rentaPct, p.valorizacion, 35, 15, p.renta > 0 ? "Renta neta de costos; valorización al vender." : "Solo valoriza; no paga la vida.");
+    else if (p.tasa > 0) add(p.nombre, canastaDe(p) === "crecimiento" ? "Crecimiento" : "Renta", `${p.tasa}% anual${p.pagaPct === 100 ? ", pagado cada mes" : ", reinvertido"}`, p.tasa, p.valorizacion, p.pagaPct === 100 ? 35 : 0, p.pagaPct === 100 ? 0 : 15, p.pagaPct === 100 ? "El rendimiento tributa cada año." : "Tributa al vender.");
+  });
+  add("Renta estable (CDT, renta fija)", "Renta", `${perfil.tasaRentaEstable}% anual, pagado cada mes`, perfil.tasaRentaEstable, 0, 35, 0, "Lo más seguro; tributa cada año.");
+  add("Bolsa / ETF diversificado", "Crecimiento", `${perfil.tasaCrecimiento}% anual, reinvertido`, perfil.tasaCrecimiento, 0, 0, 15, "Tributa al vender.");
+  add("Bitcoin", "Crecimiento", `${perfil.tasaBtc}% anual, reinvertido`, perfil.tasaBtc, 0, 0, 15, "Volátil: el supuesto es el que tú pongas.");
+  return filas.sort((a, b) => b.a10 - a.a10);
+}
+
 // ─── Vigilancia: ¿el camino se cumple? ───────────────────────────────────────
 
 /**
@@ -436,7 +614,7 @@ export function vigilarCamino(camino, cfg, resultado) {
 export function compararCaminos(caminos, baseCfg, perfil = PERFIL_DEFAULT) {
   const tasaEstres = Math.max(0, num(perfil.tasaCrecimiento) * 0.65);
   return caminos.map((c0) => {
-    const c = c0.cfg ? c0 : configurarCamino(baseCfg, c0, perfil);
+    const c = c0.cfg ? c0 : c0.despliegue ? configurarEscenario(baseCfg, c0, perfil) : configurarCamino(baseCfg, c0, perfil);
     const r = simularCamino(c.cfg);
     const vigilancia = vigilarCamino(c, c.cfg, r);
     const fin = r.meses[r.meses.length - 1];
