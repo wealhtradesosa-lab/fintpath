@@ -1137,84 +1137,113 @@ export default function FinPath(){
       demo:true,
       anonymous:!yaRegistrado,
     };
+    // 21-oct-2026 (Santiago: "montar el demo con números y escenarios parecidos
+    // al mío para ver todo el potencial de la herramienta; lotes, bodegas,
+    // apartamento, fondo BTG"). La demo anterior era un asalariado con dos
+    // arriendos. Esta es un patrimonio de familia con sociedad: tres
+    // propietarios, inmuebles de renta, lotes, fondos de crédito privado con
+    // capital × tasa, renta en dólares, dos hipotecas, gastos por categoría,
+    // declaraciones cargadas y un escenario 2027 con cambios. Cifras
+    // verosímiles, no reales; nombres genéricos.
     nd.owners=[
       {id:"own_1",name:"Pedro Pérez",type:"natural"},
-      {id:"own_j1",name:"Inversiones Pérez SAS",type:"juridica"},
+      {id:"own_2",name:"Laura Gómez",type:"natural"},
+      {id:"own_j1",name:"Inversiones Pérez SAS",type:"juridica",regimen:"ordinario"},
     ];
     nd.inv=[
-      {id:"d_i1",n:"Apartamento Chapinero",ub:"Bogotá",tp:"Real Estate",va:850000000,vc:520000000,tasa:"",owner:"own_j1"},
-      {id:"d_i2",n:"Casa Campestre Tabio",ub:"Tabio, Cundinamarca",tp:"Real Estate",va:1200000000,vc:800000000,tasa:"",owner:"own_1"},
-      {id:"d_i3",n:"Bodega Fontibón",ub:"Bogotá",tp:"Bodega",va:650000000,vc:400000000,tasa:"",owner:"own_j1"},
-      {id:"d_i4",n:"Local Centro Comercial",ub:"Bogotá",tp:"Local Comercial",va:420000000,vc:350000000,tasa:"",owner:"own_j1"},
-      {id:"d_i5",n:"Fondo Bancolombia",ub:"Colombia",tp:"Fondo de Inversión",va:180000000,vc:150000000,tasa:"8",owner:"own_1"},
-      {id:"d_i6",n:"CDT Davivienda",ub:"Colombia",tp:"CDT",va:120000000,vc:120000000,tasa:"11.5",owner:"own_1"},
-      {id:"d_i7",n:"Acciones ETF S&P500",ub:"USA",tp:"Acciones",va:95000000,vc:60000000,tasa:"",owner:"na"},
-      {id:"d_i8",n:"Bitcoin",ub:"",tp:"Crypto",va:45000000,vc:20000000,tasa:"",owner:"na"},
-      {id:"d_i9",n:"Ranger Raptor 2024",ub:"Bogotá",tp:"Vehículo",va:220000000,vc:280000000,tasa:"",owner:"own_1"},
-      {id:"d_i10",n:"Rapicredit Fondeo",ub:"Colombia",tp:"Fondo de Inversión",va:500000000,vc:500000000,tasa:"20",owner:"own_j1"},
+      {id:"d_i1",n:"Casa del lago",ub:"Guatapé, Antioquia",tp:"Real Estate",va:3000000000,vc:1900000000,tasa:"",owner:"own_j1",valorizacionPct:"6"},
+      {id:"d_i2",n:"Apartamento Poblado",ub:"Medellín",tp:"Real Estate",va:1100000000,vc:780000000,tasa:"",owner:"own_1",valorizacionPct:"5"},
+      {id:"d_i3",n:"Apartamento Miami",ub:"Miami, FL",tp:"Real Estate",va:1650000000,vc:1400000000,tasa:"",owner:"own_1",valorizacionPct:"4"},
+      {id:"d_i4",n:"Bodega Itagüí",ub:"Itagüí",tp:"Bodega",va:420000000,vc:300000000,tasa:"",owner:"own_j1"},
+      {id:"d_i5",n:"Bodega Sabaneta",ub:"Sabaneta",tp:"Bodega",va:380000000,vc:290000000,tasa:"",owner:"own_j1"},
+      {id:"d_i6",n:"Local Centro Comercial",ub:"Medellín",tp:"Local Comercial",va:840000000,vc:600000000,tasa:"",owner:"own_j1"},
+      {id:"d_i7",n:"Lote El Retiro",ub:"El Retiro, Antioquia",tp:"Real Estate",va:700000000,vc:420000000,tasa:"",owner:"own_1",valorizacionPct:"8"},
+      {id:"d_i8",n:"Lote Rionegro",ub:"Rionegro",tp:"Real Estate",va:450000000,vc:380000000,tasa:"",owner:"own_2",valorizacionPct:"7"},
+      {id:"d_i9",n:"Fondo de crédito privado",ub:"Colombia",tp:"Fondo de Inversión",va:2400000000,vc:2400000000,tasa:"21",owner:"own_j1"},
+      {id:"d_i10",n:"Fondo BTG Pactual",ub:"Colombia",tp:"Fondo de Inversión",va:1500000000,vc:1500000000,tasa:"14",owner:"own_1"},
+      {id:"d_i11",n:"CDT Bancolombia",ub:"Colombia",tp:"CDT",va:300000000,vc:300000000,tasa:"11",owner:"own_2"},
+      {id:"d_i12",n:"Acciones empresa de logística",ub:"Colombia",tp:"Acciones",va:900000000,vc:600000000,tasa:"",owner:"own_1"},
+      {id:"d_i13",n:"ETF S&P 500",ub:"USA",tp:"ETF",va:160000000,vc:110000000,tasa:"",owner:"own_1"},
+      {id:"d_i14",n:"Bitcoin",ub:"",tp:"Crypto",va:85000000,vc:30000000,tasa:"",owner:"own_1"},
+      {id:"d_i15",n:"Cuenta de ahorros",ub:"Colombia",tp:"Cash",va:60000000,vc:60000000,tasa:"",owner:"own_1"},
+      {id:"d_i16",n:"Camioneta",ub:"Medellín",tp:"Vehículo",va:210000000,vc:260000000,tasa:"",owner:"own_1"},
+      {id:"d_i17",n:"Carro",ub:"Medellín",tp:"Vehículo",va:120000000,vc:150000000,tasa:"",owner:"own_2"},
     ];
     nd.ingresos=[
-      {id:"d_ig1",nombre:"Salario Empresa Tech",categoria:"Salario",mensual:18000000,tipo:"fijo",fuente:"TechCorp",owner:"own_1",moneda:"COP"},
-      {id:"d_ig2",nombre:"Arriendo Apto Chapinero",categoria:"Arriendo",mensual:4500000,tipo:"fijo",fuente:"Apto Chapinero",owner:"own_j1",moneda:"COP",capital:"850000000",tasa:"6.4"},
-      {id:"d_ig3",nombre:"Arriendo Bodega",categoria:"Arriendo",mensual:8500000,tipo:"fijo",fuente:"Bodega Fontibón",owner:"own_j1",moneda:"COP"},
-      {id:"d_ig4",nombre:"Arriendo Local",categoria:"Arriendo",mensual:3800000,tipo:"fijo",fuente:"Local CC",owner:"own_j1",moneda:"COP"},
-      {id:"d_ig5",nombre:"Rendimiento CDT",categoria:"Rendimiento",mensual:1150000,tipo:"fijo",fuente:"CDT Davivienda",owner:"own_1",moneda:"COP",capital:"120000000",tasa:"11.5"},
-      {id:"d_ig6",nombre:"Rendimiento Rapicredit",categoria:"Rendimiento",mensual:8333000,tipo:"fijo",fuente:"Rapicredit",owner:"own_j1",moneda:"COP",capital:"500000000",tasa:"20"},
-      {id:"d_ig7",nombre:"Freelance consultoría",categoria:"Honorarios",mensual:5000000,tipo:"variable",fuente:"Clientes",owner:"own_1",moneda:"COP"},
-      // 26-jul-2026 (Santiago: "podríamos cambiar el ejemplo de Pedro Pérez,
-      // ponerle más cosas para que se vea en detalle cómo funciona la
-      // plataforma, por ejemplo algunos ingresos variables o de unos meses,
-      // para que se vea cómo el flujo cambia por mes").
-      // Los 7 ingresos originales eran TODOS mensuales fijos, así que la demo
-      // mostraba un flujo plano — justo lo que la plataforma NO es. Estos 4
-      // agregan los casos que la diferencian:
-      {id:"d_ig8",nombre:"Prima de servicios",categoria:"Salario",mensual:9000000,tipo:"fijo",
-       frecuencia:"variable",fuente:"TechCorp",owner:"own_1",moneda:"COP",
-       // Junio y diciembre: el clásico colombiano. En el flujo se ven dos picos.
-       montosMensuales:[0,0,0,0,0,9000000,0,0,0,0,0,9000000]},
-      {id:"d_ig9",nombre:"Contrato proyecto Q4",categoria:"Honorarios",mensual:12000000,tipo:"variable",
-       fuente:"Cliente corporativo",owner:"own_1",moneda:"COP",desdeMes:10,hastaMes:12,
-       // Vigencia parcial: entra solo oct-dic. Su promedio anual es $3M, no $12M.
-      },
-      {id:"d_ig10",nombre:"Comisiones ventas",categoria:"Honorarios",mensual:0,tipo:"variable",
-       frecuencia:"variable",fuente:"Clientes",owner:"own_1",moneda:"COP",
-       // Mes a mes distinto: el caso que ninguna app de finanzas modela bien.
-       montosMensuales:[3200000,1800000,4500000,2100000,6800000,3400000,2900000,5100000,4200000,7500000,8900000,11000000]},
-      {id:"d_ig11",nombre:"Dividendos Inversiones Pérez",categoria:"Dividendos",mensual:24000000,tipo:"fijo",
-       frecuencia:"anual",mesPago:4,fuente:"Inversiones Pérez SAS",owner:"own_j1",moneda:"COP",
-       // Una vez al año, en abril. Promedio $2M/mes, pero abril salta.
-      },
+      // Rentas de activos (capital × tasa: el monto sale del capital)
+      {id:"d_ig1",nombre:"Rendimiento fondo de crédito privado",categoria:"Intereses bancarios",mensual:42000000,tipo:"fijo",fuente:"Fondo de crédito privado",owner:"own_j1",moneda:"COP",capital:"2400000000",tasa:"21"},
+      {id:"d_ig2",nombre:"Rendimiento Fondo BTG",categoria:"Intereses bancarios",mensual:17500000,tipo:"fijo",fuente:"Fondo BTG Pactual",owner:"own_1",moneda:"COP",capital:"1500000000",tasa:"14"},
+      {id:"d_ig3",nombre:"Rendimiento CDT",categoria:"Intereses bancarios",mensual:2750000,tipo:"fijo",fuente:"CDT Bancolombia",owner:"own_2",moneda:"COP",capital:"300000000",tasa:"11"},
+      {id:"d_ig4",nombre:"Arriendo casa del lago (temporadas)",categoria:"Arriendo",mensual:0,tipo:"variable",frecuencia:"variable",fuente:"Casa del lago",owner:"own_j1",moneda:"COP",
+       // Alquiler por temporadas: picos en enero, Semana Santa, mitad y fin de año.
+       montosMensuales:[28000000,9000000,14000000,22000000,8000000,19000000,21000000,9000000,7000000,10000000,9000000,30000000]},
+      {id:"d_ig5",nombre:"Arriendo apartamento Miami",categoria:"Arriendo",mensual:2600,tipo:"fijo",fuente:"Apartamento Miami",owner:"own_1",moneda:"USD"},
+      {id:"d_ig6",nombre:"Arriendo bodega Itagüí",categoria:"Arriendo",mensual:4200000,tipo:"fijo",fuente:"Bodega Itagüí",owner:"own_j1",moneda:"COP"},
+      {id:"d_ig7",nombre:"Arriendo bodega Sabaneta",categoria:"Arriendo",mensual:3800000,tipo:"fijo",fuente:"Bodega Sabaneta",owner:"own_j1",moneda:"COP"},
+      {id:"d_ig8",nombre:"Arriendo local",categoria:"Arriendo",mensual:7200000,tipo:"fijo",fuente:"Local Centro Comercial",owner:"own_j1",moneda:"COP"},
+      {id:"d_ig9",nombre:"Dividendos empresa de logística",categoria:"Dividendos",mensual:36000000,tipo:"fijo",frecuencia:"anual",mesPago:4,fuente:"Acciones",owner:"own_1",moneda:"COP",capital:"900000000",tasa:"4"},
+      // Trabajo
+      {id:"d_ig10",nombre:"Honorarios consultoría",categoria:"Honorarios",mensual:14000000,tipo:"fijo",fuente:"Clientes",owner:"own_1",moneda:"COP"},
+      {id:"d_ig11",nombre:"Salario Laura",categoria:"Salario",mensual:9500000,tipo:"fijo",fuente:"Empresa",owner:"own_2",moneda:"COP"},
+      {id:"d_ig12",nombre:"Prima Laura",categoria:"Salario",mensual:0,tipo:"fijo",frecuencia:"variable",fuente:"Empresa",owner:"own_2",moneda:"COP",montosMensuales:[0,0,0,0,0,4750000,0,0,0,0,0,4750000]},
+      // Un ingreso que termina este año (el simulador futuro lo detecta)
+      {id:"d_ig13",nombre:"Contrato interventoría",categoria:"Honorarios",mensual:11000000,tipo:"variable",fuente:"Cliente",owner:"own_1",moneda:"COP",desdeMes:1,hastaMes:9},
+      // Venta de un lote: entra una vez, en agosto
+      {id:"d_ig14",nombre:"Venta lote La Ceja",categoria:"Rendimiento",mensual:0,tipo:"variable",frecuencia:"variable",fuente:"Venta",owner:"own_2",moneda:"COP",montosMensuales:[0,0,0,0,0,0,0,380000000,0,0,0,0]},
     ];
     nd.deu=[
-      {id:"d_d1",n:"Hipoteca Casa Tabio",tp:"mortgage",mt:480000000,pg:5200000,ts:12,owner:"own_1"},
-      {id:"d_d2",n:"Crédito Bodega",tp:"loan",mt:180000000,pg:3100000,ts:14,owner:"own_j1"},
-      {id:"d_d3",n:"Tarjeta Visa",tp:"credit_card",mt:8500000,pg:1200000,ts:28,owner:"own_1"},
-      {id:"d_d4",n:"Leasing Ranger Raptor",tp:"loan",mt:150000000,pg:3800000,ts:16,owner:"own_1"},
+      {id:"d_d1",n:"Hipoteca casa del lago",tp:"mortgage",mt:950000000,pg:11500000,ts:12,owner:"own_j1"},
+      {id:"d_d2",n:"Hipoteca apartamento Miami",tp:"mortgage",mt:620000000,pg:6200000,ts:7,owner:"own_1"},
+      {id:"d_d3",n:"Crédito camioneta",tp:"vehiculo",mt:98000000,pg:3600000,ts:15,owner:"own_1"},
+      {id:"d_d4",n:"Crédito carro",tp:"vehiculo",mt:52000000,pg:2400000,ts:14,owner:"own_2"},
+      {id:"d_d5",n:"Crédito de libre inversión",tp:"loan",mt:40000000,pg:2900000,ts:19,owner:"own_1",desdeMes:1,hastaMes:10},
     ];
     nd.gas={
-      "Vivienda":[{c:"Administración casa",m:1800000,t:"f",owner:"own_1"},{c:"Arriendo oficina",m:3500000,t:"f",owner:"own_j1"},{c:"Predial casa",m:450000,t:"f",owner:"own_1"},{c:"Predial bodega",m:380000,t:"f",owner:"own_j1"}],
-      "Alimentación":[{c:"Mercado familiar",m:2800000,t:"f",owner:"own_1"},{c:"Restaurantes",m:1200000,t:"v",owner:"own_1"}],
-      "Transporte":[{c:"Gasolina",m:800000,t:"v",owner:"own_1"},{c:"SOAT + Seguros",m:350000,t:"f",owner:"own_1"},{c:"Transporte empresa",m:600000,t:"f",owner:"own_j1"}],
-      "Educación":[{c:"Colegio hijos",m:4500000,t:"f",owner:"own_1",desdeMes:2,hastaMes:11},
-                   {c:"Matrícula anual",m:6500000,t:"f",owner:"own_1",frecuencia:"anual"},
-                   {c:"Cursos online",m:200000,t:"v",owner:"own_1"}],
-      "Salud":[{c:"Medicina prepagada familiar",m:1800000,t:"f",owner:"own_1"},{c:"Farmacia",m:300000,t:"v",owner:"own_1"}],
-      // 26-jul-2026 — los seguros suelen pagarse ANUALES, y así se ve la
-      // diferencia entre "$5.4M al año" y "$5.4M al mes": el error de
-      // frecuencia que costó varias sesiones detectar en producción.
-      "Seguros":[{c:"Seguro de vida",m:450000,t:"f",owner:"own_1"},
-                 {c:"Póliza todo riesgo propiedades",m:8160000,t:"f",owner:"own_j1",frecuencia:"anual"},
-                 {c:"Seguro vehículo (anual)",m:3200000,t:"f",owner:"own_1",frecuencia:"anual"}],
-      // Impuestos: el predial y la renta caen en meses puntuales, no todos los meses.
-      "Impuesto":[{c:"Predial (una vez al año)",m:4800000,t:"f",owner:"own_j1",frecuencia:"anual"},
-                  {c:"Renta persona natural",m:18000000,t:"f",owner:"own_1",frecuencia:"anual"}],
-      "Servicios":[{c:"Servicios casa",m:850000,t:"f",owner:"own_1"},{c:"Internet y telefonía empresa",m:350000,t:"f",owner:"own_j1"}],
-      "Seguridad Social":[{c:"Pensión + EPS + ARL",m:3200000,t:"f",owner:"own_1"}],
-      "Entretenimiento":[{c:"Streaming y suscripciones",m:250000,t:"f",owner:"own_1"},{c:"Vacaciones (mensualizado)",m:2000000,t:"v",owner:"own_1"}],
-      "Personal":[{c:"Ropa y cuidado personal",m:500000,t:"v",owner:"own_1"}],
+      "Vivienda":[{c:"Administración apartamento",m:1900000,t:"f",owner:"own_1"},{c:"Arriendo oficina",m:4200000,t:"f",owner:"own_j1"}],
+      "Inmueble arrendado":[{c:"Administración y mantenimiento casa del lago",m:3800000,t:"f",owner:"own_j1",activoId:"d_i1"},
+                            {c:"HOA y seguro apartamento Miami",m:2600000,t:"f",owner:"own_1",activoId:"d_i3"},
+                            {c:"Predial bodegas (anual)",m:6400000,t:"f",owner:"own_j1",frecuencia:"anual",mesPago:3}],
+      "Alimentación":[{c:"Mercado",m:3600000,t:"f",owner:"own_1"},{c:"Restaurantes",m:2200000,t:"v",owner:"own_1"},{c:"Domicilios",m:600000,t:"v",owner:"own_2"}],
+      "Educación":[{c:"Colegio hijos",m:5800000,t:"f",owner:"own_1",desdeMes:2,hastaMes:11},
+                   {c:"Matrícula anual",m:9500000,t:"f",owner:"own_1",frecuencia:"anual",mesPago:1},
+                   {c:"Universidad",m:3200000,t:"f",owner:"own_2",desdeMes:2,hastaMes:11}],
+      "Salud":[{c:"Medicina prepagada familiar",m:2900000,t:"f",owner:"own_1"},{c:"Farmacia",m:350000,t:"v",owner:"own_2"}],
+      "Seguros":[{c:"Seguro de vida",m:650000,t:"f",owner:"own_1"},
+                 {c:"Póliza todo riesgo propiedades (anual)",m:14000000,t:"f",owner:"own_j1",frecuencia:"anual",mesPago:5},
+                 {c:"Seguro camioneta (anual)",m:4800000,t:"f",owner:"own_1",frecuencia:"anual",mesPago:9},
+                 {c:"Seguro enfermedades graves",m:420000,t:"f",owner:"own_1"}],
+      "Transporte":[{c:"Gasolina",m:1300000,t:"v",owner:"own_1"},{c:"Peajes y parqueaderos",m:400000,t:"v",owner:"own_1"}],
+      "Servicios":[{c:"Servicios apartamento",m:950000,t:"f",owner:"own_1"},{c:"Internet y telefonía",m:420000,t:"f",owner:"own_1"},{c:"Servicios oficina",m:600000,t:"f",owner:"own_j1"}],
+      "Nómina":[{c:"Empleada doméstica",m:2300000,t:"f",owner:"own_1"},{c:"Asistente oficina",m:3100000,t:"f",owner:"own_j1"}],
+      "Honorarios":[{c:"Contador",m:1800000,t:"f",owner:"own_j1"},{c:"Abogado (anual)",m:9000000,t:"f",owner:"own_j1",frecuencia:"anual",mesPago:2}],
+      "Seguridad Social":[{c:"Pensión + EPS + ARL Pedro",m:3900000,t:"f",owner:"own_1"},{c:"Pensión + EPS Laura",m:2600000,t:"f",owner:"own_2"}],
+      "Aporte tributario":[{c:"Pensión voluntaria",m:2500000,t:"f",owner:"own_1"},{c:"AFC",m:1500000,t:"f",owner:"own_1"}],
+      "Impuesto":[{c:"Predial apartamento (anual)",m:5200000,t:"f",owner:"own_1",frecuencia:"anual",mesPago:3}],
+      "Mantenimiento":[{c:"Reparaciones y mantenimiento",m:900000,t:"v",owner:"own_1"}],
+      "Entretenimiento":[{c:"Streaming y suscripciones",m:320000,t:"f",owner:"own_1"},{c:"Vacaciones (mensualizado)",m:3500000,t:"v",owner:"own_1"}],
+      "Representación":[{c:"Almuerzos de negocios",m:1200000,t:"v",owner:"own_j1"}],
+      "Personal":[{c:"Ropa y cuidado personal",m:900000,t:"v",owner:"own_2"}],
     };
+    // Declaraciones de años anteriores, para que "Tu renta, año tras año" tenga con qué comparar.
+    nd.owners[0].declaraciones=[
+      {tipo:"F210",anoGravable:2025,capturadoEl:"2026-09-10T15:00:00.000Z",fuenteCaptura:"demo",renglones:{ingresosBrutos:612000000,ingresosNoConstitutivos:16000000,rentaExenta25:45000000,deducIntereses:0,deducMedicina:19000000,deducDependientes:0,pvAFC:48000000,patrimonioBruto:5400000000,deudas:810000000,patrimonioLiquido:4590000000,impuestoCalculado:96000000,retefuente:88000000,saldoPagar:8000000}},
+      {tipo:"F210",anoGravable:2024,capturadoEl:"2025-09-10T15:00:00.000Z",fuenteCaptura:"demo",renglones:{ingresosBrutos:548000000,ingresosNoConstitutivos:15000000,rentaExenta25:41000000,deducIntereses:0,deducMedicina:17000000,deducDependientes:0,pvAFC:36000000,patrimonioBruto:4900000000,deudas:900000000,patrimonioLiquido:4000000000,impuestoCalculado:84000000,retefuente:71000000,saldoPagar:13000000}},
+    ];
+    nd.owners[2].declaraciones=[
+      {tipo:"F110",anoGravable:2025,capturadoEl:"2026-04-20T15:00:00.000Z",fuenteCaptura:"demo",renglones:{ingresosBrutos:880000000,costosDeducciones:310000000,rentaLiquida:570000000,rentaLiquidaGravable:570000000,patrimonioBruto:7100000000,deudas:950000000,patrimonioLiquido:6150000000,impuestoCalculado:199500000,descICA:6000000,impuestoNeto:193500000,autorretencion:52000000,saldoPagar:141500000}},
+    ];
+    // Un escenario 2027 ya armado: así se ve el simulador futuro con cambios reales.
+    nd.escenarios=[
+      {id:"esc_demo_2027",nombre:"Mi 2027",año:2027,creado:"2026-10-21T12:00:00.000Z",descripcion:"Vendo el lote, pago la camioneta y meto más al fondo",cambios:[
+        {id:"c1",tipo:"cambia",kind:"ing",ref:"ing_0",nombre:"Rendimiento fondo de crédito privado",desdeMes:1,modo:"capital",capital:"2800000000",tasa:"21",tasaModo:"anual",monto:"49000000"},
+        {id:"c2",tipo:"termina",kind:"deu",ref:"deu_2",nombre:"Crédito camioneta",desdeMes:7},
+        {id:"c3",tipo:"nuevo",kind:"ing",nombre:"Rendimiento CDT (venta del lote)",cat:"Intereses bancarios",desdeMes:3,hastaMes:12,capital:"380000000",tasa:"11",tasaModo:"anual",monto:"3483333"},
+        {id:"c4",tipo:"nuevo",kind:"gas",nombre:"Universidad hijo mayor",cat:"Educación",desdeMes:2,monto:"4200000"},
+      ]},
+    ];
+    nd.metas=[{name:"Fondo de emergencia (6 meses)",type:"emergency",target:150000000,saved:60000000,monthly:5000000}];
     return nd;
-  });setTimeout(()=>showToast("🧾 Impuestos calculados para Pedro Pérez y Pérez SAS"),1500)};
+  });setTimeout(()=>showToast("🧾 Impuestos calculados para Pedro, Laura y Pérez SAS"),1500)};
   const demoUS=()=>{
     showToast("🇺🇸 Demo USA cargado — Alex Johnson, Austin TX");
     setU(()=>{
