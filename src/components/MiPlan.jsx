@@ -50,6 +50,19 @@ const NumPesos = ({ value, onChange, w, placeholder }) => {
   return <input type="text" inputMode="numeric" value={txt} placeholder={placeholder || "0"} onChange={(e) => { const d = e.target.value.replace(/[^\d]/g, ""); onChange(d === "" ? "" : Number(d)); }} style={{ ...inputS, width: w || "100%", textAlign: "right", fontFamily: F.mono.fontFamily, fontWeight: 500 }} />;
 };
 const Campo = ({ l, children, style }) => (<label style={{ display: "block", ...style }}><div style={{ ...F.label, marginBottom: 4 }}>{l}</div>{children}</label>);
+// "Cuándo": en N meses, o año X mes Y. Guarda meses desde hoy (0 = este mes).
+function Cuando({ mes, onChange, compacto }) {
+  const [modo, setModo] = useState("meses");
+  const m = Math.max(0, Number(mes) || 0);
+  const inp = { ...inputS, padding: "4px 6px", fontSize: 12, width: 60, textAlign: "right" };
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, ...F.caption, flexWrap: "wrap" }}>
+      <select value={modo} onChange={(e) => setModo(e.target.value)} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: "auto" }}><option value="meses">en</option><option value="anio">año</option></select>
+      {modo === "meses" ? <><input type="number" min={0} max={120} value={m} onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))} style={inp} /><span>meses</span>{!compacto && m > 0 && <span style={{ color: C.subtle }}>(año {anioDe(m)}, mes {(m % 12) + 1})</span>}</>
+        : <><input type="number" min={1} max={10} value={anioDe(m)} onChange={(e) => onChange((Math.max(1, Number(e.target.value) || 1) - 1) * 12 + (m % 12))} style={inp} /><span>mes</span><input type="number" min={1} max={12} value={(m % 12) + 1} onChange={(e) => onChange(Math.floor(m / 12) * 12 + Math.min(11, Math.max(0, (Number(e.target.value) || 1) - 1)))} style={inp} />{!compacto && <span style={{ color: C.subtle }}>(en {m} meses)</span>}</>}
+    </div>
+  );
+}
 const useAncho = () => { const [w, setW] = useState(typeof window === "undefined" ? 1200 : window.innerWidth); useEffect(() => { const f = () => setW(window.innerWidth); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []); return w; };
 const anioDe = (mes) => Math.floor((Number(mes) || 0) / 12) + 1;
 
@@ -170,9 +183,9 @@ function describirMov(m, posiciones, flujos) {
   }
 }
 function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) {
-  const [f, setF] = useState({ tipo: "flujo_inicia_ingreso", anio: 2, mes: 1, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "" });
+  const [f, setF] = useState({ tipo: "flujo_inicia_ingreso", cuando: 12, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "" });
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  const mes = (Math.max(1, Number(f.anio) || 1) - 1) * 12 + Math.min(11, Math.max(0, (Number(f.mes) || 1) - 1));
+  const mes = Math.max(0, Number(f.cuando) || 0);
   const guardar = () => {
     const base = { id: "mv_" + Math.random().toString(36).slice(2, 8), mes };
     const monto = Number(f.monto) || 0; let m = null;
@@ -192,8 +205,7 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
       {ejemplo && <div style={F.caption}>{ejemplo}</div>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, alignItems: "end" }}>
         <Campo l="Qué pasa" style={{ gridColumn: "1 / -1" }}><select value={f.tipo} onChange={(e) => set("tipo", e.target.value)} style={inputS}>{TIPOS_MOV.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</select></Campo>
-        <Campo l="En el año"><Num value={f.anio} min={1} max={10} onChange={(v) => set("anio", v)} /></Campo>
-        <Campo l="Mes del año"><Num value={f.mes} min={1} max={12} onChange={(v) => set("mes", v)} /></Campo>
+        <Campo l="Cuándo" style={{ gridColumn: "span 2" }}><div style={{ paddingTop: 4 }}><Cuando mes={f.cuando} onChange={(v) => set("cuando", v)} /></div></Campo>
         {(f.tipo === "vender" || f.tipo === "aportar" || f.tipo === "revaluar") && <Campo l={f.tipo === "aportar" ? "Destino" : "Activo"}>{selPos("posicionId")}</Campo>}
         {(f.tipo === "comprar" || f.tipo.startsWith("flujo_inicia")) && <Campo l="Nombre"><input value={f.nombre} onChange={(e) => set("nombre", e.target.value)} style={inputS} placeholder={f.tipo === "comprar" ? "Bodega, finca, apartamento…" : "Pensión, arriendo bodega, colegio…"} /></Campo>}
         {(f.tipo === "flujo_termina" || f.tipo === "flujo_cambia") && <Campo l="Cuál"><select value={f.flujoId} onChange={(e) => set("flujoId", e.target.value)} style={inputS}>{flujos.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {fmMes(x.monto)}</option>)}</select></Campo>}
@@ -222,19 +234,16 @@ function ListaEventos({ eventos, posiciones, flujos, onChange, ejemplo, vacio })
 function FilaFlujo({ f, eventos, onChange }) {
   const ev = eventos.find((e) => e.flujoId === f.id && (e.tipo === "flujo_termina" || e.tipo === "flujo_cambia"));
   const estado = ev ? ev.tipo : "sigue";
-  const anio = ev ? anioDe(ev.mes) : 2, mesDelAnio = ev ? (ev.mes % 12) + 1 : 1;
   const setEv = (patch) => {
     const otros = eventos.filter((e) => e !== ev);
     if (patch.estado === "sigue") return onChange(otros);
     const tipo = patch.estado || estado;
-    const a = patch.anio ?? anio, m = patch.mes ?? mesDelAnio;
-    const mes = (Math.max(1, Number(a) || 1) - 1) * 12 + Math.min(11, Math.max(0, (Number(m) || 1) - 1));
+    const mes = patch.mes ?? ev?.mes ?? 12;
     const nuevo = { id: ev?.id || "fx_" + Math.random().toString(36).slice(2, 8), mes, tipo: tipo === "sigue" ? "flujo_termina" : tipo, flujoId: f.id, monto: tipo === "flujo_cambia" ? (patch.monto ?? ev?.monto ?? f.monto) : undefined };
     onChange([...otros, nuevo]);
   };
   const esIng = f.tipo === "ingreso";
   const selS = { ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: estado === "sigue" ? C.ok : estado === "flujo_termina" ? C.danger : C.warn };
-  const inp = { ...inputS, padding: "4px 6px", fontSize: 12, width: 56, textAlign: "right" };
   return (
     <tr style={{ borderTop: `1px solid ${C.border}`, opacity: estado === "flujo_termina" ? 0.75 : 1 }}>
       <td style={td}>{f.nombre}<div style={F.caption}>{esIng ? (f.trabajo ? "ingreso de trabajo" : f.posicionId ? "renta de un activo" : "ingreso") : "gasto"}</div></td>
@@ -242,7 +251,7 @@ function FilaFlujo({ f, eventos, onChange }) {
       <td style={td}><select value={estado} onChange={(e) => setEv({ estado: e.target.value })} style={selS}><option value="sigue">Sigue igual</option><option value="flujo_termina">Termina en…</option><option value="flujo_cambia">Cambia a…</option></select></td>
       <td style={td}>{estado !== "sigue" && <div style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption, flexWrap: "wrap" }}>
         {estado === "flujo_cambia" && <><NumPesos value={ev?.monto ?? f.monto} onChange={(v) => setEv({ monto: v || 0 })} w={140} /><span>al mes, desde</span></>}
-        <span>año</span><input type="number" min={1} max={10} value={anio} onChange={(e) => setEv({ anio: Number(e.target.value) })} style={inp} /><span>mes</span><input type="number" min={1} max={12} value={mesDelAnio} onChange={(e) => setEv({ mes: Number(e.target.value) })} style={inp} />
+        <Cuando mes={ev?.mes ?? 12} onChange={(mes) => setEv({ mes })} compacto />
       </div>}</td>
     </tr>
   );
@@ -298,7 +307,7 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><div><div style={F.h3}>Pensiones</div><div style={F.caption}>Cuándo llega cada una y de cuánto.</div></div><button style={btn(false)} onClick={() => setPens([...pens, { nombre: `Pensión ${pens.length + 1}`, mes: 48, monto: 3e6 }])}>+ Pensión</button></div>
           {pens.map((p, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 8, marginTop: 8, alignItems: "end" }}>
             <Campo l="De quién / cuál"><input value={p.nombre} onChange={(e) => setPens(pens.map((x, k) => (k === i ? { ...x, nombre: e.target.value } : x)))} style={inputS} /></Campo>
-            <Campo l="Desde el año"><Num value={anioDe(p.mes)} min={1} max={10} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, mes: (Math.max(1, v || 1) - 1) * 12 } : x)))} /></Campo>
+            <Campo l="Desde cuándo"><div style={{ paddingTop: 4 }}><Cuando mes={p.mes} onChange={(mes) => setPens(pens.map((x, k) => (k === i ? { ...x, mes } : x)))} compacto /></div></Campo>
             <Campo l="Al mes (pesos)"><NumPesos value={p.monto} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, monto: v || 0 } : x)))} /></Campo>
             <button style={{ ...btn(false), color: C.subtle }} onClick={() => setPens(pens.filter((_, k) => k !== i))}>quitar</button>
           </div>)}
