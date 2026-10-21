@@ -80,7 +80,7 @@ import IncomeModuleUS from "./components/IncomeModuleUS";
 import ExpensesModuleUS from "./components/ExpensesModuleUS";
 import { normalizeFiscalData, getFiscalWarnings } from "./lib/normalize.js";
 import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual, mesesLibreDeuda, vaCOP, vcCOP } from "./lib/flowHelpers.js";
-import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, inflacionGlobal, fmtPctEs, fmtMeses } from "./lib/metrics.js";
+import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, inflacionGlobal, fmtPctEs, fmtMeses, umbralNivel } from "./lib/metrics.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react";
@@ -465,8 +465,16 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200,inflacionPct)=>{
   // se expone. `coberturaTotal` conserva el ratio viejo (ingreso total ÷
   // egresos) para los textos que hablan de "tus ingresos cubren tus gastos".
   const coberturaTotal=egresosTotales>0?(disponibleCuenta/egresosTotales)*100:0;
-  const met=calcularMetricas({ingresos:ing,gastos:gf,deudas:ds,inv,trm,retencionMensual,impuestoNeto});
-  const independencia=met.coberturaPasiva;
+  const argsMet={ingresos:ing,gastos:gf,deudas:ds,inv,trm,retencionMensual,impuestoNeto};
+  const met=calcularMetricas(argsMet);
+  // 21-oct-2026 — Mismo criterio que el Simulador (SimuladorAvanzado → metMes):
+  // el NIVEL se mide contra lo que se paga ESTE mes, no contra el promedio del
+  // año. Acá faltaba, así que el Dashboard, el Asesor IA, el PDF y el Excel
+  // decían un nivel y la tarjeta del Simulador otro. En la cuenta de Santiago
+  // coinciden este mes, pero en febrero, marzo, mayo y junio su flujo es
+  // negativo y las dos pantallas se separaban.
+  const metMes=calcularMetricas(argsMet,{base:"mes"});
+  const independencia=metMes.coberturaPasiva;
   return{
     // ═══ Nuevo modelo explícito ═══
     brutoTotal, retencionMensual, disponibleCuenta,
@@ -474,10 +482,16 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200,inflacionPct)=>{
     impuestoBrutoMensual, impuestoNeto,
     egresosTotales, cashFlow, independencia, coberturaTotal,
     // ═══ Base única de métricas (metrics.js) ═══
-    met, nivel:met.nivel,
-    salud:saludFinanciera(met), rentaYield:rentaYYield(met), inflacion:gananciaVsInflacion(met,inflacionPct), colchonMeses:met.colchonMeses,
-    ingresoPasivo:met.ip, ingresoPasivoBruto:met.ipBruto, pctIngresoPasivo:met.pctIngresoPasivo,
-    ob:met.ob, ahorroPct:met.ahorroPct, cargaDeudaPct:met.cargaDeudaPct, ingresoNeto:met.ingresoNeto,
+    // 21-oct-2026 — UNA sola base por párrafo. Todo lo que describe la foto de
+    // HOY (nivel, cobertura, ingreso pasivo, obligaciones, colchón, salud) sale
+    // de `metMes`; lo que describe el AÑO (brutoTotal, egresosTotales,
+    // cashFlow, arriba) sigue en promedio. Antes `nivel` era del mes y las
+    // cifras que lo acompañaban eran del promedio, así que el mismo párrafo
+    // mezclaba dos cuentas: "Nivel 4/5" junto a una cobertura que no lo producía.
+    met, metMes, nivel:metMes.nivel,
+    salud:saludFinanciera(metMes), rentaYield:rentaYYield(metMes), inflacion:gananciaVsInflacion(metMes,inflacionPct), colchonMeses:metMes.colchonMeses,
+    ingresoPasivo:metMes.ip, ingresoPasivoBruto:metMes.ipBruto, pctIngresoPasivo:metMes.pctIngresoPasivo,
+    ob:metMes.ob, ahorroPct:metMes.ahorroPct, cargaDeudaPct:metMes.cargaDeudaPct, ingresoNeto:metMes.ingresoNeto,
     // ═══ Legacy aliases (compatibilidad) ═══
     ab, td, nw:ab-td,
     ti:brutoTotal, tg:0, ni:disponibleCuenta,
@@ -1406,7 +1420,9 @@ export default function FinPath(){
 
   const handleImport=(key,rows,isGastos)=>{if(isGastos){const g={...(u&&u.gas||{})};rows.forEach(r=>{const cat=r.cat||"Otro";if(!g[cat])g[cat]=[];g[cat].push({c:r.c,m:r.m,t:r.t})});upd("gas",g)}else{upd(key,[...((u&&u[key])||[]),...rows])}};
 
-  const fm=n=>{if(masked)return"$•••••";if(n==null||isNaN(n))return"$0";const v=cur==="USD"?(n/trm):n;const loc=cur==="USD"?"en-US":"es-CO";if(Math.abs(v)>=1e9)return"$"+(v/1e9).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"B";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"M";return"$"+Math.round(v).toLocaleString(loc)};
+  // 21-oct-2026 — El signo va ANTES del peso. Antes salía "$-35.114.710" y
+  // "$-35,1M": el menos quedaba entre el símbolo y el número.
+  const fm=n=>{if(masked)return"$•••••";if(n==null||isNaN(n))return"$0";const v=cur==="USD"?(n/trm):n;const loc=cur==="USD"?"en-US":"es-CO";const sg=v<0?"-":"";const a=Math.abs(v);if(a>=1e9)return sg+"$"+(a/1e9).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"B";if(a>=1e6)return sg+"$"+(a/1e6).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"M";return sg+"$"+Math.round(a).toLocaleString(loc)};
   // Commit 23 Tarea 3: feedback honesto del estado de guardado.
   // Antes 'showToast' decia '✅ Guardado' inmediato, pero tecnicamente solo
   // era localStorage — el upsert a Supabase tenia debounce de 2s y podia
@@ -1883,11 +1899,24 @@ export default function FinPath(){
       const nv=t.nivel||{};
       const sig=nv.siguiente;
       const nvTxt=nv.nivel?("Nivel "+nv.nivel+"/5: "+nv.nombre):"Nivel: sin datos";
-      const nvCuerpo="Cobertura pasiva: "+pc(t.ind)+"\nIngreso pasivo neto: "+fm(t.ingresoPasivo)+"/mes vs Gastos + cuotas: "+fm(t.ob)+"/mes\n\n"+
-        (nv.nivel===5?"🟢 ¡Independencia alcanzada! Tu ingreso pasivo cubre el 100% de tus gastos y cuotas."
-        :nv.candado==="deficit"?"🔴 Tu flujo del mes es negativo ("+fm(t.cf)+"/mes). El primer paso es que tus ingresos cubran tus gastos y cuotas."
+      // 21-oct-2026 — Tres arreglos en este bloque:
+      //  · Las cifras salen de la MISMA base que el nivel (metMes, el mes en
+      //    curso). Antes mezclaba el promedio del año con un nivel del mes.
+      //  · El umbral del siguiente escalón sale de umbralNivel(). Leía el campo
+      //    `min`, que la escala nueva ya no tiene: daba NaN y se imprimía
+      //    "necesitas $0/mes de ingreso pasivo".
+      //  · El nivel 5 ya no es Independencia sino Abundancia; Independencia es
+      //    el 4. El texto felicitaba por lo que no era.
+      const mB=t.metMes||t.met||{};
+      const ctxNv={ob:mB.ob||0,obEsencial:nv.obEsencial||mB.ob||0};
+      const sigMonto=sig?umbralNivel(sig,ctxNv):null;
+      const nvCuerpo="Cobertura pasiva: "+pc(mB.coberturaPasiva)+"\nIngreso pasivo neto: "+fm(mB.ip)+"/mes vs Gastos + cuotas: "+fm(mB.ob)+"/mes\n\n"+
+        (nv.nivel===5?"🟢 Abundancia: tu ingreso pasivo supera en 30% tus gastos y cuotas. Ese margen es lo que absorbe un año malo sin tocar el capital."
+        :nv.nivel===4?"🟢 ¡Independencia alcanzada! Tu ingreso pasivo cubre el 100% de tus gastos y cuotas."
+        :nv.candado==="deficit"?"🔴 Tu flujo del mes es negativo ("+fm(mB.fl)+"/mes) y tus activos todavía no pagan lo esencial. El primer paso es que lo que entra cubra lo que sale."
         :nv.candado==="patrimonio_negativo"?"🟡 Tu patrimonio neto es negativo: el nivel queda en "+nv.nombre+" hasta que tus activos superen tus deudas."
-        :sig?"Siguiente: "+sig.nombre+" → necesitas "+fm((sig.min/100)*t.ob)+"/mes de ingreso pasivo\nTe faltan: "+fm(nv.faltaIPSiguiente)+"/mes de ingreso pasivo":"");
+        :sig?"Siguiente: "+sig.nombre+(sigMonto!=null?" → necesitas "+fm(sigMonto)+"/mes de ingreso pasivo\nTe faltan: "+fm(nv.faltaIPSiguiente)+"/mes de ingreso pasivo":" → no se gana con ingreso pasivo sino con que el flujo del mes quede positivo (hoy: "+fm(mB.fl)+"/mes)"):"")+
+        (nv.deficitFlujo&&nv.nivel>1?"\n\n⚠️ Ojo: el flujo de este mes es negativo ("+fm(mB.fl)+"/mes). El escalón lo ganan tus activos y no se toca, pero ese hueco se está tapando con capital o con deuda.":"");
       msgs.push({t:"🏔️ "+nvTxt,c:nvCuerpo});
       msgs.push({t:"📅 Proyección FIRE",c:"FIRE Number: "+fm(fireNum)+"\nProgreso: "+fmtPctEs(firePct, 0)+" ("+fm(t.nw)+" / "+fm(fireNum)+")\n\n"+(firePct>=100?"🟢 Tu patrimonio ya supera tu FIRE number.":"Necesitas acumular "+fm(Math.max(fireNum-t.nw,0))+" más.")});
       if(topGasto)msgs.push({t:"✂️ Aceleradores",c:"Mayor gasto: "+topGasto.cat+" ("+fm(topGasto.total)+"/mes)\n\nSi reduces gastos 15%: cash flow sube a "+fm(t.cf+t.gfm*0.15)+"/mes\nSi aumentas ingreso 20%: cash flow sube a "+fm(t.cf+t.ni*0.2)+"/mes\n\n💡 Combinar ambos te acelera al doble."});

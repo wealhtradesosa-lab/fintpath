@@ -20,7 +20,8 @@ const T = {
   rd: "#ef4444", rdD: "rgba(239,68,68,0.08)",
   bl: "#3b82f6", pr: "#a78bfa", or: "#f97316", gd: "#eab308", cy: "#22d3ee",
 };
-const fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
+// El signo va ANTES del peso: un flujo negativo salía "$-35.114.710".
+const fm = (n) => { const v = Math.round(Number(n) || 0); return (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString("es-CO"); };
 
 // Vigencia de deudas (20-jul-2026): ¿la cuota aplica en este mes?
 // ═══════════════════════════════════════════════════════════════════════════
@@ -196,6 +197,19 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
         )}
       </div>
 
+      {/* 21-oct-2026 — El flujo negativo ya no borra el escalón que los activos
+          se ganaron (metrics.js → nivelLibertad). Pero tampoco se puede callar:
+          se dice acá, encima de la barra. Si el nivel YA es Déficit, el badge
+          lo dice y repetirlo sería ruido. */}
+      {nivel?.deficitFlujo && currentLevel > 1 && (
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start", background: T.rd + "12", border: "1px solid " + T.rd + "30", borderRadius: 12, padding: "10px 14px", marginBottom: 14 }}>
+          <span style={{ fontSize: 15, lineHeight: 1.3 }}>⚠️</span>
+          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
+            Este mes sale <b style={{ color: T.rd }}>{fm(Math.abs(fl))}</b> más de lo que entra. Tu escalón lo ganan tus activos y no se toca, pero ese hueco lo estás tapando con capital o con deuda.
+          </div>
+        </div>
+      )}
+
       {/* Progress Bar */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ height: 36, background: T.bg3, borderRadius: 16, overflow: "hidden", position: "relative" }}>
@@ -286,7 +300,20 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
                   </div>
                 </>
               ) : (
-                <div style={{ fontSize: 9, color: T.txt3, marginTop: 4, lineHeight: 1.35, minHeight: 38, display: "flex", alignItems: "center", justifyContent: "center" }}>{l.requisito}</div>
+                // 21-oct-2026 (Santiago: "¿aquí no debería aparecer un valor
+                // estimado o algo?"). Déficit y Estabilidad eran las únicas dos
+                // tarjetas sin cifra: mostraban la frase del criterio mientras
+                // las otras tres mostraban un monto. No se ganan con ingreso
+                // pasivo, así que no tienen umbral — pero sí tienen una cifra, y
+                // es el flujo del mes, que es justo lo que las separa.
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
+                    {fm(fl)}<span style={{ fontSize: 9 }}>/m</span>
+                  </div>
+                  <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
+                    tu flujo del mes<br />{l.def.clave === "deficit" ? "en rojo = estás aquí" : "en verde = estás aquí"}
+                  </div>
+                </>
               )}
               <div style={{ fontSize: 9, color: T.txt3, marginTop: 3 }}>click para info ▾</div>
             </div>
@@ -577,7 +604,12 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // No cubría: su Seguridad Social ($27,6M, que arranca en octubre) entraba
     // promediada como $6,9M, y la cuota de una deuda sin saldo cargado ($2,5M)
     // no entraba. Ver metrics.js → calcularBase({ base: "mes" }).
-    const metMes = calcularMetricas(argsMet, { base: "mes" });
+    // 21-oct-2026 — …y contra el mes que el usuario TIENE SELECCIONADO, no
+    // contra el del reloj. Sin `mes`, calcularBase cae en getMesActual() y la
+    // tarjeta medía octubre mientras la pantalla mostraba otro mes. Es el mismo
+    // reclamo del 10-oct sobre el PDF ("si estoy analizando dic por qué me sale
+    // arriendo hasta sept"), en la tarjeta.
+    const metMes = calcularMetricas(argsMet, { base: "mes", mes: mesVisualizado });
     const independencia = met.coberturaPasiva;
 
     return {
@@ -609,7 +641,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       tTax: impuestoNeto,
       dynTax,
     };
-  }, [user, simVals, getVal, taxOptimizado]);
+  }, [user, simVals, getVal, taxOptimizado, mesVisualizado]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // FASE 5 (18-jul-2026): simTMes — motor del cash flow DEL MES visualizado.

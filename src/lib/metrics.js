@@ -357,24 +357,33 @@ export function nivelLibertad({ ip = 0, ob = 0, obEsencial = null, fl = 0, patri
   const obEs = obEsencial > 0 ? obEsencial : ob;
   const ctx = { ob, obEsencial: obEs };
   const cobertura = (ip / ob) * 100;
-  let nivel, candado = null;
-  if (fl < 0) { nivel = 1; candado = "deficit"; }
-  else if (ip >= ob * 1.3) nivel = 5;
+  // 21-oct-2026 — El escalón sale SIEMPRE de lo que pagan los activos. Antes el
+  // flujo negativo tiraba el nivel a 1/5 pisando la cobertura, y la tarjeta se
+  // contradecía consigo misma: la barra dibujada en 67% con el badge en
+  // "⚠️ Déficit 1/5" y los escalones de arriba apagados. El déficit sigue
+  // dejando a alguien en Déficit cuando sus activos no pagan ni lo esencial
+  // (que es lo que el nivel 1 quiere decir), pero ya no borra un escalón que
+  // los activos SÍ se ganaron: eso se reporta aparte, en `deficitFlujo`, para
+  // que la UI lo diga encima de la tarjeta.
+  let nivel;
+  if (ip >= ob * 1.3) nivel = 5;
   else if (ip >= ob) nivel = 4;
   else if (ip >= obEs) nivel = 3;
-  else nivel = 2;
+  else nivel = fl < 0 ? 1 : 2;
+  let candado = nivel === 1 ? "deficit" : null;
+  const deficitFlujo = fl < 0;
   if (patrimonioNeto < 0 && nivel > 2) { nivel = 2; candado = "patrimonio_negativo"; }
   const data = NIVELES[nivel - 1];
   const sig = nivel < 5 ? NIVELES[nivel] : null;
   const ipNecesarioSiguiente = umbralNivel(sig, ctx);
   return {
-    nivel, cobertura, candado, nombre: data.nombre, data, siguiente: sig,
+    nivel, cobertura, candado, deficitFlujo, nombre: data.nombre, data, siguiente: sig,
     obEsencial: obEs,
     coberturaEsencial: obEs > 0 ? (ip / obEs) * 100 : 0,
     faltaIPSiguiente: ipNecesarioSiguiente != null ? Math.max(0, ipNecesarioSiguiente - ip) : null,
   };
 }
-const NIVEL_VACIO = { nombre: null, data: null, siguiente: null, faltaIPSiguiente: null, obEsencial: 0, coberturaEsencial: 0 };
+const NIVEL_VACIO = { nombre: null, data: null, siguiente: null, faltaIPSiguiente: null, obEsencial: 0, coberturaEsencial: 0, deficitFlujo: false };
 
 /**
  * Atajo: base + nivel, SIEMPRE en la misma base. Quien quiera medir contra lo

@@ -8,3 +8,6 @@ dist
 # Local Netlify folder
 .netlify
 auditoria-diseno.html
+
+# Parches de trabajo de Claude (locales, no son del proyecto)
+.claude-patches

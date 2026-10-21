@@ -3,7 +3,11 @@
 // no debe inventar umbrales ni recalcular la cobertura.
 import { NIVELES, fmtPctEs, fmtMeses } from "./metrics.js";
 
-const fm = (n) => "$" + Math.round(Number(n) || 0).toLocaleString("es-CO");
+// El signo va ANTES del peso: un flujo negativo salía "$-35.114.710".
+const fm = (n) => {
+  const v = Math.round(Number(n) || 0);
+  return (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString("es-CO");
+};
 
 /** Escala oficial en una línea (nombres y umbrales de metrics.js). */
 export function escalaNiveles() {
@@ -26,7 +30,12 @@ export function escalaNiveles() {
  * @returns {string} bloque de texto para el contexto del asesor.
  */
 export function bloqueNivelLibertad(t = {}) {
-  const m = t.met;
+  // 21-oct-2026 — La base del MES (metrics.js → calcularBase({base:"mes"})),
+  // la misma que la tarjeta y el Dashboard. Antes leía `t.met` (el promedio del
+  // año), así que el asesor citaba una cobertura y un nivel distintos de los
+  // que el usuario tenía en pantalla. `t.met` queda de respaldo para cualquier
+  // llamador que todavía no exponga la base del mes.
+  const m = t.metMes || t.met;
   if (!m || !(m.ob > 0)) return "NIVEL DE LIBERTAD: sin datos suficientes (no cargaste gastos o cuotas). No lo estimes.\n";
   const nv = m.nivel || {};
   const l = [];
@@ -37,6 +46,12 @@ export function bloqueNivelLibertad(t = {}) {
   l.push("• El salario y los honorarios NO cuentan como ingreso pasivo; sí el arriendo neto de administración y predial, intereses, dividendos y pensión recibida.");
   if (nv.siguiente) {
     l.push(`• Siguiente nivel: ${nv.siguiente.nombre}` + (nv.faltaIPSiguiente > 0 ? ` — faltan ${fm(nv.faltaIPSiguiente)}/mes de ingreso pasivo neto` : ""));
+  }
+  // 21-oct-2026 — El flujo negativo ya no baja el escalón (metrics.js →
+  // nivelLibertad). Sin esta línea el modelo veía un nivel alto junto a un
+  // flujo negativo y se inventaba la explicación.
+  if (nv.deficitFlujo && nv.nivel > 1) {
+    l.push(`• OJO: el flujo del mes es NEGATIVO (${fm(m.fl)}/mes) y aun así el nivel es ${nv.nivel}/5. No es un error: el escalón lo definen los activos (cubren ${fm(m.ip)} de ${fm(m.ob)}), y el hueco se está tapando con capital o deuda. Dilo así; no bajes el nivel por tu cuenta.`);
   }
   l.push(`• Flujo libre: ${fm(m.fl)}/mes; ahorro ${fmtPctEs(m.ahorroPct)} y carga de deuda ${fmtPctEs(m.cargaDeudaPct)} del ingreso neto de retención (${fm(m.ingresoNeto)}/mes).`);
   if (m.colchonMeses != null) l.push(`• Colchón de liquidez: ${fmtMeses(m.colchonMeses)} (activos líquidos ${fm(m.liquidos)} ÷ gastos y cuotas).`);
