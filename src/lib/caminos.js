@@ -75,8 +75,24 @@ export function fichaPorDefecto(activo, perfil = PERFIL_DEFAULT, renta = 0) {
   return { bolsillo: "uso", tasa: tasaItem, pagaPct: 0, valorizacion: 0 };
 }
 
+/**
+ * Cuando el usuario elige la canasta de un activo, el papel en el motor se
+ * deriva de ella: Protección = vivienda (inmueble) o colchón líquido;
+ * Rentas = paga cada mes; Crecimiento = reinvierte; Uso = ni renta ni crece.
+ */
+export function conCanasta(ficha, perfil = PERFIL_DEFAULT, tipo = "") {
+  const k = ficha.canasta;
+  if (!k) return ficha;
+  const inmueble = TIPOS_INMUEBLE.has(tipo) || ficha.inmueble;
+  if (k === "proteccion") return inmueble ? { ...ficha, vivienda: true, bolsillo: "uso", tasa: 0, pagaPct: 0 } : { ...ficha, vivienda: false, liquido: true, bolsillo: "sustento", pagaPct: 100, valorizacion: 0 };
+  if (k === "rentas") return { ...ficha, vivienda: false, bolsillo: "sustento", pagaPct: 100, tasa: inmueble ? 0 : (ficha.tasa > 0 ? ficha.tasa : perfil.tasaRentaEstable) };
+  if (k === "crecimiento") return { ...ficha, vivienda: false, liquido: false, bolsillo: "crecimiento", pagaPct: 0, tasa: inmueble ? 0 : (ficha.tasa > 0 ? ficha.tasa : perfil.tasaCrecimiento) };
+  return { ...ficha, vivienda: false, liquido: false, bolsillo: "uso", pagaPct: 0 };
+}
+
 /** Canasta de una posición. */
 export function canastaDe(p) {
+  if (p.canasta) return p.canasta; // el usuario decidió
   if (p.vivienda) return "proteccion";
   if (p.bolsillo === "crecimiento") return "crecimiento";
   if (p.bolsillo === "caja" || (p.liquido && !(p.tasa > 0))) return "proteccion"; // efectivo: colchón, nunca "quieto"
@@ -111,7 +127,7 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
 
   const posiciones = inv.map((a) => {
     const renta = rentaDeActivo[a.id] || 0;
-    const ficha = { ...fichaPorDefecto(a, perfil, renta), ...(fichas[a.id] || {}) };
+    const ficha = conCanasta({ ...fichaPorDefecto(a, perfil, renta), ...(fichas[a.id] || {}) }, perfil, a.tp);
     return { id: a.id, nombre: nombreActivo(a), capital: num(a.va) * fx(a), tipo: a.tp, owner: a.owner, renta, ...ficha };
   });
   // Si ningún inmueble quedó como vivienda, el mayor inmueble sin renta lo es.

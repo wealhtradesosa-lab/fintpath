@@ -53,27 +53,39 @@ function BarraCanastas({ c, alto = 14 }) {
     </div>
   );
 }
-function Hoy({ base }) {
+function Hoy({ base, fichas, onFichas }) {
   const c = base.canastasHoy;
   const meses = base.gastosMes > 0 ? c.colchon / base.gastosMes : 0;
+  const mover = (p, k) => onFichas({ ...fichas, [p.id]: { ...(fichas[p.id] || {}), canasta: k } });
+  const grupos = ["proteccion", "rentas", "crecimiento", "uso"].map((k) => ({ k, items: base.posiciones.filter((p) => canastaDe(p) === k).sort((a, b) => b.capital - a.capital) }));
+  const desc = { proteccion: `Vivienda y colchón · ${Math.round(meses)} meses de gastos líquidos`, rentas: `Pagan la vida cada mes · ${pct(c.rentasPct)} de lo movible`, crecimiento: `Se multiplican · ${pct(c.crecimientoPct)} de lo movible`, uso: "Ni rentan ni crecen" };
   return (
     <div style={card}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
-        <div style={F.h2}>Hoy: tu patrimonio por canastas</div>
+        <div><div style={F.h2}>Hoy: tu patrimonio por canastas</div><div style={F.caption}>FINPATHIA propone la canasta de cada activo según su tipo. Tú decides: cambia cualquiera con su selector y los caminos se recalculan.</div></div>
         <div style={{ ...F.caption }}>Patrimonio bruto <b style={{ color: C.text }}>{fmM(c.total)}</b> · gastos del mes <b style={{ color: C.text }}>{fmMes(base.gastosMes)}</b></div>
       </div>
       <div style={{ marginTop: 14 }}><BarraCanastas c={c} alto={18} /></div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginTop: 14 }}>
-        {[
-          ["proteccion", "Vivienda y colchón", `${Math.round(meses)} meses de gastos líquidos`],
-          ["rentas", "Pagan la vida cada mes", `${pct(c.rentasPct)} de lo invertible`],
-          ["crecimiento", "Se multiplican", `${pct(c.crecimientoPct)} de lo invertible`],
-          ["uso", "Ni rentan ni crecen", "carro, lotes quietos"],
-        ].map(([k, l, d]) => (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(230px, 100%), 1fr))", gap: 10, marginTop: 14 }}>
+        {grupos.map(({ k, items }) => (
           <div key={k} style={sub}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: CANASTA_COLOR[k] }} /><span style={F.label}>{CANASTA_LABEL[k]}</span></div>
             <div style={{ ...F.monoLg, color: C.text, marginTop: 4 }}>{fmM(c[k])}</div>
-            <div style={{ ...F.caption, marginTop: 2 }}>{l} · {d}</div>
+            <div style={{ ...F.caption, marginTop: 2 }}>{desc[k]}</div>
+            <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+              {items.length === 0 && <div style={{ ...F.caption, fontStyle: "italic" }}>Nada aquí todavía.</div>}
+              {items.map((p) => (
+                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ ...F.caption, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nombre}</div>
+                    <div style={F.caption}>{fmM(p.capital)}{p.renta > 0 ? ` · renta ${fmMes(p.renta)}` : p.tasa > 0 && p.bolsillo !== "uso" ? ` · ${p.tasa}%` : ""}{p.vivienda ? " · vivienda" : ""}</div>
+                  </div>
+                  <select value={k} onChange={(e) => mover(p, e.target.value)} title="Mover a otra canasta" style={{ ...inputS, width: 34, padding: "4px 2px", fontSize: 11, color: C.subtle, textAlignLast: "center", cursor: "pointer" }}>
+                    {["proteccion", "rentas", "crecimiento", "uso"].map((x) => <option key={x} value={x}>{x === k ? "⇄" : CANASTA_LABEL[x]}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -307,21 +319,19 @@ function Fichas({ base, fichas, onFichas }) {
   return (
     <div style={card}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <div><div style={F.h2}>Tus activos, por canasta</div><div style={F.caption}>El papel de cada activo lo propone FINPATHIA según su tipo; corrígelo si no es así.</div></div>
+        <div><div style={F.h2}>Tasas y detalle por activo</div><div style={F.caption}>Cuánto rinde cada activo, qué parte recibes y cuánto valoriza. La canasta se decide arriba.</div></div>
         <button style={btn(false)} onClick={() => setAbierto((v) => !v)}>{abierto ? "Cerrar" : "Revisar"}</button>
       </div>
       {abierto && <div style={{ overflowX: "auto", marginTop: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 640 }}>
-          <thead><tr>{["Activo", "Valor", "Canasta", "Papel", "Rinde al año", "Recibe", "Valoriza al año", "Vivienda"].map((h) => <th key={h} style={{ ...F.label, textAlign: "left", padding: "6px" }}>{h}</th>)}</tr></thead>
+          <thead><tr>{["Activo", "Valor", "Canasta", "Rinde al año", "Recibe (%)", "Valoriza al año"].map((h) => <th key={h} style={{ ...F.label, textAlign: "left", padding: "6px" }}>{h}</th>)}</tr></thead>
           <tbody>{base.posiciones.map((p) => <tr key={p.id} style={{ borderTop: `1px solid ${C.border}` }}>
             <td style={{ padding: 6, color: C.text }}>{p.nombre}<div style={F.caption}>{p.tipo}{p.renta > 0 ? ` · renta ${fmMes(p.renta)}` : ""}</div></td>
             <td style={{ padding: 6, color: C.text, fontFamily: F.mono.fontFamily }}>{fmM(p.capital)}</td>
             <td style={{ padding: 6 }}><span style={chip(CANASTA_COLOR[canastaDe(p)])}>{CANASTA_LABEL[canastaDe(p)]}</span></td>
-            <td style={{ padding: 6 }}><select value={p.bolsillo} onChange={(e) => set(p.id, "bolsillo", e.target.value)} style={{ ...inputS, padding: "5px 8px", width: 130 }}><option value="sustento">Renta (recibo)</option><option value="crecimiento">Crecimiento (reinvierte)</option><option value="uso">Uso</option></select></td>
             <td style={{ padding: 6 }}><input type="number" step={0.5} value={p.tasa} onChange={(e) => set(p.id, "tasa", Number(e.target.value))} style={{ ...inputS, padding: "5px 8px", width: 70 }} /></td>
             <td style={{ padding: 6 }}><input type="number" step={10} min={0} max={100} value={p.pagaPct} onChange={(e) => set(p.id, "pagaPct", Number(e.target.value))} style={{ ...inputS, padding: "5px 8px", width: 64 }} /></td>
             <td style={{ padding: 6 }}><input type="number" step={0.5} value={p.valorizacion} onChange={(e) => set(p.id, "valorizacion", Number(e.target.value))} style={{ ...inputS, padding: "5px 8px", width: 70 }} /></td>
-            <td style={{ padding: 6 }}>{p.inmueble && <input type="checkbox" checked={!!p.vivienda} onChange={(e) => set(p.id, "vivienda", e.target.checked)} />}</td>
           </tr>)}</tbody>
         </table>
       </div>}
@@ -389,7 +399,7 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
       {sinDatos ? (
         <div style={card}><div style={F.h2}>Para trazar caminos hace falta tu punto de partida</div><div style={{ ...F.body, marginTop: 6 }}>Carga tus activos, ingresos, gastos y deudas: con eso FINPATHIA arma las canastas y los tres caminos solos.</div><div style={{ marginTop: 12, display: "flex", gap: 8 }}><button style={btn(true)} onClick={() => onNavigate?.("inv")}>Ir a Patrimonio</button><button style={btn(false)} onClick={() => onNavigate?.("ing")}>Ir a Ingresos</button></div></div>
       ) : (<>
-        <Hoy base={base} />
+        <Hoy base={base} fichas={fichas} onFichas={onFichas} />
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
             <div><div style={F.h2}>Los caminos</div><div style={F.caption}>Cada uno es un juego de rangos por canasta y condiciones. Un camino que no se cumple te lo dice.</div></div>
