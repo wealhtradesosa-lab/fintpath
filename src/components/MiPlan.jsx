@@ -1071,7 +1071,14 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   const irSub = (n) => { setSub(n); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
   const Hilo = () => (
     <div style={{ ...card, borderColor: esc.color, padding: "14px 16px" }}>
-      <div style={F.label}>Tu plata en este escenario</div>
+      {/* 22-oct-2026 (Santiago: "siempre debería ser muy visible valor
+          patrimonio y lo que falta por invertir"). El hilo contaba el
+          movimiento -vendes, pagas, te queda- pero nunca el tamaño de lo que
+          se está moviendo, asi que cada cifra flotaba sin referencia. */}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between" }}>
+        <div style={F.label}>Tu plata en este escenario</div>
+        <div style={F.caption}>Patrimonio hoy <b style={{ color: C.text, fontFamily: F.mono.fontFamily }}>{fmM(base.base?.patrimonioNeto ?? 0)}</b>{base.canastasHoy ? <> · las canastas reparten <b style={{ color: C.text, fontFamily: F.mono.fontFamily }}>{fmM(base.canastasHoy.total)}</b></> : null}</div>
+      </div>
       <div style={{ ...F.body, marginTop: 4 }}>
         {liq.liberado > 0 ? <>Vendes <b style={{ color: C.text }}>{fmM(liq.liberado)}</b></> : <>Todavía no vendes nada</>}
         {liq.pagado > 0 && <> · pagas deudas por <b style={{ color: C.text }}>{fmM(liq.pagado)}</b></>}

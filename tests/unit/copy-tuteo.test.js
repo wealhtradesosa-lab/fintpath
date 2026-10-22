@@ -220,7 +220,10 @@ function archivosTodos(dir) {
   }
   return out;
 }
-const sinComentarios = (s) => s.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l));
+// 22-oct-2026 — Un comentario JSX abre con `{/*`, y el filtro solo conocía
+// `//`, `*` y `/*`. Citar al usuario dentro de uno —"le subí el valor"— ponía
+// el test en rojo por un voseo que nadie le muestra a nadie.
+const sinComentarios = (s) => s.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*|\{\/\*)/.test(l));
 
 describe("tuteo, nunca voseo", () => {
   const todos = [...archivosTodos("src"), ...archivosTodos("netlify/functions")].filter((f) => !f.endsWith("taxCO.js"));
