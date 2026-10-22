@@ -975,7 +975,25 @@ function PasoResultado({ base, r, elegido, onElegir, onNext, onVolver }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 14 }}>
         <div style={card}>
-          <div style={F.h3}>El despliegue de hoy</div>
+          {/* 22-oct-2026 (Santiago: "si se supone que tengo una inversión de
+              rapicredit que me paga 58 MM al mes, que continúa, ¿por qué no la
+              veo en el escenario creado? Solo veo los ingresos por ítems
+              nuevos"). El resumen contaba solo lo que se MUEVE —vendes, pagas,
+              despliegas— y dejaba fuera lo que se queda, que es de donde sale
+              la mayor parte de lo que entra cada mes. Un escenario no es solo
+              el cambio: es el cambio SOBRE lo que ya tienes. */}
+          <div style={F.h3}>Lo que sigue igual y te sigue pagando</div>
+          {(() => {
+            const siguen = base.posiciones.filter((q) => !q.sale).map((q) => ({ nombre: q.nombre, mes: produce(q).recibe })).filter((q) => q.mes > 0).sort((a, b) => b.mes - a.mes);
+            const total = siguen.reduce((t, q) => t + q.mes, 0);
+            if (siguen.length === 0) return <div style={{ ...F.body, marginTop: 6 }}>Nada de lo que tienes hoy te paga cada mes.</div>;
+            return (<>
+              <div style={{ ...F.body, marginTop: 6 }}>No lo tocas y te deja <b style={{ color: C.ok }}>{fmMes(total)}</b> al mes:</div>
+              <div style={{ display: "grid", gap: 3, marginTop: 4 }}>{siguen.slice(0, 8).map((q) => <div key={q.nombre} style={F.caption}>· {q.nombre} — <b style={{ color: C.text }}>{fmMes(q.mes)}</b>/mes</div>)}
+              {siguen.length > 8 && <div style={F.caption}>· y {siguen.length - 8} más</div>}</div>
+            </>);
+          })()}
+          <div style={{ ...F.h3, marginTop: 14 }}>Y esto es lo que cambia</div>
           {r.ajuste.notas.length ? r.ajuste.notas.map((n, i) => <div key={i} style={{ ...F.body, marginTop: 6 }}>· {n}</div>) : <div style={{ ...F.body, marginTop: 6 }}>Nada cambia hoy: el escenario parte tal como estás.</div>}
           <div style={{ marginTop: 12 }}><div style={F.caption}>Canastas hoy</div><BarraCanastas c={r.canastasHoy} /><div style={{ ...F.caption, marginTop: 8 }}>Canastas año 10</div><BarraCanastas c={r.canastasFin} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 8 }}>{["proteccion", "rentas", "crecimiento"].map((k) => <div key={k}><div style={{ ...F.label, color: CANASTA_COLOR[k] }}>{CANASTA_LABEL[k]}</div><div style={{ ...F.caption, color: C.text }}>{fmM(r.canastasHoy[k])} → {fmM(r.canastasFin[k])}</div></div>)}</div>
