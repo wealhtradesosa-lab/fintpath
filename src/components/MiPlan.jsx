@@ -1241,6 +1241,55 @@ function LoQueFalta({ r, base, liq, perfil }) {
   );
 }
 
+// ─── Activo por activo ───────────────────────────────────────────────────────
+// 22-oct-2026 — En el Plan SALEM, cada plan tenía su "5 · Activo por activo" y
+// su "2 · Todo lo que tienes después del plan". La app contaba el patrimonio
+// por canastas —cuatro cifras— y nunca decía qué le pasó a CADA cosa suya, que
+// es la pregunta que uno se hace: "¿y mi bodega qué?". Acá está: con cuánto
+// arranca, con cuánto termina, qué paga hoy y qué paga en el año 10.
+function ActivoPorActivo({ r, base }) {
+  const meses = r.resultado?.meses || [];
+  if (!meses.length) return null;
+  const fin = meses[meses.length - 1];
+  const hoyPos = Object.fromEntries(base.posiciones.map((p) => [p.id, p]));
+  const filas = (r.cfg?.posiciones || []).map((p) => {
+    const h = hoyPos[p.id];
+    const d = fin.detalle?.[p.id] || { capital: 0, recibe: 0 };
+    const pagaHoy = h ? produce(h).recibe : 0;
+    return { id: p.id, nombre: p.nombre, canasta: canastaDe(p), hoy: h ? h.capital : 0, nuevo: !h,
+      fin: Math.max(0, d.capital), pagaHoy, pagaFin: d.recibe, vendido: d.capital <= 1 && (h ? h.capital : 0) > 0 };
+  }).filter((x) => x.hoy > 0 || x.fin > 0 || x.pagaFin > 0);
+  if (!filas.length) return null;
+  filas.sort((a, b) => b.fin - a.fin || b.hoy - a.hoy);
+  const tot = filas.reduce((t, x) => ({ hoy: t.hoy + x.hoy, fin: t.fin + x.fin, pagaHoy: t.pagaHoy + x.pagaHoy, pagaFin: t.pagaFin + x.pagaFin }), { hoy: 0, fin: 0, pagaHoy: 0, pagaFin: 0 });
+  return (
+    <div style={card}>
+      <div style={F.h3}>Activo por activo: qué pasó con cada cosa tuya</div>
+      <div style={{ ...F.caption, marginTop: 2 }}>Con cuánto arranca, con cuánto termina en el año 10, y cuánto te deposita cada mes en cada momento. Lo que se vendió queda en cero y lo que nació con el plan va marcado.</div>
+      <div style={{ overflowX: "auto", marginTop: 10 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
+          <thead><tr>{["Activo", "Canasta", "Hoy vale", "Año 10 vale", "Te paga hoy", "Te paga año 10"].map((h, i) => <th key={h} style={{ ...th, textAlign: i < 2 ? "left" : "right" }}>{h}</th>)}</tr></thead>
+          <tbody>
+            {filas.map((x) => <tr key={x.id} style={{ borderTop: `1px solid ${C.border}`, opacity: x.vendido ? 0.6 : 1 }}>
+              <td style={{ ...td, minWidth: 170 }}>{x.nombre}{x.nuevo && <span style={{ ...chip(C.accent), marginLeft: 6 }}>nuevo</span>}{x.vendido && <span style={{ ...chip(C.subtle), marginLeft: 6 }}>se vendió</span>}</td>
+              <td style={td}><span style={chip(CANASTA_COLOR[x.canasta])}>{CANASTA_LABEL[x.canasta]}</span></td>
+              <td style={tdNum}>{x.hoy > 0 ? fmM(x.hoy) : "—"}</td>
+              <td style={{ ...tdNum, color: x.fin > x.hoy ? C.ok : x.fin < x.hoy ? C.muted : C.text }}>{x.fin > 0 ? fmM(x.fin) : "—"}</td>
+              <td style={tdNum}>{x.pagaHoy > 0 ? fmMes(x.pagaHoy) : "—"}</td>
+              <td style={{ ...tdNum, color: x.pagaFin > 0 ? C.ok : C.muted }}>{x.pagaFin > 0 ? fmMes(x.pagaFin) : "—"}</td>
+            </tr>)}
+            <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}>
+              <td style={{ ...td, fontWeight: 700 }}>Todo junto</td><td style={td} />
+              <td style={{ ...tdNum, fontWeight: 700 }}>{fmM(tot.hoy)}</td><td style={{ ...tdNum, fontWeight: 700 }}>{fmM(tot.fin)}</td>
+              <td style={{ ...tdNum, fontWeight: 700 }}>{fmMes(tot.pagaHoy)}</td><td style={{ ...tdNum, fontWeight: 700, color: C.ok }}>{fmMes(tot.pagaFin)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // ─── Paso 4 · Tu camino a 10 años ───────────────────────────────────────────────────
 function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver, onEditar }) {
   if (!r) return null;
@@ -1303,6 +1352,7 @@ function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver, o
       </div>}
       <GraficaMesAMes r={r} />
       <LoQueFalta r={r} base={base} liq={liquidezEscenario(base, r)} perfil={perfil} />
+      <ActivoPorActivo r={r} base={base} />
       <GanaALaInflacion r={r} perfil={perfil} />
       <ComoEmpresa r={r} />
       <div style={card}>
