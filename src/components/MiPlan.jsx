@@ -108,12 +108,74 @@ function Stepper({ paso, setPaso }) {
 }
 const Siguiente = ({ onClick, children }) => <div style={{ display: "flex", justifyContent: "flex-end" }}><button style={btn(true)} onClick={onClick}>{children} →</button></div>;
 
+
+// ─── Un activo, una frase, una decisión ──────────────────────────────────────
+// 21-oct-2026. Santiago, perdido en el paso 1: "no es claro no es intuitivo
+// recibo qué? crece es qué? además después porcentajes?", "no queda claro uno
+// en esta parte qué debe hacer", "la idea es uno ver cómo organiza su plan
+// para ver el camino a los próximos 10 años".
+//
+// Era una tabla de 17 filas × 10 columnas, con los parámetros del motor
+// puestos como si fueran datos suyos: "Rinde 0% · Recibes 0%" al lado de
+// "$28,5 M" (esa renta no sale de un porcentaje, está cargada como ingreso), y
+// "Recibes" significando dos cosas distintas en dos columnas. Pero el trabajo
+// de este paso es UNA decisión por activo: ¿sigue o no sigue? Lo demás ya está
+// calculado y solo hay que corregirlo cuando está mal.
+//
+// Los porcentajes no se borran: viven detrás de "ajustar", en la fila a la que
+// pertenecen y con su nombre completo.
+function FilaActivo({ p, onFicha }) {
+  const [abierto, setAbierto] = useState(false);
+  const x = produce(p);
+  const k = canastaDe(p);
+  const off = p.sale;
+  const v = ventanaTexto(p);
+  const partes = [`Vale ${fmM(p.capital)}`];
+  partes.push(x.recibe > 0 ? `te paga ${fmMes(x.recibe)}/mes${v ? ` (${v})` : ""}` : "no te paga nada");
+  if (p.vivienda) partes.push("vives aquí");
+  if (p.tasa > 0 && p.pagaPct < 100) partes.push(`reinvierte al ${pctEs(p.tasa)}`);
+  if (p.valorizacion > 0) partes.push(`valoriza ${pctEs(p.valorizacion)} al año`);
+  else if (p.valorizacion < 0) partes.push(`pierde ${pctEs(-p.valorizacion)} al año`);
+  const inp2 = { ...inputS, padding: "4px 6px", fontSize: 12, width: 70, textAlign: "right" };
+  return (
+    <div style={{ borderTop: `1px solid ${C.border}`, padding: "12px 0", opacity: off ? 0.55 : 1 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
+        <div style={{ minWidth: 0, flex: "1 1 320px" }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>
+            {p.nombre}
+            {p.soloIngreso && <span style={{ ...chip(C.warn), marginLeft: 8 }}>de un ingreso, no está en Inversiones</span>}
+            <span style={{ ...chip(CANASTA_COLOR[k]), marginLeft: 8 }}>{CANASTA_LABEL[k]}</span>
+          </div>
+          <div style={{ ...F.body, marginTop: 3 }}>{partes.join(" · ")}</div>
+          <div style={F.caption}>{p.tipo} · {p.canasta ? "la canasta la decidiste tú" : porQueCanasta(p)}</div>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button onClick={() => onFicha({ estado: off ? "continua" : "sale" })} style={{ ...btn(false), color: off ? C.danger : C.ok, borderColor: off ? C.danger : C.ok, whiteSpace: "nowrap" }}>{off ? "Ya no va" : "Continúa"}</button>
+          <button onClick={() => setAbierto((a) => !a)} style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>{abierto ? "cerrar" : "ajustar"}</button>
+        </div>
+      </div>
+      {abierto && (
+        <div style={{ ...sub, marginTop: 10, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <Campo l="En qué canasta va"><select value={k} onChange={(e) => onFicha({ canasta: e.target.value })} style={{ ...inputS, width: 150, color: CANASTA_COLOR[k] }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select></Campo>
+          {!(p.renta > 0) && <Campo l="Rinde al año"><div><input type="number" step={0.5} value={Math.round(p.tasa * 100) / 100} onChange={(e) => onFicha({ tasa: Number(e.target.value) })} style={inp2} /> %</div></Campo>}
+          {!(p.renta > 0) && p.tasa > 0 && <Campo l="De eso, te pagan"><div><input type="number" step={10} min={0} max={100} value={p.pagaPct} onChange={(e) => onFicha({ pagaPct: Number(e.target.value) })} style={inp2} /> % (el resto se reinvierte)</div></Campo>}
+          <Campo l="Se valoriza al año"><div><input type="number" step={0.5} value={p.valorizacion} onChange={(e) => onFicha({ valorizacion: Number(e.target.value) })} style={inp2} /> %</div></Campo>
+          {p.renta > 0 && <div style={{ ...F.caption, flex: "1 1 220px" }}>Lo que te paga no sale de un porcentaje: está cargado como ingreso en Ingresos. Cámbialo allá.</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Paso 1 · Hoy ────────────────────────────────────────────────────────────
 function PasoHoy({ base, fichas, onFichas, onNext }) {
   const c = base.canastasHoy, b = base.base, hoy = base.hoy || {};
   const entra = (b?.ia || 0) + (b?.ip || 0), sale = base.gastosMes, queda = entra - sale, cob = sale > 0 ? (entra / sale) * 100 : 0;
   const meses = sale > 0 ? c.colchon / sale : 0;
   const setF = (id, patch) => onFichas({ ...fichas, [id]: { ...(fichas[id] || {}), ...patch } });
+  // La lista arranca plegada: la sección existe para ver el camino a 10 años,
+  // no para recorrer 17 filas antes de llegar a él.
+  const [revisar, setRevisar] = useState(false);
   // 21-oct-2026 (Santiago: "porque aparece BTG si no lo tengo", "la primera
   // sección es lo que uno tiene hoy"). La tabla mezclaba sus activos con
   // posiciones que esta pantalla INVENTA a partir de ingresos que declaran un
@@ -123,19 +185,6 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
   const activos = base.posiciones.filter((p) => !p.soloIngreso);
   const deIngresos = base.posiciones.filter((p) => p.soloIngreso);
   const capDeIngresos = deIngresos.reduce((s2, p) => s2 + p.capital, 0);
-  const fila = (p) => { const x = produce(p); const k = canastaDe(p); const off = p.sale; return (
-                <tr key={p.id} style={{ borderTop: `1px solid ${C.border}`, opacity: off ? 0.55 : 1 }}>
-                  <td style={td}>{p.nombre}<div style={F.caption}>{p.tipo} · {notaDe(p)}</div></td>
-                  <td style={tdNum}>{fmM(p.capital)}</td>
-                  <td style={{ ...tdNum, color: x.recibe > 0 ? C.ok : C.subtle }}>{x.recibe > 0 ? fmMes(x.recibe) : "—"}</td>
-                  <td style={td}>{ventanaTexto(p) ? <span style={chip(C.warn)}>{ventanaTexto(p)}</span> : <span style={{ color: C.subtle }}>todo el año</span>}</td>
-                  <td style={{ ...tdNum, color: x.crece > 0 ? C.warn : x.crece < 0 ? C.danger : C.subtle }}>{x.crece !== 0 ? fmMes(x.crece) : "—"}</td>
-                  <td style={td}><select value={k} onChange={(e) => setF(p.id, { canasta: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 112, color: CANASTA_COLOR[k] }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select><div style={{ ...F.caption, marginTop: 2 }}>{p.canasta ? "lo decidiste tú" : porQueCanasta(p)}</div></td>
-                  <td style={tdNum}><input type="number" step={0.5} value={p.tasa} onChange={(e) => setF(p.id, { tasa: Number(e.target.value) })} style={inp} />%</td>
-                  <td style={tdNum}><input type="number" step={10} min={0} max={100} value={p.pagaPct} onChange={(e) => setF(p.id, { pagaPct: Number(e.target.value) })} style={inp} />%</td>
-                  <td style={tdNum}><input type="number" step={0.5} value={p.valorizacion} onChange={(e) => setF(p.id, { valorizacion: Number(e.target.value) })} style={inp} />%</td>
-                  <td style={td}><button onClick={() => setF(p.id, { estado: off ? "continua" : "sale" })} style={{ ...btn(false), padding: "4px 10px", color: off ? C.danger : C.ok, borderColor: off ? C.danger : C.ok, whiteSpace: "nowrap" }}>{off ? "Sale del plan" : "Continúa"}</button></td>
-                </tr>); };
   const tiles = [["Entra al mes", fmMes(entra), "trabajo + rentas"], ["Sale al mes", fmMes(sale), "gastos + cuotas"], ["Queda", fmMes(queda), queda >= 0 ? "excedente" : "déficit"], ["Cobertura", pct(cob), "entra ÷ sale"], ["Patrimonio neto", fmM(b?.patrimonioNeto ?? c.total), capDeIngresos > 0 ? `${fmM(c.total)} bruto · ${fmM(capDeIngresos)} viene de ingresos, no de Inversiones` : `${fmM(c.total)} bruto`], ["Colchón", `${Math.round(meses)} meses`, "líquido ÷ gastos"]];
   const vivos = activos.filter((p) => !p.sale);
   const tot = vivos.reduce((s, p) => { const x = produce(p); return { recibe: s.recibe + x.recibe, crece: s.crece + x.crece }; }, { recibe: 0, crece: 0 });
@@ -161,31 +210,22 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
         <div style={{ ...F.caption, marginTop: 8 }}>Las tres primeras son papeles que cumple tu plata. <b style={{ color: C.text }}>Uso</b> es el resto: no está mal tenerlo, está mal no saber cuánto pesa.</div>
       </div>
       <div style={card}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}><div style={F.h3}>Producción por activo</div><div style={F.caption}>Rinde = % anual sobre el capital · Recibes = qué parte del rendimiento te llega cada mes (el resto se reinvierte) · Valoriza = % anual del valor</div></div>
-        <div style={{ overflowX: "auto", marginTop: 8 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
-            <thead><tr><th style={th}>Activo</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Recibes / mes</th><th style={th}>Hasta cuándo</th><th style={{ ...th, textAlign: "right" }}>Crece / mes</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Rinde</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>En el plan</th></tr></thead>
-            <tbody>
-              {[...activos].sort((a, b2) => b2.capital - a.capital).map(fila)}
-              <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}><td style={{ ...td, fontWeight: 700 }}>Lo que continúa</td><td style={{ ...tdNum, fontWeight: 700 }}>{fmM(vivos.reduce((s2, p) => s2 + p.capital, 0))}</td><td style={{ ...tdNum, fontWeight: 700, color: C.ok }}>{fmMes(tot.recibe)}</td><td style={{ ...tdNum, fontWeight: 700, color: C.warn }}>{fmMes(tot.crece)}</td><td colSpan={6} style={{ ...td, color: C.muted }}>Te paga {fmMes(tot.recibe)} al mes · se queda adentro {fmMes(tot.crece)} (se reinvierte o valoriza, no entra a la cuenta)</td></tr>
-            </tbody>
-          </table>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+          <div>
+            <div style={F.h3}>Tus activos</div>
+            <div style={{ ...F.body, marginTop: 2 }}>
+              Valen <b style={{ color: C.text }}>{fmM(vivos.reduce((s2, q) => s2 + q.capital, 0) + capDeIngresos)}</b> y te pagan <b style={{ color: C.ok }}>{fmMes(tot.recibe + totIng)}</b> al mes.
+              {" "}Adentro se queda <b style={{ color: C.warn }}>{fmMes(tot.crece)}</b> al mes, que se reinvierte o se valoriza y no entra a la cuenta.
+              {capDeIngresos > 0 && <> {deIngresos.length} {deIngresos.length === 1 ? "viene" : "vienen"} de un ingreso y no {deIngresos.length === 1 ? "está" : "están"} en Inversiones.</>}
+            </div>
+          </div>
+          <button onClick={() => setRevisar((r) => !r)} style={btn(!revisar)}>{revisar ? "Ocultar la lista" : `Revisar mis ${base.posiciones.length} activos`}</button>
         </div>
+        {revisar && <div style={{ marginTop: 6 }}>
+          <div style={{ ...F.caption, marginBottom: 2 }}>De cada uno solo hay que decidir una cosa: si <b style={{ color: C.text }}>continúa</b> o <b style={{ color: C.text }}>ya no va</b> (se vende hoy y libera plata para el plan). Lo demás ya está calculado — si algo no cuadra, "ajustar".</div>
+          {[...base.posiciones].sort((a, b2) => b2.capital - a.capital).map((q) => <FilaActivo key={q.id} p={q} onFicha={(patch) => setF(q.id, patch)} />)}
+        </div>}
       </div>
-      {deIngresos.length > 0 && <div style={{ ...card, borderColor: C.warn + "55" }}>
-        <div style={F.h3}>Capital que sale de tus ingresos, no de Inversiones</div>
-        <div style={{ ...F.body, marginTop: 4 }}>
-          Estos no están en tu patrimonio: los arma esta pantalla con los ingresos que declaran un capital y una tasa, para poder modelarlos a 10 años.
-          Suman <b style={{ color: C.text }}>{fmM(capDeIngresos)}</b> de capital y te pagan <b style={{ color: C.ok }}>{fmMes(totIng)}</b> al mes.
-          Si de verdad los tienes, cárgalos en Inversiones y desaparecen de aquí; si no, quítalos del plan.
-        </div>
-        <div style={{ overflowX: "auto", marginTop: 10 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
-            <thead><tr><th style={th}>De este ingreso</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Recibes / mes</th><th style={th}>Hasta cuándo</th><th style={{ ...th, textAlign: "right" }}>Crece / mes</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Rinde</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>En el plan</th></tr></thead>
-            <tbody>{[...deIngresos].sort((a, b2) => b2.capital - a.capital).map(fila)}</tbody>
-          </table>
-        </div>
-      </div>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 14 }}>
         {base.deudas.length > 0 && <div style={card}>
           <div style={F.h3}>Deudas</div>

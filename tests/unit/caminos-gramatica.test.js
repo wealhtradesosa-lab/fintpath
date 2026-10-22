@@ -62,7 +62,7 @@ describe("la canasta se deduce de lo que produce, no se pregunta", () => {
   });
 
   it("si el usuario la corrigió, la pantalla lo dice en vez de explicar una deducción que ya no manda", () => {
-    expect(miPlan).toContain('p.canasta ? "lo decidiste tú" : porQueCanasta(p)');
+    expect(miPlan).toContain('p.canasta ? "la canasta la decidiste tú" : porQueCanasta(p)');
   });
 });
 
@@ -76,6 +76,13 @@ describe("lo que viene se pregunta en el orden en que se piensa", () => {
   it("arranca en «compro algo», no en vocabulario del motor", () => {
     expect(miPlan).toContain('useState({ tipo: "comprar"');
     expect(miPlan).not.toContain('useState({ tipo: "flujo_inicia_ingreso"');
+  });
+
+  it("cada activo se lee como una frase, con una sola decisión", () => {
+    // 21-oct-2026 — la tabla de 10 columnas se reemplazó por esta lista.
+    expect(miPlan).toContain("function FilaActivo");
+    expect(miPlan).toContain("no te paga nada");
+    expect(miPlan).not.toContain("Producción por activo");
   });
 
   it("los campos preguntan cuánto vale y cuánto renta, con esas palabras", () => {

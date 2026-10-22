@@ -195,8 +195,10 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
       // vez de dejar al usuario adivinando por qué el monto bajó.
       const ventana = rangoEfectivo(i);
       const difiere = Math.abs((m * 12 / cap) * 100 - tasa) > 0.1;
-      // Dos decimales: sin esto la pantalla mostraba "14,380434782608695 %".
-      const tasaReal = difiere ? Math.round((m * 12 / cap) * 10000) / 100 : tasa;
+      // Exacta, no redondeada: redondearla a dos decimales movía la plata
+      // ($7.500.000 pasaban a $7.525.000). La tasa es la que SALE del monto,
+      // así que el monto manda; la pantalla la redondea al mostrarla.
+      const tasaReal = difiere ? (m * 12 / cap) * 100 : tasa;
       const declarada = difiere ? tasa : null;
       // Rendimiento de un capital: si el activo ya está en Patrimonio, se usa su ficha real
       const f = norm(i.fuente || i.nombre);
