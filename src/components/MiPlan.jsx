@@ -1068,7 +1068,7 @@ function ResultadoVivo({ r, base, onElegir, elegido, onVer, onComparar }) {
 // elija en que desea reinvertir". Y arriba, siempre visible, el hilo de la
 // plata: cuanto liberas, cuanto pagas, cuanto te queda. Nadie se pierde
 // porque en cada pantalla solo hay una cosa que contestar.
-function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuardar, onNuevo, onDuplicar, onRestablecer, onBorrar, caminoElegido, onElegir, onNext, onComparar, sub, setSub }) {
+function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuardar, onNuevo, onDuplicar, onRestablecer, onBorrar, caminoElegido, onElegir, onNext, onComparar, sub, setSub, onFicha }) {
   const ancho = useAncho();
   const esc = todos.find((e) => e.id === activoId) || todos[0];
   const r = res.find((x) => x.id === esc?.id);
@@ -1251,7 +1251,13 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                 <tbody>
                   {(esc.despliegue || []).map((d) => <tr key={d.id} style={{ borderTop: `1px solid ${C.border}` }}>
                     <td style={{ ...td, minWidth: 150 }}>{d.destinoId ? <span>{d.nombre}<div style={F.caption}>ya lo tienes · vale {fmM(posDe(d.destinoId)?.capital || 0)} hoy</div></span> : <input value={d.nombre} onChange={(e) => setD(d.id, { nombre: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }} />}</td>
-                    <td style={td}>{d.destinoId ? <span style={chip(CANASTA_COLOR[d.canasta])}>{CANASTA_LABEL[d.canasta]}</span> : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[d.canasta], borderColor: CANASTA_COLOR[d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
+                    {/* 22-oct-2026 (Santiago: "¿por qué unas se dejan elegir y
+                        otras no?"). Lo que ya tienes mostraba la canasta como
+                        un chip fijo; ahora también es un menú, y cambia la
+                        ficha del activo (vale para todos los escenarios). */}
+                    <td style={td}>{d.destinoId
+                      ? <select value={posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta} onChange={(e) => { const c = e.target.value; if (onFicha) onFicha(d.destinoId, { canasta: c }); setD(d.id, { canasta: c }); }} title="Cambia la canasta de este activo (vale para todos los escenarios)" style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta], borderColor: CANASTA_COLOR[posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>
+                      : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[d.canasta], borderColor: CANASTA_COLOR[d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
                     <td style={tdNum}><NumPesos value={d.capital} onChange={(v) => setD(d.id, { capital: v || 0 })} w={150} /></td>
                     <td style={tdNum}><Num value={d.tasa} step={0.5} onChange={(v) => setD(d.id, { tasa: v || 0 })} suffix="%" w={80} /></td>
                     <td style={tdNum}><Num value={d.pagaPct} step={10} min={0} max={100} onChange={(v) => setD(d.id, { pagaPct: v || 0, regla: v >= 100 ? "Paga el 100% del rendimiento cada mes" : v <= 0 ? "Todo se reinvierte" : `Recibe el ${v}%, reinvierte el resto` })} suffix="%" w={80} />
@@ -1512,7 +1518,7 @@ function LoQueFalta({ r, base, liq, perfil }) {
 // por canastas —cuatro cifras— y nunca decía qué le pasó a CADA cosa suya, que
 // es la pregunta que uno se hace: "¿y mi bodega qué?". Acá está: con cuánto
 // arranca, con cuánto termina, qué paga hoy y qué paga en el año 10.
-function ActivoPorActivo({ r, base }) {
+function ActivoPorActivo({ r, base, onFicha }) {
   const meses = r.resultado?.meses || [];
   if (!meses.length) return null;
   const fin = meses[meses.length - 1];
@@ -1559,7 +1565,13 @@ function ActivoPorActivo({ r, base }) {
           <tbody>
             {filas.map((x) => <tr key={x.id} style={{ borderTop: `1px solid ${C.border}`, opacity: x.vendido ? 0.6 : 1 }}>
               <td style={{ ...td, minWidth: 170 }}>{x.nombre}{x.nuevo && <span style={{ ...chip(C.accent), marginLeft: 6 }}>nuevo</span>}{x.vendido && <span style={{ ...chip(C.subtle), marginLeft: 6 }}>{x.vendidoHoy ? "se vende hoy" : `se vende · año ${x.anioVenta}`}</span>}</td>
-              <td style={td}><span style={chip(CANASTA_COLOR[x.canasta])}>{CANASTA_LABEL[x.canasta]}</span></td>
+              {/* 22-oct-2026 (Santiago, sobre esta tabla: "¿cómo edito si
+                  quiero que una cosa sea protección o crecer?"). La canasta de
+                  un activo de hoy se cambia aquí mismo; vale para todos los
+                  escenarios, igual que en el paso 1. */}
+              <td style={td}>{!x.nuevo && onFicha
+                ? <select value={x.canasta} onChange={(e) => onFicha(x.id, { canasta: e.target.value })} title="Cambia la canasta de este activo (vale para todos los escenarios)" style={{ background: "transparent", border: `1px solid ${CANASTA_COLOR[x.canasta]}55`, borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 600, color: CANASTA_COLOR[x.canasta], cursor: "pointer", fontFamily: "inherit" }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>
+                : <span style={chip(CANASTA_COLOR[x.canasta])}>{CANASTA_LABEL[x.canasta]}</span>}</td>
               <td style={tdNum}>{x.hoy > 0 ? fmM(x.hoy) : x.entra ? <span style={F.caption}>entra año {x.entra.anio}<br />con {fmM(x.entra.capital)}</span> : "—"}</td>
               <td style={{ ...tdNum, color: x.fin > x.hoy ? C.ok : x.fin < x.hoy ? C.muted : C.text }}>{x.fin > 0 ? fmM(x.fin) : "—"}</td>
               <td style={tdNum}>{x.pagaHoy > 0 ? <span>{fmMes(x.pagaHoy)}{x.vendido && <div style={F.caption}>hasta la venta</div>}</span> : x.entra && x.entra.paga > 0 ? <span style={F.caption}>desde año {x.entra.anio}<br />{fmMes(x.entra.paga)}</span> : x.creceHoy > 1e4 ? <span style={{ ...F.caption, color: CANASTA_COLOR.crecimiento }}>crece {fmMes(x.creceHoy)}</span> : "—"}</td>
@@ -1578,7 +1590,7 @@ function ActivoPorActivo({ r, base }) {
 }
 
 // ─── Paso 4 · Tu camino a 10 años ───────────────────────────────────────────────────
-function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, onVolver, onEditar }) {
+function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, onVolver, onEditar, onFicha }) {
   if (!r) return null;
   const p = r.puntos;
   // 22-oct-2026 (Santiago, mirando esta lista: "¿y por qué no veo aquí que
@@ -1660,7 +1672,7 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
       </div>}
       <GraficaMesAMes r={r} perfil={perfil} base={base} onArreglar={onEditar && (() => onEditar(4))} />
       <LoQueFalta r={r} base={base} liq={liquidezEscenario(base, r)} perfil={perfil} />
-      <ActivoPorActivo r={r} base={base} />
+      <ActivoPorActivo r={r} base={base} onFicha={onFicha} />
       <GanaALaInflacion r={r} perfil={perfil} base={base} onArreglar={onEditar && (() => onEditar(4))} />
       <ComoEmpresa r={r} />
       <div style={card}>
@@ -1846,9 +1858,9 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
           <div style={{ ...F.body, marginTop: 6 }}>Los cuatro puntos de partida del paso anterior son moldes: elige uno y ahí nace tu escenario, con su mezcla puesta. Puedes tener tantos como quieras y compararlos.</div>
           <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => ir(2)}>← Elegir un punto de partida</button></div>
         </div>}
-        {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => { ir(4); setVerCompara(true); }} sub={sub} setSub={setSub} />}
+        {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => { ir(4); setVerCompara(true); }} sub={sub} setSub={setSub} onFicha={(id, patch) => onFichas({ ...fichas, [id]: { ...(fichas[id] || {}), ...patch } })} />}
         {paso === 3 && sub === 4 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} />}
-        {paso === 4 && !verCompara && <PasoResultado base={base} perfil={perfil} onPerfil={onPerfil} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} onEditar={(n) => { ir(3); setSub(n); }} />}
+        {paso === 4 && !verCompara && <PasoResultado base={base} perfil={perfil} onPerfil={onPerfil} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} onFicha={(id, patch) => onFichas({ ...fichas, [id]: { ...(fichas[id] || {}), ...patch } })} onEditar={(n) => { ir(3); setSub(n); }} />}
         {paso === 4 && verCompara && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); setVerCompara(false); }} caminoElegido={caminoElegido} onElegir={onElegir} onEditar={(id) => { setActivoId(id); ir(3); setSub(1); }} />}
         <div style={{ ...F.caption, textAlign: "center" }}>Lo que simulas aquí no toca tus datos reales. Los ejercicios (Pensiones, Ahorro BTC, Comprar o arrendar) alimentan los supuestos, no las decisiones.</div>
       </>)}
