@@ -915,6 +915,13 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                 {destinosPosibles.map((p) => <option key={p.id} value={p.id}>{p.nombre} · {CANASTA_LABEL[canastaDe(p)]} · {p.tasa > 0 ? `${p.tasa}%` : "sin tasa"}</option>)}
               </select>
               <Saldo />
+              {/* 22-oct-2026 — Santiago, insistiendo: "estos valores no
+                  deberían aparecer aquí, si apenas estamos construyendo el
+                  plan". Las plantillas ya no reparten la plata, pero un
+                  escenario GUARDADO antes conserva lo que se le puso
+                  entonces, y no habia forma de vaciarlo sin borrar fila por
+                  fila. */}
+              {(esc.despliegue || []).length > 0 && <button style={{ ...btn(false), color: C.subtle }} onClick={() => upd({ despliegue: [] })}>Vaciar y empezar de cero</button>}
             </div>
           </div>
           )}
