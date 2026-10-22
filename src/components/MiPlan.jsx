@@ -55,7 +55,7 @@ const inputS = { background: C.bg, border: `1px solid ${C.borderStrong}`, border
 const btn = (primary) => ({ background: primary ? C.accent : "transparent", color: primary ? "#fff" : C.text, border: `1px solid ${primary ? C.accent : C.borderStrong}`, borderRadius: 999, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" });
 const chip = (color) => ({ display: "inline-block", padding: "3px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, color, background: `${color}20`, border: `1px solid ${color}40`, whiteSpace: "nowrap" });
 const th = { ...F.label, textAlign: "left", padding: "8px 6px", whiteSpace: "nowrap" };
-const td = { padding: "7px 6px", color: C.text, fontSize: 12, verticalAlign: "middle" };
+const td = { padding: "7px 6px 16px", color: C.text, fontSize: 12, verticalAlign: "middle" };
 const tdNum = { ...td, textAlign: "right", fontFamily: F.mono.fontFamily, whiteSpace: "nowrap" };
 const Num = ({ value, onChange, step = 1, min, max, suffix, w }) => (
   <div style={{ position: "relative", width: w }}>
@@ -77,10 +77,15 @@ const NumPesos = ({ value, onChange, w, placeholder }) => {
   const n = Number(value) || 0, a = Math.abs(n);
   const txt = value == null || value === "" ? "" : Math.round(n).toLocaleString("es-CO");
   const duda = a >= 1e11;
+  // 22-oct-2026 (Santiago: "diagrame bien, mire unos campos desalineados").
+  // El eco colgaba DEBAJO del input y le sumaba alto solo a este campo, asi
+  // que en una fila de campos alineados al pie —"cuanto vale" junto a "para
+  // que"— este quedaba un renglon mas arriba que los demas. Ahora flota
+  // (position: absolute): dice lo mismo y no mueve a nadie.
   return (
-    <div style={{ width: w || "100%" }}>
+    <div style={{ width: w || "100%", position: "relative" }}>
       <input type="text" inputMode="numeric" value={txt} placeholder={placeholder || "0"} onChange={(e) => { const d = e.target.value.replace(/[^\d]/g, ""); onChange(d === "" ? "" : Number(d)); }} style={{ ...inputS, width: "100%", textAlign: "right", fontFamily: F.mono.fontFamily, fontWeight: 500, borderColor: duda ? C.danger : undefined }} />
-      {a >= 1e9 && <div style={{ ...F.caption, textAlign: "right", marginTop: 2, color: duda ? C.danger : C.subtle }}>{fmtPlataCortaEs(n)}{duda ? " · ¿tantos ceros?" : ""}</div>}
+      {a >= 1e9 && <div style={{ position: "absolute", left: 0, right: 0, top: "100%", textAlign: "right", fontSize: 10, lineHeight: "13px", pointerEvents: "none", color: duda ? C.danger : C.subtle }}>{fmtPlataCortaEs(n)}{duda ? " · ¿tantos ceros?" : ""}</div>}
     </div>
   );
 };
@@ -406,7 +411,7 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
   return (
     <div style={{ ...sub, display: "grid", gap: 10 }}>
       {ejemplo && <div style={F.caption}>{ejemplo}</div>}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, alignItems: "end" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", columnGap: 10, rowGap: 22, alignItems: "end" }}>
         <Campo l="Qué pasa" style={{ gridColumn: "1 / -1" }}><select value={f.tipo} onChange={(e) => set("tipo", e.target.value)} style={inputS}>{GRUPOS_MOV.map((g) => <optgroup key={g.g} label={g.g}>{g.items.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</optgroup>)}</select></Campo>
         <Campo l="Cuándo" style={{ gridColumn: "span 2" }}><div style={{ paddingTop: 4 }}><Cuando mes={f.cuando} onChange={(v) => set("cuando", v)} /></div></Campo>
         {(f.tipo === "vender" || f.tipo === "aportar" || f.tipo === "revaluar") && <Campo l={f.tipo === "aportar" ? "Destino" : "Activo"}>{selPos("posicionId")}</Campo>}
@@ -508,7 +513,7 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
         <div style={F.h3}>Lo nuevo que llega seguro</div>
         <div style={{ ...sub, marginTop: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><div><div style={F.h3}>Pensiones</div><div style={F.caption}>Cuándo llega cada una y de cuánto.</div></div><button style={btn(false)} onClick={() => setPens([...pens, { nombre: `Pensión ${pens.length + 1}`, mes: 48, monto: 3e6 }])}>+ Pensión</button></div>
-          {pens.map((p, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 8, marginTop: 8, alignItems: "end" }}>
+          {pens.map((p, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", columnGap: 8, rowGap: 22, marginTop: 10, alignItems: "end" }}>
             <Campo l="De quién / cuál"><input value={p.nombre} onChange={(e) => setPens(pens.map((x, k) => (k === i ? { ...x, nombre: e.target.value } : x)))} style={inputS} /></Campo>
             <Campo l="Desde cuándo"><div style={{ paddingTop: 4 }}><Cuando mes={p.mes} onChange={(mes) => setPens(pens.map((x, k) => (k === i ? { ...x, mes } : x)))} compacto /></div></Campo>
             <Campo l="Al mes (pesos)"><NumPesos value={p.monto} onChange={(v) => setPens(pens.map((x, k) => (k === i ? { ...x, monto: v || 0 } : x)))} /></Campo>
@@ -654,7 +659,19 @@ function ResultadoVivo({ r, base, onElegir, elegido, onVer, onComparar }) {
     </div>
   );
 }
-function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuardar, onNuevo, onDuplicar, onRestablecer, onBorrar, caminoElegido, onElegir, onNext, onComparar }) {
+// 22-oct-2026 (Santiago: "paso a paso bien claro", "si yo soy el desarrollador
+// de la plataforma y lo veo dificil, no me imagino alguien nuevo", "esto tiene
+// que ser muy intuitivo"). El paso 3 mostraba DIEZ bloques de una sola vez
+// —nombre, que vendes, deudas, donde va la plata, que pasa despues, excedente,
+// y encima los ingresos, gastos, pensiones y supuestos—. Nadie lee eso: se
+// lee lo primero y se abandona.
+//
+// Ahora es UNA pregunta por pantalla, en el orden en que el lo conto: "revise
+// que sale y que continua, con los saldos puede pagar deudas o reinvertir,
+// elija en que desea reinvertir". Y arriba, siempre visible, el hilo de la
+// plata: cuanto liberas, cuanto pagas, cuanto te queda. Nadie se pierde
+// porque en cada pantalla solo hay una cosa que contestar.
+function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuardar, onNuevo, onDuplicar, onRestablecer, onBorrar, caminoElegido, onElegir, onNext, onComparar, sub, setSub }) {
   const ancho = useAncho();
   const esc = todos.find((e) => e.id === activoId) || todos[0];
   const r = res.find((x) => x.id === esc?.id);
@@ -683,6 +700,44 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   const vendidos = [...base.posiciones.filter((p) => p.sale), ...(esc.ventas || []).map((v) => posDe(v.posicionId)).filter((p) => p && !p.sale)];
   const pagadas = [...base.deudas.filter((d) => d.pagar), ...(esc.pagos || []).map((id) => base.deudas.find((d) => d.id === id)).filter((d) => d && !d.pagar)];
   const deLaPlantilla = !!esc.plantilla && !esc.editado;
+  const [verNombre, setVerNombre] = useState(false);
+  const SUBS = [
+    { n: 1, t: "¿Qué vendes o transformas?", c: "Lo que sale se vende y te deja plata a favor." },
+    ...(base.deudas.length > 0 ? [{ n: 2, t: "¿Qué deudas pagas con eso?", c: "Lo que pagues deja de costarte cuota." }] : []),
+    { n: 3, t: "¿En qué reinviertes lo que queda?", c: "A dónde va cada peso y con qué regla." },
+    { n: 4, t: "¿Qué más va a pasar?", c: "Lo que viene después y qué haces con lo que sobra cada mes." },
+  ];
+  const iSub = Math.max(0, SUBS.findIndex((x) => x.n === sub));
+  const irSub = (n) => { setSub(n); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
+  const Hilo = () => (
+    <div style={{ ...card, borderColor: esc.color, padding: "14px 16px" }}>
+      <div style={F.label}>Tu plata en este escenario</div>
+      <div style={{ ...F.body, marginTop: 4 }}>
+        {liq.liberado > 0 ? <>Vendes <b style={{ color: C.text }}>{fmM(liq.liberado)}</b></> : <>Todavía no vendes nada</>}
+        {liq.pagado > 0 && <> · pagas deudas por <b style={{ color: C.text }}>{fmM(liq.pagado)}</b></>}
+      </div>
+      <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap", marginTop: 4 }}>
+        <div style={{ ...F.monoLg, color: queda > 0 ? C.ok : C.muted }}>Te queda {fmM(queda)}</div>
+        {liq.asignado > 0 && <div style={F.caption}>ya pusiste {fmM(liq.asignado)}</div>}
+        <span style={chip(Math.abs(liq.porAsignar) < 1e6 ? C.ok : liq.porAsignar > 0 ? C.warn : C.danger)}>{Math.abs(liq.porAsignar) < 1e6 ? "todo puesto" : liq.porAsignar > 0 ? `sin poner ${fmM(liq.porAsignar)}` : `te pasaste por ${fmM(-liq.porAsignar)}`}</span>
+      </div>
+    </div>
+  );
+  const SubPasos = () => (
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${SUBS.length}, minmax(0, 1fr))`, gap: 6 }}>
+      {SUBS.map((x, k) => { const on = x.n === sub, hecho = k < iSub; return (
+        <button key={x.n} onClick={() => irSub(x.n)} style={{ background: on ? `${esc.color}20` : C.surface, border: `1px solid ${on ? esc.color : C.border}`, borderRadius: 12, padding: "8px 10px", cursor: "pointer", textAlign: "left", minWidth: 0 }}>
+          <div style={{ ...F.label, color: on ? esc.color : hecho ? C.ok : C.subtle }}>{hecho ? "✓" : k + 1} de {SUBS.length}</div>
+          <div style={{ ...F.caption, color: on ? C.text : C.muted, marginTop: 2 }}>{x.t}</div>
+        </button>); })}
+    </div>
+  );
+  const Pies = () => (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      {iSub > 0 ? <button style={btn(false)} onClick={() => irSub(SUBS[iSub - 1].n)}>← {SUBS[iSub - 1].t}</button> : <span />}
+      {iSub < SUBS.length - 1 ? <button style={btn(true)} onClick={() => irSub(SUBS[iSub + 1].n)}>{SUBS[iSub + 1].t} →</button> : <button style={btn(true)} onClick={onNext}>Ver mi camino a 10 años →</button>}
+    </div>
+  );
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
@@ -695,12 +750,16 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
           <span style={F.caption}>Estás editando <b style={{ color: esc.color }}>{esc.nombre}</b>. Cuando quieras:</span>
+          <button style={btn(false)} onClick={() => setVerNombre((v) => !v)}>{verNombre ? "Cerrar nombre" : "✎ Nombre y tesis"}</button>
           <button style={btn(true)} onClick={onNext}>Ver mi camino a 10 años →</button>
           <button style={btn(false)} onClick={onComparar}>Comparar todos los caminos →</button>
         </div>
       </div>
+      <Hilo />
+      <SubPasos />
       <div style={{ display: "grid", gridTemplateColumns: dos ? "minmax(0, 1fr) 340px" : "minmax(0, 1fr)", gap: 14, alignItems: "start" }}>
         <div style={{ display: "grid", gap: 12 }}>
+          {verNombre && (
           <div style={card}>
             <H n="A" t="Nombre y tesis" />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
@@ -709,6 +768,8 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             </div>
             {esc.plantilla && <div style={{ ...F.caption, marginTop: 8 }}>Plantilla {CAMINOS_BASE.find((c) => c.id === esc.plantilla)?.nombre}: {CAMINOS_BASE.find((c) => c.id === esc.plantilla)?.tesis} {esc.editado && <button style={{ ...btn(false), padding: "2px 8px", marginLeft: 6 }} onClick={() => onRestablecer(esc)}>Restablecer plantilla</button>}</div>}
           </div>
+          )}
+          {sub === 1 && (
           <div style={card}>
             <H n="B" t="¿Qué vendes o transformas hoy?" d="Marca lo que sale. Puedes vender todo o solo una parte." />
             <div style={{ display: "grid", gap: 6 }}>
@@ -721,10 +782,12 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             </div>
             <div style={{ marginTop: 10 }}><Saldo /></div>
           </div>
-          {base.deudas.length > 0 && <div style={card}>
+          )}
+          {sub === 2 && base.deudas.length > 0 && <div style={card}>
             <H n="C" t="¿Qué deudas pagas con eso?" d="Lo que pagues deja de costar cuota cada mes." />
             <div style={{ display: "grid", gap: 6 }}>{base.deudas.map((d) => <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: d.pagar ? "default" : "pointer", borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: d.pagar ? 0.7 : 1, flexWrap: "wrap" }}><input type="checkbox" checked={d.pagar || (esc.pagos || []).includes(d.id)} disabled={d.pagar} onChange={() => togglePago(d.id)} /><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}{d.pagar && <span style={chip(C.accent)}>se paga · paso 1</span>}</label>)}</div>
           </div>}
+          {sub === 3 && (
           <div style={card}>
             <H n="D" t="¿En qué inviertes lo que te queda?" d="Cada fila es un destino y cuánta plata le metes. Lo que escribes es plata que ENTRA ahí, no lo que ese activo vale." />
             <div style={{ ...sub, marginBottom: 10 }}>
@@ -762,10 +825,14 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
               <Saldo />
             </div>
           </div>
+          )}
+          {sub === 4 && (
           <div style={card}>
             <H n="E" t="¿Qué pasa después, en este escenario?" d="Lo que decides para los próximos años: compras, ventas, obras, gastos que entran. (Lo seguro ya está en el paso 2.)" />
             <ListaEventos eventos={esc.eventos || []} posiciones={[...base.posiciones, ...(esc.despliegue || []).filter((d) => !d.destinoId).map((d) => ({ id: d.id, nombre: d.nombre, capital: d.capital }))]} flujos={base.flujos} onChange={(l) => upd({ eventos: l })} vacio="Nada después todavía. Ejemplo: «Año 5: compras Casa finca por 900 M con plata del Fondo»." ejemplo="Ejemplo: en el año 5 compras una casa de 900 M con la plata del fondo." />
           </div>
+          )}
+          {sub === 4 && (
           <div style={card}>
             <H n="F" t="¿Y lo que te sobre cada mes?" d="Mes a mes te queda un excedente. Decide a dónde va y cuántos meses de gastos guardas en líquido." />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, alignItems: "end" }}>
@@ -782,10 +849,9 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>{Object.entries(CONDICION_LABEL).map(([id, l]) => <label key={id} style={{ ...F.caption, color: C.muted, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}><input type="checkbox" checked={(esc.condiciones || []).includes(id)} onChange={() => { const s = new Set(esc.condiciones || []); s.has(id) ? s.delete(id) : s.add(id); upd({ condiciones: [...s] }); }} />{l}</label>)}</div>
             </details>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-            <div>{esc.propio && <button style={{ ...btn(false), color: C.danger, borderColor: C.danger }} onClick={() => onBorrar(esc)}>Borrar escenario</button>}</div>
-            <Siguiente onClick={onNext}>Ver el resultado completo</Siguiente>
-          </div>
+          )}
+          <Pies />
+          {esc.propio && <div><button style={{ ...btn(false), color: C.danger, borderColor: C.danger }} onClick={() => onBorrar(esc)}>Borrar escenario</button></div>}
         </div>
         <div style={{ position: dos ? "sticky" : "static", top: 12 }}><ResultadoVivo r={r} base={base} elegido={caminoElegido === esc.id} onElegir={() => onElegir(esc.id)} onVer={onNext} onComparar={onComparar} /></div>
       </div>
@@ -906,9 +972,12 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
 }
 
 // ─── Pantalla ────────────────────────────────────────────────────────────────
-export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, caminos: guardados = [], caminoElegido, onPerfil, onFichas, onCaminos, onElegir, onNavigate }) {
+// `pasoInicial` existe para poder abrir la pantalla en un paso concreto (y para
+// que una prueba de humo pueda renderizar los cuatro: el build no atrapa una
+// variable sin definir dentro de un paso que no se esta mostrando).
+export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, caminos: guardados = [], caminoElegido, onPerfil, onFichas, onCaminos, onElegir, onNavigate, pasoInicial = 1 }) {
   const perfil = { ...PERFIL_DEFAULT, ...(perfilGuardado || {}) };
-  const [paso, setPaso] = useState(1);
+  const [paso, setPaso] = useState(pasoInicial);
   const [activoId, setActivoId] = useState(caminoElegido || "balance");
   const base = useMemo(() => { const b = baseDesdeUsuario(user, perfil, fichas); return { ...b, canastasHoy: medirCanastas(b.posiciones, b.caja) }; }, [user, perfilGuardado, fichas]);
   // Plantillas (recalculadas con tus datos de hoy) + las que editaste + las tuyas
@@ -929,7 +998,8 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
   // Comparar dejó de ser un paso: es la otra cara del paso 4. Eran cinco
   // casillas en el camino y una no era una pregunta, era una vista.
   const [verCompara, setVerCompara] = useState(false);
-  const ir = (n) => { setPaso(n); setVerCompara(false); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
+  const [sub, setSub] = useState(1);
+  const ir = (n) => { setPaso(n); setVerCompara(false); setSub(1); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
 
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0, 1fr)" }}>
@@ -941,8 +1011,8 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
         <Stepper paso={paso} setPaso={ir} />
         {paso === 1 && <PasoHoy base={base} fichas={fichas} onFichas={onFichas} onNext={() => ir(2)} />}
         {paso === 2 && <PasoIntencion todos={todos} res={res} base={base} activoId={rActivo?.id} setActivoId={setActivoId} onNuevo={nuevo} onNext={() => ir(3)} />}
-        {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => { ir(4); setVerCompara(true); }} />}
-        {paso === 3 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} />}
+        {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => { ir(4); setVerCompara(true); }} sub={sub} setSub={setSub} />}
+        {paso === 3 && sub === 4 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} />}
         {paso === 4 && !verCompara && <PasoResultado base={base} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} />}
         {paso === 4 && verCompara && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); setVerCompara(false); }} caminoElegido={caminoElegido} onElegir={onElegir} />}
         <div style={{ ...F.caption, textAlign: "center" }}>Lo que simulas aquí no toca tus datos reales. Los ejercicios (Pensiones, Ahorro BTC, Comprar o arrendar) alimentan los supuestos, no las decisiones.</div>
