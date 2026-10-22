@@ -102,7 +102,34 @@ function BarraCanastas({ c, alto = 14 }) {
 // ("¿cómo que lo seguro? eso no se entiende") y estaba METIDO entre lo que
 // tienes y lo que haces, que es donde más estorba: son cosas que llegan solas,
 // no decisiones tuyas. Va después de tus movimientos.
-const PASOS = [["Qué tienes hoy", "tu punto de partida"], ["Qué vendes y qué compras", "tus movimientos"], ["Qué viene nuevo", "lo que llega solo"], ["Tu camino a 10 años", "el escenario modelado"], ["Compara", "todos lado a lado"]];
+const PASOS = [["Qué tienes hoy", "tu punto de partida"], ["Qué quieres proyectar", "hacia dónde mueves tu plata"], ["Qué cambios vas a hacer", "tus inversiones y lo que se viene"], ["Tu camino a 10 años", "el resultado"]];
+
+// ─── La barra que no se va ───────────────────────────────────────────────────
+// 21-oct-2026. El número a 10 años vivía dentro del paso 3 ("Resultado en
+// vivo") y desaparecía al cambiar de paso, así que marcabas cosas sin ver el
+// efecto. Es lo único que la sección existe para responder: va arriba, fijo.
+function BarraEscenario({ todos, res, activoId, setActivoId, base, onNuevo }) {
+  const r = res.find((x) => x.id === activoId) || res[0];
+  if (!r) return null;
+  const hoy = base?.base?.patrimonioNeto ?? 0;
+  const delta = r.puntos.patrimonioFinal - hoy;
+  return (
+    <div style={{ ...card, padding: "12px 16px", position: "sticky", top: 0, zIndex: 5, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap", borderColor: r.color + "66" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span style={F.label}>Escenario</span>
+        <select value={r.id} onChange={(e) => setActivoId(e.target.value)} style={{ ...inputS, width: "auto", minWidth: 180, color: r.color, fontWeight: 700 }}>
+          {todos.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+        </select>
+        <button style={{ ...btn(false), padding: "6px 12px" }} onClick={onNuevo}>+ Nuevo</button>
+      </div>
+      <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "baseline" }}>
+        <div><span style={F.label}>Año 10 </span><b style={{ ...F.monoLg, color: C.text }}>{fmM(r.puntos.patrimonioFinal)}</b> <span style={{ ...F.caption, color: delta >= 0 ? C.ok : C.danger }}>{delta >= 0 ? "+" : "−"}{fmM(Math.abs(delta))}</span></div>
+        <div><span style={F.label}>Queda al mes </span><b style={{ ...F.monoLg, color: r.puntos.quedaMes >= 0 ? C.ok : C.danger }}>{fmMes(r.puntos.quedaMes)}</b></div>
+      </div>
+    </div>
+  );
+}
+
 function Stepper({ paso, setPaso }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 6 }}>
@@ -388,7 +415,7 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
-        <div style={F.h2}>3 · Qué viene nuevo: lo que llega solo, pase lo que pase</div>
+        <div style={F.h2}>Y qué se viene: lo que llega solo, pase lo que pase</div>
         <div style={{ ...F.body, marginTop: 4 }}>Aquí está listado lo que tienes hoy. Sobre cada cosa decide si <b style={{ color: C.text }}>sigue igual</b>, <b style={{ color: C.text }}>termina</b> (el contrato, el colegio) o <b style={{ color: C.text }}>cambia</b> de monto desde un año. Abajo agregas lo nuevo que llega seguro: la pensión en el año 4, la bodega que renta desde el año 2. Todo esto entra en todos los escenarios; lo opcional lo decides en cada uno.</div>
       </div>
       <div style={card}>
@@ -451,7 +478,98 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
   );
 }
 
-// ─── Paso 2 · Qué vendes y qué compras ───────────────────────────────────────────────────
+
+// ─── Paso 2 · Qué quieres que pase ───────────────────────────────────────────
+// 21-oct-2026. Santiago: "en ese proceso debería existir ¿qué quieres que
+// pase? quieres seguridad, quieres renta, quieres crecer patrimonio", "algo
+// que ayude a construir el escenario".
+//
+// Las tres plantillas ya armaban el escenario entero con los datos de la
+// persona (caminos.js → escenarioDesdeCamino), pero vivían como tres botones
+// que decían "Seguridad / Balance / Crecimiento" sin explicar nada, perdidos
+// entre los controles del paso siguiente. Son la PRIMERA pregunta, y la
+// respuesta construye el escenario en vez de solo ponerle nombre.
+//
+// Y cierra el vocabulario: seguridad, renta y crecimiento son las mismas tres
+// palabras con las que la app clasifica dónde está tu plata (las canastas).
+const INTENCIONES = {
+  seguridad: { titulo: "Más protección", frase: "Que pase lo que pase, la vida esté pagada. Casi todo en rentas estables y un colchón grande." },
+  balance: { titulo: "Más renta", frase: "Que la plata me pague cada mes, y una parte creciendo para no quedarme atrás." },
+  crecimiento: { titulo: "Más crecimiento", frase: "Que todo esté produciendo. Lo que no renta ni crece se vende y se pone a trabajar." },
+};
+/** A dónde lleva tu plata esa intención, en las palabras de las canastas. */
+function haciaDonde(esc) {
+  const c = esc.canastas || {};
+  const l = [];
+  if (c.rentas?.min != null) l.push(`al menos ${c.rentas.min}% en rentas`);
+  if (c.rentas?.max != null) l.push(`máximo ${c.rentas.max}% en rentas`);
+  if (c.crecimiento?.min != null) l.push(`al menos ${c.crecimiento.min}% creciendo`);
+  if (c.crecimiento?.max != null) l.push(`máximo ${c.crecimiento.max}% creciendo`);
+  if (c.colchonMeses) l.push(`colchón de ${c.colchonMeses} meses`);
+  return l.join(" · ");
+}
+/** Qué hace esa intención con las cosas de ESTA persona, en una línea. */
+function queHace(esc, base) {
+  const partes = [];
+  const ventas = esc.ventas || [];
+  if (ventas.length) {
+    const monto = ventas.reduce((t, v) => { const p = base.posiciones.find((x) => x.id === v.posicionId); return t + (v.monto != null ? v.monto : p?.capital || 0); }, 0);
+    partes.push(`vende ${ventas.length} ${ventas.length === 1 ? "cosa" : "cosas"} (${fmM(monto)})`);
+  }
+  if ((esc.pagos || []).length) partes.push(`paga ${esc.pagos.length} ${esc.pagos.length === 1 ? "deuda" : "deudas"}`);
+  const exc = esc.excedente || [];
+  const cre = exc.find((e) => e.canasta === "crecimiento")?.pct ?? 0;
+  partes.push(cre === 0 ? "lo que sobra va a rentas" : cre === 100 ? "lo que sobra va a crecimiento" : `lo que sobra: ${100 - cre}% rentas · ${cre}% creciendo`);
+  return partes.join(" · ");
+}
+function PasoIntencion({ todos, res, base, activoId, setActivoId, onNuevo, onNext }) {
+  const hoy = base?.base?.patrimonioNeto ?? 0;
+  const c = base.canastasHoy;
+  const tot = c.total || 1;
+  const plantillas = todos.filter((e) => INTENCIONES[e.id]);
+  const propios = todos.filter((e) => !INTENCIONES[e.id]);
+  return (
+    <div style={{ display: "grid", gap: 14 }}>
+      <div style={card}>
+        <div style={F.h2}>2 · Hoy estás aquí. ¿Qué quieres proyectar?</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Proyectar es mover tus activos de un papel a otro: más protección, más renta o más crecimiento. Elige hacia dónde y te armo el escenario con <b style={{ color: C.text }}>tus</b> cosas — qué vender, qué deuda pagar y a dónde mandar lo que sobre. Después lo cambias todo lo que quieras.</div>
+        <div style={{ marginTop: 14 }}><div style={F.label}>Dónde está tu plata hoy</div><div style={{ marginTop: 6 }}><BarraCanastas c={c} alto={16} /></div></div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 8 }}>{["proteccion", "rentas", "crecimiento", "uso"].map((k) => <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption }}><span style={{ width: 8, height: 8, borderRadius: 999, background: CANASTA_COLOR[k] }} /><b style={{ color: C.text }}>{CANASTA_LABEL[k]}</b> {pct((c[k] / tot) * 100)} · {fmM(c[k])}</div>)}</div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 14 }}>
+        {plantillas.map((e) => {
+          const r = res.find((x) => x.id === e.id);
+          const sel = e.id === activoId;
+          const d = r ? r.puntos.patrimonioFinal - hoy : 0;
+          return (
+            <div key={e.id} style={{ ...card, borderColor: sel ? e.color : C.border, borderWidth: sel ? 2 : 1 }}>
+              <div style={{ ...F.h3, color: e.color }}>{INTENCIONES[e.id].titulo}</div>
+              <div style={{ ...F.body, marginTop: 6, minHeight: 58 }}>{INTENCIONES[e.id].frase}</div>
+              <div style={{ ...sub, marginTop: 10 }}>
+                <div style={F.label}>Hacia dónde mueve tu plata</div>
+                <div style={{ ...F.caption, color: C.text, marginTop: 2 }}>{haciaDonde(e)}</div>
+                <div style={{ ...F.label, marginTop: 8 }}>Con lo tuyo</div>
+                <div style={{ ...F.caption, color: C.text, marginTop: 2 }}>{queHace(e, base)}</div>
+              </div>
+              {r && <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
+                <div><div style={F.label}>Año 10</div><div style={{ ...F.monoLg, color: C.text }}>{fmM(r.puntos.patrimonioFinal)}</div><div style={{ ...F.caption, color: d >= 0 ? C.ok : C.danger }}>{d >= 0 ? "+" : "−"}{fmM(Math.abs(d))}</div></div>
+                <div><div style={F.label}>Queda al mes</div><div style={{ ...F.monoLg, color: r.puntos.quedaMes >= 0 ? C.ok : C.danger }}>{fmMes(r.puntos.quedaMes)}</div><div style={F.caption}>en el año 10</div></div>
+              </div>}
+              <button style={{ ...btn(sel), width: "100%", marginTop: 12 }} onClick={() => { setActivoId(e.id); onNext(); }}>{sel ? "Seguir con este →" : "Proyectar esto →"}</button>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ ...card, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={F.caption}>¿Ninguna es lo tuyo?</span>
+        <button style={btn(false)} onClick={() => { onNuevo(); onNext(); }}>Armarlo yo desde cero</button>
+        {propios.map((e) => <button key={e.id} style={btn(e.id === activoId)} onClick={() => { setActivoId(e.id); onNext(); }}>Seguir con «{e.nombre}»</button>)}
+      </div>
+    </div>
+  );
+}
+
+// ─── Paso 3 · Qué vendes y qué compras ───────────────────────────────────────────────────
 function ResultadoVivo({ r, base, onElegir, elegido, onVer, onComparar }) {
   const p = r.puntos, ok = r.vigilancia.cumple;
   const data = [{ a: 0, v: p.patrimonioInicial }, ...r.resultado.anual.map((x) => ({ a: x.anio, v: x.patrimonioFin }))];
@@ -495,7 +613,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
-        <div style={F.h2}>2 · Qué vendes y qué compras</div>
+        <div style={F.h2}>3 · Qué cambios vas a hacer</div>
         <div style={{ ...F.body, marginTop: 4 }}>Parte de una plantilla o arma el tuyo. Un escenario es una decisión concreta: qué vendes, qué pagas, a dónde va cada peso y con qué regla, y qué haces después.</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}>
           {todos.map((e) => { const rr = res.find((x) => x.id === e.id); return <button key={e.id} onClick={() => setActivoId(e.id)} style={{ ...btn(false), borderColor: e.id === esc.id ? e.color : C.borderStrong, background: e.id === esc.id ? `${e.color}20` : "transparent", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: e.color }} />{e.nombre}{caminoElegido === e.id && " ★"}{rr && !rr.vigilancia.cumple && <span style={{ color: C.danger }}>!</span>}</button>; })}
@@ -504,7 +622,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
           <span style={F.caption}>Estás editando <b style={{ color: esc.color }}>{esc.nombre}</b>. Cuando quieras:</span>
-          <button style={btn(true)} onClick={onNext}>Seguir: qué viene nuevo →</button>
+          <button style={btn(true)} onClick={onNext}>Ver mi camino a 10 años →</button>
           <button style={btn(false)} onClick={onComparar}>Comparar todos los caminos →</button>
         </div>
       </div>
@@ -727,7 +845,10 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
   const restablecer = (esc) => onCaminos(guardados.filter((g) => g.id !== esc.id));
   const borrar = (esc) => { onCaminos(guardados.filter((g) => g.id !== esc.id)); if (caminoElegido === esc.id) onElegir(null); setActivoId("balance"); };
   const rActivo = res.find((r) => r.id === activoId) || res[0];
-  const ir = (n) => { setPaso(n); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
+  // Comparar dejó de ser un paso: es la otra cara del paso 4. Eran cinco
+  // casillas en el camino y una no era una pregunta, era una vista.
+  const [verCompara, setVerCompara] = useState(false);
+  const ir = (n) => { setPaso(n); setVerCompara(false); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
 
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0, 1fr)" }}>
@@ -735,12 +856,14 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
       {sinDatos ? (
         <div style={card}><div style={F.h2}>Para proyectar escenarios hace falta tu punto de partida</div><div style={{ ...F.body, marginTop: 6 }}>Carga tus activos, ingresos, gastos y deudas: con eso FINPATHIA arma el paso 1 solo.</div><div style={{ marginTop: 12, display: "flex", gap: 8 }}><button style={btn(true)} onClick={() => onNavigate?.("inv")}>Ir a Patrimonio</button><button style={btn(false)} onClick={() => onNavigate?.("ing")}>Ir a Ingresos</button></div></div>
       ) : (<>
+        <BarraEscenario todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} base={base} onNuevo={nuevo} />
         <Stepper paso={paso} setPaso={ir} />
         {paso === 1 && <PasoHoy base={base} fichas={fichas} onFichas={onFichas} onNext={() => ir(2)} />}
+        {paso === 2 && <PasoIntencion todos={todos} res={res} base={base} activoId={rActivo?.id} setActivoId={setActivoId} onNuevo={nuevo} onNext={() => ir(3)} />}
+        {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => { ir(4); setVerCompara(true); }} />}
         {paso === 3 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} />}
-        {paso === 2 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(3)} onComparar={() => ir(5)} />}
-        {paso === 4 && <PasoResultado base={base} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => ir(5)} onVolver={() => ir(2)} />}
-        {paso === 5 && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); ir(4); }} caminoElegido={caminoElegido} onElegir={onElegir} />}
+        {paso === 4 && !verCompara && <PasoResultado base={base} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} />}
+        {paso === 4 && verCompara && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); setVerCompara(false); }} caminoElegido={caminoElegido} onElegir={onElegir} />}
         <div style={{ ...F.caption, textAlign: "center" }}>Lo que simulas aquí no toca tus datos reales. Los ejercicios (Pensiones, Ahorro BTC, Comprar o arrendar) alimentan los supuestos, no las decisiones.</div>
       </>)}
     </div>
