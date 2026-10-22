@@ -55,14 +55,14 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
   // de Estados Unidos. Son 18 cadenas; se traducen con un diccionario local en
   // vez de un sistema de i18n, que sería sobreingeniería para este tamaño.
   const L = isEN ? {
-    titulo: "Annual Flow", ingresos: "Income", aportes: "Contributions",
+    titulo: "Annual Detail", ingresos: "Income", aportes: "Contributions",
     gastosFam: "Household", cuotas: "Loan payments", impuesto: "Tax",
     egresos: "Outflows", cashflow: "Cash Flow", saldo: "Cum. balance",
     mes: "Month", alta: "High", baja: "Low", media: "Avg", otros: "Other",
     pagado: "Paid", proximoMes: "Next month", seguridadSocial: "Payroll taxes",
     sePagaEsteMes: "DUE THIS MONTH", vencido: "OVERDUE",
   } : {
-    titulo: "Flujo Anual", ingresos: "Ingresos", aportes: "Aportes",
+    titulo: "Detalle anual", ingresos: "Ingresos", aportes: "Aportes",
     gastosFam: "Gastos fam.", cuotas: "Cuotas cr\u00e9ditos", impuesto: "Impuesto",
     egresos: "Egresos", cashflow: "Cash Flow", saldo: "Saldo acum.",
     mes: "Mes", alta: "Alta", baja: "Baja", media: "Media", otros: "Otros",
@@ -455,7 +455,10 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       <PageHeader
         label={L.titulo}
         title={isEN ? `How your ${año} behaves` : `Cómo se comporta tu año ${año}`}
-        subtitle={isEN ? "See the peaks and valleys of your income and outflows month by month." : "Visualiza picos y valles de ingresos y egresos mes a mes. Planifica con datos reales."}
+        // 21-oct-2026 — Decía "Planifica con datos reales", la misma mala
+        // interpretación del nombre viejo ("Este año · lo real"): acá no hay
+        // datos más reales que en el simulador, son los mismos que cargaste.
+        subtitle={isEN ? "See the peaks and valleys of your income and outflows month by month." : "Mes a mes, los picos y valles de lo que entra y lo que sale, con lo que tienes cargado."}
         rightSlot={
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <button onClick={() => setAño(año - 1)}

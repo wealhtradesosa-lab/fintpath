@@ -1076,7 +1076,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
 
   return (
     <div style={{overflowX:"hidden"}}>
-      <PageHeader label="Simulador" title="Bienestar financiero" subtitle="Ajusta variables en tiempo real y proyecta tu camino a la independencia."/>
+      <PageHeader label="Simulador" title="Bienestar financiero" subtitle="Mueve las perillas de este mismo año —ingresos, gastos, deudas— y mira a dónde te lleva."/>
 
       {/* ═══ Card de escenario ═══
           Agrupa nombre + descripción + export en una card sutil bajo el header,

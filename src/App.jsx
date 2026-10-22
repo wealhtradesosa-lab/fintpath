@@ -560,7 +560,7 @@ export default function FinPath(){
   // colapsar Vista familiar y Declaraciones anteriores bajo Impuestos
   // para no llenar el menú lateral). Por default abierto si la página
   // actual es uno de los hijos.
-  const[expandedMenus,setExpandedMenus]=useState(()=>({tax:false}));
+  const[expandedMenus,setExpandedMenus]=useState(()=>({tax:false,anio:true}));
   // Password recovery flow: detectar link de recovery y pedir nueva contraseña
   const[showResetPassword,setShowResetPassword]=useState(false);
   const[resetNewPassword,setResetNewPassword]=useState("");
@@ -2000,9 +2000,22 @@ export default function FinPath(){
       // año que viene, si era útil"; "son complementarias".
       // Santiago: "no quiero llenar a FINPATHIA de secciones; menos es más".
       // Nombres por horizonte de tiempo (21-oct-2026, Santiago: "es año actual,
-      // año entrante y simulaciones futuras"): este año real, este año simulado,
-      // año entrante, 10 años.
-      {id:"flujo",i:"📅",l:isEN?"This Year · Actual":"Este año · lo real"},{id:"sim",i:"🖥️",l:isUS?"Simulator":"Este año · simulado"},{id:"simf",i:"🔮",l:"Año entrante",hidden:isUS},{id:"plan",i:"🧭",l:isEN?"10-Year Scenarios":"Escenarios a 10 años",hidden:isUS},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"met",i:"🎯",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"💹",l:"Trading",
+      // año entrante y simulaciones futuras"): este año, año entrante, 10 años.
+      //
+      // 21-oct-2026 — Se llamaban "Este año · lo real" y "Este año ·
+      // simulado", y Santiago: "eso de lo real o simulado no es correcto…
+      // real y simulado es una mala interpretación". Tiene razón: las dos
+      // pantallas miran el MISMO año con los MISMOS datos que él cargó. Una
+      // lo muestra mes a mes y la otra deja moverle las perillas. Llamar "lo
+      // real" a una insinúa que la otra es inventada, y que lo cargado en la
+      // primera es un hecho y no también una proyección del año.
+      //
+      // Renombrarlas no alcanzaba: eran DOS puertas del menú al mismo año, y
+      // ningún rótulo de dos palabras explica por qué son dos. Así que es una
+      // sola —"Este año"— con sus dos vistas adentro. Las rutas no cambian
+      // (`flujo` y `sim` siguen siendo las páginas): cambia la puerta.
+      // `goesTo` = el padre no tiene página propia, lleva a su primera vista.
+      {id:"anio",i:"📅",l:isEN?"This Year":"Este año",hasChildren:true,goesTo:"flujo"},{id:"flujo",i:"📆",l:isEN?"Month by Month":"Mes a mes",parent:"anio"},{id:"sim",i:"🖥️",l:isEN?"Simulator":"Simulador",parent:"anio"},{id:"simf",i:"🔮",l:"Año entrante",hidden:isUS},{id:"plan",i:"🧭",l:isEN?"10-Year Scenarios":"Escenarios a 10 años",hidden:isUS},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"met",i:"🎯",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"💹",l:"Trading",
       // 26-jul-2026 — OCULTO DEL MENÚ, NO ELIMINADO.
       // Uso real medido en la base: 2 de 86 cuentas tienen posiciones
       // cargadas, y una es la de Santiago. Contra 31 en Ingresos y 21 en
@@ -3264,6 +3277,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trm||u?.trm||4200} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado si Plan a cero (P0.3) está activo."} onNavigateNorte={()=>setPg("norte")} extraADeudas={extraADeudas}/>;
     case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
     case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
+    // "anio" es la puerta del menú, no una página: si alguien cae ahí, es el mes a mes.
+    case"anio":
     case"flujo":return <FlujoAnual user={u} trm={u?.trm||4200} isEN={isEN}/>;
     case"plan":return <MiPlan user={u||{}} perfil={u?.perfilPlan||null} fichas={u?.fichasPlan||{}} caminos={u?.caminos||[]} caminoElegido={u?.caminoElegido||null} onPerfil={v=>upd("perfilPlan",v)} onFichas={v=>upd("fichasPlan",v)} onCaminos={v=>upd("caminos",v)} onElegir={v=>upd("caminoElegido",v)} onNavigate={setPg}/>;
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
@@ -3927,8 +3942,10 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
               const expanded=expandedMenus[n.id]||a||childActive;
               const highlight=a||childActive;
               return<button key={n.id} onClick={()=>{
-                setPg(n.id);
-                setExpandedMenus(prev=>({...prev,[n.id]:!prev[n.id]}));
+                setPg(n.goesTo||n.id);
+                // Un padre con `goesTo` es solo la puerta de sus vistas:
+                // colapsarlas al entrar escondería la que no abriste.
+                if(!n.goesTo)setExpandedMenus(prev=>({...prev,[n.id]:!prev[n.id]}));
                 if(mb)sSb(false);
               }} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:highlight?600:400,marginBottom:1,background:highlight?T.gnB:"transparent",color:highlight?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}>{n.i}</span><span style={{flex:1,textAlign:"left"}}>{n.l}</span><span style={{fontSize:10,color:T.tx3,transform:expanded?"rotate(90deg)":"none",transition:"transform 0.15s"}}>▸</span></button>;
             }
