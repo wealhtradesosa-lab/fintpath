@@ -681,6 +681,30 @@ function PasoIntencion({ todos, res, base, activoId, setActivoId, onNuevo, onNex
               <div style={{ ...sub, marginTop: 10 }}>
                 <div style={F.label}>Hacia dónde mueve tu plata</div>
                 <div style={{ ...F.caption, color: C.text, marginTop: 2 }}>{haciaDonde(e)}</div>
+                {/* 22-oct-2026 (Santiago: "estas tarjetas son planes medio
+                    sugeridos predeterminados; deberían aplicar según el modelo
+                    de las 3 canastas: si es un plan seguro prima la
+                    protección, si es crecimiento aumenta la inversión en
+                    crecimiento como BTC o IBKR, pero no quiere decir que no se
+                    hagan las de protección o renta, así sea en menor
+                    porcentaje"). La mezcla ya estaba dicha en abstracto; lo
+                    que faltaba era aterrizarla a lo suyo: dónde está hoy,
+                    a dónde apunta y cuánto habría que mover. Decir no es
+                    hacer: la tarjeta sigue sin tocarle un peso. */}
+                {e.objetivo && <div style={{ marginTop: 8 }}>
+                  <div style={F.label}>Tú hoy, contra esa mezcla</div>
+                  <div style={{ display: "grid", gap: 2, marginTop: 3 }}>
+                    {["proteccion", "rentas", "crecimiento"].map((k) => {
+                      const hoyPct = Math.round((c[k] / tot) * 100);
+                      const meta = e.objetivo[k];
+                      const falta = (meta / 100) * tot - c[k];
+                      return (<div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 8, ...F.caption }}>
+                        <span style={{ color: CANASTA_COLOR[k] }}>{CANASTA_LABEL[k]}</span>
+                        <span style={{ color: C.muted }}>{hoyPct}% → <b style={{ color: C.text }}>{meta}%</b> · {Math.abs(falta) < tot * 0.02 ? "ya estás" : falta > 0 ? `+${fmM(falta)}` : `−${fmM(-falta)}`}</span>
+                      </div>);
+                    })}
+                  </div>
+                </div>}
                 <div style={{ ...F.label, marginTop: 8 }}>Con lo tuyo</div>
                 <div style={{ ...F.caption, color: C.text, marginTop: 2 }}>{queHace(e, base)}</div>
               </div>
