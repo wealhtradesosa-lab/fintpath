@@ -79,6 +79,46 @@ export const PERFIL_DEFAULT = {
   impuestoPersona: 0,
 };
 
+/**
+ * Cómo se llama una mezcla (22-oct-2026).
+ *
+ * Santiago: "uno debería poder mover las franjas y, de acuerdo a lo que prime,
+ * el sistema dice: este escenario es balanceado, o es base protección con x%
+ * renta y crecimiento, o es crecimiento con 25% renta y 25% protección".
+ *
+ * O sea: el nombre no se elige de una lista, SALE de la mezcla. Mueves y se
+ * renombra solo. Eso le quita a las plantillas el papel de decidir por uno y
+ * las deja en lo que deben ser: tres puntos de partida entre infinitos.
+ */
+export const CANASTA_NOMBRE = { proteccion: "protección", rentas: "renta", crecimiento: "crecimiento" };
+export function nombrarMezcla(o) {
+  if (!o) return null;
+  const partes = [["proteccion", num(o.proteccion)], ["rentas", num(o.rentas)], ["crecimiento", num(o.crecimiento)]].sort((a, b) => b[1] - a[1]);
+  const [p1, p2, p3] = partes;
+  const total = p1[1] + p2[1] + p3[1] || 1;
+  // Si ninguna se despega de las otras, no hay a qué echarle la culpa: es balanceado.
+  if ((p1[1] - p3[1]) / total * 100 <= 12) return { titulo: "Balanceado", detalle: "las tres pesan casi lo mismo", dominante: null };
+  const resto = `${p2[1]}% en ${CANASTA_NOMBRE[p2[0]]} y ${p3[1]}% en ${CANASTA_NOMBRE[p3[0]]}`;
+  // Cuando la primera se lleva más de la mitad, manda de verdad; si no, solo inclina.
+  const manda = p1[1] / total * 100 >= 50;
+  return { titulo: `${manda ? "Base" : "Inclinado a"} ${CANASTA_NOMBRE[p1[0]]}`, detalle: `${p1[1]}% ahí, ${resto}`, dominante: p1[0] };
+}
+
+/** Mueve una canasta a `pct` y reparte la diferencia entre las otras dos. */
+export function moverMezcla(o, canasta, pct) {
+  const otras = ["proteccion", "rentas", "crecimiento"].filter((k) => k !== canasta);
+  const v = Math.min(100, Math.max(0, Math.round(num(pct))));
+  const sumaOtras = otras.reduce((s, k) => s + num(o[k]), 0);
+  const queda = 100 - v;
+  const r = { ...o, [canasta]: v };
+  if (sumaOtras <= 0) { otras.forEach((k) => { r[k] = Math.round(queda / 2); }); }
+  else otras.forEach((k) => { r[k] = Math.round(queda * num(o[k]) / sumaOtras); });
+  // El redondeo puede dejar 99 o 101: el sobrante se lo lleva la mayor de las otras.
+  const dif = 100 - (r.proteccion + r.rentas + r.crecimiento);
+  if (dif !== 0) { const k = otras.sort((a, b) => r[b] - r[a])[0]; r[k] = Math.max(0, r[k] + dif); }
+  return r;
+}
+
 /** De quién es una posición: tuya o de una sociedad. La ficha manda. */
 export function titularDe(activo, owners = [], ficha = {}) {
   if (ficha.titular) return ficha.titular;
@@ -403,8 +443,12 @@ export function medirCanastas(posiciones, caja = 0, capitalDe = (p) => p.capital
 export const CAMINOS_BASE = [
   { id: "seguridad", nombre: "Más protección", color: "#3b82f6",
     tesis: "Que pase lo que pase, la vida esté pagada: un colchón grande, la vivienda propia y la mayor parte en capital que te paga cada mes. Una porción crece, para no quedarse atrás de la inflación.",
-    objetivo: { proteccion: 35, rentas: 50, crecimiento: 15 },
-    canastas: { rentas: { min: 35 }, crecimiento: { max: 30 }, colchonMeses: 24, vivienda: "propia" },
+    // 22-oct-2026 — Nacio en 35/50/15 y `nombrarMezcla` la llamaba "Base
+    // renta", que es justo lo que no es. Santiago: "si es un plan seguro prima
+    // la proteccion". Si el nombre sale de la mezcla, la mezcla tiene que
+    // decir lo que el titulo promete.
+    objetivo: { proteccion: 50, rentas: 35, crecimiento: 15 },
+    canastas: { rentas: { min: 25 }, crecimiento: { max: 30 }, colchonMeses: 24, vivienda: "propia" },
     excedente: [{ canasta: "rentas", pct: 80 }, { canasta: "crecimiento", pct: 20 }],
     condiciones: ["no_vender_vivienda", "sin_deuda_cara", "no_apalancar"] },
   { id: "balance", nombre: "Más renta", color: "#22c55e",

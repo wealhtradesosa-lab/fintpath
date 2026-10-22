@@ -28,7 +28,7 @@ import { C, F } from "../lib/designTokens";
 import { fmtPlataCortaEs } from "../lib/formato.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Area, ReferenceLine } from "recharts";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
-import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, cuentaMotor, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
+import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, nombrarMezcla, moverMezcla, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, cuentaMotor, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
 
 // Capital y mensualidades se escriben igual: una sola función, con separador
 // de miles en todas las ramas (ver fmtPlataCortaEs). Los dos nombres se
@@ -655,12 +655,60 @@ function queHace(esc, base) {
   // persona no hubiera decidido nada: lo había decidido la plantilla.
   return ventas.length || (esc.pagos || []).length || (esc.despliegue || []).length ? partes.join(" · ") : `nada decidido todavía · ${partes[partes.length - 1]}`;
 }
+/**
+ * Mueve las franjas y el sistema dice qué es (22-oct-2026).
+ *
+ * Santiago: "uno debería poder mover las franjas y, de acuerdo a lo que prime,
+ * el sistema dice: este escenario es balanceado, o es base protección con x%
+ * renta y crecimiento, o es crecimiento con 25% renta y 25% protección. Uno lo
+ * mueve y de acuerdo a eso, al momento de poner las inversiones nuevas, uno
+ * sigue esos parámetros."
+ *
+ * El nombre no se elige de una lista: sale de la mezcla. Y la mezcla no manda
+ * sobre tu plata —no mueve un peso—: es la vara contra la que se mide lo que
+ * vas poniendo.
+ */
+function MezclaEditor({ objetivo, onChange, base }) {
+  const o = objetivo || { proteccion: 33, rentas: 34, crecimiento: 33 };
+  const n = nombrarMezcla(o);
+  const c = base.canastasHoy, tot = c.total || 1;
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+        <div style={F.h3}>{n.titulo}</div>
+        <div style={F.caption}>{n.detalle}</div>
+      </div>
+      <div style={{ display: "flex", height: 14, borderRadius: 999, overflow: "hidden", background: C.raised, marginTop: 8 }}>
+        {["proteccion", "rentas", "crecimiento"].map((k) => <div key={k} style={{ width: `${o[k]}%`, background: CANASTA_COLOR[k], transition: "width .15s" }} />)}
+      </div>
+      <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+        {["proteccion", "rentas", "crecimiento"].map((k) => {
+          const hoyPct = Math.round((c[k] / tot) * 100);
+          const falta = (o[k] / 100) * tot - c[k];
+          return (
+            <div key={k}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, ...F.caption }}>
+                <span><b style={{ color: CANASTA_COLOR[k] }}>{CANASTA_LABEL[k]}</b> · {CANASTA_CORTO[k]}</span>
+                <span style={{ fontFamily: F.mono.fontFamily, color: C.text }}>{o[k]}%</span>
+              </div>
+              <input type="range" min={0} max={100} step={5} value={o[k]} onChange={(e) => onChange(moverMezcla(o, k, e.target.value))} style={{ width: "100%", accentColor: CANASTA_COLOR[k] }} />
+              <div style={F.caption}>hoy tienes {hoyPct}% · {Math.abs(falta) < tot * 0.02 ? "ya estás ahí" : falta > 0 ? `faltan ${fmM(falta)}` : `sobran ${fmM(-falta)}`}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ ...F.caption, marginTop: 6 }}>Mueve una y las otras dos se acomodan para sumar 100. Esto no te mueve un peso: es la vara contra la que se mide lo que vayas poniendo.</div>
+    </div>
+  );
+}
+
 /** ¿Esta persona ya decidió algo en este escenario? */
 const tieneAlgo = (e) => !!((e.ventas || []).length || (e.pagos || []).length || (e.despliegue || []).length || (e.eventos || []).length);
 function PasoIntencion({ todos, res, base, activoId, setActivoId, onNuevo, onNext }) {
   const hoy = base?.base?.patrimonioNeto ?? 0;
   const c = base.canastasHoy;
   const tot = c.total || 1;
+  const [miMezcla, setMiMezcla] = useState({ proteccion: 25, rentas: 45, crecimiento: 30 });
   const plantillas = todos.filter((e) => INTENCIONES[e.id]);
   const propios = todos.filter((e) => !INTENCIONES[e.id]);
   return (
@@ -724,6 +772,14 @@ function PasoIntencion({ todos, res, base, activoId, setActivoId, onNuevo, onNex
             </div>
           );
         })}
+      </div>
+      {/* Las tres de arriba son tres puntos entre infinitos: acá se arma el
+          propio moviendo las franjas, y el nombre sale solo de la mezcla. */}
+      <div style={card}>
+        <div style={F.h2}>O arma tu propia mezcla</div>
+        <div style={{ ...F.body, marginTop: 4, marginBottom: 12 }}>Mueve las tres franjas hasta donde quieras llegar. El sistema le pone nombre solo, y esa mezcla te guía después cuando decidas dónde poner cada peso.</div>
+        <MezclaEditor objetivo={miMezcla} onChange={setMiMezcla} base={base} />
+        <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => { onNuevo(miMezcla); onNext(); }}>Seguir con esta mezcla →</button></div>
       </div>
       <div style={{ ...card, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <span style={F.caption}>¿Ninguna es lo tuyo?</span>
@@ -801,6 +857,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   const camino = CAMINOS_BASE.find((c) => c.id === esc.plantilla);
   const proponer = () => { if (camino) onGuardar(proponerDesdeCamino(base, camino, esc, perfil)); };
   const [verNombre, setVerNombre] = useState(false);
+  const [verMezcla, setVerMezcla] = useState(false);
   const SUBS = [
     { n: 1, t: "¿Qué vendes o transformas?", c: "Lo que sale se vende y te deja plata a favor." },
     ...(base.deudas.length > 0 ? [{ n: 2, t: "¿Qué deudas pagas con eso?", c: "Lo que pagues deja de costarte cuota." }] : []),
@@ -912,8 +969,9 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                 {liq.pagado > 0 && <>Pagando <b style={{ color: C.text }}>{pagadas.map((d) => d.nombre).join(", ")}</b> se van <b style={{ color: C.text }}>{fmM(liq.pagado)}</b>. </>}
                 {queda > 0 && <>Te queda <b style={{ color: C.ok }}>{fmM(queda)}</b> a favor: <b style={{ color: C.text }}>¿en qué lo pones?</b></>}
               </div>
+              {esc.objetivo && verMezcla && <div style={{ ...sub, marginTop: 10 }}><MezclaEditor objetivo={esc.objetivo} onChange={(o) => upd({ objetivo: o })} base={base} /></div>}
               {esc.objetivo && <div style={{ marginTop: 10, borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
-                <div style={F.label}>La mezcla a la que apuntas</div>
+                <div style={F.label}>La mezcla a la que apuntas <button style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setVerMezcla((v) => !v)}>{verMezcla ? "cerrar" : "ajustarla"}</button></div>
                 <div style={{ ...F.body, marginTop: 2 }}>
                   <b style={{ color: CANASTA_COLOR.proteccion }}>{esc.objetivo.proteccion}% protegido</b> · <b style={{ color: CANASTA_COLOR.rentas }}>{esc.objetivo.rentas}% pagándote cada mes</b> · <b style={{ color: CANASTA_COLOR.crecimiento }}>{esc.objetivo.crecimiento}% creciendo</b>
                 </div>
@@ -1205,9 +1263,9 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
   }, [base, guardados, perfilGuardado]);
   const res = useMemo(() => compararCaminos(todos, base, perfil), [todos, base, perfilGuardado]);
   const sinDatos = base.posiciones.length === 0 && base.flujos.filter((f) => f.tipo === "ingreso").length === 0;
-  const guardar = (esc) => { const limpio = { id: esc.id, nombre: esc.nombre, tesis: esc.tesis, color: esc.color, plantilla: esc.plantilla || null, propio: !!esc.propio, ventas: esc.ventas || [], pagos: esc.pagos || [], despliegue: esc.despliegue || [], eventos: esc.eventos || [], excedente: esc.excedente, colchonMeses: esc.colchonMeses, canastas: esc.canastas || null, condiciones: esc.condiciones || [] }; onCaminos(guardados.some((g) => g.id === esc.id) ? guardados.map((g) => (g.id === esc.id ? limpio : g)) : [...guardados, limpio]); };
+  const guardar = (esc) => { const limpio = { id: esc.id, nombre: esc.nombre, tesis: esc.tesis, color: esc.color, plantilla: esc.plantilla || null, propio: !!esc.propio, ventas: esc.ventas || [], pagos: esc.pagos || [], despliegue: esc.despliegue || [], eventos: esc.eventos || [], excedente: esc.excedente, colchonMeses: esc.colchonMeses, canastas: esc.canastas || null, condiciones: esc.condiciones || [], objetivo: esc.objetivo || null }; onCaminos(guardados.some((g) => g.id === esc.id) ? guardados.map((g) => (g.id === esc.id ? limpio : g)) : [...guardados, limpio]); };
   const colorNuevo = () => [CHART.purple, CHART.cyan, CHART.pink, CHART.gold][guardados.filter((g) => g.propio).length % 4];
-  const nuevo = () => { const e = escenarioVacio({ nombre: `Mi escenario ${guardados.filter((g) => g.propio).length + 1}`, colchonMeses: 6, color: colorNuevo() }); guardar(e); setActivoId(e.id); };
+  const nuevo = (objetivo) => { const e = escenarioVacio({ nombre: `Mi escenario ${guardados.filter((g) => g.propio).length + 1}`, colchonMeses: 6, color: colorNuevo() }); if (objetivo) e.objetivo = objetivo; guardar(e); setActivoId(e.id); };
   const duplicar = (esc) => { const e = { ...esc, id: "esc_" + Math.random().toString(36).slice(2, 8), nombre: `${esc.nombre} (copia)`, plantilla: null, propio: true, color: colorNuevo(), editado: false }; guardar(e); setActivoId(e.id); };
   const restablecer = (esc) => onCaminos(guardados.filter((g) => g.id !== esc.id));
   const borrar = (esc) => { onCaminos(guardados.filter((g) => g.id !== esc.id)); if (caminoElegido === esc.id) onElegir(null); setActivoId("balance"); };
