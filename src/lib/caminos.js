@@ -819,6 +819,36 @@ export function expandirMotor(m) {
   return out;
 }
 
+/**
+ * Transformar algo que ya tienes (22-oct-2026).
+ *
+ * Santiago: "una inversión como un lote puede continuar, pero en el año 2 o 3
+ * uno quiere construir en ese lote, por tanto esa inversión cambió, se
+ * modificó. Si al tercer año uno construye bodega, pues esa inversión cambió
+ * porque vale más y empieza a rentar más."
+ *
+ * No era ni una compra -el lote ya es suyo- ni una revaluación a secas: la
+ * obra CUESTA, se demora, y al terminar el activo vale otra cosa y empieza a
+ * pagar. Eran tres movimientos sueltos que había que acordarse de encadenar.
+ * Ahora es uno solo y se expande en los tres:
+ *
+ *   mes N              sale la plata de la obra y entra al activo
+ *   mes N + meses      el activo pasa a valer lo que vale terminado
+ *   mes N + meses      empieza la renta, atada a ese activo
+ */
+export function expandirTransformacion(m) {
+  const mes = Math.max(0, num(m.mes));
+  const obra = num(m.obra);
+  const listo = mes + Math.max(0, Math.round(num(m.mesesObra)));
+  const out = [];
+  if (!m.posicionId) return out;
+  if (obra > 0) out.push({ mes, tipo: "aportar", posicionId: m.posicionId, monto: obra, origen: m.origen || [{ posicionId: "caja" }] });
+  if (num(m.valor) > 0) out.push({ mes: listo, tipo: "revaluar", posicionId: m.posicionId, valor: num(m.valor) });
+  if (num(m.renta) > 0) out.push({ mes: listo, tipo: "flujo_inicia", flujo: { id: `${m.id || "tr"}_renta`, nombre: m.nombreRenta || `Renta ${m.nombre || "del activo"}`, tipo: "ingreso", monto: num(m.renta), indexa: true, posicionId: m.posicionId } });
+  if (m.valorizacion != null && num(m.valorizacion) !== 0) out.push({ mes: listo, tipo: "valorizacion_cambia", posicionId: m.posicionId, nombre: m.nombre, valorizacion: num(m.valorizacion) });
+  return out;
+}
+
 /** Lo que hace un motor, en números, para poder decirlo antes de aplicarlo. */
 export function cuentaMotor(m) {
   const costo = num(m.lote) + num(m.obra), venta = num(m.venta);
@@ -857,7 +887,7 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
     if (num(d.renta) > 0) movimientos.push({ mes: Math.max(0, num(d.rentaDesde) || 0), tipo: "flujo_inicia", flujo: { id: `${id}_renta`, nombre: `Renta ${d.nombre}`, tipo: "ingreso", monto: num(d.renta), indexa: true, posicionId: id } });
   });
   // 4) Lo que pasa después: eventos del escenario + comunes del perfil + pensiones
-  const eventos = [...(perfil.eventos || []), ...(esc.eventos || [])].flatMap((m) => (m.tipo === "motor" ? expandirMotor(m) : [{ ...m }]));
+  const eventos = [...(perfil.eventos || []), ...(esc.eventos || [])].flatMap((m) => (m.tipo === "motor" ? expandirMotor(m) : m.tipo === "transformar" ? expandirTransformacion(m) : [{ ...m }]));
   // 5) Reglas: excedente y colchón por canasta, sobre el conjunto final de posiciones
   const finales = posiciones;
   const destino = (canasta) => {
