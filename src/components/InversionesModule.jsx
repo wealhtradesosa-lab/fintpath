@@ -779,11 +779,14 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                           : Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12);
                         if (!(mensual > 0)) return;
                         const nombreActivo = form.nombre || form.n || "activo";
+                        // La renta de un inmueble es arriendo (Art. 338 ET), no
+                        // un rendimiento financiero: sin componente inflacionario.
+                        const esInmueble = ["Real Estate", "Bodega", "Lote", "Local Comercial"].includes(form.tipo);
                         onCrearIngreso({
                           id: `ing_${Date.now()}`,
-                          nombre: `Rendimiento — ${nombreActivo}`,
-                          categoria: "Rentas de capital",
-                          fiscalCode: "CAP_RENDIMIENTO_GENERICO",
+                          nombre: `${esInmueble ? "Arriendo" : "Rendimiento"} — ${nombreActivo}`,
+                          categoria: esInmueble ? "Arriendo" : "Rentas de capital",
+                          fiscalCode: esInmueble ? "CAP_ARRENDAMIENTO" : "CAP_RENDIMIENTO_GENERICO",
                           mensual,
                           tipo: "fijo",
                           frecuencia: "mensual",
@@ -799,7 +802,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                           activoId: editId || "",
                           sim: true,
                         });
-                        alert(`Ingreso creado: Rendimiento — ${nombreActivo}. Queda vinculado a este activo y puedes ajustarlo en el módulo de Ingresos.`);
+                        alert(`Ingreso creado: ${esInmueble ? "Arriendo" : "Rendimiento"} — ${nombreActivo}. Queda vinculado a este activo y puedes ajustarlo en el módulo de Ingresos.`);
                       }}
                       style={{ marginTop: 8, padding: "8px 14px", borderRadius: 10,
                         background: T.green, color: "#0a0a0a", border: "none",

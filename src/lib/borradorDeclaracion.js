@@ -86,6 +86,7 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
   const ingActividades = oIng
     .filter(i =>
       i.fiscalCode === "NOL_ARRIENDO_INMUEBLE" ||
+      i.fiscalCode === "CAP_ARRENDAMIENTO" ||
       i.fiscalCode === "NOL_ARRIENDO_BIENES_MUEBLES" ||
       i.fiscalCode === "ING_JUR_OPERACIONAL"
     )

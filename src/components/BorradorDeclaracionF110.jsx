@@ -625,8 +625,8 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                   }}
                 >
                   {/* Número renglón */}
-                  <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600, fontFamily: "monospace" }}>
-                    {r.numero}
+                  <div title={r.casillaDIAN != null ? `Casilla ${r.casillaDIAN} del formulario DIAN` : undefined} style={{ fontSize: 11, color: T.txt3, fontWeight: 600, fontFamily: "monospace" }}>
+                    {r.casillaDIAN ?? r.numero}
                   </div>
 
                   {/* Concepto */}

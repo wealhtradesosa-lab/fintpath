@@ -682,8 +682,8 @@ const AREAS_NATURAL = [
     // → el motor no tenía contra qué restar → "no pasó nada". El motor está
     // fiscalmente correcto; lo que faltaba era AVISARLE al user por qué.
     advertencia: (det, user) => {
-      const ingNoLaboral = Number(det?.ingNoLaboral) || 0;
-      if (ingNoLaboral > 0) return null; // tiene arriendos, todo bien
+      const ingArriendo = (Number(det?.arrendamientoAnual) || 0) + (Number(det?.ingNoLaboral) || 0);
+      if (ingArriendo > 0) return null; // tiene arriendos, todo bien
       // Encontrar el owner actual por nombre (det.name es el nombre del owner)
       const ownerActual = (user?.owners || []).find(o => o.name === det?.name);
       // Buscar si hay arriendos bajo OTROS owners (típicamente la SAS)
@@ -705,8 +705,8 @@ const AREAS_NATURAL = [
       const tasaMarg = (det?.tasaMarginal || 28) / 100;
       const saldoActual = Number(det?.impuesto) || 0;
       // Limitar al monto del ingreso no laboral (no puede ser más que eso)
-      const ingNoLaboral = Number(det?.ingNoLaboral) || 0;
-      const aplicable = Math.min(monto, ingNoLaboral);
+      const ingArriendo = (Number(det?.arrendamientoAnual) || 0) + (Number(det?.ingNoLaboral) || 0);
+      const aplicable = Math.min(monto, ingArriendo);
       return Math.min(Math.round(aplicable * tasaMarg), saldoActual);
     },
     permiteAplicarSinAhorro: (data) => Number(data.gastosAnuales) > 0,
@@ -2134,8 +2134,8 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
                       borderRadius: 6,
                       fontSize: 12,
                     }}>
-                      <span style={{ color: C.txt3, fontFamily: "monospace", flexShrink: 0, width: 28 }}>
-                        {r.numero}
+                      <span title={r.casillaDIAN != null ? `Casilla ${r.casillaDIAN} del formulario DIAN` : undefined} style={{ color: C.txt3, fontFamily: "monospace", flexShrink: 0, width: 28 }}>
+                        {r.casillaDIAN ?? r.numero}
                       </span>
                       <span style={{ flex: 1, color: r.destacado ? C.txt : C.txt2, fontWeight: r.destacado ? 700 : 400 }}>
                         {r.concepto}

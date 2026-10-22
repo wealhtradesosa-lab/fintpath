@@ -246,7 +246,7 @@ export function esElegibleRegimenSimple(owner, det, uvt) {
       gruposCandidatos.push("servicios_profesionales");
     }
     // Cualquier natural con ingresos no laborales podría tener actividad comercial
-    if ((det.ingNoLaboral || 0) > 0) {
+    if ((det.ingNoLaboral || 0) + (det.arrendamientoAnual || 0) > 0) {
       gruposCandidatos.push("comercio_industria", "tiendas_peluquerias");
     }
     if (gruposCandidatos.length === 0) {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { estimarImpuesto } from "../../src/lib/taxCO.js";
+import { estimarImpuesto, esActivoInmueble, esIngresoArrendamiento } from "../../src/lib/taxCO.js";
 import { fmtPctEs, fmtMeses, calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, clasificarMargen, INFLACION_DEFAULT_PCT, inflacionGlobal } from "../../src/lib/metrics.js";
 
 const qa = JSON.parse(readFileSync(new URL("../fixtures/qa_pro_patrimonio_completo.json", import.meta.url), "utf8"));
@@ -132,31 +132,41 @@ describe("origen de la renta del activo (manual vs derivada)", () => {
 
 describe("ahorro y carga de deuda: misma base neta de retención (numerador y denominador)", () => {
   // Retención REAL del fixture: la que calcula estimarImpuesto sobre los datos de la cuenta (6.171.900/año).
-  const u = { owners: [{ id: "own_1", name: "Titular", type: "natural" }], ingresos: qa.ingresos, gas: qa.gas, deu: qa.deu, inv: qa.inv, trm: qa.trm };
+  // Desde #44 la retención del arriendo es opt-in («me retienen»). Este bloque fija el caso en que
+  // el arrendatario sí retiene (comportamiento previo); el default sin marcar se prueba aparte.
+  const inmuebles = new Set((qa.inv || []).filter(esActivoInmueble).map(a => a.id));
+  const esArriendo = (i) => esIngresoArrendamiento(i, inmuebles);
+  const ingRet = qa.ingresos.map(i => esArriendo(i) ? { ...i, meRetienen: true } : i);
+  const u = { owners: [{ id: "own_1", name: "Titular", type: "natural" }], ingresos: ingRet, gas: qa.gas, deu: qa.deu, inv: qa.inv, trm: qa.trm };
+  const uDefault = { ...u, ingresos: qa.ingresos };
+  const RET_DEFAULT = Math.round(estimarImpuesto(uDefault).detalle.reduce((s, d) => s + (d.reteN || 0), 0) / 12);
+  it("#44: sin marcar «me retienen» no se supone retención del arriendo", () => { expect(RET_DEFAULT).toBe(447825 - 66500); });
   const RET = Math.round(estimarImpuesto(u).detalle.reduce((s, d) => s + (d.reteN || 0), 0) / 12);
   const conRet = (r) => calcularMetricas({ ingresos: qa.ingresos, gastos: qa.gas, deudas: qa.deu, inv: qa.inv, trm: qa.trm, retencionMensual: r });
-  it("la retención real del fixture es ~514.325/mes", () => { expect(RET).toBe(514325); });
+  // Antes de #44 el arriendo de 1,9 M caía en rendimiento genérico y se le retenía el 7 % (133.000/mes);
+  // como arriendo con «me retienen» es 3,5 % (66.500/mes): 514.325 → 447.825.
+  it("la retención real del fixture (arriendo con «me retienen») es 447.825/mes", () => { expect(RET).toBe(447825); });
   it("sin retención: FL 567.500 ÷ ingreso 9.747.500 = 5,8%", () => {
     const x = conRet(0);
     expect(x.ingresoNeto).toBe(9747500);
     expect(x.ahorroPct).toBeCloseTo((567500 / 9747500) * 100, 6);
     expect(x.cargaDeudaPct).toBeCloseTo((3720000 / 9747500) * 100, 6);
   });
-  it("con retención real: FL 53.175 ÷ neto 9.233.175 = 0,6% (0,576%), no 0,55% sobre bruto", () => {
+  it("con retención real: FL 119.675 ÷ neto 9.299.675 = 1,3% (1,287%), no 1,23% sobre bruto", () => {
     const x = conRet(RET);
     expect(x.fl).toBe(567500 - RET);
     expect(x.ingresoNeto).toBe(9747500 - RET);
-    expect(x.ahorroPct).toBeCloseTo(0.5759, 3);
-    expect(fmtPctEs(x.ahorroPct)).toBe("0,6%");
+    expect(x.ahorroPct).toBeCloseTo(1.2869, 3);
+    expect(fmtPctEs(x.ahorroPct)).toBe("1,3%");
     expect(x.ahorroPct).not.toBeCloseTo((x.fl / 9747500) * 100, 2);
-    expect(x.cargaDeudaPct).toBeCloseTo((3720000 / x.ingresoNeto) * 100, 6); // 40,3%
+    expect(x.cargaDeudaPct).toBeCloseTo((3720000 / x.ingresoNeto) * 100, 6); // 40,0%
   });
-  it("salud con retención real: 30 Crítica; puntaje y tarjeta usan la misma cifra de ahorro", () => {
+  it("salud con retención real: 31 Crítica; puntaje y tarjeta usan la misma cifra de ahorro", () => {
     const x = conRet(RET);
     const s = saludFinanciera(x);
     expect(s.componentes.ahorro.valor).toBe(x.ahorroPct);
     expect(s.componentes.cargaDeuda.valor).toBe(x.cargaDeudaPct);
-    expect(s.score).toBe(30);
+    expect(s.score).toBe(31);
     expect(s.banda).toBe("Crítica");
   });
   it("la retención no cambia IP ni OB (no se resta dos veces)", () => {

@@ -17,7 +17,7 @@ import {
   LAB_SALARIO, LAB_HONORARIOS_CON_EMPLEADOS, LAB_HONORARIOS_SIN_EMPLEADOS,
   LAB_PRESTACIONES_CESANTIAS, LAB_PRESTACIONES_PRIMA,
   CAP_INTERESES_BANCARIOS, CAP_FIC, CAP_RENDIMIENTO_GENERICO, CAP_VENTA_ACTIVOS,
-  NOL_ARRIENDO_INMUEBLE, NOL_HONORARIOS_INDEP, NOL_OTROS,
+  CAP_ARRENDAMIENTO, NOL_ARRIENDO_INMUEBLE, NOL_HONORARIOS_INDEP, NOL_OTROS,
   DIV_ART49_GRAVADOS, DIV_INTERSOCIETARIOS,
   PEN_JUBILACION,
   // Gastos
@@ -66,7 +66,8 @@ export function inferIngresoFiscalCode(ing, owner) {
   if (/Utilidad FIC|FIC/i.test(cat)) return CAP_FIC;
   if (/Rendimiento/i.test(cat)) return CAP_RENDIMIENTO_GENERICO;
   if (/Inversión/i.test(cat)) return CAP_VENTA_ACTIVOS;
-  if (/Arriendo/i.test(cat)) return NOL_ARRIENDO_INMUEBLE;
+  // Art. 338 ET: el arriendo de inmuebles es renta de capital.
+  if (/Arriendo/i.test(cat)) return CAP_ARRENDAMIENTO;
   if (/Dividendos/i.test(cat)) return isJ ? DIV_INTERSOCIETARIOS : DIV_ART49_GRAVADOS;
   if (/Pensión/i.test(cat)) return PEN_JUBILACION;
   return NOL_OTROS;

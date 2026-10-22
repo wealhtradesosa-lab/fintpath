@@ -75,6 +75,15 @@ export const RETENCIONES_DEFAULT = {
     descripcion: "Arrendamiento de inmuebles. Solo retiene si el inquilino es persona jurídica o agente retenedor declarante.",
     advertencia: "Si tu inquilino es persona natural NO declarante, NO retiene. Usa el toggle 'No aplica' para este ingreso.",
   },
+  CAP_ARRENDAMIENTO: {
+    tasa: 0.035,
+    articulo: "Art. 401 ET",
+    retenedor: "Inquilino (si es agente retenedor)",
+    aplicaJur: true,
+    aplicaNat: true,
+    descripcion: "Arrendamiento de inmuebles. Solo retiene si el inquilino es persona jurídica o agente retenedor declarante.",
+    advertencia: "Si tu inquilino es persona natural no declarante, no te retiene. Marca «Me retienen» solo si te descuentan el 3,5 %.",
+  },
   NOL_ARRIENDO_BIENES_MUEBLES: {
     tasa: 0.04,
     articulo: "Art. 401 ET",

@@ -81,9 +81,9 @@ const FISCAL_SUBOPTIONS = {
   },
   "Arriendo": {
     question: "🏠 ¿Qué arriendas?",
-    help: "Inmueble (casa, bodega, local) va a cédula NO laboral con gastos deducibles. Mueble (equipos, maquinaria) va a cédula de capital.",
+    help: "El arriendo de un inmueble (casa, bodega, local) es renta de capital: entra completo y se le restan los costos del inmueble que registres. Mueble (equipos, maquinaria) también va a cédula de capital.",
     options: [
-      { v: "NOL_ARRIENDO_INMUEBLE", l: "Inmueble (casa, bodega, local, oficina)" },
+      { v: "CAP_ARRENDAMIENTO", l: "Inmueble (casa, bodega, local, oficina)" },
       { v: "CAP_ARRIENDO_MUEBLE", l: "Mueble o equipo (maquinaria, vehículo, etc.)" },
     ],
   },
@@ -196,7 +196,7 @@ const DEFAULT_FISCAL_CODE = {
   "Salario": "LAB_SALARIO",
   "Cesantías": "LAB_PRESTACIONES_CESANTIAS",
   "Honorarios": "LAB_HONORARIOS_SIN_EMPLEADOS",
-  "Arriendo": "NOL_ARRIENDO_INMUEBLE",
+  "Arriendo": "CAP_ARRENDAMIENTO",
   "Intereses bancarios": "CAP_INTERESES_BANCARIOS",
   "Utilidad FIC": "CAP_FIC",
   "Rendimiento": "CAP_RENDIMIENTO_GENERICO",
@@ -238,6 +238,9 @@ const INITIAL_FORM = {
   //                        "0.05" → user override (5% custom)
   retencionAplica: true,
   retencionTasaCustom: "",
+  // Arriendo de inmueble (persona natural): «me retienen» es opt-in. El motor
+  // no supone retención del 3,5 % si el usuario no la marca.
+  meRetienen: false,
   // NUEVO (18-jul-2026): Frecuencia y mes de pago para flujo anual.
   // Default "mensual" mantiene comportamiento actual. Retrocompat total.
   frecuencia: "mensual",
@@ -513,6 +516,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     } else {
       delete item.retencionConfig;
     }
+    if (item.fiscalCode === "CAP_ARRENDAMIENTO" || item.fiscalCode === "NOL_ARRIENDO_INMUEBLE") {
+      item.meRetienen = form.meRetienen === true;
+    } else {
+      delete item.meRetienen;
+    }
     // Limpiar campos del form que no se persisten como top-level
     delete item.retencionAplica;
     delete item.retencionTasaCustom;
@@ -637,6 +645,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       tipoVinculacion: item.tipoVinculacion || "ordinario",
       // Sesión 28-abr-2026: leer retencionConfig (default = aplica:true sin tasa custom)
       retencionAplica: item.retencionConfig?.aplica !== false,
+      meRetienen: item.meRetienen === true,
       retencionTasaCustom: item.retencionConfig?.tasaCustom != null
         ? String(item.retencionConfig.tasaCustom * 100)  // 0.07 → "7"
         : "",
@@ -1645,6 +1654,32 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 // Buscar info de la retención default según fiscalCode + tipo de owner
                 const ownerObj = (owners || []).find(o => o.id === form.owner);
                 const ownerType = ownerObj?.type || "natural";
+                // Arriendo de inmueble de persona natural: retención opt-in
+                // («me retienen»), 3,5 % si el arrendatario es agente retenedor.
+                if (ownerType === "natural" && (form.fiscalCode === "CAP_ARRENDAMIENTO" || form.fiscalCode === "NOL_ARRIENDO_INMUEBLE")) {
+                  const retArr = (Number(form.mensual) || 0) * 12 * 0.035;
+                  return (
+                    <div style={{ gridColumn: "1/-1", marginTop: 4, padding: "14px 16px", background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+                        🏦 Retención en la fuente
+                      </div>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.txt2, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          data-testid="arriendo-me-retienen"
+                          checked={form.meRetienen === true}
+                          onChange={(e) => setForm(p => ({ ...p, meRetienen: e.target.checked }))}
+                          style={{ cursor: "pointer" }}
+                        />
+                        Me retienen (3,5 %)
+                      </label>
+                      <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, lineHeight: 1.5 }}>
+                        Márcalo solo si tu arrendatario es agente retenedor y te descuenta el 3,5 % (Art. 401 ET). Si no lo marcas, no suponemos retención.
+                        {form.meRetienen === true && retArr > 0 && <> Retención estimada: <strong style={{ color: T.txt }}>{_fm(retArr)}</strong> al año, que se resta del saldo a pagar.</>}
+                      </div>
+                    </div>
+                  );
+                }
                 const info = obtenerInfoRetencion(form.fiscalCode, ownerType);
                 const monto = Number(form.mensual) || 0;
                 const tasaUsada = form.retencionAplica === false ? 0
