@@ -153,7 +153,7 @@ function BotonesArreglar({ perfil, base, onPerfil }) {
     <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
       {malas.map((x, i) => <div key={i} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ ...F.caption, color: C.text }}><b>{x.nombre || "Pensión"}</b>: {fmMes(x.monto)} al mes</span>
-        <button style={{ ...btn(true), padding: "4px 12px" }} onClick={() => corregir(x)}>Dejarla en {fmMes(Number(x.monto) / 1e6)}</button>
+        <button style={{ ...btn(true), padding: "4px 12px" }} onClick={() => corregir(x)}>Quitarle 6 ceros: {fmMes(Number(x.monto) / 1e6)}</button>
         <button style={{ ...btn(false), padding: "4px 12px", color: C.danger, borderColor: C.danger }} onClick={() => quitar(x)}>Quitarla</button>
       </div>)}
       <div style={F.caption}>«Dejarla en…» le quita los seis ceros de más. «Quitarla» la borra del plan. Las dos cosas pasan aquí mismo, sin ir a ningún lado.</div>
@@ -164,7 +164,12 @@ function sospechosos(perfil, base) {
   const out = [];
   const gastos = Math.max(1, base?.gastosMes || 0);
   const techo = Math.max(100e6, gastos * 10);
-  (perfil?.pensiones || []).forEach((x) => { const m = Number(x.monto) || 0; if (m > techo) out.push(`${x.nombre || "Una pensión"} entra con ${fmMes(m)} al mes`); });
+  // 22-oct-2026 (Santiago: "me sale que mi pensión no parece verdadera, ¿por
+  // qué, si es verdadera? Es la máxima y yo pago lo máximo"). Tenía razón en
+  // ofenderse: el aviso decía "un dato que no puede ser", como si dudara de
+  // que la pensión existe. La pensión es real -y la máxima de Colombia son
+  // unos $36 M al mes-; lo que está mil veces más grande son los CEROS.
+  (perfil?.pensiones || []).forEach((x) => { const m = Number(x.monto) || 0; if (m > techo) out.push(`${x.nombre || "Una pensión"} está escrita como ${fmMes(m)} al mes (parecen ${Math.max(1, Math.round(Math.log10(m / 30e6)))} ceros de más)`); });
   (base?.posiciones || []).forEach((x) => { if ((Number(x.tasa) || 0) > 100) out.push(`${x.nombre} rinde ${pctEs(x.tasa)} al año`); });
   (base?.flujos || []).forEach((f) => { if (f.tipo === "ingreso" && f.monto > techo) out.push(`${f.nombre} entra con ${fmMes(f.monto)} al mes`); });
   return out;
@@ -176,7 +181,7 @@ function EscalaRota({ r, perfil, base, onArreglar, titulo }) {
       <div style={F.h3}>{titulo}</div>
       <div style={{ ...F.body, marginTop: 6, color: C.text }}>No la dibujo, porque con estos números mentiría: el patrimonio se multiplica por <b style={{ color: C.danger }}>{Math.round(vecesDe(r.puntos)).toLocaleString("es-CO")}</b> y, al lado de eso, tus cifras de verdad quedan pegadas al cero.</div>
       {malos.length > 0 && <>
-        <div style={{ ...F.body, marginTop: 8 }}>Sale de <b style={{ color: C.danger }}>un dato que no puede ser</b>:</div>
+        <div style={{ ...F.body, marginTop: 8 }}>Viene de <b style={{ color: C.danger }}>un número con ceros de más</b>:</div>
         <div style={{ display: "grid", gap: 2, marginTop: 4 }}>{malos.slice(0, 4).map((m, i) => <div key={i} style={{ ...F.caption, color: C.danger }}>· {m}</div>)}</div>
       </>}
       {onArreglar && <div style={{ marginTop: 10 }}><button style={btn(true)} onClick={onArreglar}>Llévame a arreglarlo →</button></div>}
@@ -716,8 +721,8 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
               aca seguian envenenando el plan. Si hay una que no puede ser, se
               dice en el mismo sitio donde se borra. */}
           {pens.some((x) => Number(x.monto) > Math.max(100e6, (base.gastosMes || 0) * 10)) && <div style={{ ...sub, marginTop: 10, borderColor: C.danger }}>
-            <div style={{ ...F.body, color: C.text }}><b style={{ color: C.danger }}>Hay una pensión que no puede ser.</b> {pens.filter((x) => Number(x.monto) > Math.max(100e6, (base.gastosMes || 0) * 10)).map((x) => `${x.nombre}: ${fmMes(x.monto)} al mes`).join(" · ")}.</div>
-            <div style={{ ...F.caption, marginTop: 2 }}>Tus gastos son {fmMes(base.gastosMes)} al mes. Mientras esté, todas las cifras del plan salen multiplicadas.</div>
+            <div style={{ ...F.body, color: C.text }}><b style={{ color: C.danger }}>Esta pensión tiene ceros de más.</b> {pens.filter((x) => Number(x.monto) > Math.max(100e6, (base.gastosMes || 0) * 10)).map((x) => `${x.nombre}: ${fmMes(x.monto)} al mes`).join(" · ")}.</div>
+            <div style={{ ...F.caption, marginTop: 2 }}>No dudamos de que la pensión exista, ni de que sea la máxima: la máxima de Colombia son unos $36 M al mes. Lo que está escrito ahí es mil veces eso. Mientras quede así, todas las cifras del plan salen multiplicadas.</div>
             <BotonesArreglar perfil={perfil} base={base} onPerfil={onPerfil} />
           </div>}
         </div>
@@ -899,7 +904,7 @@ function PasoIntencion({ todos, res, base, perfil, onPerfil, activoId, setActivo
           La comparación con lo tuyo ya vive, con su slider y su base dicha,
           en "arma tu propia mezcla" de abajo. Acá sobra. */}
       {hayImposible && <div style={{ ...card, borderColor: C.danger }}>
-        <div style={{ ...F.h3, color: C.danger }}>✋ Antes de proyectar nada, hay un dato que no puede ser</div>
+        <div style={{ ...F.h3, color: C.danger }}>✋ Antes de proyectar nada: hay un número con ceros de más</div>
         <div style={{ display: "grid", gap: 2, marginTop: 6 }}>{sospechosos(perfil, base).slice(0, 4).map((m, i) => <div key={i} style={{ ...F.body, color: C.danger }}>· {m}</div>)}</div>
         <div style={{ ...F.caption, marginTop: 4 }}>Mientras esté, cualquier proyección sale multiplicada y no sirve para decidir.</div>
         <BotonesArreglar perfil={perfil} base={base} onPerfil={onPerfil} />
@@ -1485,10 +1490,10 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
             79554153%", "crece 221,0% real al ano". Un numero imposible no se
             marca en un sitio y se deja suelto en otros siete. */}
         {vecesDe(p) > VECES_IMPOSIBLE && <div style={{ ...sub, marginTop: 12, borderColor: C.danger, background: "rgba(239,68,68,0.06)" }}>
-          <div style={{ ...F.h3, color: C.danger }}>✋ Nada de lo que sigue es creíble</div>
-          <div style={{ ...F.body, marginTop: 4, color: C.text }}>Este escenario multiplica tu patrimonio por <b>{Math.round(vecesDe(p)).toLocaleString("es-CO")}</b> en diez años: de {fmM(p.patrimonioInicial)} a {fmM(p.patrimonioFinal)}. Eso no pasa. Las cifras de abajo —la cobertura, lo que entra, lo que crece— están todas contaminadas por el mismo dato.</div>
+          <div style={{ ...F.h3, color: C.danger }}>✋ Hay un número con ceros de más</div>
+          <div style={{ ...F.body, marginTop: 4, color: C.text }}>No es que el dato sea falso: está escrito mil veces más grande. Por eso este escenario multiplica tu patrimonio por <b>{Math.round(vecesDe(p)).toLocaleString("es-CO")}</b> en diez años —de {fmM(p.patrimonioInicial)} a {fmM(p.patrimonioFinal)}— y todo lo de abajo sale multiplicado con él.</div>
           {sospechosos(perfil, base).length > 0 && <>
-            <div style={{ ...F.body, marginTop: 8 }}>El dato que no puede ser:</div>
+            <div style={{ ...F.body, marginTop: 8 }}>Dónde:</div>
             <div style={{ display: "grid", gap: 2, marginTop: 3 }}>{sospechosos(perfil, base).slice(0, 4).map((m, i) => <div key={i} style={{ ...F.caption, color: C.danger }}>· {m}</div>)}</div>
           </>}
           <BotonesArreglar perfil={perfil} base={base} onPerfil={onPerfil} />
