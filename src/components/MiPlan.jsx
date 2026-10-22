@@ -64,9 +64,25 @@ const Num = ({ value, onChange, step = 1, min, max, suffix, w }) => (
   </div>
 );
 // Pesos completos con separador de miles (22.000.000). Guarda el número; muestra el formato.
+//
+// 22-oct-2026 — En la cuenta real había dos pensiones cargadas en
+// $24.000.000.000.000 y $25.000.000.000.000 AL MES (billones), seis ceros de
+// más. Nadie lo vio: catorce dígitos seguidos no se leen, y el plan los tomó
+// como un hecho y mostró "$6.018.241,6 mil M en el año 10" con toda seriedad.
+// Un error de tecleo envenena los diez años de todos los escenarios.
+// Por eso, pasados los mil millones, el campo dice en voz alta cuánto es lo
+// que acabas de escribir; y pasados los cien mil millones, pregunta. No
+// bloquea: hay cifras legítimamente grandes (una finca de $9 mil M).
 const NumPesos = ({ value, onChange, w, placeholder }) => {
-  const txt = value == null || value === "" ? "" : Math.round(Number(value)).toLocaleString("es-CO");
-  return <input type="text" inputMode="numeric" value={txt} placeholder={placeholder || "0"} onChange={(e) => { const d = e.target.value.replace(/[^\d]/g, ""); onChange(d === "" ? "" : Number(d)); }} style={{ ...inputS, width: w || "100%", textAlign: "right", fontFamily: F.mono.fontFamily, fontWeight: 500 }} />;
+  const n = Number(value) || 0, a = Math.abs(n);
+  const txt = value == null || value === "" ? "" : Math.round(n).toLocaleString("es-CO");
+  const duda = a >= 1e11;
+  return (
+    <div style={{ width: w || "100%" }}>
+      <input type="text" inputMode="numeric" value={txt} placeholder={placeholder || "0"} onChange={(e) => { const d = e.target.value.replace(/[^\d]/g, ""); onChange(d === "" ? "" : Number(d)); }} style={{ ...inputS, width: "100%", textAlign: "right", fontFamily: F.mono.fontFamily, fontWeight: 500, borderColor: duda ? C.danger : undefined }} />
+      {a >= 1e9 && <div style={{ ...F.caption, textAlign: "right", marginTop: 2, color: duda ? C.danger : C.subtle }}>{fmtPlataCortaEs(n)}{duda ? " · ¿tantos ceros?" : ""}</div>}
+    </div>
+  );
 };
 const Campo = ({ l, children, style }) => (<label style={{ display: "block", ...style }}><div style={{ ...F.label, marginBottom: 4 }}>{l}</div>{children}</label>);
 // "Cuándo": en N meses, o año X mes Y. Guarda meses desde hoy (0 = este mes).
