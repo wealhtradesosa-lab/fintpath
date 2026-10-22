@@ -45,8 +45,14 @@ describe("Escenarios: los cuatro pasos se pintan", () => {
     const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={3} />);
     expect(html).toContain("Todavía no has creado ningún escenario");
   });
-  it("y el paso 2 ofrece los cuatro puntos de partida", () => {
+  // 22-oct-2026 — El paso 2 dejó de ser cuatro tarjetas que compiten y pasó a
+  // ser UNA decisión: la mezcla, con los tres moldes como atajos del mismo
+  // control. Santiago: "uno no sabe si elegir uno predeterminado o hacerlo de
+  // cero… si finalmente uno arma como quiere".
+  it("el paso 2 es una sola decisión: la mezcla, con atajos", () => {
     const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={2} />);
-    for (const t of ["Seguridad y rentar", "Vivir de la renta", "Rentar y multiplicar", "A la medida"]) expect(html, t).toContain(t);
+    expect(html).toContain("La mezcla a la que quieres llegar");
+    for (const t of ["Seguridad y rentar", "Vivir de la renta", "Rentar y multiplicar", "A mi manera"]) expect(html, t).toContain(t);
+    expect(html).toContain("Crear un escenario con esta mezcla");
   });
 });

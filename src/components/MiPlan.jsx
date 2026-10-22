@@ -213,7 +213,18 @@ function BarraCanastas({ c, alto = 14 }) {
 // ("¿cómo que lo seguro? eso no se entiende") y estaba METIDO entre lo que
 // tienes y lo que haces, que es donde más estorba: son cosas que llegan solas,
 // no decisiones tuyas. Va después de tus movimientos.
-const PASOS = [["Qué tienes hoy", "tu punto de partida"], ["Qué quieres proyectar", "hacia dónde mueves tu plata"], ["Qué cambios vas a hacer", "tus inversiones y lo que se viene"], ["Tu camino a 10 años", "el resultado"]];
+// 22-oct-2026 (Santiago: "¿cómo definir muy bien los pasos, el 1, 2, 3? Es
+// que todo como que tiene la misma importancia, entonces es difícil de
+// navegar"). Los cuatro pasos se veían igual de pesados, y no lo son: en el 1
+// uno REVISA lo que ya está, en el 2 ELIGE una sola cosa, en el 3 es donde
+// se trabaja de verdad, y el 4 se LEE. Decir el verbo y cuánto cuesta cada
+// uno es lo que convierte cuatro casillas en un camino.
+const PASOS = [
+  ["Qué tienes hoy", "Revisa", "lo que ya está cargado"],
+  ["Qué quieres proyectar", "Elige una", "la mezcla a la que apuntas"],
+  ["Qué cambios vas a hacer", "Acá trabajas", "4 preguntas"],
+  ["Tu camino a 10 años", "Lee el resultado", "8 fichas"],
+];
 
 // ─── La barra que no se va ───────────────────────────────────────────────────
 // 21-oct-2026. El número a 10 años vivía dentro del paso 3 ("Resultado en
@@ -244,10 +255,11 @@ function BarraEscenario({ todos, res, activoId, setActivoId, base, onNuevo }) {
 function Stepper({ paso, setPaso }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 6 }}>
-      {PASOS.map(([t, s], i) => { const n = i + 1, on = paso === n, done = paso > n; return (
-        <button key={t} onClick={() => setPaso(n)} style={{ background: on ? C.accent : C.surface, border: `1px solid ${on ? C.accent : C.border}`, borderRadius: 12, padding: "10px 8px", cursor: "pointer", textAlign: "left", minWidth: 0 }}>
-          <div style={{ ...F.label, color: on ? "#fff" : done ? C.ok : C.subtle }}>{done ? "✓" : n} · {s}</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: on ? "#fff" : C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t}</div>
+      {PASOS.map(([t, verbo, s], i) => { const n = i + 1, on = paso === n, done = paso > n; return (
+        <button key={t} onClick={() => setPaso(n)} style={{ background: on ? C.accent : "transparent", border: `1px solid ${on ? C.accent : done ? C.border : "transparent"}`, borderRadius: 12, padding: on ? "12px 10px" : "10px 8px", cursor: "pointer", textAlign: "left", minWidth: 0, opacity: on || done ? 1 : 0.6 }}>
+          <div style={{ ...F.label, color: on ? "#fff" : done ? C.ok : C.subtle }}>{done ? "✓" : n} · {verbo}</div>
+          <div style={{ fontSize: on ? 14 : 12, fontWeight: on ? 800 : 600, color: on ? "#fff" : done ? C.text : C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t}</div>
+          <div style={{ ...F.caption, color: on ? "rgba(255,255,255,.75)" : C.subtle, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s}</div>
         </button>); })}
     </div>
   );
@@ -910,6 +922,8 @@ function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, ac
   const capIng = deIng.reduce((t, p) => t + p.capital, 0);
   const repartido = c.proteccion + c.rentas + c.crecimiento + c.uso;
   const [miMezcla, setMiMezcla] = useState({ proteccion: 25, rentas: 45, crecimiento: 30 });
+  const [molde, setMolde] = useState(null);
+  const colorPropio = CHART.purple;
   const hayImposible = res.some((r) => vecesDe(r.puntos) > VECES_IMPOSIBLE) || sospechosos(perfil, base).length > 0;
   const plantillas = moldes || [];
   const propios = todos;
@@ -934,72 +948,35 @@ function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, ac
         <div style={{ marginTop: 14 }}><div style={F.label}>Dónde está tu plata hoy</div><div style={{ marginTop: 6 }}><BarraCanastas c={c} alto={16} /></div></div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 8 }}>{["proteccion", "rentas", "crecimiento", "uso"].map((k) => <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption }}><span style={{ width: 8, height: 8, borderRadius: 999, background: CANASTA_COLOR[k] }} /><b style={{ color: C.text }}>{CANASTA_LABEL[k]}</b> {pct((c[k] / tot) * 100)} · {fmM(c[k])}</div>)}</div>
       </div>
-      {/* 22-oct-2026 (Santiago: "estas tarjetas están pésimas", "los datos
-          son todos incorrectos", "¿449 MM? ¿700 MM? ¿y dónde quedó el
-          patrimonio completo que son como 17 mil M?").
-          Tenían razón de sobra: cada tarjeta traía la mezcla, su reparto de
-          hoy contra ella en porcentajes y pesos, lo decidido, el aviso del
-          dato imposible —repetido tres veces— y la proyección. Cinco bloques
-          para una pregunta que es una sola: ¿hacia dónde quieres ir?
-          La comparación con lo tuyo ya vive, con su slider y su base dicha,
-          en "arma tu propia mezcla" de abajo. Acá sobra. */}
+      {/* 22-oct-2026 (Santiago: "no sé qué hacer en la etapa 2: uno no sabe
+          si elegir uno predeterminado o hacerlo de cero. Y no sé qué tanto se
+          justifique elegir predeterminados o armarlo, si finalmente uno arma
+          como quiere").
+          La pregunta mata el diseño anterior, y tiene razón: desde que los
+          moldes dejaron de repartir la plata, lo ÚNICO que hacen es poner la
+          mezcla. No son cuatro caminos que compiten con el editor: son tres
+          atajos del mismo control. Una pantalla, una decisión, atajos arriba. */}
       {hayImposible && <div style={{ ...card, borderColor: C.danger }}>
         <div style={{ ...F.h3, color: C.danger }}>✋ Antes de proyectar nada: hay un número con ceros de más</div>
         <div style={{ display: "grid", gap: 2, marginTop: 6 }}>{sospechosos(perfil, base).slice(0, 4).map((m, i) => <div key={i} style={{ ...F.body, color: C.danger }}>· {m}</div>)}</div>
-        <div style={{ ...F.caption, marginTop: 4 }}>Mientras esté, cualquier proyección sale multiplicada y no sirve para decidir.</div>
         <BotonesArreglar perfil={perfil} base={base} onPerfil={onPerfil} />
         {onArreglar && !pensionesImposibles(perfil, base).length && <div style={{ marginTop: 10 }}><button style={btn(true)} onClick={onArreglar}>Llévame a arreglarlo →</button></div>}
       </div>}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 14 }}>
-        {plantillas.map((e) => {
-          const i = INTENCIONES[e.id] || {};
-          const yaTiene = propios.filter((g) => g.plantilla === e.id).length;
-          const o = e.objetivo;
-          return (
-            <div key={e.id} style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ ...F.h3, color: e.color }}>{i.titulo || e.nombre}</div>
-              <div style={F.body}>{i.frase || e.tesis}</div>
-              {o && <div style={sub}>
-                <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: C.raised }}>
-                  {["proteccion", "rentas", "crecimiento"].map((k) => <div key={k} style={{ width: `${o[k]}%`, background: CANASTA_COLOR[k] }} />)}
-                </div>
-                <div style={{ ...F.caption, marginTop: 6 }}>
-                  <span style={{ color: CANASTA_COLOR.proteccion }}>{o.proteccion}% protegido</span> · <span style={{ color: CANASTA_COLOR.rentas }}>{o.rentas}% pagándote</span> · <span style={{ color: CANASTA_COLOR.crecimiento }}>{o.crecimiento}% creciendo</span>
-                </div>
-                <div style={{ ...F.caption, marginTop: 2 }}>Colchón de {e.canastas?.colchonMeses || 6} meses · lo que sobre cada mes: {100 - ((e.excedente || []).find((x) => x.canasta === "crecimiento")?.pct ?? 0)}% a lo que te paga.</div>
-              </div>}
-              <div style={{ flex: 1 }} />
-              {yaTiene > 0 && <div style={F.caption}>Ya tienes {yaTiene} escenario{yaTiene > 1 ? "s" : ""} con este punto de partida.</div>}
-              <button style={{ ...btn(false), width: "100%" }} onClick={() => { onCrear(e); onNext(); }}>Crear un escenario así →</button>
-            </div>
-          );
-        })}
-        {/* 22-oct-2026 (Santiago: "sí, más o menos esos pueden ser los
-            escenarios, pero también que si uno quiere hacer uno a la medida lo
-            haga"). Armar el propio existía, pero vivía debajo de las tres, en
-            un bloque aparte: parecía la salida de emergencia y no una de las
-            opciones. Es una cuarta respuesta a la misma pregunta. */}
-        <div style={{ ...card, borderColor: C.borderStrong, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ ...F.h3 }}>A la medida</div>
-          <div style={F.body}>Ninguna de las tres es tu caso. Defines tú la mezcla y el plan te la nombra y te mide contra ella.</div>
-          <div style={sub}>
-            <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: C.raised }}>
-              {["proteccion", "rentas", "crecimiento"].map((k) => <div key={k} style={{ width: `${miMezcla[k]}%`, background: CANASTA_COLOR[k] }} />)}
-            </div>
-            <div style={{ ...F.caption, marginTop: 6, color: C.text }}>{nombrarMezcla(miMezcla)?.titulo}</div>
-            <div style={{ ...F.caption, marginTop: 2 }}>{miMezcla.proteccion}% protegido · {miMezcla.rentas}% pagándote · {miMezcla.crecimiento}% creciendo</div>
-          </div>
-          <div style={{ flex: 1 }} />
-          <button style={{ ...btn(false), width: "100%" }} onClick={() => { try { document.getElementById("mi-mezcla")?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch { /* noop */ } }}>Moverla y crear ↓</button>
-        </div>
-      </div>
-      {/* Las tres de arriba son tres puntos entre infinitos: acá se arma el
-          propio moviendo las franjas, y el nombre sale solo de la mezcla. */}
       <div style={card} id="mi-mezcla">
-        <div style={F.h2}>A la medida: arma tu propia mezcla</div>
-        <div style={{ ...F.body, marginTop: 4, marginBottom: 12 }}>Mueve las tres franjas hasta donde quieras llegar. El sistema le pone nombre solo, y esa mezcla te guía después cuando decidas dónde poner cada peso.</div>
-        <MezclaEditor objetivo={miMezcla} onChange={setMiMezcla} base={base} perfil={perfil} />
-        <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => { onNuevo(miMezcla); onNext(); }}>Seguir con esta mezcla →</button></div>
+        <div style={F.h2}>La mezcla a la que quieres llegar</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Es lo único que decides acá, y no mueve un peso: es la vara contra la que se mide lo que pongas después. Empieza por un atajo si alguno te suena, y muévela a tu gusto.</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+          {plantillas.map((c) => { const act = molde?.id === c.id; const i = INTENCIONES[c.id] || {};
+            return <button key={c.id} title={i.frase} style={{ ...btn(act), borderColor: act ? c.color : C.borderStrong, background: act ? `${c.color}22` : "transparent", color: act ? C.text : C.muted }}
+              onClick={() => { setMolde(c); setMiMezcla(c.objetivo); }}>{i.titulo || c.nombre}</button>; })}
+          <button style={{ ...btn(false), color: !molde ? C.text : C.muted }} onClick={() => setMolde(null)}>A mi manera</button>
+        </div>
+        <div style={{ ...F.caption, marginTop: 6 }}>{molde ? INTENCIONES[molde.id]?.frase : "Sin atajo: la mezcla es la que tú dejes abajo."}</div>
+        <div style={{ marginTop: 14 }}><MezclaEditor objetivo={miMezcla} onChange={(o) => { setMiMezcla(o); setMolde(null); }} base={base} perfil={perfil} /></div>
+        <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <button style={btn(true)} onClick={() => { onCrear(molde ? { ...molde, objetivo: miMezcla } : { id: null, nombre: nombrarMezcla(miMezcla)?.titulo || "Mi escenario", tesis: "", color: colorPropio, objetivo: miMezcla, canastas: { colchonMeses: 6 }, excedente: [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }] }); onNext(); }}>Crear un escenario con esta mezcla →</button>
+          <span style={F.caption}>Puedes crear varios y compararlos.</span>
+        </div>
       </div>
       {/* 22-oct-2026 (Santiago: "veo que se han creado muchos escenarios,
           ¿dónde los borra uno?", "¿dónde los compara?"). Borrar vivía al final
@@ -1826,10 +1803,22 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
         {[[1, "qué vendes"], [2, "qué deudas pagas"], [3, "en qué reinviertes"], [4, "qué más va a pasar"]].map(([n, t]) =>
           <button key={n} style={{ ...btn(false), padding: "5px 12px" }} onClick={() => onEditar(n)}>✎ {t}</button>)}
       </div>}
-      <GraficaMesAMes r={r} perfil={perfil} base={base} onArreglar={onEditar && (() => onEditar(4))} />
-      <ActivoPorActivo r={r} base={base} onFicha={onFicha} />
-      <GanaALaInflacion r={r} perfil={perfil} base={base} onArreglar={onEditar && (() => onEditar(4))} />
-      <ComoEmpresa r={r} />
+      {/* 22-oct-2026 (Santiago: "la sección, si bien parece que funciona, es
+          difícil de navegar porque no tiene como jerarquías: uno no sabe por
+          dónde empezar porque todo como que compite de la misma forma").
+          En su documento hay un indice de capitulos y uno sabe donde esta.
+          Aca eran ocho tarjetas del mismo tamano, el mismo borde y el mismo
+          titulo, una tras otra. El indice no es decoracion: es lo que dice
+          que esto tiene un orden y cuanto falta. */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={F.caption}>Saltar a:</span>
+        {[[1, "Lo que no tocas"], [2, "Lo que cambia"], [3, "Mes a mes"], [4, "Qué tienes después"], [5, "Inflación"], [6, "Como empresa"], [7, "Año a año"], [8, "Qué vigilar"]].map(([n, t]) =>
+          <button key={n} style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => { try { document.getElementById(`ficha-${n}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* noop */ } }}>{n} · {t}</button>)}
+      </div>
+      <div id="ficha-3"><GraficaMesAMes r={r} perfil={perfil} base={base} onArreglar={onEditar && (() => onEditar(4))} /></div>
+      <div id="ficha-4"><ActivoPorActivo r={r} base={base} onFicha={onFicha} /></div>
+      <div id="ficha-5"><GanaALaInflacion r={r} perfil={perfil} base={base} onArreglar={onEditar && (() => onEditar(4))} /></div>
+      <div id="ficha-6"><ComoEmpresa r={r} /></div>
       <div style={card}>
         <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}><div style={{ ...F.h3, color: C.subtle }}>7 ·</div><div style={F.h3}>Año a año</div></div>
         <div style={{ ...F.body, marginTop: 4 }}>El resumen de cada año en una fila, con lo que cambia ese año dicho en palabras.</div>
@@ -1840,7 +1829,7 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
           </table>
         </div>
       </div>
-      <LoQueFalta r={r} base={base} liq={liquidezEscenario(base, r)} perfil={perfil} />
+      <div id="ficha-8"><LoQueFalta r={r} base={base} liq={liquidezEscenario(base, r)} perfil={perfil} /></div>
       <Siguiente onClick={onNext}>Siguiente: compara todos los escenarios</Siguiente>
     </div>
   );
