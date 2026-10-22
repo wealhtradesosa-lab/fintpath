@@ -1101,6 +1101,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   const proponer = () => { if (camino) onGuardar(proponerDesdeCamino(base, camino, esc, perfil)); };
   const [verNombre, setVerNombre] = useState(false);
   const [verMezcla, setVerMezcla] = useState(false);
+  const [abiertoD, setAbiertoD] = useState(null);
   const SUBS = [
     { n: 1, t: "¿Qué vendes o transformas?", c: "Lo que sale se vende y te deja plata a favor." },
     ...(base.deudas.length > 0 ? [{ n: 2, t: "¿Qué deudas pagas con eso?", c: "Lo que pagues deja de costarte cuota." }] : []),
@@ -1245,34 +1246,47 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
               </div>}
               {deLaPlantilla && (esc.despliegue || []).length > 0 && <div style={{ ...F.caption, marginTop: 6 }}>Los destinos de abajo no los pusiste tú: los propuso la plantilla <b style={{ color: esc.color }}>{esc.nombre}</b> para cumplir su regla, y son activos que ya tienes. Cámbialos, quítalos o agrega otros — en cuanto toques algo, el escenario pasa a ser tuyo.</div>}
             </div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
-                <thead><tr><th style={th}>Destino</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Cuánto le metes</th><th style={{ ...th, textAlign: "right" }}>Tasa</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th} /></tr></thead>
-                <tbody>
-                  {(esc.despliegue || []).map((d) => <tr key={d.id} style={{ borderTop: `1px solid ${C.border}` }}>
-                    <td style={{ ...td, minWidth: 150 }}>{d.destinoId ? <span>{d.nombre}<div style={F.caption}>ya lo tienes · vale {fmM(posDe(d.destinoId)?.capital || 0)} hoy</div></span> : <input value={d.nombre} onChange={(e) => setD(d.id, { nombre: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }} />}</td>
-                    {/* 22-oct-2026 (Santiago: "¿por qué unas se dejan elegir y
-                        otras no?"). Lo que ya tienes mostraba la canasta como
-                        un chip fijo; ahora también es un menú, y cambia la
-                        ficha del activo (vale para todos los escenarios). */}
-                    <td style={td}>{d.destinoId
-                      ? <select value={posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta} onChange={(e) => { const c = e.target.value; if (onFicha) onFicha(d.destinoId, { canasta: c }); setD(d.id, { canasta: c }); }} title="Cambia la canasta de este activo (vale para todos los escenarios)" style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta], borderColor: CANASTA_COLOR[posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>
-                      : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[d.canasta], borderColor: CANASTA_COLOR[d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
-                    <td style={tdNum}><NumPesos value={d.capital} onChange={(v) => setD(d.id, { capital: v || 0 })} w={150} /></td>
-                    <td style={tdNum}><Num value={d.tasa} step={0.5} onChange={(v) => setD(d.id, { tasa: v || 0 })} suffix="%" w={80} /></td>
-                    <td style={tdNum}><Num value={d.pagaPct} step={10} min={0} max={100} onChange={(v) => setD(d.id, { pagaPct: v || 0, regla: v >= 100 ? "Paga el 100% del rendimiento cada mes" : v <= 0 ? "Todo se reinvierte" : `Recibe el ${v}%, reinvierte el resto` })} suffix="%" w={80} />
-                      {/* 22-oct-2026 (Santiago: "cuando uno ponga la inversión
-                          nueva, el valor y el porcentaje, el sistema debería
-                          poner la cuota aproximada"). */}
-                      {pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0 && <div style={{ ...F.caption, color: C.ok, whiteSpace: "nowrap" }}>≈ {fmMes(pagaAlMes(d.capital, d.tasa, d.pagaPct))}/mes</div>}
-                      {Number(d.capital) > 0 && Number(d.tasa) > 0 && Number(d.pagaPct) > 0 && Number(d.pagaPct) < 100 && <div style={{ ...F.caption, whiteSpace: "nowrap" }}>reinviertes ≈ {fmMes(pagaAlMes(d.capital, d.tasa, 100 - Number(d.pagaPct)))}/mes</div>}
-                      {Number(d.capital) > 0 && Number(d.tasa) > 0 && !(pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0) && <div style={{ ...F.caption, color: CANASTA_COLOR.crecimiento, whiteSpace: "nowrap" }}>crece ≈ {fmMes(pagaAlMes(d.capital, d.tasa, 100))}/mes</div>}</td>
-                    <td style={tdNum}><Num value={d.valorizacion} step={0.5} onChange={(v) => setD(d.id, { valorizacion: v || 0 })} suffix="%" w={80} /></td>
-                    <td style={td}><button style={{ ...btn(false), padding: "3px 8px", color: C.subtle }} onClick={() => upd({ despliegue: esc.despliegue.filter((x) => x.id !== d.id) })}>quitar</button></td>
-                  </tr>)}
-                  {(esc.despliegue || []).length === 0 && <tr><td colSpan={7} style={{ ...td, color: C.subtle, fontStyle: "italic" }}>Nada desplegado: lo liberado se quedaría en caja sin rendir.</td></tr>}
-                </tbody>
-              </table>
+            {/* 22-oct-2026 (Santiago: "esto no me sirve asi; yo deberia
+                saber: me sobran 100 pesos, voy a reinvertir X pesos en X
+                inversion"). Era una tabla de SIETE columnas con los parametros
+                del motor -canasta, tasa, recibes, valoriza, regla- para una
+                decision que son dos cosas: cuanto y donde. Ahora cada fila es
+                esa frase, y los parametros viven detras de "ajustar", como en
+                el paso 1. */}
+            <div style={{ display: "grid", gap: 8 }}>
+              {(esc.despliegue || []).map((d) => {
+                const pos = d.destinoId ? posDe(d.destinoId) : null;
+                const paga = pagaAlMes(d.capital, d.tasa, d.pagaPct);
+                return (
+                  <div key={d.id} style={{ ...sub, display: "grid", gap: 6 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", ...F.body, color: C.text }}>
+                      <span>Pongo</span>
+                      <NumPesos value={d.capital} onChange={(v) => setD(d.id, { capital: v || 0 })} w={170} />
+                      <span>en</span>
+                      {d.destinoId
+                        ? <b style={{ color: C.text }}>{d.nombre}</b>
+                        : <input value={d.nombre} onChange={(e) => setD(d.id, { nombre: e.target.value })} style={{ ...inputS, width: 190 }} placeholder="¿En qué? (nómbralo)" />}
+                      <span style={chip(CANASTA_COLOR[d.canasta])}>{CANASTA_LABEL[d.canasta]}</span>
+                      <span style={{ flex: 1 }} />
+                      <button style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setAbiertoD(abiertoD === d.id ? null : d.id)}>{abiertoD === d.id ? "cerrar" : "ajustar"}</button>
+                      <button style={{ ...btn(false), padding: "3px 10px", color: C.subtle }} onClick={() => upd({ despliegue: esc.despliegue.filter((x) => x.id !== d.id) })}>quitar</button>
+                    </div>
+                    <div style={F.caption}>
+                      {pos ? <>Ya lo tienes · vale {fmM(pos.capital)} hoy · </> : <>Inversión nueva · </>}
+                      {paga > 0 ? <>te pagaría <b style={{ color: C.ok }}>{fmMes(paga)}</b> al mes{Number(d.tasa) > 0 ? ` (${pctEs(d.tasa)} al año)` : ""}</>
+                        : Number(d.tasa) > 0 ? <>no te paga: reinvierte todo al {pctEs(d.tasa)} al año</>
+                        : <>no te paga nada{Number(d.valorizacion) > 0 ? `, solo valoriza ${pctEs(d.valorizacion)} al año` : ""}</>}
+                    </div>
+                    {abiertoD === d.id && <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end", borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
+                      {!d.destinoId && <Campo l="En qué canasta va"><select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, width: 140, color: CANASTA_COLOR[d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select></Campo>}
+                      <Campo l="Rinde al año"><Num value={d.tasa} step={0.5} onChange={(v) => setD(d.id, { tasa: v || 0 })} suffix="%" w={90} /></Campo>
+                      <Campo l="De eso, te paga"><Num value={d.pagaPct} step={10} min={0} max={100} onChange={(v) => setD(d.id, { pagaPct: v || 0, regla: v >= 100 ? "Paga el 100% del rendimiento cada mes" : v <= 0 ? "Todo se reinvierte" : `Recibe el ${v}%, reinvierte el resto` })} suffix="%" w={90} /></Campo>
+                      <Campo l="Se valoriza al año"><Num value={d.valorizacion} step={0.5} onChange={(v) => setD(d.id, { valorizacion: v || 0 })} suffix="%" w={90} /></Campo>
+                    </div>}
+                  </div>
+                );
+              })}
+              {(esc.despliegue || []).length === 0 && <div style={{ ...F.body, fontStyle: "italic" }}>Todavía no has puesto nada. Lo que no pongas se queda en caja sin rendir.</div>}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, alignItems: "center" }}>
               <select value="" onChange={(e) => { if (e.target.value) addD(e.target.value === "__nueva" ? null : e.target.value); }} style={{ ...inputS, width: "auto", minWidth: 220 }}>
@@ -1301,10 +1315,30 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
           )}
           {sub === 4 && (
           <div style={card}>
-            <H n="F" t="¿Y lo que te sobre cada mes?" d="Mes a mes te queda un excedente. Decide a dónde va y cuántos meses de gastos guardas en líquido." />
+            {/* 22-oct-2026 (Santiago: "esta parte está muy floja"). Y lo
+                estaba: un slider con dos porcentajes y una casilla de meses,
+                sin decir nunca CUÁNTO sobra ni en qué se convierte. Un 50%
+                de nada no es una decisión. */}
+            <H n="F" t="¿Y lo que te sobre cada mes?" d="Después de pagar tu vida, cada mes te queda un excedente. Acá decides a dónde va solo, sin que tengas que acordarte." />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, alignItems: "end" }}>
-              <div><div style={F.label}>{100 - crecPct}% a lo que te paga · {crecPct}% a lo que crece</div><input type="range" min={0} max={100} step={5} value={crecPct} onChange={(e) => { const v = Number(e.target.value); upd({ excedente: [{ canasta: "rentas", pct: 100 - v }, { canasta: "crecimiento", pct: v }] }); }} style={{ width: "100%" }} /></div>
-              <Campo l="Colchón líquido (meses de gastos)"><Num value={esc.colchonMeses} min={0} max={60} onChange={(v) => upd({ colchonMeses: v })} /></Campo>
+              <div>
+                {(() => {
+                  const sobra = Math.max(0, r?.puntos?.quedaMes ?? 0);
+                  const aPaga = sobra * (100 - crecPct) / 100, aCrece = sobra * crecPct / 100;
+                  return (<>
+                    <div style={{ ...F.body, color: C.text }}>En el año 10 te sobran <b style={{ color: C.ok }}>{fmMes(sobra)}</b> al mes. Así los repartes:</div>
+                    <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 6 }}>
+                      <div><div style={{ ...F.label, color: CANASTA_COLOR.rentas }}>{100 - crecPct}% a lo que te paga</div><div style={{ ...F.monoLg, color: C.text }}>{fmMes(aPaga)}</div><div style={F.caption}>al mes, que pasan a pagarte más</div></div>
+                      <div><div style={{ ...F.label, color: CANASTA_COLOR.crecimiento }}>{crecPct}% a lo que crece</div><div style={{ ...F.monoLg, color: C.text }}>{fmMes(aCrece)}</div><div style={F.caption}>al mes, que se multiplican adentro</div></div>
+                    </div>
+                  </>);
+                })()}
+                <input type="range" min={0} max={100} step={5} value={crecPct} onChange={(e) => { const v = Number(e.target.value); upd({ excedente: [{ canasta: "rentas", pct: 100 - v }, { canasta: "crecimiento", pct: v }] }); }} style={{ width: "100%", marginTop: 10 }} />
+                <div style={F.caption}>Muévelo: a la izquierda, más plata al mes; a la derecha, más patrimonio al final.</div>
+              </div>
+              <Campo l="Colchón líquido (meses de gastos)"><Num value={esc.colchonMeses} min={0} max={60} onChange={(v) => upd({ colchonMeses: v })} />
+                <div style={{ ...F.caption, marginTop: 4 }}>Son <b style={{ color: C.text }}>{fmM((Number(esc.colchonMeses) || 0) * (base.gastosMes || 0))}</b> guardados sin rendir, listos por si todo sale mal. Antes de repartir lo que sobra, el plan llena ese colchón.</div>
+              </Campo>
             </div>
             {/* 22-oct-2026 (Santiago: "¿cómo hago para disponer de lo que
                 sobra reinvirtiendo una parte?"). Antes el sobrante se
@@ -1410,6 +1444,39 @@ function GraficaMesAMes({ r, perfil, base, onArreglar }) {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      {/* 22-oct-2026 — Del Plan SALEM: "3 · Lo que entra cada mes" y "Lo que
+          sale cada mes", cada uno con sus barras y su TOTAL. Es la misma
+          información que el grafico, pero contada por partes: el grafico dice
+          cuando, las barras dicen de que. Se muestran sobre el PRIMER mes,
+          que es el unico donde cada renglon se conoce exacto. */}
+      {(() => {
+        const m0 = meses[0]; if (!m0) return null;
+        const entra = Object.entries(m0.detalle || {}).filter(([, v]) => v.recibe > 0)
+          .map(([id, v]) => ({ nombre: nombreDe[id] || id, valor: v.recibe, texto: fmMes(v.recibe), color: C.ok }))
+          .sort((a, b) => b.valor - a.valor).slice(0, 9);
+        if (m0.ingFlujos > 0) entra.push({ nombre: "arriendos, honorarios, pensiones", valor: m0.ingFlujos, texto: fmMes(m0.ingFlujos), color: C.accent });
+        const sale = (r.cfg?.flujos || []).filter((f) => f.tipo === "gasto" && f.monto > 0)
+          .map((f) => ({ nombre: f.nombre.replace(/^Gastos · /, ""), valor: f.monto, texto: fmMes(f.monto), color: C.muted }))
+          .sort((a, b) => b.valor - a.valor).slice(0, 9);
+        if (m0.cuotas > 0) sale.push({ nombre: "cuotas de deuda", valor: m0.cuotas, texto: fmMes(m0.cuotas), color: C.danger });
+        const Tot = ({ t, v }) => <div style={{ display: "flex", justifyContent: "space-between", gap: 10, borderTop: `1px solid ${C.borderStrong}`, marginTop: 8, paddingTop: 6, ...F.body, color: C.text }}><b>{t}</b><b style={{ fontFamily: F.mono.fontFamily }}>{v}</b></div>;
+        return (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))", gap: 16, marginTop: 16, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+            <div>
+              <div style={F.label}>Lo que entra cada mes, hoy</div>
+              <div style={{ ...F.caption, marginBottom: 8 }}>De dónde sale cada peso que llega a la cuenta.</div>
+              <Barras filas={entra} />
+              <Tot t="TOTAL ENTRA" v={`${fmMes(m0.entra)}/mes`} />
+            </div>
+            <div>
+              <div style={F.label}>Lo que sale cada mes, hoy</div>
+              <div style={{ ...F.caption, marginBottom: 8 }}>Todo lo que paga tu vida, agrupado.</div>
+              <Barras filas={sale} />
+              <Tot t="TOTAL SALE" v={`${fmMes(m0.sale)}/mes`} />
+            </div>
+          </div>
+        );
+      })()}
       {ap && <div style={{ ...F.caption, marginTop: 6 }}>Mes más apretado: <b style={{ color: C.text }}>año {anioDe(ap.mes)}</b>, cobertura {pct(ap.cobertura)} — {ap.cobertura >= 100 ? "aun así alcanza" : "ahí no alcanza y toca sacar de capital"}.</div>}
     </div>
   );
@@ -1514,6 +1581,35 @@ function LoQueFalta({ r, base, liq, perfil }) {
   );
 }
 
+/**
+ * Barras horizontales ordenadas (22-oct-2026).
+ *
+ * Santiago, mostrando su Plan SALEM: "estas gráficas y formas de ver son
+ * mejores". Lo que hacen distinto no es el color: en vez de una tabla de
+ * números —que obliga a comparar de a dos— ponen una barra por cosa, de mayor
+ * a menor, con su monto y su peso. El tamaño relativo se ve sin leer.
+ */
+function Barras({ filas, total, leyenda }) {
+  const max = Math.max(1, ...filas.map((f) => Math.abs(f.valor)));
+  const suma = total ?? filas.reduce((t, f) => t + Math.abs(f.valor), 0);
+  return (
+    <div>
+      {leyenda && <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 8 }}>{leyenda.map((l) => <div key={l.t} style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption }}><span style={{ width: 9, height: 9, borderRadius: 2, background: l.c }} />{l.t}</div>)}</div>}
+      <div style={{ display: "grid", gap: 5 }}>
+        {filas.map((f) => (
+          <div key={f.nombre} style={{ display: "grid", gridTemplateColumns: "minmax(110px, 190px) 1fr auto", gap: 10, alignItems: "center" }}>
+            <div style={{ ...F.caption, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre}</div>
+            <div style={{ height: 14, background: C.raised, borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ width: `${Math.max(1, (Math.abs(f.valor) / max) * 100)}%`, height: "100%", background: f.color || C.accent, borderRadius: 4 }} />
+            </div>
+            <div style={{ ...F.caption, fontFamily: F.mono.fontFamily, color: C.text, whiteSpace: "nowrap" }}>{f.texto}{suma > 0 && f.pct !== false ? <span style={{ color: C.subtle }}> · {Math.round((Math.abs(f.valor) / suma) * 100)}%</span> : null}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Activo por activo ───────────────────────────────────────────────────────
 // 22-oct-2026 — En el Plan SALEM, cada plan tenía su "5 · Activo por activo" y
 // su "2 · Todo lo que tienes después del plan". La app contaba el patrimonio
@@ -1562,7 +1658,23 @@ function ActivoPorActivo({ r, base, onFicha }) {
       <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}><div style={{ ...F.h3, color: C.subtle }}>4 ·</div><div style={F.h3}>Todo lo que tienes después del plan</div></div>
       <div style={{ ...F.body, marginTop: 4 }}>Cosa por cosa, lo que ya tenías <b style={{ color: C.text }}>y</b> lo que nace con el plan. Lo que vendiste queda en cero y marcado.</div>
       <div style={{ ...F.caption, marginTop: 6 }}>Con cuánto arranca, con cuánto termina en el año 10, y cuánto te deposita cada mes en cada momento. Lo que crece no te deposita: se dice cuánto se queda adentro cada mes. Lo que se vendió queda en cero y lo que nació con el plan va marcado.</div>
-      <div style={{ overflowX: "auto", marginTop: 10 }}>
+      {/* Primero el vistazo: cuánto pesa cada cosa y cuánto produce. El
+          detalle numérico queda debajo, para quien lo quiera. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))", gap: 16, marginTop: 12 }}>
+        <div>
+          <div style={F.label}>Cuánto vale cada cosa en el año 10</div>
+          <div style={{ marginTop: 8 }}><Barras filas={filas.filter((x) => x.fin > 0).slice(0, 10).map((x) => ({ nombre: x.nombre, valor: x.fin, texto: fmM(x.fin), color: CANASTA_COLOR[x.canasta] }))} /></div>
+        </div>
+        <div>
+          <div style={F.label}>Cuánto produce cada una al mes</div>
+          <div style={{ marginTop: 8 }}><Barras
+            leyenda={[{ t: "te paga (lo recibes)", c: C.ok }, { t: "multiplica (se queda adentro)", c: C.warn }]}
+            filas={filas.map((x) => ({ nombre: x.nombre, valor: Math.max(x.pagaFin || 0, x.creceFin || 0), paga: x.pagaFin || 0, crece: x.creceFin || 0 }))
+              .filter((x) => x.valor > 0).sort((a, b) => b.valor - a.valor).slice(0, 10)
+              .map((x) => ({ nombre: x.nombre, valor: x.valor, texto: fmMes(x.valor), color: x.paga >= x.crece ? C.ok : C.warn }))} /></div>
+        </div>
+      </div>
+      <div style={{ overflowX: "auto", marginTop: 16 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
           <thead><tr>{["Activo", "Canasta", "Hoy vale", "Año 10 vale", "Te paga hoy", "Te paga año 10"].map((h, i) => <th key={h} style={{ ...th, textAlign: i < 2 ? "left" : "right" }}>{h}</th>)}</tr></thead>
           <tbody>
@@ -1693,7 +1805,16 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
           <div style={F.h3}>Lo que pasa en el tiempo</div>
           {eventos.length === 0 && <div style={{ ...F.body, marginTop: 6 }}>Nada programado después de hoy.</div>}
           <div style={{ display: "grid", gap: 6, marginTop: 6 }}>{eventos.map((m, i) => <div key={i} style={{ display: "flex", gap: 10, ...F.body, color: C.text }}><span style={{ ...chip(r.color), minWidth: 56, textAlign: "center" }}>{m.mes === 0 ? "hoy" : `año ${anioDe(m.mes)}`}</span><span>{describirMov(m, r.cfg.posiciones, r.cfg.flujos, r.cfg.deudas).replace(/^Año \d+(, mes \d+)?: /, "")}</span></div>)}</div>
-          {!r.vigilancia.cumple && <div style={{ marginTop: 12 }}><div style={{ ...F.h3, color: C.danger }}>Dónde se rompe</div>{r.vigilancia.roturas.slice(0, 5).map((x, i) => <div key={i} style={{ ...F.body, color: C.danger, marginTop: 4 }}>· Año {x.anio}: {x.detalle}</div>)}</div>}
+          {/* 22-oct-2026 (Santiago: "¿por qué sale esto de que se rompe?").
+              Decía "Dónde se rompe" en rojo, como si el plan fallara. No
+              falla: se ALEJA de la mezcla que él pidió, porque lo que crece
+              crece más rápido que lo que paga. Es un aviso, no un error, y
+              nadie le mueve un peso por eso. */}
+          {!r.vigilancia.cumple && <div style={{ ...sub, marginTop: 12, borderColor: C.warn }}>
+            <div style={{ ...F.h3, color: C.warn }}>Dónde se aleja de tu mezcla</div>
+            <div style={{ ...F.caption, marginTop: 2 }}>{r.objetivo ? <>Pediste {r.objetivo.proteccion}/{r.objetivo.rentas}/{r.objetivo.crecimiento} y con los años el plan se corre, porque lo que crece crece más rápido que lo que paga. </> : null}No es un error y nadie te mueve un peso: es para que decidas si lo dejas correr o lo acomodas.</div>
+            {r.vigilancia.roturas.slice(0, 5).map((x, i) => <div key={i} style={{ ...F.body, color: C.warn, marginTop: 4 }}>· Año {x.anio}: {x.detalle}</div>)}
+          </div>}
         </div>
       </div>
       {/* 22-oct-2026 (Santiago: "y si uno ve el plan, ¿dónde lo puede editar?
@@ -1821,6 +1942,39 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
             </tbody>
           </table>
         </div>
+      </div>
+      {/* 22-oct-2026 (Santiago: "la forma en la que se ven los planes es
+          muchísimo más completa en lo que le compartí; revise y ajuste"). En
+          su documento, lo primero son las tarjetas de camino -el punto de
+          partida y cada plan, ordenados de menor a mayor patrimonio al año
+          10, con su cifra grande y su crecimiento real-. Ahí se decide; la
+          tabla larga es para después. */}
+      <div style={card}>
+        <div style={F.h2}>Los caminos, de menor a mayor</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Todos parten de lo mismo: tu patrimonio de hoy. Lo que cambia es qué haces con él. Ordenados por lo que dejan en el año 10, en plata de hoy.</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(210px, 100%), 1fr))", gap: 10, marginTop: 14 }}>
+          <div style={{ ...sub, borderTop: `3px solid ${C.subtle}` }}>
+            <div style={F.label}>Punto de partida</div>
+            <div style={{ ...F.h3, marginTop: 2 }}>Hoy</div>
+            <div style={F.caption}>Si no cambias nada</div>
+            <div style={{ ...F.monoLg, color: C.text, marginTop: 8 }}>{fmM(res[0]?.puntos.patrimonioInicial ?? 0)}</div>
+            <div style={F.caption}>lo que tienes ahora</div>
+          </div>
+          {[...res].sort((a, b) => (a.puntos.patrimonioFinalReal || 0) - (b.puntos.patrimonioFinalReal || 0)).map((r) => {
+            const sel = r.id === activoId, mejor = caminoElegido === r.id;
+            return (
+              <div key={r.id} style={{ ...sub, borderTop: `3px solid ${r.color}`, position: "relative", cursor: "pointer", outline: sel ? `1px solid ${r.color}` : "none" }} onClick={() => onVer(r.id)}>
+                {mejor && <div style={{ position: "absolute", top: -10, right: 8, ...chip(C.accent) }}>Tu camino</div>}
+                <div style={{ ...F.label, color: r.color }}>{r.nombre}</div>
+                <div style={{ ...F.caption, marginTop: 2, minHeight: 32 }}>{r.tesis ? String(r.tesis).slice(0, 80) : "—"}</div>
+                <div style={{ ...F.monoLg, color: C.text, marginTop: 8 }}>{fmM(r.puntos.patrimonioFinal)}</div>
+                <div style={F.caption}>año 10 · {r.puntos.crecimientoRealAnual == null ? "—" : `${r.puntos.crecimientoRealAnual >= 0 ? "+" : ""}${pctEs(r.puntos.crecimientoRealAnual)} real`}</div>
+                <div style={{ ...F.caption, marginTop: 4 }}>te deja <b style={{ color: C.ok }}>{fmMes(r.puntos.quedaMes)}</b>/mes</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ ...F.caption, marginTop: 10 }}>Toca uno para ver su detalle. «Real» es descontando la inflación: lo que de verdad te queda en poder de compra.</div>
       </div>
       <Recomendacion res={res} onElegir={onElegir} caminoElegido={caminoElegido} onVer={onVer} />
       <div style={card}>

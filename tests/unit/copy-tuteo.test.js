@@ -220,10 +220,15 @@ function archivosTodos(dir) {
   }
   return out;
 }
-// 22-oct-2026 — Un comentario JSX abre con `{/*`, y el filtro solo conocía
-// `//`, `*` y `/*`. Citar al usuario dentro de uno —"le subí el valor"— ponía
-// el test en rojo por un voseo que nadie le muestra a nadie.
-const sinComentarios = (s) => s.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*|\{\/\*)/.test(l));
+// 22-oct-2026 — Primero el filtro solo conocía `//`, `*` y `/*`, y se le
+// agregó `{/*`. Pero seguía mirando LÍNEA POR LÍNEA, así que la segunda línea
+// de un comentario de bloque volvía a entrar: citar al usuario dentro de uno
+// —"revise y ajuste"— ponía el test en rojo dos veces seguidas. El arreglo de
+// verdad es quitar los bloques completos antes de mirar nada.
+const sinComentarios = (s) => s
+  .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, "")   // bloques /* … */ y {/* … */}
+  .split("\n")
+  .filter((l) => !/^\s*(\/\/|\*)/.test(l));
 
 describe("tuteo, nunca voseo", () => {
   const todos = [...archivosTodos("src"), ...archivosTodos("netlify/functions")].filter((f) => !f.endsWith("taxCO.js"));
