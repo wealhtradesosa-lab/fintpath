@@ -25,7 +25,7 @@ import { useMemo, useState, useEffect } from "react";
 import PageHeader from "./PageHeader";
 import { C, F } from "../lib/designTokens";
 import { fmtPlataCortaEs } from "../lib/formato.js";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Area, ReferenceLine } from "recharts";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
 
@@ -742,7 +742,13 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
         <div style={F.h2}>3 · Qué cambios vas a hacer</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Parte de una plantilla o arma el tuyo. Un escenario es una decisión concreta: qué vendes, qué pagas, a dónde va cada peso y con qué regla, y qué haces después.</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Un escenario es una decisión concreta: qué vendes, qué pagas, a dónde va cada peso y con qué regla, y qué haces después.</div>
+        {/* 22-oct-2026 (Santiago: "no sé por qué se hicieron también los
+            escenarios de seguridad, balance y otro que ni siquiera he
+            trabajado", "¿y cómo puedo editar mis escenarios?"). Aparecían
+            tres escenarios con nombre propio sin decir nunca que los arma
+            FINPATHIA con sus datos, ni que el resaltado es el que se edita. */}
+        <div style={{ ...F.caption, marginTop: 6 }}><b style={{ color: C.text }}>Seguridad</b>, <b style={{ color: C.text }}>Balance</b> y <b style={{ color: C.text }}>Crecimiento</b> no los creaste tú: los arma FINPATHIA con tus datos, como tres puntos de partida. Toca el que quieras para <b style={{ color: C.text }}>verlo y editarlo</b> — lo que cambies se guarda solo y ese escenario pasa a ser tuyo (puedes devolverlo a la plantilla cuando quieras). «+ Nuevo desde cero» arranca uno en blanco.</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}>
           {todos.map((e) => { const rr = res.find((x) => x.id === e.id); return <button key={e.id} onClick={() => setActivoId(e.id)} style={{ ...btn(false), borderColor: e.id === esc.id ? e.color : C.borderStrong, background: e.id === esc.id ? `${e.color}20` : "transparent", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: e.color }} />{e.nombre}{caminoElegido === e.id && " ★"}{rr && !rr.vigilancia.cumple && <span style={{ color: C.danger }}>!</span>}</button>; })}
           <button style={btn(false)} onClick={onNuevo}>+ Nuevo desde cero</button>
@@ -804,7 +810,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                 <tbody>
                   {(esc.despliegue || []).map((d) => <tr key={d.id} style={{ borderTop: `1px solid ${C.border}` }}>
                     <td style={{ ...td, minWidth: 150 }}>{d.destinoId ? <span>{d.nombre}<div style={F.caption}>ya lo tienes · vale {fmM(posDe(d.destinoId)?.capital || 0)} hoy</div></span> : <input value={d.nombre} onChange={(e) => setD(d.id, { nombre: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }} />}</td>
-                    <td style={td}>{d.destinoId ? <span style={chip(CANASTA_COLOR[d.canasta])}>{CANASTA_LABEL[d.canasta]}</span> : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 112 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
+                    <td style={td}>{d.destinoId ? <span style={chip(CANASTA_COLOR[d.canasta])}>{CANASTA_LABEL[d.canasta]}</span> : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[d.canasta], borderColor: CANASTA_COLOR[d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
                     <td style={tdNum}><NumPesos value={d.capital} onChange={(v) => setD(d.id, { capital: v || 0 })} w={150} /></td>
                     <td style={tdNum}><Num value={d.tasa} step={0.5} onChange={(v) => setD(d.id, { tasa: v || 0 })} suffix="%" w={80} /></td>
                     <td style={tdNum}><Num value={d.pagaPct} step={10} min={0} max={100} onChange={(v) => setD(d.id, { pagaPct: v || 0, regla: v >= 100 ? "Paga el 100% del rendimiento cada mes" : v <= 0 ? "Todo se reinvierte" : `Recibe el ${v}%, reinvierte el resto` })} suffix="%" w={80} /></td>
@@ -859,6 +865,46 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   );
 }
 
+// ─── Mes a mes: ¿alcanza para vivir? ─────────────────────────────────────────
+// 22-oct-2026 (Santiago: "no veo tampoco la grafica que muestra que va pasando
+// en los 10 anos"… y, mostrando una: "esto es super potente"). Las graficas que
+// habia dibujaban PATRIMONIO, que es un saldo y no responde la pregunta con la
+// que uno vive: ¿lo que entra cada mes alcanza para lo que sale? Esta la
+// responde de un vistazo: mientras la linea de color va por encima de la
+// punteada, el plan se sostiene solo, y la franja es lo que sobra.
+function GraficaMesAMes({ r }) {
+  const meses = r.resultado?.meses || [];
+  if (meses.length === 0) return null;
+  const datos = meses.map((m) => ({ mes: m.mes, entra: Math.round(m.entra), sale: Math.round(m.sale) }));
+  // Los hitos que de verdad mueven la linea; si son muchos, los mas separados.
+  const hitos = (r.resultado.log || []).filter((l) => l.mes > 0).reduce((acc, l) => { const ya = acc.find((x) => Math.abs(x.mes - l.mes) < 4); if (ya) { if (!ya.texto.includes(l.texto)) ya.texto += ` + ${l.texto}`; return acc; } acc.push({ mes: l.mes, texto: l.texto }); return acc; }, []).slice(0, 7);
+  const ap = r.puntos?.mesApretado;
+  const ticks = []; for (let a = 0; a <= meses.length; a += 12) ticks.push(a);
+  return (
+    <div style={card}>
+      <div style={F.h3}>Mes a mes: ¿alcanza para vivir?</div>
+      <div style={{ ...F.caption, marginTop: 2 }}>
+        <b style={{ color: r.color }}>Línea de color</b>: lo que entra cada mes (rentas, arriendos, pensiones). <b style={{ color: C.danger }}>Línea punteada</b>: lo que sale para vivir (gastos y cuotas). <b style={{ color: C.ok }}>Franja</b>: lo que sobra ese mes. Mientras la línea de color vaya por encima de la punteada, el plan se sostiene solo.
+      </div>
+      <div style={{ height: 300, marginTop: 14 }}>
+        <ResponsiveContainer>
+          <ComposedChart data={datos} margin={{ top: 26, right: 12, left: 0, bottom: 0 }}>
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="mes" {...axisProps} ticks={ticks} tickFormatter={(m) => (m === 0 ? "hoy" : `año ${m / 12}`)} />
+            <YAxis {...axisProps} width={64} tickFormatter={(v) => fmMes(v).replace("$", "")} />
+            <Tooltip content={<ChartTooltip formatter={(v) => fmMes(v)} labelFormatter={(m) => (m === 0 ? "Hoy" : `Año ${anioDe(m)}, mes ${(m % 12) + 1}`)} />} />
+            <Area type="stepAfter" dataKey={(x) => [Math.min(x.entra, x.sale), x.entra]} name="Sobra" stroke="none" fill={C.ok} fillOpacity={0.16} isAnimationActive={false} />
+            <Line type="stepAfter" dataKey="entra" name="Entra" stroke={r.color} strokeWidth={2} dot={false} isAnimationActive={false} />
+            <Line type="stepAfter" dataKey="sale" name="Sale" stroke={C.danger} strokeDasharray="5 4" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+            {hitos.map((h) => <ReferenceLine key={h.mes} x={h.mes} stroke={C.borderStrong} strokeDasharray="3 3" label={{ value: h.texto.length > 34 ? h.texto.slice(0, 32) + "…" : h.texto, position: "top", fontSize: 10, fill: C.subtle }} />)}
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      {ap && <div style={{ ...F.caption, marginTop: 6 }}>Mes más apretado: <b style={{ color: C.text }}>año {anioDe(ap.mes)}</b>, cobertura {pct(ap.cobertura)} — {ap.cobertura >= 100 ? "aun así alcanza" : "ahí no alcanza y toca sacar de capital"}.</div>}
+    </div>
+  );
+}
+
 // ─── Paso 4 · Tu camino a 10 años ───────────────────────────────────────────────────
 function PasoResultado({ base, r, elegido, onElegir, onNext, onVolver }) {
   if (!r) return null;
@@ -892,6 +938,7 @@ function PasoResultado({ base, r, elegido, onElegir, onNext, onVolver }) {
           {!r.vigilancia.cumple && <div style={{ marginTop: 12 }}><div style={{ ...F.h3, color: C.danger }}>Dónde se rompe</div>{r.vigilancia.roturas.slice(0, 5).map((x, i) => <div key={i} style={{ ...F.body, color: C.danger, marginTop: 4 }}>· Año {x.anio}: {x.detalle}</div>)}</div>}
         </div>
       </div>
+      <GraficaMesAMes r={r} />
       <div style={card}>
         <div style={F.h3}>Año a año</div>
         <div style={{ overflowX: "auto", marginTop: 8 }}>
