@@ -1242,7 +1242,7 @@ function LoQueFalta({ r, base, liq, perfil }) {
 }
 
 // ─── Paso 4 · Tu camino a 10 años ───────────────────────────────────────────────────
-function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver }) {
+function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver, onEditar }) {
   if (!r) return null;
   const p = r.puntos;
   const eventos = [...r.cfg.movimientos].filter((m) => m.mes > 0 || m.tipo === "flujo_inicia" || m.tipo === "comprar").sort((a, b) => a.mes - b.mes);
@@ -1292,6 +1292,15 @@ function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver })
           {!r.vigilancia.cumple && <div style={{ marginTop: 12 }}><div style={{ ...F.h3, color: C.danger }}>Dónde se rompe</div>{r.vigilancia.roturas.slice(0, 5).map((x, i) => <div key={i} style={{ ...F.body, color: C.danger, marginTop: 4 }}>· Año {x.anio}: {x.detalle}</div>)}</div>}
         </div>
       </div>
+      {/* 22-oct-2026 (Santiago: "y si uno ve el plan, ¿dónde lo puede editar?
+          Veo que toca casi crearlo de nuevo"). El paso 4 enseñaba el resultado
+          y para cambiar algo tocaba devolverse a ciegas por el paso a paso.
+          Desde acá se entra directo a la pregunta que uno quiere cambiar. */}
+      {onEditar && <div style={{ ...card, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={F.caption}>¿Algo no cuadra? Cámbialo sin rehacer nada:</span>
+        {[[1, "qué vendes"], [2, "qué deudas pagas"], [3, "en qué reinviertes"], [4, "qué más va a pasar"]].map(([n, t]) =>
+          <button key={n} style={{ ...btn(false), padding: "5px 12px" }} onClick={() => onEditar(n)}>✎ {t}</button>)}
+      </div>}
       <GraficaMesAMes r={r} />
       <LoQueFalta r={r} base={base} liq={liquidezEscenario(base, r)} perfil={perfil} />
       <GanaALaInflacion r={r} perfil={perfil} />
@@ -1311,7 +1320,7 @@ function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver })
 }
 
 // ─── Paso 5 · Compara ────────────────────────────────────────────────────────
-function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onElegir }) {
+function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onElegir, onEditar }) {
   const data = useMemo(() => { const H = Math.max(...res.map((r) => r.resultado.anual.length)); return Array.from({ length: H + 1 }, (_, a) => { const row = { anio: a }; res.forEach((r) => { row[r.id] = a === 0 ? r.puntos.patrimonioInicial : r.resultado.anual[a - 1]?.patrimonioFin; }); return row; }); }, [res]);
   const hoy = useMemo(() => { const entra = (base.base?.ia || 0) + (base.base?.ip || 0), sale = base.gastosMes; const crece = base.posiciones.reduce((s, p) => s + produce(p).crece, 0); return { entra, sale, queda: entra - sale, cobertura: sale > 0 ? (entra / sale) * 100 : 0, produce: entra + crece }; }, [base]);
   const fila = (l, f, hoyV) => [l, f, hoyV];
@@ -1357,6 +1366,12 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
               {filas.map(([l, f, h]) => <tr key={l} style={{ borderTop: `1px solid ${C.border}` }}><td style={{ ...td, color: C.muted }}>{l}</td><td style={{ ...tdNum, color: C.subtle }}>{h || "—"}</td>{res.map((r) => <td key={r.id} style={tdNum}>{f(r)}</td>)}</tr>)}
               <tr style={{ borderTop: `1px solid ${C.border}` }}><td style={{ ...td, color: C.muted }}>Se cumple</td><td style={td} />{res.map((r) => <td key={r.id} style={{ ...td, textAlign: "right" }}><span style={chip(r.vigilancia.cumple ? C.ok : C.danger)}>{r.vigilancia.cumple ? "sí" : `no · año ${r.vigilancia.roturas[0].anio}`}</span></td>)}</tr>
               <tr style={{ borderTop: `1px solid ${C.border}` }}><td style={td} /><td style={td} />{res.map((r) => <td key={r.id} style={{ ...td, textAlign: "right" }}>{caminoElegido === r.id ? <span style={chip(C.accent)}>Tu camino</span> : <button style={{ ...btn(false), padding: "4px 10px" }} onClick={() => onElegir(r.id)}>Elegir</button>}</td>)}</tr>
+              {/* Comparar no sirve de nada si desde ahí no se puede entrar a
+                  mirar el detalle o a cambiar lo que no gusta. */}
+              <tr style={{ borderTop: `1px solid ${C.border}` }}><td style={{ ...td, color: C.muted }}>Mirar o cambiar</td><td style={td} />{res.map((r) => <td key={r.id} style={{ ...td, textAlign: "right" }}>
+                <button style={{ ...btn(false), padding: "4px 10px" }} onClick={() => onVer(r.id)}>Ver detalle</button>
+                {onEditar && <button style={{ ...btn(false), padding: "4px 10px", marginLeft: 6 }} onClick={() => onEditar(r.id)}>✎ Editar</button>}
+              </td>)}</tr>
             </tbody>
           </table>
         </div>
@@ -1417,8 +1432,8 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
         {paso === 2 && <PasoIntencion todos={todos} res={res} base={base} perfil={perfil} activoId={rActivo?.id} setActivoId={setActivoId} onNuevo={nuevo} onNext={() => ir(3)} />}
         {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => { ir(4); setVerCompara(true); }} sub={sub} setSub={setSub} />}
         {paso === 3 && sub === 4 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} />}
-        {paso === 4 && !verCompara && <PasoResultado base={base} perfil={perfil} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} />}
-        {paso === 4 && verCompara && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); setVerCompara(false); }} caminoElegido={caminoElegido} onElegir={onElegir} />}
+        {paso === 4 && !verCompara && <PasoResultado base={base} perfil={perfil} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} onEditar={(n) => { ir(3); setSub(n); }} />}
+        {paso === 4 && verCompara && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); setVerCompara(false); }} caminoElegido={caminoElegido} onElegir={onElegir} onEditar={(id) => { setActivoId(id); ir(3); setSub(1); }} />}
         <div style={{ ...F.caption, textAlign: "center" }}>Lo que simulas aquí no toca tus datos reales. Los ejercicios (Pensiones, Ahorro BTC, Comprar o arrendar) alimentan los supuestos, no las decisiones.</div>
       </>)}
     </div>
