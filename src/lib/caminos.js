@@ -43,7 +43,19 @@ export const PERFIL_DEFAULT = {
   depreciacionVehiculo: -10,
   arriendoPctMensual: 0.5,   // % del valor de la vivienda, si se vive arrendado
   pensiones: [],             // [{ ownerId, mes, monto, nombre }]
+  // 22-oct-2026 — Lo que gana una SOCIEDAD paga renta antes de llegarte; lo
+  // tuyo personal ya está contado en tus gastos (el impuesto neto del año), y
+  // volver a cobrarlo acá seria contarlo dos veces. De ahí el 0 por defecto.
+  impuestoSociedad: 35,      // % sobre lo que rinde y sobre la ganancia al vender
+  impuestoPersona: 0,
 };
+
+/** De quién es una posición: tuya o de una sociedad. La ficha manda. */
+export function titularDe(activo, owners = [], ficha = {}) {
+  if (ficha.titular) return ficha.titular;
+  const o = owners.find((x) => x && x.id === activo?.owner);
+  return o && (o.type === "juridica" || o.tipo === "juridica") ? "sociedad" : "persona";
+}
 
 export const CANASTAS = ["proteccion", "rentas", "crecimiento", "uso"];
 // 22-oct-2026 (Santiago: "ese término RENTAS puede confundirse con rentas de
@@ -195,7 +207,14 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
   const posiciones = inv.map((a) => {
     const renta = rentaDeActivo[a.id] || 0;
     const ficha = conCanasta({ ...fichaPorDefecto(a, perfil, renta), ...(fichas[a.id] || {}) }, perfil, a.tp);
-    return { id: a.id, nombre: nombreActivo(a), capital: num(a.va) * fx(a), tipo: a.tp, owner: a.owner, renta, ventana: ventanaDeActivo[a.id], ...ficha, sale: fichas[a.id]?.estado === "sale" };
+    const titular = titularDe(a, user.owners || [], fichas[a.id] || {});
+    const impuesto = titular === "sociedad" ? num(perfil.impuestoSociedad) : num(perfil.impuestoPersona);
+    return { id: a.id, nombre: nombreActivo(a), capital: num(a.va) * fx(a), tipo: a.tp, owner: a.owner, renta, ventana: ventanaDeActivo[a.id],
+      // Lo que costó: hace falta para cobrar el impuesto sobre la GANANCIA y
+      // no sobre el precio de venta. Si no está, no se inventa.
+      costoBase: num(a.vc) > 0 ? num(a.vc) * fx(a) : null,
+      titular, impRendPct: impuesto, impGananciaPct: impuesto,
+      ...ficha, sale: fichas[a.id]?.estado === "sale" };
   });
   // Vivienda hay UNA. `esViviendaNombre` puede pegarle a varios ("casa X",
   // "casa Y"); si pasa, manda el de mayor capital y el resto deja de serlo.
@@ -203,6 +222,10 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
   casas.slice(1).forEach((p) => { p.vivienda = false; });
   // Si ningún inmueble quedó como vivienda, el mayor inmueble sin renta lo es.
   if (!posiciones.some((p) => p.vivienda)) { const cand = posiciones.filter((p) => p.inmueble && p.bolsillo === "uso" && !esLote(p)).sort((a, b) => b.capital - a.capital)[0]; if (cand && fichas[cand.id]?.vivienda !== false) cand.vivienda = true; }
+  // La casa donde vives no paga impuesto de ganancia al venderse. Va después
+  // de decidir cuál es la vivienda, no antes: si no, la que deja de serlo se
+  // queda exenta y la que pasa a serlo sigue pagando.
+  posiciones.forEach((p) => { if (p.vivienda) p.impGananciaPct = 0; });
 
   const flujos = [];
   const usados = new Set();

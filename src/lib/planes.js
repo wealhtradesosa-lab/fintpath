@@ -70,7 +70,7 @@ function tomarDe(origen, monto, pos, caja) {
  */
 export function simularCamino(cfg = {}) {
   const H = Math.max(12, num(cfg.meses) || 120);
-  const pos = clonar(cfg.posiciones || []).map((p) => ({ ...p, capital: num(p.capital), tasa: num(p.tasa), pagaPct: p.pagaPct == null ? (p.bolsillo === "sustento" ? 100 : 0) : num(p.pagaPct), valorizacion: num(p.valorizacion), desdeMes: num(p.desdeMes) || 0 }));
+  const pos = clonar(cfg.posiciones || []).map((p) => ({ ...p, capital: num(p.capital), tasa: num(p.tasa), pagaPct: p.pagaPct == null ? (p.bolsillo === "sustento" ? 100 : 0) : num(p.pagaPct), valorizacion: num(p.valorizacion), desdeMes: num(p.desdeMes) || 0, impRendPct: num(p.impRendPct), impGananciaPct: num(p.impGananciaPct) }));
   const caja = { valor: num(cfg.caja) };
   let flujos = clonar(cfg.flujos || []).map((f) => ({ ...f, monto: num(f.monto), desdeMes: num(f.desdeMes) || 0, hastaMes: f.hastaMes == null ? Infinity : num(f.hastaMes) }));
   const deudas = clonar(cfg.deudas || []).map((d) => ({ ...d, saldo: num(d.saldo), tasa: num(d.tasa), cuota: num(d.cuota), hastaMes: d.hastaMes == null ? Infinity : num(d.hastaMes), pagada: false }));
@@ -85,9 +85,15 @@ export function simularCamino(cfg = {}) {
     switch (m.tipo) {
       case "vender": {
         const p = pos.find((x) => x.id === m.posicionId); if (!p) return;
-        const neto = m.neto != null ? num(m.neto) : p.capital * (m.netoPct != null ? num(m.netoPct) / 100 : 1);
+        const antesDeImpuesto = m.neto != null ? num(m.neto) : p.capital * (m.netoPct != null ? num(m.netoPct) / 100 : 1);
+        // El impuesto de la venta se cobra sobre la GANANCIA (lo que vale hoy
+        // menos lo que costó), no sobre el precio. Si no se sabe qué costó, no
+        // se inventa: no se cobra.
+        const gan = p.costoBase != null ? Math.max(0, p.capital - num(p.costoBase)) : 0;
+        const impVenta = gan * num(p.impGananciaPct) / 100;
+        const neto = Math.max(0, antesDeImpuesto - impVenta);
         caja.valor += neto; p.capital = 0; p.vendida = true;
-        log.push({ mes, texto: `Se vende ${p.nombre}: entran ${Math.round(neto)}` });
+        log.push({ mes, texto: `Se vende ${p.nombre}: entran ${Math.round(neto)}${impVenta > 0 ? ` (neto de ${Math.round(impVenta)} de impuesto)` : ""}` });
         // Los flujos atados al activo terminan
         flujos = flujos.map((f) => (f.posicionId === p.id ? { ...f, hastaMes: Math.min(f.hastaMes, mes - 1) } : f));
         break;
@@ -134,8 +140,13 @@ export function simularCamino(cfg = {}) {
       // crédito); lo que se reinvierte compone al efectivo anual (22% al año
       // es 22%, no 24,4%). Así el motor reproduce el plan SALEM al peso en
       // flujos y queda dentro del 1% en patrimonio.
-      const paga = p.capital * mensual(p.tasa) * (p.pagaPct / 100);
-      const re = p.capital * mensualCompuesta(p.tasa) * (1 - p.pagaPct / 100);
+      // 22-oct-2026 — Lo que una SOCIEDAD gana paga renta antes de llegarte;
+      // lo tuyo personal ya está contado en tus gastos (el impuesto neto), así
+      // que por defecto no se vuelve a cobrar. `impRendPct` lo pone quien arma
+      // la base, según de quién sea la posición (ver titularDe en caminos.js).
+      const bruto = p.capital * mensual(p.tasa) * (p.pagaPct / 100);
+      const paga = bruto * (1 - num(p.impRendPct) / 100);
+      const re = p.capital * mensualCompuesta(p.tasa) * (1 - p.pagaPct / 100) * (1 - num(p.impRendPct) / 100);
       const val = p.capital * mensualCompuesta(p.valorizacion);
       p.capital += re + val;
       recibido += paga; reinvertido += re; valorizado += val;

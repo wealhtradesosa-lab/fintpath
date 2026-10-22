@@ -228,6 +228,7 @@ function FilaActivo({ p, onFicha, onQuitar }) {
   const partes = [`Vale ${fmM(p.capital)}`];
   partes.push(x.recibe > 0 ? `te paga ${fmMes(x.recibe)}/mes${v ? ` (${v})` : ""}` : "no te paga nada");
   if (p.vivienda) partes.push("vives aquí");
+  if (p.titular === "sociedad" && p.impRendPct > 0) partes.push(`la sociedad paga ${pctEs(p.impRendPct)} de renta`);
   if (p.tasa > 0 && p.pagaPct < 100) partes.push(`reinvierte al ${pctEs(p.tasa)}`);
   if (p.valorizacion > 0) partes.push(`valoriza ${pctEs(p.valorizacion)} al año`);
   else if (p.valorizacion < 0) partes.push(`pierde ${pctEs(-p.valorizacion)} al año`);
@@ -239,6 +240,7 @@ function FilaActivo({ p, onFicha, onQuitar }) {
           <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>
             {p.nombre}
             {p.soloIngreso && <span style={{ ...chip(C.warn), marginLeft: 8 }}>de un ingreso, no está en Inversiones</span>}
+            {p.titular === "sociedad" && <span style={{ ...chip(C.accent), marginLeft: 8 }}>de una sociedad</span>}
             <span style={{ ...chip(CANASTA_COLOR[k]), marginLeft: 8 }}>{CANASTA_LABEL[k]}</span>
           </div>
           <div style={{ ...F.body, marginTop: 3 }}>{partes.join(" · ")}</div>
@@ -252,6 +254,10 @@ function FilaActivo({ p, onFicha, onQuitar }) {
       </div>
       {abierto && (
         <div style={{ ...sub, marginTop: 10, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
+          {/* 22-oct-2026 — "La casa VIP es para vivirla: no se vende y no paga
+              el 35%" (Plan SALEM). Lo que gana una sociedad paga renta antes
+              de llegarte; lo tuyo personal ya está contado en tus gastos. */}
+          <Campo l="¿De quién es?"><select value={p.titular || "persona"} onChange={(e) => onFicha({ titular: e.target.value })} style={{ ...inputS, width: 150 }}><option value="persona">Tuyo</option><option value="sociedad">De una sociedad</option></select></Campo>
           <Campo l="En qué canasta va"><select value={k} onChange={(e) => onFicha({ canasta: e.target.value })} style={{ ...inputS, width: 150, color: CANASTA_COLOR[k] }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select></Campo>
           {!(p.renta > 0) && <Campo l="Rinde al año"><div><input type="number" step={0.5} value={Math.round(p.tasa * 100) / 100} onChange={(e) => onFicha({ tasa: Number(e.target.value) })} style={inp2} /> %</div></Campo>}
           {!(p.renta > 0) && p.tasa > 0 && <Campo l="De eso, te pagan"><div><input type="number" step={10} min={0} max={100} value={p.pagaPct} onChange={(e) => onFicha({ pagaPct: Number(e.target.value) })} style={inp2} /> % (el resto se reinvierte)</div></Campo>}
@@ -595,6 +601,9 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
           <Campo l="Valorización lotes"><Num value={perfil.valorizacionLote} step={0.5} onChange={(v) => set("valorizacionLote", v)} suffix="%" /></Campo>
           <Campo l="Arriendo si vives arrendado (% del valor al mes)"><Num value={perfil.arriendoPctMensual} step={0.1} onChange={(v) => set("arriendoPctMensual", v)} suffix="%" /></Campo>
           <Campo l="Cobertura mínima"><Num value={perfil.coberturaMin} step={5} onChange={(v) => set("coberturaMin", v)} suffix="%" /></Campo>
+          <Campo l="Impuesto de la sociedad"><Num value={perfil.impuestoSociedad} step={1} min={0} max={100} onChange={(v) => set("impuestoSociedad", v)} suffix="%" /></Campo>
+          <Campo l="Impuesto sobre lo tuyo"><Num value={perfil.impuestoPersona} step={1} min={0} max={100} onChange={(v) => set("impuestoPersona", v)} suffix="%" /></Campo>
+          <div style={{ ...F.caption, gridColumn: "1 / -1" }}>Lo que gana una sociedad paga renta antes de llegarte (35% sobre lo que rinde y sobre la ganancia al vender). Lo tuyo personal va en 0 porque tu impuesto del año ya está contado dentro de tus gastos: subirlo acá lo cobraría dos veces. La casa donde vives nunca paga ganancia.</div>
         </div>}
       </div>
       <Siguiente onClick={onNext}>Siguiente: construye tu escenario</Siguiente>
