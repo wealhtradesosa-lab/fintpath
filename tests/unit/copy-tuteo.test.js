@@ -270,3 +270,37 @@ describe("sin claims de optimización tributaria en texto visible", () => {
     expect(malas).toEqual([]);
   });
 });
+
+describe("sin promesas de ahorro fijas (renglón 51 F-210)", () => {
+  it("no vuelve a aparecer «te ahorra fácil»", () => {
+    const malas = [];
+    for (const f of [...archivosTodos("src"), ...archivosTodos("netlify/functions")])
+      for (const l of sinComentarios(readFileSync(f, "utf8")))
+        if (/te ahorra f[aá]cil/i.test(l)) malas.push(`${f}: ${l.trim().slice(0, 140)}`);
+    expect(malas).toEqual([]);
+  });
+});
+
+describe("sin promesas de ahorro con monto", () => {
+  // «ahorra hasta $113M», «te ahorra $200K», «puede ahorrar entre $1M», «Cada $1M … ahorra $350K», «ahorra hasta $0.39»…
+  const reAhorroMonto = /(ahorra(r|s)?|ahorro de)\s+(hasta|entre|f[aá]cil|unos|aprox\.?)?\s*\$\s?\d|te ahorra\s+\$|Cada \$[\d.,]+\s*[MK]?[^.]{0,40}ahorra|\bahorra\s+\{fm\(/i;
+  // Mayúsculas: el KPI de marketing del hero A («AHORRO DETECTADO $113M»). «Ahorro detectado» en
+  // PlanAhorroTributario/VistaFamiliar muestra la cifra calculada del usuario, no un monto fijo.
+  const reKpiAhorro = /AHORRO DETECTADO/;
+  const prometeAhorro = (t) => reAhorroMonto.test(t) || reKpiAhorro.test(t);
+  const archivos = [...archivosTodos("src"), ...archivosTodos("netlify/functions")].filter((f) => !f.endsWith("taxCO.js") && !/US\.jsx?$/.test(f));
+  it("ningún texto promete un ahorro con monto fijo", () => {
+    const malas = [];
+    for (const f of archivos)
+      for (const l of sinComentarios(readFileSync(f, "utf8")))
+        // «para ahorrar $5M/mes?» es una meta de ahorro del usuario en AsesorIA, no una promesa.
+        if (prometeAhorro(l) && !/para ahorrar \$5M\/mes\?/.test(l)) malas.push(`${f}: ${l.trim().slice(0, 140)}`);
+    expect(malas).toEqual([]);
+  });
+  it("el patrón detecta los casos conocidos", () => {
+    for (const t of ["ahorra hasta $113M/año", "te ahorra $200K", "puede ahorrar entre $1M y $8M", "Cada $1M en nómina ahorra $350K", "Cada $1 aportado ahorra hasta $0.39", 'label="AHORRO DETECTADO" value="$113M"', "Aplicar PV/AFC ahorra {fm(ahorroOpt)}/año"])
+      expect(prometeAhorro(t)).toBe(true);
+    expect(reAhorroMonto.test("Estas deducciones pueden bajar tu impuesto.")).toBe(false);
+    expect(reAhorroMonto.test("Aplicar PV/AFC podría bajar tu impuesto estimado en {fm(ahorroOpt)}/año (estimación, confírmalo con tu contador)")).toBe(false);
+  });
+});

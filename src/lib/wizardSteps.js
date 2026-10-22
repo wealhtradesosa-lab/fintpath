@@ -183,7 +183,7 @@ export const WIZARD_NATURAL = [
     section: "ahorros",
     type: "yes_no",
     question: "¿Aportas a fondo de pensión voluntaria o cuenta AFC?",
-    helpText: "Esta es LA palanca más poderosa para reducir impuestos legalmente. Cada $1 aportado puede ahorrarte hasta $0.39 de impuesto.",
+    helpText: "Los aportes a pensión voluntaria y AFC pueden bajar tu impuesto, dentro de los topes de ley. Cuánto depende de tu caso.",
     options: [
       { value: "si", label: "Sí, aporto a PV o AFC", emoji: "💎" },
       { value: "no", label: "No / nunca lo he hecho", emoji: "❌" },

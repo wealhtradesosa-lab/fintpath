@@ -210,7 +210,7 @@ export function auditarDatos(user, options = {}) {
         severidad: "info",
         categoria: "faltantes",
         titulo: `${o.name}: no sé si tienes dependientes`,
-        mensaje: `Esta deducción puede ahorrar entre $1M y $8M al año. No la tienes cargada.`,
+        mensaje: `Si tienes dependientes, esta deducción puede bajar tu impuesto. Todavía no la tienes cargada.`,
         sugerencia: `En el wizard te pregunto, o agrégalo en Configuración → Owners.`,
         accion: { tipo: "abrir_wizard" },
       });
@@ -383,7 +383,7 @@ export function auditarDatos(user, options = {}) {
         categoria: "oportunidades_data",
         titulo: `${o.name}: facturas como independiente pero no veo costos`,
         mensaje: `Como persona natural independiente puedes deducir gastos de tu actividad: oficina, internet, transporte, materiales, etc.`,
-        sugerencia: `Carga tus gastos de la actividad. Cada $1M deducido te ahorra $200K-$390K de impuesto.`,
+        sugerencia: `Carga tus gastos de la actividad para que el cálculo los tenga en cuenta. Revisa con tu contador cuáles proceden.`,
         accion: { tipo: "agregar_gasto", categoria: "Oficina" },
       });
     }

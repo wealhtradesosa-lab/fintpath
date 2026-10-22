@@ -255,7 +255,7 @@ export default function HeroVariantA({ onGetStarted = () => {}, onLogin }) {
               <KPICard label="PATRIMONIO" value="$21.8B" sub="+8.3% YoY" color={T.green} />
               <KPICard label="INGRESO ANUAL" value="$1.6B" sub="3 fuentes" color={T.blue} />
               <KPICard label="IMPUESTO ESTIMADO" value="$127M" sub="Tasa 7.9%" color={T.purple} />
-              <KPICard label="AHORRO DETECTADO" value="$113M" sub="Ver palancas" color={T.green} highlight />
+              <KPICard label="PATRIMONIO NETO" value="Tu foto" sub="Activos menos deudas" color={T.green} highlight />
             </div>
 
             {/* Chart sintético */}
