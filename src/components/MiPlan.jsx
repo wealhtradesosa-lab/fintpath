@@ -185,7 +185,15 @@ const Siguiente = ({ onClick, children }) => <div style={{ display: "flex", just
 // rótulo de la VENTA, así que la tercera no tenía dónde entrar y el único
 // camino era irse a Patrimonio a apagar el activo (lo que lo saca de todo el
 // producto: impuestos, dashboard, asesores). Ahora la venta se llama por su
-// nombre —"Se vende hoy"— y quitar es su propia acción, reversible.
+// nombre y quitar es su propia accion, reversible.
+//
+// 22-oct-2026 — Primero quedo "Se vende hoy", y Santiago: "porque usa el
+// termino hoy… 'sale hoy' no es como muy claro", "sale es que?", "activo para
+// reconvertir, activo para vender pero no necesariamente hoy, eso ('hoy')
+// sobra". Tiene razon: el "hoy" es un detalle del motor (la venta entra en el
+// mes 0), no la decision de la persona. La decision es que ese activo deja de
+// ser lo que es para convertirse en otra cosa. Se llama por eso: "Para
+// reconvertir".
 function FilaActivo({ p, onFicha, onQuitar }) {
   const [abierto, setAbierto] = useState(false);
   const x = produce(p);
@@ -212,7 +220,7 @@ function FilaActivo({ p, onFicha, onQuitar }) {
           <div style={F.caption}>{p.tipo} · {p.canasta ? "la canasta la decidiste tú" : porQueCanasta(p)}</div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={() => onFicha({ estado: off ? "continua" : "sale" })} style={{ ...btn(false), color: off ? C.danger : C.ok, borderColor: off ? C.danger : C.ok, whiteSpace: "nowrap" }}>{off ? "Se vende hoy" : "Continúa"}</button>
+          <button onClick={() => onFicha({ estado: off ? "continua" : "sale" })} style={{ ...btn(false), color: off ? C.danger : C.ok, borderColor: off ? C.danger : C.ok, whiteSpace: "nowrap" }}>{off ? "Para reconvertir" : "Continúa"}</button>
           <button onClick={() => setAbierto((a) => !a)} style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>{abierto ? "cerrar" : "ajustar"}</button>
           <button onClick={onQuitar} title="No va en el modelo: no lo tienes o no va acá. Sale del patrimonio y de lo que entra al mes; no libera plata, porque no se vende. Se puede volver a incluir." style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>quitar</button>
         </div>
@@ -261,7 +269,8 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
         <div style={F.h2}>1 · Hoy: qué tienes, qué produce y qué sigue en el plan</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Este es tu punto de partida: <b style={{ color: C.text }}>qué tienes</b>, <b style={{ color: C.text }}>cuánto vale</b>, <b style={{ color: C.text }}>cuánto te renta</b> y <b style={{ color: C.text }}>hasta cuándo</b>. Ya clasificamos cada cosa según lo que produce — revisa que esté bien y corrige lo que no cuadre. Lo único que tienes que decidir es si cada activo <b style={{ color: C.text }}>continúa</b> o <b style={{ color: C.text }}>se vende hoy</b>: lo que se vende libera plata para desplegar en cada escenario, y las deudas que marques se pagan con eso. Y si algo no va acá —no es tuyo, está repetido, no lo tienes— lo <b style={{ color: C.text }}>quitas</b>: eso no se vende, simplemente deja de contar. Lo que decidas aquí vale para todos los escenarios.</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Este es tu punto de partida: <b style={{ color: C.text }}>qué tienes</b>, <b style={{ color: C.text }}>cuánto vale</b>, <b style={{ color: C.text }}>cuánto te renta</b> y <b style={{ color: C.text }}>hasta cuándo</b>. Ya clasificamos cada cosa según lo que produce — revisa que esté bien y corrige lo que no cuadre.</div>
+        <div style={{ ...F.body, marginTop: 8 }}>Acá haces una sola cosa: decir <b style={{ color: C.text }}>qué continúa</b> y <b style={{ color: C.text }}>qué sale para reconvertir</b>. Lo que sale se vende, y esa plata te queda <b style={{ color: C.text }}>a favor</b>: con ella pagas deudas o reinviertes, y eliges en qué más adelante. Si algo no va en el modelo —no es tuyo, está repetido, no lo tienes— lo <b style={{ color: C.text }}>quitas</b>: eso no se vende, simplemente deja de contar. Lo que decidas aquí vale para todos los escenarios.</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginTop: 14 }}>
           {tiles.map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
         </div>
@@ -288,7 +297,7 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
           <button onClick={() => setRevisar((r) => !r)} style={btn(!revisar)}>{revisar ? "Ocultar la lista" : `Revisar mis ${base.posiciones.length} activos`}</button>
         </div>
         {revisar && <div style={{ marginTop: 6 }}>
-          <div style={{ ...F.caption, marginBottom: 2 }}>De cada uno hay que decidir una cosa: si <b style={{ color: C.text }}>continúa</b> o <b style={{ color: C.text }}>se vende hoy</b> (libera plata para el plan). Lo demás ya está calculado — si algo no cuadra, "ajustar"; si algo no va en el modelo, "quitar".</div>
+          <div style={{ ...F.caption, marginBottom: 2 }}>De cada uno decides una cosa: si <b style={{ color: C.text }}>continúa</b> tal como está, o si va <b style={{ color: C.text }}>para reconvertir</b> — lo vendes y esa plata queda a favor para pagar deudas o reinvertir. No dice cuándo lo vendes: el plan cuenta esa plata disponible desde el arranque. Lo demás ya está calculado — si algo no cuadra, "ajustar"; si algo no va en el modelo, "quitar".</div>
           {[...base.posiciones].sort((a, b2) => b2.capital - a.capital).map((q) => <FilaActivo key={q.id} p={q} onFicha={(patch) => setF(q.id, patch)} onQuitar={() => setF(q.id, { estado: "fuera" })} />)}
         </div>}
         {/* Lo quitado no se esconde: se dice, con su plata, y se puede
@@ -308,17 +317,17 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 14 }}>
         {base.deudas.length > 0 && <div style={card}>
           <div style={F.h3}>Deudas</div>
-          <div style={{ ...F.caption, marginBottom: 8 }}>Marca las que se pagan hoy con lo que sale del plan.</div>
+          <div style={{ ...F.caption, marginBottom: 8 }}>Marca las que pagas con ese saldo a favor. Lo que pagues deja de costarte cuota cada mes.</div>
           <div style={{ display: "grid", gap: 6 }}>{base.deudas.map((d) => <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", borderTop: `1px solid ${C.border}`, paddingTop: 6, flexWrap: "wrap" }}><input type="checkbox" checked={!!d.pagar} onChange={(e) => setF(`deu_${d.id}`, { pagar: e.target.checked })} /><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}{d.pagar && <span style={chip(C.ok)}>se paga hoy</span>}</label>)}</div>
         </div>}
         <div style={{ ...card, borderColor: salen.length ? C.accent : C.border }}>
-          <div style={F.h3}>Lo decidido hoy, para todos los escenarios</div>
-          {salen.length === 0 && capFuera.n === 0 && !base.deudas.some((d) => d.pagar) ? <div style={{ ...F.body, marginTop: 6 }}>Todo continúa tal como está. Si algo va a salir del plan (un inmueble que vendes, un lote), márcalo arriba como <b style={{ color: C.text }}>Se vende hoy</b>.</div> : (
+          <div style={F.h3}>Lo que decides acá vale para todos los escenarios</div>
+          {salen.length === 0 && capFuera.n === 0 && !base.deudas.some((d) => d.pagar) ? <div style={{ ...F.body, marginTop: 6 }}>Todo continúa tal como está. Si algo va a salir (un inmueble que vendes, un lote quieto), márcalo arriba como <b style={{ color: C.text }}>Para reconvertir</b>.</div> : (
             <div style={{ marginTop: 6, display: "grid", gap: 6 }}>
               {capFuera.n > 0 && <div style={F.body}>Fuera del modelo: <b style={{ color: C.text }}>{base.fuera.map((q) => q.nombre).join(", ")}</b> → {fmM(capFuera.capital)} que dejan de contar (no se venden).</div>}
-              {salen.length > 0 && <div style={F.body}>Sale: <b style={{ color: C.text }}>{salen.map((p) => p.nombre).join(", ")}</b> → liberas <b style={{ color: C.text }}>{fmM(hoy.liberado)}</b>{hoy.costoVentaPct > 0 ? ` (neto de ${hoy.costoVentaPct}% de costos de venta)` : ""}.</div>}
+              {salen.length > 0 && <div style={F.body}>Para reconvertir: <b style={{ color: C.text }}>{salen.map((p) => p.nombre).join(", ")}</b> → liberas <b style={{ color: C.text }}>{fmM(hoy.liberado)}</b>{hoy.costoVentaPct > 0 ? ` (neto de ${hoy.costoVentaPct}% de costos de venta)` : ""}.</div>}
               {hoy.pagado > 0 && <div style={F.body}>Se paga: <b style={{ color: C.text }}>{base.deudas.filter((d) => d.pagar).map((d) => d.nombre).join(", ")}</b> → <b style={{ color: C.text }}>{fmM(hoy.pagado)}</b>, y dejas de pagar {fmMes(hoy.cuotasQueSalen)} de cuotas al mes.</div>}
-              <div style={{ ...F.body, color: hoy.porDesplegar >= 0 ? C.ok : C.danger }}>Quedan <b>{fmM(hoy.porDesplegar)}</b> por desplegar en cada escenario (paso 3).</div>
+              <div style={{ ...F.body, color: hoy.porDesplegar >= 0 ? C.ok : C.danger }}>Te queda <b>{fmM(hoy.porDesplegar)}</b> a favor para reinvertir. En qué lo pones se decide en el paso 3.</div>
             </div>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, ...F.caption }}>Costos de venta (comisión, impuestos)<input type="number" step={0.5} min={0} max={30} value={fichas.__costoVentaPct ?? 0} onChange={(e) => onFichas({ ...fichas, __costoVentaPct: Number(e.target.value) })} style={inp} />% de lo vendido</div>
@@ -693,7 +702,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
           <div style={card}>
             <H n="B" t="¿Qué vendes o transformas hoy?" d="Marca lo que sale. Puedes vender todo o solo una parte." />
             <div style={{ display: "grid", gap: 6 }}>
-              {base.posiciones.filter((p) => p.sale).map((p) => <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: 0.7 }}><input type="checkbox" checked disabled /><span style={{ ...F.caption, color: C.text }}>{p.nombre}</span><span style={F.caption}>{fmM(p.capital)}</span><span style={chip(C.accent)}>sale · decidido en Hoy</span></div>)}
+              {base.posiciones.filter((p) => p.sale).map((p) => <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: 0.7 }}><input type="checkbox" checked disabled /><span style={{ ...F.caption, color: C.text }}>{p.nombre}</span><span style={F.caption}>{fmM(p.capital)}</span><span style={chip(C.accent)}>para reconvertir · paso 1</span></div>)}
               {base.posiciones.filter((p) => !p.sale).sort((a, b) => b.capital - a.capital).map((p) => { const v = ventaDe(p.id); return (
                 <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 6, flexWrap: "wrap" }}>
                   <label style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200, cursor: "pointer" }}><input type="checkbox" checked={!!v} onChange={() => toggleVenta(p)} /><span style={{ ...F.caption, color: C.text }}>{p.nombre}</span><span style={F.caption}>{fmM(p.capital)}{p.vivienda ? " · vivienda" : ""}{p.renta > 0 ? ` · renta ${fmMes(p.renta)}` : ""}</span></label>
@@ -704,7 +713,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
           </div>
           {base.deudas.length > 0 && <div style={card}>
             <H n="C" t="¿Qué deudas pagas con eso?" d="Lo que pagues deja de costar cuota cada mes." />
-            <div style={{ display: "grid", gap: 6 }}>{base.deudas.map((d) => <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: d.pagar ? "default" : "pointer", borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: d.pagar ? 0.7 : 1, flexWrap: "wrap" }}><input type="checkbox" checked={d.pagar || (esc.pagos || []).includes(d.id)} disabled={d.pagar} onChange={() => togglePago(d.id)} /><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}{d.pagar && <span style={chip(C.accent)}>se paga · decidido en Hoy</span>}</label>)}</div>
+            <div style={{ display: "grid", gap: 6 }}>{base.deudas.map((d) => <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: d.pagar ? "default" : "pointer", borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: d.pagar ? 0.7 : 1, flexWrap: "wrap" }}><input type="checkbox" checked={d.pagar || (esc.pagos || []).includes(d.id)} disabled={d.pagar} onChange={() => togglePago(d.id)} /><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}{d.pagar && <span style={chip(C.accent)}>se paga · paso 1</span>}</label>)}</div>
           </div>}
           <div style={card}>
             <H n="D" t="¿En qué inviertes lo que te queda?" d="Cada fila es un destino y cuánta plata le metes. Lo que escribes es plata que ENTRA ahí, no lo que ese activo vale." />

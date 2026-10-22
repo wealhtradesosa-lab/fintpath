@@ -674,7 +674,7 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   const nom = (id) => byId[id]?.nombre || id;
   const salen = baseCfg.posiciones.filter((p) => p.sale).map((p) => p.nombre);
   const pagadasHoy = baseCfg.deudas.filter((d) => d.pagar).map((d) => d.nombre);
-  if (salen.length) notas.push(`Sale del plan (decidido en Hoy): ${salen.join(", ")}${pagadasHoy.length ? `; se paga ${pagadasHoy.join(", ")}` : ""}: quedan ${M(num(baseCfg.hoy?.porDesplegar))} por desplegar.`);
+  if (salen.length) notas.push(`Para reconvertir (decidido en el paso 1): ${salen.join(", ")}${pagadasHoy.length ? `; se paga ${pagadasHoy.join(", ")}` : ""}: quedan ${M(num(baseCfg.hoy?.porDesplegar))} por desplegar.`);
   const vendidas = (esc.ventas || []).filter((v) => !byId[v.posicionId]?.sale).map((v) => `${nom(v.posicionId)}${v.monto != null ? ` (${M(v.monto)})` : ""}`);
   if (vendidas.length) notas.push(`Vendes ${vendidas.join(", ")}: liberas ${M(liq.liberado - liq.liberadoHoy)}.`);
   const pagosEsc = (esc.pagos || []).filter((id) => !baseCfg.deudas.find((d) => d.id === id)?.pagar);
