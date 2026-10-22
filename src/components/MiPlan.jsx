@@ -655,6 +655,8 @@ function queHace(esc, base) {
   // persona no hubiera decidido nada: lo había decidido la plantilla.
   return ventas.length || (esc.pagos || []).length || (esc.despliegue || []).length ? partes.join(" · ") : `nada decidido todavía · ${partes[partes.length - 1]}`;
 }
+/** ¿Esta persona ya decidió algo en este escenario? */
+const tieneAlgo = (e) => !!((e.ventas || []).length || (e.pagos || []).length || (e.despliegue || []).length || (e.eventos || []).length);
 function PasoIntencion({ todos, res, base, activoId, setActivoId, onNuevo, onNext }) {
   const hoy = base?.base?.patrimonioNeto ?? 0;
   const c = base.canastasHoy;
@@ -708,7 +710,13 @@ function PasoIntencion({ todos, res, base, activoId, setActivoId, onNuevo, onNex
                 <div style={{ ...F.label, marginTop: 8 }}>Con lo tuyo</div>
                 <div style={{ ...F.caption, color: C.text, marginTop: 2 }}>{queHace(e, base)}</div>
               </div>
-              {r && <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
+              {/* 22-oct-2026 (Santiago: "modela escenarios por defecto sin que
+                  el usuario los haya hecho"). La tarjeta mostraba un "AÑO 10:
+                  $38.580 M" de un plan que nadie armó: es el resultado de no
+                  hacer nada, presentado como la promesa de la plantilla. Si no
+                  hay ni una decisión tomada, no hay resultado que mostrar. */}
+              {!tieneAlgo(e) && <div style={{ ...F.caption, marginTop: 10, color: C.muted }}>Todavía no hay plan que proyectar: esta tarjeta solo dice hacia dónde apunta la mezcla. Elígela y arma el plan —qué vendes, qué pagas, en qué lo pones— y ahí sale el resultado a 10 años.</div>}
+              {r && tieneAlgo(e) && <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
                 <div><div style={F.label}>Año 10 <Imposible p={r.puntos} compacto /></div><div style={{ ...F.monoLg, color: C.text }}>{fmM(r.puntos.patrimonioFinal)}</div><div style={{ ...F.caption, color: d >= 0 ? C.ok : C.danger }}>{d >= 0 ? "+" : "−"}{fmM(Math.abs(d))}</div></div>
                 <div><div style={F.label}>Queda al mes</div><div style={{ ...F.monoLg, color: r.puntos.quedaMes >= 0 ? C.ok : C.danger }}>{fmMes(r.puntos.quedaMes)}</div><div style={F.caption}>en el año 10</div></div>
               </div>}

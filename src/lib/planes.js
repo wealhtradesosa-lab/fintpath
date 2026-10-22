@@ -167,6 +167,31 @@ export function simularCamino(cfg = {}) {
     const entra = recibido + ingFlujos;
     const sale = gastos + cuotas;
     const queda = entra - sale;
+    const cob = sale > 0 ? (entra / sale) * 100 : null;
+    // 4.5) La banda de cobertura (22-oct-2026, del Plan Patrimonial SALEM:
+    //      "el sustento se mide por cobertura: mínimo 120%. Si baja de 110%,
+    //      se mueve capital de crecimiento a sustento. Si pasa de 140%, lo que
+    //      sobra sube a crecimiento").
+    //
+    //      Es una banda de DOS lados, y los dos importan: el de abajo protege
+    //      la vida -si lo que entra deja de cubrir lo que sale, se trae
+    //      capital de lo que crece hasta volver a cubrirla- y el de arriba
+    //      evita que el plan acumule renta de más mientras lo que multiplica
+    //      se queda quieto.
+    const BC = R.coberturaBanda;
+    let movioPorCobertura = 0;
+    if (BC && cob != null && BC.min != null && cob < num(BC.min) && BC.haciaId) {
+      const dest = pos.find((x) => x.id === BC.haciaId);
+      const faltaMes = sale * num(BC.min) / 100 - entra;
+      // Cuánto capital hay que traer para que ESE destino produzca lo que falta.
+      const rinde = dest ? mensual(dest.tasa) * (dest.pagaPct / 100) : 0;
+      if (dest && rinde > 0 && faltaMes > 0) {
+        const necesario = faltaMes / rinde;
+        const fuentes = pos.filter((x) => (BC.desdeIds || []).includes(x.id) && x.id !== dest.id && x.capital > 0).sort((a, b) => b.capital - a.capital).map((x) => ({ posicionId: x.id }));
+        const t = tomarDe(fuentes, necesario, pos, caja);
+        if (t > 0) { dest.capital += t; movioPorCobertura = t; log.push({ mes, texto: `Cobertura en ${Math.round(cob)}%: se mueven ${Math.round(t)} de lo que crece a ${dest.nombre}` }); }
+      }
+    }
     // 5) Excedente o déficit
     if (queda > 0) {
       let libre = queda;
@@ -176,7 +201,10 @@ export function simularCamino(cfg = {}) {
         const actual = c === caja ? caja.valor : c?.capital;
         if (c && actual < num(R.colchon.meta)) { const t = Math.min(libre, num(R.colchon.meta) - actual); if (c === caja) caja.valor += t; else c.capital += t; libre -= t; }
       }
-      const reparto = R.excedente.length ? R.excedente : [{ posicionId: "caja", pct: 100 }];
+      // Con la cobertura por encima del techo, lo que sobra sube entero a lo
+      // que crece: ya hay de sobra con qué vivir.
+      const holgado = BC && BC.max != null && cob != null && cob > num(BC.max) && BC.haciaCrecimientoId;
+      const reparto = holgado ? [{ posicionId: BC.haciaCrecimientoId, pct: 100 }] : (R.excedente.length ? R.excedente : [{ posicionId: "caja", pct: 100 }]);
       reparto.forEach((r) => {
         const t = libre * num(r.pct) / 100;
         if (r.posicionId === "caja") caja.valor += t; else { const p = pos.find((x) => x.id === r.posicionId); if (p) p.capital += t; else caja.valor += t; }
@@ -210,7 +238,7 @@ export function simularCamino(cfg = {}) {
     const deudaTotal = deudas.reduce((s, d) => s + d.saldo, 0);
     meses.push({
       mes, entra, sale, queda, gastos, cuotas, recibido, ingFlujos,
-      cobertura: sale > 0 ? (entra / sale) * 100 : null,
+      cobertura: cob, movioPorCobertura,
       crece: reinvertido + valorizado, produce: entra + reinvertido + valorizado,
       patrimonio: activos - deudaTotal, activos, deudaTotal, caja: caja.valor,
       porBolsillo: BOLSILLOS.reduce((o, b) => { o[b] = pos.filter((p) => p.bolsillo === b).reduce((s, p) => s + Math.max(0, p.capital), 0) + (b === "caja" ? caja.valor : 0); return o; }, {}),
