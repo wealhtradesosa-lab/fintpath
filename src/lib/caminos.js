@@ -46,7 +46,28 @@ export const PERFIL_DEFAULT = {
 };
 
 export const CANASTAS = ["proteccion", "rentas", "crecimiento", "uso"];
-export const CANASTA_LABEL = { proteccion: "Protección", rentas: "Rentas", crecimiento: "Crecimiento", uso: "Uso" };
+// 22-oct-2026 (Santiago: "ese término RENTAS puede confundirse con rentas de
+// arriendo", "¿cómo sabe uno qué cabe en rentas?"). La canasta nunca fue "los
+// arriendos": es el capital que te DEPOSITA plata cada mes, venga de un CDT,
+// de un fondo o de un local. Los nombres pasan a decir lo que la plata hace,
+// que es además la regla con la que se clasifica (ver CANASTA_PRUEBA).
+export const CANASTA_LABEL = { proteccion: "Protección", rentas: "Te paga", crecimiento: "Crece", uso: "Uso" };
+// La pregunta que decide la canasta de una cosa. Es la regla de `canastaDe`
+// dicha en voz alta, no un invento para la pantalla: lo que manda es qué hace
+// la plata, no cuánto rinde.
+export const CANASTA_PRUEBA = {
+  proteccion: "¿Está ahí para que no te hundas si todo sale mal?",
+  rentas: "¿Te deposita plata cada mes, y te la puedes gastar?",
+  crecimiento: "¿Lo que rinde se queda adentro y se multiplica?",
+  uso: "¿Ni te paga ni crece, y lo tienes porque lo usas?",
+};
+// Ejemplos de la vida real, para no tener que adivinar.
+export const CANASTA_EJEMPLOS = {
+  proteccion: "la casa donde vives · el efectivo del colchón",
+  rentas: "un CDT · un fondo que paga rendimiento · un local arrendado",
+  crecimiento: "acciones · ETF · cripto · un fondo que no reparte",
+  uso: "el carro · un lote quieto",
+};
 // 21-oct-2026 (Santiago: "no sé cómo explicar a un nuevo usuario qué es
 // protección, rentas o crecimiento"). Es la segunda vez que pasa: el 3-ago fue
 // con las canastas de Tu Norte y se resolvió con CANASTAS_EXPLICADAS
@@ -55,8 +76,8 @@ export const CANASTA_LABEL = { proteccion: "Protección", rentas: "Rentas", crec
 // La de Protección es la línea que ya se escribió en agosto.
 export const CANASTA_CORTO = {
   proteccion: "Lo que te sostiene si todo sale mal",
-  rentas: "Lo que paga tu vida cada mes",
-  crecimiento: "Lo que se multiplica, pero hoy no te paga",
+  rentas: "Capital que te deposita plata cada mes. No son solo arriendos",
+  crecimiento: "Se multiplica adentro, pero hoy no te paga nada",
   uso: "Ni te paga ni crece: lo tienes porque lo usas",
 };
 /** Por qué una posición cayó en su canasta. Se deduce de lo que produce. */

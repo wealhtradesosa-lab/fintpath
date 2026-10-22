@@ -27,7 +27,7 @@ import { C, F } from "../lib/designTokens";
 import { fmtPlataCortaEs } from "../lib/formato.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
-import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
+import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
 
 // Capital y mensualidades se escriben igual: una sola función, con separador
 // de miles en todas las ramas (ver fmtPlataCortaEs). Los dos nombres se
@@ -281,8 +281,18 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
             solución de entonces fue la misma: una línea por canasta, donde ya
             está la palabra. Van en orden de propósito, que es lo que las
             explica: primero no perder, después vivir, después crecer. */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10, marginTop: 10 }}>{["proteccion", "rentas", "crecimiento", "uso"].map((k) => <div key={k} style={{ borderLeft: `3px solid ${CANASTA_COLOR[k]}`, paddingLeft: 8 }}><div style={{ ...F.caption }}><b style={{ color: C.text }}>{CANASTA_LABEL[k]}</b> · {fmM(c[k])}</div><div style={{ ...F.caption, marginTop: 1 }}>{CANASTA_CORTO[k]}</div></div>)}</div>
-        <div style={{ ...F.caption, marginTop: 8 }}>Las tres primeras son papeles que cumple tu plata. <b style={{ color: C.text }}>Uso</b> es el resto: no está mal tenerlo, está mal no saber cuánto pesa.</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10, marginTop: 10 }}>{["proteccion", "rentas", "crecimiento", "uso"].map((k) => <div key={k} style={{ borderLeft: `3px solid ${CANASTA_COLOR[k]}`, paddingLeft: 8 }}>
+          <div style={{ ...F.caption }}><b style={{ color: C.text }}>{CANASTA_LABEL[k]}</b> · {fmM(c[k])}</div>
+          <div style={{ ...F.caption, marginTop: 1 }}>{CANASTA_CORTO[k]}</div>
+          {/* 22-oct-2026 (Santiago: "¿cómo sabe uno qué cabe en rentas?",
+              "¿rentas es qué, inversiones que van de X a tanto por ciento?").
+              No se decide por el porcentaje: se decide por lo que la plata
+              HACE, que es la regla real de `canastaDe`. Así que va la pregunta
+              que la decide, y un ejemplo, para no tener que adivinar. */}
+          <div style={{ ...F.caption, marginTop: 4, color: CANASTA_COLOR[k] }}>{CANASTA_PRUEBA[k]}</div>
+          <div style={{ ...F.caption, marginTop: 1 }}>{CANASTA_EJEMPLOS[k]}</div>
+        </div>)}</div>
+        <div style={{ ...F.caption, marginTop: 8 }}>No se decide por cuánto rinde, sino por lo que hace tu plata: si te la deposita cada mes, <b style={{ color: C.text }}>te paga</b>; si se queda adentro multiplicándose, <b style={{ color: C.text }}>crece</b>. Las tres primeras son papeles que cumple tu plata; <b style={{ color: C.text }}>Uso</b> es el resto: no está mal tenerlo, está mal no saber cuánto pesa.</div>
       </div>
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
@@ -759,7 +769,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
           <div style={card}>
             <H n="F" t="¿Y lo que te sobre cada mes?" d="Mes a mes te queda un excedente. Decide a dónde va y cuántos meses de gastos guardas en líquido." />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, alignItems: "end" }}>
-              <div><div style={F.label}>{100 - crecPct}% a rentas · {crecPct}% a crecimiento</div><input type="range" min={0} max={100} step={5} value={crecPct} onChange={(e) => { const v = Number(e.target.value); upd({ excedente: [{ canasta: "rentas", pct: 100 - v }, { canasta: "crecimiento", pct: v }] }); }} style={{ width: "100%" }} /></div>
+              <div><div style={F.label}>{100 - crecPct}% a lo que te paga · {crecPct}% a lo que crece</div><input type="range" min={0} max={100} step={5} value={crecPct} onChange={(e) => { const v = Number(e.target.value); upd({ excedente: [{ canasta: "rentas", pct: 100 - v }, { canasta: "crecimiento", pct: v }] }); }} style={{ width: "100%" }} /></div>
               <Campo l="Colchón líquido (meses de gastos)"><Num value={esc.colchonMeses} min={0} max={60} onChange={(v) => upd({ colchonMeses: v })} /></Campo>
             </div>
             <details style={{ marginTop: 10 }}>
