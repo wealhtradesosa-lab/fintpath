@@ -195,7 +195,8 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
       // vez de dejar al usuario adivinando por qué el monto bajó.
       const ventana = rangoEfectivo(i);
       const difiere = Math.abs((m * 12 / cap) * 100 - tasa) > 0.1;
-      const tasaReal = difiere ? (m * 12 / cap) * 100 : tasa;
+      // Dos decimales: sin esto la pantalla mostraba "14,380434782608695 %".
+      const tasaReal = difiere ? Math.round((m * 12 / cap) * 10000) / 100 : tasa;
       const declarada = difiere ? tasa : null;
       // Rendimiento de un capital: si el activo ya está en Patrimonio, se usa su ficha real
       const f = norm(i.fuente || i.nombre);

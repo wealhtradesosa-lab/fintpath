@@ -29,6 +29,9 @@ import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canasta
 const fmM = (n) => { const v = Number(n) || 0; const a = Math.abs(v); if (a >= 1e9) return (v < 0 ? "−" : "") + "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M"; return (v < 0 ? "−" : "") + "$" + Math.round(a / 1e6).toLocaleString("es-CO") + " M"; };
 const fmMes = (n) => { const v = Number(n) || 0; const a = Math.abs(v); return (v < 0 ? "−" : "") + "$" + (a >= 1e6 ? (a / 1e6).toFixed(1).replace(".0", "").replace(".", ",") + " M" : Math.round(a / 1e3) + " K"); };
 const pct = (n) => `${Math.round(Number(n) || 0)}%`;
+// 21-oct-2026 — Con coma, y sin decimales inventados: la tasa derivada salía
+// "14.380434782608695%" y además con punto.
+const pctEs = (n) => { const v = Number(n) || 0; const r = Math.round(v * 10) / 10; return (Number.isInteger(r) ? String(r) : r.toFixed(1).replace(".", ",")) + "%"; };
 const CANASTA_COLOR = { proteccion: C.accent, rentas: C.ok, crecimiento: C.warn, uso: C.subtle };
 const MES_CORTO = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 // 21-oct-2026 — "hasta cuándo" era la celda que faltaba de la rejilla
@@ -82,7 +85,7 @@ const produce = (p) => {
   const crece = p.capital * (Math.pow(1 + (Number(p.tasa) || 0) / 100, 1 / 12) - 1) * (1 - (p.pagaPct ?? 0) / 100) + p.capital * (Math.pow(1 + (Number(p.valorizacion) || 0) / 100, 1 / 12) - 1);
   return { recibe, crece };
 };
-const notaDe = (p) => p.tasaDeclarada ? `Declaraste ${p.tasaDeclarada}% sobre el capital · con la vigencia que cargaste entra el ${p.tasa.toFixed(1)}%` : p.vivienda && !(p.renta > 0) ? "Tu vivienda: protege, no produce" : p.renta > 0 ? `Renta ${fmMes(p.renta)} al mes${p.valorizacion ? ` · valoriza ${p.valorizacion}%` : ""}` : p.bolsillo === "crecimiento" ? `Reinvierte al ${p.tasa}%` : p.tasa > 0 ? `Paga el ${p.pagaPct}% de ${p.tasa}% cada mes` : p.vehiculo ? "Pierde valor" : p.valorizacion > 0 ? `Solo valoriza ${p.valorizacion}%` : "Quieto";
+const notaDe = (p) => p.tasaDeclarada ? `Declaraste ${pctEs(p.tasaDeclarada)} sobre el capital · con la vigencia que cargaste entra ${pctEs(p.tasa)}` : p.vivienda && !(p.renta > 0) ? "Tu vivienda: protege, no produce" : p.renta > 0 ? `Renta ${fmMes(p.renta)} al mes${p.valorizacion ? ` · valoriza ${pctEs(p.valorizacion)}` : ""}` : p.bolsillo === "crecimiento" && p.tasa > 0 ? `Reinvierte al ${pctEs(p.tasa)}` : p.tasa > 0 ? `Paga el ${pctEs(p.pagaPct)} de ${pctEs(p.tasa)} cada mes` : p.vehiculo ? "Pierde valor con el uso" : p.valorizacion > 0 ? `Solo valoriza ${pctEs(p.valorizacion)}` : "Ni renta ni crece";
 
 // ─── Barra de canastas ───────────────────────────────────────────────────────
 function BarraCanastas({ c, alto = 14 }) {
