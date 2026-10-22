@@ -470,7 +470,7 @@ const GRUPOS_MOV = [
     { v: "revaluar", l: "Un activo pasa a valer otra cosa (obra, avalúo)" },
   ] },
 ];
-function describirMov(m, posiciones, flujos) {
+function describirMov(m, posiciones, flujos, deudas = []) {
   const p = posiciones.find((x) => x.id === m.posicionId)?.nombre || m.posicionId;
   const a = `Año ${anioDe(m.mes)}${m.mes % 12 ? `, mes ${(m.mes % 12) + 1}` : ""}`;
   switch (m.tipo) {
@@ -489,6 +489,8 @@ function describirMov(m, posiciones, flujos) {
     }
     case "comprar": return `${a}: compras ${m.nombre} por ${fmM(m.costo)}${m.renta ? `, renta ${fmMes(m.renta)}/mes${m.rentaDesde ? ` desde ${m.rentaDesde} meses después` : ""}` : ""}`;
     case "aportar": { const d = posiciones.find((x) => x.id === m.posicionId); const paga = d ? pagaAlMes(m.monto, d.tasa, d.pagaPct) : 0; return `${a}: mueves ${fmM(m.monto)} a ${p}${paga > 0 ? ` · te paga ≈ ${fmMes(paga)}/mes` : ""}`; }
+    case "retirar": return `${a}: sacas ${fmM(m.monto)} de ${p}`;
+    case "pagar_deuda": return `${a}: pagas ${deudas.find((d) => d.id === m.deudaId)?.nombre || "la deuda"}`;
     case "revaluar": return `${a}: ${p} pasa a valer ${fmM(m.valor)}`;
     case "flujo_inicia": return `${a}: ${m.flujo?.tipo === "gasto" ? "entra el gasto" : "entra"} ${m.flujo?.nombre}, ${fmMes(m.flujo?.monto)}/mes`;
     case "flujo_termina": return `${a}: termina ${flujos.find((f) => f.id === m.flujoId)?.nombre || m.flujoId}`;
@@ -1530,7 +1532,12 @@ function ActivoPorActivo({ r, base }) {
 function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, onVolver, onEditar }) {
   if (!r) return null;
   const p = r.puntos;
-  const eventos = [...r.cfg.movimientos].filter((m) => m.mes > 0 || m.tipo === "flujo_inicia" || m.tipo === "comprar").sort((a, b) => a.mes - b.mes);
+  // 22-oct-2026 (Santiago, mirando esta lista: "¿y por qué no veo aquí que
+  // entra la inversión BTG?"). Lo de HOY —ventas, deudas pagadas, plata que
+  // entra a un destino— es el primer capítulo de la historia, no un detalle
+  // aparte; y un ingreso que ya terminó con la venta no "termina" otra vez.
+  const vendidoAntes = (m) => { const f = r.cfg.flujos.find((x) => x.id === m.flujoId); return !!f?.posicionId && r.cfg.movimientos.some((v) => v.tipo === "vender" && v.posicionId === f.posicionId && v.mes < m.mes); };
+  const eventos = [...r.cfg.movimientos].filter((m) => (m.mes > 0 || m.tipo === "flujo_inicia" || m.tipo === "comprar" || ((m.tipo === "vender" || m.tipo === "retirar" || m.tipo === "pagar_deuda" || m.tipo === "aportar") && Number(m.monto ?? 1) > 0)) && !(m.tipo === "flujo_termina" && vendidoAntes(m))).sort((a, b) => a.mes - b.mes);
   const fmtCambio = (t) => t.replace(/(\d{6,})\/mes/g, (_, n) => fmMes(Number(n)) + "/mes").replace(/\b(\d{6,})\b/g, (_, n) => fmM(Number(n)));
   return (
     <div style={{ display: "grid", gap: 14 }}>
@@ -1588,7 +1595,7 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
         <div style={card}>
           <div style={F.h3}>Lo que pasa en el tiempo</div>
           {eventos.length === 0 && <div style={{ ...F.body, marginTop: 6 }}>Nada programado después de hoy.</div>}
-          <div style={{ display: "grid", gap: 6, marginTop: 6 }}>{eventos.map((m, i) => <div key={i} style={{ display: "flex", gap: 10, ...F.body, color: C.text }}><span style={{ ...chip(r.color), minWidth: 56, textAlign: "center" }}>año {anioDe(m.mes)}</span><span>{describirMov(m, r.cfg.posiciones, r.cfg.flujos).replace(/^Año \d+(, mes \d+)?: /, "")}</span></div>)}</div>
+          <div style={{ display: "grid", gap: 6, marginTop: 6 }}>{eventos.map((m, i) => <div key={i} style={{ display: "flex", gap: 10, ...F.body, color: C.text }}><span style={{ ...chip(r.color), minWidth: 56, textAlign: "center" }}>{m.mes === 0 ? "hoy" : `año ${anioDe(m.mes)}`}</span><span>{describirMov(m, r.cfg.posiciones, r.cfg.flujos, r.cfg.deudas).replace(/^Año \d+(, mes \d+)?: /, "")}</span></div>)}</div>
           {!r.vigilancia.cumple && <div style={{ marginTop: 12 }}><div style={{ ...F.h3, color: C.danger }}>Dónde se rompe</div>{r.vigilancia.roturas.slice(0, 5).map((x, i) => <div key={i} style={{ ...F.body, color: C.danger, marginTop: 4 }}>· Año {x.anio}: {x.detalle}</div>)}</div>}
         </div>
       </div>
