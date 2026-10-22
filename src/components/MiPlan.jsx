@@ -993,6 +993,12 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
           {sub === 3 && (
           <div style={card}>
             <H n="D" t="¿En qué inviertes lo que te queda?" d="Cada fila es un destino y cuánta plata le metes. Lo que escribes es plata que ENTRA ahí, no lo que ese activo vale." />
+            {/* 22-oct-2026 (Santiago, sobre dónde se mete la obra del año 3:
+                "¿en la sección donde inviertes lo que queda?"). No: acá es solo
+                la plata de HOY. Lo que pasa después va con fecha en la
+                siguiente pregunta, y las dos se conectan por "con plata de".
+                Decirlo evita dejar plata quieta esperando una obra. */}
+            <div style={{ ...F.caption, marginBottom: 10 }}>Acá va la plata de <b style={{ color: C.text }}>hoy</b>: estos destinos empiezan a trabajar desde ya. Lo que pasa <b style={{ color: C.text }}>después</b> —la obra del año 3, una compra en el 5— va en la pregunta siguiente, y ahí eliges de cuál de estos destinos sale la plata cuando llegue el momento. Así no la dejas quieta esperando.</div>
             <div style={{ ...sub, marginBottom: 10 }}>
               <div style={F.body}>
                 {vendidos.length > 0 ? <>Vendes <b style={{ color: C.text }}>{vendidos.map((p) => p.nombre).join(", ")}</b> y liberas <b style={{ color: C.text }}>{fmM(liq.liberado)}</b>. </> : <>Hoy no sale nada del plan, así que no hay plata liberada. </>}
