@@ -928,11 +928,29 @@ function PasoIntencion({ todos, res, base, perfil, onPerfil, activoId, setActivo
             </div>
           );
         })}
+        {/* 22-oct-2026 (Santiago: "sí, más o menos esos pueden ser los
+            escenarios, pero también que si uno quiere hacer uno a la medida lo
+            haga"). Armar el propio existía, pero vivía debajo de las tres, en
+            un bloque aparte: parecía la salida de emergencia y no una de las
+            opciones. Es una cuarta respuesta a la misma pregunta. */}
+        <div style={{ ...card, borderColor: C.borderStrong, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ ...F.h3 }}>A la medida</div>
+          <div style={F.body}>Ninguna de las tres es tu caso. Defines tú la mezcla y el plan te la nombra y te mide contra ella.</div>
+          <div style={sub}>
+            <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: C.raised }}>
+              {["proteccion", "rentas", "crecimiento"].map((k) => <div key={k} style={{ width: `${miMezcla[k]}%`, background: CANASTA_COLOR[k] }} />)}
+            </div>
+            <div style={{ ...F.caption, marginTop: 6, color: C.text }}>{nombrarMezcla(miMezcla)?.titulo}</div>
+            <div style={{ ...F.caption, marginTop: 2 }}>{miMezcla.proteccion}% protegido · {miMezcla.rentas}% pagándote · {miMezcla.crecimiento}% creciendo</div>
+          </div>
+          <div style={{ flex: 1 }} />
+          <button style={{ ...btn(false), width: "100%" }} onClick={() => { try { document.getElementById("mi-mezcla")?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch { /* noop */ } }}>Moverla y seguir ↓</button>
+        </div>
       </div>
       {/* Las tres de arriba son tres puntos entre infinitos: acá se arma el
           propio moviendo las franjas, y el nombre sale solo de la mezcla. */}
-      <div style={card}>
-        <div style={F.h2}>O arma tu propia mezcla</div>
+      <div style={card} id="mi-mezcla">
+        <div style={F.h2}>A la medida: arma tu propia mezcla</div>
         <div style={{ ...F.body, marginTop: 4, marginBottom: 12 }}>Mueve las tres franjas hasta donde quieras llegar. El sistema le pone nombre solo, y esa mezcla te guía después cuando decidas dónde poner cada peso.</div>
         <MezclaEditor objetivo={miMezcla} onChange={setMiMezcla} base={base} perfil={perfil} />
         <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => { onNuevo(miMezcla); onNext(); }}>Seguir con esta mezcla →</button></div>
