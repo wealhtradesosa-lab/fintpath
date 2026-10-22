@@ -1391,8 +1391,22 @@ function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver, o
           <div style={{ display: "flex", gap: 8 }}><button style={btn(false)} onClick={onVolver}>← Editar</button>{!elegido && <button style={btn(true)} onClick={onElegir}>Elegir este camino</button>}</div>
         </div>
         {r.tesis && <div style={{ ...F.body, marginTop: 6, fontStyle: "italic" }}>{r.tesis}</div>}
-        <div style={{ ...sub, marginTop: 12 }}><div style={F.h3}>Así se cuenta este escenario</div>{narrar(r, base).map((t, i) => <div key={i} style={{ ...F.body, color: C.text, marginTop: 6 }}>{t}</div>)}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
+        {/* 22-oct-2026 — El ✋ salia en la barra de arriba pero no aqui, asi
+            que la narracion y las ocho cifras se leian como si fueran verdad:
+            "el patrimonio pasa de $18,7 mil M a $3.542.514,1 mil M", "cobertura
+            79554153%", "crece 221,0% real al ano". Un numero imposible no se
+            marca en un sitio y se deja suelto en otros siete. */}
+        {vecesDe(p) > VECES_IMPOSIBLE && <div style={{ ...sub, marginTop: 12, borderColor: C.danger, background: "rgba(239,68,68,0.06)" }}>
+          <div style={{ ...F.h3, color: C.danger }}>✋ Nada de lo que sigue es creíble</div>
+          <div style={{ ...F.body, marginTop: 4, color: C.text }}>Este escenario multiplica tu patrimonio por <b>{Math.round(vecesDe(p)).toLocaleString("es-CO")}</b> en diez años: de {fmM(p.patrimonioInicial)} a {fmM(p.patrimonioFinal)}. Eso no pasa. Las cifras de abajo —la cobertura, lo que entra, lo que crece— están todas contaminadas por el mismo dato.</div>
+          {sospechosos(perfil, base).length > 0 && <>
+            <div style={{ ...F.body, marginTop: 8 }}>El dato que no puede ser:</div>
+            <div style={{ display: "grid", gap: 2, marginTop: 3 }}>{sospechosos(perfil, base).slice(0, 4).map((m, i) => <div key={i} style={{ ...F.caption, color: C.danger }}>· {m}</div>)}</div>
+          </>}
+          {onEditar && <div style={{ marginTop: 10 }}><button style={btn(true)} onClick={() => onEditar(4)}>Llévame a arreglarlo →</button></div>}
+        </div>}
+        <div style={{ ...sub, marginTop: 12, opacity: vecesDe(p) > VECES_IMPOSIBLE ? 0.45 : 1 }}><div style={F.h3}>Así se cuenta este escenario</div>{narrar(r, base).map((t, i) => <div key={i} style={{ ...F.body, color: C.text, marginTop: 6 }}>{t}</div>)}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12, opacity: vecesDe(p) > VECES_IMPOSIBLE ? 0.45 : 1 }}>
           {[["Patrimonio año 10", fmM(p.patrimonioFinal), `${fmM(p.patrimonioFinalReal)} de hoy`], ["Crece al año (real)", p.crecimientoRealAnual == null ? "—" : p.crecimientoRealAnual.toFixed(1).replace(".", ",") + "%", "descontando inflación"], ["Entra · año 10", fmMes(p.entraMes), "al mes"], ["Sale · año 10", fmMes(p.saleMes), "gastos + cuotas"], ["Cobertura · año 10", pct(p.cobertura), "entra ÷ sale"], ["Produce al mes", fmMes(p.produceMes), "recibido + reinvertido"], ["Mes más apretado", p.mesApretado ? `año ${anioDe(p.mesApretado.mes)}` : "—", p.mesApretado ? `cobertura ${pct(p.mesApretado.cobertura)}` : ""], ["Si crecimiento rinde menos", fmM(p.estres.patrimonioFinal), `al ${String(Math.round(p.estres.tasa * 10) / 10).replace(".", ",")}%`]].map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
         </div>
       </div>
