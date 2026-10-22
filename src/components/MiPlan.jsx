@@ -652,7 +652,18 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   const destinosPosibles = base.posiciones.filter((p) => !p.vivienda && !p.vehiculo && !(ventaDe(p.id) && ventaDe(p.id).monto == null));
   const dos = ancho >= 980;
   const H = ({ n, t, d }) => <div style={{ marginBottom: 8 }}><div style={F.h3}><span style={{ color: esc.color }}>{n}</span> {t}</div>{d && <div style={F.caption}>{d}</div>}</div>;
-  const Saldo = () => <div style={{ display: "flex", flexWrap: "wrap", gap: 12, ...F.caption, alignItems: "center" }}><span>Liberas <b style={{ color: C.text }}>{fmM(liq.liberado)}</b></span><span>− pagas <b style={{ color: C.text }}>{fmM(liq.pagado)}</b></span><span>− asignas <b style={{ color: C.text }}>{fmM(liq.asignado)}</b></span><span style={chip(Math.abs(liq.porAsignar) < 1e6 ? C.ok : liq.porAsignar > 0 ? C.warn : C.danger)}>{Math.abs(liq.porAsignar) < 1e6 ? "todo asignado" : liq.porAsignar > 0 ? `por asignar ${fmM(liq.porAsignar)}` : `falta ${fmM(-liq.porAsignar)}`}</span></div>;
+  // 22-oct-2026 (Santiago, perdido en el paso D: "esa sección a dónde va la
+  // plata y con qué regla?… aparece rapciredit socio con una inversión de 11
+  // mil que no sé ni de dónde salió… no entiendo"). Su propia frase es el
+  // arreglo: "de los ítems que quitó en la sección anterior tiene un saldo a
+  // favor de XXXX, ¿en qué va a invertir ese saldo?". El saldo era un pie de
+  // tabla en letra chica; ahora es la pregunta, con la cuenta en palabras.
+  const Saldo = () => <div style={{ display: "flex", flexWrap: "wrap", gap: 12, ...F.caption, alignItems: "center" }}><span>Liberas <b style={{ color: C.text }}>{fmM(liq.liberado)}</b></span><span>− pagas <b style={{ color: C.text }}>{fmM(liq.pagado)}</b></span><span>− asignas <b style={{ color: C.text }}>{fmM(liq.asignado)}</b></span><span style={chip(Math.abs(liq.porAsignar) < 1e6 ? C.ok : liq.porAsignar > 0 ? C.warn : C.danger)}>{Math.abs(liq.porAsignar) < 1e6 ? "todo asignado" : liq.porAsignar > 0 ? `queda sin poner ${fmM(liq.porAsignar)}` : `te pasaste por ${fmM(-liq.porAsignar)}`}</span></div>;
+  const posDe = (id) => base.posiciones.find((x) => x.id === id);
+  const queda = liq.liberado - liq.pagado;
+  const vendidos = [...base.posiciones.filter((p) => p.sale), ...(esc.ventas || []).map((v) => posDe(v.posicionId)).filter((p) => p && !p.sale)];
+  const pagadas = [...base.deudas.filter((d) => d.pagar), ...(esc.pagos || []).map((id) => base.deudas.find((d) => d.id === id)).filter((d) => d && !d.pagar)];
+  const deLaPlantilla = !!esc.plantilla && !esc.editado;
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
@@ -696,13 +707,21 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             <div style={{ display: "grid", gap: 6 }}>{base.deudas.map((d) => <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: d.pagar ? "default" : "pointer", borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: d.pagar ? 0.7 : 1, flexWrap: "wrap" }}><input type="checkbox" checked={d.pagar || (esc.pagos || []).includes(d.id)} disabled={d.pagar} onChange={() => togglePago(d.id)} /><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}{d.pagar && <span style={chip(C.accent)}>se paga · decidido en Hoy</span>}</label>)}</div>
           </div>}
           <div style={card}>
-            <H n="D" t="¿A dónde va la plata y con qué regla?" d="El despliegue: cada destino con su capital, su tasa y la regla con la que trabaja." />
+            <H n="D" t="¿En qué inviertes lo que te queda?" d="Cada fila es un destino y cuánta plata le metes. Lo que escribes es plata que ENTRA ahí, no lo que ese activo vale." />
+            <div style={{ ...sub, marginBottom: 10 }}>
+              <div style={F.body}>
+                {vendidos.length > 0 ? <>Vendes <b style={{ color: C.text }}>{vendidos.map((p) => p.nombre).join(", ")}</b> y liberas <b style={{ color: C.text }}>{fmM(liq.liberado)}</b>. </> : <>Hoy no sale nada del plan, así que no hay plata liberada. </>}
+                {liq.pagado > 0 && <>Pagando <b style={{ color: C.text }}>{pagadas.map((d) => d.nombre).join(", ")}</b> se van <b style={{ color: C.text }}>{fmM(liq.pagado)}</b>. </>}
+                {queda > 0 && <>Te queda <b style={{ color: C.ok }}>{fmM(queda)}</b> a favor: <b style={{ color: C.text }}>¿en qué lo pones?</b></>}
+              </div>
+              {deLaPlantilla && (esc.despliegue || []).length > 0 && <div style={{ ...F.caption, marginTop: 6 }}>Los destinos de abajo no los pusiste tú: los propuso la plantilla <b style={{ color: esc.color }}>{esc.nombre}</b> para cumplir su regla, y son activos que ya tienes. Cámbialos, quítalos o agrega otros — en cuanto toques algo, el escenario pasa a ser tuyo.</div>}
+            </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
-                <thead><tr><th style={th}>Destino</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Capital</th><th style={{ ...th, textAlign: "right" }}>Tasa</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>Regla</th><th style={th} /></tr></thead>
+                <thead><tr><th style={th}>Destino</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Cuánto le metes</th><th style={{ ...th, textAlign: "right" }}>Tasa</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>Regla</th><th style={th} /></tr></thead>
                 <tbody>
                   {(esc.despliegue || []).map((d) => <tr key={d.id} style={{ borderTop: `1px solid ${C.border}` }}>
-                    <td style={{ ...td, minWidth: 150 }}>{d.destinoId ? <span>{d.nombre}<div style={F.caption}>ya existe</div></span> : <input value={d.nombre} onChange={(e) => setD(d.id, { nombre: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }} />}</td>
+                    <td style={{ ...td, minWidth: 150 }}>{d.destinoId ? <span>{d.nombre}<div style={F.caption}>ya lo tienes · vale {fmM(posDe(d.destinoId)?.capital || 0)} hoy</div></span> : <input value={d.nombre} onChange={(e) => setD(d.id, { nombre: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }} />}</td>
                     <td style={td}>{d.destinoId ? <span style={chip(CANASTA_COLOR[d.canasta])}>{CANASTA_LABEL[d.canasta]}</span> : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 112 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
                     <td style={tdNum}><NumPesos value={d.capital} onChange={(v) => setD(d.id, { capital: v || 0 })} w={150} /></td>
                     <td style={tdNum}><Num value={d.tasa} step={0.5} onChange={(v) => setD(d.id, { tasa: v || 0 })} suffix="%" w={80} /></td>
@@ -729,7 +748,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             <ListaEventos eventos={esc.eventos || []} posiciones={[...base.posiciones, ...(esc.despliegue || []).filter((d) => !d.destinoId).map((d) => ({ id: d.id, nombre: d.nombre, capital: d.capital }))]} flujos={base.flujos} onChange={(l) => upd({ eventos: l })} vacio="Nada después todavía. Ejemplo: «Año 5: compras Casa finca por 900 M con plata del Fondo»." ejemplo="Ejemplo: en el año 5 compras una casa de 900 M con la plata del fondo." />
           </div>
           <div style={card}>
-            <H n="F" t="Lo que sobra cada mes" d="A dónde va el excedente, y cuánto colchón líquido mantienes." />
+            <H n="F" t="¿Y lo que te sobre cada mes?" d="Mes a mes te queda un excedente. Decide a dónde va y cuántos meses de gastos guardas en líquido." />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, alignItems: "end" }}>
               <div><div style={F.label}>{100 - crecPct}% a rentas · {crecPct}% a crecimiento</div><input type="range" min={0} max={100} step={5} value={crecPct} onChange={(e) => { const v = Number(e.target.value); upd({ excedente: [{ canasta: "rentas", pct: 100 - v }, { canasta: "crecimiento", pct: v }] }); }} style={{ width: "100%" }} /></div>
               <Campo l="Colchón líquido (meses de gastos)"><Num value={esc.colchonMeses} min={0} max={60} onChange={(v) => upd({ colchonMeses: v })} /></Campo>
