@@ -144,16 +144,31 @@ const esTrabajoCat = (i) => /^Salario|^Honorarios|^Cesant|^Negocio/.test(String(
 export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}) {
   const trm = num(user.trm) || 4200;
   const fx = (x) => (x?.moneda === "USD" ? trm : 1);
-  const inv = (user.inv || []).filter((a) => a && a.sim !== false);
+  // 21-oct-2026 (Santiago: "uno debería poder borrar algún item si no va en el
+  // modelo"). Eran dos estados para tres situaciones: «continúa» y «ya no va»
+  // (se vende hoy y libera plata para el plan). Faltaba la tercera, que no es
+  // una decisión del plan sino una corrección del dato: esto no va acá.
+  // Vender no es lo mismo que no tenerlo — lo vendido libera plata, lo quitado
+  // no existe: sale del patrimonio, de las canastas y de lo que entra al mes.
+  // Vive en la ficha, como todo lo de este paso: no toca los datos reales.
+  const estaFuera = (id) => fichas[id]?.estado === "fuera";
+  const todos = (user.inv || []).filter((a) => a && a.sim !== false);
+  const inv = todos.filter((a) => !estaFuera(a.id));
   const ingresos = (user.ingresos || []).filter((i) => i && i.sim !== false);
   const deudas = (user.deu || user.deudas || []).filter((d) => d && d.sim !== false && num(d.mt) > 0);
-  const base = calcularBase({ inv: user.inv, ingresos: user.ingresos, gastos: user.gas || user.gastos, deudas: user.deu || user.deudas, trm });
+  // Lo quitado, para poder decirlo en pantalla y devolverlo. `ingresosFuera`
+  // son los ingresos que colgaban de algo quitado: la renta de un activo que
+  // no va en el modelo tampoco entra.
+  const fuera = todos.filter((a) => estaFuera(a.id)).map((a) => ({ id: a.id, nombre: nombreActivo(a), capital: num(a.va) * fx(a), tipo: a.tp }));
+  const ingresosFuera = new Set();
 
-  // Renta mensual ya cargada por inmueble (activoId o por nombre)
+  // Renta mensual ya cargada por inmueble (activoId o por nombre). Se busca
+  // contra TODOS los activos, incluidos los quitados: si el arriendo es de uno
+  // que no va en el modelo, el arriendo tampoco.
   const rentaDeActivo = {};
-  const activoDeArriendo = (i) => (i.activoId ? inv.find((x) => x.id === i.activoId) : null) || busca(inv, i.fuente || i.nombre, (x) => TIPOS_INMUEBLE.has(x.tp));
+  const activoDeArriendo = (i) => (i.activoId ? todos.find((x) => x.id === i.activoId) : null) || busca(todos, i.fuente || i.nombre, (x) => TIPOS_INMUEBLE.has(x.tp));
   const ventanaDeActivo = {};
-  ingresos.filter(esArriendoCat).forEach((i) => { const a = activoDeArriendo(i); if (a) { rentaDeActivo[a.id] = (rentaDeActivo[a.id] || 0) + montoPromedioMensual(i) * fx(i); ventanaDeActivo[a.id] = ventanaDeActivo[a.id] || rangoEfectivo(i); } });
+  ingresos.filter(esArriendoCat).forEach((i) => { const a = activoDeArriendo(i); if (!a) return; if (estaFuera(a.id)) { ingresosFuera.add(i.id); return; } rentaDeActivo[a.id] = (rentaDeActivo[a.id] || 0) + montoPromedioMensual(i) * fx(i); ventanaDeActivo[a.id] = ventanaDeActivo[a.id] || rangoEfectivo(i); });
 
   const posiciones = inv.map((a) => {
     const renta = rentaDeActivo[a.id] || 0;
@@ -170,6 +185,7 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
   const flujos = [];
   const usados = new Set();
   ingresos.forEach((i) => {
+    if (ingresosFuera.has(i.id)) return;
     const m = montoPromedioMensual(i) * fx(i);
     if (!(m > 0)) return;
     if (esArriendoCat(i)) { flujos.push({ id: `ing_${i.id}`, nombre: i.nombre || "Arriendo", tipo: "ingreso", monto: m, posicionId: activoDeArriendo(i)?.id, indexa: true, origenId: i.id }); return; }
@@ -202,14 +218,30 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
       const declarada = difiere ? tasa : null;
       // Rendimiento de un capital: si el activo ya está en Patrimonio, se usa su ficha real
       const f = norm(i.fuente || i.nombre);
-      const a = inv.find((x) => !TIPOS_INMUEBLE.has(x.tp) && !usados.has(x.id) && ((f && (norm(nombreActivo(x)).includes(f) || f.includes(norm(nombreActivo(x))))) || Math.abs(num(x.va) * fx(x) - cap) / Math.max(1, cap) < 0.02));
-      if (a) { usados.add(a.id); const p = posiciones.find((x) => x.id === a.id); if (p && !fichas[a.id]) { p.bolsillo = "sustento"; p.tasa = tasaReal; p.tasaDeclarada = declarada; p.pagaPct = 100; p.valorizacion = 0; p.ventana = ventana; } return; }
+      const a = todos.find((x) => !TIPOS_INMUEBLE.has(x.tp) && !usados.has(x.id) && ((f && (norm(nombreActivo(x)).includes(f) || f.includes(norm(nombreActivo(x))))) || Math.abs(num(x.va) * fx(x) - cap) / Math.max(1, cap) < 0.02));
+      if (a) { if (estaFuera(a.id)) { ingresosFuera.add(i.id); return; } usados.add(a.id); const p = posiciones.find((x) => x.id === a.id); if (p && !fichas[a.id]) { p.bolsillo = "sustento"; p.tasa = tasaReal; p.tasaDeclarada = declarada; p.pagaPct = 100; p.valorizacion = 0; p.ventana = ventana; } return; }
+      // Posición que esta pantalla INVENTA a partir del ingreso: es la que más
+      // se quita ("porque aparece BTG si no lo tengo"), así que se quita igual.
+      if (estaFuera(`cap_${i.id}`)) { ingresosFuera.add(i.id); fuera.push({ id: `cap_${i.id}`, nombre: i.nombre || "Inversión", capital: cap, tipo: "Capital", soloIngreso: true }); return; }
       posiciones.push({ id: `cap_${i.id}`, nombre: i.nombre || "Inversión", bolsillo: "sustento", capital: cap, tasa: tasaReal, tasaDeclarada: declarada, pagaPct: 100, valorizacion: 0, tipo: "Capital", owner: i.owner, soloIngreso: true, ventana, ...(fichas[`cap_${i.id}`] || {}) });
       return;
     }
     const trabajo = esTrabajoCat(i);
     flujos.push({ id: `ing_${i.id}`, nombre: i.nombre || i.categoria || "Ingreso", tipo: "ingreso", monto: m, indexa: trabajo, trabajo, origenId: i.id, owner: i.owner });
   });
+  // La base (patrimonio, lo que entra, lo que sale) se mide sobre el MISMO
+  // universo que el plan. Si no, el encabezado cuenta un patrimonio que la
+  // lista ya no tiene y los gastos de un activo quitado siguen pesando.
+  // Se filtra desde los arreglos crudos, no desde los ya filtrados por `sim`,
+  // para no romper el conteo de ocultos (el ojo ⬜ de las listas).
+  const gastosVivos = {};
+  Object.entries(user.gas || user.gastos || {}).forEach(([cat, items]) => { gastosVivos[cat] = (items || []).filter((g) => !(g?.activoId && estaFuera(g.activoId))); });
+  const base = calcularBase({
+    inv: (user.inv || []).filter((a) => !estaFuera(a?.id)),
+    ingresos: (user.ingresos || []).filter((i) => !ingresosFuera.has(i?.id)),
+    gastos: gastosVivos, deudas: user.deu || user.deudas, trm,
+  });
+
   // Gastos de vida por categoría (sin cuotas), para que cada uno pueda
   // terminar o cambiar en el tiempo. La base única (base.g) ya netea los
   // costos de los inmuebles arrendados y suma seguridad social e impuesto;
@@ -235,7 +267,7 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
   const pagado = deudasCfg.filter((d) => d.pagar).reduce((s, d) => s + d.saldo, 0);
   const hoy = { liberado, pagado, porDesplegar: liberado - pagado, costoVentaPct: costoVenta, cuotasQueSalen: deudasCfg.filter((d) => d.pagar).reduce((s, d) => s + d.cuota, 0) };
 
-  return { posiciones, flujos, deudas: deudasCfg, caja: 0, gastosMes: base.g + base.sd, base, trm, hoy };
+  return { posiciones, flujos, deudas: deudasCfg, caja: 0, gastosMes: base.g + base.sd, base, trm, hoy, fuera };
 }
 
 /** Movimientos de mes 0 que vienen de HOY (comunes a todos los escenarios). */

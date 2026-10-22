@@ -159,7 +159,14 @@ const Siguiente = ({ onClick, children }) => <div style={{ display: "flex", just
 //
 // Los porcentajes no se borran: viven detrás de "ajustar", en la fila a la que
 // pertenecen y con su nombre completo.
-function FilaActivo({ p, onFicha }) {
+// 21-oct-2026 (Santiago: "uno debería poder borrar algún item si no va en el
+// modelo"). El botón tenía dos estados —Continúa / Ya no va— para tres
+// situaciones: sigue, se vende hoy, y no va acá. "Ya no va" era además el
+// rótulo de la VENTA, así que la tercera no tenía dónde entrar y el único
+// camino era irse a Patrimonio a apagar el activo (lo que lo saca de todo el
+// producto: impuestos, dashboard, asesores). Ahora la venta se llama por su
+// nombre —"Se vende hoy"— y quitar es su propia acción, reversible.
+function FilaActivo({ p, onFicha, onQuitar }) {
   const [abierto, setAbierto] = useState(false);
   const x = produce(p);
   const k = canastaDe(p);
@@ -185,8 +192,9 @@ function FilaActivo({ p, onFicha }) {
           <div style={F.caption}>{p.tipo} · {p.canasta ? "la canasta la decidiste tú" : porQueCanasta(p)}</div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={() => onFicha({ estado: off ? "continua" : "sale" })} style={{ ...btn(false), color: off ? C.danger : C.ok, borderColor: off ? C.danger : C.ok, whiteSpace: "nowrap" }}>{off ? "Ya no va" : "Continúa"}</button>
+          <button onClick={() => onFicha({ estado: off ? "continua" : "sale" })} style={{ ...btn(false), color: off ? C.danger : C.ok, borderColor: off ? C.danger : C.ok, whiteSpace: "nowrap" }}>{off ? "Se vende hoy" : "Continúa"}</button>
           <button onClick={() => setAbierto((a) => !a)} style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>{abierto ? "cerrar" : "ajustar"}</button>
+          <button onClick={onQuitar} title="No va en el modelo: no lo tienes o no va acá. Sale del patrimonio y de lo que entra al mes; no libera plata, porque no se vende. Se puede volver a incluir." style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>quitar</button>
         </div>
       </div>
       {abierto && (
@@ -227,12 +235,13 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
   const tot = vivos.reduce((s, p) => { const x = produce(p); return { recibe: s.recibe + x.recibe, crece: s.crece + x.crece }; }, { recibe: 0, crece: 0 });
   const totIng = deIngresos.filter((p) => !p.sale).reduce((s2, p) => s2 + produce(p).recibe, 0);
   const salen = base.posiciones.filter((p) => p.sale);
+  const capFuera = (base.fuera || []).reduce((s2, q) => ({ n: s2.n + 1, capital: s2.capital + q.capital }), { n: 0, capital: 0 });
   const inp = { ...inputS, padding: "4px 6px", fontSize: 12, width: 64, textAlign: "right" };
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
         <div style={F.h2}>1 · Hoy: qué tienes, qué produce y qué sigue en el plan</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Este es tu punto de partida: <b style={{ color: C.text }}>qué tienes</b>, <b style={{ color: C.text }}>cuánto vale</b>, <b style={{ color: C.text }}>cuánto te renta</b> y <b style={{ color: C.text }}>hasta cuándo</b>. Ya clasificamos cada cosa según lo que produce — revisa que esté bien y corrige lo que no cuadre. Lo único que tienes que decidir es si cada activo <b style={{ color: C.text }}>continúa</b> o <b style={{ color: C.text }}>sale del plan</b> (se vende hoy): lo que sale libera plata para desplegar en cada escenario, y las deudas que marques se pagan con eso. Lo que decidas aquí vale para todos los escenarios.</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Este es tu punto de partida: <b style={{ color: C.text }}>qué tienes</b>, <b style={{ color: C.text }}>cuánto vale</b>, <b style={{ color: C.text }}>cuánto te renta</b> y <b style={{ color: C.text }}>hasta cuándo</b>. Ya clasificamos cada cosa según lo que produce — revisa que esté bien y corrige lo que no cuadre. Lo único que tienes que decidir es si cada activo <b style={{ color: C.text }}>continúa</b> o <b style={{ color: C.text }}>se vende hoy</b>: lo que se vende libera plata para desplegar en cada escenario, y las deudas que marques se pagan con eso. Y si algo no va acá —no es tuyo, está repetido, no lo tienes— lo <b style={{ color: C.text }}>quitas</b>: eso no se vende, simplemente deja de contar. Lo que decidas aquí vale para todos los escenarios.</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginTop: 14 }}>
           {tiles.map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
         </div>
@@ -259,8 +268,21 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
           <button onClick={() => setRevisar((r) => !r)} style={btn(!revisar)}>{revisar ? "Ocultar la lista" : `Revisar mis ${base.posiciones.length} activos`}</button>
         </div>
         {revisar && <div style={{ marginTop: 6 }}>
-          <div style={{ ...F.caption, marginBottom: 2 }}>De cada uno solo hay que decidir una cosa: si <b style={{ color: C.text }}>continúa</b> o <b style={{ color: C.text }}>ya no va</b> (se vende hoy y libera plata para el plan). Lo demás ya está calculado — si algo no cuadra, "ajustar".</div>
-          {[...base.posiciones].sort((a, b2) => b2.capital - a.capital).map((q) => <FilaActivo key={q.id} p={q} onFicha={(patch) => setF(q.id, patch)} />)}
+          <div style={{ ...F.caption, marginBottom: 2 }}>De cada uno hay que decidir una cosa: si <b style={{ color: C.text }}>continúa</b> o <b style={{ color: C.text }}>se vende hoy</b> (libera plata para el plan). Lo demás ya está calculado — si algo no cuadra, "ajustar"; si algo no va en el modelo, "quitar".</div>
+          {[...base.posiciones].sort((a, b2) => b2.capital - a.capital).map((q) => <FilaActivo key={q.id} p={q} onFicha={(patch) => setF(q.id, patch)} onQuitar={() => setF(q.id, { estado: "fuera" })} />)}
+        </div>}
+        {/* Lo quitado no se esconde: se dice, con su plata, y se puede
+            devolver. Un ítem que desaparece sin rastro es un patrimonio que
+            bajó sin explicación. */}
+        {capFuera.n > 0 && <div style={{ ...sub, marginTop: 10, borderColor: C.border }}>
+          <div style={F.label}>Fuera del modelo · {capFuera.n} {capFuera.n === 1 ? "cosa" : "cosas"} · {fmM(capFuera.capital)}</div>
+          <div style={{ ...F.caption, marginTop: 2 }}>No cuentan en ningún escenario: no suman al patrimonio, no rentan y no liberan plata (no se venden, no los tienes). Tus datos en Patrimonio e Ingresos quedaron intactos.</div>
+          <div style={{ display: "grid", gap: 5, marginTop: 8 }}>
+            {base.fuera.map((q) => <div key={q.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", borderTop: `1px solid ${C.border}`, paddingTop: 5 }}>
+              <span style={{ ...F.caption, color: C.muted }}>{q.nombre} · {fmM(q.capital)}{q.soloIngreso ? " · venía de un ingreso, no de Inversiones" : ""}</span>
+              <button style={{ ...btn(false), padding: "3px 10px" }} onClick={() => setF(q.id, { estado: "continua" })}>volver a incluir</button>
+            </div>)}
+          </div>
         </div>}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 14 }}>
@@ -271,8 +293,9 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
         </div>}
         <div style={{ ...card, borderColor: salen.length ? C.accent : C.border }}>
           <div style={F.h3}>Lo decidido hoy, para todos los escenarios</div>
-          {salen.length === 0 && !base.deudas.some((d) => d.pagar) ? <div style={{ ...F.body, marginTop: 6 }}>Todo continúa tal como está. Si algo va a salir del plan (un inmueble que vendes, un lote), márcalo arriba como <b style={{ color: C.text }}>Sale del plan</b>.</div> : (
+          {salen.length === 0 && capFuera.n === 0 && !base.deudas.some((d) => d.pagar) ? <div style={{ ...F.body, marginTop: 6 }}>Todo continúa tal como está. Si algo va a salir del plan (un inmueble que vendes, un lote), márcalo arriba como <b style={{ color: C.text }}>Se vende hoy</b>.</div> : (
             <div style={{ marginTop: 6, display: "grid", gap: 6 }}>
+              {capFuera.n > 0 && <div style={F.body}>Fuera del modelo: <b style={{ color: C.text }}>{base.fuera.map((q) => q.nombre).join(", ")}</b> → {fmM(capFuera.capital)} que dejan de contar (no se venden).</div>}
               {salen.length > 0 && <div style={F.body}>Sale: <b style={{ color: C.text }}>{salen.map((p) => p.nombre).join(", ")}</b> → liberas <b style={{ color: C.text }}>{fmM(hoy.liberado)}</b>{hoy.costoVentaPct > 0 ? ` (neto de ${hoy.costoVentaPct}% de costos de venta)` : ""}.</div>}
               {hoy.pagado > 0 && <div style={F.body}>Se paga: <b style={{ color: C.text }}>{base.deudas.filter((d) => d.pagar).map((d) => d.nombre).join(", ")}</b> → <b style={{ color: C.text }}>{fmM(hoy.pagado)}</b>, y dejas de pagar {fmMes(hoy.cuotasQueSalen)} de cuotas al mes.</div>}
               <div style={{ ...F.body, color: hoy.porDesplegar >= 0 ? C.ok : C.danger }}>Quedan <b>{fmM(hoy.porDesplegar)}</b> por desplegar en cada escenario (paso 3).</div>
