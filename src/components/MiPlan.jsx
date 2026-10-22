@@ -1392,7 +1392,7 @@ function GraficaMesAMes({ r, perfil, base, onArreglar }) {
   const ticks = []; for (let a = 0; a <= meses.length; a += 12) ticks.push(a);
   return (
     <div style={card}>
-      <div style={F.h3}>Mes a mes: ¿alcanza para vivir?</div>
+      <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}><div style={{ ...F.h3, color: C.subtle }}>3 ·</div><div style={F.h3}>Mes a mes: ¿alcanza para vivir?</div></div>
       <div style={{ ...F.caption, marginTop: 2 }}>
         <b style={{ color: r.color }}>Línea de color</b>: lo que entra cada mes (rentas, arriendos, pensiones). <b style={{ color: C.danger }}>Línea punteada</b>: lo que sale para vivir (gastos y cuotas). <b style={{ color: C.ok }}>Franja</b>: lo que sobra ese mes. Mientras la línea de color vaya por encima de la punteada, el plan se sostiene solo.
       </div>
@@ -1430,8 +1430,9 @@ function GanaALaInflacion({ r, perfil, base, onArreglar }) {
   const gana = datos.filter((d) => d.crece > infl).length;
   return (
     <div style={card}>
-      <div style={F.h3}>¿Le gana a la inflación, año por año?</div>
-      <div style={{ ...F.caption, marginTop: 2 }}>Cada barra es cuánto crece tu patrimonio ese año. La línea punteada es la inflación ({pctEs(infl)}): por encima, ganas poder de compra; por debajo, tienes más pesos y compras menos.</div>
+      <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}><div style={{ ...F.h3, color: C.subtle }}>5 ·</div><div style={F.h3}>¿Le gana a la inflación, año por año?</div></div>
+      <div style={{ ...F.body, marginTop: 4 }}>Crecer no basta: si el patrimonio sube menos que la vida, tienes más pesos y compras menos.</div>
+      <div style={{ ...F.caption, marginTop: 6 }}>Cada barra es cuánto crece tu patrimonio ese año. La línea punteada es la inflación ({pctEs(infl)}): por encima, ganas poder de compra; por debajo, tienes más pesos y compras menos.</div>
       <div style={{ height: 190, marginTop: 12 }}>
         <ResponsiveContainer>
           <BarChart data={datos} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -1463,8 +1464,9 @@ function ComoEmpresa({ r }) {
   const f1 = filas[0], f10 = filas[filas.length - 1];
   return (
     <div style={card}>
-      <div style={F.h3}>Tu patrimonio como empresa</div>
-      <div style={{ ...F.caption, marginTop: 2 }}>Lo que produce todo tu capital en el año —lo que te paga, lo que reinvierte y lo que valoriza— contra lo que cuesta tu vida. La diferencia es lo que el negocio gana.</div>
+      <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}><div style={{ ...F.h3, color: C.subtle }}>6 ·</div><div style={F.h3}>Tu patrimonio como empresa</div></div>
+      <div style={{ ...F.body, marginTop: 4 }}>Deja de ser un saldo que sube y baja: es un negocio con ingresos, costos y margen.</div>
+      <div style={{ ...F.caption, marginTop: 6 }}>Lo que produce todo tu capital en el año —lo que te paga, lo que reinvierte y lo que valoriza— contra lo que cuesta tu vida. La diferencia es lo que el negocio gana.</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
         {[["Factura hoy", fmM(f1.factura), "al año"], ["Cuesta tu vida", fmM(f1.costo), "al año"], ["Gana hoy", fmM(f1.gana), `margen ${pctEs(f1.margen)}`], ["Gana en el año 10", fmM(f10.gana), `margen ${pctEs(f10.margen)}`]]
           .map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
@@ -1500,8 +1502,8 @@ function LoQueFalta({ r, base, liq, perfil }) {
   if (!puntos.length) return null;
   return (
     <div style={{ ...card, borderColor: puntos.some((x) => x.mal) ? C.warn : C.border }}>
-      <div style={F.h3}>Lo que hay que vigilar en este escenario</div>
-      <div style={{ ...F.caption, marginTop: 2 }}>No es una lista escrita a mano: son las cosas que este plan deja abiertas.</div>
+      <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}><div style={{ ...F.h3, color: C.subtle }}>8 ·</div><div style={F.h3}>Lo que hay que vigilar</div></div>
+      <div style={{ ...F.body, marginTop: 4 }}>No es una lista escrita a mano: son las cosas que <b style={{ color: C.text }}>este</b> plan deja abiertas, calculadas sobre él.</div>
       <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
         {puntos.map((x, i) => <div key={i} style={{ borderLeft: `3px solid ${x.mal ? C.danger : C.warn}`, paddingLeft: 10 }}>
           <div style={{ ...F.body, color: C.text }}>{x.t}</div>
@@ -1557,8 +1559,9 @@ function ActivoPorActivo({ r, base, onFicha }) {
   const tot = filas.reduce((t, x) => ({ hoy: t.hoy + x.hoy, fin: t.fin + x.fin, pagaHoy: t.pagaHoy + x.pagaHoy, pagaFin: t.pagaFin + x.pagaFin }), { hoy: 0, fin: 0, pagaHoy: 0, pagaFin: 0 });
   return (
     <div style={card}>
-      <div style={F.h3}>Activo por activo: qué pasó con cada cosa tuya</div>
-      <div style={{ ...F.caption, marginTop: 2 }}>Con cuánto arranca, con cuánto termina en el año 10, y cuánto te deposita cada mes en cada momento. Lo que crece no te deposita: se dice cuánto se queda adentro cada mes. Lo que se vendió queda en cero y lo que nació con el plan va marcado.</div>
+      <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}><div style={{ ...F.h3, color: C.subtle }}>4 ·</div><div style={F.h3}>Todo lo que tienes después del plan</div></div>
+      <div style={{ ...F.body, marginTop: 4 }}>Cosa por cosa, lo que ya tenías <b style={{ color: C.text }}>y</b> lo que nace con el plan. Lo que vendiste queda en cero y marcado.</div>
+      <div style={{ ...F.caption, marginTop: 6 }}>Con cuánto arranca, con cuánto termina en el año 10, y cuánto te deposita cada mes en cada momento. Lo que crece no te deposita: se dice cuánto se queda adentro cada mes. Lo que se vendió queda en cero y lo que nació con el plan va marcado.</div>
       <div style={{ overflowX: "auto", marginTop: 10 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
           <thead><tr>{["Activo", "Canasta", "Hoy vale", "Año 10 vale", "Te paga hoy", "Te paga año 10"].map((h, i) => <th key={h} style={{ ...th, textAlign: i < 2 ? "left" : "right" }}>{h}</th>)}</tr></thead>
@@ -1585,6 +1588,36 @@ function ActivoPorActivo({ r, base, onFicha }) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Una ficha del resultado (22-oct-2026).
+ *
+ * Santiago, comparando con su Plan Patrimonial SALEM: "es mucho mejor como se
+ * ve aquí el escenario… cómo se separa cada cosa en fichas, cómo se presenta
+ * de claro todo; en cambio FINPATHIA no se lee tan bien".
+ *
+ * Tres cosas hacen la diferencia en su documento, y ninguna es de diseño:
+ *   · cada cosa en SU ficha, numerada, en una secuencia que se encadena;
+ *   · la cifra va en el titulo, no escondida adentro;
+ *   · y debajo, una frase que dice que INCLUYE y que NO -"lo que no se vende
+ *     no aparece aqui porque no se mueve; eso lo suma el punto 2"-, que es
+ *     exactamente lo que falto todo el dia para saber de donde sale cada
+ *     numero.
+ */
+function Ficha({ n, t, cifra, pie, d, children, borde }) {
+  return (
+    <div style={{ ...card, ...(borde ? { borderColor: borde } : {}) }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
+        <div style={{ ...F.h3, color: C.subtle }}>{n}</div>
+        <div style={F.h3}>{t}</div>
+        {cifra != null && <div style={{ ...F.monoLg, color: C.text }}>· {cifra}</div>}
+        {pie && <div style={F.caption}>{pie}</div>}
+      </div>
+      {d && <div style={{ ...F.body, marginTop: 4 }}>{d}</div>}
+      <div style={{ marginTop: 12 }}>{children}</div>
     </div>
   );
 }
@@ -1637,7 +1670,8 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
               despliegas— y dejaba fuera lo que se queda, que es de donde sale
               la mayor parte de lo que entra cada mes. Un escenario no es solo
               el cambio: es el cambio SOBRE lo que ya tienes. */}
-          <div style={F.h3}>Lo que sigue igual y te sigue pagando</div>
+          <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}><div style={{ ...F.h3, color: C.subtle }}>1 ·</div><div style={F.h3}>Lo que sigue igual y te sigue pagando</div></div>
+          <div style={{ ...F.body, marginTop: 4 }}>Solo lo que NO tocas en este escenario. Lo que vendes, lo que compras y a dónde va esa plata no aparece acá: eso es el punto 2.</div>
           {(() => {
             const vendeEntero = new Set((r.ventas || []).filter((v) => v.monto == null).map((v) => v.posicionId));
             const siguen = base.posiciones.filter((q) => !q.sale && !vendeEntero.has(q.id)).map((q) => ({ nombre: q.nombre, mes: produce(q).recibe })).filter((q) => q.mes > 0).sort((a, b) => b.mes - a.mes);
@@ -1649,7 +1683,8 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
               {siguen.length > 8 && <div style={F.caption}>· y {siguen.length - 8} más</div>}</div>
             </>);
           })()}
-          <div style={{ ...F.h3, marginTop: 14 }}>Y esto es lo que cambia</div>
+          <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap", marginTop: 16 }}><div style={{ ...F.h3, color: C.subtle }}>2 ·</div><div style={F.h3}>Y esto es lo que cambia</div></div>
+          <div style={{ ...F.body, marginTop: 4 }}>Solo el movimiento: qué sale, qué deuda se paga y a dónde entra cada peso que se libera. Lo que ya tenías y se queda, está arriba.</div>
           {r.ajuste.notas.length ? r.ajuste.notas.map((n, i) => <div key={i} style={{ ...F.body, marginTop: 6 }}>· {n}</div>) : <div style={{ ...F.body, marginTop: 6 }}>Nada cambia hoy: el escenario parte tal como estás.</div>}
           <div style={{ marginTop: 12 }}><div style={F.caption}>Canastas hoy</div><BarraCanastas c={r.canastasHoy} /><div style={{ ...F.caption, marginTop: 8 }}>Canastas año 10</div><BarraCanastas c={r.canastasFin} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 8 }}>{["proteccion", "rentas", "crecimiento"].map((k) => <div key={k}><div style={{ ...F.label, color: CANASTA_COLOR[k] }}>{CANASTA_LABEL[k]}</div><div style={{ ...F.caption, color: C.text }}>{fmM(r.canastasHoy[k])} → {fmM(r.canastasFin[k])}</div></div>)}</div>
@@ -1671,12 +1706,12 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
           <button key={n} style={{ ...btn(false), padding: "5px 12px" }} onClick={() => onEditar(n)}>✎ {t}</button>)}
       </div>}
       <GraficaMesAMes r={r} perfil={perfil} base={base} onArreglar={onEditar && (() => onEditar(4))} />
-      <LoQueFalta r={r} base={base} liq={liquidezEscenario(base, r)} perfil={perfil} />
       <ActivoPorActivo r={r} base={base} onFicha={onFicha} />
       <GanaALaInflacion r={r} perfil={perfil} base={base} onArreglar={onEditar && (() => onEditar(4))} />
       <ComoEmpresa r={r} />
       <div style={card}>
-        <div style={F.h3}>Año a año</div>
+        <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}><div style={{ ...F.h3, color: C.subtle }}>7 ·</div><div style={F.h3}>Año a año</div></div>
+        <div style={{ ...F.body, marginTop: 4 }}>El resumen de cada año en una fila, con lo que cambia ese año dicho en palabras.</div>
         <div style={{ overflowX: "auto", marginTop: 8 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
             <thead><tr>{["Año", "Entra/mes", "Sale/mes", "Queda/mes", "Cobertura", "Patrimonio", "Qué pasa"].map((h, i) => <th key={h} style={{ ...th, textAlign: i === 0 || i === 6 ? "left" : "right" }}>{h}</th>)}</tr></thead>
@@ -1684,6 +1719,7 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
           </table>
         </div>
       </div>
+      <LoQueFalta r={r} base={base} liq={liquidezEscenario(base, r)} perfil={perfil} />
       <Siguiente onClick={onNext}>Siguiente: compara todos los escenarios</Siguiente>
     </div>
   );
