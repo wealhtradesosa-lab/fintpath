@@ -201,3 +201,26 @@ describe("prueba de estrés", () => {
     expect(peor.meses[23].detalle.a.capital).toBeCloseTo(base.meses[23].detalle.a.capital, 6);
   });
 });
+
+describe("la parte que no recibes se reinvierte donde digas", () => {
+  // 22-oct-2026 (Santiago: "uno no puede decir que se reinvierte un pedazo").
+  it("de un fondo al 12% recibes el 50% y el otro 50% va al portafolio", () => {
+    const r = simularCamino({
+      meses: 12, caja: 0,
+      posiciones: [{ id: "f", nombre: "Fondo", bolsillo: "sustento", capital: 1200, tasa: 12, pagaPct: 50, reinvierteEn: "p" }, { id: "p", nombre: "Portafolio", bolsillo: "crecimiento", capital: 0, tasa: 0 }],
+      flujos: [], reglas: { excedente: [] },
+    });
+    expect(r.meses[0].detalle.f.recibe).toBeCloseTo(6, 6);
+    expect(r.meses[0].detalle.p.capital).toBeGreaterThan(5);
+    expect(r.meses[11].detalle.f.capital).toBeCloseTo(1200, 6);
+    expect(r.meses[11].detalle.p.capital).toBeGreaterThan(60);
+  });
+  it("el escenario pasa recibes y destino de lo reinvertido a una posición que ya existe", () => {
+    const base = baseDesdeUsuario(user);
+    const esc = escenarioVacio({ nombre: "CDT a medias", despliegue: [{ id: "x", destinoId: "i1", nombre: "CDT", canasta: "rentas", capital: 0, tasa: 10, pagaPct: 40, reinvierteEn: "i2" }] });
+    const [r] = compararCaminos([esc], base, PERFIL_DEFAULT);
+    const cdt = r.cfg.posiciones.find((p) => p.id === "i1");
+    expect(cdt.pagaPct).toBe(40);
+    expect(cdt.reinvierteEn).toBe("i2");
+  });
+});

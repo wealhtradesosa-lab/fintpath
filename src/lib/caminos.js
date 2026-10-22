@@ -929,11 +929,18 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
     // Una inversión nueva con $0 hoy también existe: la plata puede llegarle
     // después (una venta del año 2 que "va a" ella). Antes se descartaba y el
     // evento posterior apuntaba a una posición que no estaba.
-    if (cap <= 0 && d.destinoId) return;
-    if (d.destinoId && byId[d.destinoId]) { movimientos.push({ mes: 0, tipo: "aportar", posicionId: d.destinoId, monto: cap, origen: [{ posicionId: "caja", monto: cap }] }); if (num(d.tasa) > 0 && num(d.tasa) !== byId[d.destinoId].tasa) movimientos.push({ mes: 0, tipo: "tasa_cambia", posicionId: d.destinoId, tasa: num(d.tasa) }); return; }
+    if (d.destinoId && byId[d.destinoId]) {
+      if (cap > 0) movimientos.push({ mes: 0, tipo: "aportar", posicionId: d.destinoId, monto: cap, origen: [{ posicionId: "caja", monto: cap }] });
+      if (num(d.tasa) > 0 && num(d.tasa) !== byId[d.destinoId].tasa) movimientos.push({ mes: 0, tipo: "tasa_cambia", posicionId: d.destinoId, tasa: num(d.tasa) });
+      // Lo que la fila dice de "recibes" y "lo reinvertido va a" manda sobre
+      // la posición que ya existe (antes solo se aplicaba la tasa).
+      const pc = posiciones.find((x) => x.id === d.destinoId);
+      if (pc) { if (d.pagaPct != null && d.pagaPct !== "") pc.pagaPct = num(d.pagaPct); pc.reinvierteEn = d.reinvierteEn || undefined; }
+      return;
+    }
     const papel = papelDeCanasta(d.canasta || "rentas", d, perfil);
     const id = d.id || uid("d");
-    posiciones.push({ id, nombre: d.nombre || "Nueva inversión", capital: 0, tipo: d.canasta === "crecimiento" ? "ETF" : d.canasta === "rentas" ? (d.inmueble ? "Real Estate" : "CDT") : "Real Estate", liquido: d.canasta === "rentas" && !d.inmueble, inmueble: !!d.inmueble || d.canasta === "proteccion", nuevo: true, ...papel, desdeMes: 0 });
+    posiciones.push({ id, nombre: d.nombre || "Nueva inversión", capital: 0, tipo: d.canasta === "crecimiento" ? "ETF" : d.canasta === "rentas" ? (d.inmueble ? "Real Estate" : "CDT") : "Real Estate", liquido: d.canasta === "rentas" && !d.inmueble, inmueble: !!d.inmueble || d.canasta === "proteccion", nuevo: true, ...papel, reinvierteEn: d.reinvierteEn || undefined, desdeMes: 0 });
     if (cap > 0) movimientos.push({ mes: 0, tipo: "aportar", posicionId: id, monto: cap, origen: [{ posicionId: "caja", monto: cap }] });
     if (num(d.renta) > 0) movimientos.push({ mes: Math.max(0, num(d.rentaDesde) || 0), tipo: "flujo_inicia", flujo: { id: `${id}_renta`, nombre: `Renta ${d.nombre}`, tipo: "ingreso", monto: num(d.renta), indexa: true, posicionId: id } });
   });
@@ -987,7 +994,7 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   const pagosEsc = (esc.pagos || []).filter((id) => !baseCfg.deudas.find((d) => d.id === id)?.pagar);
   if (pagosEsc.length) notas.push(`Pagas ${pagosEsc.map((id) => baseCfg.deudas.find((d) => d.id === id)?.nombre || id).join(", ")}: ${M(liq.pagado - liq.pagadoHoy)}.`);
   if (num(esc.disfrutePct) > 0) notas.push(`De lo que sobra cada mes te gastas el ${num(esc.disfrutePct)}% y reinviertes el resto.`);
-  (esc.despliegue || []).filter((d) => num(d.capital) > 0).forEach((d) => notas.push(`${M(d.capital)} a ${d.nombre}${num(d.tasa) > 0 ? ` al ${d.tasa}%` : ""}${d.regla ? ` · ${d.regla}` : ""}.`));
+  (esc.despliegue || []).filter((d) => num(d.capital) > 0).forEach((d) => { const pp = d.pagaPct == null ? 100 : num(d.pagaPct); const re = d.reinvierteEn ? [...baseCfg.posiciones, ...(esc.despliegue || [])].find((x) => x.id === d.reinvierteEn)?.nombre : null; notas.push(`${M(d.capital)} a ${d.nombre}${num(d.tasa) > 0 ? ` al ${d.tasa}%` : ""}${num(d.tasa) > 0 ? (pp >= 100 ? " · te paga todo el rendimiento" : pp <= 0 ? ` · todo se reinvierte${re ? ` en ${re}` : ""}` : ` · recibes el ${pp}% y el ${100 - pp}% se reinvierte${re ? ` en ${re}` : ""}`) : ""}.`); });
   if (liq.porAsignar > 1e6) notas.push(`Quedan ${M(liq.porAsignar)} sin asignar (se quedan en caja, sin rendir).`);
   if (liq.porAsignar < -1e6) notas.push(`Falta plata: asignas ${M(-liq.porAsignar)} más de lo que liberas.`);
   return {

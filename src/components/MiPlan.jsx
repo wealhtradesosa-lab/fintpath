@@ -1246,7 +1246,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
-                <thead><tr><th style={th}>Destino</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Cuánto le metes</th><th style={{ ...th, textAlign: "right" }}>Tasa</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>Regla</th><th style={th} /></tr></thead>
+                <thead><tr><th style={th}>Destino</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Cuánto le metes</th><th style={{ ...th, textAlign: "right" }}>Tasa</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th}>Lo que no recibes va a</th><th style={th} /></tr></thead>
                 <tbody>
                   {(esc.despliegue || []).map((d) => <tr key={d.id} style={{ borderTop: `1px solid ${C.border}` }}>
                     <td style={{ ...td, minWidth: 150 }}>{d.destinoId ? <span>{d.nombre}<div style={F.caption}>ya lo tienes · vale {fmM(posDe(d.destinoId)?.capital || 0)} hoy</div></span> : <input value={d.nombre} onChange={(e) => setD(d.id, { nombre: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }} />}</td>
@@ -1258,9 +1258,15 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                           nueva, el valor y el porcentaje, el sistema debería
                           poner la cuota aproximada"). */}
                       {pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0 && <div style={{ ...F.caption, color: C.ok, whiteSpace: "nowrap" }}>≈ {fmMes(pagaAlMes(d.capital, d.tasa, d.pagaPct))}/mes</div>}
-                      {Number(d.capital) > 0 && Number(d.tasa) > 0 && !(pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0) && <div style={{ ...F.caption, whiteSpace: "nowrap" }}>se reinvierte</div>}</td>
+                      {Number(d.capital) > 0 && Number(d.tasa) > 0 && Number(d.pagaPct) > 0 && Number(d.pagaPct) < 100 && <div style={{ ...F.caption, whiteSpace: "nowrap" }}>reinviertes ≈ {fmMes(pagaAlMes(d.capital, d.tasa, 100 - Number(d.pagaPct)))}/mes</div>}
+                      {Number(d.capital) > 0 && Number(d.tasa) > 0 && !(pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0) && <div style={{ ...F.caption, whiteSpace: "nowrap" }}>todo se reinvierte</div>}</td>
                     <td style={tdNum}><Num value={d.valorizacion} step={0.5} onChange={(v) => setD(d.id, { valorizacion: v || 0 })} suffix="%" w={80} /></td>
-                    <td style={{ ...td, minWidth: 180 }}><input value={d.regla || ""} onChange={(e) => setD(d.id, { regla: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 11 }} placeholder="Regla" /></td>
+                    <td style={{ ...td, minWidth: 180 }}>{Number(d.tasa) > 0 && Number(d.pagaPct) < 100
+                      ? <select value={d.reinvierteEn || ""} onChange={(e) => setD(d.id, { reinvierteEn: e.target.value || undefined })} style={{ ...inputS, padding: "4px 6px", fontSize: 11 }}>
+                          <option value="">esta misma inversión</option>
+                          {[...(esc.despliegue || []).filter((x) => x.id !== d.id).map((x) => ({ id: x.destinoId || x.id, nombre: x.nombre })), ...base.posiciones.filter((p) => !p.sale && !(esc.despliegue || []).some((x) => x.destinoId === p.id)).map((p) => ({ id: p.id, nombre: p.nombre }))].filter((o) => o.id !== (d.destinoId || d.id)).map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+                        </select>
+                      : <span style={F.caption}>{Number(d.tasa) > 0 ? "— te paga todo" : "—"}</span>}</td>
                     <td style={td}><button style={{ ...btn(false), padding: "3px 8px", color: C.subtle }} onClick={() => upd({ despliegue: esc.despliegue.filter((x) => x.id !== d.id) })}>quitar</button></td>
                   </tr>)}
                   {(esc.despliegue || []).length === 0 && <tr><td colSpan={8} style={{ ...td, color: C.subtle, fontStyle: "italic" }}>Nada desplegado: lo liberado se quedaría en caja sin rendir.</td></tr>}

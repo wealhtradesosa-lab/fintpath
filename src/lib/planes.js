@@ -161,10 +161,16 @@ export function simularCamino(cfg = {}) {
       const paga = bruto * (1 - num(p.impRendPct) / 100);
       const re = p.capital * mensualCompuesta(p.tasa) * (1 - p.pagaPct / 100) * (1 - num(p.impRendPct) / 100);
       const val = p.capital * mensualCompuesta(p.valorizacion);
-      p.capital += re + val;
+      // 22-oct-2026 (Santiago: "uno no puede decir que se reinvierte un
+      // pedazo"). La parte que no recibes se reinvierte: en esta misma
+      // posición, o en otra si `reinvierteEn` lo dice (de BTG, el 40 % va al
+      // portafolio).
+      const otra = p.reinvierteEn && p.reinvierteEn !== p.id ? pos.find((x) => x.id === p.reinvierteEn) : null;
+      if (otra && re > 0) { otra.capital += re; otra.recibioRe = (otra.recibioRe || 0) + re; p.capital += val; } else p.capital += re + val;
       recibido += paga; reinvertido += re; valorizado += val;
-      detalle[p.id] = { capital: p.capital, recibe: paga };
+      detalle[p.id] = { capital: p.capital, recibe: paga, reinvierte: re, reinvierteEn: otra ? otra.id : p.id };
     });
+    pos.forEach((p) => { if (detalle[p.id]) detalle[p.id].capital = p.capital; });
     // 4) Flujos y deudas
     const activo = (f) => mes >= f.desdeMes && mes <= f.hastaMes;
     const ingFlujos = flujos.filter((f) => f.tipo === "ingreso" && activo(f)).reduce((s, f) => s + f.monto, 0);
@@ -302,7 +308,11 @@ export function simularCamino(cfg = {}) {
  */
 export function estresar(cfg, { tasaCrecimiento = null, sinPosicionId = null } = {}) {
   const c = clonar(cfg);
-  if (tasaCrecimiento != null) c.posiciones = (c.posiciones || []).map((p) => (p.bolsillo === "crecimiento" ? { ...p, tasa: tasaCrecimiento } : p));
+  // 22-oct-2026 (Santiago: "¿si crecimiento rinde menos me da MÁS plata?").
+  // La prueba ponía a TODO lo que crece en la tasa de estrés, también a lo
+  // que rendía menos (un portafolio al 1,5 % pasaba al 7,8 %). Estresar es
+  // solo bajar: lo que ya rinde menos se queda como está.
+  if (tasaCrecimiento != null) c.posiciones = (c.posiciones || []).map((p) => (p.bolsillo === "crecimiento" ? { ...p, tasa: Math.min(num(p.tasa), num(tasaCrecimiento)) } : p));
   if (sinPosicionId) c.posiciones = (c.posiciones || []).map((p) => (p.id === sinPosicionId ? { ...p, tasa: 0 } : p));
   return simularCamino(c);
 }
