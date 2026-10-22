@@ -8,13 +8,14 @@ import { describe, it, expect } from "vitest";
 import { fmtPlataCortaEs } from "../../src/lib/formato.js";
 
 describe("la plata abreviada SIEMPRE lleva separador de miles", () => {
-  it("las cifras de la captura", () => {
-    expect(fmtPlataCortaEs(6018241.6e9)).toBe("$6.018.241,6 mil M");
-    expect(fmtPlataCortaEs(164981833.2e6)).toBe("$164.981,8 mil M");
+  it("las cifras de la captura, en la palabra que la gente lee", () => {
+    expect(fmtPlataCortaEs(6018241.6e9)).toBe("$6.018,2 billones");
+    expect(fmtPlataCortaEs(164981833.2e6)).toBe("$165 billones");
   });
 
   it("la única rama que pasa de tres dígitos es «mil M», y lleva puntos", () => {
-    expect(fmtPlataCortaEs(1234.5e9)).toBe("$1.234,5 mil M");
+    expect(fmtPlataCortaEs(1234.5e9)).toBe("$1,2 billón");
+    expect(fmtPlataCortaEs(999e9)).toBe("$999 mil M");
     expect(fmtPlataCortaEs(456.78e6)).toBe("$457 M");   // M y K nunca pasan de 999
     expect(fmtPlataCortaEs(123456)).toBe("$123 K");
   });
@@ -35,7 +36,7 @@ describe("la plata abreviada SIEMPRE lleva separador de miles", () => {
   });
 
   it("los negativos llevan su signo y su separador", () => {
-    expect(fmtPlataCortaEs(-1234.5e9)).toBe("−$1.234,5 mil M");
+    expect(fmtPlataCortaEs(-1234.5e9)).toBe("−$1,2 billón");
     expect(fmtPlataCortaEs(-456.78e6)).toBe("−$457 M");
   });
 });

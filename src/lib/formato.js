@@ -30,7 +30,14 @@ export function fmtMilesEs(n) {
  * millones salió "$6018241,6 mil M" en la tarjeta de Escenarios. Arreglarla en
  * una copia dejaba las otras cinco rotas, así que vive acá, una sola vez.
  *
- *   1.234.567.890.123 → "$1.234,6 mil M"
+ * 22-oct-2026 — Faltaba el escalón de arriba. "$62.550,1 mil M al mes" se lee
+ * como "62" y Santiago preguntó tres veces si eran 62 millones: son 62
+ * BILLONES. Mil millones de mil millones no le cabe a nadie en la cabeza
+ * escrito como "mil M". Pasado el billón se dice billones, que es la palabra
+ * que usa la gente, y ahí el absurdo se ve solo.
+ *
+ *   62.550.100.000.000.000 → "$62,6 billones"
+ *   1.234.567.890.123 → "$1,2 billones"
  *   28.500.000        → "$29 M"    (de 10 M para arriba, entero)
  *   2.500.000         → "$2,5 M"
  *   850.000           → "$850 K"
@@ -38,6 +45,7 @@ export function fmtMilesEs(n) {
 export function fmtPlataCortaEs(n) {
   const v = Math.round(Number(n) || 0), a = Math.abs(v), sg = v < 0 ? "−" : "";
   const q = (x, dec) => x.toLocaleString(ES, { minimumFractionDigits: 0, maximumFractionDigits: dec });
+  if (a >= 1e12) return sg + "$" + q(a / 1e12, 1) + (a < 2e12 ? " billón" : " billones");
   if (a >= 1e9) return sg + "$" + q(a / 1e9, 1) + " mil M";
   if (a >= 1e7) return sg + "$" + q(a / 1e6, 0) + " M";
   if (a >= 1e6) return sg + "$" + q(a / 1e6, 1) + " M";

@@ -763,9 +763,9 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
 // Y cierra el vocabulario: seguridad, renta y crecimiento son las mismas tres
 // palabras con las que la app clasifica dónde está tu plata (las canastas).
 const INTENCIONES = {
-  seguridad: { titulo: "Más protección", frase: "Que pase lo que pase, la vida esté pagada: colchón grande, vivienda propia y la mayor parte pagándote cada mes." },
-  balance: { titulo: "Más renta", frase: "Que la plata te pague cada mes, con una quinta parte creciendo para no quedarte atrás." },
-  crecimiento: { titulo: "Más crecimiento", frase: "Que la mitad esté multiplicándose, sin quedarte sin con qué vivir: un tercio te sigue pagando." },
+  seguridad: { titulo: "Seguridad y rentar", frase: "Que pase lo que pase, la vida esté pagada. Colchón grande y vivienda propia; el resto, rentando." },
+  balance: { titulo: "Vivir de la renta", frase: "Que la plata te pague cada mes, lo más posible, sin dejar de crecer un poco." },
+  crecimiento: { titulo: "Rentar y multiplicar", frase: "Que una parte te pague la vida y la otra se multiplique. Más riesgo, más patrimonio al final." },
 };
 /** La mezcla a la que apunta: las tres canastas, siempre las tres. */
 function haciaDonde(esc) {
@@ -808,7 +808,11 @@ function queHace(esc, base) {
 function MezclaEditor({ objetivo, onChange, base, perfil }) {
   const o = objetivo || { proteccion: 33, rentas: 34, crecimiento: 33 };
   const n = nombrarMezcla(o);
-  const c = base.canastasHoy, tot = c.total || 1;
+  const c = base.canastasHoy;
+  // La mezcla reparte las tres canastas; Uso no entra, asi que tampoco cuenta
+  // en el denominador: si no, los porcentajes de uno y los de la mezcla no
+  // suman lo mismo y la comparacion no quiere decir nada.
+  const tot = Math.max(1, c.proteccion + c.rentas + c.crecimiento);
   return (
     <div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -819,7 +823,7 @@ function MezclaEditor({ objetivo, onChange, base, perfil }) {
           lo que tendría ese portafolio"). Un porcentaje no dice nada hasta
           verlo en plata: 50% de protección son $8,5 mil M quietos, y eso se
           decide distinto que un "50%". */}
-      <div style={{ ...F.caption, marginTop: 2 }}>Sobre tus <b style={{ color: C.text }}>{fmM(tot)}</b> de hoy, esa mezcla sería:</div>
+      <div style={{ ...F.caption, marginTop: 2 }}>Sobre los <b style={{ color: C.text }}>{fmM(tot)}</b> que reparten las tres canastas{c.uso > 0 ? <> (tus <b style={{ color: C.text }}>{fmM(c.uso)}</b> de Uso quedan por fuera: ni te pagan ni crecen)</> : null}, esa mezcla sería:</div>
       <div style={{ display: "flex", height: 14, borderRadius: 999, overflow: "hidden", background: C.raised, marginTop: 8 }}>
         {["proteccion", "rentas", "crecimiento"].map((k) => <div key={k} style={{ width: `${o[k]}%`, background: CANASTA_COLOR[k], transition: "width .15s" }} />)}
       </div>
@@ -857,7 +861,11 @@ function PasoIntencion({ todos, res, base, perfil, onPerfil, activoId, setActivo
   const hoy = base?.base?.patrimonioNeto ?? 0;
   const c = base.canastasHoy;
   const tot = c.total || 1;
+  const deIng = base.posiciones.filter((p) => p.soloIngreso && !p.sale);
+  const capIng = deIng.reduce((t, p) => t + p.capital, 0);
+  const repartido = c.proteccion + c.rentas + c.crecimiento + c.uso;
   const [miMezcla, setMiMezcla] = useState({ proteccion: 25, rentas: 45, crecimiento: 30 });
+  const hayImposible = res.some((r) => vecesDe(r.puntos) > VECES_IMPOSIBLE) || sospechosos(perfil, base).length > 0;
   const plantillas = todos.filter((e) => INTENCIONES[e.id]);
   const propios = todos.filter((e) => !INTENCIONES[e.id]);
   return (
@@ -865,65 +873,58 @@ function PasoIntencion({ todos, res, base, perfil, onPerfil, activoId, setActivo
       <div style={card}>
         <div style={F.h2}>2 · Hoy estás aquí. ¿Qué quieres proyectar?</div>
         <div style={{ ...F.body, marginTop: 4 }}>Proyectar es mover tus activos de un papel a otro: más protección, más renta o más crecimiento. Elige hacia dónde y te armo el escenario con <b style={{ color: C.text }}>tus</b> cosas — qué vender, qué deuda pagar y a dónde mandar lo que sobre. Después lo cambias todo lo que quieras.</div>
+        {/* 22-oct-2026 (Santiago: "¿y dónde quedó el patrimonio completo que
+            son como 17 mil M?", "cada canasta origina valores como de fuentes
+            distintas"). Las canastas repartían $25,7 mil M y su patrimonio
+            neto es $17,0 mil M: la diferencia son los $8,7 mil M cargados como
+            INGRESOS con capital (BTG y compañía), que producen pero no están
+            en Inversiones. Nunca se dijo, y por eso ningún número cuadraba
+            con el de al lado. */}
+        <div style={{ marginTop: 12, ...sub }}>
+          <div style={{ ...F.body, color: C.text }}>Las canastas reparten <b>{fmM(repartido)}</b>:</div>
+          <div style={{ ...F.caption, marginTop: 3 }}>· <b style={{ color: C.text }}>{fmM(hoy)}</b> de patrimonio neto — tus activos de Inversiones menos lo que debes (cada deuda se resta del activo del que cuelga).</div>
+          {capIng > 0 && <div style={{ ...F.caption, marginTop: 2 }}>· <b style={{ color: C.text }}>{fmM(capIng)}</b> que tienes cargado como <b style={{ color: C.text }}>ingresos con capital</b> ({deIng.slice(0, 3).map((p) => p.nombre).join(", ")}{deIng.length > 3 ? ` y ${deIng.length - 3} más` : ""}): producen, pero no están en Inversiones.</div>}
+          {c.uso > 0 && <div style={{ ...F.caption, marginTop: 2 }}>De todo eso, <b style={{ color: C.text }}>{fmM(c.uso)}</b> está en <b style={{ color: C.text }}>Uso</b>: ni te paga ni crece, y por eso no entra en la mezcla.</div>}
+        </div>
         <div style={{ marginTop: 14 }}><div style={F.label}>Dónde está tu plata hoy</div><div style={{ marginTop: 6 }}><BarraCanastas c={c} alto={16} /></div></div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 8 }}>{["proteccion", "rentas", "crecimiento", "uso"].map((k) => <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, ...F.caption }}><span style={{ width: 8, height: 8, borderRadius: 999, background: CANASTA_COLOR[k] }} /><b style={{ color: C.text }}>{CANASTA_LABEL[k]}</b> {pct((c[k] / tot) * 100)} · {fmM(c[k])}</div>)}</div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 14 }}>
+      {/* 22-oct-2026 (Santiago: "estas tarjetas están pésimas", "los datos
+          son todos incorrectos", "¿449 MM? ¿700 MM? ¿y dónde quedó el
+          patrimonio completo que son como 17 mil M?").
+          Tenían razón de sobra: cada tarjeta traía la mezcla, su reparto de
+          hoy contra ella en porcentajes y pesos, lo decidido, el aviso del
+          dato imposible —repetido tres veces— y la proyección. Cinco bloques
+          para una pregunta que es una sola: ¿hacia dónde quieres ir?
+          La comparación con lo tuyo ya vive, con su slider y su base dicha,
+          en "arma tu propia mezcla" de abajo. Acá sobra. */}
+      {hayImposible && <div style={{ ...card, borderColor: C.danger }}>
+        <div style={{ ...F.h3, color: C.danger }}>✋ Antes de proyectar nada, hay un dato que no puede ser</div>
+        <div style={{ display: "grid", gap: 2, marginTop: 6 }}>{sospechosos(perfil, base).slice(0, 4).map((m, i) => <div key={i} style={{ ...F.body, color: C.danger }}>· {m}</div>)}</div>
+        <div style={{ ...F.caption, marginTop: 4 }}>Mientras esté, cualquier proyección sale multiplicada y no sirve para decidir.</div>
+        <BotonesArreglar perfil={perfil} base={base} onPerfil={onPerfil} />
+        {onArreglar && !pensionesImposibles(perfil, base).length && <div style={{ marginTop: 10 }}><button style={btn(true)} onClick={onArreglar}>Llévame a arreglarlo →</button></div>}
+      </div>}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 14 }}>
         {plantillas.map((e) => {
-          const r = res.find((x) => x.id === e.id);
+          const i = INTENCIONES[e.id] || {};
           const sel = e.id === activoId;
-          const d = r ? r.puntos.patrimonioFinal - hoy : 0;
+          const o = e.objetivo;
           return (
-            <div key={e.id} style={{ ...card, borderColor: sel ? e.color : C.border, borderWidth: sel ? 2 : 1 }}>
-              <div style={{ ...F.h3, color: e.color }}>{INTENCIONES[e.id].titulo}</div>
-              <div style={{ ...F.body, marginTop: 6, minHeight: 58 }}>{INTENCIONES[e.id].frase}</div>
-              <div style={{ ...sub, marginTop: 10 }}>
-                <div style={F.label}>Hacia dónde mueve tu plata</div>
-                <div style={{ ...F.caption, color: C.text, marginTop: 2 }}>{haciaDonde(e)}</div>
-                {/* 22-oct-2026 (Santiago: "estas tarjetas son planes medio
-                    sugeridos predeterminados; deberían aplicar según el modelo
-                    de las 3 canastas: si es un plan seguro prima la
-                    protección, si es crecimiento aumenta la inversión en
-                    crecimiento como BTC o IBKR, pero no quiere decir que no se
-                    hagan las de protección o renta, así sea en menor
-                    porcentaje"). La mezcla ya estaba dicha en abstracto; lo
-                    que faltaba era aterrizarla a lo suyo: dónde está hoy,
-                    a dónde apunta y cuánto habría que mover. Decir no es
-                    hacer: la tarjeta sigue sin tocarle un peso. */}
-                {e.objetivo && <div style={{ marginTop: 8 }}>
-                  <div style={F.label}>Tú hoy, contra esa mezcla</div>
-                  <div style={{ display: "grid", gap: 2, marginTop: 3 }}>
-                    {["proteccion", "rentas", "crecimiento"].map((k) => {
-                      const hoyPct = Math.round((c[k] / tot) * 100);
-                      const meta = e.objetivo[k];
-                      const falta = (meta / 100) * tot - c[k];
-                      return (<div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 8, ...F.caption }}>
-                        <span style={{ color: CANASTA_COLOR[k] }}>{CANASTA_LABEL[k]}</span>
-                        <span style={{ color: C.muted }}>{hoyPct}% → <b style={{ color: C.text }}>{meta}%</b> · {Math.abs(falta) < tot * 0.02 ? "ya estás" : falta > 0 ? `+${fmM(falta)}` : `−${fmM(-falta)}`}</span>
-                      </div>);
-                    })}
-                  </div>
-                </div>}
-                <div style={{ ...F.label, marginTop: 8 }}>Con lo tuyo</div>
-                <div style={{ ...F.caption, color: C.text, marginTop: 2 }}>{queHace(e, base)}</div>
-              </div>
-              {/* 22-oct-2026 (Santiago: "modela escenarios por defecto sin que
-                  el usuario los haya hecho"). La tarjeta mostraba un "AÑO 10:
-                  $38.580 M" de un plan que nadie armó: es el resultado de no
-                  hacer nada, presentado como la promesa de la plantilla. Si no
-                  hay ni una decisión tomada, no hay resultado que mostrar. */}
-              {r && vecesDe(r.puntos) > VECES_IMPOSIBLE && sospechosos(perfil, base).length > 0 && <div style={{ ...sub, marginTop: 10, borderColor: C.danger }}>
-                <div style={{ ...F.caption, color: C.text }}>Estas cifras no salen del plan, salen de un dato que no puede ser:</div>
-                {sospechosos(perfil, base).slice(0, 2).map((m, i) => <div key={i} style={{ ...F.caption, color: C.danger }}>· {m}</div>)}
-                <BotonesArreglar perfil={perfil} base={base} onPerfil={onPerfil} />
-                {onArreglar && !pensionesImposibles(perfil, base).length && <button style={{ ...btn(false), marginTop: 6, padding: "4px 10px" }} onClick={onArreglar}>Llévame a arreglarlo →</button>}
+            <div key={e.id} style={{ ...card, borderColor: sel ? e.color : C.border, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ ...F.h3, color: e.color }}>{i.titulo || e.nombre}</div>
+              <div style={F.body}>{i.frase || e.tesis}</div>
+              {o && <div style={sub}>
+                <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: C.raised }}>
+                  {["proteccion", "rentas", "crecimiento"].map((k) => <div key={k} style={{ width: `${o[k]}%`, background: CANASTA_COLOR[k] }} />)}
+                </div>
+                <div style={{ ...F.caption, marginTop: 6 }}>
+                  <span style={{ color: CANASTA_COLOR.proteccion }}>{o.proteccion}% protegido</span> · <span style={{ color: CANASTA_COLOR.rentas }}>{o.rentas}% pagándote</span> · <span style={{ color: CANASTA_COLOR.crecimiento }}>{o.crecimiento}% creciendo</span>
+                </div>
+                <div style={{ ...F.caption, marginTop: 2 }}>Colchón de {e.canastas?.colchonMeses || 6} meses · lo que sobre cada mes: {100 - ((e.excedente || []).find((x) => x.canasta === "crecimiento")?.pct ?? 0)}% a lo que te paga.</div>
               </div>}
-              {!tieneAlgo(e) && <div style={{ ...F.caption, marginTop: 10, color: C.muted }}>Todavía no hay plan que proyectar: esta tarjeta solo dice hacia dónde apunta la mezcla. Elígela y arma el plan —qué vendes, qué pagas, en qué lo pones— y ahí sale el resultado a 10 años.</div>}
-              {r && tieneAlgo(e) && <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
-                <div><div style={F.label}>Año 10 <Imposible p={r.puntos} compacto /></div><div style={{ ...F.monoLg, color: C.text }}>{fmM(r.puntos.patrimonioFinal)}</div><div style={{ ...F.caption, color: d >= 0 ? C.ok : C.danger }}>{d >= 0 ? "+" : "−"}{fmM(Math.abs(d))}</div></div>
-                <div><div style={F.label}>Queda al mes</div><div style={{ ...F.monoLg, color: r.puntos.quedaMes >= 0 ? C.ok : C.danger }}>{fmMes(r.puntos.quedaMes)}</div><div style={F.caption}>en el año 10</div></div>
-              </div>}
-              <button style={{ ...btn(sel), width: "100%", marginTop: 12 }} onClick={() => { setActivoId(e.id); onNext(); }}>{sel ? "Seguir con este →" : "Proyectar esto →"}</button>
+              <div style={{ flex: 1 }} />
+              <button style={{ ...btn(sel), width: "100%" }} onClick={() => { setActivoId(e.id); onNext(); }}>{sel ? "Seguir con este →" : "Armar este plan →"}</button>
             </div>
           );
         })}
@@ -1660,7 +1661,7 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
   const perfil = { ...PERFIL_DEFAULT, ...(perfilGuardado || {}) };
   const [paso, setPaso] = useState(pasoInicial);
   const [activoId, setActivoId] = useState(caminoElegido || "balance");
-  const base = useMemo(() => { const b = baseDesdeUsuario(user, perfil, fichas); return { ...b, canastasHoy: medirCanastas(b.posiciones, b.caja) }; }, [user, perfilGuardado, fichas]);
+  const base = useMemo(() => { const b = baseDesdeUsuario(user, perfil, fichas); return { ...b, canastasHoy: medirCanastas(b.posiciones, b.caja, undefined, b.deudas) }; }, [user, perfilGuardado, fichas]);
   // Plantillas (recalculadas con tus datos de hoy) + las que editaste + las tuyas
   const todos = useMemo(() => {
     const plantillas = CAMINOS_BASE.map((c) => escenarioDesdeCamino(base, c, perfil));

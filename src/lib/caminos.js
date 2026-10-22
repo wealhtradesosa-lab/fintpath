@@ -372,7 +372,10 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
   if (resto > 1) flujos.push({ id: "gastos_otros", nombre: "Otros gastos (impuestos, costos netos de inmuebles)", tipo: "gasto", monto: resto, indexa: true });
   else if (resto < -1) { const mayor = flujos.filter((f) => f.tipo === "gasto").sort((a, b) => b.monto - a.monto)[0]; if (mayor) mayor.monto = Math.max(0, mayor.monto + resto); }
 
-  const deudasCfg = deudas.map((d) => ({ id: d.id, nombre: d.n || d.nombre || "Deuda", saldo: num(d.mt) * fx(d), tasa: num(d.ts), cuota: num(d.pg) * fx(d), hipoteca: d.tp === "mortgage", hastaMes: d.hastaMes ? num(d.hastaMes) - 1 : undefined, pagar: !!fichas[`deu_${d.id}`]?.pagar }));
+  // `activoId` (el campo `la` del usuario) dice de qué activo cuelga la deuda.
+  // Hace falta para repartir el patrimonio NETO por canasta: una casa de $900 M
+  // con $600 M de hipoteca pone $300 M en la canasta, no $900 M.
+  const deudasCfg = deudas.map((d) => ({ id: d.id, nombre: d.n || d.nombre || "Deuda", saldo: num(d.mt) * fx(d), tasa: num(d.ts), cuota: num(d.pg) * fx(d), hipoteca: d.tp === "mortgage", activoId: d.la || d.link || null, hastaMes: d.hastaMes ? num(d.hastaMes) - 1 : undefined, pagar: !!fichas[`deu_${d.id}`]?.pagar }));
 
   // Lo decidido en HOY, común a todos los escenarios: lo que sale del plan se
   // vende hoy y libera plata; las deudas marcadas se pagan con eso.
@@ -396,7 +399,13 @@ export function movimientosHoy(baseCfg) {
 // ─── Canastas: medir ─────────────────────────────────────────────────────────
 
 /** Reparto por canasta de un conjunto de posiciones (+ caja). */
-export function medirCanastas(posiciones, caja = 0, capitalDe = (p) => p.capital) {
+// 22-oct-2026 — Santiago: "aquí usted debería partir del patrimonio NETO, el
+// cual se reparte en las 3 canastas". Se repartía el bruto, así que una casa
+// de $900 M con $600 M de hipoteca pesaba $900 M en Protección y el total no
+// cuadraba con su patrimonio. Pasando `deudas`, cada una se resta de la
+// canasta del activo del que cuelga; las que no cuelgan de nada salen de lo
+// más líquido, que es de donde se pagan.
+export function medirCanastas(posiciones, caja = 0, capitalDe = (p) => p.capital, deudas = null) {
   const c = { proteccion: 0, rentas: 0, crecimiento: 0, uso: 0, colchon: caja, vivienda: 0 };
   posiciones.forEach((p) => {
     const k = Math.max(0, capitalDe(p));
@@ -409,6 +418,19 @@ export function medirCanastas(posiciones, caja = 0, capitalDe = (p) => p.capital
   // Los inmuebles que rentan son rentas, pero ningún camino pide venderlos
   // para cuadrar un porcentaje; se muestran aparte (rentasInmuebles).
   c.rentasInmuebles = posiciones.filter((p) => canastaDe(p) === "rentas" && p.inmueble).reduce((s, p) => s + Math.max(0, capitalDe(p)), 0);
+  if (deudas) {
+    const porId = Object.fromEntries(posiciones.map((p) => [p.id, p]));
+    let sueltas = 0;
+    deudas.forEach((d) => {
+      const saldo = Math.max(0, num(d.saldo)); if (!saldo) return;
+      const p = d.activoId ? porId[d.activoId] : null;
+      if (p) { const k = canastaDe(p); const t = Math.min(saldo, c[k]); c[k] -= t; sueltas += saldo - t; if (p.vivienda) c.vivienda = Math.max(0, c.vivienda - t); }
+      else sueltas += saldo;
+    });
+    let falta = sueltas;
+    ["proteccion", "uso", "rentas", "crecimiento"].forEach((k) => { if (falta <= 0) return; const t = Math.min(falta, c[k]); c[k] -= t; falta -= t; });
+    c.neto = true;
+  }
   c.rentasMovibles = c.rentas - c.rentasInmuebles;
   const invertible = c.rentasMovibles + c.crecimiento;
   c.rentasPct = invertible > 0 ? (c.rentasMovibles / invertible) * 100 : 0;
@@ -441,7 +463,15 @@ export function medirCanastas(posiciones, caja = 0, capitalDe = (p) => p.capital
 // tolerancia con la que se vigila si el escenario la cumple. Ninguna de las
 // dos reparte plata sola: eso lo decide la persona (ver escenarioDesdeCamino).
 export const CAMINOS_BASE = [
-  { id: "seguridad", nombre: "Más protección", color: "#3b82f6",
+  // 22-oct-2026 (Santiago: "esta sección es donde uno crea un escenario,
+  // entonces la pregunta es: ¿qué quiere que haga ese escenario? ¿Seguridad y
+  // rentar? ¿Vivir de la renta? ¿Rentar y multiplicar? De acuerdo a eso da más
+  // o menos unos parámetros para que, cuando uno arme o transforme las
+  // inversiones, se cumplan un poco esos parámetros").
+  // Los nombres dejan de ser los de las canastas y pasan a ser los del
+  // PROPÓSITO: nadie quiere "más protección", quiere estar tranquilo y que le
+  // rente.
+  { id: "seguridad", nombre: "Seguridad y rentar", color: "#3b82f6",
     tesis: "Que pase lo que pase, la vida esté pagada: un colchón grande, la vivienda propia y la mayor parte en capital que te paga cada mes. Una porción crece, para no quedarse atrás de la inflación.",
     // 22-oct-2026 — Nacio en 35/50/15 y `nombrarMezcla` la llamaba "Base
     // renta", que es justo lo que no es. Santiago: "si es un plan seguro prima
@@ -451,13 +481,13 @@ export const CAMINOS_BASE = [
     canastas: { rentas: { min: 25 }, crecimiento: { max: 30 }, colchonMeses: 24, vivienda: "propia" },
     excedente: [{ canasta: "rentas", pct: 80 }, { canasta: "crecimiento", pct: 20 }],
     condiciones: ["no_vender_vivienda", "sin_deuda_cara", "no_apalancar"] },
-  { id: "balance", nombre: "Más renta", color: "#22c55e",
+  { id: "balance", nombre: "Vivir de la renta", color: "#22c55e",
     tesis: "Que la plata te pague cada mes: la mayor parte en capital que deposita, un colchón razonable y una quinta parte creciendo.",
     objetivo: { proteccion: 20, rentas: 60, crecimiento: 20 },
     canastas: { rentas: { min: 45 }, crecimiento: { min: 10, max: 35 }, colchonMeses: 12, vivienda: "indiferente" },
     excedente: [{ canasta: "rentas", pct: 65 }, { canasta: "crecimiento", pct: 35 }],
     condiciones: ["sin_deuda_cara"] },
-  { id: "crecimiento", nombre: "Más crecimiento", color: "#f97316",
+  { id: "crecimiento", nombre: "Rentar y multiplicar", color: "#f97316",
     tesis: "Que la mitad del patrimonio esté multiplicándose, sin quedarte sin con qué vivir: un tercio sigue pagando cada mes y el colchón se mantiene.",
     objetivo: { proteccion: 15, rentas: 35, crecimiento: 50 },
     canastas: { rentas: { min: 20 }, crecimiento: { min: 35, max: 65 }, colchonMeses: 6, vivienda: "indiferente" },
