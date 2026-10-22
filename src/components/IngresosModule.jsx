@@ -263,7 +263,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user, plan, onUpgrade}) {
+export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user, plan, onUpgrade, onIrAPatrimonio}) {
   const fm = fmt || _fm;
   // Fase 3 commit 5 — gating reader: si role==='reader', los handlers
   // de escritura abortan vía guardEdit() y emiten 'fp3-reader-blocked'.
@@ -1005,10 +1005,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         );
                       })()}
                     </td>
-                    <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString("es-CO") + (item.tasa ? " • " +fmtTasaEs(item.tasa)+"" : "") : item.fuente || "—"}</td>
+                    <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.desdePatrimonio ? <span style={{ color: T.blue }}>🏦 viene de Patrimonio</span> : item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString("es-CO") + (item.tasa ? " • " +fmtTasaEs(item.tasa)+"" : "") : item.fuente || "—"}</td>
                     <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
                       <button onClick={() => { if (!guardEdit(role)) return; const upd = items.map(x => x.id === item.id ? {...x, sim: !(item.sim!==false)} : x); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{item.sim===false?"⬜":"✅"}</button>
-                      <button onClick={() => handleEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
+                      <button onClick={() => { if (item.desdePatrimonio) { if (onIrAPatrimonio) { onIrAPatrimonio(item.activoId); return; } alert("Este ingreso nace de un activo: edítalo en Patrimonio (cuánto vale, cuánto paga y cuándo)."); return; } handleEdit(item); }} title={item.desdePatrimonio ? "Se edita en Patrimonio" : "Editar"} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>{item.desdePatrimonio ? "🏦" : "✏️"}</button>
                       <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== item.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button></div>
                     </td>
                   </tr>
@@ -1326,6 +1326,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   de inversión que generan renta sobre un capital. */}
               {["Rendimiento","Dividendos","Arriendo","Inversión","Intereses bancarios","Utilidad FIC"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
+                  {/* 21-oct-2026 — Un solo origen: la inversión se registra en Patrimonio
+                      (qué es, cuánto vale, cuánto paga y cuándo) y el ingreso nace allá.
+                      Este bloque queda para arriendos sueltos y casos viejos. */}
+                  <div style={{fontSize:11,color:T.blue,marginBottom:8,lineHeight:1.5}}>🏦 ¿Este ingreso sale de una inversión tuya (CDT, fondo, préstamo, inmueble)? Regístrala en <strong>Patrimonio</strong>: allá dices cuánto vale, cuánto te paga y cuándo, y el ingreso se crea solo y queda vinculado.{onIrAPatrimonio && <> <button type="button" onClick={() => onIrAPatrimonio(null)} style={{ marginLeft: 6, background: "transparent", border: `1px solid ${T.blue}`, color: T.blue, borderRadius: 999, padding: "2px 10px", fontSize: 11, cursor: "pointer" }}>Ir a Patrimonio</button></>}</div>
                   <div style={{fontSize:11,color:T.txt3,marginBottom:10}}>📊 Con 2 de 3 valores se calcula el tercero automáticamente</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                     <In l="💼 Capital invertido" value={form.capital} onChange={(v) => {

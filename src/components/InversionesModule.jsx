@@ -126,7 +126,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user, trm, plan, onUpgrade, onCrearIngreso}) {
+export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user, trm, plan, onUpgrade, onCrearIngreso, onSyncIngreso }) {
   // ── 14-sep-2026 · Rentabilidad por activo ────────────────────────────────
   // Primer uso del vínculo ingreso → activo. Antes un activo era solo un valor
   // de compra y uno actual: la plataforma no sabía si producía algo. Con el
@@ -189,6 +189,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
 
   const items = inversiones || [];
   const activos = items.filter((i) => i.sim !== false);
+  // 21-oct-2026 — Ingresos manda aquí a editar el activo del que nace un ingreso.
+  useEffect(() => {
+    try { const id = sessionStorage.getItem("fp3_abrir_activo"); if (id) { sessionStorage.removeItem("fp3_abrir_activo"); const inv = items.find((i) => i.id === id); if (inv) openEdit(inv); } } catch { /* noop */ }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // 26-jul-2026 — Límite del plan gratuito (7 por sección).
   // OJO: `activos` sigue completo, así que totalValor, rendimiento y todo lo
   // que alimenta al dashboard incluye los bloqueados. El límite quita ACCESO
@@ -236,7 +240,13 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   //
   // Queda el borrado fila por fila, que ya existía y pide confirmación.
 
+  // 21-oct-2026 — El ingreso que nace del activo. Hay UNO principal, marcado
+  // desdePatrimonio, que este formulario crea y mantiene; otros ingresos
+  // vinculados (p. ej. dos arriendos del mismo inmueble) siguen en Ingresos.
+  const ingresoPrincipalDe = (id) => (user?.ingresos || []).find((x) => x && x.activoId === id && x.desdePatrimonio) || null;
   const openEdit = (inv) => {
+    const ing = ingresoPrincipalDe(inv.id);
+    const rentaLegacy = Number(inv.renta) || 0, tasaLegacy = Number(inv.tasa) || 0;
     setForm({
       nombre: String(getName(inv) || ""),
       ubicacion: String(getLoc(inv) || ""),
@@ -251,6 +261,16 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       tasaLegacy: !!inv.tasa && !inv.rentaOrigen,
       owner: inv.owner || "",
       moneda: inv.moneda || "COP",
+      // ¿Genera ingreso? cómo y cuándo (desde el ingreso vinculado, o de los campos viejos como estimación)
+      genera: ing ? "si" : (rentaLegacy > 0 || tasaLegacy > 0 ? "si" : "no"),
+      modo: ing ? (Number(ing.capital) > 0 && Number(ing.tasa) > 0 ? "tasa" : "fijo") : (rentaLegacy > 0 ? "fijo" : "tasa"),
+      renta: ing ? String(ing.mensual || "") : (rentaLegacy > 0 ? String(rentaLegacy) : ""),
+      recibePct: ing && ing.recibePct != null ? String(ing.recibePct) : "100",
+      vigencia: ing ? (ing.frecuencia === "anual" ? "anual" : (ing.vigenciaModo === "limitada" || (ing.desdeMes && ing.hastaMes && !(Number(ing.desdeMes) === 1 && Number(ing.hastaMes) === 12)) ? "meses" : "todo")) : "todo",
+      desdeMes: ing && ing.desdeMes ? String(ing.desdeMes) : "1",
+      hastaMes: ing && ing.hastaMes ? String(ing.hastaMes) : "12",
+      mesPago: ing && ing.mesPago ? String(ing.mesPago) : "12",
+      ingresoNombre: ing ? (ing.nombre || "") : "",
     });
     setEditId(inv.id);
     setShowForm(true);
@@ -298,6 +318,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       pctTerreno: form.pctTerreno !== "" && form.pctTerreno != null ? Math.max(0, Math.min(100, parseFloat(form.pctTerreno))) : undefined,
     };
     // Store income directly on investment so coaches can read it
+    let idActivo = editId;
     if (editId) {
       onUpdate(items.map((i) => {
         if (i.id !== editId) return i;
@@ -305,9 +326,37 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       }));
     } else {
       updated.id = "i_" + Date.now();
+      idActivo = updated.id;
       updated.ig = [];
       updated.gs = [];
       onUpdate([...items, updated]);
+    }
+    // 21-oct-2026 — El ingreso del activo nace aquí (Santiago: "uno al
+    // ingresar algo en patrimonio debe el sistema preguntar si genera o no
+    // ingreso, para que fluya bien"). Un solo origen: Patrimonio dice qué es,
+    // cuánto vale, cuánto paga y cuándo; Ingresos lo refleja.
+    if (onSyncIngreso) {
+      if (form.genera === "si") {
+        const esInmueble = ["Real Estate", "Local Comercial", "Bodega"].includes(form.tipo);
+        const esParticipacion = form.tipo === "Acciones" || form.tipo === "Fondo de Inversión";
+        const recibe = form.modo === "tasa" ? Math.max(0, Math.min(100, parseFloat(form.recibePct) || 100)) : 100;
+        const mensual = form.modo === "tasa" ? Math.round(va * tasa / 100 / 12 * recibe / 100) : Math.round(parseFloat(form.renta) || 0);
+        const vigencia = form.vigencia || "todo";
+        const desde = vigencia === "meses" ? Math.max(1, Math.min(12, parseInt(form.desdeMes) || 1)) : 1;
+        const hasta = vigencia === "meses" ? Math.max(desde, Math.min(12, parseInt(form.hastaMes) || 12)) : 12;
+        const nombre = form.ingresoNombre || `${esInmueble ? "Renta" : esParticipacion ? "Dividendos" : "Rendimiento"} — ${updated.n || "activo"}`;
+        if (mensual > 0) onSyncIngreso(idActivo, {
+          nombre, activoId: idActivo, desdePatrimonio: true, owner: form.owner || "", moneda: form.moneda || "COP", sim: true, tipo: "fijo",
+          categoria: esInmueble ? "Arriendo" : esParticipacion ? "Dividendos" : "Rentas de capital",
+          fiscalCode: esInmueble ? "NOL_ARRIENDO_INMUEBLE" : esParticipacion ? "DIV_ART49_GRAVADOS" : "CAP_RENDIMIENTO_GENERICO",
+          mensual, capital: form.modo === "tasa" ? va : undefined, tasa: form.modo === "tasa" ? tasa : undefined, tasaModo: form.modo === "tasa" ? "anual" : undefined, recibePct: form.modo === "tasa" ? recibe : undefined,
+          frecuencia: vigencia === "anual" ? "anual" : "mensual", mesPago: vigencia === "anual" ? Math.max(1, Math.min(12, parseInt(form.mesPago) || 12)) : 1,
+          desdeMes: desde, hastaMes: hasta, vigenciaModo: vigencia === "meses" ? "limitada" : undefined, montosMensuales: undefined,
+        });
+        else onSyncIngreso(idActivo, null);
+      } else {
+        onSyncIngreso(idActivo, null);
+      }
     }
     setShowForm(false);
     setEditId(null);
@@ -619,70 +668,46 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 return null;
               })()}
               <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
-                <div style={{fontSize:11,fontWeight:700,color:T.txt2,marginBottom:10}}>💰 ¿Este activo genera ingreso?</div>
-
-                {/* 14-sep-2026 — A diferencia del campo único de gastos, que se
-                    retiró porque lo usaba 1 de 187 activos, estos campos SÍ se
-                    usan: 50 de 187 tienen % de rendimiento. Así que no se
-                    quitan.
-                    Lo que faltaba era distinguir la ESTIMACIÓN del ingreso
-                    REGISTRADO. Escribir aquí un rendimiento no crea un ingreso
-                    — eso fue justamente lo que confundió a Santiago ("me dijo
-                    que sí lo añadía y no lo añadió"). Ahora el bloque muestra
-                    primero lo que de verdad está registrado y vinculado, y deja
-                    los campos como lo que son: una calculadora. */}
-                {(() => {
-                  const anual = (typeof rentaPorActivo !== "undefined" && editId)
-                    ? (rentaPorActivo[editId] || 0) : 0;
-                  if (!anual) return null;
-                  return (
-                    <div style={{ marginBottom: 10, padding: "9px 11px", borderRadius: 10,
-                          background: T.greenDim || "rgba(34,197,94,0.10)",
-                          border: "1px solid rgba(34,197,94,0.28)" }}>
-                      <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.55 }}>
-                        Ingresos ya registrados para este activo:{" "}
-                        <strong style={{ color: T.green }}>
-                          ${Math.round(anual / 12).toLocaleString("es-CO")}/mes
-                        </strong>{" "}
-                        <span style={{ color: T.txt3 }}>
-                          (${Math.round(anual).toLocaleString("es-CO")} al año)
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 10, color: T.txt3, marginTop: 3 }}>
-                        Es lo que cuenta para tu flujo de caja y tu rentabilidad.
-                      </div>
-                    </div>
-                  );
-                })()}
-                <div style={{display:"flex",gap:8}}>
-                  <div style={{flex:1}}><In l="Renta mensual ($)" value={form.renta} onChange={(v) => {
-                    const va=parseFloat(form.va)||0;
-                    const newTasa=va>0&&v?((parseFloat(v)*12/va)*100).toFixed(1):"";
-                    setForm((p) => ({ ...p, renta: v, tasa: newTasa, rentaOrigen: "derivada", tasaLegacy: false }));
-                  }} type="number" placeholder="Ej: 4200000" /></div>
-                  <div style={{flex:1}}><In l="Renta neta anual %" value={form.tasa} onChange={(v) => {
-                    const va=parseFloat(form.va)||0;
-                    const newRenta=va>0&&v?Math.round(va*parseFloat(v)/100/12):"";
-                    setForm((p) => ({ ...p, tasa: v, renta: String(newRenta), rentaOrigen: "manual", tasaLegacy: false }));
-                  }} type="number" placeholder="Ej: 12" /></div>
+                {/* 21-oct-2026 — Aquí nace el ingreso del activo (un solo origen).
+                    Santiago: "activo Puerto Madero: cuánto vale, cuánto renta, y esa
+                    renta si es todo el año o unos meses; también cuánto se valoriza". */}
+                <div style={{fontSize:11,fontWeight:700,color:T.txt2,marginBottom:10}}>💰 ¿Este activo te genera ingreso?</div>
+                <div style={{display:"flex",gap:8,marginBottom:10}}>
+                  {[["no","No"],["si","Sí"]].map(([v,l]) => <button key={v} type="button" onClick={() => setForm((p) => ({ ...p, genera: v }))} style={{flex:1,padding:"9px 12px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,border:`1px solid ${(form.genera||"no")===v?T.green:T.border}`,background:(form.genera||"no")===v?"rgba(34,197,94,0.12)":"transparent",color:(form.genera||"no")===v?T.green:T.txt2}}>{l}</button>)}
                 </div>
-                <div style={{fontSize:10,color:T.txt3,marginTop:6,lineHeight:1.5}}>
-                  Renta después de administración y predial. Si ya es neta, escríbela tal cual.
-                </div>
-                {form.tasaLegacy && parseFloat(form.tasa) > 0 && (
-                  <div style={{fontSize:10,color:"#eab308",marginTop:6,lineHeight:1.5}}>
-                    ⓘ Este % se cargó antes como «rendimiento anual»: se interpreta como renta bruta anual y ahora se descuentan la administración y el predial vinculados al activo. Si ya es neta, vuelve a escribirla; si es bruta, guarda para confirmarla.
+                {form.genera === "si" && (<>
+                  <div style={{fontSize:11,fontWeight:600,color:T.txt3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>¿Cómo?</div>
+                  <div style={{display:"flex",gap:8,marginBottom:10}}>
+                    {[["fijo","Renta fija: $ al mes"],["tasa","Rendimiento: % anual sobre el valor"]].map(([v,l]) => <button key={v} type="button" onClick={() => setForm((p) => ({ ...p, modo: v }))} style={{flex:1,padding:"8px 10px",borderRadius:10,cursor:"pointer",fontSize:12,fontWeight:600,border:`1px solid ${(form.modo||"fijo")===v?T.blue:T.border}`,background:(form.modo||"fijo")===v?"rgba(59,130,246,0.12)":"transparent",color:(form.modo||"fijo")===v?T.blue:T.txt2}}>{l}</button>)}
                   </div>
-                )}
+                  {(form.modo||"fijo") === "fijo" ? (
+                    <In l="Cuánto te paga al mes ($)" value={form.renta} onChange={(v) => { const va=parseFloat(form.va)||0; const newTasa=va>0&&v?((parseFloat(v)*12/va)*100).toFixed(1):""; setForm((p) => ({ ...p, renta: v, tasa: newTasa, rentaOrigen: "derivada", tasaLegacy: false })); }} type="number" placeholder="Ej: 4.200.000" />
+                  ) : (
+                    <div style={{display:"flex",gap:8}}>
+                      <div style={{flex:1}}><In l="Tasa anual %" value={form.tasa} onChange={(v) => { const va=parseFloat(form.va)||0; const rec=Math.max(0,Math.min(100,parseFloat(form.recibePct)||100)); const newRenta=va>0&&v?Math.round(va*parseFloat(v)/100/12*rec/100):""; setForm((p) => ({ ...p, tasa: v, renta: String(newRenta), rentaOrigen: "manual", tasaLegacy: false })); }} type="number" placeholder="Ej: 21" /></div>
+                      <div style={{flex:1}}><In l="Qué parte recibes (%)" value={form.recibePct ?? "100"} onChange={(v) => { const va=parseFloat(form.va)||0; const t=parseFloat(form.tasa)||0; const rec=Math.max(0,Math.min(100,parseFloat(v)||0)); setForm((p) => ({ ...p, recibePct: v, renta: va>0&&t>0?String(Math.round(va*t/100/12*rec/100)):p.renta })); }} type="number" placeholder="100" /></div>
+                    </div>
+                  )}
+                  {(form.modo||"fijo") === "tasa" && parseFloat(form.va) > 0 && parseFloat(form.tasa) > 0 && (
+                    <div style={{fontSize:12,color:T.green,marginTop:-4,marginBottom:10}}>≈ ${Math.round(parseFloat(form.va)*parseFloat(form.tasa)/100/12*(Math.max(0,Math.min(100,parseFloat(form.recibePct)||100))/100)).toLocaleString("es-CO")} al mes{(parseFloat(form.recibePct)||100) < 100 ? " · el resto se reinvierte" : ""}</div>
+                  )}
+                  <div style={{fontSize:11,fontWeight:600,color:T.txt3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>¿Cuándo?</div>
+                  <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                    {[["todo","Todo el año"],["meses","Solo unos meses"],["anual","Un pago al año"]].map(([v,l]) => <button key={v} type="button" onClick={() => setForm((p) => ({ ...p, vigencia: v }))} style={{flex:1,minWidth:120,padding:"8px 10px",borderRadius:10,cursor:"pointer",fontSize:12,fontWeight:600,border:`1px solid ${(form.vigencia||"todo")===v?T.blue:T.border}`,background:(form.vigencia||"todo")===v?"rgba(59,130,246,0.12)":"transparent",color:(form.vigencia||"todo")===v?T.blue:T.txt2}}>{l}</button>)}
+                  </div>
+                  {(form.vigencia||"todo") === "meses" && <div style={{display:"flex",gap:8}}><div style={{flex:1}}><In l="Desde" value={form.desdeMes||"1"} onChange={(v) => setForm((p) => ({ ...p, desdeMes: v }))} options={[{v:1,l:"Enero"},{v:2,l:"Febrero"},{v:3,l:"Marzo"},{v:4,l:"Abril"},{v:5,l:"Mayo"},{v:6,l:"Junio"},{v:7,l:"Julio"},{v:8,l:"Agosto"},{v:9,l:"Septiembre"},{v:10,l:"Octubre"},{v:11,l:"Noviembre"},{v:12,l:"Diciembre"}].map((m) => ({ v: String(m.v), l: m.l }))} /></div><div style={{flex:1}}><In l="Hasta" value={form.hastaMes||"12"} onChange={(v) => setForm((p) => ({ ...p, hastaMes: v }))} options={[{v:1,l:"Enero"},{v:2,l:"Febrero"},{v:3,l:"Marzo"},{v:4,l:"Abril"},{v:5,l:"Mayo"},{v:6,l:"Junio"},{v:7,l:"Julio"},{v:8,l:"Agosto"},{v:9,l:"Septiembre"},{v:10,l:"Octubre"},{v:11,l:"Noviembre"},{v:12,l:"Diciembre"}].map((m) => ({ v: String(m.v), l: m.l }))} /></div></div>}
+                  {(form.vigencia||"todo") === "anual" && <In l="En qué mes" value={form.mesPago||"12"} onChange={(v) => setForm((p) => ({ ...p, mesPago: v }))} options={[{v:1,l:"Enero"},{v:2,l:"Febrero"},{v:3,l:"Marzo"},{v:4,l:"Abril"},{v:5,l:"Mayo"},{v:6,l:"Junio"},{v:7,l:"Julio"},{v:8,l:"Agosto"},{v:9,l:"Septiembre"},{v:10,l:"Octubre"},{v:11,l:"Noviembre"},{v:12,l:"Diciembre"}].map((m) => ({ v: String(m.v), l: m.l }))} />}
+                  <In l="Nombre del ingreso (opcional)" value={form.ingresoNombre||""} onChange={(v) => setForm((p) => ({ ...p, ingresoNombre: v }))} placeholder={`Renta — ${form.nombre || "activo"}`} />
+                  <div style={{fontSize:10,color:T.txt3,marginTop:-6,marginBottom:8,lineHeight:1.5}}>Al guardar, este ingreso queda creado y vinculado al activo; en Ingresos aparece como "viene de Patrimonio" y se edita aquí.</div>
+                  {(() => {
+                    const otros = (user?.ingresos || []).filter((x) => x && x.activoId === editId && !x.desdePatrimonio && x.sim !== false);
+                    if (!editId || !otros.length) return null;
+                    return <div style={{fontSize:11,color:T.txt2,lineHeight:1.5,marginBottom:8}}>Además, en Ingresos hay {otros.length} ingreso{otros.length > 1 ? "s" : ""} vinculado{otros.length > 1 ? "s" : ""} a este activo: {otros.map((x) => `${x.nombre} ($${Math.round(x.mensual || 0).toLocaleString("es-CO")}/mes)`).join(", ")}.</div>;
+                  })()}
+                </>)}
                 <div style={{marginTop:8}}>
-                  <In l="Valorización anual % (opcional)" value={form.valorizacionPct} onChange={(v) => setForm((p) => ({ ...p, valorizacionPct: v }))} type="number" placeholder="Ej: 3" />
-                  <div style={{fontSize:10,color:T.txt3,marginTop:4,lineHeight:1.5}}>Cuánto sube el valor del activo al año. No es renta: se suma aparte al comparar contra la inflación.</div>
-                </div>
-                <div style={{fontSize:10,color:T.txt3,marginTop:6,lineHeight:1.5}}>
-                  Estimación: escribe uno y el otro se calcula solo. Estos campos
-                  NO crean el ingreso — sirven para dimensionarlo. Para que cuente
-                  en tu flujo, regístralo con el botón de abajo o desde la sección
-                  de Ingresos.
+                  <In l="📈 ¿Cuánto se valoriza al año? (%)" value={form.valorizacionPct} onChange={(v) => setForm((p) => ({ ...p, valorizacionPct: v }))} type="number" placeholder="Ej: 5" />
+                  <div style={{fontSize:10,color:T.txt3,marginTop:-6,lineHeight:1.5}}>Cuánto sube el valor del activo al año. No es renta: se suma aparte al proyectar tu patrimonio.</div>
                 </div>
                 {/* 14-sep-2026 (Santiago: "poner en una sola casilla todos los
                     gastos que tiene esa propiedad es poco práctico").
@@ -744,75 +769,6 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               {false && <div style={{ gridColumn: "1/-1", background: T.blue + "10", borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 12, color: T.blue }}>💡 Si este activo genera renta mensual (arriendo, dividendos, rendimientos), ponla en el módulo de <strong>Ingresos</strong>. Aquí solo va el valor del activo.</div>
               </div>}
-              {/* 14-sep-2026 — Antes el bloque solo aparecía si había % de
-                  rendimiento. Quien escribía la renta mensual directamente (8
-                  activos en la base) no veía nada y se quedaba sin forma de
-                  registrarla. Ahora basta con cualquiera de los dos: los campos
-                  están enlazados, así que escribir uno completa el otro. */}
-              {((parseFloat(form.tasa) > 0 && parseFloat(form.va) > 0) || parseFloat(form.renta) > 0) && (
-                <div style={{ gridColumn: "1/-1", background: T.greenDim, borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontSize: 12, color: T.green, fontWeight: 600 }}>💰 Este activo generaría:</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: T.green, marginTop: 4 }}>
-                    {"$" + Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12).toLocaleString("es-CO") + "/mes"}
-                  </div>
-                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                    = {"$" + Math.round(parseFloat(form.va) * parseFloat(form.tasa) / 100).toLocaleString("es-CO") + "/año"} ({fmtTasaEs(form.tasa)} de {"$" + Math.round(parseFloat(form.va)).toLocaleString("es-CO")})
-                  </div>
-                  {/* 14-sep-2026 (Santiago: "un activo dije que también
-                      rentaba, me dijo que sí lo añadía como rendimiento y no lo
-                      añadió"). Tenía razón. El bloque mostraba la cifra, decía
-                      "este activo generaría $X/mes" y después pedía ir a
-                      cargarlo a mano en otro módulo. Ese texto se leía como
-                      confirmación, no como instrucción -- y el módulo no tenía
-                      forma de crear el ingreso: solo recibía onUpdate para
-                      activos.
-                      Ahora lo crea de verdad, y queda vinculado al activo por
-                      activoId, que es lo que permite calcular su rendimiento. */}
-                  {onCrearIngreso ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Si el usuario escribió la renta, esa manda: es un
-                        // dato suyo, no una derivación del porcentaje.
-                        const mensual = parseFloat(form.renta) > 0
-                          ? Math.round(parseFloat(form.renta))
-                          : Math.round((parseFloat(form.va) * parseFloat(form.tasa) / 100) / 12);
-                        if (!(mensual > 0)) return;
-                        const nombreActivo = form.nombre || form.n || "activo";
-                        onCrearIngreso({
-                          id: `ing_${Date.now()}`,
-                          nombre: `Rendimiento — ${nombreActivo}`,
-                          categoria: "Rentas de capital",
-                          fiscalCode: "CAP_RENDIMIENTO_GENERICO",
-                          mensual,
-                          tipo: "fijo",
-                          frecuencia: "mensual",
-                          // Hereda la moneda del activo: un activo en dólares
-                          // genera renta en dólares, y guardarla como pesos
-                          // multiplicaría el error por la TRM.
-                          moneda: form.moneda || "COP",
-                          owner: form.owner || "",
-                          // El vínculo es el punto: sin él la renta existiría
-                          // suelta y el activo seguiría figurando improductivo.
-                          // El id del activo vive en editId, no en el form
-                          // (openEdit lo guarda aparte).
-                          activoId: editId || "",
-                          sim: true,
-                        });
-                        alert(`Ingreso creado: Rendimiento — ${nombreActivo}. Queda vinculado a este activo y puedes ajustarlo en el módulo de Ingresos.`);
-                      }}
-                      style={{ marginTop: 8, padding: "8px 14px", borderRadius: 10,
-                        background: T.green, color: "#0a0a0a", border: "none",
-                        cursor: "pointer", fontSize: 12, fontWeight: 800 }}>
-                      + Registrar este rendimiento como ingreso
-                    </button>
-                  ) : (
-                    <div style={{ fontSize: 11, color: T.blue, marginTop: 6, fontWeight: 600 }}>
-                      👉 Agrega este ingreso en el módulo de Ingresos con categoría "Rendimiento"
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
               <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>

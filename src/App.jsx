@@ -92,7 +92,7 @@ import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { leerNorte, borrarNorte, itemsDesdeNorte } from "./lib/norteUnMinuto.js";
-import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre } from "./lib/migrations";
+import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre, migrateInversionUnica } from "./lib/migrations";
 import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
@@ -233,7 +233,7 @@ Object.keys(d.gas).forEach(cat => {
     return { ...item, fiscalCode: _deriveGasFiscalCode(cat, item.owner) };
   });
 });
-if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateAporteTributarioNombre(migrateDeudaViviendaWizardLegacy(migratePlanOptimizacionNamespace(migrateFiscalCodePVLegacy(migrateDeclaracionesV55(migrateAportesVoluntariosV17(d))))))};
+if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateInversionUnica(migrateAporteTributarioNombre(migrateDeudaViviendaWizardLegacy(migratePlanOptimizacionNamespace(migrateFiscalCodePVLegacy(migrateDeclaracionesV55(migrateAportesVoluntariosV17(d)))))))};
 
 // ═══ END-TO-END ENCRYPTION ═══
 const E2E={
@@ -3211,8 +3211,8 @@ export default function FinPath(){
 
     </div>}
         
-case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="assets" plan={plan} onUpgrade={()=>setPg("price")}/>:<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdate={v=>upd("inv",v)} onCrearIngreso={(ing)=>upd("ingresos",[...((u&&u.ingresos)||[]),ing])} fmt={fm} onImport={()=>setShowImport(true)} user={u} trm={trm||u?.trm||4200} plan={plan} onUpgrade={()=>setPg("price")}/>;
-    case"ing":return isUS?<IncomeModuleUS ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm} plan={plan} onUpgrade={()=>setPg("price")}/>:<IngresosModule owners={u?.owners||[]} ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm} cur={cur} fmt={fm} onImport={()=>setShowImport(true)} user={u} plan={plan} onUpgrade={()=>setPg("price")} user={authUser}/>;
+case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="assets" plan={plan} onUpgrade={()=>setPg("price")}/>:<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdate={v=>upd("inv",v)} onCrearIngreso={(ing)=>upd("ingresos",[...((u&&u.ingresos)||[]),ing])} onSyncIngreso={(activoId,ing)=>{const lst=(u&&u.ingresos)||[];const hay=lst.some(x=>x&&x.activoId===activoId&&x.desdePatrimonio);let n;if(!ing)n=lst.filter(x=>!(x&&x.activoId===activoId&&x.desdePatrimonio));else if(hay)n=lst.map(x=>(x&&x.activoId===activoId&&x.desdePatrimonio)?{...x,...ing,id:x.id}:x);else n=[...lst,{...ing,id:"ing_"+Date.now()}];if(JSON.stringify(n)!==JSON.stringify(lst))upd("ingresos",n);}} fmt={fm} onImport={()=>setShowImport(true)} user={u} trm={trm||u?.trm||4200} plan={plan} onUpgrade={()=>setPg("price")}/>;
+    case"ing":return isUS?<IncomeModuleUS ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm} plan={plan} onUpgrade={()=>setPg("price")}/>:<IngresosModule owners={u?.owners||[]} ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} onIrAPatrimonio={(activoId)=>{try{if(activoId)sessionStorage.setItem("fp3_abrir_activo",activoId)}catch{}setPg("inv")}} trm={trm} cur={cur} fmt={fm} onImport={()=>setShowImport(true)} user={u} plan={plan} onUpgrade={()=>setPg("price")} user={authUser}/>;
     case"trd":return gated("trd","Básico",<div><PageHeader label="Inversiones US" title="Trading" subtitle="Posiciones, P/L, upside y objetivos por acción." rightSlot={<><Bt sz="s" onClick={async()=>{
               const tickers=((u&&u.ibk)||[]).map(p=>p.tk).filter(Boolean).join(",");
               if(!tickers)return alert("No hay posiciones con ticker");

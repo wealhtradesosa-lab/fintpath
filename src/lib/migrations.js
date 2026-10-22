@@ -252,3 +252,51 @@ export function migrateAporteTributarioNombre(d) {
   }
   return d;
 }
+
+// ─── 21-oct-2026 · Un solo origen para las inversiones ─────────────────────
+// Santiago: "hay inversiones que dan rentas y se reportan en Patrimonio y en
+// Ingresos: es confuso". Regla nueva: la inversión vive en Patrimonio (qué es,
+// cuánto vale, cuánto paga, cuándo) y el ingreso nace de ella. Esta migración
+// toma cada ingreso con capital que NO está vinculado a un activo y:
+//   · si hay un activo con el mismo nombre (palabras en común) o el mismo
+//     capital, lo vincula a ese activo y le pasa la tasa;
+//   · si no, crea el activo en Patrimonio ("Renta fija / préstamo") con ese
+//     capital y lo vincula.
+// Nada se borra: el ingreso sigue existiendo, ahora con activoId y marcado
+// desdePatrimonio para que se edite desde el activo. Se corre una sola vez
+// (marca d.migracionInversionUnica).
+const _norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+const _GENERICAS = new Set(["venta", "renta", "saldo", "fondo", "capital", "inversion", "intereses", "rendimiento", "dividendos", "adicional", "hoy", "socio", "fondeo", "para", "con", "del", "los", "las"]);
+const _palabras = (t) => _norm(t).split(" ").filter((w) => w.length >= 4 && !_GENERICAS.has(w));
+export function migrateInversionUnica(d) {
+  if (!d || typeof d !== "object" || d.migracionInversionUnica) return d;
+  const ingresos = Array.isArray(d.ingresos) ? d.ingresos : [];
+  const inv = Array.isArray(d.inv) ? d.inv : (d.inv = []);
+  const CATS = new Set(["Rendimiento", "Intereses bancarios", "Intereses", "Utilidad FIC", "Inversión", "Rentas de capital"]);
+  const usados = new Set(ingresos.map((i) => i && i.activoId).filter(Boolean));
+  ingresos.forEach((i) => {
+    if (!i || typeof i !== "object" || i.activoId || i.desdePatrimonio) return;
+    const cap = Number(i.capital) || 0, tasa = Number(i.tasa) || 0;
+    if (!(cap > 0) || !CATS.has(String(i.categoria || ""))) return;
+    const pi = _palabras(i.fuente && _palabras(i.fuente).length ? `${i.nombre} ${i.fuente}` : i.nombre);
+    const fx = (x) => ((x.moneda || "COP") === (i.moneda || "COP") ? 1 : null);
+    const comparten = (x) => { const px = _palabras(x.n || x.nombre); return pi.some((w) => px.some((v) => v === w || v.includes(w) || w.includes(v))); };
+    const mismoCapital = (x) => fx(x) != null && Math.abs((Number(x.va) || 0) - cap) / cap < 0.02;
+    // Un ingreso OCULTO con capital suele ser un plan ("saldo local 730 a
+    // rapicredit": la plata de una venta futura). No se une al inmueble que
+    // nombra: se crea aparte, también oculto, para que Escenarios lo tome.
+    const INMUEBLES = new Set(["Real Estate", "Local Comercial", "Bodega"]);
+    const candidato = (x) => x && !usados.has(x.id) && !(i.sim === false && INMUEBLES.has(x.tp));
+    let a = inv.find((x) => candidato(x) && comparten(x)) || inv.find((x) => candidato(x) && mismoCapital(x));
+    if (!a) {
+      a = { id: "i_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), n: i.nombre || "Inversión", nombre: i.nombre || "Inversión", name: i.nombre || "Inversión", tp: "Renta Fija", tipo: "Renta Fija", va: cap, vc: cap, moneda: i.moneda || "COP", owner: i.owner || "", ub: i.fuente || "", ubicacion: i.fuente || "", ig: [], gs: [], tasa, rentaOrigen: "manual", creadoDesdeIngreso: i.id, sim: i.sim === false ? false : undefined };
+      inv.push(a);
+    } else if (tasa > 0 && !(Number(a.tasa) > 0)) { a.tasa = tasa; a.rentaOrigen = "manual"; }
+    usados.add(a.id);
+    i.activoId = a.id;
+    i.desdePatrimonio = true;
+    if (i.recibePct == null) i.recibePct = 100;
+  });
+  d.migracionInversionUnica = new Date().toISOString().slice(0, 10);
+  return d;
+}
