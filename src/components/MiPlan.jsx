@@ -7,11 +7,13 @@
 // empieza en 2 años, la pensión en 4— y todo esto entonces le muestra a uno y
 // le modela el escenario; además los puede uno revisar cada uno y compararlos."
 //
-//   1 · HOY            qué tienes y qué produce cada peso
-//   2 · LO QUE VIENE   lo seguro, en todos los escenarios: pensión, obra, contrato
-//   3 · TU ESCENARIO   qué vendes, qué pagas, a dónde va la plata y con qué regla
-//   4 · EL RESULTADO   el escenario modelado y contado, año a año
-//   5 · COMPARA        todos lado a lado, estrés y $100 M en cada inversión
+//   1 · QUÉ TIENES HOY          tu punto de partida: qué vale y qué te paga
+//   2 · QUÉ VENDES Y QUÉ COMPRAS tus movimientos: qué sale, qué deudas pagas,
+//                                a dónde va la plata y con qué regla
+//   3 · QUÉ VIENE NUEVO          lo que llega solo, en todos los escenarios:
+//                                pensión, la obra, un contrato
+//   4 · TU CAMINO A 10 AÑOS      el escenario modelado y contado, año a año
+//   5 · COMPARA                  todos lado a lado, estrés y $100 M en cada uno
 //
 // Seguridad, Balance y Crecimiento son plantillas: llenan el paso 3 con un
 // despliegue concreto que se puede editar. El motor es lib/planes.js; la
@@ -94,7 +96,13 @@ function BarraCanastas({ c, alto = 14 }) {
 }
 
 // ─── Stepper ─────────────────────────────────────────────────────────────────
-const PASOS = [["Hoy", "Qué tienes"], ["Lo que viene", "Lo seguro"], ["Tu escenario", "Qué mueves"], ["El resultado", "Modelado"], ["Compara", "Lado a lado"]];
+// 21-oct-2026. Santiago: "qué tienes hoy, qué vas a vender, qué vas a comprar,
+// qué cosas nuevas o ingresos vienen… y así se arman los escenarios". Son sus
+// palabras y son los pasos. Antes el 2 se llamaba "Lo que viene · Lo seguro"
+// ("¿cómo que lo seguro? eso no se entiende") y estaba METIDO entre lo que
+// tienes y lo que haces, que es donde más estorba: son cosas que llegan solas,
+// no decisiones tuyas. Va después de tus movimientos.
+const PASOS = [["Qué tienes hoy", "tu punto de partida"], ["Qué vendes y qué compras", "tus movimientos"], ["Qué viene nuevo", "lo que llega solo"], ["Tu camino a 10 años", "el escenario modelado"], ["Compara", "todos lado a lado"]];
 function Stepper({ paso, setPaso }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 6 }}>
@@ -173,9 +181,11 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
   const entra = (b?.ia || 0) + (b?.ip || 0), sale = base.gastosMes, queda = entra - sale, cob = sale > 0 ? (entra / sale) * 100 : 0;
   const meses = sale > 0 ? c.colchon / sale : 0;
   const setF = (id, patch) => onFichas({ ...fichas, [id]: { ...(fichas[id] || {}), ...patch } });
-  // La lista arranca plegada: la sección existe para ver el camino a 10 años,
-  // no para recorrer 17 filas antes de llegar a él.
-  const [revisar, setRevisar] = useState(false);
+  // 21-oct-2026 — Arranca ABIERTA. La probé plegada para llegar rápido al
+  // camino y Santiago, con razón: "lo que tienes hoy y uno no ve nada
+  // listado". El paso se llama así precisamente para mostrarlo; el resumen va
+  // encima y la lista se puede cerrar, pero no se esconde de entrada.
+  const [revisar, setRevisar] = useState(true);
   // 21-oct-2026 (Santiago: "porque aparece BTG si no lo tengo", "la primera
   // sección es lo que uno tiene hoy"). La tabla mezclaba sus activos con
   // posiciones que esta pantalla INVENTA a partir de ingresos que declaran un
@@ -333,7 +343,7 @@ function ListaEventos({ eventos, posiciones, flujos, onChange, ejemplo, vacio })
   );
 }
 
-// ─── Paso 2 · Lo que viene ───────────────────────────────────────────────────
+// ─── Paso 3 · Qué viene nuevo ───────────────────────────────────────────────────
 // Una fila por ingreso o gasto de hoy: sigue igual · termina en… · cambia a… desde…
 function FilaFlujo({ f, eventos, onChange }) {
   const ev = eventos.find((e) => e.flujoId === f.id && (e.tipo === "flujo_termina" || e.tipo === "flujo_cambia"));
@@ -378,7 +388,7 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
-        <div style={F.h2}>2 · Lo que ya viene, pase lo que pase</div>
+        <div style={F.h2}>3 · Qué viene nuevo: lo que llega solo, pase lo que pase</div>
         <div style={{ ...F.body, marginTop: 4 }}>Aquí está listado lo que tienes hoy. Sobre cada cosa decide si <b style={{ color: C.text }}>sigue igual</b>, <b style={{ color: C.text }}>termina</b> (el contrato, el colegio) o <b style={{ color: C.text }}>cambia</b> de monto desde un año. Abajo agregas lo nuevo que llega seguro: la pensión en el año 4, la bodega que renta desde el año 2. Todo esto entra en todos los escenarios; lo opcional lo decides en cada uno.</div>
       </div>
       <div style={card}>
@@ -441,7 +451,7 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
   );
 }
 
-// ─── Paso 3 · Tu escenario ───────────────────────────────────────────────────
+// ─── Paso 2 · Qué vendes y qué compras ───────────────────────────────────────────────────
 function ResultadoVivo({ r, base, onElegir, elegido, onVer, onComparar }) {
   const p = r.puntos, ok = r.vigilancia.cumple;
   const data = [{ a: 0, v: p.patrimonioInicial }, ...r.resultado.anual.map((x) => ({ a: x.anio, v: x.patrimonioFin }))];
@@ -485,7 +495,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
-        <div style={F.h2}>3 · Tu escenario: qué transformas y a dónde va la plata</div>
+        <div style={F.h2}>2 · Qué vendes y qué compras</div>
         <div style={{ ...F.body, marginTop: 4 }}>Parte de una plantilla o arma el tuyo. Un escenario es una decisión concreta: qué vendes, qué pagas, a dónde va cada peso y con qué regla, y qué haces después.</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}>
           {todos.map((e) => { const rr = res.find((x) => x.id === e.id); return <button key={e.id} onClick={() => setActivoId(e.id)} style={{ ...btn(false), borderColor: e.id === esc.id ? e.color : C.borderStrong, background: e.id === esc.id ? `${e.color}20` : "transparent", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: e.color }} />{e.nombre}{caminoElegido === e.id && " ★"}{rr && !rr.vigilancia.cumple && <span style={{ color: C.danger }}>!</span>}</button>; })}
@@ -494,8 +504,8 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
           <span style={F.caption}>Estás editando <b style={{ color: esc.color }}>{esc.nombre}</b>. Cuando quieras:</span>
-          <button style={btn(true)} onClick={onNext}>Ver este escenario modelado (paso 4) →</button>
-          <button style={btn(false)} onClick={onComparar}>Comparar todos (paso 5) →</button>
+          <button style={btn(true)} onClick={onNext}>Seguir: qué viene nuevo →</button>
+          <button style={btn(false)} onClick={onComparar}>Comparar todos los caminos →</button>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: dos ? "minmax(0, 1fr) 340px" : "minmax(0, 1fr)", gap: 14, alignItems: "start" }}>
@@ -584,7 +594,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   );
 }
 
-// ─── Paso 4 · El resultado ───────────────────────────────────────────────────
+// ─── Paso 4 · Tu camino a 10 años ───────────────────────────────────────────────────
 function PasoResultado({ base, r, elegido, onElegir, onNext, onVolver }) {
   if (!r) return null;
   const p = r.puntos;
@@ -598,7 +608,7 @@ function PasoResultado({ base, r, elegido, onElegir, onNext, onVolver }) {
           <div style={{ display: "flex", gap: 8 }}><button style={btn(false)} onClick={onVolver}>← Editar</button>{!elegido && <button style={btn(true)} onClick={onElegir}>Elegir este camino</button>}</div>
         </div>
         {r.tesis && <div style={{ ...F.body, marginTop: 6, fontStyle: "italic" }}>{r.tesis}</div>}
-        <div style={{ ...sub, marginTop: 12 }}><div style={F.h3}>4 · Así se cuenta este escenario</div>{narrar(r, base).map((t, i) => <div key={i} style={{ ...F.body, color: C.text, marginTop: 6 }}>{t}</div>)}</div>
+        <div style={{ ...sub, marginTop: 12 }}><div style={F.h3}>Así se cuenta este escenario</div>{narrar(r, base).map((t, i) => <div key={i} style={{ ...F.body, color: C.text, marginTop: 6 }}>{t}</div>)}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
           {[["Patrimonio año 10", fmM(p.patrimonioFinal), `${fmM(p.patrimonioFinalReal)} de hoy`], ["Crece al año (real)", p.crecimientoRealAnual == null ? "—" : p.crecimientoRealAnual.toFixed(1).replace(".", ",") + "%", "descontando inflación"], ["Entra · año 10", fmMes(p.entraMes), "al mes"], ["Sale · año 10", fmMes(p.saleMes), "gastos + cuotas"], ["Cobertura · año 10", pct(p.cobertura), "entra ÷ sale"], ["Produce al mes", fmMes(p.produceMes), "recibido + reinvertido"], ["Mes más apretado", p.mesApretado ? `año ${anioDe(p.mesApretado.mes)}` : "—", p.mesApretado ? `cobertura ${pct(p.mesApretado.cobertura)}` : ""], ["Si crecimiento rinde menos", fmM(p.estres.patrimonioFinal), `al ${String(Math.round(p.estres.tasa * 10) / 10).replace(".", ",")}%`]].map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
         </div>
@@ -660,7 +670,7 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
-        <div style={F.h2}>5 · Todos los escenarios, lado a lado</div>
+        <div style={F.h2}>5 · Todos tus caminos, lado a lado</div>
         <div style={{ ...F.caption, marginTop: 2 }}>Los mismos indicadores para cada uno, con hoy como referencia. Toca un nombre para abrirlo.</div>
         <div style={{ height: 260, marginTop: 14 }}>
           <ResponsiveContainer>
@@ -727,9 +737,9 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
       ) : (<>
         <Stepper paso={paso} setPaso={ir} />
         {paso === 1 && <PasoHoy base={base} fichas={fichas} onFichas={onFichas} onNext={() => ir(2)} />}
-        {paso === 2 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(3)} />}
-        {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => ir(5)} />}
-        {paso === 4 && <PasoResultado base={base} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => ir(5)} onVolver={() => ir(3)} />}
+        {paso === 3 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} />}
+        {paso === 2 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(3)} onComparar={() => ir(5)} />}
+        {paso === 4 && <PasoResultado base={base} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => ir(5)} onVolver={() => ir(2)} />}
         {paso === 5 && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); ir(4); }} caminoElegido={caminoElegido} onElegir={onElegir} />}
         <div style={{ ...F.caption, textAlign: "center" }}>Lo que simulas aquí no toca tus datos reales. Los ejercicios (Pensiones, Ahorro BTC, Comprar o arrendar) alimentan los supuestos, no las decisiones.</div>
       </>)}
