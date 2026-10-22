@@ -147,6 +147,9 @@ export function esIngresoArrendamiento(i, inmueblesIds) {
 // Retención por arriendo: solo si el usuario marcó «me retienen» (Art. 401 ET,
 // 3,5 % cuando el arrendatario es agente retenedor). No se supone por defecto.
 export const TASA_RETENCION_ARRIENDO = 0.035;
+// Tope combinado PV + AFC (Art. 126-1 / 126-4 ET).
+export const TOPE_PV_AFC_PCT = 0.30;
+export const TOPE_PV_AFC_UVT = 3800;
 export function retencionArriendoItem(i, montoAnual) {
   if (!i || i.meRetienen !== true) return 0;
   const custom = i.retencionConfig?.tasaCustom; // decimal (0.035), como lo guarda Ingresos
@@ -796,12 +799,25 @@ export const estimarImpuesto = (u, options = {}) => {
       const exenta25Bruta = Math.min(baseExenta * 0.25, TOPE_EXENTA25_UVT * uvt);
       const exenta25 = options.omitirExenta25 ? 0 : exenta25Bruta;
 
-      // Art. 336 ET: rentas exentas + deducciones ≤ min(40% del neto de la cédula, 1340 UVT).
-      const lim40Pct = netoLaboral * 0.40;
+      // Art. 336 ET: rentas exentas + deducciones ≤ min(40 %, 1340 UVT). El 40 %
+      // se calcula sobre el total de la cédula general (rentas de trabajo, de
+      // capital y no laborales) menos los ingresos no constitutivos de renta
+      // (aportes obligatorios, componente inflacionario). El tope de 1340 UVT es
+      // uno solo para toda la cédula. Solo la exenta del 25 % (Art. 206-10, tope
+      // 790 UVT) sigue calculándose únicamente sobre lo laboral (ver arriba).
+      // Pensiones (cédula propia, Art. 337) y dividendos (Art. 242) no entran.
+      const pctInflacBase336 = ((u.componenteInflacionarioPct != null ? u.componenteInflacionarioPct : 50.88) / 100);
+      const rendBase336 = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual;
+      const incrngoCapital336 = ow.fiscalProfile?.obligadoContabilidad ? 0 : rendBase336 * pctInflacBase336;
+      const baseCapital336 = Math.max(0, rendBase336 - incrngoCapital336 + inversionAnual + arrendamientoAnual);
+      const baseNoLaboral336 = Math.max(0, ingNoLaboral);
+      const baseArt336 = Math.max(0, netoLaboral) + baseCapital336 + baseNoLaboral336;
+      const lim40Pct = baseArt336 * 0.40;
       const lim1340 = TOPE_ART336_UVT * uvt;
       const lim40 = Math.min(lim40Pct, lim1340);
-      // Pensión voluntaria + AFC (Art. 126-1 y 126-4 ET): renta exenta bajo el cap
-      // compartido de 2500 uvt / 25% neto laboral.
+      // Pensión voluntaria + AFC (Art. 126-1 y 126-4 ET): un solo tope combinado de
+      // 30 % del ingreso laboral del año y 3.800 UVT. Este límite se aplica ANTES del
+      // tope del 40 % / 1.340 UVT del Art. 336 (lo que quede dentro entra al bag).
       //
       // Commit 1.7: después de la migración silenciosa, PV y AFC viven sólo en
       // Egresos (fiscalCode AP_TRIB_PV y AP_TRIB_AFC). El lector viejo
@@ -809,7 +825,8 @@ export const estimarImpuesto = (u, options = {}) => {
       const pvEgresoAnual  = oGas.filter(g => g.fiscalCode === AP_TRIB_PV).reduce((s, g) => s + totalAnualItem(g), 0);
       const afcEgresoAnual = oGas.filter(g => g.fiscalCode === AP_TRIB_AFC).reduce((s, g) => s + totalAnualItem(g), 0);
       const pvManualBruto  = pvEgresoAnual + afcEgresoAnual;
-      const pvManualAnual  = pvManualBruto > 0 ? Math.min(pvManualBruto, netoLaboral * 0.25, 2500 * uvt) : 0;
+      const topePvAfc      = Math.max(0, Math.min(netoLaboral * TOPE_PV_AFC_PCT, TOPE_PV_AFC_UVT * uvt));
+      const pvManualAnual  = pvManualBruto > 0 ? Math.min(pvManualBruto, topePvAfc) : 0;
       // Commit 3 Tarea 3: cesantías exentas Art. 206 #4. Calcular la porción exenta
       // en función del salario mensual promedio (proxy: salAnual/12 si hay salario,
       // si solo hay cesantías sueltas, asumir 100% exento como caso de liquidación).
@@ -918,11 +935,11 @@ export const estimarImpuesto = (u, options = {}) => {
       // El espacio disponible se mide sin contar la PV manual (la sugerencia podría reemplazarla o subirla).
       const baseBenefSinPV = Math.min(exenta25 + totalDeducciones, lim40);
       const espacioPV = Math.max(0, lim40 - baseBenefSinPV);
-      const pensionVolSugerido = Math.min(espacioPV, netoLaboral * 0.25, 2500 * uvt);
+      const pensionVolSugerido = Math.min(espacioPV, topePvAfc);
       // Tomar el máximo entre lo que el usuario ya aporta y lo que sugiere la optimización (nunca bajar su aporte actual).
-      const pensionVol = Math.min(Math.max(pvManualAnual, pensionVolSugerido), netoLaboral * 0.25, 2500 * uvt);
+      const pensionVol = Math.min(Math.max(pvManualAnual, pensionVolSugerido), topePvAfc);
       const espacioAFC = Math.max(0, lim40 - baseBenefSinPV - pensionVol);
-      const afc = Math.min(espacioAFC, netoLaboral * 0.30, 3800 * uvt);
+      const afc = Math.min(espacioAFC, Math.max(0, topePvAfc - pensionVol)); // tope combinado con la PV
       const rentaOptTrabajo = Math.max(0, netoLaboral - Math.min(exenta25 + totalDeducciones + pensionVol + afc, lim40));
       const rentaOptGeneral = rentaOptTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
       const impOpt = calcImpRentaAg(rentaOptGeneral / uvt) + impDiv + impPension;
@@ -1100,15 +1117,19 @@ export const estimarImpuesto = (u, options = {}) => {
         honorariosNeto: Math.max(0, honAnual - gastosHonorariosDed),
         pensionVol, afc, totalDeducciones,
         // Topes legales y espacio disponible (Sprint 4B1 — para consumo por OwnerPlan):
-        afcMax: Math.min(netoLaboral * 0.30, 3800 * uvt),
-        pvMax: Math.min(netoLaboral * 0.25, 2500 * uvt),
+        // PV y AFC comparten un solo tope (Art. 126-1 / 126-4): cada uno puede usarlo
+        // completo, pero juntos no pasan de pvAfcMax.
+        pvAfcMax: topePvAfc,
+        pvAfcAplicado: pvManualAnual, // aporte real PV+AFC ya recortado al tope 126-1/126-4 (antes del 336)
+        afcMax: topePvAfc,
+        pvMax: topePvAfc,
         pctUsado: lim40 > 0 ? (benefLaboral / lim40 * 100) : 0,
         rentaSin: rentaLiqGeneral, rentaCon: rentaOptGeneral,
         retefuenteNat: reteN,
         reteEstimadaAuto,
         anticiposRenta,
         pagosPrevios,
-        lim40, lim40Pct, lim1340,
+        lim40, lim40Pct, lim1340, baseArt336,
         tope336: lim40,
         topeExenta25UVT: TOPE_EXENTA25_UVT,
         topeArt336UVT: TOPE_ART336_UVT,
