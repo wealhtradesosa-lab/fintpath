@@ -787,8 +787,18 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
       <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap", marginTop: 4 }}>
         <div style={{ ...F.monoLg, color: queda > 0 ? C.ok : C.muted }}>Te queda {fmM(queda)}</div>
         {liq.asignado > 0 && <div style={F.caption}>ya pusiste {fmM(liq.asignado)}</div>}
-        <span style={chip(Math.abs(liq.porAsignar) < 1e6 ? C.ok : liq.porAsignar > 0 ? C.warn : C.danger)}>{Math.abs(liq.porAsignar) < 1e6 ? "todo puesto" : liq.porAsignar > 0 ? `sin poner ${fmM(liq.porAsignar)}` : `te pasaste por ${fmM(-liq.porAsignar)}`}</span>
+        <span style={chip(Math.abs(liq.porAsignar) < 1e6 ? C.ok : liq.porAsignar > 0 ? C.danger : C.warn)}>{Math.abs(liq.porAsignar) < 1e6 ? "todo puesto" : liq.porAsignar > 0 ? `sin poner ${fmM(liq.porAsignar)}` : `te pasaste por ${fmM(-liq.porAsignar)}`}</span>
       </div>
+      {/* 22-oct-2026 — Santiago: "si vendo Puerto madero y casi todo ese
+          dinero se pone a rentar, mis ingresos serían casi el doble o más, y
+          usted me pone 78 MM". Tenía razón: vender mata las rentas del activo
+          vendido, y la plata liberada se quedaba EN CAJA sin rendir un peso.
+          El plan lo decía en letra chica ("sin poner $X") y en ninguna parte
+          decía la consecuencia, que es la que duele: entra menos que antes. */}
+      {liq.porAsignar > 1e6 && <div style={{ ...sub, marginTop: 10, borderColor: C.danger }}>
+        <div style={{ ...F.body, color: C.text }}><b style={{ color: C.danger }}>{fmM(liq.porAsignar)} están quietos en caja y no rinden un peso.</b> Vender mata la renta de lo que vendiste; si esa plata no se pone a trabajar, lo que entra al mes <b>baja</b>.</div>
+        <div style={{ ...F.caption, marginTop: 3 }}>Puestos a rentar al {pctEs(perfil.tasaRentaEstable)} serían <b style={{ color: C.ok }}>{fmMes(liq.porAsignar * (Number(perfil.tasaRentaEstable) || 0) / 100 / 12)}</b> más al mes. Abajo decides dónde.</div>
+      </div>}
     </div>
   );
   const SubPasos = () => (
