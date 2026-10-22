@@ -18,7 +18,13 @@ const user = {
   gas: { Hogar: [{ c: "Mercado", m: 6e6, freq: "mes" }] },
   deu: [{ id: "d1", n: "Tarjeta", mt: 30e6, ts: 24, pg: 2e6 }],
 };
-const props = { user, fichas: { cdt: { estado: "sale" } }, caminos: [], onPerfil: () => {}, onFichas: () => {}, onCaminos: () => {}, onElegir: () => {} };
+// 22-oct-2026 — Los cuatro puntos de partida son MOLDES: los escenarios son
+// solo los que la persona crea a partir de ellos. Sin ninguno creado, el paso
+// 3 ya no muestra una pantalla en blanco sino por dónde empezar.
+const unEscenario = { id: "e1", nombre: "Rentar y multiplicar", color: "#f97316", plantilla: "crecimiento", propio: true,
+  objetivo: { proteccion: 15, rentas: 35, crecimiento: 50 }, ventas: [], pagos: [], despliegue: [], eventos: [],
+  excedente: [{ canasta: "rentas", pct: 35 }, { canasta: "crecimiento", pct: 65 }], colchonMeses: 6, canastas: null, condiciones: [] };
+const props = { user, fichas: { cdt: { estado: "sale" } }, caminos: [unEscenario], onPerfil: () => {}, onFichas: () => {}, onCaminos: () => {}, onElegir: () => {} };
 const pinta = (paso) => renderToString(<MiPlan {...props} pasoInicial={paso} />);
 
 describe("Escenarios: los cuatro pasos se pintan", () => {
@@ -35,4 +41,12 @@ describe("Escenarios: los cuatro pasos se pintan", () => {
     expect(html).not.toContain("¿Y lo que te sobre cada mes?"); // cuerpo de la 4
   });
   it("4 · tu camino a 10 años", () => expect(pinta(4)).toBeTruthy());
+  it("sin ningún escenario creado, el paso 3 dice por dónde empezar", () => {
+    const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={3} />);
+    expect(html).toContain("Todavía no has creado ningún escenario");
+  });
+  it("y el paso 2 ofrece los cuatro puntos de partida", () => {
+    const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={2} />);
+    for (const t of ["Seguridad y rentar", "Vivir de la renta", "Rentar y multiplicar", "A la medida"]) expect(html, t).toContain(t);
+  });
 });

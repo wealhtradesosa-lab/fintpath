@@ -862,7 +862,7 @@ function MezclaEditor({ objetivo, onChange, base, perfil }) {
 
 /** ¿Esta persona ya decidió algo en este escenario? */
 const tieneAlgo = (e) => !!((e.ventas || []).length || (e.pagos || []).length || (e.despliegue || []).length || (e.eventos || []).length);
-function PasoIntencion({ todos, res, base, perfil, onPerfil, activoId, setActivoId, onNuevo, onNext, onArreglar, onBorrar, onComparar }) {
+function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, activoId, setActivoId, onNuevo, onNext, onArreglar, onBorrar, onComparar }) {
   const hoy = base?.base?.patrimonioNeto ?? 0;
   const c = base.canastasHoy;
   const tot = c.total || 1;
@@ -871,12 +871,12 @@ function PasoIntencion({ todos, res, base, perfil, onPerfil, activoId, setActivo
   const repartido = c.proteccion + c.rentas + c.crecimiento + c.uso;
   const [miMezcla, setMiMezcla] = useState({ proteccion: 25, rentas: 45, crecimiento: 30 });
   const hayImposible = res.some((r) => vecesDe(r.puntos) > VECES_IMPOSIBLE) || sospechosos(perfil, base).length > 0;
-  const plantillas = todos.filter((e) => INTENCIONES[e.id]);
-  const propios = todos.filter((e) => !INTENCIONES[e.id]);
+  const plantillas = moldes || [];
+  const propios = todos;
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
-        <div style={F.h2}>2 · Hoy estás aquí. ¿Qué quieres proyectar?</div>
+        <div style={F.h2}>2 · ¿Qué quieres que haga este escenario?</div>
         <div style={{ ...F.body, marginTop: 4 }}>Proyectar es mover tus activos de un papel a otro: más protección, más renta o más crecimiento. Elige hacia dónde y te armo el escenario con <b style={{ color: C.text }}>tus</b> cosas — qué vender, qué deuda pagar y a dónde mandar lo que sobre. Después lo cambias todo lo que quieras.</div>
         {/* 22-oct-2026 (Santiago: "¿y dónde quedó el patrimonio completo que
             son como 17 mil M?", "cada canasta origina valores como de fuentes
@@ -913,10 +913,10 @@ function PasoIntencion({ todos, res, base, perfil, onPerfil, activoId, setActivo
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 14 }}>
         {plantillas.map((e) => {
           const i = INTENCIONES[e.id] || {};
-          const sel = e.id === activoId;
+          const yaTiene = propios.filter((g) => g.plantilla === e.id).length;
           const o = e.objetivo;
           return (
-            <div key={e.id} style={{ ...card, borderColor: sel ? e.color : C.border, display: "flex", flexDirection: "column", gap: 10 }}>
+            <div key={e.id} style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ ...F.h3, color: e.color }}>{i.titulo || e.nombre}</div>
               <div style={F.body}>{i.frase || e.tesis}</div>
               {o && <div style={sub}>
@@ -929,7 +929,8 @@ function PasoIntencion({ todos, res, base, perfil, onPerfil, activoId, setActivo
                 <div style={{ ...F.caption, marginTop: 2 }}>Colchón de {e.canastas?.colchonMeses || 6} meses · lo que sobre cada mes: {100 - ((e.excedente || []).find((x) => x.canasta === "crecimiento")?.pct ?? 0)}% a lo que te paga.</div>
               </div>}
               <div style={{ flex: 1 }} />
-              <button style={{ ...btn(sel), width: "100%" }} onClick={() => { setActivoId(e.id); onNext(); }}>{sel ? "Seguir con este →" : "Armar este plan →"}</button>
+              {yaTiene > 0 && <div style={F.caption}>Ya tienes {yaTiene} escenario{yaTiene > 1 ? "s" : ""} con este punto de partida.</div>}
+              <button style={{ ...btn(false), width: "100%" }} onClick={() => { onCrear(e); onNext(); }}>Crear un escenario así →</button>
             </div>
           );
         })}
@@ -949,7 +950,7 @@ function PasoIntencion({ todos, res, base, perfil, onPerfil, activoId, setActivo
             <div style={{ ...F.caption, marginTop: 2 }}>{miMezcla.proteccion}% protegido · {miMezcla.rentas}% pagándote · {miMezcla.crecimiento}% creciendo</div>
           </div>
           <div style={{ flex: 1 }} />
-          <button style={{ ...btn(false), width: "100%" }} onClick={() => { try { document.getElementById("mi-mezcla")?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch { /* noop */ } }}>Moverla y seguir ↓</button>
+          <button style={{ ...btn(false), width: "100%" }} onClick={() => { try { document.getElementById("mi-mezcla")?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch { /* noop */ } }}>Moverla y crear ↓</button>
         </div>
       </div>
       {/* Las tres de arriba son tres puntos entre infinitos: acá se arma el
@@ -1686,15 +1687,27 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
   const [activoId, setActivoId] = useState(caminoElegido || "balance");
   const base = useMemo(() => { const b = baseDesdeUsuario(user, perfil, fichas); return { ...b, canastasHoy: medirCanastas(b.posiciones, b.caja, undefined, b.deudas) }; }, [user, perfilGuardado, fichas]);
   // Plantillas (recalculadas con tus datos de hoy) + las que editaste + las tuyas
-  const todos = useMemo(() => {
-    const plantillas = CAMINOS_BASE.map((c) => escenarioDesdeCamino(base, c, perfil));
-    const porId = Object.fromEntries(guardados.map((g) => [g.id, g]));
-    return [...plantillas.map((p) => (porId[p.id] ? { ...p, ...porId[p.id], editado: true } : p)), ...guardados.filter((g) => !plantillas.some((p) => p.id === g.id))];
-  }, [base, guardados, perfilGuardado]);
+  // 22-oct-2026 (Santiago: "creé un escenario, el de crecimiento, pero los
+  // otros quedaron como por defecto. No me queda claro el proceso: ¿uno crea
+  // un escenario y con base en eso se crean los de renta y seguridad por
+  // defecto? No es claro, no es intuitivo").
+  //
+  // Tenía razón: los tres caminos SIEMPRE existían, se regeneraban solos con
+  // sus datos y se mezclaban con los suyos, asi que no habia forma de saber
+  // cual era de uno. Ahora son dos cosas distintas: los cuatro puntos de
+  // partida son MOLDES -no son escenarios, no se guardan, no se comparan- y
+  // tus escenarios son solo los que tu creaste a partir de ellos.
+  const todos = useMemo(() => guardados.map((g) => ({ ...g })), [guardados]);
   const res = useMemo(() => compararCaminos(todos, base, perfil), [todos, base, perfilGuardado]);
   const sinDatos = base.posiciones.length === 0 && base.flujos.filter((f) => f.tipo === "ingreso").length === 0;
   const guardar = (esc) => { const limpio = { id: esc.id, nombre: esc.nombre, tesis: esc.tesis, color: esc.color, plantilla: esc.plantilla || null, propio: !!esc.propio, ventas: esc.ventas || [], pagos: esc.pagos || [], despliegue: esc.despliegue || [], eventos: esc.eventos || [], excedente: esc.excedente, colchonMeses: esc.colchonMeses, canastas: esc.canastas || null, condiciones: esc.condiciones || [], objetivo: esc.objetivo || null }; onCaminos(guardados.some((g) => g.id === esc.id) ? guardados.map((g) => (g.id === esc.id ? limpio : g)) : [...guardados, limpio]); };
   const colorNuevo = () => [CHART.purple, CHART.cyan, CHART.pink, CHART.gold][guardados.filter((g) => g.propio).length % 4];
+  const crearDesde = (c) => {
+    const e = escenarioVacio({ nombre: INTENCIONES[c.id]?.titulo || c.nombre, tesis: c.tesis, color: c.color, plantilla: c.id,
+      colchonMeses: c.canastas?.colchonMeses ?? 6, excedente: c.excedente, canastas: c.canastas || null, condiciones: c.condiciones || [] });
+    e.objetivo = c.objetivo || null;
+    guardar(e); setActivoId(e.id); return e;
+  };
   const nuevo = (objetivo) => { const e = escenarioVacio({ nombre: `Mi escenario ${guardados.filter((g) => g.propio).length + 1}`, colchonMeses: 6, color: colorNuevo() }); if (objetivo) e.objetivo = objetivo; guardar(e); setActivoId(e.id); };
   const duplicar = (esc) => { const e = { ...esc, id: "esc_" + Math.random().toString(36).slice(2, 8), nombre: `${esc.nombre} (copia)`, plantilla: null, propio: true, color: colorNuevo(), editado: false }; guardar(e); setActivoId(e.id); };
   const restablecer = (esc) => onCaminos(guardados.filter((g) => g.id !== esc.id));
@@ -1715,7 +1728,12 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
         <BarraEscenario todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} base={base} onNuevo={nuevo} />
         <Stepper paso={paso} setPaso={ir} />
         {paso === 1 && <PasoHoy base={base} fichas={fichas} onFichas={onFichas} onNext={() => ir(2)} />}
-        {paso === 2 && <PasoIntencion todos={todos} res={res} base={base} perfil={perfil} onPerfil={onPerfil} activoId={rActivo?.id} setActivoId={setActivoId} onNuevo={nuevo} onNext={() => ir(3)} onArreglar={() => { ir(3); setSub(4); }} onBorrar={borrar} onComparar={() => { ir(4); setVerCompara(true); }} />}
+        {paso === 2 && <PasoIntencion moldes={CAMINOS_BASE} todos={todos} res={res} base={base} perfil={perfil} onPerfil={onPerfil} onCrear={crearDesde} activoId={rActivo?.id} setActivoId={setActivoId} onNuevo={nuevo} onNext={() => ir(3)} onArreglar={() => { ir(3); setSub(4); }} onBorrar={borrar} onComparar={() => { ir(4); setVerCompara(true); }} />}
+        {paso > 2 && !rActivo && <div style={card}>
+          <div style={F.h2}>Todavía no has creado ningún escenario</div>
+          <div style={{ ...F.body, marginTop: 6 }}>Los cuatro puntos de partida del paso anterior son moldes: elige uno y ahí nace tu escenario, con su mezcla puesta. Puedes tener tantos como quieras y compararlos.</div>
+          <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => ir(2)}>← Elegir un punto de partida</button></div>
+        </div>}
         {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => { ir(4); setVerCompara(true); }} sub={sub} setSub={setSub} />}
         {paso === 3 && sub === 4 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} />}
         {paso === 4 && !verCompara && <PasoResultado base={base} perfil={perfil} onPerfil={onPerfil} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} onEditar={(n) => { ir(3); setSub(n); }} />}
