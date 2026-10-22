@@ -28,7 +28,7 @@ import { C, F } from "../lib/designTokens";
 import { fmtPlataCortaEs } from "../lib/formato.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Area, ReferenceLine, BarChart, Bar, Cell } from "recharts";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
-import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, nombrarMezcla, moverMezcla, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, cuentaMotor, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
+import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, nombrarMezcla, moverMezcla, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, cuentaMotor, escenarioVacio, liquidezEscenario, narrar, cienEnCada, pagaAlMes } from "../lib/caminos.js";
 
 // Capital y mensualidades se escriben igual: una sola función, con separador
 // de miles en todas las ramas (ver fmtPlataCortaEs). Los dos nombres se
@@ -474,9 +474,21 @@ function describirMov(m, posiciones, flujos) {
   const p = posiciones.find((x) => x.id === m.posicionId)?.nombre || m.posicionId;
   const a = `Año ${anioDe(m.mes)}${m.mes % 12 ? `, mes ${(m.mes % 12) + 1}` : ""}`;
   switch (m.tipo) {
-    case "vender": return `${a}: vendes ${p}`;
+    case "vender": {
+      // 22-oct-2026 (Santiago: "si vendí Puerto Madero, ¿por qué no muestra
+      // que ese mismo año ingresa BTG?"). La venta dice ahora a dónde va la
+      // plata y, si ese destino paga, cuánto deja al mes (aproximado: lo que
+      // el activo vale hoy × tasa del destino).
+      const v = posiciones.find((x) => x.id === m.posicionId);
+      const dId = m.nuevo ? null : m.destinoId;
+      const d = dId ? posiciones.find((x) => x.id === dId) : null;
+      const dest = m.nuevo ? { nombre: m.nuevo.nombre || "Nueva inversión", tasa: m.nuevo.tasa, pagaPct: m.nuevo.pagaPct } : d;
+      if (!dest) return `${a}: vendes ${p}`;
+      const paga = pagaAlMes(v?.capital || 0, dest.tasa, dest.pagaPct);
+      return `${a}: vendes ${p} → ${fmM(v?.capital || 0)} a ${dest.nombre}${paga > 0 ? ` · te paga ≈ ${fmMes(paga)}/mes` : ""}`;
+    }
     case "comprar": return `${a}: compras ${m.nombre} por ${fmM(m.costo)}${m.renta ? `, renta ${fmMes(m.renta)}/mes${m.rentaDesde ? ` desde ${m.rentaDesde} meses después` : ""}` : ""}`;
-    case "aportar": return `${a}: mueves ${fmM(m.monto)} a ${p}`;
+    case "aportar": { const d = posiciones.find((x) => x.id === m.posicionId); const paga = d ? pagaAlMes(m.monto, d.tasa, d.pagaPct) : 0; return `${a}: mueves ${fmM(m.monto)} a ${p}${paga > 0 ? ` · te paga ≈ ${fmMes(paga)}/mes` : ""}`; }
     case "revaluar": return `${a}: ${p} pasa a valer ${fmM(m.valor)}`;
     case "flujo_inicia": return `${a}: ${m.flujo?.tipo === "gasto" ? "entra el gasto" : "entra"} ${m.flujo?.nombre}, ${fmMes(m.flujo?.monto)}/mes`;
     case "flujo_termina": return `${a}: termina ${flujos.find((f) => f.id === m.flujoId)?.nombre || m.flujoId}`;
@@ -500,7 +512,7 @@ function aFormulario(m) {
     case "comprar": return { ...b, tipo: "comprar", nombre: m.nombre || "", monto: m.costo, canasta: m.bolsillo === "crecimiento" ? "crecimiento" : m.pagaPct === 100 ? "rentas" : "uso", renta: m.renta ?? "", rentaDesde: m.rentaDesde ?? 0, val1: m.valorizacion ?? 5, valN: m.valorizacion ?? 5, valorTocado: true };
     case "transformar": return { ...b, tipo: "transformar", posicionId: m.posicionId, obraCosto: m.obra, mesesObra: m.mesesObra, valorFinal: m.valor, rentaFinal: m.renta, valorTocado: true };
     case "motor": return { ...b, tipo: "motor", nombre: m.nombre || "", lote: m.lote, obra: m.obra, venta: m.venta, mesesVuelta: m.mesesVuelta, impuestoPct: m.impuestoPct, vueltas: m.vueltas };
-    case "vender": return { ...b, tipo: "vender", posicionId: m.posicionId };
+    case "vender": return { ...b, tipo: "vender", posicionId: m.posicionId, destinoId: m.nuevo ? "__nueva" : (m.destinoId || ""), nNombre: m.nuevo?.nombre || "", nCanasta: m.nuevo?.canasta || "rentas", nTasa: m.nuevo?.tasa ?? "", nPaga: m.nuevo?.pagaPct ?? 100 };
     case "aportar": return { ...b, tipo: "aportar", posicionId: m.posicionId, monto: m.monto };
     case "revaluar": return { ...b, tipo: "revaluar", posicionId: m.posicionId, monto: m.valor };
     case "flujo_inicia": return { ...b, tipo: m.flujo?.tipo === "gasto" ? "flujo_inicia_gasto" : "flujo_inicia_ingreso", nombre: m.flujo?.nombre || "", monto: m.flujo?.monto };
@@ -519,14 +531,17 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo, in
   // de verdad: el salto de la obra o de los planos, y el ritmo normal despues.
   const [f, setF] = useState({ tipo: "comprar", cuando: 12, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "", val1: 5, valN: 5, tramo: 12,
     lote: "", obra: "", venta: "", mesesVuelta: 14, impuestoPct: 35, vueltas: 8,
-    obraCosto: "", mesesObra: 12, valorFinal: "", rentaFinal: "", valorTocado: false, ...(inicial ? aFormulario(inicial) : {}) });
+    obraCosto: "", mesesObra: 12, valorFinal: "", rentaFinal: "", valorTocado: false,
+    destinoId: "", nNombre: "", nCanasta: "rentas", nTasa: PERFIL_DEFAULT.tasaRentaEstable, nPaga: 100, ...(inicial ? aFormulario(inicial) : {}) });
   const motor = f.tipo === "motor" ? cuentaMotor({ lote: f.lote, obra: f.obra, venta: f.venta, mesesVuelta: f.mesesVuelta, impuestoPct: f.impuestoPct, vueltas: f.vueltas }) : null;
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const mes = Math.max(0, Number(f.cuando) || 0);
   const guardar = () => {
     const base = { id: inicial?.id || ("mv_" + Math.random().toString(36).slice(2, 8)), mes };
     const monto = Number(f.monto) || 0; let m = null;
-    if (f.tipo === "vender") m = { ...base, tipo: "vender", posicionId: f.posicionId };
+    if (f.tipo === "vender") m = { ...base, tipo: "vender", posicionId: f.posicionId,
+      destinoId: f.destinoId && f.destinoId !== "__nueva" ? f.destinoId : undefined,
+      nuevo: f.destinoId === "__nueva" ? { nombre: f.nNombre || "Nueva inversión", canasta: f.nCanasta, tasa: Number(f.nTasa) || 0, pagaPct: f.nCanasta === "rentas" ? (Number(f.nPaga) || 0) : 0 } : undefined };
     if (f.tipo === "comprar" && f.nombre && monto > 0) m = { ...base, tipo: "comprar", nombre: f.nombre, costo: monto, bolsillo: f.canasta === "crecimiento" ? "crecimiento" : f.canasta === "rentas" ? "sustento" : "uso", pagaPct: f.canasta === "rentas" ? 100 : 0, valorizacion: Number(f.val1) || 0, origen: [{ posicionId: f.origenId }], renta: Number(f.renta) > 0 ? Number(f.renta) : undefined, rentaDesde: Number(f.rentaDesde) || 0 };
     if (f.tipo === "aportar" && monto > 0) m = { ...base, tipo: "aportar", posicionId: f.posicionId, monto, origen: [{ posicionId: f.origenId }] };
     if (f.tipo === "revaluar" && monto > 0) m = { ...base, tipo: "revaluar", posicionId: f.posicionId, valor: monto };
@@ -561,6 +576,19 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo, in
             propios campos -transformar y motor- sin hacer nada: un campo
             huerfano que solo podia confundir. */}
         {f.tipo !== "vender" && f.tipo !== "flujo_termina" && f.tipo !== "transformar" && f.tipo !== "motor" && <Campo l={esFlujo ? "Cuánto al mes (pesos)" : f.tipo === "revaluar" ? "Nuevo valor (pesos)" : f.tipo === "comprar" ? "Cuánto vale (pesos)" : "Monto (pesos)"}><NumPesos value={f.monto} onChange={(v) => set("monto", v)} /></Campo>}
+        {f.tipo === "vender" && <>
+          <Campo l="Y la plata va a"><select value={f.destinoId} onChange={(e) => set("destinoId", e.target.value)} style={inputS}><option value="">Se queda en caja (líquida, sin rendir)</option><option value="__nueva">Una inversión nueva…</option>{posiciones.filter((p) => p.id !== f.posicionId).map((p) => <option key={p.id} value={p.id}>{p.nombre} · {fmM(p.capital)}</option>)}</select></Campo>
+          {f.destinoId === "__nueva" && <>
+            <Campo l="Cómo se llama"><input value={f.nNombre} onChange={(e) => set("nNombre", e.target.value)} style={inputS} placeholder="Fondo, CDT, portafolio…" /></Campo>
+            <Campo l="Para qué"><select value={f.nCanasta} onChange={(e) => { const c = e.target.value; setF((st) => ({ ...st, nCanasta: c, nTasa: c === "crecimiento" ? PERFIL_DEFAULT.tasaCrecimiento : PERFIL_DEFAULT.tasaRentaEstable, nPaga: c === "rentas" ? 100 : 0 })); }} style={inputS}><option value="rentas">Que me pague cada mes</option><option value="crecimiento">Que crezca (se reinvierte)</option></select></Campo>
+            <Campo l="Tasa al año"><Num value={f.nTasa} step={0.5} onChange={(v) => set("nTasa", v)} suffix="%" /></Campo>
+            {f.nCanasta === "rentas" && <Campo l="Recibes del rendimiento"><Num value={f.nPaga} step={10} min={0} max={100} onChange={(v) => set("nPaga", v)} suffix="%" /></Campo>}
+          </>}
+          {(() => { const v = posiciones.find((x) => x.id === f.posicionId); if (!v || !f.destinoId) return null;
+            const d = f.destinoId === "__nueva" ? { nombre: f.nNombre || "la inversión nueva", tasa: Number(f.nTasa) || 0, pagaPct: f.nCanasta === "rentas" ? Number(f.nPaga) || 0 : 0 } : posiciones.find((x) => x.id === f.destinoId);
+            if (!d) return null; const paga = pagaAlMes(v.capital, d.tasa, d.pagaPct);
+            return <div style={{ ...sub, gridColumn: "1 / -1" }}><div style={F.body}>Hoy <b style={{ color: C.text }}>{v.nombre}</b> vale <b style={{ color: C.text }}>{fmM(v.capital)}</b>. Al venderlo, esa plata entra a <b style={{ color: C.text }}>{d.nombre}</b>{Number(d.tasa) > 0 ? <> al <b style={{ color: C.text }}>{pctEs(Number(d.tasa))}</b></> : null}{paga > 0 ? <> y te paga <b style={{ color: C.ok }}>≈ {fmMes(paga)}</b> al mes desde ese momento</> : Number(d.tasa) > 0 ? <> y se reinvierte: crece sin pagarte</> : null}.</div></div>; })()}
+        </>}
         {f.tipo === "comprar" && <Campo l="Para qué"><select value={f.canasta} onChange={(e) => set("canasta", e.target.value)} style={inputS}><option value="rentas">Rentar (paga cada mes)</option><option value="proteccion">Vivir ahí</option><option value="crecimiento">Crecimiento</option><option value="uso">Uso</option></select></Campo>}
         {f.tipo === "transformar" && <>
           <div style={{ ...sub, gridColumn: "1 / -1" }}>
@@ -1214,7 +1242,12 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                     <td style={td}>{d.destinoId ? <span style={chip(CANASTA_COLOR[d.canasta])}>{CANASTA_LABEL[d.canasta]}</span> : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[d.canasta], borderColor: CANASTA_COLOR[d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
                     <td style={tdNum}><NumPesos value={d.capital} onChange={(v) => setD(d.id, { capital: v || 0 })} w={150} /></td>
                     <td style={tdNum}><Num value={d.tasa} step={0.5} onChange={(v) => setD(d.id, { tasa: v || 0 })} suffix="%" w={80} /></td>
-                    <td style={tdNum}><Num value={d.pagaPct} step={10} min={0} max={100} onChange={(v) => setD(d.id, { pagaPct: v || 0, regla: v >= 100 ? "Paga el 100% del rendimiento cada mes" : v <= 0 ? "Todo se reinvierte" : `Recibe el ${v}%, reinvierte el resto` })} suffix="%" w={80} /></td>
+                    <td style={tdNum}><Num value={d.pagaPct} step={10} min={0} max={100} onChange={(v) => setD(d.id, { pagaPct: v || 0, regla: v >= 100 ? "Paga el 100% del rendimiento cada mes" : v <= 0 ? "Todo se reinvierte" : `Recibe el ${v}%, reinvierte el resto` })} suffix="%" w={80} />
+                      {/* 22-oct-2026 (Santiago: "cuando uno ponga la inversión
+                          nueva, el valor y el porcentaje, el sistema debería
+                          poner la cuota aproximada"). */}
+                      {pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0 && <div style={{ ...F.caption, color: C.ok, whiteSpace: "nowrap" }}>≈ {fmMes(pagaAlMes(d.capital, d.tasa, d.pagaPct))}/mes</div>}
+                      {Number(d.capital) > 0 && Number(d.tasa) > 0 && !(pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0) && <div style={{ ...F.caption, whiteSpace: "nowrap" }}>se reinvierte</div>}</td>
                     <td style={tdNum}><Num value={d.valorizacion} step={0.5} onChange={(v) => setD(d.id, { valorizacion: v || 0 })} suffix="%" w={80} /></td>
                     <td style={{ ...td, minWidth: 180 }}><input value={d.regla || ""} onChange={(e) => setD(d.id, { regla: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 11 }} placeholder="Regla" /></td>
                     <td style={td}><button style={{ ...btn(false), padding: "3px 8px", color: C.subtle }} onClick={() => upd({ despliegue: esc.despliegue.filter((x) => x.id !== d.id) })}>quitar</button></td>
@@ -1238,6 +1271,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                   fila. */}
               {(esc.despliegue || []).length > 0 && <button style={{ ...btn(false), color: C.subtle }} onClick={() => upd({ despliegue: [] })}>Vaciar y empezar de cero</button>}
             </div>
+            {liq.porAsignar < -1e6 && <div style={{ ...F.caption, color: C.warn, marginTop: 8 }}>Estás metiendo más plata de la que liberas hoy. Si viene de algo que vendes más adelante (un apartamento en el año 2), no la pongas aquí: en «¿Qué pasa después?» marca la venta y di a dónde va la plata — ahí sí entra ese año y empieza a pagarte.</div>}
           </div>
           )}
           {sub === 4 && (

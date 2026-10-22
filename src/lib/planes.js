@@ -94,6 +94,14 @@ export function simularCamino(cfg = {}) {
         const neto = Math.max(0, antesDeImpuesto - impVenta);
         caja.valor += neto; p.capital = 0; p.vendida = true;
         log.push({ mes, texto: `Se vende ${p.nombre}: entran ${Math.round(neto)}${impVenta > 0 ? ` (neto de ${Math.round(impVenta)} de impuesto)` : ""}` });
+        // 22-oct-2026 (Santiago: "si vendí Puerto Madero, ¿por qué no muestra
+        // que ese mismo año ingresa BTG?"). Una venta decía a dónde NO iba la
+        // plata (a caja) pero no a dónde SÍ. Con destinoId, lo que entra por
+        // la venta pasa directo a esa posición el mismo mes y empieza a rendir.
+        if (m.destinoId && m.destinoId !== "caja") {
+          const d = pos.find((x) => x.id === m.destinoId);
+          if (d && d.id !== p.id && neto > 0) { d.capital += neto; caja.valor -= neto; if (d.desdeMes > mes) d.desdeMes = mes; log.push({ mes, texto: `→ ${Math.round(neto)} a ${d.nombre}` }); }
+        }
         // Los flujos atados al activo terminan
         flujos = flujos.map((f) => (f.posicionId === p.id ? { ...f, hastaMes: Math.min(f.hastaMes, mes - 1) } : f));
         break;

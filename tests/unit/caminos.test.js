@@ -131,3 +131,28 @@ describe("motor: colchón primero", () => {
     expect(fin.detalle.etf.capital).toBe(30);
   });
 });
+
+describe("una venta dice a dónde va la plata", () => {
+  // 22-oct-2026 (Santiago: "si vendí Puerto Madero, ¿por qué no muestra que
+  // ese mismo año ingresa BTG?"). La plata de una venta futura no se queda en
+  // caja: entra el mismo mes a la inversión elegida, nueva o existente.
+  const base = baseDesdeUsuario(user);
+  it("a una inversión nueva que paga desde ese mes", () => {
+    const esc = escenarioVacio({ nombre: "Apto → fondo", eventos: [{ id: "mv_1", mes: 24, tipo: "vender", posicionId: "i3", nuevo: { nombre: "Fondo", canasta: "rentas", tasa: 14, pagaPct: 100 } }] });
+    const [r] = compararCaminos([esc], base, PERFIL_DEFAULT);
+    const m = r.resultado.meses;
+    expect(m[23].detalle.mv_1_dest.capital).toBe(0);
+    expect(m[24].detalle.mv_1_dest.capital).toBeGreaterThan(400e6);
+    expect(m[25].detalle.mv_1_dest.recibe).toBeGreaterThan(4e6);
+    expect(r.resultado.log.some((l) => l.mes === 24 && /a Fondo/.test(l.texto))).toBe(true);
+  });
+  it("a una que ya tienes", () => {
+    const esc = escenarioVacio({ nombre: "Apto → CDT", eventos: [{ id: "mv_2", mes: 24, tipo: "vender", posicionId: "i3", destinoId: "i1" }] });
+    const [r] = compararCaminos([esc], base, PERFIL_DEFAULT);
+    expect(r.resultado.meses[24].detalle.i1.capital).toBeGreaterThan(r.resultado.meses[23].detalle.i1.capital + 400e6);
+  });
+  it("y la cuota aproximada es capital × tasa ÷ 12 × lo que recibes", () => {
+    expect(pagaAlMes(7500e6, 14, 100)).toBeCloseTo(87.5e6, -3);
+    expect(pagaAlMes(7500e6, 14, 0)).toBe(0);
+  });
+});
