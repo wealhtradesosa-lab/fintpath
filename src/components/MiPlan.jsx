@@ -28,7 +28,7 @@ import { C, F } from "../lib/designTokens";
 import { fmtPlataCortaEs } from "../lib/formato.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Area, ReferenceLine } from "recharts";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
-import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
+import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
 
 // Capital y mensualidades se escriben igual: una sola función, con separador
 // de miles en todas las ramas (ver fmtPlataCortaEs). Los dos nombres se
@@ -112,6 +112,20 @@ function Cuando({ mes, onChange, compacto }) {
 const useAncho = () => { const [w, setW] = useState(typeof window === "undefined" ? 1200 : window.innerWidth); useEffect(() => { const f = () => setW(window.innerWidth); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []); return w; };
 const anioDe = (mes) => Math.floor((Number(mes) || 0) / 12) + 1;
 
+// 22-oct-2026 — Santiago, leyendo "$62.550 mil M" al mes: "en mi caso, si ya
+// la plataforma me dice que con Crecimiento me entran 62 MM, ya no me sirve,
+// porque con eso no vivo". Leyó 62 millones donde decía 62 billones, y estuvo
+// a un paso de descartar un escenario por una cifra que estaba rota (dos
+// pensiones tecleadas con seis ceros de más).
+//
+// El numero imposible se presentaba con la misma seriedad que uno bueno. Diez
+// años al 30% anual multiplican por 14; por cien, ya no es un plan, es un
+// dato malo. Así que cuando pasa de ahí, la cifra se marca: no se esconde
+// -esconderla seria mentir al reves- pero deja de parecer un hecho.
+const VECES_IMPOSIBLE = 100;
+const vecesDe = (p) => { const i = Number(p?.patrimonioInicial) || 0, f = Number(p?.patrimonioFinal) || 0; return i > 0 && f > 0 ? f / i : 0; };
+const Imposible = ({ p, compacto }) => { const x = vecesDe(p); if (x <= VECES_IMPOSIBLE) return null; return <span style={{ ...chip(C.danger), marginLeft: 6, whiteSpace: "normal", display: "inline-block" }}>✋ multiplica tu patrimonio por {Math.round(x).toLocaleString("es-CO")}{compacto ? "" : ": eso no es un plan, es un supuesto mal puesto. Revisa pensiones y tasas."}</span>; };
+
 // Producción mensual de una posición hoy: lo que recibes y lo que crece
 const produce = (p) => {
   const recibe = p.capital * (Number(p.tasa) || 0) / 100 / 12 * ((p.pagaPct ?? 0) / 100) + (p.renta || 0);
@@ -154,7 +168,7 @@ function BarraEscenario({ todos, res, activoId, setActivoId, base, onNuevo }) {
         <button style={{ ...btn(false), padding: "6px 12px" }} onClick={onNuevo}>+ Nuevo</button>
       </div>
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "baseline" }}>
-        <div><span style={F.label}>Año 10 </span><b style={{ ...F.monoLg, color: C.text }}>{fmM(r.puntos.patrimonioFinal)}</b> <span style={{ ...F.caption, color: delta >= 0 ? C.ok : C.danger }}>{delta >= 0 ? "+" : "−"}{fmM(Math.abs(delta))}</span></div>
+        <div><span style={F.label}>Año 10 </span><b style={{ ...F.monoLg, color: C.text }}>{fmM(r.puntos.patrimonioFinal)}</b><Imposible p={r.puntos} compacto /> <span style={{ ...F.caption, color: delta >= 0 ? C.ok : C.danger }}>{delta >= 0 ? "+" : "−"}{fmM(Math.abs(delta))}</span></div>
         <div><span style={F.label}>Queda al mes </span><b style={{ ...F.monoLg, color: r.puntos.quedaMes >= 0 ? C.ok : C.danger }}>{fmMes(r.puntos.quedaMes)}</b></div>
       </div>
     </div>
@@ -585,19 +599,16 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
 // Y cierra el vocabulario: seguridad, renta y crecimiento son las mismas tres
 // palabras con las que la app clasifica dónde está tu plata (las canastas).
 const INTENCIONES = {
-  seguridad: { titulo: "Más protección", frase: "Que pase lo que pase, la vida esté pagada. Casi todo en rentas estables y un colchón grande." },
-  balance: { titulo: "Más renta", frase: "Que la plata me pague cada mes, y una parte creciendo para no quedarme atrás." },
-  crecimiento: { titulo: "Más crecimiento", frase: "Que todo esté produciendo. Lo que no renta ni crece se vende y se pone a trabajar." },
+  seguridad: { titulo: "Más protección", frase: "Que pase lo que pase, la vida esté pagada: colchón grande, vivienda propia y la mayor parte pagándote cada mes." },
+  balance: { titulo: "Más renta", frase: "Que la plata te pague cada mes, con una quinta parte creciendo para no quedarte atrás." },
+  crecimiento: { titulo: "Más crecimiento", frase: "Que la mitad esté multiplicándose, sin quedarte sin con qué vivir: un tercio te sigue pagando." },
 };
-/** A dónde lleva tu plata esa intención, en las palabras de las canastas. */
+/** La mezcla a la que apunta: las tres canastas, siempre las tres. */
 function haciaDonde(esc) {
-  const c = esc.canastas || {};
+  const o = esc.objetivo;
   const l = [];
-  if (c.rentas?.min != null) l.push(`al menos ${c.rentas.min}% en rentas`);
-  if (c.rentas?.max != null) l.push(`máximo ${c.rentas.max}% en rentas`);
-  if (c.crecimiento?.min != null) l.push(`al menos ${c.crecimiento.min}% creciendo`);
-  if (c.crecimiento?.max != null) l.push(`máximo ${c.crecimiento.max}% creciendo`);
-  if (c.colchonMeses) l.push(`colchón de ${c.colchonMeses} meses`);
+  if (o) l.push(`${o.proteccion}% protegido · ${o.rentas}% pagándote · ${o.crecimiento}% creciendo`);
+  if (esc.canastas?.colchonMeses) l.push(`colchón de ${esc.canastas.colchonMeses} meses`);
   return l.join(" · ");
 }
 /** Qué hace esa intención con las cosas de ESTA persona, en una línea. */
@@ -606,13 +617,16 @@ function queHace(esc, base) {
   const ventas = esc.ventas || [];
   if (ventas.length) {
     const monto = ventas.reduce((t, v) => { const p = base.posiciones.find((x) => x.id === v.posicionId); return t + (v.monto != null ? v.monto : p?.capital || 0); }, 0);
-    partes.push(`vende ${ventas.length} ${ventas.length === 1 ? "cosa" : "cosas"} (${fmM(monto)})`);
+    partes.push(`vendes ${ventas.length} ${ventas.length === 1 ? "cosa" : "cosas"} (${fmM(monto)})`);
   }
-  if ((esc.pagos || []).length) partes.push(`paga ${esc.pagos.length} ${esc.pagos.length === 1 ? "deuda" : "deudas"}`);
+  if ((esc.pagos || []).length) partes.push(`pagas ${esc.pagos.length} ${esc.pagos.length === 1 ? "deuda" : "deudas"}`);
+  if ((esc.despliegue || []).length) partes.push(`${esc.despliegue.length} ${esc.despliegue.length === 1 ? "destino" : "destinos"} para la plata`);
   const exc = esc.excedente || [];
   const cre = exc.find((e) => e.canasta === "crecimiento")?.pct ?? 0;
-  partes.push(cre === 0 ? "lo que sobra va a rentas" : cre === 100 ? "lo que sobra va a crecimiento" : `lo que sobra: ${100 - cre}% rentas · ${cre}% creciendo`);
-  return partes.join(" · ");
+  partes.push(`lo que sobra cada mes: ${100 - cre}% a lo que te paga · ${cre}% a lo que crece`);
+  // 22-oct-2026 — Antes acá decía "vende 6 cosas ($1,6 mil M)" aunque la
+  // persona no hubiera decidido nada: lo había decidido la plantilla.
+  return ventas.length || (esc.pagos || []).length || (esc.despliegue || []).length ? partes.join(" · ") : `nada decidido todavía · ${partes[partes.length - 1]}`;
 }
 function PasoIntencion({ todos, res, base, activoId, setActivoId, onNuevo, onNext }) {
   const hoy = base?.base?.patrimonioNeto ?? 0;
@@ -644,7 +658,7 @@ function PasoIntencion({ todos, res, base, activoId, setActivoId, onNuevo, onNex
                 <div style={{ ...F.caption, color: C.text, marginTop: 2 }}>{queHace(e, base)}</div>
               </div>
               {r && <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
-                <div><div style={F.label}>Año 10</div><div style={{ ...F.monoLg, color: C.text }}>{fmM(r.puntos.patrimonioFinal)}</div><div style={{ ...F.caption, color: d >= 0 ? C.ok : C.danger }}>{d >= 0 ? "+" : "−"}{fmM(Math.abs(d))}</div></div>
+                <div><div style={F.label}>Año 10 <Imposible p={r.puntos} compacto /></div><div style={{ ...F.monoLg, color: C.text }}>{fmM(r.puntos.patrimonioFinal)}</div><div style={{ ...F.caption, color: d >= 0 ? C.ok : C.danger }}>{d >= 0 ? "+" : "−"}{fmM(Math.abs(d))}</div></div>
                 <div><div style={F.label}>Queda al mes</div><div style={{ ...F.monoLg, color: r.puntos.quedaMes >= 0 ? C.ok : C.danger }}>{fmMes(r.puntos.quedaMes)}</div><div style={F.caption}>en el año 10</div></div>
               </div>}
               <button style={{ ...btn(sel), width: "100%", marginTop: 12 }} onClick={() => { setActivoId(e.id); onNext(); }}>{sel ? "Seguir con este →" : "Proyectar esto →"}</button>
@@ -669,7 +683,7 @@ function ResultadoVivo({ r, base, onElegir, elegido, onVer, onComparar }) {
     <div style={{ ...card, borderColor: r.color }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><div style={F.h3}>Resultado en vivo</div><span style={chip(ok ? C.ok : C.danger)}>{ok ? "se cumple" : `se rompe · año ${r.vigilancia.roturas[0].anio}`}</span></div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
-        <div><div style={F.label}>Patrimonio año 10</div><div style={{ ...F.monoLg, color: C.text }}>{fmM(p.patrimonioFinal)}</div><div style={F.caption}>{fmM(p.patrimonioFinalReal)} de hoy</div></div>
+        <div><div style={F.label}>Patrimonio año 10</div><div style={{ ...F.monoLg, color: C.text }}>{fmM(p.patrimonioFinal)}</div><Imposible p={p} /><div style={F.caption}>{fmM(p.patrimonioFinalReal)} de hoy</div></div>
         <div><div style={F.label}>Queda al mes · año 10</div><div style={{ ...F.monoLg, color: p.quedaMes >= 0 ? C.ok : C.danger }}>{fmMes(p.quedaMes)}</div><div style={F.caption}>cobertura {pct(p.cobertura)}</div></div>
         <div><div style={F.label}>Entra / sale · año 10</div><div style={{ ...F.caption, color: C.text }}>{fmMes(p.entraMes)} / {fmMes(p.saleMes)}</div></div>
         <div><div style={F.label}>Mes más apretado</div><div style={{ ...F.caption, color: p.seSostiene ? C.text : C.danger }}>{p.mesApretado ? `año ${anioDe(p.mesApretado.mes)} · ${pct(p.mesApretado.cobertura)}` : "—"}</div></div>
@@ -725,6 +739,8 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   const vendidos = [...base.posiciones.filter((p) => p.sale), ...(esc.ventas || []).map((v) => posDe(v.posicionId)).filter((p) => p && !p.sale)];
   const pagadas = [...base.deudas.filter((d) => d.pagar), ...(esc.pagos || []).map((id) => base.deudas.find((d) => d.id === id)).filter((d) => d && !d.pagar)];
   const deLaPlantilla = !!esc.plantilla && !esc.editado;
+  const camino = CAMINOS_BASE.find((c) => c.id === esc.plantilla);
+  const proponer = () => { if (camino) onGuardar(proponerDesdeCamino(base, camino, esc, perfil)); };
   const [verNombre, setVerNombre] = useState(false);
   const SUBS = [
     { n: 1, t: "¿Qué vendes o transformas?", c: "Lo que sale se vende y te deja plata a favor." },
@@ -827,6 +843,14 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                 {liq.pagado > 0 && <>Pagando <b style={{ color: C.text }}>{pagadas.map((d) => d.nombre).join(", ")}</b> se van <b style={{ color: C.text }}>{fmM(liq.pagado)}</b>. </>}
                 {queda > 0 && <>Te queda <b style={{ color: C.ok }}>{fmM(queda)}</b> a favor: <b style={{ color: C.text }}>¿en qué lo pones?</b></>}
               </div>
+              {esc.objetivo && <div style={{ marginTop: 10, borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
+                <div style={F.label}>La mezcla a la que apuntas</div>
+                <div style={{ ...F.body, marginTop: 2 }}>
+                  <b style={{ color: CANASTA_COLOR.proteccion }}>{esc.objetivo.proteccion}% protegido</b> · <b style={{ color: CANASTA_COLOR.rentas }}>{esc.objetivo.rentas}% pagándote cada mes</b> · <b style={{ color: CANASTA_COLOR.crecimiento }}>{esc.objetivo.crecimiento}% creciendo</b>
+                </div>
+                <div style={{ ...F.caption, marginTop: 2 }}>Es una meta, no una orden: tú decides con qué llegar. {camino && "Si quieres, te propongo un reparto y lo ajustas."}</div>
+                {camino && <div style={{ marginTop: 8 }}><button style={btn(false)} onClick={proponer}>Proponme un reparto para esta mezcla →</button></div>}
+              </div>}
               {deLaPlantilla && (esc.despliegue || []).length > 0 && <div style={{ ...F.caption, marginTop: 6 }}>Los destinos de abajo no los pusiste tú: los propuso la plantilla <b style={{ color: esc.color }}>{esc.nombre}</b> para cumplir su regla, y son activos que ya tienes. Cámbialos, quítalos o agrega otros — en cuanto toques algo, el escenario pasa a ser tuyo.</div>}
             </div>
             <div style={{ overflowX: "auto" }}>

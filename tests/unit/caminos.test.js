@@ -1,7 +1,7 @@
 // caminos.js + planes.js: de los datos de cualquier usuario a tres caminos que
 // se cumplen. Usuario inventado; nada de datos reales.
 import { describe, it, expect } from "vitest";
-import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, nuevoCamino, vigilarCamino, configurarCamino, PERFIL_DEFAULT } from "../../src/lib/caminos.js";
+import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, nuevoCamino, vigilarCamino, configurarCamino, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino } from "../../src/lib/caminos.js";
 import { simularCamino } from "../../src/lib/planes.js";
 
 const user = {
@@ -57,11 +57,32 @@ describe("los tres caminos", () => {
   it("todos se cumplen en los 10 años y se sostienen", () => {
     res.forEach((r) => { expect(r.vigilancia.cumple, `${r.nombre}: ${JSON.stringify(r.vigilancia.roturas)}`).toBe(true); expect(r.puntos.seSostiene).toBe(true); });
   });
-  it("Seguridad paga la deuda cara, no vende la vivienda y queda en rentas", () => {
-    const s = by.seguridad;
-    expect(s.resultado.deudas.find((d) => d.id === "d2").pagada).toBe(true);
-    expect(s.canastasFin.vivienda).toBeGreaterThan(600e6);
-    expect(s.canastasFin.rentasPct).toBeGreaterThanOrEqual(85);
+  // 22-oct-2026 — La plantilla ya NO arma el escenario sola: trae la mezcla a
+  // la que apunta y nada más. Santiago: "de una vez poner los valores es
+  // incorrecto, pues uno está precisamente construyendo".
+  it("ninguna plantilla llega repartiendo la plata", () => {
+    CAMINOS_BASE.forEach((c) => {
+      const e = escenarioDesdeCamino(base, c, PERFIL_DEFAULT);
+      expect(e.despliegue, c.nombre).toEqual([]);
+      expect(e.ventas, c.nombre).toEqual([]);
+      expect(e.pagos, c.nombre).toEqual([]);
+      expect(e.eventos, c.nombre).toEqual([]);
+      expect(e.objetivo, c.nombre).toBeTruthy();
+    });
+  });
+  it("cada mezcla tiene de todo un poco: ninguna canasta en 0 ni en 100", () => {
+    CAMINOS_BASE.forEach((c) => {
+      const o = c.objetivo;
+      expect(o.proteccion + o.rentas + o.crecimiento, c.nombre).toBe(100);
+      [o.proteccion, o.rentas, o.crecimiento].forEach((x) => { expect(x, c.nombre).toBeGreaterThan(0); expect(x, c.nombre).toBeLessThan(100); });
+      // Y lo que sobra cada mes tampoco se va entero para un solo lado.
+      c.excedente.forEach((e) => expect(e.pct, `${c.nombre} excedente`).toBeLessThan(100));
+    });
+  });
+  it("pero si la persona la pide, la propuesta sigue sabiendo armarla", () => {
+    const c = CAMINOS_BASE.find((x) => x.id === "seguridad");
+    const prop = proponerDesdeCamino(base, c, escenarioDesdeCamino(base, c, PERFIL_DEFAULT), PERFIL_DEFAULT);
+    expect(prop.despliegue.length + prop.ventas.length + prop.pagos.length).toBeGreaterThan(0);
   });
   it("Balance mantiene el crecimiento en rango gracias al rebalanceo anual", () => {
     const b = by.balance;
@@ -69,13 +90,10 @@ describe("los tres caminos", () => {
     expect(b.canastasFin.crecimientoPct).toBeGreaterThanOrEqual(23);
     expect(b.resultado.log.some((l) => /Rebalanceo/.test(l.texto))).toBe(true);
   });
-  it("Crecimiento vende la vivienda y lo quieto, paga la hipoteca y vive arrendado", () => {
+  it("Más crecimiento inclina hacia lo que crece, pero no se lo lleva todo", () => {
     const c = by.crecimiento;
-    expect(c.canastasFin.vivienda).toBe(0);
-    expect(c.resultado.deudas.find((d) => d.id === "d1").pagada).toBe(true);
-    expect(c.cfg.movimientos.some((m) => m.tipo === "flujo_inicia" && m.flujo.id === "arriendo_vivienda")).toBe(true);
-    expect(c.canastasFin.crecimientoPct).toBeGreaterThanOrEqual(60);
-    expect(c.ajuste.notas.join(" ")).toMatch(/Lote/);
+    expect(c.canastasFin.crecimientoPct).toBeLessThan(100);
+    expect(c.canastasFin.rentasPct).toBeGreaterThan(0);
   });
   it("cada camino da los mismos puntos para comparar", () => {
     res.forEach((r) => ["patrimonioFinal", "patrimonioFinalReal", "entraMes", "saleMes", "cobertura", "produceMes", "estres", "sinMayorFuente"].forEach((k) => expect(r.puntos[k], `${r.nombre}.${k}`).toBeDefined()));

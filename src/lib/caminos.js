@@ -334,22 +334,39 @@ export function medirCanastas(posiciones, caja = 0, capitalDe = (p) => p.capital
  * `vivienda`: "propia" | "arrendado" | "indiferente". `excedente` reparte lo
  * que sobra cada mes por canasta. `condiciones`: lo que el camino no permite.
  */
+// 22-oct-2026 (Santiago: "un portafolio crecimiento no es que todo 100% sea
+// para producir, eso sería muy arriesgado. Cada portafolio tiene de todo un
+// poco y se balancea según lo que se quiera: más seguridad, más renta, más
+// crecimiento. Pero no es el 100% necesariamente").
+//
+// Las tres plantillas eran esquinas: Seguridad exigía al menos 85% en lo que
+// te paga y mandaba el 100% del excedente ahí; Crecimiento, al menos 60%
+// creciendo y el 100% del excedente a crecer. De ahí salía un portafolio de
+// una sola franja de color, que no es un portafolio. Ahora cada una es una
+// MEZCLA —las tres canastas siempre presentes— inclinada hacia su objetivo.
+//
+// `objetivo` es la mezcla a la que apunta; `canastas` es la banda de
+// tolerancia con la que se vigila si el escenario la cumple. Ninguna de las
+// dos reparte plata sola: eso lo decide la persona (ver escenarioDesdeCamino).
 export const CAMINOS_BASE = [
-  { id: "seguridad", nombre: "Seguridad", color: "#3b82f6",
-    tesis: "Todo en rentas estables que pagan la vida, y la vivienda como activo de protección: no se vende. La deuda cara se paga primero con lo líquido.",
-    canastas: { rentas: { min: 85 }, crecimiento: { max: 15 }, colchonMeses: 24, vivienda: "propia" },
-    excedente: [{ canasta: "rentas", pct: 100 }],
+  { id: "seguridad", nombre: "Más protección", color: "#3b82f6",
+    tesis: "Que pase lo que pase, la vida esté pagada: un colchón grande, la vivienda propia y la mayor parte en capital que te paga cada mes. Una porción crece, para no quedarse atrás de la inflación.",
+    objetivo: { proteccion: 35, rentas: 50, crecimiento: 15 },
+    canastas: { rentas: { min: 35 }, crecimiento: { max: 30 }, colchonMeses: 24, vivienda: "propia" },
+    excedente: [{ canasta: "rentas", pct: 80 }, { canasta: "crecimiento", pct: 20 }],
     condiciones: ["no_vender_vivienda", "sin_deuda_cara", "no_apalancar"] },
-  { id: "balance", nombre: "Balance", color: "#22c55e",
-    tesis: "Protección más rentas estables más crecimiento: la vida cubierta con margen y una parte multiplicando. Lo que sobra se reparte.",
-    canastas: { rentas: { min: 50 }, crecimiento: { min: 25, max: 50 }, colchonMeses: 12, vivienda: "indiferente" },
-    excedente: [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }],
+  { id: "balance", nombre: "Más renta", color: "#22c55e",
+    tesis: "Que la plata te pague cada mes: la mayor parte en capital que deposita, un colchón razonable y una quinta parte creciendo.",
+    objetivo: { proteccion: 20, rentas: 60, crecimiento: 20 },
+    canastas: { rentas: { min: 45 }, crecimiento: { min: 10, max: 35 }, colchonMeses: 12, vivienda: "indiferente" },
+    excedente: [{ canasta: "rentas", pct: 65 }, { canasta: "crecimiento", pct: 35 }],
     condiciones: ["sin_deuda_cara"] },
-  { id: "crecimiento", nombre: "Crecimiento", color: "#f97316",
-    tesis: "Todo produce: acciones, cripto, fondos diversificados e inmuebles que rentan. Se vive arrendado; lo que no produce se vende y se pone a trabajar.",
-    canastas: { rentas: { max: 40 }, crecimiento: { min: 60 }, colchonMeses: 6, vivienda: "arrendado" },
-    excedente: [{ canasta: "crecimiento", pct: 100 }],
-    condiciones: ["todo_produce"] },
+  { id: "crecimiento", nombre: "Más crecimiento", color: "#f97316",
+    tesis: "Que la mitad del patrimonio esté multiplicándose, sin quedarte sin con qué vivir: un tercio sigue pagando cada mes y el colchón se mantiene.",
+    objetivo: { proteccion: 15, rentas: 35, crecimiento: 50 },
+    canastas: { rentas: { min: 20 }, crecimiento: { min: 35, max: 65 }, colchonMeses: 6, vivienda: "indiferente" },
+    excedente: [{ canasta: "rentas", pct: 35 }, { canasta: "crecimiento", pct: 65 }],
+    condiciones: ["sin_deuda_cara"] },
 ];
 
 export const CONDICION_LABEL = {
@@ -599,11 +616,32 @@ function papelDeCanasta(canasta, item, perfil) {
  * Plantilla → escenario editable: corre el ajuste del camino y lo traduce a
  * ventas, pagos y despliegue con nombres, para que la persona lo vea y lo cambie.
  */
+// 22-oct-2026 (Santiago: "uno sí debe elegir escenarios predeterminados sobre
+// el que uno quiere trabajar, pero de una vez poner los valores es incorrecto,
+// pues uno está precisamente construyendo"; "porque si no, usted está
+// determinando valores y escenarios que de pronto no le sirven a la persona").
+//
+// La plantilla llegaba con el escenario ARMADO: ventas marcadas, deudas
+// pagadas y el despliegue repartido hasta el último peso. De ahí salía
+// "aparece rapciredit socio con una inversión de 11 mil que no sé ni de dónde
+// salió". Ahora la plantilla trae la MEZCLA a la que apuntas (y el colchón, y
+// cómo se reparte lo que sobre cada mes) y nada más: qué vendes, qué pagas y
+// en qué lo pones lo decides tú, con la meta a la vista.
+//
+// `ajustarAlCamino` sigue vivo: es el que sabe proponer, y se usa cuando la
+// persona pide la propuesta ("acércame a mi mezcla"), no de entrada.
 export function escenarioDesdeCamino(baseCfg, camino, perfil = PERFIL_DEFAULT) {
-  const aj = ajustarAlCamino(baseCfg, camino, perfil);
-  const byId = Object.fromEntries(aj.posiciones.map((p) => [p.id, p]));
   const esc = escenarioVacio({ id: camino.id, nombre: camino.nombre, tesis: camino.tesis, color: camino.color, plantilla: camino.id, excedente: camino.excedente, colchonMeses: camino.canastas?.colchonMeses ?? 6, canastas: camino.canastas || null, condiciones: camino.condiciones || [] });
   esc.propio = false;
+  esc.objetivo = camino.objetivo || null;
+  return esc;
+}
+
+/** La propuesta de la plantilla, cuando la persona la pide. */
+export function proponerDesdeCamino(baseCfg, camino, esc0, perfil = PERFIL_DEFAULT) {
+  const esc = { ...esc0, ventas: [...(esc0.ventas || [])], pagos: [...(esc0.pagos || [])], despliegue: [...(esc0.despliegue || [])], eventos: [...(esc0.eventos || [])] };
+  const aj = ajustarAlCamino(baseCfg, camino, perfil);
+  const byId = Object.fromEntries(aj.posiciones.map((p) => [p.id, p]));
   const venta = (posicionId, monto) => {
     if (posicionId === "caja" || !posicionId) return;
     const v = esc.ventas.find((x) => x.posicionId === posicionId);
