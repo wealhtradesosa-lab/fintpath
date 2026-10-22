@@ -26,7 +26,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs.jsx";
 import { C, F } from "../lib/designTokens";
 import { fmtPlataCortaEs } from "../lib/formato.js";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Area, ReferenceLine } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Area, ReferenceLine, BarChart, Bar, Cell } from "recharts";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, nombrarMezcla, moverMezcla, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, cuentaMotor, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
 
@@ -686,7 +686,7 @@ function queHace(esc, base) {
  * sobre tu plata —no mueve un peso—: es la vara contra la que se mide lo que
  * vas poniendo.
  */
-function MezclaEditor({ objetivo, onChange, base }) {
+function MezclaEditor({ objetivo, onChange, base, perfil }) {
   const o = objetivo || { proteccion: 33, rentas: 34, crecimiento: 33 };
   const n = nombrarMezcla(o);
   const c = base.canastasHoy, tot = c.total || 1;
@@ -696,6 +696,11 @@ function MezclaEditor({ objetivo, onChange, base }) {
         <div style={F.h3}>{n.titulo}</div>
         <div style={F.caption}>{n.detalle}</div>
       </div>
+      {/* 22-oct-2026 (Santiago: "ok muy bien esto, pero no muestra el valor de
+          lo que tendría ese portafolio"). Un porcentaje no dice nada hasta
+          verlo en plata: 50% de protección son $8,5 mil M quietos, y eso se
+          decide distinto que un "50%". */}
+      <div style={{ ...F.caption, marginTop: 2 }}>Sobre tus <b style={{ color: C.text }}>{fmM(tot)}</b> de hoy, esa mezcla sería:</div>
       <div style={{ display: "flex", height: 14, borderRadius: 999, overflow: "hidden", background: C.raised, marginTop: 8 }}>
         {["proteccion", "rentas", "crecimiento"].map((k) => <div key={k} style={{ width: `${o[k]}%`, background: CANASTA_COLOR[k], transition: "width .15s" }} />)}
       </div>
@@ -707,14 +712,21 @@ function MezclaEditor({ objetivo, onChange, base }) {
             <div key={k}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, ...F.caption }}>
                 <span><b style={{ color: CANASTA_COLOR[k] }}>{CANASTA_LABEL[k]}</b> · {CANASTA_CORTO[k]}</span>
-                <span style={{ fontFamily: F.mono.fontFamily, color: C.text }}>{o[k]}%</span>
+                <span style={{ fontFamily: F.mono.fontFamily, color: C.text }}>{o[k]}% · <b>{fmM((o[k] / 100) * tot)}</b></span>
               </div>
               <input type="range" min={0} max={100} step={5} value={o[k]} onChange={(e) => onChange(moverMezcla(o, k, e.target.value))} style={{ width: "100%", accentColor: CANASTA_COLOR[k] }} />
-              <div style={F.caption}>hoy tienes {hoyPct}% · {Math.abs(falta) < tot * 0.02 ? "ya estás ahí" : falta > 0 ? `faltan ${fmM(falta)}` : `sobran ${fmM(-falta)}`}</div>
+              <div style={F.caption}>hoy tienes {hoyPct}% ({fmM(c[k])}) · {Math.abs(falta) < tot * 0.02 ? "ya estás ahí" : falta > 0 ? `faltan ${fmM(falta)} por poner ahí` : `sobran ${fmM(-falta)} que saldrían de ahí`}</div>
             </div>
           );
         })}
       </div>
+      {/* Lo que esa mezcla produciría al mes, con los supuestos de hoy: es la
+          pregunta con la que uno vive, y una mezcla no se puede elegir sin
+          verla. "Te paga" deposita; "crece" se queda adentro. */}
+      {perfil && <div style={{ ...sub, marginTop: 10 }}>
+        <div style={{ ...F.body }}>Así, lo que te <b style={{ color: CANASTA_COLOR.rentas }}>deposita cada mes</b> sería del orden de <b style={{ color: C.ok }}>{fmMes((o.rentas / 100) * tot * (Number(perfil.tasaRentaEstable) || 0) / 100 / 12)}</b>, y lo que <b style={{ color: CANASTA_COLOR.crecimiento }}>se multiplica adentro</b>, <b style={{ color: C.text }}>{fmMes((o.crecimiento / 100) * tot * (Number(perfil.tasaCrecimiento) || 0) / 100 / 12)}</b> al mes sin que lo veas.</div>
+        <div style={{ ...F.caption, marginTop: 2 }}>Cuentas gruesas con tus supuestos ({pctEs(perfil.tasaRentaEstable)} lo que paga, {pctEs(perfil.tasaCrecimiento)} lo que crece). Lo fino sale cuando decidas en qué exactamente.</div>
+      </div>}
       <div style={{ ...F.caption, marginTop: 6 }}>Mueve una y las otras dos se acomodan para sumar 100. Esto no te mueve un peso: es la vara contra la que se mide lo que vayas poniendo.</div>
     </div>
   );
@@ -722,7 +734,7 @@ function MezclaEditor({ objetivo, onChange, base }) {
 
 /** ¿Esta persona ya decidió algo en este escenario? */
 const tieneAlgo = (e) => !!((e.ventas || []).length || (e.pagos || []).length || (e.despliegue || []).length || (e.eventos || []).length);
-function PasoIntencion({ todos, res, base, activoId, setActivoId, onNuevo, onNext }) {
+function PasoIntencion({ todos, res, base, perfil, activoId, setActivoId, onNuevo, onNext }) {
   const hoy = base?.base?.patrimonioNeto ?? 0;
   const c = base.canastasHoy;
   const tot = c.total || 1;
@@ -796,7 +808,7 @@ function PasoIntencion({ todos, res, base, activoId, setActivoId, onNuevo, onNex
       <div style={card}>
         <div style={F.h2}>O arma tu propia mezcla</div>
         <div style={{ ...F.body, marginTop: 4, marginBottom: 12 }}>Mueve las tres franjas hasta donde quieras llegar. El sistema le pone nombre solo, y esa mezcla te guía después cuando decidas dónde poner cada peso.</div>
-        <MezclaEditor objetivo={miMezcla} onChange={setMiMezcla} base={base} />
+        <MezclaEditor objetivo={miMezcla} onChange={setMiMezcla} base={base} perfil={perfil} />
         <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => { onNuevo(miMezcla); onNext(); }}>Seguir con esta mezcla →</button></div>
       </div>
       <div style={{ ...card, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -987,7 +999,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                 {liq.pagado > 0 && <>Pagando <b style={{ color: C.text }}>{pagadas.map((d) => d.nombre).join(", ")}</b> se van <b style={{ color: C.text }}>{fmM(liq.pagado)}</b>. </>}
                 {queda > 0 && <>Te queda <b style={{ color: C.ok }}>{fmM(queda)}</b> a favor: <b style={{ color: C.text }}>¿en qué lo pones?</b></>}
               </div>
-              {esc.objetivo && verMezcla && <div style={{ ...sub, marginTop: 10 }}><MezclaEditor objetivo={esc.objetivo} onChange={(o) => upd({ objetivo: o })} base={base} /></div>}
+              {esc.objetivo && verMezcla && <div style={{ ...sub, marginTop: 10 }}><MezclaEditor objetivo={esc.objetivo} onChange={(o) => upd({ objetivo: o })} base={base} perfil={perfil} /></div>}
               {esc.objetivo && <div style={{ marginTop: 10, borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
                 <div style={F.label}>La mezcla a la que apuntas <button style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setVerMezcla((v) => !v)}>{verMezcla ? "cerrar" : "ajustarla"}</button></div>
                 <div style={{ ...F.body, marginTop: 2 }}>
@@ -1133,8 +1145,104 @@ function GraficaMesAMes({ r }) {
   );
 }
 
+// ─── Le gana a la inflación, año por año ─────────────────────────────────────
+// 22-oct-2026 — Del Plan Patrimonial SALEM: "cada barra es cuánto crece el
+// patrimonio neto ese año. La línea punteada es la inflación: por encima, el
+// plan gana". Crecer no basta: si el patrimonio sube 4% y la vida sube 6%, se
+// está perdiendo con cara de ganancia.
+function GanaALaInflacion({ r, perfil }) {
+  const an = r.resultado?.anual || [];
+  if (an.length < 2) return null;
+  const infl = Number(perfil.inflacion) || 0;
+  const datos = an.map((a, i) => { const antes = i === 0 ? r.puntos.patrimonioInicial : an[i - 1].patrimonioFin;
+    return { anio: a.anio, crece: antes > 0 ? (a.patrimonioFin / antes - 1) * 100 : 0 }; });
+  const gana = datos.filter((d) => d.crece > infl).length;
+  return (
+    <div style={card}>
+      <div style={F.h3}>¿Le gana a la inflación, año por año?</div>
+      <div style={{ ...F.caption, marginTop: 2 }}>Cada barra es cuánto crece tu patrimonio ese año. La línea punteada es la inflación ({pctEs(infl)}): por encima, ganas poder de compra; por debajo, tienes más pesos y compras menos.</div>
+      <div style={{ height: 190, marginTop: 12 }}>
+        <ResponsiveContainer>
+          <BarChart data={datos} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="anio" {...axisProps} tickFormatter={(a) => `año ${a}`} />
+            <YAxis {...axisProps} width={46} tickFormatter={(v) => `${Math.round(v)}%`} />
+            <Tooltip content={<ChartTooltip formatter={(v) => pctEs(v)} labelFormatter={(a) => `Año ${a}`} />} />
+            <ReferenceLine y={infl} stroke={C.danger} strokeDasharray="5 4" />
+            <Bar dataKey="crece" name="Crece" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+              {datos.map((d) => <Cell key={d.anio} fill={d.crece > infl ? C.ok : C.danger} />)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div style={{ ...F.body, marginTop: 6 }}>Le gana a la inflación en <b style={{ color: gana >= datos.length / 2 ? C.ok : C.danger }}>{gana} de {datos.length}</b> años.</div>
+    </div>
+  );
+}
+
+// ─── El patrimonio como empresa ──────────────────────────────────────────────
+// 22-oct-2026 — Del Plan SALEM: "el patrimonio como empresa: cuánto factura y
+// cuánto gana al año". Mirarlo así cambia la conversación: deja de ser un
+// saldo que sube y baja y pasa a ser un negocio con ingresos, costos y margen.
+function ComoEmpresa({ r }) {
+  const an = r.resultado?.anual || [];
+  if (!an.length) return null;
+  const filas = an.map((a) => { const factura = a.produce, costo = a.sale, gana = factura - costo;
+    return { anio: a.anio, factura, costo, gana, margen: factura > 0 ? (gana / factura) * 100 : 0 }; });
+  const f1 = filas[0], f10 = filas[filas.length - 1];
+  return (
+    <div style={card}>
+      <div style={F.h3}>Tu patrimonio como empresa</div>
+      <div style={{ ...F.caption, marginTop: 2 }}>Lo que produce todo tu capital en el año —lo que te paga, lo que reinvierte y lo que valoriza— contra lo que cuesta tu vida. La diferencia es lo que el negocio gana.</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
+        {[["Factura hoy", fmM(f1.factura), "al año"], ["Cuesta tu vida", fmM(f1.costo), "al año"], ["Gana hoy", fmM(f1.gana), `margen ${pctEs(f1.margen)}`], ["Gana en el año 10", fmM(f10.gana), `margen ${pctEs(f10.margen)}`]]
+          .map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
+      </div>
+      <div style={{ overflowX: "auto", marginTop: 12 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}>
+          <thead><tr>{["Año", "Factura", "Cuesta la vida", "Gana", "Margen"].map((h, i) => <th key={h} style={{ ...th, textAlign: i === 0 ? "left" : "right" }}>{h}</th>)}</tr></thead>
+          <tbody>{filas.map((x) => <tr key={x.anio} style={{ borderTop: `1px solid ${C.border}` }}>
+            <td style={{ ...td, color: C.muted }}>{x.anio}</td><td style={tdNum}>{fmM(x.factura)}</td><td style={tdNum}>{fmM(x.costo)}</td>
+            <td style={{ ...tdNum, color: x.gana >= 0 ? C.ok : C.danger }}>{fmM(x.gana)}</td><td style={tdNum}>{pctEs(x.margen)}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Lo que hay que vigilar ──────────────────────────────────────────────────
+// 22-oct-2026 — Del Plan SALEM, cada plan traía su "lo que hay que vigilar" y
+// sus "decisiones pendientes". Acá se calculan: no es una lista que alguien
+// escribe a mano, son las cosas que ESTE escenario deja abiertas.
+function LoQueFalta({ r, base, liq, perfil }) {
+  const puntos = [];
+  const an = r.resultado?.anual || [];
+  if (liq && liq.porAsignar > 1e6) puntos.push({ t: `Te quedan ${fmM(liq.porAsignar)} sin poner a trabajar`, d: `En caja no rinden. Al ${pctEs(perfil.tasaRentaEstable)} serían ${fmMes(liq.porAsignar * (Number(perfil.tasaRentaEstable) || 0) / 100 / 12)} más al mes.`, mal: true });
+  if (liq && liq.porAsignar < -1e6) puntos.push({ t: `Te pasaste por ${fmM(-liq.porAsignar)}`, d: "Estás asignando más plata de la que liberas: baja alguno de los destinos o vende algo más.", mal: true });
+  const flojo = an.filter((a) => a.cobertura != null && a.cobertura < (Number(perfil.coberturaMin) || 120));
+  if (flojo.length) puntos.push({ t: `La cobertura baja del ${pctEs(perfil.coberturaMin)} en ${flojo.length === 1 ? `el año ${flojo[0].anio}` : `${flojo.length} años`}`, d: `El más apretado es el año ${flojo.sort((a, b) => a.cobertura - b.cobertura)[0].anio}, con ${pctEs(flojo[0].cobertura)}: ahí lo que entra no cubre con holgura lo que sale.`, mal: true });
+  (r.vigilancia?.roturas || []).forEach((x) => puntos.push({ t: x.detalle, d: `Año ${x.anio}: este escenario rompe una de sus propias reglas.`, mal: true }));
+  const ocultos = base.base?.ocultos;
+  if (ocultos?.nIngresos > 0) puntos.push({ t: `${ocultos.nIngresos} ${ocultos.nIngresos === 1 ? "ingreso apagado" : "ingresos apagados"} (${fmMes(ocultos.ingresos)}/mes)`, d: "Están con el ojo ⬜ en tus listas y el plan no los cuenta. Si deben contar, enciéndelos.", mal: false });
+  const aMedias = base.posiciones.filter((p) => p.ritmo && p.ritmo.meses > 0 && p.ritmo.meses < 12 && p.ritmo.mejor > p.ritmo.promedio * 1.2);
+  aMedias.forEach((p) => puntos.push({ t: `${p.nombre} solo corre ${p.ritmo.meses} de los 12 meses`, d: `En su mejor mes son ${fmMes(p.ritmo.mejor)}, pero repartido sobre el año el plan cuenta ${fmMes(p.ritmo.promedio)}. Si entra todos los meses, arregla la vigencia en Ingresos.`, mal: false }));
+  if (!puntos.length) return null;
+  return (
+    <div style={{ ...card, borderColor: puntos.some((x) => x.mal) ? C.warn : C.border }}>
+      <div style={F.h3}>Lo que hay que vigilar en este escenario</div>
+      <div style={{ ...F.caption, marginTop: 2 }}>No es una lista escrita a mano: son las cosas que este plan deja abiertas.</div>
+      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+        {puntos.map((x, i) => <div key={i} style={{ borderLeft: `3px solid ${x.mal ? C.danger : C.warn}`, paddingLeft: 10 }}>
+          <div style={{ ...F.body, color: C.text }}>{x.t}</div>
+          <div style={F.caption}>{x.d}</div>
+        </div>)}
+      </div>
+    </div>
+  );
+}
+
 // ─── Paso 4 · Tu camino a 10 años ───────────────────────────────────────────────────
-function PasoResultado({ base, r, elegido, onElegir, onNext, onVolver }) {
+function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver }) {
   if (!r) return null;
   const p = r.puntos;
   const eventos = [...r.cfg.movimientos].filter((m) => m.mes > 0 || m.tipo === "flujo_inicia" || m.tipo === "comprar").sort((a, b) => a.mes - b.mes);
@@ -1185,6 +1293,9 @@ function PasoResultado({ base, r, elegido, onElegir, onNext, onVolver }) {
         </div>
       </div>
       <GraficaMesAMes r={r} />
+      <LoQueFalta r={r} base={base} liq={liquidezEscenario(base, r)} perfil={perfil} />
+      <GanaALaInflacion r={r} perfil={perfil} />
+      <ComoEmpresa r={r} />
       <div style={card}>
         <div style={F.h3}>Año a año</div>
         <div style={{ overflowX: "auto", marginTop: 8 }}>
@@ -1303,10 +1414,10 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
         <BarraEscenario todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} base={base} onNuevo={nuevo} />
         <Stepper paso={paso} setPaso={ir} />
         {paso === 1 && <PasoHoy base={base} fichas={fichas} onFichas={onFichas} onNext={() => ir(2)} />}
-        {paso === 2 && <PasoIntencion todos={todos} res={res} base={base} activoId={rActivo?.id} setActivoId={setActivoId} onNuevo={nuevo} onNext={() => ir(3)} />}
+        {paso === 2 && <PasoIntencion todos={todos} res={res} base={base} perfil={perfil} activoId={rActivo?.id} setActivoId={setActivoId} onNuevo={nuevo} onNext={() => ir(3)} />}
         {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => { ir(4); setVerCompara(true); }} sub={sub} setSub={setSub} />}
         {paso === 3 && sub === 4 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} />}
-        {paso === 4 && !verCompara && <PasoResultado base={base} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} />}
+        {paso === 4 && !verCompara && <PasoResultado base={base} perfil={perfil} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} />}
         {paso === 4 && verCompara && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); setVerCompara(false); }} caminoElegido={caminoElegido} onElegir={onElegir} />}
         <div style={{ ...F.caption, textAlign: "center" }}>Lo que simulas aquí no toca tus datos reales. Los ejercicios (Pensiones, Ahorro BTC, Comprar o arrendar) alimentan los supuestos, no las decisiones.</div>
       </>)}
