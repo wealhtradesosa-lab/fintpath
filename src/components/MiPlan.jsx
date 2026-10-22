@@ -23,6 +23,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 import { useMemo, useState, useEffect } from "react";
 import PageHeader from "./PageHeader";
+import InputDecimalEs from "./InputDecimalEs.jsx";
 import { C, F } from "../lib/designTokens";
 import { fmtPlataCortaEs } from "../lib/formato.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Area, ReferenceLine } from "recharts";
@@ -57,9 +58,14 @@ const chip = (color) => ({ display: "inline-block", padding: "3px 8px", borderRa
 const th = { ...F.label, textAlign: "left", padding: "8px 6px", whiteSpace: "nowrap" };
 const td = { padding: "7px 6px 16px", color: C.text, fontSize: 12, verticalAlign: "middle" };
 const tdNum = { ...td, textAlign: "right", fontFamily: F.mono.fontFamily, whiteSpace: "nowrap" };
+// 22-oct-2026 (Santiago: "pongo que una inversion crece el 1,5% no me deja
+// poner por ejemplo 1,7"). Era <input type="number" step={0.5}>: el navegador
+// rechaza cualquier valor que no caiga en el salto, y en un teclado en español
+// la COMA ni siquiera entra. Dos formas de no poder escribir tu propio dato.
+// InputDecimalEs acepta coma o punto y devuelve siempre un número.
 const Num = ({ value, onChange, step = 1, min, max, suffix, w }) => (
   <div style={{ position: "relative", width: w }}>
-    <input type="number" step={step} min={min} max={max} value={value ?? ""} onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))} style={{ ...inputS, paddingRight: suffix ? 26 : 10 }} />
+    <InputDecimalEs value={value ?? ""} onChange={(v) => onChange(v === "" ? "" : Math.min(max ?? Infinity, Math.max(min ?? -Infinity, v)))} style={{ ...inputS, paddingRight: suffix ? 26 : 10, textAlign: "right" }} />
     {suffix && <span style={{ position: "absolute", right: 8, top: 9, fontSize: 11, color: C.subtle }}>{suffix}</span>}
   </div>
 );
@@ -387,24 +393,39 @@ function describirMov(m, posiciones, flujos) {
     case "flujo_inicia": return `${a}: ${m.flujo?.tipo === "gasto" ? "entra el gasto" : "entra"} ${m.flujo?.nombre}, ${fmMes(m.flujo?.monto)}/mes`;
     case "flujo_termina": return `${a}: termina ${flujos.find((f) => f.id === m.flujoId)?.nombre || m.flujoId}`;
     case "flujo_cambia": return `${a}: ${flujos.find((f) => f.id === m.flujoId)?.nombre || m.flujoId} pasa a ${fmMes(m.monto)}/mes`;
+    case "valorizacion_cambia": return `${a}: ${m.nombre || p} pasa a valorizar ${pctEs(m.valorizacion)} al año`;
     default: return `${a}: ${m.tipo}`;
   }
 }
 function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) {
-  const [f, setF] = useState({ tipo: "comprar", cuando: 12, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "" });
+  // 22-oct-2026 (Santiago: "agregue en lo de que pasa despues y puse construir
+  // una casa pero no me deja poner cuanto se valoriza por primer ano y cuanto
+  // cada ano en adelante… si uno construye o compra casa en planos hay una
+  // valorizacion superior y luego cada ano. Esto es importante si estamos
+  // proyectando cuanto crece el patrimonio"). La compra traia la valorizacion
+  // clavada en 5% para siempre. Ahora son dos tramos, que es como se comporta
+  // de verdad: el salto de la obra o de los planos, y el ritmo normal despues.
+  const [f, setF] = useState({ tipo: "comprar", cuando: 12, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "", val1: 5, valN: 5, tramo: 12 });
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const mes = Math.max(0, Number(f.cuando) || 0);
   const guardar = () => {
     const base = { id: "mv_" + Math.random().toString(36).slice(2, 8), mes };
     const monto = Number(f.monto) || 0; let m = null;
     if (f.tipo === "vender") m = { ...base, tipo: "vender", posicionId: f.posicionId };
-    if (f.tipo === "comprar" && f.nombre && monto > 0) m = { ...base, tipo: "comprar", nombre: f.nombre, costo: monto, bolsillo: f.canasta === "crecimiento" ? "crecimiento" : f.canasta === "rentas" ? "sustento" : "uso", pagaPct: f.canasta === "rentas" ? 100 : 0, valorizacion: f.canasta === "crecimiento" ? 0 : 5, origen: [{ posicionId: f.origenId }], renta: Number(f.renta) > 0 ? Number(f.renta) : undefined, rentaDesde: Number(f.rentaDesde) || 0 };
+    if (f.tipo === "comprar" && f.nombre && monto > 0) m = { ...base, tipo: "comprar", nombre: f.nombre, costo: monto, bolsillo: f.canasta === "crecimiento" ? "crecimiento" : f.canasta === "rentas" ? "sustento" : "uso", pagaPct: f.canasta === "rentas" ? 100 : 0, valorizacion: Number(f.val1) || 0, origen: [{ posicionId: f.origenId }], renta: Number(f.renta) > 0 ? Number(f.renta) : undefined, rentaDesde: Number(f.rentaDesde) || 0 };
     if (f.tipo === "aportar" && monto > 0) m = { ...base, tipo: "aportar", posicionId: f.posicionId, monto, origen: [{ posicionId: f.origenId }] };
     if (f.tipo === "revaluar" && monto > 0) m = { ...base, tipo: "revaluar", posicionId: f.posicionId, valor: monto };
     if ((f.tipo === "flujo_inicia_ingreso" || f.tipo === "flujo_inicia_gasto") && f.nombre && monto > 0) m = { ...base, tipo: "flujo_inicia", flujo: { id: base.id + "_f", nombre: f.nombre, tipo: f.tipo.endsWith("gasto") ? "gasto" : "ingreso", monto, indexa: true } };
     if (f.tipo === "flujo_termina") m = { ...base, tipo: "flujo_termina", flujoId: f.flujoId };
     if (f.tipo === "flujo_cambia" && monto >= 0) m = { ...base, tipo: "flujo_cambia", flujoId: f.flujoId, monto };
-    if (m) { onAgregar(m); onCerrar(); }
+    if (!m) return;
+    const extras = [];
+    // El segundo tramo de la valorización es un movimiento aparte: el motor ya
+    // sabe cambiarle la valorización a una posición (`valorizacion_cambia`), y
+    // la posición que crea la compra lleva el id del movimiento.
+    if (f.tipo === "comprar" && Number(f.valN) !== Number(f.val1)) extras.push({ id: base.id + "_v", mes: mes + Math.max(1, Number(f.tramo) || 12), tipo: "valorizacion_cambia", posicionId: base.id, nombre: f.nombre, valorizacion: Number(f.valN) || 0 });
+    onAgregar([m, ...extras]);
+    onCerrar();
   };
   const selPos = (k) => <select value={f[k]} onChange={(e) => set(k, e.target.value)} style={inputS}>{posiciones.map((p) => <option key={p.id} value={p.id}>{p.nombre} · {fmM(p.capital)}</option>)}</select>;
   const esFlujo = f.tipo.startsWith("flujo_inicia") || f.tipo === "flujo_cambia";
@@ -419,6 +440,10 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
         {(f.tipo === "flujo_termina" || f.tipo === "flujo_cambia") && <Campo l="Cuál"><select value={f.flujoId} onChange={(e) => set("flujoId", e.target.value)} style={inputS}>{flujos.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {fmMes(x.monto)}</option>)}</select></Campo>}
         {f.tipo !== "vender" && f.tipo !== "flujo_termina" && <Campo l={esFlujo ? "Cuánto al mes (pesos)" : f.tipo === "revaluar" ? "Nuevo valor (pesos)" : f.tipo === "comprar" ? "Cuánto vale (pesos)" : "Monto (pesos)"}><NumPesos value={f.monto} onChange={(v) => set("monto", v)} /></Campo>}
         {f.tipo === "comprar" && <Campo l="Para qué"><select value={f.canasta} onChange={(e) => set("canasta", e.target.value)} style={inputS}><option value="rentas">Rentar (paga cada mes)</option><option value="proteccion">Vivir ahí</option><option value="crecimiento">Crecimiento</option><option value="uso">Uso</option></select></Campo>}
+        {f.tipo === "comprar" && <><Campo l="Se valoriza el primer tramo (% al año)"><Num value={f.val1} step={0.5} onChange={(v) => set("val1", v)} suffix="%" /></Campo>
+        <Campo l="Ese tramo dura (meses)"><Num value={f.tramo} min={1} max={120} onChange={(v) => set("tramo", v)} /></Campo>
+        <Campo l="Y de ahí en adelante (% al año)"><Num value={f.valN} step={0.5} onChange={(v) => set("valN", v)} suffix="%" /></Campo>
+        <div style={{ ...F.caption, gridColumn: "1 / -1" }}>En planos o en obra la valorización del principio suele ser mayor: pon ahí el salto (por ejemplo 20% mientras se construye, 12 meses) y después el ritmo normal (5% al año).</div></>}
         {f.tipo === "comprar" && f.canasta === "rentas" && <><Campo l="Cuánto renta al mes (pesos)"><NumPesos value={f.renta} onChange={(v) => set("renta", v)} /></Campo><Campo l="Empieza a rentar (meses después)"><Num value={f.rentaDesde} min={0} onChange={(v) => set("rentaDesde", v)} /></Campo></>}
         {(f.tipo === "comprar" || f.tipo === "aportar") && <Campo l="Con plata de">{selPos("origenId")}</Campo>}
       </div>
@@ -432,7 +457,7 @@ function ListaEventos({ eventos, posiciones, flujos, onChange, ejemplo, vacio })
     <div>
       {eventos.length === 0 && !abierto && <div style={{ ...F.body, fontStyle: "italic" }}>{vacio}</div>}
       {eventos.length > 0 && <div style={{ display: "grid", gap: 6 }}>{[...eventos].sort((a, b) => a.mes - b.mes).map((m) => <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, ...F.body, color: C.text }}><span>· {describirMov(m, posiciones, flujos)}{m.plantilla && <span style={{ ...chip(C.subtle), marginLeft: 6 }}>plantilla</span>}</span><button style={{ ...btn(false), padding: "3px 10px", color: C.subtle }} onClick={() => onChange(eventos.filter((x) => x.id !== m.id))}>quitar</button></div>)}</div>}
-      {abierto ? <div style={{ marginTop: 10 }}><EditorMovimiento posiciones={posiciones} flujos={flujos} ejemplo={ejemplo} onAgregar={(m) => onChange([...eventos, m])} onCerrar={() => setAbierto(false)} /></div> : <div style={{ marginTop: 10 }}><button style={btn(false)} onClick={() => setAbierto(true)}>+ Agregar</button></div>}
+      {abierto ? <div style={{ marginTop: 10 }}><EditorMovimiento posiciones={posiciones} flujos={flujos} ejemplo={ejemplo} onAgregar={(m) => onChange([...eventos, ...(Array.isArray(m) ? m : [m])])} onCerrar={() => setAbierto(false)} /></div> : <div style={{ marginTop: 10 }}><button style={btn(false)} onClick={() => setAbierto(true)}>+ Agregar</button></div>}
     </div>
   );
 }
