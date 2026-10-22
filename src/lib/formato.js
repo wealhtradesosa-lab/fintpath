@@ -19,6 +19,32 @@ export function fmtMilesEs(n) {
   return v.toLocaleString(ES);
 }
 
+/**
+ * Plata abreviada para tarjetas y gráficas, SIEMPRE con puntos de miles.
+ *
+ * 21-oct-2026 (Santiago: "por favor separar en miles esto es terrible", "lo
+ * hemos pedido mucho", "siempre lo hace"). Había SEIS copias de esta función
+ * —MiPlan (dos), caminos, LandingLibertad, RentaAnoTrasAno, SimuladorFuturo—
+ * y todas abreviaban con `toFixed()`, que no pone separador de miles. Mientras
+ * la cifra cabía en tres dígitos no se notaba; apenas una pasó de los mil
+ * millones salió "$6018241,6 mil M" en la tarjeta de Escenarios. Arreglarla en
+ * una copia dejaba las otras cinco rotas, así que vive acá, una sola vez.
+ *
+ *   1.234.567.890.123 → "$1.234,6 mil M"
+ *   28.500.000        → "$29 M"    (de 10 M para arriba, entero)
+ *   2.500.000         → "$2,5 M"
+ *   850.000           → "$850 K"
+ */
+export function fmtPlataCortaEs(n) {
+  const v = Math.round(Number(n) || 0), a = Math.abs(v), sg = v < 0 ? "−" : "";
+  const q = (x, dec) => x.toLocaleString(ES, { minimumFractionDigits: 0, maximumFractionDigits: dec });
+  if (a >= 1e9) return sg + "$" + q(a / 1e9, 1) + " mil M";
+  if (a >= 1e7) return sg + "$" + q(a / 1e6, 0) + " M";
+  if (a >= 1e6) return sg + "$" + q(a / 1e6, 1) + " M";
+  if (a >= 1e3) return sg + "$" + q(a / 1e3, 0) + " K";
+  return sg + "$" + q(a, 0);
+}
+
 /** Lee lo que escribe el usuario ("4,5", "4.5", " 4,5 %") como número; "" → "" (campo vacío). */
 export function parseDecimalEs(txt) {
   if (typeof txt === "number") return Number.isFinite(txt) ? txt : "";

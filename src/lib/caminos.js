@@ -24,6 +24,7 @@
 import { simularCamino, estresar, cienMillones } from "./planes.js";
 import { montoPromedioMensual, rangoEfectivo } from "./flowHelpers.js";
 import { calcularBase } from "./metrics.js";
+import { fmtPlataCortaEs } from "./formato.js";
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9áéíóúñ ]/g, "").trim();
@@ -377,7 +378,7 @@ const porCapital = (arr) => [...arr].sort((a, b) => b.capital - a.capital);
 /** Rentas de las que se puede sacar: primero lo líquido que sobra del colchón (rinde menos), después de menor a mayor tasa. */
 const rentasMovibles = (pos) => [...porCapital(pos.filter((p) => canastaDe(p) === "rentas" && p.liquido)), ...pos.filter((p) => canastaDe(p) === "rentas" && !p.inmueble && !p.liquido).sort((a, b) => a.tasa - b.tasa)];
 
-const M = (x) => { const a = Math.abs(Number(x) || 0); return (x < 0 ? "−" : "") + (a >= 1e9 ? "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M" : "$" + Math.round(a / 1e6).toLocaleString("es-CO") + " M"); };
+const M = fmtPlataCortaEs;
 
 /**
  * Ajuste inicial: los movimientos de mes 0 que llevan el punto de partida a

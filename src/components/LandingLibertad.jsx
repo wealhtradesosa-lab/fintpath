@@ -17,6 +17,7 @@ import { getConsent, setConsent, loadTrackers, initConsent } from "../lib/consen
 import { track } from "../lib/analytics";
 import { calcularNorte, guardarNorte, RETORNO_SUPUESTO } from "../lib/norteUnMinuto.js";
 import { NIVELES } from "../lib/metrics.js";
+import { fmtPlataCortaEs } from "../lib/formato.js";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24", border: "rgba(255,255,255,0.08)",
@@ -27,13 +28,7 @@ const BODY = "'Inter',system-ui,sans-serif";
 const MONO = "ui-monospace,'SF Mono',Menlo,monospace";
 
 const fm = (n) => "$" + Math.round(Math.abs(n || 0)).toLocaleString("es-CO");
-const fmC = (n) => {
-  const a = Math.abs(Math.round(n || 0));
-  if (a >= 1e9) return "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M";
-  if (a >= 1e6) return "$" + (a / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(".0", "").replace(".", ",") + " M";
-  if (a >= 1e3) return "$" + Math.round(a / 1e3) + " K";
-  return "$" + a;
-};
+const fmC = fmtPlataCortaEs;
 const años = (y) => y == null ? "más de 60 años" : y < 1 / 12 ? "ya" : y < 1 ? `${Math.max(1, Math.round(y * 12))} meses` : y < 1.5 ? "1 año" : `${Math.round(y)} años`;
 
 // Campo de pesos: solo dígitos, con separador de miles al escribir.

@@ -24,12 +24,16 @@
 import { useMemo, useState, useEffect } from "react";
 import PageHeader from "./PageHeader";
 import { C, F } from "../lib/designTokens";
+import { fmtPlataCortaEs } from "../lib/formato.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
 
-const fmM = (n) => { const v = Number(n) || 0; const a = Math.abs(v); if (a >= 1e9) return (v < 0 ? "−" : "") + "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M"; return (v < 0 ? "−" : "") + "$" + Math.round(a / 1e6).toLocaleString("es-CO") + " M"; };
-const fmMes = (n) => { const v = Number(n) || 0; const a = Math.abs(v); return (v < 0 ? "−" : "") + "$" + (a >= 1e6 ? (a / 1e6).toFixed(1).replace(".0", "").replace(".", ",") + " M" : Math.round(a / 1e3) + " K"); };
+// Capital y mensualidades se escriben igual: una sola función, con separador
+// de miles en todas las ramas (ver fmtPlataCortaEs). Los dos nombres se
+// conservan porque dicen qué se está mostrando en cada punto de la pantalla.
+const fmM = fmtPlataCortaEs;
+const fmMes = fmtPlataCortaEs;
 const pct = (n) => `${Math.round(Number(n) || 0)}%`;
 // 21-oct-2026 — Con coma, y sin decimales inventados: la tasa derivada salía
 // "14.380434782608695%" y además con punto.

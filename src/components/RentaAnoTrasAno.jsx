@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { fmtPctEs } from "../lib/formato.js";
+import { fmtPctEs, fmtPlataCortaEs } from "../lib/formato.js";
 import { C, Cα, F, R } from "../lib/designTokens";
 
 /**
@@ -22,14 +22,7 @@ import { C, Cα, F, R } from "../lib/designTokens";
  */
 
 const fm = (n) => (n < 0 ? "−$" : "$") + Math.abs(Math.round(n || 0)).toLocaleString("es-CO");
-const fmC = (n) => {
-  const a = Math.abs(Math.round(n || 0)), sg = n < 0 ? "−" : "";
-  if (a >= 1e9) return sg + "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M";
-  if (a >= 1e7) return sg + "$" + Math.round(a / 1e6) + " M";
-  if (a >= 1e6) return sg + "$" + (a / 1e6).toFixed(1).replace(".0", "").replace(".", ",") + " M";
-  if (a >= 1e3) return sg + "$" + Math.round(a / 1e3) + " K";
-  return sg + "$" + a;
-};
+const fmC = fmtPlataCortaEs;
 
 // Declaración guardada → fila normalizada. F-210 (natural) y F-110 (jurídica)
 // guardan renglones con nombres distintos; acá se unifican.

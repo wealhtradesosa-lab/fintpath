@@ -25,7 +25,7 @@
 // Los datos reales NO se tocan. Los escenarios viven en user.escenarios y se
 // guardan con la cuenta.
 // ═══════════════════════════════════════════════════════════════════════════
-import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
+import { fmtPctEs, fmtTasaEs, fmtPlataCortaEs } from "../lib/formato.js";
 import { useState, useMemo, useEffect, useRef } from "react";
 import PageHeader from "./PageHeader";
 import { estimarImpuesto } from "../lib/taxCO";
@@ -42,14 +42,7 @@ const mesL = (m) => (MESES.find((x) => x.v === m) || {}).l || "";
 // Renta mensual que sale de un capital y una tasa (anual o mensual).
 const rentaDe = (cap, tasa, modo) => { const c = Number(cap) || 0, t = Number(tasa) || 0; return c > 0 && t > 0 ? Math.round(modo === "mensual" ? c * t / 100 : c * t / 100 / 12) : 0; };
 // Formato corto para las barras: $12,3 M · $850 K
-const fmC = (n) => {
-  const a = Math.abs(Math.round(n || 0)), sg = n < 0 ? "−" : "";
-  if (a >= 1e9) return sg + "$" + (a / 1e9).toFixed(1).replace(".0", "").replace(".", ",") + " mil M";
-  if (a >= 1e7) return sg + "$" + Math.round(a / 1e6) + " M";
-  if (a >= 1e6) return sg + "$" + (a / 1e6).toFixed(1).replace(".0", "").replace(".", ",") + " M";
-  if (a >= 1e3) return sg + "$" + Math.round(a / 1e3) + " K";
-  return sg + "$" + a;
-};
+const fmC = fmtPlataCortaEs;
 const uid = () => "c_" + Math.random().toString(36).slice(2, 9);
 
 const CATS_ING = ["Salario", "Honorarios", "Arriendo", "Dividendos", "Intereses bancarios", "Rendimiento", "Pensión", "Negocio", "Otro"];
