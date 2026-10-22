@@ -1487,7 +1487,12 @@ function ActivoPorActivo({ r, base }) {
     const h = hoyPos[p.id];
     const d = fin.detalle?.[p.id] || { capital: 0, recibe: 0 };
     const pagaHoy = h ? produce(h).recibe : 0;
-    return { id: p.id, nombre: p.nombre, canasta: canastaDe(p), hoy: h ? h.capital : 0, nuevo: !h,
+    // 22-oct-2026 (Santiago: "se crea una nueva inversión pero deja campos
+    // vacíos y en ninguna parte me muestra lo que renta"). Lo nuevo no tiene
+    // "hoy": se dice en qué año entra, con cuánto, y cuánto paga ese año.
+    let entra = null;
+    if (!h) { const i = meses.findIndex((m) => (m.detalle?.[p.id]?.capital || 0) > 1); if (i >= 0) { const sig = meses[Math.min(i + 1, meses.length - 1)].detalle?.[p.id]; entra = { anio: Math.floor(i / 12) + 1, capital: meses[i].detalle[p.id].capital, paga: sig?.recibe || 0 }; } }
+    return { id: p.id, nombre: p.nombre, canasta: canastaDe(p), hoy: h ? h.capital : 0, nuevo: !h, entra,
       fin: Math.max(0, d.capital), pagaHoy, pagaFin: d.recibe, vendido: d.capital <= 1 && (h ? h.capital : 0) > 0 };
   }).filter((x) => x.hoy > 0 || x.fin > 0 || x.pagaFin > 0);
   if (!filas.length) return null;
@@ -1504,9 +1509,9 @@ function ActivoPorActivo({ r, base }) {
             {filas.map((x) => <tr key={x.id} style={{ borderTop: `1px solid ${C.border}`, opacity: x.vendido ? 0.6 : 1 }}>
               <td style={{ ...td, minWidth: 170 }}>{x.nombre}{x.nuevo && <span style={{ ...chip(C.accent), marginLeft: 6 }}>nuevo</span>}{x.vendido && <span style={{ ...chip(C.subtle), marginLeft: 6 }}>se vendió</span>}</td>
               <td style={td}><span style={chip(CANASTA_COLOR[x.canasta])}>{CANASTA_LABEL[x.canasta]}</span></td>
-              <td style={tdNum}>{x.hoy > 0 ? fmM(x.hoy) : "—"}</td>
+              <td style={tdNum}>{x.hoy > 0 ? fmM(x.hoy) : x.entra ? <span style={F.caption}>entra año {x.entra.anio}<br />con {fmM(x.entra.capital)}</span> : "—"}</td>
               <td style={{ ...tdNum, color: x.fin > x.hoy ? C.ok : x.fin < x.hoy ? C.muted : C.text }}>{x.fin > 0 ? fmM(x.fin) : "—"}</td>
-              <td style={tdNum}>{x.pagaHoy > 0 ? fmMes(x.pagaHoy) : "—"}</td>
+              <td style={tdNum}>{x.pagaHoy > 0 ? fmMes(x.pagaHoy) : x.entra && x.entra.paga > 0 ? <span style={F.caption}>desde año {x.entra.anio}<br />{fmMes(x.entra.paga)}</span> : "—"}</td>
               <td style={{ ...tdNum, color: x.pagaFin > 0 ? C.ok : C.muted }}>{x.pagaFin > 0 ? fmMes(x.pagaFin) : "—"}</td>
             </tr>)}
             <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}>

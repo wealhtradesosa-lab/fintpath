@@ -1213,6 +1213,30 @@ export default function FinPath(){
       {id:"d_d4",n:"Crédito carro",tp:"vehiculo",mt:52000000,pg:2400000,ts:14,owner:"own_2"},
       {id:"d_d5",n:"Crédito de libre inversión",tp:"loan",mt:40000000,pg:2900000,ts:19,owner:"own_1",desdeMes:1,hastaMes:10},
     ];
+    // 22-oct-2026 (Santiago: "¿el demo ya tiene los escenarios creados?
+    // importante"). La demo llegaba a "Escenarios a 10 años" con las tres
+    // plantillas y ningún escenario guardado: la sección más potente se veía
+    // vacía. Tres escenarios concretos con los activos de arriba, uno por
+    // temperamento, listos para abrir y comparar.
+    nd.caminos=[
+      {id:"demo_esc_1",nombre:"Simplificar y asegurar",tesis:"Vender lo que no produce, quitar las cuotas caras y dejar todo en rentas estables.",color:"#22c55e",plantilla:"seguridad",propio:true,editado:true,
+       ventas:[{posicionId:"d_i17"},{posicionId:"d_i14"}],pagos:["d_d4","d_d5"],
+       despliegue:[{id:"demo_d1",destinoId:"d_i11",nombre:"CDT Bancolombia",canasta:"rentas",capital:113000000,tasa:11,pagaPct:100,valorizacion:0,regla:"Paga el 100% del rendimiento cada mes"}],
+       eventos:[{id:"demo_mv1",mes:36,tipo:"vender",posicionId:"d_i8",nuevo:{nombre:"CDT a largo plazo",canasta:"rentas",tasa:11,pagaPct:100}}],
+       excedente:[{canasta:"rentas",pct:80},{canasta:"crecimiento",pct:20}],colchonMeses:12,canastas:{rentas:{min:60},crecimiento:{max:30}},condiciones:["sin_deuda_cara"]},
+      {id:"demo_esc_2",nombre:"Bodega sobre el lote",tesis:"Construir en El Retiro con plata del fondo y comprar un apartamento para rentar en el año 4.",color:"#f59e0b",plantilla:"balance",propio:true,editado:true,
+       ventas:[],pagos:[],despliegue:[],
+       eventos:[{id:"demo_mv2",mes:12,tipo:"transformar",posicionId:"d_i7",nombre:"Lote El Retiro",obra:900000000,mesesObra:14,valor:2100000000,renta:16000000,origen:[{posicionId:"d_i9"}]},
+                {id:"demo_mv3",mes:48,tipo:"comprar",nombre:"Apartamento para rentar",costo:650000000,bolsillo:"sustento",pagaPct:100,valorizacion:5,origen:[{posicionId:"d_i10"}],renta:3800000,rentaDesde:1}],
+       excedente:[{canasta:"rentas",pct:50},{canasta:"crecimiento",pct:50}],colchonMeses:9,canastas:{rentas:{min:50},crecimiento:{min:25,max:50}},condiciones:[]},
+      {id:"demo_esc_3",nombre:"Todo produce",tesis:"Vender los carros y el apartamento, vivir arrendado y poner todo a crecer.",color:"#a855f7",plantilla:"crecimiento",propio:true,editado:true,
+       ventas:[{posicionId:"d_i16"},{posicionId:"d_i17"}],pagos:["d_d3","d_d4"],
+       despliegue:[{id:"demo_d2",destinoId:"d_i13",nombre:"ETF S&P 500",canasta:"crecimiento",capital:180000000,tasa:12,pagaPct:0,valorizacion:0,regla:"Todo se reinvierte"}],
+       eventos:[{id:"demo_mv4",mes:24,tipo:"vender",posicionId:"d_i2",nuevo:{nombre:"Portafolio global",canasta:"crecimiento",tasa:12,pagaPct:0}},
+                {id:"demo_mv5",mes:24,tipo:"flujo_inicia",flujo:{id:"demo_mv5_f",nombre:"Arriendo donde vives",tipo:"gasto",monto:6500000,indexa:true}}],
+       excedente:[{canasta:"rentas",pct:20},{canasta:"crecimiento",pct:80}],colchonMeses:6,canastas:{rentas:{max:40},crecimiento:{min:50}},condiciones:["todo_produce"]},
+    ];
+    nd.caminoElegido="demo_esc_2";
     nd.gas={
       "Vivienda":[{c:"Administración apartamento",m:1900000,t:"f",owner:"own_1"},{c:"Arriendo oficina",m:4200000,t:"f",owner:"own_j1"}],
       "Inmueble arrendado":[{c:"Administración y mantenimiento casa del lago",m:3800000,t:"f",owner:"own_j1",activoId:"d_i1"},
