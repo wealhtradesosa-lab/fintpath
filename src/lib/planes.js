@@ -201,14 +201,21 @@ export function simularCamino(cfg = {}) {
       }
     }
     // 5) Excedente o déficit
+    let disfrute = 0;
     if (queda > 0) {
       let libre = queda;
+      disfrute = 0;
       // Primero el colchón: {posicionId, meta} se llena antes de repartir
       if (R.colchon && R.colchon.posicionId) {
         const c = R.colchon.posicionId === "caja" ? caja : pos.find((x) => x.id === R.colchon.posicionId);
         const actual = c === caja ? caja.valor : c?.capital;
         if (c && actual < num(R.colchon.meta)) { const t = Math.min(libre, num(R.colchon.meta) - actual); if (c === caja) caja.valor += t; else c.capital += t; libre -= t; }
       }
+      // 22-oct-2026 (Santiago: "¿cómo hago para disponer de lo que sobra
+      // reinvirtiendo una parte?"). `disfrutePct` es la parte del sobrante
+      // que la persona se gasta (viajes, familia, lo que sea): sale del
+      // sistema ese mes y solo el resto se reinvierte.
+      if (R.disfrutePct > 0) { disfrute = libre * Math.min(100, num(R.disfrutePct)) / 100; libre -= disfrute; }
       // Con la cobertura por encima del techo, lo que sobra sube entero a lo
       // que crece: ya hay de sobra con qué vivir.
       const holgado = BC && BC.max != null && cob != null && cob > num(BC.max) && BC.haciaCrecimientoId;
@@ -245,7 +252,7 @@ export function simularCamino(cfg = {}) {
     const activos = pos.reduce((s, p) => s + Math.max(0, p.capital), 0) + caja.valor;
     const deudaTotal = deudas.reduce((s, d) => s + d.saldo, 0);
     meses.push({
-      mes, entra, sale, queda, gastos, cuotas, recibido, ingFlujos,
+      mes, entra, sale, queda, gastos, cuotas, recibido, ingFlujos, disfrute,
       cobertura: cob, movioPorCobertura,
       crece: reinvertido + valorizado, produce: entra + reinvertido + valorizado,
       patrimonio: activos - deudaTotal, activos, deudaTotal, caja: caja.valor,

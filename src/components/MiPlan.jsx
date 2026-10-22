@@ -1289,6 +1289,26 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
               <div><div style={F.label}>{100 - crecPct}% a lo que te paga · {crecPct}% a lo que crece</div><input type="range" min={0} max={100} step={5} value={crecPct} onChange={(e) => { const v = Number(e.target.value); upd({ excedente: [{ canasta: "rentas", pct: 100 - v }, { canasta: "crecimiento", pct: v }] }); }} style={{ width: "100%" }} /></div>
               <Campo l="Colchón líquido (meses de gastos)"><Num value={esc.colchonMeses} min={0} max={60} onChange={(v) => upd({ colchonMeses: v })} /></Campo>
             </div>
+            {/* 22-oct-2026 (Santiago: "¿cómo hago para disponer de lo que
+                sobra reinvirtiendo una parte?"). Antes el sobrante se
+                reinvertía entero; no había forma de decir "me gasto una
+                parte". */}
+            {(() => {
+              // Dónde cae cada parte del sobrante: lo que la persona eligió, o
+              // lo que el motor escoge (la posición más grande de esa canasta).
+              const todas = [...base.posiciones.filter((p) => !p.sale && !(esc.ventas || []).some((v) => v.posicionId === p.id && v.monto == null)), ...(esc.despliegue || []).filter((d) => !d.destinoId).map((d) => ({ id: d.id, nombre: d.nombre, capital: d.capital, tasa: d.tasa, pagaPct: d.pagaPct, canasta: d.canasta }))];
+              const deCanasta = (c) => todas.filter((p) => (p.canasta || canastaDe(p)) === c);
+              const sel = (c) => <select value={esc.excedenteDestinos?.[c] || ""} onChange={(e) => upd({ excedenteDestinos: { ...(esc.excedenteDestinos || {}), [c]: e.target.value || undefined } })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }}><option value="">el motor elige (la más grande)</option>{deCanasta(c).map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}{todas.filter((p) => (p.canasta || canastaDe(p)) !== c).map((p) => <option key={p.id} value={p.id}>{p.nombre} · {CANASTA_LABEL[p.canasta || canastaDe(p)]}</option>)}</select>;
+              return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginTop: 10 }}>
+                {100 - crecPct > 0 && <Campo l={`El ${100 - crecPct}% que va a lo que te paga entra a`}>{sel("rentas")}</Campo>}
+                {crecPct > 0 && <Campo l={`El ${crecPct}% que va a lo que crece entra a`}>{sel("crecimiento")}</Campo>}
+              </div>;
+            })()}
+            <div style={{ marginTop: 12 }}>
+              <div style={F.label}>De lo que sobra, te gastas el {Number(esc.disfrutePct) || 0}% y reinviertes el {100 - (Number(esc.disfrutePct) || 0)}%</div>
+              <input type="range" min={0} max={100} step={5} value={Number(esc.disfrutePct) || 0} onChange={(e) => upd({ disfrutePct: Number(e.target.value) })} style={{ width: "100%" }} />
+              <div style={{ ...F.caption, marginTop: 2 }}>Lo que te gastas sale del plan ese mes (viajes, familia, lo que quieras): no suma al patrimonio. El reparto de arriba aplica solo a lo que reinviertes.</div>
+            </div>
             <details style={{ marginTop: 10 }}>
               <summary style={{ ...F.caption, cursor: "pointer" }}>Reglas que este escenario se obliga a cumplir (opcional)</summary>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 10 }}>
@@ -1297,7 +1317,6 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                 <Campo l="Crecimiento máx."><Num value={esc.canastas?.crecimiento?.max ?? ""} onChange={(v) => upd({ canastas: { ...(esc.canastas || {}), crecimiento: { ...(esc.canastas?.crecimiento || {}), max: v === "" ? undefined : v } } })} suffix="%" /></Campo>
               </div>
               <label style={{ ...F.caption, display: "flex", gap: 8, alignItems: "flex-start", marginTop: 10, cursor: "pointer" }}><input type="checkbox" checked={!!esc.rebalancear} onChange={(e) => upd({ rebalancear: e.target.checked })} style={{ marginTop: 2 }} /><span>Rebalancear solo cada mes para cumplir estos rangos (mueve plata entre lo que te paga y lo que crece). Apagado, las reglas solo avisan dónde se rompen; <b style={{ color: C.text }}>lo que tú pusiste en cada destino se queda ahí</b>.</span></label>
-              <label style={{ ...F.caption, display: "flex", gap: 8, alignItems: "flex-start", marginTop: 8, cursor: "pointer" }}><input type="checkbox" checked={!!esc.protegerCobertura} onChange={(e) => upd({ protegerCobertura: e.target.checked })} /><span>Si lo que entra deja de cubrir lo que sale (cobertura bajo {pctEs(perfil.coberturaMin)}), traer capital de lo que crece hacia lo que te paga — lo justo para volver a cubrir la vida, y queda anotado. <b style={{ color: C.muted }}>Apagado</b>: así nadie te mueve plata sin que lo pidas.</span></label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>{Object.entries(CONDICION_LABEL).map(([id, l]) => <label key={id} style={{ ...F.caption, color: C.muted, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}><input type="checkbox" checked={(esc.condiciones || []).includes(id)} onChange={() => { const s = new Set(esc.condiciones || []); s.has(id) ? s.delete(id) : s.add(id); upd({ condiciones: [...s] }); }} />{l}</label>)}</div>
             </details>
           </div>
@@ -1764,7 +1783,7 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
   const todos = useMemo(() => guardados.map((g) => ({ ...g })), [guardados]);
   const res = useMemo(() => compararCaminos(todos, base, perfil), [todos, base, perfilGuardado]);
   const sinDatos = base.posiciones.length === 0 && base.flujos.filter((f) => f.tipo === "ingreso").length === 0;
-  const guardar = (esc) => { const limpio = { id: esc.id, nombre: esc.nombre, tesis: esc.tesis, color: esc.color, plantilla: esc.plantilla || null, propio: !!esc.propio, ventas: esc.ventas || [], pagos: esc.pagos || [], despliegue: esc.despliegue || [], eventos: esc.eventos || [], excedente: esc.excedente, colchonMeses: esc.colchonMeses, canastas: esc.canastas || null, condiciones: esc.condiciones || [], objetivo: esc.objetivo || null, rebalancear: !!esc.rebalancear, protegerCobertura: !!esc.protegerCobertura }; onCaminos(guardados.some((g) => g.id === esc.id) ? guardados.map((g) => (g.id === esc.id ? limpio : g)) : [...guardados, limpio]); };
+  const guardar = (esc) => { const limpio = { id: esc.id, nombre: esc.nombre, tesis: esc.tesis, color: esc.color, plantilla: esc.plantilla || null, propio: !!esc.propio, ventas: esc.ventas || [], pagos: esc.pagos || [], despliegue: esc.despliegue || [], eventos: esc.eventos || [], excedente: esc.excedente, colchonMeses: esc.colchonMeses, canastas: esc.canastas || null, condiciones: esc.condiciones || [], objetivo: esc.objetivo || null }; onCaminos(guardados.some((g) => g.id === esc.id) ? guardados.map((g) => (g.id === esc.id ? limpio : g)) : [...guardados, limpio]); };
   const colorNuevo = () => [CHART.purple, CHART.cyan, CHART.pink, CHART.gold][guardados.filter((g) => g.propio).length % 4];
   const crearDesde = (c) => {
     const e = escenarioVacio({ nombre: INTENCIONES[c.id]?.titulo || c.nombre, tesis: c.tesis, color: c.color, plantilla: c.id,

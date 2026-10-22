@@ -1,7 +1,7 @@
 // caminos.js + planes.js: de los datos de cualquier usuario a tres caminos que
 // se cumplen. Usuario inventado; nada de datos reales.
 import { describe, it, expect } from "vitest";
-import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, nuevoCamino, vigilarCamino, configurarCamino, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, escenarioVacio, configurarEscenario, pagaAlMes } from "../../src/lib/caminos.js";
+import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, nuevoCamino, vigilarCamino, configurarCamino, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, escenarioVacio, pagaAlMes } from "../../src/lib/caminos.js";
 import { simularCamino } from "../../src/lib/planes.js";
 
 const user = {
@@ -154,5 +154,26 @@ describe("una venta dice a dónde va la plata", () => {
   it("y la cuota aproximada es capital × tasa ÷ 12 × lo que recibes", () => {
     expect(pagaAlMes(7500e6, 14, 100)).toBeCloseTo(87.5e6, -3);
     expect(pagaAlMes(7500e6, 14, 0)).toBe(0);
+  });
+});
+
+describe("lo que sobra cada mes", () => {
+  // 22-oct-2026 (Santiago: "¿cómo hago para disponer de lo que sobra
+  // reinvirtiendo una parte? ¿y en qué?").
+  it("una parte se gasta y el resto va al destino elegido", () => {
+    const r = simularCamino({
+      meses: 12, caja: 0,
+      posiciones: [{ id: "a", nombre: "CDT", bolsillo: "sustento", capital: 0, tasa: 0 }],
+      flujos: [{ id: "s", nombre: "S", tipo: "ingreso", monto: 10 }, { id: "g", nombre: "G", tipo: "gasto", monto: 4 }],
+      reglas: { excedente: [{ posicionId: "a", pct: 100 }], disfrutePct: 50 },
+    });
+    expect(r.meses[11].detalle.a.capital).toBe(36);
+    expect(r.meses[0].disfrute).toBe(3);
+  });
+  it("el escenario manda el sobrante a la posición que la persona eligió", () => {
+    const base = baseDesdeUsuario(user);
+    const esc = escenarioVacio({ nombre: "A mi CDT", excedente: [{ canasta: "rentas", pct: 100 }], excedenteDestinos: { rentas: "i1" } });
+    const [r] = compararCaminos([esc], base, PERFIL_DEFAULT);
+    expect(r.cfg.reglas.excedente[0].posicionId).toBe("i1");
   });
 });
