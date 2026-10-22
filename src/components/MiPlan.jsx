@@ -1876,6 +1876,15 @@ function Recomendacion({ res, onElegir, caminoElegido, onVer }) {
   );
 }
 
+/** Corta en el espacio anterior, no a media palabra. */
+function recortar(txt, n) {
+  const t = String(txt || "").trim();
+  if (!t) return "—";
+  if (t.length <= n) return t;
+  const corte = t.slice(0, n);
+  const esp = corte.lastIndexOf(" ");
+  return (esp > n * 0.6 ? corte.slice(0, esp) : corte).replace(/[,;:.\s]+$/, "") + "…";
+}
 function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onElegir, onEditar }) {
   const data = useMemo(() => { const H = Math.max(...res.map((r) => r.resultado.anual.length)); return Array.from({ length: H + 1 }, (_, a) => { const row = { anio: a }; res.forEach((r) => { row[r.id] = a === 0 ? r.puntos.patrimonioInicial : r.resultado.anual[a - 1]?.patrimonioFin; }); return row; }); }, [res]);
   const hoy = useMemo(() => { const entra = (base.base?.ia || 0) + (base.base?.ip || 0), sale = base.gastosMes; const crece = base.posiciones.reduce((s, p) => s + produce(p).crece, 0); return { entra, sale, queda: entra - sale, cobertura: sale > 0 ? (entra / sale) * 100 : 0, produce: entra + crece }; }, [base]);
@@ -1952,10 +1961,17 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
           {[...res].sort((a, b) => (a.puntos.patrimonioFinalReal || 0) - (b.puntos.patrimonioFinalReal || 0)).map((r) => {
             const sel = r.id === activoId, mejor = caminoElegido === r.id;
             return (
-              <div key={r.id} style={{ ...sub, borderTop: `3px solid ${r.color}`, position: "relative", cursor: "pointer", outline: sel ? `1px solid ${r.color}` : "none" }} onClick={() => onVer(r.id)}>
-                {mejor && <div style={{ position: "absolute", top: -10, right: 8, ...chip(C.accent) }}>Tu camino</div>}
-                <div style={{ ...F.label, color: r.color }}>{r.nombre}</div>
-                <div style={{ ...F.caption, marginTop: 2, minHeight: 32 }}>{r.tesis ? String(r.tesis).slice(0, 80) : "—"}</div>
+              // 22-oct-2026 — El chip "Tu camino" iba absoluto en top:-10 y
+              // quedaba montado sobre el borde y sobre la tarjeta de arriba,
+              // medio cortado. Va en la fila del nombre, donde no pisa nada.
+              // Y la tesis se cortaba a media palabra ("…que rentan. Se"):
+              // ahora corta en el espacio anterior y pone el puntico.
+              <div key={r.id} style={{ ...sub, borderTop: `3px solid ${r.color}`, cursor: "pointer", outline: sel ? `1px solid ${r.color}` : "none" }} onClick={() => onVer(r.id)}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 6, alignItems: "flex-start" }}>
+                  <div style={{ ...F.label, color: r.color }}>{r.nombre}</div>
+                  {mejor && <span style={{ ...chip(C.accent), flexShrink: 0 }}>Tu camino</span>}
+                </div>
+                <div style={{ ...F.caption, marginTop: 2, minHeight: 32 }}>{recortar(r.tesis, 78)}</div>
                 <div style={{ ...F.monoLg, color: C.text, marginTop: 8 }}>{fmM(r.puntos.patrimonioFinal)}</div>
                 <div style={F.caption}>año 10 · {r.puntos.crecimientoRealAnual == null ? "—" : `${r.puntos.crecimientoRealAnual >= 0 ? "+" : ""}${pctEs(r.puntos.crecimientoRealAnual)} real`}</div>
                 <div style={{ ...F.caption, marginTop: 4 }}>te deja <b style={{ color: C.ok }}>{fmMes(r.puntos.quedaMes)}</b>/mes</div>
