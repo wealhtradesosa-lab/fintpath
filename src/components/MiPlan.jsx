@@ -1089,7 +1089,16 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
           decía la consecuencia, que es la que duele: entra menos que antes. */}
       {liq.porAsignar > 1e6 && <div style={{ ...sub, marginTop: 10, borderColor: C.danger }}>
         <div style={{ ...F.body, color: C.text }}><b style={{ color: C.danger }}>{fmM(liq.porAsignar)} están quietos en caja y no rinden un peso.</b> Vender mata la renta de lo que vendiste; si esa plata no se pone a trabajar, lo que entra al mes <b>baja</b>.</div>
-        <div style={{ ...F.caption, marginTop: 3 }}>Puestos a rentar al {pctEs(perfil.tasaRentaEstable)} serían <b style={{ color: C.ok }}>{fmMes(liq.porAsignar * (Number(perfil.tasaRentaEstable) || 0) / 100 / 12)}</b> más al mes. Abajo decides dónde.</div>
+        <div style={{ ...F.caption, marginTop: 3 }}>Puestos a rentar al {pctEs(perfil.tasaRentaEstable)} serían <b style={{ color: C.ok }}>{fmMes(liq.porAsignar * (Number(perfil.tasaRentaEstable) || 0) / 100 / 12)}</b> más al mes.</div>
+        {/* 22-oct-2026 (Santiago: "le subí el valor a la inversión de la casa
+            pero sigue mostrando arriba que me sobran aún $685 M"). Subir una
+            compra FUTURA no consume el sobrante de HOY: esa plata sale del
+            destino que uno eligió en "con plata de", no de la caja suelta. Son
+            dos momentos distintos y la pantalla no lo decía. */}
+        {(esc.eventos || []).length > 0 && <div style={{ ...F.caption, marginTop: 3 }}>Ojo: esto es la plata de <b style={{ color: C.text }}>hoy</b>. Lo que compres más adelante sale del destino que elegiste en «con plata de», así que subirle el precio a una compra futura no baja este sobrante.</div>}
+        {(esc.despliegue || []).length > 0 && <div style={{ marginTop: 8 }}>
+          <button style={btn(true)} onClick={() => { const d = [...esc.despliegue].sort((a, b) => (Number(b.capital) || 0) - (Number(a.capital) || 0))[0]; upd({ despliegue: esc.despliegue.map((x) => (x.id === d.id ? { ...x, capital: (Number(x.capital) || 0) + liq.porAsignar } : x)) }); }}>Poner los {fmM(liq.porAsignar)} en {[...esc.despliegue].sort((a, b) => (Number(b.capital) || 0) - (Number(a.capital) || 0))[0]?.nombre} →</button>
+        </div>}
       </div>}
     </div>
   );
