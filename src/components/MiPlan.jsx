@@ -1526,8 +1526,15 @@ function ActivoPorActivo({ r, base }) {
     // "hoy": se dice en qué año entra, con cuánto, y cuánto paga ese año.
     let entra = null;
     if (!h) { const i = meses.findIndex((m) => (m.detalle?.[p.id]?.capital || 0) > 1); if (i >= 0) { const sig = meses[Math.min(i + 1, meses.length - 1)].detalle?.[p.id]; entra = { anio: Math.floor(i / 12) + 1, capital: meses[i].detalle[p.id].capital, paga: sig?.recibe || 0 }; } }
+    // 22-oct-2026 (Santiago: "¿POR QUÉ ME SALE QUE PUERTO MADERO ME PAGA
+    // $58 M? YA SE SUPONE SALIÓ"). Lo que se vende HOY no "te paga hoy": se
+    // dice en qué mes se vende y la columna queda vacía. Lo que se vende más
+    // adelante sí paga hasta entonces, y se dice el año.
+    const vendido = d.capital <= 1 && (h ? h.capital : 0) > 0;
+    const mesVenta = vendido ? meses.findIndex((m) => (m.detalle?.[p.id]?.capital || 0) <= 1) : -1;
+    const vendidoHoy = vendido && mesVenta === 0;
     return { id: p.id, nombre: p.nombre, canasta: canastaDe(p), hoy: h ? h.capital : 0, nuevo: !h, entra,
-      fin: Math.max(0, d.capital), pagaHoy, pagaFin: d.recibe, vendido: d.capital <= 1 && (h ? h.capital : 0) > 0 };
+      fin: Math.max(0, d.capital), pagaHoy: vendidoHoy ? 0 : pagaHoy, pagaFin: d.recibe, vendido, vendidoHoy, anioVenta: mesVenta >= 0 ? Math.floor(mesVenta / 12) + 1 : null };
   }).filter((x) => x.hoy > 0 || x.fin > 0 || x.pagaFin > 0);
   if (!filas.length) return null;
   filas.sort((a, b) => b.fin - a.fin || b.hoy - a.hoy);
@@ -1541,11 +1548,11 @@ function ActivoPorActivo({ r, base }) {
           <thead><tr>{["Activo", "Canasta", "Hoy vale", "Año 10 vale", "Te paga hoy", "Te paga año 10"].map((h, i) => <th key={h} style={{ ...th, textAlign: i < 2 ? "left" : "right" }}>{h}</th>)}</tr></thead>
           <tbody>
             {filas.map((x) => <tr key={x.id} style={{ borderTop: `1px solid ${C.border}`, opacity: x.vendido ? 0.6 : 1 }}>
-              <td style={{ ...td, minWidth: 170 }}>{x.nombre}{x.nuevo && <span style={{ ...chip(C.accent), marginLeft: 6 }}>nuevo</span>}{x.vendido && <span style={{ ...chip(C.subtle), marginLeft: 6 }}>se vendió</span>}</td>
+              <td style={{ ...td, minWidth: 170 }}>{x.nombre}{x.nuevo && <span style={{ ...chip(C.accent), marginLeft: 6 }}>nuevo</span>}{x.vendido && <span style={{ ...chip(C.subtle), marginLeft: 6 }}>{x.vendidoHoy ? "se vende hoy" : `se vende · año ${x.anioVenta}`}</span>}</td>
               <td style={td}><span style={chip(CANASTA_COLOR[x.canasta])}>{CANASTA_LABEL[x.canasta]}</span></td>
               <td style={tdNum}>{x.hoy > 0 ? fmM(x.hoy) : x.entra ? <span style={F.caption}>entra año {x.entra.anio}<br />con {fmM(x.entra.capital)}</span> : "—"}</td>
               <td style={{ ...tdNum, color: x.fin > x.hoy ? C.ok : x.fin < x.hoy ? C.muted : C.text }}>{x.fin > 0 ? fmM(x.fin) : "—"}</td>
-              <td style={tdNum}>{x.pagaHoy > 0 ? fmMes(x.pagaHoy) : x.entra && x.entra.paga > 0 ? <span style={F.caption}>desde año {x.entra.anio}<br />{fmMes(x.entra.paga)}</span> : "—"}</td>
+              <td style={tdNum}>{x.pagaHoy > 0 ? <span>{fmMes(x.pagaHoy)}{x.vendido && <div style={F.caption}>hasta la venta</div>}</span> : x.entra && x.entra.paga > 0 ? <span style={F.caption}>desde año {x.entra.anio}<br />{fmMes(x.entra.paga)}</span> : "—"}</td>
               <td style={{ ...tdNum, color: x.pagaFin > 0 ? C.ok : C.muted }}>{x.pagaFin > 0 ? fmMes(x.pagaFin) : "—"}</td>
             </tr>)}
             <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}>
@@ -1610,7 +1617,8 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
               el cambio: es el cambio SOBRE lo que ya tienes. */}
           <div style={F.h3}>Lo que sigue igual y te sigue pagando</div>
           {(() => {
-            const siguen = base.posiciones.filter((q) => !q.sale).map((q) => ({ nombre: q.nombre, mes: produce(q).recibe })).filter((q) => q.mes > 0).sort((a, b) => b.mes - a.mes);
+            const vendeEntero = new Set((r.ventas || []).filter((v) => v.monto == null).map((v) => v.posicionId));
+            const siguen = base.posiciones.filter((q) => !q.sale && !vendeEntero.has(q.id)).map((q) => ({ nombre: q.nombre, mes: produce(q).recibe })).filter((q) => q.mes > 0).sort((a, b) => b.mes - a.mes);
             const total = siguen.reduce((t, q) => t + q.mes, 0);
             if (siguen.length === 0) return <div style={{ ...F.body, marginTop: 6 }}>Nada de lo que tienes hoy te paga cada mes.</div>;
             return (<>
