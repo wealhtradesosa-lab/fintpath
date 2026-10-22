@@ -123,6 +123,11 @@ export function simularCamino(cfg = {}) {
       case "flujo_termina": { const f = flujos.find((x) => x.id === m.flujoId); if (f) { f.hastaMes = Math.min(f.hastaMes, mes - 1); log.push({ mes, texto: `Termina ${f.nombre}` }); } break; }
       case "flujo_cambia": { const f = flujos.find((x) => x.id === m.flujoId); if (f) { log.push({ mes, texto: `${f.nombre}: de ${Math.round(f.monto)} a ${Math.round(num(m.monto))}/mes` }); f.monto = num(m.monto); } break; }
       case "valorizacion_cambia": { const p = pos.find((x) => x.id === m.posicionId); if (p) { p.valorizacion = num(m.valorizacion); log.push({ mes, texto: `${p.nombre} valoriza ${p.valorizacion}% al año` }); } break; }
+      // 22-oct-2026 (Santiago: "¿no debería uno poder elegir si reinvierte
+      // una parte de esa inversión, o en qué etapa se hace?"). Lo que una
+      // posición te paga (y lo que reinvierte) puede cambiar con fecha:
+      // tres años reinvirtiendo todo y desde el cuarto recibir el 100 %.
+      case "paga_cambia": { const p = pos.find((x) => x.id === m.posicionId); if (p) { p.pagaPct = Math.min(100, Math.max(0, num(m.pagaPct))); log.push({ mes, texto: `${p.nombre} pasa a pagar el ${p.pagaPct}% (reinvierte el resto)` }); } break; }
       case "tasa_cambia": { const p = pos.find((x) => x.id === m.posicionId); if (p) { p.tasa = num(m.tasa); log.push({ mes, texto: `${p.nombre} rinde ${p.tasa}%` }); } break; }
       default: break;
     }

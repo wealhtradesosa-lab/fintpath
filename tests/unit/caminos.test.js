@@ -2,7 +2,7 @@
 // se cumplen. Usuario inventado; nada de datos reales.
 import { describe, it, expect } from "vitest";
 import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, nuevoCamino, vigilarCamino, configurarCamino, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, escenarioVacio, pagaAlMes } from "../../src/lib/caminos.js";
-import { simularCamino } from "../../src/lib/planes.js";
+import { simularCamino, estresar } from "../../src/lib/planes.js";
 
 const user = {
   trm: 4200,
@@ -175,5 +175,29 @@ describe("lo que sobra cada mes", () => {
     const esc = escenarioVacio({ nombre: "A mi CDT", excedente: [{ canasta: "rentas", pct: 100 }], excedenteDestinos: { rentas: "i1" } });
     const [r] = compararCaminos([esc], base, PERFIL_DEFAULT);
     expect(r.cfg.reglas.excedente[0].posicionId).toBe("i1");
+  });
+});
+
+describe("lo que una inversión te paga cambia con fecha", () => {
+  it("reinvierte todo tres años y desde el cuarto paga el 100%", () => {
+    const r = simularCamino({
+      meses: 60, caja: 0,
+      posiciones: [{ id: "f", nombre: "Fondo", bolsillo: "sustento", capital: 1200, tasa: 10, pagaPct: 0 }],
+      flujos: [{ id: "g", nombre: "G", tipo: "gasto", monto: 1 }],
+      movimientos: [{ mes: 36, tipo: "paga_cambia", posicionId: "f", pagaPct: 100 }],
+      reglas: { excedente: [] },
+    });
+    expect(r.meses[12].detalle.f.recibe).toBe(0);
+    expect(r.meses[12].detalle.f.capital).toBeGreaterThan(1200);
+    expect(r.meses[40].detalle.f.recibe).toBeGreaterThan(10);
+  });
+});
+
+describe("prueba de estrés", () => {
+  it("bajar la tasa de crecimiento nunca sube el patrimonio", () => {
+    const cfg = { meses: 24, caja: 0, posiciones: [{ id: "a", nombre: "Lento", bolsillo: "crecimiento", capital: 100, tasa: 1.5 }, { id: "b", nombre: "Rápido", bolsillo: "crecimiento", capital: 100, tasa: 20 }], flujos: [], reglas: {} };
+    const base = simularCamino(cfg), peor = estresar(cfg, { tasaCrecimiento: 7.8 });
+    expect(peor.puntos.patrimonioFinal).toBeLessThan(base.puntos.patrimonioFinal);
+    expect(peor.meses[23].detalle.a.capital).toBeCloseTo(base.meses[23].detalle.a.capital, 6);
   });
 });
