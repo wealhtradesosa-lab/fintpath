@@ -28,7 +28,7 @@ import { C, F } from "../lib/designTokens";
 import { fmtPlataCortaEs } from "../lib/formato.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Area, ReferenceLine } from "recharts";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
-import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
+import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, cuentaMotor, escenarioVacio, liquidezEscenario, narrar, cienEnCada } from "../lib/caminos.js";
 
 // Capital y mensualidades se escriben igual: una sola función, con separador
 // de miles en todas las ramas (ver fmtPlataCortaEs). Los dos nombres se
@@ -385,6 +385,7 @@ const GRUPOS_MOV = [
     { v: "comprar", l: "Compro algo (casa, bodega, lote)" },
     { v: "flujo_inicia_ingreso", l: "Empieza a entrar plata (pensión, renta, contrato)" },
     { v: "flujo_inicia_gasto", l: "Empieza un gasto (colegio, arriendo)" },
+    { v: "motor", l: "Un motor que construye y vende, vuelta tras vuelta" },
   ] },
   { g: "Ya no va", items: [
     { v: "vender", l: "Vendo un activo" },
@@ -407,6 +408,7 @@ function describirMov(m, posiciones, flujos) {
     case "flujo_inicia": return `${a}: ${m.flujo?.tipo === "gasto" ? "entra el gasto" : "entra"} ${m.flujo?.nombre}, ${fmMes(m.flujo?.monto)}/mes`;
     case "flujo_termina": return `${a}: termina ${flujos.find((f) => f.id === m.flujoId)?.nombre || m.flujoId}`;
     case "flujo_cambia": return `${a}: ${flujos.find((f) => f.id === m.flujoId)?.nombre || m.flujoId} pasa a ${fmMes(m.monto)}/mes`;
+    case "motor": { const c = cuentaMotor(m); return `${a}: arranca ${m.nombre} — ${m.vueltas} vueltas de ${m.mesesVuelta} meses (lote ${fmM(m.lote)} + obra ${fmM(m.obra)} → vende ${fmM(m.venta)})${c ? `, ${pctEs(c.porVuelta)} por vuelta` : ""}`; }
     case "valorizacion_cambia": return `${a}: ${m.nombre || p} pasa a valorizar ${pctEs(m.valorizacion)} al año`;
     default: return `${a}: ${m.tipo}`;
   }
@@ -419,7 +421,9 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
   // proyectando cuanto crece el patrimonio"). La compra traia la valorizacion
   // clavada en 5% para siempre. Ahora son dos tramos, que es como se comporta
   // de verdad: el salto de la obra o de los planos, y el ritmo normal despues.
-  const [f, setF] = useState({ tipo: "comprar", cuando: 12, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "", val1: 5, valN: 5, tramo: 12 });
+  const [f, setF] = useState({ tipo: "comprar", cuando: 12, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "", val1: 5, valN: 5, tramo: 12,
+    lote: "", obra: "", venta: "", mesesVuelta: 14, impuestoPct: 35, vueltas: 8 });
+  const motor = f.tipo === "motor" ? cuentaMotor({ lote: f.lote, obra: f.obra, venta: f.venta, mesesVuelta: f.mesesVuelta, impuestoPct: f.impuestoPct, vueltas: f.vueltas }) : null;
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const mes = Math.max(0, Number(f.cuando) || 0);
   const guardar = () => {
@@ -430,6 +434,7 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
     if (f.tipo === "aportar" && monto > 0) m = { ...base, tipo: "aportar", posicionId: f.posicionId, monto, origen: [{ posicionId: f.origenId }] };
     if (f.tipo === "revaluar" && monto > 0) m = { ...base, tipo: "revaluar", posicionId: f.posicionId, valor: monto };
     if ((f.tipo === "flujo_inicia_ingreso" || f.tipo === "flujo_inicia_gasto") && f.nombre && monto > 0) m = { ...base, tipo: "flujo_inicia", flujo: { id: base.id + "_f", nombre: f.nombre, tipo: f.tipo.endsWith("gasto") ? "gasto" : "ingreso", monto, indexa: true } };
+    if (f.tipo === "motor" && f.nombre && motor) m = { ...base, tipo: "motor", nombre: f.nombre, lote: Number(f.lote) || 0, obra: Number(f.obra) || 0, venta: Number(f.venta) || 0, mesesVuelta: Number(f.mesesVuelta) || 14, impuestoPct: Number(f.impuestoPct) || 0, vueltas: Number(f.vueltas) || 1, reinvierte: true, origen: [{ posicionId: f.origenId }] };
     if (f.tipo === "flujo_termina") m = { ...base, tipo: "flujo_termina", flujoId: f.flujoId };
     if (f.tipo === "flujo_cambia" && monto >= 0) m = { ...base, tipo: "flujo_cambia", flujoId: f.flujoId, monto };
     if (!m) return;
@@ -454,12 +459,25 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
         {(f.tipo === "flujo_termina" || f.tipo === "flujo_cambia") && <Campo l="Cuál"><select value={f.flujoId} onChange={(e) => set("flujoId", e.target.value)} style={inputS}>{flujos.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {fmMes(x.monto)}</option>)}</select></Campo>}
         {f.tipo !== "vender" && f.tipo !== "flujo_termina" && <Campo l={esFlujo ? "Cuánto al mes (pesos)" : f.tipo === "revaluar" ? "Nuevo valor (pesos)" : f.tipo === "comprar" ? "Cuánto vale (pesos)" : "Monto (pesos)"}><NumPesos value={f.monto} onChange={(v) => set("monto", v)} /></Campo>}
         {f.tipo === "comprar" && <Campo l="Para qué"><select value={f.canasta} onChange={(e) => set("canasta", e.target.value)} style={inputS}><option value="rentas">Rentar (paga cada mes)</option><option value="proteccion">Vivir ahí</option><option value="crecimiento">Crecimiento</option><option value="uso">Uso</option></select></Campo>}
+        {f.tipo === "motor" && <>
+          <Campo l="Cuánto vale el lote (pesos)"><NumPesos value={f.lote} onChange={(v) => set("lote", v)} /></Campo>
+          <Campo l="Cuánto cuesta la obra (pesos)"><NumPesos value={f.obra} onChange={(v) => set("obra", v)} /></Campo>
+          <Campo l="En cuánto se vende (pesos)"><NumPesos value={f.venta} onChange={(v) => set("venta", v)} /></Campo>
+          <Campo l="Cuánto dura una vuelta (meses)"><Num value={f.mesesVuelta} min={1} max={60} onChange={(v) => set("mesesVuelta", v)} /></Campo>
+          <Campo l="Impuesto sobre la utilidad"><Num value={f.impuestoPct} min={0} max={100} step={1} onChange={(v) => set("impuestoPct", v)} suffix="%" /></Campo>
+          <Campo l="Cuántas vueltas"><Num value={f.vueltas} min={1} max={30} onChange={(v) => set("vueltas", v)} /></Campo>
+          {motor && <div style={{ ...sub, gridColumn: "1 / -1" }}>
+            <div style={F.body}>Cada vuelta pone <b style={{ color: C.text }}>{fmM(motor.costo)}</b>, vende en <b style={{ color: C.text }}>{fmM(motor.venta)}</b>, deja <b style={{ color: C.ok }}>{fmM(motor.utilidad)}</b> de utilidad y paga <b style={{ color: C.danger }}>{fmM(motor.impuesto)}</b> de impuesto: quedan <b style={{ color: C.text }}>{fmM(motor.queda)}</b> para la siguiente.</div>
+            <div style={{ ...F.body, marginTop: 4 }}>Eso es <b style={{ color: C.ok }}>{pctEs(motor.porVuelta)} por vuelta</b> (≈ {pctEs(motor.anual)} al año). Tras <b style={{ color: C.text }}>{f.vueltas} vueltas</b> ({Math.round(motor.meses / 12 * 10) / 10} años) el capital del motor llega a <b style={{ color: C.text }}>{fmM(motor.final)}</b>.</div>
+            {motor.meses > 120 && <div style={{ ...F.caption, color: C.warn, marginTop: 4 }}>Ojo: {f.vueltas} vueltas de {f.mesesVuelta} meses son {Math.round(motor.meses / 12 * 10) / 10} años y el plan mide 10. Las vueltas que no alcancen se quedan a medias.</div>}
+          </div>}
+        </>}
         {f.tipo === "comprar" && <><Campo l="Se valoriza el primer tramo (% al año)"><Num value={f.val1} step={0.5} onChange={(v) => set("val1", v)} suffix="%" /></Campo>
         <Campo l="Ese tramo dura (meses)"><Num value={f.tramo} min={1} max={120} onChange={(v) => set("tramo", v)} /></Campo>
         <Campo l="Y de ahí en adelante (% al año)"><Num value={f.valN} step={0.5} onChange={(v) => set("valN", v)} suffix="%" /></Campo>
         <div style={{ ...F.caption, gridColumn: "1 / -1" }}>En planos o en obra la valorización del principio suele ser mayor: pon ahí el salto (por ejemplo 20% mientras se construye, 12 meses) y después el ritmo normal (5% al año).</div></>}
         {f.tipo === "comprar" && f.canasta === "rentas" && <><Campo l="Cuánto renta al mes (pesos)"><NumPesos value={f.renta} onChange={(v) => set("renta", v)} /></Campo><Campo l="Empieza a rentar (meses después)"><Num value={f.rentaDesde} min={0} onChange={(v) => set("rentaDesde", v)} /></Campo></>}
-        {(f.tipo === "comprar" || f.tipo === "aportar") && <Campo l="Con plata de">{selPos("origenId")}</Campo>}
+        {(f.tipo === "comprar" || f.tipo === "aportar" || f.tipo === "motor") && <Campo l="Con plata de">{selPos("origenId")}</Campo>}
       </div>
       <div style={{ display: "flex", gap: 8 }}><button style={btn(true)} onClick={guardar}>Agregar</button><button style={btn(false)} onClick={onCerrar}>Cancelar</button></div>
     </div>

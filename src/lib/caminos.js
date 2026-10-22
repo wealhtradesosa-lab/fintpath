@@ -675,6 +675,67 @@ export function liquidezEscenario(baseCfg, esc) {
   return { liberado, pagado, asignado, porAsignar: liberado - pagado - asignado, liberadoHoy, pagadoHoy };
 }
 
+/**
+ * Un motor que construye y vende, vuelta tras vuelta (22-oct-2026).
+ *
+ * Santiago, mostrando su Plan Patrimonial SALEM: "mire estos escenarios, los
+ * construí como yo quería; necesitamos que el sistema tenga esa capacidad de
+ * permitir crear escenarios así de completos". Cuatro de sus siete planes
+ * giran sobre lo mismo: un lote más una obra que se vende a los ~14 meses, y
+ * la utilidad vuelve a entrar a la siguiente vuelta. Ocho vueltas en diez
+ * años. Eso no se podía expresar: tocaba cargar 24 movimientos a mano y aun
+ * así no sabía reinvertir el resultado de la vuelta anterior.
+ *
+ * No necesita motor nuevo: se expande en lo que el simulador ya sabe hacer
+ * —comprar, revaluar, vender— una terna por vuelta. Con sus números:
+ *
+ *   lote 650 + obra 750 = 1.400 · vende 1.900 a los 14 meses
+ *   utilidad 500 (+35,7%) · renta de la SAS 35% = 175
+ *   queda 1.725 para la siguiente vuelta (+23,2% por vuelta)
+ *   8 vueltas → 1.400 × 1,2321^8 = 7.434 en el año 10
+ *
+ * Cada vuelta invierte lo que quedó de la anterior, así que el precio de
+ * venta sube en la misma proporción: la rentabilidad del ciclo es la que
+ * manda, no la cifra escrita.
+ */
+export function expandirMotor(m) {
+  const costo = num(m.lote) + num(m.obra);
+  const venta = num(m.venta);
+  const vuelta = Math.max(1, Math.round(num(m.mesesVuelta) || 14));
+  const vueltas = Math.max(1, Math.round(num(m.vueltas) || 1));
+  const imp = Math.min(100, Math.max(0, num(m.impuestoPct)));
+  if (!(costo > 0) || !(venta > 0)) return [];
+  const utilidad = Math.max(0, venta - costo);
+  const impMonto = utilidad * imp / 100;
+  const netoPct = 100 - (impMonto / venta) * 100;   // lo que queda de la venta, neto de impuesto
+  const factor = (venta - impMonto) / costo;        // cuánto multiplica el capital cada vuelta
+  const out = [];
+  let cap = costo;
+  for (let v = 0; v < vueltas; v++) {
+    const mes = Math.max(0, num(m.mes)) + v * vuelta;
+    const id = `${m.id || "motor"}_v${v + 1}`;
+    out.push({ mes, tipo: "comprar", id, nombre: `${m.nombre || "Motor"} · vuelta ${v + 1}`, costo: cap, bolsillo: "uso", tasa: 0, pagaPct: 0, valorizacion: 0,
+      origen: v === 0 ? (m.origen || [{ posicionId: "caja" }]) : [{ posicionId: "caja" }] });
+    out.push({ mes: mes + vuelta, tipo: "revaluar", posicionId: id, valor: venta * (cap / costo) });
+    out.push({ mes: mes + vuelta, tipo: "vender", posicionId: id, netoPct });
+    cap = m.reinvierte === false ? costo : cap * factor;
+  }
+  return out;
+}
+
+/** Lo que hace un motor, en números, para poder decirlo antes de aplicarlo. */
+export function cuentaMotor(m) {
+  const costo = num(m.lote) + num(m.obra), venta = num(m.venta);
+  if (!(costo > 0) || !(venta > 0)) return null;
+  const utilidad = Math.max(0, venta - costo);
+  const impMonto = utilidad * Math.min(100, Math.max(0, num(m.impuestoPct))) / 100;
+  const factor = (venta - impMonto) / costo;
+  const vueltas = Math.max(1, Math.round(num(m.vueltas) || 1));
+  const vuelta = Math.max(1, Math.round(num(m.mesesVuelta) || 14));
+  return { costo, venta, utilidad, impuesto: impMonto, queda: venta - impMonto, factor, porVuelta: (factor - 1) * 100,
+    anual: (Math.pow(factor, 12 / vuelta) - 1) * 100, final: costo * Math.pow(factor, vueltas), meses: vueltas * vuelta };
+}
+
 /** Escenario → configuración para simularCamino. */
 export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   const H = (num(perfil.horizonteAnios) || 10) * 12;
@@ -700,7 +761,7 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
     if (num(d.renta) > 0) movimientos.push({ mes: Math.max(0, num(d.rentaDesde) || 0), tipo: "flujo_inicia", flujo: { id: `${id}_renta`, nombre: `Renta ${d.nombre}`, tipo: "ingreso", monto: num(d.renta), indexa: true, posicionId: id } });
   });
   // 4) Lo que pasa después: eventos del escenario + comunes del perfil + pensiones
-  const eventos = [...(perfil.eventos || []), ...(esc.eventos || [])].map((m) => ({ ...m }));
+  const eventos = [...(perfil.eventos || []), ...(esc.eventos || [])].flatMap((m) => (m.tipo === "motor" ? expandirMotor(m) : [{ ...m }]));
   // 5) Reglas: excedente y colchón por canasta, sobre el conjunto final de posiciones
   const finales = posiciones;
   const destino = (canasta) => {
