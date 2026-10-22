@@ -431,7 +431,7 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
   // de verdad: el salto de la obra o de los planos, y el ritmo normal despues.
   const [f, setF] = useState({ tipo: "comprar", cuando: 12, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "", val1: 5, valN: 5, tramo: 12,
     lote: "", obra: "", venta: "", mesesVuelta: 14, impuestoPct: 35, vueltas: 8,
-    obraCosto: "", mesesObra: 12, valorFinal: "", rentaFinal: "" });
+    obraCosto: "", mesesObra: 12, valorFinal: "", rentaFinal: "", valorTocado: false });
   const motor = f.tipo === "motor" ? cuentaMotor({ lote: f.lote, obra: f.obra, venta: f.venta, mesesVuelta: f.mesesVuelta, impuestoPct: f.impuestoPct, vueltas: f.vueltas }) : null;
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const mes = Math.max(0, Number(f.cuando) || 0);
@@ -467,19 +467,33 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
         {(f.tipo === "vender" || f.tipo === "aportar" || f.tipo === "revaluar" || f.tipo === "transformar") && <Campo l={f.tipo === "aportar" ? "Destino" : f.tipo === "transformar" ? "Qué vas a transformar" : "Activo"}>{selPos("posicionId")}</Campo>}
         {(f.tipo === "comprar" || f.tipo.startsWith("flujo_inicia")) && <Campo l="Nombre"><input value={f.nombre} onChange={(e) => set("nombre", e.target.value)} style={inputS} placeholder={f.tipo === "comprar" ? "Bodega, finca, apartamento…" : "Pensión, arriendo bodega, colegio…"} /></Campo>}
         {(f.tipo === "flujo_termina" || f.tipo === "flujo_cambia") && <Campo l="Cuál"><select value={f.flujoId} onChange={(e) => set("flujoId", e.target.value)} style={inputS}>{flujos.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {fmMes(x.monto)}</option>)}</select></Campo>}
-        {f.tipo !== "vender" && f.tipo !== "flujo_termina" && <Campo l={esFlujo ? "Cuánto al mes (pesos)" : f.tipo === "revaluar" ? "Nuevo valor (pesos)" : f.tipo === "comprar" ? "Cuánto vale (pesos)" : "Monto (pesos)"}><NumPesos value={f.monto} onChange={(v) => set("monto", v)} /></Campo>}
+        {/* 22-oct-2026 (Santiago: "no entiendo este formulario, ¿qué se pone
+            en monto? ¿el monto no es el mismo valor que cuesta la obra?"). El
+            campo generico de monto se colaba en las opciones que tienen sus
+            propios campos -transformar y motor- sin hacer nada: un campo
+            huerfano que solo podia confundir. */}
+        {f.tipo !== "vender" && f.tipo !== "flujo_termina" && f.tipo !== "transformar" && f.tipo !== "motor" && <Campo l={esFlujo ? "Cuánto al mes (pesos)" : f.tipo === "revaluar" ? "Nuevo valor (pesos)" : f.tipo === "comprar" ? "Cuánto vale (pesos)" : "Monto (pesos)"}><NumPesos value={f.monto} onChange={(v) => set("monto", v)} /></Campo>}
         {f.tipo === "comprar" && <Campo l="Para qué"><select value={f.canasta} onChange={(e) => set("canasta", e.target.value)} style={inputS}><option value="rentas">Rentar (paga cada mes)</option><option value="proteccion">Vivir ahí</option><option value="crecimiento">Crecimiento</option><option value="uso">Uso</option></select></Campo>}
         {f.tipo === "transformar" && <>
-          <Campo l="Cuánto cuesta la obra (pesos)"><NumPesos value={f.obraCosto} onChange={(v) => set("obraCosto", v)} /></Campo>
+          <div style={{ ...sub, gridColumn: "1 / -1" }}>
+            <div style={F.body}>Hoy <b style={{ color: C.text }}>{posiciones.find((x) => x.id === f.posicionId)?.nombre || "ese activo"}</b> vale <b style={{ color: C.text }}>{fmM(posiciones.find((x) => x.id === f.posicionId)?.capital || 0)}</b> en tu patrimonio. Abajo dices cuánto le metes de obra y cuánto vale <b style={{ color: C.text }}>ya terminado</b> — ese segundo número reemplaza al de hoy, no se le suma.</div>
+          </div>
+          <Campo l="Cuánto cuesta la obra (pesos)"><NumPesos value={f.obraCosto} onChange={(v) => { set("obraCosto", v); const p = posiciones.find((x) => x.id === f.posicionId); if (p && !f.valorTocado) setF((st) => ({ ...st, obraCosto: v, valorFinal: Math.round(p.capital + (Number(v) || 0)) })); }} /></Campo>
           <Campo l="Cuánto se demora (meses)"><Num value={f.mesesObra} min={0} max={60} onChange={(v) => set("mesesObra", v)} /></Campo>
-          <Campo l="Cuánto vale terminado (pesos)"><NumPesos value={f.valorFinal} onChange={(v) => set("valorFinal", v)} /></Campo>
+          <Campo l="Cuánto vale YA TERMINADO (pesos)"><NumPesos value={f.valorFinal} onChange={(v) => setF((st) => ({ ...st, valorFinal: v, valorTocado: true }))} /></Campo>
           <Campo l="Cuánto renta al mes, terminado (pesos)"><NumPesos value={f.rentaFinal} onChange={(v) => set("rentaFinal", v)} /></Campo>
           <Campo l="Con plata de">{selPos("origenId")}</Campo>
           {(() => { const p = posiciones.find((x) => x.id === f.posicionId); const vf = Number(f.valorFinal) || 0, oc = Number(f.obraCosto) || 0;
             if (!p || !(vf > 0)) return null;
             const puesto = p.capital + oc, gana = vf - puesto;
             return <div style={{ ...sub, gridColumn: "1 / -1" }}>
-              <div style={F.body}>Hoy <b style={{ color: C.text }}>{p.nombre}</b> vale <b style={{ color: C.text }}>{fmM(p.capital)}</b>. Le metes <b style={{ color: C.text }}>{fmM(oc)}</b> de obra y queda valiendo <b style={{ color: C.text }}>{fmM(vf)}</b>: {gana >= 0 ? <>ganas <b style={{ color: C.ok }}>{fmM(gana)}</b> sobre lo puesto</> : <>pierdes <b style={{ color: C.danger }}>{fmM(-gana)}</b> frente a lo puesto</>}.</div>
+              <div style={{ ...F.body, fontFamily: F.mono.fontFamily, lineHeight: 1.7 }}>
+                <div>{fmM(p.capital)} &nbsp;lo que vale hoy</div>
+                <div>+ {fmM(oc)} &nbsp;la obra</div>
+                <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 2 }}>= {fmM(puesto)} &nbsp;lo que llevas puesto</div>
+                <div style={{ color: C.text, fontWeight: 700 }}>{fmM(vf)} &nbsp;lo que vale terminado</div>
+                <div style={{ color: gana >= 0 ? C.ok : C.danger }}>{gana >= 0 ? "+" : "−"}{fmM(Math.abs(gana))} &nbsp;{gana >= 0 ? "lo que ganas con la obra" : "lo que pierdes frente a lo puesto"}</div>
+              </div>
               {Number(f.rentaFinal) > 0 && <div style={{ ...F.body, marginTop: 3 }}>Y empieza a pagarte <b style={{ color: C.ok }}>{fmMes(Number(f.rentaFinal))}</b> al mes desde el mes {Math.max(0, Number(f.cuando) || 0) + (Number(f.mesesObra) || 0)}, o sea <b style={{ color: C.text }}>{pctEs(Number(f.rentaFinal) * 12 / vf * 100)}</b> al año sobre lo que vale.</div>}
             </div>; })()}
         </>}
