@@ -1,7 +1,7 @@
 // caminos.js + planes.js: de los datos de cualquier usuario a tres caminos que
 // se cumplen. Usuario inventado; nada de datos reales.
 import { describe, it, expect } from "vitest";
-import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, nuevoCamino, vigilarCamino, configurarCamino, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino } from "../../src/lib/caminos.js";
+import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, nuevoCamino, vigilarCamino, configurarCamino, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, escenarioVacio, configurarEscenario, pagaAlMes } from "../../src/lib/caminos.js";
 import { simularCamino } from "../../src/lib/planes.js";
 
 const user = {

@@ -969,6 +969,17 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   // escenario que la persona arma a mano, las reglas de canasta VIGILAN (se
   // avisa dónde se rompe), pero no mueven plata sola, salvo que ella lo pida
   // con `rebalancear: true`.
+  // 22-oct-2026 — La banda de cobertura se escribio en el motor y nunca se
+  // conecto: era codigo muerto que yo ya habia anunciado como funcionando.
+  // Se conecta ahora, pero APAGADA por defecto y con su propia casilla, por
+  // la misma razon por la que el rebalanceo lo esta: mover plata de la
+  // persona en silencio es justo lo que ella reclamo ("¿como que BTG $7,8 M?").
+  const coberturaBanda = esc.protegerCobertura === true ? {
+    min: num(perfil.coberturaMin) || 120,
+    max: null,
+    haciaId: destino("rentas"),
+    desdeIds: finales.filter((p) => canastaDe(p) === "crecimiento").map((p) => p.id),
+  } : null;
   const rebalanceo = esc.rebalancear === true && (C.crecimiento?.max != null || C.crecimiento?.min != null) && idsCrec.length && idsRentas.length
     ? { a: { ids: idsCrec, destinoId: destino("crecimiento") }, b: { ids: idsRentas, destinoId: destino("rentas") }, aMin: C.crecimiento?.min ?? null, aMax: C.crecimiento?.max ?? null, aMeta: C.crecimiento?.min != null && C.crecimiento?.max != null ? (num(C.crecimiento.min) + num(C.crecimiento.max)) / 2 : C.crecimiento?.max != null ? Math.max(0, num(C.crecimiento.max) - 5) : Math.min(100, num(C.crecimiento.min) + 5) }
     : null;
@@ -988,7 +999,7 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   return {
     ...esc, ajuste: { notas, movimientos }, liquidez: liq,
     cfg: { meses: H, caja: baseCfg.caja, posiciones: finales, flujos: baseCfg.flujos, deudas: baseCfg.deudas, movimientos: [...movimientosHoy(baseCfg), ...movimientos, ...movimientosPerfil(perfil), ...eventos],
-      reglas: { excedente, deficitDesde, colchon, rebalanceo, inflacion: num(perfil.inflacion), indexarGastos: true, indexarSustento: false, coberturaMin: num(perfil.coberturaMin) || 120 } },
+      reglas: { excedente, deficitDesde, colchon, rebalanceo, coberturaBanda, inflacion: num(perfil.inflacion), indexarGastos: true, indexarSustento: false, coberturaMin: num(perfil.coberturaMin) || 120 } },
   };
 }
 
