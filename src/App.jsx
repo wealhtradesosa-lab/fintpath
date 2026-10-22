@@ -1165,104 +1165,88 @@ export default function FinPath(){
       {id:"own_2",name:"Laura Gómez",type:"natural"},
       {id:"own_j1",name:"Inversiones Pérez SAS",type:"juridica",regimen:"ordinario"},
     ];
+    // 22-oct-2026 (Santiago: "que el demo tenga modelos muy parecidos a los
+    // números que vemos aquí, pero sin mis datos personales y nombres de
+    // inversiones más genéricas; para mostrar ahora a unos interesados").
+    // Patrimonio de familia concentrado en ladrillo (una casa de recreo grande
+    // que renta por temporadas, dos apartamentos en USA con hipoteca, un local,
+    // un lote con licencia), un fondo de crédito privado que paga cada mes,
+    // efectivo de una venta por invertir, carros con cuota, sin salario. Los
+    // escenarios muestran el mismo dilema: vender el inmueble grande y poner
+    // a producir la plata, de tres maneras. Cifras verosímiles, redondeadas;
+    // nombres genéricos; ninguna persona real.
     nd.inv=[
-      {id:"d_i1",n:"Casa del lago",ub:"Guatapé, Antioquia",tp:"Real Estate",va:3000000000,vc:1900000000,tasa:"",owner:"own_j1",valorizacionPct:"6"},
-      {id:"d_i2",n:"Apartamento Poblado",ub:"Medellín",tp:"Real Estate",va:1100000000,vc:780000000,tasa:"",owner:"own_1",valorizacionPct:"5"},
-      {id:"d_i3",n:"Apartamento Miami",ub:"Miami, FL",tp:"Real Estate",va:1650000000,vc:1400000000,tasa:"",owner:"own_1",valorizacionPct:"4"},
-      {id:"d_i4",n:"Bodega Itagüí",ub:"Itagüí",tp:"Bodega",va:420000000,vc:300000000,tasa:"",owner:"own_j1"},
-      {id:"d_i5",n:"Bodega Sabaneta",ub:"Sabaneta",tp:"Bodega",va:380000000,vc:290000000,tasa:"",owner:"own_j1"},
-      {id:"d_i6",n:"Local Centro Comercial",ub:"Medellín",tp:"Local Comercial",va:840000000,vc:600000000,tasa:"",owner:"own_j1"},
-      {id:"d_i7",n:"Lote El Retiro",ub:"El Retiro, Antioquia",tp:"Real Estate",va:700000000,vc:420000000,tasa:"",owner:"own_1",valorizacionPct:"8"},
-      {id:"d_i8",n:"Lote Rionegro",ub:"Rionegro",tp:"Real Estate",va:450000000,vc:380000000,tasa:"",owner:"own_2",valorizacionPct:"7"},
-      {id:"d_i9",n:"Fondo de crédito privado",ub:"Colombia",tp:"Fondo de Inversión",va:2400000000,vc:2400000000,tasa:"21",owner:"own_j1"},
-      {id:"d_i10",n:"Fondo BTG Pactual",ub:"Colombia",tp:"Fondo de Inversión",va:1500000000,vc:1500000000,tasa:"14",owner:"own_1"},
-      {id:"d_i11",n:"CDT Bancolombia",ub:"Colombia",tp:"CDT",va:300000000,vc:300000000,tasa:"11",owner:"own_2"},
-      {id:"d_i12",n:"Acciones empresa de logística",ub:"Colombia",tp:"Acciones",va:900000000,vc:600000000,tasa:"",owner:"own_1"},
-      {id:"d_i13",n:"ETF S&P 500",ub:"USA",tp:"ETF",va:160000000,vc:110000000,tasa:"",owner:"own_1"},
-      {id:"d_i14",n:"Bitcoin",ub:"",tp:"Crypto",va:85000000,vc:30000000,tasa:"",owner:"own_1"},
-      {id:"d_i15",n:"Cuenta de ahorros",ub:"Colombia",tp:"Cash",va:60000000,vc:60000000,tasa:"",owner:"own_1"},
-      {id:"d_i16",n:"Camioneta",ub:"Medellín",tp:"Vehículo",va:210000000,vc:260000000,tasa:"",owner:"own_1"},
-      {id:"d_i17",n:"Carro",ub:"Medellín",tp:"Vehículo",va:120000000,vc:150000000,tasa:"",owner:"own_2"},
+      {id:"d_i1",n:"Casa de recreo en el lago",ub:"Oriente antioqueño",tp:"Real Estate",va:8500000000,vc:6000000000,tasa:"",owner:"own_j1",valorizacionPct:"4"},
+      {id:"d_i2",n:"Apartamento en Orlando",ub:"Orlando, FL",tp:"Real Estate",va:1600000000,vc:1400000000,tasa:"",owner:"own_1",valorizacionPct:"3"},
+      {id:"d_i3",n:"Apartamento en Miami",ub:"Miami, FL",tp:"Real Estate",va:850000000,vc:700000000,tasa:"",owner:"own_1",valorizacionPct:"4"},
+      {id:"d_i4",n:"Local comercial",ub:"Medellín",tp:"Local Comercial",va:1100000000,vc:800000000,tasa:"",owner:"own_j1",valorizacionPct:"4"},
+      {id:"d_i5",n:"Lote con licencia para bodega",ub:"Antioquia",tp:"Real Estate",va:410000000,vc:300000000,tasa:"",owner:"own_1",valorizacionPct:"6"},
+      {id:"d_i6",n:"Fondo de crédito privado",ub:"Colombia",tp:"Fondo de Inversión",va:3300000000,vc:3300000000,tasa:"19",owner:"own_j1"},
+      {id:"d_i7",n:"Participación en fintech de crédito",ub:"Colombia",tp:"Acciones",va:950000000,vc:600000000,tasa:"8.2",owner:"own_1"},
+      {id:"d_i8",n:"Efectivo de una venta (por invertir)",ub:"Colombia",tp:"Cash",va:800000000,vc:800000000,tasa:"",owner:"own_2"},
+      {id:"d_i9",n:"Portafolio de acciones USA",ub:"USA",tp:"Acciones",va:130000000,vc:100000000,tasa:"",owner:"own_1"},
+      {id:"d_i10",n:"Bitcoin",ub:"",tp:"Crypto",va:70000000,vc:40000000,tasa:"",owner:"own_1"},
+      {id:"d_i11",n:"Camioneta",ub:"Medellín",tp:"Vehículo",va:330000000,vc:380000000,tasa:"",owner:"own_1"},
+      {id:"d_i12",n:"Carro",ub:"Medellín",tp:"Vehículo",va:205000000,vc:240000000,tasa:"",owner:"own_2"},
+      {id:"d_i13",n:"Cuenta de ahorros",ub:"Colombia",tp:"Cash",va:40000000,vc:40000000,tasa:"",owner:"own_1"},
     ];
     nd.ingresos=[
       // Rentas de activos (capital × tasa: el monto sale del capital)
-      {id:"d_ig1",nombre:"Rendimiento fondo de crédito privado",categoria:"Intereses bancarios",mensual:42000000,tipo:"fijo",fuente:"Fondo de crédito privado",owner:"own_j1",moneda:"COP",capital:"2400000000",tasa:"21"},
-      {id:"d_ig2",nombre:"Rendimiento Fondo BTG",categoria:"Intereses bancarios",mensual:17500000,tipo:"fijo",fuente:"Fondo BTG Pactual",owner:"own_1",moneda:"COP",capital:"1500000000",tasa:"14"},
-      {id:"d_ig3",nombre:"Rendimiento CDT",categoria:"Intereses bancarios",mensual:2750000,tipo:"fijo",fuente:"CDT Bancolombia",owner:"own_2",moneda:"COP",capital:"300000000",tasa:"11"},
-      {id:"d_ig4",nombre:"Arriendo casa del lago (temporadas)",categoria:"Arriendo",mensual:0,tipo:"variable",frecuencia:"variable",fuente:"Casa del lago",owner:"own_j1",moneda:"COP",
+      {id:"d_ig1",nombre:"Rendimiento fondo de crédito privado",categoria:"Intereses bancarios",mensual:52250000,tipo:"fijo",fuente:"Fondo de crédito privado",owner:"own_j1",moneda:"COP",capital:"3300000000",tasa:"19"},
+      {id:"d_ig2",nombre:"Dividendos fintech de crédito",categoria:"Dividendos",mensual:6500000,tipo:"fijo",fuente:"Participación en fintech de crédito",owner:"own_1",moneda:"COP",capital:"950000000",tasa:"8.2"},
+      {id:"d_ig3",nombre:"Arriendo casa del lago (temporadas)",categoria:"Arriendo",mensual:0,tipo:"variable",frecuencia:"variable",fuente:"Casa de recreo en el lago",owner:"own_j1",moneda:"COP",
        // Alquiler por temporadas: picos en enero, Semana Santa, mitad y fin de año.
-       montosMensuales:[28000000,9000000,14000000,22000000,8000000,19000000,21000000,9000000,7000000,10000000,9000000,30000000]},
-      {id:"d_ig5",nombre:"Arriendo apartamento Miami",categoria:"Arriendo",mensual:2600,tipo:"fijo",fuente:"Apartamento Miami",owner:"own_1",moneda:"USD"},
-      {id:"d_ig6",nombre:"Arriendo bodega Itagüí",categoria:"Arriendo",mensual:4200000,tipo:"fijo",fuente:"Bodega Itagüí",owner:"own_j1",moneda:"COP"},
-      {id:"d_ig7",nombre:"Arriendo bodega Sabaneta",categoria:"Arriendo",mensual:3800000,tipo:"fijo",fuente:"Bodega Sabaneta",owner:"own_j1",moneda:"COP"},
-      {id:"d_ig8",nombre:"Arriendo local",categoria:"Arriendo",mensual:7200000,tipo:"fijo",fuente:"Local Centro Comercial",owner:"own_j1",moneda:"COP"},
-      {id:"d_ig9",nombre:"Dividendos empresa de logística",categoria:"Dividendos",mensual:36000000,tipo:"fijo",frecuencia:"anual",mesPago:4,fuente:"Acciones",owner:"own_1",moneda:"COP",capital:"900000000",tasa:"4"},
-      // Trabajo
-      {id:"d_ig10",nombre:"Honorarios consultoría",categoria:"Honorarios",mensual:14000000,tipo:"fijo",fuente:"Clientes",owner:"own_1",moneda:"COP"},
-      {id:"d_ig11",nombre:"Salario Laura",categoria:"Salario",mensual:9500000,tipo:"fijo",fuente:"Empresa",owner:"own_2",moneda:"COP"},
-      {id:"d_ig12",nombre:"Prima Laura",categoria:"Salario",mensual:0,tipo:"fijo",frecuencia:"variable",fuente:"Empresa",owner:"own_2",moneda:"COP",montosMensuales:[0,0,0,0,0,4750000,0,0,0,0,0,4750000]},
-      // Un ingreso que termina este año (el simulador futuro lo detecta)
-      {id:"d_ig13",nombre:"Contrato interventoría",categoria:"Honorarios",mensual:11000000,tipo:"variable",fuente:"Cliente",owner:"own_1",moneda:"COP",desdeMes:1,hastaMes:9},
-      // Venta de un lote: entra una vez, en agosto
-      {id:"d_ig14",nombre:"Venta lote La Ceja",categoria:"Rendimiento",mensual:0,tipo:"variable",frecuencia:"variable",fuente:"Venta",owner:"own_2",moneda:"COP",montosMensuales:[0,0,0,0,0,0,0,380000000,0,0,0,0]},
+       montosMensuales:[60000000,25000000,35000000,50000000,20000000,45000000,55000000,25000000,20000000,30000000,25000000,66000000]},
+      {id:"d_ig4",nombre:"Arriendo del domo (en la casa del lago)",categoria:"Arriendo",mensual:2500,tipo:"fijo",fuente:"Casa de recreo en el lago",owner:"own_j1",moneda:"USD"},
+      {id:"d_ig5",nombre:"Arriendo apartamento Orlando",categoria:"Arriendo",mensual:7000,tipo:"fijo",fuente:"Apartamento en Orlando",owner:"own_1",moneda:"USD"},
+      {id:"d_ig6",nombre:"Arriendo apartamento Miami",categoria:"Arriendo",mensual:1900,tipo:"fijo",fuente:"Apartamento en Miami",owner:"own_1",moneda:"USD"},
+      {id:"d_ig7",nombre:"Dividendos empresa de distribución",categoria:"Dividendos",mensual:6500000,tipo:"fijo",fuente:"Participación minoritaria",owner:"own_1",moneda:"COP"},
+      // Trabajo: sin salario fijo; honorarios semi-pasivos
+      {id:"d_ig8",nombre:"Honorarios por distribución",categoria:"Honorarios",mensual:13000000,tipo:"fijo",fuente:"Clientes",owner:"own_1",moneda:"COP"},
+      // Un contrato que termina este año (el simulador futuro lo detecta)
+      {id:"d_ig9",nombre:"Contrato de consultoría",categoria:"Honorarios",mensual:9000000,tipo:"variable",fuente:"Cliente",owner:"own_2",moneda:"COP",desdeMes:1,hastaMes:8},
     ];
     nd.deu=[
-      {id:"d_d1",n:"Hipoteca casa del lago",tp:"mortgage",mt:950000000,pg:11500000,ts:12,owner:"own_j1"},
-      {id:"d_d2",n:"Hipoteca apartamento Miami",tp:"mortgage",mt:620000000,pg:6200000,ts:7,owner:"own_1"},
-      {id:"d_d3",n:"Crédito camioneta",tp:"vehiculo",mt:98000000,pg:3600000,ts:15,owner:"own_1"},
-      {id:"d_d4",n:"Crédito carro",tp:"vehiculo",mt:52000000,pg:2400000,ts:14,owner:"own_2"},
-      {id:"d_d5",n:"Crédito de libre inversión",tp:"loan",mt:40000000,pg:2900000,ts:19,owner:"own_1",desdeMes:1,hastaMes:10},
+      {id:"d_d1",n:"Hipoteca apartamento Miami",tp:"mortgage",mt:470000000,pg:4900000,ts:7,owner:"own_1"},
+      {id:"d_d2",n:"Hipoteca apartamento Orlando",tp:"mortgage",mt:1100000000,pg:12800000,ts:7.5,owner:"own_1"},
+      {id:"d_d3",n:"Crédito camioneta",tp:"vehiculo",mt:165000000,pg:4500000,ts:9,owner:"own_1"},
+      {id:"d_d4",n:"Crédito carro",tp:"vehiculo",mt:96000000,pg:4500000,ts:22,owner:"own_2"},
+      {id:"d_d5",n:"Crédito de consumo",tp:"loan",mt:61000000,pg:1500000,ts:18,owner:"own_1"},
     ];
-    // 22-oct-2026 (Santiago: "¿el demo ya tiene los escenarios creados?
-    // importante"). La demo llegaba a "Escenarios a 10 años" con las tres
-    // plantillas y ningún escenario guardado: la sección más potente se veía
-    // vacía. Tres escenarios concretos con los activos de arriba, uno por
-    // temperamento, listos para abrir y comparar.
-    nd.caminos=[
-      {id:"demo_esc_1",nombre:"Simplificar y asegurar",tesis:"Vender lo que no produce, quitar las cuotas caras y dejar todo en rentas estables.",color:"#22c55e",plantilla:"seguridad",propio:true,editado:true,
-       ventas:[{posicionId:"d_i17"},{posicionId:"d_i14"}],pagos:["d_d4","d_d5"],
-       despliegue:[{id:"demo_d1",destinoId:"d_i11",nombre:"CDT Bancolombia",canasta:"rentas",capital:113000000,tasa:11,pagaPct:100,valorizacion:0,regla:"Paga el 100% del rendimiento cada mes"}],
-       eventos:[{id:"demo_mv1",mes:36,tipo:"vender",posicionId:"d_i8",nuevo:{nombre:"CDT a largo plazo",canasta:"rentas",tasa:11,pagaPct:100}}],
-       excedente:[{canasta:"rentas",pct:80},{canasta:"crecimiento",pct:20}],colchonMeses:12,canastas:{rentas:{min:60},crecimiento:{max:30}},condiciones:["sin_deuda_cara"]},
-      {id:"demo_esc_2",nombre:"Bodega sobre el lote",tesis:"Construir en El Retiro con plata del fondo y comprar un apartamento para rentar en el año 4.",color:"#f59e0b",plantilla:"balance",propio:true,editado:true,
-       ventas:[],pagos:[],despliegue:[],
-       eventos:[{id:"demo_mv2",mes:12,tipo:"transformar",posicionId:"d_i7",nombre:"Lote El Retiro",obra:900000000,mesesObra:14,valor:2100000000,renta:16000000,origen:[{posicionId:"d_i9"}]},
-                {id:"demo_mv3",mes:48,tipo:"comprar",nombre:"Apartamento para rentar",costo:650000000,bolsillo:"sustento",pagaPct:100,valorizacion:5,origen:[{posicionId:"d_i10"}],renta:3800000,rentaDesde:1}],
-       excedente:[{canasta:"rentas",pct:50},{canasta:"crecimiento",pct:50}],colchonMeses:9,canastas:{rentas:{min:50},crecimiento:{min:25,max:50}},condiciones:[]},
-      {id:"demo_esc_3",nombre:"Todo produce",tesis:"Vender los carros y el apartamento, vivir arrendado y poner todo a crecer.",color:"#a855f7",plantilla:"crecimiento",propio:true,editado:true,
-       ventas:[{posicionId:"d_i16"},{posicionId:"d_i17"}],pagos:["d_d3","d_d4"],
-       despliegue:[{id:"demo_d2",destinoId:"d_i13",nombre:"ETF S&P 500",canasta:"crecimiento",capital:180000000,tasa:12,pagaPct:0,valorizacion:0,regla:"Todo se reinvierte"}],
-       eventos:[{id:"demo_mv4",mes:24,tipo:"vender",posicionId:"d_i2",nuevo:{nombre:"Portafolio global",canasta:"crecimiento",tasa:12,pagaPct:0}},
-                {id:"demo_mv5",mes:24,tipo:"flujo_inicia",flujo:{id:"demo_mv5_f",nombre:"Arriendo donde vives",tipo:"gasto",monto:6500000,indexa:true}}],
-       excedente:[{canasta:"rentas",pct:20},{canasta:"crecimiento",pct:80}],colchonMeses:6,canastas:{rentas:{max:40},crecimiento:{min:50}},condiciones:["todo_produce"]},
-    ];
-    nd.caminoElegido="demo_esc_2";
     nd.gas={
-      "Vivienda":[{c:"Administración apartamento",m:1900000,t:"f",owner:"own_1"},{c:"Arriendo oficina",m:4200000,t:"f",owner:"own_j1"}],
-      "Inmueble arrendado":[{c:"Administración y mantenimiento casa del lago",m:3800000,t:"f",owner:"own_j1",activoId:"d_i1"},
-                            {c:"HOA y seguro apartamento Miami",m:2600000,t:"f",owner:"own_1",activoId:"d_i3"},
-                            {c:"Predial bodegas (anual)",m:6400000,t:"f",owner:"own_j1",frecuencia:"anual",mesPago:3}],
-      "Alimentación":[{c:"Mercado",m:3600000,t:"f",owner:"own_1"},{c:"Restaurantes",m:2200000,t:"v",owner:"own_1"},{c:"Domicilios",m:600000,t:"v",owner:"own_2"}],
-      "Educación":[{c:"Colegio hijos",m:5800000,t:"f",owner:"own_1",desdeMes:2,hastaMes:11},
-                   {c:"Matrícula anual",m:9500000,t:"f",owner:"own_1",frecuencia:"anual",mesPago:1},
-                   {c:"Universidad",m:3200000,t:"f",owner:"own_2",desdeMes:2,hastaMes:11}],
-      "Salud":[{c:"Medicina prepagada familiar",m:2900000,t:"f",owner:"own_1"},{c:"Farmacia",m:350000,t:"v",owner:"own_2"}],
-      "Seguros":[{c:"Seguro de vida",m:650000,t:"f",owner:"own_1"},
-                 {c:"Póliza todo riesgo propiedades (anual)",m:14000000,t:"f",owner:"own_j1",frecuencia:"anual",mesPago:5},
-                 {c:"Seguro camioneta (anual)",m:4800000,t:"f",owner:"own_1",frecuencia:"anual",mesPago:9},
-                 {c:"Seguro enfermedades graves",m:420000,t:"f",owner:"own_1"}],
-      "Transporte":[{c:"Gasolina",m:1300000,t:"v",owner:"own_1"},{c:"Peajes y parqueaderos",m:400000,t:"v",owner:"own_1"}],
-      "Servicios":[{c:"Servicios apartamento",m:950000,t:"f",owner:"own_1"},{c:"Internet y telefonía",m:420000,t:"f",owner:"own_1"},{c:"Servicios oficina",m:600000,t:"f",owner:"own_j1"}],
-      "Nómina":[{c:"Empleada doméstica",m:2300000,t:"f",owner:"own_1"},{c:"Asistente oficina",m:3100000,t:"f",owner:"own_j1"}],
-      "Honorarios":[{c:"Contador",m:1800000,t:"f",owner:"own_j1"},{c:"Abogado (anual)",m:9000000,t:"f",owner:"own_j1",frecuencia:"anual",mesPago:2}],
-      "Seguridad Social":[{c:"Pensión + EPS + ARL Pedro",m:3900000,t:"f",owner:"own_1"},{c:"Pensión + EPS Laura",m:2600000,t:"f",owner:"own_2"}],
-      "Aporte tributario":[{c:"Pensión voluntaria",m:2500000,t:"f",owner:"own_1"},{c:"AFC",m:1500000,t:"f",owner:"own_1"}],
-      "Impuesto":[{c:"Predial apartamento (anual)",m:5200000,t:"f",owner:"own_1",frecuencia:"anual",mesPago:3}],
-      "Mantenimiento":[{c:"Reparaciones y mantenimiento",m:900000,t:"v",owner:"own_1"}],
-      "Entretenimiento":[{c:"Streaming y suscripciones",m:320000,t:"f",owner:"own_1"},{c:"Vacaciones (mensualizado)",m:3500000,t:"v",owner:"own_1"}],
-      "Representación":[{c:"Almuerzos de negocios",m:1200000,t:"v",owner:"own_j1"}],
-      "Personal":[{c:"Ropa y cuidado personal",m:900000,t:"v",owner:"own_2"}],
+      "Obligatorios":[{c:"Seguridad social (dos personas)",m:27600000,t:"f",owner:"own_1"},{c:"Seguros de vida y salud",m:6900000,t:"f",owner:"own_1"}],
+      "Impuestos":[{c:"Impuesto de renta (neto, mensualizado)",m:5400000,t:"f",owner:"own_1"},{c:"Retención en la fuente",m:5200000,t:"f",owner:"own_1"},{c:"Aporte tributario sociedad",m:1200000,t:"f",owner:"own_j1"},{c:"Impuesto vehicular (anual)",m:7200000,t:"f",owner:"own_1",frecuencia:"anual",mesPago:4}],
+      "Vivienda":[{c:"Arriendo vivienda",m:10000000,t:"f",owner:"own_1"},{c:"Servicios",m:2000000,t:"f",owner:"own_1"},{c:"Empleada doméstica",m:1800000,t:"f",owner:"own_1"}],
+      "Familia":[{c:"Educación hijos",m:9300000,t:"f",owner:"own_1",desdeMes:2,hastaMes:11},{c:"Alimentación",m:6900000,t:"v",owner:"own_1"},{c:"Transporte",m:1700000,t:"v",owner:"own_1"},{c:"Representación",m:1500000,t:"v",owner:"own_1"},{c:"Entretenimiento",m:1400000,t:"v",owner:"own_2"}],
+      "Honorarios":[{c:"Asesoría legal y contable",m:8000000,t:"f",owner:"own_j1"}],
+      "Inmueble arrendado":[{c:"Administración y mantenimiento casa del lago",m:3500000,t:"f",owner:"own_j1",activoId:"d_i1"},{c:"HOA y seguro apartamento Orlando",m:3200000,t:"f",owner:"own_1",activoId:"d_i2"}],
     };
+    // Tres escenarios, el mismo dilema: vender la casa del lago (y Orlando, que
+    // pierde plata con la hipoteca), pagar las cuotas de los carros y poner a
+    // producir los $9.500 M que quedan. Lo que cambia es dónde.
+    const vender=[{posicionId:"d_i1"},{posicionId:"d_i2"},{posicionId:"d_i8"}];
+    const pagar=["d_d2","d_d3","d_d4","d_d5"];
+    const bodega={id:"demo_mv_bodega",mes:1,tipo:"transformar",posicionId:"d_i5",nombre:"Lote con licencia para bodega",obra:600000000,mesesObra:5,valor:1010000000,renta:8000000,origen:[{posicionId:"demo_d_fondo"}]};
+    const pensiones=[{id:"demo_mv_pen1",mes:48,tipo:"flujo_inicia",flujo:{id:"demo_mv_pen1_f",nombre:"Pensión Laura",tipo:"ingreso",monto:24000000,indexa:true}},{id:"demo_mv_pen2",mes:72,tipo:"flujo_inicia",flujo:{id:"demo_mv_pen2_f",nombre:"Pensión Pedro",tipo:"ingreso",monto:25000000,indexa:true}}];
+    const fondo=(cap)=>({id:"demo_d_fondo",destinoId:null,nombre:"Fondo de renta fija",canasta:"rentas",capital:cap,tasa:10.5,pagaPct:100,valorizacion:0,regla:"Paga el 100% del rendimiento cada mes"});
+    nd.caminos=[
+      {id:"demo_esc_1",nombre:"Vender el lago y vivir de rentas",tesis:"Vender la casa del lago y Orlando, pagar las cuotas, y repartir entre un fondo que paga cada mes, la bodega y acciones.",color:"#f59e0b",plantilla:"balance",propio:true,editado:true,
+       ventas:vender,pagos:pagar,
+       despliegue:[fondo(7000000000),{id:"demo_d_acc",destinoId:"d_i9",nombre:"Portafolio de acciones USA",canasta:"crecimiento",capital:2200000000,tasa:22,pagaPct:0,valorizacion:0,regla:"Todo se reinvierte"},{id:"demo_d_btc",destinoId:"d_i10",nombre:"Bitcoin",canasta:"crecimiento",capital:270000000,tasa:20,pagaPct:0,valorizacion:0,regla:"Todo se reinvierte"}],
+       eventos:[bodega,...pensiones,{id:"demo_mv_casa",mes:48,tipo:"comprar",nombre:"Casa propia",costo:4300000000,bolsillo:"uso",pagaPct:0,valorizacion:5,origen:[{posicionId:"demo_d_fondo"}]},{id:"demo_mv_arr",mes:48,tipo:"flujo_cambia",flujoId:"gas_vivienda",monto:3800000}],
+       excedente:[{canasta:"rentas",pct:50},{canasta:"crecimiento",pct:50}],colchonMeses:6,canastas:null,condiciones:[]},
+      {id:"demo_esc_2",nombre:"Conservador: todo en rentas estables",tesis:"Lo mismo, pero todo lo que queda va a rentas que pagan cada mes; nada en crecimiento.",color:"#22c55e",plantilla:"seguridad",propio:true,editado:true,
+       ventas:vender,pagos:pagar,
+       despliegue:[fondo(9470000000)],
+       eventos:[bodega,...pensiones],
+       excedente:[{canasta:"rentas",pct:80},{canasta:"crecimiento",pct:20}],colchonMeses:12,canastas:{rentas:{min:80}},condiciones:["sin_deuda_cara"]},
+      {id:"demo_esc_3",nombre:"Motor de construcción",tesis:"Parte de la plata entra a proyectos de construcción que se venden vuelta tras vuelta, y lo demás a rentas.",color:"#a855f7",plantilla:"crecimiento",propio:true,editado:true,
+       ventas:vender,pagos:pagar,
+       despliegue:[fondo(7000000000),{id:"demo_d_acc3",destinoId:"d_i9",nombre:"Portafolio de acciones USA",canasta:"crecimiento",capital:2200000000,tasa:22,pagaPct:0,valorizacion:0,regla:"Todo se reinvierte"},{id:"demo_d_btc3",destinoId:"d_i10",nombre:"Bitcoin",canasta:"crecimiento",capital:270000000,tasa:20,pagaPct:0,valorizacion:0,regla:"Todo se reinvierte"}],
+       eventos:[bodega,...pensiones,{id:"demo_mv_motor",mes:2,tipo:"motor",nombre:"Proyectos de construcción asociativos",lote:1200000000,obra:1500000000,venta:3645000000,mesesVuelta:16,impuestoPct:35,vueltas:6,reinvierte:true,origen:[{posicionId:"demo_d_fondo"}]}],
+       excedente:[{canasta:"rentas",pct:30},{canasta:"crecimiento",pct:70}],colchonMeses:6,canastas:null,condiciones:[]},
+    ];
+    nd.caminoElegido="demo_esc_1";
     // Declaraciones de años anteriores, para que "Tu renta, año tras año" tenga con qué comparar.
     nd.owners[0].declaraciones=[
       {tipo:"F210",anoGravable:2025,capturadoEl:"2026-09-10T15:00:00.000Z",fuenteCaptura:"demo",renglones:{ingresosBrutos:612000000,ingresosNoConstitutivos:16000000,rentaExenta25:45000000,deducIntereses:0,deducMedicina:19000000,deducDependientes:0,pvAFC:48000000,patrimonioBruto:5400000000,deudas:810000000,patrimonioLiquido:4590000000,impuestoCalculado:96000000,retefuente:88000000,saldoPagar:8000000}},

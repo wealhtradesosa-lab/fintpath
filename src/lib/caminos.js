@@ -963,7 +963,13 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   const C = esc.canastas || {};
   const idsCrec = finales.filter((p) => canastaDe(p) === "crecimiento").map((p) => p.id);
   const idsRentas = finales.filter((p) => canastaDe(p) === "rentas" && !p.inmueble).map((p) => p.id);
-  const rebalanceo = (C.crecimiento?.max != null || C.crecimiento?.min != null) && idsCrec.length && idsRentas.length
+  // 22-oct-2026 (Santiago: "¿cómo que BTG $7,8 M?"). Puso $7.500 M en un fondo
+  // que paga, y la regla de la plantilla Crecimiento (crecimiento ≥ 60 %) se
+  // los movía, mes a mes y en silencio, a un portafolio al 1,5 %. En un
+  // escenario que la persona arma a mano, las reglas de canasta VIGILAN (se
+  // avisa dónde se rompe), pero no mueven plata sola, salvo que ella lo pida
+  // con `rebalancear: true`.
+  const rebalanceo = esc.rebalancear === true && (C.crecimiento?.max != null || C.crecimiento?.min != null) && idsCrec.length && idsRentas.length
     ? { a: { ids: idsCrec, destinoId: destino("crecimiento") }, b: { ids: idsRentas, destinoId: destino("rentas") }, aMin: C.crecimiento?.min ?? null, aMax: C.crecimiento?.max ?? null, aMeta: C.crecimiento?.min != null && C.crecimiento?.max != null ? (num(C.crecimiento.min) + num(C.crecimiento.max)) / 2 : C.crecimiento?.max != null ? Math.max(0, num(C.crecimiento.max) - 5) : Math.min(100, num(C.crecimiento.min) + 5) }
     : null;
   const liq = liquidezEscenario(baseCfg, esc);
@@ -994,7 +1000,7 @@ export function narrar(r, baseCfg) {
   frases.push(`Hoy entran ${M(baseCfg.base?.ia + baseCfg.base?.ip || hoy.entra)} al mes y salen ${M(baseCfg.gastosMes)}.`);
   if (r.ajuste?.notas?.length) frases.push(r.ajuste.notas.join(" "));
   const ev = (r.eventos || []).filter((e) => !e.plantilla);
-  if (ev.length) frases.push("Después: " + ev.map((e) => `año ${Math.floor(num(e.mes) / 12) + 1}, ${e.tipo === "comprar" ? `compras ${e.nombre}` : e.tipo === "vender" ? `vendes ${baseCfg.posiciones.find((x) => x.id === e.posicionId)?.nombre || ""}${e.nuevo ? ` y la plata va a ${e.nuevo.nombre || "una inversión nueva"}${num(e.nuevo.tasa) > 0 ? ` al ${e.nuevo.tasa}%` : ""}` : e.destinoId ? ` y la plata va a ${baseCfg.posiciones.find((x) => x.id === e.destinoId)?.nombre || ""}` : ""}` : e.tipo === "transformar" ? `construyes sobre ${e.nombre || baseCfg.posiciones.find((x) => x.id === e.posicionId)?.nombre || ""}${num(e.renta) > 0 ? ` y renta ${M(e.renta)}/mes` : ""}` : e.tipo === "flujo_inicia" ? `${e.flujo?.tipo === "gasto" ? "entra el gasto" : "entra"} ${e.flujo?.nombre}` : e.tipo}`).join("; ") + ".");
+  if (ev.length) frases.push("Después: " + ev.map((e) => `año ${Math.floor(num(e.mes) / 12) + 1}, ${e.tipo === "comprar" ? `compras ${e.nombre}` : e.tipo === "vender" ? `vendes ${baseCfg.posiciones.find((x) => x.id === e.posicionId)?.nombre || ""}${e.nuevo ? ` y la plata va a ${e.nuevo.nombre || "una inversión nueva"}${num(e.nuevo.tasa) > 0 ? ` al ${e.nuevo.tasa}%` : ""}` : e.destinoId ? ` y la plata va a ${baseCfg.posiciones.find((x) => x.id === e.destinoId)?.nombre || ""}` : ""}` : e.tipo === "transformar" ? `construyes sobre ${e.nombre || baseCfg.posiciones.find((x) => x.id === e.posicionId)?.nombre || ""}${num(e.renta) > 0 ? ` y renta ${M(e.renta)}/mes` : ""}` : e.tipo === "flujo_inicia" ? `${e.flujo?.tipo === "gasto" ? "entra el gasto" : "entra"} ${e.flujo?.nombre}` : e.tipo === "flujo_cambia" ? `${baseCfg.flujos.find((f) => f.id === e.flujoId)?.nombre || "un flujo"} pasa a ${M(e.monto)}/mes` : e.tipo === "flujo_termina" ? `termina ${baseCfg.flujos.find((f) => f.id === e.flujoId)?.nombre || "un flujo"}` : e.tipo === "motor" ? `arranca ${e.nombre || "el motor"} (${e.vueltas || 1} vueltas)` : e.tipo === "aportar" ? `mueves ${M(e.monto)} a ${baseCfg.posiciones.find((x) => x.id === e.posicionId)?.nombre || ""}` : e.tipo}`).join("; ") + ".");
   frases.push(`En el año 10 entran ${M(fin.entraMes)} al mes contra ${M(fin.saleMes)} de gastos y cuotas: cobertura ${Math.round(fin.cobertura || 0)}%. El patrimonio pasa de ${M(p.patrimonioInicial)} a ${M(p.patrimonioFinal)} (${M(p.patrimonioFinalReal)} en plata de hoy, ${p.crecimientoRealAnual == null ? "" : p.crecimientoRealAnual.toFixed(1).replace(".", ",") + "% real al año"}).`);
   if (p.mesApretado) frases.push(`El mes más apretado es en el año ${Math.floor(p.mesApretado.mes / 12) + 1}, con cobertura ${Math.round(p.mesApretado.cobertura)}%${p.seSostiene ? ": se sostiene." : ": ahí no alcanza."}`);
   if (p.estres) frases.push(`Si crecimiento rinde ${String(Math.round(p.estres.tasa * 10) / 10).replace(".", ",")}% en vez de lo supuesto, el patrimonio termina en ${M(p.estres.patrimonioFinal)}.`);
