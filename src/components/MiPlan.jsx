@@ -458,7 +458,29 @@ function describirMov(m, posiciones, flujos) {
     default: return `${a}: ${m.tipo}`;
   }
 }
-function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) {
+/**
+ * Un movimiento guardado, de vuelta al formulario (22-oct-2026).
+ *
+ * Santiago: "que esto se pueda editar, no solo quitar". Un evento cargado solo
+ * se podia borrar y volver a escribir entero: si uno se equivoco en el mes de
+ * una obra de seis campos, perdia los otros cinco.
+ */
+function aFormulario(m) {
+  const b = { cuando: Math.max(0, Number(m.mes) || 0), origenId: m.origen?.[0]?.posicionId };
+  switch (m.tipo) {
+    case "comprar": return { ...b, tipo: "comprar", nombre: m.nombre || "", monto: m.costo, canasta: m.bolsillo === "crecimiento" ? "crecimiento" : m.pagaPct === 100 ? "rentas" : "uso", renta: m.renta ?? "", rentaDesde: m.rentaDesde ?? 0, val1: m.valorizacion ?? 5, valN: m.valorizacion ?? 5, valorTocado: true };
+    case "transformar": return { ...b, tipo: "transformar", posicionId: m.posicionId, obraCosto: m.obra, mesesObra: m.mesesObra, valorFinal: m.valor, rentaFinal: m.renta, valorTocado: true };
+    case "motor": return { ...b, tipo: "motor", nombre: m.nombre || "", lote: m.lote, obra: m.obra, venta: m.venta, mesesVuelta: m.mesesVuelta, impuestoPct: m.impuestoPct, vueltas: m.vueltas };
+    case "vender": return { ...b, tipo: "vender", posicionId: m.posicionId };
+    case "aportar": return { ...b, tipo: "aportar", posicionId: m.posicionId, monto: m.monto };
+    case "revaluar": return { ...b, tipo: "revaluar", posicionId: m.posicionId, monto: m.valor };
+    case "flujo_inicia": return { ...b, tipo: m.flujo?.tipo === "gasto" ? "flujo_inicia_gasto" : "flujo_inicia_ingreso", nombre: m.flujo?.nombre || "", monto: m.flujo?.monto };
+    case "flujo_termina": return { ...b, tipo: "flujo_termina", flujoId: m.flujoId };
+    case "flujo_cambia": return { ...b, tipo: "flujo_cambia", flujoId: m.flujoId, monto: m.monto };
+    default: return { ...b, tipo: m.tipo };
+  }
+}
+function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo, inicial }) {
   // 22-oct-2026 (Santiago: "agregue en lo de que pasa despues y puse construir
   // una casa pero no me deja poner cuanto se valoriza por primer ano y cuanto
   // cada ano en adelante… si uno construye o compra casa en planos hay una
@@ -468,12 +490,12 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
   // de verdad: el salto de la obra o de los planos, y el ritmo normal despues.
   const [f, setF] = useState({ tipo: "comprar", cuando: 12, posicionId: posiciones[0]?.id || "", nombre: "", monto: "", canasta: "rentas", renta: "", rentaDesde: 0, flujoId: flujos[0]?.id || "", origenId: posiciones[0]?.id || "", val1: 5, valN: 5, tramo: 12,
     lote: "", obra: "", venta: "", mesesVuelta: 14, impuestoPct: 35, vueltas: 8,
-    obraCosto: "", mesesObra: 12, valorFinal: "", rentaFinal: "", valorTocado: false });
+    obraCosto: "", mesesObra: 12, valorFinal: "", rentaFinal: "", valorTocado: false, ...(inicial ? aFormulario(inicial) : {}) });
   const motor = f.tipo === "motor" ? cuentaMotor({ lote: f.lote, obra: f.obra, venta: f.venta, mesesVuelta: f.mesesVuelta, impuestoPct: f.impuestoPct, vueltas: f.vueltas }) : null;
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const mes = Math.max(0, Number(f.cuando) || 0);
   const guardar = () => {
-    const base = { id: "mv_" + Math.random().toString(36).slice(2, 8), mes };
+    const base = { id: inicial?.id || ("mv_" + Math.random().toString(36).slice(2, 8)), mes };
     const monto = Number(f.monto) || 0; let m = null;
     if (f.tipo === "vender") m = { ...base, tipo: "vender", posicionId: f.posicionId };
     if (f.tipo === "comprar" && f.nombre && monto > 0) m = { ...base, tipo: "comprar", nombre: f.nombre, costo: monto, bolsillo: f.canasta === "crecimiento" ? "crecimiento" : f.canasta === "rentas" ? "sustento" : "uso", pagaPct: f.canasta === "rentas" ? 100 : 0, valorizacion: Number(f.val1) || 0, origen: [{ posicionId: f.origenId }], renta: Number(f.renta) > 0 ? Number(f.renta) : undefined, rentaDesde: Number(f.rentaDesde) || 0 };
@@ -554,17 +576,30 @@ function EditorMovimiento({ posiciones, flujos, onAgregar, onCerrar, ejemplo }) 
         {f.tipo === "comprar" && f.canasta === "rentas" && <><Campo l="Cuánto renta al mes (pesos)"><NumPesos value={f.renta} onChange={(v) => set("renta", v)} /></Campo><Campo l="Empieza a rentar (meses después)"><Num value={f.rentaDesde} min={0} onChange={(v) => set("rentaDesde", v)} /></Campo></>}
         {(f.tipo === "comprar" || f.tipo === "aportar" || f.tipo === "motor") && <Campo l="Con plata de">{selPos("origenId")}</Campo>}
       </div>
-      <div style={{ display: "flex", gap: 8 }}><button style={btn(true)} onClick={guardar}>Agregar</button><button style={btn(false)} onClick={onCerrar}>Cancelar</button></div>
+      <div style={{ display: "flex", gap: 8 }}><button style={btn(true)} onClick={guardar}>{inicial ? "Guardar cambios" : "Agregar"}</button><button style={btn(false)} onClick={onCerrar}>Cancelar</button></div>
     </div>
   );
 }
 function ListaEventos({ eventos, posiciones, flujos, onChange, ejemplo, vacio }) {
   const [abierto, setAbierto] = useState(false);
+  const [editando, setEditando] = useState(null);
+  // Al guardar una edición se reemplaza el evento Y lo que haya derivado de él
+  // (el segundo tramo de valorización de una compra lleva su mismo id + "_v").
+  const guardar = (nuevos) => {
+    const arr = Array.isArray(nuevos) ? nuevos : [nuevos];
+    if (editando) onChange([...eventos.filter((x) => x.id !== editando.id && x.id !== `${editando.id}_v`), ...arr]);
+    else onChange([...eventos, ...arr]);
+    setEditando(null);
+  };
   return (
     <div>
       {eventos.length === 0 && !abierto && <div style={{ ...F.body, fontStyle: "italic" }}>{vacio}</div>}
-      {eventos.length > 0 && <div style={{ display: "grid", gap: 6 }}>{[...eventos].sort((a, b) => a.mes - b.mes).map((m) => <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, ...F.body, color: C.text }}><span>· {describirMov(m, posiciones, flujos)}{m.plantilla && <span style={{ ...chip(C.subtle), marginLeft: 6 }}>plantilla</span>}</span><button style={{ ...btn(false), padding: "3px 10px", color: C.subtle }} onClick={() => onChange(eventos.filter((x) => x.id !== m.id))}>quitar</button></div>)}</div>}
-      {abierto ? <div style={{ marginTop: 10 }}><EditorMovimiento posiciones={posiciones} flujos={flujos} ejemplo={ejemplo} onAgregar={(m) => onChange([...eventos, ...(Array.isArray(m) ? m : [m])])} onCerrar={() => setAbierto(false)} /></div> : <div style={{ marginTop: 10 }}><button style={btn(false)} onClick={() => setAbierto(true)}>+ Agregar</button></div>}
+      {eventos.length > 0 && <div style={{ display: "grid", gap: 6 }}>{[...eventos].sort((a, b) => a.mes - b.mes).map((m) => <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, ...F.body, color: C.text }}><span>· {describirMov(m, posiciones, flujos)}{m.plantilla && <span style={{ ...chip(C.subtle), marginLeft: 6 }}>plantilla</span>}</span><span style={{ display: "flex", gap: 6 }}>
+        <button style={{ ...btn(false), padding: "3px 10px" }} onClick={() => { setEditando(m); setAbierto(false); }}>editar</button>
+        <button style={{ ...btn(false), padding: "3px 10px", color: C.subtle }} onClick={() => onChange(eventos.filter((x) => x.id !== m.id && x.id !== `${m.id}_v`))}>quitar</button>
+      </span></div>)}</div>}
+      {editando ? <div style={{ marginTop: 10 }}><div style={{ ...F.label, marginBottom: 6 }}>Editando: {describirMov(editando, posiciones, flujos)}</div><EditorMovimiento key={editando.id} posiciones={posiciones} flujos={flujos} inicial={editando} onAgregar={guardar} onCerrar={() => setEditando(null)} /></div>
+       : abierto ? <div style={{ marginTop: 10 }}><EditorMovimiento posiciones={posiciones} flujos={flujos} ejemplo={ejemplo} onAgregar={guardar} onCerrar={() => setAbierto(false)} /></div> : <div style={{ marginTop: 10 }}><button style={btn(false)} onClick={() => setAbierto(true)}>+ Agregar</button></div>}
     </div>
   );
 }
@@ -652,6 +687,14 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
             <button style={{ ...btn(false), color: C.subtle }} onClick={() => setPens(pens.filter((_, k) => k !== i))}>quitar</button>
           </div>)}
           {pens.length === 0 && <div style={{ ...F.body, marginTop: 8, fontStyle: "italic" }}>Sin pensiones todavía.</div>}
+          {/* 22-oct-2026 — Santiago agregó pensiones nuevas como eventos sin
+              borrar las viejas, y termino con cuatro: las dos imposibles de
+              aca seguian envenenando el plan. Si hay una que no puede ser, se
+              dice en el mismo sitio donde se borra. */}
+          {pens.some((x) => Number(x.monto) > Math.max(100e6, (base.gastosMes || 0) * 10)) && <div style={{ ...sub, marginTop: 10, borderColor: C.danger }}>
+            <div style={{ ...F.body, color: C.text }}><b style={{ color: C.danger }}>Hay una pensión que no puede ser.</b> {pens.filter((x) => Number(x.monto) > Math.max(100e6, (base.gastosMes || 0) * 10)).map((x) => `${x.nombre}: ${fmMes(x.monto)} al mes`).join(" · ")}.</div>
+            <div style={{ ...F.caption, marginTop: 2 }}>Tus gastos son {fmMes(base.gastosMes)} al mes. Corrige el monto acá arriba o quita la fila con el botón de al lado: mientras esté, todas las cifras del plan salen multiplicadas.</div>
+          </div>}
         </div>
         <div style={{ ...sub, marginTop: 10 }}>
           <div style={F.h3}>Otros ingresos, gastos o compras ya decididas</div>
