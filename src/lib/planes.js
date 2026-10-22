@@ -127,7 +127,7 @@ export function simularCamino(cfg = {}) {
       // una parte de esa inversión, o en qué etapa se hace?"). Lo que una
       // posición te paga (y lo que reinvierte) puede cambiar con fecha:
       // tres años reinvirtiendo todo y desde el cuarto recibir el 100 %.
-      case "paga_cambia": { const p = pos.find((x) => x.id === m.posicionId); if (p) { p.pagaPct = Math.min(100, Math.max(0, num(m.pagaPct))); log.push({ mes, texto: `${p.nombre} pasa a pagar el ${p.pagaPct}% (reinvierte el resto)` }); } break; }
+      case "paga_cambia": { const p = pos.find((x) => x.id === m.posicionId); if (p) { p.pagaPct = Math.min(100, Math.max(0, num(m.pagaPct))); if (m.reinvierteEn !== undefined) p.reinvierteEn = m.reinvierteEn || undefined; log.push({ mes, texto: `${p.nombre} pasa a pagar el ${p.pagaPct}% (reinvierte el resto)` }); } break; }
       case "tasa_cambia": { const p = pos.find((x) => x.id === m.posicionId); if (p) { p.tasa = num(m.tasa); log.push({ mes, texto: `${p.nombre} rinde ${p.tasa}%` }); } break; }
       default: break;
     }
