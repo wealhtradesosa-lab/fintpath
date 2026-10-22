@@ -76,7 +76,7 @@ export const CANASTA_EJEMPLOS = {
 // La de Protección es la línea que ya se escribió en agosto.
 export const CANASTA_CORTO = {
   proteccion: "Lo que te sostiene si todo sale mal",
-  rentas: "Capital que te deposita plata cada mes. No son solo arriendos",
+  rentas: "Te deposita plata cada mes. No son solo arriendos",
   crecimiento: "Se multiplica adentro, pero hoy no te paga nada",
   uso: "Ni te paga ni crece: lo tienes porque lo usas",
 };
