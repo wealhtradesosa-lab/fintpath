@@ -1260,7 +1260,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                           poner la cuota aproximada"). */}
                       {pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0 && <div style={{ ...F.caption, color: C.ok, whiteSpace: "nowrap" }}>≈ {fmMes(pagaAlMes(d.capital, d.tasa, d.pagaPct))}/mes</div>}
                       {Number(d.capital) > 0 && Number(d.tasa) > 0 && Number(d.pagaPct) > 0 && Number(d.pagaPct) < 100 && <div style={{ ...F.caption, whiteSpace: "nowrap" }}>reinviertes ≈ {fmMes(pagaAlMes(d.capital, d.tasa, 100 - Number(d.pagaPct)))}/mes</div>}
-                      {Number(d.capital) > 0 && Number(d.tasa) > 0 && !(pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0) && <div style={{ ...F.caption, whiteSpace: "nowrap" }}>todo se reinvierte</div>}</td>
+                      {Number(d.capital) > 0 && Number(d.tasa) > 0 && !(pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0) && <div style={{ ...F.caption, color: CANASTA_COLOR.crecimiento, whiteSpace: "nowrap" }}>crece ≈ {fmMes(pagaAlMes(d.capital, d.tasa, 100))}/mes</div>}</td>
                     <td style={tdNum}><Num value={d.valorizacion} step={0.5} onChange={(v) => setD(d.id, { valorizacion: v || 0 })} suffix="%" w={80} /></td>
                     <td style={td}><button style={{ ...btn(false), padding: "3px 8px", color: C.subtle }} onClick={() => upd({ despliegue: esc.despliegue.filter((x) => x.id !== d.id) })}>quitar</button></td>
                   </tr>)}
@@ -1533,8 +1533,13 @@ function ActivoPorActivo({ r, base }) {
     const vendido = d.capital <= 1 && (h ? h.capital : 0) > 0;
     const mesVenta = vendido ? meses.findIndex((m) => (m.detalle?.[p.id]?.capital || 0) <= 1) : -1;
     const vendidoHoy = vendido && mesVenta === 0;
+    // 22-oct-2026 (Santiago: "¿las inversiones de crecer no deberían dejar
+    // también un aproximado de lo que producen cada mes?"). Lo que crece no
+    // te paga, pero produce: se dice cuánto se queda adentro cada mes.
+    const creceHoy = h && !vendidoHoy ? produce(h).crece : 0;
+    const creceFin = (d.reinvierte || 0) + Math.max(0, d.capital) * (Math.pow(1 + (Number(p.valorizacion) || 0) / 100, 1 / 12) - 1);
     return { id: p.id, nombre: p.nombre, canasta: canastaDe(p), hoy: h ? h.capital : 0, nuevo: !h, entra,
-      fin: Math.max(0, d.capital), pagaHoy: vendidoHoy ? 0 : pagaHoy, pagaFin: d.recibe, vendido, vendidoHoy, anioVenta: mesVenta >= 0 ? Math.floor(mesVenta / 12) + 1 : null };
+      fin: Math.max(0, d.capital), pagaHoy: vendidoHoy ? 0 : pagaHoy, pagaFin: d.recibe, creceHoy, creceFin: d.capital > 1 ? creceFin : 0, vendido, vendidoHoy, anioVenta: mesVenta >= 0 ? Math.floor(mesVenta / 12) + 1 : null };
   }).filter((x) => x.hoy > 0 || x.fin > 0 || x.pagaFin > 0);
   if (!filas.length) return null;
   filas.sort((a, b) => b.fin - a.fin || b.hoy - a.hoy);
@@ -1542,7 +1547,7 @@ function ActivoPorActivo({ r, base }) {
   return (
     <div style={card}>
       <div style={F.h3}>Activo por activo: qué pasó con cada cosa tuya</div>
-      <div style={{ ...F.caption, marginTop: 2 }}>Con cuánto arranca, con cuánto termina en el año 10, y cuánto te deposita cada mes en cada momento. Lo que se vendió queda en cero y lo que nació con el plan va marcado.</div>
+      <div style={{ ...F.caption, marginTop: 2 }}>Con cuánto arranca, con cuánto termina en el año 10, y cuánto te deposita cada mes en cada momento. Lo que crece no te deposita: se dice cuánto se queda adentro cada mes. Lo que se vendió queda en cero y lo que nació con el plan va marcado.</div>
       <div style={{ overflowX: "auto", marginTop: 10 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
           <thead><tr>{["Activo", "Canasta", "Hoy vale", "Año 10 vale", "Te paga hoy", "Te paga año 10"].map((h, i) => <th key={h} style={{ ...th, textAlign: i < 2 ? "left" : "right" }}>{h}</th>)}</tr></thead>
@@ -1552,8 +1557,8 @@ function ActivoPorActivo({ r, base }) {
               <td style={td}><span style={chip(CANASTA_COLOR[x.canasta])}>{CANASTA_LABEL[x.canasta]}</span></td>
               <td style={tdNum}>{x.hoy > 0 ? fmM(x.hoy) : x.entra ? <span style={F.caption}>entra año {x.entra.anio}<br />con {fmM(x.entra.capital)}</span> : "—"}</td>
               <td style={{ ...tdNum, color: x.fin > x.hoy ? C.ok : x.fin < x.hoy ? C.muted : C.text }}>{x.fin > 0 ? fmM(x.fin) : "—"}</td>
-              <td style={tdNum}>{x.pagaHoy > 0 ? <span>{fmMes(x.pagaHoy)}{x.vendido && <div style={F.caption}>hasta la venta</div>}</span> : x.entra && x.entra.paga > 0 ? <span style={F.caption}>desde año {x.entra.anio}<br />{fmMes(x.entra.paga)}</span> : "—"}</td>
-              <td style={{ ...tdNum, color: x.pagaFin > 0 ? C.ok : C.muted }}>{x.pagaFin > 0 ? fmMes(x.pagaFin) : "—"}</td>
+              <td style={tdNum}>{x.pagaHoy > 0 ? <span>{fmMes(x.pagaHoy)}{x.vendido && <div style={F.caption}>hasta la venta</div>}</span> : x.entra && x.entra.paga > 0 ? <span style={F.caption}>desde año {x.entra.anio}<br />{fmMes(x.entra.paga)}</span> : x.creceHoy > 1e4 ? <span style={{ ...F.caption, color: CANASTA_COLOR.crecimiento }}>crece {fmMes(x.creceHoy)}</span> : "—"}</td>
+              <td style={{ ...tdNum, color: x.pagaFin > 0 ? C.ok : C.muted }}>{x.pagaFin > 0 ? fmMes(x.pagaFin) : x.creceFin > 1e4 ? <span style={{ ...F.caption, color: CANASTA_COLOR.crecimiento }}>crece {fmMes(x.creceFin)}</span> : "—"}</td>
             </tr>)}
             <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}>
               <td style={{ ...td, fontWeight: 700 }}>Todo junto</td><td style={td} />
