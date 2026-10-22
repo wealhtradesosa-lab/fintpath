@@ -1536,10 +1536,15 @@ function ActivoPorActivo({ r, base }) {
     // 22-oct-2026 (Santiago: "¿las inversiones de crecer no deberían dejar
     // también un aproximado de lo que producen cada mes?"). Lo que crece no
     // te paga, pero produce: se dice cuánto se queda adentro cada mes.
+    // Una renta atada al activo (la bodega que se construye sobre el lote, el
+    // arriendo de una compra) es un flujo, no rendimiento del capital: se
+    // suma a lo que ese activo te paga en el año 10.
+    const H = meses.length - 1;
+    const rentaFin = (r.resultado?.flujos || []).filter((f) => f.tipo === "ingreso" && f.posicionId === p.id && H >= (f.desdeMes || 0) && H <= (f.hastaMes == null ? Infinity : f.hastaMes)).reduce((t, f) => t + f.monto, 0);
     const creceHoy = h && !vendidoHoy ? produce(h).crece : 0;
     const creceFin = (d.reinvierte || 0) + Math.max(0, d.capital) * (Math.pow(1 + (Number(p.valorizacion) || 0) / 100, 1 / 12) - 1);
     return { id: p.id, nombre: p.nombre, canasta: canastaDe(p), hoy: h ? h.capital : 0, nuevo: !h, entra,
-      fin: Math.max(0, d.capital), pagaHoy: vendidoHoy ? 0 : pagaHoy, pagaFin: d.recibe, creceHoy, creceFin: d.capital > 1 ? creceFin : 0, vendido, vendidoHoy, anioVenta: mesVenta >= 0 ? Math.floor(mesVenta / 12) + 1 : null };
+      fin: Math.max(0, d.capital), pagaHoy: vendidoHoy ? 0 : pagaHoy, pagaFin: d.recibe + rentaFin, creceHoy, creceFin: d.capital > 1 ? creceFin : 0, vendido, vendidoHoy, anioVenta: mesVenta >= 0 ? Math.floor(mesVenta / 12) + 1 : null };
   }).filter((x) => x.hoy > 0 || x.fin > 0 || x.pagaFin > 0);
   if (!filas.length) return null;
   filas.sort((a, b) => b.fin - a.fin || b.hoy - a.hoy);
