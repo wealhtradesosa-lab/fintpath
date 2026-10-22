@@ -1320,6 +1320,46 @@ function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver, o
 }
 
 // ─── Paso 5 · Compara ────────────────────────────────────────────────────────
+// ─── Cuál te conviene, y por qué ─────────────────────────────────────────────
+// 22-oct-2026 — El Plan Patrimonial SALEM cierra con "Recomendación: el Plan
+// Conservador + Casa". La app ponía diez escenarios al lado y dejaba al
+// usuario solo frente a la tabla. Recomendar no es adivinar: es decir con qué
+// vara se está midiendo, y dejar ver quién gana en cada cosa por separado —
+// para que quien no esté de acuerdo con la vara pueda elegir otro.
+function Recomendacion({ res, onElegir, caminoElegido, onVer }) {
+  if (!res || res.length < 2) return null;
+  const con = (f) => [...res].sort(f)[0];
+  const masMes = con((a, b) => b.puntos.quedaMes - a.puntos.quedaMes);
+  const masPatrimonio = con((a, b) => b.puntos.patrimonioFinalReal - a.puntos.patrimonioFinalReal);
+  const masFirme = con((a, b) => (b.puntos.mesApretado?.cobertura ?? 0) - (a.puntos.mesApretado?.cobertura ?? 0));
+  // Primero los que se sostienen y no rompen sus propias reglas; de esos, el
+  // que más patrimonio real deja. La vida cubierta antes que el tamaño.
+  const sanos = res.filter((r) => r.puntos.seSostiene !== false && r.vigilancia?.cumple !== false);
+  const pool = sanos.length ? sanos : res;
+  const elegido = [...pool].sort((a, b) => b.puntos.patrimonioFinalReal - a.puntos.patrimonioFinalReal)[0];
+  const Chip = ({ t, r, d }) => <div style={sub}><div style={F.label}>{t}</div><div style={{ ...F.body, color: r.color, fontWeight: 700, marginTop: 2 }}>{r.nombre}</div><div style={F.caption}>{d}</div></div>;
+  return (
+    <div style={{ ...card, borderColor: elegido.color }}>
+      <div style={F.h2}>Si tuviera que elegir uno: <span style={{ color: elegido.color }}>{elegido.nombre}</span></div>
+      <div style={{ ...F.body, marginTop: 4 }}>
+        La vara: primero que <b style={{ color: C.text }}>la vida quede cubierta todos los meses</b> y que el escenario no rompa sus propias reglas; entre los que lo logran, el que deja <b style={{ color: C.text }}>más patrimonio en plata de hoy</b>.
+        {sanos.length === 0 && <> <b style={{ color: C.danger }}>Ojo: ninguno pasa el primer filtro</b>, así que este es solo el que más patrimonio deja.</>}
+        {sanos.length > 0 && sanos.length < res.length && <> {res.length - sanos.length} de {res.length} no pasaron el primer filtro.</>}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 8, marginTop: 12 }}>
+        <Chip t="El que más te deja al mes" r={masMes} d={`${fmMes(masMes.puntos.quedaMes)} libres en el año 10`} />
+        <Chip t="El que más patrimonio deja" r={masPatrimonio} d={`${fmM(masPatrimonio.puntos.patrimonioFinalReal)} en plata de hoy`} />
+        <Chip t="El que menos se aprieta" r={masFirme} d={masFirme.puntos.mesApretado ? `su peor mes queda en ${pct(masFirme.puntos.mesApretado.cobertura)}` : "nunca baja"} />
+      </div>
+      <div style={{ ...F.caption, marginTop: 10 }}>No son el mismo en general, y ahí está la decisión: más plata al mes casi siempre es menos patrimonio al final. Si tu vara es otra, elige otro — la tabla de abajo es la misma cuenta, sin opinión.</div>
+      <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+        {caminoElegido === elegido.id ? <span style={chip(C.accent)}>Ya es tu camino</span> : <button style={btn(true)} onClick={() => onElegir(elegido.id)}>Hacer de «{elegido.nombre}» mi camino</button>}
+        <button style={btn(false)} onClick={() => onVer(elegido.id)}>Ver su detalle →</button>
+      </div>
+    </div>
+  );
+}
+
 function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onElegir, onEditar }) {
   const data = useMemo(() => { const H = Math.max(...res.map((r) => r.resultado.anual.length)); return Array.from({ length: H + 1 }, (_, a) => { const row = { anio: a }; res.forEach((r) => { row[r.id] = a === 0 ? r.puntos.patrimonioInicial : r.resultado.anual[a - 1]?.patrimonioFin; }); return row; }); }, [res]);
   const hoy = useMemo(() => { const entra = (base.base?.ia || 0) + (base.base?.ip || 0), sale = base.gastosMes; const crece = base.posiciones.reduce((s, p) => s + produce(p).crece, 0); return { entra, sale, queda: entra - sale, cobertura: sale > 0 ? (entra / sale) * 100 : 0, produce: entra + crece }; }, [base]);
@@ -1376,6 +1416,7 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
           </table>
         </div>
       </div>
+      <Recomendacion res={res} onElegir={onElegir} caminoElegido={caminoElegido} onVer={onVer} />
       <div style={card}>
         <div style={F.h3}>$100 M en cada inversión, en igualdad de condiciones</div>
         <div style={F.caption}>Qué serían $100 M a 3, 5 y 10 años en cada tipo de inversión que tienes o podrías tener, con todo reinvertido y neto de impuestos (35% sobre rendimiento pagado, 15% al vender).</div>
