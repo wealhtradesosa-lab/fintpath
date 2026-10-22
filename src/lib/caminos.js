@@ -22,11 +22,28 @@
  * Puro: sin React, sin storage. Todo en COP; montos mensuales salvo capital.
  */
 import { simularCamino, estresar, cienMillones } from "./planes.js";
-import { montoPromedioMensual, rangoEfectivo } from "./flowHelpers.js";
+import { montoPromedioMensual, rangoEfectivo, montoDelMes } from "./flowHelpers.js";
 import { calcularBase } from "./metrics.js";
 import { fmtPlataCortaEs } from "./formato.js";
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+
+/**
+ * Cuántos meses del año corre de verdad un renglón, y cuánto cae en su mejor
+ * mes (22-oct-2026).
+ *
+ * Santiago: "no saca bien los cálculos porque no está tomando los ingresos de
+ * rentas de inversiones de siempre". Sí los tomaba: su BTG dice $122,5 M al
+ * mes pero su vigencia es SOLO diciembre, así que el plan -que trabaja con el
+ * promedio del año- lo cuenta como $10,2 M. El número estaba bien y aun así
+ * engañaba, porque la pantalla no decía por qué. Esto es lo que hace falta
+ * para poder decirlo.
+ */
+export function ritmoDelAnio(item, anio = new Date().getFullYear()) {
+  let meses = 0, mejor = 0, total = 0;
+  for (let m = 1; m <= 12; m++) { const v = num(montoDelMes(item, anio, m)); total += v; if (v > 0) { meses++; if (v > mejor) mejor = v; } }
+  return { meses, mejor, promedio: total / 12, total };
+}
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9áéíóúñ ]/g, "").trim();
 
 /** Supuestos por defecto del perfil. La persona los cambia una vez y aplican a todo. */
@@ -233,7 +250,7 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
     if (ingresosFuera.has(i.id)) return;
     const m = montoPromedioMensual(i) * fx(i);
     if (!(m > 0)) return;
-    if (esArriendoCat(i)) { flujos.push({ id: `ing_${i.id}`, nombre: i.nombre || "Arriendo", tipo: "ingreso", monto: m, posicionId: activoDeArriendo(i)?.id, indexa: true, origenId: i.id }); return; }
+    if (esArriendoCat(i)) { flujos.push({ id: `ing_${i.id}`, nombre: i.nombre || "Arriendo", tipo: "ingreso", monto: m, posicionId: activoDeArriendo(i)?.id, indexa: true, origenId: i.id, ritmo: ritmoDelAnio(i) }); return; }
     const cap = num(i.capital) * fx(i), tasa = num(i.tasa);
     if (esRendimientoCat(i) && cap > 0 && tasa > 0) {
       // 21-oct-2026 — La posición se armaba con `capital × tasa NOMINAL`, que
@@ -268,11 +285,11 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
       // Posición que esta pantalla INVENTA a partir del ingreso: es la que más
       // se quita ("porque aparece BTG si no lo tengo"), así que se quita igual.
       if (estaFuera(`cap_${i.id}`)) { ingresosFuera.add(i.id); fuera.push({ id: `cap_${i.id}`, nombre: i.nombre || "Inversión", capital: cap, tipo: "Capital", soloIngreso: true }); return; }
-      posiciones.push({ id: `cap_${i.id}`, nombre: i.nombre || "Inversión", bolsillo: "sustento", capital: cap, tasa: tasaReal, tasaDeclarada: declarada, pagaPct: 100, valorizacion: 0, tipo: "Capital", owner: i.owner, soloIngreso: true, ventana, ...(fichas[`cap_${i.id}`] || {}) });
+      posiciones.push({ id: `cap_${i.id}`, nombre: i.nombre || "Inversión", bolsillo: "sustento", capital: cap, tasa: tasaReal, tasaDeclarada: declarada, pagaPct: 100, valorizacion: 0, tipo: "Capital", owner: i.owner, soloIngreso: true, ventana, ritmo: ritmoDelAnio(i), ...(fichas[`cap_${i.id}`] || {}) });
       return;
     }
     const trabajo = esTrabajoCat(i);
-    flujos.push({ id: `ing_${i.id}`, nombre: i.nombre || i.categoria || "Ingreso", tipo: "ingreso", monto: m, indexa: trabajo, trabajo, origenId: i.id, owner: i.owner });
+    flujos.push({ id: `ing_${i.id}`, nombre: i.nombre || i.categoria || "Ingreso", tipo: "ingreso", monto: m, indexa: trabajo, trabajo, origenId: i.id, owner: i.owner, ritmo: ritmoDelAnio(i) });
   });
   // La base (patrimonio, lo que entra, lo que sale) se mide sobre el MISMO
   // universo que el plan. Si no, el encabezado cuenta un patrimonio que la

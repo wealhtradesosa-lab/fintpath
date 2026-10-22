@@ -951,7 +951,34 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
 function GraficaMesAMes({ r }) {
   const meses = r.resultado?.meses || [];
   if (meses.length === 0) return null;
-  const datos = meses.map((m) => ({ mes: m.mes, entra: Math.round(m.entra), sale: Math.round(m.sale) }));
+  // 22-oct-2026 — Santiago, por tercera vez: "¿de dónde saca el sistema que me
+  // ingresan 78 MM en este escenario que estamos armando?". Tres veces la
+  // misma pregunta no es una duda: es que la cifra no se puede abrir. El motor
+  // ya sabe de dónde sale cada peso de cada mes (detalle por posición, flujos,
+  // gastos y cuotas); lo que faltaba era enseñarlo al pararse encima.
+  const nombreDe = Object.fromEntries((r.cfg?.posiciones || []).map((p) => [p.id, p.nombre]));
+  const datos = meses.map((m) => ({ mes: m.mes, entra: Math.round(m.entra), sale: Math.round(m.sale),
+    recibido: m.recibido, ingFlujos: m.ingFlujos, gastos: m.gastos, cuotas: m.cuotas,
+    partes: Object.entries(m.detalle || {}).filter(([, v]) => v.recibe > 0).map(([id, v]) => ({ nombre: nombreDe[id] || id, monto: v.recibe })).sort((a, b) => b.monto - a.monto) }));
+  const DeDonde = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0]?.payload; if (!d) return null;
+    const sobra = d.entra - d.sale;
+    const L = ({ t, v, color, sangria }) => <div style={{ display: "flex", justifyContent: "space-between", gap: 14, ...F.caption, color: color || C.muted, paddingLeft: sangria ? 10 : 0 }}><span>{t}</span><span style={{ fontFamily: F.mono.fontFamily, color: color || C.text }}>{fmMes(v)}</span></div>;
+    return (
+      <div style={{ background: C.surface, border: `1px solid ${C.borderStrong}`, borderRadius: 10, padding: "10px 12px", minWidth: 240, boxShadow: "0 8px 24px rgba(0,0,0,.45)" }}>
+        <div style={F.label}>{label === 0 ? "Hoy" : `Año ${anioDe(label)}, mes ${(label % 12) + 1}`}</div>
+        <div style={{ marginTop: 6 }}><L t="Entra" v={d.entra} color={r.color} /></div>
+        {d.partes.slice(0, 5).map((x) => <L key={x.nombre} t={`· ${x.nombre}`} v={x.monto} sangria />)}
+        {d.partes.length > 5 && <L t={`· y ${d.partes.length - 5} más`} v={d.partes.slice(5).reduce((t, x) => t + x.monto, 0)} sangria />}
+        {d.ingFlujos > 0 && <L t="· arriendos, honorarios, pensiones" v={d.ingFlujos} sangria />}
+        <div style={{ marginTop: 6, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}><L t="Sale" v={d.sale} color={C.danger} /></div>
+        {d.gastos > 0 && <L t="· gastos de vida" v={d.gastos} sangria />}
+        {d.cuotas > 0 && <L t="· cuotas de deuda" v={d.cuotas} sangria />}
+        <div style={{ marginTop: 6, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}><L t="Sobra" v={sobra} color={sobra >= 0 ? C.ok : C.danger} /></div>
+      </div>
+    );
+  };
   // Los hitos que de verdad mueven la linea; si son muchos, los mas separados.
   const hitos = (r.resultado.log || []).filter((l) => l.mes > 0).reduce((acc, l) => { const ya = acc.find((x) => Math.abs(x.mes - l.mes) < 4); if (ya) { if (!ya.texto.includes(l.texto)) ya.texto += ` + ${l.texto}`; return acc; } acc.push({ mes: l.mes, texto: l.texto }); return acc; }, []).slice(0, 7);
   const ap = r.puntos?.mesApretado;
@@ -968,7 +995,7 @@ function GraficaMesAMes({ r }) {
             <CartesianGrid {...gridProps} />
             <XAxis dataKey="mes" {...axisProps} ticks={ticks} tickFormatter={(m) => (m === 0 ? "hoy" : `año ${m / 12}`)} />
             <YAxis {...axisProps} width={64} tickFormatter={(v) => fmMes(v).replace("$", "")} />
-            <Tooltip content={<ChartTooltip formatter={(v) => fmMes(v)} labelFormatter={(m) => (m === 0 ? "Hoy" : `Año ${anioDe(m)}, mes ${(m % 12) + 1}`)} />} />
+            <Tooltip content={<DeDonde />} />
             <Area type="stepAfter" dataKey={(x) => [Math.min(x.entra, x.sale), x.entra]} name="Sobra" stroke="none" fill={C.ok} fillOpacity={0.16} isAnimationActive={false} />
             <Line type="stepAfter" dataKey="entra" name="Entra" stroke={r.color} strokeWidth={2} dot={false} isAnimationActive={false} />
             <Line type="stepAfter" dataKey="sale" name="Sale" stroke={C.danger} strokeDasharray="5 4" strokeWidth={1.5} dot={false} isAnimationActive={false} />
