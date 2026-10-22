@@ -60,10 +60,22 @@ export const PERFIL_DEFAULT = {
   depreciacionVehiculo: -10,
   arriendoPctMensual: 0.5,   // % del valor de la vivienda, si se vive arrendado
   pensiones: [],             // [{ ownerId, mes, monto, nombre }]
-  // 22-oct-2026 — Lo que gana una SOCIEDAD paga renta antes de llegarte; lo
-  // tuyo personal ya está contado en tus gastos (el impuesto neto del año), y
-  // volver a cobrarlo acá seria contarlo dos veces. De ahí el 0 por defecto.
-  impuestoSociedad: 35,      // % sobre lo que rinde y sobre la ganancia al vender
+  // 22-oct-2026 — Lo que gana una sociedad paga renta antes de llegarte, y la
+  // pantalla sabe decirlo. Pero arranca en CERO, y no en 35%, por dos razones.
+  //
+  // La primera: se publicó en 35% y le bajó a Santiago lo que entra al mes sin
+  // que él hubiera pedido nada —"77 MM está mal, algo no considera usted"—.
+  // Un supuesto nuestro no puede moverle los números a espaldas suyas; es lo
+  // mismo que él viene reclamando todo el día con las plantillas.
+  //
+  // La segunda: 35% plano casi nunca es la tarifa real. En su propio F110 de
+  // 2025, "inversiones lagoon" declara $92,9 M de ingresos y $144.000 de
+  // impuesto neto —tiene costos, deducciones y $500 M de pérdidas fiscales
+  // acumuladas—. Poner 35% ahí no es prudente: es otro número inventado.
+  //
+  // Quien quiera cobrarlo lo sube en Supuestos, y entonces sí: sobre lo que
+  // rinde y sobre la ganancia al vender, menos la casa donde vive.
+  impuestoSociedad: 0,       // % sobre lo que rinde y sobre la ganancia al vender
   impuestoPersona: 0,
 };
 
