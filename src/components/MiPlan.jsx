@@ -136,6 +136,30 @@ const vecesDe = (p) => { const i = Number(p?.patrimonioInicial) || 0, f = Number
  * Una gráfica con un valor absurdo adentro no es una gráfica: es una mentira
  * con ejes. Mejor no dibujarla y señalar el dato que hay que arreglar.
  */
+// 22-oct-2026 — Santiago, despues de tres explicaciones de donde queda el
+// campo: "sigo perdido con esto". Cuando alguien se pierde buscando donde
+// arreglar algo, el problema ya no es que no sepa: es que lo estamos mandando
+// a buscar. El boton va donde el ya esta parado.
+function pensionesImposibles(perfil, base) {
+  const techo = Math.max(100e6, (base?.gastosMes || 0) * 10);
+  return (perfil?.pensiones || []).filter((x) => (Number(x.monto) || 0) > techo);
+}
+function BotonesArreglar({ perfil, base, onPerfil }) {
+  const malas = pensionesImposibles(perfil, base);
+  if (!malas.length || !onPerfil) return null;
+  const quitar = (x) => onPerfil({ ...perfil, pensiones: (perfil.pensiones || []).filter((y) => y !== x) });
+  const corregir = (x) => onPerfil({ ...perfil, pensiones: (perfil.pensiones || []).map((y) => (y === x ? { ...y, monto: Math.round(Number(y.monto) / 1e6) } : y)) });
+  return (
+    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+      {malas.map((x, i) => <div key={i} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ ...F.caption, color: C.text }}><b>{x.nombre || "Pensión"}</b>: {fmMes(x.monto)} al mes</span>
+        <button style={{ ...btn(true), padding: "4px 12px" }} onClick={() => corregir(x)}>Dejarla en {fmMes(Number(x.monto) / 1e6)}</button>
+        <button style={{ ...btn(false), padding: "4px 12px", color: C.danger, borderColor: C.danger }} onClick={() => quitar(x)}>Quitarla</button>
+      </div>)}
+      <div style={F.caption}>«Dejarla en…» le quita los seis ceros de más. «Quitarla» la borra del plan. Las dos cosas pasan aquí mismo, sin ir a ningún lado.</div>
+    </div>
+  );
+}
 function sospechosos(perfil, base) {
   const out = [];
   const gastos = Math.max(1, base?.gastosMes || 0);
@@ -693,7 +717,8 @@ function PasoViene({ base, perfil, onPerfil, onNext }) {
               dice en el mismo sitio donde se borra. */}
           {pens.some((x) => Number(x.monto) > Math.max(100e6, (base.gastosMes || 0) * 10)) && <div style={{ ...sub, marginTop: 10, borderColor: C.danger }}>
             <div style={{ ...F.body, color: C.text }}><b style={{ color: C.danger }}>Hay una pensión que no puede ser.</b> {pens.filter((x) => Number(x.monto) > Math.max(100e6, (base.gastosMes || 0) * 10)).map((x) => `${x.nombre}: ${fmMes(x.monto)} al mes`).join(" · ")}.</div>
-            <div style={{ ...F.caption, marginTop: 2 }}>Tus gastos son {fmMes(base.gastosMes)} al mes. Corrige el monto acá arriba o quita la fila con el botón de al lado: mientras esté, todas las cifras del plan salen multiplicadas.</div>
+            <div style={{ ...F.caption, marginTop: 2 }}>Tus gastos son {fmMes(base.gastosMes)} al mes. Mientras esté, todas las cifras del plan salen multiplicadas.</div>
+            <BotonesArreglar perfil={perfil} base={base} onPerfil={onPerfil} />
           </div>}
         </div>
         <div style={{ ...sub, marginTop: 10 }}>
@@ -828,7 +853,7 @@ function MezclaEditor({ objetivo, onChange, base, perfil }) {
 
 /** ¿Esta persona ya decidió algo en este escenario? */
 const tieneAlgo = (e) => !!((e.ventas || []).length || (e.pagos || []).length || (e.despliegue || []).length || (e.eventos || []).length);
-function PasoIntencion({ todos, res, base, perfil, activoId, setActivoId, onNuevo, onNext, onArreglar, onBorrar, onComparar }) {
+function PasoIntencion({ todos, res, base, perfil, onPerfil, activoId, setActivoId, onNuevo, onNext, onArreglar, onBorrar, onComparar }) {
   const hoy = base?.base?.patrimonioNeto ?? 0;
   const c = base.canastasHoy;
   const tot = c.total || 1;
@@ -890,7 +915,8 @@ function PasoIntencion({ todos, res, base, perfil, activoId, setActivoId, onNuev
               {r && vecesDe(r.puntos) > VECES_IMPOSIBLE && sospechosos(perfil, base).length > 0 && <div style={{ ...sub, marginTop: 10, borderColor: C.danger }}>
                 <div style={{ ...F.caption, color: C.text }}>Estas cifras no salen del plan, salen de un dato que no puede ser:</div>
                 {sospechosos(perfil, base).slice(0, 2).map((m, i) => <div key={i} style={{ ...F.caption, color: C.danger }}>· {m}</div>)}
-                {onArreglar && <button style={{ ...btn(false), marginTop: 6, padding: "4px 10px" }} onClick={onArreglar}>Llévame a arreglarlo →</button>}
+                <BotonesArreglar perfil={perfil} base={base} onPerfil={onPerfil} />
+                {onArreglar && !pensionesImposibles(perfil, base).length && <button style={{ ...btn(false), marginTop: 6, padding: "4px 10px" }} onClick={onArreglar}>Llévame a arreglarlo →</button>}
               </div>}
               {!tieneAlgo(e) && <div style={{ ...F.caption, marginTop: 10, color: C.muted }}>Todavía no hay plan que proyectar: esta tarjeta solo dice hacia dónde apunta la mezcla. Elígela y arma el plan —qué vendes, qué pagas, en qué lo pones— y ahí sale el resultado a 10 años.</div>}
               {r && tieneAlgo(e) && <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
@@ -1421,7 +1447,7 @@ function ActivoPorActivo({ r, base }) {
 }
 
 // ─── Paso 4 · Tu camino a 10 años ───────────────────────────────────────────────────
-function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver, onEditar }) {
+function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, onVolver, onEditar }) {
   if (!r) return null;
   const p = r.puntos;
   const eventos = [...r.cfg.movimientos].filter((m) => m.mes > 0 || m.tipo === "flujo_inicia" || m.tipo === "comprar").sort((a, b) => a.mes - b.mes);
@@ -1446,7 +1472,8 @@ function PasoResultado({ base, r, perfil, elegido, onElegir, onNext, onVolver, o
             <div style={{ ...F.body, marginTop: 8 }}>El dato que no puede ser:</div>
             <div style={{ display: "grid", gap: 2, marginTop: 3 }}>{sospechosos(perfil, base).slice(0, 4).map((m, i) => <div key={i} style={{ ...F.caption, color: C.danger }}>· {m}</div>)}</div>
           </>}
-          {onEditar && <div style={{ marginTop: 10 }}><button style={btn(true)} onClick={() => onEditar(4)}>Llévame a arreglarlo →</button></div>}
+          <BotonesArreglar perfil={perfil} base={base} onPerfil={onPerfil} />
+          {onEditar && !pensionesImposibles(perfil, base).length && <div style={{ marginTop: 10 }}><button style={btn(true)} onClick={() => onEditar(4)}>Llévame a arreglarlo →</button></div>}
         </div>}
         <div style={{ ...sub, marginTop: 12, opacity: vecesDe(p) > VECES_IMPOSIBLE ? 0.45 : 1 }}><div style={F.h3}>Así se cuenta este escenario</div>{narrar(r, base).map((t, i) => <div key={i} style={{ ...F.body, color: C.text, marginTop: 6 }}>{t}</div>)}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12, opacity: vecesDe(p) > VECES_IMPOSIBLE ? 0.45 : 1 }}>
@@ -1664,10 +1691,10 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
         <BarraEscenario todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} base={base} onNuevo={nuevo} />
         <Stepper paso={paso} setPaso={ir} />
         {paso === 1 && <PasoHoy base={base} fichas={fichas} onFichas={onFichas} onNext={() => ir(2)} />}
-        {paso === 2 && <PasoIntencion todos={todos} res={res} base={base} perfil={perfil} activoId={rActivo?.id} setActivoId={setActivoId} onNuevo={nuevo} onNext={() => ir(3)} onArreglar={() => { ir(3); setSub(4); }} onBorrar={borrar} onComparar={() => { ir(4); setVerCompara(true); }} />}
+        {paso === 2 && <PasoIntencion todos={todos} res={res} base={base} perfil={perfil} onPerfil={onPerfil} activoId={rActivo?.id} setActivoId={setActivoId} onNuevo={nuevo} onNext={() => ir(3)} onArreglar={() => { ir(3); setSub(4); }} onBorrar={borrar} onComparar={() => { ir(4); setVerCompara(true); }} />}
         {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => { ir(4); setVerCompara(true); }} sub={sub} setSub={setSub} />}
         {paso === 3 && sub === 4 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} />}
-        {paso === 4 && !verCompara && <PasoResultado base={base} perfil={perfil} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} onEditar={(n) => { ir(3); setSub(n); }} />}
+        {paso === 4 && !verCompara && <PasoResultado base={base} perfil={perfil} onPerfil={onPerfil} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} onEditar={(n) => { ir(3); setSub(n); }} />}
         {paso === 4 && verCompara && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); setVerCompara(false); }} caminoElegido={caminoElegido} onElegir={onElegir} onEditar={(id) => { setActivoId(id); ir(3); setSub(1); }} />}
         <div style={{ ...F.caption, textAlign: "center" }}>Lo que simulas aquí no toca tus datos reales. Los ejercicios (Pensiones, Ahorro BTC, Comprar o arrendar) alimentan los supuestos, no las decisiones.</div>
       </>)}
