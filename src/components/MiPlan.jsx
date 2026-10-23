@@ -265,8 +265,12 @@ function BarraEscenario({ todos, res, activoId, setActivoId, base, onNuevo, onVe
 }
 
 function Stepper({ paso, setPaso }) {
+  // 23-oct-2026 (Santiago, desde el celular: "muchos problemas en la versión
+  // responsive, textos se salen de sus contenedores"). Cuatro columnas fijas
+  // en 390 px cortaban "INVERSIONE…"; en angosto van 2×2.
+  const ancho = useAncho();
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 6 }}>
+    <div style={{ display: "grid", gridTemplateColumns: ancho < 720 ? "repeat(2, minmax(0, 1fr))" : `repeat(${PASOS.length}, minmax(0, 1fr))`, gap: 6 }}>
       {PASOS.map(([t, s], i) => { const n = i + 1, on = paso === n, done = paso > n; return (
         <button key={t} onClick={() => setPaso(n)} style={{ background: on ? C.accent : C.surface, border: `1px solid ${on ? C.accent : C.border}`, borderRadius: 12, padding: "10px 8px", cursor: "pointer", textAlign: "left", minWidth: 0 }}>
           <div style={{ ...F.label, color: on ? "#fff" : done ? C.ok : C.subtle }}>{done ? "✓" : n} · {s}</div>
@@ -336,7 +340,10 @@ function FilaActivo({ p, onFicha, onQuitar }) {
           <div style={F.caption}>{p.tipo} · {p.canasta ? "la canasta la decidiste tú" : porQueCanasta(p)}</div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={() => onFicha({ estado: off ? "continua" : "sale" })} style={{ ...btn(false), color: off ? C.danger : C.ok, borderColor: off ? C.danger : C.ok, whiteSpace: "nowrap" }}>{off ? "Para reconvertir" : "Continúa"}</button>
+          {/* 23-oct-2026 (Santiago: "local Macarena y lote no se venden, se
+              transforman, y aparecen como vendidos hoy"). "Para reconvertir"
+              sonaba a transformar; es vender hoy y repartir la plata. */}
+          <button onClick={() => onFicha({ estado: off ? "continua" : "sale" })} title={off ? "Se vende hoy: la plata queda para repartir en el escenario. Clic para que continúe." : "Clic si se vende hoy; la plata queda para repartir en el escenario. Una obra o transformación no va aquí: va en «¿Qué pasa después?»."} style={{ ...btn(false), color: off ? C.danger : C.ok, borderColor: off ? C.danger : C.ok, whiteSpace: "nowrap" }}>{off ? "Se vende hoy" : "Continúa"}</button>
           <button onClick={() => setAbierto((a) => !a)} style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>{abierto ? "cerrar" : "ajustar"}</button>
           <button onClick={onQuitar} title="No va en el modelo: no lo tienes o no va acá. Sale del patrimonio y de lo que entra al mes; no libera plata, porque no se vende. Se puede volver a incluir." style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>quitar</button>
         </div>
@@ -390,7 +397,7 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
       <div style={card}>
         <div style={F.h2}>1 · Hoy: qué tienes, qué produce y qué sigue en el plan</div>
         <div style={{ ...F.body, marginTop: 4 }}>Este es tu punto de partida: <b style={{ color: C.text }}>qué tienes</b>, <b style={{ color: C.text }}>cuánto vale</b>, <b style={{ color: C.text }}>cuánto te renta</b> y <b style={{ color: C.text }}>hasta cuándo</b>. Ya clasificamos cada cosa según lo que produce — revisa que esté bien y corrige lo que no cuadre.</div>
-        <div style={{ ...F.body, marginTop: 8 }}>Acá haces una sola cosa: decir <b style={{ color: C.text }}>qué continúa</b> y <b style={{ color: C.text }}>qué sale para reconvertir</b>. Lo que sale se vende, y esa plata te queda <b style={{ color: C.text }}>a favor</b>: con ella pagas deudas o reinviertes, y eliges en qué más adelante. Si algo no va en el modelo —no es tuyo, está repetido, no lo tienes— lo <b style={{ color: C.text }}>quitas</b>: eso no se vende, simplemente deja de contar. Lo que decidas aquí vale para todos los escenarios.</div>
+        <div style={{ ...F.body, marginTop: 8 }}>Acá haces una sola cosa: decir <b style={{ color: C.text }}>qué continúa</b> y <b style={{ color: C.text }}>qué se vende hoy</b>. Lo que se vende deja plata que te queda <b style={{ color: C.text }}>a favor</b>: con ella pagas deudas o reinviertes, y eliges en qué más adelante. Si algo no va en el modelo —no es tuyo, está repetido, no lo tienes— lo <b style={{ color: C.text }}>quitas</b>: eso no se vende, simplemente deja de contar. Lo que decidas aquí vale para todos los escenarios.</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginTop: 14 }}>
           {tiles.map(([l, v, d]) => <div key={l} style={sub}><div style={F.label}>{l}</div><div style={{ ...F.monoLg, color: C.text, marginTop: 2 }}>{v}</div><div style={F.caption}>{d}</div></div>)}
         </div>
@@ -427,7 +434,7 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
           <button onClick={() => setRevisar((r) => !r)} style={btn(!revisar)}>{revisar ? "Ocultar la lista" : `Revisar mis ${base.posiciones.length} activos`}</button>
         </div>
         {revisar && <div style={{ marginTop: 6 }}>
-          <div style={{ ...F.caption, marginBottom: 2 }}>De cada uno decides una cosa: si <b style={{ color: C.text }}>continúa</b> tal como está, o si va <b style={{ color: C.text }}>para reconvertir</b> — lo vendes y esa plata queda a favor para pagar deudas o reinvertir. No dice cuándo lo vendes: el plan cuenta esa plata disponible desde el arranque. Lo demás ya está calculado — si algo no cuadra, "ajustar"; si algo no va en el modelo, "quitar".</div>
+          <div style={{ ...F.caption, marginBottom: 2 }}>De cada uno decides una cosa: si <b style={{ color: C.text }}>continúa</b> tal como está, o si <b style={{ color: C.text }}>se vende hoy</b> — esa plata queda a favor para pagar deudas o reinvertir desde el arranque. Una obra o transformación (el lote que pasa a bodega) no se marca aquí: el activo <b style={{ color: C.text }}>continúa</b> y la obra va en «¿Qué pasa después?». Lo demás ya está calculado — si algo no cuadra, "ajustar"; si algo no va en el modelo, "quitar".</div>
           {[...base.posiciones].sort((a, b2) => b2.capital - a.capital).map((q) => <FilaActivo key={q.id} p={q} onFicha={(patch) => setF(q.id, patch)} onQuitar={() => setF(q.id, { estado: "fuera" })} />)}
         </div>}
         {/* Lo quitado no se esconde: se dice, con su plata, y se puede
@@ -452,10 +459,10 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
         </div>}
         <div style={{ ...card, borderColor: salen.length ? C.accent : C.border }}>
           <div style={F.h3}>Lo que decides acá vale para todos los escenarios</div>
-          {salen.length === 0 && capFuera.n === 0 && !base.deudas.some((d) => d.pagar) ? <div style={{ ...F.body, marginTop: 6 }}>Todo continúa tal como está. Si algo va a salir (un inmueble que vendes, un lote quieto), márcalo arriba como <b style={{ color: C.text }}>Para reconvertir</b>.</div> : (
+          {salen.length === 0 && capFuera.n === 0 && !base.deudas.some((d) => d.pagar) ? <div style={{ ...F.body, marginTop: 6 }}>Todo continúa tal como está. Si algo va a salir (un inmueble que vendes, un lote quieto), márcalo arriba como <b style={{ color: C.text }}>Se vende hoy</b>.</div> : (
             <div style={{ marginTop: 6, display: "grid", gap: 6 }}>
               {capFuera.n > 0 && <div style={F.body}>Fuera del modelo: <b style={{ color: C.text }}>{base.fuera.map((q) => q.nombre).join(", ")}</b> → {fmM(capFuera.capital)} que dejan de contar (no se venden).</div>}
-              {salen.length > 0 && <div style={F.body}>Para reconvertir: <b style={{ color: C.text }}>{salen.map((p) => p.nombre).join(", ")}</b> → liberas <b style={{ color: C.text }}>{fmM(hoy.liberado)}</b>{hoy.costoVentaPct > 0 ? ` (neto de ${hoy.costoVentaPct}% de costos de venta)` : ""}.</div>}
+              {salen.length > 0 && <div style={F.body}>Se vende hoy: <b style={{ color: C.text }}>{salen.map((p) => p.nombre).join(", ")}</b> → liberas <b style={{ color: C.text }}>{fmM(hoy.liberado)}</b>{hoy.costoVentaPct > 0 ? ` (neto de ${hoy.costoVentaPct}% de costos de venta)` : ""}.</div>}
               {hoy.pagado > 0 && <div style={F.body}>Se paga: <b style={{ color: C.text }}>{base.deudas.filter((d) => d.pagar).map((d) => d.nombre).join(", ")}</b> → <b style={{ color: C.text }}>{fmM(hoy.pagado)}</b>, y dejas de pagar {fmMes(hoy.cuotasQueSalen)} de cuotas al mes.</div>}
               <div style={{ ...F.body, color: hoy.porDesplegar >= 0 ? C.ok : C.danger }}>Te queda <b>{fmM(hoy.porDesplegar)}</b> a favor para reinvertir. En qué lo pones se decide en el paso 3.</div>
             </div>
@@ -494,8 +501,11 @@ const GRUPOS_MOV = [
     { v: "revaluar", l: "Un activo pasa a valer otra cosa (obra, avalúo)" },
   ] },
 ];
-function describirMov(m, posiciones, flujos, deudas = []) {
-  const p = posiciones.find((x) => x.id === m.posicionId)?.nombre || m.posicionId;
+function describirMov(m, posiciones, flujos, deudas = [], movimientos = []) {
+  // Una posición que nace dentro del plan (cada vuelta del motor es una
+  // compra) no está en `posiciones`: su nombre está en la compra que la creó.
+  const nombreDe = (id) => posiciones.find((x) => x.id === id)?.nombre || movimientos.find((x) => x.tipo === "comprar" && x.id === id)?.nombre || (String(id || "").includes("_motor_") || String(id || "").startsWith("demo_mv_") ? "el proyecto" : id);
+  const p = nombreDe(m.posicionId);
   const a = `Año ${anioDe(m.mes)}${m.mes % 12 ? `, mes ${(m.mes % 12) + 1}` : ""}`;
   switch (m.tipo) {
     case "vender": {
@@ -1195,7 +1205,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
           <div style={card}>
             <H n="B" t="¿Qué vendes o transformas hoy?" d="Marca lo que sale. Puedes vender todo o solo una parte." />
             <div style={{ display: "grid", gap: 6 }}>
-              {base.posiciones.filter((p) => p.sale).map((p) => <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: 0.7 }}><input type="checkbox" checked disabled /><span style={{ ...F.caption, color: C.text }}>{p.nombre}</span><span style={F.caption}>{fmM(p.capital)}</span><span style={chip(C.accent)}>para reconvertir · paso 1</span></div>)}
+              {base.posiciones.filter((p) => p.sale).map((p) => <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: 0.7 }}><input type="checkbox" checked disabled /><span style={{ ...F.caption, color: C.text }}>{p.nombre}</span><span style={F.caption}>{fmM(p.capital)}</span><span style={chip(C.accent)}>se vende hoy · paso 1</span></div>)}
               {base.posiciones.filter((p) => !p.sale).sort((a, b) => b.capital - a.capital).map((p) => { const v = ventaDe(p.id); return (
                 <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 6, flexWrap: "wrap" }}>
                   <label style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200, cursor: "pointer" }}><input type="checkbox" checked={!!v} onChange={() => toggleVenta(p)} /><span style={{ ...F.caption, color: C.text }}>{p.nombre}</span><span style={F.caption}>{fmM(p.capital)}{p.vivienda ? " · vivienda" : ""}{p.renta > 0 ? ` · renta ${fmMes(p.renta)}` : ""}</span></label>
@@ -1377,7 +1387,20 @@ function GraficaMesAMes({ r, perfil, base, onArreglar }) {
     );
   };
   // Los hitos que de verdad mueven la linea; si son muchos, los mas separados.
-  const hitos = (r.resultado.log || []).filter((l) => l.mes > 0).reduce((acc, l) => { const ya = acc.find((x) => Math.abs(x.mes - l.mes) < 4); if (ya) { if (!ya.texto.includes(l.texto)) ya.texto += ` + ${l.texto}`; return acc; } acc.push({ mes: l.mes, texto: l.texto }); return acc; }, []).slice(0, 7);
+  // 23-oct-2026: los rebalanceos mensuales y las cifras crudas del log se
+  // montaban unas sobre otras arriba del gráfico. Solo hitos de verdad,
+  // cortos, y en pantalla angosta numerados con su lista debajo.
+  const ancho = useAncho();
+  // Hitos desde los movimientos del escenario (no desde el log del motor, que
+  // trae cifras crudas y rebalanceos): una línea por hecho, con su nombre.
+  const movs = r.cfg?.movimientos || [];
+  const vistos = new Set();
+  const hitos = [...movs].filter((m) => m.mes > 0 && ["vender", "comprar", "flujo_inicia", "revaluar", "transformar", "paga_cambia"].includes(m.tipo)).sort((a, b) => a.mes - b.mes).map((m) => ({ mes: m.mes, texto: describirMov(m, r.cfg.posiciones, r.cfg.flujos, r.cfg.deudas, movs).replace(/^Año \d+(, mes \d+)?: /, "") }))
+    .filter((h) => { const k = h.texto.replace(/ · vuelta \d+.*$/, "").replace(/ por \$.*$/, "").replace(/ pasa a valer .*$/, " pasa a valer"); if (vistos.has(k)) return false; vistos.add(k); return true; })
+    // Lo que pasa el mismo mes (o casi) es UN hito: un solo marcador en el gráfico.
+    .reduce((acc, h) => { const ya = acc.find((x) => Math.abs(x.mes - h.mes) < 3); if (ya) { ya.texto += ` · ${h.texto}`; return acc; } acc.push({ ...h }); return acc; }, [])
+    .slice(0, ancho < 720 ? 6 : 7).map((h, i) => ({ ...h, n: i + 1 }));
+  const angosto = ancho < 720;
   const ap = r.puntos?.mesApretado;
   const ticks = []; for (let a = 0; a <= meses.length; a += 12) ticks.push(a);
   return (
@@ -1396,10 +1419,11 @@ function GraficaMesAMes({ r, perfil, base, onArreglar }) {
             <Area type="stepAfter" dataKey={(x) => [Math.min(x.entra, x.sale), x.entra]} name="Sobra" stroke="none" fill={C.ok} fillOpacity={0.16} isAnimationActive={false} />
             <Line type="stepAfter" dataKey="entra" name="Entra" stroke={r.color} strokeWidth={2} dot={false} isAnimationActive={false} />
             <Line type="stepAfter" dataKey="sale" name="Sale" stroke={C.danger} strokeDasharray="5 4" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-            {hitos.map((h) => <ReferenceLine key={h.mes} x={h.mes} stroke={C.borderStrong} strokeDasharray="3 3" label={{ value: h.texto.length > 34 ? h.texto.slice(0, 32) + "…" : h.texto, position: "top", fontSize: 10, fill: C.subtle }} />)}
+            {hitos.map((h) => <ReferenceLine key={h.mes} x={h.mes} stroke={C.borderStrong} strokeDasharray="3 3" label={{ value: angosto ? String(h.n) : h.texto.length > 28 ? h.texto.slice(0, 26) + "…" : h.texto, position: "top", fontSize: 10, fill: C.subtle }} />)}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      {angosto && hitos.length > 0 && <div style={{ ...F.caption, marginTop: 6, display: "grid", gap: 2 }}>{hitos.map((h) => <div key={h.mes}><b style={{ color: C.text }}>{h.n}</b> · año {anioDe(h.mes)}: {h.texto}</div>)}</div>}
       {ap && <div style={{ ...F.caption, marginTop: 6 }}>Mes más apretado: <b style={{ color: C.text }}>año {anioDe(ap.mes)}</b>, cobertura {pct(ap.cobertura)} — {ap.cobertura >= 100 ? "aun así alcanza" : "ahí no alcanza y toca sacar de capital"}.</div>}
     </div>
   );
@@ -1594,7 +1618,7 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
     <div style={{ display: "grid", gap: 14 }}>
       <div style={{ ...card, borderColor: r.color }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 999, background: r.color }} /><span style={F.h1}>{r.nombre}</span>{elegido && <span style={chip(C.accent)}>Tu camino</span>}<span style={chip(r.vigilancia.cumple ? C.ok : C.danger)}>{r.vigilancia.cumple ? "se cumple" : `se rompe · año ${r.vigilancia.roturas[0].anio}`}</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}><span style={{ width: 10, height: 10, borderRadius: 999, background: r.color, flexShrink: 0 }} /><span style={{ ...F.h1, minWidth: 0, overflowWrap: "anywhere" }}>{r.nombre}</span>{elegido && <span style={chip(C.accent)}>Tu camino</span>}<span style={chip(r.vigilancia.cumple ? C.ok : C.danger)}>{r.vigilancia.cumple ? "se cumple" : `se rompe · año ${r.vigilancia.roturas[0].anio}`}</span></div>
           <div style={{ display: "flex", gap: 8 }}><button style={btn(false)} onClick={onVolver}>← Editar</button>{!elegido && <button style={btn(true)} onClick={onElegir}>Elegir este camino</button>}</div>
         </div>
         {r.tesis && <div style={{ ...F.body, marginTop: 6, fontStyle: "italic" }}>{r.tesis}</div>}
@@ -1647,7 +1671,7 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
         <div style={card}>
           <div style={F.h3}>Lo que pasa en el tiempo</div>
           {eventos.length === 0 && <div style={{ ...F.body, marginTop: 6 }}>Nada programado después de hoy.</div>}
-          <div style={{ display: "grid", gap: 6, marginTop: 6 }}>{eventos.map((m, i) => <div key={i} style={{ display: "flex", gap: 10, ...F.body, color: C.text }}><span style={{ ...chip(r.color), minWidth: 56, textAlign: "center" }}>{m.mes === 0 ? "hoy" : `año ${anioDe(m.mes)}`}</span><span>{describirMov(m, r.cfg.posiciones, r.cfg.flujos, r.cfg.deudas).replace(/^Año \d+(, mes \d+)?: /, "")}</span></div>)}</div>
+          <div style={{ display: "grid", gap: 6, marginTop: 6 }}>{eventos.map((m, i) => <div key={i} style={{ display: "flex", gap: 10, ...F.body, color: C.text }}><span style={{ ...chip(r.color), minWidth: 56, textAlign: "center" }}>{m.mes === 0 ? "hoy" : `año ${anioDe(m.mes)}`}</span><span>{describirMov(m, r.cfg.posiciones, r.cfg.flujos, r.cfg.deudas, r.cfg.movimientos).replace(/^Año \d+(, mes \d+)?: /, "")}</span></div>)}</div>
           {!r.vigilancia.cumple && <div style={{ marginTop: 12 }}><div style={{ ...F.h3, color: C.danger }}>Dónde se rompe</div>{r.vigilancia.roturas.slice(0, 5).map((x, i) => <div key={i} style={{ ...F.body, color: C.danger, marginTop: 4 }}>· Año {x.anio}: {x.detalle}</div>)}</div>}
         </div>
       </div>

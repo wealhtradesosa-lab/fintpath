@@ -988,13 +988,17 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   const nom = (id) => byId[id]?.nombre || id;
   const salen = baseCfg.posiciones.filter((p) => p.sale).map((p) => p.nombre);
   const pagadasHoy = baseCfg.deudas.filter((d) => d.pagar).map((d) => d.nombre);
-  if (salen.length) notas.push(`Para reconvertir (decidido en el paso 1): ${salen.join(", ")}${pagadasHoy.length ? `; se paga ${pagadasHoy.join(", ")}` : ""}: quedan ${M(num(baseCfg.hoy?.porDesplegar))} por desplegar.`);
+  if (salen.length) notas.push(`Se vende hoy (decidido en el paso 1): ${salen.join(", ")}${pagadasHoy.length ? `; se paga ${pagadasHoy.join(", ")}` : ""}: quedan ${M(num(baseCfg.hoy?.porDesplegar))} por desplegar.`);
   const vendidas = (esc.ventas || []).filter((v) => !byId[v.posicionId]?.sale).map((v) => `${nom(v.posicionId)}${v.monto != null ? ` (${M(v.monto)})` : ""}`);
   if (vendidas.length) notas.push(`Vendes ${vendidas.join(", ")}: liberas ${M(liq.liberado - liq.liberadoHoy)}.`);
   const pagosEsc = (esc.pagos || []).filter((id) => !baseCfg.deudas.find((d) => d.id === id)?.pagar);
   if (pagosEsc.length) notas.push(`Pagas ${pagosEsc.map((id) => baseCfg.deudas.find((d) => d.id === id)?.nombre || id).join(", ")}: ${M(liq.pagado - liq.pagadoHoy)}.`);
   if (num(esc.disfrutePct) > 0) notas.push(`De lo que sobra cada mes te gastas el ${num(esc.disfrutePct)}% y reinviertes el resto.`);
   (esc.despliegue || []).filter((d) => num(d.capital) > 0).forEach((d) => { const pp = d.pagaPct == null ? 100 : num(d.pagaPct); const re = d.reinvierteEn ? [...baseCfg.posiciones, ...(esc.despliegue || [])].find((x) => x.id === d.reinvierteEn)?.nombre : null; notas.push(`${M(d.capital)} a ${d.nombre}${num(d.tasa) > 0 ? ` al ${d.tasa}%` : ""}${num(d.tasa) > 0 ? (pp >= 100 ? " · te paga todo el rendimiento" : pp <= 0 ? ` · todo se reinvierte${re ? ` en ${re}` : ""}` : ` · recibes el ${pp}% y el ${100 - pp}% se reinvierte${re ? ` en ${re}` : ""}`) : ""}.`); });
+  // 23-oct-2026: algo vendido hoy no puede transformarse ni recibir obra
+  // después. Se avisa, en vez de dejar que la obra caiga sobre un activo en cero.
+  const vendidosHoy = new Set([...baseCfg.posiciones.filter((p) => p.sale).map((p) => p.id), ...(esc.ventas || []).filter((v) => v.monto == null).map((v) => v.posicionId)]);
+  (esc.eventos || []).filter((e) => (e.tipo === "transformar" || e.tipo === "aportar" || e.tipo === "revaluar") && vendidosHoy.has(e.posicionId)).forEach((e) => notas.push(`Ojo: ${nom(e.posicionId)} se vende hoy, pero en el año ${Math.floor(num(e.mes) / 12) + 1} tienes ${e.tipo === "transformar" ? "una obra" : e.tipo === "aportar" ? "un aporte" : "un cambio de valor"} sobre él: una de las dos cosas sobra. Si se transforma, en el paso 1 debe decir «Continúa».`));
   if (liq.porAsignar > 1e6) notas.push(`Quedan ${M(liq.porAsignar)} sin asignar (se quedan en caja, sin rendir).`);
   if (liq.porAsignar < -1e6) notas.push(`Falta plata: asignas ${M(-liq.porAsignar)} más de lo que liberas.`);
   return {

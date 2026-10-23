@@ -35,7 +35,7 @@ describe("Escenarios: los cuatro pasos se pintan", () => {
     expect(html).toContain("Mis escenarios");
     expect(html).toContain("Rentar y multiplicar");
   });
-  it("1 · qué tienes hoy", () => expect(pinta(1)).toContain("Para reconvertir"));
+  it("1 · qué tienes hoy", () => expect(pinta(1)).toContain("Se vende hoy"));
   it("2 · qué quieres proyectar", () => expect(pinta(2)).toBeTruthy());
   it("3 · una pregunta por pantalla, con el hilo de la plata arriba", () => {
     const html = pinta(3);
