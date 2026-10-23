@@ -1783,6 +1783,46 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
           </table>
         </div>
       </div>
+      {/* 22-oct-2026 (Santiago: "la forma en la que se ven los planes es
+          muchísimo más completa en lo que le compartí; revise y ajuste"). En
+          su documento, lo primero son las tarjetas de camino -el punto de
+          partida y cada plan, ordenados de menor a mayor patrimonio al año
+          10, con su cifra grande y su crecimiento real-. Ahí se decide; la
+          tabla larga es para después. */}
+      <div style={card}>
+        <div style={F.h2}>Los caminos, de menor a mayor</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Todos parten de lo mismo: tu patrimonio de hoy. Lo que cambia es qué haces con él. Ordenados por lo que dejan en el año 10, en plata de hoy.</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(210px, 100%), 1fr))", gap: 10, marginTop: 14 }}>
+          <div style={{ ...sub, borderTop: `3px solid ${C.subtle}` }}>
+            <div style={F.label}>Punto de partida</div>
+            <div style={{ ...F.h3, marginTop: 2 }}>Hoy</div>
+            <div style={F.caption}>Si no cambias nada</div>
+            <div style={{ ...F.monoLg, color: C.text, marginTop: 8 }}>{fmM(res[0]?.puntos.patrimonioInicial ?? 0)}</div>
+            <div style={F.caption}>lo que tienes ahora</div>
+          </div>
+          {[...res].sort((a, b) => (a.puntos.patrimonioFinalReal || 0) - (b.puntos.patrimonioFinalReal || 0)).map((r) => {
+            const sel = r.id === activoId, mejor = caminoElegido === r.id;
+            return (
+              // 22-oct-2026 — El chip "Tu camino" iba absoluto en top:-10 y
+              // quedaba montado sobre el borde y sobre la tarjeta de arriba,
+              // medio cortado. Va en la fila del nombre, donde no pisa nada.
+              // Y la tesis se cortaba a media palabra ("…que rentan. Se"):
+              // ahora corta en el espacio anterior y pone el puntico.
+              <div key={r.id} style={{ ...sub, borderTop: `3px solid ${r.color}`, cursor: "pointer", outline: sel ? `1px solid ${r.color}` : "none" }} onClick={() => onVer(r.id)}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 6, alignItems: "flex-start" }}>
+                  <div style={{ ...F.label, color: r.color }}>{r.nombre}</div>
+                  {mejor && <span style={{ ...chip(C.accent), flexShrink: 0 }}>Tu camino</span>}
+                </div>
+                <div style={{ ...F.caption, marginTop: 2, minHeight: 32 }}>{recortar(r.tesis, 78)}</div>
+                <div style={{ ...F.monoLg, color: C.text, marginTop: 8 }}>{fmM(r.puntos.patrimonioFinal)}</div>
+                <div style={F.caption}>año 10 · {r.puntos.crecimientoRealAnual == null ? "—" : `${r.puntos.crecimientoRealAnual >= 0 ? "+" : ""}${pctEs(r.puntos.crecimientoRealAnual)} real`}</div>
+                <div style={{ ...F.caption, marginTop: 4 }}>te deja <b style={{ color: C.ok }}>{fmMes(r.puntos.quedaMes)}</b>/mes</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ ...F.caption, marginTop: 10 }}>Toca uno para ver su detalle. «Real» es descontando la inflación: lo que de verdad te queda en poder de compra.</div>
+      </div>
       <Recomendacion res={res} onElegir={onElegir} caminoElegido={caminoElegido} onVer={onVer} />
       <div style={card}>
         <div style={F.h3}>$100 M en cada inversión, en igualdad de condiciones</div>

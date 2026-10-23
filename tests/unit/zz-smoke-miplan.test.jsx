@@ -48,6 +48,21 @@ describe("Escenarios: los cuatro pasos se pintan", () => {
     expect(html).not.toContain("¿Y lo que te sobre cada mes?"); // cuerpo de la 4
   });
   it("4 · tu camino a 10 años", () => expect(pinta(4)).toBeTruthy());
+
+  // 22-oct-2026 — `recortar` se usaba en dos sitios y nunca quedó definida:
+  // Comparar reventaba al abrirse y ni el build ni 379 tests lo vieron, porque
+  // ninguno renderizaba esa pantalla. Las pantallas que no se pintan en una
+  // prueba son las que se rompen en silencio.
+  it("la lista y la comparación se pintan (la pantalla que reventaba)", () => {
+    const dos = [unEscenario, { ...unEscenario, id: "e2", nombre: "Vivir de la renta", color: "#22c55e",
+      tesis: "Que la plata te pague cada mes, lo más posible, sin dejar de crecer un poco y sin quedarte corto nunca." }];
+    const html = renderToString(<MiPlan {...props} caminos={dos} />);
+    expect(html).toContain("Mis escenarios");
+    expect(html).toContain("Los caminos, de menor a mayor");
+    expect(html).toContain("Si tuviera que elegir uno");
+    expect(html).toContain("…");                       // la tesis larga se recorta
+    expect(html).not.toContain("sin quedarte corto");  // y no se cuela entera
+  });
   it("sin ningún escenario creado, el paso 3 dice por dónde empezar", () => {
     const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={3} vistaInicial="armar" />);
     expect(html).toContain("Todavía no has creado ningún escenario");
