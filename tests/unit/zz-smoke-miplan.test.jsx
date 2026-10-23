@@ -71,10 +71,14 @@ describe("Escenarios: los cuatro pasos se pintan", () => {
   // ser UNA decisión: la mezcla, con los tres moldes como atajos del mismo
   // control. Santiago: "uno no sabe si elegir uno predeterminado o hacerlo de
   // cero… si finalmente uno arma como quiere".
-  it("el paso 2 es una sola decisión: la mezcla, con atajos", () => {
+  // 23-oct-2026 (Santiago: "el ecualizador no se usa; que al armar el
+  // escenario le diga a uno cómo quedó distribuido"). El paso 2 elige el
+  // molde y crea; sin barras de mezcla.
+  it("el paso 2 es una sola decisión: el molde, sin ecualizador", () => {
     const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={2} vistaInicial="armar" />);
-    expect(html).toContain("La mezcla a la que quieres llegar");
+    expect(html).toContain("Elige con qué molde arrancas");
     for (const t of ["Seguridad y rentar", "Vivir de la renta", "Rentar y multiplicar", "A mi manera"]) expect(html, t).toContain(t);
-    expect(html).toContain("Crear un escenario con esta mezcla");
+    expect(html).toContain("Crear escenario");
+    expect(html).not.toContain("La mezcla a la que quieres llegar");
   });
 });

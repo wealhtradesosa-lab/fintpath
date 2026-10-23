@@ -229,7 +229,7 @@ function BarraCanastas({ c, alto = 14 }) {
 // ("¿cómo que lo seguro? eso no se entiende") y estaba METIDO entre lo que
 // tienes y lo que haces, que es donde más estorba: son cosas que llegan solas,
 // no decisiones tuyas. Va después de tus movimientos.
-const PASOS = [["Qué tienes hoy", "tu punto de partida"], ["Qué quieres proyectar", "hacia dónde mueves tu plata"], ["Qué cambios vas a hacer", "tus inversiones y lo que se viene"], ["Tu camino a 10 años", "el resultado"]];
+const PASOS = [["Qué tienes hoy", "tu punto de partida"], ["Con qué molde arrancas", "las reglas del escenario"], ["Qué cambios vas a hacer", "tus inversiones y lo que se viene"], ["Tu camino a 10 años", "el resultado"]];
 
 // ─── La barra que no se va ───────────────────────────────────────────────────
 // 21-oct-2026. El número a 10 años vivía dentro del paso 3 ("Resultado en
@@ -950,8 +950,8 @@ function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, ac
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
-        <div style={F.h2}>2 · ¿Qué quieres que haga este escenario?</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Proyectar es mover tus activos de un papel a otro: más protección, más renta o más crecimiento. Elige hacia dónde y te armo el escenario con <b style={{ color: C.text }}>tus</b> cosas — qué vender, qué deuda pagar y a dónde mandar lo que sobre. Después lo cambias todo lo que quieras.</div>
+        <div style={F.h2}>2 · Elige con qué molde arrancas</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Un molde trae reglas (cuánto colchón, a dónde va el sobrante, qué vigilar). Qué vendes, qué pagas y en qué inviertes lo decides tú en el paso 3, y al armarlo verás cómo quedó repartida tu plata.</div>
         {/* 22-oct-2026 (Santiago: "¿y dónde quedó el patrimonio completo que
             son como 17 mil M?", "cada canasta origina valores como de fuentes
             distintas"). Las canastas repartían $25,7 mil M y su patrimonio
@@ -982,18 +982,22 @@ function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, ac
         {onArreglar && !pensionesImposibles(perfil, base).length && <div style={{ marginTop: 10 }}><button style={btn(true)} onClick={onArreglar}>Llévame a arreglarlo →</button></div>}
       </div>}
       <div style={card} id="mi-mezcla">
-        <div style={F.h2}>La mezcla a la que quieres llegar</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Es lo único que decides acá, y no mueve un peso: es la vara contra la que se mide lo que pongas después. Arranca con un atajo si alguno te suena, y muévela a tu gusto.</div>
+        {/* 23-oct-2026 (Santiago: "el ecualizador no se usa: después uno mueve
+            sus cosas como quiere; más bien que al armar el escenario le diga a
+            uno cómo quedó distribuido"). Fuera las tres barras: acá solo se
+            elige el molde y se crea; cómo quedó repartida la plata se dice en
+            el resultado. */}
+        <div style={F.h2}>Arranca un escenario</div>
+        <div style={{ ...F.body, marginTop: 4 }}>Elige un molde: trae el reparto del sobrante, el colchón y las reglas que vigilar. Lo que vendes, qué pagas y en qué inviertes lo decides tú en el paso siguiente, y al armarlo verás <b style={{ color: C.text }}>cómo quedó repartida tu plata</b>.</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
           {plantillas.map((c) => { const act = molde?.id === c.id; const i = INTENCIONES[c.id] || {};
             return <button key={c.id} title={i.frase} style={{ ...btn(false), borderColor: act ? c.color : C.borderStrong, background: act ? `${c.color}22` : "transparent", color: act ? C.text : C.muted, fontWeight: act ? 700 : 500 }}
               onClick={() => { setMolde(c); setMiMezcla(c.objetivo); }}>{i.titulo || c.nombre}</button>; })}
           <button style={{ ...btn(false), color: !molde ? C.text : C.muted }} onClick={() => setMolde(null)}>A mi manera</button>
         </div>
-        <div style={{ ...F.caption, marginTop: 6 }}>{molde ? INTENCIONES[molde.id]?.frase : "Sin atajo: la mezcla es la que tú dejes abajo."}</div>
-        <div style={{ marginTop: 14 }}><MezclaEditor objetivo={miMezcla} onChange={(o) => { setMiMezcla(o); setMolde(null); }} base={base} perfil={perfil} /></div>
+        <div style={{ ...F.caption, marginTop: 6 }}>{molde ? INTENCIONES[molde.id]?.frase : "A mi manera: sin reglas de molde; tú pones todo."}</div>
         <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <button style={btn(true)} onClick={() => { onCrear(molde ? { ...molde, objetivo: miMezcla } : { id: null, nombre: nombrarMezcla(miMezcla)?.titulo || "Mi escenario", tesis: "", color: CHART.purple, objetivo: miMezcla, canastas: { colchonMeses: 6 }, excedente: [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }] }); onNext(); }}>Crear un escenario con esta mezcla →</button>
+          <button style={btn(true)} onClick={() => { onCrear(molde ? { ...molde, objetivo: molde.objetivo || miMezcla } : { id: null, nombre: "Mi escenario", tesis: "", color: CHART.purple, objetivo: null, canastas: { colchonMeses: 6 }, excedente: [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }] }); onNext(); }}>{molde ? `Crear escenario «${INTENCIONES[molde.id]?.titulo || molde.nombre}» →` : "Crear escenario a mi manera →"}</button>
           <span style={F.caption}>Puedes crear varios y compararlos.</span>
         </div>
       </div>
@@ -1665,6 +1669,10 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
           })()}
           <div style={{ ...F.h3, marginTop: 14 }}>Y esto es lo que cambia</div>
           {r.ajuste.notas.length ? r.ajuste.notas.map((n, i) => <div key={i} style={{ ...F.body, marginTop: 6 }}>· {n}</div>) : <div style={{ ...F.body, marginTop: 6 }}>Nada cambia hoy: el escenario parte tal como estás.</div>}
+          {/* 23-oct-2026 (Santiago: "cuando se arma el escenario, que le diga a
+              uno cómo quedó distribuido"). */}
+          {(() => { const pc = (c, k) => (c.total > 0 ? Math.round((c[k] || 0) / c.total * 100) : 0); const linea = (c) => ["proteccion", "rentas", "crecimiento"].map((k) => `${CANASTA_LABEL[k]} ${pc(c, k)}%`).join(" · ");
+            return <div style={{ ...sub, marginTop: 12 }}><div style={F.h3}>Así queda repartida tu plata</div><div style={{ ...F.body, marginTop: 4 }}>Hoy, antes de mover nada: <b style={{ color: C.text }}>{linea(r.canastasHoy)}</b>.</div><div style={{ ...F.body, marginTop: 2 }}>Con este escenario, en el año 10: <b style={{ color: C.text }}>{linea(r.canastasFin)}</b>.</div></div>; })()}
           <div style={{ marginTop: 12 }}><div style={F.caption}>Canastas hoy</div><BarraCanastas c={r.canastasHoy} /><div style={{ ...F.caption, marginTop: 8 }}>Canastas año 10</div><BarraCanastas c={r.canastasFin} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 8 }}>{["proteccion", "rentas", "crecimiento"].map((k) => <div key={k}><div style={{ ...F.label, color: CANASTA_COLOR[k] }}>{CANASTA_LABEL[k]}</div><div style={{ ...F.caption, color: C.text }}>{fmM(r.canastasHoy[k])} → {fmM(r.canastasFin[k])}</div></div>)}</div>
         </div>
