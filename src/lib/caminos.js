@@ -724,7 +724,9 @@ export function nuevoCamino(parcial = {}) {
 const uid = (pref) => `${pref}_${Math.random().toString(36).slice(2, 8)}`;
 
 export function escenarioVacio(parcial = {}) {
-  return { id: parcial.id || uid("esc"), nombre: parcial.nombre || "Mi escenario", tesis: parcial.tesis || "", color: parcial.color || "#a855f7", plantilla: parcial.plantilla || null,
+  // Lo que el escenario sepa de más (repartoSobrante, disfrutePct,
+  // excedenteDestinos, rebalancear…) viaja tal cual.
+  return { ...parcial, id: parcial.id || uid("esc"), nombre: parcial.nombre || "Mi escenario", tesis: parcial.tesis || "", color: parcial.color || "#a855f7", plantilla: parcial.plantilla || null,
     ventas: parcial.ventas || [], pagos: parcial.pagos || [], despliegue: parcial.despliegue || [], eventos: parcial.eventos || [],
     excedente: parcial.excedente || [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }], colchonMeses: parcial.colchonMeses ?? 6,
     canastas: parcial.canastas || null, condiciones: parcial.condiciones || [], propio: true };
@@ -961,7 +963,17 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
     if (!finales.some((p) => p.id === n.id)) finales.push(n);
     return n.id;
   };
-  const excedente = (esc.excedente || []).filter((e) => num(e.pct) > 0).map((e) => ({ posicionId: destino(e.canasta), pct: num(e.pct) }));
+  // 23-oct-2026 (Santiago: "uno debería poder dejar 20 % para gastos
+  // normales, 40 % a renta -en cuáles- y el resto en crecimiento -en cuáles:
+  // BTC, IBKR-"). `repartoSobrante` es esa tabla: filas {posicionId|"gasto",
+  // pct} sobre el total del sobrante. El motor quita primero lo gastado y
+  // reparte el resto, así que los pct de las filas se reescalan sobre lo que
+  // queda. Si no hay tabla, vale el reparto por canasta de antes.
+  const tabla = (esc.repartoSobrante || []).filter((f) => num(f.pct) > 0 && f.posicionId);
+  const gastoPct = tabla.filter((f) => f.posicionId === "gasto").reduce((t, f) => t + num(f.pct), 0);
+  const excedente = tabla.length
+    ? tabla.filter((f) => f.posicionId !== "gasto" && finales.some((p) => p.id === f.posicionId)).map((f) => ({ posicionId: f.posicionId, pct: 100 - gastoPct > 0 ? num(f.pct) / (100 - gastoPct) * 100 : 0 }))
+    : (esc.excedente || []).filter((e) => num(e.pct) > 0).map((e) => ({ posicionId: destino(e.canasta), pct: num(e.pct) }));
   const deficitDesde = finales.filter((p) => canastaDe(p) === "rentas" && !p.inmueble).sort((a, b) => (b.liquido ? 1 : 0) - (a.liquido ? 1 : 0)).map((p) => p.id);
   let colchon = null;
   if (num(esc.colchonMeses) > 0) {
@@ -993,7 +1005,8 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   if (vendidas.length) notas.push(`Vendes ${vendidas.join(", ")}: liberas ${M(liq.liberado - liq.liberadoHoy)}.`);
   const pagosEsc = (esc.pagos || []).filter((id) => !baseCfg.deudas.find((d) => d.id === id)?.pagar);
   if (pagosEsc.length) notas.push(`Pagas ${pagosEsc.map((id) => baseCfg.deudas.find((d) => d.id === id)?.nombre || id).join(", ")}: ${M(liq.pagado - liq.pagadoHoy)}.`);
-  if (num(esc.disfrutePct) > 0) notas.push(`De lo que sobra cada mes te gastas el ${num(esc.disfrutePct)}% y reinviertes el resto.`);
+  if (tabla.length) { const nomF = (id) => [...baseCfg.posiciones, ...finales].find((x) => x.id === id)?.nombre || id; notas.push(`Lo que sobra cada mes: ${tabla.map((f) => `${num(f.pct)}% ${f.posicionId === "gasto" ? "te lo gastas" : `a ${nomF(f.posicionId)}`}`).join(" · ")}${tabla.reduce((t, f) => t + num(f.pct), 0) < 100 ? ` · el ${100 - tabla.reduce((t, f) => t + num(f.pct), 0)}% restante se queda en caja` : ""}.`); }
+  else if (num(esc.disfrutePct) > 0) notas.push(`De lo que sobra cada mes te gastas el ${num(esc.disfrutePct)}% y reinviertes el resto.`);
   (esc.despliegue || []).filter((d) => num(d.capital) > 0).forEach((d) => { const pp = d.pagaPct == null ? 100 : num(d.pagaPct); const re = d.reinvierteEn ? [...baseCfg.posiciones, ...(esc.despliegue || [])].find((x) => x.id === d.reinvierteEn)?.nombre : null; notas.push(`${M(d.capital)} a ${d.nombre}${num(d.tasa) > 0 ? ` al ${d.tasa}%` : ""}${num(d.tasa) > 0 ? (pp >= 100 ? " · te paga todo el rendimiento" : pp <= 0 ? ` · todo se reinvierte${re ? ` en ${re}` : ""}` : ` · recibes el ${pp}% y el ${100 - pp}% se reinvierte${re ? ` en ${re}` : ""}`) : ""}.`); });
   // 23-oct-2026: algo vendido hoy no puede transformarse ni recibir obra
   // después. Se avisa, en vez de dejar que la obra caiga sobre un activo en cero.
@@ -1004,7 +1017,7 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   return {
     ...esc, ajuste: { notas, movimientos }, liquidez: liq,
     cfg: { meses: H, caja: baseCfg.caja, posiciones: finales, flujos: baseCfg.flujos, deudas: baseCfg.deudas, movimientos: [...movimientosHoy(baseCfg), ...movimientos, ...movimientosPerfil(perfil), ...eventos],
-      reglas: { excedente, deficitDesde, colchon, rebalanceo, disfrutePct: num(esc.disfrutePct), inflacion: num(perfil.inflacion), indexarGastos: true, indexarSustento: false, coberturaMin: num(perfil.coberturaMin) || 120 } },
+      reglas: { excedente, deficitDesde, colchon, rebalanceo, disfrutePct: tabla.length ? gastoPct : num(esc.disfrutePct), inflacion: num(perfil.inflacion), indexarGastos: true, indexarSustento: false, coberturaMin: num(perfil.coberturaMin) || 120 } },
   };
 }
 

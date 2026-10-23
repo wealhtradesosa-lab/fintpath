@@ -1305,31 +1305,59 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
           )}
           {sub === 4 && (
           <div style={card}>
-            <H n="F" t="¿Y lo que te sobre cada mes?" d="Mes a mes te queda un excedente. Decide a dónde va y cuántos meses de gastos guardas en líquido." />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, alignItems: "end" }}>
-              <div><div style={F.label}>{100 - crecPct}% a lo que te paga · {crecPct}% a lo que crece</div><input type="range" min={0} max={100} step={5} value={crecPct} onChange={(e) => { const v = Number(e.target.value); upd({ excedente: [{ canasta: "rentas", pct: 100 - v }, { canasta: "crecimiento", pct: v }] }); }} style={{ width: "100%" }} /></div>
-              <Campo l="Colchón líquido (meses de gastos)"><Num value={esc.colchonMeses} min={0} max={60} onChange={(v) => upd({ colchonMeses: v })} /></Campo>
-            </div>
-            {/* 22-oct-2026 (Santiago: "¿cómo hago para disponer de lo que
-                sobra reinvirtiendo una parte?"). Antes el sobrante se
-                reinvertía entero; no había forma de decir "me gasto una
-                parte". */}
+            <H n="F" t="¿Y lo que te sobre cada mes?" d="Cada mes te queda plata después de gastos y cuotas. Dila en porcentajes: cuánto te gastas, cuánto a lo que te paga y en cuáles, cuánto a lo que crece y en cuáles." />
+            {/* 23-oct-2026 (Santiago: "uno debería poder dejar 20 % que es
+                tanta plata para gastos normales, 40 % a renta -en cuáles- y
+                el resto en crecimiento, y escoger cuáles: BTC, IBKR"). Las
+                barras y los dos menús no daban para eso; esto es una tabla. */}
             {(() => {
-              // Dónde cae cada parte del sobrante: lo que la persona eligió, o
-              // lo que el motor escoge (la posición más grande de esa canasta).
+              const sobraHoy = Math.max(0, r?.resultado?.meses?.[0]?.queda ?? 0);
               const todas = [...base.posiciones.filter((p) => !p.sale && !(esc.ventas || []).some((v) => v.posicionId === p.id && v.monto == null)), ...(esc.despliegue || []).filter((d) => !d.destinoId).map((d) => ({ id: d.id, nombre: d.nombre, capital: d.capital, tasa: d.tasa, pagaPct: d.pagaPct, canasta: d.canasta }))];
-              const deCanasta = (c) => todas.filter((p) => (p.canasta || canastaDe(p)) === c);
-              const sel = (c) => <select value={esc.excedenteDestinos?.[c] || ""} onChange={(e) => upd({ excedenteDestinos: { ...(esc.excedenteDestinos || {}), [c]: e.target.value || undefined } })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }}><option value="">el motor elige (la más grande)</option>{deCanasta(c).map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}{todas.filter((p) => (p.canasta || canastaDe(p)) !== c).map((p) => <option key={p.id} value={p.id}>{p.nombre} · {CANASTA_LABEL[p.canasta || canastaDe(p)]}</option>)}</select>;
-              return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginTop: 10 }}>
-                {100 - crecPct > 0 && <Campo l={`El ${100 - crecPct}% que va a lo que te paga entra a`}>{sel("rentas")}</Campo>}
-                {crecPct > 0 && <Campo l={`El ${crecPct}% que va a lo que crece entra a`}>{sel("crecimiento")}</Campo>}
+              const cDe = (p) => p.canasta || canastaDe(p);
+              const filas = esc.repartoSobrante || [
+                ...(Number(esc.disfrutePct) > 0 ? [{ id: "f_gasto", posicionId: "gasto", pct: Number(esc.disfrutePct) }] : []),
+                ...["rentas", "crecimiento"].map((c) => { const pctC = ((esc.excedente || []).find((e) => e.canasta === c)?.pct ?? 50) * (100 - (Number(esc.disfrutePct) || 0)) / 100; const dest = esc.excedenteDestinos?.[c] || [...todas].filter((p) => cDe(p) === c).sort((x, y) => (y.capital || 0) - (x.capital || 0))[0]?.id; return dest && pctC > 0 ? { id: `f_${c}`, posicionId: dest, pct: Math.round(pctC) } : null; }).filter(Boolean),
+              ];
+              const setFilas = (l) => upd({ repartoSobrante: l });
+              const setFila = (id, patch) => setFilas(filas.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+              const suma = filas.reduce((t, f) => t + (Number(f.pct) || 0), 0);
+              const nombre = (id) => id === "gasto" ? "Me lo gasto (vida, viajes, familia)" : todas.find((p) => p.id === id)?.nombre || id;
+              const grupo = (id) => id === "gasto" ? "gasto" : cDe(todas.find((p) => p.id === id) || {}) === "crecimiento" ? "crecimiento" : "rentas";
+              const porGrupo = (g) => filas.filter((f) => grupo(f.posicionId) === g).reduce((t, f) => t + (Number(f.pct) || 0), 0);
+              const opciones = <>
+                <option value="gasto">Me lo gasto (vida, viajes, familia)</option>
+                <optgroup label="A lo que te paga">{todas.filter((p) => cDe(p) === "rentas").map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</optgroup>
+                <optgroup label="A lo que crece">{todas.filter((p) => cDe(p) === "crecimiento").map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</optgroup>
+                <optgroup label="Otros">{todas.filter((p) => !["rentas", "crecimiento"].includes(cDe(p))).map((p) => <option key={p.id} value={p.id}>{p.nombre} · {CANASTA_LABEL[cDe(p)]}</option>)}</optgroup>
+              </>;
+              return <div style={{ marginTop: 4 }}>
+                <div style={{ ...F.body, marginBottom: 8 }}>Hoy te sobran <b style={{ color: C.ok }}>{fmMes(sobraHoy)}</b> al mes{sobraHoy > 0 ? "; así los repartes" : ""}:</div>
+                <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}>
+                  <thead><tr><th style={th}>A dónde va</th><th style={{ ...th, textAlign: "right" }}>%</th><th style={{ ...th, textAlign: "right" }}>≈ al mes</th><th style={th} /></tr></thead>
+                  <tbody>
+                    {filas.map((f) => <tr key={f.id} style={{ borderTop: `1px solid ${C.border}` }}>
+                      <td style={{ ...td, minWidth: 220 }}><select value={f.posicionId} onChange={(e) => setFila(f.id, { posicionId: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 12, color: f.posicionId === "gasto" ? C.text : CANASTA_COLOR[grupo(f.posicionId)] }}>{opciones}</select></td>
+                      <td style={tdNum}><Num value={f.pct} step={5} min={0} max={100} onChange={(v) => setFila(f.id, { pct: Math.min(100, Math.max(0, v || 0)) })} suffix="%" w={80} /></td>
+                      <td style={{ ...tdNum, color: f.posicionId === "gasto" ? C.text : CANASTA_COLOR[grupo(f.posicionId)] }}>{fmMes(sobraHoy * (Number(f.pct) || 0) / 100)}</td>
+                      <td style={td}><button style={{ ...btn(false), padding: "3px 8px", color: C.subtle }} onClick={() => setFilas(filas.filter((x) => x.id !== f.id))}>quitar</button></td>
+                    </tr>)}
+                    <tr style={{ borderTop: `2px solid ${C.borderStrong}` }}>
+                      <td style={{ ...td, fontWeight: 700 }}>Total{porGrupo("gasto") > 0 || porGrupo("rentas") > 0 || porGrupo("crecimiento") > 0 ? <div style={{ ...F.caption, fontWeight: 400 }}>{[porGrupo("gasto") > 0 ? `te gastas ${porGrupo("gasto")}%` : null, porGrupo("rentas") > 0 ? `${porGrupo("rentas")}% a lo que te paga` : null, porGrupo("crecimiento") > 0 ? `${porGrupo("crecimiento")}% a lo que crece` : null].filter(Boolean).join(" · ")}</div> : null}</td>
+                      <td style={{ ...tdNum, fontWeight: 700, color: suma === 100 ? C.ok : C.warn }}>{suma}%</td>
+                      <td style={{ ...tdNum, fontWeight: 700 }}>{fmMes(sobraHoy * Math.min(100, suma) / 100)}</td>
+                      <td style={td} />
+                    </tr>
+                  </tbody>
+                </table></div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
+                  <button style={btn(false)} onClick={() => setFilas([...filas, { id: "f_" + Math.random().toString(36).slice(2, 7), posicionId: todas.find((p) => !filas.some((f) => f.posicionId === p.id))?.id || "gasto", pct: Math.max(0, 100 - suma) }])}>+ Agregar destino</button>
+                  {suma !== 100 && <span style={chip(C.warn)}>{suma < 100 ? `falta repartir el ${100 - suma}%: se queda en caja, sin rendir` : `te pasaste por ${suma - 100}%`}</span>}
+                  {suma === 100 && <span style={chip(C.ok)}>todo repartido</span>}
+                </div>
+                <div style={{ ...F.caption, marginTop: 6 }}>Lo que te gastas sale del plan ese mes y no suma al patrimonio. Lo demás entra cada mes a la inversión que digas y rinde con su tasa. Las cifras en pesos son con lo que sobra hoy; cuando entren las rentas nuevas o las pensiones, el sobrante crece y el reparto se mantiene en porcentaje.</div>
+                <div style={{ marginTop: 12, maxWidth: 260 }}><Campo l="Colchón líquido (meses de gastos)"><Num value={esc.colchonMeses} min={0} max={60} onChange={(v) => upd({ colchonMeses: v })} /></Campo></div>
               </div>;
             })()}
-            <div style={{ marginTop: 12 }}>
-              <div style={F.label}>De lo que sobra, te gastas el {Number(esc.disfrutePct) || 0}% y reinviertes el {100 - (Number(esc.disfrutePct) || 0)}%</div>
-              <input type="range" min={0} max={100} step={5} value={Number(esc.disfrutePct) || 0} onChange={(e) => upd({ disfrutePct: Number(e.target.value) })} style={{ width: "100%" }} />
-              <div style={{ ...F.caption, marginTop: 2 }}>Lo que te gastas sale del plan ese mes (viajes, familia, lo que quieras): no suma al patrimonio. El reparto de arriba aplica solo a lo que reinviertes.</div>
-            </div>
             <details style={{ marginTop: 10 }}>
               <summary style={{ ...F.caption, cursor: "pointer" }}>Reglas que este escenario se obliga a cumplir (opcional)</summary>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 10 }}>

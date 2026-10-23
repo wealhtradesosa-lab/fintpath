@@ -224,3 +224,17 @@ describe("la parte que no recibes se reinvierte donde digas", () => {
     expect(cdt.reinvierteEn).toBe("i2");
   });
 });
+
+describe("la tabla de lo que sobra cada mes", () => {
+  // 23-oct-2026 (Santiago: "20 % para gastos, 40 % a renta en cuáles, el resto
+  // a crecimiento en cuáles: BTC, IBKR").
+  it("reparte por filas: gasto, varios destinos, y reescala sobre lo reinvertido", () => {
+    const base = baseDesdeUsuario(user);
+    const esc = escenarioVacio({ nombre: "Tabla", repartoSobrante: [{ id: "a", posicionId: "gasto", pct: 20 }, { id: "b", posicionId: "i1", pct: 40 }, { id: "c", posicionId: "i2", pct: 30 }, { id: "d", posicionId: "i5", pct: 10 }] });
+    const [r] = compararCaminos([esc], base, PERFIL_DEFAULT);
+    expect(r.cfg.reglas.disfrutePct).toBe(20);
+    const ex = Object.fromEntries(r.cfg.reglas.excedente.map((e) => [e.posicionId, Math.round(e.pct)]));
+    expect(ex.i1).toBe(50); expect(ex.i2).toBe(38); expect(ex.i5).toBe(13);
+    expect(r.ajuste.notas.join(" ")).toMatch(/20% te lo gastas · 40% a CDT/);
+  });
+});
