@@ -25,9 +25,16 @@ const unEscenario = { id: "e1", nombre: "Rentar y multiplicar", color: "#f97316"
   objetivo: { proteccion: 15, rentas: 35, crecimiento: 50 }, ventas: [], pagos: [], despliegue: [], eventos: [],
   excedente: [{ canasta: "rentas", pct: 35 }, { canasta: "crecimiento", pct: 65 }], colchonMeses: 6, canastas: null, condiciones: [] };
 const props = { user, fichas: { cdt: { estado: "sale" } }, caminos: [unEscenario], onPerfil: () => {}, onFichas: () => {}, onCaminos: () => {}, onElegir: () => {} };
-const pinta = (paso) => renderToString(<MiPlan {...props} pasoInicial={paso} />);
+// `vistaInicial="armar"` entra al taller: por defecto, con escenarios ya
+// creados, la pantalla abre en la LISTA.
+const pinta = (paso) => renderToString(<MiPlan {...props} pasoInicial={paso} vistaInicial="armar" />);
 
 describe("Escenarios: los cuatro pasos se pintan", () => {
+  it("con escenarios creados, la pantalla abre en la lista", () => {
+    const html = renderToString(<MiPlan {...props} />);
+    expect(html).toContain("Mis escenarios");
+    expect(html).toContain("Rentar y multiplicar");
+  });
   it("1 · qué tienes hoy", () => expect(pinta(1)).toContain("Para reconvertir"));
   it("2 · qué quieres proyectar", () => expect(pinta(2)).toBeTruthy());
   it("3 · una pregunta por pantalla, con el hilo de la plata arriba", () => {
@@ -42,7 +49,7 @@ describe("Escenarios: los cuatro pasos se pintan", () => {
   });
   it("4 · tu camino a 10 años", () => expect(pinta(4)).toBeTruthy());
   it("sin ningún escenario creado, el paso 3 dice por dónde empezar", () => {
-    const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={3} />);
+    const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={3} vistaInicial="armar" />);
     expect(html).toContain("Todavía no has creado ningún escenario");
   });
   // 22-oct-2026 — El paso 2 dejó de ser cuatro tarjetas que compiten y pasó a
@@ -50,7 +57,7 @@ describe("Escenarios: los cuatro pasos se pintan", () => {
   // control. Santiago: "uno no sabe si elegir uno predeterminado o hacerlo de
   // cero… si finalmente uno arma como quiere".
   it("el paso 2 es una sola decisión: la mezcla, con atajos", () => {
-    const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={2} />);
+    const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={2} vistaInicial="armar" />);
     expect(html).toContain("La mezcla a la que quieres llegar");
     for (const t of ["Seguridad y rentar", "Vivir de la renta", "Rentar y multiplicar", "A mi manera"]) expect(html, t).toContain(t);
     expect(html).toContain("Crear un escenario con esta mezcla");

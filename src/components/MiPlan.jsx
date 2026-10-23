@@ -112,6 +112,22 @@ function Cuando({ mes, onChange, compacto }) {
 const useAncho = () => { const [w, setW] = useState(typeof window === "undefined" ? 1200 : window.innerWidth); useEffect(() => { const f = () => setW(window.innerWidth); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []); return w; };
 const anioDe = (mes) => Math.floor((Number(mes) || 0) / 12) + 1;
 
+// 22-oct-2026 — La tesis de un escenario se cortaba a media palabra ("…e
+// inmuebles que rentan. Se") con un slice seco. Corta en el espacio anterior,
+// se come la coma o el punto que quede suelto y pone el puntico.
+//
+// Y, de paso: esta función se usó en dos sitios antes de existir. `vite build`
+// y 379 tests en verde no lo vieron -ninguno renderiza Comparar-, y en la
+// pantalla reventaba. Es la segunda vez hoy que publico una función que nadie
+// llama o que no existe: el build no prueba que el código se ejecute.
+function recortar(txt, n) {
+  const t = String(txt || "").trim();
+  if (!t) return "—";
+  if (t.length <= n) return t;
+  const corte = t.slice(0, n), esp = corte.lastIndexOf(" ");
+  return (esp > n * 0.6 ? corte.slice(0, esp) : corte).replace(/[,;:.\s]+$/, "") + "…";
+}
+
 // 22-oct-2026 — Santiago, leyendo "$62.550 mil M" al mes: "en mi caso, si ya
 // la plataforma me dice que con Crecimiento me entran 62 MM, ya no me sirve,
 // porque con eso no vivo". Leyó 62 millones donde decía 62 billones, y estuvo
@@ -1786,7 +1802,7 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
 // `pasoInicial` existe para poder abrir la pantalla en un paso concreto (y para
 // que una prueba de humo pueda renderizar los cuatro: el build no atrapa una
 // variable sin definir dentro de un paso que no se esta mostrando).
-export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, caminos: guardados = [], caminoElegido, onPerfil, onFichas, onCaminos, onElegir, onNavigate, pasoInicial = 1 }) {
+export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, caminos: guardados = [], caminoElegido, onPerfil, onFichas, onCaminos, onElegir, onNavigate, pasoInicial = 1, vistaInicial }) {
   const perfil = { ...PERFIL_DEFAULT, ...(perfilGuardado || {}) };
   const [paso, setPaso] = useState(pasoInicial);
   const [activoId, setActivoId] = useState(caminoElegido || "balance");
@@ -1821,20 +1837,62 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
   // Comparar dejó de ser un paso: es la otra cara del paso 4. Eran cinco
   // casillas en el camino y una no era una pregunta, era una vista.
   const [verCompara, setVerCompara] = useState(false);
+  const [vista, setVista] = useState(vistaInicial || (guardados.length ? "lista" : "armar"));
   const [sub, setSub] = useState(1);
-  const ir = (n) => { setPaso(n); setVerCompara(false); setSub(1); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
+  const ir = (n) => { setPaso(n); setVerCompara(false); setSub(1); setVista("armar"); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
+  // 22-oct-2026 (Santiago: "crea tus escenarios y ver escenarios… en ver
+  // escenarios los elijo, los comparo, etc.", "esto está super pesado
+  // gráficamente, es muy difícil de navegar naturalmente"). Todo vivia en una
+  // sola pantalla -el paso a paso, el escenario, la comparacion- y por eso
+  // todo competia. Son dos lugares distintos: la LISTA, donde uno elige,
+  // compara y borra; y el TALLER, donde uno arma uno solo.
+  const irALista = () => { setVista("lista"); setVerCompara(false); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
 
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0, 1fr)" }}>
       <PageHeader label="—— Escenarios a 10 años" title="Modela escenarios y mira cómo cambian tu patrimonio y tus ingresos en los próximos años" accent="próximos años" subtitle="Paso a paso: qué tienes hoy, qué viene seguro, qué vendes o transformas y a dónde va la plata. Cada escenario se modela a 10 años y se compara con los demás para decidir." compact />
+      {!sinDatos && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <button style={btn(vista === "lista")} onClick={irALista}>Mis escenarios{todos.length ? ` (${todos.length})` : ""}</button>
+        <button style={btn(vista === "armar")} onClick={() => { setVista("armar"); }}>{rActivo ? `Armar «${rActivo.nombre}»` : "Crear un escenario"}</button>
+        {vista === "armar" && <span style={F.caption}>Paso {paso} de 4</span>}
+      </div>}
       {sinDatos ? (
         <div style={card}><div style={F.h2}>Para proyectar escenarios hace falta tu punto de partida</div><div style={{ ...F.body, marginTop: 6 }}>Carga tus activos, ingresos, gastos y deudas: con eso FINPATHIA arma el paso 1 solo.</div><div style={{ marginTop: 12, display: "flex", gap: 8 }}><button style={btn(true)} onClick={() => onNavigate?.("inv")}>Ir a Patrimonio</button><button style={btn(false)} onClick={() => onNavigate?.("ing")}>Ir a Ingresos</button></div></div>
-      ) : (<>
+      ) : vista === "lista" ? (<>
+        <div style={card}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "baseline" }}>
+            <div><div style={F.h2}>Mis escenarios</div><div style={{ ...F.body, marginTop: 4 }}>Cada uno es una forma distinta de usar lo que tienes. Ábrelos, compáralos y quédate con uno.</div></div>
+            <button style={btn(true)} onClick={() => { setVista("armar"); ir(2); }}>+ Crear escenario</button>
+          </div>
+          {todos.length === 0 && <div style={{ ...F.body, marginTop: 12, fontStyle: "italic" }}>Todavía no tienes ninguno. Créalo y vuelve: acá los vas a ver todos juntos.</div>}
+          {todos.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: 10, marginTop: 14 }}>
+            {[...res].sort((a, b) => (b.puntos.patrimonioFinalReal || 0) - (a.puntos.patrimonioFinalReal || 0)).map((rr) => (
+              <div key={rr.id} style={{ ...sub, borderTop: `3px solid ${rr.color}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 6, alignItems: "flex-start" }}>
+                  <div style={{ ...F.label, color: rr.color }}>{rr.nombre}</div>
+                  {caminoElegido === rr.id && <span style={chip(C.accent)}>Tu camino</span>}
+                </div>
+                <div style={{ ...F.caption, marginTop: 2, minHeight: 30 }}>{recortar(rr.tesis, 70)}</div>
+                {vecesDe(rr.puntos) <= VECES_IMPOSIBLE ? <>
+                  <div style={{ ...F.monoLg, color: C.text, marginTop: 8 }}>{fmM(rr.puntos.patrimonioFinal)}</div>
+                  <div style={F.caption}>en el año 10 · te deja <b style={{ color: C.ok }}>{fmMes(rr.puntos.quedaMes)}</b>/mes</div>
+                </> : <div style={{ ...F.caption, color: C.danger, marginTop: 8 }}>✋ hay un dato con ceros de más</div>}
+                <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                  <button style={{ ...btn(true), padding: "4px 10px" }} onClick={() => { setActivoId(rr.id); setVista("armar"); setPaso(4); }}>Ver</button>
+                  <button style={{ ...btn(false), padding: "4px 10px" }} onClick={() => { setActivoId(rr.id); setVista("armar"); setPaso(3); setSub(1); }}>Editar</button>
+                  <button style={{ ...btn(false), padding: "4px 10px", color: C.danger, borderColor: C.danger }} onClick={() => { const e = todos.find((x) => x.id === rr.id); if (e && (typeof window === "undefined" || window.confirm(`¿Borrar «${e.nombre}»? No se puede deshacer.`))) borrar(e); }}>Borrar</button>
+                </div>
+              </div>
+            ))}
+          </div>}
+        </div>
+        {res.length > 1 && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); setVista("armar"); setPaso(4); }} caminoElegido={caminoElegido} onElegir={onElegir} onEditar={(id) => { setActivoId(id); setVista("armar"); setPaso(3); setSub(1); }} />}
+      </>) : (<>
         {/* Lo único que no se mueve mientras bajas: qué escenario miras, en
             qué paso vas y la cifra. Antes el paso a paso se iba hacia arriba y
             uno quedaba perdido en medio de ocho fichas. */}
         <div style={{ position: "sticky", top: 0, zIndex: 6, background: C.bg || "#0b0d12", paddingBottom: 8, display: "grid", gap: 8 }}>
-          <BarraEscenario todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} base={base} onNuevo={nuevo} onVerTodos={() => ir(2)} onBorrar={borrar} />
+          <BarraEscenario todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} base={base} onNuevo={nuevo} onVerTodos={irALista} onBorrar={borrar} />
           <Stepper paso={paso} setPaso={ir} />
         </div>
         {paso === 1 && <PasoHoy base={base} fichas={fichas} onFichas={onFichas} onNext={() => ir(2)} />}
