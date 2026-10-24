@@ -3,7 +3,7 @@ import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
-import { metricasReales, etiquetaEscenario, vistaNivel, estadoNivel, llevaCheck, pctPiso, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
+import { metricasReales, impuestoBase, pistaEsenciales, etiquetaEscenario, vistaNivel, estadoNivel, llevaCheck, pctPiso, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
@@ -150,7 +150,7 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
 }
 
 // ─── FREEDOM BAR (inline, reactive) ───
-function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null }) {
+function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null, trmPendiente = false, pistaSeguridad = null }) {
   const [verOcultos, setVerOcultos] = useState(false);
   const [confirmados, setConfirmados] = useState(() => leerConfirmados());
   const [expandedLvl, setExpandedLvl] = useState(null);
@@ -207,6 +207,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
       {vista && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>Tu nivel real, con tus datos guardados (los sliders y escenarios no lo cambian).</div>
+          {trmPendiente && <div style={{ fontSize: 10, color: T.gd, marginBottom: 4 }}>Tus montos en dólares quedan fuera de este nivel: pendiente de tasa. Se suman cuando cargue la TRM.</div>}
           <div style={{ fontSize: 15, fontWeight: 800, color: currentData?.color || T.txt, lineHeight: 1.4 }}>{vista.titular}</div>
           <div style={{ fontSize: 12, color: T.txt2, marginTop: 4, overflowWrap: "anywhere" }}>
             Tu ingreso pasivo (bruto): <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(ni)}/mes</b> · Tus gastos y cuotas: <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(te)}/mes</b>
@@ -306,7 +307,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
               </button>
               {verOcultos && (
                 <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-                  {nombresIngresosOcultos.map((n, i) => <li key={i}>{n.nombre}: <b>{fm(n.mensual)}/mes</b>{n.nota && <span style={{ color: T.txt3 }}> ({n.nota})</span>}
+                  {nombresIngresosOcultos.map((n, i) => <li key={i}>{n.nombre}: {n.pendienteTasa ? <b>pendiente de tasa</b> : <b>{fm(n.mensual)}/mes</b>}{n.nota && <span style={{ color: T.txt3 }}> ({n.nota})</span>}
                     {n.revisar && !confirmados.has(n.nombre) && (
                       <div style={{ marginTop: 3, color: T.gd }}>
                         Revisa: ¿es renta de una inversión?{" "}
@@ -344,11 +345,14 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
               {l.porCobertura ? (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                    Meta: {fm(needed)}<span style={{ fontSize: 9 }}>/mes</span>
+                    <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>Meta: {fm(needed)}<span style={{ fontSize: 9 }}>/mes</span></span>
                   </div>
                   <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
                     de ingreso pasivo<br />{l.def.umbral === "esencial" ? "paga lo esencial" : l.def.factor > 1 ? "paga todo, con margen" : "paga todo"}
                   </div>
+                  {l.def.umbral === "esencial" && pistaSeguridad && (
+                    <div style={{ fontSize: 9, color: T.gd, marginTop: 3, lineHeight: 1.3 }}>{pistaSeguridad}</div>
+                  )}
                 </>
               ) : (
                 // 21-oct-2026 (Santiago: "¿aquí no debería aparecer un valor
@@ -363,7 +367,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
                 metaNivel(l.def) ? (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                    Meta: {fm(0)}<span style={{ fontSize: 9 }}>/mes</span>
+                    <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>Meta: {fm(0)}<span style={{ fontSize: 9 }}>/mes</span></span>
                   </div>
                   <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
                     de flujo o más<br />hoy: {fm(fl)}/mes
@@ -454,7 +458,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
 // ═══════════════════════════════════════
 // MAIN SIMULATOR
 // ═══════════════════════════════════════
-export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onNavigate, onInflacionChange}) {
+export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onNavigate, onInflacionChange, trmReal}) {
 
   // 30-ago-2026 — CAUSA RAIZ de "algo salió mal" al abrir el simulador:
   // ReferenceError: trm is not defined.
@@ -566,12 +570,21 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // ═══════════════════════════════════════════════════════════════════════════
   const simT = useMemo(() => {
     const trm = user?.trm || 4200;
+    // 24-oct-2026 (QA #58) — ¿El escenario cambia algo de verdad? Tocar un
+    // slider y dejarlo en su valor no es un escenario: en ese caso el nivel del
+    // escenario es EXACTAMENTE el real (mismo impuesto, misma TRM).
+    let cambio = false;
+    const gv = (k, def) => {
+      const v = getVal(k, def);
+      if (Math.abs((Number(v) || 0) - (Number(def) || 0)) > 0.5) cambio = true;
+      return v;
+    };
 
     // ─── PASO 1: Ingresos con overrides de sliders + moneda ──────────────
     const ingSim = (user.ingresos || []).map((ing, ii) => {
       if (ing.sim === false) return ing;
       const baseCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
-      const overrideCop = getVal(`ing_${ii}`, baseCop);
+      const overrideCop = gv(`ing_${ii}`, baseCop);
       const newMensual = ing.moneda === "USD" ? (overrideCop / trm) : overrideCop;
       return { ...ing, mensual: newMensual };
     });
@@ -595,7 +608,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       gasSim[cat] = (items || []).map((g, gi) => {
         if (g.sim === false) return g;
-        const newM = getVal(`gf_${cat}_${gi}`, g.m || 0);
+        const newM = gv(`gf_${cat}_${gi}`, g.m || 0);
         return { ...g, m: newM };
       });
       gasSim[cat].forEach(g => {
@@ -613,7 +626,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     const deuSim = (user.deudas || []).map((d, di) => {
       if (d.sim === false) return d;
       if ((d.mt || 0) > 0) {
-        const newPago = getVal(`debt_${di}`, (d.pago || d.pg || 0));
+        const newPago = gv(`debt_${di}`, (d.pago || d.pg || 0));
         return { ...d, pago: newPago, pg: newPago };
       }
       return d;
@@ -646,7 +659,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
         ? (td.impOptBruto != null ? td.impOptBruto : (td.impBruto || 0))
         : (td.impBruto != null ? td.impBruto : (td.impuesto || 0));
       const mesBase = Math.round(anualBase / 12);
-      const simImpBrutoMes = getVal(`tax_${td.name}`, mesBase);
+      const simImpBrutoMes = gv(`tax_${td.name}`, mesBase);
       impuestoBrutoAnual += simImpBrutoMes * 12;
       retencionAnual += (td.reteN || 0);
     });
@@ -674,7 +687,13 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // tarjeta medía octubre mientras la pantalla mostraba otro mes. Es el mismo
     // reclamo del 10-oct sobre el PDF ("si estoy analizando dic por qué me sale
     // arriendo hasta sept"), en la tarjeta.
-    const metMes = calcularMetricas(argsMet, { base: "mes", mes: mesVisualizado });
+    const sinCambios = !cambio && !Object.values(taxOptimizado || {}).some(Boolean);
+    let metMes = calcularMetricas(argsMet, { base: "mes", mes: mesVisualizado });
+    if (sinCambios) {
+      // Mismo cálculo que el nivel real (metricasReales + impuesto de los datos
+      // guardados, igual que baseT): mismo % sí o sí.
+      metMes = metricasReales(user, { ...impuestoBase(impuestoData), mes: mesVisualizado, trm: trmReal });
+    }
     // La cobertura sale de la MISMA base que el nivel. Quedaba en el promedio
     // del año mientras el nivel ya era del mes, así que el KPI "Independencia"
     // de esta misma pantalla contradecía a la tarjeta de abajo.
@@ -684,7 +703,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       // ip/ob/fl son las cifras de la cuenta de libertad: van en la base del
       // nivel (el mes). El flujo del AÑO tiene sus propios campos más abajo
       // (brutoTotal, egresosTotales, cashFlow, ni, te, cf) y sigue en promedio.
-      met, metMes, nivel: metMes.nivel, ip: metMes.ip, ob: metMes.ob, fl: metMes.fl,
+      met, metMes, sinCambios, nivel: metMes.nivel, ip: metMes.ip, ob: metMes.ob, fl: metMes.fl,
       // ═══ NUEVO MODELO EXPLÍCITO ═══
       brutoTotal,
       retencionMensual,
@@ -712,7 +731,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       tTax: impuestoNeto,
       dynTax,
     };
-  }, [user, simVals, getVal, taxOptimizado, mesVisualizado]);
+  }, [user, simVals, getVal, taxOptimizado, mesVisualizado, impuestoData, trmReal]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // FASE 5 (18-jul-2026): simTMes — motor del cash flow DEL MES visualizado.
@@ -1063,8 +1082,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
 
   // 24-oct-2026 (QA #58) — Nivel real: solo datos guardados, sin simVals.
   const metReal = useMemo(() => metricasReales(user, {
-    retencionMensual: baseT.retencionMensual, impuestoNeto: baseT.impuestoNeto, mes: mesVisualizado,
-  }), [user, baseT, mesVisualizado]);
+    retencionMensual: baseT.retencionMensual, impuestoNeto: baseT.impuestoNeto, mes: mesVisualizado, trm: trmReal,
+  }), [user, baseT, mesVisualizado, trmReal]);
 
   // ── 14-sep-2026 · Gráfica del año: lo real + el escenario ────────────────
   // Santiago: "es una sola gráfica, se puede mostrar el actual de lo que va del
@@ -1493,8 +1512,10 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
       <FreedomBarLive ip={metReal.ip} ob={metReal.ob}
         fl={metReal.fl} nivel={metReal.nivel}
         ocultos={metReal.ocultos} mesMedido={metReal.mesMedido}
-        escenarioTxt={etiquetaEscenario(metReal, simT.metMes, Object.keys(simVals || {}).length > 0)}
-        nombresIngresosOcultos={ingresosOcultos(user.ingresos, trm)} onNavigate={onNavigate} />
+        escenarioTxt={etiquetaEscenario(metReal, simT.metMes, !simT.sinCambios)}
+        trmPendiente={metReal.trmPendiente}
+        pistaSeguridad={pistaEsenciales(metReal)}
+        nombresIngresosOcultos={ingresosOcultos(user.ingresos, trmReal)} onNavigate={onNavigate} />
 
       {/* Scenario presets */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 20 }}>

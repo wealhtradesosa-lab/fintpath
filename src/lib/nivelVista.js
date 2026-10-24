@@ -77,9 +77,14 @@ const NOMBRE_FREQ = { anual: "anual", trimestral: "trimestral", semestral: "seme
  * no mensuales → total del año / 12, aunque ya se hayan cobrado (antes salían
  * en $0/mes). El total del aviso es la suma de esta lista.
  */
-export function ingresosOcultos(ingresos = [], trm = 4200, año = getMesActual().año) {
+export function ingresosOcultos(ingresos = [], trm = null, año = getMesActual().año) {
+  const tasa = trmUsable(trm);
   return (ingresos || []).filter((i) => i && i.sim === false).map((i) => {
-    const fx = i.moneda === "USD" ? trm : 1;
+    // Sin tasa real no se inventa una (nunca 4.200): el monto queda pendiente.
+    if (i.moneda === "USD" && tasa == null) {
+      return { nombre: String(i.nombre || i.categoria || "Ingreso sin nombre"), mensual: null, nota: "pendiente de tasa", revisar: false, pendienteTasa: true };
+    }
+    const fx = i.moneda === "USD" ? tasa : 1;
     const freq = getFrecuencia(i);
     const noMensual = freq !== "mensual" && freq !== "variable";
     const mensual = (noMensual ? (totalAnualItem(i) || 0) / 12 : (montoPromedioMensual(i) || 0)) * fx;
@@ -118,11 +123,28 @@ export function confirmarRenta(nombre, store = typeof localStorage !== "undefine
  * y, si cambian algo, se muestran como «Nivel en este escenario».
  * Ingreso laboral (salario, prima, bono) nunca es pasivo (metrics.js → esLaboral).
  */
-export function metricasReales(user = {}, { retencionMensual = 0, impuestoNeto = 0, mes } = {}) {
-  return calcularMetricas({
-    ingresos: user.ingresos || [], gastos: user.gastos || {}, deudas: user.deudas || [],
-    inv: user.inv || [], trm: user.trm || 4200, retencionMensual, impuestoNeto,
+export function metricasReales(user = {}, { retencionMensual = 0, impuestoNeto = 0, mes, trm } = {}) {
+  // 24-oct-2026 (QA #58) — Misma TRM que el resto de la app (la del Banco de la
+  // República o la última real guardada). Nunca 4.200: si no hay tasa, los
+  // montos en USD quedan FUERA del nivel y se marca «pendiente de tasa», igual
+  // que la lista de ingresos ocultos.
+  const tasa = trmUsable(trm !== undefined ? trm : user.trm);
+  const esUSD = (x) => x && x.moneda === "USD";
+  let nUSD = 0;
+  const sinUSD = (arr) => (arr || []).filter((x) => { if (tasa == null && esUSD(x) && x.sim !== false) { nUSD++; return false; } return true; });
+  const gastos = {};
+  Object.entries(user.gastos || {}).forEach(([c, items]) => { gastos[c] = sinUSD(items); });
+  const met = calcularMetricas({
+    ingresos: sinUSD(user.ingresos), gastos, deudas: sinUSD(user.deudas),
+    inv: sinUSD(user.inv), trm: tasa ?? 1, retencionMensual, impuestoNeto,
   }, { base: "mes", mes });
+  return { ...met, trm: tasa, trmPendiente: tasa == null && nUSD > 0, nUSDExcluidos: nUSD };
+}
+
+/** TRM utilizable: número > 0. Si no hay, null (nunca un valor inventado). */
+export function trmUsable(trm) {
+  const n = Number(trm);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 /** Texto aparte para el escenario; null si no hay simulación o no cambia nada. */
@@ -132,4 +154,21 @@ export function etiquetaEscenario(real, esc, simulando) {
   const pct = pctPiso(esc.ip, esc.ob);
   if (real?.nivel?.nivel === n && pctPiso(real.ip, real.ob) === pct) return null;
   return `Nivel en este escenario: ${NIVELES[n - 1].nombre} (${fmtPctEs(pct, 0)}). Es una simulación: tu nivel real no cambia.`;
+}
+
+/** Retención e impuesto neto mensuales de los datos guardados (misma regla que baseT). */
+export function impuestoBase(impuestoData) {
+  let ib = 0, rb = 0;
+  ((impuestoData && impuestoData.detalle) || []).forEach((td) => {
+    ib += td.impBruto != null ? td.impBruto : (td.impuesto || 0);
+    rb += (td.reteN || 0);
+  });
+  return { retencionMensual: Math.round(rb / 12), impuestoNeto: Math.max(0, Math.round((ib - rb) / 12)) };
+}
+
+export const PISTA_ESENCIALES = "Marca tus gastos esenciales para ver cuándo llegas a Seguridad";
+/** Solo copy: pista cuando ningún gasto está marcado como esencial (no cambia el nivel). */
+export function pistaEsenciales(met) {
+  if (!met || !(met.ob > 0) || met.esencialesClasificados) return null;
+  return PISTA_ESENCIALES;
 }
