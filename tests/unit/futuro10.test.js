@@ -514,3 +514,18 @@ describe("futuro10 · gastos que se acaban", () => {
     expect(ya.desglose.sale.reduce((s, x) => s + x.mensual, 0)).toBeCloseTo(ya.filas[1].gastos / 12, -2);
   });
 });
+
+describe("futuro10 · casa propia en 5 años pagada con una inversión", () => {
+  it("la plata sale de BTG ese año; lo que falta, de la liquidez", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "pm", n: "PM", tp: "Real Estate", va: 9000e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 500e6 }], ingresos: [], gas: {}, deu: [] };
+    const cfg = { decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "BTG", monto: 5000e6, anio: 1, rendimientoNomPct: 10, pctRecibe: 100 }],
+      futuros: { activos: [{ nombre: "Casa", clase: "vivienda", valor: 3900e6, cuotaInicial: 3900e6, anioCuota: 5, entrega: 5, fuenteId: "nueva_0" }] } };
+    const r = proyectarFuturo10(u, cfg);
+    const btg4 = r.filas[4].porActivo.find((x) => x.nombre === "BTG").valor, btg5 = r.filas[5].porActivo.find((x) => x.nombre === "BTG").valor;
+    expect(btg4 - btg5).toBeCloseTo(3900e6, -3);
+    expect(r.filas[5].porActivo.find((x) => x.nombre === "Casa").valor).toBeCloseTo(3900e6, -3);
+    expect(Math.abs(r.filas[5].patrimonio - r.filas[4].patrimonio) / r.filas[4].patrimonio).toBeLessThan(0.1);
+    expect(r.alertas.some((a) => a.tipo === "pago_futuro" && /salen de BTG/.test(a.texto))).toBe(true);
+    expect(r.fuentes.some((f) => f.id === "nueva_0")).toBe(true);
+  });
+});

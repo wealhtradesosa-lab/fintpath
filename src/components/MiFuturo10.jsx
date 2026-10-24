@@ -122,7 +122,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         </div>
         <div style={card}>
           <Seccion n={2} titulo="Lo que viene" sub="Lo que empieza más adelante: una pensión, un local que te entregan, la universidad de los hijos." />
-          <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} gastosHoy={r.gastosHoy || []} />
+          <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} gastosHoy={r.gastosHoy || []} fuentes={r.fuentes || []} />
         </div>
       </>)}
 
@@ -261,7 +261,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 }
 
 const ANIOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [] }) {
+function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuentes = [] }) {
   const [verTodos, setVerTodos] = useState(false);
   const f = { ingresos: [], activos: [], gastos: [], ...(cfg.futuros || {}) };
   const put = (k, arr) => set("futuros", { ...f, [k]: arr });
@@ -271,7 +271,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [] }) {
   const lbl = { fontSize: 12, color: C.tx2 };
   const g = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 6, padding: "8px 0", borderTop: `1px solid ${C.bd}` };
   const selAnio = (v, on, vacioTxt) => <select style={inp} value={v ?? ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}>{vacioTxt && <option value="">{vacioTxt}</option>}{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>;
-  const hintVal = (cl) => fmtPctEs(((1 + esc.inflacionPct / 100) * (1 + (cl === "inmueble" ? SUPUESTOS_F10.presets.fincaRaiz.valorizacionSpread : SUPUESTOS_F10.otrosRealSpread) / 100) - 1) * 100, 1);
+  const hintVal = (cl) => fmtPctEs(((1 + esc.inflacionPct / 100) * (1 + (cl === "inmueble" || cl === "vivienda" ? SUPUESTOS_F10.presets.fincaRaiz.valorizacionSpread : SUPUESTOS_F10.otrosRealSpread) / 100) - 1) * 100, 1);
   const fut = leerFuturos(f, esc); // mismo motor que la proyección
   const totalIng = fut.ingresos.reduce((sm, x) => sm + x.mensual, 0);
   const primerAnio = fut.ingresos.length ? Math.min(...fut.ingresos.map((x) => x.desde)) : null;
@@ -327,14 +327,17 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [] }) {
       {f.activos.map((x, i) => (
         <div key={i} style={g}>
           <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder="Ej.: local comercial" onChange={(e) => upA(i, { nombre: e.target.value })} /></label>
-          <label style={lbl}>Tipo<select style={inp} value={x.clase || "inmueble"} onChange={(e) => upA(i, { clase: e.target.value })}><option value="inmueble">Finca raíz</option><option value="otro">Otro</option></select></label>
+          <label style={lbl}>Tipo<select style={inp} value={x.clase || "inmueble"} onChange={(e) => upA(i, { clase: e.target.value })}><option value="inmueble">Finca raíz que renta</option><option value="vivienda">Casa para vivir</option><option value="otro">Otro</option></select></label>
+          <label style={lbl}>¿De dónde sale la plata?<select style={inp} value={x.fuenteId || ""} onChange={(e) => upA(i, { fuenteId: e.target.value || null })}><option value="">De mi liquidez</option>{fuentes.map((y) => <option key={y.id} value={y.id}>De {y.nombre}</option>)}</select>
+            <span style={{ fontSize: 11 }}>Si esa inversión no alcanza, lo que falta sale de tu liquidez.</span></label>
           <label style={lbl}>Valor total ($)<NumberInput style={inp} value={x.valor ?? ""} onChange={(v) => upA(i, { valor: v })} /></label>
           <label style={lbl}>Cuota inicial ($)<NumberInput style={inp} value={x.cuotaInicial ?? ""} onChange={(v) => upA(i, { cuotaInicial: v })} /></label>
           <label style={lbl}>Año de la cuota inicial{selAnio(x.anioCuota || 1, (v) => upA(i, { anioCuota: v || 1 }))}</label>
           <label style={lbl}>Año de entrega{selAnio(x.entrega || 1, (v) => upA(i, { entrega: v || 1 }))}
-            <span style={{ fontSize: 11 }}>El resto se paga en la entrega. Los pagos salen de tu liquidez; desde la entrega se valoriza.</span></label>
-          <label style={lbl}>Renta neta al mes ($, pesos de hoy, opcional)<NumberInput style={inp} value={x.rentaMensual ?? ""} onChange={(v) => upA(i, { rentaMensual: v })} /></label>
-          <label style={lbl}>Renta desde{selAnio(x.rentaDesde || x.entrega || 1, (v) => upA(i, { rentaDesde: v || 1 }))}</label>
+            <span style={{ fontSize: 11 }}>El resto se paga en la entrega, de donde elegiste arriba. Desde la entrega se valoriza.</span></label>
+          {x.clase !== "vivienda" && <><label style={lbl}>Renta neta al mes ($, pesos de hoy, opcional)<NumberInput style={inp} value={x.rentaMensual ?? ""} onChange={(v) => upA(i, { rentaMensual: v })} /></label>
+          <label style={lbl}>Renta desde{selAnio(x.rentaDesde || x.entrega || 1, (v) => upA(i, { rentaDesde: v || 1 }))}</label></>}
+          {x.clase === "vivienda" && <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2 }}>Si al mudarte dejas de pagar arriendo, márcalo abajo en «Gastos que se acaban» desde el año de entrega.</div>}
           <label style={lbl}>¿Cuánto crees que se valoriza al año? (%)<InputDecimalEs style={inp} placeholder={hintVal(x.clase || "inmueble")} value={x.valorizacionNomPct ?? ""} onChange={(v) => upA(i, { valorizacionNomPct: v })} />
             <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {hintVal(x.clase || "inmueble")}.</span></label>
           <button style={btn(false)} onClick={() => put("activos", f.activos.filter((_, j) => j !== i))}>Quitar</button>
