@@ -24,6 +24,7 @@ const CsvImport = lazy(() => import("./components/CsvImport"));
 const CalculadoraWizard = lazy(() => import("./components/CalculadoraWizard"));
 const SimuladorAvanzado = lazy(() => import("./components/SimuladorAvanzado"));
 const SimuladorFuturo = lazy(() => import("./components/SimuladorFuturo"));
+const MiFuturo10 = lazy(() => import("./components/MiFuturo10"));
 const MiPlan = lazy(() => import("./components/MiPlan"));
 const DeclaracionFlow = lazy(() => import("./components/DeclaracionFlow"));
 const PensionesColpensiones = lazy(() => import("./components/PensionesColpensiones"));
@@ -2023,7 +2024,7 @@ export default function FinPath(){
       // sola —"Este año"— con sus dos vistas adentro. Las rutas no cambian
       // (`flujo` y `sim` siguen siendo las páginas): cambia la puerta.
       // `goesTo` = el padre no tiene página propia, lleva a su primera vista.
-      {id:"anio",i:"📅",l:isEN?"This Year":"Este año",hasChildren:true,goesTo:"flujo"},{id:"flujo",i:"📆",l:isEN?"Month by Month":"Mes a mes",parent:"anio"},{id:"sim",i:"🖥️",l:isEN?"Simulator":"Simulador",parent:"anio"},{id:"simf",i:"🔮",l:"Año entrante",hidden:isUS},{id:"plan",i:"🧭",l:isEN?"10-Year Scenarios":"Escenarios a 10 años",hidden:isUS},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"met",i:"🎯",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"💹",l:"Trading",
+      {id:"anio",i:"📅",l:isEN?"This Year":"Este año",hasChildren:true,goesTo:"flujo"},{id:"flujo",i:"📆",l:isEN?"Month by Month":"Mes a mes",parent:"anio"},{id:"sim",i:"🖥️",l:isEN?"Simulator":"Simulador",parent:"anio"},{id:"simf",i:"🔮",l:"Año entrante",hidden:isUS},{id:"plan",i:"🧭",l:isEN?"10-Year Scenarios":"Escenarios a 10 años",hidden:isUS},{id:"f10",i:"🌱",l:"Mi futuro a 10 años",hidden:isUS},{id:"norte",i:"🧭",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"met",i:"🎯",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"💹",l:"Trading",
       // 26-jul-2026 — OCULTO DEL MENÚ, NO ELIMINADO.
       // Uso real medido en la base: 2 de 86 cuentas tienen posiciones
       // cargadas, y una es la de Santiago. Contra 31 en Ingresos y 21 en
@@ -3283,6 +3284,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           retirementBalance={(u?.inv||[]).filter(i=>["Fondo de Inversión","CDT","Acciones"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)}
         />
       :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trm||u?.trm||4200} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado si Plan a cero (P0.3) está activo."} onNavigateNorte={()=>setPg("norte")} extraADeudas={extraADeudas}/>;
+    case"f10":return <MiFuturo10 user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],ingresos:(u&&u.ingresos)||[],gas:(u&&u.gas)||{},deu:(u&&u.deu)||[],trm:u?.trm||4200}} guardado={u?.futuro10||{}} onGuardar={v=>upd("futuro10",v)}/>;
     case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
     case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
     // "anio" es la puerta del menú, no una página: si alguien cae ahí, es el mes a mes.
