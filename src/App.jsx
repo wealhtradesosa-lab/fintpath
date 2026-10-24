@@ -93,6 +93,7 @@ import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { leerNorte, borrarNorte, itemsDesdeNorte } from "./lib/norteUnMinuto.js";
+import { migrateInvFiscalCodeTipo } from "./lib/invFiscalCode.js";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre, migrateInversionUnica } from "./lib/migrations";
 import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
@@ -234,7 +235,7 @@ Object.keys(d.gas).forEach(cat => {
     return { ...item, fiscalCode: _deriveGasFiscalCode(cat, item.owner) };
   });
 });
-if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateInversionUnica(migrateAporteTributarioNombre(migrateDeudaViviendaWizardLegacy(migratePlanOptimizacionNamespace(migrateFiscalCodePVLegacy(migrateDeclaracionesV55(migrateAportesVoluntariosV17(d)))))))};
+if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateInvFiscalCodeTipo(migrateInversionUnica(migrateAporteTributarioNombre(migrateDeudaViviendaWizardLegacy(migratePlanOptimizacionNamespace(migrateFiscalCodePVLegacy(migrateDeclaracionesV55(migrateAportesVoluntariosV17(d))))))))};
 
 // ═══ END-TO-END ENCRYPTION ═══
 const E2E={

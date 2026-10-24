@@ -9,6 +9,7 @@ import NumberInput from "./NumberInput";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
 import PageHeader from "./PageHeader";
+import { fiscalCodeParaTipo } from "../lib/invFiscalCode.js";
 import { exportInversionesExcel } from "../lib/excelExport.js";
 import { exportPatrimonioPDF } from "../lib/pdfSectionExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
@@ -251,7 +252,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       nombre: String(getName(inv) || ""),
       ubicacion: String(getLoc(inv) || ""),
       tipo: String(getType(inv) || "Real Estate"),
-      fiscalCode: inv.fiscalCode || "INV_INMUEBLE_HABITACIONAL",
+      fiscalCode: fiscalCodeParaTipo(getType(inv) || "Real Estate", inv.fiscalCode, (owners || []).find((o) => o.id === inv.owner)),
       pctTerreno: inv.pctTerreno != null ? String(inv.pctTerreno) : "",
       va: String(getVArw(inv) || ""),
       vc: String(getVCrw(inv) || ""),
@@ -314,7 +315,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       // Un activo viejo sin indicador que se guarda sin tocar el % queda confirmado como bruta.
       rentaOrigen: tasa > 0 ? (form.rentaOrigen || "derivada") : undefined,
       valorizacionPct: form.valorizacionPct !== "" && form.valorizacionPct != null ? parseFloat(form.valorizacionPct) || 0 : undefined,
-      fiscalCode: form.fiscalCode || undefined,
+      fiscalCode: fiscalCodeParaTipo(form.tipo, form.fiscalCode, (owners || []).find((o) => o.id === form.owner)),
+      revisarFiscal: undefined,
       pctTerreno: form.pctTerreno !== "" && form.pctTerreno != null ? Math.max(0, Math.min(100, parseFloat(form.pctTerreno))) : undefined,
     };
     // Store income directly on investment so coaches can read it
@@ -559,6 +561,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         )}
                         <span>{name}</span>
                       </div>
+                      {inv.revisarFiscal && (
+                        <div onClick={() => openEdit(inv)} style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", cursor: "pointer", marginBottom: 2 }}>Revisa: revisa la clasificación fiscal</div>
+                      )}
                       <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? "renta " +fmtTasaEs(inv.tasa)+" anual" : ""].filter(Boolean).join(" • ")}</div>
                       {(()=>{
                         if(!inv.owner || inv.owner==="") return null;
@@ -631,7 +636,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               </div>
               <In l="Ubicación" value={form.ubicacion} onChange={(v) => setForm((p) => ({ ...p, ubicacion: v }))} placeholder="Miami, FL" />
               <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
-              <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["Real Estate", "Fondo de Inversión", "CDT", "Acciones", "Crypto", "Bodega", "Lote", "Vehículo", "Local Comercial", "Renta Fija", "Negocio", "Cash", "Otro"]} />
+              <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v, fiscalCode: fiscalCodeParaTipo(v, p.fiscalCode, (owners || []).find((o) => o.id === p.owner)) }))} options={["Real Estate", "Fondo de Inversión", "CDT", "Acciones", "Crypto", "Bodega", "Lote", "Vehículo", "Local Comercial", "Renta Fija", "Negocio", "Cash", "Otro"]} />
               {["Real Estate", "Bodega", "Lote", "Local Comercial"].includes(form.tipo) && (
                 <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>🏠 ¿Cómo usas este inmueble? (define si depreciación aplica)</div>
