@@ -487,3 +487,16 @@ describe("futuro10 · desglose del año 1 cuadra con la proyección", () => {
     expect(r2.desglose.entra.find((x) => x.nombre === "BTG").mensual).toBeCloseTo(8500e6 * 0.14 / 12, -3);
   });
 });
+
+describe("futuro10 · gastos futuros (universidad de los hijos)", () => {
+  it("180 M al año desde el año 4, durante 4 años: sube con la inflación y se acaba", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", tp: "Cash", va: 2000e6 }], ingresos: [{ nombre: "S", categoria: "Salario", mensual: 50e6 }], gas: { V: [{ n: "x", m: 20e6 }] }, deu: [] };
+    const sin = proyectarFuturo10(u, {});
+    const r = proyectarFuturo10(u, { futuros: { gastos: [{ nombre: "Universidad", anual: 180e6, desde: 4, anios: 4 }] } });
+    expect(r.filas[3].gastos).toBeCloseTo(sin.filas[3].gastos, 0);
+    expect(r.filas[4].gastos - sin.filas[4].gastos).toBeCloseTo(180e6 * 1.04 ** 4, -2);
+    expect(r.filas[7].gastos - sin.filas[7].gastos).toBeCloseTo(180e6 * 1.04 ** 7, -2);
+    expect(r.filas[8].gastos).toBeCloseTo(sin.filas[8].gastos, 0);
+    expect(r.final.patrimonio).toBeLessThan(sin.final.patrimonio);
+  });
+});

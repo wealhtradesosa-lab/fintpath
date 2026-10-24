@@ -44,6 +44,7 @@ export function eventosDelPlan(r) {
   const fut = r.futuros || { ingresos: [], activos: [] };
   fut.ingresos.forEach((x) => ev.push({ anio: x.desde, corto: x.nombre, texto: `${x.nombre}: +${fmM(x.mensual)}/mes` }));
   fut.activos.forEach((x) => ev.push({ anio: x.entrega, corto: x.nombre, texto: `Recibes ${x.nombre}` }));
+  (fut.gastos || []).forEach((x) => { ev.push({ anio: x.desde, corto: x.nombre, texto: `Empieza ${x.nombre}: −${fmM(x.anual)}/año` }); if (x.hasta < 99) ev.push({ anio: x.hasta + 1, corto: `Fin ${x.nombre}`, texto: `Termina ${x.nombre}` }); });
   (r.alertas || []).filter((a) => a.tipo === "pago_unico").forEach((a) => ev.push({ anio: a.anio, corto: "Pago único", texto: a.texto.replace(/^En el año \d+ /, "") }));
   return ev.sort((a, b) => a.anio - b.anio);
 }

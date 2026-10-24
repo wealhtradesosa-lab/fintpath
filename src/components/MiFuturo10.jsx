@@ -18,7 +18,7 @@ const PASOS = ["Hoy", "Decide", "Tu plata", "Resultado", "Escenarios"];
 const plata = (v) => "$" + fmtMilesEs(v);
 export const AVISO_F10 = "Proyección ilustrativa, no asesoría. Proyección estimada con supuestos generales que puedes ajustar en algunos pasos; no es una recomendación de inversión. No incluye impuestos.";
 
-const CONFIG_INICIAL = { escenario: "base", decisiones: {}, norte: "equilibrio", mezcla: null, nuevas: [], reinversiones: [], futuros: { ingresos: [], activos: [] } };
+const CONFIG_INICIAL = { escenario: "base", decisiones: {}, norte: "equilibrio", mezcla: null, nuevas: [], reinversiones: [], futuros: { ingresos: [], activos: [], gastos: [] } };
 
 export const MSG_DEMO_F10 = "En modo demo no se guardan escenarios.";
 
@@ -121,7 +121,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           })}
         </div>
         <div style={card}>
-          <Seccion n={2} titulo="Lo que viene" sub="Lo que todavía no tienes y empieza más adelante: una pensión, una venta futura, un local que te entregan." />
+          <Seccion n={2} titulo="Lo que viene" sub="Lo que empieza más adelante: una pensión, un local que te entregan, la universidad de los hijos." />
           <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} />
         </div>
       </>)}
@@ -262,10 +262,11 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
 const ANIOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 function LoQueViene({ cfg, set, esc, owners, activos = [] }) {
-  const f = { ingresos: [], activos: [], ...(cfg.futuros || {}) };
+  const f = { ingresos: [], activos: [], gastos: [], ...(cfg.futuros || {}) };
   const put = (k, arr) => set("futuros", { ...f, [k]: arr });
   const upI = (i, v) => put("ingresos", f.ingresos.map((x, j) => (j === i ? { ...x, ...v } : x)));
   const upA = (i, v) => put("activos", f.activos.map((x, j) => (j === i ? { ...x, ...v } : x)));
+  const upG = (i, v) => put("gastos", (f.gastos || []).map((x, j) => (j === i ? { ...x, ...v } : x)));
   const lbl = { fontSize: 12, color: C.tx2 };
   const g = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 6, padding: "8px 0", borderTop: `1px solid ${C.bd}` };
   const selAnio = (v, on, vacioTxt) => <select style={inp} value={v ?? ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}>{vacioTxt && <option value="">{vacioTxt}</option>}{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>;
@@ -274,6 +275,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [] }) {
   const totalIng = fut.ingresos.reduce((sm, x) => sm + x.mensual, 0);
   const primerAnio = fut.ingresos.length ? Math.min(...fut.ingresos.map((x) => x.desde)) : null;
   const totalAct = f.activos.reduce((sm, x) => sm + (Number(x.valor) || 0), 0);
+  const totalGas = (fut.gastos || []).reduce((sm, x) => sm + x.anual, 0);
   return (
     <div>
       {/* 24-oct-2026 (Santiago: "es muy poco visible lo de ingresos futuros;
@@ -288,6 +290,11 @@ function LoQueViene({ cfg, set, esc, owners, activos = [] }) {
           <div style={{ fontSize: 11, color: C.tx2 }}>Activos futuros</div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{totalAct > 0 ? plata(totalAct) : "Ninguno"}</div>
           {f.activos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{f.activos.length} {f.activos.length === 1 ? "activo" : "activos"}</div>}
+        </div>
+        <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
+          <div style={{ fontSize: 11, color: C.tx2 }}>Gastos futuros</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: totalGas > 0 ? C.am : C.tx }}>{totalGas > 0 ? `${plata(totalGas)} al año` : "Ninguno"}</div>
+          {(fut.gastos || []).length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{fut.gastos.length} {fut.gastos.length === 1 ? "gasto" : "gastos"}</div>}
         </div>
       </div>
       <div style={{ fontSize: 12, color: C.am, background: "rgba(245,158,11,0.08)", border: `1px solid rgba(245,158,11,0.3)`, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>¿La renta sale de un activo que ya tienes? Elígelo en «¿De dónde sale?». Si además le vas a meter plata (construir la bodega en el lote), hazlo en el paso 3, Tu plata → «Invertir en lo que ya tienes»: ahí van la inversión y la renta juntas.</div>
@@ -332,6 +339,32 @@ function LoQueViene({ cfg, set, esc, owners, activos = [] }) {
           <button style={btn(false)} onClick={() => put("activos", f.activos.filter((_, j) => j !== i))}>Quitar</button>
         </div>))}
       <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("activos", [...f.activos, { nombre: "", clase: "inmueble", valor: "", cuotaInicial: "", anioCuota: 1, entrega: 2, rentaMensual: "", rentaDesde: "" }])}>+ Agregar activo futuro</button>
+      {/* 24-oct-2026 (Santiago: "como vienen nuevas rentas también vienen
+          nuevos gastos: la universidad de mis hijos afuera, unos 180 M por
+          año, en 3 años"). Pesos de hoy; suben con la inflación. */}
+      <h4 style={{ margin: "16px 0 8px" }}>Gastos futuros</h4>
+      {(f.gastos || []).map((x, i) => {
+        const d = Math.max(1, Number(x.desde) || 1), n = x.anios === "" || x.anios == null ? null : Math.max(1, Number(x.anios) || 1);
+        const cuando = d === 1 ? "desde ya" : `dentro de ${d - 1} año${d === 2 ? "" : "s"}`;
+        return (
+          <div key={i} style={g}>
+            <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder="Ej.: universidad de los hijos" onChange={(e) => upG(i, { nombre: e.target.value })} /></label>
+            <label style={lbl}>Al año ($, pesos de hoy)<NumberInput style={inp} value={x.anual ?? ""} onChange={(v) => upG(i, { anual: v })} />
+              <span style={{ fontSize: 11 }}>Sube cada año con la inflación.</span></label>
+            <label style={lbl}>Empieza{selAnio(x.desde || 1, (v) => upG(i, { desde: v || 1 }))}</label>
+            <div style={lbl}>¿Cuántos años?
+              <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                <button type="button" style={btn(n == null)} onClick={() => upG(i, { anios: "" })}>Siempre</button>
+                <button type="button" style={btn(n != null)} onClick={() => upG(i, { anios: n ?? 4 })}>Un tiempo</button>
+              </div>
+              {n != null && <select style={{ ...inp, marginTop: 6 }} value={n} onChange={(e) => upG(i, { anios: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{y} año{y === 1 ? "" : "s"}</option>)}</select>}
+            </div>
+            {(Number(x.anual) || 0) > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am }}>Sale {plata(Number(x.anual))} al año ({plata(Math.round(Number(x.anual) / 12))} al mes) {cuando}{n != null ? `, durante ${n} año${n === 1 ? "" : "s"}` : ", siempre"}.</div>}
+            <button style={btn(false)} onClick={() => put("gastos", (f.gastos || []).filter((_, j) => j !== i))}>Quitar</button>
+          </div>
+        );
+      })}
+      <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("gastos", [...(f.gastos || []), { nombre: "", anual: "", desde: 4, anios: 4 }])}>+ Agregar gasto futuro</button>
     </div>
   );
 }
