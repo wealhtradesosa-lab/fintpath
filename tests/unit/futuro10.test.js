@@ -237,3 +237,48 @@ describe("futuro10 · inversiones nuevas se reflejan en el resultado", () => {
     expect(r.bolsaDetalle.colchon).toBeCloseTo(60e6, 0);
   });
 });
+
+describe("futuro10 · lote que se transforma en bodega", () => {
+  const U = () => ({ inflacionPct: 4, inv: [{ id: "l", n: "Lote", tp: "Lote", va: 400e6 }, { id: "orl", n: "Orlando", tp: "Real Estate", va: 900e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 50e6 }], ingresos: [], gas: {}, deu: [] });
+  const bodega = { accion: "modifica", inversionMonto: 600e6, inversionAnio: 1, rentaNuevaMensual: 8.5e6, rentaNuevaDesdeMes: 6 };
+
+  it("resume cuánto queda valiendo, la renta y desde cuándo", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { l: bodega } });
+    const x = r.modificados.find((y) => y.id === "l");
+    expect(x.valorConObra).toBeCloseTo(1000e6, 0);
+    expect(x.rentaMensual).toBe(8.5e6);
+    expect(x.rentaDesdeMes).toBe(6);
+    expect(x.rentaPctAnual).toBeCloseTo(10.2, 6);
+  });
+
+  it("la renta que arranca a los 6 meses paga medio año 1 y el año 2 completo", () => {
+    const sin = proyectarFuturo10(U(), {});
+    const r = proyectarFuturo10(U(), { decisiones: { l: { accion: "modifica", rentaNuevaMensual: 8.5e6, rentaNuevaDesdeMes: 6 } } });
+    expect(r.filas[1].rentaNueva).toBeCloseTo(8.5e6 * 6 * 1.04, 0);
+    expect(r.filas[2].rentaNueva).toBeCloseTo(8.5e6 * 12 * 1.04 ** 2, 0);
+    expect(r.filas[1].cf - sin.filas[1].cf).toBeCloseTo(8.5e6 * 6 * 1.04, 0);
+  });
+
+  it("la obra del año 1 sale del saldo de lo vendido", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { l: bodega, orl: { accion: "vende" } } });
+    expect(r.bolsaDetalle.obras).toBeCloseTo(600e6, 0);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(300e6, 0);
+    expect(r.filas[0].patrimonio).toBeCloseTo(1350e6, 0);
+  });
+
+  it("escenarios guardados con rentaNuevaDesde (año) siguen funcionando", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { l: { accion: "modifica", rentaNuevaMensual: 5e6, rentaNuevaDesde: 3 } } });
+    expect(r.filas[2].rentaNueva).toBe(0);
+    expect(r.filas[3].rentaNueva).toBeCloseTo(60e6 * 1.04 ** 3, 0);
+  });
+});
+
+describe("futuro10 · la tabla de ingresos muestra la renta nueva", () => {
+  it("la bodega sube el ingreso del mes en la tabla", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "l", n: "Lote", tp: "Lote", va: 400e6 }, { id: "c", tp: "Cash", va: 900e6 }], ingresos: [{ nombre: "Honorarios", categoria: "Salario", mensual: 30e6 }], gas: {}, deu: [] };
+    const sin = proyectarFuturo10(u, {});
+    const r = proyectarFuturo10(u, { decisiones: { l: { accion: "modifica", rentaNuevaMensual: 8.5e6, rentaNuevaDesdeMes: 6 } } });
+    expect((r.filas[2].ingresosReal - sin.filas[2].ingresosReal) / 12).toBeCloseTo(8.5e6, 0);
+    expect((r.filas[1].ingresosReal - sin.filas[1].ingresosReal) / 12).toBeCloseTo(8.5e6 / 2, 0);
+  });
+});
