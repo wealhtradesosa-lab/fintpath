@@ -168,7 +168,12 @@ function LoadingScreen(){
 }
 
 
-const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.owners)d.owners=[{id:"own_1",name:"Personal",type:"natural",regimen:"ordinario"}];d.owners=d.owners.map(o=>({...o,regimen:o.regimen||"ordinario"}));if(!d.inv)d.inv=[];d.inv=d.inv.map(i=>{if(i.tp&&!isNaN(Number(i.tp))){i.tp=inferType(i);i.tipo=i.tp}return i});if(!d.deu)d.deu=[];
+// Hotfix TRM: 4200 era el valor por defecto mientras el efecto de TRM estaba
+// roto. No es una tasa real: no se guarda y, si viene guardado, se descarta.
+export const TRM_PROVISIONAL=4200;
+export const trmReal=(d)=>{const t=Number(d&&d.trm);return Number.isFinite(t)&&t>0&&t!==TRM_PROVISIONAL?t:null};
+export const sinTrmProvisional=(d)=>{if(!d||typeof d!=="object"||trmReal(d))return d;const{trm,trmSrc,...resto}=d;return resto};
+const sanitize=(d)=>{if(!d||typeof d!=="object")return null;if(d.trm!=null&&!trmReal(d)){delete d.trm;delete d.trmSrc}if(!d.p)d.p={};if(!d.p.name)d.p.name="Usuario";if(!d.p.email)d.p.email="";if(!d.p.plan)d.p.plan="free";if(!d.owners)d.owners=[{id:"own_1",name:"Personal",type:"natural",regimen:"ordinario"}];d.owners=d.owners.map(o=>({...o,regimen:o.regimen||"ordinario"}));if(!d.inv)d.inv=[];d.inv=d.inv.map(i=>{if(i.tp&&!isNaN(Number(i.tp))){i.tp=inferType(i);i.tipo=i.tp}return i});if(!d.deu)d.deu=[];
 // Commit 18 Tarea 3: migración silenciosa para deudas legacy sin fiscalCode.
 // El bug latente del Commit 19 (handleSave no persistía fiscalCode) dejó deudas
 // guardadas SIN ese campo. Aquí derivamos el fiscalCode automáticamente del
@@ -278,6 +283,8 @@ const takeSnapshot=(d)=>{
   }catch{}
 };
 const sS=async(d,uid,accountId,isLegacy,role)=>{
+  // Nunca se persiste una TRM que no sea real (p. ej. el 4200 provisional).
+  d=sinTrmProvisional(d);
   // Modo demo: solo en memoria. Ni caché local, ni snapshots, ni Supabase.
   if(esDemo(d))return;
   try{
@@ -513,7 +520,7 @@ const unfmtNum=(v)=>String(v).replace(/,/g,"");
 const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div style={{display:"flex",flexDirection:"column",gap:5}}>{l&&<label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{l}</label>}{opts?<select value={v||""} onChange={e=>oc(e.target.value)} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}>{opts.map(o=><option key={o.v!=null?o.v:o} value={o.v!=null?o.v:o}>{o.l||o}</option>)}</select>:tp==="number"?<input type="text" inputMode="numeric" value={fmtNum(v)} onChange={e=>{const raw=unfmtNum(e.target.value);oc(raw)}} placeholder={ph} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}/>:<input type={tp||"text"} value={v!=null?v:""} onChange={e=>oc(e.target.value)} placeholder={ph} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}/>}</div>;
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
-export { sS as _sS, sL as _sL };
+export { sS as _sS, sL as _sL, sanitize as _sanitize };
 export default function FinPath(){
   const[pagoEstado,setPagoEstado]=useState(null);
   // Hallazgos que el usuario marcó como "ya lo sé". Se guardan aparte de sus

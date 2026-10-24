@@ -62,3 +62,21 @@ describe("App.jsx: efectos de TRM", () => {
     expect(ref.current).toBeNull();
   });
 });
+
+describe("TRM provisional 4200 (requisitos Tributario)", async () => {
+  const { trmReal, sinTrmProvisional, _sanitize } = await import("../../src/App.jsx");
+  it("(1) no se persiste trm=4200: sinTrmProvisional la quita", () => {
+    expect(sinTrmProvisional({ trm: 4200, trmSrc: "x", p: {} })).toEqual({ p: {} });
+    expect(sinTrmProvisional({ p: {} })).toEqual({ p: {} });
+    expect(sinTrmProvisional({ trm: 3912.5, trmSrc: "BanRep" }).trm).toBe(3912.5);
+  });
+  it("(2) un perfil con TRM real guardada la conserva al cargar (respaldo si /api/trm falla)", () => {
+    expect(_sanitize({ trm: 3912.5, trmSrc: "BanRep" }).trm).toBe(3912.5);
+  });
+  it("(3) un 4200 guardado se trata como inválido al cargar", () => {
+    const d = _sanitize({ trm: 4200, trmSrc: "default" });
+    expect(d.trm).toBeUndefined();
+    expect(trmReal(d)).toBeNull();
+    expect(trmReal({ trm: 4200 })).toBeNull();
+  });
+});
