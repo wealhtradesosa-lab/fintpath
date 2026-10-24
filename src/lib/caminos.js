@@ -283,7 +283,11 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
       // no sobre el precio de venta. Si no está, no se inventa.
       costoBase: num(a.vc) > 0 ? num(a.vc) * fx(a) : null,
       titular, impRendPct: impuesto, impGananciaPct: impuesto,
-      ...ficha, sale: fichas[a.id]?.estado === "sale" };
+      ...ficha, sale: fichas[a.id]?.estado === "sale",
+      // 24-oct-2026 (Santiago: "uno tiene inversiones que puede vender o
+      // transformar: un lote de $400 M, le hago $600 M de obra, y la renta va
+      // sobre los $1.000 M"). Tercer estado del paso 1: se transforma.
+      transforma: fichas[a.id]?.estado === "transforma" ? { obra: num(fichas[a.id].obra), mesesObra: Math.max(0, Math.round(num(fichas[a.id].mesesObra))), valorFinal: num(fichas[a.id].valorFinal) || (num(a.va) * fx(a) + num(fichas[a.id].obra)), renta: num(fichas[a.id].renta), rentaCanasta: fichas[a.id].rentaCanasta || "rentas" } : null };
   });
   // Vivienda hay UNA. `esViviendaNombre` puede pegarle a varios ("casa X",
   // "casa Y"); si pasa, manda el de mayor capital y el resto deja de serlo.
@@ -382,7 +386,9 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
   const costoVenta = num(fichas.__costoVentaPct);
   const liberado = posiciones.filter((p) => p.sale).reduce((s, p) => s + p.capital * (1 - costoVenta / 100), 0);
   const pagado = deudasCfg.filter((d) => d.pagar).reduce((s, d) => s + d.saldo, 0);
-  const hoy = { liberado, pagado, porDesplegar: liberado - pagado, costoVentaPct: costoVenta, cuotasQueSalen: deudasCfg.filter((d) => d.pagar).reduce((s, d) => s + d.cuota, 0) };
+  // Las obras de hoy (lo que se transforma) salen de la misma plata liberada.
+  const obras = posiciones.filter((p) => p.transforma && p.transforma.obra > 0).reduce((s, p) => s + p.transforma.obra, 0);
+  const hoy = { liberado, pagado, obras, porDesplegar: liberado - pagado - obras, costoVentaPct: costoVenta, cuotasQueSalen: deudasCfg.filter((d) => d.pagar).reduce((s, d) => s + d.cuota, 0) };
 
   return { posiciones, flujos, deudas: deudasCfg, caja: 0, gastosMes: base.g + base.sd, base, trm, hoy, fuera };
 }
@@ -393,6 +399,9 @@ export function movimientosHoy(baseCfg) {
   const costo = num(baseCfg.hoy?.costoVentaPct);
   baseCfg.posiciones.filter((p) => p.sale && p.capital > 0).forEach((p) => out.push({ mes: 0, tipo: "vender", posicionId: p.id, netoPct: 100 - costo, hoy: true }));
   baseCfg.deudas.filter((d) => d.pagar).forEach((d) => out.push({ mes: 0, tipo: "pagar_deuda", deudaId: d.id, origen: [{ posicionId: "caja", monto: d.saldo }], hoy: true }));
+  // Lo que se transforma hoy: obra con plata de caja, nuevo valor cuando
+  // termina, y renta desde ahí (atada al activo, para que cuente en su fila).
+  baseCfg.posiciones.filter((p) => p.transforma).forEach((p) => { const t = p.transforma; expandirTransformacion({ id: `tr_${p.id}`, mes: 0, posicionId: p.id, nombre: p.nombre, obra: t.obra, mesesObra: t.mesesObra, valor: t.valorFinal, renta: t.renta, origen: [{ posicionId: "caja" }] }).forEach((m) => out.push({ ...m, hoy: true })); });
   return out;
 }
 
@@ -799,8 +808,9 @@ export function liquidezEscenario(baseCfg, esc) {
   const liberadoHoy = num(baseCfg.hoy?.liberado), pagadoHoy = num(baseCfg.hoy?.pagado);
   const liberado = liberadoHoy + (esc.ventas || []).reduce((s, v) => { const p = byId[v.posicionId]; if (!p || p.sale) return s; return s + (v.monto != null ? Math.min(num(v.monto), p.capital) : p.capital * (1 - num(esc.costoVentaPct || 0) / 100)); }, 0);
   const pagado = pagadoHoy + (esc.pagos || []).reduce((s, id) => { const d = baseCfg.deudas.find((x) => x.id === id); return s + (d && !d.pagar ? d.saldo : 0); }, 0);
-  const asignado = (esc.despliegue || []).reduce((s, d) => s + num(d.capital), 0);
-  return { liberado, pagado, asignado, porAsignar: liberado - pagado - asignado, liberadoHoy, pagadoHoy };
+  const obras = num(baseCfg.hoy?.obras);
+  const asignado = (esc.despliegue || []).reduce((s, d) => s + num(d.capital), 0) + obras;
+  return { liberado, pagado, asignado, obras, porAsignar: liberado - pagado - asignado, liberadoHoy, pagadoHoy };
 }
 
 /**
@@ -999,6 +1009,7 @@ export function configurarEscenario(baseCfg, esc, perfil = PERFIL_DEFAULT) {
   const notas = [];
   const nom = (id) => byId[id]?.nombre || id;
   const salen = baseCfg.posiciones.filter((p) => p.sale).map((p) => p.nombre);
+  baseCfg.posiciones.filter((p) => p.transforma).forEach((p) => notas.push(`${p.nombre} se transforma (decidido en el paso 1): obra de ${M(p.transforma.obra)}${p.transforma.mesesObra ? ` en ${p.transforma.mesesObra} meses` : ""} → pasa a valer ${M(p.transforma.valorFinal)}${p.transforma.renta > 0 ? ` y renta ${M(p.transforma.renta)}/mes` : ""}.`));
   const pagadasHoy = baseCfg.deudas.filter((d) => d.pagar).map((d) => d.nombre);
   if (salen.length) notas.push(`Se vende hoy (decidido en el paso 1): ${salen.join(", ")}${pagadasHoy.length ? `; se paga ${pagadasHoy.join(", ")}` : ""}: quedan ${M(num(baseCfg.hoy?.porDesplegar))} por desplegar.`);
   const vendidas = (esc.ventas || []).filter((v) => !byId[v.posicionId]?.sale).map((v) => `${nom(v.posicionId)}${v.monto != null ? ` (${M(v.monto)})` : ""}`);

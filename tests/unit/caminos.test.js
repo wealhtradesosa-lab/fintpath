@@ -238,3 +238,20 @@ describe("la tabla de lo que sobra cada mes", () => {
     expect(r.ajuste.notas.join(" ")).toMatch(/20% te lo gastas · 40% a CDT/);
   });
 });
+
+describe("paso 1: continúa · se vende hoy · se transforma", () => {
+  // 24-oct-2026 (Santiago: "un lote de $400 M, $600 M de obra, y la renta va
+  // sobre los $1.000 M"). La obra sale de la plata liberada hoy.
+  it("la obra se paga con lo liberado, el activo pasa a valer lo terminado y renta desde ahí", () => {
+    const fichas = { i3: { estado: "sale" }, i7: { estado: "transforma", obra: 100e6, mesesObra: 5, valorFinal: 300e6, renta: 2e6 } };
+    const base = baseDesdeUsuario(user, PERFIL_DEFAULT, fichas);
+    expect(base.hoy.obras).toBe(100e6);
+    expect(base.hoy.porDesplegar).toBe(450e6 - 100e6);
+    const [r] = compararCaminos([escenarioVacio({ nombre: "t" })], base, PERFIL_DEFAULT);
+    const m = r.resultado.meses;
+    expect(Math.round(m[0].detalle.i7.capital / 1e6)).toBeGreaterThanOrEqual(250);
+    expect(Math.round(m[6].detalle.i7.capital / 1e6)).toBeGreaterThanOrEqual(300);
+    expect(m[6].entra - m[4].entra).toBeGreaterThan(1.9e6);
+    expect(r.ajuste.notas.join(" ")).toMatch(/Lote se transforma/);
+  });
+});

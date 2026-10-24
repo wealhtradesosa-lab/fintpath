@@ -343,11 +343,27 @@ function FilaActivo({ p, onFicha, onQuitar }) {
           {/* 23-oct-2026 (Santiago: "local Macarena y lote no se venden, se
               transforman, y aparecen como vendidos hoy"). "Para reconvertir"
               sonaba a transformar; es vender hoy y repartir la plata. */}
-          <button onClick={() => onFicha({ estado: off ? "continua" : "sale" })} title={off ? "Se vende hoy: la plata queda para repartir en el escenario. Clic para que continúe." : "Clic si se vende hoy; la plata queda para repartir en el escenario. Una obra o transformación no va aquí: va en «¿Qué pasa después?»."} style={{ ...btn(false), color: off ? C.danger : C.ok, borderColor: off ? C.danger : C.ok, whiteSpace: "nowrap" }}>{off ? "Se vende hoy" : "Continúa"}</button>
+          {/* 24-oct-2026 (Santiago: "uno tiene inversiones que puede vender o
+              transformar: un lote de $400 M, $600 M de obra, y la renta va
+              sobre los $1.000 M"). Tres estados: continúa · se vende hoy · se
+              transforma. La obra sale de la misma plata liberada hoy. */}
+          <div style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 999, overflow: "hidden" }}>
+            {[["continua", "Continúa", C.ok], ["sale", "Se vende hoy", C.danger], ...(p.vehiculo || p.liquido ? [] : [["transforma", "Se transforma", CANASTA_COLOR.crecimiento]])].map(([e, l, col]) => { const on = (p.transforma ? "transforma" : off ? "sale" : "continua") === e; return <button key={e} onClick={() => onFicha({ estado: e })} style={{ background: on ? `${col}22` : "transparent", border: "none", borderRight: `1px solid ${C.border}`, padding: "5px 10px", fontSize: 12, fontWeight: on ? 700 : 500, color: on ? col : C.muted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{l}</button>; })}
+          </div>
           <button onClick={() => setAbierto((a) => !a)} style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>{abierto ? "cerrar" : "ajustar"}</button>
           <button onClick={onQuitar} title="No va en el modelo: no lo tienes o no va acá. Sale del patrimonio y de lo que entra al mes; no libera plata, porque no se vende. Se puede volver a incluir." style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>quitar</button>
         </div>
       </div>
+      {p.transforma && (() => { const t = p.transforma; const puesto = p.capital + (t.obra || 0); const vf = t.valorFinal || puesto; return (
+        <div style={{ ...sub, marginTop: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, alignItems: "end" }}>
+            <Campo l="Cuánto cuesta la obra"><NumPesos value={t.obra || ""} onChange={(v) => onFicha({ obra: v || 0, valorFinal: t.valorTocado ? t.valorFinal : Math.round(p.capital + (Number(v) || 0)) })} w={150} /></Campo>
+            <Campo l="Cuánto se demora (meses)"><Num value={t.mesesObra || 0} min={0} max={60} onChange={(v) => onFicha({ mesesObra: v })} /></Campo>
+            <Campo l="Vale ya terminado"><NumPesos value={t.valorFinal || ""} onChange={(v) => onFicha({ valorFinal: v || 0, valorTocado: true })} w={150} /></Campo>
+            <Campo l="Renta al mes, terminado"><NumPesos value={t.renta || ""} onChange={(v) => onFicha({ renta: v || 0 })} w={150} /></Campo>
+          </div>
+          <div style={{ ...F.caption, marginTop: 6 }}>Hoy vale <b style={{ color: C.text }}>{fmM(p.capital)}</b> + obra <b style={{ color: C.text }}>{fmM(t.obra || 0)}</b> = <b style={{ color: C.text }}>{fmM(puesto)}</b> puestos → terminado vale <b style={{ color: C.text }}>{fmM(vf)}</b>{t.renta > 0 ? <> y te paga <b style={{ color: C.ok }}>{fmMes(t.renta)}</b>/mes ({pctEs(t.renta * 12 / Math.max(1, vf) * 100)} al año sobre lo que vale)</> : null}. La obra se paga con la plata que liberas hoy.</div>
+        </div>); })()}
       {abierto && (
         <div style={{ ...sub, marginTop: 10, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
           {/* 22-oct-2026 — "La casa VIP es para vivirla: no se vende y no paga
@@ -459,9 +475,10 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
         </div>}
         <div style={{ ...card, borderColor: salen.length ? C.accent : C.border }}>
           <div style={F.h3}>Lo que decides acá vale para todos los escenarios</div>
-          {salen.length === 0 && capFuera.n === 0 && !base.deudas.some((d) => d.pagar) ? <div style={{ ...F.body, marginTop: 6 }}>Todo continúa tal como está. Si algo va a salir (un inmueble que vendes, un lote quieto), márcalo arriba como <b style={{ color: C.text }}>Se vende hoy</b>.</div> : (
+          {salen.length === 0 && capFuera.n === 0 && !base.deudas.some((d) => d.pagar) && !base.posiciones.some((q) => q.transforma) ? <div style={{ ...F.body, marginTop: 6 }}>Todo continúa tal como está. Si algo va a salir (un inmueble que vendes, un lote quieto), márcalo arriba como <b style={{ color: C.text }}>Se vende hoy</b>.</div> : (
             <div style={{ marginTop: 6, display: "grid", gap: 6 }}>
               {capFuera.n > 0 && <div style={F.body}>Fuera del modelo: <b style={{ color: C.text }}>{base.fuera.map((q) => q.nombre).join(", ")}</b> → {fmM(capFuera.capital)} que dejan de contar (no se venden).</div>}
+              {base.posiciones.filter((q) => q.transforma).length > 0 && <div style={F.body}>Se transforma: <b style={{ color: C.text }}>{base.posiciones.filter((q) => q.transforma).map((q) => `${q.nombre} (obra ${fmM(q.transforma.obra)} → vale ${fmM(q.transforma.valorFinal)}${q.transforma.renta > 0 ? `, renta ${fmMes(q.transforma.renta)}` : ""})`).join(", ")}</b> → la obra se paga con lo liberado hoy{hoy.obras > 0 ? ` (${fmM(hoy.obras)})` : ""}.</div>}
               {salen.length > 0 && <div style={F.body}>Se vende hoy: <b style={{ color: C.text }}>{salen.map((p) => p.nombre).join(", ")}</b> → liberas <b style={{ color: C.text }}>{fmM(hoy.liberado)}</b>{hoy.costoVentaPct > 0 ? ` (neto de ${hoy.costoVentaPct}% de costos de venta)` : ""}.</div>}
               {hoy.pagado > 0 && <div style={F.body}>Se paga: <b style={{ color: C.text }}>{base.deudas.filter((d) => d.pagar).map((d) => d.nombre).join(", ")}</b> → <b style={{ color: C.text }}>{fmM(hoy.pagado)}</b>, y dejas de pagar {fmMes(hoy.cuotasQueSalen)} de cuotas al mes.</div>}
               <div style={{ ...F.body, color: hoy.porDesplegar >= 0 ? C.ok : C.danger }}>Te queda <b>{fmM(hoy.porDesplegar)}</b> a favor para reinvertir. En qué lo pones se decide en el paso 3.</div>
@@ -1091,7 +1108,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   // arreglo: "de los ítems que quitó en la sección anterior tiene un saldo a
   // favor de XXXX, ¿en qué va a invertir ese saldo?". El saldo era un pie de
   // tabla en letra chica; ahora es la pregunta, con la cuenta en palabras.
-  const Saldo = () => <div style={{ display: "flex", flexWrap: "wrap", gap: 12, ...F.caption, alignItems: "center" }}><span>Liberas <b style={{ color: C.text }}>{fmM(liq.liberado)}</b></span><span>− pagas <b style={{ color: C.text }}>{fmM(liq.pagado)}</b></span><span>− asignas <b style={{ color: C.text }}>{fmM(liq.asignado)}</b></span><span style={chip(Math.abs(liq.porAsignar) < 1e6 ? C.ok : liq.porAsignar > 0 ? C.warn : C.danger)}>{Math.abs(liq.porAsignar) < 1e6 ? "todo asignado" : liq.porAsignar > 0 ? `queda sin poner ${fmM(liq.porAsignar)}` : `te pasaste por ${fmM(-liq.porAsignar)}`}</span></div>;
+  const Saldo = () => <div style={{ display: "flex", flexWrap: "wrap", gap: 12, ...F.caption, alignItems: "center" }}><span>Liberas <b style={{ color: C.text }}>{fmM(liq.liberado)}</b></span><span>− pagas <b style={{ color: C.text }}>{fmM(liq.pagado)}</b></span><span>− asignas <b style={{ color: C.text }}>{fmM(liq.asignado)}</b>{liq.obras > 0 && <span style={F.caption}> (incluye obras de hoy {fmM(liq.obras)})</span>}</span><span style={chip(Math.abs(liq.porAsignar) < 1e6 ? C.ok : liq.porAsignar > 0 ? C.warn : C.danger)}>{Math.abs(liq.porAsignar) < 1e6 ? "todo asignado" : liq.porAsignar > 0 ? `queda sin poner ${fmM(liq.porAsignar)}` : `te pasaste por ${fmM(-liq.porAsignar)}`}</span></div>;
   const posDe = (id) => base.posiciones.find((x) => x.id === id);
   const queda = liq.liberado - liq.pagado;
   const vendidos = [...base.posiciones.filter((p) => p.sale), ...(esc.ventas || []).map((v) => posDe(v.posicionId)).filter((p) => p && !p.sale)];
@@ -1173,13 +1190,12 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
         <div style={F.h2}>3 · Arma el escenario</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Un escenario es una decisión concreta: qué vendes, qué pagas, a dónde va cada peso y con qué regla, y qué haces después.</div>
+        <div style={{ ...F.caption, marginTop: 4 }}>Qué vendes, qué pagas, a dónde va cada peso y qué pasa después. El resultado se recalcula con cada cambio.</div>
         {/* 22-oct-2026 (Santiago: "no sé por qué se hicieron también los
             escenarios de seguridad, balance y otro que ni siquiera he
             trabajado", "¿y cómo puedo editar mis escenarios?"). Aparecían
             tres escenarios con nombre propio sin decir nunca que los arma
             FINPATHIA con sus datos, ni que el resaltado es el que se edita. */}
-        <div style={{ ...F.caption, marginTop: 6 }}><b style={{ color: C.text }}>Seguridad</b>, <b style={{ color: C.text }}>Balance</b> y <b style={{ color: C.text }}>Crecimiento</b> no los creaste tú: los arma FINPATHIA con tus datos, como tres puntos de partida. Toca el que quieras para <b style={{ color: C.text }}>verlo y editarlo</b> — lo que cambies se guarda solo y ese escenario pasa a ser tuyo (puedes devolverlo a la plantilla cuando quieras). «+ Nuevo desde cero» arranca uno en blanco.</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}>
           {todos.map((e) => { const rr = res.find((x) => x.id === e.id); return <button key={e.id} onClick={() => setActivoId(e.id)} style={{ ...btn(false), borderColor: e.id === esc.id ? e.color : C.borderStrong, background: e.id === esc.id ? `${e.color}20` : "transparent", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: e.color }} />{e.nombre}{caminoElegido === e.id && " ★"}{rr && !rr.vigilancia.cumple && <span style={{ color: C.danger }}>!</span>}</button>; })}
           <button style={btn(false)} onClick={onNuevo}>+ Nuevo desde cero</button>
@@ -1239,20 +1255,26 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                 {liq.pagado > 0 && <>Pagando <b style={{ color: C.text }}>{pagadas.map((d) => d.nombre).join(", ")}</b> se van <b style={{ color: C.text }}>{fmM(liq.pagado)}</b>. </>}
                 {queda > 0 && <>Te queda <b style={{ color: C.ok }}>{fmM(queda)}</b> a favor: <b style={{ color: C.text }}>¿en qué lo pones?</b></>}
               </div>
-              {esc.objetivo && verMezcla && <div style={{ ...sub, marginTop: 10 }}><MezclaEditor objetivo={esc.objetivo} onChange={(o) => upd({ objetivo: o })} base={base} perfil={perfil} /></div>}
-              {esc.objetivo && <div style={{ marginTop: 10, borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
-                <div style={F.label}>La mezcla a la que apuntas <button style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setVerMezcla((v) => !v)}>{verMezcla ? "cerrar" : "ajustarla"}</button></div>
-                <div style={{ ...F.body, marginTop: 2 }}>
-                  <b style={{ color: CANASTA_COLOR.proteccion }}>{esc.objetivo.proteccion}% protegido</b> · <b style={{ color: CANASTA_COLOR.rentas }}>{esc.objetivo.rentas}% pagándote cada mes</b> · <b style={{ color: CANASTA_COLOR.crecimiento }}>{esc.objetivo.crecimiento}% creciendo</b>
-                </div>
-                <div style={{ ...F.caption, marginTop: 2 }}>Es una meta, no una orden: tú decides con qué llegar. {camino && "Si quieres, te propongo un reparto y lo ajustas."}</div>
-                {camino && <div style={{ marginTop: 8 }}><button style={btn(false)} onClick={proponer}>Proponme un reparto para esta mezcla →</button></div>}
-              </div>}
+              {camino && <div style={{ marginTop: 10 }}><button style={btn(false)} onClick={proponer}>Proponme un reparto según el molde «{INTENCIONES[camino.id]?.titulo || camino.nombre}» →</button><span style={{ ...F.caption, marginLeft: 8 }}>Lo ajustas después como quieras.</span></div>}
               {deLaPlantilla && (esc.despliegue || []).length > 0 && <div style={{ ...F.caption, marginTop: 6 }}>Los destinos de abajo no los pusiste tú: los propuso la plantilla <b style={{ color: esc.color }}>{esc.nombre}</b> para cumplir su regla, y son activos que ya tienes. Cámbialos, quítalos o agrega otros — en cuanto toques algo, el escenario pasa a ser tuyo.</div>}
             </div>
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
-                <thead><tr><th style={th}>Destino</th><th style={th}>Canasta</th><th style={{ ...th, textAlign: "right" }}>Cuánto le metes</th><th style={{ ...th, textAlign: "right" }}>Tasa</th><th style={{ ...th, textAlign: "right" }}>Recibes</th><th style={{ ...th, textAlign: "right" }}>Valoriza</th><th style={th} /></tr></thead>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 880 }}>
+                {/* 24-oct-2026 (Santiago: "no se entiende muy bien qué es
+                    tasa; esta sección le falta diagramarse mejor"). Columnas
+                    con nombre de lo que son, cada una con su explicación al
+                    pasar el mouse, y una columna propia para lo que produce
+                    al mes en vez de letras flotando debajo de un número. */}
+                <thead><tr>
+                  <th style={th}>Destino</th>
+                  <th style={th}>Canasta</th>
+                  <th style={{ ...th, textAlign: "right" }} title="La plata que entra ahí hoy, en pesos.">Cuánto le metes</th>
+                  <th style={{ ...th, textAlign: "right" }} title="Lo que produce la inversión en un año, en porcentaje: 14 % es $14 al año por cada $100.">Rinde al año</th>
+                  <th style={{ ...th, textAlign: "right" }} title="Qué parte de ese rendimiento te depositan cada mes. El resto se queda adentro y crece.">Te llega</th>
+                  <th style={{ ...th, textAlign: "right" }} title="Lo que produce cada mes, en pesos: lo que te depositan y lo que se queda creciendo adentro.">Produce al mes</th>
+                  <th style={{ ...th, textAlign: "right" }} title="Cuánto sube de precio al año sin pagarte nada (inmuebles, lotes). 0 si no aplica.">Sube de precio</th>
+                  <th style={th} />
+                </tr></thead>
                 <tbody>
                   {(esc.despliegue || []).map((d) => <tr key={d.id} style={{ borderTop: `1px solid ${C.border}` }}>
                     <td style={{ ...td, minWidth: 150 }}>{d.destinoId ? <span>{d.nombre}<div style={F.caption}>ya lo tienes · vale {fmM(posDe(d.destinoId)?.capital || 0)} hoy</div></span> : <input value={d.nombre} onChange={(e) => setD(d.id, { nombre: e.target.value })} style={{ ...inputS, padding: "4px 6px", fontSize: 12 }} />}</td>
@@ -1264,18 +1286,22 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                       ? <select value={posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta} onChange={(e) => { const c = e.target.value; if (onFicha) onFicha(d.destinoId, { canasta: c }); setD(d.id, { canasta: c }); }} title="Cambia la canasta de este activo (vale para todos los escenarios)" style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta], borderColor: CANASTA_COLOR[posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>
                       : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[d.canasta], borderColor: CANASTA_COLOR[d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
                     <td style={tdNum}><NumPesos value={d.capital} onChange={(v) => setD(d.id, { capital: v || 0 })} w={150} /></td>
-                    <td style={tdNum}><Num value={d.tasa} step={0.5} onChange={(v) => setD(d.id, { tasa: v || 0 })} suffix="%" w={80} /></td>
-                    <td style={tdNum}><Num value={d.pagaPct} step={10} min={0} max={100} onChange={(v) => setD(d.id, { pagaPct: v || 0, regla: v >= 100 ? "Paga el 100% del rendimiento cada mes" : v <= 0 ? "Todo se reinvierte" : `Recibe el ${v}%, reinvierte el resto` })} suffix="%" w={80} />
-                      {/* 22-oct-2026 (Santiago: "cuando uno ponga la inversión
-                          nueva, el valor y el porcentaje, el sistema debería
-                          poner la cuota aproximada"). */}
-                      {pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0 && <div style={{ ...F.caption, color: C.ok, whiteSpace: "nowrap" }}>≈ {fmMes(pagaAlMes(d.capital, d.tasa, d.pagaPct))}/mes</div>}
-                      {Number(d.capital) > 0 && Number(d.tasa) > 0 && Number(d.pagaPct) > 0 && Number(d.pagaPct) < 100 && <div style={{ ...F.caption, whiteSpace: "nowrap" }}>reinviertes ≈ {fmMes(pagaAlMes(d.capital, d.tasa, 100 - Number(d.pagaPct)))}/mes</div>}
-                      {Number(d.capital) > 0 && Number(d.tasa) > 0 && !(pagaAlMes(d.capital, d.tasa, d.pagaPct) > 0) && <div style={{ ...F.caption, color: CANASTA_COLOR.crecimiento, whiteSpace: "nowrap" }}>crece ≈ {fmMes(pagaAlMes(d.capital, d.tasa, 100))}/mes</div>}</td>
-                    <td style={tdNum}><Num value={d.valorizacion} step={0.5} onChange={(v) => setD(d.id, { valorizacion: v || 0 })} suffix="%" w={80} /></td>
+                    {/* 24-oct-2026 (Santiago: "IBKR, 20 % de retorno: ¿y cuánto se
+                        valoriza? ¿y qué tasa pongo? Es confuso"). Cada canasta
+                        muestra solo las casillas que le aplican: lo que te paga
+                        tiene rinde y "te llega"; lo que crece solo rinde (todo
+                        se queda adentro); protección y uso solo suben de precio. */}
+                    {(() => { const k = d.destinoId && posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta; const esCrece = k === "crecimiento", esPaga = k === "rentas", esQuieto = !esCrece && !esPaga;
+                      return <>
+                        <td style={tdNum}>{esQuieto ? <span style={F.caption} title="Protección y Uso no rinden: solo pueden subir de precio.">—</span> : <Num value={d.tasa} step={0.5} onChange={(v) => setD(d.id, { tasa: v || 0 })} suffix="%" w={80} />}</td>
+                        <td style={tdNum}>{esPaga ? <Num value={d.pagaPct} step={10} min={0} max={100} onChange={(v) => setD(d.id, { pagaPct: v || 0, regla: v >= 100 ? "Paga el 100% del rendimiento cada mes" : v <= 0 ? "Todo se reinvierte" : `Recibe el ${v}%, reinvierte el resto` })} suffix="%" w={80} /> : <span style={F.caption} title={esCrece ? "Lo que crece no te paga: todo se queda adentro." : "No rinde, así que no hay nada que te llegue."}>{esCrece ? "0 % · se reinvierte" : "—"}</span>}</td>
+                      </>; })()}
+                    <td style={{ ...tdNum, minWidth: 130 }}>{(() => { const cap = Number(d.capital) || 0, tasa = Number(d.tasa) || 0, pp = Number(d.pagaPct) || 0; if (!(cap > 0 && tasa > 0)) return <span style={F.caption}>—</span>; const te = pagaAlMes(cap, tasa, pp), re = pagaAlMes(cap, tasa, 100 - pp);
+                      return <div style={{ display: "grid", gap: 1 }}>{te > 0 && <div style={{ ...F.caption, color: C.ok, whiteSpace: "nowrap" }}>te llegan {fmMes(te)}</div>}{re > 0 && <div style={{ ...F.caption, color: CANASTA_COLOR.crecimiento, whiteSpace: "nowrap" }}>{te > 0 ? "y crecen" : "crecen"} {fmMes(re)}</div>}</div>; })()}</td>
+                    <td style={tdNum}>{(() => { const k = d.destinoId && posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta; return k === "crecimiento" ? <span style={F.caption} title="En lo que crece, el rendimiento ya es la subida de precio: va en «Rinde al año».">—</span> : <Num value={d.valorizacion} step={0.5} onChange={(v) => setD(d.id, { valorizacion: v || 0 })} suffix="%" w={80} />; })()}</td>
                     <td style={td}><button style={{ ...btn(false), padding: "3px 8px", color: C.subtle }} onClick={() => upd({ despliegue: esc.despliegue.filter((x) => x.id !== d.id) })}>quitar</button></td>
                   </tr>)}
-                  {(esc.despliegue || []).length === 0 && <tr><td colSpan={7} style={{ ...td, color: C.subtle, fontStyle: "italic" }}>Nada desplegado: lo liberado se quedaría en caja sin rendir.</td></tr>}
+                  {(esc.despliegue || []).length === 0 && <tr><td colSpan={8} style={{ ...td, color: C.subtle, fontStyle: "italic" }}>Nada desplegado: lo liberado se quedaría en caja sin rendir.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -1294,7 +1320,11 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                   fila. */}
               {(esc.despliegue || []).length > 0 && <button style={{ ...btn(false), color: C.subtle }} onClick={() => upd({ despliegue: [] })}>Vaciar y empezar de cero</button>}
             </div>
-            <div style={{ ...F.caption, marginTop: 8 }}><b style={{ color: C.text }}>Recibes</b> es la parte del rendimiento que te llega cada mes; el resto se reinvierte dentro de esa misma inversión. Para mandar lo reinvertido a otra inversión, o para que cambie con los años (tres años reinvirtiendo todo y desde el cuarto recibir el 100 %), ve a «¿Qué pasa después?» → <i>Una inversión pasa a pagarme otra parte</i>.</div>
+            <div style={{ ...F.caption, marginTop: 8, display: "grid", gap: 2 }}>
+              <div><b style={{ color: C.text }}>Rinde al año</b>: lo que produce la inversión en un año. 14 % en $7.000 M son $980 M al año, $82 M al mes.</div>
+              <div><b style={{ color: C.text }}>Te llega</b>: qué parte de eso te depositan. 100 % = todo te llega; 0 % = todo se queda adentro creciendo; 60 % = recibes el 60 y el 40 crece dentro de la misma inversión.</div>
+              <div><b style={{ color: C.text }}>Sube de precio</b>: valorización anual sin pagarte nada (un lote, un apartamento). Para mandar lo reinvertido a otra inversión o cambiarlo con los años, en «¿Qué pasa después?» → <i>Una inversión pasa a pagarme otra parte</i>.</div>
+            </div>
             {liq.porAsignar < -1e6 && <div style={{ ...F.caption, color: C.warn, marginTop: 8 }}>Estás metiendo más plata de la que liberas hoy. Si viene de algo que vendes más adelante (un apartamento en el año 2), no la pongas aquí: en «¿Qué pasa después?» marca la venta y di a dónde va la plata — ahí sí entra ese año y empieza a pagarte.</div>}
           </div>
           <div style={card} id="esc-sec-4">
