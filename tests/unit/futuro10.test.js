@@ -45,9 +45,9 @@ describe("futuro10", () => {
     const opt = resolverEscenario("optimista", { inflacionPct: 4 });
     expect(opt.inflacionPct).toBe(3.5);
     const base = resolverEscenario("base", { inflacionPct: 4 });
-    expect(retornoNominalPreset("sp500", base)).toBeCloseTo((1.04 * 1.055 - 1) * 100, 6);
+    expect(retornoNominalPreset("sp500", base)).toBeCloseTo(4 + 5.5, 6);
     const c = cienMillones("rfCorto", base);
-    expect(c[2].hoy).toBeCloseTo(100e6 * 1.025 ** 10, 0);
+    expect(c[2].hoy).toBeCloseTo(100e6 * (1.065 / 1.04) ** 10, 0); // nominal = 4 + 2,5 (suma simple)
   });
   it("renta manual (rentaOrigen) es neta: no resta otra vez los gastos vinculados; vender quita esa renta", () => {
     const u = { inflacionPct: 4, inv: [{ id: "ap", n: "Apto", tp: "Real Estate", va: 400e6, rentaOrigen: "manual" }],
@@ -107,7 +107,7 @@ describe("futuro10", () => {
       const a = proyectarFuturo10(u, cus({ rendimientoNomPct: 10, tipo: "renta" }));
       const b = proyectarFuturo10(u, cus({ rendimientoNomPct: 10, tipo: "valoriza" }));
       expect(a.filas[1].patrimonio).toBeCloseTo(b.filas[1].patrimonio, 0);
-      expect(a.filas[1].cf).toBeCloseTo(200e6 * 0.06, 0);
+      expect(a.filas[1].cf).toBeCloseTo(200e6 * 0.10, 0) // % nominal sobre el capital;
       expect(Math.abs(a.final.patrimonio / b.final.patrimonio - 1)).toBeLessThan(0.1);
     });
     it("escenario guardado (JSON) recarga igual", () => {

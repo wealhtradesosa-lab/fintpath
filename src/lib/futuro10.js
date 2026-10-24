@@ -94,7 +94,7 @@ export function retornoNominalPreset(clave, esc, sup = SUPUESTOS_F10, override =
     real = n(p.realSpread) + esc.retornoSpread;
     if (p.topeSpread != null) real = Math.min(real, p.topeSpread);
   }
-  return ((1 + i) * (1 + real / 100) - 1) * 100;
+  return i * 100 + real; // suma simple: renta fija corto = 5 + 2,5 = 7,5% (decisión de Finanzas, oct-2026)
 }
 
 /** Estimado de una inversión predefinida: % NOMINAL anual del escenario + su fuente. Nunca vacío. */
@@ -287,13 +287,17 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
   const rentaTodas = activos.reduce((s, a) => s + a.rentaAnual, 0);
   let otrosIngresos = Math.max(0, ingresosBase - rentaTodas);
   const ipOtros = Math.max(0, b.ip * 12 - rentaTodas); // pasiva no vinculada a activos
-  let gastos = (b.ob - b.sd) * 12;
+  // Gastos vinculados a un activo (predial, administración sin renta que los netee): salen de G
+  // y se suman aparte mientras el activo no se haya vendido; desde el año de venta dejan de correr.
+  const gVinc = b.gastoVinculadoEnG || {};
+  const gVincTotal = Object.values(gVinc).reduce((s, m) => s + (n(m) || 0) * 12, 0);
+  let gastos = (b.ob - b.sd) * 12 - gVincTotal;
   const todos = [...activos, ...nuevas];
   let deficit = faltaInicial; // faltante acumulado (nunca se vende finca raíz sola)
   const valorTotal = () => todos.reduce((s, a) => s + a.valor, 0) + colchon + canasta.liquidez + canasta.renta + canasta.crecimiento - deficit;
   const invertible = () => todos.filter((a) => a.invertible).reduce((s, a) => s + a.valor, 0) + colchon + canasta.liquidez + canasta.renta + canasta.crecimiento - deficit;
   const filas = [];
-  const fila0 = { anio: 0, ingresos: ingresosBase, gastos: gastos + cuotasHoy, cf: 0, activos: valorTotal(), invertible: invertible(), deuda: deudaTotal(),
+  const fila0 = { anio: 0, ingresos: ingresosBase, gastos: gastos + gVincTotal + cuotasHoy, cf: 0, activos: valorTotal(), invertible: invertible(), deuda: deudaTotal(),
     liquidez: colchon + canasta.liquidez + liquidosQueQuedan, rentaPasiva: b.ip * 12 - rentaTodas + rentaExist };
   fila0.patrimonio = fila0.activos - fila0.deuda; fila0.deflactor = 1;
   fila0.patrimonioReal = fila0.patrimonio; fila0.invertibleReal = fila0.invertible; fila0.rentaPasivaReal = fila0.rentaPasiva;
@@ -335,7 +339,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
       if (c.anio !== t) return;
       const antes = deficit;
       retirar(c.monto);
-      todos.push({ id: c.id, nombre: c.nombre, monto: c.monto, anio: t, faltante: (deficit - antes) / fIdx, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? inf : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom - inf : 0, usd: c.usd, invertible: true });
+      todos.push({ id: c.id, nombre: c.nombre, monto: c.monto, anio: t, faltante: (deficit - antes) / fIdx, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? 0 : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom : 0, /* paga renta: % NOMINAL sobre el capital, capital nominal */ usd: c.usd, invertible: true });
     });
     // 1) ventas en su año (valor bruto, sin costos ni impuestos)
     activos.forEach((a) => {
@@ -373,10 +377,12 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     // 4) flujo del año
     if (t > 1) { otrosIngresos *= 1 + gIng; gastos *= 1 + gGas; }
     const gR = Math.pow(1 + gIng, t - 1);
+    const gastosVinculados = activos.reduce((s, a) => s + (!a.vendido && gVinc[a.id] > 0 ? gVinc[a.id] * 12 * Math.pow(1 + gGas, t - 1) : 0), 0);
     let rentaRetirada = 0;
     activos.forEach((a) => {
       if (a.vendido || !(a.rentaAnual > 0)) return;
-      const r = a.rentaAnual * gR;
+      // Inmueble: el arriendo se indexa. Activo financiero que paga renta: cupón nominal fijo.
+      const r = a.rentaAnual * (a.clase === "inmueble" ? gR : 1);
       if (a.rentaModo === "reinvierte") a.valor += r; else rentaRetirada += r;
     });
     let rentaNueva = 0;
@@ -400,7 +406,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
       d.saldo = Math.max(0, d.saldo + interes - pago); cuota += pago;
     });
     const ingresos = otrosIngresos + rentaRetirada;
-    const cf = ingresos + rentaNueva - gastos - cuota;
+    const cf = ingresos + rentaNueva - gastos - gastosVinculados - cuota;
     if (cf >= 0) depositar(cf);
     else retirar(-cf);
     // 5) pagos de activos futuros
@@ -422,7 +428,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     const activosT = valorTotal();
     const deuda = deudaTotal();
     const rentaPasiva = ipOtros * Math.pow(1 + gIng, t - 1) + rentaRetirada + rentaNueva - ingFuturo + fut.ingresos.reduce((s, x) => s + (x.renta && t >= x.desde && t <= x.hasta ? x.mensual * 12 * (x.fijo ? 1 : fIdx) : 0), 0);
-    const f = { anio: t, ingresos: ingresos + rentaNueva, rentaNueva, rentaPasiva, gastos: gastos + cuota, cf, activos: activosT, invertible: invertible(), deuda, liquidez, deflactor, faltante: deficit };
+    const f = { anio: t, ingresos: ingresos + rentaNueva, rentaNueva, rentaPasiva, gastos: gastos + gastosVinculados + cuota, gastosVinculados, cf, activos: activosT, invertible: invertible(), deuda, liquidez, deflactor, faltante: deficit };
     f.patrimonio = activosT - deuda;
     f.patrimonioReal = f.patrimonio / deflactor;
     f.invertibleReal = f.invertible / deflactor;
@@ -469,7 +475,7 @@ export function crecimientoDefault(a, esc, sup = SUPUESTOS_F10, rentaAnual = 0) 
   const clase = claseActivo(a);
   if (clase === "vehiculo") return null; // depreciación por año
   if (clase === "inmueble") return a.valorizacionPct != null && a.valorizacionPct !== "" ? n(a.valorizacionPct) / 100 : inf + n(sup.presets.fincaRaiz.valorizacionSpread) / 100;
-  if (rentaAnual > 0) return inf; // el rendimiento ya lo paga como ingreso
+  if (rentaAnual > 0) return 0; // paga renta: el capital queda nominal (se erosiona en pesos de hoy); la renta va al flujo
   if (clase === "liquido") return retornoNominalPreset("rfCorto", esc, sup) / 100;
   if (clase === "acciones") return retornoNominalPreset("sp500", esc, sup) / 100;
   return (1 + inf) * (1 + n(sup.otrosRealSpread) / 100) - 1;

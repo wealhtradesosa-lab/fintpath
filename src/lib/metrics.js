@@ -207,6 +207,7 @@ export function calcularBase(d = {}, opts = {}) {
   // de la renta neta). 'derivada' o sin indicador (activos viejos) = bruta.
   const manualIds = new Set(inv.filter((x) => x.rentaOrigen === "manual").map((x) => x.id));
   let costosAbsorbidosManual = 0;
+  const gastoVinculadoEnG = {}; // activoId → gasto mensual vinculado que termina en G (sin renta que lo netee)
   Object.entries(gastos || {}).forEach(([cat, items]) => {
     (items || []).forEach((g) => {
       if (!g || g.sim === false) return;
@@ -217,6 +218,10 @@ export function calcularBase(d = {}, opts = {}) {
         costoPorActivo[g.activoId] = (costoPorActivo[g.activoId] || 0) + m;
       } else if (!g.activoId && esGastoInmuebleArrendado(cat, g) && rentaSinVinculo > 0) {
         costoInmuebleSinVinculo += m;
+      } else if (g.activoId) {
+        gastoVinculadoEnG[g.activoId] = (gastoVinculadoEnG[g.activoId] || 0) + m;
+        gastosVida += m;
+        if (esGastoEsencial(cat, g)) gastosVidaEsencial += m;
       } else if (cat === "Seguridad Social") {
         aportesObligatorios += m;
       } else {
@@ -231,6 +236,7 @@ export function calcularBase(d = {}, opts = {}) {
     const r = rentaPorActivo[id] || 0;
     const usado = Math.min(c, r);
     costosNeteados += usado; excesoCostos += c - usado;
+    if (c - usado > 0) gastoVinculadoEnG[id] = (gastoVinculadoEnG[id] || 0) + c - usado;
   });
   {
     const usado = Math.min(costoInmuebleSinVinculo, rentaSinVinculo);
@@ -288,7 +294,7 @@ export function calcularBase(d = {}, opts = {}) {
   const ahorroPct = ingresoNeto > 0 ? (fl / ingresoNeto) * 100 : 0;
   const cargaDeudaPct = ingresoNeto > 0 ? (sd / ingresoNeto) * 100 : 0;
   return {
-    trm, base, anioMedido: aMed, mesMedido: mMed, ocultos,
+    trm, base, anioMedido: aMed, mesMedido: mMed, ocultos, gastoVinculadoEnG,
     iaBruto, ia, ipBruto, ip, costosNeteados, costosAbsorbidosManual,
     g, sd, ob, fl, obEsencial, gastosVidaEsencial, esencialesClasificados,
     aportesObligatorios, gastosVida, impuestoNeto, retencionMensual,

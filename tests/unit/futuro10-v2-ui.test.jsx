@@ -100,8 +100,10 @@ describe("Bug BTG Pactual: inversión nueva más grande que la plata disponible"
     expect(d.monto).toBe(6.5e9);
     expect(d.faltante).toBeGreaterThan(6e9);
     expect(d.rentaMensual).toBeGreaterThan(0);
-    expect(d.valorFinal).toBeCloseTo(6.5e9, -6); // «Paga renta»: el valor sigue la inflación (constante en pesos de hoy)
-    expect(r.filas[1].rentaPasivaReal - sin.filas[1].rentaPasivaReal).toBeGreaterThan(6.5e9 * 0.08);
+    // «Paga renta»: el 14% es NOMINAL sobre el capital; el capital queda nominal y se erosiona en pesos de hoy.
+    expect(d.valorFinal).toBeCloseTo(6.5e9 / 1.05 ** 10, -6);
+    expect(r.filas[1].rentaPasivaReal - sin.filas[1].rentaPasivaReal).toBeCloseTo(910e6, -6); // año 1 ≈ $910M (~$76M/mes)
+    expect(r.filas[2].rentaPasivaReal - sin.filas[2].rentaPasivaReal).toBeCloseTo(910e6 / 1.05, -6);
     const a = r.alertas.find((x) => x.tipo === "nueva_sin_plata");
     expect(a.texto).toMatch(/BTG Pactual: te faltan \$/);
     const h = txt(renderToString(<InversionesNuevas items={r.nuevasDetalle} />));
@@ -132,7 +134,7 @@ describe("Campo de rendimiento prellenado", () => {
     expect(h).toMatch(/>5(,0)?% anual antes de impuestos/); // = inflación, 0% real
   });
   it("renta fija corto en el escenario base sale del supuesto (inflación 5%), sin valores fijos", () => {
-    expect(estimadoPreset("rfCorto", resolverEscenario("base", {})).pct).toBeCloseTo((1.05 * 1.025 - 1) * 100, 1);
+    expect(estimadoPreset("rfCorto", resolverEscenario("base", {})).pct).toBe(7.5); // 5 + 2,5, suma simple
   });
 });
 
@@ -146,7 +148,7 @@ describe("Barra de Reinvierte y tasa UVR", () => {
     expect(b.queda).toBeCloseTo(b.disponible - b.asignado, 2);
     expect(b.queda).toBeLessThan(0);
     const h = txt(renderToString(<BarraReinvertir disponible={r.disponible} />));
-    expect(h).toContain("Disponible para reinvertir"); expect(h).toContain("de ventas"); expect(h).toContain("de tu caja"); expect(h).toContain("Te queda"); expect(h).toContain("position:sticky");
+    expect(h).toMatch(/Tienes \$[\d.]+ para invertir/); expect(h).toMatch(/Te queda −\$/); expect(h).toContain("de ventas"); expect(h).toContain("de tu caja"); expect(h).toContain("Te queda"); expect(h).toContain("position:sticky");
     expect(h).toContain("no incluye costos de venta ni impuestos");
   });
   it("UVR: 8,95% real, Superfinanciera vía agregador, 25-sep-2026", () => {
@@ -185,5 +187,19 @@ describe("Disponible del paso 3 (datos tipo QA Pro)", () => {
     const r = proyectarFuturo10(pobre, { nuevas: [{ preset: "custom", nombre: "X", monto: 10e6, anio: 1 }] });
     expect(r.disponible[0].antesDeAsignar).toBeLessThanOrEqual(0);
     expect(r.alertas.some((a) => a.tipo === "nueva_sin_plata")).toBe(true);
+  });
+});
+
+describe("Gastos vinculados a un activo vendido", () => {
+  it("el predial deja de correr desde el año de venta", () => {
+    const u = { inflacionPct: 5, inv: [{ id: "casa", n: "Casa", tp: "Real Estate", va: 500e6 }], ingresos: [{ nombre: "Salario", mensual: 20e6 }],
+      gas: { Vivienda: [{ n: "Predial", m: 500000, activoId: "casa" }], Vida: [{ n: "x", m: 5e6 }] }, deu: [] };
+    const r = proyectarFuturo10(u, { decisiones: { casa: { accion: "vende", anioVenta: 3 } } });
+    expect(r.filas[1].gastosVinculados).toBeCloseTo(6e6, 0);
+    expect(r.filas[2].gastosVinculados).toBeGreaterThan(0);
+    expect(r.filas[3].gastosVinculados).toBe(0);
+    expect(r.filas[10].gastosVinculados).toBe(0);
+    const sigue = proyectarFuturo10(u, {});
+    expect(sigue.filas[10].gastosVinculados).toBeGreaterThan(0);
   });
 });

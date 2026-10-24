@@ -462,11 +462,12 @@ export function CampoRendimiento({ estimado, value, onChange, fuente, nota = nul
 export function BarraReinvertir({ disponible = [] }) {
   const b = resumenReinvertir(disponible);
   const it = (t, v, color = C.tx, sub = null) => (<div style={{ minWidth: 0 }}><div style={{ fontSize: 11, color: C.tx2 }}>{t}</div><div style={{ fontSize: 17, fontWeight: 700, color }}>{plata(v)}</div>{sub && <div style={{ fontSize: 11, color: C.tx2 }}>{sub}</div>}</div>);
+  const frase = (t, color, sub = null) => (<div style={{ minWidth: 0 }}><div style={{ fontSize: 17, fontWeight: 700, color }}>{t}</div>{sub && <div style={{ fontSize: 11, color: C.tx2 }}>{sub}</div>}</div>);
   return (
     <div role="status" aria-live="polite" style={{ position: "sticky", top: 0, zIndex: 5, background: C.bg2, border: `1px solid ${b.queda < 0 ? C.rd : C.bd}`, borderRadius: 8, padding: "10px 12px", marginBottom: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,160px),1fr))", gap: 8 }}>
-      {it("Disponible para reinvertir", b.disponible, b.disponible <= 0 ? C.rd : C.tx, `${plata(b.deVentas)} de ventas · ${plata(b.deCaja)} de tu caja${b.comprometido > 0 ? ` · −${plata(b.comprometido)} comprometido en el paso 2` : ""}`)}
+      {frase(`Tienes ${plata(b.disponible)} para invertir`, b.disponible <= 0 ? C.rd : C.tx, `${plata(b.deVentas)} de ventas · ${plata(b.deCaja)} de tu caja${b.comprometido > 0 ? ` · −${plata(b.comprometido)} comprometido en el paso 2` : ""}`)}
       {it("Ya asignado", b.asignado)}
-      {it("Te queda", b.queda, b.queda < 0 ? C.rd : C.gn)}
+      {frase(`Te queda ${plata(b.queda)}`, b.queda < 0 ? C.rd : C.gn)}
       <div style={{ gridColumn: "1 / -1", fontSize: 11, color: C.tx2 }}>10 años, en pesos de hoy. Caja = liquidez por encima del colchón + lo que te sobra cada año. Las ventas van por su valor bruto: no incluye costos de venta ni impuestos.</div>
     </div>
   );
