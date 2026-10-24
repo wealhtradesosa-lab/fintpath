@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, resolverEscenario, cienMillones, leerModifica } from "../../src/lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, resolverEscenario, cienMillones, leerModifica, migrarModifica } from "../../src/lib/futuro10.js";
 
 const cero = JSON.parse(JSON.stringify(SUPUESTOS_F10));
 cero.presets.rfCorto.realSpread = 0; cero.presets.rfLargo.realSpread = 0;
@@ -51,7 +51,9 @@ describe("futuro10", () => {
     expect(r.bolsaDetalle.nuevas).toBe(80e6);
     expect(r.bolsaDetalle.restante).toBeCloseTo(500e6 - r.bolsaDetalle.colchon - 200e6, 0);
     const r2 = proyectarFuturo10(u, { decisiones: { c: { accion: "vende" } }, reinversiones: [{ activoId: "e", monto: 900e6 }] });
-    expect(r2.bolsaDetalle.faltante).toBeGreaterThan(0);
+    // 24-oct-2026: lo que no alcanza para aumentar lo que ya tienes se paga en el año 1 (no se recorta).
+    expect(r2.bolsaDetalle.pendienteAnio1).toBeGreaterThan(0);
+    expect(r2.bolsaDetalle.faltante).toBe(0);
     expect(r2.bolsaDetalle.restante).toBe(0);
   });
   it("presets: renta fija largo con tope y escenarios", () => {
@@ -296,5 +298,44 @@ describe("futuro10 · inversión personalizada del año 1 sale de lo vendido", (
     const r = proyectarFuturo10(U(), { decisiones: { f: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "Negocio", monto: 1000e6, anio: 3 }] });
     expect(r.bolsaDetalle.programadas).toBeCloseTo(1000e6, 0);
     expect(r.bolsaDetalle.restante).toBeCloseTo(11787e6, 0);
+  });
+});
+
+describe("futuro10 · un solo camino para meterle plata a lo que ya tienes", () => {
+  const U = () => ({ inflacionPct: 4, inv: [{ id: "l", n: "Lote", tp: "Lote", va: 400e6 }, { id: "orl", n: "Orlando", tp: "Real Estate", va: 900e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 50e6 }], ingresos: [], gas: {}, deu: [] });
+  it("reinvertir en el lote con renta: hoy + aporte = total y la renta entra desde el mes 6", () => {
+    const sin = proyectarFuturo10(U(), { decisiones: { orl: { accion: "vende" } } });
+    const r = proyectarFuturo10(U(), { decisiones: { orl: { accion: "vende" } }, reinversiones: [{ activoId: "l", monto: 600e6, rentaMensual: 8.5e6, rentaDesdeMes: 6 }] });
+    const d = r.reinversionesDetalle[0];
+    expect(d.valorHoy).toBeCloseTo(400e6, 0); expect(d.aporte).toBeCloseTo(600e6, 0); expect(d.total).toBeCloseTo(1000e6, 0);
+    expect(d.rentaPctAnual).toBeCloseTo(10.2, 6);
+    expect(r.filas[1].rentaNueva - sin.filas[1].rentaNueva).toBeCloseTo(8.5e6 * 6 * 1.04, 0);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(300e6, 0);
+  });
+  it("un «Se modifica» guardado se pasa a Reinvierte sin perder nada", () => {
+    const viejo = { decisiones: { l: { accion: "modifica", inversionMonto: 600e6, inversionAnio: 1, rentaNuevaMensual: 8.5e6, rentaNuevaDesdeMes: 6, valorizacionNomPct: 5 } } };
+    const nuevo = migrarModifica(viejo);
+    expect(nuevo.decisiones.l.accion).toBe("continua");
+    expect(nuevo.reinversiones).toEqual([{ activoId: "l", monto: 600e6, anio: 1, rentaMensual: 8.5e6, rentaDesdeMes: 6, valorizacionNomPct: 5 }]);
+    const a = proyectarFuturo10(U(), viejo), b = proyectarFuturo10(U(), nuevo);
+    expect(b.filas[2].rentaNueva).toBeCloseTo(a.filas[2].rentaNueva, 0);
+    // Antes la obra del año 1 se valorizaba desde el año 2; en Reinvierte, desde que se invierte.
+    expect(Math.abs(b.final.patrimonio / a.final.patrimonio - 1)).toBeLessThan(0.05);
+  });
+  it("aporte en un año siguiente queda programado y entra ese año", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [{ activoId: "l", monto: 100e6, anio: 3 }] });
+    expect(r.bolsaDetalle.programadas).toBeCloseTo(100e6, 0);
+    expect(r.alertas.some((x) => x.tipo === "inversion_adicional" && x.anio === 3)).toBe(true);
+  });
+});
+
+describe("futuro10 · aumentar lo que ya tienes cuando la plata no alcanza", () => {
+  it("no recorta la obra: lo que falta se paga en el año 1", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "l", n: "Lote", tp: "Lote", va: 400e6 }, { id: "c", tp: "Cash", va: 100e6 }], ingresos: [{ nombre: "Honorarios", categoria: "Salario", mensual: 40e6 }], gas: {}, deu: [] };
+    const r = proyectarFuturo10(u, { reinversiones: [{ activoId: "l", monto: 600e6, rentaMensual: 8.5e6, rentaDesdeMes: 6 }] });
+    expect(r.reinversionesDetalle[0].total).toBeCloseTo(1000e6, 0);
+    expect(r.bolsaDetalle.pendienteAnio1).toBeCloseTo(500e6, 0);
+    expect(r.bolsaDetalle.faltante).toBeCloseTo(0, 0);
+    expect(r.reparto.find((x) => x.nombre === "Lote").valor).toBeGreaterThan(1000e6);
   });
 });

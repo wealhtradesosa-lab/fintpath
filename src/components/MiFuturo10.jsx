@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, valorizacionHintPct, leerModifica, rendimientoHintPct, validarMezcla, leerFuturos } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 
 const C = { bg: "#111827", bg2: "#1f2937", bd: "rgba(255,255,255,0.1)", tx: "#e5e7eb", tx2: "#9ca3af", gn: "#22c55e", rd: "#ef4444", am: "#f59e0b" };
@@ -26,7 +26,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   // no quedan guardados"). Lo que uno va decidiendo se guarda solo como
   // borrador (`futuro10.borrador`) y vuelve al entrar; "Guardar en tu cuenta"
   // sigue siendo para dejar un escenario con nombre y compararlo.
-  const [cfg, setCfg] = useState(() => (guardado.borrador ? { ...CONFIG_INICIAL, ...guardado.borrador } : CONFIG_INICIAL));
+  const [cfg, setCfg] = useState(() => migrarModifica(guardado.borrador ? { ...CONFIG_INICIAL, ...guardado.borrador } : CONFIG_INICIAL));
   const ultimoGuardado = useRef(JSON.stringify(guardado.borrador || null));
   useEffect(() => {
     if (demo || !onGuardar) return;
@@ -93,7 +93,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             1 qué pasa con las inversiones actuales, 2 deudas, 3 ingresos
             futuros"). Tres secciones numeradas, cada una en su tarjeta. */}
         <div style={card}>
-          <Seccion n={1} titulo="Tus inversiones de hoy" sub="De cada una: sigue igual, se vende o se modifica. Una obra sobre algo que ya tienes (la bodega en tu lote) va en «Se modifica»." />
+          <Seccion n={1} titulo="Tus inversiones de hoy" sub="De cada una: sigue igual o se vende. ¿Le vas a meter plata, como una obra en tu lote? Eso va en el paso 3, Reinvierte." />
           {(user.inv || []).filter((a) => a && a.sim !== false).map((a) => {
             const d = cfg.decisiones[a.id] || { accion: "continua" };
             const setD = (v) => set("decisiones", { ...cfg.decisiones, [a.id]: { ...d, ...v } });
@@ -101,38 +101,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               <div key={a.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}><b>{a.n || a.nombre}</b><span style={{ color: C.tx2 }}>{plata(a.va)}{String(a.moneda).toUpperCase() === "USD" ? " USD" : ""}</span></div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-                  {[["continua", "Continúa"], ["vende", "Se vende"], ["modifica", "Se modifica"]].map(([k, l]) => <button key={k} style={btn(d.accion === k)} onClick={() => setD({ accion: k })}>{l}</button>)}
+                  {[["continua", "Sigue igual"], ["vende", "Se vende"]].map(([k, l]) => <button key={k} style={btn(d.accion === k)} onClick={() => setD({ accion: k })}>{l}</button>)}
                 </div>
-                {d.accion === "modifica" && (() => {
-                  const hint = valorizacionHintPct(a, esc);
-                  const m = leerModifica(d, esc);
-                  const lbl = { display: "block", marginTop: 6, fontSize: 12, color: C.tx2 };
-                  const anios = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-                  return (
-                    <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 8 }}>
-                      <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2 }}>Ejemplo: construir una bodega en el lote. Pon lo que cuesta la obra, la renta que dará y desde cuándo.</div>
-                      <label style={lbl}>¿Cuánto crees que se valoriza al año? (%)
-                        <InputDecimalEs style={inp} placeholder={fmtPctEs(hint, 1)} value={m.valorizacionNomPct == null ? "" : Math.round(m.valorizacionNomPct * 100) / 100} onChange={(v) => setD({ valorizacionNomPct: v, retornoRealPct: undefined })} />
-                        <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {fmtPctEs(hint, 1)}. Es lo que sube el valor cada año, como lo dirías en la calle.</span></label>
-                      <label style={lbl}>Inversión adicional, por ejemplo una obra ($)
-                        <NumberInput style={inp} value={d.inversionMonto ?? ""} onChange={(v) => setD({ inversionMonto: v })} />
-                        <span style={{ fontSize: 11 }}>Por ejemplo, una construcción. Sale de tu liquidez y se suma al valor del activo; desde ahí se valoriza todo.</span></label>
-                      <label style={lbl}>¿En qué año la haces?
-                        <select style={inp} value={m.inversionAnio} onChange={(e) => setD({ inversionAnio: Number(e.target.value) })}>{anios.map((y) => <option key={y} value={y}>Año {y}</option>)}</select></label>
-                      <label style={lbl}>Renta nueva al mes ($, pesos de hoy, opcional)
-                        <NumberInput style={inp} value={d.rentaNuevaMensual ?? ""} onChange={(v) => setD({ rentaNuevaMensual: v })} />
-                        <span style={{ fontSize: 11 }}>Lo que te quedaría libre cada mes, por ejemplo un arriendo después de gastos. Sube con la inflación.</span></label>
-                      <label style={lbl}>¿Cuándo empieza esa renta?
-                        <select style={inp} value={m.rentaNuevaDesdeMes} onChange={(e) => setD({ rentaNuevaDesdeMes: Number(e.target.value), rentaNuevaDesde: undefined })}>{opcionesMes(m.rentaNuevaDesdeMes).map((mm) => <option key={mm} value={mm}>{textoMes(mm)}</option>)}</select></label>
-                      {(() => { const x = (r.modificados || []).find((y) => y.id === a.id);
-                        if (!x || (x.inversion <= 0 && x.rentaMensual <= 0)) return null;
-                        return <div style={{ gridColumn: "1 / -1", background: C.bg, borderRadius: 8, padding: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
-                          <div><div style={{ fontSize: 11, color: C.tx2 }}>Queda valiendo</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(x.valorConObra)}</div>{x.inversion > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>hoy {plata(x.valorHoy)} + {plata(x.inversion)}</div>}</div>
-                          {x.rentaMensual > 0 && <div><div style={{ fontSize: 11, color: C.tx2 }}>Renta al mes</div><div style={{ fontSize: 16, fontWeight: 700, color: C.gn }}>{plata(x.rentaMensual)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{textoMes(x.rentaDesdeMes).toLowerCase()} · {fmtPctEs(x.rentaPctAnual, 1)} al año sobre el total</div></div>}
-                        </div>; })()}
-                    </div>
-                  );
-                })()}
               </div>
             );
           })}
@@ -165,6 +135,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                   {[["Vendiste", bd.vendido, C.tx], ...(bd.desdeLiquidez > 0 ? [["+ De tu liquidez", bd.desdeLiquidez, C.am]] : []), ...(bd.deudas > 0 ? [["− Deudas", bd.deudas, C.tx2]] : []), ["− Colchón", bd.colchon, C.tx2], ...(bd.obras > 0 ? [["− Obras", bd.obras, C.tx2]] : []), ["− A lo que ya tienes", bd.reinvertido, C.tx2], ["− Inversiones nuevas", bd.nuevas, C.tx2], ["Te quedan", bd.restante, bd.restante > 0 ? C.gn : C.tx]].map(([l, v, col]) => <div key={l}><div style={{ fontSize: 11, color: C.tx2 }}>{l}</div><div style={{ fontSize: 15, fontWeight: 700, color: col, fontFamily: "monospace" }}>{plata(v || 0)}</div></div>)}
                 </div>
                 <div style={{ fontSize: 12, color: C.tx2, marginTop: 8 }}>
+                  {bd.pendienteAnio1 > 0 && <div style={{ color: C.am, marginBottom: 4 }}>Lo que le metes a lo que ya tienes no alcanza con lo vendido y tu liquidez: los {plata(bd.pendienteAnio1)} que faltan salen de lo que vaya entrando en el año 1.</div>}
                   {bd.programadas > 0 && <div style={{ marginBottom: 4 }}>Además programaste {plata(bd.programadas)} en inversiones de años siguientes: se pagan ese año con lo que tengas.</div>}
                   {bd.obrasPedido > bd.obras + 0.5 && <div style={{ color: C.am, marginBottom: 4 }}>La obra pide {plata(bd.obrasPedido)}: {plata(bd.obras)} salen de aquí y los {plata(bd.obrasPedido - bd.obras)} que faltan, de lo que vaya entrando en el año 1.</div>}
                   {bd.faltante > 0 ? <span style={{ color: C.am }}>Pediste {plata(bd.pedido)} y entre lo vendido y tu liquidez solo alcanza para {plata(bd.pedido - bd.faltante)}: se asigna hasta donde llega.</span>
@@ -210,18 +181,34 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             </div>
           ))}
           <button style={btn(false)} onClick={() => set("nuevas", [...cfg.nuevas, { preset: "rfCorto", monto: "" }])}>+ Crear inversión</button>
-          <h4>Reinvertir en lo que ya tienes</h4>
-          <p style={{ color: C.tx2, fontSize: 12, marginTop: -6 }}>Si con esa plata construyes o el activo va a dar renta nueva, márcalo «Se modifica» en Decide: ahí pones la obra, la renta y desde cuándo.</p>
-          {cfg.reinversiones.map((x, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6, marginBottom: 6 }}>
-              <select style={inp} value={x.activoId} onChange={(e) => set("reinversiones", cfg.reinversiones.map((y, j) => j === i ? { ...y, activoId: e.target.value } : y))}>
-                {r.activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-              </select>
-              <NumberInput style={inp} placeholder="Monto" value={x.monto} onChange={(v) => set("reinversiones", cfg.reinversiones.map((y, j) => j === i ? { ...y, monto: v } : y))} />
-              <button style={btn(false)} onClick={() => set("reinversiones", cfg.reinversiones.filter((_, j) => j !== i))}>Quitar</button>
-            </div>
-          ))}
-          {r.activos.length > 0 && <button style={btn(false)} onClick={() => set("reinversiones", [...cfg.reinversiones, { activoId: r.activos[0].id, monto: "" }])}>+ Reinvertir</button>}
+          {/* 24-oct-2026 (Santiago: "estoy perdido… si a mí me pasa, a otros les
+              pasará"). Un solo camino para meterle plata a lo que ya tienes:
+              aporte, cuándo, renta y desde cuándo, con hoy + aporte = total. */}
+          <h4 style={{ marginBottom: 2 }}>Aumentar lo que ya tienes</h4>
+          <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>Plata que le metes a algo tuyo: más capital a una inversión o una obra, como la bodega en tu lote. Si va a dar renta, ponla aquí mismo.</p>
+          {cfg.reinversiones.map((x, i) => {
+            const up = (v) => set("reinversiones", cfg.reinversiones.map((y, j) => (j === i ? { ...y, ...v } : y)));
+            const det = (r.reinversionesDetalle || []).find((y) => y.i === i);
+            const lbl = { fontSize: 12, color: C.tx2 };
+            const desdeMes = Number(x.rentaDesdeMes) || 0;
+            return (
+              <div key={i} style={{ borderTop: `1px solid ${C.bd}`, padding: "10px 0" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
+                  <label style={lbl}>¿A cuál?<select style={inp} value={x.activoId} onChange={(e) => up({ activoId: e.target.value })}>{r.activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>
+                  <label style={lbl}>¿Cuánto le metes? ($)<NumberInput style={inp} placeholder="Ej.: 600.000.000" value={x.monto} onChange={(v) => up({ monto: v })} /></label>
+                  <label style={lbl}>¿Cuándo?<select style={inp} value={Number(x.anio) || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Ya (año 1)" : `Año ${y}`}</option>)}</select></label>
+                  <label style={lbl}>¿Va a dar renta? ($ al mes, opcional)<NumberInput style={inp} placeholder="Ej.: 8.500.000" value={x.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>
+                  {(Number(x.rentaMensual) || 0) > 0 && <label style={lbl}>¿Desde cuándo?<select style={inp} value={desdeMes} onChange={(e) => up({ rentaDesdeMes: Number(e.target.value) })}>{opcionesMes(desdeMes).map((mm) => <option key={mm} value={mm}>{textoMes(mm)}</option>)}</select></label>}
+                </div>
+                {det && (det.aporte > 0 || det.rentaMensual > 0) && <div style={{ marginTop: 8, background: C.bg, borderRadius: 8, padding: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
+                  <div><div style={{ fontSize: 11, color: C.tx2 }}>Queda valiendo</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.total)}</div><div style={{ fontSize: 11, color: C.tx2 }}>hoy {plata(det.valorHoy)} + {plata(det.aporte)}{det.anio > 1 ? ` en el año ${det.anio}` : ""}</div></div>
+                  {det.rentaMensual > 0 && <div><div style={{ fontSize: 11, color: C.tx2 }}>Renta al mes</div><div style={{ fontSize: 16, fontWeight: 700, color: C.gn }}>{plata(det.rentaMensual)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{textoMes(det.rentaDesdeMes).toLowerCase()} · {fmtPctEs(det.rentaPctAnual, 1)} al año sobre el total</div></div>}
+                </div>}
+                <button style={{ ...btn(false), marginTop: 8 }} onClick={() => set("reinversiones", cfg.reinversiones.filter((_, j) => j !== i))}>Quitar</button>
+              </div>
+            );
+          })}
+          {r.activos.length > 0 && <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => set("reinversiones", [...cfg.reinversiones, { activoId: r.activos[0].id, monto: "", anio: 1, rentaMensual: "", rentaDesdeMes: 0 }])}>+ Aumentar algo que ya tienes</button>}
           <p style={{ color: C.tx2, fontSize: 12 }}>Lo que no asignes a mano se reparte según el norte.</p>
         </div>
       )}
@@ -275,7 +262,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 <tbody>{escenarios.map((e) => { const x = proyectarFuturo10(user, e.config); return (
                   <tr key={e.id} style={{ textAlign: "right", borderTop: `1px solid ${C.bd}` }}>
                     <td style={{ textAlign: "left" }}>{e.nombre}{x.alertas.length ? " ⚠️" : ""}</td><td>{fmtPlataCortaEs(x.final.patrimonioReal)}</td><td>{fmtPlataCortaEs(x.final.patrimonio)}</td>
-                    <td><button style={btn(false)} onClick={() => { setCfg({ ...CONFIG_INICIAL, ...e.config }); ir(3); }}>Ver</button> <button style={btn(false)} onClick={() => borrar(e.id)}>Borrar</button></td>
+                    <td><button style={btn(false)} onClick={() => { setCfg(migrarModifica({ ...CONFIG_INICIAL, ...e.config })); ir(3); }}>Ver</button> <button style={btn(false)} onClick={() => borrar(e.id)}>Borrar</button></td>
                   </tr>); })}</tbody>
               </table>
             </div>)}
@@ -299,7 +286,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
       <details style={card}>
         <summary style={{ cursor: "pointer" }}>Supuestos de referencia (estimaciones de largo plazo)</summary>
-        <p style={{ color: C.tx2, fontSize: 12 }}>Puedes cambiar el escenario arriba, la valorización de cada activo en el paso 2 y la mezcla o el rendimiento de una inversión personalizada en el paso 3.</p>
+        <p style={{ color: C.tx2, fontSize: 12 }}>Puedes cambiar el escenario arriba y, en el paso 3, la mezcla o el rendimiento de una inversión personalizada.</p>
         <TablaSupuestos esc={esc} />
       </details>
     </div>

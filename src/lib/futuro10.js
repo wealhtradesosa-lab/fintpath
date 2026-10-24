@@ -174,7 +174,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   bolsa -= colchon;
   const colchonInicial = colchon; // `colchon` cambia año a año; la bolsa reporta el de hoy
   const nuevas = [];
-  let reinvertidoTotal = 0, nuevasTotal = 0, pedidoTotal = 0, desdeLiquidez = 0, programadasTotal = 0;
+  let reinvertidoTotal = 0, nuevasTotal = 0, pedidoTotal = 0, desdeLiquidez = 0, programadasTotal = 0, pendienteAnio1 = 0;
   // 24-oct-2026 (Santiago: "añadí estas inversiones y cuando voy a ver el
   // resultado no se ven ahí reflejadas"). Antes una inversión solo se
   // financiaba con lo vendido: sin ventas, o si no alcanzaba, quedaba en $0 y
@@ -201,12 +201,36 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const m = tomar(a.invMonto, a.id);
     a.reserva = m; a.reservaBase = m; obrasTotal += m; a.invMonto -= m; // lo que no alcance se saca en el año 1
   });
-  (cfg.reinversiones || []).forEach((r) => {
+  // 24-oct-2026 (Santiago: "reinvertir en cosas que ya se tienen debería traer
+  // el valor anterior más el nuevo… y dónde pongo lo que va a rentar"). Cada
+  // reinversión puede traer su renta (rentaMensual, pesos de hoy) y desde qué
+  // mes; se devuelve el detalle hoy + aporte = total para la pantalla.
+  const reinversionesDetalle = [];
+  (cfg.reinversiones || []).forEach((r, k) => {
     pedidoTotal += Math.max(0, n(r.monto));
     const a = activos.find((x) => x.id === r.activoId);
-    if (!a || n(r.monto) <= 0) return;
-    const m = tomar(n(r.monto), a.id);
-    if (m > 0) { a.valor += m; reinvertidoTotal += m; }
+    if (!a) return;
+    const antes = a.valor;
+    if (!vacio(r.valorizacionNomPct)) a.crec = n(r.valorizacionNomPct) / 100;
+    const anioAporte = Math.min(10, Math.max(1, Math.round(n(r.anio) || 1)));
+    let m = 0;
+    if (anioAporte === 1) {
+      m = n(r.monto) > 0 ? tomar(n(r.monto), a.id) : 0;
+      if (m > 0) { a.valor += m; reinvertidoTotal += m; }
+      // Si lo vendido y la liquidez no alcanzan, el resto se paga con lo que
+      // entre en el año 1 (la obra se hace igual): no se recorta.
+      const resto = Math.max(0, n(r.monto)) - m;
+      if (resto > 0.5) { pedidoTotal -= resto; pendienteAnio1 += resto; (a.aportesFuturos = a.aportesFuturos || []).push({ monto: resto, anio: 1 }); m += resto; }
+    } else if (n(r.monto) > 0) {
+      // Aporte de un año siguiente: se paga ese año con lo que haya (como una obra futura).
+      pedidoTotal -= Math.max(0, n(r.monto)); programadasTotal += n(r.monto);
+      (a.aportesFuturos = a.aportesFuturos || []).push({ monto: n(r.monto), anio: anioAporte });
+    }
+    const rentaMensual = Math.max(0, n(r.rentaMensual));
+    const rentaDesdeMes = Math.min(119, Math.max(0, Math.round(n(r.rentaDesdeMes))));
+    if (rentaMensual > 0) (a.rentasExtra = a.rentasExtra || []).push({ anual: rentaMensual * 12, desdeMes: rentaDesdeMes });
+    const totalConAporte = antes + (anioAporte === 1 ? m : n(r.monto));
+    reinversionesDetalle.push({ i: k, activoId: a.id, nombre: a.nombre, valorHoy: antes, aporte: anioAporte === 1 ? m : n(r.monto), anio: anioAporte, total: totalConAporte, rentaMensual, rentaDesdeMes, rentaPctAnual: totalConAporte > 0 ? rentaMensual * 12 / totalConAporte * 100 : 0 });
   });
   const personalizadas = [];
   (cfg.nuevas || []).forEach((x, k) => {
@@ -296,7 +320,8 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * Math.pow(1 + inf, t) : 0), 0);
     // Renta nueva por meses: si arranca en el mes 7, el año 1 recibe 6 de 12 meses.
     const fraccionAnio = (mesInicio) => Math.min(1, Math.max(0, (12 * t - n(mesInicio)) / 12));
-    const rentaNueva = rentaPers + ingFuturo + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * Math.pow(1 + inf, t) : 0), 0);
+    const rentaNueva = rentaPers + ingFuturo + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * Math.pow(1 + inf, t) : 0)
+      + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * Math.pow(1 + inf, t), 0), 0);
     const cuota = deuda > 0 ? Math.min(cuotaAnual, cuotaAnual * Math.max(0, aniosDeuda - (t - 1))) : 0;
     deuda = Math.max(0, deuda - cuota);
     const cf = ingresos + rentaNueva - gastos - cuota;
@@ -314,6 +339,11 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     }));
     // Inversión adicional (pesos de ese año): pasa de tu liquidez al activo. No cambia el patrimonio.
     todos.forEach((a) => {
+      (a.aportesFuturos || []).forEach((x) => {
+        if (x.anio !== t) return;
+        retirar(x.monto); a.valor += x.monto;
+        alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En el año ${t} pasas plata de tu liquidez a ${a.nombre}.` });
+      });
       if (a.invAnio === t && (a.invMonto > 0 || a.reserva > 0)) {
         // lo apartado entra al activo; lo que rindió mientras tanto vuelve al colchón
         if (a.reserva > 0) { a.valor += a.reservaBase; colchon += a.reserva - a.reservaBase; a.reserva = 0; }
@@ -344,8 +374,9 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   ].sort((x, y) => y.valor - x.valor);
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
-    bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, programadas: programadasTotal, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
+    bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
     reparto: repartoFinal,
+    reinversionesDetalle,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, pagar, pagado }) => ({ id, nombre, saldo, activoId, porVenta, pagar, pagado })),
     cuotasQueSalenMes: Math.max(0, b.sd - bDeuda.sd),
@@ -459,4 +490,30 @@ export function cienMillones(presetClave, esc, monto = 100e6, sup = SUPUESTOS_F1
   const r = retornoNominalPreset(presetClave, esc, sup) / 100;
   const inf = esc.inflacionPct / 100;
   return [3, 5, 10].map((a) => { const nom = monto * Math.pow(1 + r, a); return { anios: a, nominal: nom, hoy: nom / Math.pow(1 + inf, a) }; });
+}
+
+/**
+ * 24-oct-2026 (Santiago: "estoy perdido… si a mí me pasa, a otros les pasará").
+ * La obra y la renta nueva vivían en dos lados (Decide → «Se modifica» y
+ * Reinvierte). Queda un solo camino: Reinvierte → «Aumentar lo que ya tienes».
+ * Esta función pasa un «Se modifica» guardado a una reinversión equivalente
+ * (aporte, año, renta, desde qué mes, valorización) y deja el activo en
+ * «continúa». No toca lo que ya estaba como reinversión.
+ */
+export function migrarModifica(cfg = {}, esc) {
+  const dec = cfg.decisiones || {};
+  const extra = [];
+  const nuevasDec = {};
+  let cambio = false;
+  Object.entries(dec).forEach(([id, d]) => {
+    if (d?.accion !== "modifica") { nuevasDec[id] = d; return; }
+    cambio = true;
+    const m = leerModifica(d, esc || { inflacionPct: INFLACION_DEFAULT_PCT });
+    if (m.inversionMonto > 0 || m.rentaNuevaMensual > 0 || m.valorizacionNomPct != null) {
+      extra.push({ activoId: id, monto: m.inversionMonto || "", anio: m.inversionAnio, rentaMensual: m.rentaNuevaMensual || "", rentaDesdeMes: m.rentaNuevaDesdeMes, ...(m.valorizacionNomPct != null ? { valorizacionNomPct: m.valorizacionNomPct } : {}) });
+    }
+    nuevasDec[id] = { accion: "continua" };
+  });
+  if (!cambio) return cfg;
+  return { ...cfg, decisiones: nuevasDec, reinversiones: [...(cfg.reinversiones || []), ...extra] };
 }
