@@ -110,7 +110,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const d = dec[a.id] || {};
     const valor = n(a.va) * fxA(a);
     const rentaAnual = n(b.rentaNetaPorActivo[a.id]) * 12;
-    if (d.accion === "vende") { bolsa += valor; rentaVendida += rentaAnual; return; }
+    if (d.accion === "vende") { bolsa += valor; return; } // su renta y sus gastos salen con bOp (abajo)
     const clase = claseActivo(a);
     // Crecimiento del VALOR (la renta vinculada ya entra al flujo de ingresos).
     let crec = crecimientoDefault(a, esc, sup, rentaAnual);
@@ -312,14 +312,22 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   let deuda = bDeuda.deudaTotal - deudaUnica; const cuotaAnual = bDeuda.sd * 12;
   const aniosDeuda = cuotaAnual > 0 ? deuda / cuotaAnual : 0;
 
-  let ingresos = (b.ia + b.ip) * 12 - rentaVendida;
-  let gastos = (b.ob - b.sd) * 12;
+  // 24-oct-2026 (Santiago: "¿y los gastos de dónde salen?"). Al vender un
+  // activo se van su renta, TODOS sus gastos vinculados (también lo que cuesta
+  // por encima de lo que renta: Orlando renta 22,6 M y cuesta 24,8 M) y sus
+  // ingresos vinculados. Antes solo se restaba la renta neta y el exceso de
+  // costos se quedaba en los gastos para siempre.
+  const vendidosIds = new Set((b.inv || []).filter((a) => dec[a.id]?.accion === "vende").map((a) => a.id));
+  const sinVendidos = (arr) => (arr || []).filter((x) => !(x && x.activoId && vendidosIds.has(x.activoId)));
+  const gastosSinVendidos = Object.fromEntries(Object.entries(user.gastos || user.gas || {}).map(([k, v]) => [k, sinVendidos(v)]));
+  const bOp = vendidosIds.size ? calcularBase({ ...sinImp, inv: (user.inv || []).filter((a) => !vendidosIds.has(a?.id)), ingresos: sinVendidos(user.ingresos), gastos: gastosSinVendidos, gas: gastosSinVendidos, deu: deudasVivas, deudas: deudasVivas }, {}) : bDeuda;
+  let ingresos = (bOp.ia + bOp.ip) * 12 - rentaVendida;
+  let gastos = (bOp.ob - bOp.sd) * 12;
   // 24-oct-2026 (Santiago: "los gráficos de los escenarios están muy flojos…
   // que se vea como el HTML", su plan SALEM). Para graficar lo que produce el
   // patrimonio se lleva aparte la renta pasiva (lo que llega a la cuenta sin
   // trabajar) y, por activo, cuánto renta y cuánto crece cada año.
-  let pasivo = Math.max(0, b.ip * 12 - rentaVendida);
-  const factorRenta = () => (pasivo > 0 && b.ip > 0 ? pasivo / Math.max(1, b.ip * 12 - rentaVendida) : 1);
+  let pasivo = Math.max(0, bOp.ip * 12 - rentaVendida);
   const todos = [...activos, ...nuevas];
   const valorTotal = () => todos.reduce((s, a) => s + a.valor + (a.reserva || 0), 0) + colchon + canasta.liquidez + canasta.renta + canasta.crecimiento;
   const invertible = () => todos.filter((a) => a.invertible).reduce((s, a) => s + a.valor + (a.reserva || 0), 0) + colchon + canasta.liquidez + canasta.renta + canasta.crecimiento;
@@ -390,9 +398,10 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const fraccionAnio = (mesInicio) => Math.min(1, Math.max(0, (12 * t - n(mesInicio)) / 12));
     const rentaNueva = rentaPers + ingFuturo + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * Math.pow(1 + inf, t) : 0)
       + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * Math.pow(1 + inf, t), 0), 0);
+    const gastoFuturo = (fut.gastos || []).reduce((sm, x) => sm + (t >= x.desde && t <= x.hasta ? x.anual * Math.pow(1 + inf, t) : 0), 0);
     const cuota = deuda > 0 ? Math.min(cuotaAnual, cuotaAnual * Math.max(0, aniosDeuda - (t - 1))) : 0;
     deuda = Math.max(0, deuda - cuota);
-    const cf = ingresos + rentaNueva - gastos - cuota;
+    const cf = ingresos + rentaNueva - gastos - gastoFuturo - cuota;
     if (cf >= 0) {
       Object.keys(canasta).forEach((k) => { canasta[k] += cf * mezcla[k] / 100; });
     } else {
@@ -431,7 +440,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const liquidez = colchon + canasta.liquidez + todos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
     const deflactor = Math.pow(1 + inf, t);
     const activosT = valorTotal();
-    const f = { anio: t, ingresos: ingresos + rentaNueva, rentaNueva, gastos: gastos + cuota, cf, activos: activosT, invertible: invertible(), deuda: deuda + deudaUnica, liquidez, deflactor };
+    const f = { anio: t, ingresos: ingresos + rentaNueva, rentaNueva, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: deuda + deudaUnica, liquidez, deflactor };
     // Lo que produce el patrimonio este año: renta que llega a la cuenta + lo que crece invertido.
     f.rentas = pasivo + rentaNueva; f.laboral = Math.max(0, ingresos - pasivo); f.crece = creceAnio; f.produce = f.rentas + creceAnio;
     const fr = Math.pow(1 + gIng, t - 1);
@@ -568,7 +577,15 @@ export function leerFuturos(f = {}, esc, sup = SUPUESTOS_F10) {
       crec: vacio(x.valorizacionNomPct) ? def : n(x.valorizacionNomPct) / 100,
       rentaMensual: Math.max(0, n(x.rentaMensual)), rentaDesde: anio(x.rentaDesde, entrega) };
   }).filter((x) => x.pagos.some((p) => p.monto > 0));
-  return { ingresos, activos };
+  // 24-oct-2026 (Santiago: "como vienen nuevas rentas también vienen nuevos
+  // gastos: mis hijos en la universidad afuera, unos 180 M por año").
+  // gastos: [{nombre, anual (pesos de hoy), desde, anios?}] — sube con la inflación.
+  const gastos = (f?.gastos || []).map((x) => {
+    const desde = anio(x.desde);
+    const anios = vacio(x.anios) ? null : Math.max(1, Math.round(n(x.anios)));
+    return { nombre: String(x.nombre || "").trim() || "Gasto futuro", anual: Math.max(0, n(x.anual)), desde, hasta: anios == null ? 99 : desde + anios - 1 };
+  }).filter((x) => x.anual > 0);
+  return { ingresos, activos, gastos };
 }
 
 /** Mezcla personalizada: debe sumar 100%. Devuelve null o el mensaje para mostrar. */

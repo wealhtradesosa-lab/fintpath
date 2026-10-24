@@ -460,3 +460,14 @@ describe("futuro10 · renta fija personalizada paga la tasa completa", () => {
     expect(r.reparto.find((x) => x.nombre === "BTG").valor).toBeCloseTo(1000e6 * 1.1 ** 10, -4);
   });
 });
+
+describe("futuro10 · al vender se van la renta y todos los gastos del activo", () => {
+  it("Orlando renta 22,6 M y cuesta 24,8 M: al venderlo no queda el exceso en los gastos", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "orl", n: "Orlando", tp: "Real Estate", va: 460e6 }, { id: "c", tp: "Cash", va: 100e6 }],
+      ingresos: [{ nombre: "Arriendo Orlando", categoria: "Arriendo", mensual: 22.6e6, activoId: "orl" }, { nombre: "Sueldo", categoria: "Salario", mensual: 50e6 }],
+      gas: { Vivienda: [{ n: "Admin Orlando", m: 24.8e6, activoId: "orl" }], Vida: [{ n: "Mercado", m: 20e6 }] }, deu: [] };
+    const r = proyectarFuturo10(u, { decisiones: { orl: { accion: "vende" } } });
+    expect(r.filas[1].gastos / 12).toBeCloseTo(20e6, -2);
+    expect(r.filas[1].ingresos / 12).toBeCloseTo(50e6, -2);
+  });
+});

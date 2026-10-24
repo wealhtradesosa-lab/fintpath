@@ -381,6 +381,9 @@ const textoIngresoFuturo = (x) => {
   return `Te llegan ${monto} al mes ${cuando(d)}, durante ${h - d + 1} años.`;
 };
 
+// 24-oct-2026: según el tipo de activo, la plataforma pregunta lo suyo.
+const PARTES = [[0, "Nada: todo se reinvierte"], [25, "Una cuarta parte"], [50, "La mitad"], [75, "Tres cuartas partes"], [100, "Todo: me llega cada mes"]];
+const ETQ_TIPO = { inmueble: "Inmueble: da renta y se valoriza", liquido: "Renta fija o cuenta: rinde una tasa al año", acciones: "Fondos, trading o acciones: rinde al año", otro: "Otra inversión: rinde al año", vehiculo: "Vehículo" };
 function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] }) {
   const lbl = { fontSize: 12, color: C.tx2 };
   const desdeMes = Number(x.rentaDesdeMes) || 0;
