@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -38,6 +38,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
     return () => clearTimeout(t);
   }, [cfg, demo]); // eslint-disable-line react-hooks/exhaustive-deps
   const [nombreEsc, setNombreEsc] = useState("");
+  const [descEsc, setDescEsc] = useState("");
   const [verEsc, setVerEsc] = useState(null);
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
   const r = useMemo(() => proyectarFuturo10(user, cfg), [user, cfg]);
@@ -47,21 +48,21 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const ir = (i) => { setPaso(i); setVerEsc(null); track("futuro10_paso", { paso: i + 1 }); };
   // Planes para comparar: seguir como vas, lo que estás armando y los guardados.
   const planesComparar = useMemo(() => {
-    const ps = [{ nombre: "Hoy, si nada cambia", esHoy: true, r: proyectarFuturo10(user, { escenario: cfg.escenario }) }];
+    const ps = [{ nombre: "Hoy", esHoy: true, r: proyectarFuturo10(user, { escenario: cfg.escenario }) }];
     // El borrador solo aparece si es distinto de lo guardado (si no, se repite).
     const igualA = (c) => JSON.stringify({ ...migrarModifica({ ...CONFIG_INICIAL, ...c }), escenario: cfg.escenario }) === JSON.stringify({ ...cfg });
     const borrador = JSON.stringify(cfg) !== JSON.stringify(CONFIG_INICIAL) && !escenarios.some((e) => igualA(e.config));
     if (borrador) ps.push({ nombre: "Lo que estás armando", r });
-    escenarios.forEach((e) => ps.push({ nombre: e.nombre, r: proyectarFuturo10(user, { ...migrarModifica({ ...CONFIG_INICIAL, ...e.config }), escenario: cfg.escenario }) }));
+    escenarios.forEach((e) => ps.push({ id: e.id, nombre: e.nombre, descripcion: e.descripcion || "", recomendado: !!e.recomendado, r: proyectarFuturo10(user, { ...migrarModifica({ ...CONFIG_INICIAL, ...e.config }), escenario: cfg.escenario }) }));
     return ps;
   }, [user, cfg, r, escenarios]);
   const bolsa = (user.inv || []).filter((a) => cfg.decisiones[a.id]?.accion === "vende").length;
 
   const guardar = () => {
     if (demo) return; // la demo nunca escribe en la cuenta real
-    const nuevo = { id: "f10_" + Date.now(), nombre: nombreEsc.trim() || `Escenario ${escenarios.length + 1}`, creado: new Date().toISOString(), config: cfg };
+    const nuevo = { id: "f10_" + Date.now(), nombre: nombreEsc.trim() || `Escenario ${escenarios.length + 1}`, descripcion: descEsc.trim(), creado: new Date().toISOString(), config: cfg };
     onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: [...escenarios, nuevo].slice(-10) });
-    setNombreEsc("");
+    setNombreEsc(""); setDescEsc("");
     track("futuro10_guardar", { escenario: cfg.escenario, norte: cfg.mezcla ? "personalizado" : cfg.norte, cantidad_escenarios: escenarios.length + 1 });
   };
   const borrar = (id) => !demo && onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.filter((e) => e.id !== id) });
@@ -220,6 +221,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             <input style={{ ...inp, flex: "1 1 160px", width: "auto" }} placeholder="Nombre del escenario, ej.: Conservador + casa" value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />
             <button style={btn(!demo)} disabled={demo} onClick={guardar}>Guardar este escenario</button>
           </div>
+          <input style={{ ...inp, marginTop: 6 }} placeholder={`Resumen en una frase (opcional). Si lo dejas vacío: «${resumenEscenario(r)}»`} value={descEsc} onChange={(e) => setDescEsc(e.target.value)} />
           {demo && <p style={{ color: C.am, fontSize: 12 }}>{MSG_DEMO_F10}</p>}
           {escenarios.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             {escenarios.map((e) => <span key={e.id} style={{ display: "inline-flex", gap: 4, alignItems: "center", fontSize: 12, border: `1px solid ${C.bd}`, borderRadius: 999, padding: "2px 4px 2px 10px" }}>{e.nombre}
@@ -231,7 +233,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <button style={{ ...btn(false), marginBottom: 10 }} onClick={() => setVerEsc(null)}>← Volver a comparar</button>
           <div style={{ ...card, marginBottom: 14, borderTop: `3px solid ${verEsc.color || C.gn}` }}><h3 style={{ margin: 0 }}>{verEsc.nombre}</h3></div>
           <PlanInforme r={verEsc.r} nombre={verEsc.nombre} inflacionPct={esc.inflacionPct} />
-        </> : <PlanComparador planes={planesComparar} inflacionPct={esc.inflacionPct} onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />}
+        </> : <PlanComparador planes={planesComparar} inflacionPct={esc.inflacionPct} onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
+          onRecomendar={demo ? null : (id) => onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.map((e) => ({ ...e, recomendado: e.id === id ? !e.recomendado : false })) })} />}
       </>)}
 
 

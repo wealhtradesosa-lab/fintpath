@@ -675,3 +675,26 @@ export function migrarModifica(cfg = {}, esc) {
   if (!cambio) return cfg;
   return { ...cfg, decisiones: nuevasDec, reinversiones: [...(cfg.reinversiones || []), ...extra] };
 }
+
+
+/**
+ * 24-oct-2026 (Santiago: "visualizar así los planes, es una nota… tiene un
+ * resumen muy bueno en cada tarjeta"). Resumen corto de un escenario para su
+ * tarjeta, armado con lo que decidió: qué vende, en qué pone la plata y qué
+ * empieza después. El usuario puede escribir el suyo; este es el de respaldo.
+ */
+export function resumenEscenario(r) {
+  if (!r) return "";
+  const corto = (v) => `$${Math.round(Math.abs(Number(v) || 0) / 1e6).toLocaleString("es-CO")}M`;
+  const partes = [];
+  if ((r.vendidos || []).length) partes.push(`Vende ${r.vendidos.map((v) => v.nombre).join(" y ")}`);
+  const inv = [...(r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => ({ n: x.nombre, v: x.aporte })), ...(r.nuevasDetalle || []).map((x) => ({ n: x.nombre, v: x.monto }))].sort((a, b) => b.v - a.v);
+  if (inv.length) partes.push(inv.slice(0, 2).map((x) => `${x.n} ${corto(x.v)}`).join(" + "));
+  const pagadas = (r.deudas || []).filter((d) => d.pagado > 0);
+  if (pagadas.length) partes.push(pagadas.length === 1 ? `paga ${pagadas[0].nombre}` : `paga ${pagadas.length} deudas`);
+  const fut = r.futuros || { ingresos: [] };
+  if ((fut.ingresos || []).length) partes.push(`${fut.ingresos[0].nombre} desde el año ${fut.ingresos[0].desde}`);
+  if (!partes.length) return "Todo sigue como está hoy.";
+  const t = partes.join(" · ");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}

@@ -30,6 +30,8 @@ export const INF = {
   ok: "#6CC58F",
   bad: "#E07A5F",
   franja: "rgba(108,197,143,0.16)",
+  sobra: "#4F6B5A", // lo que sobra, reinvertido
+  sobreColor: "#FFFFFF",
 };
 
 // Color estable por clase de activo (Patrimonio neto por año, Todo lo que tienes).

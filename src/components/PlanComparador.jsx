@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
 import { INF, fmM, fmEje, fmPct } from "../lib/informeTheme.js";
+import { resumenEscenario } from "../lib/futuro10.js";
 
 const card = { background: INF.panel, border: `1px solid ${INF.linea}`, borderRadius: 12, padding: 16, marginBottom: 14 };
 const h3 = { margin: "0 0 4px", fontSize: 16, fontWeight: 600, color: INF.tx };
@@ -41,7 +42,60 @@ function medir(r, inflacionPct) {
   };
 }
 
-export default function PlanComparador({ planes, inflacionPct = 4, onVer }) {
+// 24-oct-2026 (Santiago: "me falta esta gráfica que es muy buena" — «Cómo se
+// reparte el patrimonio en cada camino» de su plan SALEM). Una franja por plan
+// que suma 100 % de sus activos justo después de las decisiones (hoy). Las
+// inversiones que pesan ≥ 5 % en algún plan van con su nombre; el resto se
+// agrupa por tipo. Tocar un tramo lo resalta en todos los caminos.
+const GRUPO_CLASE = { inmueble: "Otros inmuebles", liquido: "Efectivo y liquidez", acciones: "Bolsa", nueva: "Otras inversiones nuevas", otro: "Otros activos", vehiculo: "Vehículos", canasta: "Lo que sobra, reinvertido" };
+function reparto(planes) {
+  const filas = planes.map((p) => (p.esHoy ? p.r.filas[0] : p.r.filas[0]).porActivo || []);
+  const totales = filas.map((l) => l.filter((a) => a.valor > 0).reduce((s, a) => s + a.valor, 0));
+  const grande = new Set();
+  filas.forEach((l, i) => l.forEach((a) => { if (a.valor > 0 && totales[i] > 0 && a.valor / totales[i] >= 0.05 && a.clase !== "canasta") grande.add(a.id); }));
+  const grupoDe = (a) => (grande.has(a.id) ? { k: a.id, nombre: a.nombre } : { k: "g_" + (a.clase || "otro"), nombre: GRUPO_CLASE[a.clase] || "Otros activos" });
+  const grupos = {}; const orden = [];
+  const porPlan = filas.map((l) => { const m = {}; l.filter((a) => a.valor > 0).forEach((a) => { const g = grupoDe(a); if (!grupos[g.k]) { grupos[g.k] = { k: g.k, nombre: g.nombre }; orden.push(g.k); } (m[g.k] = m[g.k] || { valor: 0, items: [] }); m[g.k].valor += a.valor; m[g.k].items.push(a); }); return m; });
+  // Orden estable: primero los grupos con nombre (por peso total), luego los agrupados.
+  const peso = (k) => porPlan.reduce((s, m) => s + (m[k]?.valor || 0), 0);
+  orden.sort((a, b) => (a.startsWith("g_") - b.startsWith("g_")) || peso(b) - peso(a));
+  orden.forEach((k, i) => { grupos[k].color = k.startsWith("g_") ? (k === "g_canasta" ? INF.sobra : INF.gris) : INF.serie[i % INF.serie.length]; });
+  return { orden, grupos, porPlan, totales };
+}
+
+function Reparto({ m }) {
+  const [sel, setSel] = useState(null);
+  const { orden, grupos, porPlan, totales } = useMemo(() => reparto(m), [m]);
+  return (
+    <div style={card}>
+      <h3 style={h3}>Cómo se reparte el patrimonio en cada camino</h3>
+      <p style={lead}>Cada franja suma 100 % de los activos de ese camino, justo después de sus decisiones. Toca un tramo: se resalta esa inversión en todos los caminos y abajo ves cuánto vale en cada uno.</p>
+      {m.map((p, i) => <div key={p.k} style={{ display: "grid", gridTemplateColumns: "minmax(70px,18%) minmax(0,1fr)", gap: 10, alignItems: "center", margin: "8px 0" }}>
+        <span style={{ textAlign: "right", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nombre}</span>
+        <div>
+          <div style={{ display: "flex", height: 30, gap: 2, minWidth: 0, overflow: "hidden" }}>
+            {orden.filter((k) => porPlan[i][k]).map((k) => { const v = porPlan[i][k].valor, pct = totales[i] > 0 ? v / totales[i] * 100 : 0; const g = grupos[k];
+              return <button key={k} onClick={() => setSel(sel === k ? null : k)} title={`${g.nombre} ${fmPct(pct, 0)} · ${fmM(v)}`}
+                style={{ flex: `${pct} 0 0`, minWidth: 3, background: g.color, opacity: sel && sel !== k ? 0.25 : 1, border: "none", borderRadius: 3, padding: 0, color: INF.sobreColor, fontSize: 12, fontWeight: 700, cursor: "pointer", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "clip" }}>
+                {pct >= 12 ? `${g.nombre.length > 14 ? g.nombre.slice(0, 13) + "…" : g.nombre} ${fmPct(pct, 0)}` : pct >= 4 ? fmPct(pct, 0) : ""}</button>; })}
+          </div>
+          <div style={{ textAlign: "right", fontSize: 11, color: INF.tx2, marginTop: 2 }}>Total {fmM(totales[i])}</div>
+        </div>
+      </div>)}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", fontSize: 12, color: INF.tx2, marginTop: 10 }}>
+        {orden.map((k) => <button key={k} onClick={() => setSel(sel === k ? null : k)} style={{ background: "none", border: "none", padding: 0, color: sel === k ? INF.tx : INF.tx2, cursor: "pointer", fontSize: 12 }}><span style={{ display: "inline-block", width: 10, height: 10, background: grupos[k].color, marginRight: 5, borderRadius: 3 }} />{grupos[k].nombre}</button>)}
+      </div>
+      {sel && <div style={{ marginTop: 12, borderTop: `1px solid ${INF.linea}`, paddingTop: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}><span style={{ display: "inline-block", width: 10, height: 10, background: grupos[sel].color, marginRight: 6, borderRadius: 3 }} />{grupos[sel].nombre}</div>
+        {m.map((p, i) => { const g = porPlan[i][sel]; return <div key={p.k} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, padding: "3px 0" }}>
+          <span>{p.nombre}{g && g.items.length > 1 ? <span style={{ color: INF.tx2, fontSize: 11 }}> · {g.items.map((a) => `${a.nombre} ${fmM(a.valor)}`).join(", ")}</span> : null}</span>
+          <b style={{ whiteSpace: "nowrap" }}>{g ? `${fmM(g.valor)} · ${fmPct(totales[i] > 0 ? g.valor / totales[i] * 100 : 0, 0)}` : "—"}</b></div>; })}
+      </div>}
+    </div>
+  );
+}
+
+export default function PlanComparador({ planes, inflacionPct = 4, onVer, onRecomendar }) {
   const [modo, setModo] = useState("nominal");
   const m = useMemo(() => planes.map((p, i) => ({ ...p, color: p.esHoy ? INF.gris : INF.serie[i % INF.serie.length], k: "p" + i, med: medir(p.r, inflacionPct) })), [planes, inflacionPct]);
   const d = (f) => (modo === "real" ? f.deflactor || 1 : 1);
@@ -59,6 +113,23 @@ export default function PlanComparador({ planes, inflacionPct = 4, onVer }) {
 
   return (
     <div style={{ color: INF.tx }}>
+      {/* Tarjetas de los caminos (como el plan SALEM): de menor a mayor patrimonio en el año 10. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,210px),1fr))", gap: 10, marginBottom: 14 }}>
+        {[...m].sort((a, b) => (b.esHoy - a.esHoy) || a.med.fin.patrimonio - b.med.fin.patrimonio).map((p, i, arr) => {
+          const letra = p.esHoy ? null : String.fromCharCode(65 + arr.filter((x) => !x.esHoy).indexOf(p));
+          return <div key={p.k} role="button" tabIndex={0} onClick={() => onVer && onVer(p)} onKeyDown={(e) => { if (e.key === "Enter" && onVer) onVer(p); }}
+            style={{ position: "relative", textAlign: "left", background: INF.panel, border: `1px solid ${p.recomendado ? INF.teja : INF.linea}`, borderTop: `3px solid ${p.color}`, borderRadius: 12, padding: "14px 14px 12px", color: INF.tx, cursor: onVer ? "pointer" : "default", display: "flex", flexDirection: "column", minHeight: 170 }}>
+            {p.recomendado && <span style={{ position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)", background: INF.teja, color: INF.sobreColor, fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "1px 10px", whiteSpace: "nowrap" }}>Recomendado</span>}
+            <div style={{ fontSize: 11, color: INF.tx2, textTransform: "uppercase", letterSpacing: 0.6 }}>{p.esHoy ? "Punto de partida" : `Camino ${letra}`}</div>
+            <div style={{ fontSize: 16, fontWeight: 600, margin: "2px 0 4px" }}>{p.nombre}</div>
+            <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.45, flex: 1 }}>{p.esHoy ? "Si nada cambia" : p.descripcion || resumenEscenario(p.r)}</div>
+            <div style={{ fontSize: 24, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 10 }}>{fmM(p.med.fin.patrimonio)}</div>
+            <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.ok : INF.bad }}>año 10 · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} real`}</div>
+            {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.teja : INF.tx2, fontSize: 11, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? "★ Recomendado" : "☆ Marcar como recomendado"}</button>}
+          </div>;
+        })}
+      </div>
+
       <div style={card}>
         <h3 style={h3}>El patrimonio en el tiempo, plan por plan</h3>
         <p style={lead}>Patrimonio neto año a año. Todos parten del mismo punto: lo que tienes hoy. La línea gris es seguir como vas, sin cambiar nada.</p>
@@ -70,20 +141,13 @@ export default function PlanComparador({ planes, inflacionPct = 4, onVer }) {
             <YAxis {...eje} tickFormatter={fmEje} width={74} />
             <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} />} />
             {m.map((p) => <Line key={p.k} type="monotone" dataKey={p.k} name={p.nombre} stroke={p.color} strokeWidth={p.esHoy ? 1.6 : 2.2} dot={false}
-              label={(q) => (q.index === curvas.length - 1 ? <text x={q.x + 6} y={q.y + 4 + (desp[p.k] || 0)} fill={p.color} fontSize={11}>{`${p.nombre.slice(0, 18)} ${fmM(q.value)}`}</text> : null)} />)}
+              label={(q) => (q.index === curvas.length - 1 ? <text x={q.x + 6} y={q.y + 4 + (desp[p.k] || 0)} fill={p.color} fontSize={11}>{`${p.nombre.length > 14 ? p.nombre.slice(0, 13) + "…" : p.nombre} ${fmM(q.value)}`}</text> : null)} />)}
           </LineChart>
         </ResponsiveContainer></div></div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 10, marginBottom: 14 }}>
-        {orden.map((p) => <button key={p.k} onClick={() => onVer && onVer(p)} style={{ textAlign: "left", background: INF.panel, border: `1px solid ${INF.linea}`, borderTop: `3px solid ${p.color}`, borderRadius: 12, padding: 12, color: INF.tx, cursor: onVer ? "pointer" : "default" }}>
-          <div style={{ fontSize: 11, color: INF.tx2, textTransform: "uppercase", letterSpacing: 0.5 }}>{p.esHoy ? "Si nada cambia" : "Escenario"}</div>
-          <div style={{ fontSize: 14, fontWeight: 600, margin: "2px 0 6px" }}>{p.nombre}</div>
-          <div style={{ fontSize: 22, fontFamily: "Georgia, 'Times New Roman', serif" }}>{fmM(p.med.fin.patrimonio)}</div>
-          <div style={{ fontSize: 11, color: INF.tx2 }}>año 10 · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} real`}</div>
-          {onVer && <div style={{ fontSize: 12, color: INF.azul, marginTop: 6 }}>Ver en detalle →</div>}
-        </button>)}
-      </div>
+
+      <Reparto m={m} />
 
       <div style={card}>
         <h3 style={h3}>Hoy y los planes en cinco números</h3>
