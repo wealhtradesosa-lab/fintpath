@@ -93,7 +93,7 @@ describe("Construir o mejorar", () => {
   it("inversión sale de la plata disponible y la renta aparece desde el año en que queda lista", () => {
     const r0 = proyectarFuturo10(u, {});
     const r = proyectarFuturo10(u, { decisiones: { l: { accion: "construye", obra } } });
-    expect(r.disponible[1].adicionales).toBeCloseTo(100e6 / 1.05 ** 2, 0);
+    expect(r.disponible[1].adicionales).toBeCloseTo(100e6, 0);
     expect(r.filas[2].rentaPasivaReal).toBeCloseTo(r0.filas[2].rentaPasivaReal, 0);
     expect(r.filas[3].rentaPasivaReal - r0.filas[3].rentaPasivaReal).toBeCloseTo(48e6, -2);
     expect(r.filas[2].patrimonio).toBeCloseTo(r0.filas[2].patrimonio, -3); // pasar plata no crea patrimonio
@@ -122,5 +122,34 @@ describe("datos-mercado (BanRep)", () => {
     expect(ultimoDato([[Date.UTC(2026, 7, 15), 5.4], [Date.UTC(2026, 8, 15), 5.1]]).pct).toBe(5.1);
     expect(ultimoDato({ data: [] })).toBeNull();
     expect(IPC_MANUAL).toMatchObject({ fuente: expect.any(String), fecha: expect.any(String), manual: true });
+  });
+});
+
+describe("revisión Finanzas #56", () => {
+  const userBase = (extra = {}) => ({ inflacionPct: 5, ingresos: [], gas: {}, inv: [{ id: "a1", n: "Casa", tp: "Real Estate", va: 500e6 }], deu: [], ...extra });
+  it("convención de deflación: retorno real 0 y flujo 0 → patrimonio real constante desde el año 1", () => {
+    for (const esc of ["base", "pesimista", "optimista"]) {
+      const inf = resolverEscenario(esc, userBase()).inflacionPct;
+      const r = proyectarFuturo10(userBase(), { escenario: esc, activos: { a1: { rendimientoPct: inf } } });
+      r.filas.forEach((f) => expect(f.patrimonioReal).toBeCloseTo(500e6, -2));
+      expect(r.filas[1].factorFlujo).toBe(1);
+    }
+  });
+  it("Construir o mejorar: el monto es en pesos de hoy y se infla al año del gasto", () => {
+    const u = userBase({ inv: [{ id: "a1", n: "Lote", tp: "Real Estate", va: 100e6 }, { id: "c", n: "CDT", tp: "CDT", va: 500e6 }] });
+    const inf = resolverEscenario("base", u).inflacionPct / 100;
+    const cfg = { escenario: "base", activos: { a1: { rendimientoPct: 0 } }, decisiones: { a1: { accion: "construye", obra: { inversiones: [{ monto: 50e6, anio: 3 }], anioLista: 3 } } } };
+    const sin = proyectarFuturo10(u, { escenario: "base", activos: { a1: { rendimientoPct: 0 } } });
+    const con = proyectarFuturo10(u, cfg);
+    expect(sin.filas[3].liquidez - con.filas[3].liquidez).toBeCloseTo(50e6 * Math.pow(1 + inf, 2), -2);
+    expect(con.disponible[2].adicionales).toBeCloseTo(50e6, 0); // se muestra en pesos de hoy
+  });
+  it("deuda en UVR: tasa real sobre UVR por defecto, con fuente y fecha", () => {
+    const t = tasaDeuda({ tp: "Mortgage", mt: 100e6 }, { uvr: true });
+    expect(t).toMatchObject({ estimada: true, real: true, tipo: "hipotecarioUVR" });
+    expect(t.pct).toBeLessThan(10);
+    expect(t.fuente).toMatch(/Superfinanciera, tasa promedio por modalidad/);
+    expect(t.fecha).toBeTruthy();
+    expect(tasaDeuda({ tp: "Mortgage" }).pct).toBe(13.94);
   });
 });

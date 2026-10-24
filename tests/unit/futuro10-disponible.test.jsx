@@ -25,15 +25,15 @@ describe("Plata disponible para invertir", () => {
       expect(d.queda).toBeCloseTo(suma, 6);
       // flujo libre = cf del motor en pesos de hoy
       const f = r.filas[d.anio];
-      expect(d.flujo).toBeCloseTo(f.cf / f.deflactor, 4);
+      expect(d.flujo).toBeCloseTo(f.cf / f.factorFlujo, 4);
     });
     const d1 = r.disponible[0];
     expect(d1.ventas).toBe(600e6);
     expect(d1.asignado).toBe(100e6);
-    expect(d1.adicionales).toBeCloseTo(50e6 / 1.04, 0); // reinversión vieja → «Construir o mejorar» año 1
+    expect(d1.adicionales).toBeCloseTo(50e6, 0); // pesos de hoy; reinversión vieja → «Construir o mejorar» año 1
     const metaColchon = r.hoy.salidaMensual * SUPUESTOS_F10.colchonMeses;
     expect(d1.liquidezHoy).toBeCloseTo(Math.max(0, 80e6 - metaColchon), 0);
-    expect(r.disponible[2].adicionales).toBeCloseTo(20e6 / 1.04 ** 3, 0);
+    expect(r.disponible[2].adicionales).toBeCloseTo(20e6, 0);
     expect(r.disponible.every((d) => d.exceso === 0)).toBe(true);
   });
 
@@ -52,7 +52,7 @@ describe("Plata disponible para invertir", () => {
 
   it("una inversión personalizada de un año futuro cuenta en ese año", () => {
     const r = proyectarFuturo10(u, { nuevas: [{ preset: "custom", nombre: "Negocio", monto: 5e9, anio: 4 }] });
-    expect(r.disponible[3].asignado).toBeCloseTo(5e9 / 1.04 ** 4, 0);
+    expect(r.disponible[3].asignado).toBeCloseTo(5e9 / 1.04 ** 3, 0);
     expect(r.disponible[3].exceso).toBeGreaterThan(0);
     expect(r.disponible[3].asignaciones[0]).toMatchObject({ tipo: "nueva", idx: 0 });
   });
@@ -64,7 +64,7 @@ describe("QA Mi futuro a 10", () => {
   it("Ingreso/mes* incluye la renta nueva (ingresosReal usa los ingresos totales del año)", () => {
     const sin = proyectarFuturo10(u, {});
     const con = proyectarFuturo10(u, { decisiones: { e: { accion: "modifica", rentaNuevaMensual: 3e6, rentaNuevaDesde: 1 } } });
-    con.filas.slice(1).forEach((f) => expect(f.ingresosReal).toBeCloseTo(f.ingresos / f.deflactor, 4));
+    con.filas.slice(1).forEach((f) => expect(f.ingresosReal).toBeCloseTo(f.ingresos / f.factorFlujo, 4));
     expect(con.filas[1].ingresosReal - sin.filas[1].ingresosReal).toBeCloseTo(36e6, -3);
     expect(con.filas[1].ingresosReal).toBeGreaterThan(0);
   });

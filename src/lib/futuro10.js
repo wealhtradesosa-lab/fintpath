@@ -41,12 +41,15 @@ export const SUPUESTOS_F10 = {
     vehiculo: "Estimación interna, sin fuente oficial",
     colchon: "BBVA y Bancolombia recomiendan de 3 a 6 meses",
   },
-  // Tasa cuando la deuda no tiene la suya: promedio publicado por tipo (E.A.).
+  // Tasa cuando la deuda no tiene la suya: promedio publicado por modalidad (E.A.).
+  // ACTUALIZAR CADA TRIMESTRE (Superfinanciera, tasas de interés por modalidad). Próxima revisión: ene-2027.
+  // hipotecarioUVR es tasa REAL sobre UVR (el saldo ya se indexa con la inflación): no usar la nominal en pesos.
   tasasDeuda: {
-    hipotecario: { pct: 13.94, fuente: "Superfinanciera, vivienda No VIS en pesos, corte 25-sep-2026" },
-    vehiculo: { pct: 21.06, fuente: "Superfinanciera, crédito de vehículo, corte 25-sep-2026" },
-    consumo: { pct: 19.06, fuente: "Superfinanciera, interés bancario corriente consumo, oct-2026" },
-    tarjeta: { pct: 24.85, fuente: "Superfinanciera, tarjeta de crédito, corte 25-sep-2026" },
+    hipotecario: { pct: 13.94, fecha: "25-sep-2026", fuente: "Superfinanciera, tasa promedio por modalidad (vivienda No VIS en pesos)" },
+    hipotecarioUVR: { pct: 7.85, real: true, fecha: "25-sep-2026", fuente: "Superfinanciera, tasa promedio por modalidad (vivienda No VIS en UVR, real sobre UVR)" },
+    vehiculo: { pct: 21.06, fecha: "25-sep-2026", fuente: "Superfinanciera, tasa promedio por modalidad (vehículo)" },
+    consumo: { pct: 19.06, fecha: "oct-2026", fuente: "Superfinanciera, tasa promedio por modalidad (consumo)" },
+    tarjeta: { pct: 24.85, fecha: "25-sep-2026", fuente: "Superfinanciera, tasa promedio por modalidad (tarjeta de crédito)" },
   },
   // Presets de retorno. realSpread = puntos sobre la inflación del escenario.
   presets: {
@@ -113,14 +116,17 @@ export function metaColchonF10(user = {}, b = null, sup = SUPUESTOS_F10) {
   return base.ob * n(sup.colchonMeses);
 }
 
-/** Tasa anual (%) de una deuda: la suya o la promedio publicada para su tipo. Nunca 0%. */
+/** Tasa anual (%) de una deuda: la suya o la promedio publicada para su modalidad. Nunca 0%.
+ *  Con UVR la tasa es REAL sobre UVR (el saldo se indexa aparte con la inflación). */
 export function tasaDeuda(d = {}, override = {}, sup = SUPUESTOS_F10) {
-  if (!vacioM(override.tasaPct) && n(override.tasaPct) > 0) return { pct: n(override.tasaPct), estimada: false };
-  if (!vacioM(d.ts) && n(d.ts) > 0) return { pct: n(d.ts), estimada: false };
+  const uvr = !!override.uvr;
+  if (!vacioM(override.tasaPct) && n(override.tasaPct) > 0) return { pct: n(override.tasaPct), estimada: false, real: uvr };
+  if (!vacioM(d.ts) && n(d.ts) > 0) return { pct: n(d.ts), estimada: false, real: uvr };
   const tp = String(d.tp || d.tipo || "").toLowerCase();
-  const k = /mortg|hipot|vivienda|leasing/.test(tp) ? "hipotecario" : /veh|carro|auto/.test(tp) ? "vehiculo" : /tarj|card|credit/.test(tp) ? "tarjeta" : "consumo";
+  let k = /mortg|hipot|vivienda|leasing/.test(tp) ? "hipotecario" : /veh|carro|auto/.test(tp) ? "vehiculo" : /tarj|card|credit/.test(tp) ? "tarjeta" : "consumo";
+  if (uvr) k = "hipotecarioUVR"; // en UVR solo hay tasa real publicada (vivienda)
   const t = sup.tasasDeuda[k];
-  return { pct: t.pct, estimada: true, tipo: k, fuente: t.fuente };
+  return { pct: t.pct, estimada: true, tipo: k, real: uvr, fuente: t.fuente, fecha: t.fecha, etiqueta: uvr ? `UVR + ${fmtPct(t.pct)} real` : `${fmtPct(t.pct)} E.A.` };
 }
 
 /** Retorno real (%) a partir del nominal: (1+n)/(1+i)−1, una sola vez. */
@@ -240,7 +246,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     const ov = (cfg.deudas || {})[d.id] || {};
     const t = tasaDeuda(d, ov, sup);
     const saldo = n(d.mt) * fxA(d), cuota = n(d.pg ?? d.pago) * fxA(d);
-    if (t.estimada && saldo > 0) alertas.push({ tipo: "tasa_estimada", anio: 0, texto: `${d.n || d.nombre || "Una deuda"}: tasa estimada ${fmtPct(t.pct)} (${t.fuente}). Tasa estimada, agrégala.` });
+    if (t.estimada && saldo > 0) alertas.push({ tipo: "tasa_estimada", anio: 0, texto: `${d.n || d.nombre || "Una deuda"}: tasa estimada, agrégala. Usamos ${t.etiqueta} (${t.fuente}, ${t.fecha}).` });
     if (saldo <= 0 && cuota > 0) alertas.push({ tipo: "deuda_sin_saldo", anio: 0, texto: `${d.n || d.nombre || "Una deuda"} tiene cuota pero no saldo: la cuota se mantiene los 10 años. Agrega el saldo.` });
     return { nombre: d.n || d.nombre || "Deuda", saldo, cuota, tasa: t.pct / 100, uvr: !!ov.uvr, sinSaldo: saldo <= 0 && cuota > 0 };
   }).filter((d) => d.saldo > 0 || d.cuota > 0);
@@ -270,7 +276,11 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
   fut.activos.forEach((x, k) => todos.push({ id: "futuro_" + k, nombre: x.nombre, clase: x.clase, valor: 0, crec: x.crec, entrega: x.entrega, pagos: x.pagos, usd: false, invertible: x.clase !== "vehiculo", rentaFutura: x.rentaMensual * 12, rentaDesde: x.rentaDesde }));
   let expUSD = canasta.crecimiento > 0;
   for (let t = 1; t <= N; t++) {
-    const idx = Math.pow(1 + inf, t); // pesos de hoy → pesos del año t (en pesos de hoy se ven iguales)
+    // Convención única: base = pesos de hoy (inicio del año 1).
+    // Flujos del año t (ingresos, rentas, cuotas, inversiones) → factor (1+i)^(t-1): el año 1 vale 1.
+    // Saldos al cierre del año t (patrimonio, metas, valor final) → deflactor (1+i)^t.
+    const idx = Math.pow(1 + inf, t); // saldos al cierre del año t
+    const fIdx = Math.pow(1 + inf, t - 1); // flujos durante el año t
     const dA = disp[t - 1];
     // Retiro en orden: colchón → liquidez → activos líquidos (fondos, CDT, acciones). Nunca finca raíz ni ilíquidos.
     const retirar = (monto) => {
@@ -289,7 +299,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
       if (deficit > 0) { const u = Math.min(deficit, m); deficit -= u; m -= u; }
       const liq = colchon + canasta.liquidez + todos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
       const falta = Math.max(0, metaColchon * idx - liq);
-      const c = Math.min(falta, m); colchon += c; m -= c; if (dA && t > 1) dA.colchon += c / Math.pow(1 + inf, t);
+      const c = Math.min(falta, m); colchon += c; m -= c; if (dA && t > 1) dA.colchon += c / fIdx;
       repartir(m);
     };
     // 0) inversiones personalizadas del año
@@ -321,8 +331,9 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
       if (!a.obra || a.vendido) return;
       a.obra.inversiones.forEach((iv) => {
         if (iv.anio !== t || iv.monto <= 0) return;
-        retirar(iv.monto); a.valor += iv.monto;
-        if (dA) dA.adicionales += iv.monto / Math.pow(1 + inf, t);
+        const m = iv.monto * fIdx; // monto en pesos de hoy → pesos del año en que se gasta
+        retirar(m); a.valor += m;
+        if (dA) dA.adicionales += iv.monto;
         alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En el año ${t} pasas plata de tu liquidez a ${a.nombre}.` });
       });
       if (a.obra.anioLista === t) {
@@ -342,16 +353,16 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     let rentaNueva = 0;
     activos.forEach((a) => {
       if (!a.obra || a.vendido || !(a.obra.rentaMensual > 0) || t < a.obra.anioLista) return;
-      const r = a.obra.rentaMensual * 12 * idx;
+      const r = a.obra.rentaMensual * 12 * fIdx;
       if (a.obra.renta === "reinvierte") a.valor += r; else rentaNueva += r;
     });
     rentaNueva += todos.reduce((s, a) => s + (a.rentaPct ? a.valor / (1 + a.crec) * a.rentaPct : 0), 0);
-    const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * (x.fijo ? 1 : idx) : 0), 0);
-    const rentaFut = todos.reduce((s, a) => s + (a.rentaFutura > 0 && t >= a.rentaDesde ? a.rentaFutura * idx : 0), 0);
+    const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * (x.fijo ? 1 : fIdx) : 0), 0);
+    const rentaFut = todos.reduce((s, a) => s + (a.rentaFutura > 0 && t >= a.rentaDesde ? a.rentaFutura * fIdx : 0), 0);
     rentaNueva += ingFuturo + rentaFut;
     let cuota = 0;
     deudas.forEach((d) => {
-      const c = d.uvr ? d.cuota * 12 * idx : d.cuota * 12;
+      const c = d.uvr ? d.cuota * 12 * fIdx : d.cuota * 12;
       if (d.sinSaldo) { cuota += c; return; }
       if (d.saldo <= 0) return;
       if (d.uvr) d.saldo *= 1 + inf;
@@ -367,7 +378,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     todos.forEach((a) => (a.pagos || []).forEach((pg) => {
       if (pg.anio !== t || pg.monto <= 0) return;
       retirar(pg.monto); a.valor += pg.monto;
-      if (dA) dA.pagosFuturos += pg.monto / Math.pow(1 + inf, t);
+      if (dA) dA.pagosFuturos += pg.monto / fIdx;
       alertas.push({ tipo: "pago_futuro", anio: t, texto: `En el año ${t} pagas parte de ${a.nombre} con tu liquidez.` });
     }));
     if (canasta.crecimiento > 0) expUSD = true;
@@ -376,17 +387,18 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     if (cf < 0) alertas.push({ tipo: "cf_negativo", anio: t, texto: `En el año ${t} sale más de lo que entra; se usa tu liquidez.` });
     const liquidez = colchon + canasta.liquidez + todos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0) - deficit;
     if (dA) {
-      dA.flujo = cf / deflactor;
-      personalizadas.forEach((c) => { if (c.anio === t) { dA.asignado += c.monto / deflactor; dA.asignaciones.push({ tipo: "nueva", idx: Number(String(c.id).split("_")[1]), nombre: c.nombre, monto: c.monto / deflactor }); } });
+      dA.flujo = cf / fIdx;
+      personalizadas.forEach((c) => { if (c.anio === t) { dA.asignado += c.monto / fIdx; dA.asignaciones.push({ tipo: "nueva", idx: Number(String(c.id).split("_")[1]), nombre: c.nombre, monto: c.monto / fIdx }); } });
     }
     const activosT = valorTotal();
     const deuda = deudaTotal();
-    const rentaPasiva = ipOtros * Math.pow(1 + gIng, t - 1) + rentaRetirada + rentaNueva - ingFuturo + fut.ingresos.reduce((s, x) => s + (x.renta && t >= x.desde && t <= x.hasta ? x.mensual * 12 * (x.fijo ? 1 : idx) : 0), 0);
+    const rentaPasiva = ipOtros * Math.pow(1 + gIng, t - 1) + rentaRetirada + rentaNueva - ingFuturo + fut.ingresos.reduce((s, x) => s + (x.renta && t >= x.desde && t <= x.hasta ? x.mensual * 12 * (x.fijo ? 1 : fIdx) : 0), 0);
     const f = { anio: t, ingresos: ingresos + rentaNueva, rentaNueva, rentaPasiva, gastos: gastos + cuota, cf, activos: activosT, invertible: invertible(), deuda, liquidez, deflactor, faltante: deficit };
     f.patrimonio = activosT - deuda;
     f.patrimonioReal = f.patrimonio / deflactor;
     f.invertibleReal = f.invertible / deflactor;
-    f.ingresosReal = f.ingresos / deflactor; f.gastosReal = f.gastos / deflactor; f.rentaPasivaReal = rentaPasiva / deflactor;
+    f.factorFlujo = fIdx;
+    f.ingresosReal = f.ingresos / fIdx; f.gastosReal = f.gastos / fIdx; f.rentaPasivaReal = rentaPasiva / fIdx;
     if (deficit <= 0 && metaColchon > 0 && liquidez < metaColchon * idx) alertas.push({ tipo: "liquidez_baja", anio: t, texto: `En el año ${t} tu liquidez queda por debajo de tu colchón.` });
     filas.push(f);
   }

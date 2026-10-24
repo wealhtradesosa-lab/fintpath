@@ -311,7 +311,7 @@ export function Obra({ a, d, setD }) {
     <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 8 }}>
       {o.inversiones.map((iv, k) => (
         <div key={k} style={{ display: "grid", gridTemplateColumns: "1fr 90px", gap: 4 }}>
-          <label style={lbl}>Inversión ($, pesos de ese año)<NumberInput style={inp} placeholder="0" value={iv.monto ?? ""} onChange={(v) => up({ inversiones: o.inversiones.map((x, j) => (j === k ? { ...x, monto: v } : x)) })} /></label>
+          <label style={lbl}>Monto en pesos de hoy<NumberInput style={inp} placeholder="0" value={iv.monto ?? ""} onChange={(v) => up({ inversiones: o.inversiones.map((x, j) => (j === k ? { ...x, monto: v } : x)) })} /></label>
           <label style={lbl}>Año<select style={inp} value={iv.anio || 1} onChange={(e) => up({ inversiones: o.inversiones.map((x, j) => (j === k ? { ...x, anio: Number(e.target.value) } : x)) })}>{ANIOS_SEL.map((y) => <option key={y} value={y}>{y}</option>)}</select></label>
         </div>))}
       <div style={{ display: "flex", alignItems: "end", gap: 6 }}>
@@ -347,8 +347,9 @@ function Deudas({ user, cfg, set }) {
           <div key={d.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,180px),1fr))", gap: 8 }}>
             <div><b>{d.n || d.nombre || "Deuda"}</b><div style={{ color: C.tx2, fontSize: 12 }}>Saldo {plata(d.mt)} · cuota {plata(d.pg ?? d.pago)}/mes</div>
               {!(Number(d.mt) > 0) && <div style={{ color: C.am, fontSize: 11 }}>Agrega el saldo: por ahora la cuota se mantiene los 10 años.</div>}</div>
-            <label style={lbl}>Tasa anual (%)<InputDecimalEs style={inp} placeholder={fmtPctEs(t.pct)} value={ov.tasaPct ?? (Number(d.ts) > 0 ? d.ts : "")} onChange={(v) => setO({ tasaPct: v })} />
-              {t.estimada && <span style={{ fontSize: 11, color: C.am }}>Tasa estimada, agrégala. Usamos {fmtPctEs(t.pct)}: {t.fuente}.</span>}</label>
+            <label style={lbl}>{ov.uvr ? "Tasa real sobre UVR (%)" : "Tasa anual E.A. (%)"}<InputDecimalEs style={inp} placeholder={fmtPctEs(t.pct)} value={ov.tasaPct ?? (Number(d.ts) > 0 ? d.ts : "")} onChange={(v) => setO({ tasaPct: v })} />
+              {t.estimada && <span style={{ fontSize: 11, color: C.am }}>Tasa estimada, agrégala. Usamos {t.real ? `UVR + ${fmtPctEs(t.pct)} real` : `${fmtPctEs(t.pct)} E.A.`} · Fuente: {t.fuente}, {t.fecha}.</span>}
+              {!t.estimada && t.real && <span style={{ fontSize: 11, color: C.tx2 }}>En UVR: escribe la tasa real (la que va sobre la UVR).</span>}</label>
             <label style={{ ...lbl, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={!!ov.uvr} onChange={(e) => setO({ uvr: e.target.checked })} /> ¿En UVR?</label>
           </div>);
       })}
@@ -480,12 +481,13 @@ function Grid({ items }) {
   </div>;
 }
 
-export const IPC_MANUAL = { pct: 6.29, fuente: "DANE, IPC anual", fecha: "sep-2026" }; // solo si no responde BanRep
+// Solo referencia en la tabla: NUNCA entra a la proyección (la proyección usa la inflación del escenario).
+export const IPC_MANUAL = { pct: 6.29, fuente: "DANE, IPC anual", fecha: "sep-2026", manual: true };
 export function TablaSupuestos({ esc, mercado = null }) {
   const s = SUPUESTOS_F10, p = s.presets, F = s.fuentes;
   const ipc = mercado?.ipc?.pct > 0 ? mercado.ipc : IPC_MANUAL;
   const filas = [
-    ["IPC observado (referencia)", `${fmtPctEs(ipc.pct)} anual`, `${ipc.fuente}, ${ipc.fecha}${ipc === IPC_MANUAL ? " (valor manual: no hubo respuesta en vivo)" : ""}`],
+    ["IPC observado (referencia)", `${fmtPctEs(ipc.pct)} anual`, `${ipc.fuente}, ${ipc.fecha || "sin fecha"}${ipc.manual ? ` (valor manual del ${ipc.fecha}; no hubo respuesta en vivo; no se usa en la proyección)` : " (no se usa en la proyección)"}`],
     ["Inflación proyectada", `${fmtPctEs(esc.inflacionPct)} al año`, F.inflacion],
     ["Renta fija corto", `inflación + ${fmtPctEs(p.rfCorto.realSpread + esc.retornoSpread)} ≈ ${fmtPctEs(retornoNominalPreset("rfCorto", esc))} al año`, F.rfCorto],
     ["Renta fija largo", `inflación + ${fmtPctEs(p.rfLargo.realSpread)} (tope + ${fmtPctEs(p.rfLargo.topeSpread)})`, F.rfLargo],
