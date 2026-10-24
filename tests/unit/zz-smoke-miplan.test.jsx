@@ -75,11 +75,14 @@ describe("Escenarios: los cuatro pasos se pintan", () => {
   // 23-oct-2026 (Santiago: "el ecualizador no se usa; que al armar el
   // escenario le diga a uno cómo quedó distribuido"). El paso 2 elige el
   // molde y crea; sin barras de mezcla.
-  it("el paso 2 es una sola decisión: el molde, sin ecualizador", () => {
+  // 24-oct-2026 (Santiago: "como 7 botones, y si hundo un molde no pasa
+  // nada"). Un clic por molde crea y abre el taller; sin botón de "Crear".
+  it("el paso 2: tus escenarios y crear uno con un clic", () => {
     const html = renderToString(<MiPlan {...props} caminos={[]} pasoInicial={2} vistaInicial="armar" />);
-    expect(html).toContain("Elige con qué molde arrancas");
-    for (const t of ["Seguridad y rentar", "Vivir de la renta", "Rentar y multiplicar", "A mi manera"]) expect(html, t).toContain(t);
-    expect(html).toContain("Crear escenario");
+    expect(html).toContain("Crear un escenario");
+    expect(html).toContain("+ Crear escenario");
+    for (const t of ["Seguridad y rentar", "Vivir de la renta", "Rentar y multiplicar"]) expect(html, t).not.toContain(t);
+    expect(html).not.toContain("Armarlo yo desde cero");
     expect(html).not.toContain("La mezcla a la que quieres llegar");
   });
 });

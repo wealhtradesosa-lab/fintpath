@@ -949,16 +949,14 @@ function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, ac
   const deIng = base.posiciones.filter((p) => p.soloIngreso && !p.sale);
   const capIng = deIng.reduce((t, p) => t + p.capital, 0);
   const repartido = c.proteccion + c.rentas + c.crecimiento + c.uso;
-  const [miMezcla, setMiMezcla] = useState({ proteccion: 25, rentas: 45, crecimiento: 30 });
-  const [molde, setMolde] = useState(null);
   const hayImposible = res.some((r) => vecesDe(r.puntos) > VECES_IMPOSIBLE) || sospechosos(perfil, base).length > 0;
   const plantillas = moldes || [];
   const propios = todos;
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
-        <div style={F.h2}>2 · Elige con qué molde arrancas</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Un molde trae reglas (cuánto colchón, a dónde va el sobrante, qué vigilar). Qué vendes, qué pagas y en qué inviertes lo decides tú en el paso 3, y al armarlo verás cómo quedó repartida tu plata.</div>
+        <div style={F.h2}>2 · Tus escenarios</div>
+        <div style={{ ...F.caption, marginTop: 4 }}>Abre uno para verlo o editarlo, o crea otro. Arriba, dónde está tu plata hoy.</div>
         {/* 22-oct-2026 (Santiago: "¿y dónde quedó el patrimonio completo que
             son como 17 mil M?", "cada canasta origina valores como de fuentes
             distintas"). Las canastas repartían $25,7 mil M y su patrimonio
@@ -994,19 +992,14 @@ function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, ac
             uno cómo quedó distribuido"). Fuera las tres barras: acá solo se
             elige el molde y se crea; cómo quedó repartida la plata se dice en
             el resultado. */}
-        <div style={F.h2}>Arranca un escenario</div>
-        <div style={{ ...F.body, marginTop: 4 }}>Elige un molde: trae el reparto del sobrante, el colchón y las reglas que vigilar. Lo que vendes, qué pagas y en qué inviertes lo decides tú en el paso siguiente, y al armarlo verás <b style={{ color: C.text }}>cómo quedó repartida tu plata</b>.</div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          {plantillas.map((c) => { const act = molde?.id === c.id; const i = INTENCIONES[c.id] || {};
-            return <button key={c.id} title={i.frase} style={{ ...btn(false), borderColor: act ? c.color : C.borderStrong, background: act ? `${c.color}22` : "transparent", color: act ? C.text : C.muted, fontWeight: act ? 700 : 500 }}
-              onClick={() => { setMolde(c); setMiMezcla(c.objetivo); }}>{i.titulo || c.nombre}</button>; })}
-          <button style={{ ...btn(false), color: !molde ? C.text : C.muted }} onClick={() => setMolde(null)}>A mi manera</button>
-        </div>
-        <div style={{ ...F.caption, marginTop: 6 }}>{molde ? INTENCIONES[molde.id]?.frase : "A mi manera: sin reglas de molde; tú pones todo."}</div>
-        <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <button style={btn(true)} onClick={() => { onCrear(molde ? { ...molde, objetivo: molde.objetivo || miMezcla } : { id: null, nombre: "Mi escenario", tesis: "", color: CHART.purple, objetivo: null, canastas: { colchonMeses: 6 }, excedente: [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }] }); onNext(); }}>{molde ? `Crear escenario «${INTENCIONES[molde.id]?.titulo || molde.nombre}» →` : "Crear escenario a mi manera →"}</button>
-          <span style={F.caption}>Puedes crear varios y compararlos.</span>
-        </div>
+        {/* 24-oct-2026 (Santiago, por tercera vez: "los escenarios
+            predeterminados no están bien implementados, confunden, enredan la
+            experiencia"). Fuera los moldes del camino principal: un solo botón
+            crea el escenario y abre el taller. Las reglas de un molde quedan
+            como opción avanzada dentro del taller, para quien las quiera. */}
+        <div style={F.h2}>Crear un escenario</div>
+        <div style={{ ...F.caption, marginTop: 4 }}>Parte de lo que tienes hoy; tú decides qué vendes, a dónde va la plata y qué viene después.</div>
+        <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => { onCrear({ id: null, nombre: `Escenario ${(todos || []).length + 1}`, tesis: "", color: [CHART.purple, "#f59e0b", "#22c55e", "#3b82f6", "#ec4899"][(todos || []).length % 5], objetivo: null, canastas: { colchonMeses: 6 }, excedente: [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }] }); onNext(); }}>+ Crear escenario →</button></div>
       </div>
       {/* 22-oct-2026 (Santiago: "veo que se han creado muchos escenarios,
           ¿dónde los borra uno?", "¿dónde los compara?"). Borrar vivía al final
@@ -1031,10 +1024,7 @@ function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, ac
               <button style={{ ...btn(false), padding: "4px 10px", color: C.danger, borderColor: C.danger }} onClick={() => { if (typeof window === "undefined" || window.confirm(`¿Borrar «${e.nombre}»? No se puede deshacer.`)) onBorrar(e); }}>Borrar</button>
             </div>); })}
         </div>}
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 12, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
-          <span style={F.caption}>¿Ninguna es lo tuyo?</span>
-          <button style={btn(false)} onClick={() => { onNuevo(); onNext(); }}>Armarlo yo desde cero</button>
-        </div>
+
       </div>
     </div>
   );
@@ -1377,6 +1367,11 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             })()}
             <details style={{ marginTop: 10 }}>
               <summary style={{ ...F.caption, cursor: "pointer" }}>Reglas que este escenario se obliga a cumplir (opcional)</summary>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
+                <span style={F.caption}>Cargar las reglas de un molde:</span>
+                {CAMINOS_BASE.map((c) => <button key={c.id} style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => upd({ canastas: { ...(c.canastas || {}), colchonMeses: esc.colchonMeses ?? c.canastas?.colchonMeses ?? 6 }, condiciones: c.condiciones || [], plantilla: c.id })}>{INTENCIONES[c.id]?.titulo || c.nombre}</button>)}
+                <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11, color: C.subtle }} onClick={() => upd({ canastas: { colchonMeses: esc.colchonMeses ?? 6 }, condiciones: [], plantilla: null })}>Sin reglas</button>
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 10 }}>
                 <Campo l="Rentas mín."><Num value={esc.canastas?.rentas?.min ?? ""} onChange={(v) => upd({ canastas: { ...(esc.canastas || {}), rentas: { ...(esc.canastas?.rentas || {}), min: v === "" ? undefined : v } } })} suffix="%" /></Campo>
                 <Campo l="Crecimiento mín."><Num value={esc.canastas?.crecimiento?.min ?? ""} onChange={(v) => upd({ canastas: { ...(esc.canastas || {}), crecimiento: { ...(esc.canastas?.crecimiento || {}), min: v === "" ? undefined : v } } })} suffix="%" /></Campo>
