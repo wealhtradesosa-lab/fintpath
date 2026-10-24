@@ -14,7 +14,7 @@ import { exportIngresosPDF } from "../lib/pdfSectionExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import { detectarTemplate, TEMPLATES } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
-import { MARCA_REVISAR_PRIMA, esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
+import { MARCA_REVISAR_PRIMA, MARCA_SUGERIR_PRIMA, debeSugerirPrimaBono, descartarSugerenciaPrimaBono, esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -410,6 +410,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
   // Fase 2 flujo anual (18-jul-2026): toggle pagado/pendiente por año.
   const añoActual = new Date().getFullYear();
+  const descartarSugerenciaPrima = (item) => {
+    if (!guardEdit(role)) return;
+    onUpdate(descartarSugerenciaPrimaBono(items, item.id));
+  };
   const togglePagoItem = (item) => {
     if (!guardEdit(role)) return;
     if (esPrimaBono(item)) return; // ya viene cobrado: marcarlo "pagado" lo dejaría en $0
@@ -968,6 +972,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         {esPrimaBono(item) ? fm(item.moneda==="USD" ? mensualPrimaBono(item)*(trm||4200) : mensualPrimaBono(item)) : fm(item.moneda==="USD" ? promedioMesActivo(item)*(trm||4200) : promedioMesActivo(item))}
                         {esPrimaBono(item) && <div data-testid="nota-prima-bono" style={{ fontSize: 9, color: T.txt3, fontWeight: 500 }}>{notaPrimaBono(item)}</div>}
                         {esPrimaBono(item) && item.revisarFrecuencia && <div data-testid="revisar-prima-bono" style={{ fontSize: 9, color: "#f97316", fontWeight: 600 }}>⚠️ {MARCA_REVISAR_PRIMA}</div>}
+                        {debeSugerirPrimaBono(item) && <div data-testid="sugerir-prima-bono" style={{ fontSize: 9, color: "#f97316", fontWeight: 600, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                          <span>⚠️ {MARCA_SUGERIR_PRIMA}</span>
+                          <button type="button" data-testid="sugerir-prima-editar" onClick={(e) => { e.stopPropagation(); handleEdit(item); }} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, border: "1px solid #f97316", background: "transparent", color: "#f97316", cursor: "pointer" }}>Revisar</button>
+                          <button type="button" data-testid="sugerir-prima-descartar" onClick={(e) => { e.stopPropagation(); descartarSugerenciaPrima(item); }} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#a1a1aa", cursor: "pointer" }}>Es mensual, dejarlo así</button>
+                        </div>}
                         {item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(promedioMesActivo(item)).toLocaleString("es-CO")}</span>}
                       </div>
                       {/* Subtítulo con total anual solo si NO es mensual todo el año */}

@@ -50,3 +50,13 @@ export function migratePrimaBonoAnual(d) {
   });
   return d;
 }
+
+export const MARCA_SUGERIR_PRIMA = "Revisa: ¿es una prima o bono? Muévelo a Prima o bonificación laboral con el total del año";
+const _sinTildes = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+/** Nombre parece prima/bono pero la categoría no es Prima/Bono. */
+export const nombreParecePrimaBono = (i) => !!i && !esPrimaBono(i) && /\b(prima|primas|bono|bonos|bonificacion|bonificaciones)\b/.test(_sinTildes(i.nombre));
+/** Debe mostrarse la sugerencia (no descartada). No modifica nada. */
+export const debeSugerirPrimaBono = (i) => nombreParecePrimaBono(i) && !i.sugerenciaPrimaBonoDescartada;
+/** «Es mensual, dejarlo así»: descarta para siempre la sugerencia de ese ítem. Idempotente. */
+export const descartarSugerenciaPrimaBono = (items, id) =>
+  (items || []).map((i) => (i && i.id === id && !i.sugerenciaPrimaBonoDescartada ? { ...i, sugerenciaPrimaBonoDescartada: true } : i));
