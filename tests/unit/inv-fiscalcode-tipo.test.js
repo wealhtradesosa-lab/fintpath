@@ -9,8 +9,11 @@ describe("fiscalCode sigue al tipo (form)", () => {
     expect(fiscalCodeParaTipo("Bodega", "INV_INMUEBLE_ARRENDADO")).toBe("INV_INMUEBLE_ARRENDADO");
     expect(fiscalCodeParaTipo("Real Estate", "INV_CDT")).toBe("INV_INMUEBLE_HABITACIONAL");
   });
+  it("Cash → INV_EFECTIVO", () => {
+    expect(fiscalCodeParaTipo("Cash", "INV_INMUEBLE_HABITACIONAL")).toBe("INV_EFECTIVO");
+  });
   it("tipo ambiguo → sin código", () => {
-    expect(fiscalCodeParaTipo("Cash", "INV_INMUEBLE_HABITACIONAL")).toBeUndefined();
+    expect(fiscalCodeParaTipo("Negocio", "INV_INMUEBLE_HABITACIONAL")).toBeUndefined();
   });
   it("vehículo depende del owner", () => {
     expect(fiscalCodeParaTipo("Vehículo", undefined, { type: "juridica" })).toBe("INV_VEHICULO_PRODUCTIVO");
@@ -38,5 +41,17 @@ describe("migración al cargar", () => {
   it("idempotente", () => {
     const r = migrateInvFiscalCodeTipo(d);
     expect(migrateInvFiscalCodeTipo(r)).toBe(r);
+  });
+});
+
+import { inferInversionFiscalCode } from "../../src/lib/normalize.js";
+describe("normalize: fallback neutro", () => {
+  it("sin código ni tipo conocido → INV_OTROS_ACTIVOS, nunca habitacional", () => {
+    expect(inferInversionFiscalCode({ tipo: "Negocio" }, {}, [])).toBe("INV_OTROS_ACTIVOS");
+    expect(inferInversionFiscalCode({}, {}, [])).toBe("INV_OTROS_ACTIVOS");
+  });
+  it("Cash → INV_EFECTIVO; Real Estate sigue habitacional", () => {
+    expect(inferInversionFiscalCode({ tipo: "Cash" }, {}, [])).toBe("INV_EFECTIVO");
+    expect(inferInversionFiscalCode({ tipo: "Real Estate" }, {}, [])).toBe("INV_INMUEBLE_HABITACIONAL");
   });
 });

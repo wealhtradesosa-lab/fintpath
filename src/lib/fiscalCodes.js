@@ -156,6 +156,8 @@ export const INV_CRYPTO                      = "INV_CRYPTO";
 export const INV_VEHICULO_PRODUCTIVO         = "INV_VEHICULO_PRODUCTIVO";
 export const INV_VEHICULO_PERSONAL           = "INV_VEHICULO_PERSONAL";
 export const INV_EQUIPO_PRODUCTIVO           = "INV_EQUIPO_PRODUCTIVO";
+export const INV_EFECTIVO                    = "INV_EFECTIVO";     // efectivo, depósitos y cuentas
+export const INV_OTROS_ACTIVOS               = "INV_OTROS_ACTIVOS"; // fallback neutro: solo patrimonio bruto, sin beneficio
 
 // ─── OWNERS ───────────────────────────────────────────────────────────────
 
@@ -267,6 +269,9 @@ export const FISCAL_CODE_META = {
   [INV_VEHICULO_PRODUCTIVO]:       { kind: "inversion", deprecia: true,  label: "Vehículo productivo",          et: "Art. 137 (20%/año)" },
   [INV_VEHICULO_PERSONAL]:         { kind: "inversion", deprecia: false, label: "Vehículo personal",            et: "Solo patrimonio" },
   [INV_EQUIPO_PRODUCTIVO]:         { kind: "inversion", deprecia: true,  label: "Maquinaria / equipos",         et: "Art. 137 (según tipo)" },
+
+  [INV_EFECTIVO]:                  { kind: "inversion", deprecia: false, label: "Efectivo / depósitos",         et: "Patrimonio bruto" },
+  [INV_OTROS_ACTIVOS]:             { kind: "inversion", deprecia: false, label: "Otros activos",                et: "Patrimonio bruto, sin beneficio ni exención" },
 
   // Owners
   [OWN_NAT_RESIDENTE_ORDINARIO]:   { kind: "owner", type: "natural",   regimen: "ordinario",  label: "Natural residente ordinario" },

@@ -6,10 +6,11 @@ export const esTipoInmueble = (tipo) => TIPOS_INMUEBLE.includes(String(tipo || "
 export const esCodigoInmueble = (fc) => typeof fc === "string" && fc.startsWith("INV_INMUEBLE_");
 
 // Código inequívoco para un tipo no inmueble; null si el tipo no alcanza
-// (Cash, Negocio, Renta Fija, Otro…) y el usuario debe revisarlo.
+// (Negocio, Renta Fija, Otro…) y el usuario debe revisarlo.
 export function codigoPorTipo(tipo, owner) {
   const t = String(tipo || "").trim().toLowerCase();
   if (t === "cdt") return "INV_CDT";
+  if (t === "cash" || t === "efectivo") return "INV_EFECTIVO";
   if (t === "fondo de inversión" || t === "fondo de inversion") return "INV_FIC";
   if (t === "acciones") return "INV_ACCIONES";
   if (t === "crypto" || t === "cripto") return "INV_CRYPTO";

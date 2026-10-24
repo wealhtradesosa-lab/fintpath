@@ -562,7 +562,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         <span>{name}</span>
                       </div>
                       {inv.revisarFiscal && (
-                        <div onClick={() => openEdit(inv)} style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", cursor: "pointer", marginBottom: 2 }}>Revisa: revisa la clasificación fiscal</div>
+                        <div onClick={() => openEdit(inv)} style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", cursor: "pointer", marginBottom: 2 }}>Revisa: ¿qué tipo de inversión es? Elígelo para que tu renta quede bien calculada</div>
                       )}
                       <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? "renta " +fmtTasaEs(inv.tasa)+" anual" : ""].filter(Boolean).join(" • ")}</div>
                       {(()=>{
