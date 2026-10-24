@@ -66,7 +66,7 @@ const T = {
   ch: [C.ok, C.accent, C.warn, C.purple, "#ec4899", "#22d3ee", "#eab308"],
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
-const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Cesantías",l:"💵 Cesantías / Intereses cesantías"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
+export const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Cesantías",l:"💵 Cesantías / Intereses cesantías"},{v:"Prima/Bono",l:"🎁 Prima / Bono"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
 
 // Sub-opciones de fiscalCode por categoría ambigua. Si la categoría no está
 // aquí, el fiscalCode se deriva automáticamente vía normalize.js (no pregunta).
@@ -192,9 +192,11 @@ const aplicarTasaSiVariable = (nf, form, cap, tas, tasaModo) => {
   return nf;
 };
 
-const DEFAULT_FISCAL_CODE = {
+export const DEFAULT_FISCAL_CODE = {
   "Salario": "LAB_SALARIO",
   "Cesantías": "LAB_PRESTACIONES_CESANTIAS",
+  // Laboral siempre: renta de trabajo en taxCO (Art. 206-10) y nunca pasivo.
+  "Prima/Bono": "LAB_PRESTACIONES_PRIMA",
   "Honorarios": "LAB_HONORARIOS_SIN_EMPLEADOS",
   "Arriendo": "NOL_ARRIENDO_INMUEBLE",
   "Intereses bancarios": "CAP_INTERESES_BANCARIOS",
@@ -263,7 +265,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user, plan, onUpgrade, onIrAPatrimonio}) {
+export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user, authUser, plan, onUpgrade, onIrAPatrimonio}) {
   const fm = fmt || _fm;
   // Fase 3 commit 5 — gating reader: si role==='reader', los handlers
   // de escritura abortan vía guardEdit() y emiten 'fp3-reader-blocked'.
@@ -290,7 +292,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           const res = await fetchAuth("/.netlify/functions/analyze-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: base64, type: "ingreso", mediaType, userId: user?.id })
+            body: JSON.stringify({ image: base64, type: "ingreso", mediaType, userId: authUser?.id ?? user?.id })
           });
           const data = await res.json();
           if (data.success && data.data) {

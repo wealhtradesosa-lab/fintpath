@@ -13,6 +13,7 @@ import BitcoinRetirementUS from "./components/BitcoinRetirementUS";
 // Estos módulos no se necesitan para ver la portada ni el dashboard: se cargan
 // cuando el usuario entra a su sección.
 const TuNorte = lazy(() => import("./components/TuNorte"));
+import AvisoCambioNivel from "./components/AvisoCambioNivel.jsx";
 const IngresosModule = lazy(() => import("./components/IngresosModule"));
 const GastosModule = lazy(() => import("./components/GastosModule"));
 const DeudasModule = lazy(() => import("./components/DeudasModule"));
@@ -3159,6 +3160,7 @@ export default function FinPath(){
         {/* Independence Progress */}
         <Cd s={{padding:"24px",display:"flex",flexDirection:"column",justifyContent:"center"}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:24}}>Independencia Financiera</div>
+          <AvisoCambioNivel T={T}/>
           <div style={{position:"relative",height:14,background:T.bg3,borderRadius:8,overflow:"hidden",marginBottom:8}}>
             <div style={{height:"100%",width:Math.min(t.ind,150)+"%",maxWidth:"100%",background:t.ind>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#ef4444,#eab308)",borderRadius:8,transition:"width 0.5s"}}/>
           </div>
@@ -3252,7 +3254,7 @@ export default function FinPath(){
     </div>}
         
 case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="assets" plan={plan} onUpgrade={()=>setPg("price")}/>:<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdate={v=>upd("inv",v)} onCrearIngreso={(ing)=>upd("ingresos",[...((u&&u.ingresos)||[]),ing])} onSyncIngreso={(activoId,ing)=>{const lst=(u&&u.ingresos)||[];const hay=lst.some(x=>x&&x.activoId===activoId&&x.desdePatrimonio);let n;if(!ing)n=lst.filter(x=>!(x&&x.activoId===activoId&&x.desdePatrimonio));else if(hay)n=lst.map(x=>(x&&x.activoId===activoId&&x.desdePatrimonio)?{...x,...ing,id:x.id}:x);else n=[...lst,{...ing,id:"ing_"+Date.now()}];if(JSON.stringify(n)!==JSON.stringify(lst))upd("ingresos",n);}} fmt={fm} onImport={()=>setShowImport(true)} user={u} trm={trm||u?.trm||4200} plan={plan} onUpgrade={()=>setPg("price")}/>;
-    case"ing":return isUS?<IncomeModuleUS ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm} plan={plan} onUpgrade={()=>setPg("price")}/>:<IngresosModule owners={u?.owners||[]} ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} onIrAPatrimonio={(activoId)=>{try{if(activoId)sessionStorage.setItem("fp3_abrir_activo",activoId)}catch{}setPg("inv")}} trm={trm} cur={cur} fmt={fm} onImport={()=>setShowImport(true)} user={u} plan={plan} onUpgrade={()=>setPg("price")} user={authUser}/>;
+    case"ing":return isUS?<IncomeModuleUS ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} trm={trm} plan={plan} onUpgrade={()=>setPg("price")}/>:<IngresosModule owners={u?.owners||[]} ingresos={(u&&u.ingresos)||[]} onUpdate={v=>upd("ingresos",v)} onIrAPatrimonio={(activoId)=>{try{if(activoId)sessionStorage.setItem("fp3_abrir_activo",activoId)}catch{}setPg("inv")}} trm={trm} cur={cur} fmt={fm} onImport={()=>setShowImport(true)} user={u} authUser={authUser} plan={plan} onUpgrade={()=>setPg("price")}/>;
     case"trd":return gated("trd","Básico",<div><PageHeader label="Inversiones US" title="Trading" subtitle="Posiciones, P/L, upside y objetivos por acción." rightSlot={<><Bt sz="s" onClick={async()=>{
               const tickers=((u&&u.ibk)||[]).map(p=>p.tk).filter(Boolean).join(",");
               if(!tickers)return alert("No hay posiciones con ticker");
