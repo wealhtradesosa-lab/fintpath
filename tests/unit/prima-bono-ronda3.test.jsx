@@ -84,3 +84,22 @@ describe("sugerencia por nombre (prod: Salario/Otro/Comisiones con prima/bono en
     expect(s).toMatch(/sugerir-prima-descartar[^\n]*descartarSugerenciaPrima\(item\)[^\n]*Es mensual, dejarlo así/);
   });
 });
+
+import { notaPrimaBono, textoRevisarPrima } from "../../src/lib/primaBono.js";
+describe("mes de cobro sin definir en primas migradas", () => {
+  it("sin mes guardado: no afirma diciembre en la UI, pide elegir el mes", () => {
+    const p = migratePrimaBonoAnual(legacy()).ingresos[0];
+    expect(p.mesSupuesto).toBe(true);
+    expect(notaPrimaBono(p)).toBe("anual, mes de cobro sin definir");
+    expect(notaPrimaBono(p)).not.toMatch(/diciembre/);
+    expect(textoRevisarPrima(p)).toBe("Revisa: ¿este valor es mensual o anual? Elige el mes en que la cobras");
+    expect(montoPromedioMensual(p)).toBe(1e6);
+  });
+  it("con mes guardado lo respeta y la nota lo dice", () => {
+    const d = legacy(); d.ingresos[0].mesPago = 6;
+    const p = migratePrimaBonoAnual(d).ingresos[0];
+    expect(p.mesSupuesto).toBeUndefined();
+    expect(notaPrimaBono(p)).toBe("anual, ya cobrado en junio");
+    expect(textoRevisarPrima(p)).toBe("Revisa: ¿este valor es mensual o anual?");
+  });
+});

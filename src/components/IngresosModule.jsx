@@ -14,7 +14,7 @@ import { exportIngresosPDF } from "../lib/pdfSectionExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import { detectarTemplate, TEMPLATES } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
-import { MARCA_REVISAR_PRIMA, MARCA_SUGERIR_PRIMA, debeSugerirPrimaBono, descartarSugerenciaPrimaBono, esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
+import { textoRevisarPrima, MARCA_REVISAR_PRIMA, MARCA_SUGERIR_PRIMA, debeSugerirPrimaBono, descartarSugerenciaPrimaBono, esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -478,7 +478,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     // `undefined` desaparece al serializar a JSON, así que el dato queda limpio.
     const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal, montosMensuales: frecuenciaFinal === "variable" ? montosFinales : undefined };
     // Prima/Bono: siempre total anual (taxCO lo toma una sola vez; el flujo ÷ 12).
-    if (esPrimaBono(item)) { Object.assign(item, normalizarPrimaBono(item)); delete item.pagos; delete item.desdeMes; delete item.hastaMes; item.migPrimaBonoAnual = true; item.revisarFrecuencia = false; }
+    if (esPrimaBono(item)) { Object.assign(item, normalizarPrimaBono(item)); delete item.pagos; delete item.desdeMes; delete item.hastaMes; item.migPrimaBonoAnual = true; item.revisarFrecuencia = false; item.mesSupuesto = false; }
     // Commit 1.5: persistir aportes obligatorios en shape anidado, sólo para Salario
     if (isSalario) {
       item.aportes = {
@@ -971,7 +971,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                             esa frecuencia y confundía la lectura). */}
                         {esPrimaBono(item) ? fm(item.moneda==="USD" ? mensualPrimaBono(item)*(trm||4200) : mensualPrimaBono(item)) : fm(item.moneda==="USD" ? promedioMesActivo(item)*(trm||4200) : promedioMesActivo(item))}
                         {esPrimaBono(item) && <div data-testid="nota-prima-bono" style={{ fontSize: 9, color: T.txt3, fontWeight: 500 }}>{notaPrimaBono(item)}</div>}
-                        {esPrimaBono(item) && item.revisarFrecuencia && <div data-testid="revisar-prima-bono" style={{ fontSize: 9, color: "#f97316", fontWeight: 600 }}>⚠️ {MARCA_REVISAR_PRIMA}</div>}
+                        {esPrimaBono(item) && item.revisarFrecuencia && <div data-testid="revisar-prima-bono" style={{ fontSize: 9, color: "#f97316", fontWeight: 600 }}>⚠️ {textoRevisarPrima(item)}</div>}
                         {debeSugerirPrimaBono(item) && <div data-testid="sugerir-prima-bono" style={{ fontSize: 9, color: "#f97316", fontWeight: 600, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                           <span>⚠️ {MARCA_SUGERIR_PRIMA}</span>
                           <button type="button" data-testid="sugerir-prima-editar" onClick={(e) => { e.stopPropagation(); handleEdit(item); }} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, border: "1px solid #f97316", background: "transparent", color: "#f97316", cursor: "pointer" }}>Revisar</button>

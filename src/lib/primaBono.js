@@ -23,7 +23,10 @@ export function normalizarPrimaBono(item) {
 /** Valor mensual para la lista: total anual ÷ 12. */
 export const mensualPrimaBono = (item) => totalAnualItem(normalizarPrimaBono(item)) / 12;
 
-export const notaPrimaBono = (item) => `anual, ya cobrado en ${MESES[(Number(item?.mesPago) || 1) - 1]}`;
+export const notaPrimaBono = (item) => (item?.mesSupuesto || !(Number(item?.mesPago) >= 1)) ? "anual, mes de cobro sin definir" : `anual, ya cobrado en ${MESES[Number(item.mesPago) - 1]}`;
+export const MARCA_ELEGIR_MES = "Elige el mes en que la cobras";
+/** Texto de la marca Revisa (añade «Elige el mes…» si el mes es supuesto). */
+export const textoRevisarPrima = (item) => item?.mesSupuesto ? `Revisa: ¿este valor es mensual o anual? ${MARCA_ELEGIR_MES}` : "Revisa: ¿este valor es mensual o anual?";
 
 /** Ayuda en vivo del campo: «Se mostrará como $X/mes». */
 export const ayudaPrimaBono = (totalAnual, fmt) => `Se mostrará como ${fmt(Math.round((Number(totalAnual) || 0) / 12))}/mes`;
@@ -43,7 +46,7 @@ export function migratePrimaBonoAnual(d) {
     if (freq === "mensual" || freq === "variable") {
       const total = Math.round(totalAnualItem(i));
       const { pagos, montosMensuales, desdeMes, hastaMes, ...resto } = i;
-      return { ...resto, mensual: total, frecuencia: "anual", mesPago: Number(i.mesPago) > 1 ? Number(i.mesPago) : 12,
+      return { ...resto, mensual: total, frecuencia: "anual", ...(Number(i.mesPago) >= 1 && Number(i.mesPago) <= 12 ? { mesPago: Number(i.mesPago) } : { mesPago: 12, mesSupuesto: true }), // diciembre solo para el cálculo; la UI no lo afirma
         fiscalCode: i.fiscalCode || "LAB_PRESTACIONES_PRIMA", migPrimaBonoAnual: true, revisarFrecuencia: true };
     }
     return { ...normalizarPrimaBono(i), migPrimaBonoAnual: true };
