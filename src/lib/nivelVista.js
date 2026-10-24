@@ -14,7 +14,7 @@ export function vistaNivel({ ip = 0, ob = 0, nivel = null } = {}) {
   if (!(ob > 0) || !nivel?.nivel) return null;
   const n = nivel.nivel;
   const nombre = NIVELES[n - 1].nombre;
-  const pct = Math.round((ip / ob) * 100);
+  const pct = pctPiso(ip, ob);
   const sobraPct = pct > 100 ? pct - 100 : 0;
   const titular = `Estás en ${nombre} (nivel ${n}/5). Tu ingreso pasivo cubre el ${fmtPctEs(pct, 0)} de tus gastos y cuotas`
     + (sobraPct > 0 ? `: te sobra un ${fmtPctEs(sobraPct, 0)} cada mes.` : ".");
@@ -27,6 +27,21 @@ export function vistaNivel({ ip = 0, ob = 0, nivel = null } = {}) {
     siguiente: sig ? sig.nombre : null,
     faltaSiguiente: meta != null ? Math.max(0, meta - ip) : null,
   };
+}
+
+/**
+ * % entero que se muestra, redondeado HACIA ABAJO: 129,99% → 129%, nunca 130%
+ * (si no, el titular diría «130%» con el nivel aún en Independencia). El
+ * epsilon evita que 1,3 × ob en coma flotante (129,9999…) caiga a 129.
+ */
+export function pctPiso(ip, ob) {
+  if (!(ob > 0)) return 0;
+  return Math.floor((ip / ob) * 100 + 1e-9);
+}
+
+/** ✓ «alcanzado» solo para niveles ya superados. Déficit es el punto de partida: nunca lleva ✓. */
+export function llevaCheck(id, actual) {
+  return id > 1 && estadoNivel(id, actual) === "pasado";
 }
 
 /** Estado de cada tarjeta: "pasado" (✓, apagado), "actual" (resaltado) o "pendiente". */

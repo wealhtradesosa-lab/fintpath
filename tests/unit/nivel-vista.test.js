@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { nivelLibertad, umbralNivel, NIVELES } from "../../src/lib/metrics.js";
-import { vistaNivel, estadoNivel } from "../../src/lib/nivelVista.js";
+import { vistaNivel, estadoNivel, llevaCheck, pctPiso } from "../../src/lib/nivelVista.js";
 
 // Caso de la captura de Luis (24-oct-2026): metas Independencia $123.512.386/mes
 // y Abundancia $160.566.101/mes (= 1,3×). Ingreso pasivo al 136%.
@@ -102,5 +102,28 @@ describe("registros viejos «Inversión» sin código", () => {
     confirmarRenta("Fondo viejo", store);
     expect(leerConfirmados(store).has("Fondo viejo")).toBe(true);
     expect(mem.fp_inversion_confirmada).toBe('["Fondo viejo"]');
+  });
+});
+
+describe("QA #58: ✓ de Déficit y % redondeado hacia abajo", () => {
+  it("Déficit nunca lleva ✓, ni en Abundancia", () => {
+    for (const actual of [1, 2, 3, 4, 5]) expect(llevaCheck(1, actual)).toBe(false);
+    expect([2, 3, 4].map((id) => llevaCheck(id, 5))).toEqual([true, true, true]);
+    expect(llevaCheck(5, 5)).toBe(false);
+  });
+  it("129,99% dice 129% con nivel Independencia, no 130%", () => {
+    const ob2 = 100000000, ip2 = 129990000;
+    const nv = nivelLibertad({ ip: ip2, ob: ob2, fl: 1 });
+    expect(nv.nivel).toBe(4);
+    const v = vistaNivel({ ip: ip2, ob: ob2, nivel: nv });
+    expect(v.pct).toBe(129);
+    expect(v.titular).toMatch(/cubre el 129\s?%/);
+    expect(v.titular).not.toMatch(/130/);
+  });
+  it("pctPiso: justo en el umbral da el umbral", () => {
+    expect(pctPiso(130000000, 100000000)).toBe(130);
+    expect(pctPiso(ob * 1.3, ob)).toBe(130);
+    expect(pctPiso(99.999, 100)).toBe(99);
+    expect(pctPiso(1, 0)).toBe(0);
   });
 });

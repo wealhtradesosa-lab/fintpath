@@ -3,7 +3,7 @@ import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
-import { vistaNivel, estadoNivel, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
+import { vistaNivel, estadoNivel, llevaCheck, pctPiso, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
@@ -207,13 +207,11 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
       {vista && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: currentData?.color || T.txt, lineHeight: 1.4 }}>{vista.titular}</div>
-          <div style={{ fontSize: 12, color: T.txt2, marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: T.txt2, marginTop: 4, overflowWrap: "anywhere" }}>
             Tu ingreso pasivo (bruto): <b>{fm(ni)}/mes</b> · Tus gastos y cuotas: <b>{fm(te)}/mes</b>
           </div>
           <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Tus gastos y cuotas incluyen el impuesto de renta estimado.</div>
-          {vista.siguiente && vista.faltaSiguiente > 0 && (
-            <div style={{ fontSize: 12, color: T.txt2, marginTop: 4 }}>Te faltan <b>{fm(vista.faltaSiguiente)}/mes</b> para {vista.siguiente}.</div>
-          )}
+          {/* «Te faltan $X/mes» va solo en el cuadro «Siguiente» (QA #58). */}
         </div>
       )}
 
@@ -250,7 +248,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
             minWidth: overallProg > 3 ? 50 : 0,
           }}>
             {overallProg > 8 && (
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{Math.round(ratio * 100)}%</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{pctPiso(ip, ob)}%</span>
             )}
           </div>
         </div>
@@ -276,7 +274,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
             const est = estadoNivel(l.id, currentLevel);
             return (
               <div key={l.id} style={{ position: "absolute", left: pos(l) + "%", transform: "translateX(-50%)", textAlign: "center", whiteSpace: "nowrap" }}>
-                <div style={{ fontSize: 9, fontWeight: est === "actual" ? 800 : 500, color: est === "actual" ? l.color : T.txt3 }}>{est === "pasado" ? "✓ " : ""}{l.name}</div>
+                <div style={{ fontSize: 9, fontWeight: est === "actual" ? 800 : 500, color: est === "actual" ? l.color : T.txt3 }}>{llevaCheck(l.id, currentLevel) ? "✓ " : ""}{l.name}</div>
               </div>
             );
           })}
@@ -329,12 +327,12 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
             <div key={l.id} onClick={() => setExpandedLvl(expandedLvl === l.id ? null : l.id)} style={{
               background: current ? l.color + "12" : reached ? "rgba(255,255,255,0.02)" : T.bg3,
               border: "1px solid " + (current ? l.color + "40" : reached ? l.color + "20" : T.border),
-              borderRadius: 12, padding: "10px 8px", textAlign: "center", position: "relative",
+              borderRadius: 12, padding: "10px 10px", textAlign: "center", position: "relative", minWidth: 0, overflowWrap: "anywhere",
               opacity: current ? 1 : pasado ? 0.6 : 0.5, cursor: "pointer", transition: "all 0.2s",
             }}>
               {current && <div style={{ position: "absolute", top: 5, right: 5, width: 6, height: 6, borderRadius: "50%", background: l.color }} />}
               <div style={{ fontSize: 18, marginBottom: 4 }}>{l.icon}</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: reached ? l.color : T.txt3, lineHeight: 1.2 }}>{pasado ? `✓ ${l.name} alcanzado` : l.name}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: reached ? l.color : T.txt3, lineHeight: 1.2 }}>{llevaCheck(l.id, currentLevel) ? `✓ ${l.name} alcanzado` : l.name}</div>
               {l.porCobertura ? (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
@@ -429,7 +427,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 9, color: T.txt3 }}>Te faltan</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: nextData.color }}>{fm(monthlyGap)}<span style={{ fontSize: 10 }}>/mes</span></div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: nextData.color, overflowWrap: "anywhere" }}>{fm(monthlyGap)}<span style={{ fontSize: 10 }}>/mes</span></div>
             </div>
           </div>
         </div>
