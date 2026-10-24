@@ -17,3 +17,19 @@ describe("Renta de inversión nueva: totales en pesos de hoy", () => {
     expect(r.filas[2].rentaNueva - sin.filas[2].rentaNueva).toBe(0);
   });
 });
+
+import { textoFaltanteNueva } from "../../src/components/MiFuturo10.jsx";
+describe("Finanzas #56: alerta de faltante con monto invertido y renta de la parte fondeada", () => {
+  const u = { inflacionPct: 5, inv: [{ id: "c", n: "CDT", tp: "CDT", va: 200e6 }], ingresos: [{ nombre: "Salario", mensual: 20e6 }], gas: { Vida: [{ n: "x", m: 8e6 }] }, deu: [] };
+  it("faltan + invertido = monto; renta fondeada = invertido × 14% / 12 = la que entra al flujo", () => {
+    const btg = { preset: "custom", nombre: "BTG", monto: 6.5e9, rendimientoNomPct: 14, anio: 1, tipo: "renta", moneda: "COP" };
+    const sin = proyectarFuturo10(u, {}), r = proyectarFuturo10(u, { nuevas: [btg] });
+    const d = r.nuevasDetalle[0];
+    expect(d.faltante).toBeGreaterThan(0);
+    expect(d.faltante + d.invertido).toBeCloseTo(6.5e9, 0);
+    expect(Math.abs(d.rentaMensualFondeada - d.invertido * 0.14 / 12)).toBeLessThan(100); // <100 pesos sobre millones (punto fijo)
+    expect((r.filas[1].rentaNueva - sin.filas[1].rentaNueva) / 12).toBeCloseTo(d.rentaMensualFondeada, -1);
+    const t = textoFaltanteNueva(d);
+    expect(t).toMatch(/^Faltan \$[\d.]+ para BTG\. Quedaron invertidos \$[\d.]+; esa parte renta \$[\d.]+\/mes\.$/);
+  });
+});

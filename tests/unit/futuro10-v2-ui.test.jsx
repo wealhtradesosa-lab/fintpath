@@ -107,7 +107,7 @@ describe("Bug BTG Pactual: inversión nueva más grande que la plata disponible"
     const a = r.alertas.find((x) => x.tipo === "nueva_sin_plata");
     expect(a.texto).toMatch(/BTG Pactual: te faltan \$/);
     const h = txt(renderToString(<InversionesNuevas items={r.nuevasDetalle} />));
-    expect(h).toContain("BTG Pactual"); expect(h).toContain("Te faltan"); expect(h).toContain("Valor a 10 años");
+    expect(h).toContain("BTG Pactual"); expect(h).toMatch(/Faltan \$[\d.]+ para BTG Pactual\. Quedaron invertidos \$[\d.]+; esa parte renta \$[\d.]+\/mes\./); expect(h).toContain("Valor a 10 años");
   });
   it("una predefinida más grande que lo disponible no se recorta", () => {
     const r = proyectarFuturo10(u, { nuevas: [{ preset: "rfLargo", monto: 5e9 }] });

@@ -490,6 +490,9 @@ export function BarraReinvertir({ disponible = [] }) {
 }
 
 /** Resultado: cada inversión nueva con su línea, su renta y su valor a 10 años. */
+/** Alerta junto a la inversión nueva con faltante (criterio Finanzas #56). */
+export const textoFaltanteNueva = (x) => `Faltan ${plata(x.faltante)} para ${x.nombre}. Quedaron invertidos ${plata(Math.max(0, x.invertido ?? 0))}${x.anio > 1 ? ` (pesos del año ${x.anio})` : ""}` +
+  (x.rentaMensual > 0 ? `; esa parte renta ${plata(x.rentaMensualFondeada)}/mes.` : ".");
 export function InversionesNuevas({ items = [] }) {
   if (!items.length) return null;
   return (
@@ -498,8 +501,8 @@ export function InversionesNuevas({ items = [] }) {
       {items.map((x) => (
         <div key={x.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "6px 0", fontSize: 12 }}>
           <b>{x.nombre}</b> · {plata(x.monto)} en el año {x.anio}{Number.isFinite(x.rendimientoPct) ? ` · ${fmtPctEs(x.rendimientoPct, 1)} anual` : ""}{x.usd ? " · USD" : ""}
-          <div style={{ color: C.tx2 }}>{x.rentaMensual > 0 ? `Renta ${plata(x.rentaMensual)}/mes en pesos del año ${x.anio} · ` : ""}Valor a 10 años {plata(x.valorFinal)} en pesos de hoy{x.rentaMensual > 0 && x.rentaMensualFondeada < x.rentaMensual - 1 && <span style={{ display: "block", color: C.am }}>A tu flujo solo entran {plata(x.rentaMensualFondeada)}/mes: la renta cuenta por la parte que tiene plata.</span>}</div>
-          {x.faltante > 0 && <div role="alert" style={{ color: C.rd }}>Te faltan {plata(x.faltante)} para esta inversión.</div>}
+          <div style={{ color: C.tx2 }}>{x.rentaMensual > 0 ? `Renta ${plata(x.rentaMensual)}/mes en pesos del año ${x.anio} · ` : ""}Valor a 10 años {plata(x.valorFinal)} en pesos de hoy</div>
+          {x.faltante > 0 && <div role="alert" style={{ color: C.rd }}>{textoFaltanteNueva(x)}</div>}
         </div>))}
     </div>
   );

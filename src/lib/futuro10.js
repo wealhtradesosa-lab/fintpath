@@ -205,7 +205,21 @@ export const TIPOS_OBRA = [["", "Igual que hoy"], ["inmueble", "Finca raíz (cas
  * @param {object} user  datos del usuario (inv, ingresos, gas, deu, metas, trm, inflacionPct)
  * @param {object} cfg   escenario v2 (o v1: se migra)
  */
+/** 24-oct-2026 (Finanzas): una inversión nueva solo renta por la parte con plata. Esa parte depende
+ *  del faltante final del año (que a su vez depende del flujo con esa renta): se itera hasta que el
+ *  faltante quede estable, para que flujo, alerta y detalle usen el mismo número. */
 export function proyectarFuturo10(user = {}, cfgIn = {}) {
+  let fondeo = {}, r = proyectarInterno(user, cfgIn, fondeo);
+  for (let k = 0; k < 8; k++) {
+    const nf = {}; let cambio = 0;
+    r.nuevasDetalle.forEach((d) => { nf[d.id] = d.fondeado; cambio = Math.max(cambio, Math.abs((fondeo[d.id] ?? 1) - d.fondeado) * d.monto); });
+    if (cambio < 0.01) break;
+    fondeo = nf; r = proyectarInterno(user, cfgIn, fondeo);
+  }
+  return r;
+}
+
+function proyectarInterno(user = {}, cfgIn = {}, fondeo = {}) {
   const cfg = migrarConfigF10(cfgIn, user);
   const sup = cfg.supuestos || SUPUESTOS_F10;
   const esc = resolverEscenario(cfg.escenario || "base", { ...user, devaluacionRealPct: cfg.devaluacionRealPct ?? user.devaluacionRealPct }, sup);
@@ -265,7 +279,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     const p = sup.presets[x.preset];
     const falta = n(x.monto) - m;
     if (falta > 0) faltaInicial += falta;
-    nuevas.push({ id: "nueva_" + k, nombre: x.nombre || p.nombre, rendPct: rendimientoNuevaPct(x, esc, sup), monto: n(x.monto), anio: 1, faltante: falta, clase: x.preset === "rfCorto" ? "liquido" : "nueva", valor: n(x.monto), crec: rendimientoNuevaPct(x, esc, sup) / 100, usd: !!p.usd, invertible: true });
+    nuevas.push({ id: "nueva_" + k, fondeado: fondeo["nueva_" + k] ?? 1, nombre: x.nombre || p.nombre, rendPct: rendimientoNuevaPct(x, esc, sup), monto: n(x.monto), anio: 1, faltante: falta, clase: x.preset === "rfCorto" ? "liquido" : "nueva", valor: n(x.monto), crec: rendimientoNuevaPct(x, esc, sup) / 100, usd: !!p.usd, invertible: true });
   });
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
   const repartir = (m) => ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] += m * mezcla[k] / 100; });
@@ -342,8 +356,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
       if (c.anio !== t) return;
       const antes = deficit;
       retirar(c.monto);
-      const sinPlata = Math.min(c.monto, deficit - antes);
-      todos.push({ id: c.id, nombre: c.nombre, monto: c.monto, anio: t, faltante: (deficit - antes) / fIdx, fondeado: c.monto > 0 ? 1 - sinPlata / c.monto : 1, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? 0 : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom : 0, /* paga renta: % NOMINAL sobre el capital, capital nominal */ rendPct: c.rendNom * 100, usd: c.usd, invertible: true });
+      todos.push({ id: c.id, nombre: c.nombre, monto: c.monto, anio: t, faltante: (deficit - antes) / fIdx, fondeado: fondeo[c.id] ?? 1, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? 0 : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom : 0, /* paga renta: % NOMINAL sobre el capital, capital nominal */ rendPct: c.rendNom * 100, usd: c.usd, invertible: true });
     });
     // 1) ventas en su año (valor bruto, sin costos ni impuestos)
     activos.forEach((a) => {
@@ -465,7 +478,8 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio, disponible: disp, metaColchon, hayVentas,
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses, rentaPasivaMensual: b.ip },
     activos: activos.filter((a) => a.anioVenta !== 1 || true).map(({ id, nombre, clase, usd, rentaAnual }) => ({ id, nombre, clase, usd, rentaMensual: rentaAnual / 12 })),
-    nuevasDetalle: todos.filter((a) => String(a.id).startsWith("nueva_")).map((a) => ({ id: a.id, nombre: a.nombre, monto: a.monto, anio: a.anio, faltante: a.faltante || 0, valorFinal: a.valor / fin.deflactor, rentaMensual: rentaMensualNuevaAnioN(a), rentaMensualFondeada: rentaMensualNuevaAnioN(a) * (a.fondeado ?? 1), rendimientoPct: a.rendPct, usd: !!a.usd })),
+    nuevasDetalle: todos.filter((a) => String(a.id).startsWith("nueva_")).map((a) => ({ id: a.id, nombre: a.nombre, monto: a.monto, anio: a.anio, faltante: a.faltante || 0, valorFinal: a.valor / fin.deflactor, ...(() => { const fal = Math.min(a.monto, (a.faltante || 0) * Math.pow(1 + inf, (a.anio || 1) - 1)); const fo = a.monto > 0 ? Math.max(0, 1 - fal / a.monto) : 1;
+      return { fondeado: fo, invertido: a.monto - fal, rentaMensual: rentaMensualNuevaAnioN(a), rentaMensualFondeada: rentaMensualNuevaAnioN(a) * (a.fondeado ?? 1) /* la misma que entra al flujo */ }; })(), rendimientoPct: a.rendPct, usd: !!a.usd })),
     // Aviso cambiario solo por activos/inversiones en USD; lo del norte (S&P 500) se avisa aparte.
     hayUSD: todos.some((a) => a.usd && a.valor > 0) || personalizadas.some((a) => a.usd), usdPorNorte: expUSD,
     final: fin,
