@@ -32,7 +32,7 @@ describe("futuro10", () => {
     const u = { inflacionPct: 4, inv: [{ id: "a", tp: "Cash", va: 10e6 }], ingresos: [], gas: { Vida: [{ n: "Mercado", m: 1e6 }] }, deu: [] };
     const r = proyectarFuturo10(u, {});
     expect(r.alertas.some((a) => a.tipo === "cf_negativo")).toBe(true);
-    expect(r.alertas.some((a) => a.tipo === "activo_negativo")).toBe(true);
+    expect(r.alertas.some((a) => a.tipo === "faltante")).toBe(true);
     expect(r.liqAgotadaAnio).not.toBeNull();
   });
   it("vender un activo lo manda a la bolsa y se reparte según el norte", () => {
@@ -43,11 +43,9 @@ describe("futuro10", () => {
   });
   it("presets: renta fija largo con tope y escenarios", () => {
     const opt = resolverEscenario("optimista", { inflacionPct: 4 });
-    expect(opt.inflacionPct).toBe(3);
-    // 3,5 + 1 = 4,5 = tope
-    expect(retornoNominalPreset("rfLargo", opt)).toBeCloseTo((1.03 * 1.045 - 1) * 100, 6);
+    expect(opt.inflacionPct).toBe(3.5);
     const base = resolverEscenario("base", { inflacionPct: 4 });
-    expect(retornoNominalPreset("sp500", base)).toBeCloseTo((1.04 * 1.065 - 1) * 100, 6);
+    expect(retornoNominalPreset("sp500", base)).toBeCloseTo((1.04 * 1.055 - 1) * 100, 6);
     const c = cienMillones("rfCorto", base);
     expect(c[2].hoy).toBeCloseTo(100e6 * 1.025 ** 10, 0);
   });

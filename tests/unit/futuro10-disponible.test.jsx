@@ -29,7 +29,8 @@ describe("Plata disponible para invertir", () => {
     });
     const d1 = r.disponible[0];
     expect(d1.ventas).toBe(600e6);
-    expect(d1.asignado).toBe(150e6);
+    expect(d1.asignado).toBe(100e6);
+    expect(d1.adicionales).toBeCloseTo(50e6 / 1.04, 0); // reinversión vieja → «Construir o mejorar» año 1
     const metaColchon = r.hoy.salidaMensual * SUPUESTOS_F10.colchonMeses;
     expect(d1.liquidezHoy).toBeCloseTo(Math.max(0, 80e6 - metaColchon), 0);
     expect(r.disponible[2].adicionales).toBeCloseTo(20e6 / 1.04 ** 3, 0);
