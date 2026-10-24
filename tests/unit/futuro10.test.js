@@ -471,3 +471,19 @@ describe("futuro10 · al vender se van la renta y todos los gastos del activo", 
     expect(r.filas[1].ingresos / 12).toBeCloseTo(50e6, -2);
   });
 });
+
+describe("futuro10 · desglose del año 1 cuadra con la proyección", () => {
+  it("entra y sale suman lo mismo que la fila del año 1, y avisa lo que se reinvierte", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "pm", n: "PM", tp: "Real Estate", va: 9000e6 }, { id: "l", n: "Lote", tp: "Lote", va: 400e6 }],
+      ingresos: [{ nombre: "Arriendo PM", categoria: "Arriendo", mensual: 47e6, activoId: "pm" }, { nombre: "Fee", categoria: "Honorarios", mensual: 13e6 }],
+      gas: { Vida: [{ n: "Familia", m: 21e6 }] }, deu: [{ id: "f", n: "Ford", mt: 157e6, pg: 4.5e6, ts: 20 }] };
+    const r = proyectarFuturo10(u, { decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "BTG", monto: 8500e6, anio: 1, rendimientoNomPct: 14, pctRecibe: 0 }], reinversiones: [{ activoId: "l", monto: 300e6, rentaMensual: 8e6 }] });
+    const sum = (l) => l.reduce((s, x) => s + x.mensual, 0);
+    expect(sum(r.desglose.entra)).toBeCloseTo(r.filas[1].ingresos / 12, -2);
+    expect(sum(r.desglose.sale)).toBeCloseTo(r.filas[1].gastos / 12, -2);
+    expect(r.desglose.reinvierte[0].nombre).toBe("BTG");
+    expect(r.desglose.reinvierte[0].mensual).toBeCloseTo(8500e6 * 0.14 / 12, -3);
+    const r2 = proyectarFuturo10(u, { decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "BTG", monto: 8500e6, anio: 1, rendimientoNomPct: 14, pctRecibe: 100 }] });
+    expect(r2.desglose.entra.find((x) => x.nombre === "BTG").mensual).toBeCloseTo(8500e6 * 0.14 / 12, -3);
+  });
+});

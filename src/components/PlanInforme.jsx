@@ -146,6 +146,12 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
         <Ficha l="Le gana a la inflación" v={real == null ? "—" : `${real >= 0 ? "+" : ""}${fmPct(real, 1)}`} s={`real al año · en ${ganaN} de ${gana.length} años`} col={real != null && real >= 0 ? INF.ok : INF.bad} />
       </div>
 
+      {(r.desglose?.reinvierte || []).length > 0 && <div style={{ ...card, borderColor: INF.dorado }}>
+        <h3 style={h3}>Lo que rinde y no te llega al mes</h3>
+        <p style={lead}>Estas inversiones producen, pero todo se reinvierte: hacen crecer el patrimonio y no suman a lo que entra cada mes. Si alguna te paga (una renta fija como BTG), cámbiala en el paso 3, Tu plata → «De lo que rinde, ¿cuánto te llega?».</p>
+        {r.desglose.reinvierte.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${INF.linea}` }}><span>{x.nombre} <span style={{ color: INF.tx2, fontSize: 11 }}>· {fmPct(x.pct, 1)} al año</span></span><b style={{ color: INF.dorado, whiteSpace: "nowrap" }}>{fmM(x.mensual)}/mes se reinvierte</b></div>)}
+      </div>}
+
       <Toggle />
 
       <div style={card}>
@@ -156,8 +162,8 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} />
             <YAxis {...eje} tickFormatter={fmEje} width={72} />
-            <Tooltip content={<ChartTooltip formatter={tip} />} />
-            <Area type="stepAfter" dataKey="base" stackId="b" stroke="none" fill="transparent" isAnimationActive={false} legendType="none" name=" " />
+            <Tooltip content={(q) => <ChartTooltip {...q} payload={(q.payload || []).filter((x) => x.dataKey !== "base")} formatter={tip} />} />
+            <Area type="stepAfter" dataKey="base" stackId="b" stroke="none" fill="transparent" isAnimationActive={false} legendType="none" name=" " tooltipType="none" />
             <Area type="stepAfter" dataKey="sobra" stackId="b" stroke="none" fill={INF.franja} isAnimationActive={false} name="Sobra" />
             {marcas.map((m, i) => <ReferenceLine key={m.anio} x={anioTxt(m.anio)} stroke={INF.ref} strokeDasharray="2 3"
               label={(q) => <text x={q.viewBox.x + 4} y={q.viewBox.y - 6 - (i % 2) * 14} fill={INF.tx2} fontSize={11}>{m.txt.length > 26 ? m.txt.slice(0, 25) + "…" : m.txt}</text>} />)}
@@ -201,6 +207,20 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
         </div>
       </div>
 
+      {r.desglose && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
+        {[["3 · Lo que entra cada mes", "En el año 1, partida por partida. Las rentas de tus inmuebles van netas de sus costos.", r.desglose.entra, INF.azul, f1.ingresos / 12], ["Lo que sale cada mes", "En el año 1: tus gastos de Egresos, las cuotas de las deudas que siguen y los gastos futuros que ya empezaron.", r.desglose.sale, INF.teja, f1.gastos / 12]].map(([t, l, lista, col, tot]) => {
+          const mx = Math.max(1, ...lista.map((x) => Math.abs(x.mensual)));
+          return <div key={t} style={card}>
+            <h3 style={h3}>{t} · {fmM(tot)}</h3>
+            <p style={lead}>{l}</p>
+            {lista.map((x, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(100px,42%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
+              <span style={{ minWidth: 0 }}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre}</span>{x.nota && <span style={{ fontSize: 11, color: INF.tx2 }}>{x.nota}</span>}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ height: 12, width: `${Math.max(1, Math.abs(x.mensual) / mx * 60)}%`, background: x.mensual < 0 ? INF.gris : col, borderRadius: 3 }} /><span style={{ whiteSpace: "nowrap", color: INF.tx2 }}>{fmM(x.mensual)}</span></span>
+            </div>)}
+          </div>;
+        })}
+      </div>}
+
       <div style={card}>
         <h3 style={h3}>Año a año: todo lo que produce el patrimonio</h3>
         <p style={lead}>Abajo, en tonos azules y verdes, lo que llega a la cuenta cada año (rentas y pensiones). Arriba, lo que se queda invertido y crece. El número sobre cada barra es el total que produjo el patrimonio ese año. La línea roja es lo que sale para vivir.</p>
@@ -230,7 +250,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
         <div style={card}>
-          <h3 style={h3}>3 · Patrimonio neto por año</h3>
+          <h3 style={h3}>4 · Patrimonio neto por año</h3>
           <p style={lead}>Cada color es una inversión; el número de arriba es el patrimonio neto (activos menos deudas).</p>
           <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={280}>
             <BarChart data={pat} margin={{ top: 22, right: 6, left: 0, bottom: 0 }}>
@@ -281,7 +301,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
       </div>
 
       <div style={card}>
-        <h3 style={h3}>4 · Año por año</h3>
+        <h3 style={h3}>5 · Año por año</h3>
         <p style={lead}>{nombre}. {modo === "real" ? "En pesos de hoy." : "En pesos de cada año."} Cobertura = lo que entra ÷ lo que sale.</p>
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 560 }}>
           <thead><tr><th style={{ ...th, textAlign: "left" }}>Año</th><th style={th}>Patrimonio</th>{sL.map((s) => <th key={s.id} style={th}>{(s.nombre || "").slice(0, 18)}</th>)}<th style={th}>Deuda</th><th style={th}>Cobertura</th></tr></thead>

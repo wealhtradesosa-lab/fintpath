@@ -17,7 +17,8 @@
 //     gastos vinculados).
 // Supuestos de referencia definidos con Finpathia · Finanzas (24-oct-2026); centralizados en SUPUESTOS_F10.
 // ═══════════════════════════════════════════════════════════════════════════
-import { calcularBase, tipoActivo, esLiquido, INFLACION_DEFAULT_PCT } from "./metrics.js";
+import { calcularBase, tipoActivo, esLiquido, tipoIngreso, INFLACION_DEFAULT_PCT } from "./metrics.js";
+import { montoPromedioMensual } from "./flowHelpers.js";
 
 export const SUPUESTOS_F10 = {
   validadoPor: "Finpathia · Finanzas, 24-oct-2026",
@@ -464,6 +465,44 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     filas.push(f);
   }
   const fin = filas[filas.length - 1];
+  // 24-oct-2026 (Santiago: "no me dan los números"). Lo que entra y lo que
+  // sale en el AÑO 1, partida por partida, al mes (como su plan SALEM: «Lo que
+  // entra cada mes» / «Lo que sale cada mes»). Sale de las mismas reglas del
+  // motor; si algo no se puede atribuir a una partida, queda como «Ajustes»
+  // para que la suma siempre cuadre con la proyección.
+  const desglose = (() => {
+    const f1 = filas[1]; if (!f1) return { entra: [], sale: [] };
+    const fxI = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? trm : 1);
+    const mesDe = (x, campo = "mensual") => montoPromedioMensual({ ...x, mensual: n(x?.[campo]) * fxI(x) });
+    const sigue = (x) => x && x.sim !== false && !(x.activoId && vendidosIds.has(x.activoId));
+    const conRenta = new Set(Object.keys(bOp.rentaNetaPorActivo || {}));
+    const nombreActivo = (id) => { const a = (user.inv || []).find((y) => y.id === id); return a ? a.n || a.nombre : "un activo"; };
+    const entra = [];
+    (user.ingresos || []).filter(sigue).forEach((i) => {
+      if (i.activoId && conRenta.has(i.activoId) && tipoIngreso(i) === "pasivo") return; // va como renta neta del activo
+      const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: v, nota: tipoIngreso(i) === "pasivo" ? "renta" : "trabajo" });
+    });
+    Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada) return; if (v > 0.5) entra.push({ nombre: `Renta de ${nombreActivo(id)}`, mensual: v, nota: "neta de sus costos" }); });
+    const ff = 1 + inf;
+    todos.forEach((a) => {
+      const p0 = (filas[0].porActivo || []).find((x) => x.id === a.id);
+      if (a.rentaPct) { const v = (p0 ? p0.valor : a.valor) * a.rentaPct / 12; if (v > 0.5) entra.push({ nombre: a.nombre, mensual: v, nota: `${(a.rentaPct * 100).toFixed(1).replace(".", ",")} % al año que te llega` }); }
+      const frac = (m) => Math.min(1, Math.max(0, (12 - n(m)) / 12));
+      if (a.rentaNuevaAnual > 0 && frac(a.rentaDesdeMes) > 0) entra.push({ nombre: `${a.nombre} (renta nueva)`, mensual: a.rentaNuevaAnual * frac(a.rentaDesdeMes) * ff / 12, nota: n(a.rentaDesdeMes) > 0 ? `desde el mes ${n(a.rentaDesdeMes)}` : "" });
+      (a.rentasExtra || []).forEach((x) => { if (frac(x.desdeMes) > 0) entra.push({ nombre: `${a.nombre} (renta nueva)`, mensual: x.anual * frac(x.desdeMes) * ff / 12, nota: n(x.desdeMes) > 0 ? `desde el mes ${n(x.desdeMes)}; promedio del año 1` : "" }); });
+    });
+    fut.ingresos.filter((x) => x.desde <= 1 && x.hasta >= 1).forEach((x) => entra.push({ nombre: x.nombre, mensual: x.mensual * ff, nota: "ingreso futuro" }));
+    const sale = [];
+    Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).filter(sigue).forEach((g) => {
+      if (g.activoId && conRenta.has(g.activoId)) return; // ya restado de la renta de su activo
+      const v = montoPromedioMensual(g) * fxI(g); if (v > 0.5) sale.push({ nombre: g.n || g.nombre || cat, mensual: v, nota: cat }); }));
+    deudasVivas.filter((d) => d && d.sim !== false && !esUnica(d)).forEach((d) => { const v = montoPromedioMensual({ ...d, mensual: n(d.pg ?? d.pago) * fxI(d) }); if (v > 0.5) sale.push({ nombre: `Cuota ${d.n || d.nombre || "deuda"}`, mensual: v, nota: "deuda" }); });
+    (fut.gastos || []).filter((x) => x.desde <= 1 && x.hasta >= 1).forEach((x) => sale.push({ nombre: x.nombre, mensual: x.anual * ff / 12, nota: "gasto futuro" }));
+    const cuadra = (lista, total) => { const s = lista.reduce((t, x) => t + x.mensual, 0); const dif = total - s; if (Math.abs(dif) > Math.max(1, total * 0.005)) lista.push({ nombre: "Ajustes (crecimiento del año, cuotas que terminan, costos)", mensual: dif, nota: "" }); return lista.sort((a, b) => b.mensual - a.mensual); };
+    // Lo que rinde y NO te llega al mes (se reinvierte): BTG, IBKR, fondos…
+    const reinvierte = (filas[1].porActivo || []).map((x) => { const a = todos.find((y) => y.id === x.id); return a && a.clase !== "inmueble" && a.clase !== "vehiculo" && (x.crece || 0) > 0.5 && !(a.rentaPct > 0) && !(a.rentaAnual > 0) ? { id: a.id, nombre: a.nombre, mensual: x.crece / 12, pct: (a.crec || 0) * 100 } : null; }).filter(Boolean).sort((a, b) => b.mensual - a.mensual);
+    return { entra: cuadra(entra, f1.ingresos / 12), sale: cuadra(sale, f1.gastos / 12), reinvierte };
+  })();
   // Cómo queda repartida la plata al final, inversión por inversión.
   const defl = fin.deflactor || 1;
   const repartoFinal = [
@@ -475,6 +514,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
     bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
     reparto: repartoFinal,
+    desglose,
     vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => ({ id: x.id, nombre: x.n || x.nombre || "Activo", valor: n(x.va) * fxA(x) })),
     reinversionesDetalle,
     nuevasDetalle: [...nuevas.map((x) => ({ nombre: x.nombre, monto: x.montoInicial ?? 0, anio: 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0, fuente: x.fuente })), ...personalizadas.map((c) => ({ nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta, fuente: "liquidez" }))],
