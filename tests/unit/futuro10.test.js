@@ -599,3 +599,15 @@ describe("vínculo a un activo borrado", () => {
     expect(sugerirVinculados(user, "o").ingresos[0].sugerido).toBe(true);
   });
 });
+
+describe("ingresos que se acaban", () => {
+  it("apagar una renta baja los ingresos desde ese año", () => {
+    const user = { trm: 4000, inflacionPct: 4, inv: [], ingresos: [{ nombre: "renta orlando", tipo: "pasivo", mensual: 20e6, frecuencia: "mensual" }, { nombre: "Salario", mensual: 30e6, frecuencia: "mensual" }], gas: {} };
+    const a = proyectarFuturo10(user, { decisiones: {} });
+    const r = proyectarFuturo10(user, { decisiones: {}, ingresosTerminan: { "i:0": 3 } });
+    expect(r.filas[1].ingresos).toBeCloseTo(a.filas[1].ingresos, -3);
+    expect(a.filas[3].ingresos - r.filas[3].ingresos).toBeGreaterThan(12 * 20e6);
+    const r1 = proyectarFuturo10(user, { decisiones: {}, ingresosTerminan: { "i:0": 1 } });
+    expect(r1.desglose.entra.some((x) => /orlando/.test(x.nombre))).toBe(false);
+  });
+});

@@ -344,6 +344,18 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const v = montoPromedioMensual(g) * fxG(g); if (!(v > 0.5)) return;
     gastosHoy.push({ key: `${cat}::${idx}`, nombre: g.c || g.n || g.nombre || cat, cat, mensual: v, neteado: !!(g.activoId && conRentaOp.has(g.activoId)) });
   }));
+  // 24-oct-2026 (Santiago: "uno debería poder apagar y prender rentas que ya
+  // no van, gastos que ya no van"). Igual que los gastos: cada ingreso de hoy
+  // sigue o se acaba desde un año (cfg.ingresosTerminan: { "i:índice": año }).
+  const fxIng = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? b.trm : 1);
+  const ingresosHoy = [];
+  (user.ingresos || []).forEach((i, k) => {
+    if (!i || i.sim === false || (i.activoId && vendidosIds.has(i.activoId)) || fuera.has(`i:${k}`)) return;
+    const v = montoPromedioMensual(i) * fxIng(i); if (!(v > 0.5)) return;
+    ingresosHoy.push({ key: `i:${k}`, nombre: i.nombre || i.categoria || "Ingreso", mensual: v, pasivo: tipoIngreso(i) === "pasivo" });
+  });
+  const ingTerminan = cfg.ingresosTerminan || {};
+  const ingSeVan = ingresosHoy.filter((x) => ingTerminan[x.key]).map((x) => ({ ...x, desde: Math.min(N, Math.max(1, Math.round(n(ingTerminan[x.key])) || 1)) }));
   const terminan = cfg.gastosTerminan || {};
   const seVan = gastosHoy.filter((g) => !g.neteado && terminan[g.key]).map((g) => ({ ...g, desde: Math.min(N, Math.max(1, Math.round(n(terminan[g.key])) || 1)) }));
   // 24-oct-2026 (Santiago: "los gráficos de los escenarios están muy flojos…
@@ -414,6 +426,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     creceAnio += creceCan.colchon + creceCan.liquidez + creceCan.renta + creceCan.crecimiento;
     // 2) flujo del año (ingresos y gastos ya crecidos)
     if (t > 1) { ingresos *= 1 + gIng; gastos *= 1 + gGas; pasivo *= 1 + gIng; }
+    ingSeVan.filter((x) => x.desde === t).forEach((x) => { const v = x.mensual * 12 * Math.pow(1 + gIng, t - 1); ingresos = Math.max(0, ingresos - v); if (x.pasivo) pasivo = Math.max(0, pasivo - v); });
     // Renta nueva de un activo modificado: pesos de hoy, crece con la inflación.
     const rentaPers = todos.reduce((s, a) => s + (a.rentaPct ? a.valor / (1 + a.crec) * a.rentaPct : 0), 0);
     const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * Math.pow(1 + inf, t) : 0), 0);
@@ -522,7 +535,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const conRenta = new Set(Object.keys(bOp.rentaNetaPorActivo || {}));
     const nombreActivo = (id) => { const a = (user.inv || []).find((y) => y.id === id); return a ? a.n || a.nombre : "un activo"; };
     const entra = [];
-    (user.ingresos || []).filter((i, k) => sigue(i) && !fuera.has(`i:${k}`)).forEach((i) => {
+    (user.ingresos || []).filter((i, k) => sigue(i) && !fuera.has(`i:${k}`) && !ingSeVan.some((x) => x.key === `i:${k}` && x.desde <= 1)).forEach((i) => {
       if (i.activoId && conRenta.has(i.activoId) && tipoIngreso(i) === "pasivo") return; // va como renta neta del activo
       const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: v, nota: tipoIngreso(i) === "pasivo" ? "renta · de tu página Ingresos" : "trabajo · de tu página Ingresos" });
     });
@@ -562,7 +575,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
     reparto: repartoFinal,
     desglose,
-    gastosHoy, seVan,
+    gastosHoy, seVan, ingresosHoy, ingSeVan,
     vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => ({ id: x.id, nombre: x.n || x.nombre || "Activo", valor: n(x.va) * fxA(x) })),
     reinversionesDetalle,
     nuevasDetalle: [...nuevas.map((x) => ({ id: x.id, nombre: x.nombre, monto: x.montoInicial ?? 0, anio: 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0, fuente: x.fuente })), ...personalizadas.map((c) => ({ nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta, fuente: "liquidez" }))],

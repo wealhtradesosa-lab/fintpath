@@ -123,7 +123,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         </div>
         <div style={card}>
           <Seccion n={2} titulo="Lo que viene" sub="Lo que empieza más adelante: una pensión, un local que te entregan, la universidad de los hijos." />
-          <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} gastosHoy={r.gastosHoy || []} fuentes={r.fuentes || []} />
+          <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} gastosHoy={r.gastosHoy || []} ingresosHoy={r.ingresosHoy || []} fuentes={r.fuentes || []} />
         </div>
       </>)}
 
@@ -262,7 +262,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 }
 
 const ANIOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuentes = [] }) {
+function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingresosHoy = [], fuentes = [] }) {
   const [verTodos, setVerTodos] = useState(false);
   const f = { ingresos: [], activos: [], gastos: [], ...(cfg.futuros || {}) };
   const put = (k, arr) => set("futuros", { ...f, [k]: arr });
@@ -409,6 +409,9 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuent
       <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("gastos", [...(f.gastos || []), { nombre: "", anual: "", desde: 4, anios: 4 }])}>+ Agregar gasto futuro</button>
       {/* 24-oct-2026 (Santiago: "¿cómo quita uno items de gastos que ya no
           van? por ejemplo mantenimientos"). Solo cambia el escenario. */}
+      <h4 style={{ margin: "16px 0 4px" }}>Ingresos que se acaban</h4>
+      <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Tus ingresos de hoy (de Ingresos). Apaga los que ya no van en este escenario y desde cuándo; tus datos de Ingresos no cambian.</div>
+      <SeAcaba lista={ingresosHoy} term={cfg.ingresosTerminan || {}} setTerm={(nx) => set("ingresosTerminan", nx)} frase="Dejas de recibir" />
       <h4 style={{ margin: "16px 0 4px" }}>Gastos que se acaban</h4>
       <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Tus gastos de hoy (de Egresos). Marca los que dejas de pagar en este escenario y desde cuándo; tus datos de Egresos no cambian.</div>
       {(() => {
@@ -622,4 +625,26 @@ function SeVaConVenta({ user, activoId, d, setD }) {
       {auto.length + visibles.length === 0 && <div style={{ fontSize: 12, color: C.tx2 }}>No encontré rentas ni gastos con este nombre. Búscalos abajo.</div>}
       {lista.length > 0 && <button style={{ ...btn(false), marginTop: 6, fontSize: 12 }} onClick={() => setVerTodo(!verTodo)}>{verTodo ? "Ver solo los marcados" : "Buscar otro ingreso o gasto"}</button>}
     </div>);
+}
+
+// Lista Sigue / Se acaba (desde un año). La usan los ingresos que se acaban.
+function SeAcaba({ lista, term, setTerm, frase }) {
+  const [verTodos, setVerTodos] = useState(false);
+  const orden = [...lista].sort((a, b) => (!!term[b.key] - !!term[a.key]) || b.mensual - a.mensual);
+  const visibles = verTodos ? orden : orden.slice(0, 8);
+  const setT = (k, v) => { const nx = { ...term }; if (v) nx[k] = v; else delete nx[k]; setTerm(nx); };
+  const total = orden.filter((g) => term[g.key]).reduce((sm, g) => sm + g.mensual, 0);
+  if (!orden.length) return <div style={{ fontSize: 12, color: C.tx2 }}>No tienes ingresos cargados.</div>;
+  return <>
+    {visibles.map((g) => { const t = term[g.key]; return (
+      <div key={g.key} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "6px 0", borderTop: `1px solid ${C.bd}` }}>
+        <span style={{ flex: "1 1 160px", minWidth: 0, textDecoration: t ? "line-through" : "none", color: t ? C.tx2 : C.tx }}>{g.nombre}</span>
+        <span style={{ fontSize: 13, whiteSpace: "nowrap", color: C.tx2 }}>{plata(Math.round(g.mensual))}/mes</span>
+        <button style={btn(!t)} onClick={() => setT(g.key, null)}>Sigue</button>
+        <button style={btn(!!t)} onClick={() => setT(g.key, t || 1)}>Se acaba</button>
+        {t && <select style={{ ...inp, width: "auto" }} value={t} onChange={(e) => setT(g.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Desde ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>}
+      </div>); })}
+    {orden.length > 8 && <button style={{ ...btn(false), marginTop: 6 }} onClick={() => setVerTodos(!verTodos)}>{verTodos ? "Ver menos" : `Ver todos (${orden.length})`}</button>}
+    {total > 0 && <div style={{ fontSize: 12, color: C.am, marginTop: 6 }}>{frase} {plata(Math.round(total))} al mes.</div>}
+  </>;
 }
