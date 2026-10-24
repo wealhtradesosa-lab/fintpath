@@ -15,7 +15,7 @@
 //     modela impuestos). La renta de cada activo sale de rentaNetaPorActivo,
 //     que ya respeta `rentaOrigen` (manual = neta: no se restan otra vez los
 //     gastos vinculados).
-// Supuestos validados por Finanzas (24-oct-2026); editables en SUPUESTOS_F10.
+// Supuestos validados por Finanzas (24-oct-2026); centralizados en SUPUESTOS_F10.
 // ═══════════════════════════════════════════════════════════════════════════
 import { calcularBase, tipoActivo, esLiquido, INFLACION_DEFAULT_PCT } from "./metrics.js";
 
@@ -163,6 +163,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   // ── Lo que viene: ingresos y activos que empiezan más adelante ──────────
   const fut = leerFuturos(cfg.futuros, esc, sup);
   fut.activos.forEach((x, k) => todos.push({ id: "futuro_" + k, nombre: x.nombre, clase: x.clase === "inmueble" ? "inmueble" : "otro", valor: 0, crec: x.crec, entrega: x.entrega, pagos: x.pagos, usd: false, invertible: true, rentaNuevaAnual: x.rentaMensual * 12, rentaDesde: x.rentaDesde }));
+  let expUSD = canasta.crecimiento > 0;
   for (let t = 1; t <= N; t++) {
     // Saca plata en orden: colchón → liquidez → líquidos existentes → renta → crecimiento.
     const retirar = (monto) => {
@@ -218,6 +219,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
         alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En el año ${t} pasas plata de tu liquidez a ${a.nombre}.` });
       }
     });
+    if (canasta.crecimiento > 0) expUSD = true;
     const liquidez = colchon + canasta.liquidez + todos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
     const deflactor = Math.pow(1 + inf, t);
     const activosT = valorTotal();
@@ -235,7 +237,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses },
     activos: activos.map(({ id, nombre, clase, usd }) => ({ id, nombre, clase, usd })),
-    hayUSD: [...activos, ...nuevas, ...personalizadas].some((a) => a.usd) || mezcla.crecimiento > 0,
+    hayUSD: todos.some((a) => a.usd && a.valor > 0) || [...activos, ...nuevas, ...personalizadas].some((a) => a.usd && (a.valor || a.monto) > 0) || expUSD,
     final: fin,
     // Comparativo contra la inflación: solo lo invertible (sin vehículos).
     vsInflacionReal: fila0.invertible > 0 ? (fin.invertibleReal / fila0.invertible - 1) * 100 : null,
@@ -318,6 +320,14 @@ export function leerFuturos(f = {}, esc, sup = SUPUESTOS_F10) {
       rentaMensual: Math.max(0, n(x.rentaMensual)), rentaDesde: anio(x.rentaDesde, entrega) };
   }).filter((x) => x.pagos.some((p) => p.monto > 0));
   return { ingresos, activos };
+}
+
+/** Mezcla personalizada: debe sumar 100%. Devuelve null o el mensaje para mostrar. */
+export function validarMezcla(m) {
+  if (!m) return null;
+  const s = ["liquidez", "renta", "crecimiento"].reduce((t, k) => t + (Number(m[k]) || 0), 0);
+  if (Math.abs(s - 100) < 0.01) return null;
+  return `La mezcla suma ${String(Math.round(s * 10) / 10).replace(".", ",")}%. Ajústala para que sume 100%.`;
 }
 
 export function normalizarMezcla(m = {}) {

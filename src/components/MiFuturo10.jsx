@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, valorizacionHintPct, leerModifica, rendimientoHintPct } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, valorizacionHintPct, leerModifica, rendimientoHintPct, validarMezcla } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 
 const C = { bg: "#111827", bg2: "#1f2937", bd: "rgba(255,255,255,0.1)", tx: "#e5e7eb", tx2: "#9ca3af", gn: "#22c55e", rd: "#ef4444", am: "#f59e0b" };
@@ -14,11 +14,13 @@ const btn = (on) => ({ padding: "8px 12px", borderRadius: 8, border: `1px solid 
 const inp = { width: "100%", boxSizing: "border-box", background: C.bg, color: C.tx, border: `1px solid ${C.bd}`, borderRadius: 6, padding: "6px 8px", fontSize: 13 };
 const PASOS = ["Hoy", "Decide", "Reinvierte", "Resultado", "Escenarios", "Cada inversión"];
 const plata = (v) => "$" + fmtMilesEs(v);
-export const AVISO_F10 = "Proyección ilustrativa, no asesoría. Proyección estimada con supuestos editables; no es una recomendación de inversión. No incluye impuestos.";
+export const AVISO_F10 = "Proyección ilustrativa, no asesoría. Proyección estimada con supuestos generales que puedes ajustar en algunos pasos; no es una recomendación de inversión. No incluye impuestos.";
 
 const CONFIG_INICIAL = { escenario: "base", decisiones: {}, norte: "equilibrio", mezcla: null, nuevas: [], reinversiones: [], futuros: { ingresos: [], activos: [] } };
 
-export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0 }) {
+export const MSG_DEMO_F10 = "En modo demo no se guardan escenarios.";
+
+export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false }) {
   const [paso, setPaso] = useState(pasoInicial);
   const [cfg, setCfg] = useState(CONFIG_INICIAL);
   const [nombreEsc, setNombreEsc] = useState("");
@@ -31,12 +33,13 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const bolsa = (user.inv || []).filter((a) => cfg.decisiones[a.id]?.accion === "vende").length;
 
   const guardar = () => {
+    if (demo) return; // la demo nunca escribe en la cuenta real
     const nuevo = { id: "f10_" + Date.now(), nombre: nombreEsc.trim() || `Escenario ${escenarios.length + 1}`, creado: new Date().toISOString(), config: cfg };
     onGuardar && onGuardar({ ...guardado, escenarios: [...escenarios, nuevo].slice(-10) });
     setNombreEsc("");
     track("futuro10_guardar", { escenario: cfg.escenario, norte: cfg.mezcla ? "personalizado" : cfg.norte, cantidad_escenarios: escenarios.length + 1 });
   };
-  const borrar = (id) => onGuardar && onGuardar({ ...guardado, escenarios: escenarios.filter((e) => e.id !== id) });
+  const borrar = (id) => !demo && onGuardar && onGuardar({ ...guardado, escenarios: escenarios.filter((e) => e.id !== id) });
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
@@ -128,6 +131,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             {["liquidez", "renta", "crecimiento"].map((k) => <label key={k} style={{ fontSize: 12, color: C.tx2 }}>{k[0].toUpperCase() + k.slice(1)} (%)
               {cfg.mezcla ? <InputDecimalEs style={inp} value={cfg.mezcla[k]} onChange={(v) => set("mezcla", { ...cfg.mezcla, [k]: v })} /> : <div style={{ color: C.tx, fontSize: 15 }}>{fmtPctEs(mezcla[k], 0)}</div>}</label>)}
           </div>
+          {validarMezcla(cfg.mezcla) && <p role="alert" style={{ color: C.rd, fontSize: 12 }}>{validarMezcla(cfg.mezcla)}</p>}
           <h4>Inversiones nuevas</h4>
           {cfg.nuevas.map((x, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6, marginBottom: 6 }}>
@@ -191,7 +195,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             <b style={{ color: C.rd }}>Alertas de liquidez</b>
             {dedupe(r.alertas).map((a, i) => <div key={i} style={{ fontSize: 12 }}>{a.texto}</div>)}
           </div>}
-          {r.hayUSD && <p style={{ color: C.am, fontSize: 12 }}>Lo que está en dólares tiene riesgo cambiario: si el peso se revalúa, vale menos en pesos. El escenario base supone devaluación real de 0%.</p>}
+          {r.hayUSD && <p style={{ color: C.am, fontSize: 12 }}>Lo que está en dólares tiene riesgo cambiario: si el peso se revalúa, vale menos en pesos. El escenario {esc.nombre.toLowerCase()} supone devaluación real de {fmtPctEs(SUPUESTOS_F10.presets.sp500.devaluacionRealPct)}.</p>}
         </div>
       )}
 
@@ -200,8 +204,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <h3 style={{ marginTop: 0 }}>Guardar y comparar</h3>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <input style={{ ...inp, flex: "1 1 160px", width: "auto" }} placeholder="Nombre del escenario" value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />
-            <button style={btn(true)} onClick={guardar}>Guardar en tu cuenta</button>
+            <button style={btn(!demo)} disabled={demo} onClick={guardar}>Guardar en tu cuenta</button>
           </div>
+          {demo && <p style={{ color: C.am, fontSize: 12 }}>{MSG_DEMO_F10}</p>}
           {escenarios.length === 0 ? <p style={{ color: C.tx2 }}>Aún no tienes escenarios guardados.</p> : (
             <div style={{ overflowX: "auto", marginTop: 10 }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 320 }}>
@@ -232,7 +237,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       )}
 
       <details style={card}>
-        <summary style={{ cursor: "pointer" }}>Supuestos usados (editables, validados por Finanzas)</summary>
+        <summary style={{ cursor: "pointer" }}>Supuestos usados (validados por Finanzas)</summary>
+        <p style={{ color: C.tx2, fontSize: 12 }}>Puedes cambiar el escenario arriba, la valorización de cada activo en el paso 2 y la mezcla o el rendimiento de una inversión personalizada en el paso 3.</p>
         <TablaSupuestos esc={esc} />
       </details>
     </div>
@@ -298,8 +304,8 @@ function Grid({ items }) {
 function TablaSupuestos({ esc }) {
   const s = SUPUESTOS_F10, p = s.presets;
   const filas = [
-    ["Inflación", fmtPctEs(esc.inflacionPct)],
-    ["Renta fija corto", `inflación + ${fmtPctEs(p.rfCorto.realSpread)}`],
+    ["Inflación", `${fmtPctEs(esc.inflacionPct)} al año`],
+    ["Renta fija corto", `inflación + ${fmtPctEs(p.rfCorto.realSpread + esc.retornoSpread)} ≈ ${fmtPctEs(retornoNominalPreset("rfCorto", esc))} al año`],
     ["Renta fija largo", `inflación + ${fmtPctEs(p.rfLargo.realSpread)} (tope + ${fmtPctEs(p.rfLargo.topeSpread)})`],
     ["Finca raíz", `renta neta ${fmtPctEs(p.fincaRaiz.rentaNetaPct)} + valorización = inflación`],
     ["S&P 500 (USD)", `${fmtPctEs(esc.spRealPct)} real; devaluación real ${fmtPctEs(p.sp500.devaluacionRealPct)}`],
@@ -308,5 +314,8 @@ function TablaSupuestos({ esc }) {
     ["Ajuste de retornos del escenario", fmtPctEs(esc.retornoSpread)],
     ["Colchón de liquidez", `${s.colchonMeses} meses de gastos`],
   ];
-  return <table style={{ width: "100%", fontSize: 12, marginTop: 8 }}><tbody>{filas.map(([a, b]) => <tr key={a}><td style={{ color: C.tx2, padding: "3px 0" }}>{a}</td><td style={{ textAlign: "right" }}>{b}</td></tr>)}</tbody></table>;
+  return <div style={{ fontSize: 12, marginTop: 8 }}>{filas.map(([a, b]) => (
+    <div key={a} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "2px 8px", padding: "4px 0", borderTop: `1px solid ${C.bd}` }}>
+      <span style={{ color: C.tx2 }}>{a}</span><span style={{ textAlign: "right", overflowWrap: "anywhere", minWidth: 0 }}>{b}</span>
+    </div>))}</div>;
 }
