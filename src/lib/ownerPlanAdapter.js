@@ -25,7 +25,7 @@
 //     o null si no hay ingresos.
 
 import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "./taxCO.js";
-import { sugerenciaPvAfcDe } from "./sugerenciaPvAfc.js";
+import { sugerenciaPvAfc } from "./sugerenciaPvAfc.js";
 import { totalAnualItem } from "./flowHelpers.js";
 import { GAS_JUR_NO_DEDUCIBLE } from "./fiscalCodes.js";
 
@@ -54,6 +54,8 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
   const est = estimarImpuesto(userLike, { ag: DEFAULT_AG });
   const d = est.detalle[0];
   if (!d) return null;
+  // Aporte sugerido (regla Finanzas) y ahorro: mismo helper que las recomendaciones.
+  const sugPV = sugerenciaPvAfc(userLike, owner, { ag: DEFAULT_AG });
 
   // ── Cosméticos locales derivados de los props (no tributarios) ──
   const patTotal = (inv || []).reduce((s, i) => s + (+i.va || 0), 0);
@@ -131,8 +133,9 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     ingAnual: d.ingreso,
     // FIX abr 2026 (mismo razonamiento que jurídica):
     // impSin/impCon ahora apuntan a impBruto/impOptBruto, no a saldo.
-    aportePvAfc: sugerenciaPvAfcDe(d).aporte,
-    ahorroPvAfc: sugerenciaPvAfcDe(d).ahorro,
+    sugPvAfc: sugPV,
+    aportePvAfc: sugPV.aporte,
+    ahorroPvAfc: sugPV.ahorro || 0,
     impSin: d.impBruto != null ? d.impBruto : d.impuesto,
     impCon: d.impOptBruto != null ? d.impOptBruto : d.impOptimizado,
     tasaSin: d.tasaBruta != null ? d.tasaBruta : d.tasa,

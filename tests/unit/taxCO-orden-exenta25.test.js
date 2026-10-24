@@ -165,3 +165,41 @@ it("recomendaciones estratégicas: sin copy de 25 % / 2.500 UVT para PV/AFC", ()
   const pv = recs.find((r) => r.id === "aporte_pv_estrategico");
   if (pv) { expect(pv.descripcion).toMatch(/podría ser exento/); expect(pv.etiqueta).toBe(ETIQUETA_AG_RECOS); expect(pv.nota).toBe(NOTA_FIJA_PV_AFC); }
 });
+
+import { sugerenciaPvAfc, textoTopePvAfc } from "../../src/lib/sugerenciaPvAfc.js";
+describe("Regla Finanzas: aporte = min(flujo libre tras fondo de emergencia, espacio fiscal)", () => {
+  const gastosArr = (m) => [{ id: "g1", owner: "o1", cat: "Vivienda", nombre: "Gastos", m, tipo: "fijo" }];
+  const casos = (salMes, gastoMes) => {
+    const u = user(salMes, { Vivienda: gastosArr(gastoMes) });
+    const fd = adapterOwnerPlan({ owner: u.owners[0], ingresos: u.ingresos, gastos: gastosArr(gastoMes), inv: [], deu: [], trm: 4200 });
+    const d = estimarImpuesto(u, { ag: AG_RECOS }).detalle[0];
+    const recs = generarRecomendacionesEstrategicas(u, u.owners[0], { ...d, impuesto: Math.max(d.impBruto, 1e6) }) || [];
+    return { u, fd, r1: recs.find((r) => r.id === "aporte_pv_estrategico"), s: sugerenciaPvAfc(u, u.owners[0], { ag: AG_RECOS }) };
+  };
+  it("flujo libre bajo: tarjeta y REC 1 bajan igual, ahorro = taxCO con ESE aporte", () => {
+    const alto = casos(15e6, 0), bajo = casos(15e6, 11e6);
+    expect(bajo.fd.aportePvAfc).toBeLessThan(alto.fd.aportePvAfc);
+    expect(bajo.fd.aportePvAfc).toBe(bajo.s.aporte);
+    expect(bajo.s.aporte).toBe(Math.round(Math.min(bajo.s.flujoLibreAnual, bajo.s.espacioFiscal)));
+    expect(bajo.r1.inversion.monto).toBe(bajo.fd.aportePvAfc);
+    expect(bajo.r1.ahorroAnual.monto).toBe(bajo.fd.ahorroPvAfc);
+    const sin = estimarImpuesto(bajo.u, { ag: AG_RECOS }).detalle[0];
+    const con = estimarImpuesto({ ...bajo.u, gas: { ...bajo.u.gas, ...aporte("AP_TRIB_PV", bajo.s.aporte / 12) } }, { ag: AG_RECOS }).detalle[0];
+    expect(bajo.fd.ahorroPvAfc).toBe(Math.round(sin.impBruto - con.impBruto));
+    expect(bajo.r1.descripcion).toMatch(/^Aportando \$[\d.]+\/mes \(\$[\d.]+ al año\) pagarías \$[\d.]+ menos de impuesto\./);
+    expect(bajo.r1.tope).toBe(`Tope legal: $${Math.round(bajo.s.topeAnual / 12).toLocaleString("es-CO")}/mes`);
+    // nunca proporcional: el ahorro con el aporte reducido no es una regla de tres
+    expect(bajo.fd.ahorroPvAfc).not.toBe(Math.round(alto.fd.ahorroPvAfc * bajo.s.aporte / alto.fd.aportePvAfc));
+    console.log("FIG bajo", bajo.s.flujoLibreAnual, bajo.s.aporte, bajo.fd.ahorroPvAfc);
+  });
+  it("tope legal a $15M/mes = $4.320.000/mes", () => {
+    expect(textoTopePvAfc(casos(15e6, 0).s)).toBe("Tope legal: $4.320.000/mes");
+  });
+  it("sin flujo libre: no hay cifra de ahorro en tarjeta ni en REC 1", () => {
+    const c = casos(15e6, 20e6);
+    expect(c.s.sinFlujo).toBe(true);
+    expect(c.fd.aportePvAfc).toBe(0); expect(c.fd.ahorroPvAfc).toBe(0);
+    expect(c.r1.ahorroAnual.monto).toBe(0);
+    expect(c.r1.descripcion).toMatch(/^Hoy no te queda flujo libre/);
+  });
+});

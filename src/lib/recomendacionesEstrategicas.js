@@ -1,6 +1,6 @@
 import { fmtPctEs } from "./formato.js";
 import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "./taxCO.js";
-import { sugerenciaPvAfcDe } from "./sugerenciaPvAfc.js";
+import { sugerenciaPvAfc, textoSugerenciaPvAfc, textoTopePvAfc } from "./sugerenciaPvAfc.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · recomendacionesEstrategicas.js · Sesión 1-may-2026
 //
@@ -254,22 +254,24 @@ function recomendacionesNaturalLaboral(perfil) {
   );
   if (!yaAportaPV) {
     // Tope conjunto PV+AFC: 30% del ingreso laboral, máx 3.800 UVT/año (UVT del AG_RECOS).
-    // Mismo aporte y ahorro que la tarjeta del simulador (helper compartido).
-    const detAg = perfil._user && perfil._owner ? estimarImpuesto({ ...perfil._user, owners: [perfil._owner] }, { ag: AG_RECOS }).detalle.find((d) => d.name === perfil._owner.name) : null;
-    const { aporte: aporteSugerido, ahorro: ahorroBase } = sugerenciaPvAfcDe(detAg);
-    const ahorroPV = Math.round(ahorroBase);
+    // Mismo aporte y ahorro que la tarjeta del simulador (helper compartido, regla Finanzas).
+    const sug = sugerenciaPvAfc(perfil._user, perfil._owner, { ag: AG_RECOS });
+    const aporteSugerido = sug.aporte;
+    const ahorroPV = sug.ahorro || 0;
+    const topeAnual = sug.topeAnual;
     recs.push({
       id: "aporte_pv_estrategico",
       ejecutaEn: "personal",
       icono: "💼",
       titulo: "Pensión voluntaria o AFC",
-      descripcion: `Hasta $${aporteSugerido.toLocaleString("es-CO")} al año en pensión voluntaria o AFC podría ser exento (hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
-      accion: `Si decides aportar, puedes hacerlo por nómina o directo al fondo, hasta $${aporteSugerido.toLocaleString("es-CO")} al año.`,
+      tope: textoTopePvAfc(sug),
+      descripcion: `${textoSugerenciaPvAfc(sug)} Hasta $${Math.round(topeAnual / 12).toLocaleString("es-CO")}/mes en pensión voluntaria o AFC podría ser exento (hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
+      accion: sug.sinFlujo ? "Primero completa tu fondo de emergencia; luego revisa si te queda flujo para aportar." : `Si decides aportar, puedes hacerlo por nómina o directo al fondo: $${aporteSugerido.toLocaleString("es-CO")} al año.`,
       inversion: {
         monto: aporteSugerido,
         descripcion: "Sale de tu liquidez pero queda ahorrado a tu nombre.",
       },
-      ahorroAnual: { monto: ahorroPV, calculoDetallado: `menos de impuesto si aportas $${aporteSugerido.toLocaleString("es-CO")} al año. Diferencia de impuesto calculada con y sin el aporte.` },
+      ahorroAnual: { monto: ahorroPV, calculoDetallado: sug.sinFlujo ? textoSugerenciaPvAfc(sug) : `menos de impuesto si aportas $${aporteSugerido.toLocaleString("es-CO")} al año. Diferencia de impuesto calculada con y sin el aporte.` },
       roi: { porcentaje: aporteSugerido > 0 ? (ahorroPV / aporteSugerido) * 100 : 0, descripcion: "Ahorro en impuesto sobre lo aportado." },
       baseLegal: "Arts. 126-1 y 126-4 ET",
       caveat: "Si lo retiras antes y para otro fin, pierdes el beneficio.",
@@ -280,7 +282,7 @@ function recomendacionesNaturalLaboral(perfil) {
   }
 
   // REC 2: Cuenta AFC — mismo aporte/ahorro compartido (tope conjunto con PV).
-  const sugAFC = sugerenciaPvAfcDe(perfil._user && perfil._owner ? estimarImpuesto({ ...perfil._user, owners: [perfil._owner] }, { ag: AG_RECOS }).detalle.find((d) => d.name === perfil._owner.name) : null);
+  const sugAFC = sugerenciaPvAfc(perfil._user, perfil._owner, { ag: AG_RECOS });
   recs.push({
     id: "cuenta_afc",
       ejecutaEn: "personal",
@@ -288,7 +290,7 @@ function recomendacionesNaturalLaboral(perfil) {
     titulo: "Cuenta AFC (Ahorro para Fomento de la Construcción)",
     descripcion: "Hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC. Solo para destinar a compra/mejora de vivienda o pago de hipoteca.",
     accion: "Abre una cuenta AFC en cualquier banco (Bancolombia, Davivienda, etc.) y aporta hasta el cap legal.",
-    ahorroAnual: { monto: Math.round(sugAFC.ahorro), calculoDetallado: `menos de impuesto si aportas $${sugAFC.aporte.toLocaleString("es-CO")} al año (tope compartido con pensión voluntaria). Diferencia de impuesto calculada con y sin el aporte.` },
+    ahorroAnual: { monto: Math.round(sugAFC.ahorro || 0), calculoDetallado: sugAFC.sinFlujo ? textoSugerenciaPvAfc(sugAFC) : `menos de impuesto si aportas $${sugAFC.aporte.toLocaleString("es-CO")} al año (tope compartido con pensión voluntaria). Diferencia de impuesto calculada con y sin el aporte.` },
     inversion: { monto: sugAFC.aporte, descripcion: "El monto aportado queda en tu cuenta AFC." },
     roi: { porcentaje: sugAFC.aporte > 0 ? Math.round(sugAFC.ahorro / sugAFC.aporte * 1000) / 10 : 0, descripcion: "Ahorro en impuesto sobre lo aportado; el saldo se puede usar para vivienda." },
     nota: NOTA_FIJA_PV_AFC,
