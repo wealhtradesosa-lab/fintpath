@@ -120,4 +120,32 @@ describe("futuro10", () => {
       expect(r1.filas[2].patrimonio).toBeCloseTo(proyectarFuturo10(u, { supuestos: cero }).filas[2].patrimonio, 0);
     });
   });
+
+  describe("Lo que viene", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", tp: "Cash", va: 2000e6 }], ingresos: [], gas: {}, deu: [] };
+    it("ingreso futuro solo afecta los años activos", () => {
+      const r0 = proyectarFuturo10(u, { supuestos: cero });
+      const r = proyectarFuturo10(u, { supuestos: cero, futuros: { ingresos: [{ nombre: "Pensión", mensual: 5e6, desde: 4, hasta: 6 }] } });
+      [1, 2, 3, 7, 10].forEach((t) => expect(r.filas[t].cf).toBeCloseTo(r0.filas[t].cf, 0));
+      [4, 5, 6].forEach((t) => expect(r.filas[t].cf - r0.filas[t].cf).toBeCloseTo(60e6 * 1.04 ** t, 0));
+    });
+    it("pagos del activo futuro no cambian el patrimonio y se valoriza desde la entrega", () => {
+      const r0 = proyectarFuturo10(u, { supuestos: cero });
+      const fut = { activos: [{ nombre: "Local", clase: "inmueble", valor: 800e6, cuotaInicial: 300e6, anioCuota: 1, entrega: 2, valorizacionNomPct: 10 }] };
+      const r = proyectarFuturo10(u, { supuestos: cero, futuros: fut });
+      expect(r.filas[1].patrimonio).toBeCloseTo(r0.filas[1].patrimonio, 0);
+      // año 2: la cuota no se valoriza antes de la entrega, pero la caja sí habría rendido 4%
+      expect(r.filas[2].patrimonio).toBeCloseTo(r0.filas[2].patrimonio - 300e6 * 0.04, 0);
+      expect(r.filas[3].patrimonio - r0.filas[3].patrimonio).toBeCloseTo(800e6 * (1.1 - 1.04) - 300e6 * 0.04 * 1.04, -2);
+    });
+    it("renta del activo futuro desde el año Z", () => {
+      const r0 = proyectarFuturo10(u, { supuestos: cero });
+      const r = proyectarFuturo10(u, { supuestos: cero, futuros: { activos: [{ nombre: "Local", valor: 500e6, entrega: 2, rentaMensual: 4e6, rentaDesde: 3 }] } });
+      expect(r.filas[2].cf).toBeCloseTo(r0.filas[2].cf, 0);
+      expect(r.filas[3].cf - r0.filas[3].cf).toBeCloseTo(48e6 * 1.04 ** 3, 0);
+    });
+    it("escenario viejo sin futuros carga igual", () => {
+      expect(proyectarFuturo10(u, {}).final.patrimonio).toBeCloseTo(proyectarFuturo10(u, { futuros: undefined }).final.patrimonio, 0);
+    });
+  });
 });
