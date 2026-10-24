@@ -118,6 +118,7 @@ export default function NumberInput({
   const inputRef = useRef(null);
   const pendingCursor = useRef(null);
   const tecleado = useRef(false);
+  const [avisoCentavos, setAvisoCentavos] = useState("");
 
   // Sync desde el padre cuando no estamos editando (por si cambia value)
   useEffect(() => {
@@ -139,7 +140,20 @@ export default function NumberInput({
   const handleChange = (e) => {
     const input = e.target;
     // Monto: no se puede teclear la coma decimal; lo pegado tras la coma se descarta.
-    const rawInput = allowDecimals ? input.value : input.value.split(",")[0];
+    // 24-oct-2026 (QA PR #56: teclear «1.500,50» quedaba 150.050): antes la coma se
+    // borraba de la pantalla y los dígitos siguientes se pegaban a la parte entera.
+    // Ahora la coma y lo que sigue se ven, se ignoran para el valor (sin centavos,
+    // igual que la importación de Excel) y se avisa; al salir del campo se limpian.
+    if (!allowDecimals && input.value.includes(",")) {
+      const ent = parseNumber(input.value.split(",")[0], { allowDecimals: false });
+      tecleado.current = true;
+      setDisplayValue(input.value);
+      setAvisoCentavos(typeof ent === "number" ? `Sin centavos: usamos $${formatNumber(ent)}.` : "");
+      if (typeof ent === "number") onChange(ent);
+      return;
+    }
+    if (avisoCentavos) setAvisoCentavos("");
+    const rawInput = input.value;
     tecleado.current = true;
     const oldCursor = input.selectionStart;
     const oldDisplay = displayValue;
@@ -225,6 +239,7 @@ export default function NumberInput({
 
   const handleBlur = () => {
     setIsFocused(false);
+    setAvisoCentavos("");
     // Al perder foco: expandir shortcuts pendientes (500M → 500.000.000)
     const parsed = parseNumber(displayValue, { allowDecimals });
     if (typeof parsed === "number") {
@@ -236,7 +251,7 @@ export default function NumberInput({
     }
   };
 
-  return (
+  return (<>
     <input
       ref={inputRef}
       type="text"
@@ -251,7 +266,8 @@ export default function NumberInput({
       autoComplete="off"
       {...rest}
     />
-  );
+    {avisoCentavos && <span role="alert" style={{ display: "block", fontSize: 11, color: "#f59e0b", marginTop: 2 }}>{avisoCentavos}</span>}
+  </>);
 }
 
 /** Campo de tasa/porcentaje (admite decimales) según su etiqueta; el resto son montos en pesos. */

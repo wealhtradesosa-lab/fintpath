@@ -10,13 +10,14 @@ describe("QA v3: montos sin decimales y foco", () => {
   it("monto: «1.500,50» → 1500 (se descarta lo decimal)", () => {
     expect(pnQA("1.500,50", { allowDecimals: false })).toBe(1500);
   });
-  it("monto: teclear coma no la deja en pantalla", () => {
+  it("monto: la coma y los centavos se ven mientras escribes, valen 1.500 y se limpian al salir", () => {
     const on = vi.fn();
     const { container } = render(<NumberInputQA allowDecimals={false} value="" onChange={on} />);
     const el = container.querySelector("input");
     fireEvent.change(el, { target: { value: "1.500,50" } });
-    expect(el.value).toBe("1.500");
     expect(on).toHaveBeenLastCalledWith(1500);
+    fireEvent.blur(el);
+    expect(el.value).toBe("1.500");
   });
   it("teclear justo tras el foco no reselecciona lo escrito", async () => {
     vi.useFakeTimers();
