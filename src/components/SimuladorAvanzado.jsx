@@ -3,6 +3,7 @@ import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
+import { vistaNivel, estadoNivel } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
@@ -164,6 +165,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
   const pos = (l) => Math.min((umbral(l) / (ob * TOPE)) * 100, 100);
   const currentData = currentLevel > 0 ? LEVELS[currentLevel - 1] : null;
   const nextData = currentLevel < 5 ? LEVELS[currentLevel] : null;
+  const vista = vistaNivel({ ip, ob, nivel });
   const monthlyGap = nextData
     ? (currentLevel === 1 ? Math.max(0, -(fl || 0)) : Math.max(0, (umbral(nextData) || 0) - ni))
     : 0;
@@ -196,6 +198,21 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
           </div>
         )}
       </div>
+
+      {/* 24-oct-2026 — Un solo titular con el nivel. Antes el badge decía
+          Abundancia y el cuadro de abajo «¡Independencia!». */}
+      {vista && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: currentData?.color || T.txt, lineHeight: 1.4 }}>{vista.titular}</div>
+          <div style={{ fontSize: 12, color: T.txt2, marginTop: 4 }}>
+            Tu ingreso pasivo (bruto): <b>{fm(ni)}/mes</b> · Tus gastos y cuotas: <b>{fm(te)}/mes</b>
+          </div>
+          <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Tus gastos y cuotas incluyen el impuesto de renta estimado.</div>
+          {vista.siguiente && vista.faltaSiguiente > 0 && (
+            <div style={{ fontSize: 12, color: T.txt2, marginTop: 4 }}>Te faltan <b>{fm(vista.faltaSiguiente)}/mes</b> para {vista.siguiente}.</div>
+          )}
+        </div>
+      )}
 
       {/* 21-oct-2026 — El flujo negativo ya no borra el escalón que los activos
           se ganaron (metrics.js → nivelLibertad). Pero tampoco se puede callar:
@@ -237,7 +254,9 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
 
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.txt3, marginTop: 4 }}>
           <span>0% de tus gastos cubierto</span>
-          <span>{ratio > 1 ? `la barra topa en 100% — vas en ${fmtPctEs(ratio * 100, 0)}` : "100% = tus gastos cubiertos"}</span>
+          {vista?.desborde
+            ? <span style={{ fontSize: 11, fontWeight: 800, color: currentData?.color || T.gd }}>{vista.desborde}</span>
+            : <span>100% = tus gastos cubiertos</span>}
         </div>
 
         {/* Level labels */}
@@ -251,10 +270,10 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
             </div>
           </div>
           {LEVELS.filter((l) => l.porCobertura).map((l) => {
-            const reached = currentLevel >= l.id;
+            const est = estadoNivel(l.id, currentLevel);
             return (
-              <div key={l.id} style={{ position: "absolute", left: pos(l) + "%", transform: "translateX(-50%)", textAlign: "center" }}>
-                <div style={{ fontSize: 9, fontWeight: reached ? 700 : 500, color: reached ? l.color : T.txt3 }}>{l.name}</div>
+              <div key={l.id} style={{ position: "absolute", left: pos(l) + "%", transform: "translateX(-50%)", textAlign: "center", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: 9, fontWeight: est === "actual" ? 800 : 500, color: est === "actual" ? l.color : T.txt3 }}>{est === "pasado" ? "✓ " : ""}{l.name}</div>
               </div>
             );
           })}
@@ -277,23 +296,25 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
       {/* 5 Level mini-cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 6, marginBottom: 16 }}>
         {LEVELS.map((l) => {
-          const reached = currentLevel >= l.id;
-          const current = currentLevel === l.id;
+          const est = estadoNivel(l.id, currentLevel);
+          const current = est === "actual";
+          const pasado = est === "pasado";
+          const reached = current; // solo la tarjeta actual va a color
           const needed = umbral(l);
           return (
             <div key={l.id} onClick={() => setExpandedLvl(expandedLvl === l.id ? null : l.id)} style={{
               background: current ? l.color + "12" : reached ? "rgba(255,255,255,0.02)" : T.bg3,
               border: "1px solid " + (current ? l.color + "40" : reached ? l.color + "20" : T.border),
               borderRadius: 12, padding: "10px 8px", textAlign: "center", position: "relative",
-              opacity: reached || current ? 1 : 0.5, cursor: "pointer", transition: "all 0.2s",
+              opacity: current ? 1 : pasado ? 0.6 : 0.5, cursor: "pointer", transition: "all 0.2s",
             }}>
-              {reached && <div style={{ position: "absolute", top: 5, right: 5, width: 6, height: 6, borderRadius: "50%", background: l.color }} />}
+              {current && <div style={{ position: "absolute", top: 5, right: 5, width: 6, height: 6, borderRadius: "50%", background: l.color }} />}
               <div style={{ fontSize: 18, marginBottom: 4 }}>{l.icon}</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: reached ? l.color : T.txt3, lineHeight: 1.2 }}>{l.name}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: reached ? l.color : T.txt3, lineHeight: 1.2 }}>{pasado ? `✓ ${l.name} alcanzado` : l.name}</div>
               {l.porCobertura ? (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                    {fm(needed)}<span style={{ fontSize: 9 }}>/m</span>
+                    Meta: {fm(needed)}<span style={{ fontSize: 9 }}>/mes</span>
                   </div>
                   <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
                     de ingreso pasivo<br />{l.def.umbral === "esencial" ? "paga lo esencial" : l.def.factor > 1 ? "paga todo, con margen" : "paga todo"}
@@ -378,8 +399,8 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
       {currentLevel >= 5 && (
         <div style={{ background: "linear-gradient(135deg, rgba(234,179,8,0.1), rgba(234,179,8,0.04))", border: "1px solid rgba(234,179,8,0.25)", borderRadius: 12, padding: 20, textAlign: "center" }}>
           <div style={{ fontSize: 32 }}>👑</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: T.gd }}>¡Independencia!</div>
-          <div style={{ fontSize: 13, color: T.txt2 }}>Ingreso pasivo = {Math.round(ratio * 100)}% de gastos y cuotas</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: T.gd }}>¡Abundancia!</div>
+          <div style={{ fontSize: 13, color: T.txt2 }}>Estás en el último nivel{vista?.desborde ? `: ${vista.desborde} de tus gastos y cuotas` : ""}.</div>
         </div>
       )}
     </div>
