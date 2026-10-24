@@ -317,7 +317,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [] }) {
             {!x.activoId && <span style={{ fontSize: 11 }}>Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. Sube con la inflación.</span>}</label>
           <label style={lbl}>¿De dónde sale?<select style={inp} value={x.activoId || ""} onChange={(e) => upI(i, { activoId: e.target.value || null })}><option value="">No sale de un activo (pensión, honorarios…)</option>{activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>
           <label style={lbl}>Empieza{selAnio(x.desde || 1, (v) => upI(i, { desde: v || 1 }))}</label>
-          {x.activoId && <label style={lbl}>¿Cuánto se valoriza al año? (%, opcional)<InputDecimalEs style={inp} placeholder="Ej.: 5" value={x.valorizacionNomPct ?? ""} onChange={(v) => upI(i, { valorizacionNomPct: v })} /></label>}
+          {x.activoId && <label style={lbl}>¿Cuánto sube el valor de {(activos.find((y) => y.id === x.activoId) || {}).nombre || "ese activo"} al año? (%, opcional)<InputDecimalEs style={inp} placeholder="Ej.: 5" value={x.valorizacionNomPct ?? ""} onChange={(v) => upI(i, { valorizacionNomPct: v })} /><span style={{ fontSize: 11 }}>Es el valor del activo, no la renta. La renta sube cada año con la inflación.</span></label>}
           {/* 24-oct-2026 (Santiago, con la pensión puesta "termina año 7" sin querer:
               "no veo esa opción"). En el iPhone «Sigue» quedaba escondida arriba de la
               rueda. Ahora son dos botones y el año solo aparece si termina. */}
