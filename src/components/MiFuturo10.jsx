@@ -278,6 +278,13 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         </div>
       )}
 
+      {/* 24-oct-2026 (Santiago: "que sea fluido el proceso, una etapa te lleva a
+          la siguiente"). Al final de cada paso, el siguiente. */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {paso > 0 && <button style={{ ...btn(false), padding: "12px" }} onClick={() => { ir(paso - 1); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>← Atrás</button>}
+        {paso < PASOS.length - 1 && <button style={{ ...btn(true), flex: 1, padding: "12px", fontWeight: 600 }} onClick={() => { ir(paso + 1); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>Siguiente: {PASOS[paso + 1]} →</button>}
+      </div>
+
       <details style={card}>
         <summary style={{ cursor: "pointer" }}>Supuestos de referencia (estimaciones de largo plazo)</summary>
         <p style={{ color: C.tx2, fontSize: 12 }}>Puedes cambiar el escenario arriba y, en el paso 3, la mezcla o el rendimiento de una inversión personalizada.</p>
