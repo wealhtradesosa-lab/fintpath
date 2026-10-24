@@ -37,15 +37,16 @@ describe("Escenarios: los cuatro pasos se pintan", () => {
   });
   it("1 · qué tienes hoy", () => expect(pinta(1)).toContain("Se vende hoy"));
   it("2 · qué quieres proyectar", () => expect(pinta(2)).toBeTruthy());
-  it("3 · una pregunta por pantalla, con el hilo de la plata arriba", () => {
+  // 24-oct-2026 (Santiago: "hagámoslo práctico, intuitivo"). Ya no es una
+  // pregunta por pantalla: las cinco van de corrido, con índice para saltar.
+  it("3 · el taller completo de corrido, con el hilo de la plata arriba", () => {
     const html = pinta(3);
     expect(html).toContain("Tu plata en este escenario");
-    // Los cuatro títulos están en el paso a paso de arriba…
-    for (const t of ["¿Qué vendes o transformas?", "¿Qué deudas pagas con eso?", "¿En qué reinviertes lo que queda?", "¿Qué más va a pasar?"]) expect(html, t).toContain(t);
-    // …pero solo la primera pregunta está abierta.
+    for (const t of ["Qué vendes", "Qué deudas pagas", "En qué inviertes", "Qué pasa después", "Lo que sobra cada mes"]) expect(html, t).toContain(t);
     expect(html).toContain("Marca lo que sale");            // cuerpo de la 1
-    expect(html).not.toContain("Cuánto le metes");          // cuerpo de la 3
-    expect(html).not.toContain("¿Y lo que te sobre cada mes?"); // cuerpo de la 4
+    expect(html).toContain("Cuánto le metes");              // cuerpo de la 3
+    expect(html).toContain("¿Y lo que te sobre cada mes?"); // cuerpo de la 5
+    expect(html).toContain("Y qué se viene");               // lo que llega solo
   });
   it("4 · tu camino a 10 años", () => expect(pinta(4)).toBeTruthy());
 

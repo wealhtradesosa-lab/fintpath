@@ -229,7 +229,7 @@ function BarraCanastas({ c, alto = 14 }) {
 // ("¿cómo que lo seguro? eso no se entiende") y estaba METIDO entre lo que
 // tienes y lo que haces, que es donde más estorba: son cosas que llegan solas,
 // no decisiones tuyas. Va después de tus movimientos.
-const PASOS = [["Qué tienes hoy", "tu punto de partida"], ["Con qué molde arrancas", "las reglas del escenario"], ["Qué cambios vas a hacer", "tus inversiones y lo que se viene"], ["Tu camino a 10 años", "el resultado"]];
+const PASOS = [["Qué tienes hoy", "tu punto de partida"], ["Tus escenarios", "elige uno o crea otro"], ["Arma el escenario", "qué vendes, a dónde va la plata, qué viene"], ["Tu camino a 10 años", "el resultado"]];
 
 // ─── La barra que no se va ───────────────────────────────────────────────────
 // 21-oct-2026. El número a 10 años vivía dentro del paso 3 ("Resultado en
@@ -1107,6 +1107,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
     { n: 3, t: "¿En qué reinviertes lo que queda?", c: "A dónde va cada peso y con qué regla." },
     { n: 4, t: "¿Qué más va a pasar?", c: "Lo que viene después y qué haces con lo que sobra cada mes." },
   ];
+  const SUBS_IDX = [{ n: 1, t: "Qué vendes" }, ...(base.deudas.length > 0 ? [{ n: 2, t: "Qué deudas pagas" }] : []), { n: 3, t: "En qué inviertes" }, { n: 4, t: "Qué pasa después" }, { n: 5, t: "Lo que sobra cada mes" }, { n: 6, t: "Lo que llega solo" }];
   const iSub = Math.max(0, SUBS.findIndex((x) => x.n === sub));
   const irSub = (n) => { setSub(n); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* noop */ } };
   const Hilo = () => (
@@ -1171,7 +1172,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={card}>
-        <div style={F.h2}>3 · Qué cambios vas a hacer</div>
+        <div style={F.h2}>3 · Arma el escenario</div>
         <div style={{ ...F.body, marginTop: 4 }}>Un escenario es una decisión concreta: qué vendes, qué pagas, a dónde va cada peso y con qué regla, y qué haces después.</div>
         {/* 22-oct-2026 (Santiago: "no sé por qué se hicieron también los
             escenarios de seguridad, balance y otro que ni siquiera he
@@ -1192,7 +1193,10 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
         </div>
       </div>
       <Hilo />
-      <SubPasos />
+      {/* 24-oct-2026 (Santiago: "hagámoslo práctico, intuitivo"). Ya no hay
+          sub-pestañas: las cinco preguntas van de corrido, con el resultado
+          vivo al lado. Esta tira es solo un índice para saltar. */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{SUBS_IDX.map((x) => <button key={x.n} onClick={() => { try { document.getElementById(`esc-sec-${x.n}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* noop */ } }} style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }}>{x.t}</button>)}</div>
       <div style={{ display: "grid", gridTemplateColumns: dos ? "minmax(0, 1fr) 340px" : "minmax(0, 1fr)", gap: 14, alignItems: "start" }}>
         <div style={{ display: "grid", gap: 12 }}>
           {verNombre && (
@@ -1205,9 +1209,8 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             {esc.plantilla && <div style={{ ...F.caption, marginTop: 8 }}>Plantilla {CAMINOS_BASE.find((c) => c.id === esc.plantilla)?.nombre}: {CAMINOS_BASE.find((c) => c.id === esc.plantilla)?.tesis} {esc.editado && <button style={{ ...btn(false), padding: "2px 8px", marginLeft: 6 }} onClick={() => onRestablecer(esc)}>Restablecer plantilla</button>}</div>}
           </div>
           )}
-          {sub === 1 && (
-          <div style={card}>
-            <H n="B" t="¿Qué vendes o transformas hoy?" d="Marca lo que sale. Puedes vender todo o solo una parte." />
+          <div style={card} id="esc-sec-1">
+            <H n="B" t="¿Qué vendes hoy?" d="Marca lo que sale. Puedes vender todo o solo una parte." />
             <div style={{ display: "grid", gap: 6 }}>
               {base.posiciones.filter((p) => p.sale).map((p) => <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: 0.7 }}><input type="checkbox" checked disabled /><span style={{ ...F.caption, color: C.text }}>{p.nombre}</span><span style={F.caption}>{fmM(p.capital)}</span><span style={chip(C.accent)}>se vende hoy · paso 1</span></div>)}
               {base.posiciones.filter((p) => !p.sale).sort((a, b) => b.capital - a.capital).map((p) => { const v = ventaDe(p.id); return (
@@ -1218,13 +1221,11 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             </div>
             <div style={{ marginTop: 10 }}><Saldo /></div>
           </div>
-          )}
-          {sub === 2 && base.deudas.length > 0 && <div style={card}>
+          {base.deudas.length > 0 && <div style={card} id="esc-sec-2">
             <H n="C" t="¿Qué deudas pagas con eso?" d="Lo que pagues deja de costar cuota cada mes." />
             <div style={{ display: "grid", gap: 6 }}>{base.deudas.map((d) => <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: d.pagar ? "default" : "pointer", borderTop: `1px solid ${C.border}`, paddingTop: 6, opacity: d.pagar ? 0.7 : 1, flexWrap: "wrap" }}><input type="checkbox" checked={d.pagar || (esc.pagos || []).includes(d.id)} disabled={d.pagar} onChange={() => togglePago(d.id)} /><span style={{ ...F.caption, color: C.text }}>{d.nombre}</span><span style={F.caption}>{fmM(d.saldo)} · {d.tasa}% · cuota {fmMes(d.cuota)}</span>{d.tasa >= 18 && <span style={chip(C.danger)}>cara</span>}{d.pagar && <span style={chip(C.accent)}>se paga · paso 1</span>}</label>)}</div>
           </div>}
-          {sub === 3 && (
-          <div style={card}>
+          <div style={card} id="esc-sec-3">
             <H n="D" t="¿En qué inviertes lo que te queda?" d="Cada fila es un destino y cuánta plata le metes. Lo que escribes es plata que ENTRA ahí, no lo que ese activo vale." />
             {/* 22-oct-2026 (Santiago, sobre dónde se mete la obra del año 3:
                 "¿en la sección donde inviertes lo que queda?"). No: acá es solo
@@ -1296,15 +1297,11 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             <div style={{ ...F.caption, marginTop: 8 }}><b style={{ color: C.text }}>Recibes</b> es la parte del rendimiento que te llega cada mes; el resto se reinvierte dentro de esa misma inversión. Para mandar lo reinvertido a otra inversión, o para que cambie con los años (tres años reinvirtiendo todo y desde el cuarto recibir el 100 %), ve a «¿Qué pasa después?» → <i>Una inversión pasa a pagarme otra parte</i>.</div>
             {liq.porAsignar < -1e6 && <div style={{ ...F.caption, color: C.warn, marginTop: 8 }}>Estás metiendo más plata de la que liberas hoy. Si viene de algo que vendes más adelante (un apartamento en el año 2), no la pongas aquí: en «¿Qué pasa después?» marca la venta y di a dónde va la plata — ahí sí entra ese año y empieza a pagarte.</div>}
           </div>
-          )}
-          {sub === 4 && (
-          <div style={card}>
+          <div style={card} id="esc-sec-4">
             <H n="E" t="¿Qué pasa después, en este escenario?" d="Lo que decides para los próximos años: compras, ventas, obras, gastos que entran. (Lo seguro ya está en el paso 2.)" />
             <ListaEventos eventos={esc.eventos || []} posiciones={[...base.posiciones, ...(esc.despliegue || []).filter((d) => !d.destinoId).map((d) => ({ id: d.id, nombre: d.nombre, capital: d.capital }))]} flujos={base.flujos} onChange={(l) => upd({ eventos: l })} vacio="Nada después todavía. Ejemplo: «Año 5: compras Casa finca por 900 M con plata del Fondo»." ejemplo="Ejemplo: en el año 5 compras una casa de 900 M con la plata del fondo." />
           </div>
-          )}
-          {sub === 4 && (
-          <div style={card}>
+          <div style={card} id="esc-sec-5">
             <H n="F" t="¿Y lo que te sobre cada mes?" d="Cada mes te queda plata después de gastos y cuotas. Dila en porcentajes: cuánto te gastas, cuánto a lo que te paga y en cuáles, cuánto a lo que crece y en cuáles." />
             {/* 23-oct-2026 (Santiago: "uno debería poder dejar 20 % que es
                 tanta plata para gastos normales, 40 % a renta -en cuáles- y
@@ -1369,8 +1366,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>{Object.entries(CONDICION_LABEL).map(([id, l]) => <label key={id} style={{ ...F.caption, color: C.muted, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}><input type="checkbox" checked={(esc.condiciones || []).includes(id)} onChange={() => { const s = new Set(esc.condiciones || []); s.has(id) ? s.delete(id) : s.add(id); upd({ condiciones: [...s] }); }} />{l}</label>)}</div>
             </details>
           </div>
-          )}
-          <Pies />
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}><button style={btn(true)} onClick={onNext}>Ver mi camino a 10 años →</button></div>
           {esc.propio && <div><button style={{ ...btn(false), color: C.danger, borderColor: C.danger }} onClick={() => onBorrar(esc)}>Borrar escenario</button></div>}
         </div>
         <div style={{ position: dos ? "sticky" : "static", top: 12 }}><ResultadoVivo r={r} base={base} elegido={caminoElegido === esc.id} onElegir={() => onElegir(esc.id)} onVer={onNext} onComparar={onComparar} /></div>
@@ -2003,8 +1999,8 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
           <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => ir(2)}>← Elegir un punto de partida</button></div>
         </div>}
         {paso === 3 && <PasoEscenario base={base} perfil={perfil} todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} onGuardar={guardar} onNuevo={nuevo} onDuplicar={duplicar} onRestablecer={restablecer} onBorrar={borrar} caminoElegido={caminoElegido} onElegir={onElegir} onNext={() => ir(4)} onComparar={() => { ir(4); setVerCompara(true); }} sub={sub} setSub={setSub} onFicha={(id, patch) => onFichas({ ...fichas, [id]: { ...(fichas[id] || {}), ...patch } })} />}
-        {paso === 3 && sub === 4 && <PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} />}
-        {paso === 4 && !verCompara && <PasoResultado base={base} perfil={perfil} onPerfil={onPerfil} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} onFicha={(id, patch) => onFichas({ ...fichas, [id]: { ...(fichas[id] || {}), ...patch } })} onEditar={(n) => { ir(3); setSub(n); }} />}
+        {paso === 3 && <div id="esc-sec-6"><PasoViene base={base} perfil={perfil} onPerfil={onPerfil} onNext={() => ir(4)} /></div>}
+        {paso === 4 && !verCompara && <PasoResultado base={base} perfil={perfil} onPerfil={onPerfil} r={rActivo} elegido={caminoElegido === rActivo?.id} onElegir={() => onElegir(rActivo.id)} onNext={() => setVerCompara(true)} onVolver={() => ir(2)} onFicha={(id, patch) => onFichas({ ...fichas, [id]: { ...(fichas[id] || {}), ...patch } })} onEditar={(n) => { ir(3); setSub(n); setTimeout(() => { try { document.getElementById(`esc-sec-${n}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* noop */ } }, 120); }} />}
         {paso === 4 && verCompara && <PasoCompara res={res} base={base} perfil={perfil} activoId={rActivo?.id} onVer={(id) => { setActivoId(id); setVerCompara(false); }} caminoElegido={caminoElegido} onElegir={onElegir} onEditar={(id) => { setActivoId(id); ir(3); setSub(1); }} />}
         <div style={{ ...F.caption, textAlign: "center" }}>Lo que simulas aquí no toca tus datos reales. Los ejercicios (Pensiones, Ahorro BTC, Comprar o arrendar) alimentan los supuestos, no las decisiones.</div>
       </>)}
