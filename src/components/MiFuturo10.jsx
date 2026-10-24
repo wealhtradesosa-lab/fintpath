@@ -38,6 +38,11 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
     return () => clearTimeout(t);
   }, [cfg, demo]); // eslint-disable-line react-hooks/exhaustive-deps
   const [nombreEsc, setNombreEsc] = useState("");
+  // 24-oct-2026 (Santiago: "una vez creado el escenario no deja cambiar el
+  // nombre"). Al tocar Editar se carga su nombre y resumen, y se guarda sobre
+  // el mismo escenario (o como uno nuevo).
+  const [editandoId, setEditandoId] = useState(null);
+  const [renId, setRenId] = useState(null), [renTxt, setRenTxt] = useState("");
   const [descEsc, setDescEsc] = useState("");
   const [verEsc, setVerEsc] = useState(null);
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
@@ -58,8 +63,17 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   }, [user, cfg, r, escenarios]);
   const bolsa = (user.inv || []).filter((a) => cfg.decisiones[a.id]?.accion === "vende").length;
 
+  const editando = escenarios.find((e) => e.id === editandoId) || null;
+  const guardarCambios = () => {
+    if (demo || !editando) return;
+    const lista = escenarios.map((e) => (e.id === editando.id ? { ...e, nombre: nombreEsc.trim() || e.nombre, descripcion: descEsc.trim(), config: cfg, editado: new Date().toISOString() } : e));
+    onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: lista });
+    setEditandoId(null); setNombreEsc(""); setDescEsc("");
+  };
+  const renombrar = (id, nombre) => { if (demo || !nombre.trim()) return; onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.map((e) => (e.id === id ? { ...e, nombre: nombre.trim() } : e)) }); };
   const guardar = () => {
     if (demo) return; // la demo nunca escribe en la cuenta real
+    setEditandoId(null);
     const nuevo = { id: "f10_" + Date.now(), nombre: nombreEsc.trim() || `Escenario ${escenarios.length + 1}`, descripcion: descEsc.trim(), creado: new Date().toISOString(), config: cfg };
     onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: [...escenarios, nuevo].slice(-10) });
     setNombreEsc(""); setDescEsc("");
@@ -215,13 +229,22 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <div style={{ fontSize: 12, color: C.tx2, marginBottom: 8 }}>Guarda lo que armaste con un nombre y compáralo con los otros. Toca un escenario para verlo con todo.</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <input style={{ ...inp, flex: "1 1 160px", width: "auto" }} placeholder="Nombre del escenario, ej.: Conservador + casa" value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />
-            <button style={btn(!demo)} disabled={demo} onClick={guardar}>Guardar este escenario</button>
+            {editando ? <>
+              <button style={btn(!demo)} disabled={demo} onClick={guardarCambios}>Guardar cambios</button>
+              <button style={btn(false)} disabled={demo} onClick={guardar}>Guardar como nuevo</button>
+            </> : <button style={btn(!demo)} disabled={demo} onClick={guardar}>Guardar este escenario</button>}
           </div>
+          {editando && <div style={{ fontSize: 12, color: C.gn, marginTop: 6 }}>Estás editando «{editando.nombre}». Cambia el nombre arriba si quieres y toca Guardar cambios. <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>Cancelar</button></div>}
           <input style={{ ...inp, marginTop: 6 }} placeholder={`Resumen en una frase (opcional). Si lo dejas vacío: «${resumenEscenario(r)}»`} value={descEsc} onChange={(e) => setDescEsc(e.target.value)} />
           {demo && <p style={{ color: C.am, fontSize: 12 }}>{MSG_DEMO_F10}</p>}
           {escenarios.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-            {escenarios.map((e) => <span key={e.id} style={{ display: "inline-flex", gap: 4, alignItems: "center", fontSize: 12, border: `1px solid ${C.bd}`, borderRadius: 999, padding: "2px 4px 2px 10px" }}>{e.nombre}
-              <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => { setCfg(migrarModifica({ ...CONFIG_INICIAL, ...e.config })); ir(1); }}>Editar</button>
+            {escenarios.map((e) => renId === e.id ? <span key={e.id} style={{ display: "inline-flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+              <input autoFocus style={{ ...inp, width: 200 }} value={renTxt} onChange={(ev) => setRenTxt(ev.target.value)} onKeyDown={(ev) => { if (ev.key === "Enter") { renombrar(e.id, renTxt); setRenId(null); } }} />
+              <button style={{ ...btn(true), padding: "4px 10px", fontSize: 12 }} onClick={() => { renombrar(e.id, renTxt); setRenId(null); }}>Listo</button>
+              <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setRenId(null)}>Cancelar</button></span>
+            : <span key={e.id} style={{ display: "inline-flex", gap: 4, alignItems: "center", fontSize: 12, border: `1px solid ${C.bd}`, borderRadius: 999, padding: "2px 4px 2px 10px" }}>{e.nombre}
+              <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => { setCfg(migrarModifica({ ...CONFIG_INICIAL, ...e.config })); setEditandoId(e.id); setNombreEsc(e.nombre || ""); setDescEsc(e.descripcion || ""); ir(1); }}>Editar</button>
+              <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} disabled={demo} onClick={() => { setRenId(e.id); setRenTxt(e.nombre || ""); }}>Cambiar nombre</button>
               <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => borrar(e.id)}>Borrar</button></span>)}
           </div>}
         </div>
