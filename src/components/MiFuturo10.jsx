@@ -122,7 +122,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         </div>
         <div style={card}>
           <Seccion n={2} titulo="Lo que viene" sub="Lo que empieza más adelante: una pensión, un local que te entregan, la universidad de los hijos." />
-          <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} />
+          <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} gastosHoy={r.gastosHoy || []} />
         </div>
       </>)}
 
@@ -261,7 +261,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 }
 
 const ANIOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-function LoQueViene({ cfg, set, esc, owners, activos = [] }) {
+function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [] }) {
+  const [verTodos, setVerTodos] = useState(false);
   const f = { ingresos: [], activos: [], gastos: [], ...(cfg.futuros || {}) };
   const put = (k, arr) => set("futuros", { ...f, [k]: arr });
   const upI = (i, v) => put("ingresos", f.ingresos.map((x, j) => (j === i ? { ...x, ...v } : x)));
@@ -365,6 +366,29 @@ function LoQueViene({ cfg, set, esc, owners, activos = [] }) {
         );
       })}
       <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("gastos", [...(f.gastos || []), { nombre: "", anual: "", desde: 4, anios: 4 }])}>+ Agregar gasto futuro</button>
+      {/* 24-oct-2026 (Santiago: "¿cómo quita uno items de gastos que ya no
+          van? por ejemplo mantenimientos"). Solo cambia el escenario. */}
+      <h4 style={{ margin: "16px 0 4px" }}>Gastos que se acaban</h4>
+      <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Tus gastos de hoy (de Egresos). Marca los que dejas de pagar en este escenario y desde cuándo; tus datos de Egresos no cambian.</div>
+      {(() => {
+        const term = cfg.gastosTerminan || {};
+        const lista = gastosHoy.filter((g) => !g.neteado).sort((a, b) => (!!term[b.key] - !!term[a.key]) || b.mensual - a.mensual);
+        const visibles = verTodos ? lista : lista.slice(0, 8);
+        const setT = (k, v) => { const nx = { ...term }; if (v) nx[k] = v; else delete nx[k]; set("gastosTerminan", nx); };
+        const ahorro = lista.filter((g) => term[g.key]).reduce((sm, g) => sm + g.mensual, 0);
+        return <>
+          {visibles.map((g) => { const t = term[g.key]; return (
+            <div key={g.key} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "6px 0", borderTop: `1px solid ${C.bd}` }}>
+              <span style={{ flex: "1 1 160px", minWidth: 0 }}><span style={{ textDecoration: t ? "line-through" : "none", color: t ? C.tx2 : C.tx }}>{g.nombre}</span> <span style={{ fontSize: 11, color: C.tx2 }}>{g.cat !== g.nombre ? `· ${g.cat}` : ""}</span></span>
+              <span style={{ fontSize: 13, whiteSpace: "nowrap", color: C.tx2 }}>{plata(Math.round(g.mensual))}/mes</span>
+              <button style={btn(!t)} onClick={() => setT(g.key, null)}>Sigue</button>
+              <button style={btn(!!t)} onClick={() => setT(g.key, t || 1)}>Se acaba</button>
+              {t && <select style={{ ...inp, width: "auto" }} value={t} onChange={(e) => setT(g.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Desde ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>}
+            </div>); })}
+          {lista.length > 8 && <button style={{ ...btn(false), marginTop: 6 }} onClick={() => setVerTodos(!verTodos)}>{verTodos ? "Ver menos" : `Ver todos (${lista.length})`}</button>}
+          {ahorro > 0 && <div style={{ fontSize: 12, color: C.gn, marginTop: 6 }}>Dejas de pagar {plata(Math.round(ahorro))} al mes en gastos que se acaban.</div>}
+        </>;
+      })()}
     </div>
   );
 }

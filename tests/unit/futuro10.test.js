@@ -500,3 +500,17 @@ describe("futuro10 · gastos futuros (universidad de los hijos)", () => {
     expect(r.final.patrimonio).toBeLessThan(sin.final.patrimonio);
   });
 });
+
+describe("futuro10 · gastos que se acaban", () => {
+  it("un mantenimiento que se acaba en 2 años deja de restar desde ese año", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", tp: "Cash", va: 2000e6 }], ingresos: [{ nombre: "S", categoria: "Salario", mensual: 50e6 }], gas: { Mantenimiento: [{ c: "Finca", m: 3e6 }], Vida: [{ c: "Mercado", m: 20e6 }] }, deu: [] };
+    const sin = proyectarFuturo10(u, {});
+    expect(sin.gastosHoy.find((g) => g.key === "Mantenimiento::0").nombre).toBe("Finca");
+    const r = proyectarFuturo10(u, { gastosTerminan: { "Mantenimiento::0": 3 } });
+    expect(r.filas[2].gastos).toBeCloseTo(sin.filas[2].gastos, 0);
+    expect(sin.filas[3].gastos - r.filas[3].gastos).toBeCloseTo(3e6 * 12 * (1.04) ** 2, -2);
+    const ya = proyectarFuturo10(u, { gastosTerminan: { "Mantenimiento::0": 1 } });
+    expect(ya.desglose.sale.some((x) => x.nombre === "Finca")).toBe(false);
+    expect(ya.desglose.sale.reduce((s, x) => s + x.mensual, 0)).toBeCloseTo(ya.filas[1].gastos / 12, -2);
+  });
+});

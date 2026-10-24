@@ -324,6 +324,20 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   const bOp = vendidosIds.size ? calcularBase({ ...sinImp, inv: (user.inv || []).filter((a) => !vendidosIds.has(a?.id)), ingresos: sinVendidos(user.ingresos), gastos: gastosSinVendidos, gas: gastosSinVendidos, deu: deudasVivas, deudas: deudasVivas }, {}) : bDeuda;
   let ingresos = (bOp.ia + bOp.ip) * 12 - rentaVendida;
   let gastos = (bOp.ob - bOp.sd) * 12;
+  // 24-oct-2026 (Santiago: "¿cómo quita uno items de gastos que ya no van?
+  // por ejemplo mantenimientos"). Gastos de hoy que se acaban en el escenario
+  // (cfg.gastosTerminan: { "cat::índice": año desde el que ya no se paga }).
+  // Solo cambia el escenario: Egresos no se toca.
+  const fxG = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? b.trm : 1);
+  const conRentaOp = new Set(Object.keys(bOp.rentaNetaPorActivo || {}));
+  const gastosHoy = [];
+  Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g, idx) => {
+    if (!g || g.sim === false || (g.activoId && vendidosIds.has(g.activoId))) return;
+    const v = montoPromedioMensual(g) * fxG(g); if (!(v > 0.5)) return;
+    gastosHoy.push({ key: `${cat}::${idx}`, nombre: g.c || g.n || g.nombre || cat, cat, mensual: v, neteado: !!(g.activoId && conRentaOp.has(g.activoId)) });
+  }));
+  const terminan = cfg.gastosTerminan || {};
+  const seVan = gastosHoy.filter((g) => !g.neteado && terminan[g.key]).map((g) => ({ ...g, desde: Math.min(N, Math.max(1, Math.round(n(terminan[g.key])) || 1)) }));
   // 24-oct-2026 (Santiago: "los gráficos de los escenarios están muy flojos…
   // que se vea como el HTML", su plan SALEM). Para graficar lo que produce el
   // patrimonio se lleva aparte la renta pasiva (lo que llega a la cuenta sin
@@ -399,7 +413,8 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const fraccionAnio = (mesInicio) => Math.min(1, Math.max(0, (12 * t - n(mesInicio)) / 12));
     const rentaNueva = rentaPers + ingFuturo + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * Math.pow(1 + inf, t) : 0)
       + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * Math.pow(1 + inf, t), 0), 0);
-    const gastoFuturo = (fut.gastos || []).reduce((sm, x) => sm + (t >= x.desde && t <= x.hasta ? x.anual * Math.pow(1 + inf, t) : 0), 0);
+    const gastoFuturo = (fut.gastos || []).reduce((sm, x) => sm + (t >= x.desde && t <= x.hasta ? x.anual * Math.pow(1 + inf, t) : 0), 0)
+      - seVan.reduce((sm, g) => sm + (t >= g.desde ? g.mensual * 12 * Math.pow(1 + gGas, t - 1) : 0), 0);
     const cuota = deuda > 0 ? Math.min(cuotaAnual, cuotaAnual * Math.max(0, aniosDeuda - (t - 1))) : 0;
     deuda = Math.max(0, deuda - cuota);
     const cf = ingresos + rentaNueva - gastos - gastoFuturo - cuota;
@@ -495,7 +510,9 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const sale = [];
     Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).filter(sigue).forEach((g) => {
       if (g.activoId && conRenta.has(g.activoId)) return; // ya restado de la renta de su activo
-      const v = montoPromedioMensual(g) * fxI(g); if (v > 0.5) sale.push({ nombre: g.n || g.nombre || cat, mensual: v, nota: cat }); }));
+      const v = montoPromedioMensual(g) * fxI(g); const key = `${cat}::${(items || []).indexOf(g)}`;
+      if (seVan.some((x) => x.key === key && x.desde <= 1)) return;
+      if (v > 0.5) sale.push({ nombre: g.c || g.n || g.nombre || cat, mensual: v, nota: (g.c || g.n || g.nombre) ? cat : "" }); }));
     deudasVivas.filter((d) => d && d.sim !== false && !esUnica(d)).forEach((d) => { const v = montoPromedioMensual({ ...d, mensual: n(d.pg ?? d.pago) * fxI(d) }); if (v > 0.5) sale.push({ nombre: `Cuota ${d.n || d.nombre || "deuda"}`, mensual: v, nota: "deuda" }); });
     (fut.gastos || []).filter((x) => x.desde <= 1 && x.hasta >= 1).forEach((x) => sale.push({ nombre: x.nombre, mensual: x.anual * ff / 12, nota: "gasto futuro" }));
     const cuadra = (lista, total) => { const s = lista.reduce((t, x) => t + x.mensual, 0); const dif = total - s; if (Math.abs(dif) > Math.max(1, total * 0.005)) lista.push({ nombre: "Ajustes (crecimiento del año, cuotas que terminan, costos)", mensual: dif, nota: "" }); return lista.sort((a, b) => b.mensual - a.mensual); };
@@ -515,6 +532,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
     reparto: repartoFinal,
     desglose,
+    gastosHoy, seVan,
     vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => ({ id: x.id, nombre: x.n || x.nombre || "Activo", valor: n(x.va) * fxA(x) })),
     reinversionesDetalle,
     nuevasDetalle: [...nuevas.map((x) => ({ nombre: x.nombre, monto: x.montoInicial ?? 0, anio: 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0, fuente: x.fuente })), ...personalizadas.map((c) => ({ nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta, fuente: "liquidez" }))],
