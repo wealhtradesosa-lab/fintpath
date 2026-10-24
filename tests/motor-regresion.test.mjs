@@ -4,11 +4,14 @@
 // Capturan los IMPUESTOS calculados para casos típicos antes del Commit 3.
 // Sirven para verificar que casos sin LAB_PRESTACIONES_CESANTIAS se mantienen
 // idénticos post-cambio.
-// Ejecutar: node tests/motor-regresion.test.mjs
+// Ejecutar: npm test (vitest). Snapshot en tests/__snapshots__/; si cambia, falla.
 // ═════════════════════════════════════════════════════════════════════════
 
+import { describe, it, expect } from "vitest";
 import { estimarImpuesto } from "../src/lib/taxCO.js";
 
+describe("motor-regresion (taxCO)", () => {
+it("snapshots de impuestos por caso no cambian", () => {
 const snapshots = {};
 
 function capturar(nombre, det) {
@@ -68,3 +71,6 @@ console.log(JSON.stringify(snapshots, null, 2));
 console.log("═".repeat(70));
 console.log("Estos valores deben mantenerse IDÉNTICOS para casos 1, 2, 3");
 console.log("post-Commit 3. El caso 4 (con cesantías) DEBE cambiar (esperado).");
+expect(snapshots).toMatchSnapshot();
+});
+});

@@ -1,13 +1,13 @@
 // ═════════════════════════════════════════════════════════════════════════
 // Tests unitarios del optimizador V2 (Commit 1: infraestructura)
 // ─────────────────────────────────────────────────────────────────────────
-// Ejecutar con: node tests/optimizador.test.mjs
-// Si todos los tests pasan, exit code 0. Si alguno falla, exit code 1.
+// Ejecutar: npm test (vitest). Cada test() es un it() de vitest; si alguno falla, exit code ≠ 0.
 //
 // Estos tests verifican el contrato del módulo. En Commits 2-6 se agregarán
 // tests específicos por palanca y de integración con taxCO.
 // ═════════════════════════════════════════════════════════════════════════
 
+import { describe, it } from "vitest";
 import {
   calcularEscenarioOptimo,
   detectarPalancasAutomatizables,
@@ -15,20 +15,7 @@ import {
   OPTIMIZADOR_V2_ENABLED,
 } from "../src/lib/optimizador.js";
 
-let passed = 0;
-let failed = 0;
-const results = [];
-
-function test(name, fn) {
-  try {
-    fn();
-    results.push({ name, status: "✅" });
-    passed++;
-  } catch (err) {
-    results.push({ name, status: "❌", error: err.message });
-    failed++;
-  }
-}
+const test = (name, fn) => it(name, fn);
 
 function assertEq(actual, expected, msg = "") {
   if (actual !== expected) {
@@ -46,6 +33,7 @@ function assertDeepEq(actual, expected, msg = "") {
   }
 }
 
+describe("optimizador V2 (Commit 1)", () => {
 // ─────────────────────────────────────────────────────────────────────────
 // Tests del flag de feature
 // ─────────────────────────────────────────────────────────────────────────
@@ -149,20 +137,4 @@ test("aplicarPalancaSegura: nuevoEscenario es copia (no muta original)", () => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────
-// Reporte final
-// ─────────────────────────────────────────────────────────────────────────
-
-console.log("─".repeat(70));
-console.log("Tests del optimizador V2 (Commit 1)");
-console.log("─".repeat(70));
-for (const r of results) {
-  console.log(`${r.status} ${r.name}`);
-  if (r.error) console.log(`   └─ ${r.error}`);
-}
-console.log("─".repeat(70));
-console.log(`Total: ${passed + failed} | ✅ ${passed} | ❌ ${failed}`);
-
-if (failed > 0) {
-  process.exit(1);
-}
+});
