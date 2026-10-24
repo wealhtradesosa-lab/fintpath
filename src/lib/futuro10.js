@@ -46,9 +46,10 @@ export const SUPUESTOS_F10 = {
   // hipotecarioUVR es tasa REAL sobre UVR (el saldo ya se indexa con la inflación): no usar la nominal en pesos.
   tasasDeuda: {
     hipotecario: { pct: 13.94, fecha: "25-sep-2026", fuente: "Superfinanciera, tasa promedio por modalidad (vivienda No VIS en pesos)" },
-    hipotecarioUVR: { pct: 7.85, real: true, fecha: "25-sep-2026", fuente: "Superfinanciera, tasa promedio por modalidad (vivienda No VIS en UVR, real sobre UVR)" },
+    // hipotecarioUVR: el dataset oficial kett-344s (datos.gov.co) no devolvió filas desde el servidor el 24-oct-2026; valor de un agregador.
+    hipotecarioUVR: { pct: 8.95, real: true, fecha: "25-sep-2026", fuente: "Superfinanciera vía agregador, promedio No VIS en UVR (real sobre UVR)" },
     vehiculo: { pct: 21.06, fecha: "25-sep-2026", fuente: "Superfinanciera, tasa promedio por modalidad (vehículo)" },
-    consumo: { pct: 19.06, fecha: "oct-2026", fuente: "Superfinanciera, tasa promedio por modalidad (consumo)" },
+    consumo: { pct: 19.06, fecha: "25-sep-2026", fuente: "Superfinanciera, tasa promedio por modalidad (consumo)" },
     tarjeta: { pct: 24.85, fecha: "25-sep-2026", fuente: "Superfinanciera, tasa promedio por modalidad (tarjeta de crédito)" },
   },
   // Presets de retorno. realSpread = puntos sobre la inflación del escenario.
@@ -96,6 +97,28 @@ export function retornoNominalPreset(clave, esc, sup = SUPUESTOS_F10, override =
   return ((1 + i) * (1 + real / 100) - 1) * 100;
 }
 
+/** Estimado de una inversión predefinida: % NOMINAL anual del escenario + su fuente. Nunca vacío. */
+export function estimadoPreset(clave, esc, sup = SUPUESTOS_F10) {
+  if (!sup.presets[clave]) return null;
+  const pct = Math.round(retornoNominalPreset(clave, esc, sup) * 10) / 10;
+  const F = sup.fuentes;
+  const fuente = clave === "sp500" ? `${F.sp500}; devaluación: ${F.devaluacion}` : F[clave] || "Supuesto interno";
+  return { pct, fuente: `${fuente} · escenario ${esc.nombre || esc.clave}, inflación ${String(esc.inflacionPct).replace(".", ",")}%` };
+}
+/** % nominal que usa el motor para una inversión predefinida: el del usuario si lo editó; si no, el estimado. */
+export const rendimientoNuevaPct = (x, esc, sup = SUPUESTOS_F10) =>
+  (x && x.rendimientoNomPct !== "" && x.rendimientoNomPct != null && Number.isFinite(Number(x.rendimientoNomPct)) ? Number(x.rendimientoNomPct) : retornoNominalPreset(x.preset, esc, sup));
+
+/** Barra de «Reinvierte» (10 años, pesos de hoy): de ventas + de tu caja = disponible; menos asignado = te queda. */
+export function resumenReinvertir(disp = []) {
+  const s = (f) => disp.reduce((t, d) => t + n(f(d)), 0);
+  const deVentas = s((d) => d.ventas);
+  const deCaja = s((d) => d.liquidezHoy - d.colchon + d.flujo);
+  const asignado = s((d) => d.asignado + d.adicionales + d.pagosFuturos);
+  return { deVentas, deCaja, disponible: deVentas + deCaja, asignado, queda: deVentas + deCaja - asignado };
+}
+export const esCripto = (a = {}) => /crypt|cripto|btc|bitcoin|ethereum|\beth\b/i.test(`${a.tp || a.tipo || ""} ${a.n || a.nombre || ""}`);
+
 export function claseActivo(a) {
   const tp = tipoActivo(a);
   if (/veh/i.test(tp)) return "vehiculo";
@@ -126,7 +149,7 @@ export function tasaDeuda(d = {}, override = {}, sup = SUPUESTOS_F10) {
   let k = /mortg|hipot|vivienda|leasing/.test(tp) ? "hipotecario" : /veh|carro|auto/.test(tp) ? "vehiculo" : /tarj|card|credit/.test(tp) ? "tarjeta" : "consumo";
   if (uvr) k = "hipotecarioUVR"; // en UVR solo hay tasa real publicada (vivienda)
   const t = sup.tasasDeuda[k];
-  return { pct: t.pct, estimada: true, tipo: k, real: uvr, fuente: t.fuente, fecha: t.fecha, etiqueta: uvr ? `UVR + ${fmtPct(t.pct)} real` : `${fmtPct(t.pct)} E.A.` };
+  return { pct: t.pct, estimada: true, tipo: k, real: uvr, fuente: t.fuente, fecha: t.fecha, etiqueta: uvr ? `UVR + ${fmtPct(t.pct)} (Superfinanciera, promedio No VIS en UVR, ${t.fecha}). Es un promedio, no tu tasa.` : `${fmtPct(t.pct)} E.A.` };
 }
 
 /** Retorno real (%) a partir del nominal: (1+n)/(1+i)−1, una sola vez. */
@@ -227,14 +250,17 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
   disp[0].liquidezHoy = Math.max(0, liquidosQueQuedan - metaColchon); disp[0].ventas = bolsa; disp[0].colchon = colchon;
   bolsa -= colchon;
   const nuevas = [], personalizadas = [];
+  let faltaInicial = 0; // inversiones del año 1 más grandes que la plata disponible: nunca se recortan en silencio
   (cfg.nuevas || []).forEach((x, k) => {
     if (x.preset === "custom") { const c = leerPersonalizada(x, esc, sup); if (c.monto > 0) personalizadas.push({ ...c, id: "nueva_" + k }); return; }
     const m = Math.min(bolsa, Math.max(0, n(x.monto)));
     if (n(x.monto) > 0 && sup.presets[x.preset]) { disp[0].asignado += n(x.monto); disp[0].asignaciones.push({ tipo: "nueva", idx: k, nombre: x.nombre || sup.presets[x.preset].nombre, monto: n(x.monto) }); }
-    if (m <= 0 || !sup.presets[x.preset]) return;
+    if (!(n(x.monto) > 0) || !sup.presets[x.preset]) return;
     bolsa -= m;
     const p = sup.presets[x.preset];
-    nuevas.push({ id: "nueva_" + k, nombre: x.nombre || p.nombre, clase: x.preset === "rfCorto" ? "liquido" : "nueva", valor: m, crec: rNom(x.preset), usd: !!p.usd, invertible: true });
+    const falta = n(x.monto) - m;
+    if (falta > 0) faltaInicial += falta;
+    nuevas.push({ id: "nueva_" + k, nombre: x.nombre || p.nombre, monto: n(x.monto), anio: 1, faltante: falta, clase: x.preset === "rfCorto" ? "liquido" : "nueva", valor: n(x.monto), crec: rendimientoNuevaPct(x, esc, sup) / 100, usd: !!p.usd, invertible: true });
   });
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
   const repartir = (m) => ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] += m * mezcla[k] / 100; });
@@ -246,7 +272,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     const ov = (cfg.deudas || {})[d.id] || {};
     const t = tasaDeuda(d, ov, sup);
     const saldo = n(d.mt) * fxA(d), cuota = n(d.pg ?? d.pago) * fxA(d);
-    if (t.estimada && saldo > 0) alertas.push({ tipo: "tasa_estimada", anio: 0, texto: `${d.n || d.nombre || "Una deuda"}: tasa estimada, agrégala. Usamos ${t.etiqueta} (${t.fuente}, ${t.fecha}).` });
+    if (t.estimada && saldo > 0) alertas.push({ tipo: "tasa_estimada", anio: 0, texto: `${d.n || d.nombre || "Una deuda"}: tasa estimada, agrégala. Usamos ${t.real ? t.etiqueta : `${t.etiqueta} (${t.fuente}, ${t.fecha})`}` });
     if (saldo <= 0 && cuota > 0) alertas.push({ tipo: "deuda_sin_saldo", anio: 0, texto: `${d.n || d.nombre || "Una deuda"} tiene cuota pero no saldo: la cuota se mantiene los 10 años. Agrega el saldo.` });
     return { nombre: d.n || d.nombre || "Deuda", saldo, cuota, tasa: t.pct / 100, uvr: !!ov.uvr, sinSaldo: saldo <= 0 && cuota > 0 };
   }).filter((d) => d.saldo > 0 || d.cuota > 0);
@@ -261,7 +287,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
   const ipOtros = Math.max(0, b.ip * 12 - rentaTodas); // pasiva no vinculada a activos
   let gastos = (b.ob - b.sd) * 12;
   const todos = [...activos, ...nuevas];
-  let deficit = 0; // faltante acumulado (nunca se vende finca raíz sola)
+  let deficit = faltaInicial; // faltante acumulado (nunca se vende finca raíz sola)
   const valorTotal = () => todos.reduce((s, a) => s + a.valor, 0) + colchon + canasta.liquidez + canasta.renta + canasta.crecimiento - deficit;
   const invertible = () => todos.filter((a) => a.invertible).reduce((s, a) => s + a.valor, 0) + colchon + canasta.liquidez + canasta.renta + canasta.crecimiento - deficit;
   const filas = [];
@@ -305,8 +331,9 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     // 0) inversiones personalizadas del año
     personalizadas.forEach((c) => {
       if (c.anio !== t) return;
+      const antes = deficit;
       retirar(c.monto);
-      todos.push({ id: c.id, nombre: c.nombre, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? inf : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom - inf : 0, usd: c.usd, invertible: true });
+      todos.push({ id: c.id, nombre: c.nombre, monto: c.monto, anio: t, faltante: (deficit - antes) / fIdx, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? inf : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom - inf : 0, usd: c.usd, invertible: true });
     });
     // 1) ventas en su año (valor bruto, sin costos ni impuestos)
     activos.forEach((a) => {
@@ -408,12 +435,14 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     d.queda = d.antesDeAsignar - d.asignado;
     d.exceso = d.asignado > 0 && d.queda < 0 ? -d.queda : 0;
   });
+  todos.filter((a) => String(a.id).startsWith("nueva_") && a.faltante > 0).forEach((a) => alertas.unshift({ tipo: "nueva_sin_plata", anio: a.anio, monto: a.faltante,
+    texto: `${a.nombre}: te faltan ${fmtPlata(a.faltante)} para invertir ${fmtPlata(a.monto)} en el año ${a.anio}. La incluimos completa; lo que falta queda como faltante.` }));
   disp.filter((d) => d.exceso > 0).forEach((d) => alertas.push({ tipo: "exceso", anio: d.anio, texto: `Te pasas por ${fmtPlata(d.exceso)} en el año ${d.anio}. Saldría de tu colchón y luego de tus inversiones.` }));
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio, disponible: disp, metaColchon, hayVentas,
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses, rentaPasivaMensual: b.ip },
     activos: activos.filter((a) => a.anioVenta !== 1 || true).map(({ id, nombre, clase, usd, rentaAnual }) => ({ id, nombre, clase, usd, rentaMensual: rentaAnual / 12 })),
-    nuevasDetalle: todos.filter((a) => String(a.id).startsWith("nueva_")).map((a) => ({ nombre: a.nombre, valorFinal: a.valor / fin.deflactor, rentaMensual: a.rentaPct ? (a.valor * a.rentaPct) / 12 / fin.deflactor : 0 })),
+    nuevasDetalle: todos.filter((a) => String(a.id).startsWith("nueva_")).map((a) => ({ id: a.id, nombre: a.nombre, monto: a.monto, anio: a.anio, faltante: a.faltante || 0, valorFinal: a.valor / fin.deflactor, rentaMensual: a.rentaPct ? (a.valor / (1 + a.crec) * a.rentaPct) / 12 / fin.deflactor : 0 })),
     hayUSD: todos.some((a) => a.usd && a.valor > 0) || personalizadas.some((a) => a.usd) || expUSD,
     final: fin,
     vsInflacionReal: fila0.invertible > 0 ? (fin.invertibleReal / fila0.invertible - 1) * 100 : null,

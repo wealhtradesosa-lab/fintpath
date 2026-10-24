@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderToString } from "react-dom/server";
-import MiFuturo10, { LoQueViene, Obra, agruparAlertas, ESTADO_GUARDADO, TablaSupuestos } from "../../src/components/MiFuturo10.jsx";
-import { resolverEscenario } from "../../src/lib/futuro10.js";
+import MiFuturo10, { LoQueViene, Obra, agruparAlertas, ESTADO_GUARDADO, TablaSupuestos, RendimientoPreset } from "../../src/components/MiFuturo10.jsx";
+import { resolverEscenario, estimadoPreset, retornoNominalPreset, proyectarFuturo10, SUPUESTOS_F10 } from "../../src/lib/futuro10.js";
 
 const txt = (h) => h.replace(/<!-- -->/g, "");
 const esc = resolverEscenario("base", { inflacionPct: 5 });
@@ -54,5 +54,104 @@ describe("Mi futuro a 10 v2 · pantalla", () => {
     expect(h).toContain("ajustado a valuaciones actuales");
     expect(h.toLowerCase()).not.toContain("validado");
     expect(txt(renderToString(<TablaSupuestos esc={esc} mercado={{ ipc: { pct: 5.1, fuente: "BanRep", fecha: "sep-2026" } }} />))).toContain("BanRep, sep-2026");
+  });
+});
+
+describe("Inversión predefinida: rendimiento estimado prellenado", () => {
+  it("cada preset muestra un % nominal del escenario con fuente; nunca vacío", () => {
+    for (const e of ["pesimista", "base", "optimista"]) {
+      const es = resolverEscenario(e, { inflacionPct: 5 });
+      Object.keys(SUPUESTOS_F10.presets).forEach((k) => {
+        const est = estimadoPreset(k, es);
+        expect(est.pct).toBeCloseTo(retornoNominalPreset(k, es), 1);
+        expect(est.fuente.length).toBeGreaterThan(5);
+        const h = txt(renderToString(<RendimientoPreset x={{ preset: k, monto: 1e6 }} esc={es} up={() => {}} />));
+        expect(h).toMatch(new RegExp(`value="${String(est.pct).replace(".", "\\.")}|value="${String(est.pct).replace(".", ",")}`));
+        expect(h).toContain("Fuente:");
+        expect(h).not.toContain("restaurar estimado");
+      });
+    }
+    expect(estimadoPreset("rfCorto", resolverEscenario("pesimista", {})).pct).not.toBe(estimadoPreset("rfCorto", resolverEscenario("optimista", {})).pct);
+  });
+  it("si el usuario lo edita se respeta, el motor lo usa y aparece «restaurar estimado»", () => {
+    const h = txt(renderToString(<RendimientoPreset x={{ preset: "rfLargo", rendimientoNomPct: 12 }} esc={esc} up={() => {}} />));
+    expect(h).toContain("restaurar estimado");
+    expect(h).toMatch(/value="12"/);
+    const u = { inflacionPct: 5, inv: [{ id: "c", n: "Apto", tp: "Real Estate", va: 300e6 }], ingresos: [], gas: {}, deu: [] };
+    const cfg = (x) => ({ decisiones: { c: { accion: "vende", anioVenta: 1 } }, mezcla: { liquidez: 100, renta: 0, crecimiento: 0 }, nuevas: [{ preset: "rfLargo", monto: 100e6, ...x }] });
+    const est = proyectarFuturo10(u, cfg({}));
+    const vacio = proyectarFuturo10(u, cfg({ rendimientoNomPct: "" }));
+    const mio = proyectarFuturo10(u, cfg({ rendimientoNomPct: 20 }));
+    expect(vacio.final.patrimonio).toBeCloseTo(est.final.patrimonio, 0);
+    expect(mio.final.patrimonio).toBeGreaterThan(est.final.patrimonio);
+  });
+});
+
+import { CampoRendimiento, BarraReinvertir, InversionesNuevas } from "../../src/components/MiFuturo10.jsx";
+import { resumenReinvertir, tasaDeuda } from "../../src/lib/futuro10.js";
+
+describe("Bug BTG Pactual: inversión nueva más grande que la plata disponible", () => {
+  const u = { inflacionPct: 5, inv: [{ id: "c", n: "CDT", tp: "CDT", va: 200e6 }], ingresos: [{ nombre: "Salario", mensual: 20e6 }], gas: { Vida: [{ n: "x", m: 8e6 }] }, deu: [] };
+  const btg = { preset: "custom", nombre: "BTG Pactual", monto: 6.5e9, rendimientoNomPct: 14, anio: 1, tipo: "renta" };
+  it("aparece en Resultado con su línea, su renta y su valor a 10 años, y alerta roja «te faltan»", () => {
+    const sin = proyectarFuturo10(u, {}), r = proyectarFuturo10(u, { nuevas: [btg] });
+    const d = r.nuevasDetalle.find((x) => x.nombre === "BTG Pactual");
+    expect(d).toBeTruthy();
+    expect(d.monto).toBe(6.5e9);
+    expect(d.faltante).toBeGreaterThan(6e9);
+    expect(d.rentaMensual).toBeGreaterThan(0);
+    expect(d.valorFinal).toBeCloseTo(6.5e9, -6); // «Paga renta»: el valor sigue la inflación (constante en pesos de hoy)
+    expect(r.filas[1].rentaPasivaReal - sin.filas[1].rentaPasivaReal).toBeGreaterThan(6.5e9 * 0.08);
+    const a = r.alertas.find((x) => x.tipo === "nueva_sin_plata");
+    expect(a.texto).toMatch(/BTG Pactual: te faltan \$/);
+    const h = txt(renderToString(<InversionesNuevas items={r.nuevasDetalle} />));
+    expect(h).toContain("BTG Pactual"); expect(h).toContain("Te faltan"); expect(h).toContain("Valor a 10 años");
+  });
+  it("una predefinida más grande que lo disponible no se recorta", () => {
+    const r = proyectarFuturo10(u, { nuevas: [{ preset: "rfLargo", monto: 5e9 }] });
+    const d = r.nuevasDetalle[0];
+    expect(d.monto).toBe(5e9); expect(d.faltante).toBeGreaterThan(0);
+    expect(r.alertas.some((x) => x.tipo === "nueva_sin_plata")).toBe(true);
+  });
+});
+
+describe("Campo de rendimiento prellenado", () => {
+  it("«X% anual antes de impuestos», «Estimado…», sin NaN, restaurar cuando se edita", () => {
+    const h = txt(renderToString(<CampoRendimiento estimado={7.625} value="" onChange={() => {}} fuente="F" />));
+    expect(h).toContain("7,6% anual antes de impuestos"); expect(h).toContain("Estimado. Si tienes una tasa real, ponla.");
+    expect(h).not.toContain("NaN"); expect(h).not.toContain("restaurar");
+    const h2 = txt(renderToString(<CampoRendimiento estimado={7.6} value={NaN} onChange={() => {}} />));
+    expect(h2).not.toContain("NaN");
+    const h3 = txt(renderToString(<CampoRendimiento estimado={7.6} value={11} onChange={() => {}} />));
+    expect(h3).toMatch(/11(,0)?% anual antes de impuestos/); expect(h3).toContain("restaurar estimado");
+  });
+  it("cripto: 0% real, sin supuesto, aviso de volatilidad", () => {
+    const h = txt(renderToString(<MiFuturo10 user={{ inflacionPct: 5, inv: [{ id: "b", n: "Bitcoin", tp: "Crypto", va: 50e6 }], ingresos: [], gas: {}, deu: [] }} />));
+    expect(h).toContain("sin supuesto de valorización, ajústalo");
+    expect(h).toContain("muy volátiles");
+    expect(h).toMatch(/>5(,0)?% anual antes de impuestos/); // = inflación, 0% real
+  });
+  it("renta fija corto en el escenario base sale del supuesto (inflación 5%), sin valores fijos", () => {
+    expect(estimadoPreset("rfCorto", resolverEscenario("base", {})).pct).toBeCloseTo((1.05 * 1.025 - 1) * 100, 1);
+  });
+});
+
+describe("Barra de Reinvierte y tasa UVR", () => {
+  it("disponible = ventas + caja; te queda = disponible − asignado", () => {
+    const u = { inflacionPct: 5, inv: [{ id: "c", n: "Apto", tp: "Real Estate", va: 300e6 }], ingresos: [], gas: {}, deu: [] };
+    const r = proyectarFuturo10(u, { decisiones: { c: { accion: "vende", anioVenta: 1 } }, nuevas: [{ preset: "rfLargo", monto: 400e6 }] });
+    const b = resumenReinvertir(r.disponible);
+    expect(b.deVentas).toBe(300e6);
+    expect(b.disponible).toBeCloseTo(b.deVentas + b.deCaja, 2);
+    expect(b.queda).toBeCloseTo(b.disponible - b.asignado, 2);
+    expect(b.queda).toBeLessThan(0);
+    const h = txt(renderToString(<BarraReinvertir disponible={r.disponible} />));
+    expect(h).toContain("Disponible para reinvertir"); expect(h).toContain("de ventas"); expect(h).toContain("de tu caja"); expect(h).toContain("Te queda"); expect(h).toContain("position:sticky");
+    expect(h).toContain("no incluye costos de venta ni impuestos");
+  });
+  it("UVR: 8,95% real, Superfinanciera vía agregador, 25-sep-2026", () => {
+    const t = tasaDeuda({ tp: "Mortgage" }, { uvr: true });
+    expect(t.pct).toBe(8.95); expect(t.fecha).toBe("25-sep-2026"); expect(t.fuente).toMatch(/vía agregador/);
+    expect(t.etiqueta).toContain("Es un promedio, no tu tasa.");
   });
 });

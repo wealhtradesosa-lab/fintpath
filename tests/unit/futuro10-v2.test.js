@@ -148,7 +148,7 @@ describe("revisión Finanzas #56", () => {
     const t = tasaDeuda({ tp: "Mortgage", mt: 100e6 }, { uvr: true });
     expect(t).toMatchObject({ estimada: true, real: true, tipo: "hipotecarioUVR" });
     expect(t.pct).toBeLessThan(10);
-    expect(t.fuente).toMatch(/Superfinanciera, tasa promedio por modalidad/);
+    expect(t.fuente).toMatch(/Superfinanciera/);
     expect(t.fecha).toBeTruthy();
     expect(tasaDeuda({ tp: "Mortgage" }).pct).toBe(13.94);
   });

@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, valorizacionHintPct, rendimientoHintPct, validarMezcla, leerFuturos, migrarConfigF10, avisoRetornoAlto, pareceIngresoFuturo, tasaDeuda, leerObra, TIPOS_ACTIVO_FUTURO, TIPOS_OBRA } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, valorizacionHintPct, rendimientoHintPct, validarMezcla, leerFuturos, migrarConfigF10, avisoRetornoAlto, estimadoPreset, resumenReinvertir, esCripto, pareceIngresoFuturo, tasaDeuda, leerObra, TIPOS_ACTIVO_FUTURO, TIPOS_OBRA } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 
 const C = { bg: "#111827", bg2: "#1f2937", bd: "rgba(255,255,255,0.1)", tx: "#e5e7eb", tx2: "#9ca3af", gn: "#22c55e", rd: "#ef4444", am: "#f59e0b" };
@@ -29,7 +29,7 @@ export const ESTADO_GUARDADO = { guardando: "Guardando…", listo: "Guardado hac
 export const NOTA_SIMULADOR = "¿Por qué no coincide con el Simulador? Aquí cada activo sigue su propio supuesto, las deudas pagan interés, las ventas tienen año y todo se muestra en pesos de hoy. El Simulador usa un retorno único sobre tu patrimonio.";
 export const AVISO_VENTAS = "Las ventas se toman por su valor bruto: no incluye costos de venta ni impuestos.";
 const GRUPOS_ALERTA = [
-  ["Plata que falta", ["faltante", "cf_negativo", "exceso"]],
+  ["Plata que falta", ["nueva_sin_plata", "faltante", "cf_negativo", "exceso"]],
   ["Liquidez", ["liquidez_baja", "inversion_adicional", "pago_futuro"]],
   ["Revisa tus datos", ["tasa_estimada", "deuda_sin_saldo", "retorno_alto"]],
 ];
@@ -134,8 +134,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 <div><b>{a.n || a.nombre}</b><div style={{ color: C.tx2, fontSize: 12 }}>{ETQ[info.clase] || "Otros"} · {plata(a.va)}{info.usd ? " USD" : ""}</div></div>
                 <label style={{ fontSize: 12, color: C.tx2 }}>Valorización anual (%)
                   {veh ? <div style={{ color: C.tx, fontSize: 13 }}>{fmtPctEs(SUPUESTOS_F10.vehiculo.depAnios1a3Pct)} años 1–3, {fmtPctEs(SUPUESTOS_F10.vehiculo.depDespuesPct)} después</div>
-                    : <InputDecimalEs style={inp} placeholder={fmtPctEs(hint, 1)} value={pr.rendimientoPct ?? ""} onChange={(v) => setP({ rendimientoPct: v })} />}
-                  <span style={{ fontSize: 11 }}>{veh ? SUPUESTOS_F10.fuentes.vehiculo : `Si no sabes, déjalo en ${fmtPctEs(hint, 1)}. Fuente: ${fuenteClase(info.clase)}.`}</span>
+                    : <CampoRendimiento estimado={hint} value={pr.rendimientoPct} onChange={(v) => setP({ rendimientoPct: v })} fuente={fuenteClase(info.clase)}
+                        nota={info.clase === "otro" ? "0% real: sin supuesto de valorización, ajústalo." : null} cripto={esCripto(a)} />}
+                  {veh && <span style={{ fontSize: 11 }}>{SUPUESTOS_F10.fuentes.vehiculo}</span>}
                   {aviso && <span role="alert" style={{ display: "block", fontSize: 11, color: C.am }}>{aviso}</span>}</label>
                 {info.rentaMensual > 0 && <div style={{ fontSize: 12, color: C.tx2 }}>Renta neta {plata(info.rentaMensual)}/mes
                   <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
@@ -178,6 +179,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       {paso === 2 && (
         <div style={card}>
           <h3 style={{ marginTop: 0 }}>Reinvierte</h3>
+          <BarraReinvertir disponible={r.disponible} />
           <PlataDisponible disponible={r.disponible} />
           <p style={{ color: C.tx2, fontSize: 12 }}>Elige un norte. Son ejemplos de mezcla, no recomendaciones.</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -192,11 +194,12 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <h4>Inversiones nuevas</h4>
           {cfg.nuevas.map((x, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,140px),1fr))", gap: 6, marginBottom: 6 }}>
-              <select style={inp} value={x.preset} onChange={(e) => set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, preset: e.target.value } : y))}>
+              <select style={inp} value={x.preset} onChange={(e) => set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, preset: e.target.value, rendimientoNomPct: "" } : y))}>
                 {Object.entries(SUPUESTOS_F10.presets).map(([k, p]) => <option key={k} value={k}>{p.nombre}</option>)}
                 <option value="custom">Otra (personalizada)</option>
               </select>
               <NumberInput style={inp} placeholder="Monto" value={x.monto} onChange={(v) => set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, monto: v } : y))} />
+              {x.preset !== "custom" && <RendimientoPreset x={x} esc={esc} up={(v) => set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, ...v } : y))} />}
               {x.preset === "custom" && (() => {
                 const up = (v) => set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, ...v } : y));
                 const hint = rendimientoHintPct(esc);
@@ -204,8 +207,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 return (<>
                   <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder="Ej.: negocio, CDT, finca" /></label>
                   <label style={lbl}>¿En qué año?<select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((y) => <option key={y} value={y}>Año {y}</option>)}</select></label>
-                  <label style={lbl}>Rendimiento anual esperado (%)<InputDecimalEs style={inp} placeholder={fmtPctEs(hint, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />
-                    <span style={{ fontSize: 11 }}>Si no sabes, usa {fmtPctEs(hint, 1)}.</span></label>
+                  <CampoRendimiento estimado={hint} value={x.rendimientoNomPct} onChange={(v) => up({ rendimientoNomPct: v })} fuente={`${SUPUESTOS_F10.fuentes.rfCorto} (renta fija corto plazo del escenario)`} />
                   <label style={lbl}>Moneda<select style={inp} value={x.moneda || "COP"} onChange={(e) => up({ moneda: e.target.value })}><option value="COP">COP</option><option value="USD">USD</option></select>
                     {x.moneda === "USD" && <span style={{ fontSize: 11, color: C.am }}>En dólares, el resultado en pesos también depende de cómo se mueva la tasa de cambio.</span>}</label>
                   <label style={lbl}>¿Cómo te da plata?<select style={inp} value={x.tipo || "valoriza"} onChange={(e) => up({ tipo: e.target.value })}><option value="renta">Paga renta (te entra al flujo)</option><option value="valoriza">Solo se valoriza (crece el valor)</option></select></label>
@@ -238,6 +240,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             </table>
             <div style={{ color: C.tx2, fontSize: 11 }}>* En pesos de hoy (se descuenta la inflación una sola vez). La columna nominal es en pesos de cada año.</div>
           </div>
+          <InversionesNuevas items={r.nuevasDetalle} />
           {agruparAlertas(r.alertas).map(([titulo, xs]) => (
             <div key={titulo} style={{ ...card, borderColor: titulo === "Plata que falta" ? C.rd : C.am, marginTop: 10 }}>
               <b style={{ color: titulo === "Plata que falta" ? C.rd : C.am }}>{titulo}</b>
@@ -348,7 +351,7 @@ function Deudas({ user, cfg, set }) {
             <div><b>{d.n || d.nombre || "Deuda"}</b><div style={{ color: C.tx2, fontSize: 12 }}>Saldo {plata(d.mt)} · cuota {plata(d.pg ?? d.pago)}/mes</div>
               {!(Number(d.mt) > 0) && <div style={{ color: C.am, fontSize: 11 }}>Agrega el saldo: por ahora la cuota se mantiene los 10 años.</div>}</div>
             <label style={lbl}>{ov.uvr ? "Tasa real sobre UVR (%)" : "Tasa anual E.A. (%)"}<InputDecimalEs style={inp} placeholder={fmtPctEs(t.pct)} value={ov.tasaPct ?? (Number(d.ts) > 0 ? d.ts : "")} onChange={(v) => setO({ tasaPct: v })} />
-              {t.estimada && <span style={{ fontSize: 11, color: C.am }}>Tasa estimada, agrégala. Usamos {t.real ? `UVR + ${fmtPctEs(t.pct)} real` : `${fmtPctEs(t.pct)} E.A.`} · Fuente: {t.fuente}, {t.fecha}.</span>}
+              {t.estimada && <span style={{ fontSize: 11, color: C.am }}>Tasa estimada, agrégala. Usamos {t.real ? `UVR + ${fmtPctEs(t.pct)} (Superfinanciera, promedio No VIS en UVR, ${t.fecha}). Es un promedio, no tu tasa.` : `${fmtPctEs(t.pct)} E.A. Fuente: ${t.fuente}, ${t.fecha}. Es un promedio, no tu tasa.`}</span>}
               {!t.estimada && t.real && <span style={{ fontSize: 11, color: C.tx2 }}>En UVR: escribe la tasa real (la que va sobre la UVR).</span>}</label>
             <label style={{ ...lbl, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={!!ov.uvr} onChange={(e) => setO({ uvr: e.target.checked })} /> ¿En UVR?</label>
           </div>);
@@ -426,6 +429,63 @@ export const textoExceso = (d) => `En el año ${d.anio} asignas ${plata(d.exceso
 const alertaSt = { color: C.rd, fontSize: 12, background: "rgba(239,68,68,0.08)", border: `1px solid ${C.rd}`, borderRadius: 6, padding: "4px 8px" };
 
 // Alerta junto a la inversión que se pasa de lo disponible en su año.
+/** Inversión predefinida: % nominal estimado (editable) con su fuente; «restaurar estimado» si lo cambiaste. */
+export function RendimientoPreset({ x, esc, up }) {
+  const e = estimadoPreset(x.preset, esc);
+  if (!e) return null;
+  return <CampoRendimiento estimado={e.pct} value={x.rendimientoNomPct} onChange={(v) => up({ rendimientoNomPct: v })} fuente={e.fuente} esc={esc} />;
+}
+
+const editadoOk = (v) => v !== "" && v != null && Number.isFinite(Number(v));
+/** Rendimiento anual prellenado con el estimado (nunca vacío ni NaN), editable, con fuente y «restaurar estimado». */
+export function CampoRendimiento({ estimado, value, onChange, fuente, nota = null, cripto = false, esc = null }) {
+  const est = Math.round(Number(estimado) * 10) / 10;
+  const ed = editadoOk(value);
+  const efectivo = ed ? Number(value) : est;
+  return (
+    <label style={{ fontSize: 12, color: C.tx2, display: "block" }}>Rendimiento anual (%)
+      <InputDecimalEs style={inp} value={efectivo} onChange={(v) => onChange(editadoOk(v) ? v : "")} />
+      <span style={{ display: "block", fontSize: 12, color: C.tx }}>{fmtPctEs(efectivo, 1)} anual antes de impuestos</span>
+      {!ed && <span style={{ display: "block", fontSize: 11 }}>Estimado. Si tienes una tasa real, ponla.</span>}
+      {nota && <span style={{ display: "block", fontSize: 11, color: C.am }}>{nota}</span>}
+      {cripto && <span style={{ display: "block", fontSize: 11, color: C.am }}>Bitcoin y otras criptomonedas son muy volátiles: pueden caer más de 50% en un año. No sugerimos un rendimiento.</span>}
+      {fuente && <span style={{ display: "block", fontSize: 11 }}>Fuente: {fuente}.</span>}
+      {ed && <button type="button" onClick={() => onChange("")} style={{ background: "none", border: 0, padding: 0, color: C.gn, textDecoration: "underline", cursor: "pointer", fontSize: 11 }}>restaurar estimado ({fmtPctEs(est, 1)})</button>}
+      {esc && ed && avisoRetornoAlto(value, esc) && <span style={{ display: "block", fontSize: 11, color: C.am }}>Supuesto alto, revisa.</span>}
+    </label>
+  );
+}
+
+/** Barra fija arriba en «Reinvierte»: se actualiza en vivo (10 años, pesos de hoy). */
+export function BarraReinvertir({ disponible = [] }) {
+  const b = resumenReinvertir(disponible);
+  const it = (t, v, color = C.tx, sub = null) => (<div style={{ minWidth: 0 }}><div style={{ fontSize: 11, color: C.tx2 }}>{t}</div><div style={{ fontSize: 17, fontWeight: 700, color }}>{plata(v)}</div>{sub && <div style={{ fontSize: 11, color: C.tx2 }}>{sub}</div>}</div>);
+  return (
+    <div role="status" aria-live="polite" style={{ position: "sticky", top: 0, zIndex: 5, background: C.bg2, border: `1px solid ${b.queda < 0 ? C.rd : C.bd}`, borderRadius: 8, padding: "10px 12px", marginBottom: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,160px),1fr))", gap: 8 }}>
+      {it("Disponible para reinvertir", b.disponible, C.tx, `${plata(b.deVentas)} de ventas · ${plata(b.deCaja)} de tu caja`)}
+      {it("Ya asignado", b.asignado)}
+      {it("Te queda", b.queda, b.queda < 0 ? C.rd : C.gn)}
+      <div style={{ gridColumn: "1 / -1", fontSize: 11, color: C.tx2 }}>10 años, en pesos de hoy. Caja = liquidez por encima del colchón + lo que te sobra cada año. Las ventas van por su valor bruto: no incluye costos de venta ni impuestos.</div>
+    </div>
+  );
+}
+
+/** Resultado: cada inversión nueva con su línea, su renta y su valor a 10 años. */
+export function InversionesNuevas({ items = [] }) {
+  if (!items.length) return null;
+  return (
+    <div style={{ marginTop: 10 }}>
+      <h4 style={{ margin: "8px 0" }}>Tus inversiones nuevas</h4>
+      {items.map((x) => (
+        <div key={x.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "6px 0", fontSize: 12 }}>
+          <b>{x.nombre}</b> · {plata(x.monto)} en el año {x.anio}
+          <div style={{ color: C.tx2 }}>Renta pasiva {plata(x.rentaMensual)}/mes · Valor a 10 años {plata(x.valorFinal)} (pesos de hoy)</div>
+          {x.faltante > 0 && <div role="alert" style={{ color: C.rd }}>Te faltan {plata(x.faltante)} para esta inversión.</div>}
+        </div>))}
+    </div>
+  );
+}
+
 export function AlertaExceso({ disponible = [], tipo, idx }) {
   const d = disponible.find((x) => x.exceso > 0 && x.asignaciones.some((a) => a.tipo === tipo && a.idx === idx));
   return d ? <div role="alert" style={{ ...alertaSt, gridColumn: "1 / -1" }}>{textoExceso(d)}</div> : null;
