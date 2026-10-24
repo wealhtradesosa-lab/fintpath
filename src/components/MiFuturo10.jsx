@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, sugerirVinculados } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, sugerirVinculados, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -88,15 +88,10 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             ["Flujo del mes", plata(r.hoy.flujoMensual)],
             ["Liquidez", plata(r.hoy.liquidos)],
           ]} />
-          <p style={{ color: C.tx2, fontSize: 12 }}>Tus activos, por canasta:</p>
-          {["liquido", "inmueble", "acciones", "otro", "vehiculo"].map((cl) => {
-            const xs = (user.inv || []).filter((a) => r.activos.find((x) => x.id === a.id && x.clase === cl));
-            if (!xs.length) return null;
-            return <div key={cl} style={{ fontSize: 13, marginBottom: 4 }}><b>{ETQ[cl]}:</b> {xs.map((a) => a.n || a.nombre).join(", ")}</div>;
-          })}
           <p style={{ color: C.tx2, fontSize: 12 }}>Las cifras de hoy no incluyen impuestos.</p>
         </div>
       )}
+      {paso === 0 && <HoyDetalle user={user} cfg={cfg} set={set} />}
 
       {paso === 1 && (<>
         {/* 24-oct-2026 (Santiago: "veo que se pisan las mangueras de ambas
@@ -646,5 +641,67 @@ function SeAcaba({ lista, term, setTerm, frase }) {
       </div>); })}
     {orden.length > 8 && <button style={{ ...btn(false), marginTop: 6 }} onClick={() => setVerTodos(!verTodos)}>{verTodos ? "Ver menos" : `Ver todos (${orden.length})`}</button>}
     {total > 0 && <div style={{ fontSize: 12, color: C.am, marginTop: 6 }}>{frase} {plata(Math.round(total))} al mes.</div>}
+  </>;
+}
+
+// 24-oct-2026 (Santiago: "uno debería poder revisar cada inversión, cuánto
+// vale, cuánto renta… veo que carga promedios de otro lado… el paso uno debe
+// editar también los ingresos como fees, rentas de otras inversiones").
+// Hoy = revisar y corregir PARA EL PLAN lo que tienes y lo que te entra.
+// Las páginas Patrimonio, Ingresos y Egresos no se tocan.
+function HoyDetalle({ user, cfg, set }) {
+  const invs = inversionesHoy(user, cfg);
+  const sueltos = ingresosSueltosHoy(user, cfg);
+  const [abierto, setAbierto] = useState(null);
+  const lbl = { fontSize: 12, color: C.tx2, display: "flex", flexDirection: "column", gap: 4 };
+  const rh = cfg.rentaHoy || {}, ih = cfg.ingresoHoy || {};
+  const setR = (id, v) => { const nx = { ...rh }; if (v === "" || v == null) delete nx[id]; else nx[id] = v; set("rentaHoy", nx); };
+  const setI = (k, v) => { const nx = { ...ih }; if (v === "" || v == null) delete nx[k]; else nx[k] = v; set("ingresoHoy", nx); };
+  const pctTxt = (v) => `${(Math.round(v * 10) / 10).toLocaleString("es-CO")} % al año`;
+  const fila = { borderTop: `1px solid ${C.bd}`, padding: "10px 0" };
+  const totalInv = invs.filter((x) => !x.vende).reduce((sm, x) => sm + x.usada, 0), totalSue = sueltos.reduce((sm, x) => sm + x.mensual, 0);
+  return <>
+    <div style={card}>
+      <h3 style={{ marginTop: 0, marginBottom: 2 }}>Cada inversión: cuánto vale y cuánto renta</h3>
+      <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>Toca una para ver de dónde sale su renta. Si no es lo que te da hoy, corrígela aquí: solo cambia el plan.</p>
+      {invs.map((x) => { const ab = abierto === x.id; return (
+        <div key={x.id} style={fila}>
+          <div onClick={() => setAbierto(ab ? null : x.id)} style={{ cursor: "pointer" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b>{x.nombre}</b><span>{plata(Math.round(x.valor))}</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", fontSize: 13, color: x.usada > 0 ? C.gn : C.tx2 }}>
+              <span>{x.usada > 0 ? `Renta ${plata(Math.round(x.usada))}/mes${x.corregida ? " (corregida)" : ""}` : "Sin renta: crece de valor"}</span>
+              <span>{x.usada > 0 ? pctTxt(x.pctAnual) : ""} {ab ? "▴" : "▾"}</span>
+            </div>
+            {x.vende && <div style={{ fontSize: 11, color: C.am }}>En este plan se vende (paso 2).</div>}
+          </div>
+          {ab && <div style={{ marginTop: 8, fontSize: 12, color: C.tx2 }}>
+            {x.ingresos.length === 0 && x.gastos.length === 0 && <div>No tiene ingresos ni gastos ligados en tus páginas Ingresos y Egresos.</div>}
+            {x.ingresos.map((y, k) => <div key={"i" + k} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><span>+ {y.nombre}{y.nota ? <i> · {y.nota}</i> : null}</span><span>{plata(Math.round(y.mensual))}</span></div>)}
+            {x.gastos.map((y, k) => <div key={"g" + k} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><span>− {y.nombre}{x.manual ? <i> · ya incluido en la renta</i> : y.nota ? <i> · {y.nota}</i> : null}</span><span>{plata(Math.round(y.mensual))}</span></div>)}
+            {(x.ingresos.length > 0 || x.gastos.length > 0) && <div style={{ display: "flex", justifyContent: "space-between", borderTop: `1px solid ${C.bd}`, marginTop: 4, paddingTop: 4, color: C.tx }}><span>Renta neta según tus páginas</span><span>{plata(Math.round(x.neta))}/mes</span></div>}
+            <label style={{ ...lbl, marginTop: 8 }}>¿Cuánto te deja al mes, neto? ($, opcional)
+              <NumberInput style={inp} placeholder={x.neta > 0 ? fmtMilesEs(Math.round(x.neta)) : "Ej.: 57.500.000"} value={rh[x.id] ?? ""} onChange={(v) => setR(x.id, v)} />
+              <span style={{ fontSize: 11 }}>Si lo dejas vacío se usa la renta de tus páginas. {x.valor > 0 ? "Ej.: 21 % al año de " + plata(Math.round(x.valor)) + " = " + plata(Math.round(x.valor * 0.21 / 12)) + "/mes." : ""}</span></label>
+            {rh[x.id] != null && <button style={{ ...btn(false), marginTop: 6, fontSize: 12 }} onClick={() => setR(x.id, null)}>Volver a la de mis páginas</button>}
+          </div>}
+        </div>); })}
+      <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Rentas de inversiones{invs.some((x) => x.vende) ? " (sin las que vendes)" : ""}</span><span>{plata(Math.round(totalInv))}/mes</span></div>
+    </div>
+    <div style={card}>
+      <h3 style={{ marginTop: 0, marginBottom: 2 }}>Otros ingresos: fees, salarios, rentas sueltas</h3>
+      <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>Lo que te entra y no está ligado a una inversión. Corrige el monto para el plan si no es lo que recibes cada mes. Si alguno se acaba, apágalo en el paso 2.</p>
+      {sueltos.length === 0 && <div style={{ fontSize: 13, color: C.tx2 }}>No tienes otros ingresos.</div>}
+      {sueltos.map((x) => (
+        <div key={x.key} style={fila}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b>{x.nombre}</b><span style={{ fontSize: 12, color: C.tx2 }}>{x.renta ? "renta" : "trabajo"}</span></div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
+            <span style={{ width: 170 }}><NumberInput style={inp} placeholder={fmtMilesEs(Math.round(x.enIngresos))} value={ih[x.key] ?? ""} onChange={(v) => setI(x.key, v)} /></span>
+            <span style={{ fontSize: 12, color: x.corregido ? C.gn : C.tx2 }}>{x.corregido ? `corregido (en Ingresos: ${plata(Math.round(x.enIngresos))})` : `${plata(Math.round(x.mensual))}/mes, de tu página Ingresos`}</span>
+            {x.corregido && <button style={{ ...btn(false), fontSize: 12, padding: "4px 8px" }} onClick={() => setI(x.key, null)}>Quitar</button>}
+          </div>
+          {x.nota && !x.corregido && <div style={{ fontSize: 11, color: C.tx2, marginTop: 2 }}>{x.nota}</div>}
+        </div>))}
+      <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Otros ingresos</span><span>{plata(Math.round(totalSue))}/mes</span></div>
+    </div>
   </>;
 }

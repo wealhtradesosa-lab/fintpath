@@ -611,3 +611,27 @@ describe("ingresos que se acaban", () => {
     expect(r1.desglose.entra.some((x) => /orlando/.test(x.nombre))).toBe(false);
   });
 });
+
+describe("montos completos y cada inversión hoy", () => {
+  const user = { trm: 4000, inflacionPct: 4,
+    inv: [{ id: "rc", n: "RAPICREDIT FONDEO", tipo: "otro", va: 3288e6 }],
+    ingresos: [{ nombre: "Rapicredit", tipo: "pasivo", activoId: "rc", mensual: 57.5e6, frecuencia: "mensual", desdeMes: 7, hastaMes: 12 }],
+    gas: { Varios: [{ c: "Comisión fondeo", activoId: "rc", mensual: 5e6, frecuencia: "mensual" }] } };
+  it("un ingreso de julio a diciembre cuenta el mes completo en el plan", async () => {
+    const { inversionesHoy } = await import("../../src/lib/futuro10.js");
+    const [x] = inversionesHoy(user);
+    expect(x.bruta).toBeCloseTo(57.5e6, -3);
+    expect(x.neta).toBeCloseTo(52.5e6, -3);
+    expect(x.ingresos[0].nota).toMatch(/jul a dic/);
+    const r = proyectarFuturo10(user, { decisiones: {} });
+    expect(r.filas[1].ingresos / 12).toBeGreaterThan(52e6);
+  });
+  it("corregir la renta en el plan la reemplaza", async () => {
+    const { inversionesHoy } = await import("../../src/lib/futuro10.js");
+    const a = proyectarFuturo10(user, { decisiones: {} });
+    const r = proyectarFuturo10(user, { decisiones: {}, rentaHoy: { rc: 57.5e6 } });
+    expect(r.filas[1].ingresos - a.filas[1].ingresos).toBeCloseTo(5e6 * 12 * 1.0, -6);
+    expect(inversionesHoy(user, { rentaHoy: { rc: 57.5e6 } })[0].pctAnual).toBeCloseTo(21, 0);
+    expect(r.desglose.entra.find((x) => /RAPICREDIT/.test(x.nombre)).nota).toMatch(/corregiste/);
+  });
+});

@@ -88,7 +88,8 @@ export function claseActivo(a) {
  *                         mezcla:{liquidez,renta,crecimiento}, nuevas:[{nombre,preset,monto}],
  *                         reinversiones:[{activoId,monto}], supuestos }
  */
-export function proyectarFuturo10(user = {}, cfg = {}) {
+export function proyectarFuturo10(userIn = {}, cfg = {}) {
+  const user = ajustarIngresos(paraPlan(userIn), cfg);
   const sup = cfg.supuestos || SUPUESTOS_F10;
   const esc = resolverEscenario(cfg.escenario || "base", user, sup);
   const N = n(cfg.anios) || sup.anios;
@@ -363,6 +364,17 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   // patrimonio se lleva aparte la renta pasiva (lo que llega a la cuenta sin
   // trabajar) y, por activo, cuánto renta y cuánto crece cada año.
   let pasivo = Math.max(0, bOp.ip * 12 - rentaVendida);
+  // 24-oct-2026 (Santiago: "uno debería poder revisar cada inversión, cuánto
+  // vale, cuánto renta"). En el paso Hoy puede corregir para el plan la renta
+  // neta de un activo (cfg.rentaHoy: { id: pesos al mes }); reemplaza la que
+  // sale de Ingresos − Egresos ligados. Sus páginas no se tocan.
+  const rentaHoy = cfg.rentaHoy || {};
+  activos.forEach((a) => {
+    const v = rentaHoy[a.id]; if (v == null || v === "" || a.rentaReemplazada) return;
+    const nueva = Math.max(0, n(v)) * 12, antes = n((bOp.rentaNetaPorActivo || {})[a.id]) * 12;
+    ingresos += nueva - antes; pasivo += nueva - antes; a.rentaAnual = nueva; a.rentaCorregida = true;
+    if (nueva > 0 && a.crec != null && a.clase !== "inmueble" && a.clase !== "vehiculo") a.crec = Math.min(a.crec, inf); // el rendimiento ya llega como renta
+  });
   const todos = [...activos, ...nuevas];
   const valorTotal = () => todos.reduce((s, a) => s + a.valor + (a.reserva || 0), 0) + colchon + canasta.liquidez + canasta.renta + canasta.crecimiento;
   const invertible = () => todos.filter((a) => a.invertible).reduce((s, a) => s + a.valor + (a.reserva || 0), 0) + colchon + canasta.liquidez + canasta.renta + canasta.crecimiento;
@@ -539,7 +551,8 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
       if (i.activoId && conRenta.has(i.activoId) && tipoIngreso(i) === "pasivo") return; // va como renta neta del activo
       const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: v, nota: tipoIngreso(i) === "pasivo" ? "renta · de tu página Ingresos" : "trabajo · de tu página Ingresos" });
     });
-    Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada) return; if (v > 0.5) { const br = (bOp.rentaPorActivo || {})[id] || v, mm = (x) => `$${(Math.round(x / 1e5) / 10).toLocaleString("es-CO")}M`;
+    activos.filter((a) => a.rentaCorregida && a.rentaAnual > 0).forEach((a) => entra.push({ nombre: `Renta de ${a.nombre}`, mensual: a.rentaAnual / 12 * Math.pow(1 + gIng, 0), nota: "la corregiste en el paso Hoy" }));
+    Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada || a?.rentaCorregida) return; if (v > 0.5) { const br = (bOp.rentaPorActivo || {})[id] || v, mm = (x) => `$${(Math.round(x / 1e5) / 10).toLocaleString("es-CO")}M`;
       // 24-oct-2026 (Santiago: "Rapicredit me da el 21 % de 3.288 M"): se muestra la cuenta, no solo el neto.
       entra.push({ nombre: `Renta de ${nombreActivo(id)}`, mensual: v, nota: br - v > 0.5 ? `${mm(br)} de renta − ${mm(br - v)} de gastos ligados en Egresos` : "renta de tu página Ingresos" }); } });
     const ff = 1 + inf;
@@ -820,4 +833,73 @@ export function vinculadosQueSeVan(user = {}, cfg = {}, vendidosIds) {
     elegidos.forEach((k) => fuera.add(k));
   });
   return fuera;
+}
+
+// ── Montos para el plan ────────────────────────────────────────────────────
+// 24-oct-2026 (Santiago: "Rapicredit me da el 21 % de 3.288 M… veo que carga
+// promedios de otro lado"). Ingresos y Egresos guardan la vigencia del AÑO EN
+// CURSO (Rapicredit paga de julio a diciembre → desdeMes 7) y el promedio de
+// este año la reparte en 12 meses: 57,5 M quedaban como 28,7 M y así seguían
+// los 10 años. Para proyectar, un concepto mensual cuenta su monto completo y
+// un pago anual ya hecho este año vuelve a contar; si algo se acaba, se apaga
+// en «Ingresos / Gastos que se acaban».
+const sinVigencia = (x) => {
+  if (!x || typeof x !== "object") return x;
+  const f = x.frecuencia || "mensual";
+  const out = { ...x };
+  if (f === "mensual" && (x.desdeMes || x.hastaMes)) { out._vigencia = { desde: Number(x.desdeMes) || 1, hasta: Number(x.hastaMes) || 12 }; out.desdeMes = 1; out.hastaMes = 12; }
+  if (x.pagos) delete out.pagos;
+  return out;
+};
+export function paraPlan(user = {}) {
+  if (user._paraPlan) return user;
+  const g = user.gastos || user.gas;
+  const gN = g ? Object.fromEntries(Object.entries(g).map(([k, v]) => [k, (v || []).map(sinVigencia)])) : g;
+  return { ...user, _paraPlan: true, ingresos: (user.ingresos || []).map(sinVigencia), ...(user.gastos ? { gastos: gN } : {}), ...(user.gas ? { gas: gN } : {}) };
+}
+
+/** Cada inversión hoy: cuánto vale y cuánto renta, con de dónde sale. */
+export function inversionesHoy(userIn = {}, cfg = {}) {
+  const user = ajustarIngresos(paraPlan(userIn), cfg);
+  const { impuestoNeto, retencionMensual, ...sinImp } = user;
+  const b = calcularBase({ ...sinImp, gastos: user.gastos || user.gas }, {});
+  const trm = b.trm, fx = (x) => (String(x?.moneda || x?.currency || "").toUpperCase() === "USD" ? trm : 1);
+  const MES = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  const nota = (x) => x._vigencia ? `en Ingresos/Egresos va de ${MES[x._vigencia.desde]} a ${MES[x._vigencia.hasta]}; aquí cuenta el mes completo` : (x.frecuencia && x.frecuencia !== "mensual" ? `pago ${x.frecuencia}, repartido por mes` : "");
+  return (user.inv || []).filter((a) => a && a.sim !== false).map((a) => {
+    const ingresos = (user.ingresos || []).filter((i) => i && i.sim !== false && i.activoId === a.id).map((i) => ({ nombre: i.nombre || i.categoria || "Ingreso", mensual: montoPromedioMensual(i) * fx(i), nota: nota(i) }));
+    const gastos = []; Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g) => { if (g && g.sim !== false && g.activoId === a.id) gastos.push({ nombre: g.c || g.n || g.nombre || cat, mensual: montoPromedioMensual(g) * fx(g), nota: nota(g) }); }));
+    const valor = n(a.va) * fx(a), bruta = n(b.rentaPorActivo?.[a.id]), neta = n(b.rentaNetaPorActivo?.[a.id]);
+    const corr = (cfg.rentaHoy || {})[a.id];
+    const usada = corr != null && corr !== "" ? Math.max(0, n(corr)) : neta;
+    return { id: a.id, nombre: a.n || a.nombre || "Activo", clase: claseActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende" };
+  });
+}
+
+// 24-oct-2026 (Santiago: "el paso uno no solo debe editar patrimonio, también
+// los ingresos como fees, rentas de otras inversiones"). En Hoy se corrige
+// para el plan cuánto entra de cada ingreso (cfg.ingresoHoy: { "i:índice":
+// pesos al mes }). Se reemplaza el monto y todo el motor lo usa.
+function ajustarIngresos(user, cfg = {}) {
+  const aj = cfg.ingresoHoy || {};
+  if (!Object.keys(aj).length) return user;
+  return { ...user, ingresos: (user.ingresos || []).map((i, k) => {
+    const v = aj[`i:${k}`]; if (v == null || v === "" || !i) return i;
+    const { montosMensuales, capital, tasa, montoModo, ...resto } = i;
+    return { ...resto, mensual: Math.max(0, n(v)), moneda: "COP", frecuencia: "mensual", _corregido: true };
+  }) };
+}
+/** Ingresos de hoy que no están ligados a una inversión (fees, salarios, rentas sueltas). */
+export function ingresosSueltosHoy(userIn = {}, cfg = {}) {
+  const base = paraPlan(userIn), user = ajustarIngresos(base, cfg);
+  const ids = new Set((user.inv || []).filter(Boolean).map((a) => a.id));
+  const trm = n(user.trm) || 4200, fx = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? trm : 1);
+  const MES = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  return (user.ingresos || []).map((i, k) => {
+    if (!i || i.sim === false || (i.activoId && ids.has(i.activoId))) return null;
+    const o = base.ingresos[k];
+    const enIngresos = montoPromedioMensual(o) * fx(o);
+    const nota = o._vigencia ? `en Ingresos va de ${MES[o._vigencia.desde]} a ${MES[o._vigencia.hasta]}; aquí cuenta el mes completo` : (o.frecuencia && !["mensual", "variable"].includes(o.frecuencia) ? `pago ${o.frecuencia}, repartido por mes` : o.frecuencia === "variable" ? "variable: promedio de lo cargado en el año" : "");
+    return { key: `i:${k}`, nombre: i.nombre || i.categoria || "Ingreso", renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
+  }).filter(Boolean);
 }
