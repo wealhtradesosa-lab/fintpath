@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "../../src/lib/taxCO.js";
 import { AG_RECOS, UVT_RECOS } from "../../src/lib/recomendacionesEstrategicas.js";
-import { adapterOwnerPlan, ahorroPvAfc, saldoResumen, etiquetaAG } from "../../src/lib/ownerPlanAdapter.js";
+import { adapterOwnerPlan, ahorroPvAfc, saldoResumen, etiquetaAG, topePvAfcAnual, AG_PROYECCION } from "../../src/lib/ownerPlanAdapter.js";
 
 const user = (salMes, gas = {}, extra = []) => ({ trm: 4200, owners: [{ id: "o1", name: "Luis", type: "natural" }], gas, deu: [], inv: [],
   ingresos: [{ id: "sal", owner: "o1", nombre: "Salario", fiscalCode: "LAB_SALARIO", mensual: salMes, tipo: "fijo" }, ...extra] });
@@ -109,5 +109,19 @@ describe("UVT sale del mismo año gravable que taxCO", () => {
     expect(3800 * uvtForYear(2026)).toBe(199021200);
     expect(uvtForYear(2025)).toBe(49799);
     if (DEFAULT_AG === 2026) expect(etiquetaAG({ ag: 2026, uvt: 52374 })).toBe("AG 2026 · UVT $52.374");
+  });
+});
+
+describe("Wizard: tope PV/AFC con la UVT de su año gravable", () => {
+  it("proyección AG 2026 → $199.021.200 con etiqueta; declaración AG 2025 → $189.236.200", () => {
+    expect(topePvAfcAnual(2026)).toEqual({ ag: 2026, uvt: 52374, tope: 199021200 });
+    expect(topePvAfcAnual(2025)).toEqual({ ag: 2025, uvt: 49799, tope: 189236200 });
+    expect(etiquetaAG({ ag: 2026 })).toBe("AG 2026 · UVT $52.374");
+  });
+  it("el tope y el impuesto del wizard usan el mismo AG", () => {
+    const t = topePvAfcAnual(AG_PROYECCION);
+    const d = estimarImpuesto(user(60e6), { ag: AG_PROYECCION }).detalle[0];
+    expect(t.uvt).toBe(uvtForYear(AG_PROYECCION));
+    expect(d.pvMax).toBe(t.tope); // 30% de 60M/mes supera 3.800 UVT → tope exacto del mismo año
   });
 });

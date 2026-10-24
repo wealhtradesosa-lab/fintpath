@@ -175,3 +175,11 @@ export function etiquetaAG(fd) {
   const ag = fd?.ag || DEFAULT_AG, uvt = fd?.uvt || uvtForYear(ag);
   return `AG ${ag} · UVT $${Math.round(uvt).toLocaleString("es-CO")}`;
 }
+
+// Proyección con los aportes de hoy (wizard, simulador): AG por defecto (2026).
+// La declaración F-210 AG 2025 debe pedir topePvAfcAnual(2025) → $189.236.200.
+export const AG_PROYECCION = DEFAULT_AG;
+export function topePvAfcAnual(ag = AG_PROYECCION) {
+  const uvt = uvtForYear(ag);
+  return { ag, uvt, tope: Math.round(3800 * uvt) };
+}
