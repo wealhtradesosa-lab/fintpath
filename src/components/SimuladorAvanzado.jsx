@@ -3,7 +3,7 @@ import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
-import { vistaNivel, estadoNivel, TOPE_BARRA, metaNivel, ingresosOcultos } from "../lib/nivelVista.js";
+import { vistaNivel, estadoNivel, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
@@ -290,7 +290,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           👁️ Esta cuenta <b>no incluye</b> lo que tienes oculto:
           {ocultos.nGastos > 0 && <> {ocultos.nGastos} gasto{ocultos.nGastos > 1 ? "s" : ""} por <b>{fm(ocultos.gastos)}/mes</b></>}
           {ocultos.nGastos > 0 && ocultos.nIngresos > 0 && " y"}
-          {ocultos.nIngresos > 0 && <> {ocultos.nIngresos} ingreso{ocultos.nIngresos > 1 ? "s" : ""} por <b>{fm(ocultos.ingresos)}/mes</b></>}
+          {ocultos.nIngresos > 0 && <> {ocultos.nIngresos} ingreso{ocultos.nIngresos > 1 ? "s" : ""} por <b>{fm(nombresIngresosOcultos.length ? sumaOcultos(nombresIngresosOcultos) : ocultos.ingresos)}/mes</b>{nombresIngresosOcultos.length > 0 && " en promedio"}</>}
           . Si eso lo sigues pagando o cobrando, vuelve a mostrarlo en su sección para que el nivel sea real.
           {nombresIngresosOcultos.length > 0 && (
             <div style={{ marginTop: 6 }}>
@@ -299,7 +299,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
               </button>
               {verOcultos && (
                 <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-                  {nombresIngresosOcultos.map((n, i) => <li key={i}>{n.nombre}: <b>{fm(n.mensual)}/mes</b></li>)}
+                  {nombresIngresosOcultos.map((n, i) => <li key={i}>{n.nombre}: <b>{fm(n.mensual)}/mes</b>{n.nota && <span style={{ color: T.txt3 }}> ({n.nota})</span>}</li>)}
                 </ul>
               )}
             </div>

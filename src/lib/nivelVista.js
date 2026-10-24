@@ -4,7 +4,7 @@
 // Todo sale ahora de UN solo nivel (metrics.js → nivelLibertad) y de los mismos
 // umbrales en plata (umbralNivel). Este módulo solo arma las frases.
 import { NIVELES, umbralNivel, fmtPctEs } from "./metrics.js";
-import { montoPromedioMensual } from "./flowHelpers.js";
+import { montoPromedioMensual, totalAnualItem, getFrecuencia, estaPagadoEnAño, getMesActual, MESES } from "./flowHelpers.js";
 
 /**
  * @param {{ip:number, ob:number, nivel:object|null}} p  nivel = salida de nivelLibertad
@@ -54,11 +54,29 @@ export function metaNivel(def, ctx) {
   return { tipo: "pasivo", monto: umbralNivel(def, ctx) };
 }
 
-/** Ingresos ocultos (sim === false): nombre y monto mensual en COP. Solo para
- *  mostrarle al usuario sus propios datos; no va a analytics ni a logs. */
-export function ingresosOcultos(ingresos = [], trm = 4200) {
-  return (ingresos || []).filter((i) => i && i.sim === false).map((i) => ({
-    nombre: String(i.nombre || i.categoria || "Ingreso sin nombre"),
-    mensual: (montoPromedioMensual(i) || 0) * (i.moneda === "USD" ? trm : 1),
-  }));
+const NOMBRE_FREQ = { anual: "anual", trimestral: "trimestral", semestral: "semestral", unico: "pago único" };
+/**
+ * Ingresos ocultos (sim === false): nombre, monto mensual en COP y nota. Solo
+ * para mostrarle al usuario sus propios datos; no va a analytics ni a logs.
+ * Base única: promedio mensual del año. Mensual/variable → montoPromedioMensual;
+ * no mensuales → total del año / 12, aunque ya se hayan cobrado (antes salían
+ * en $0/mes). El total del aviso es la suma de esta lista.
+ */
+export function ingresosOcultos(ingresos = [], trm = 4200, año = getMesActual().año) {
+  return (ingresos || []).filter((i) => i && i.sim === false).map((i) => {
+    const fx = i.moneda === "USD" ? trm : 1;
+    const freq = getFrecuencia(i);
+    const noMensual = freq !== "mensual" && freq !== "variable";
+    const mensual = (noMensual ? (totalAnualItem(i) || 0) / 12 : (montoPromedioMensual(i) || 0)) * fx;
+    let nota = null;
+    if (noMensual) {
+      const f = NOMBRE_FREQ[freq] || freq;
+      if (estaPagadoEnAño(i, año)) {
+        const mes = Number(i.mesPago) >= 1 && Number(i.mesPago) <= 12 ? MESES[Number(i.mesPago) - 1].l.toLowerCase() : null;
+        nota = mes ? `${f}, ya cobrado en ${mes}` : `${f}, ya cobrado este año`;
+      } else nota = `${f}, prorrateado por mes`;
+    }
+    return { nombre: String(i.nombre || i.categoria || "Ingreso sin nombre"), mensual, nota };
+  });
 }
+export const sumaOcultos = (lista = []) => lista.reduce((s, x) => s + (x.mensual || 0), 0);
