@@ -15,6 +15,9 @@ import { tipoIngreso } from "../../src/lib/metrics.js";
 import { inferIngresoFiscalCode } from "../../src/lib/normalize.js";
 import { estimarImpuesto } from "../../src/lib/taxCO.js";
 import { CATS, DEFAULT_FISCAL_CODE } from "../../src/components/IngresosModule.jsx";
+import { normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../../src/lib/primaBono.js";
+import { montoPromedioMensual } from "../../src/lib/flowHelpers.js";
+import { FISCAL_CODE_META } from "../../src/lib/fiscalCodes.js";
 import AvisoCambioNivel, { AVISO_NIVEL_KEY, AVISO_NIVEL_TEXTO, marcarAvisoNivelVisto } from "../../src/components/AvisoCambioNivel.jsx";
 
 describe("App.jsx → IngresosModule recibe user una sola vez", () => {
@@ -38,17 +41,42 @@ describe("Categoría Prima/Bono", () => {
     expect(tipoIngreso({ categoria: "Prima/Bono", fiscalCode })).toBe("activo");
     expect(tipoIngreso({ categoria: "Prima/Bono", fiscalCode, activoId: "a1" })).toBe("activo");
   });
-  it("entra a taxCO como renta de trabajo (con exenta 25%), no como otros ingresos", () => {
-    const mk = (extra) => ({ trm: 4200, owners: [{ id: "o1", name: "Luis", type: "natural" }], gas: {}, deu: [], inv: [],
-      ingresos: [
-        { id: "sal", owner: "o1", nombre: "Salario", categoria: "Salario", fiscalCode: "LAB_SALARIO", mensual: 10e6, tipo: "fijo" },
-        ...extra,
-      ] });
-    const det = (u) => estimarImpuesto(u, { ag: 2025 }).detalle.find((d) => d.name === "Luis");
+  const mk = (extra) => ({ trm: 4200, owners: [{ id: "o1", name: "Luis", type: "natural" }], gas: {}, deu: [], inv: [],
+    ingresos: [
+      { id: "sal", owner: "o1", nombre: "Salario", categoria: "Salario", fiscalCode: "LAB_SALARIO", mensual: 10e6, tipo: "fijo" },
+      ...extra,
+    ] });
+  const det = (u) => estimarImpuesto(u, { ag: 2025 }).detalle.find((d) => d.name === "Luis");
+  // Como lo guarda el formulario: total anual de $12M, cobrado en junio.
+  const bono = () => normalizarPrimaBono({ id: "pb", owner: "o1", nombre: "Bono", categoria: "Prima/Bono", fiscalCode: DEFAULT_FISCAL_CODE["Prima/Bono"], mensual: 12e6, mesPago: 6, activoId: "a1" });
+
+  it("se guarda como anual: taxCO recibe el anual una sola vez (12M, no 144M)", () => {
+    const b = bono();
+    expect(b.frecuencia).toBe("anual");
     const base = det(mk([]));
-    const con = det(mk([{ id: "pb", owner: "o1", nombre: "Bono", categoria: "Prima/Bono", fiscalCode: DEFAULT_FISCAL_CODE["Prima/Bono"], mensual: 1e6, tipo: "fijo", activoId: "a1" }]));
-    expect(con.primaAnual).toBeCloseTo(12e6, 0);
+    const con = det(mk([b]));
+    expect(con.primaAnual).toBe(12e6);
+    expect(con.primaAnual).not.toBe(144e6);
     expect(con.exenta25).toBeGreaterThan(base.exenta25);
+  });
+  it("es renta de trabajo: no suma a cesantías ni a ingresos no laborales", () => {
+    const base = det(mk([]));
+    const con = det(mk([bono()]));
+    expect(con.cesantiasAnual || 0).toBe(base.cesantiasAnual || 0);
+    expect(con.ingNoLaboral).toBe(base.ingNoLaboral);
+    expect(con.ingLaboral - base.ingLaboral).toBe(12e6);
+  });
+  it("flujo mensual ÷ 12, nunca $0, con nota de mes cobrado", () => {
+    const b = bono();
+    expect(montoPromedioMensual(b)).toBe(1e6);
+    expect(mensualPrimaBono({ ...b, pagos: { [new Date().getFullYear()]: true } })).toBe(1e6);
+    expect(notaPrimaBono(b)).toBe("anual, ya cobrado en junio");
+    expect(ayudaPrimaBono("12000000", (n) => "$" + n.toLocaleString("es-CO"))).toBe("Se mostrará como $1.000.000/mes");
+  });
+  it("se lee «Prima o bonificación laboral», no «Prima legal»", () => {
+    expect(FISCAL_CODE_META.LAB_PRESTACIONES_PRIMA.label).toBe("Prima o bonificación laboral");
+    expect(labelCategoria("Prima/Bono")).toBe("Prima o bonificación laboral");
+    expect(CATS.find((c) => c.v === "Prima/Bono").l).toContain("Prima o bonificación laboral");
   });
 });
 

@@ -14,6 +14,7 @@ import { exportIngresosPDF } from "../lib/pdfSectionExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import { detectarTemplate, TEMPLATES } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
+import { esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -66,7 +67,7 @@ const T = {
   ch: [C.ok, C.accent, C.warn, C.purple, "#ec4899", "#22d3ee", "#eab308"],
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
-export const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Cesantías",l:"💵 Cesantías / Intereses cesantías"},{v:"Prima/Bono",l:"🎁 Prima / Bono"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
+export const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Cesantías",l:"💵 Cesantías / Intereses cesantías"},{v:"Prima/Bono",l:"🎁 Prima o bonificación laboral"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
 
 // Sub-opciones de fiscalCode por categoría ambigua. Si la categoría no está
 // aquí, el fiscalCode se deriva automáticamente vía normalize.js (no pregunta).
@@ -370,7 +371,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   const conEncabezados = (lista) => {
     const porCat = {};
     lista.forEach(it => {
-      const k = it.categoria || it.tipo || "Sin categoría";
+      const k = labelCategoria(it.categoria) || it.tipo || "Sin categoría";
       (porCat[k] = porCat[k] || []).push(it);
     });
     const grupos = Object.entries(porCat)
@@ -411,6 +412,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   const añoActual = new Date().getFullYear();
   const togglePagoItem = (item) => {
     if (!guardEdit(role)) return;
+    if (esPrimaBono(item)) return; // ya viene cobrado: marcarlo "pagado" lo dejaría en $0
     onUpdate(items.map(i => i.id === item.id ? togglePagado(i, añoActual) : i));
   };
 
@@ -471,6 +473,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     // respétalos", creyendo que el arreglo es un dato bueno.
     // `undefined` desaparece al serializar a JSON, así que el dato queda limpio.
     const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal, montosMensuales: frecuenciaFinal === "variable" ? montosFinales : undefined };
+    // Prima/Bono: siempre total anual (taxCO lo toma una sola vez; el flujo ÷ 12).
+    if (esPrimaBono(item)) { Object.assign(item, normalizarPrimaBono(item)); delete item.pagos; delete item.desdeMes; delete item.hastaMes; }
     // Commit 1.5: persistir aportes obligatorios en shape anidado, sólo para Salario
     if (isSalario) {
       item.aportes = {
@@ -812,7 +816,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             {(() => {
               const grupos = {};
               activos.forEach(i => {
-                const k = i.categoria || i.tipo || "Sin categoría";
+                const k = labelCategoria(i.categoria) || i.tipo || "Sin categoría";
                 grupos[k] = (grupos[k] || 0) + montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1);
               });
               const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
@@ -961,7 +965,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         {/* 25-jul-2026: en variables usamos el promedio de meses
                             ACTIVOS, no item.mensual (que el motor ignora para
                             esa frecuencia y confundía la lectura). */}
-                        {fm(item.moneda==="USD" ? promedioMesActivo(item)*(trm||4200) : promedioMesActivo(item))}
+                        {esPrimaBono(item) ? fm(item.moneda==="USD" ? mensualPrimaBono(item)*(trm||4200) : mensualPrimaBono(item)) : fm(item.moneda==="USD" ? promedioMesActivo(item)*(trm||4200) : promedioMesActivo(item))}
+                        {esPrimaBono(item) && <div data-testid="nota-prima-bono" style={{ fontSize: 9, color: T.txt3, fontWeight: 500 }}>{notaPrimaBono(item)}</div>}
                         {item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(promedioMesActivo(item)).toLocaleString("es-CO")}</span>}
                       </div>
                       {/* Subtítulo con total anual solo si NO es mensual todo el año */}
@@ -1057,6 +1062,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   setForm((p) => {
                     const nf = { ...p, categoria: catValue,
                       fiscalCode: DEFAULT_FISCAL_CODE[catValue] || "NOL_OTROS" };
+                    if (catValue === "Prima/Bono") { nf.frecuencia = "anual"; nf.mesPago = new Date().getMonth() + 1; }
                     // Mismo prefill de aportes que ya hacia el selector de
                     // Categoria DIAN del formulario, para no perder la ayuda.
                     const m = Number(p.mensual) || 0;
@@ -1151,6 +1157,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               )}
               <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => {
                 const nf = { ...p, categoria: v, fiscalCode: DEFAULT_FISCAL_CODE[v] || "NOL_OTROS" };
+                if (v === "Prima/Bono") { nf.frecuencia = "anual"; nf.mesPago = new Date().getMonth() + 1; }
                 // Commit 1.5: si cambia a Salario y ya hay bruto pero no aportes, prefill 4%+4%
                 const m = Number(p.mensual) || 0;
                 if (v === "Salario" && m > 0) {
@@ -1282,6 +1289,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 //  - Modo avanzado con freq no-mensual: mantiene labelMontoSegunFrecuencia
                 const isSalarioLike = ["Salario","Honorarios"].includes(form.categoria);
                 if (isSalarioLike) return "💵 Monto BRUTO mensual (antes de descuentos)";
+                if (form.categoria === "Prima/Bono") return "Total que recibes en el año";
                 const freq = form.frecuencia || "mensual";
                 // Modo avanzado con freq no-mensual: mostrar label específico
                 const esAvanzado = templateElegido?.id === "avanzado";
@@ -1320,6 +1328,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 if (freq === "anual") return "¿Cuánto en total al año?";
                 return "¿Monto del pago único?";
               })()} />
+              )}
+              {form.categoria === "Prima/Bono" && (
+                <div data-testid="ayuda-prima-bono" style={{ fontSize: 11, color: "#a1a1aa", marginTop: -6 }}>{ayudaPrimaBono(form.mensual, fm)}</div>
               )}
               {/* Fix 25-may-2026: el campo Capital invertido aparecía solo para
                   Rendimiento/Dividendos/Arriendo/Inversión. Pero CDT (Intereses
