@@ -14,7 +14,7 @@ import { exportIngresosPDF } from "../lib/pdfSectionExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import { detectarTemplate, TEMPLATES } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
-import { esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
+import { MARCA_REVISAR_PRIMA, esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -452,7 +452,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       const total = montosFinales.reduce((s, m) => s + (Number(m) || 0), 0);
       mensualFinal = Math.round(total / 12);
     }
-    if (!isSalario && modoIngreso === "anual") {
+    if (!isSalario && modoIngreso === "anual" && form.categoria !== "Prima/Bono") {
       if (frecuenciaFinal !== "mensual") {
         const factor = factorDeFrecuencia(frecuenciaFinal);
         mensualFinal = Math.round(mensualFinal / factor);
@@ -474,7 +474,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     // `undefined` desaparece al serializar a JSON, así que el dato queda limpio.
     const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal, montosMensuales: frecuenciaFinal === "variable" ? montosFinales : undefined };
     // Prima/Bono: siempre total anual (taxCO lo toma una sola vez; el flujo ÷ 12).
-    if (esPrimaBono(item)) { Object.assign(item, normalizarPrimaBono(item)); delete item.pagos; delete item.desdeMes; delete item.hastaMes; }
+    if (esPrimaBono(item)) { Object.assign(item, normalizarPrimaBono(item)); delete item.pagos; delete item.desdeMes; delete item.hastaMes; item.migPrimaBonoAnual = true; item.revisarFrecuencia = false; }
     // Commit 1.5: persistir aportes obligatorios en shape anidado, sólo para Salario
     if (isSalario) {
       item.aportes = {
@@ -967,6 +967,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                             esa frecuencia y confundía la lectura). */}
                         {esPrimaBono(item) ? fm(item.moneda==="USD" ? mensualPrimaBono(item)*(trm||4200) : mensualPrimaBono(item)) : fm(item.moneda==="USD" ? promedioMesActivo(item)*(trm||4200) : promedioMesActivo(item))}
                         {esPrimaBono(item) && <div data-testid="nota-prima-bono" style={{ fontSize: 9, color: T.txt3, fontWeight: 500 }}>{notaPrimaBono(item)}</div>}
+                        {esPrimaBono(item) && item.revisarFrecuencia && <div data-testid="revisar-prima-bono" style={{ fontSize: 9, color: "#f97316", fontWeight: 600 }}>⚠️ {MARCA_REVISAR_PRIMA}</div>}
                         {item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(promedioMesActivo(item)).toLocaleString("es-CO")}</span>}
                       </div>
                       {/* Subtítulo con total anual solo si NO es mensual todo el año */}
@@ -1203,7 +1204,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   para templates mensuales. Reformulación clara del modoIngreso:
                   "Mensual" = lo que llega cada mes / "Total del año" = suma anual.
                   Solo aparece si el template pide 'modoIngresoSimple' Y no es Salario. */}
-              {mostrarCampo("modoIngresoSimple") && !["Salario","Honorarios"].includes(form.categoria) && (
+              {mostrarCampo("modoIngresoSimple") && !["Salario","Honorarios","Prima/Bono"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                   <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
                     💵 ¿El monto que vas a poner es...?
@@ -1242,7 +1243,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               )}
 
               {/* Toggle avanzado (por pago vs anual) — solo cuando el template es "avanzado" con frecuencia distinta a mensual */}
-              {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && !["Salario","Honorarios"].includes(form.categoria) && (
+              {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && !["Salario","Honorarios","Prima/Bono"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                   <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
                     💵 ¿Cómo conoces el monto?
@@ -1330,7 +1331,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               })()} />
               )}
               {form.categoria === "Prima/Bono" && (
-                <div data-testid="ayuda-prima-bono" style={{ fontSize: 11, color: "#a1a1aa", marginTop: -6 }}>{ayudaPrimaBono(form.mensual, fm)}</div>
+                <div data-testid="ayuda-prima-bono" style={{ gridColumn: "1/-1", width: "100%", display: "block", fontSize: 11, color: "#a1a1aa", marginTop: 4, lineHeight: 1.4 }}>{ayudaPrimaBono(form.mensual, fm)}</div>
               )}
               {/* Fix 25-may-2026: el campo Capital invertido aparecía solo para
                   Rendimiento/Dividendos/Arriendo/Inversión. Pero CDT (Intereses

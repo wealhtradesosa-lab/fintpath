@@ -157,7 +157,10 @@ export function calcularBase(d = {}, opts = {}) {
   const { base = "promedio", anio, mes } = opts;
   const hoy = getMesActual();
   const aMed = anio || hoy.año, mMed = mes || hoy.mes;
-  const mens = base === "mes" ? (it) => montoDelMes(it, aMed, mMed) : montoPromedioMensual;
+  // Prima/Bono (no mensual): siempre ÷ 12, como en Flujo de caja, aunque el mes
+  // medido no sea el del cobro. Así la tasa de ahorro no salta ese mes ni queda en 0 el resto.
+  const mensBase = base === "mes" ? (it) => montoDelMes(it, aMed, mMed) : montoPromedioMensual;
+  const mens = (it) => (String(it?.categoria || "").trim() === "Prima/Bono" ? montoPromedioMensual(it) : mensBase(it));
   mensContexto.anio = aMed; mensContexto.mes = base === "mes" ? mMed : null;
   const trm = num(d.trm) || 4200;
   const visible = (x) => x && x.sim !== false;

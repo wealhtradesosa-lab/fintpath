@@ -27,3 +27,26 @@ export const notaPrimaBono = (item) => `anual, ya cobrado en ${MESES[(Number(ite
 
 /** Ayuda en vivo del campo: «Se mostrará como $X/mes». */
 export const ayudaPrimaBono = (totalAnual, fmt) => `Se mostrará como ${fmt(Math.round((Number(totalAnual) || 0) / 12))}/mes`;
+
+export const MARCA_REVISAR_PRIMA = "Revisa: ¿este valor es mensual o anual?";
+
+/**
+ * Migración al cargar: un Prima/Bono guardado como mensual pasa a total anual
+ * (mensual × meses activos, ×12 si es todo el año) y queda marcado para revisar.
+ * Idempotente por ítem (flag migPrimaBonoAnual).
+ */
+export function migratePrimaBonoAnual(d) {
+  if (!d || typeof d !== "object" || !Array.isArray(d.ingresos)) return d;
+  d.ingresos = d.ingresos.map((i) => {
+    if (!esPrimaBono(i) || i.migPrimaBonoAnual) return i;
+    const freq = i.frecuencia || "mensual";
+    if (freq === "mensual" || freq === "variable") {
+      const total = Math.round(totalAnualItem(i));
+      const { pagos, montosMensuales, desdeMes, hastaMes, ...resto } = i;
+      return { ...resto, mensual: total, frecuencia: "anual", mesPago: Number(i.mesPago) > 1 ? Number(i.mesPago) : 12,
+        fiscalCode: i.fiscalCode || "LAB_PRESTACIONES_PRIMA", migPrimaBonoAnual: true, revisarFrecuencia: true };
+    }
+    return { ...normalizarPrimaBono(i), migPrimaBonoAnual: true };
+  });
+  return d;
+}

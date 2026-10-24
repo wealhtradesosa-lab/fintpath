@@ -13,6 +13,7 @@ import BitcoinRetirementUS from "./components/BitcoinRetirementUS";
 // Estos módulos no se necesitan para ver la portada ni el dashboard: se cargan
 // cuando el usuario entra a su sección.
 const TuNorte = lazy(() => import("./components/TuNorte"));
+import { migratePrimaBonoAnual } from "./lib/primaBono.js";
 import AvisoCambioNivel from "./components/AvisoCambioNivel.jsx";
 const IngresosModule = lazy(() => import("./components/IngresosModule"));
 const GastosModule = lazy(() => import("./components/GastosModule"));
@@ -235,7 +236,7 @@ Object.keys(d.gas).forEach(cat => {
     return { ...item, fiscalCode: _deriveGasFiscalCode(cat, item.owner) };
   });
 });
-if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migrateInversionUnica(migrateAporteTributarioNombre(migrateDeudaViviendaWizardLegacy(migratePlanOptimizacionNamespace(migrateFiscalCodePVLegacy(migrateDeclaracionesV55(migrateAportesVoluntariosV17(d)))))))};
+if(!d.ingresos)d.ingresos=[];if(!d.metas)d.metas=[];if(!d.ibk)d.ibk=[];if(!d.pen)d.pen={};if(!d.jurisdiction)d.jurisdiction="CO";if(d.componenteInflacionarioPct==null)d.componenteInflacionarioPct=50.88;return migratePrimaBonoAnual(migrateInversionUnica(migrateAporteTributarioNombre(migrateDeudaViviendaWizardLegacy(migratePlanOptimizacionNamespace(migrateFiscalCodePVLegacy(migrateDeclaracionesV55(migrateAportesVoluntariosV17(d))))))))};
 
 // ═══ END-TO-END ENCRYPTION ═══
 const E2E={
