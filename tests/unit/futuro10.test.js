@@ -32,7 +32,7 @@ describe("futuro10", () => {
     const u = { inflacionPct: 4, inv: [{ id: "a", tp: "Cash", va: 10e6 }], ingresos: [], gas: { Vida: [{ n: "Mercado", m: 1e6 }] }, deu: [] };
     const r = proyectarFuturo10(u, {});
     expect(r.alertas.some((a) => a.tipo === "cf_negativo")).toBe(true);
-    expect(r.alertas.some((a) => a.tipo === "activo_negativo")).toBe(true);
+    expect(r.alertas.some((a) => a.tipo === "faltante")).toBe(true);
     expect(r.liqAgotadaAnio).not.toBeNull();
   });
   it("vender un activo lo manda a la bolsa y se reparte según el norte", () => {
@@ -43,11 +43,9 @@ describe("futuro10", () => {
   });
   it("presets: renta fija largo con tope y escenarios", () => {
     const opt = resolverEscenario("optimista", { inflacionPct: 4 });
-    expect(opt.inflacionPct).toBe(3);
-    // 3,5 + 1 = 4,5 = tope
-    expect(retornoNominalPreset("rfLargo", opt)).toBeCloseTo((1.03 * 1.045 - 1) * 100, 6);
+    expect(opt.inflacionPct).toBe(3.5);
     const base = resolverEscenario("base", { inflacionPct: 4 });
-    expect(retornoNominalPreset("sp500", base)).toBeCloseTo((1.04 * 1.065 - 1) * 100, 6);
+    expect(retornoNominalPreset("sp500", base)).toBeCloseTo((1.04 * 1.055 - 1) * 100, 6);
     const c = cienMillones("rfCorto", base);
     expect(c[2].hoy).toBeCloseTo(100e6 * 1.025 ** 10, 0);
   });
@@ -88,7 +86,7 @@ describe("futuro10", () => {
       const r = proyectarFuturo10(lote, { decisiones: { l: { accion: "modifica", rentaNuevaMensual: 5e6, rentaNuevaDesde: 3 } } });
       const r0 = proyectarFuturo10(lote, {});
       expect(r.filas[2].cf).toBeCloseTo(r0.filas[2].cf, 0);
-      expect(r.filas[3].cf - r0.filas[3].cf).toBeCloseTo(60e6 * 1.04 ** 3, 0);
+      expect(r.filas[3].cf - r0.filas[3].cf).toBeCloseTo(60e6 * 1.04 ** 2, 0);
     });
     it("escenario guardado con retornoRealPct viejo sigue cargando", () => {
       const viejo = proyectarFuturo10(lote, { decisiones: { l: { accion: "modifica", retornoRealPct: 2 } } });
@@ -127,7 +125,7 @@ describe("futuro10", () => {
       const r0 = proyectarFuturo10(u, { supuestos: cero });
       const r = proyectarFuturo10(u, { supuestos: cero, futuros: { ingresos: [{ nombre: "Pensión", mensual: 5e6, desde: 4, hasta: 6 }] } });
       [1, 2, 3, 7, 10].forEach((t) => expect(r.filas[t].cf).toBeCloseTo(r0.filas[t].cf, 0));
-      [4, 5, 6].forEach((t) => expect(r.filas[t].cf - r0.filas[t].cf).toBeCloseTo(60e6 * 1.04 ** t, 0));
+      [4, 5, 6].forEach((t) => expect(r.filas[t].cf - r0.filas[t].cf).toBeCloseTo(60e6 * 1.04 ** (t - 1), 0));
     });
     it("pagos del activo futuro no cambian el patrimonio y se valoriza desde la entrega", () => {
       const r0 = proyectarFuturo10(u, { supuestos: cero });
@@ -142,7 +140,7 @@ describe("futuro10", () => {
       const r0 = proyectarFuturo10(u, { supuestos: cero });
       const r = proyectarFuturo10(u, { supuestos: cero, futuros: { activos: [{ nombre: "Local", valor: 500e6, entrega: 2, rentaMensual: 4e6, rentaDesde: 3 }] } });
       expect(r.filas[2].cf).toBeCloseTo(r0.filas[2].cf, 0);
-      expect(r.filas[3].cf - r0.filas[3].cf).toBeCloseTo(48e6 * 1.04 ** 3, 0);
+      expect(r.filas[3].cf - r0.filas[3].cf).toBeCloseTo(48e6 * 1.04 ** 2, 0);
     });
     it("escenario viejo sin futuros carga igual", () => {
       expect(proyectarFuturo10(u, {}).final.patrimonio).toBeCloseTo(proyectarFuturo10(u, { futuros: undefined }).final.patrimonio, 0);
