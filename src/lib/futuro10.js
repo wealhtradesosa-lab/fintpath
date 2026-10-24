@@ -109,13 +109,15 @@ export function estimadoPreset(clave, esc, sup = SUPUESTOS_F10) {
 export const rendimientoNuevaPct = (x, esc, sup = SUPUESTOS_F10) =>
   (x && x.rendimientoNomPct !== "" && x.rendimientoNomPct != null && Number.isFinite(Number(x.rendimientoNomPct)) ? Number(x.rendimientoNomPct) : retornoNominalPreset(x.preset, esc, sup));
 
-/** Barra de «Reinvierte» (10 años, pesos de hoy): de ventas + de tu caja = disponible; menos asignado = te queda. */
+/** Barra de «Reinvierte» (10 años, pesos de hoy). Disponible = liquidez sobre el colchón + ventas brutas + flujo libre − comprometido en el paso 2. */
 export function resumenReinvertir(disp = []) {
   const s = (f) => disp.reduce((t, d) => t + n(f(d)), 0);
   const deVentas = s((d) => d.ventas);
   const deCaja = s((d) => d.liquidezHoy - d.colchon + d.flujo);
-  const asignado = s((d) => d.asignado + d.adicionales + d.pagosFuturos);
-  return { deVentas, deCaja, disponible: deVentas + deCaja, asignado, queda: deVentas + deCaja - asignado };
+  const comprometido = s((d) => d.adicionales + d.pagosFuturos); // paso 2: Construir o mejorar, pagos de activos futuros
+  const asignado = s((d) => d.asignado); // paso 3: inversiones nuevas
+  const disponible = deVentas + deCaja - comprometido; // = Σ antesDeAsignar
+  return { deVentas, deCaja, comprometido, disponible, asignado, queda: disponible - asignado };
 }
 export const esCripto = (a = {}) => /crypt|cripto|btc|bitcoin|ethereum|\beth\b/i.test(`${a.tp || a.tipo || ""} ${a.n || a.nombre || ""}`);
 

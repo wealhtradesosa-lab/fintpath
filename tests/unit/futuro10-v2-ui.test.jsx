@@ -155,3 +155,35 @@ describe("Barra de Reinvierte y tasa UVR", () => {
     expect(t.etiqueta).toContain("Es un promedio, no tu tasa.");
   });
 });
+
+import { SIN_PLATA_ANIO } from "../../src/components/MiFuturo10.jsx";
+describe("Disponible del paso 3 (datos tipo QA Pro)", () => {
+  const qa = { inflacionPct: 5, inv: [{ id: "cdt", n: "CDT", tp: "CDT", va: 300e6 }, { id: "apto", n: "Apto", tp: "Real Estate", va: 800e6 }],
+    ingresos: [{ nombre: "Salario", mensual: 25e6 }], gas: { Vida: [{ n: "Gastos", m: 10e6 }] }, deu: [] };
+  it("sin ventas: liquidez sobre el colchón + flujo, no 0; fórmula por año", () => {
+    const r = proyectarFuturo10(qa, {});
+    const d1 = r.disponible[0];
+    expect(d1.ventas).toBe(0);
+    expect(d1.antesDeAsignar).toBeGreaterThan(0);
+    r.disponible.forEach((d) => expect(d.antesDeAsignar).toBeCloseTo(d.liquidezHoy + d.ventas - d.colchon + d.flujo - d.adicionales - d.pagosFuturos, 2));
+    expect(d1.liquidezHoy).toBeCloseTo(Math.max(0, 300e6 - r.metaColchon), 0);
+    const b = resumenReinvertir(r.disponible);
+    expect(b.disponible).toBeGreaterThan(0);
+    expect(b.disponible).toBeCloseTo(r.disponible.reduce((s, d) => s + d.antesDeAsignar, 0), 0);
+  });
+  it("con venta y Construir o mejorar: ventas brutas suman y lo comprometido resta", () => {
+    const r = proyectarFuturo10(qa, { decisiones: { apto: { accion: "vende", anioVenta: 1 } } });
+    const r2 = proyectarFuturo10({ ...qa, inv: [...qa.inv, { id: "lote", n: "Lote", tp: "Real Estate", va: 100e6 }] }, { decisiones: { apto: { accion: "vende", anioVenta: 1 }, lote: { accion: "construye", obra: { inversiones: [{ monto: 200e6, anio: 1 }], anioLista: 2 } } } });
+    expect(resumenReinvertir(r.disponible).deVentas).toBe(800e6);
+    expect(resumenReinvertir(r2.disponible).comprometido).toBeCloseTo(200e6, 0);
+  });
+  it("disponible ≤ 0 en el año: aviso de faltante", () => {
+    const pobre = { inflacionPct: 5, inv: [], ingresos: [{ nombre: "Salario", mensual: 5e6 }], gas: { Vida: [{ n: "Gastos", m: 6e6 }] }, deu: [] };
+    const h = txt(renderToString(<MiFuturo10 user={pobre} pasoInicial={2} />));
+    expect(h).not.toContain(SIN_PLATA_ANIO); // sin inversión, sin aviso
+    expect(SIN_PLATA_ANIO).toBe("No tienes plata disponible este año; esta inversión queda como faltante.");
+    const r = proyectarFuturo10(pobre, { nuevas: [{ preset: "custom", nombre: "X", monto: 10e6, anio: 1 }] });
+    expect(r.disponible[0].antesDeAsignar).toBeLessThanOrEqual(0);
+    expect(r.alertas.some((a) => a.tipo === "nueva_sin_plata")).toBe(true);
+  });
+});

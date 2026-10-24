@@ -25,6 +25,7 @@ export const conNombres = (cfg) => {
 };
 const CONFIG_INICIAL = { version: 2, escenario: "base", decisiones: {}, activos: {}, deudas: {}, norte: "equilibrio", mezcla: null, nuevas: [], futuros: { ingresos: [], activos: [] } };
 export const AUTOSAVE_MS = 1500;
+export const SIN_PLATA_ANIO = "No tienes plata disponible este año; esta inversión queda como faltante.";
 export const ESTADO_GUARDADO = { guardando: "Guardando…", listo: "Guardado hace un momento", offline: "Sin conexión, se guarda al volver" };
 export const NOTA_SIMULADOR = "¿Por qué no coincide con el Simulador? Aquí cada activo sigue su propio supuesto, las deudas pagan interés, las ventas tienen año y todo se muestra en pesos de hoy. El Simulador usa un retorno único sobre tu patrimonio.";
 export const AVISO_VENTAS = "Las ventas se toman por su valor bruto: no incluye costos de venta ni impuestos.";
@@ -214,6 +215,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 </>);
               })()}
               <button style={btn(false)} onClick={() => set("nuevas", cfg.nuevas.filter((_, j) => j !== i))}>Quitar</button>
+              {(() => { const dd = r.disponible[Math.min(10, Math.max(1, Number(x.anio) || 1)) - 1]; return Number(x.monto) > 0 && dd && dd.antesDeAsignar <= 0 ? <div role="alert" style={{ gridColumn: "1 / -1", color: C.rd, fontSize: 12 }}>{SIN_PLATA_ANIO}</div> : null; })()}
               <AlertaExceso disponible={r.disponible} tipo="nueva" idx={i} />
             </div>
           ))}
@@ -462,7 +464,7 @@ export function BarraReinvertir({ disponible = [] }) {
   const it = (t, v, color = C.tx, sub = null) => (<div style={{ minWidth: 0 }}><div style={{ fontSize: 11, color: C.tx2 }}>{t}</div><div style={{ fontSize: 17, fontWeight: 700, color }}>{plata(v)}</div>{sub && <div style={{ fontSize: 11, color: C.tx2 }}>{sub}</div>}</div>);
   return (
     <div role="status" aria-live="polite" style={{ position: "sticky", top: 0, zIndex: 5, background: C.bg2, border: `1px solid ${b.queda < 0 ? C.rd : C.bd}`, borderRadius: 8, padding: "10px 12px", marginBottom: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,160px),1fr))", gap: 8 }}>
-      {it("Disponible para reinvertir", b.disponible, C.tx, `${plata(b.deVentas)} de ventas · ${plata(b.deCaja)} de tu caja`)}
+      {it("Disponible para reinvertir", b.disponible, b.disponible <= 0 ? C.rd : C.tx, `${plata(b.deVentas)} de ventas · ${plata(b.deCaja)} de tu caja${b.comprometido > 0 ? ` · −${plata(b.comprometido)} comprometido en el paso 2` : ""}`)}
       {it("Ya asignado", b.asignado)}
       {it("Te queda", b.queda, b.queda < 0 ? C.rd : C.gn)}
       <div style={{ gridColumn: "1 / -1", fontSize: 11, color: C.tx2 }}>10 años, en pesos de hoy. Caja = liquidez por encima del colchón + lo que te sobra cada año. Las ventas van por su valor bruto: no incluye costos de venta ni impuestos.</div>
