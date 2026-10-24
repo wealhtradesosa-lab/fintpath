@@ -58,7 +58,10 @@ function analizarPerfil(owner, det, user) {
 
   const isJuridica = owner.type === "juridica";
   const ingresoAnual = Number(det.ingreso) || 0;
-  const saldoACargo = Number(det.impuesto) || 0;
+  // Impuesto a cargo (antes de retenciones). NO usar det.impuesto: es el saldo
+  // tras retenciones cortado en 0, y esconde las recomendaciones a quien tiene
+  // saldo a favor aunque el aporte sí le baje el impuesto (#60, regla Finanzas).
+  const impuestoACargo = Number(det.impuestoACargo ?? det.impBruto ?? det.impuesto) || 0;
   const ingLaboral = Number(det.ingLaboral) || 0;
   const ingNoLaboral = Number(det.ingNoLaboral) || 0;
   const divAnual = Number(det.divAnual) || 0;
@@ -92,7 +95,7 @@ function analizarPerfil(owner, det, user) {
     isJuridica,
     tipoPerfil,
     ingresoAnual,
-    saldoACargo,
+    impuestoACargo,
     ingLaboral,
     ingNoLaboral,
     divAnual,
@@ -109,9 +112,9 @@ function analizarPerfil(owner, det, user) {
 
 function recomendacionesNaturalNoLaboral(perfil) {
   const recs = [];
-  const { saldoACargo, ingNoLaboral, divAnual, patrimonioAprox, capacidadInversion } = perfil;
+  const { impuestoACargo, ingNoLaboral, divAnual, patrimonioAprox, capacidadInversion } = perfil;
 
-  if (saldoACargo < 1_000_000) return recs; // si no debe nada, no recomendar
+  if (impuestoACargo < 1_000_000) return recs; // si no debe nada, no recomendar
 
   // Tasa marginal aproximada en cédula general
   const tasaMarg = ingNoLaboral > 1_000_000_000 ? 0.39 :
@@ -137,9 +140,9 @@ function recomendacionesNaturalNoLaboral(perfil) {
     d.sim !== false
   );
   const yaTieneCreditoVivienda = deudasReales.length > 0;
-  if (saldoACargo > 5_000_000 && !yaTieneCreditoVivienda) {
+  if (impuestoACargo > 5_000_000 && !yaTieneCreditoVivienda) {
     const interesesAnualesEstimados = 60_000_000; // típico crédito $500M al 12%
-    const ahorroAnual = Math.min(interesesAnualesEstimados * tasaMarg, saldoACargo);
+    const ahorroAnual = Math.min(interesesAnualesEstimados * tasaMarg, impuestoACargo);
     recs.push({
       id: "credito_hipotecario_vivienda",
       ejecutaEn: "personal",
@@ -167,7 +170,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
 
   // ── REC 2: Generar renta laboral vía consultoría a propias sociedades ──
   // Para acceder a beneficios laborales (PV/AFC, dependientes, salud)
-  if (perfil.ingLaboral === 0 && saldoACargo > 10_000_000) {
+  if (perfil.ingLaboral === 0 && impuestoACargo > 10_000_000) {
     const consultoria_anual = 120_000_000; // ~$10M/mes consultoría profesional
     // Tope conjunto PV + AFC: 30 % del ingreso laboral, hasta 3.800 UVT/año.
     const aporteAFCmax = Math.min(consultoria_anual * 0.30, 3800 * UVT);
@@ -184,7 +187,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
         descripcion: "Cero costo financiero. Requiere documentar el servicio (contrato + facturación).",
       },
       ahorroAnual: {
-        monto: Math.min(ahorroAFC, saldoACargo),
+        monto: Math.min(ahorroAFC, impuestoACargo),
         calculoDetallado: `Con la consultoría, hasta $${aporteAFCmax.toLocaleString("es-CO")}/año en pensión voluntaria o AFC podría ser exento (30% del ingreso, hasta 3.800 UVT al año, compartido entre pensión voluntaria y AFC). Diferencia de impuesto calculada con y sin el aporte.`,
       },
       roi: {
@@ -198,8 +201,8 @@ function recomendacionesNaturalNoLaboral(perfil) {
   }
 
   // ── REC 3: Donaciones a ESAL ──────────────────────────────────────────
-  if (saldoACargo > 5_000_000) {
-    const donacionSugerida = Math.min(saldoACargo * 0.5, 50_000_000); // sugerir donar hasta 50M o 50% del saldo
+  if (impuestoACargo > 5_000_000) {
+    const donacionSugerida = Math.min(impuestoACargo * 0.5, 50_000_000); // sugerir donar hasta 50M o 50% del saldo
     const descuento = donacionSugerida * 0.25; // 25% del Art. 257
     recs.push({
       id: "donacion_esal",
@@ -213,7 +216,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
         descripcion: "Sale de tu bolsillo, pero el 25% vuelve como descuento de impuesto. Costo neto efectivo: 75% del monto.",
       },
       ahorroAnual: {
-        monto: Math.min(descuento, saldoACargo),
+        monto: Math.min(descuento, impuestoACargo),
         calculoDetallado: `$${donacionSugerida.toLocaleString("es-CO")} × 25% (Art. 257 ET) = $${descuento.toLocaleString("es-CO")} de descuento.`,
       },
       roi: {
@@ -240,8 +243,8 @@ function recomendacionesNaturalNoLaboral(perfil) {
 
 function recomendacionesNaturalLaboral(perfil) {
   const recs = [];
-  const { saldoACargo, ingLaboral } = perfil;
-  if (saldoACargo < 500_000) return recs;
+  const { impuestoACargo, ingLaboral } = perfil;
+  if (impuestoACargo < 500_000) return recs;
 
 
   // REC 1: Aporte a Pensión Voluntaria — solo si NO está aportando ya.
@@ -309,12 +312,12 @@ function recomendacionesNaturalLaboral(perfil) {
 
 function recomendacionesJuridica(perfil) {
   const recs = [];
-  const { saldoACargo, ingresoAnual } = perfil;
-  if (saldoACargo < 5_000_000) return recs;
+  const { impuestoACargo, ingresoAnual } = perfil;
+  if (impuestoACargo < 5_000_000) return recs;
 
   // REC 1: Comprar bodega / inmueble productivo
-  if (saldoACargo > 50_000_000) {
-    const inversion = Math.min(saldoACargo * 5, 1_000_000_000); // dimensionar a la capacidad
+  if (impuestoACargo > 50_000_000) {
+    const inversion = Math.min(impuestoACargo * 5, 1_000_000_000); // dimensionar a la capacidad
     const depreciacionAnual = inversion / 20;
     const ivaDescontable = inversion * 0.19;
     const ahorroAno1 = Math.round(depreciacionAnual * 0.35 + ivaDescontable);
@@ -330,7 +333,7 @@ function recomendacionesJuridica(perfil) {
         descripcion: `$${inversion.toLocaleString("es-CO")} en activo fijo. Puede financiarse, lo que genera además intereses deducibles.`,
       },
       ahorroAnual: {
-        monto: Math.min(ahorroAno1, saldoACargo),
+        monto: Math.min(ahorroAno1, impuestoACargo),
         calculoDetallado: `Año 1: depreciación $${depreciacionAnual.toLocaleString("es-CO")} × 35% = $${Math.round(depreciacionAnual * 0.35).toLocaleString("es-CO")} + IVA descontable $${ivaDescontable.toLocaleString("es-CO")} (Art. 258-1) = $${ahorroAno1.toLocaleString("es-CO")}. Recurrente $${Math.round(depreciacionAnual * 0.35).toLocaleString("es-CO")}/año por 19 años más.`,
       },
       roi: {
@@ -346,7 +349,7 @@ function recomendacionesJuridica(perfil) {
   // REC 1b: Adquirir vehículo / equipo productivo (movida desde el flow de
   // persona natural — 18-jul-2026 noche, Santiago: "una cosa son las
   // optimizaciones a Sosa, otras a Lagoon, no tienen por qué mezclarse").
-  if (saldoACargo > 8_000_000) {
+  if (impuestoACargo > 8_000_000) {
     recs.push({
       id: "vehiculo_productivo_sociedad",
       ejecutaEn: "sociedad",
@@ -373,8 +376,8 @@ function recomendacionesJuridica(perfil) {
   }
 
   // REC 2: Inversión en CT&I (deducción 175%)
-  if (saldoACargo > 20_000_000) {
-    const inversion = Math.min(saldoACargo * 0.5, 200_000_000);
+  if (impuestoACargo > 20_000_000) {
+    const inversion = Math.min(impuestoACargo * 0.5, 200_000_000);
     const deduccion = inversion * 1.75;
     const ahorroFiscal = Math.round(deduccion * 0.35) + (inversion * 0.25);
     recs.push({
@@ -389,7 +392,7 @@ function recomendacionesJuridica(perfil) {
         descripcion: "Inversión real en el proyecto (personal, equipos, materiales). Debe ser certificable.",
       },
       ahorroAnual: {
-        monto: Math.min(ahorroFiscal, saldoACargo),
+        monto: Math.min(ahorroFiscal, impuestoACargo),
         calculoDetallado: `Deducción 175% de $${inversion.toLocaleString("es-CO")} = $${deduccion.toLocaleString("es-CO")}, beneficio: $${Math.round(deduccion * 0.35).toLocaleString("es-CO")}. + Descuento directo 25% = $${(inversion * 0.25).toLocaleString("es-CO")}. Total: $${ahorroFiscal.toLocaleString("es-CO")}.`,
       },
       roi: {
@@ -412,7 +415,7 @@ function recomendacionesJuridica(perfil) {
     accion: "Invertir en capacitación certificada para equipo (Coursera Business, EAFIT, Andes, Universidad de los Andes).",
     inversion: { monto: 30_000_000, descripcion: "$30M anuales en capacitación del equipo." },
     ahorroAnual: {
-      monto: Math.min(Math.round(30_000_000 * 1.75 * 0.35), saldoACargo),
+      monto: Math.min(Math.round(30_000_000 * 1.75 * 0.35), impuestoACargo),
       calculoDetallado: "$30M × 175% = $52.5M deducción × 35% tarifa = $18.4M ahorro fiscal."
     },
     roi: { porcentaje: 61, descripcion: "Doble retorno: ahorro fiscal + equipo más productivo." },
@@ -422,8 +425,8 @@ function recomendacionesJuridica(perfil) {
   });
 
   // REC 4: Donación ESAL
-  if (saldoACargo > 10_000_000) {
-    const donacion = Math.min(saldoACargo * 0.3, 100_000_000);
+  if (impuestoACargo > 10_000_000) {
+    const donacion = Math.min(impuestoACargo * 0.3, 100_000_000);
     recs.push({
       id: "donacion_esal_juridica",
       ejecutaEn: "sociedad",
@@ -432,7 +435,7 @@ function recomendacionesJuridica(perfil) {
       descripcion: "Las donaciones de la sociedad a entidades del Régimen Tributario Especial generan DESCUENTO directo del 25% sobre el impuesto. Es la forma más eficiente de transformar parte del impuesto en impacto social.",
       accion: `Donar $${donacion.toLocaleString("es-CO")} a una ESAL certificada (universidades, fundaciones de salud o cultura).`,
       inversion: { monto: donacion, descripcion: "Costo neto: 75% del valor donado." },
-      ahorroAnual: { monto: Math.min(Math.round(donacion * 0.25), saldoACargo), calculoDetallado: `$${donacion.toLocaleString("es-CO")} × 25%` },
+      ahorroAnual: { monto: Math.min(Math.round(donacion * 0.25), impuestoACargo), calculoDetallado: `$${donacion.toLocaleString("es-CO")} × 25%` },
       roi: { porcentaje: 25, descripcion: "ROI inmediato 25% + reputación + impacto social." },
       baseLegal: "Art. 257 ET",
       caveat: "Requiere certificado de donación de la ESAL + verificación que esté en RTE.",
