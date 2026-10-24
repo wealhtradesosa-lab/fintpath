@@ -1249,7 +1249,8 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       art: "Art. 126-1 ET",
       topeMensual: `Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M)`,
       valor: det.pensionVol || 0,
-      montoMaximoTexto: `Aportes 100% deducibles, tope conjunto con AFC del 30% del ingreso laboral o $${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M/año (lo menor). Si retiras antes de 10 años para algo distinto a vivienda, pierdes el beneficio.`,
+      montoMaximoTexto: `Hasta $${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M/año en pensión voluntaria o AFC podría ser exento (tope conjunto: 30% del ingreso laboral o 3.800 UVT, lo menor, dentro del tope del 40%). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
+      nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.",
       ctaTexto: "→ Cargar en Egresos",
       linkTexto: "Modificar PV →",
       accion: { tipo: "navigate", target: "egresos" },
@@ -1261,7 +1262,8 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       art: "Art. 126-4 ET",
       topeMensual: `Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M)`,
       valor: det.afc || 0,
-      montoMaximoTexto: `Aportes 100% deducibles, tope conjunto con PV. Si retiras antes de 10 años para algo distinto a vivienda, pierdes el beneficio.`,
+      montoMaximoTexto: `Hasta $${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M/año en pensión voluntaria o AFC podría ser exento (tope conjunto con la pensión voluntaria). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
+      nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.",
       ctaTexto: "→ Cargar en Egresos",
       linkTexto: "Modificar AFC →",
       accion: { tipo: "navigate", target: "egresos" },
@@ -1346,6 +1348,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
                   <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5, marginBottom: 8 }}>
                     {it.montoMaximoTexto}
                   </div>
+                  {it.nota && <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginBottom: 8 }}>{it.nota}</div>}
                   <button
                     type="button"
                     onClick={() => handleAccion(it.accion)}

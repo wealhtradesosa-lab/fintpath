@@ -81,8 +81,10 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       const pctUsado = fiscalData.pctUsado || 0;
       const ahorro = fiscalData.ahorro || 0;
       const impCon = fiscalData.impCon || 0;
-      if (pvMax > 500000) recs.push({ icon: "💰", title: "Pensión voluntaria", desc: "Aporta " + fm(pvMax / 12) + "/mes a un fondo de pensión voluntaria. Es exento de renta y ahorras para el futuro. Retirable después de 10 años.", impact: calcImp(rentaSin / UVT) - calcImp(Math.max(0, rentaSin - pvMax) / UVT), color: T.green });
-      if (afcMax > 500000) recs.push({ icon: "🏠", title: "Cuenta AFC", desc: "Ahorra " + fm(afcMax / 12) + "/mes en una Cuenta AFC. Exento si se usa para compra de vivienda.", impact: calcImp(Math.max(0, rentaSin - pvMax) / UVT) - impCon, color: T.blue });
+      // PV y AFC comparten el tope 30 % / 3.800 UVT (dentro del Art. 336): una sola
+      // línea que no empuja a ninguno de los dos.
+      const pvAfcMax = pvMax + afcMax;
+      if (pvAfcMax > 500000) recs.push({ icon: "💰", title: "Pensión voluntaria o AFC", desc: "Hasta " + fm(pvAfcMax / 12) + "/mes en pensión voluntaria o AFC podría ser exento (tope conjunto 30 % / 3.800 UVT, dentro del tope del 40 %). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.", nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.", impact: calcImp(rentaSin / UVT) - impCon, color: T.green });
       if (!gbc["Salud"] && ingAnual > 2000 * UVT) recs.push({ icon: "🏥", title: "Medicina prepagada", desc: "Deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → Salud.", impact: 0, color: T.purple });
       if (deducDep > 0) recs.push({ icon: "👨‍👩‍👧", title: "Dependientes: " + fm(deducDep) + "/año", desc: "Ya se está deduciendo 10% del ingreso por dependientes (gastos educación detectados).", impact: 0, color: T.green });
       if (deducViv > 0) recs.push({ icon: "🏠", title: "Intereses vivienda: " + fm(deducViv) + "/año", desc: "Los intereses de tu hipoteca ya se deducen automáticamente.", impact: 0, color: T.green });
@@ -571,6 +573,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
                 <div style={{ fontSize: 12, fontWeight: 700, color: r.color }}>{r.title}</div>
                 <div style={{ fontSize: 11, color: T.txt2, marginTop: 2, lineHeight: 1.5 }}>{r.desc}</div>
                 {r.impact > 100000 && <div style={{ fontSize: 11, fontWeight: 700, color: T.green, marginTop: 4 }}>Ahorro estimado: {fm(r.impact)}/año ({fm(r.impact / 12)}/mes)</div>}
+                {r.nota && <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{r.nota}</div>}
               </div>
             </div>
           ))}
