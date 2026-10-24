@@ -1,4 +1,5 @@
 import { useState } from "react";
+import InputEntero from "./InputEntero.jsx";
 import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
@@ -662,7 +663,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
                   <div style={{flex:"1 1 130px"}}>
                     <div style={{fontSize:10,color:T.txt3,marginBottom:4,fontWeight:600}}>PLAZO (MESES)</div>
-                    <NumberInput allowDecimals={false} allowShortcuts={false} value={form.plazoMeses} onChange={(v)=>setForm(p=>({...p,plazoMeses:v===""?"":String(v)}))}
+                    <InputEntero value={form.plazoMeses} onChange={(v)=>setForm(p=>({...p,plazoMeses:v}))}
                       placeholder="240" style={{width:"100%",background:T.bg2,border:`1px solid ${T.border}`,borderRadius:8,padding:"9px 11px",color:T.txt,fontSize:13}} />
                   </div>
                   {(() => {
