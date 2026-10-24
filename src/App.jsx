@@ -525,14 +525,19 @@ export default function FinPath(){
     const n=[...new Set([...p,id])];
     try{localStorage.setItem("fp3_hallazgos_descartados",JSON.stringify(n))}catch{}
     return n;
+  });
+  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("mensual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
   const trmPendiente = useRef(null);
   // Aplica la TRM que llegó antes de que existiera `u`. Sin esto, en la carga
   // normal (sesión más lenta que la petición) la tasa real se perdía.
   useEffect(() => {
-    if (u && trmPendiente.current && u.trm !== trmPendiente.current.trm) {
+    // Una TRM guardada (incluido el 4200 por defecto que quedó en perfiles
+    // mientras el efecto estaba roto) es provisional: la tasa real la pisa.
+    // Se consume una sola vez para no pisar luego un ajuste manual.
+    if (u && trmPendiente.current) {
       const { trm, trmSrc } = trmPendiente.current;
       trmPendiente.current = null;
-      setU(p => p ? { ...p, trm, trmSrc } : p);
+      if (u.trm !== trm || u.trmSrc !== trmSrc) setU(p => p ? { ...p, trm, trmSrc } : p);
     }
   }, [u]);
 
@@ -559,7 +564,6 @@ export default function FinPath(){
     document.addEventListener("visibilitychange", alVolver);
     return () => { vivo = false; clearInterval(id); document.removeEventListener("visibilitychange", alVolver); };
   }, []);
-  });const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("mensual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
   // Modo demo: copia de la cuenta real al entrar, y ref al u actual.
   const realAntesDemoRef=useRef(null);const uRef=useRef(null);uRef.current=u;
   // State para menús desplegables del sidebar (sesión 1-may-2026 v3:
