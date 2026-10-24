@@ -123,8 +123,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                       {(() => { const x = (r.modificados || []).find((y) => y.id === a.id);
                         if (!x || (x.inversion <= 0 && x.rentaMensual <= 0)) return null;
                         return <div style={{ gridColumn: "1 / -1", background: C.bg, borderRadius: 8, padding: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
-                          <div><div style={{ fontSize: 11, color: C.tx2 }}>Queda valiendo</div><div style={{ fontSize: 17, fontWeight: 700 }}>{plata(x.valorConObra)}</div>{x.inversion > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>hoy {plata(x.valorHoy)} + {plata(x.inversion)}</div>}</div>
-                          {x.rentaMensual > 0 && <div><div style={{ fontSize: 11, color: C.tx2 }}>Renta al mes</div><div style={{ fontSize: 17, fontWeight: 700, color: C.gn }}>{plata(x.rentaMensual)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{textoMes(x.rentaDesdeMes).toLowerCase()} · {fmtPctEs(x.rentaPctAnual, 1)} al año sobre el total</div></div>}
+                          <div><div style={{ fontSize: 11, color: C.tx2 }}>Queda valiendo</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(x.valorConObra)}</div>{x.inversion > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>hoy {plata(x.valorHoy)} + {plata(x.inversion)}</div>}</div>
+                          {x.rentaMensual > 0 && <div><div style={{ fontSize: 11, color: C.tx2 }}>Renta al mes</div><div style={{ fontSize: 16, fontWeight: 700, color: C.gn }}>{plata(x.rentaMensual)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{textoMes(x.rentaDesdeMes).toLowerCase()} · {fmtPctEs(x.rentaPctAnual, 1)} al año sobre el total</div></div>}
                         </div>; })()}
                     </div>
                   );
