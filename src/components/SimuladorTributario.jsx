@@ -3,7 +3,7 @@ import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import NumberInput from "./NumberInput";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { estimarImpuesto, UVT } from "../lib/taxCO.js";
-import { adapterOwnerPlan } from "../lib/ownerPlanAdapter.js";
+import { adapterOwnerPlan, ahorroPvAfc } from "../lib/ownerPlanAdapter.js";
 import { getFiscalWarnings } from "../lib/normalize.js";
 import { calcImpRenta as calcImpRentaCore } from "../lib/tablaArt241.js";
 import { track } from "../lib/analytics.js";
@@ -84,7 +84,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       // PV y AFC comparten el tope 30 % / 3.800 UVT (dentro del Art. 336): una sola
       // línea que no empuja a ninguno de los dos.
       const pvAfcMax = pvMax + afcMax;
-      if (pvAfcMax > 500000) recs.push({ icon: "💰", title: "Pensión voluntaria o AFC", desc: "Hasta " + fm(pvAfcMax / 12) + "/mes en pensión voluntaria o AFC podría ser exento (tope conjunto 30 % / 3.800 UVT, dentro del tope del 40 %). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.", nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.", impact: calcImp(rentaSin / UVT) - impCon, color: T.green });
+      if (pvAfcMax > 500000) recs.push({ icon: "💰", title: "Pensión voluntaria o AFC", desc: "Hasta " + fm(pvAfcMax / 12) + "/mes en pensión voluntaria o AFC podría ser exento (tope conjunto 30 % / 3.800 UVT, dentro del tope del 40 %). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.", nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.", impact: ahorroPvAfc(fiscalData), color: T.green });
       if (!gbc["Salud"] && ingAnual > 2000 * UVT) recs.push({ icon: "🏥", title: "Medicina prepagada", desc: "Deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → Salud.", impact: 0, color: T.purple });
       if (deducDep > 0) recs.push({ icon: "👨‍👩‍👧", title: "Dependientes: " + fm(deducDep) + "/año", desc: "Ya se está deduciendo 10% del ingreso por dependientes (gastos educación detectados).", impact: 0, color: T.green });
       if (deducViv > 0) recs.push({ icon: "🏠", title: "Intereses vivienda: " + fm(deducViv) + "/año", desc: "Los intereses de tu hipoteca ya se deducen automáticamente.", impact: 0, color: T.green });

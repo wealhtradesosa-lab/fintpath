@@ -3,6 +3,7 @@
 // exentas (206-4); todo bajo el tope Art. 336 (40 % / 1.340 UVT).
 import { describe, it, expect } from "vitest";
 import { estimarImpuesto } from "../../src/lib/taxCO.js";
+import { adapterOwnerPlan, ahorroPvAfc } from "../../src/lib/ownerPlanAdapter.js";
 
 const user = (salMes, gas = {}, extra = []) => ({ trm: 4200, owners: [{ id: "o1", name: "Luis", type: "natural" }], gas, deu: [], inv: [],
   ingresos: [{ id: "sal", owner: "o1", nombre: "Salario", fiscalCode: "LAB_SALARIO", mensual: salMes, tipo: "fijo" }, ...extra] });
@@ -39,5 +40,16 @@ describe("exenta 25 % después de PV/AFC y cesantías", () => {
     expect(pvAnual).toBeGreaterThan(0);
     const d1 = det(user(15e6, aporte("AP_TRIB_PV", pvAnual / 12)));
     expect(d0.ahorroOptimo).toBeCloseTo(d0.impuesto - d1.impuesto, -2);
+  });
+});
+
+describe("tarjeta «Pensión voluntaria o AFC» del simulador", () => {
+  it("ahorro de la tarjeta == diferencia de taxCO con y sin el aporte", () => {
+    for (const salMes of [10e6, 15e6, 30e6]) {
+      const u0 = user(salMes), d0 = det(u0);
+      const fd = adapterOwnerPlan({ owner: u0.owners[0], ingresos: u0.ingresos, gastos: [], inv: [], deu: [], trm: 4200 });
+      const d1 = det(user(salMes, aporte("AP_TRIB_PV", d0.pensionVol / 12)));
+      expect(ahorroPvAfc(fd)).toBeCloseTo(d0.impuesto - d1.impuesto, -2);
+    }
   });
 });

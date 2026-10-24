@@ -147,3 +147,9 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     gastosTotal, gastosDeducTotal,
   };
 }
+
+// Ahorro de la tarjeta «Pensión voluntaria o AFC» del simulador: es el
+// ahorroOptimo de taxCO = impuesto sin el aporte sugerido − impuesto con él.
+export function ahorroPvAfc(fiscalData) {
+  return Math.max(0, Number(fiscalData?.ahorro) || 0);
+}
