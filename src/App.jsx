@@ -24,6 +24,7 @@ const CsvImport = lazy(() => import("./components/CsvImport"));
 const CalculadoraWizard = lazy(() => import("./components/CalculadoraWizard"));
 const SimuladorAvanzado = lazy(() => import("./components/SimuladorAvanzado"));
 const SimuladorFuturo = lazy(() => import("./components/SimuladorFuturo"));
+import { esTasaReal, resolverTasa } from "./lib/tasaDolar.js";
 const MiFuturo10 = lazy(() => import("./components/MiFuturo10"));
 const DeclaracionFlow = lazy(() => import("./components/DeclaracionFlow"));
 const PensionesColpensiones = lazy(() => import("./components/PensionesColpensiones"));
@@ -538,14 +539,20 @@ export default function FinPath(){
     const n=[...new Set([...p,id])];
     try{localStorage.setItem("fp3_hallazgos_descartados",JSON.stringify(n))}catch{}
     return n;
+  });
+const[u,_setU]=useState(null);const[trmCarga,setTrmCarga]=useState("cargando");const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("mensual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
+  // 24-oct-2026 (PR #56): este bloque estaba DENTRO del callback de descartarHallazgo (llave sin cerrar):
+  // trmPendiente no existía en el componente, la TRM de arranque nunca se aplicaba y la app quedaba en 4.200.
   const trmPendiente = useRef(null);
+  // 24-oct-2026 (PR #56): si la tasa no llega en 10 s, se pasa a la última guardada (con su fecha).
+  useEffect(() => { const id = setTimeout(() => setTrmCarga(c => (c === "cargando" ? "fallo" : c)), 10000); return () => clearTimeout(id); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Aplica la TRM que llegó antes de que existiera `u`. Sin esto, en la carga
   // normal (sesión más lenta que la petición) la tasa real se perdía.
   useEffect(() => {
     if (u && trmPendiente.current && u.trm !== trmPendiente.current.trm) {
-      const { trm, trmSrc } = trmPendiente.current;
+      const { trm, trmSrc, trmFecha } = trmPendiente.current;
       trmPendiente.current = null;
-      setU(p => p ? { ...p, trm, trmSrc } : p);
+      setU(p => p ? { ...p, trm, trmSrc, trmFecha } : p);
     }
   }, [u]);
 
@@ -564,7 +571,7 @@ export default function FinPath(){
       try {
         const r = await fetch("/api/trm");
         const j = await r.json();
-        if (vivo && j?.trm) setU(p => (p && p.trm !== j.trm) ? { ...p, trm: j.trm, trmSrc: j.source } : p);
+        if (vivo && esTasaReal(j)) { setTrmCarga("ok"); setU(p => (p && p.trm !== j.trm) ? { ...p, trm: j.trm, trmSrc: j.source, trmFecha: j.date || null } : p); }
       } catch {}
     };
     const id = setInterval(traer, 6 * 60 * 60 * 1000);
@@ -572,7 +579,6 @@ export default function FinPath(){
     document.addEventListener("visibilitychange", alVolver);
     return () => { vivo = false; clearInterval(id); document.removeEventListener("visibilitychange", alVolver); };
   }, []);
-  });const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("mensual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
   // Modo demo: copia de la cuenta real al entrar, y ref al u actual.
   const realAntesDemoRef=useRef(null);const uRef=useRef(null);uRef.current=u;
   // State para menús desplegables del sidebar (sesión 1-may-2026 v3:
@@ -764,11 +770,13 @@ export default function FinPath(){
     try{
       const r=await fetch('/api/trm');
       const j=await r.json();
-      if(j.trm){
-        trmPendiente.current={trm:j.trm,trmSrc:j.source};
-        setU(p=>p?{...p,trm:j.trm,trmSrc:j.source}:p);
-      }
-    }catch{}
+      // 24-oct-2026 (PR #56): el 4.200 «default» de la función ya no pisa la última tasa guardada.
+      if(esTasaReal(j)){
+        trmPendiente.current={trm:j.trm,trmSrc:j.source,trmFecha:j.date||null};
+        setU(p=>p?{...p,trm:j.trm,trmSrc:j.source,trmFecha:j.date||null}:p);
+        setTrmCarga("ok");
+      } else setTrmCarga("fallo");
+    }catch{setTrmCarga("fallo")}
     // Handle Stripe success redirect
     const params=new URLSearchParams(window.location.search);
     const successFlag=params.get('success');
@@ -3318,7 +3326,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     // «Escenarios a 10 años» (MiPlan) se retiró del menú: lo reemplaza «Mi futuro a 10 años».
     // Links/estado viejo con pg="plan" muestran f10. Datos guardados (perfilPlan, caminos…) se conservan.
     case"plan":
-    case"f10":return <MiFuturo10 user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],ingresos:(u&&u.ingresos)||[],gas:(u&&u.gas)||{},deu:(u&&u.deu)||[],metas:(u&&u.metas)||[],trm:u?.trm||4200}} guardado={u?.futuro10||{}} demo={!!u?.p?.demo} onGuardar={v=>{if(u?.p?.demo)return;upd("futuro10",v)}}/>;
+    case"f10":return <MiFuturo10 user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],ingresos:(u&&u.ingresos)||[],gas:(u&&u.gas)||{},deu:(u&&u.deu)||[],metas:(u&&u.metas)||[],trm:u?.trm||4200}} tasa={resolverTasa(trmCarga,u)} guardado={u?.futuro10||{}} demo={!!u?.p?.demo} onGuardar={v=>{if(u?.p?.demo)return;upd("futuro10",v)}}/>;
     case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
     case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado impuestoData={estimarImpuesto(u)} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm:u?.trm||4200,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
     // "anio" es la puerta del menú, no una página: si alguien cae ahí, es el mes a mes.

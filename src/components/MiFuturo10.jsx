@@ -40,9 +40,22 @@ export function agruparAlertas(alertas = []) {
   return GRUPOS_ALERTA.map(([t, tipos]) => [t, d.filter((a) => tipos.includes(a.tipo))]).filter(([, xs]) => xs.length);
 }
 
+// 24-oct-2026 (Finanzas/Soporte, PR #56): ninguna cifra que dependa del dólar se muestra ni
+// se guarda con la TRM provisional (4.200). Mientras carga: aviso en vez de cifras. Si la
+// fuente falla: última tasa guardada, con su fecha a la vista.
+export const MSG_CARGANDO_TRM = "Cargando tasa del dólar…";
+const esUSD = (x) => String(x?.moneda || x?.currency || "").toUpperCase() === "USD";
+export const usaDolar = (user = {}) => [...(user.inv || []), ...(user.deu || []), ...(user.ingresos || []), ...Object.values(user.gas || user.gastos || {}).flat()].some(esUSD);
+export const textoTasaUsada = (tasa = {}) => `Tasa usada: ${plata(tasa.trm)}${tasa.fecha ? ` (${String(tasa.fecha).slice(0, 10)})` : ""}`;
+/** tasa: { estado: "cargando" | "ok" | "respaldo", trm, fecha }. Sin prop → se asume lista (pruebas, usos viejos). */
+export const tasaProvisional = (tasa) => !!tasa && tasa.estado === "cargando";
+
 export const MSG_DEMO_F10 = "En modo demo no se guardan escenarios.";
 
-export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false }) {
+export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false, tasa = null }) {
+  const provisional = tasaProvisional(tasa);
+  const ocultarCifras = provisional && usaDolar(user);
+  const provRef = useRef(provisional); provRef.current = provisional;
   const borrador = !demo && guardado?.borrador?.cfg ? guardado.borrador : null;
   const [paso, setPaso] = useState(borrador ? Math.min(PASOS.length - 1, Number(borrador.paso) || 0) : pasoInicial);
   const [cfg, setCfg] = useState(() => (borrador ? { ...CONFIG_INICIAL, ...migrarConfigF10(borrador.cfg, user) } : CONFIG_INICIAL));
@@ -50,6 +63,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const ultimo = useRef({ guardado, onGuardar });
   ultimo.current = { guardado, onGuardar };
   const primera = useRef(true);
+  const visto = useRef({ cfg: null, paso: null });
   // 24-oct-2026 (QA PR #56): quitar una inversión se guarda de inmediato, y si el
   // usuario sale de «Mi futuro» con un guardado pendiente, se escribe al desmontar.
   const urgente = useRef(false);
@@ -57,14 +71,17 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const escribirAhora = () => {
     const { guardado: g, onGuardar: og } = ultimo.current;
     const b = pendiente.current; pendiente.current = null;
-    if (!b || !og) return;
+    if (!b || !og || provRef.current) { if (provRef.current) pendiente.current = b; return; }
     og({ ...g, borrador: { ...b, actualizado: new Date().toISOString() } });
     if (typeof window !== "undefined") window.dispatchEvent(new Event("fp3-flush-save"));
   };
-  useEffect(() => () => { if (pendiente.current) escribirAhora(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => { if (pendiente.current && !provRef.current) escribirAhora(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (demo || !onGuardar) return undefined; // la demo nunca escribe
-    if (primera.current) { primera.current = false; return undefined; }
+    if (primera.current) { primera.current = false; visto.current = { cfg, paso }; return undefined; }
+    const sinCambios = visto.current.cfg === cfg && visto.current.paso === paso; visto.current = { cfg, paso };
+    if (provisional) { if (!sinCambios) pendiente.current = { cfg, paso }; return undefined; } // con TRM provisional no se guarda; se guarda al llegar la tasa
+    if (sinCambios && !pendiente.current) return undefined; // solo cambió el estado de la tasa
     pendiente.current = { cfg, paso };
     if (urgente.current) { urgente.current = false; escribirAhora(); setEstadoGuardado("listo"); return undefined; }
     setEstadoGuardado("guardando");
@@ -84,7 +101,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       } else escribir();
     }, AUTOSAVE_MS);
     return () => { clearTimeout(id); quitar(); };
-  }, [cfg, paso, demo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cfg, paso, demo, provisional]); // eslint-disable-line react-hooks/exhaustive-deps
   const [mercado, setMercado] = useState(null);
   useEffect(() => {
     if (typeof fetch === "undefined") return;
@@ -94,15 +111,16 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   }, []);
   const [nombreEsc, setNombreEsc] = useState("");
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
-  const r = useMemo(() => proyectarFuturo10(user, cfg), [user, cfg]);
-  const esc = r.escenario;
+  // Se calcula una sola vez con la tasa final: con TRM provisional y datos en dólares no se calcula.
+  const r = useMemo(() => (ocultarCifras ? null : proyectarFuturo10(user, cfg)), [user, cfg, ocultarCifras]);
+  const esc = r?.escenario;
   const escenarios = guardado.escenarios || [];
   const mezcla = cfg.mezcla || SUPUESTOS_F10.nortes[cfg.norte] || SUPUESTOS_F10.nortes.equilibrio;
   const ir = (i) => { setPaso(i); track("futuro10_paso", { paso: i + 1 }); };
   const bolsa = (user.inv || []).filter((a) => cfg.decisiones[a.id]?.accion === "vende").length;
 
   const guardar = () => {
-    if (demo) return; // la demo nunca escribe en la cuenta real
+    if (demo || provisional) return; // la demo nunca escribe; con TRM provisional tampoco
     const nuevo = { id: "f10_" + Date.now(), nombre: nombreEsc.trim() || `Escenario ${escenarios.length + 1}`, creado: new Date().toISOString(), config: { ...conNombres(cfg), version: 2 } };
     onGuardar && onGuardar({ ...guardado, escenarios: [...escenarios, nuevo].slice(-10) });
     setNombreEsc("");
@@ -110,11 +128,19 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   };
   const borrar = (id) => !demo && onGuardar && onGuardar({ ...guardado, escenarios: escenarios.filter((e) => e.id !== id) });
 
+  if (ocultarCifras) return (
+    <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
+      <PageHeader label="Mi futuro a 10 años" title="¿Cómo se ve tu patrimonio en 10 años?" compact subtitle="Tienes datos en dólares: esperamos la tasa del día para calcular." />
+      <div role="status" data-testid="f10-cargando-trm" style={{ ...card, fontSize: 13, color: C.tx2 }}>{MSG_CARGANDO_TRM}</div>
+    </div>
+  );
+
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
       <PageHeader label="Mi futuro a 10 años" title="¿Cómo se ve tu patrimonio en 10 años?" compact
         subtitle="Decide qué hacer con cada activo, reinvierte y mira el resultado en pesos de hoy. Tus datos reales no se tocan." />
       <div style={{ ...card, borderColor: C.am, fontSize: 12, color: C.tx2 }}>{AVISO_F10}</div>
+      {tasa?.estado === "respaldo" && usaDolar(user) && <div role="note" data-testid="f10-tasa-usada" style={{ ...card, fontSize: 12, color: C.tx2 }}>{textoTasaUsada(tasa)}. No pudimos traer la tasa de hoy; usamos la última guardada.</div>}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {PASOS.map((p, i) => <button key={p} style={btn(paso === i)} onClick={() => ir(i)}>{i + 1}. {p}</button>)}
