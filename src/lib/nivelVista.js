@@ -76,7 +76,23 @@ export function ingresosOcultos(ingresos = [], trm = 4200, año = getMesActual()
         nota = mes ? `${f}, ya cobrado en ${mes}` : `${f}, ya cobrado este año`;
       } else nota = `${f}, prorrateado por mes`;
     }
-    return { nombre: String(i.nombre || i.categoria || "Ingreso sin nombre"), mensual, nota };
+    // Registro viejo: categoría «Inversión» sin código fiscal. Cuenta como
+    // pasivo (metrics.js:42) pero puede ser una venta. Solo se marca para que
+    // el usuario lo revise; no cambia el nivel.
+    const revisar = String(i.categoria || "").trim() === "Inversión" && !i.fiscalCode;
+    return { nombre: String(i.nombre || i.categoria || "Ingreso sin nombre"), mensual, nota, revisar };
   });
 }
 export const sumaOcultos = (lista = []) => lista.reduce((s, x) => s + (x.mensual || 0), 0);
+
+// Confirmaciones del usuario («sí, es renta de una inversión»). Solo nombres,
+// en el navegador del usuario; no van a analytics ni a logs.
+const CLAVE_CONFIRMADOS = "fp_inversion_confirmada";
+export function leerConfirmados(store = typeof localStorage !== "undefined" ? localStorage : null) {
+  try { return new Set(JSON.parse(store?.getItem(CLAVE_CONFIRMADOS) || "[]")); } catch { return new Set(); }
+}
+export function confirmarRenta(nombre, store = typeof localStorage !== "undefined" ? localStorage : null) {
+  const set = leerConfirmados(store); set.add(nombre);
+  try { store?.setItem(CLAVE_CONFIRMADOS, JSON.stringify([...set])); } catch { /* sin storage */ }
+  return set;
+}

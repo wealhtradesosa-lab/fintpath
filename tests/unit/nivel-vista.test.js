@@ -56,6 +56,7 @@ describe("auditoría ingreso pasivo", () => {
   });
 });
 
+import { leerConfirmados, confirmarRenta } from "../../src/lib/nivelVista.js";
 import { posEnBarra, metaNivel, ingresosOcultos, sumaOcultos, TOPE_BARRA } from "../../src/lib/nivelVista.js";
 describe("escala de la barra y metas", () => {
   it("0–150%: 136% queda pasado de la marca de Abundancia y nada se corta", () => {
@@ -74,7 +75,7 @@ describe("escala de la barra y metas", () => {
       { nombre: "Arriendo X", sim: false, mensual: 5000000 },
       { nombre: "Salario", mensual: 9 },
       { categoria: "Dividendos", sim: false, mensual: 100, moneda: "USD" },
-    ], 4000)).toEqual([{ nombre: "Arriendo X", mensual: 5000000, nota: null }, { nombre: "Dividendos", mensual: 400000, nota: null }]);
+    ], 4000)).toEqual([{ nombre: "Arriendo X", mensual: 5000000, nota: null, revisar: false }, { nombre: "Dividendos", mensual: 400000, nota: null, revisar: false }]);
   });
   it("un anual ya cobrado no sale en $0: total/12 con nota; la suma = total del aviso", () => {
     const l = ingresosOcultos([
@@ -82,9 +83,24 @@ describe("escala de la barra y metas", () => {
       { nombre: "Cupón", sim: false, mensual: 3000000, frecuencia: "trimestral", pagos: { 2026: true } },
       { nombre: "Arriendo", sim: false, mensual: 2000000 },
     ], 4000, 2026);
-    expect(l[0]).toEqual({ nombre: "Dividendo anual", mensual: 1000000, nota: "anual, ya cobrado en marzo" });
+    expect(l[0]).toEqual({ nombre: "Dividendo anual", mensual: 1000000, nota: "anual, ya cobrado en marzo", revisar: false });
     expect(l[1].mensual).toBe(1000000);
     expect(l[1].nota).toBe("trimestral, ya cobrado este año");
     expect(sumaOcultos(l)).toBe(4000000);
+  });
+});
+
+describe("registros viejos «Inversión» sin código", () => {
+  it("se marcan para revisar y la confirmación se guarda solo con el nombre", () => {
+    const l = ingresosOcultos([
+      { nombre: "Fondo viejo", categoria: "Inversión", sim: false, mensual: 1 },
+      { nombre: "Venta lote", categoria: "Inversión", fiscalCode: "CAP_VENTA_ACTIVOS", sim: false, mensual: 1 },
+    ]);
+    expect(l.map((x) => x.revisar)).toEqual([true, false]);
+    const mem = {}; const store = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = v; } };
+    expect(leerConfirmados(store).has("Fondo viejo")).toBe(false);
+    confirmarRenta("Fondo viejo", store);
+    expect(leerConfirmados(store).has("Fondo viejo")).toBe(true);
+    expect(mem.fp_inversion_confirmada).toBe('["Fondo viejo"]');
   });
 });

@@ -3,7 +3,7 @@ import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
-import { vistaNivel, estadoNivel, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos } from "../lib/nivelVista.js";
+import { vistaNivel, estadoNivel, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
@@ -150,8 +150,9 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
 }
 
 // ─── FREEDOM BAR (inline, reactive) ───
-function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [] }) {
+function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate }) {
   const [verOcultos, setVerOcultos] = useState(false);
+  const [confirmados, setConfirmados] = useState(() => leerConfirmados());
   const [expandedLvl, setExpandedLvl] = useState(null);
   const te = ob, ni = ip;
   const obEsencial = nivel?.obEsencial || ob;
@@ -299,7 +300,16 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
               </button>
               {verOcultos && (
                 <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-                  {nombresIngresosOcultos.map((n, i) => <li key={i}>{n.nombre}: <b>{fm(n.mensual)}/mes</b>{n.nota && <span style={{ color: T.txt3 }}> ({n.nota})</span>}</li>)}
+                  {nombresIngresosOcultos.map((n, i) => <li key={i}>{n.nombre}: <b>{fm(n.mensual)}/mes</b>{n.nota && <span style={{ color: T.txt3 }}> ({n.nota})</span>}
+                    {n.revisar && !confirmados.has(n.nombre) && (
+                      <div style={{ marginTop: 3, color: T.gd }}>
+                        Revisa: ¿es renta de una inversión?{" "}
+                        <button onClick={() => setConfirmados(new Set(confirmarRenta(n.nombre)))} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 6, color: T.txt2, cursor: "pointer", fontSize: 10, padding: "1px 6px" }}>Sí, es renta</button>{" "}
+                        <button onClick={() => onNavigate && onNavigate("flujo")} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 6, color: T.txt2, cursor: "pointer", fontSize: 10, padding: "1px 6px" }}>No, cambiar categoría</button>
+                      </div>
+                    )}
+                    {n.revisar && confirmados.has(n.nombre) && <span style={{ color: T.txt3 }}> · confirmado como renta</span>}
+                  </li>)}
                 </ul>
               )}
             </div>
@@ -1469,7 +1479,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
       <FreedomBarLive ip={simT.metMes?.ip ?? simT.ip} ob={simT.metMes?.ob ?? simT.ob}
         fl={simT.metMes?.fl ?? simT.fl} nivel={simT.metMes?.nivel ?? simT.nivel}
         ocultos={simT.metMes?.ocultos} mesMedido={simT.metMes?.mesMedido}
-        nombresIngresosOcultos={ingresosOcultos(user.ingresos, trm)} />
+        nombresIngresosOcultos={ingresosOcultos(user.ingresos, trm)} onNavigate={onNavigate} />
 
       {/* Scenario presets */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 20 }}>
