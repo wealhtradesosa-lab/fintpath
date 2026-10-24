@@ -95,16 +95,30 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             1 qué pasa con las inversiones actuales, 2 deudas, 3 ingresos
             futuros"). Tres secciones numeradas, cada una en su tarjeta. */}
         <div style={card}>
-          <Seccion n={1} titulo="Tus inversiones de hoy" sub="De cada una: sigue igual o se vende. ¿Le vas a meter plata, como una obra en tu lote? Eso va en el paso 3, Reinvierte." />
+          <Seccion n={1} titulo="Tus inversiones de hoy" sub="De cada una: sigue igual, se vende o le vas a invertir (por ejemplo, construir una bodega en tu lote)." />
           {(user.inv || []).filter((a) => a && a.sim !== false).map((a) => {
             const d = cfg.decisiones[a.id] || { accion: "continua" };
-            const setD = (v) => set("decisiones", { ...cfg.decisiones, [a.id]: { ...d, ...v } });
+            // 24-oct-2026 (Santiago: "¿dónde sabe la plataforma que a un activo
+            // que ya existe le voy a invertir?"). En el activo mismo: «Le voy a
+            // invertir» guarda una reinversión de ese activo (la misma que se
+            // ve en Reinvierte; un solo dato, no se cuenta dos veces).
+            const iR = cfg.reinversiones.findIndex((x) => x.activoId === a.id);
+            const accion = d.accion === "vende" ? "vende" : iR >= 0 ? "invierte" : "continua";
+            const elegir = (k) => {
+              const sinEsta = cfg.reinversiones.filter((x) => x.activoId !== a.id);
+              const decisiones = { ...cfg.decisiones, [a.id]: { accion: k === "vende" ? "vende" : "continua" } };
+              const reinversiones = k === "invierte" ? (iR >= 0 ? cfg.reinversiones : [...cfg.reinversiones, { activoId: a.id, monto: "", anio: 1, rentaMensual: "", rentaDesdeMes: 0 }]) : sinEsta;
+              setCfg((p) => ({ ...p, decisiones, reinversiones }));
+            };
+            const upR = (v) => set("reinversiones", cfg.reinversiones.map((y, j) => (j === iR ? { ...y, ...v } : y)));
+            const detR = iR >= 0 ? (r.reinversionesDetalle || []).find((y) => y.i === iR) : null;
             return (
               <div key={a.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}><b>{a.n || a.nombre}</b><span style={{ color: C.tx2 }}>{plata(a.va)}{String(a.moneda).toUpperCase() === "USD" ? " USD" : ""}</span></div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-                  {[["continua", "Sigue igual"], ["vende", "Se vende"]].map(([k, l]) => <button key={k} style={btn(d.accion === k)} onClick={() => setD({ accion: k })}>{l}</button>)}
+                  {[["continua", "Sigue igual"], ["vende", "Se vende"], ["invierte", "Le voy a invertir"]].map(([k, l]) => <button key={k} style={btn(accion === k)} onClick={() => elegir(k)}>{l}</button>)}
                 </div>
+                {accion === "invierte" && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} /></div>}
               </div>
             );
           })}
@@ -191,21 +205,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           {cfg.reinversiones.map((x, i) => {
             const up = (v) => set("reinversiones", cfg.reinversiones.map((y, j) => (j === i ? { ...y, ...v } : y)));
             const det = (r.reinversionesDetalle || []).find((y) => y.i === i);
-            const lbl = { fontSize: 12, color: C.tx2 };
-            const desdeMes = Number(x.rentaDesdeMes) || 0;
             return (
               <div key={i} style={{ borderTop: `1px solid ${C.bd}`, padding: "10px 0" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
-                  <label style={lbl}>¿A cuál?<select style={inp} value={x.activoId} onChange={(e) => up({ activoId: e.target.value })}>{r.activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>
-                  <label style={lbl}>¿Cuánto le metes? ($)<NumberInput style={inp} placeholder="Ej.: 600.000.000" value={x.monto} onChange={(v) => up({ monto: v })} /></label>
-                  <label style={lbl}>¿Cuándo?<select style={inp} value={Number(x.anio) || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select></label>
-                  <label style={lbl}>¿Va a dar renta? ($ al mes, opcional)<NumberInput style={inp} placeholder="Ej.: 8.500.000" value={x.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>
-                  {(Number(x.rentaMensual) || 0) > 0 && <label style={lbl}>¿Desde cuándo?<select style={inp} value={desdeMes} onChange={(e) => up({ rentaDesdeMes: Number(e.target.value) })}>{opcionesMes(desdeMes).map((mm) => <option key={mm} value={mm}>{textoMes(mm)}</option>)}</select></label>}
-                </div>
-                {det && (det.aporte > 0 || det.rentaMensual > 0) && <div style={{ marginTop: 8, background: C.bg, borderRadius: 8, padding: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
-                  <div><div style={{ fontSize: 11, color: C.tx2 }}>Queda valiendo</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.total)}</div><div style={{ fontSize: 11, color: C.tx2 }}>hoy {plata(det.valorHoy)} + {plata(det.aporte)}{det.anio > 1 ? ` en ${det.anio - 1} año${det.anio === 2 ? "" : "s"}` : ""}</div></div>
-                  {det.rentaMensual > 0 && <div><div style={{ fontSize: 11, color: C.tx2 }}>Renta al mes</div><div style={{ fontSize: 16, fontWeight: 700, color: C.gn }}>{plata(det.rentaMensual)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{textoMes(det.rentaDesdeMes).toLowerCase()} · {fmtPctEs(det.rentaPctAnual, 1)} al año sobre el total</div></div>}
-                </div>}
+                <AporteCampos x={x} up={up} det={det} activos={r.activos} conActivo />
                 <button style={{ ...btn(false), marginTop: 8 }} onClick={() => set("reinversiones", cfg.reinversiones.filter((_, j) => j !== i))}>Quitar</button>
               </div>
             );
@@ -326,6 +328,7 @@ function LoQueViene({ cfg, set, esc, owners }) {
           {f.activos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{f.activos.length} {f.activos.length === 1 ? "activo" : "activos"}</div>}
         </div>
       </div>
+      <div style={{ fontSize: 12, color: C.am, background: "rgba(245,158,11,0.08)", border: `1px solid rgba(245,158,11,0.3)`, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>¿La renta sale de construir o invertir en algo que ya tienes, como una bodega en tu lote? No la pongas aquí: ve a la sección 1, en ese activo toca «Le voy a invertir» y pon ahí la inversión y la renta.</div>
       <h4 style={{ margin: "8px 0" }}>Ingresos futuros</h4>
       {f.ingresos.map((x, i) => (
         <div key={i} style={g}>
@@ -482,6 +485,24 @@ function Graficas({ r, cfg, user, escenarios }) {
       </div>}
     </div>
   );
+}
+
+function AporteCampos({ x, up, det, activos, conActivo = false }) {
+  const lbl = { fontSize: 12, color: C.tx2 };
+  const desdeMes = Number(x.rentaDesdeMes) || 0;
+  return (<>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
+      {conActivo && <label style={lbl}>¿A cuál?<select style={inp} value={x.activoId} onChange={(e) => up({ activoId: e.target.value })}>{activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
+      <label style={lbl}>¿Cuánto le vas a invertir? ($)<NumberInput style={inp} placeholder="Ej.: 600.000.000" value={x.monto} onChange={(v) => up({ monto: v })} /></label>
+      <label style={lbl}>¿Cuándo?<select style={inp} value={Number(x.anio) || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select></label>
+      <label style={lbl}>¿Va a dar renta? ($ al mes, opcional)<NumberInput style={inp} placeholder="Ej.: 8.500.000" value={x.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>
+      {(Number(x.rentaMensual) || 0) > 0 && <label style={lbl}>¿Desde cuándo renta?<select style={inp} value={desdeMes} onChange={(e) => up({ rentaDesdeMes: Number(e.target.value) })}>{opcionesMes(desdeMes).map((mm) => <option key={mm} value={mm}>{textoMes(mm)}</option>)}</select></label>}
+    </div>
+    {det && (det.aporte > 0 || det.rentaMensual > 0) && <div style={{ marginTop: 8, background: C.bg, borderRadius: 8, padding: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
+      <div><div style={{ fontSize: 11, color: C.tx2 }}>Queda valiendo</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.total)}</div><div style={{ fontSize: 11, color: C.tx2 }}>hoy {plata(det.valorHoy)} + {plata(det.aporte)}{det.anio > 1 ? ` en ${det.anio - 1} año${det.anio === 2 ? "" : "s"}` : ""}</div></div>
+      {det.rentaMensual > 0 && <div><div style={{ fontSize: 11, color: C.tx2 }}>Renta al mes</div><div style={{ fontSize: 16, fontWeight: 700, color: C.gn }}>{plata(det.rentaMensual)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{textoMes(det.rentaDesdeMes).toLowerCase()} · {fmtPctEs(det.rentaPctAnual, 1)} al año sobre el total</div></div>}
+    </div>}
+  </>);
 }
 
 const MESES_RENTA = [0, 3, 6, 9, 12, 18, 24, 36, 48, 60, 72, 84, 96, 108];
