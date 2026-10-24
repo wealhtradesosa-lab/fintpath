@@ -1,5 +1,5 @@
 import { fmtPctEs } from "./formato.js";
-import { estimarImpuesto } from "./taxCO.js";
+import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "./taxCO.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · recomendacionesEstrategicas.js · Sesión 1-may-2026
 //
@@ -40,7 +40,11 @@ import { estimarImpuesto } from "./taxCO.js";
 //   }
 // ═══════════════════════════════════════════════════════════════════════════
 
-const UVT = 49799; // AG 2025 default ($49.799) — ver UVT_BY_AG / uvtForYear en taxCO.js
+// UVT del mismo año gravable que se le pasa a taxCO (regla Tributario: nunca un
+// valor único para toda la app). Recomendaciones = AG por defecto (2026).
+export const AG_RECOS = DEFAULT_AG;
+export const UVT_RECOS = uvtForYear(AG_RECOS);
+const UVT = UVT_RECOS;
 
 // ─────────────────────────────────────────────────────────────────────────
 // ANÁLISIS DEL PERFIL DEL OWNER
@@ -491,6 +495,6 @@ export function ahorroAporteConTaxCO(perfil, consultoriaAnual, aporteAnual) {
   const base = { ...user, owners: [owner], ingresos: [...(user.ingresos || []), consult] };
   const gas = { ...(base.gas || {}) };
   gas["Aporte tributario"] = [...(gas["Aporte tributario"] || []), { owner: owner.id, fiscalCode: "AP_TRIB_AFC", m: aporteAnual / 12 }];
-  const imp = (u) => (estimarImpuesto(u).detalle.find((d) => d.name === owner.name)?.impBruto) || 0;
+  const imp = (u) => (estimarImpuesto(u, { ag: AG_RECOS }).detalle.find((d) => d.name === owner.name)?.impBruto) || 0;
   return Math.max(0, imp(base) - imp({ ...base, gas }));
 }

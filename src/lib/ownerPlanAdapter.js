@@ -24,7 +24,7 @@
 //     → { type, regimen, ingAnual, impActual, tasaActual, ..., gastosByCat, ... }
 //     o null si no hay ingresos.
 
-import { estimarImpuesto } from "./taxCO.js";
+import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "./taxCO.js";
 import { totalAnualItem } from "./flowHelpers.js";
 import { GAS_JUR_NO_DEDUCIBLE } from "./fiscalCodes.js";
 
@@ -49,7 +49,8 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     componenteInflacionarioPct,
   };
 
-  const est = estimarImpuesto(userLike);
+  // Simulador y ahorro PV/AFC: AG por defecto; la UVT se deriva de ese año.
+  const est = estimarImpuesto(userLike, { ag: DEFAULT_AG });
   const d = est.detalle[0];
   if (!d) return null;
 
@@ -134,6 +135,8 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     tasaSin: d.tasaBruta != null ? d.tasaBruta : d.tasa,
     tasaCon: d.ingreso > 0 ? ((d.impOptBruto != null ? d.impOptBruto : d.impOptimizado) / d.ingreso * 100) : 0,
     ahorro: d.ahorroOptimo,
+    ag: DEFAULT_AG,
+    uvt: uvtForYear(DEFAULT_AG),
     saldoAPagar: d.saldoAPagar || 0,
     saldoAFavor: d.saldoAFavor || 0,
     saldoAFavorOpt: d.saldoAFavorOpt || 0,
@@ -165,4 +168,10 @@ export function saldoResumen(fd, isJ) {
     return { saldoAPagar: Math.max(0, imp - ret), saldoAFavor: Math.max(0, ret - imp) };
   }
   return { saldoAPagar: Number(fd?.saldoAPagar) || 0, saldoAFavor: Number(fd?.saldoAFavor) || 0 };
+}
+
+// Etiqueta «AG 2026 · UVT $52.374», derivada del año que se le pasó a taxCO.
+export function etiquetaAG(fd) {
+  const ag = fd?.ag || DEFAULT_AG, uvt = fd?.uvt || uvtForYear(ag);
+  return `AG ${ag} · UVT $${Math.round(uvt).toLocaleString("es-CO")}`;
 }

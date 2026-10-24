@@ -2,8 +2,9 @@
 // después de INCRNGO, deducciones, PV/AFC exentas (30 % / 3.800 UVT) y cesantías
 // exentas (206-4); todo bajo el tope Art. 336 (40 % / 1.340 UVT).
 import { describe, it, expect } from "vitest";
-import { estimarImpuesto } from "../../src/lib/taxCO.js";
-import { adapterOwnerPlan, ahorroPvAfc, saldoResumen } from "../../src/lib/ownerPlanAdapter.js";
+import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "../../src/lib/taxCO.js";
+import { AG_RECOS, UVT_RECOS } from "../../src/lib/recomendacionesEstrategicas.js";
+import { adapterOwnerPlan, ahorroPvAfc, saldoResumen, etiquetaAG } from "../../src/lib/ownerPlanAdapter.js";
 
 const user = (salMes, gas = {}, extra = []) => ({ trm: 4200, owners: [{ id: "o1", name: "Luis", type: "natural" }], gas, deu: [], inv: [],
   ingresos: [{ id: "sal", owner: "o1", nombre: "Salario", fiscalCode: "LAB_SALARIO", mensual: salMes, tipo: "fijo" }, ...extra] });
@@ -88,5 +89,25 @@ describe("simulador: columna de saldo y tope conjunto", () => {
   it("$10 M/mes: máximo PV+AFC = $2,88 M/mes (tope compartido, sin doble conteo)", () => {
     const fd = fdDe(user(10e6));
     expect(Math.round(fd.pvMax / 12 / 1e4) / 100).toBeCloseTo(2.88, 2);
+  });
+});
+
+describe("UVT sale del mismo año gravable que taxCO", () => {
+  it("recomendaciones y simulador: tope y tarifa con el mismo AG", () => {
+    expect(UVT_RECOS).toBe(uvtForYear(AG_RECOS));
+    const u = user(10e6);
+    const fd = adapterOwnerPlan({ owner: u.owners[0], ingresos: u.ingresos, gastos: [], inv: [], deu: [], trm: 4200 });
+    const d = estimarImpuesto(u, { ag: fd.ag }).detalle.find((x) => x.name === "Luis");
+    expect(fd.ag).toBe(AG_RECOS);
+    expect(fd.uvt).toBe(uvtForYear(fd.ag));
+    expect(fd.impSin).toBeCloseTo(d.impBruto, 0);
+    expect(d.pvMax).toBeLessThanOrEqual(3800 * fd.uvt);
+    expect(etiquetaAG(fd)).toBe(`AG ${fd.ag} · UVT $${fd.uvt.toLocaleString("es-CO")}`);
+  });
+  it("AG 2026 → UVT $52.374, tope 3.800 UVT = $199.021.200; AG 2025 → $49.799", () => {
+    expect(uvtForYear(2026)).toBe(52374);
+    expect(3800 * uvtForYear(2026)).toBe(199021200);
+    expect(uvtForYear(2025)).toBe(49799);
+    if (DEFAULT_AG === 2026) expect(etiquetaAG({ ag: 2026, uvt: 52374 })).toBe("AG 2026 · UVT $52.374");
   });
 });
