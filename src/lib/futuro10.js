@@ -132,7 +132,9 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const m = Math.min(bolsa, Math.max(0, n(r.monto))); const a = activos.find((x) => x.id === r.activoId);
     if (a && m > 0) { a.valor += m; bolsa -= m; }
   });
+  const personalizadas = [];
   (cfg.nuevas || []).forEach((x, k) => {
+    if (x.preset === "custom") { const c = leerPersonalizada(x, esc, sup); if (c.monto > 0) personalizadas.push({ ...c, id: "nueva_" + k }); return; }
     const m = Math.min(bolsa, Math.max(0, n(x.monto)));
     if (m <= 0 || !sup.presets[x.preset]) return;
     bolsa -= m;
@@ -159,20 +161,6 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   filas.push(fila0);
   let liqAgotadaAnio = null;
   for (let t = 1; t <= N; t++) {
-    // 1) rendimientos y depreciación del año
-    todos.forEach((a) => {
-      if (a.crec == null) { const p = t <= 3 ? sup.vehiculo.depAnios1a3Pct : sup.vehiculo.depDespuesPct; a.valor *= 1 + p / 100; }
-      else a.valor *= 1 + a.crec;
-    });
-    colchon *= 1 + rCan.liquidez;
-    Object.keys(canasta).forEach((k) => { canasta[k] *= 1 + rCan[k]; });
-    // 2) flujo del año (ingresos y gastos ya crecidos)
-    if (t > 1) { ingresos *= 1 + gIng; gastos *= 1 + gGas; }
-    // Renta nueva de un activo modificado: pesos de hoy, crece con la inflación.
-    const rentaNueva = todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 && a.rentaDesde > 0 && t >= a.rentaDesde ? a.rentaNuevaAnual * Math.pow(1 + inf, t) : 0), 0);
-    const cuota = deuda > 0 ? Math.min(cuotaAnual, cuotaAnual * Math.max(0, aniosDeuda - (t - 1))) : 0;
-    deuda = Math.max(0, deuda - cuota);
-    const cf = ingresos + rentaNueva - gastos - cuota;
     // Saca plata en orden: colchón → liquidez → líquidos existentes → renta → crecimiento.
     const retirar = (monto) => {
       let falta = monto;
@@ -184,6 +172,28 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
       canasta.crecimiento = sacar(canasta.crecimiento);
       if (falta > 0) { canasta.liquidez -= falta; if (liqAgotadaAnio == null) liqAgotadaAnio = t; }
     };
+    // 0) inversiones personalizadas: al inicio del año X pasan de tu liquidez/bolsa al activo nuevo.
+    personalizadas.forEach((c) => {
+      if (c.anio !== t) return;
+      retirar(c.monto);
+      // «Paga renta»: el valor sigue la inflación y el resto del rendimiento va al flujo.
+      todos.push({ id: c.id, nombre: c.nombre, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? inf : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom - inf : 0, usd: c.usd, invertible: true });
+    });
+    // 1) rendimientos y depreciación del año
+    todos.forEach((a) => {
+      if (a.crec == null) { const p = t <= 3 ? sup.vehiculo.depAnios1a3Pct : sup.vehiculo.depDespuesPct; a.valor *= 1 + p / 100; }
+      else a.valor *= 1 + a.crec;
+    });
+    colchon *= 1 + rCan.liquidez;
+    Object.keys(canasta).forEach((k) => { canasta[k] *= 1 + rCan[k]; });
+    // 2) flujo del año (ingresos y gastos ya crecidos)
+    if (t > 1) { ingresos *= 1 + gIng; gastos *= 1 + gGas; }
+    // Renta nueva de un activo modificado: pesos de hoy, crece con la inflación.
+    const rentaPers = todos.reduce((s, a) => s + (a.rentaPct ? a.valor / (1 + a.crec) * a.rentaPct : 0), 0);
+    const rentaNueva = rentaPers + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 && a.rentaDesde > 0 && t >= a.rentaDesde ? a.rentaNuevaAnual * Math.pow(1 + inf, t) : 0), 0);
+    const cuota = deuda > 0 ? Math.min(cuotaAnual, cuotaAnual * Math.max(0, aniosDeuda - (t - 1))) : 0;
+    deuda = Math.max(0, deuda - cuota);
+    const cf = ingresos + rentaNueva - gastos - cuota;
     if (cf >= 0) {
       Object.keys(canasta).forEach((k) => { canasta[k] += cf * mezcla[k] / 100; });
     } else {
@@ -214,7 +224,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses },
     activos: activos.map(({ id, nombre, clase, usd }) => ({ id, nombre, clase, usd })),
-    hayUSD: [...activos, ...nuevas].some((a) => a.usd) || mezcla.crecimiento > 0,
+    hayUSD: [...activos, ...nuevas, ...personalizadas].some((a) => a.usd) || mezcla.crecimiento > 0,
     final: fin,
     // Comparativo contra la inflación: solo lo invertible (sin vehículos).
     vsInflacionReal: fila0.invertible > 0 ? (fin.invertibleReal / fila0.invertible - 1) * 100 : null,
@@ -254,6 +264,19 @@ export function leerModifica(d = {}, esc) {
     valorizacionNomPct,
     inversionMonto: Math.max(0, n(d.inversionMonto)), inversionAnio: anio(d.inversionAnio),
     rentaNuevaMensual: Math.max(0, n(d.rentaNuevaMensual)), rentaNuevaDesde: anio(d.rentaNuevaDesde),
+  };
+}
+
+/** Hint (% nominal) para una inversión personalizada: renta fija corto plazo del escenario. */
+export function rendimientoHintPct(esc, sup = SUPUESTOS_F10) { return retornoNominalPreset("rfCorto", esc, sup); }
+
+/** Normaliza una inversión «Otra (personalizada)». Rendimiento en % NOMINAL. */
+export function leerPersonalizada(x = {}, esc, sup = SUPUESTOS_F10) {
+  const rend = vacio(x.rendimientoNomPct) ? rendimientoHintPct(esc, sup) : n(x.rendimientoNomPct);
+  return {
+    nombre: String(x.nombre || "").trim() || "Inversión personalizada",
+    monto: Math.max(0, n(x.monto)), anio: Math.min(10, Math.max(1, Math.round(n(x.anio) || 1))),
+    rendNom: rend / 100, usd: String(x.moneda || "COP").toUpperCase() === "USD", pagaRenta: x.tipo === "renta",
   };
 }
 

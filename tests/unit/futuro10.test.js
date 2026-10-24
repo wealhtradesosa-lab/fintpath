@@ -97,4 +97,27 @@ describe("futuro10", () => {
       expect(leerModifica({ retornoRealPct: 0 }, resolverEscenario("base", { inflacionPct: 4 })).valorizacionNomPct).toBeCloseTo(4, 6);
     });
   });
+
+  describe("Inversión personalizada", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", tp: "Cash", va: 500e6 }], ingresos: [], gas: {}, deu: [] };
+    const cus = (o) => ({ supuestos: cero, nuevas: [{ preset: "custom", nombre: "Negocio", monto: 200e6, anio: 1, ...o }] });
+    it("rendimiento nominal = inflación ⇒ valor real constante", () => {
+      const r = proyectarFuturo10(u, cus({ rendimientoNomPct: 4 }));
+      r.filas.forEach((f) => expect(f.patrimonioReal).toBeCloseTo(500e6, 0));
+    });
+    it("paga renta vs solo se valoriza: retorno total parecido", () => {
+      const a = proyectarFuturo10(u, cus({ rendimientoNomPct: 10, tipo: "renta" }));
+      const b = proyectarFuturo10(u, cus({ rendimientoNomPct: 10, tipo: "valoriza" }));
+      expect(a.filas[1].patrimonio).toBeCloseTo(b.filas[1].patrimonio, 0);
+      expect(a.filas[1].cf).toBeCloseTo(200e6 * 0.06, 0);
+      expect(Math.abs(a.final.patrimonio / b.final.patrimonio - 1)).toBeLessThan(0.1);
+    });
+    it("escenario guardado (JSON) recarga igual", () => {
+      const cfg = cus({ rendimientoNomPct: 8, moneda: "USD", anio: 3 });
+      const r1 = proyectarFuturo10(u, cfg), r2 = proyectarFuturo10(u, JSON.parse(JSON.stringify(cfg)));
+      expect(r2.final.patrimonio).toBeCloseTo(r1.final.patrimonio, 0);
+      expect(r1.hayUSD).toBe(true);
+      expect(r1.filas[2].patrimonio).toBeCloseTo(proyectarFuturo10(u, { supuestos: cero }).filas[2].patrimonio, 0);
+    });
+  });
 });
