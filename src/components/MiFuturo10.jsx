@@ -5,16 +5,16 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
-import { ComposedChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
-import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
+import PlanInforme from "./PlanInforme";
+import PlanComparador from "./PlanComparador";
 
 const C = { bg: "#111827", bg2: "#1f2937", bd: "rgba(255,255,255,0.1)", tx: "#e5e7eb", tx2: "#9ca3af", gn: "#22c55e", rd: "#ef4444", am: "#f59e0b" };
 const card = { background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 12, padding: 14, marginBottom: 12 };
 const btn = (on) => ({ padding: "8px 12px", borderRadius: 8, border: `1px solid ${on ? C.gn : C.bd}`, background: on ? "rgba(34,197,94,0.15)" : "transparent", color: on ? C.gn : C.tx, cursor: "pointer", fontSize: 13 });
 const inp = { width: "100%", boxSizing: "border-box", background: C.bg, color: C.tx, border: `1px solid ${C.bd}`, borderRadius: 6, padding: "6px 8px", fontSize: 13 };
-const PASOS = ["Hoy", "Decide", "Tu plata", "Resultado", "Escenarios", "Cada inversión"];
+const PASOS = ["Hoy", "Decide", "Tu plata", "Resultado", "Escenarios"];
 const plata = (v) => "$" + fmtMilesEs(v);
 export const AVISO_F10 = "Proyección ilustrativa, no asesoría. Proyección estimada con supuestos generales que puedes ajustar en algunos pasos; no es una recomendación de inversión. No incluye impuestos.";
 
@@ -38,12 +38,23 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
     return () => clearTimeout(t);
   }, [cfg, demo]); // eslint-disable-line react-hooks/exhaustive-deps
   const [nombreEsc, setNombreEsc] = useState("");
+  const [verEsc, setVerEsc] = useState(null);
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
   const r = useMemo(() => proyectarFuturo10(user, cfg), [user, cfg]);
   const esc = r.escenario;
   const escenarios = guardado.escenarios || [];
   const mezcla = cfg.mezcla || SUPUESTOS_F10.nortes[cfg.norte] || SUPUESTOS_F10.nortes.equilibrio;
-  const ir = (i) => { setPaso(i); track("futuro10_paso", { paso: i + 1 }); };
+  const ir = (i) => { setPaso(i); setVerEsc(null); track("futuro10_paso", { paso: i + 1 }); };
+  // Planes para comparar: seguir como vas, lo que estás armando y los guardados.
+  const planesComparar = useMemo(() => {
+    const ps = [{ nombre: "Hoy, si nada cambia", esHoy: true, r: proyectarFuturo10(user, { escenario: cfg.escenario }) }];
+    // El borrador solo aparece si es distinto de lo guardado (si no, se repite).
+    const igualA = (c) => JSON.stringify({ ...migrarModifica({ ...CONFIG_INICIAL, ...c }), escenario: cfg.escenario }) === JSON.stringify({ ...cfg });
+    const borrador = JSON.stringify(cfg) !== JSON.stringify(CONFIG_INICIAL) && !escenarios.some((e) => igualA(e.config));
+    if (borrador) ps.push({ nombre: "Lo que estás armando", r });
+    escenarios.forEach((e) => ps.push({ nombre: e.nombre, r: proyectarFuturo10(user, { ...migrarModifica({ ...CONFIG_INICIAL, ...e.config }), escenario: cfg.escenario }) }));
+    return ps;
+  }, [user, cfg, r, escenarios]);
   const bolsa = (user.inv || []).filter((a) => cfg.decisiones[a.id]?.accion === "vende").length;
 
   const guardar = () => {
@@ -64,11 +75,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {PASOS.map((p, i) => <button key={p} style={btn(paso === i)} onClick={() => ir(i)}>{i + 1}. {p}</button>)}
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12, alignItems: "center" }}>
-        <span style={{ color: C.tx2, fontSize: 12 }}>Escenario:</span>
-        {Object.entries(SUPUESTOS_F10.escenarios).map(([k, e]) => <button key={k} style={btn(cfg.escenario === k)} onClick={() => set("escenario", k)}>{e.nombre}</button>)}
-        <span style={{ color: C.tx2, fontSize: 12 }}>inflación {fmtPctEs(esc.inflacionPct)}</span>
-      </div>
+
 
       {paso === 0 && (
         <div style={card}>
@@ -168,7 +175,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                     <span style={{ fontSize: 11 }}>Si no sabes, usa {fmtPctEs(hint, 1)}.</span></label>
                   <label style={lbl}>Moneda<select style={inp} value={x.moneda || "COP"} onChange={(e) => up({ moneda: e.target.value })}><option value="COP">COP</option><option value="USD">USD</option></select>
                     {x.moneda === "USD" && <span style={{ fontSize: 11, color: C.am }}>En dólares, el resultado en pesos también depende de cómo se mueva la tasa de cambio.</span>}</label>
-                  <label style={lbl}>¿Cómo te da plata?<select style={inp} value={x.tipo || "valoriza"} onChange={(e) => up({ tipo: e.target.value })}><option value="renta">Paga renta (te entra al flujo)</option><option value="valoriza">Solo se valoriza (crece el valor)</option></select></label>
+                  <label style={lbl}>De lo que rinde, ¿cuánto te llega?<select style={inp} value={x.pctRecibe ?? (x.tipo === "renta" ? 100 : 0)} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{PARTES.map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select>
+                    {(() => { const rend = (x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? hint : Number(x.rendimientoNomPct)) / 100; const p = (x.pctRecibe ?? (x.tipo === "renta" ? 100 : 0)) / 100; const mes = (Number(x.monto) || 0) * rend * p / 12;
+                      return <span style={{ fontSize: 11, color: mes > 0 ? C.gn : C.tx2 }}>{mes > 0 ? `Te llegan ${plata(Math.round(mes))} al mes; ${p < 1 ? "el resto se reinvierte" : "el capital queda igual"}.` : "Todo se reinvierte: crece con interés compuesto."}</span>; })()}</label>
                 </>}
                 <div><button style={btn(false)} onClick={() => set("nuevas", cfg.nuevas.filter((_, j) => j !== i))}>Quitar</button></div>
               </div>
@@ -190,77 +199,41 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         </div>
       </>)}
 
-      {paso === 3 && (
-        <div style={card}>
-          <h3 style={{ marginTop: 0 }}>Resultado a 10 años</h3>
-          <Graficas r={r} cfg={cfg} user={user} escenarios={escenarios} />
-          <Grid items={[
-            ["Patrimonio en pesos de hoy", plata(r.final.patrimonioReal)],
-            ["Patrimonio nominal", plata(r.final.patrimonio)],
-            ["Invertible vs. inflación", r.vsInflacionReal == null ? "—" : (r.vsInflacionReal >= 0 ? "+" : "") + fmtPctEs(r.vsInflacionReal)],
-          ]} />
-          <div style={{ overflowX: "auto", marginTop: 10 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 280 }}>
-              <thead><tr style={{ color: C.tx2, textAlign: "right" }}><th style={{ textAlign: "left" }}>Año</th><th>Ingreso/mes*</th><th>Gasto/mes*</th><th>Patrimonio*</th></tr></thead>
-              <tbody>{r.filas.slice(1).map((f) => (
-                <tr key={f.anio} style={{ textAlign: "right", borderTop: `1px solid ${C.bd}`, color: f.cf < 0 ? C.rd : C.tx }}>
-                  <td style={{ textAlign: "left" }}>{f.anio}</td><td>{fmtPlataCortaEs(f.ingresosReal / 12)}</td><td>{fmtPlataCortaEs(f.gastosReal / 12)}</td><td>{fmtPlataCortaEs(f.patrimonioReal)}</td>
-                </tr>))}</tbody>
-            </table>
-            <div style={{ color: C.tx2, fontSize: 11 }}>* En pesos de hoy (se descuenta la inflación una sola vez).</div>
-          </div>
-          {(r.reparto || []).length > 0 && <div style={{ marginTop: 14 }}>
-            <h4 style={{ margin: "0 0 6px" }}>Cómo queda repartida tu plata en el año 10</h4>
-            {r.reparto.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "6px 0", borderTop: `1px solid ${C.bd}`, fontSize: 13 }}>
-              <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{x.nombre}{x.clase === "nueva" && <span style={{ color: C.gn, fontSize: 11 }}> · nueva</span>}</span>
-              <span style={{ whiteSpace: "nowrap", textAlign: "right" }}><b>{fmtPlataCortaEs(x.valorReal)}</b> <span style={{ color: C.tx2, fontSize: 11 }}>({fmtPlataCortaEs(x.valor)})</span></span>
-            </div>)}
-            <div style={{ color: C.tx2, fontSize: 11 }}>En pesos de hoy; entre paréntesis, nominal. Sin restar deudas.</div>
-          </div>}
-          {r.alertas.length > 0 && <div style={{ ...card, borderColor: C.rd, marginTop: 10 }}>
-            <b style={{ color: C.rd }}>Alertas de liquidez</b>
-            {dedupe(r.alertas).map((a, i) => <div key={i} style={{ fontSize: 12 }}>{a.texto}</div>)}
-          </div>}
-          {r.hayUSD && <p style={{ color: C.am, fontSize: 12 }}>Lo que está en dólares tiene riesgo cambiario: si el peso se revalúa, vale menos en pesos. El escenario {esc.nombre.toLowerCase()} supone devaluación real de {fmtPctEs(SUPUESTOS_F10.presets.sp500.devaluacionRealPct)}.</p>}
+      {paso === 3 && (<>
+        <div style={{ ...card, marginBottom: 14 }}>
+          <h3 style={{ margin: 0 }}>Resultado a 10 años</h3>
+          <div style={{ fontSize: 12, color: C.tx2, marginTop: 4 }}>Así se ve este escenario. Guárdalo en el paso 5 para compararlo con otros.</div>
         </div>
-      )}
+        <PlanInforme r={r} nombre="Este escenario" inflacionPct={esc.inflacionPct} />
+        {r.alertas.length > 0 && <div style={{ ...card, borderColor: C.rd }}>
+          <b style={{ color: C.rd }}>Alertas de liquidez</b>
+          {dedupe(r.alertas).map((a, i) => <div key={i} style={{ fontSize: 12 }}>{a.texto}</div>)}
+        </div>}
+        {r.hayUSD && <p style={{ color: C.am, fontSize: 12 }}>Lo que está en dólares tiene riesgo cambiario: si el peso se revalúa, vale menos en pesos. Los supuestos {esc.nombre.toLowerCase()} suponen devaluación real de {fmtPctEs(SUPUESTOS_F10.presets.sp500.devaluacionRealPct)}.</p>}
+      </>)}
 
-      {paso === 4 && (
+      {paso === 4 && (<>
         <div style={card}>
-          <h3 style={{ marginTop: 0 }}>Guardar y comparar</h3>
+          <h3 style={{ marginTop: 0 }}>Tus escenarios</h3>
+          <div style={{ fontSize: 12, color: C.tx2, marginBottom: 8 }}>Guarda lo que armaste con un nombre y compáralo con los otros. Toca un escenario para verlo con todo.</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <input style={{ ...inp, flex: "1 1 160px", width: "auto" }} placeholder="Nombre del escenario" value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />
-            <button style={btn(!demo)} disabled={demo} onClick={guardar}>Guardar en tu cuenta</button>
+            <input style={{ ...inp, flex: "1 1 160px", width: "auto" }} placeholder="Nombre del escenario, ej.: Conservador + casa" value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />
+            <button style={btn(!demo)} disabled={demo} onClick={guardar}>Guardar este escenario</button>
           </div>
           {demo && <p style={{ color: C.am, fontSize: 12 }}>{MSG_DEMO_F10}</p>}
-          {escenarios.length === 0 ? <p style={{ color: C.tx2 }}>Aún no tienes escenarios guardados.</p> : (
-            <div style={{ overflowX: "auto", marginTop: 10 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 320 }}>
-                <thead><tr style={{ color: C.tx2, textAlign: "right" }}><th style={{ textAlign: "left" }}>Escenario</th><th>Pesos de hoy</th><th>Nominal</th><th></th></tr></thead>
-                <tbody>{escenarios.map((e) => { const x = proyectarFuturo10(user, e.config); return (
-                  <tr key={e.id} style={{ textAlign: "right", borderTop: `1px solid ${C.bd}` }}>
-                    <td style={{ textAlign: "left" }}>{e.nombre}{x.alertas.length ? " ⚠️" : ""}</td><td>{fmtPlataCortaEs(x.final.patrimonioReal)}</td><td>{fmtPlataCortaEs(x.final.patrimonio)}</td>
-                    <td><button style={btn(false)} onClick={() => { setCfg(migrarModifica({ ...CONFIG_INICIAL, ...e.config })); ir(3); }}>Ver</button> <button style={btn(false)} onClick={() => borrar(e.id)}>Borrar</button></td>
-                  </tr>); })}</tbody>
-              </table>
-            </div>)}
+          {escenarios.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+            {escenarios.map((e) => <span key={e.id} style={{ display: "inline-flex", gap: 4, alignItems: "center", fontSize: 12, border: `1px solid ${C.bd}`, borderRadius: 999, padding: "2px 4px 2px 10px" }}>{e.nombre}
+              <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => { setCfg(migrarModifica({ ...CONFIG_INICIAL, ...e.config })); ir(1); }}>Editar</button>
+              <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => borrar(e.id)}>Borrar</button></span>)}
+          </div>}
         </div>
-      )}
+        {verEsc ? <>
+          <button style={{ ...btn(false), marginBottom: 10 }} onClick={() => setVerEsc(null)}>← Volver a comparar</button>
+          <div style={{ ...card, marginBottom: 14, borderTop: `3px solid ${verEsc.color || C.gn}` }}><h3 style={{ margin: 0 }}>{verEsc.nombre}</h3></div>
+          <PlanInforme r={verEsc.r} nombre={verEsc.nombre} inflacionPct={esc.inflacionPct} />
+        </> : <PlanComparador planes={planesComparar} inflacionPct={esc.inflacionPct} onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />}
+      </>)}
 
-      {paso === 5 && (
-        <div style={card}>
-          <h3 style={{ marginTop: 0 }}>Cada inversión: $100.000.000 a 3, 5 y 10 años</h3>
-          <p style={{ color: C.tx2, fontSize: 12 }}>Ejemplos por tipo de inversión, escenario {esc.nombre.toLowerCase()}. En pesos de hoy; entre paréntesis, nominal.</p>
-          {Object.entries(SUPUESTOS_F10.presets).map(([k, p]) => (
-            <div key={k} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
-              <b>{p.nombre}</b> <span style={{ color: C.tx2, fontSize: 12 }}>· {fmtPctEs(retornoNominalPreset(k, esc))} nominal al año</span>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, fontSize: 12, marginTop: 4 }}>
-                {cienMillones(k, esc).map((c) => <div key={c.anios}>{c.anios} años<br /><b>{fmtPlataCortaEs(c.hoy)}</b><br /><span style={{ color: C.tx2 }}>({fmtPlataCortaEs(c.nominal)})</span></div>)}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* 24-oct-2026 (Santiago: "que sea fluido el proceso, una etapa te lleva a
           la siguiente"). Al final de cada paso, el siguiente. */}
@@ -270,8 +243,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       </div>
 
       <details style={card}>
-        <summary style={{ cursor: "pointer" }}>Supuestos de referencia (estimaciones de largo plazo)</summary>
-        <p style={{ color: C.tx2, fontSize: 12 }}>Puedes cambiar el escenario arriba y, en el paso 3, la mezcla o el rendimiento de una inversión personalizada.</p>
+        <summary style={{ cursor: "pointer" }}>Supuestos (inflación y cuánto rinden las inversiones)</summary>
+        <p style={{ color: C.tx2, fontSize: 12 }}>No son tus escenarios: es cómo se comporta el mercado. «Normales» es lo esperado; «Prudentes» supone más inflación y menos rendimiento; «Favorables», lo contrario.</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8, alignItems: "center" }}>
+        <span style={{ color: C.tx2, fontSize: 12 }}>Supuestos del mercado:</span>
+        {Object.entries(SUPUESTOS_F10.escenarios).map(([k, e]) => <button key={k} style={btn(cfg.escenario === k)} onClick={() => set("escenario", k)}>{e.nombre}</button>)}
+        <span style={{ color: C.tx2, fontSize: 12 }}>inflación {fmtPctEs(esc.inflacionPct)}</span>
+      </div>
+
         <TablaSupuestos esc={esc} />
       </details>
     </div>
@@ -402,80 +381,6 @@ const textoIngresoFuturo = (x) => {
   return `Te llegan ${monto} al mes ${cuando(d)}, durante ${h - d + 1} años.`;
 };
 
-// 24-oct-2026 (Santiago: "no veo la gráfica en el tiempo… no se visualiza muy
-// bien el escenario"; referencia: su plan SALEM con la curva de patrimonio de
-// los caminos lado a lado). Tres piezas: patrimonio en el tiempo con los
-// escenarios guardados superpuestos, lo que entra vs. lo que sale al mes, y
-// lo que pasa cada año.
-const COLORES_ESC = [CHART.purple, CHART.cyan, CHART.orange, CHART.pink, CHART.gold];
-const ejeCorto = (v) => { const a = Math.abs(v); const sg = v < 0 ? "−" : ""; if (a >= 1e9) return `${sg}${fmtMilesEs(Math.round(a / 1e8) / 10)} mil M`; if (a >= 1e6) return `${sg}${fmtMilesEs(Math.round(a / 1e6))} M`; return `${sg}${fmtMilesEs(Math.round(a))}`; };
-const tipFmt = (v) => fmtPlataCortaEs(v);
-
-function Graficas({ r, cfg, user, escenarios }) {
-  const guardados = useMemo(() => escenarios.slice(-4).map((e) => ({ nombre: e.nombre, filas: proyectarFuturo10(user, e.config).filas })), [escenarios, user]);
-  const datos = r.filas.map((f, i) => {
-    const row = { anio: f.anio === 0 ? "Hoy" : `Año ${f.anio}`, patrimonio: f.patrimonioReal, entra: f.anio === 0 ? (r.hoy.ingresoMensual || 0) : (f.ingresosReal || 0) / 12, sale: f.anio === 0 ? (r.hoy.salidaMensual || 0) : (f.gastosReal || 0) / 12 };
-    guardados.forEach((g, k) => { row[`esc${k}`] = g.filas[i]?.patrimonioReal; });
-    return row;
-  });
-  const fut = leerFuturos(cfg.futuros, r.escenario);
-  const eventos = [
-    ...(r.deudas || []).filter((d) => d.pagado > 0).map((d) => ({ anio: 0, texto: `Pagas ${d.nombre}` })),
-    ...(r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => ({ anio: x.anio || 1, texto: `Le metes ${fmtPlataCortaEs(x.aporte)} a ${x.nombre}` })),
-    ...(r.reinversionesDetalle || []).filter((x) => x.rentaMensual > 0).map((x) => ({ anio: Math.floor(x.rentaDesdeMes / 12) + 1, texto: `${x.nombre} empieza a rentar ${fmtPlataCortaEs(x.rentaMensual)}/mes` })),
-    ...fut.ingresos.map((x) => ({ anio: x.desde, texto: `Empieza ${x.nombre}: ${fmtPlataCortaEs(x.mensual)}/mes` })),
-    ...fut.activos.map((x) => ({ anio: x.entrega, texto: `Recibes ${x.nombre}` })),
-  ].sort((a, b) => a.anio - b.anio);
-  const caja = { background: C.bg, borderRadius: 10, padding: "12px 6px 6px", marginBottom: 12 };
-  const tit = { fontSize: 13, fontWeight: 600, margin: "0 8px 6px" };
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={caja}>
-        <div style={tit}>Tu patrimonio en el tiempo <span style={{ color: C.tx2, fontWeight: 400, fontSize: 11 }}>· pesos de hoy</span></div>
-        <ResponsiveContainer width="100%" height={230}>
-          <ComposedChart data={datos} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-            <ChartGradients />
-            <CartesianGrid {...gridProps} />
-            <XAxis dataKey="anio" {...axisProps} interval="preserveStartEnd" />
-            <YAxis {...axisProps} tickFormatter={ejeCorto} width={70} />
-            <Tooltip content={<ChartTooltip formatter={tipFmt} />} />
-            <Area type="monotone" dataKey="patrimonio" name="Este escenario" stroke={CHART.blue} strokeWidth={2.5} fill="url(#gradBlue)" />
-            {guardados.map((g, k) => <Line key={k} type="monotone" dataKey={`esc${k}`} name={g.nombre} stroke={COLORES_ESC[k % COLORES_ESC.length]} strokeWidth={1.8} dot={false} />)}
-            {guardados.length > 0 && <Legend wrapperStyle={{ fontSize: 11 }} />}
-          </ComposedChart>
-        </ResponsiveContainer>
-        {guardados.length === 0 && <div style={{ fontSize: 11, color: C.tx2, margin: "2px 8px 4px" }}>Guarda escenarios en el paso 5 para verlos aquí, uno al lado del otro.</div>}
-      </div>
-      <div style={caja}>
-        <div style={tit}>Lo que entra y lo que sale al mes <span style={{ color: C.tx2, fontWeight: 400, fontSize: 11 }}>· pesos de hoy</span></div>
-        <ResponsiveContainer width="100%" height={200}>
-          <ComposedChart data={datos} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid {...gridProps} />
-            <XAxis dataKey="anio" {...axisProps} interval="preserveStartEnd" />
-            <YAxis {...axisProps} tickFormatter={ejeCorto} width={70} />
-            <Tooltip content={<ChartTooltip formatter={tipFmt} />} />
-            <Line type="monotone" dataKey="entra" name="Entra al mes" stroke={CHART.green} strokeWidth={2.5} dot={false} />
-            <Line type="monotone" dataKey="sale" name="Sale al mes" stroke={CHART.orange} strokeWidth={2.5} dot={false} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-      {eventos.length > 0 && <div style={{ ...caja, padding: 12 }}>
-        <div style={{ ...tit, margin: "0 0 6px" }}>Lo que pasa en el camino</div>
-        {eventos.map((e, i) => <div key={i} style={{ display: "flex", gap: 10, fontSize: 12.5, padding: "5px 0", borderTop: i ? `1px solid ${C.bd}` : "none" }}>
-          <span style={{ color: C.gn, minWidth: 48, fontWeight: 600 }}>{e.anio === 0 ? "Hoy" : `Año ${e.anio}`}</span><span>{e.texto}</span>
-        </div>)}
-      </div>}
-    </div>
-  );
-}
-
-// 24-oct-2026 (Santiago: "según el tipo de inversión la plataforma debe saber
-// si genera renta o se valoriza"). Inmueble: renta al mes + valorización.
-// Fondos, trading, acciones, renta fija: rendimiento anual + qué parte te
-// llega (el resto se reinvierte: interés compuesto).
-const PARTES = [[0, "Nada: todo se reinvierte"], [25, "Una cuarta parte"], [50, "La mitad"], [75, "Tres cuartas partes"], [100, "Todo: me llega cada mes"]];
-const ETQ_TIPO = { inmueble: "Inmueble: da renta y se valoriza", liquido: "Renta fija o cuenta: rinde una tasa al año", acciones: "Fondos, trading o acciones: rinde al año", otro: "Otra inversión: rinde al año", vehiculo: "Vehículo" };
 function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] }) {
   const lbl = { fontSize: 12, color: C.tx2 };
   const desdeMes = Number(x.rentaDesdeMes) || 0;

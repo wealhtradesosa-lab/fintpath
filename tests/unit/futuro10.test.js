@@ -124,7 +124,8 @@ describe("futuro10", () => {
       const a = proyectarFuturo10(u, cus({ rendimientoNomPct: 10, tipo: "renta" }));
       const b = proyectarFuturo10(u, cus({ rendimientoNomPct: 10, tipo: "valoriza" }));
       expect(a.filas[1].patrimonio).toBeCloseTo(b.filas[1].patrimonio, 0);
-      expect(a.filas[1].cf).toBeCloseTo(200e6 * 0.06, 0);
+      // 24-oct-2026: «paga renta» paga la tasa completa (10 % de 200 M), como un CDT.
+      expect(a.filas[1].cf).toBeCloseTo(200e6 * 0.10, 0);
       expect(Math.abs(a.final.patrimonio / b.final.patrimonio - 1)).toBeLessThan(0.1);
     });
     it("escenario guardado (JSON) recarga igual", () => {
@@ -426,5 +427,36 @@ describe("futuro10 · deuda sin intereses de un solo pago", () => {
     expect(r.filas[2].deuda).toBeGreaterThan(437e6 - 1);
     expect(r.filas[3].deuda).toBeLessThan(437e6);
     expect(r.alertas.some((a) => a.tipo === "pago_unico" && a.anio === 3)).toBe(true);
+  });
+});
+
+describe("futuro10 · el detalle de inversiones nuevas es lo que se invierte hoy", () => {
+  it("nuevasDetalle.monto no cambia con los años", () => {
+    const u = { inflacionPct: 6.3, inv: [{ id: "pm", n: "PM", tp: "Real Estate", va: 8700e6 }], ingresos: [], gas: {}, deu: [] };
+    const r = proyectarFuturo10(u, { decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "BTG", monto: 5000e6, anio: 1, rendimientoNomPct: 10.5, tipo: "renta" }, { preset: "rfCorto", monto: 1000e6 }] });
+    expect(r.nuevasDetalle.map((x) => x.monto)).toEqual([5000e6, 1000e6]);
+  });
+  it("cada año trae lo que produce: renta + crece = produce", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", tp: "Cash", va: 1000e6 }], ingresos: [{ nombre: "S", categoria: "Salario", mensual: 20e6 }], gas: { V: [{ n: "x", m: 5e6 }] }, deu: [] };
+    const r = proyectarFuturo10(u, {});
+    r.filas.slice(1).forEach((f) => { expect(f.produce).toBeCloseTo(f.rentas + f.crece, 0); expect(f.porActivo.length).toBeGreaterThan(0); });
+  });
+});
+
+describe("futuro10 · renta fija personalizada paga la tasa completa", () => {
+  const U = () => ({ inflacionPct: 3, inv: [{ id: "pm", n: "PM", tp: "Real Estate", va: 9000e6 }], ingresos: [], gas: {}, deu: [] });
+  it("BTG 7.164 M al 10,5 %, te llega todo: $62,7 M al mes y el capital queda igual", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "BTG", monto: 7164e6, anio: 1, rendimientoNomPct: 10.5, pctRecibe: 100 }] });
+    expect(r.filas[1].rentaNueva / 12).toBeCloseTo(7164e6 * 0.105 / 12, -3);
+    expect(r.reparto.find((x) => x.nombre === "BTG").valor).toBeCloseTo(7164e6, -3);
+  });
+  it("escenarios viejos con tipo renta siguen pagando (ahora la tasa completa)", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "BTG", monto: 1000e6, anio: 1, rendimientoNomPct: 10, tipo: "renta" }] });
+    expect(r.filas[1].rentaNueva).toBeCloseTo(100e6, -3);
+  });
+  it("si no te llega nada, todo se reinvierte con interés compuesto", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "BTG", monto: 1000e6, anio: 1, rendimientoNomPct: 10, pctRecibe: 0 }] });
+    expect(r.filas[1].rentaNueva).toBe(0);
+    expect(r.reparto.find((x) => x.nombre === "BTG").valor).toBeCloseTo(1000e6 * 1.1 ** 10, -4);
   });
 });

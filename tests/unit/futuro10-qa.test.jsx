@@ -9,7 +9,7 @@ describe("Mi futuro a 10: hallazgos QA", () => {
   it("modo demo: no guarda y muestra el aviso", () => {
     const html = renderToString(createElement(MiFuturo10, { user: vacio, pasoInicial: 4, demo: true, onGuardar: () => { throw new Error("no debe guardar"); } }));
     expect(html).toContain(MSG_DEMO_F10);
-    expect(html).toMatch(/disabled=""[^>]*>Guardar en tu cuenta/);
+    expect(html).toMatch(/disabled=""[^>]*>Guardar este escenario/);
     const real = renderToString(createElement(MiFuturo10, { user: vacio, pasoInicial: 4 }));
     expect(real).not.toContain(MSG_DEMO_F10);
   });
@@ -19,7 +19,7 @@ describe("Mi futuro a 10: hallazgos QA", () => {
     const conIngreso = { ...vacio, ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 10e6 }] };
     expect(proyectarFuturo10(conIngreso, { norte: "crecer" }).hayUSD).toBe(true); // el flujo va a crecimiento (S&P)
     const html = renderToString(createElement(MiFuturo10, { user: { ...vacio, inv: [{ id: "a", tp: "Cash", va: 10e6, moneda: "USD" }] }, pasoInicial: 3 }));
-    expect(html.replace(/<!-- -->/g, "")).toContain("escenario base supone");
+    expect(html.replace(/<!-- -->/g, "")).toContain("supuestos normales suponen");
     expect(renderToString(createElement(MiFuturo10, { user: vacio, pasoInicial: 3 }))).not.toContain("riesgo cambiario");
   });
   it("mezcla personalizada debe sumar 100%", () => {
