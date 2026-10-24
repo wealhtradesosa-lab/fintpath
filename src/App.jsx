@@ -1938,7 +1938,7 @@ export default function FinPath(){
       const ctxNv={ob:mB.ob||0,obEsencial:nv.obEsencial||mB.ob||0};
       const sigMonto=sig?umbralNivel(sig,ctxNv):null;
       const nvCuerpo="Cobertura pasiva: "+pc(mB.coberturaPasiva)+"\nIngreso pasivo neto: "+fm(mB.ip)+"/mes vs Gastos + cuotas: "+fm(mB.ob)+"/mes\n\n"+
-        (nv.nivel===5?"🟢 Abundancia: tu ingreso pasivo supera en 30% tus gastos y cuotas. Ese margen es lo que absorbe un año malo sin tocar el capital."
+        (nv.nivel===5?"🟢 Abundancia: tu ingreso pasivo es el doble de tus gastos y cuotas. Ese margen absorbe un año malo sin tocar el capital y deja para reinvertir."
         :nv.nivel===4?"🟢 ¡Independencia alcanzada! Tu ingreso pasivo cubre el 100% de tus gastos y cuotas."
         :nv.candado==="deficit"?"🔴 Tu flujo del mes es negativo ("+fm(mB.fl)+"/mes) y tus activos todavía no pagan lo esencial. El primer paso es que lo que entra cubra lo que sale."
         :nv.candado==="patrimonio_negativo"?"🟡 Tu patrimonio neto es negativo: el nivel queda en "+nv.nombre+" hasta que tus activos superen tus deudas."

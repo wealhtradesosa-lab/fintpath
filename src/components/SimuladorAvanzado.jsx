@@ -157,9 +157,9 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
   const umbral = (l) => umbralNivel(l.def, ctx);
   const ratio = ob > 0 ? ip / ob : 0;
   const currentLevel = nivel?.nivel || 0;
-  // La barra llega hasta Abundancia (1,3x), no hasta Independencia: si topara en
-  // 100% el último escalón no tendría dónde dibujarse.
-  const TOPE = 1.3;
+  // La barra llega hasta Abundancia (el factor del último escalón), no hasta
+  // Independencia: si topara en 100% el último escalón no tendría dónde dibujarse.
+  const TOPE = NIVELES[NIVELES.length - 1].factor || 2;
   const overallProg = Math.min((ratio / TOPE) * 100, 100);
   const pos = (l) => Math.min((umbral(l) / (ob * TOPE)) * 100, 100);
   const currentData = currentLevel > 0 ? LEVELS[currentLevel - 1] : null;
@@ -339,7 +339,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
                       ? <>Necesitas {fm(needed)}/mes de ingreso pasivo — {l.def.umbral === "esencial"
                           ? <>lo esencial de tu mes, dentro de {fm(te)} de gastos y cuotas</>
                           : l.def.factor > 1
-                          ? <>tus {fm(te)}/mes de gastos y cuotas, con 30% de margen</>
+                          ? <>tus {fm(te)}/mes de gastos y cuotas, dos veces</>
                           : <>tus {fm(te)}/mes de gastos y cuotas completos</>}</>
                       : l.requisito}
                   </div>
@@ -378,8 +378,11 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
       {currentLevel >= 5 && (
         <div style={{ background: "linear-gradient(135deg, rgba(234,179,8,0.1), rgba(234,179,8,0.04))", border: "1px solid rgba(234,179,8,0.25)", borderRadius: 12, padding: 20, textAlign: "center" }}>
           <div style={{ fontSize: 32 }}>👑</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: T.gd }}>¡Independencia!</div>
-          <div style={{ fontSize: 13, color: T.txt2 }}>Ingreso pasivo = {Math.round(ratio * 100)}% de gastos y cuotas</div>
+          {/* 24-oct-2026 (Santiago: "arriba muestra Abundancia y abajo
+              Independencia: ¿en cuál estoy?"). El cartel decía siempre
+              "¡Independencia!"; ahora dice el nombre del nivel en que está. */}
+          <div style={{ fontSize: 18, fontWeight: 800, color: T.gd }}>¡{currentData?.name || "Abundancia"}!</div>
+          <div style={{ fontSize: 13, color: T.txt2 }}>Ingreso pasivo = {Math.round(ratio * 100)}% de gastos y cuotas · nivel {currentLevel} de 5</div>
         </div>
       )}
     </div>

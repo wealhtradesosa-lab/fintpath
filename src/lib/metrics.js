@@ -350,9 +350,13 @@ export const NIVELES = [
   { id: 4, clave: "independencia", nombre: "Independencia", umbral: "total", factor: 1, icon: "🚀", color: "#f97316",
     desc: "Tus activos pagan todo tu nivel de vida",
     detail: "Tu ingreso pasivo neto cubre el 100% de tus gastos y cuotas, sin recortar nada. Trabajar pasa a ser una elección." },
-  { id: 5, clave: "abundancia", nombre: "Abundancia", umbral: "total", factor: 1.3, icon: "👑", color: "#eab308",
-    desc: "Lo pagan con margen de sobra",
-    detail: "Tu ingreso pasivo supera en 30% tus gastos y cuotas. Ese margen es lo que absorbe la inflación, un año malo de rentas o un gasto grande sin tener que tocar el capital." },
+  // 24-oct-2026 (Santiago, con 136 % de cobertura: "¿136 % sí es para estar
+  // en abundancia? Abundancia creería yo es cuando se alcanzan porcentajes
+  // más altos"). Antes bastaba 130 %. Abundancia es pagar la vida DOS veces
+  // con los activos: 200 %.
+  { id: 5, clave: "abundancia", nombre: "Abundancia", umbral: "total", factor: 2, icon: "👑", color: "#eab308",
+    desc: "Lo pagan dos veces",
+    detail: "Tu ingreso pasivo es el doble de tus gastos y cuotas. Ese margen absorbe la inflación, un año malo de rentas o un gasto grande sin tocar el capital, y deja plata para reinvertir cada mes." },
 ];
 
 /** Ingreso pasivo mensual que exige un escalón. null si no se mide así. */

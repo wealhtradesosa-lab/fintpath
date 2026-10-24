@@ -8,7 +8,7 @@ const met = calcularMetricas({ ingresos: qa.ingresos, gastos: qa.gas, deudas: qa
 
 describe("contexto del Asesor IA: nivel de libertad", () => {
   it("la escala se dicta anclada a plata real, sin porcentajes inventados", () => {
-    expect(escalaNiveles()).toBe("N1 Déficit (flujo libre negativo) · N2 Estabilidad (flujo positivo, sin cubrir lo esencial) · N3 Seguridad (ingreso pasivo ≥ gastos esenciales + cuotas) · N4 Independencia (ingreso pasivo ≥ gastos + cuotas) · N5 Abundancia (ingreso pasivo ≥ 1.3× (gastos + cuotas))");
+    expect(escalaNiveles()).toBe("N1 Déficit (flujo libre negativo) · N2 Estabilidad (flujo positivo, sin cubrir lo esencial) · N3 Seguridad (ingreso pasivo ≥ gastos esenciales + cuotas) · N4 Independencia (ingreso pasivo ≥ gastos + cuotas) · N5 Abundancia (ingreso pasivo ≥ 2× (gastos + cuotas))");
     expect(escalaNiveles()).not.toMatch(/25–50|50–100|Libertad parcial/);
   });
   it("QA Pro: cobertura precalculada 17,4%, N2 Estabilidad, siguiente Seguridad; sin umbrales inventados", () => {

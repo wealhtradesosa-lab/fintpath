@@ -126,7 +126,7 @@ describe("la cuenta real que destapó todo esto", () => {
     expect(n.nivel).toBe(4);
     expect(n.nombre).toBe("Independencia");
     expect(n.siguiente.nombre).toBe("Abundancia");
-    expect(umbralNivel(n.siguiente, { ob: santi.ob, obEsencial: n.obEsencial })).toBeCloseTo(santi.ob * 1.3, 0);
+    expect(umbralNivel(n.siguiente, { ob: santi.ob, obEsencial: n.obEsencial })).toBeCloseTo(santi.ob * 2, 0);
     expect(n.faltaIPSiguiente).toBeGreaterThan(0);
   });
 

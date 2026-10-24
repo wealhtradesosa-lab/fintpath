@@ -125,19 +125,26 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   const metaColchon = (b.ob * n(sup.colchonMeses));
   const liquidosQueQuedan = activos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
   const canasta = { liquidez: 0, renta: 0, crecimiento: 0 };
+  // 24-oct-2026 (Santiago: "en Reinvierte necesito ver qué saldo me quedó de
+  // lo que vendí, para ir sabiendo cuánto tengo para reinvertir"). Se lleva la
+  // cuenta de la bolsa paso a paso y se devuelve en `bolsaDetalle`.
+  const vendidoTotal = bolsa;
   let colchon = Math.min(bolsa, Math.max(0, metaColchon - liquidosQueQuedan));
   bolsa -= colchon;
   const nuevas = [];
+  let reinvertidoTotal = 0, nuevasTotal = 0, pedidoTotal = 0;
   (cfg.reinversiones || []).forEach((r) => {
+    pedidoTotal += Math.max(0, n(r.monto));
     const m = Math.min(bolsa, Math.max(0, n(r.monto))); const a = activos.find((x) => x.id === r.activoId);
-    if (a && m > 0) { a.valor += m; bolsa -= m; }
+    if (a && m > 0) { a.valor += m; bolsa -= m; reinvertidoTotal += m; }
   });
   const personalizadas = [];
   (cfg.nuevas || []).forEach((x, k) => {
     if (x.preset === "custom") { const c = leerPersonalizada(x, esc, sup); if (c.monto > 0) personalizadas.push({ ...c, id: "nueva_" + k }); return; }
+    pedidoTotal += Math.max(0, n(x.monto));
     const m = Math.min(bolsa, Math.max(0, n(x.monto)));
     if (m <= 0 || !sup.presets[x.preset]) return;
-    bolsa -= m;
+    bolsa -= m; nuevasTotal += m;
     nuevas.push({ id: "nueva_" + k, nombre: x.nombre || sup.presets[x.preset].nombre, clase: "nueva", valor: m, crec: rNom(x.preset), usd: !!sup.presets[x.preset].usd, invertible: true });
   });
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
@@ -235,6 +242,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   const fin = filas[filas.length - 1];
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
+    bolsaDetalle: { vendido: vendidoTotal, colchon, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, faltante: Math.max(0, pedidoTotal - (vendidoTotal - colchon)) },
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses },
     activos: activos.map(({ id, nombre, clase, usd }) => ({ id, nombre, clase, usd })),
     hayUSD: todos.some((a) => a.usd && a.valor > 0) || [...activos, ...nuevas, ...personalizadas].some((a) => a.usd && (a.valor || a.monto) > 0) || expUSD,

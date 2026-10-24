@@ -1,6 +1,6 @@
 // FINPATHIA · Mi futuro a 10 años. Sección independiente del Simulador.
 // Motor: src/lib/futuro10.js. Escenarios guardados en user_data.data.futuro10.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
@@ -22,7 +22,19 @@ export const MSG_DEMO_F10 = "En modo demo no se guardan escenarios.";
 
 export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false }) {
   const [paso, setPaso] = useState(pasoInicial);
-  const [cfg, setCfg] = useState(CONFIG_INICIAL);
+  // 24-oct-2026 (Santiago: "los avances que uno hace en la sección como que
+  // no quedan guardados"). Lo que uno va decidiendo se guarda solo como
+  // borrador (`futuro10.borrador`) y vuelve al entrar; "Guardar en tu cuenta"
+  // sigue siendo para dejar un escenario con nombre y compararlo.
+  const [cfg, setCfg] = useState(() => (guardado.borrador ? { ...CONFIG_INICIAL, ...guardado.borrador } : CONFIG_INICIAL));
+  const ultimoGuardado = useRef(JSON.stringify(guardado.borrador || null));
+  useEffect(() => {
+    if (demo || !onGuardar) return;
+    const json = JSON.stringify(cfg);
+    if (json === ultimoGuardado.current || json === JSON.stringify(CONFIG_INICIAL)) return;
+    const t = setTimeout(() => { ultimoGuardado.current = json; onGuardar({ ...guardado, borrador: cfg }); }, 600);
+    return () => clearTimeout(t);
+  }, [cfg, demo]); // eslint-disable-line react-hooks/exhaustive-deps
   const [nombreEsc, setNombreEsc] = useState("");
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
   const r = useMemo(() => proyectarFuturo10(user, cfg), [user, cfg]);
@@ -35,11 +47,11 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const guardar = () => {
     if (demo) return; // la demo nunca escribe en la cuenta real
     const nuevo = { id: "f10_" + Date.now(), nombre: nombreEsc.trim() || `Escenario ${escenarios.length + 1}`, creado: new Date().toISOString(), config: cfg };
-    onGuardar && onGuardar({ ...guardado, escenarios: [...escenarios, nuevo].slice(-10) });
+    onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: [...escenarios, nuevo].slice(-10) });
     setNombreEsc("");
     track("futuro10_guardar", { escenario: cfg.escenario, norte: cfg.mezcla ? "personalizado" : cfg.norte, cantidad_escenarios: escenarios.length + 1 });
   };
-  const borrar = (id) => !demo && onGuardar && onGuardar({ ...guardado, escenarios: escenarios.filter((e) => e.id !== id) });
+  const borrar = (id) => !demo && onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.filter((e) => e.id !== id) });
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
@@ -122,7 +134,24 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       {paso === 2 && (
         <div style={card}>
           <h3 style={{ marginTop: 0 }}>Reinvierte</h3>
-          <p style={{ color: C.tx2, fontSize: 12 }}>Elige un norte. Son ejemplos de mezcla, no recomendaciones.</p>
+          {/* 24-oct-2026 (Santiago: "necesito ver qué saldo me quedó de las
+              inversiones que vendí para ir sabiendo cuánto tengo para
+              reinvertir"). La cuenta de la bolsa, siempre a la vista. */}
+          {(() => { const bd = r.bolsaDetalle || {}; const hay = bd.vendido > 0;
+            return <div style={{ ...card, background: C.bg, marginBottom: 12 }}>
+              {!hay ? <div style={{ fontSize: 12, color: C.tx2 }}>Todavía no vendes nada en el paso 2, así que no hay plata para reinvertir. Lo que pongas aquí saldría de tu liquidez.</div>
+              : <>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 8 }}>
+                  {[["Vendiste", bd.vendido, C.tx], ["− Colchón", bd.colchon, C.tx2], ["− A lo que ya tienes", bd.reinvertido, C.tx2], ["− Inversiones nuevas", bd.nuevas, C.tx2], ["Te quedan", bd.restante, bd.restante > 0 ? C.gn : C.tx]].map(([l, v, col]) => <div key={l}><div style={{ fontSize: 11, color: C.tx2 }}>{l}</div><div style={{ fontSize: 15, fontWeight: 700, color: col, fontFamily: "monospace" }}>{plata(v || 0)}</div></div>)}
+                </div>
+                <div style={{ fontSize: 12, color: C.tx2, marginTop: 8 }}>
+                  {bd.faltante > 0 ? <span style={{ color: C.am }}>Pediste {plata(bd.pedido)} pero solo hay {plata(bd.vendido - bd.colchon)} después del colchón: se asigna hasta donde alcanza.</span>
+                  : bd.restante > 0 ? <>Los <b style={{ color: C.tx }}>{plata(bd.restante)}</b> que quedan se reparten según el norte de abajo{bd.colchon > 0 ? `; el colchón de ${SUPUESTOS_F10.colchonMeses} meses se completa primero` : ""}.</>
+                  : <>Todo lo vendido quedó asignado{bd.colchon > 0 ? ` (incluido el colchón de ${SUPUESTOS_F10.colchonMeses} meses)` : ""}.</>}
+                </div>
+              </>}
+            </div>; })()}
+          <p style={{ color: C.tx2, fontSize: 12 }}>Elige un norte para lo que quede sin asignar. Son ejemplos de mezcla, no recomendaciones.</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {Object.entries(SUPUESTOS_F10.nortes).map(([k, nt]) => <button key={k} style={btn(!cfg.mezcla && cfg.norte === k)} onClick={() => setCfg((p) => ({ ...p, norte: k, mezcla: null }))}>{nt.nombre}</button>)}
             <button style={btn(!!cfg.mezcla)} onClick={() => set("mezcla", { liquidez: mezcla.liquidez, renta: mezcla.renta, crecimiento: mezcla.crecimiento })}>Personalizado</button>

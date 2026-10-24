@@ -41,6 +41,19 @@ describe("futuro10", () => {
     expect(r.mezcla.renta).toBeCloseTo(65);
     expect(r.filas[0].activos).toBeCloseTo(500e6, 0);
   });
+  // 24-oct-2026 (Santiago: "en Reinvierte necesito ver qué saldo me quedó de
+  // lo que vendí"). La cuenta de la bolsa viaja en el resultado.
+  it("la bolsa dice cuánto se vendió, cuánto se asignó y cuánto queda", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", n: "Casa", tp: "Real Estate", va: 500e6 }, { id: "e", n: "ETF", tp: "ETF", va: 50e6 }], ingresos: [], gas: {}, deu: [] };
+    const r = proyectarFuturo10(u, { decisiones: { c: { accion: "vende" } }, reinversiones: [{ activoId: "e", monto: 120e6 }], nuevas: [{ preset: "rfCorto", monto: 80e6 }] });
+    expect(r.bolsaDetalle.vendido).toBe(500e6);
+    expect(r.bolsaDetalle.reinvertido).toBe(120e6);
+    expect(r.bolsaDetalle.nuevas).toBe(80e6);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(500e6 - r.bolsaDetalle.colchon - 200e6, 0);
+    const r2 = proyectarFuturo10(u, { decisiones: { c: { accion: "vende" } }, reinversiones: [{ activoId: "e", monto: 900e6 }] });
+    expect(r2.bolsaDetalle.faltante).toBeGreaterThan(0);
+    expect(r2.bolsaDetalle.restante).toBe(0);
+  });
   it("presets: renta fija largo con tope y escenarios", () => {
     const opt = resolverEscenario("optimista", { inflacionPct: 4 });
     expect(opt.inflacionPct).toBe(3);
