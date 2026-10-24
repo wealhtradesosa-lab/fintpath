@@ -5,20 +5,28 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, valorizacionHintPct, leerModifica, rendimientoHintPct } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, valorizacionHintPct, leerModifica, rendimientoHintPct, validarMezcla, leerFuturos } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 
 const C = { bg: "#111827", bg2: "#1f2937", bd: "rgba(255,255,255,0.1)", tx: "#e5e7eb", tx2: "#9ca3af", gn: "#22c55e", rd: "#ef4444", am: "#f59e0b" };
 const card = { background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 12, padding: 14, marginBottom: 12 };
 const btn = (on) => ({ padding: "8px 12px", borderRadius: 8, border: `1px solid ${on ? C.gn : C.bd}`, background: on ? "rgba(34,197,94,0.15)" : "transparent", color: on ? C.gn : C.tx, cursor: "pointer", fontSize: 13 });
-const inp = { width: "100%", boxSizing: "border-box", background: C.bg, color: C.tx, border: `1px solid ${C.bd}`, borderRadius: 6, padding: "6px 8px", fontSize: 13 };
+const inp = { width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box", background: C.bg, color: C.tx, border: `1px solid ${C.bd}`, borderRadius: 6, padding: "6px 8px", fontSize: 13 };
 const PASOS = ["Hoy", "Decide", "Reinvierte", "Resultado", "Escenarios", "Cada inversión"];
 const plata = (v) => (Math.round(Number(v) || 0) < 0 ? "−$" : "$") + fmtMilesEs(Math.abs(Number(v) || 0));
 export const AVISO_F10 = "Proyección ilustrativa, no asesoría. Proyección estimada con supuestos generales que puedes ajustar en algunos pasos; no es una recomendación de inversión. No incluye impuestos.";
 
+// Al guardar, un ingreso o activo futuro sin nombre queda «Ingreso futuro N» / «Activo futuro N».
+export const conNombres = (cfg) => {
+  const f = cfg.futuros || {};
+  const pon = (arr = [], base) => arr.map((x, k) => (String(x.nombre || "").trim() ? x : { ...x, nombre: `${base} ${k + 1}` }));
+  return { ...cfg, futuros: { ...f, ingresos: pon(f.ingresos, "Ingreso futuro"), activos: pon(f.activos, "Activo futuro") } };
+};
 const CONFIG_INICIAL = { escenario: "base", decisiones: {}, norte: "equilibrio", mezcla: null, nuevas: [], reinversiones: [], futuros: { ingresos: [], activos: [] } };
 
-export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0 }) {
+export const MSG_DEMO_F10 = "En modo demo no se guardan escenarios.";
+
+export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false }) {
   const [paso, setPaso] = useState(pasoInicial);
   const [cfg, setCfg] = useState(CONFIG_INICIAL);
   const [nombreEsc, setNombreEsc] = useState("");
@@ -31,12 +39,13 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const bolsa = (user.inv || []).filter((a) => cfg.decisiones[a.id]?.accion === "vende").length;
 
   const guardar = () => {
-    const nuevo = { id: "f10_" + Date.now(), nombre: nombreEsc.trim() || `Escenario ${escenarios.length + 1}`, creado: new Date().toISOString(), config: cfg };
+    if (demo) return; // la demo nunca escribe en la cuenta real
+    const nuevo = { id: "f10_" + Date.now(), nombre: nombreEsc.trim() || `Escenario ${escenarios.length + 1}`, creado: new Date().toISOString(), config: conNombres(cfg) };
     onGuardar && onGuardar({ ...guardado, escenarios: [...escenarios, nuevo].slice(-10) });
     setNombreEsc("");
     track("futuro10_guardar", { escenario: cfg.escenario, norte: cfg.mezcla ? "personalizado" : cfg.norte, cantidad_escenarios: escenarios.length + 1 });
   };
-  const borrar = (id) => onGuardar && onGuardar({ ...guardado, escenarios: escenarios.filter((e) => e.id !== id) });
+  const borrar = (id) => !demo && onGuardar && onGuardar({ ...guardado, escenarios: escenarios.filter((e) => e.id !== id) });
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
@@ -91,7 +100,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                   const lbl = { display: "block", marginTop: 6, fontSize: 12, color: C.tx2 };
                   const anios = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
                   return (
-                    <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 8 }}>
+                    <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 8 }}>
                       <label style={lbl}>¿Cuánto crees que se valoriza al año? (%)
                         <InputDecimalEs style={inp} placeholder={fmtPctEs(hint, 1)} value={m.valorizacionNomPct == null ? "" : Math.round(m.valorizacionNomPct * 100) / 100} onChange={(v) => setD({ valorizacionNomPct: v, retornoRealPct: undefined })} />
                         <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {fmtPctEs(hint, 1)}. Es lo que sube el valor cada año, como lo dirías en la calle.</span></label>
@@ -125,13 +134,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             {Object.entries(SUPUESTOS_F10.nortes).map(([k, nt]) => <button key={k} style={btn(!cfg.mezcla && cfg.norte === k)} onClick={() => setCfg((p) => ({ ...p, norte: k, mezcla: null }))}>{nt.nombre}</button>)}
             <button style={btn(!!cfg.mezcla)} onClick={() => set("mezcla", { liquidez: mezcla.liquidez, renta: mezcla.renta, crecimiento: mezcla.crecimiento })}>Personalizado</button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(100px,1fr))", gap: 8, marginTop: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,100px),1fr))", gap: 8, marginTop: 10 }}>
             {["liquidez", "renta", "crecimiento"].map((k) => <label key={k} style={{ fontSize: 12, color: C.tx2 }}>{k[0].toUpperCase() + k.slice(1)} (%)
               {cfg.mezcla ? <InputDecimalEs style={inp} value={cfg.mezcla[k]} onChange={(v) => set("mezcla", { ...cfg.mezcla, [k]: v })} /> : <div style={{ color: C.tx, fontSize: 15 }}>{fmtPctEs(mezcla[k], 0)}</div>}</label>)}
           </div>
+          {validarMezcla(cfg.mezcla) && <p role="alert" style={{ color: C.rd, fontSize: 12 }}>{validarMezcla(cfg.mezcla)}</p>}
           <h4>Inversiones nuevas</h4>
           {cfg.nuevas.map((x, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6, marginBottom: 6 }}>
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,140px),1fr))", gap: 6, marginBottom: 6 }}>
               <select style={inp} value={x.preset} onChange={(e) => set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, preset: e.target.value } : y))}>
                 {Object.entries(SUPUESTOS_F10.presets).map(([k, p]) => <option key={k} value={k}>{p.nombre}</option>)}
                 <option value="custom">Otra (personalizada)</option>
@@ -158,7 +168,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <button style={btn(false)} onClick={() => set("nuevas", [...cfg.nuevas, { preset: "rfCorto", monto: "" }])}>+ Crear inversión</button>
           <h4>Reinvertir en lo que ya tienes</h4>
           {cfg.reinversiones.map((x, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6, marginBottom: 6 }}>
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,140px),1fr))", gap: 6, marginBottom: 6 }}>
               <select style={inp} value={x.activoId} onChange={(e) => set("reinversiones", cfg.reinversiones.map((y, j) => j === i ? { ...y, activoId: e.target.value } : y))}>
                 {r.activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
@@ -194,7 +204,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             <b style={{ color: C.rd }}>Alertas de liquidez</b>
             {dedupe(r.alertas).map((a, i) => <div key={i} style={{ fontSize: 12 }}>{a.texto}</div>)}
           </div>}
-          {r.hayUSD && <p style={{ color: C.am, fontSize: 12 }}>Lo que está en dólares tiene riesgo cambiario: si el peso se revalúa, vale menos en pesos. El escenario base supone devaluación real de 0%.</p>}
+          {r.hayUSD && <p style={{ color: C.am, fontSize: 12 }}>Lo que está en dólares tiene riesgo cambiario: si el peso se revalúa, vale menos en pesos. El escenario {esc.nombre.toLowerCase()} supone devaluación real de {fmtPctEs(SUPUESTOS_F10.presets.sp500.devaluacionRealPct)}.</p>}
         </div>
       )}
 
@@ -203,8 +213,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <h3 style={{ marginTop: 0 }}>Guardar y comparar</h3>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <input style={{ ...inp, flex: "1 1 160px", width: "auto" }} placeholder="Nombre del escenario" value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />
-            <button style={btn(true)} onClick={guardar}>Guardar en tu cuenta</button>
+            <button style={btn(!demo)} disabled={demo} onClick={guardar}>Guardar en tu cuenta</button>
           </div>
+          {demo && <p style={{ color: C.am, fontSize: 12 }}>{MSG_DEMO_F10}</p>}
           {escenarios.length === 0 ? <p style={{ color: C.tx2 }}>Aún no tienes escenarios guardados.</p> : (
             <div style={{ overflowX: "auto", marginTop: 10 }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 320 }}>
@@ -236,6 +247,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
       <details style={card}>
         <summary style={{ cursor: "pointer" }}>Supuestos usados (validados por Finanzas)</summary>
+        <p style={{ color: C.tx2, fontSize: 12 }}>Puedes cambiar el escenario arriba, la valorización de cada activo en el paso 2 y la mezcla o el rendimiento de una inversión personalizada en el paso 3.</p>
         <TablaSupuestos esc={esc} />
       </details>
     </div>
@@ -249,7 +261,7 @@ function LoQueViene({ cfg, set, esc, owners }) {
   const upI = (i, v) => put("ingresos", f.ingresos.map((x, j) => (j === i ? { ...x, ...v } : x)));
   const upA = (i, v) => put("activos", f.activos.map((x, j) => (j === i ? { ...x, ...v } : x)));
   const lbl = { fontSize: 12, color: C.tx2 };
-  const g = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 6, padding: "8px 0", borderTop: `1px solid ${C.bd}` };
+  const g = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,150px),1fr))", gap: 6, padding: "8px 0", borderTop: `1px solid ${C.bd}` };
   const selAnio = (v, on, vacioTxt) => <select style={inp} value={v ?? ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}>{vacioTxt && <option value="">{vacioTxt}</option>}{ANIOS.map((y) => <option key={y} value={y}>Año {y}</option>)}</select>;
   const hintVal = (cl) => fmtPctEs(((1 + esc.inflacionPct / 100) * (1 + (cl === "inmueble" ? SUPUESTOS_F10.presets.fincaRaiz.valorizacionSpread : SUPUESTOS_F10.otrosRealSpread) / 100) - 1) * 100, 1);
   return (
@@ -259,7 +271,7 @@ function LoQueViene({ cfg, set, esc, owners }) {
       <b style={{ fontSize: 13 }}>Ingresos futuros</b>
       {f.ingresos.map((x, i) => (
         <div key={i} style={g}>
-          <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder="Ej.: pensión" onChange={(e) => upI(i, { nombre: e.target.value })} /></label>
+          <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder={`Ingreso futuro ${i + 1}`} onChange={(e) => upI(i, { nombre: e.target.value })} /></label>
           <label style={lbl}>Al mes ($, pesos de hoy)<NumberInput style={inp} value={x.mensual ?? ""} onChange={(v) => upI(i, { mensual: v })} />
             <span style={{ fontSize: 11 }}>Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. Sube con la inflación.</span></label>
           <label style={lbl}>Empieza{selAnio(x.desde || 1, (v) => upI(i, { desde: v || 1 }))}</label>
@@ -271,7 +283,7 @@ function LoQueViene({ cfg, set, esc, owners }) {
       <div style={{ marginTop: 10 }}><b style={{ fontSize: 13 }}>Activos futuros</b></div>
       {f.activos.map((x, i) => (
         <div key={i} style={g}>
-          <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder="Ej.: local comercial" onChange={(e) => upA(i, { nombre: e.target.value })} /></label>
+          <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder={`Activo futuro ${i + 1}`} onChange={(e) => upA(i, { nombre: e.target.value })} /></label>
           <label style={lbl}>Tipo<select style={inp} value={x.clase || "inmueble"} onChange={(e) => upA(i, { clase: e.target.value })}><option value="inmueble">Finca raíz</option><option value="otro">Otro</option></select></label>
           <label style={lbl}>Valor total ($)<NumberInput style={inp} value={x.valor ?? ""} onChange={(v) => upA(i, { valor: v })} /></label>
           <label style={lbl}>Cuota inicial ($)<NumberInput style={inp} value={x.cuotaInicial ?? ""} onChange={(v) => upA(i, { cuotaInicial: v })} /></label>
@@ -282,6 +294,7 @@ function LoQueViene({ cfg, set, esc, owners }) {
           <label style={lbl}>Renta desde{selAnio(x.rentaDesde || x.entrega || 1, (v) => upA(i, { rentaDesde: v || 1 }))}</label>
           <label style={lbl}>¿Cuánto crees que se valoriza al año? (%)<InputDecimalEs style={inp} placeholder={hintVal(x.clase || "inmueble")} value={x.valorizacionNomPct ?? ""} onChange={(v) => upA(i, { valorizacionNomPct: v })} />
             <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {hintVal(x.clase || "inmueble")}.</span></label>
+          <AvisoPagosFuturo x={x} i={i} esc={esc} />
           <button style={btn(false)} onClick={() => put("activos", f.activos.filter((_, j) => j !== i))}>Quitar</button>
         </div>))}
       <button style={btn(false)} onClick={() => put("activos", [...f.activos, { nombre: "", clase: "inmueble", valor: "", cuotaInicial: "", anioCuota: 1, entrega: 2, rentaMensual: "", rentaDesde: "" }])}>+ Activo futuro</button>
@@ -290,7 +303,8 @@ function LoQueViene({ cfg, set, esc, owners }) {
 }
 
 const ETQ = { liquido: "Liquidez", inmueble: "Finca raíz", acciones: "Crecimiento", otro: "Otros", vehiculo: "Vehículos (no invertibles)" };
-const dedupe = (as) => { const vistos = new Set(); return as.filter((a) => (vistos.has(a.tipo) ? false : vistos.add(a.tipo))); };
+// Una alerta por tipo, salvo los pagos de activos futuros: se muestra cada año en que pagas.
+const dedupe = (as) => { const vistos = new Set(); return as.filter((a) => { const k = a.tipo === "pago_futuro" ? a.texto : a.tipo; return vistos.has(k) ? false : vistos.add(k); }); };
 
 export const textoExceso = (d) => `En el año ${d.anio} asignas ${plata(d.exceso)} más de lo que tienes.`;
 const alertaSt = { color: C.rd, fontSize: 12, background: "rgba(239,68,68,0.08)", border: `1px solid ${C.rd}`, borderRadius: 6, padding: "4px 8px" };
@@ -337,8 +351,16 @@ export function PlataDisponible({ disponible = [] }) {
   );
 }
 
+// Aviso junto al activo futuro: en qué años sus pagos salen de tu liquidez.
+export function AvisoPagosFuturo({ x, i, esc }) {
+  const a = leerFuturos({ activos: [{ ...x, nombre: x.nombre || `Activo futuro ${i + 1}` }] }, esc).activos[0];
+  if (!a) return null;
+  const pagos = a.pagos.filter((p) => p.monto > 0);
+  return <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am }}>{pagos.map((p) => `En el año ${p.anio} pagas ${plata(p.monto)} de ${a.nombre} con tu liquidez.`).join(" ")}</div>;
+}
+
 function Grid({ items }) {
-  return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
+  return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,140px),1fr))", gap: 8 }}>
     {items.map(([l, v]) => <div key={l} style={{ background: C.bg, borderRadius: 8, padding: 10 }}><div style={{ color: C.tx2, fontSize: 11 }}>{l}</div><div style={{ fontSize: 16, fontWeight: 600 }}>{v}</div></div>)}
   </div>;
 }
@@ -346,8 +368,8 @@ function Grid({ items }) {
 function TablaSupuestos({ esc }) {
   const s = SUPUESTOS_F10, p = s.presets;
   const filas = [
-    ["Inflación", fmtPctEs(esc.inflacionPct)],
-    ["Renta fija corto", `inflación + ${fmtPctEs(p.rfCorto.realSpread)}`],
+    ["Inflación", `${fmtPctEs(esc.inflacionPct)} al año`],
+    ["Renta fija corto", `inflación + ${fmtPctEs(p.rfCorto.realSpread + esc.retornoSpread)} ≈ ${fmtPctEs(retornoNominalPreset("rfCorto", esc))} al año`],
     ["Renta fija largo", `inflación + ${fmtPctEs(p.rfLargo.realSpread)} (tope + ${fmtPctEs(p.rfLargo.topeSpread)})`],
     ["Finca raíz", `renta neta ${fmtPctEs(p.fincaRaiz.rentaNetaPct)} + valorización = inflación`],
     ["S&P 500 (USD)", `${fmtPctEs(esc.spRealPct)} real; devaluación real ${fmtPctEs(p.sp500.devaluacionRealPct)}`],
@@ -356,5 +378,8 @@ function TablaSupuestos({ esc }) {
     ["Ajuste de retornos del escenario", fmtPctEs(esc.retornoSpread)],
     ["Colchón de liquidez", `${s.colchonMeses} meses de gastos`],
   ];
-  return <table style={{ width: "100%", fontSize: 12, marginTop: 8 }}><tbody>{filas.map(([a, b]) => <tr key={a}><td style={{ color: C.tx2, padding: "3px 0" }}>{a}</td><td style={{ textAlign: "right" }}>{b}</td></tr>)}</tbody></table>;
+  return <div style={{ fontSize: 12, marginTop: 8 }}>{filas.map(([a, b]) => (
+    <div key={a} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "2px 8px", padding: "4px 0", borderTop: `1px solid ${C.bd}` }}>
+      <span style={{ color: C.tx2 }}>{a}</span><span style={{ textAlign: "right", overflowWrap: "anywhere", minWidth: 0 }}>{b}</span>
+    </div>))}</div>;
 }

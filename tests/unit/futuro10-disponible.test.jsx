@@ -56,3 +56,26 @@ describe("Plata disponible para invertir", () => {
     expect(r.disponible[3].asignaciones[0]).toMatchObject({ tipo: "nueva", idx: 0 });
   });
 });
+
+import { conNombres, AvisoPagosFuturo } from "../../src/components/MiFuturo10.jsx";
+import { leerFuturos } from "../../src/lib/futuro10.js";
+describe("QA Mi futuro a 10", () => {
+  it("Ingreso/mes* incluye la renta nueva (ingresosReal usa los ingresos totales del año)", () => {
+    const sin = proyectarFuturo10(u, {});
+    const con = proyectarFuturo10(u, { decisiones: { e: { accion: "modifica", rentaNuevaMensual: 3e6, rentaNuevaDesde: 1 } } });
+    con.filas.slice(1).forEach((f) => expect(f.ingresosReal).toBeCloseTo(f.ingresos / f.deflactor, 4));
+    expect(con.filas[1].ingresosReal - sin.filas[1].ingresosReal).toBeCloseTo(36e6, -3);
+    expect(con.filas[1].ingresosReal).toBeGreaterThan(0);
+  });
+  it("un activo o ingreso futuro sin nombre recibe un nombre por defecto", () => {
+    const esc = proyectarFuturo10(u, {}).escenario;
+    const f = leerFuturos({ ingresos: [{ mensual: 1e6 }], activos: [{ valor: 1e8, entrega: 2 }, { nombre: " ", valor: 1e8 }] }, esc);
+    expect(f.ingresos[0].nombre).toBe("Ingreso futuro 1");
+    expect(f.activos.map((a) => a.nombre)).toEqual(["Activo futuro 1", "Activo futuro 2"]);
+    const g = conNombres({ futuros: { ingresos: [], activos: [{ nombre: "" }, { nombre: "Local" }] } });
+    expect(g.futuros.activos.map((a) => a.nombre)).toEqual(["Activo futuro 1", "Local"]);
+    const aviso = txt(renderToString(<AvisoPagosFuturo x={{ valor: 3e8, cuotaInicial: 6e7, anioCuota: 1, entrega: 2 }} i={0} esc={esc} />));
+    expect(aviso).toContain("En el año 1 pagas $60.000.000 de Activo futuro 1 con tu liquidez.");
+    expect(aviso).toContain("En el año 2 pagas $240.000.000");
+  });
+});
