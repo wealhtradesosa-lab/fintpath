@@ -45,8 +45,22 @@ const CATS_ACTIVAS = new Set([
   "Salario", "Honorarios", "Freelance", "Comisiones", "Cesantías", "Negocio",
 ]);
 
+// Ingresos laborales: nunca son pasivos, aunque estén vinculados a un activo
+// o traigan un código CAP_/DIV_ por error de carga.
+const CATS_LABORALES = new Set([
+  ...CATS_ACTIVAS, "Prima", "Prima de servicios", "Bono", "Bonos", "Bonificación",
+  "Bonificaciones", "Intereses cesantías", "Intereses sobre cesantías", "Vacaciones",
+  "Horas extra", "Auxilio", "Prestaciones",
+]);
+export function esLaboral(i) {
+  const fc = String(i?.fiscalCode || "");
+  if (fc.startsWith("LAB_") || fc === "NOL_HONORARIOS_INDEP" || fc === "NOL_NEGOCIO") return true;
+  return CATS_LABORALES.has(String(i?.categoria || "").trim());
+}
+
 /** "pasivo" | "activo". Todo lo que no es claramente pasivo es activo. */
 export function tipoIngreso(i) {
+  if (esLaboral(i)) return "activo";
   const fc = String(i?.fiscalCode || "");
   if (fc) {
     if (fc === "CAP_VENTA_ACTIVOS") return "activo";
@@ -57,7 +71,8 @@ export function tipoIngreso(i) {
   const cat = String(i?.categoria || "").trim();
   if (CATS_ACTIVAS.has(cat)) return "activo";
   if (CATS_PASIVAS.has(cat)) return "pasivo";
-  // Un ingreso vinculado a un activo (creado desde Patrimonio) es renta del activo.
+  // Un ingreso vinculado a un activo (creado desde Patrimonio) es renta del
+  // activo, salvo que sea laboral (eso ya salió arriba).
   if (i?.activoId) return "pasivo";
   return "activo";
 }
