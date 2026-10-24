@@ -1053,6 +1053,10 @@ export const estimarImpuesto = (u, options = {}) => {
         // impuesto/impOptimizado = SALDO a pagar (después de retenciones/anticipos).
         impuesto: impActualNat,
         saldoAPagar: impActualNat,
+        // Saldo a favor: retenciones/anticipos por encima del impuesto a cargo.
+        // saldoAPagar sigue en 0 en ese caso (no cambia la cuenta del a cargo).
+        saldoAFavor: regimenN === "simple" ? 0 : Math.max(0, pagosPrevios - imp - (impGO || 0)),
+        saldoAFavorOpt: regimenN === "simple" ? 0 : Math.max(0, pagosPrevios - impOpt - (impGO || 0)),
         saldoACargo: impActualNat, // alias legacy DeclaracionFlow (= post-rete)
         impSinOpt: impActualNat, impOptimizado: impOptNat,
         // impBruto = IMPUESTO A CARGO (tabla Art.241 / régimen) ANTES de retenciones.

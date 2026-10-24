@@ -46,13 +46,31 @@ describe("exenta 25 % después de PV/AFC y cesantías", () => {
 describe("tarjeta «Pensión voluntaria o AFC» del simulador", () => {
   it("ahorro de la tarjeta == diferencia de taxCO con y sin el aporte", () => {
     // Mismo año que usa el simulador (default de taxCO). Con y sin aporte se
-    // compara el impuesto que muestra la tarjeta (saldo, después de retenciones).
+    // compara el impuesto ANTES de retenciones (impBruto), no el saldo a pagar.
     const detD = (u) => estimarImpuesto(u).detalle.find((d) => d.name === "Luis");
     for (const salMes of [10e6, 15e6, 30e6, 60e6]) {
       const u0 = user(salMes), d0 = detD(u0);
       const fd = adapterOwnerPlan({ owner: u0.owners[0], ingresos: u0.ingresos, gastos: [], inv: [], deu: [], trm: 4200 });
       const d1 = detD(user(salMes, aporte("AP_TRIB_PV", d0.pensionVol / 12)));
-      expect(ahorroPvAfc(fd)).toBeCloseTo(d0.impuesto - d1.impuesto, -2);
+      expect(ahorroPvAfc(fd)).toBeCloseTo(d0.impBruto - d1.impBruto, -2);
+      expect(ahorroPvAfc(fd)).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("saldo a favor cuando las retenciones superan el impuesto a cargo", () => {
+  it("$15 M/mes: ahorro = diferencia del impuesto a cargo y se expone el saldo a favor", () => {
+    const u0 = user(15e6), d0 = estimarImpuesto(u0).detalle.find((d) => d.name === "Luis");
+    const fd = adapterOwnerPlan({ owner: u0.owners[0], ingresos: u0.ingresos, gastos: [], inv: [], deu: [], trm: 4200 });
+    expect(d0.saldoAPagar).toBe(0);
+    expect(fd.saldoAFavor).toBeGreaterThan(0);
+    expect(fd.saldoAFavorOpt).toBeGreaterThan(fd.saldoAFavor);
+    expect(ahorroPvAfc(fd)).toBeCloseTo(d0.impBruto - d0.impOptBruto, -2);
+    expect(fd.saldoAFavorOpt - fd.saldoAFavor).toBeCloseTo(ahorroPvAfc(fd), -2);
+  });
+  it("$60 M/mes: hay saldo a pagar, no saldo a favor", () => {
+    const d = estimarImpuesto(user(60e6)).detalle.find((x) => x.name === "Luis");
+    expect(d.saldoAPagar).toBeGreaterThan(0);
+    expect(d.saldoAFavor).toBe(0);
   });
 });

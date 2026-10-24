@@ -84,7 +84,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       // PV y AFC comparten el tope 30 % / 3.800 UVT (dentro del Art. 336): una sola
       // línea que no empuja a ninguno de los dos.
       const pvAfcMax = pvMax + afcMax;
-      if (pvAfcMax > 500000) recs.push({ icon: "💰", title: "Pensión voluntaria o AFC", desc: "Hasta " + fm(pvAfcMax / 12) + "/mes en pensión voluntaria o AFC podría ser exento (tope conjunto 30 % / 3.800 UVT, dentro del tope del 40 %). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.", nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.", impact: ahorroPvAfc(fiscalData), color: T.green });
+      if (pvAfcMax > 500000) recs.push({ icon: "💰", title: "Pensión voluntaria o AFC", desc: "Hasta " + fm(pvAfcMax / 12) + "/mes en pensión voluntaria o AFC podría ser exento (tope conjunto 30 % / 3.800 UVT, dentro del tope del 40 %). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.", nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.", impact: ahorroPvAfc(fiscalData), impactTexto: "menos de impuesto. Si aportas por nómina, lo notas como menos retención cada mes; si no, como saldo a favor en la declaración.", color: T.green });
       if (!gbc["Salud"] && ingAnual > 2000 * UVT) recs.push({ icon: "🏥", title: "Medicina prepagada", desc: "Deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → Salud.", impact: 0, color: T.purple });
       if (deducDep > 0) recs.push({ icon: "👨‍👩‍👧", title: "Dependientes: " + fm(deducDep) + "/año", desc: "Ya se está deduciendo 10% del ingreso por dependientes (gastos educación detectados).", impact: 0, color: T.green });
       if (deducViv > 0) recs.push({ icon: "🏠", title: "Intereses vivienda: " + fm(deducViv) + "/año", desc: "Los intereses de tu hipoteca ya se deducen automáticamente.", impact: 0, color: T.green });
@@ -180,6 +180,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         const impBrutoVal = Number(calc.impBruto) || 0;
         const retencionEstimada = Number(isJ ? calc.retefuenteCalc : calc.retefuenteNat) || 0;
         const saldoAPagar = Math.max(0, impBrutoVal - retencionEstimada);
+        const saldoAFavor = Math.max(0, retencionEstimada - impBrutoVal);
         if (impBrutoVal <= 0) return null;
         return (
           <div style={{ padding: mb ? "12px 16px" : "14px 24px", borderBottom: "1px solid " + T.border, background: "rgba(34,197,94,0.02)" }}>
@@ -193,8 +194,8 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
                 <div style={{ fontSize: mb ? 16 : 18, fontWeight: 800, color: T.blue, fontFamily: "monospace" }}>{retencionEstimada > 0 ? fm(retencionEstimada) : "$0"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>(=) Saldo a pagar</div>
-                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 800, color: saldoAPagar > 0 ? T.orange : T.green, fontFamily: "monospace" }}>{fm(saldoAPagar)}</div>
+                <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>{saldoAFavor > 0 ? "(=) Saldo a favor" : "(=) Saldo a pagar"}</div>
+                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 800, color: saldoAPagar > 0 ? T.orange : T.green, fontFamily: "monospace" }}>{saldoAFavor > 0 ? fm(saldoAFavor) : fm(saldoAPagar)}</div>
               </div>
             </div>
             <div style={{ marginTop: 8, fontSize: 9, color: T.txt3, lineHeight: 1.5, fontStyle: "italic" }}>
@@ -572,7 +573,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: r.color }}>{r.title}</div>
                 <div style={{ fontSize: 11, color: T.txt2, marginTop: 2, lineHeight: 1.5 }}>{r.desc}</div>
-                {r.impact > 100000 && <div style={{ fontSize: 11, fontWeight: 700, color: T.green, marginTop: 4 }}>Ahorro estimado: {fm(r.impact)}/año ({fm(r.impact / 12)}/mes)</div>}
+                {r.impact > 100000 && <div style={{ fontSize: 11, fontWeight: 700, color: T.green, marginTop: 4 }}>{r.impactTexto ? <>{fm(r.impact)} {r.impactTexto}</> : <>Ahorro estimado: {fm(r.impact)}/año ({fm(r.impact / 12)}/mes)</>}</div>}
                 {r.nota && <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{r.nota}</div>}
               </div>
             </div>

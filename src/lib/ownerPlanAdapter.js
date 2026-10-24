@@ -134,6 +134,8 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     tasaSin: d.tasaBruta != null ? d.tasaBruta : d.tasa,
     tasaCon: d.ingreso > 0 ? ((d.impOptBruto != null ? d.impOptBruto : d.impOptimizado) / d.ingreso * 100) : 0,
     ahorro: d.ahorroOptimo,
+    saldoAFavor: d.saldoAFavor || 0,
+    saldoAFavorOpt: d.saldoAFavorOpt || 0,
     deducViv: d.deducVivienda,
     gastosDeducNat: d.totalDeducciones,
     // benefSin es lo mismo que benAplic del motor:
@@ -148,8 +150,9 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
   };
 }
 
-// Ahorro de la tarjeta «Pensión voluntaria o AFC» del simulador: es el
-// ahorroOptimo de taxCO = impuesto sin el aporte sugerido − impuesto con él.
+// Ahorro de la tarjeta «Pensión voluntaria o AFC» del simulador: impuesto
+// ANTES de retenciones sin el aporte sugerido − con él (impBruto − impOptBruto).
+// No es saldo a pagar: las retenciones pueden cubrirlo.
 export function ahorroPvAfc(fiscalData) {
-  return Math.max(0, Number(fiscalData?.ahorro) || 0);
+  return Math.max(0, (Number(fiscalData?.impSin) || 0) - (Number(fiscalData?.impCon) || 0));
 }
