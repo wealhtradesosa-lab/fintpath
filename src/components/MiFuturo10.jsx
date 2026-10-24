@@ -52,15 +52,20 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const mezcla = cfg.mezcla || SUPUESTOS_F10.nortes[cfg.norte] || SUPUESTOS_F10.nortes.equilibrio;
   const ir = (i) => { setPaso(i); setVerEsc(null); track("futuro10_paso", { paso: i + 1 }); };
   // Planes para comparar: seguir como vas, lo que estás armando y los guardados.
+  // El borrador solo aparece si es distinto de lo guardado (si no, se repite).
+  // 24-oct-2026 (Santiago: "a veces queda un plan fantasma que es lo que uno
+  // está armando y no hay dónde quitarlo"). Ahora se nombra y se puede guardar
+  // o descartar desde Tus escenarios.
+  const igualA = (c) => JSON.stringify({ ...migrarModifica({ ...CONFIG_INICIAL, ...c }), escenario: cfg.escenario }) === JSON.stringify({ ...cfg });
+  const hayBorrador = JSON.stringify({ ...cfg, escenario: CONFIG_INICIAL.escenario }) !== JSON.stringify(CONFIG_INICIAL) && !escenarios.some((e) => igualA(e.config));
+  const editandoEsc = escenarios.find((e) => e.id === editandoId) || null;
+  const nombreBorrador = editandoEsc ? `${editandoEsc.nombre} (cambios sin guardar)` : "Sin guardar: lo que estás armando";
   const planesComparar = useMemo(() => {
     const ps = [{ nombre: "Hoy", esHoy: true, r: proyectarFuturo10(user, { escenario: cfg.escenario }) }];
-    // El borrador solo aparece si es distinto de lo guardado (si no, se repite).
-    const igualA = (c) => JSON.stringify({ ...migrarModifica({ ...CONFIG_INICIAL, ...c }), escenario: cfg.escenario }) === JSON.stringify({ ...cfg });
-    const borrador = JSON.stringify(cfg) !== JSON.stringify(CONFIG_INICIAL) && !escenarios.some((e) => igualA(e.config));
-    if (borrador) ps.push({ nombre: "Lo que estás armando", r });
+    if (hayBorrador) ps.push({ nombre: nombreBorrador, r });
     escenarios.forEach((e) => ps.push({ id: e.id, nombre: e.nombre, descripcion: e.descripcion || "", recomendado: !!e.recomendado, r: proyectarFuturo10(user, { ...migrarModifica({ ...CONFIG_INICIAL, ...e.config }), escenario: cfg.escenario }) }));
     return ps;
-  }, [user, cfg, r, escenarios]);
+  }, [user, cfg, r, escenarios, hayBorrador, nombreBorrador]);
   const bolsa = (user.inv || []).filter((a) => cfg.decisiones[a.id]?.accion === "vende").length;
 
   const editando = escenarios.find((e) => e.id === editandoId) || null;
@@ -234,6 +239,10 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               <button style={btn(false)} disabled={demo} onClick={guardar}>Guardar como nuevo</button>
             </> : <button style={btn(!demo)} disabled={demo} onClick={guardar}>Guardar este escenario</button>}
           </div>
+          {hayBorrador && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginTop: 8, padding: "8px 10px", border: `1px dashed ${C.am}`, borderRadius: 8, fontSize: 12 }}>
+            <span style={{ flex: "1 1 200px", color: C.am }}>«{nombreBorrador}» aparece en la comparación porque no lo has guardado.</span>
+            <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => { setCfg(editandoEsc ? migrarModifica({ ...CONFIG_INICIAL, ...editandoEsc.config }) : { ...CONFIG_INICIAL, escenario: cfg.escenario }); setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>Descartar</button>
+          </div>}
           {editando && <div style={{ fontSize: 12, color: C.gn, marginTop: 6 }}>Estás editando «{editando.nombre}». Cambia el nombre arriba si quieres y toca Guardar cambios. <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>Cancelar</button></div>}
           <input style={{ ...inp, marginTop: 6 }} placeholder={`Resumen en una frase (opcional). Si lo dejas vacío: «${resumenEscenario(r)}»`} value={descEsc} onChange={(e) => setDescEsc(e.target.value)} />
           {demo && <p style={{ color: C.am, fontSize: 12 }}>{MSG_DEMO_F10}</p>}
