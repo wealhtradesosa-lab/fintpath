@@ -14,7 +14,7 @@ const C = { bg: "#111827", bg2: "#1f2937", bd: "rgba(255,255,255,0.1)", tx: "#e5
 const card = { background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 12, padding: 14, marginBottom: 12 };
 const btn = (on) => ({ padding: "8px 12px", borderRadius: 8, border: `1px solid ${on ? C.gn : C.bd}`, background: on ? "rgba(34,197,94,0.15)" : "transparent", color: on ? C.gn : C.tx, cursor: "pointer", fontSize: 13 });
 const inp = { width: "100%", boxSizing: "border-box", background: C.bg, color: C.tx, border: `1px solid ${C.bd}`, borderRadius: 6, padding: "6px 8px", fontSize: 13 };
-const PASOS = ["Hoy", "Decide", "Reinvierte", "Resultado", "Escenarios", "Cada inversión"];
+const PASOS = ["Hoy", "Decide", "Lo que te queda", "Resultado", "Escenarios", "Cada inversión"];
 const plata = (v) => "$" + fmtMilesEs(v);
 export const AVISO_F10 = "Proyección ilustrativa, no asesoría. Proyección estimada con supuestos generales que puedes ajustar en algunos pasos; no es una recomendación de inversión. No incluye impuestos.";
 
@@ -58,7 +58,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
       <PageHeader label="Mi futuro a 10 años" title="¿Cómo se ve tu patrimonio en 10 años?" compact
-        subtitle="Decide qué hacer con cada activo, reinvierte y mira el resultado en pesos de hoy. Tus datos reales no se tocan." />
+        subtitle="Decide qué hacer con cada activo, mira lo que te queda y el resultado en pesos de hoy. Tus datos reales no se tocan." />
       <div style={{ ...card, borderColor: C.am, fontSize: 12, color: C.tx2 }}>{AVISO_F10}</div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
@@ -126,7 +126,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         <div style={card}>
           <Seccion n={2} titulo="Tus deudas" sub="La deuda de un activo que vendes se paga sola con esa venta. Las demás, márcalas si quieres pagarlas con lo vendido." />
           {(r.deudas || []).length > 0 ? <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} /> : <p style={{ color: C.tx2, fontSize: 13 }}>No tienes deudas con saldo.</p>}
-          <p style={{ color: C.tx2, fontSize: 12 }}>Lo que vendes ({bolsa} activo{bolsa === 1 ? "" : "s"}) paga primero esas deudas; con el resto se completa un colchón de {SUPUESTOS_F10.colchonMeses} meses de gastos y lo demás pasa a Reinvierte.</p>
+          <p style={{ color: C.tx2, fontSize: 12 }}>Lo que vendes ({bolsa} activo{bolsa === 1 ? "" : "s"}) paga primero esas deudas; con el resto se completa un colchón de {SUPUESTOS_F10.colchonMeses} meses de gastos y lo demás pasa al paso 3, Lo que te queda.</p>
         </div>
         <div style={card}>
           <Seccion n={3} titulo="Lo que viene" sub="Lo que todavía no tienes y empieza más adelante: una pensión, una venta futura, un local que te entregan." />
@@ -136,7 +136,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
       {paso === 2 && (
         <div style={card}>
-          <h3 style={{ marginTop: 0 }}>Reinvierte</h3>
+          <h3 style={{ marginTop: 0, marginBottom: 2 }}>Lo que te queda</h3>
+          <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>La plata que sobra de lo que vendes, después de pagar deudas y de lo que les inviertes a tus activos en Decide. Aquí decides en qué cosas nuevas la pones.</p>
           {/* 24-oct-2026 (Santiago: "necesito ver qué saldo me quedó de las
               inversiones que vendí para ir sabiendo cuánto tengo para
               reinvertir"). La cuenta de la bolsa, siempre a la vista. */}
@@ -148,7 +149,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               </div>
               : <>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 8 }}>
-                  {[["Vendiste", bd.vendido, C.tx], ...(bd.desdeLiquidez > 0 ? [["+ De tu liquidez", bd.desdeLiquidez, C.am]] : []), ...(bd.deudas > 0 ? [["− Deudas", bd.deudas, C.tx2]] : []), ["− Colchón", bd.colchon, C.tx2], ...(bd.obras > 0 ? [["− Obras", bd.obras, C.tx2]] : []), ["− A lo que ya tienes", bd.reinvertido, C.tx2], ["− Inversiones nuevas", bd.nuevas, C.tx2], ["Te quedan", bd.restante, bd.restante > 0 ? C.gn : C.tx]].map(([l, v, col]) => <div key={l}><div style={{ fontSize: 11, color: C.tx2 }}>{l}</div><div style={{ fontSize: 15, fontWeight: 700, color: col, fontFamily: "monospace" }}>{plata(v || 0)}</div></div>)}
+                  {[["Vendiste", bd.vendido, C.tx], ...(bd.desdeLiquidez > 0 ? [["+ De tu liquidez", bd.desdeLiquidez, C.am]] : []), ...(bd.deudas > 0 ? [["− Deudas", bd.deudas, C.tx2]] : []), ["− Colchón", bd.colchon, C.tx2], ...(bd.obras > 0 ? [["− Obras", bd.obras, C.tx2]] : []), ["− Inviertes en tus activos", bd.reinvertido, C.tx2], ["− Inversiones nuevas", bd.nuevas, C.tx2], ["Te quedan", bd.restante, bd.restante > 0 ? C.gn : C.tx]].map(([l, v, col]) => <div key={l}><div style={{ fontSize: 11, color: C.tx2 }}>{l}</div><div style={{ fontSize: 15, fontWeight: 700, color: col, fontFamily: "monospace" }}>{plata(v || 0)}</div></div>)}
                 </div>
                 <div style={{ fontSize: 12, color: C.tx2, marginTop: 8 }}>
                   {bd.pendienteAnio1 > 0 && <div style={{ color: C.am, marginBottom: 4 }}>Lo que le metes a lo que ya tienes no alcanza con lo vendido y tu liquidez: los {plata(bd.pendienteAnio1)} que faltan salen de lo que vaya entrando en el año 1.</div>}
@@ -161,16 +162,6 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 </div>
               </>}
             </div>; })()}
-          <p style={{ color: C.tx2, fontSize: 12 }}>Elige un norte para lo que quede sin asignar. Son ejemplos de mezcla, no recomendaciones.</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {Object.entries(SUPUESTOS_F10.nortes).map(([k, nt]) => <button key={k} style={btn(!cfg.mezcla && cfg.norte === k)} onClick={() => setCfg((p) => ({ ...p, norte: k, mezcla: null }))}>{nt.nombre}</button>)}
-            <button style={btn(!!cfg.mezcla)} onClick={() => set("mezcla", { liquidez: mezcla.liquidez, renta: mezcla.renta, crecimiento: mezcla.crecimiento })}>Personalizado</button>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(100px,1fr))", gap: 8, marginTop: 10 }}>
-            {["liquidez", "renta", "crecimiento"].map((k) => <label key={k} style={{ fontSize: 12, color: C.tx2 }}>{k[0].toUpperCase() + k.slice(1)} (%)
-              {cfg.mezcla ? <InputDecimalEs style={inp} value={cfg.mezcla[k]} onChange={(v) => set("mezcla", { ...cfg.mezcla, [k]: v })} /> : <div style={{ color: C.tx, fontSize: 15 }}>{fmtPctEs(mezcla[k], 0)}</div>}</label>)}
-          </div>
-          {validarMezcla(cfg.mezcla) && <p role="alert" style={{ color: C.rd, fontSize: 12 }}>{validarMezcla(cfg.mezcla)}</p>}
           <h4>Inversiones nuevas</h4>
           {cfg.nuevas.map((x, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6, marginBottom: 6 }}>
@@ -197,24 +188,22 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             </div>
           ))}
           <button style={btn(false)} onClick={() => set("nuevas", [...cfg.nuevas, { preset: "rfCorto", monto: "" }])}>+ Crear inversión</button>
+          <h4 style={{ marginBottom: 2 }}>El resto se reparte así</h4>
+          <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>Lo que no pongas en inversiones nuevas. Son ejemplos de mezcla, no recomendaciones.</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {Object.entries(SUPUESTOS_F10.nortes).map(([k, nt]) => <button key={k} style={btn(!cfg.mezcla && cfg.norte === k)} onClick={() => setCfg((p) => ({ ...p, norte: k, mezcla: null }))}>{nt.nombre}</button>)}
+            <button style={btn(!!cfg.mezcla)} onClick={() => set("mezcla", { liquidez: mezcla.liquidez, renta: mezcla.renta, crecimiento: mezcla.crecimiento })}>Personalizado</button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(100px,1fr))", gap: 8, marginTop: 10 }}>
+            {["liquidez", "renta", "crecimiento"].map((k) => <label key={k} style={{ fontSize: 12, color: C.tx2 }}>{k[0].toUpperCase() + k.slice(1)} (%)
+              {cfg.mezcla ? <InputDecimalEs style={inp} value={cfg.mezcla[k]} onChange={(v) => set("mezcla", { ...cfg.mezcla, [k]: v })} /> : <div style={{ color: C.tx, fontSize: 15 }}>{fmtPctEs(mezcla[k], 0)}</div>}</label>)}
+          </div>
+          {validarMezcla(cfg.mezcla) && <p role="alert" style={{ color: C.rd, fontSize: 12 }}>{validarMezcla(cfg.mezcla)}</p>}
           {/* 24-oct-2026 (Santiago: "estoy perdido… si a mí me pasa, a otros les
               pasará"). Un solo camino para meterle plata a lo que ya tienes:
               aporte, cuándo, renta y desde cuándo, con hoy + aporte = total. */}
-          <h4 style={{ marginBottom: 2 }}>Aumentar lo que ya tienes</h4>
-          <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>Plata que le metes a algo tuyo: más capital a una inversión o una obra, como la bodega en tu lote. Si va a dar renta, ponla aquí mismo.</p>
-          {cfg.reinversiones.map((x, i) => {
-            const up = (v) => set("reinversiones", cfg.reinversiones.map((y, j) => (j === i ? { ...y, ...v } : y)));
-            const det = (r.reinversionesDetalle || []).find((y) => y.i === i);
-            return (
-              <div key={i} style={{ borderTop: `1px solid ${C.bd}`, padding: "10px 0" }}>
-                <AporteCampos x={x} up={up} det={det} activos={r.activos} conActivo />
-                <button style={{ ...btn(false), marginTop: 8 }} onClick={() => set("reinversiones", cfg.reinversiones.filter((_, j) => j !== i))}>Quitar</button>
-              </div>
-            );
-          })}
-          {r.activos.length > 0 && <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => set("reinversiones", [...cfg.reinversiones, { activoId: r.activos[0].id, monto: "", anio: 1, rentaMensual: "", rentaDesdeMes: 0 }])}>+ Aumentar algo que ya tienes</button>}
-          <p style={{ color: C.tx2, fontSize: 12 }}>Lo que no asignes a mano se reparte según el norte.</p>
-        </div>
+
+                  </div>
       )}
 
       {paso === 3 && (
