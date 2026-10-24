@@ -282,3 +282,19 @@ describe("futuro10 · la tabla de ingresos muestra la renta nueva", () => {
     expect((r.filas[1].ingresosReal - sin.filas[1].ingresosReal) / 12).toBeCloseTo(8.5e6 / 2, 0);
   });
 });
+
+describe("futuro10 · inversión personalizada del año 1 sale de lo vendido", () => {
+  const U = () => ({ inflacionPct: 3, inv: [{ id: "f", n: "Finca", tp: "Real Estate", va: 11787e6 }, { id: "c", tp: "Cash", va: 100e6 }], ingresos: [], gas: {}, deu: [] });
+  it("BTG 7.500 M en el año 1 baja el saldo de Te quedan", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { f: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "BTG", monto: 7500e6, anio: 1, rendimientoNomPct: 14, tipo: "valoriza" }] });
+    expect(r.bolsaDetalle.nuevas).toBeCloseTo(7500e6, 0);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(11787e6 - 7500e6, 0);
+    expect(r.reparto.find((x) => x.nombre === "BTG").valor).toBeCloseTo(7500e6 * 1.14 ** 10, -3);
+    expect(r.filas[0].patrimonio).toBeCloseTo(11887e6, 0);
+  });
+  it("una personalizada de un año siguiente queda programada, no descuenta hoy", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { f: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "Negocio", monto: 1000e6, anio: 3 }] });
+    expect(r.bolsaDetalle.programadas).toBeCloseTo(1000e6, 0);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(11787e6, 0);
+  });
+});

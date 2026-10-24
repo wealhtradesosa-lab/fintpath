@@ -174,7 +174,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   bolsa -= colchon;
   const colchonInicial = colchon; // `colchon` cambia año a año; la bolsa reporta el de hoy
   const nuevas = [];
-  let reinvertidoTotal = 0, nuevasTotal = 0, pedidoTotal = 0, desdeLiquidez = 0;
+  let reinvertidoTotal = 0, nuevasTotal = 0, pedidoTotal = 0, desdeLiquidez = 0, programadasTotal = 0;
   // 24-oct-2026 (Santiago: "añadí estas inversiones y cuando voy a ver el
   // resultado no se ven ahí reflejadas"). Antes una inversión solo se
   // financiaba con lo vendido: sin ventas, o si no alcanzaba, quedaba en $0 y
@@ -210,7 +210,26 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   });
   const personalizadas = [];
   (cfg.nuevas || []).forEach((x, k) => {
-    if (x.preset === "custom") { const c = leerPersonalizada(x, esc, sup); if (c.monto > 0) personalizadas.push({ ...c, id: "nueva_" + k }); return; }
+    if (x.preset === "custom") {
+      const c = leerPersonalizada(x, esc, sup);
+      if (c.monto <= 0) return;
+      // 24-oct-2026 (Santiago: "me dice que faltan 8.630 M por invertir pero
+      // ya invertí 7.500 M"). La personalizada del año 1 no se descontaba de lo
+      // vendido: se sacaba durante el año de las canastas y la bolsa la seguía
+      // mostrando libre. Ahora sale desde hoy, como las de la lista. Las de
+      // años siguientes se pagan ese año con lo que haya (programadas).
+      if (c.anio === 1) {
+        pedidoTotal += c.monto;
+        const m = tomar(c.monto);
+        if (m <= 0) return;
+        nuevasTotal += m;
+        nuevas.push({ id: "nueva_" + k, nombre: c.nombre, clase: "nueva", valor: m, crec: c.pagaRenta ? inf : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom - inf : 0, usd: c.usd, invertible: true });
+        return;
+      }
+      programadasTotal += c.monto;
+      personalizadas.push({ ...c, id: "nueva_" + k });
+      return;
+    }
     pedidoTotal += Math.max(0, n(x.monto));
     if (n(x.monto) <= 0 || !sup.presets[x.preset]) return;
     const m = tomar(n(x.monto));
@@ -325,7 +344,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   ].sort((x, y) => y.valor - x.valor);
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
-    bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
+    bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, programadas: programadasTotal, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
     reparto: repartoFinal,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, pagar, pagado }) => ({ id, nombre, saldo, activoId, porVenta, pagar, pagado })),
