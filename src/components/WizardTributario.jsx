@@ -481,7 +481,7 @@ function NumberStep({ step, value, onChange, onSubmit }) {
           color: C.txt3,
           fontWeight: 700,
         }}>$</span>
-        <NumberInput
+        <NumberInput allowDecimals={false}
           value={value || ""}
           onChange={(v) => onChange(v === "" ? "" : String(v))}
           onKeyDown={(e) => { if (e.key === "Enter" && Number(value) > 0) onSubmit(); }}

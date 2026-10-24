@@ -180,7 +180,7 @@ export default function BuyVsInvest({ isUS = false }) {
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 16 }}>{isUS ? "🏠 The home" : "🏠 La casa"}</div>
 
           <Campo label={isUS ? "Home price" : "Precio de la casa"}>
-            <NumberInput value={precioCasa} onChange={setPrecioCasa} />
+            <NumberInput allowDecimals={false} value={precioCasa} onChange={setPrecioCasa} />
           </Campo>
 
           <Campo label={isUS ? "How do you buy it?" : "¿Cómo la compras?"}>
@@ -221,7 +221,7 @@ export default function BuyVsInvest({ isUS = false }) {
           </Campo>
 
           <Campo label={isUS ? "HOA / month" : "Administración mensual"}>
-            <NumberInput value={administracionMensual} onChange={setAdmin} />
+            <NumberInput allowDecimals={false} value={administracionMensual} onChange={setAdmin} />
           </Campo>
 
           {/* {isUS ? "Cost of owning" : "Costos de tener la casa"}. Van en % del avaluo y no en pesos fijos
@@ -272,7 +272,7 @@ export default function BuyVsInvest({ isUS = false }) {
 
           <Campo label={isUS ? "Monthly rent for that same home" : "Arriendo mensual de esa misma casa"}
             ayuda="Lo que pagarías por vivir ahí sin comprarla. Sube con el IPC cada año.">
-            <NumberInput value={arriendoMensual} onChange={setArriendo} />
+            <NumberInput allowDecimals={false} value={arriendoMensual} onChange={setArriendo} />
           </Campo>
 
           <Campo label={isUS ? "Where do you invest the difference?" : "¿Dónde inviertes la diferencia?"}>

@@ -1868,7 +1868,7 @@ function InputInline({ input, value, onChange }) {
       ) : input.type === "currency" ? (
         <div style={{ display: "flex", alignItems: "center", gap: 4, background: C.bg3, border: `1px solid ${C.border}`, borderRadius: 8, padding: "0 10px" }}>
           <span style={{ color: C.txt3, fontSize: 13 }}>$</span>
-          <NumberInput
+          <NumberInput allowDecimals={false}
             value={value || ""}
             onChange={(v) => onChange(v === "" ? "" : String(v))}
             placeholder={input.placeholder}

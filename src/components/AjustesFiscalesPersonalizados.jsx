@@ -277,7 +277,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
             value={!!profile.auxilios?.alimentacion}
             onChange={(v) => updateProfile({ auxilios: { ...profile.auxilios, alimentacion: v } })}
           >
-            <NumberInput
+            <NumberInput allowDecimals={false}
               label="Monto mensual recibido"
               value={profile.auxilios?.alimentacionMonto}
               onChange={(v) => updateProfile({ auxilios: { ...profile.auxilios, alimentacionMonto: v } })}
@@ -418,7 +418,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
             value={!!eventos.recibioHerencia}
             onChange={(v) => updateEvento({ recibioHerencia: v })}
           >
-            <NumberInput
+            <NumberInput allowDecimals={false}
               label="Valor total recibido"
               value={eventos.herenciaMonto}
               onChange={(v) => updateEvento({ herenciaMonto: v })}
@@ -437,8 +437,8 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
             onChange={(v) => updateEvento({ vendioInmuebleAntiguo: v })}
           >
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <NumberInput label="Valor venta" value={eventos.inmuebleValorVenta} onChange={(v) => updateEvento({ inmuebleValorVenta: v })} placeholder="$" />
-              <NumberInput label="Costo fiscal" value={eventos.inmuebleCostoFiscal} onChange={(v) => updateEvento({ inmuebleCostoFiscal: v })} placeholder="$" hint="Valor de adquisición + mejoras documentadas" />
+              <NumberInput allowDecimals={false} label="Valor venta" value={eventos.inmuebleValorVenta} onChange={(v) => updateEvento({ inmuebleValorVenta: v })} placeholder="$" />
+              <NumberInput allowDecimals={false} label="Costo fiscal" value={eventos.inmuebleCostoFiscal} onChange={(v) => updateEvento({ inmuebleCostoFiscal: v })} placeholder="$" hint="Valor de adquisición + mejoras documentadas" />
             </div>
           </SwitchRow>
 
@@ -451,7 +451,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
             value={!!eventos.ganoLoteria}
             onChange={(v) => updateEvento({ ganoLoteria: v })}
           >
-            <NumberInput
+            <NumberInput allowDecimals={false}
               label="Monto del premio bruto"
               value={eventos.loteriaMonto}
               onChange={(v) => updateEvento({ loteriaMonto: v })}
@@ -511,7 +511,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
             value={(profile.donaciones?.monto || 0) > 0}
             onChange={(v) => updateProfile({ donaciones: v ? { monto: profile.donaciones?.monto || 0 } : { monto: 0 } })}
           >
-            <NumberInput
+            <NumberInput allowDecimals={false}
               label="Total donado en el año"
               value={profile.donaciones?.monto}
               onChange={(v) => updateProfile({ donaciones: { ...profile.donaciones, monto: v } })}
@@ -541,7 +541,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
                 <option value="primera_infancia">Primera infancia (Art. 114-2)</option>
               </select>
             </div>
-            <NumberInput
+            <NumberInput allowDecimals={false}
               label="Monto invertido"
               value={profile.inversionesCTI?.monto}
               onChange={(v) => updateProfile({ inversionesCTI: { ...profile.inversionesCTI, monto: v } })}

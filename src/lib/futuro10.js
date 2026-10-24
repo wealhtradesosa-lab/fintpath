@@ -117,7 +117,10 @@ export function resumenReinvertir(disp = []) {
   const comprometido = s((d) => d.adicionales + d.pagosFuturos); // paso 2: Construir o mejorar, pagos de activos futuros
   const asignado = s((d) => d.asignado); // paso 3: inversiones nuevas
   const disponible = deVentas + deCaja - comprometido; // = Σ antesDeAsignar
-  return { deVentas, deCaja, comprometido, disponible, asignado, queda: disponible - asignado };
+  // Faltante = Σ por año de max(0, asignado − disponible de ese año). Es el MISMO número de
+  // «te faltan» en cada inversión y en la alerta: la plata de años futuros no paga una inversión de hoy.
+  const faltan = disp.reduce((t, d) => t + Math.max(0, n(d.asignado) - n(d.liquidezHoy + d.ventas - d.colchon + d.flujo - d.adicionales - d.pagosFuturos)), 0);
+  return { deVentas, deCaja, comprometido, disponible, asignado, queda: disponible - asignado, faltan };
 }
 export const esCripto = (a = {}) => /crypt|cripto|btc|bitcoin|ethereum|\beth\b/i.test(`${a.tp || a.tipo || ""} ${a.n || a.nombre || ""}`);
 
@@ -262,7 +265,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     const p = sup.presets[x.preset];
     const falta = n(x.monto) - m;
     if (falta > 0) faltaInicial += falta;
-    nuevas.push({ id: "nueva_" + k, nombre: x.nombre || p.nombre, monto: n(x.monto), anio: 1, faltante: falta, clase: x.preset === "rfCorto" ? "liquido" : "nueva", valor: n(x.monto), crec: rendimientoNuevaPct(x, esc, sup) / 100, usd: !!p.usd, invertible: true });
+    nuevas.push({ id: "nueva_" + k, nombre: x.nombre || p.nombre, rendPct: rendimientoNuevaPct(x, esc, sup), monto: n(x.monto), anio: 1, faltante: falta, clase: x.preset === "rfCorto" ? "liquido" : "nueva", valor: n(x.monto), crec: rendimientoNuevaPct(x, esc, sup) / 100, usd: !!p.usd, invertible: true });
   });
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
   const repartir = (m) => ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] += m * mezcla[k] / 100; });
@@ -339,7 +342,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
       if (c.anio !== t) return;
       const antes = deficit;
       retirar(c.monto);
-      todos.push({ id: c.id, nombre: c.nombre, monto: c.monto, anio: t, faltante: (deficit - antes) / fIdx, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? 0 : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom : 0, /* paga renta: % NOMINAL sobre el capital, capital nominal */ usd: c.usd, invertible: true });
+      todos.push({ id: c.id, nombre: c.nombre, monto: c.monto, anio: t, faltante: (deficit - antes) / fIdx, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? 0 : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom : 0, /* paga renta: % NOMINAL sobre el capital, capital nominal */ rendPct: c.rendNom * 100, usd: c.usd, invertible: true });
     });
     // 1) ventas en su año (valor bruto, sin costos ni impuestos)
     activos.forEach((a) => {
@@ -442,16 +445,26 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     d.antesDeAsignar = d.liquidezHoy + d.ventas - d.colchon + d.flujo - d.adicionales - d.pagosFuturos;
     d.queda = d.antesDeAsignar - d.asignado;
     d.exceso = d.asignado > 0 && d.queda < 0 ? -d.queda : 0;
+    // Reparte el exceso del año entre sus inversiones nuevas, en orden: una sola fórmula de faltante.
+    let resto = Math.max(0, d.antesDeAsignar);
+    d.asignaciones.filter((x) => x.tipo === "nueva").forEach((x) => {
+      const usa = Math.min(resto, x.monto); resto -= usa;
+      const id = "nueva_" + x.idx, inv = todos.find((a) => a.id === id && a.anio === d.anio);
+      if (inv) inv.faltante = x.monto - usa;
+    });
   });
   todos.filter((a) => String(a.id).startsWith("nueva_") && a.faltante > 0).forEach((a) => alertas.unshift({ tipo: "nueva_sin_plata", anio: a.anio, monto: a.faltante,
     texto: `${a.nombre}: te faltan ${fmtPlata(a.faltante)} para invertir ${fmtPlata(a.monto)} en el año ${a.anio}. La incluimos completa; lo que falta queda como faltante.` }));
-  disp.filter((d) => d.exceso > 0).forEach((d) => alertas.push({ tipo: "exceso", anio: d.anio, texto: `Te pasas por ${fmtPlata(d.exceso)} en el año ${d.anio}. Saldría de tu colchón y luego de tus inversiones.` }));
+  const hayNuevaSinPlata = alertas.some((x) => x.tipo === "nueva_sin_plata");
+  if (hayNuevaSinPlata) for (let k = alertas.length - 1; k >= 0; k--) if (alertas[k].tipo === "faltante") alertas.splice(k, 1); // el faltante ya está dicho por inversión
+  disp.filter((d) => d.exceso > 0 && !hayNuevaSinPlata).forEach((d) => alertas.push({ tipo: "exceso", anio: d.anio, texto: `Te pasas por ${fmtPlata(d.exceso)} en el año ${d.anio}. Saldría de tu colchón y luego de tus inversiones.` }));
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio, disponible: disp, metaColchon, hayVentas,
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses, rentaPasivaMensual: b.ip },
     activos: activos.filter((a) => a.anioVenta !== 1 || true).map(({ id, nombre, clase, usd, rentaAnual }) => ({ id, nombre, clase, usd, rentaMensual: rentaAnual / 12 })),
-    nuevasDetalle: todos.filter((a) => String(a.id).startsWith("nueva_")).map((a) => ({ id: a.id, nombre: a.nombre, monto: a.monto, anio: a.anio, faltante: a.faltante || 0, valorFinal: a.valor / fin.deflactor, rentaMensual: a.rentaPct ? (a.valor / (1 + a.crec) * a.rentaPct) / 12 / fin.deflactor : 0 })),
-    hayUSD: todos.some((a) => a.usd && a.valor > 0) || personalizadas.some((a) => a.usd) || expUSD,
+    nuevasDetalle: todos.filter((a) => String(a.id).startsWith("nueva_")).map((a) => ({ id: a.id, nombre: a.nombre, monto: a.monto, anio: a.anio, faltante: a.faltante || 0, valorFinal: a.valor / fin.deflactor, rentaMensual: rentaMensualNuevaHoy(a, inf), rendimientoPct: a.rendPct, usd: !!a.usd })),
+    // Aviso cambiario solo por activos/inversiones en USD; lo del norte (S&P 500) se avisa aparte.
+    hayUSD: todos.some((a) => a.usd && a.valor > 0) || personalizadas.some((a) => a.usd), usdPorNorte: expUSD,
     final: fin,
     vsInflacionReal: fila0.invertible > 0 ? (fin.invertibleReal / fila0.invertible - 1) * 100 : null,
   };
@@ -503,6 +516,14 @@ export function leerModifica(d = {}, esc) {
     inversionMonto: Math.max(0, n(d.inversionMonto)), inversionAnio: anio(d.inversionAnio),
     rentaNuevaMensual: Math.max(0, n(d.rentaNuevaMensual)), rentaNuevaDesde: anio(d.rentaNuevaDesde),
   };
+}
+
+/** Renta mensual de una inversión nueva que paga renta, en pesos de hoy: monto × % nominal / 12,
+ *  deflactada UNA vez al año en que entra ((1+i)^(año−1)). Única fuente para tarjeta y detalle. */
+export function rentaMensualNuevaHoy(x, inf) {
+  const pct = x.rentaPct != null ? x.rentaPct : (x.pagaRenta ? x.rendNom : 0);
+  if (!(pct > 0)) return 0;
+  return n(x.monto) * pct / 12 / Math.pow(1 + inf, Math.max(0, n(x.anio || 1) - 1));
 }
 
 /** Hint (% nominal) para una inversión personalizada: renta fija corto plazo del escenario. */

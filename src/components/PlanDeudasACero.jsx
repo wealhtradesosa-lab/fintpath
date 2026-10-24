@@ -228,7 +228,7 @@ export default function PlanDeudasACero({
                 >
                   Override extra /mes
                 </label>
-                <NumberInput
+                <NumberInput allowDecimals={false}
                   value={extraOverride == null ? "" : extraOverride}
                   onChange={(v) =>
                     setExtraOverride(v === "" || v == null ? null : String(v))

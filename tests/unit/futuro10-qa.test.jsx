@@ -17,7 +17,7 @@ describe("Mi futuro a 10: hallazgos QA", () => {
     expect(proyectarFuturo10(vacio, {}).hayUSD).toBe(false);
     expect(proyectarFuturo10({ ...vacio, inv: [{ id: "a", tp: "Cash", va: 10e6, moneda: "USD" }] }, {}).hayUSD).toBe(true);
     const conIngreso = { ...vacio, ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 10e6 }] };
-    expect(proyectarFuturo10(conIngreso, { norte: "crecer" }).hayUSD).toBe(true); // el flujo va a crecimiento (S&P)
+    expect(proyectarFuturo10(conIngreso, { norte: "crecer" }).usdPorNorte).toBe(true); // el flujo va a crecimiento (S&P)
     const html = renderToString(createElement(MiFuturo10, { user: { ...vacio, inv: [{ id: "a", tp: "Cash", va: 10e6, moneda: "USD" }] }, pasoInicial: 3 }));
     expect(html.replace(/<!-- -->/g, "")).toContain("escenario base supone");
     expect(renderToString(createElement(MiFuturo10, { user: vacio, pasoInicial: 3 }))).not.toContain("riesgo cambiario");

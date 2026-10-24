@@ -686,7 +686,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                   {/* Valor */}
                   {isEditing ? (
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      <NumberInput
+                      <NumberInput allowDecimals={false}
                         value={editValue}
                         onChange={(v) => setEditValue(v === "" ? "" : String(v))}
                         autoFocus

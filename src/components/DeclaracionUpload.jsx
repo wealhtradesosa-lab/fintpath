@@ -314,7 +314,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
             {Object.keys(labels).map((k) => (
               <div key={k} style={{ padding: "8px 10px", background: T.bg3, borderRadius: 6 }}>
                 <div style={{ fontSize: 10, color: T.txt3, marginBottom: 3 }}>{labels[k]}</div>
-                <NumberInput
+                <NumberInput allowDecimals={false}
                   value={editedRenglones[k] ?? ""}
                   onChange={(v) => setEditedRenglones((p) => ({ ...p, [k]: v === "" ? "" : String(v) }))}
                   style={{ width: "100%", background: "transparent", border: "none", color: T.txt, fontSize: 13, fontFamily: "monospace", outline: "none", padding: 0 }}

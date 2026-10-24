@@ -36,7 +36,7 @@ const Field = ({ label, articulo, value, onChange, hint, prevYear, prevYearLabel
       </label>
       {articulo && <span style={{ fontSize: 9, color: T.txt3, fontFamily: "monospace", whiteSpace: "nowrap" }}>{articulo}</span>}
     </div>
-    <NumberInput
+    <NumberInput allowDecimals={false}
       value={value || ""}
       onChange={(v) => onChange(v === "" ? null : +v)}
       placeholder="0"

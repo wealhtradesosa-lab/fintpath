@@ -286,6 +286,7 @@ export default function MetasModule({
                 Override CF /mes
               </label>
               <NumberInput
+                allowDecimals={false}
                 value={cfOverride == null ? "" : cfOverride}
                 onChange={(v) =>
                   setCfOverride(v === "" || v == null ? null : String(v))
@@ -1177,6 +1178,7 @@ export default function MetasModule({
                   Monto necesario
                 </label>
                 <NumberInput
+                allowDecimals={false}
                   value={form.monto}
                   onChange={(v) =>
                     setForm((p) => ({
@@ -1212,6 +1214,7 @@ export default function MetasModule({
                   Ya ahorrado
                 </label>
                 <NumberInput
+                allowDecimals={false}
                   value={form.ahorrado}
                   onChange={(v) =>
                     setForm((p) => ({

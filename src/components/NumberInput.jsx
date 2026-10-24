@@ -36,7 +36,11 @@ const formatNumber = (value) => {
 };
 
 // ── Parse: string → número. Soporta shortcuts K/M ────────────────────────
-const parseNumber = (str) => {
+// 24-oct-2026 (QA PR #56: «6.500.000.000» tecleado quedaba en 6,5). En un campo de
+// MONTO (allowDecimals=false) el punto SIEMPRE es separador de miles (es-CO) y no
+// hay decimales: la coma, si aparece, se redondea. En un campo de TASA se conserva
+// la regla de #47 (punto o coma decimal: «7.5» = «7,5» = 7,5).
+export const parseNumber = (str, { allowDecimals = true } = {}) => {
   if (typeof str !== "string") return typeof str === "number" ? str : "";
   const trimmed = str.trim();
   if (!trimmed) return "";
@@ -70,6 +74,10 @@ const parseNumber = (str) => {
   //     ("1.500" → 1500 · "39.500.000" → 39500000)
   // Un separador de miles nunca deja 1 o 2 dígitos sueltos al final, así que
   // la regla no rompe el caso de los montos.
+  if (!allowDecimals) {
+    const num = parseFloat(trimmed.replace(/\./g, "").replace(",", "."));
+    return isNaN(num) ? "" : Math.round(num);
+  }
   const decimalConPunto = /^\d{1,3}\.\d{1,2}$/.test(trimmed);
   const cleaned = decimalConPunto
     ? trimmed
@@ -147,10 +155,11 @@ export default function NumberInput({
     // Mismo tratamiento que los atajos K/M: mientras el texto termina en
     // separador decimal (o en separador + un dígito), se respeta lo tecleado y
     // se avisa el valor parseado sin reformatear la pantalla.
-    const escribiendoDecimal = /[.,]\d?$/.test(rawInput);
+    // Tasa: «6.5» o «6.50» puede ser decimal; se respeta lo tecleado sin reformatear.
+    const escribiendoDecimal = allowDecimals && (/[.,]\d?$/.test(rawInput) || /^\d{1,3}\.\d{1,2}$/.test(rawInput.trim()));
     if (escribiendoDecimal) {
       setDisplayValue(rawInput);
-      const parsed = parseNumber(rawInput);
+      const parsed = parseNumber(rawInput, { allowDecimals });
       if (typeof parsed === "number") onChange(parsed);
       return;
     }
@@ -158,13 +167,13 @@ export default function NumberInput({
     const endsWithShortcut = allowShortcuts && /[kmKM]\s*$/.test(rawInput);
     if (endsWithShortcut) {
       setDisplayValue(rawInput);
-      const parsed = parseNumber(rawInput);
+      const parsed = parseNumber(rawInput, { allowDecimals });
       if (typeof parsed === "number") onChange(parsed);
       return;
     }
 
     // Parse a número puro
-    const parsed = parseNumber(rawInput);
+    const parsed = parseNumber(rawInput, { allowDecimals });
 
     // Reformatear
     let newFormatted;
@@ -172,7 +181,7 @@ export default function NumberInput({
       newFormatted = "";
     } else if (typeof parsed === "number") {
       // Preservar coma decimal si el usuario la escribió sin decimales aún
-      if (rawInput.endsWith(",") && !rawInput.includes(",", rawInput.indexOf(",") + 1)) {
+      if (allowDecimals && rawInput.endsWith(",") && !rawInput.includes(",", rawInput.indexOf(",") + 1)) {
         newFormatted = formatNumber(parsed) + ",";
       } else {
         newFormatted = formatNumber(parsed);
@@ -208,7 +217,7 @@ export default function NumberInput({
   const handleBlur = () => {
     setIsFocused(false);
     // Al perder foco: expandir shortcuts pendientes (500M → 500.000.000)
-    const parsed = parseNumber(displayValue);
+    const parsed = parseNumber(displayValue, { allowDecimals });
     if (typeof parsed === "number") {
       setDisplayValue(formatNumber(parsed));
       onChange(parsed);
@@ -235,3 +244,6 @@ export default function NumberInput({
     />
   );
 }
+
+/** Campo de tasa/porcentaje (admite decimales) según su etiqueta; el resto son montos en pesos. */
+export const esCampoTasa = (label = "") => /%|tasa|inter[eé]s|rentab|rendim|valoriz|inflaci|\bE\.?A\b|spread/i.test(String(label));

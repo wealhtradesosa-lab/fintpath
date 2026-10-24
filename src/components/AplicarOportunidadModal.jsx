@@ -365,7 +365,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
                     {inp.prefix}
                   </span>
                 )}
-                <NumberInput
+                <NumberInput allowDecimals={inp.prefix !== "$"}
                   value={valores[inp.key] || ""}
                   onChange={(v) => setValores(vs => ({ ...vs, [inp.key]: v === "" ? "" : String(v) }))}
                   placeholder="0"
