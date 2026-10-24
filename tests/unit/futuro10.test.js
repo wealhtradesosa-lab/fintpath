@@ -339,3 +339,11 @@ describe("futuro10 · aumentar lo que ya tienes cuando la plata no alcanza", () 
     expect(r.reparto.find((x) => x.nombre === "Lote").valor).toBeGreaterThan(1000e6);
   });
 });
+
+describe("futuro10 · la tabla trae el gasto del mes", () => {
+  it("gastosReal existe en todas las filas y no es cero con gastos", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", tp: "Cash", va: 500e6 }], ingresos: [{ nombre: "S", categoria: "Salario", mensual: 20e6 }], gas: { Vida: [{ n: "Mercado", m: 8e6 }] }, deu: [] };
+    const r = proyectarFuturo10(u, {});
+    r.filas.slice(1).forEach((f) => { expect(Number.isFinite(f.gastosReal)).toBe(true); expect(f.gastosReal / 12).toBeGreaterThan(7e6); });
+  });
+});

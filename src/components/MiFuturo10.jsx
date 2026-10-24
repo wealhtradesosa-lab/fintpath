@@ -7,6 +7,8 @@ import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
 import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
+import { ComposedChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
 const C = { bg: "#111827", bg2: "#1f2937", bd: "rgba(255,255,255,0.1)", tx: "#e5e7eb", tx2: "#9ca3af", gn: "#22c55e", rd: "#ef4444", am: "#f59e0b" };
 const card = { background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 12, padding: 14, marginBottom: 12 };
@@ -216,6 +218,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       {paso === 3 && (
         <div style={card}>
           <h3 style={{ marginTop: 0 }}>Resultado a 10 años</h3>
+          <Graficas r={r} cfg={cfg} user={user} escenarios={escenarios} />
           <Grid items={[
             ["Patrimonio en pesos de hoy", plata(r.final.patrimonioReal)],
             ["Patrimonio nominal", plata(r.final.patrimonio)],
@@ -412,6 +415,74 @@ const textoIngresoFuturo = (x) => {
   if (h === d) return `Te llegan ${monto} al mes solo durante el año ${d}.`;
   return `Te llegan ${monto} al mes del año ${d} al año ${h} (${h - d + 1} años).`;
 };
+
+// 24-oct-2026 (Santiago: "no veo la gráfica en el tiempo… no se visualiza muy
+// bien el escenario"; referencia: su plan SALEM con la curva de patrimonio de
+// los caminos lado a lado). Tres piezas: patrimonio en el tiempo con los
+// escenarios guardados superpuestos, lo que entra vs. lo que sale al mes, y
+// lo que pasa cada año.
+const COLORES_ESC = [CHART.purple, CHART.cyan, CHART.orange, CHART.pink, CHART.gold];
+const ejeCorto = (v) => { const a = Math.abs(v); const sg = v < 0 ? "−" : ""; if (a >= 1e9) return `${sg}${fmtMilesEs(Math.round(a / 1e8) / 10)} mil M`; if (a >= 1e6) return `${sg}${fmtMilesEs(Math.round(a / 1e6))} M`; return `${sg}${fmtMilesEs(Math.round(a))}`; };
+const tipFmt = (v) => fmtPlataCortaEs(v);
+
+function Graficas({ r, cfg, user, escenarios }) {
+  const guardados = useMemo(() => escenarios.slice(-4).map((e) => ({ nombre: e.nombre, filas: proyectarFuturo10(user, e.config).filas })), [escenarios, user]);
+  const datos = r.filas.map((f, i) => {
+    const row = { anio: f.anio === 0 ? "Hoy" : `Año ${f.anio}`, patrimonio: f.patrimonioReal, entra: f.anio === 0 ? (r.hoy.ingresoMensual || 0) : (f.ingresosReal || 0) / 12, sale: f.anio === 0 ? (r.hoy.salidaMensual || 0) : (f.gastosReal || 0) / 12 };
+    guardados.forEach((g, k) => { row[`esc${k}`] = g.filas[i]?.patrimonioReal; });
+    return row;
+  });
+  const fut = leerFuturos(cfg.futuros, r.escenario);
+  const eventos = [
+    ...(r.deudas || []).filter((d) => d.pagado > 0).map((d) => ({ anio: 0, texto: `Pagas ${d.nombre}` })),
+    ...(r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => ({ anio: x.anio || 1, texto: `Le metes ${fmtPlataCortaEs(x.aporte)} a ${x.nombre}` })),
+    ...(r.reinversionesDetalle || []).filter((x) => x.rentaMensual > 0).map((x) => ({ anio: Math.floor(x.rentaDesdeMes / 12) + 1, texto: `${x.nombre} empieza a rentar ${fmtPlataCortaEs(x.rentaMensual)}/mes` })),
+    ...fut.ingresos.map((x) => ({ anio: x.desde, texto: `Empieza ${x.nombre}: ${fmtPlataCortaEs(x.mensual)}/mes` })),
+    ...fut.activos.map((x) => ({ anio: x.entrega, texto: `Recibes ${x.nombre}` })),
+  ].sort((a, b) => a.anio - b.anio);
+  const caja = { background: C.bg, borderRadius: 10, padding: "12px 6px 6px", marginBottom: 12 };
+  const tit = { fontSize: 13, fontWeight: 600, margin: "0 8px 6px" };
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={caja}>
+        <div style={tit}>Tu patrimonio en el tiempo <span style={{ color: C.tx2, fontWeight: 400, fontSize: 11 }}>· pesos de hoy</span></div>
+        <ResponsiveContainer width="100%" height={230}>
+          <ComposedChart data={datos} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
+            <ChartGradients />
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="anio" {...axisProps} interval="preserveStartEnd" />
+            <YAxis {...axisProps} tickFormatter={ejeCorto} width={70} />
+            <Tooltip content={<ChartTooltip formatter={tipFmt} />} />
+            <Area type="monotone" dataKey="patrimonio" name="Este escenario" stroke={CHART.blue} strokeWidth={2.5} fill="url(#gradBlue)" />
+            {guardados.map((g, k) => <Line key={k} type="monotone" dataKey={`esc${k}`} name={g.nombre} stroke={COLORES_ESC[k % COLORES_ESC.length]} strokeWidth={1.8} dot={false} />)}
+            {guardados.length > 0 && <Legend wrapperStyle={{ fontSize: 11 }} />}
+          </ComposedChart>
+        </ResponsiveContainer>
+        {guardados.length === 0 && <div style={{ fontSize: 11, color: C.tx2, margin: "2px 8px 4px" }}>Guarda escenarios en el paso 5 para verlos aquí, uno al lado del otro.</div>}
+      </div>
+      <div style={caja}>
+        <div style={tit}>Lo que entra y lo que sale al mes <span style={{ color: C.tx2, fontWeight: 400, fontSize: 11 }}>· pesos de hoy</span></div>
+        <ResponsiveContainer width="100%" height={200}>
+          <ComposedChart data={datos} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="anio" {...axisProps} interval="preserveStartEnd" />
+            <YAxis {...axisProps} tickFormatter={ejeCorto} width={70} />
+            <Tooltip content={<ChartTooltip formatter={tipFmt} />} />
+            <Line type="monotone" dataKey="entra" name="Entra al mes" stroke={CHART.green} strokeWidth={2.5} dot={false} />
+            <Line type="monotone" dataKey="sale" name="Sale al mes" stroke={CHART.orange} strokeWidth={2.5} dot={false} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      {eventos.length > 0 && <div style={{ ...caja, padding: 12 }}>
+        <div style={{ ...tit, margin: "0 0 6px" }}>Lo que pasa en el camino</div>
+        {eventos.map((e, i) => <div key={i} style={{ display: "flex", gap: 10, fontSize: 12.5, padding: "5px 0", borderTop: i ? `1px solid ${C.bd}` : "none" }}>
+          <span style={{ color: C.gn, minWidth: 48, fontWeight: 600 }}>{e.anio === 0 ? "Hoy" : `Año ${e.anio}`}</span><span>{e.texto}</span>
+        </div>)}
+      </div>}
+    </div>
+  );
+}
 
 const MESES_RENTA = [0, 3, 6, 9, 12, 18, 24, 36, 48, 60, 72, 84, 96, 108];
 const opcionesMes = (actual) => (MESES_RENTA.includes(actual) ? MESES_RENTA : [...MESES_RENTA, actual].sort((a, b) => a - b));
