@@ -80,3 +80,53 @@ describe("TRM provisional 4200 (requisitos Tributario)", async () => {
     expect(trmReal({ trm: 4200 })).toBeNull();
   });
 });
+
+describe("TRM en pantalla: viva → guardada → pendiente (sin 4200)", async () => {
+  const React = (await import("react")).default;
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const A = await import("../../src/App.jsx");
+  const conUSD = { inv: [{ id: "a", va: 1000, moneda: "USD" }, { id: "b", va: 5e6 }] };
+  const soloCOP = { inv: [{ id: "b", va: 5e6 }] };
+
+  it("/api/trm con source default (4200) no cuenta como tasa", () => {
+    expect(A.trmDeApi({ trm: 4200, source: "default" })).toBeNull();
+    expect(A.trmDeApi({ trm: 3900, source: "default" })).toBeNull();
+    expect(A.trmDeApi({ trm: 3912.5, source: "Banco de la República", date: "2026-10-23" }))
+      .toEqual({ trm: 3912.5, trmSrc: "Banco de la República", trmFecha: "2026-10-23" });
+  });
+  it("viva / guardada con fecha / pendiente", () => {
+    expect(A.estadoTrm({ ...conUSD, trm: 3912.5 }, true)).toMatchObject({ trm: 3912.5, modo: "viva" });
+    expect(A.estadoTrm({ ...conUSD, trm: 3912.5, trmFecha: "2026-10-23" }, false)).toMatchObject({ trm: 3912.5, modo: "guardada", fecha: "23-oct" });
+    expect(A.estadoTrm({ ...conUSD, trm: 4200 }, false)).toMatchObject({ trm: 0, modo: "pendiente" });
+    expect(A.estadoTrm(soloCOP, false).modo).toBe("sin_usd");
+  });
+  it("aviso: «Tasa usada: TRM del DD-mmm» y «No pudimos obtener la TRM»", () => {
+    const g = renderToStaticMarkup(React.createElement(A.AvisoTasa, { est: { modo: "guardada", fecha: "23-oct", trm: 3900 }, t: {} }));
+    expect(g).toContain("Tasa usada: TRM del 23-oct");
+    const p = renderToStaticMarkup(React.createElement(A.AvisoTasa, { est: { modo: "pendiente", trm: 0 }, t: { nw: 5e6 }, fm: (n) => String(n) }));
+    expect(p).toContain("No pudimos obtener la TRM; vuelve a intentar");
+    expect(p).toContain("pendientes de tasa");
+    expect(p).toContain("sin tus montos en USD");
+  });
+  it("pendiente: totales marcados y nivel congelado en el último conocido", () => {
+    const base = { nw: 5e6, nivel: { nivel: 1, nombre: "Supervivencia" } };
+    const ultimo = { nivel: 3, nombre: "Seguridad" };
+    const r = A.totalesConTasa(base, { modo: "pendiente" }, ultimo);
+    expect(r.pendienteTasa).toBe(true);
+    expect(r.nivel).toBe(ultimo); // no baja → no hay cambio de nivel que avisar
+    expect(r.nw).toBe(5e6);
+    const sinUltimo = A.totalesConTasa(base, { modo: "pendiente" }, null);
+    expect(sinUltimo.nivel.pendienteTasa).toBe(true);
+    expect(A.totalesConTasa(base, { modo: "viva" }, ultimo)).toBe(base);
+  });
+  it("sin tasa, los USD no se convierten a 4200 (vaCOP con trm=0)", async () => {
+    const { vaCOP } = await import("../../src/lib/flowHelpers.js");
+    expect(vaCOP({ va: 1000, moneda: "USD" }, A.estadoTrm({ ...conUSD, trm: 4200 }).trm)).toBe(0);
+  });
+  it("nota F-210/F-110 solo con ítems USD", () => {
+    const con = renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: conUSD }));
+    expect(con).toContain(A.NOTA_TRM_DECLARACION);
+    expect(con).toContain("31-dic-2025");
+    expect(renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: soloCOP }))).toBe("");
+  });
+});
