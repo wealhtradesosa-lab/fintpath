@@ -15,7 +15,7 @@
 //     modela impuestos). La renta de cada activo sale de rentaNetaPorActivo,
 //     que ya respeta `rentaOrigen` (manual = neta: no se restan otra vez los
 //     gastos vinculados).
-// Supuestos validados por Finanzas (24-oct-2026); centralizados en SUPUESTOS_F10.
+// Supuestos de referencia definidos con Finpathia · Finanzas (24-oct-2026); centralizados en SUPUESTOS_F10.
 // ═══════════════════════════════════════════════════════════════════════════
 import { calcularBase, tipoActivo, esLiquido, INFLACION_DEFAULT_PCT } from "./metrics.js";
 
