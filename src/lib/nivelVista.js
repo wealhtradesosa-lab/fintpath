@@ -3,7 +3,7 @@
 // 136%», el badge en Abundancia y abajo un cuadro que decía «¡Independencia!».
 // Todo sale ahora de UN solo nivel (metrics.js → nivelLibertad) y de los mismos
 // umbrales en plata (umbralNivel). Este módulo solo arma las frases.
-import { NIVELES, umbralNivel, fmtPctEs } from "./metrics.js";
+import { NIVELES, umbralNivel, fmtPctEs, calcularMetricas } from "./metrics.js";
 import { montoPromedioMensual, totalAnualItem, getFrecuencia, estaPagadoEnAño, getMesActual, MESES } from "./flowHelpers.js";
 
 /**
@@ -110,4 +110,26 @@ export function confirmarRenta(nombre, store = typeof localStorage !== "undefine
   const set = leerConfirmados(store); set.add(nombre);
   try { store?.setItem(CLAVE_CONFIRMADOS, JSON.stringify([...set])); } catch { /* sin storage */ }
   return set;
+}
+
+/**
+ * 24-oct-2026 (QA #58) — El nivel REAL sale solo de los datos guardados.
+ * Los sliders y escenarios (Crisis, Optimista…) no lo tocan: se calculan aparte
+ * y, si cambian algo, se muestran como «Nivel en este escenario».
+ * Ingreso laboral (salario, prima, bono) nunca es pasivo (metrics.js → esLaboral).
+ */
+export function metricasReales(user = {}, { retencionMensual = 0, impuestoNeto = 0, mes } = {}) {
+  return calcularMetricas({
+    ingresos: user.ingresos || [], gastos: user.gastos || {}, deudas: user.deudas || [],
+    inv: user.inv || [], trm: user.trm || 4200, retencionMensual, impuestoNeto,
+  }, { base: "mes", mes });
+}
+
+/** Texto aparte para el escenario; null si no hay simulación o no cambia nada. */
+export function etiquetaEscenario(real, esc, simulando) {
+  if (!simulando || !esc?.nivel?.nivel || !(esc.ob > 0)) return null;
+  const n = esc.nivel.nivel;
+  const pct = pctPiso(esc.ip, esc.ob);
+  if (real?.nivel?.nivel === n && pctPiso(real.ip, real.ob) === pct) return null;
+  return `Nivel en este escenario: ${NIVELES[n - 1].nombre} (${fmtPctEs(pct, 0)}). Es una simulación: tu nivel real no cambia.`;
 }
