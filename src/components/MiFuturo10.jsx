@@ -271,7 +271,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuent
   const lbl = { fontSize: 12, color: C.tx2 };
   const g = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 6, padding: "8px 0", borderTop: `1px solid ${C.bd}` };
   const selAnio = (v, on, vacioTxt) => <select style={inp} value={v ?? ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}>{vacioTxt && <option value="">{vacioTxt}</option>}{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>;
-  const hintVal = (cl) => fmtPctEs(((1 + esc.inflacionPct / 100) * (1 + (cl === "inmueble" || cl === "vivienda" ? SUPUESTOS_F10.presets.fincaRaiz.valorizacionSpread : SUPUESTOS_F10.otrosRealSpread) / 100) - 1) * 100, 1);
+  const hintVal = (cl) => fmtPctEs(((1 + esc.inflacionPct / 100) * (1 + (cl === "inmueble" || cl === "vivienda" || cl === "lote" ? SUPUESTOS_F10.presets.fincaRaiz.valorizacionSpread : SUPUESTOS_F10.otrosRealSpread) / 100) - 1) * 100, 1);
   const fut = leerFuturos(f, esc); // mismo motor que la proyección
   const totalIng = fut.ingresos.reduce((sm, x) => sm + x.mensual, 0);
   const primerAnio = fut.ingresos.length ? Math.min(...fut.ingresos.map((x) => x.desde)) : null;
@@ -288,7 +288,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuent
           {fut.ingresos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{fut.ingresos.length} {fut.ingresos.length === 1 ? "ingreso" : "ingresos"} · el primero {primerAnio === 1 ? "desde ya" : `en ${primerAnio - 1} año${primerAnio === 2 ? "" : "s"}`}</div>}
         </div>
         <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
-          <div style={{ fontSize: 11, color: C.tx2 }}>Activos futuros</div>
+          <div style={{ fontSize: 11, color: C.tx2 }}>Compras y construcciones</div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{totalAct > 0 ? plata(totalAct) : "Ninguno"}</div>
           {f.activos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{f.activos.length} {f.activos.length === 1 ? "activo" : "activos"}</div>}
         </div>
@@ -323,26 +323,45 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuent
           <button style={btn(false)} onClick={() => put("ingresos", f.ingresos.filter((_, j) => j !== i))}>Quitar</button>
         </div>))}
       <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("ingresos", [...f.ingresos, { nombre: "", mensual: "", desde: 1, hasta: "" }])}>+ Agregar ingreso futuro</button>
-      <h4 style={{ margin: "16px 0 8px" }}>Activos futuros</h4>
-      {f.activos.map((x, i) => (
-        <div key={i} style={g}>
-          <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder="Ej.: local comercial" onChange={(e) => upA(i, { nombre: e.target.value })} /></label>
-          <label style={lbl}>Tipo<select style={inp} value={x.clase || "inmueble"} onChange={(e) => upA(i, { clase: e.target.value })}><option value="inmueble">Finca raíz que renta</option><option value="vivienda">Casa para vivir</option><option value="otro">Otro</option></select></label>
-          <label style={lbl}>¿De dónde sale la plata?<select style={inp} value={x.fuenteId || ""} onChange={(e) => upA(i, { fuenteId: e.target.value || null })}><option value="">De mi liquidez</option>{fuentes.map((y) => <option key={y.id} value={y.id}>De {y.nombre}</option>)}</select>
-            <span style={{ fontSize: 11 }}>Si esa inversión no alcanza, lo que falta sale de tu liquidez.</span></label>
-          <label style={lbl}>Valor total ($)<NumberInput style={inp} value={x.valor ?? ""} onChange={(v) => upA(i, { valor: v })} /></label>
-          <label style={lbl}>Cuota inicial ($)<NumberInput style={inp} value={x.cuotaInicial ?? ""} onChange={(v) => upA(i, { cuotaInicial: v })} /></label>
-          <label style={lbl}>Año de la cuota inicial{selAnio(x.anioCuota || 1, (v) => upA(i, { anioCuota: v || 1 }))}</label>
-          <label style={lbl}>Año de entrega{selAnio(x.entrega || 1, (v) => upA(i, { entrega: v || 1 }))}
-            <span style={{ fontSize: 11 }}>El resto se paga en la entrega, de donde elegiste arriba. Desde la entrega se valoriza.</span></label>
-          {x.clase !== "vivienda" && <><label style={lbl}>Renta neta al mes ($, pesos de hoy, opcional)<NumberInput style={inp} value={x.rentaMensual ?? ""} onChange={(v) => upA(i, { rentaMensual: v })} /></label>
-          <label style={lbl}>Renta desde{selAnio(x.rentaDesde || x.entrega || 1, (v) => upA(i, { rentaDesde: v || 1 }))}</label></>}
-          {x.clase === "vivienda" && <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2 }}>Si al mudarte dejas de pagar arriendo, márcalo abajo en «Gastos que se acaban» desde el año de entrega.</div>}
-          <label style={lbl}>¿Cuánto crees que se valoriza al año? (%)<InputDecimalEs style={inp} placeholder={hintVal(x.clase || "inmueble")} value={x.valorizacionNomPct ?? ""} onChange={(v) => upA(i, { valorizacionNomPct: v })} />
-            <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {hintVal(x.clase || "inmueble")}.</span></label>
-          <button style={btn(false)} onClick={() => put("activos", f.activos.filter((_, j) => j !== i))}>Quitar</button>
-        </div>))}
-      <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("activos", [...f.activos, { nombre: "", clase: "inmueble", valor: "", cuotaInicial: "", anioCuota: 1, entrega: 2, rentaMensual: "", rentaDesde: "" }])}>+ Agregar activo futuro</button>
+      {/* 24-oct-2026 (Santiago: "la parte de activos futuros no está bien
+          pensada, solo deja elegir finca raíz y otros… si quiero construir una
+          casa, ¿ese es el lugar? ¿y debo decir de dónde sale la plata?"). */}
+      <h4 style={{ margin: "16px 0 4px" }}>Compras y construcciones futuras</h4>
+      <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Algo que vas a comprar o construir: tu casa, un local, un lote. Dices cuánto cuesta, cuándo está listo y de dónde sale la plata.</div>
+      {f.activos.map((x, i) => {
+        const tipo = x.clase || "inmueble";
+        const renta = tipo === "inmueble" || tipo === "negocio";
+        const total = Number(x.valor) || 0, antes = Math.min(total, Number(x.cuotaInicial) || 0);
+        const cuando = (y) => (y === 1 ? "ya" : `en ${y - 1} año${y === 2 ? "" : "s"}`);
+        const fuenteNom = x.fuenteId ? (fuentes.find((y) => y.id === x.fuenteId) || {}).nombre || "esa inversión" : "tu liquidez";
+        return (
+          <div key={i} style={g}>
+            <label style={lbl}>¿Qué es?<select style={inp} value={tipo} onChange={(e) => upA(i, { clase: e.target.value })}>
+              <option value="vivienda">Casa para vivir</option><option value="inmueble">Inmueble para rentar</option><option value="lote">Lote</option><option value="negocio">Negocio</option><option value="otro">Otro</option></select></label>
+            <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder={tipo === "vivienda" ? "Ej.: casa finca" : "Ej.: local comercial"} onChange={(e) => upA(i, { nombre: e.target.value })} /></label>
+            <label style={lbl}>¿Cuánto cuesta en total? ($)<NumberInput style={inp} value={x.valor ?? ""} onChange={(v) => upA(i, { valor: v })} /></label>
+            <label style={lbl}>¿Cuándo está lista?{selAnio(x.entrega || 1, (v) => upA(i, { entrega: v || 1, anioCuota: Math.min(Number(x.anioCuota) || 1, v || 1) }))}
+              <span style={{ fontSize: 11 }}>Cuando la recibes o terminas de construir.</span></label>
+            <label style={lbl}>¿De dónde sale la plata?<select style={inp} value={x.fuenteId || ""} onChange={(e) => upA(i, { fuenteId: e.target.value || null })}><option value="">De mi liquidez</option>{fuentes.map((y) => <option key={y.id} value={y.id}>De {y.nombre}</option>)}</select>
+              <span style={{ fontSize: 11 }}>Si esa inversión no alcanza, lo que falta sale de tu liquidez.</span></label>
+            <label style={lbl}>¿Pagas una parte antes? ($, opcional)<NumberInput style={inp} value={x.cuotaInicial ?? ""} onChange={(v) => upA(i, { cuotaInicial: v })} />
+              <span style={{ fontSize: 11 }}>Un anticipo o la primera etapa de la obra. Si no, todo se paga cuando está lista.</span></label>
+            {antes > 0 && <label style={lbl}>¿Cuándo pagas esa parte?{selAnio(x.anioCuota || 1, (v) => upA(i, { anioCuota: Math.min(v || 1, Number(x.entrega) || 1) }))}</label>}
+            {renta && <>
+              <label style={lbl}>¿Cuánto renta al mes? ($, neto, opcional)<NumberInput style={inp} value={x.rentaMensual ?? ""} onChange={(v) => upA(i, { rentaMensual: v })} /></label>
+              {(Number(x.rentaMensual) || 0) > 0 && <label style={lbl}>¿Desde cuándo renta?{selAnio(x.rentaDesde || x.entrega || 1, (v) => upA(i, { rentaDesde: v || 1 }))}</label>}
+            </>}
+            <label style={lbl}>¿Cuánto sube su valor al año? (%)<InputDecimalEs style={inp} placeholder={hintVal(tipo)} value={x.valorizacionNomPct ?? ""} onChange={(v) => upA(i, { valorizacionNomPct: v })} />
+              <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {hintVal(tipo)}.</span></label>
+            {total > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am }}>
+              {antes > 0 ? `Pagas ${plata(antes)} ${cuando(Number(x.anioCuota) || 1)} y ${plata(total - antes)} ${cuando(Number(x.entrega) || 1)}` : `Pagas ${plata(total)} ${cuando(Number(x.entrega) || 1)}`}, de {fuenteNom}.
+              {renta && (Number(x.rentaMensual) || 0) > 0 ? ` Renta ${plata(Number(x.rentaMensual))} al mes ${cuando(Number(x.rentaDesde) || Number(x.entrega) || 1)}.` : ""}
+              {tipo === "vivienda" ? " Si al mudarte dejas de pagar arriendo, márcalo en «Gastos que se acaban» desde ese año." : ""}</div>}
+            <button style={btn(false)} onClick={() => put("activos", f.activos.filter((_, j) => j !== i))}>Quitar</button>
+          </div>
+        );
+      })}
+      <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("activos", [...f.activos, { nombre: "", clase: "vivienda", valor: "", cuotaInicial: "", anioCuota: 1, entrega: 2, rentaMensual: "", rentaDesde: "", fuenteId: null }])}>+ Agregar compra o construcción</button>
       {/* 24-oct-2026 (Santiago: "como vienen nuevas rentas también vienen
           nuevos gastos: la universidad de mis hijos afuera, unos 180 M por
           año, en 3 años"). Pesos de hoy; suben con la inflación. */}

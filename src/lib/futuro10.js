@@ -641,8 +641,8 @@ export function leerFuturos(f = {}, esc, sup = SUPUESTOS_F10) {
       const valor = Math.max(0, n(x.valor)), cuota = Math.min(valor, Math.max(0, n(x.cuotaInicial)));
       pagos = [{ monto: cuota, anio: Math.min(anio(x.anioCuota), entrega) }, { monto: valor - cuota, anio: entrega }];
     }
-    const def = x.clase === "inmueble" ? (1 + inf) * (1 + n(sup.presets.fincaRaiz.valorizacionSpread) / 100) - 1 : (1 + inf) * (1 + n(sup.otrosRealSpread) / 100) - 1;
-    return { nombre: String(x.nombre || "").trim() || "Activo futuro", clase: x.clase === "inmueble" || x.clase === "vivienda" ? "inmueble" : "otro", vivienda: x.clase === "vivienda", fuenteId: x.fuenteId || null, entrega, pagos,
+    const def = ["inmueble", "vivienda", "lote"].includes(x.clase) ? (1 + inf) * (1 + n(sup.presets.fincaRaiz.valorizacionSpread) / 100) - 1 : (1 + inf) * (1 + n(sup.otrosRealSpread) / 100) - 1;
+    return { nombre: String(x.nombre || "").trim() || "Activo futuro", clase: ["inmueble", "vivienda", "lote"].includes(x.clase) ? "inmueble" : "otro", vivienda: x.clase === "vivienda", tipo: x.clase || "inmueble", fuenteId: x.fuenteId || null, entrega, pagos,
       crec: vacio(x.valorizacionNomPct) ? def : n(x.valorizacionNomPct) / 100,
       rentaMensual: Math.max(0, n(x.rentaMensual)), rentaDesde: anio(x.rentaDesde, entrega) };
   }).filter((x) => x.pagos.some((p) => p.monto > 0));
