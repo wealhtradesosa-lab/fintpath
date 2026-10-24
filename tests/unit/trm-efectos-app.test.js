@@ -127,6 +127,8 @@ describe("TRM en pantalla: viva → guardada → pendiente (sin 4200)", async ()
     const con = renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: conUSD }));
     expect(con).toContain(A.NOTA_TRM_DECLARACION);
     expect(con).toContain("31-dic-2025");
+    expect(A.NOTA_TRM_DECLARACION).toBe("Ojo: el cálculo de este borrador todavía no usa la TRM real para tus montos en USD; lo estamos corrigiendo. En tu declaración usa la TRM del 31-dic-2025 para patrimonio y la del día de cada pago para ingresos.");
+    expect(con).not.toContain("Convertido con la TRM actual");
     expect(renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: soloCOP }))).toBe("");
   });
 });
