@@ -45,6 +45,8 @@ import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "./taxCO.js";
 export const AG_RECOS = DEFAULT_AG;
 export const UVT_RECOS = uvtForYear(AG_RECOS);
 const UVT = UVT_RECOS;
+export const ETIQUETA_AG_RECOS = `AG ${AG_RECOS} · UVT $${UVT_RECOS.toLocaleString("es-CO")}`;
+export const NOTA_FIJA_PV_AFC = "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.";
 
 // ─────────────────────────────────────────────────────────────────────────
 // ANÁLISIS DEL PERFIL DEL OWNER
@@ -240,7 +242,6 @@ function recomendacionesNaturalLaboral(perfil) {
   const { saldoACargo, ingLaboral } = perfil;
   if (saldoACargo < 500_000) return recs;
 
-  const tasaMarg = ingLaboral > 600_000_000 ? 0.37 : ingLaboral > 300_000_000 ? 0.35 : 0.33;
 
   // REC 1: Aporte a Pensión Voluntaria — solo si NO está aportando ya.
   // Buscamos en gas REAL (no en proyecciones del wizard) para evitar
@@ -251,23 +252,29 @@ function recomendacionesNaturalLaboral(perfil) {
     (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC")
   );
   if (!yaAportaPV) {
-    const aporteSugerido = Math.min(ingLaboral * 0.20, 2500 * UVT);
-    const ahorroPV = Math.min(Math.round(aporteSugerido * tasaMarg), saldoACargo);
+    // Tope conjunto PV+AFC: 30% del ingreso laboral, máx 3.800 UVT/año (UVT del AG_RECOS).
+    // Mismo tope que calcula taxCO (30% del ingreso neto, máx 3.800 UVT) para el AG_RECOS.
+    const detAg = perfil._user && perfil._owner ? estimarImpuesto({ ...perfil._user, owners: [perfil._owner] }, { ag: AG_RECOS }).detalle.find((d) => d.name === perfil._owner.name) : null;
+    const aporteSugerido = Math.round(detAg?.pvMax ?? Math.min(ingLaboral * 0.30, 3800 * UVT));
+    // Ahorro = diferencia de impuesto a cargo en taxCO (con vs sin aporte), mismo AG.
+    const ahorroPV = Math.min(Math.round(ahorroAporteTaxCO(perfil, aporteSugerido, { fiscalCode: "AP_TRIB_PV" })), saldoACargo);
     recs.push({
       id: "aporte_pv_estrategico",
       ejecutaEn: "personal",
       icono: "💼",
-      titulo: "Aportar a Pensión Voluntaria",
-      descripcion: "Aporte deducible al 100% (cap 25% del ingreso). La palanca más potente para empleados con salario alto.",
-      accion: `Aportar ~$${aporteSugerido.toLocaleString("es-CO")}/año a un fondo de Pensión Voluntaria (Protección, Porvenir, Old Mutual, etc).`,
+      titulo: "Pensión voluntaria o AFC",
+      descripcion: `Hasta $${aporteSugerido.toLocaleString("es-CO")} al año en pensión voluntaria o AFC podría ser exento (hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
+      accion: `Si decides aportar, puedes hacerlo por nómina o directo al fondo, hasta $${aporteSugerido.toLocaleString("es-CO")} al año.`,
       inversion: {
         monto: aporteSugerido,
-        descripcion: "Sale de tu liquidez pero queda invertido a tu nombre, generando rendimientos.",
+        descripcion: "Sale de tu liquidez pero queda ahorrado a tu nombre.",
       },
-      ahorroAnual: { monto: ahorroPV, calculoDetallado: `${aporteSugerido.toLocaleString("es-CO")} × ${fmtPctEs((tasaMarg * 100), 0)}` },
-      roi: { porcentaje: tasaMarg * 100, descripcion: "ROI inmediato + capital crece a tu nombre." },
-      baseLegal: "Art. 126-1 ET",
-      caveat: "Si retiras antes de 10 años o sin cumplir requisitos de pensión, pierdes el beneficio fiscal y pagas retención.",
+      ahorroAnual: { monto: ahorroPV, calculoDetallado: "menos de impuesto. Diferencia de impuesto calculada con y sin el aporte." },
+      roi: { porcentaje: aporteSugerido > 0 ? (ahorroPV / aporteSugerido) * 100 : 0, descripcion: "Ahorro en impuesto sobre lo aportado." },
+      baseLegal: "Arts. 126-1 y 126-4 ET",
+      caveat: "Si lo retiras antes y para otro fin, pierdes el beneficio.",
+      nota: NOTA_FIJA_PV_AFC,
+      etiqueta: ETIQUETA_AG_RECOS,
       prioridad: "alta",
     });
   }
@@ -278,11 +285,13 @@ function recomendacionesNaturalLaboral(perfil) {
       ejecutaEn: "personal",
     icono: "🏠",
     titulo: "Cuenta AFC (Ahorro para Fomento de la Construcción)",
-    descripcion: "Aporte deducible al 100% (cap conjunto con PV: 25% del ingreso). Solo para destinar a compra/mejora de vivienda o pago de hipoteca.",
+    descripcion: "Hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC. Solo para destinar a compra/mejora de vivienda o pago de hipoteca.",
     accion: "Abre una cuenta AFC en cualquier banco (Bancolombia, Davivienda, etc.) y aporta hasta el cap legal.",
     inversion: { monto: 0, descripcion: "Cero costo de apertura. El monto aportado queda en tu cuenta." },
-    ahorroAnual: { monto: Math.min(Math.round(60_000_000 * tasaMarg), saldoACargo), calculoDetallado: "Si aportas $5M/mes ($60M/año) a AFC: deducible 100%" },
-    roi: { porcentaje: tasaMarg * 100, descripcion: "ROI inmediato + el saldo se puede usar para vivienda." },
+    ahorroAnual: { monto: Math.min(Math.round(ahorroAporteTaxCO(perfil, 60_000_000, { fiscalCode: "AP_TRIB_AFC" })), saldoACargo), calculoDetallado: "Si aportas $5M/mes ($60M/año) a AFC: diferencia de impuesto calculada con y sin el aporte (tope compartido con pensión voluntaria)." },
+    roi: { porcentaje: Math.round(ahorroAporteTaxCO(perfil, 60_000_000, { fiscalCode: "AP_TRIB_AFC" }) / 60_000_000 * 1000) / 10, descripcion: "Ahorro en impuesto sobre lo aportado; el saldo se puede usar para vivienda." },
+    nota: NOTA_FIJA_PV_AFC,
+    etiqueta: ETIQUETA_AG_RECOS,
     baseLegal: "Art. 126-4 ET",
     caveat: "Solo retirable para vivienda. Si retiras para otra cosa, pagas retención del 7-15%.",
     prioridad: "alta",
@@ -488,13 +497,17 @@ export function generarRecomendacionesEstrategicas(user, owner, det) {
 }
 // Diferencia de impuesto a cargo (antes de retenciones) corriendo taxCO con la
 // consultoría y con vs sin el aporte. Sin datos del usuario → 0 (no se inventa).
-export function ahorroAporteConTaxCO(perfil, consultoriaAnual, aporteAnual) {
+export function ahorroAporteTaxCO(perfil, aporteAnual, { consultoriaAnual = 0, fiscalCode = "AP_TRIB_AFC" } = {}) {
   const user = perfil?._user, owner = perfil?._owner;
   if (!user || !owner || aporteAnual <= 0) return 0;
-  const consult = { id: "__consultoria", owner: owner.id, nombre: "Consultoría", fiscalCode: "LAB_HONORARIOS_SIN_EMPLEADOS", mensual: consultoriaAnual / 12, tipo: "fijo" };
-  const base = { ...user, owners: [owner], ingresos: [...(user.ingresos || []), consult] };
+  const extra = consultoriaAnual > 0 ? [{ id: "__consultoria", owner: owner.id, nombre: "Consultoría", fiscalCode: "LAB_HONORARIOS_SIN_EMPLEADOS", mensual: consultoriaAnual / 12, tipo: "fijo" }] : [];
+  const base = { ...user, owners: [owner], ingresos: [...(user.ingresos || []), ...extra] };
   const gas = { ...(base.gas || {}) };
-  gas["Aporte tributario"] = [...(gas["Aporte tributario"] || []), { owner: owner.id, fiscalCode: "AP_TRIB_AFC", m: aporteAnual / 12 }];
+  gas["Aporte tributario"] = [...(gas["Aporte tributario"] || []), { owner: owner.id, fiscalCode, m: aporteAnual / 12 }];
   const imp = (u) => (estimarImpuesto(u, { ag: AG_RECOS }).detalle.find((d) => d.name === owner.name)?.impBruto) || 0;
   return Math.max(0, imp(base) - imp({ ...base, gas }));
+}
+
+export function ahorroAporteConTaxCO(perfil, consultoriaAnual, aporteAnual) {
+  return ahorroAporteTaxCO(perfil, aporteAnual, { consultoriaAnual, fiscalCode: "AP_TRIB_AFC" });
 }

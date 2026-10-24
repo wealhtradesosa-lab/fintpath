@@ -225,6 +225,8 @@ function RecomendacionCard({ rec, indice }) {
               {rec.caveat}
             </div>
           )}
+          {rec.nota && <div style={{ fontSize: 11, color: C.txt3, lineHeight: 1.4 }}>{rec.nota}</div>}
+          {rec.etiqueta && <div style={{ fontSize: 10, color: C.txt3 }}>{rec.etiqueta}</div>}
         </div>
       )}
     </div>

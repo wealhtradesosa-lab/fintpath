@@ -22,7 +22,7 @@ import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { useMemo, useState, useEffect } from "react";
 import { montoPromedioMensual, totalAnualItem } from "../lib/flowHelpers.js";
 import { estimarImpuesto, UVT } from "../lib/taxCO.js";
-import { AG_PROYECCION, topePvAfcAnual, etiquetaAG } from "../lib/ownerPlanAdapter.js";
+import { AG_PROYECCION, topePvAfcAnual, etiquetaAG, topeMedicinaMensual } from "../lib/ownerPlanAdapter.js";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { GRUPOS_SIMPLE } from "../lib/regimenSimple.js";
 // Commit 21 Tarea 3: detector de palancas del Optimizador V2 para mostrar
@@ -1194,7 +1194,8 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
   const UVT_AG = topePvAfcAnual(AG_PROYECCION).uvt;
   const ETIQUETA_AG = etiquetaAG({ ag: AG_PROYECCION });
   const MAX_DEP = Math.round(384 * UVT_AG);                      // $20.1M (10% lab, máx 384 UVT)
-  const MAX_MEDICINA = Math.round(16 * UVT_AG * 12);             // $10.05M (16 UVT/mes)
+  const MED_MES = topeMedicinaMensual(AG_PROYECCION);          // 16 UVT/mes · AG 2026: $837.984/mes
+  const MAX_MEDICINA = MED_MES * 12;
   const MAX_VIVIENDA = Math.round(1200 * UVT_AG);                // $62.85M (1.200 UVT/año)
   const MAX_PV_AFC = topePvAfcAnual(AG_PROYECCION).tope;      // 3.800 UVT del AG de proyección (AG 2026: $199.021.200). Una declaración AG 2025 usaría $189.236.200.
 
@@ -1228,7 +1229,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "💊",
       label: "Medicina prepagada / salud / vida",
       art: "Art. 387 #2 ET",
-      topeMensual: `Tope: 16 UVT/mes (~$${Math.round(16 * UVT / 1000)}k/mes, $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año)`,
+      topeMensual: `Tope: 16 UVT/mes (~$${fmtNumEs(MED_MES, 0)}/mes · ${ETIQUETA_AG}, $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año)`,
       valor: det.deducMedicina || 0,
       montoMaximoTexto: `Hasta $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año combinando medicina prepagada + seguros de salud + seguros de vida. Tope conjunto 16 UVT/mes.`,
       ctaTexto: "→ Cargar en Egresos",

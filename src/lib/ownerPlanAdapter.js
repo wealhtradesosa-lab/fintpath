@@ -183,3 +183,8 @@ export function topePvAfcAnual(ag = AG_PROYECCION) {
   const uvt = uvtForYear(ag);
   return { ag, uvt, tope: Math.round(3800 * uvt) };
 }
+
+// Medicina prepagada (Art. 387 ET): 16 UVT/mes del AG que se calcula.
+export function topeMedicinaMensual(ag = AG_PROYECCION) {
+  return Math.round(16 * uvtForYear(ag));
+}

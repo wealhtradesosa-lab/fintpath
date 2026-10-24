@@ -78,7 +78,7 @@ export const IMP_VEHICULAR_PROFESIONAL        = "IMP_VEHICULAR_PROFESIONAL"; // 
 // ─── APORTES TRIBUTARIOS (Commit 1.6) ────────────────────────────────────
 // Egresos que reducen la base gravable de persona natural. Shape nuevo:
 // viven en el módulo de Egresos con categoría "Aporte tributario".
-// Comparten tope 25% neto laboral / 2500 UVT entre PV y AFC (Art. 126-1, 126-4 ET).
+// Comparten tope 30% del ingreso / 3.800 UVT entre PV y AFC (Art. 126-1, 126-4 ET).
 // Salud prepagada comparte tope 16 UVT/mes con gastos médicos (Art. 387 #2 ET).
 export const AP_TRIB_PV                      = "AP_TRIB_PV";                   // Pensión Voluntaria (Art. 126-1)
 export const AP_TRIB_AFC                     = "AP_TRIB_AFC";                  // Ahorro Fomento Construcción (Art. 126-4)

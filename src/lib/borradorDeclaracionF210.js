@@ -150,7 +150,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
     { seccion: "deducciones", numero: 40, concepto: "Medicina prepagada + seguros salud + médicos", valor: v(40, deducMedicina), auto: deducMedicina, tipo: "editable", fuente: "Gastos categoría Salud + AP_TRIB_SALUD_PREPAGADA", articulo: "Art. 387 ET",
       tip: "🏥 Tope conjunto 16 UVT/mes (~$10M/año). Incluye: medicina prepagada, seguros de salud, seguros de vida, gastos médicos no cubiertos por POS." },
     { seccion: "deducciones", numero: 41, concepto: "Aportes voluntarios pensión + AFC", valor: v(41, pvAfcReal), auto: pvAfcReal, tipo: "editable", fuente: "Aportes reales a pensión voluntaria + AFC (Egresos)", articulo: "Art. 126-1 y 126-4 ET",
-      tip: `💎 LA PALANCA MÁS PODEROSA. Hasta 30% del ingreso laboral (3800 UVT) para AFC + 25% (2500 UVT) para PV. Combinado caben hasta 1340 UVT ($${uvt.toLocaleString("es-CO")} UVT · AG ${ano}). Cada $1 aportado ahorra hasta $0.39 de impuesto.` },
+      tip: `💎 PV + AFC: hasta 30% del ingreso, máximo 3.800 UVT ($${Math.round(3800 * uvt).toLocaleString("es-CO")}), tope compartido. Todo entra en el tope del 40% / 1.340 UVT (AG ${ano} · UVT $${uvt.toLocaleString("es-CO")}).` },
     { seccion: "deducciones", numero: 42, concepto: "GMF deducible (50%)", valor: v(42, gmfDeducible), auto: gmfDeducible, tipo: "editable", fuente: "Cálculo automático 50% del 4x1000",
       tip: "🏦 El 4x1000 que te cobra el banco es deducible al 50%. Cálculo automático sobre tus ingresos." },
     { seccion: "deducciones", numero: 43, concepto: `Total deducciones limitadas (40% / 1340 UVT · $${uvt.toLocaleString("es-CO")} AG ${ano})`, tipo: "formula", destacado: true,

@@ -195,7 +195,7 @@ export const WIZARD_NATURAL = [
     section: "ahorros",
     type: "number",
     question: "¿Cuánto aportas al mes a PV o AFC?",
-    helpText: "El total combinado. Tope: 30% del ingreso para AFC + 25% para PV (con cap de 1340 UVT/año).",
+    helpText: "El total combinado. Tope: hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC.",
     placeholder: "Ej: 1000000",
     suffix: "/ mes",
     shouldShow: (a) => a.tieneAportesPV === "si",

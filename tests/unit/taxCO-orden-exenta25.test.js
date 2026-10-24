@@ -3,8 +3,8 @@
 // exentas (206-4); todo bajo el tope Art. 336 (40 % / 1.340 UVT).
 import { describe, it, expect } from "vitest";
 import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "../../src/lib/taxCO.js";
-import { AG_RECOS, UVT_RECOS } from "../../src/lib/recomendacionesEstrategicas.js";
-import { adapterOwnerPlan, ahorroPvAfc, saldoResumen, etiquetaAG, topePvAfcAnual, AG_PROYECCION } from "../../src/lib/ownerPlanAdapter.js";
+import { AG_RECOS, UVT_RECOS, generarRecomendacionesEstrategicas, ahorroAporteTaxCO, ETIQUETA_AG_RECOS, NOTA_FIJA_PV_AFC } from "../../src/lib/recomendacionesEstrategicas.js";
+import { adapterOwnerPlan, ahorroPvAfc, saldoResumen, etiquetaAG, topePvAfcAnual, AG_PROYECCION, topeMedicinaMensual } from "../../src/lib/ownerPlanAdapter.js";
 
 const user = (salMes, gas = {}, extra = []) => ({ trm: 4200, owners: [{ id: "o1", name: "Luis", type: "natural" }], gas, deu: [], inv: [],
   ingresos: [{ id: "sal", owner: "o1", nombre: "Salario", fiscalCode: "LAB_SALARIO", mensual: salMes, tipo: "fijo" }, ...extra] });
@@ -124,4 +124,37 @@ describe("Wizard: tope PV/AFC con la UVT de su año gravable", () => {
     expect(t.uvt).toBe(uvtForYear(AG_PROYECCION));
     expect(d.pvMax).toBe(t.tope); // 30% de 60M/mes supera 3.800 UVT → tope exacto del mismo año
   });
+});
+
+describe("Wizard medicina prepagada: 16 UVT/mes del AG de proyección", () => {
+  it("AG 2026 → $837.984/mes", () => {
+    expect(AG_PROYECCION).toBe(2026);
+    expect(topeMedicinaMensual(AG_PROYECCION)).toBe(837984);
+    expect(topeMedicinaMensual(2025)).toBe(16 * 49799);
+  });
+});
+
+describe("REC aporte_pv_estrategico: tope 30%/3.800 UVT y ahorro = diferencia taxCO", () => {
+  it("ahorro con/sin aporte a $15M/mes usa el mismo AG que el tope", () => {
+    const u = user(15e6);
+    const perfil = { _user: u, _owner: u.owners[0] };
+    const aporte_ = aporte;
+    const d = estimarImpuesto(u, { ag: AG_RECOS }).detalle[0];
+    const d0neto = () => d.neto;
+    const aporteV = Math.round(Math.min(d0neto(u) * 0.30, 3800 * UVT_RECOS));
+    expect(aporteV).toBe(d.pvMax);
+    const con = estimarImpuesto(user(15e6, aporte_("AP_TRIB_PV", aporteV / 12)), { ag: AG_RECOS }).detalle[0];
+    expect(ahorroAporteTaxCO(perfil, aporteV, { fiscalCode: "AP_TRIB_PV" })).toBeCloseTo(d.impBruto - con.impBruto, 0);
+    expect(ETIQUETA_AG_RECOS).toBe("AG 2026 · UVT $52.374");
+    expect(NOTA_FIJA_PV_AFC).toMatch(/^Es un cálculo del ahorro en impuesto, no una recomendación/);
+  });
+});
+
+it("recomendaciones estratégicas: sin copy de 25 % / 2.500 UVT para PV/AFC", () => {
+  const u = user(40e6); const d = estimarImpuesto(u, { ag: AG_RECOS }).detalle[0];
+  const recs = generarRecomendacionesEstrategicas(u, u.owners[0], d) || [];
+  const txt = JSON.stringify(recs);
+  expect(txt).not.toMatch(/2\.?500 UVT|cap 25/);
+  const pv = recs.find((r) => r.id === "aporte_pv_estrategico");
+  if (pv) { expect(pv.descripcion).toMatch(/podría ser exento/); expect(pv.etiqueta).toBe(ETIQUETA_AG_RECOS); expect(pv.nota).toBe(NOTA_FIJA_PV_AFC); }
 });
