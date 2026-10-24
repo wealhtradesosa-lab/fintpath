@@ -126,16 +126,22 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   const liquidosQueQuedan = activos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
   const canasta = { liquidez: 0, renta: 0, crecimiento: 0 };
   let colchon = Math.min(bolsa, Math.max(0, metaColchon - liquidosQueQuedan));
+  // «Plata disponible para invertir»: libro por año con los MISMOS montos que
+  // mueve el motor (año 1 incluye lo de hoy). Pesos de hoy.
+  const disp = Array.from({ length: (n(cfg.anios) || sup.anios) }, (_, i) => ({ anio: i + 1, liquidezHoy: 0, ventas: 0, colchon: 0, flujo: 0, adicionales: 0, pagosFuturos: 0, asignado: 0, asignaciones: [] }));
+  if (disp[0]) { disp[0].liquidezHoy = Math.max(0, liquidosQueQuedan - metaColchon); disp[0].ventas = bolsa; disp[0].colchon = colchon; }
   bolsa -= colchon;
   const nuevas = [];
-  (cfg.reinversiones || []).forEach((r) => {
+  (cfg.reinversiones || []).forEach((r, k) => {
     const m = Math.min(bolsa, Math.max(0, n(r.monto))); const a = activos.find((x) => x.id === r.activoId);
+    if (a && n(r.monto) > 0 && disp[0]) { disp[0].asignado += n(r.monto); disp[0].asignaciones.push({ tipo: "reinversion", idx: k, nombre: a.nombre, monto: n(r.monto) }); }
     if (a && m > 0) { a.valor += m; bolsa -= m; }
   });
   const personalizadas = [];
   (cfg.nuevas || []).forEach((x, k) => {
     if (x.preset === "custom") { const c = leerPersonalizada(x, esc, sup); if (c.monto > 0) personalizadas.push({ ...c, id: "nueva_" + k }); return; }
     const m = Math.min(bolsa, Math.max(0, n(x.monto)));
+    if (n(x.monto) > 0 && sup.presets[x.preset] && disp[0]) { disp[0].asignado += n(x.monto); disp[0].asignaciones.push({ tipo: "nueva", idx: k, nombre: x.nombre || sup.presets[x.preset].nombre, monto: n(x.monto) }); }
     if (m <= 0 || !sup.presets[x.preset]) return;
     bolsa -= m;
     nuevas.push({ id: "nueva_" + k, nombre: x.nombre || sup.presets[x.preset].nombre, clase: "nueva", valor: m, crec: rNom(x.preset), usd: !!sup.presets[x.preset].usd, invertible: true });
@@ -220,6 +226,12 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     });
     const liquidez = colchon + canasta.liquidez + todos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
     const deflactor = Math.pow(1 + inf, t);
+    const dA = disp[t - 1];
+    if (dA) {
+      dA.flujo = cf / deflactor;
+      todos.forEach((a) => { (a.pagos || []).forEach((pg) => { if (pg.anio === t && pg.monto > 0) dA.pagosFuturos += pg.monto / deflactor; }); if (a.invMonto > 0 && a.invAnio === t) dA.adicionales += a.invMonto / deflactor; });
+      personalizadas.forEach((c) => { if (c.anio === t) { dA.asignado += c.monto / deflactor; dA.asignaciones.push({ tipo: "nueva", idx: Number(String(c.id).split("_")[1]), nombre: c.nombre, monto: c.monto / deflactor }); } });
+    }
     const activosT = valorTotal();
     const f = { anio: t, ingresos: ingresos + rentaNueva, rentaNueva, gastos: gastos + cuota, cf, activos: activosT, invertible: invertible(), deuda, liquidez, deflactor };
     f.patrimonio = activosT - deuda;
@@ -231,8 +243,13 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     filas.push(f);
   }
   const fin = filas[filas.length - 1];
+  disp.forEach((d) => {
+    d.antesDeAsignar = d.liquidezHoy + d.ventas - d.colchon + d.flujo - d.adicionales - d.pagosFuturos;
+    d.queda = d.antesDeAsignar - d.asignado;
+    d.exceso = d.asignado > 0 && d.queda < 0 ? -d.queda : 0;
+  });
   return {
-    escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
+    escenario: esc, mezcla, filas, alertas, liqAgotadaAnio, disponible: disp,
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses },
     activos: activos.map(({ id, nombre, clase, usd }) => ({ id, nombre, clase, usd })),
     hayUSD: [...activos, ...nuevas, ...personalizadas].some((a) => a.usd) || mezcla.crecimiento > 0,
