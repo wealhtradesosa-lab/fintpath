@@ -300,7 +300,16 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   const rCan = { liquidez: rNom(sup.canastas.liquidez), renta: rNom(sup.canastas.renta), crecimiento: rNom(sup.canastas.crecimiento) };
 
   // ── Deuda: la cuota sigue nominal fija hasta saldar; saldo lineal ───────
-  let deuda = bDeuda.deudaTotal; const cuotaAnual = bDeuda.sd * 12;
+  // 24-oct-2026 (Santiago: "debo 437 M de un local… pueden existir deudas sin
+  // interés que se pagan de una sola vez"). Una deuda sin intereses
+  // (tipoInteres "sin_interes", sin cuota) no entra al pozo que se amortiza con
+  // cuotas: su saldo resta del patrimonio hasta que se paga, sea con una venta
+  // (Tu plata → Pagar deudas) o de una vez en el año `pagoUnicoAnio`.
+  const anioHoy = new Date().getFullYear();
+  const esUnica = (d) => d && d.tipoInteres === "sin_interes" && !(n(d.pg ?? d.pago) > 0);
+  const unicas = deudasVivas.filter(esUnica).map((d) => ({ nombre: d.n || d.nombre || "Deuda", saldo: n(d.mt) * fxA(d), t: n(d.pagoUnicoAnio) > 0 ? Math.min(N, Math.max(1, n(d.pagoUnicoAnio) - anioHoy + 1)) : null }));
+  let deudaUnica = unicas.reduce((sm, d) => sm + d.saldo, 0);
+  let deuda = bDeuda.deudaTotal - deudaUnica; const cuotaAnual = bDeuda.sd * 12;
   const aniosDeuda = cuotaAnual > 0 ? deuda / cuotaAnual : 0;
 
   let ingresos = (b.ia + b.ip) * 12 - rentaVendida;
@@ -311,7 +320,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   const filas = [];
   const alertas = [];
   const fila0 = { anio: 0, ingresos, gastos: gastos + (deuda > 0 ? cuotaAnual : 0), cf: 0, activos: valorTotal(), invertible: invertible(), deuda, liquidez: colchon + canasta.liquidez + liquidosQueQuedan };
-  fila0.patrimonio = fila0.activos - deuda; fila0.deflactor = 1;
+  fila0.patrimonio = fila0.activos - deuda - deudaUnica; fila0.deuda = deuda + deudaUnica; fila0.deflactor = 1;
   fila0.patrimonioReal = fila0.patrimonio; fila0.invertibleReal = fila0.invertible;
   filas.push(fila0);
   let liqAgotadaAnio = null;
@@ -370,6 +379,13 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
       retirar(-cf);
       alertas.push({ tipo: "cf_negativo", anio: t, texto: `En el año ${t} sale más de lo que entra; se usa tu liquidez.` });
     }
+    // Deuda sin intereses que se paga de una vez este año: sale de tu liquidez.
+    unicas.forEach((d) => {
+      if (d.t !== t || d.saldo <= 0) return;
+      retirar(d.saldo); deudaUnica -= d.saldo;
+      alertas.push({ tipo: "pago_unico", anio: t, texto: `En el año ${t} pagas ${d.nombre} de una vez con tu liquidez.` });
+      d.saldo = 0;
+    });
     // Pagos de un activo futuro: pasan de tu liquidez al activo (no cambia el patrimonio).
     todos.forEach((a) => (a.pagos || []).forEach((pg) => {
       if (pg.anio !== t || pg.monto <= 0) return;
@@ -395,8 +411,8 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const liquidez = colchon + canasta.liquidez + todos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
     const deflactor = Math.pow(1 + inf, t);
     const activosT = valorTotal();
-    const f = { anio: t, ingresos: ingresos + rentaNueva, rentaNueva, gastos: gastos + cuota, cf, activos: activosT, invertible: invertible(), deuda, liquidez, deflactor };
-    f.patrimonio = activosT - deuda;
+    const f = { anio: t, ingresos: ingresos + rentaNueva, rentaNueva, gastos: gastos + cuota, cf, activos: activosT, invertible: invertible(), deuda: deuda + deudaUnica, liquidez, deflactor };
+    f.patrimonio = activosT - deuda - deudaUnica;
     f.patrimonioReal = f.patrimonio / deflactor;
     f.invertibleReal = f.invertible / deflactor;
     f.ingresosReal = (ingresos + rentaNueva) / deflactor; // incluye la renta nueva (bodega, ingresos futuros)

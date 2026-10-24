@@ -406,3 +406,25 @@ describe("futuro10 · de dónde sale la plata de cada inversión", () => {
     expect(r.bolsaDetalle.restante).toBeCloseTo(1000e6, 0);
   });
 });
+
+describe("futuro10 · deuda sin intereses de un solo pago", () => {
+  const U = (extra = {}) => ({ inflacionPct: 4, inv: [{ id: "loc", n: "Local", tp: "Local Comercial", va: 900e6 }, { id: "pm", n: "Puerto Madero", tp: "Real Estate", va: 1000e6 }, { id: "c", tp: "Cash", va: 600e6 }], ingresos: [], gas: {}, deu: [{ id: "s", n: "Saldo local", mt: 437e6, pg: 0, ts: 0, tipoInteres: "sin_interes", la: "loc", ...extra }, { id: "h", n: "Hipoteca", mt: 100e6, pg: 2e6, ts: 12 }] });
+  it("no se amortiza con las cuotas de otras deudas: resta igual hasta pagarla", () => {
+    const r = proyectarFuturo10(U(), {});
+    expect(r.filas[0].deuda).toBeCloseTo(537e6, 0);
+    const ult = r.filas[10];
+    expect(ult.deuda).toBeCloseTo(437e6, 0); // la hipoteca se saldó; el saldo del local sigue
+  });
+  it("se paga con la venta de Puerto Madero si la marcas", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { pm: { accion: "vende" } }, pagarDeudas: { s: true } });
+    expect(r.deudas.find((d) => d.id === "s").pagado).toBeCloseTo(437e6, 0);
+    expect(r.filas[0].deuda).toBeCloseTo(100e6, 0);
+  });
+  it("con año de pago, sale de la liquidez ese año", () => {
+    const anio = new Date().getFullYear() + 2; // año 3 de la proyección
+    const r = proyectarFuturo10(U({ pagoUnicoAnio: anio }), {});
+    expect(r.filas[2].deuda).toBeGreaterThan(437e6 - 1);
+    expect(r.filas[3].deuda).toBeLessThan(437e6);
+    expect(r.alertas.some((a) => a.tipo === "pago_unico" && a.anio === 3)).toBe(true);
+  });
+});

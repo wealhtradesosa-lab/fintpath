@@ -139,7 +139,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   // la pregunta en deudas es dónde está concentrado el pasivo.
   const NOM_TP = { mortgage: "Hipoteca", loan: "Libre inversión", vehiculo: "Vehículo",
                    leasing: "Leasing", personal: "Préstamo personal",
-                   credit_card: "Tarjeta", tarjeta: "Tarjeta", card: "Tarjeta" };
+                   credit_card: "Tarjeta", tarjeta: "Tarjeta", card: "Tarjeta", saldo_pendiente: "Saldo pendiente" };
   const conEncabezados = (lista) => {
     const porTipo = {};
     lista.forEach(d => { const k = NOM_TP[d.tp] || "Otro"; (porTipo[k] = porTipo[k] || []).push(d); });
@@ -178,7 +178,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     // Commit 5 Tarea 3 (bugfix): persistir fiscalCode al guardar. Antes el campo
     // se omitía y el motor caía al default vía normalizer, ignorando la elección
     // del usuario en el sub-selector "¿Para qué usaste esta deuda?".
-    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: +form.pg || 0, ts: +form.ts || 0, tipoInteres: form.tipoInteres || undefined, plazoMeses: form.plazoMeses ? Number(form.plazoMeses) : undefined, moneda: form.moneda || undefined, la: form.la || null, owner: form.owner || "",
+    const item = { n: form.n || "", tp: form.tp || "loan", fiscalCode: form.fiscalCode || "DEU_NAT_CONSUMO", mt: +form.mt || 0, pg: form.tipoInteres === "sin_interes" ? 0 : +form.pg || 0, ts: form.tipoInteres === "sin_interes" ? 0 : +form.ts || 0, tipoInteres: form.tipoInteres || undefined, pagoUnicoAnio: form.tipoInteres === "sin_interes" && form.pagoUnicoAnio ? Number(form.pagoUnicoAnio) : undefined, plazoMeses: form.plazoMeses ? Number(form.plazoMeses) : undefined, moneda: form.moneda || undefined, la: form.la || null, owner: form.owner || "",
       // Vigencia de la deuda (20-jul-2026, Santiago): "las deudas también
       // pueden ser hasta X mes" — cuotas solo pesan dentro del rango.
       // 25-jul-2026 (Santiago: "he modificado meses o todo el año y no guarda
@@ -208,7 +208,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   };
 
   const openEdit = (d) => {
-    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, tipoInteres: d.tipoInteres || "compuesto", plazoMeses: d.plazoMeses || "", moneda: d.moneda || "COP", la: d.la || "", owner: d.owner || "", capExt: "", intExt: "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo , frecuencia: d.frecuencia || "mensual", montosMensuales: Array.isArray(d.montosMensuales) ? d.montosMensuales : new Array(12).fill(0)});
+    setForm({ n: d.n, tp: d.tp, fiscalCode: d.fiscalCode || (d.tp === "mortgage" ? "DEU_NAT_VIVIENDA_HABITACIONAL" : "DEU_NAT_CONSUMO"), mt: d.mt, pg: d.pg, ts: d.ts, tipoInteres: d.tipoInteres || "compuesto", pagoUnicoAnio: d.pagoUnicoAnio || "", plazoMeses: d.plazoMeses || "", moneda: d.moneda || "COP", la: d.la || "", owner: d.owner || "", capExt: "", intExt: "", desdeMes: Number(d.desdeMes) || 1, hastaMes: Number(d.hastaMes) || 12, vigenciaModo: d.vigenciaModo , frecuencia: d.frecuencia || "mensual", montosMensuales: Array.isArray(d.montosMensuales) ? d.montosMensuales : new Array(12).fill(0)});
     setEditId(d.id);
     setShowForm(true);
   };
@@ -329,7 +329,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         // Los valores viejos se mantienen para no romper lo ya cargado.
         const NOM = { mortgage: "Hipoteca", loan: "Libre inversión", vehiculo: "Vehículo",
                       leasing: "Leasing", personal: "Préstamo personal",
-                      credit_card: "Tarjeta", tarjeta: "Tarjeta", card: "Tarjeta" };
+                      credit_card: "Tarjeta", tarjeta: "Tarjeta", card: "Tarjeta", saldo_pendiente: "Saldo pendiente" };
         const grupos = {};
         (items || []).filter(d => d.sim !== false && (d.mt || 0) > 0).forEach(d => {
           const k = NOM[d.tp] || "Otro";
@@ -605,13 +605,16 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 </>}
               </div>
               <In l="Nombre" value={form.n} onChange={(v) => setForm((p) => ({ ...p, n: v }))} placeholder="Hipoteca casa" />
-              <In l="Tipo" value={form.tp} onChange={(v) => setForm((p) => ({ ...p, tp: v }))} options={[
+              <In l="Tipo" value={form.tp} onChange={(v) => setForm((p) => ({ ...p, tp: v,
+                // El tipo «saldo pendiente» es un pago único sin intereses; al salir de él se vuelve a cuota con interés.
+                tipoInteres: v === "saldo_pendiente" ? "sin_interes" : (p.tipoInteres === "sin_interes" ? "compuesto" : p.tipoInteres) }))} options={[
                 { v: "mortgage", l: "🏠 Hipoteca — vivienda o inmueble" },
                 { v: "loan", l: "💳 Libre inversión — crédito de consumo" },
                 { v: "vehiculo", l: "🚗 Vehículo" },
                 { v: "leasing", l: "📄 Leasing" },
                 { v: "personal", l: "🤝 Préstamo personal — familiar, socio, conocido" },
                 { v: "credit_card", l: "💳 Tarjeta de crédito" },
+                { v: "saldo_pendiente", l: "🧾 Saldo pendiente — sin intereses, un solo pago" },
               ]} />
             <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
               <In l="Saldo" value={form.mt} onChange={(v) => setForm((p) => ({ ...p, mt: v }))} type="number" placeholder="0" />
@@ -656,7 +659,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 en vez de 22,99%. Con saldo, tasa y plazo la cuota es exacta.
                 Sigue siendo BOTÓN y no autocompletado: la app propone, el
                 usuario decide. Esa fue la lección de aquel bug. */}
-            {(form.tipoInteres || "compuesto") !== "simple" && (
+            {!["simple","sin_interes"].includes(form.tipoInteres || "compuesto") && (
               <div style={{gridColumn:"1/-1",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
                 <div style={{fontSize:12,fontWeight:700,color:T.txt2,marginBottom:8}}>🧮 ¿No sabes la cuota o la tasa? Pon el plazo</div>
                 <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
@@ -747,7 +750,11 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             <div style={{fontSize:11,color:T.txt3,marginBottom:6,fontWeight:600}}>¿Cómo se cobran los intereses?</div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {[{v:"compuesto",l:"Como un banco",d:"Interés sobre el saldo, que va bajando. Tasa E.A."},
-                  {v:"simple",l:"Interés simple",d:"Siempre sobre el monto original. Préstamos entre personas."}].map(o=>
+                  {v:"simple",l:"Interés simple",d:"Siempre sobre el monto original. Préstamos entre personas."},
+                  // 24-oct-2026 (Santiago: "debo 437 M de un local… pueden existir
+                  // deudas sin interés que se pagan de una sola vez, por ejemplo
+                  // al vender un activo").
+                  {v:"sin_interes",l:"Un solo pago, sin intereses",d:"Un saldo que pagas de una vez: al vender algo o en una fecha."}].map(o=>
                   <button key={o.v} type="button" onClick={()=>setForm(p=>({...p,tipoInteres:o.v}))}
                     style={{flex:"1 1 220px",textAlign:"left",background:(form.tipoInteres||"compuesto")===o.v?"rgba(34,197,94,0.10)":T.bg3,
                       border:"1px solid "+((form.tipoInteres||"compuesto")===o.v?T.green:T.border),borderRadius:10,padding:"10px 12px",cursor:"pointer",color:T.txt}}>
@@ -756,8 +763,20 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   </button>)}
               </div>
             </div>
+              {form.tipoInteres === "sin_interes" ? (
+                <div style={{ gridColumn: "1/-1", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 11, color: T.txt3, marginBottom: 6, fontWeight: 600 }}>¿Cuándo lo pagas?</div>
+                  <select value={form.pagoUnicoAnio || ""} onChange={(e) => setForm((p) => ({ ...p, pagoUnicoAnio: e.target.value ? Number(e.target.value) : "" }))}
+                    style={{ width: "100%", background: T.bg2 || T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13 }}>
+                    <option value="">Cuando venda algo (lo eliges en Mi futuro a 10 años)</option>
+                    {Array.from({ length: 11 }, (_, k) => new Date().getFullYear() + k).map((y) => <option key={y} value={y}>En {y}</option>)}
+                  </select>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, lineHeight: 1.5 }}>No hay cuota ni intereses: el saldo se resta de tu patrimonio hasta que lo pagas. En Mi futuro a 10 años puedes pagarlo con la venta de un activo (Tu plata → Pagar deudas).</div>
+                </div>
+              ) : <>
               <In l="Cuota/mes ($)" value={form.pg} onChange={(v) => setForm((p) => ({ ...p, pg: v, cuotaManual: true }))} type="number" placeholder="0" />
               <In l="Tasa anual % (E.A.)" value={form.ts} onChange={(v) => setForm((p) => ({ ...p, ts: v }))} type="number" placeholder="Ej: 22,99" />
+              </>}
             {/* 26-jul-2026 (Santiago cargó 13,7 y quedó 137 por el bug de la
                 coma, ya corregido). Una tasa de tres cifras casi siempre es un
                 decimal perdido, y el motor la daría por buena: con 137% E.A.
@@ -785,7 +804,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   permite VERIFICAR la tasa contra el interés realmente cobrado.
                   La cuota se arma por SUMA (capital + interés), que es un dato,
                   no una identidad inventada como el auto-cálculo anterior. */}
-              <div style={{ gridColumn: "1/-1", background: "#141418", border: `1px dashed ${T.border}`, borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ gridColumn: "1/-1", background: "#141418", border: `1px dashed ${T.border}`, borderRadius: 10, padding: "12px 14px", display: form.tipoInteres === "sin_interes" ? "none" : undefined }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.txt2, marginBottom: 2 }}>📄 Desglose del extracto <span style={{ fontWeight: 400, color: T.txt3 }}>(opcional)</span></div>
                 <div style={{ fontSize: 10, color: T.txt3, marginBottom: 10 }}>Copia los dos renglones tal cual salen en tu extracto. Con eso se arma la cuota y se verifica la tasa.</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -827,7 +846,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               </div>
               {/* Vigencia de la deuda (20-jul-2026): "¿se paga todo el año o
                   hasta X mes?" — reusa el selector de Ingresos/Gastos. */}
-              <div style={{ gridColumn: "1/-1" }}>
+              {form.tipoInteres !== "sin_interes" && <div style={{ gridColumn: "1/-1" }}>
                 <FrecuenciaSelector
                   frecuencia={form.frecuencia || "mensual"}
                   mesPago={1}
@@ -842,7 +861,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   mostrarSelectorMes={false}
                   mostrarVigencia={true}
                 />
-              </div>
+              </div>}
               {/* 25-jul-2026 (Santiago: "las deudas también pueden ser una vez
                   al año, variables o fijas, pues uno hace abonos o la paga" ·
                   "me gustó el abordaje de ingresos, uno puede cambiar los
