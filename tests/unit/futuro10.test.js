@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, resolverEscenario, cienMillones, leerModifica, migrarModifica } from "../../src/lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, resolverEscenario, cienMillones, leerModifica, migrarModifica, leerFuentesPago } from "../../src/lib/futuro10.js";
 
 const cero = JSON.parse(JSON.stringify(SUPUESTOS_F10));
 cero.presets.rfCorto.realSpread = 0; cero.presets.rfLargo.realSpread = 0;
@@ -525,7 +525,25 @@ describe("futuro10 · casa propia en 5 años pagada con una inversión", () => {
     expect(btg4 - btg5).toBeCloseTo(3900e6, -3);
     expect(r.filas[5].porActivo.find((x) => x.nombre === "Casa").valor).toBeCloseTo(3900e6, -3);
     expect(Math.abs(r.filas[5].patrimonio - r.filas[4].patrimonio) / r.filas[4].patrimonio).toBeLessThan(0.1);
-    expect(r.alertas.some((a) => a.tipo === "pago_futuro" && /salen de BTG/.test(a.texto))).toBe(true);
+    expect(r.alertas.some((a) => a.tipo === "pago_futuro" && /de BTG/.test(a.texto))).toBe(true);
     expect(r.fuentes.some((f) => f.id === "nueva_0")).toBe(true);
+  });
+});
+
+describe("futuro10 · una compra futura puede salir de varias inversiones", () => {
+  it("50 % de BTG y 50 % de IBKR", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "pm", n: "PM", tp: "Real Estate", va: 9000e6 }, { id: "ib", n: "IBKR", tp: "ETF", va: 3000e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 500e6 }], ingresos: [], gas: {}, deu: [] };
+    const cfg = { decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "BTG", monto: 5000e6, anio: 1, rendimientoNomPct: 10, pctRecibe: 100 }],
+      futuros: { activos: [{ nombre: "Casa", clase: "vivienda", valor: 2000e6, entrega: 3, fuentes: [{ id: "nueva_0", pct: 50 }, { id: "ib", pct: 50 }] }] } };
+    const r = proyectarFuturo10(u, cfg);
+    const v = (t, n) => r.filas[t].porActivo.find((x) => x.nombre === n).valor;
+    expect(v(2, "BTG") - v(3, "BTG")).toBeCloseTo(1000e6, -3);
+    const sinCasa = proyectarFuturo10(u, { ...cfg, futuros: { activos: [] } });
+    expect(sinCasa.filas[3].porActivo.find((x) => x.nombre === "IBKR").valor - v(3, "IBKR")).toBeCloseTo(1000e6, -3);
+    expect(r.alertas.some((a) => a.tipo === "pago_futuro" && /de BTG y .* de IBKR/.test(a.texto))).toBe(true);
+  });
+  it("escenarios viejos con fuenteId siguen funcionando (100 %)", () => {
+    expect(leerFuentesPago({ fuenteId: "x" })).toEqual([{ id: "x", pct: 100 }]);
+    expect(leerFuentesPago({ fuentes: [{ id: "a", pct: 70 }, { id: "b", pct: 50 }] })).toEqual([{ id: "a", pct: 70 }, { id: "b", pct: 30 }]);
   });
 });

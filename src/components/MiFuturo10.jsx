@@ -333,7 +333,12 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuent
         const renta = tipo === "inmueble" || tipo === "negocio";
         const total = Number(x.valor) || 0, antes = Math.min(total, Number(x.cuotaInicial) || 0);
         const cuando = (y) => (y === 1 ? "ya" : `en ${y - 1} año${y === 2 ? "" : "s"}`);
-        const fuenteNom = x.fuenteId ? (fuentes.find((y) => y.id === x.fuenteId) || {}).nombre || "esa inversión" : "tu liquidez";
+        const fps = Array.isArray(x.fuentes) ? x.fuentes : x.fuenteId ? [{ id: x.fuenteId, pct: 100 }] : [];
+        const setFps = (arr) => upA(i, { fuentes: arr, fuenteId: null });
+        const sumaFps = fps.reduce((sm, z) => sm + (Number(z.pct) || 0), 0);
+        const nomF = (id) => (fuentes.find((y) => y.id === id) || {}).nombre || "una inversión";
+        const validas = fps.filter((z) => z.id && Number(z.pct) > 0);
+        const fuenteNom = validas.length ? validas.map((z) => `${z.pct} % de ${nomF(z.id)}`).join(" y ") + (sumaFps < 100 ? ` y ${100 - sumaFps} % de tus cuentas de hoy` : "") : "tu liquidez";
         return (
           <div key={i} style={g}>
             <label style={lbl}>¿Qué es?<select style={inp} value={tipo} onChange={(e) => upA(i, { clase: e.target.value })}>
@@ -342,8 +347,15 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuent
             <label style={lbl}>¿Cuánto cuesta en total? ($)<NumberInput style={inp} value={x.valor ?? ""} onChange={(v) => upA(i, { valor: v })} /></label>
             <label style={lbl}>¿Cuándo está lista?{selAnio(x.entrega || 1, (v) => upA(i, { entrega: v || 1, anioCuota: Math.min(Number(x.anioCuota) || 1, v || 1) }))}
               <span style={{ fontSize: 11 }}>Cuando la recibes o terminas de construir.</span></label>
-            <label style={lbl}>¿De dónde sale la plata?<select style={inp} value={x.fuenteId || ""} onChange={(e) => upA(i, { fuenteId: e.target.value || null })}><option value="">De mi liquidez</option>{fuentes.map((y) => <option key={y.id} value={y.id}>De {y.nombre}</option>)}</select>
-              <span style={{ fontSize: 11 }}>Si esa inversión no alcanza, lo que falta sale de tu liquidez.</span></label>
+            <div style={{ ...lbl, gridColumn: "1 / -1" }}>¿De dónde sale la plata?
+              {fps.map((fp, k) => <div key={k} style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center" }}>
+                <select style={{ ...inp, flex: 1 }} value={fp.id || ""} onChange={(e) => setFps(fps.map((z, j) => (j === k ? { ...z, id: e.target.value } : z)))}><option value="">Elige una inversión</option>{fuentes.map((y) => <option key={y.id} value={y.id}>{y.nombre}</option>)}</select>
+                <span style={{ display: "flex", alignItems: "center", gap: 2, width: 76 }}><InputDecimalEs style={inp} value={fp.pct ?? ""} onChange={(v) => setFps(fps.map((z, j) => (j === k ? { ...z, pct: v } : z)))} />%</span>
+                <button style={{ ...btn(false), padding: "6px 8px" }} onClick={() => setFps(fps.filter((_, j) => j !== k))}>✕</button>
+              </div>)}
+              <button style={{ ...btn(false), marginTop: 6 }} onClick={() => { const resto = 100 - sumaFps; if (resto > 0) setFps([...fps, { id: "", pct: resto }]); else { const n = fps.length + 1, base = Math.floor(100 / n); setFps([...fps, { id: "" }].map((z, j) => ({ ...z, pct: j === n - 1 ? 100 - base * (n - 1) : base }))); } }}>+ {fps.length ? "Otra inversión" : "Sale de una inversión"}</button>
+              <span style={{ display: "block", fontSize: 11, marginTop: 4 }}>{fps.length === 0 ? "Si no eliges, sale de tus cuentas de hoy (ahorros y efectivo)." : sumaFps < 100 ? `El ${100 - sumaFps} % restante sale de tus cuentas de hoy.` : sumaFps > 100 ? "Los porcentajes suman más de 100 %." : "Si alguna no alcanza, lo que falta sale de tus cuentas de hoy."}</span>
+            </div>
             <label style={lbl}>¿Pagas una parte antes? ($, opcional)<NumberInput style={inp} value={x.cuotaInicial ?? ""} onChange={(v) => upA(i, { cuotaInicial: v })} />
               <span style={{ fontSize: 11 }}>Un anticipo o la primera etapa de la obra. Si no, todo se paga cuando está lista.</span></label>
             {antes > 0 && <label style={lbl}>¿Cuándo pagas esa parte?{selAnio(x.anioCuota || 1, (v) => upA(i, { anioCuota: Math.min(v || 1, Number(x.entrega) || 1) }))}</label>}
@@ -354,14 +366,14 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuent
             <label style={lbl}>¿Cuánto sube su valor al año? (%)<InputDecimalEs style={inp} placeholder={hintVal(tipo)} value={x.valorizacionNomPct ?? ""} onChange={(v) => upA(i, { valorizacionNomPct: v })} />
               <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {hintVal(tipo)}.</span></label>
             {total > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am }}>
-              {antes > 0 ? `Pagas ${plata(antes)} ${cuando(Number(x.anioCuota) || 1)} y ${plata(total - antes)} ${cuando(Number(x.entrega) || 1)}` : `Pagas ${plata(total)} ${cuando(Number(x.entrega) || 1)}`}, de {fuenteNom}.
+              {antes > 0 ? `Pagas ${plata(antes)} ${cuando(Number(x.anioCuota) || 1)} y ${plata(total - antes)} ${cuando(Number(x.entrega) || 1)}` : `Pagas ${plata(total)} ${cuando(Number(x.entrega) || 1)}`}: {validas.length ? fuenteNom : "de tus cuentas de hoy"}.
               {renta && (Number(x.rentaMensual) || 0) > 0 ? ` Renta ${plata(Number(x.rentaMensual))} al mes ${cuando(Number(x.rentaDesde) || Number(x.entrega) || 1)}.` : ""}
               {tipo === "vivienda" ? " Si al mudarte dejas de pagar arriendo, márcalo en «Gastos que se acaban» desde ese año." : ""}</div>}
             <button style={btn(false)} onClick={() => put("activos", f.activos.filter((_, j) => j !== i))}>Quitar</button>
           </div>
         );
       })}
-      <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("activos", [...f.activos, { nombre: "", clase: "vivienda", valor: "", cuotaInicial: "", anioCuota: 1, entrega: 2, rentaMensual: "", rentaDesde: "", fuenteId: null }])}>+ Agregar compra o construcción</button>
+      <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("activos", [...f.activos, { nombre: "", clase: "vivienda", valor: "", cuotaInicial: "", anioCuota: 1, entrega: 2, rentaMensual: "", rentaDesde: "", fuentes: [] }])}>+ Agregar compra o construcción</button>
       {/* 24-oct-2026 (Santiago: "como vienen nuevas rentas también vienen
           nuevos gastos: la universidad de mis hijos afuera, unos 180 M por
           año, en 3 años"). Pesos de hoy; suben con la inflación. */}
@@ -511,9 +523,9 @@ function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] })
 // Origen de la plata de cada inversión (motor: fuente venta | nuevo | liquidez).
 function FuenteSel({ value, on }) {
   return <select style={inp} value={value || "venta"} onChange={(e) => on(e.target.value)}>
-    <option value="venta">De lo que vendo</option>
-    <option value="nuevo">Capital nuevo (plata de afuera)</option>
-    <option value="liquidez">De mi liquidez de hoy</option>
+    <option value="venta">De lo que vendo (la plata de las ventas)</option>
+    <option value="liquidez">De mis cuentas de hoy (ahorros y efectivo que ya tengo)</option>
+    <option value="nuevo">Plata nueva que entra de afuera (prima, crédito, herencia)</option>
   </select>;
 }
 
