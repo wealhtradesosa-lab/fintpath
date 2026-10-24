@@ -92,7 +92,7 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
 
   // ── Derivados específicos de natural (para UI de optimización) ──
   const benefCon = d.type === "natural"
-    ? (d.exenta25 || 0) + (d.totalDeducciones || 0) + (d.pvMax || 0) + (d.afcMax || 0)
+    ? (d.exenta25 || 0) + (d.totalDeducciones || 0) + (d.pvMax || 0) // pvMax = tope conjunto PV+AFC
     : 0;
   const benAplicCon = d.type === "natural"
     ? Math.min(benefCon, d.lim40 || 0)
@@ -134,6 +134,7 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     tasaSin: d.tasaBruta != null ? d.tasaBruta : d.tasa,
     tasaCon: d.ingreso > 0 ? ((d.impOptBruto != null ? d.impOptBruto : d.impOptimizado) / d.ingreso * 100) : 0,
     ahorro: d.ahorroOptimo,
+    saldoAPagar: d.saldoAPagar || 0,
     saldoAFavor: d.saldoAFavor || 0,
     saldoAFavorOpt: d.saldoAFavorOpt || 0,
     deducViv: d.deducVivienda,
@@ -155,4 +156,13 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
 // No es saldo a pagar: las retenciones pueden cubrirlo.
 export function ahorroPvAfc(fiscalData) {
   return Math.max(0, (Number(fiscalData?.impSin) || 0) - (Number(fiscalData?.impCon) || 0));
+}
+
+// Columna «(=) Saldo a pagar / a favor» del simulador: sale de taxCO.
+export function saldoResumen(fd, isJ) {
+  if (isJ) {
+    const imp = Number(fd?.impBruto) || 0, ret = Number(fd?.retefuenteCalc) || 0;
+    return { saldoAPagar: Math.max(0, imp - ret), saldoAFavor: Math.max(0, ret - imp) };
+  }
+  return { saldoAPagar: Number(fd?.saldoAPagar) || 0, saldoAFavor: Number(fd?.saldoAFavor) || 0 };
 }

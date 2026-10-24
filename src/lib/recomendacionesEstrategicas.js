@@ -1,4 +1,5 @@
 import { fmtPctEs } from "./formato.js";
+import { estimarImpuesto } from "./taxCO.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · recomendacionesEstrategicas.js · Sesión 1-may-2026
 //
@@ -79,6 +80,7 @@ function analizarPerfil(owner, det, user) {
   }
 
   return {
+    _user: user, _owner: owner,
     owner,
     isJuridica,
     tipoPerfil,
@@ -160,8 +162,9 @@ function recomendacionesNaturalNoLaboral(perfil) {
   // Para acceder a beneficios laborales (PV/AFC, dependientes, salud)
   if (perfil.ingLaboral === 0 && saldoACargo > 10_000_000) {
     const consultoria_anual = 120_000_000; // ~$10M/mes consultoría profesional
-    const aporteAFCmax = Math.min(consultoria_anual * 0.25, 2500 * UVT); // cap 25%
-    const ahorroAFC = Math.round(aporteAFCmax * tasaMarg);
+    // Tope conjunto PV + AFC: 30 % del ingreso laboral, hasta 3.800 UVT/año.
+    const aporteAFCmax = Math.min(consultoria_anual * 0.30, 3800 * UVT);
+    const ahorroAFC = Math.round(ahorroAporteConTaxCO(perfil, consultoria_anual, aporteAFCmax));
     recs.push({
       id: "consultoria_laboral",
       ejecutaEn: "personal",
@@ -175,7 +178,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
       },
       ahorroAnual: {
         monto: Math.min(ahorroAFC, saldoACargo),
-        calculoDetallado: `Aportar el 25% (cap legal) = $${aporteAFCmax.toLocaleString("es-CO")}/año a AFC, deducible al 100%. Ahorro: × ${fmtPctEs((tasaMarg * 100), 0)} tasa marginal.`,
+        calculoDetallado: `Con la consultoría, hasta $${aporteAFCmax.toLocaleString("es-CO")}/año en pensión voluntaria o AFC podría ser exento (30% del ingreso, hasta 3.800 UVT al año, compartido entre pensión voluntaria y AFC). Diferencia de impuesto calculada con y sin el aporte.`,
       },
       roi: {
         porcentaje: 30,
@@ -478,4 +481,16 @@ export function generarRecomendacionesEstrategicas(user, owner, det) {
   });
 
   return recs;
+}
+// Diferencia de impuesto a cargo (antes de retenciones) corriendo taxCO con la
+// consultoría y con vs sin el aporte. Sin datos del usuario → 0 (no se inventa).
+export function ahorroAporteConTaxCO(perfil, consultoriaAnual, aporteAnual) {
+  const user = perfil?._user, owner = perfil?._owner;
+  if (!user || !owner || aporteAnual <= 0) return 0;
+  const consult = { id: "__consultoria", owner: owner.id, nombre: "Consultoría", fiscalCode: "LAB_HONORARIOS_SIN_EMPLEADOS", mensual: consultoriaAnual / 12, tipo: "fijo" };
+  const base = { ...user, owners: [owner], ingresos: [...(user.ingresos || []), consult] };
+  const gas = { ...(base.gas || {}) };
+  gas["Aporte tributario"] = [...(gas["Aporte tributario"] || []), { owner: owner.id, fiscalCode: "AP_TRIB_AFC", m: aporteAnual / 12 }];
+  const imp = (u) => (estimarImpuesto(u).detalle.find((d) => d.name === owner.name)?.impBruto) || 0;
+  return Math.max(0, imp(base) - imp({ ...base, gas }));
 }

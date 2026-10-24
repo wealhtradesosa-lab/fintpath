@@ -3,7 +3,7 @@
 // exentas (206-4); todo bajo el tope Art. 336 (40 % / 1.340 UVT).
 import { describe, it, expect } from "vitest";
 import { estimarImpuesto } from "../../src/lib/taxCO.js";
-import { adapterOwnerPlan, ahorroPvAfc } from "../../src/lib/ownerPlanAdapter.js";
+import { adapterOwnerPlan, ahorroPvAfc, saldoResumen } from "../../src/lib/ownerPlanAdapter.js";
 
 const user = (salMes, gas = {}, extra = []) => ({ trm: 4200, owners: [{ id: "o1", name: "Luis", type: "natural" }], gas, deu: [], inv: [],
   ingresos: [{ id: "sal", owner: "o1", nombre: "Salario", fiscalCode: "LAB_SALARIO", mensual: salMes, tipo: "fijo" }, ...extra] });
@@ -72,5 +72,21 @@ describe("saldo a favor cuando las retenciones superan el impuesto a cargo", () 
     const d = estimarImpuesto(user(60e6)).detalle.find((x) => x.name === "Luis");
     expect(d.saldoAPagar).toBeGreaterThan(0);
     expect(d.saldoAFavor).toBe(0);
+  });
+});
+
+describe("simulador: columna de saldo y tope conjunto", () => {
+  const fdDe = (u) => adapterOwnerPlan({ owner: u.owners[0], ingresos: u.ingresos, gastos: [], inv: [], deu: [], trm: 4200 });
+  it("$15 M/mes: la columna usa el saldo de taxCO y cuadra con la tarjeta", () => {
+    const u = user(15e6), d = estimarImpuesto(u).detalle.find((x) => x.name === "Luis"), fd = fdDe(u);
+    const col = saldoResumen(fd, false);
+    expect(col.saldoAPagar).toBe(d.saldoAPagar);
+    expect(col.saldoAFavor).toBeCloseTo(d.saldoAFavor, 0);
+    expect(col.saldoAFavor).toBeGreaterThan(0);
+    expect(fd.saldoAFavorOpt - col.saldoAFavor).toBeCloseTo(ahorroPvAfc(fd), -2);
+  });
+  it("$10 M/mes: máximo PV+AFC = $2,88 M/mes (tope compartido, sin doble conteo)", () => {
+    const fd = fdDe(user(10e6));
+    expect(Math.round(fd.pvMax / 12 / 1e4) / 100).toBeCloseTo(2.88, 2);
   });
 });

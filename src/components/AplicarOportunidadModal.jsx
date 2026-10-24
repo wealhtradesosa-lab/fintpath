@@ -54,7 +54,7 @@ const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 const CODIGOS_APLICABLES = {
   APORTAR_PV_AFC: {
     title: "Cargar aporte a Pensión Voluntaria / AFC",
-    descripcion: "Aportar a una cuenta de Pensión Voluntaria (PV) o de Ahorro al Fomento de la Construcción (AFC) reduce tu base gravable. Los aportes son 100% deducibles bajo el cap legal del 25% del ingreso (con tope 2500 UVT/año).",
+    descripcion: "Aportar a una cuenta de Pensión Voluntaria (PV) o de Ahorro al Fomento de la Construcción (AFC) reduce tu base gravable. El aporte puede ser exento hasta el 30% del ingreso, hasta 3.800 UVT al año (compartido entre pensión voluntaria y AFC).",
     inputs: [
       {
         key: "aporteMensual",

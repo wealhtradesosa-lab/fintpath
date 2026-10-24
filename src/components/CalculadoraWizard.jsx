@@ -1191,7 +1191,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
   const MAX_DEP = Math.round(384 * UVT);                      // $20.1M (10% lab, máx 384 UVT)
   const MAX_MEDICINA = Math.round(16 * UVT * 12);             // $10.05M (16 UVT/mes)
   const MAX_VIVIENDA = Math.round(1200 * UVT);                // $62.85M (1.200 UVT/año)
-  const MAX_PV_AFC = Math.round(3800 * UVT);                  // $199.02M conjunto
+  const MAX_PV_AFC = Math.round(3800 * UVT);                  // conjunto PV+AFC: 3.800 UVT (UVT 2025: 3.800 × $49.799 = $189.236.200; con la UVT del año por defecto, 3.800 × UVT)
 
   // Helper: ejecutar scroll suave a un id dentro del Paso 3 (mismo wizard step).
   const scrollTo = (id) => {
