@@ -3,7 +3,7 @@ import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
-import { vistaNivel, estadoNivel, TOPE_BARRA, metaNivel, nombresOcultos } from "../lib/nivelVista.js";
+import { vistaNivel, estadoNivel, TOPE_BARRA, metaNivel, ingresosOcultos } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
@@ -299,7 +299,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
               </button>
               {verOcultos && (
                 <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-                  {nombresIngresosOcultos.map((n, i) => <li key={i}>{n}</li>)}
+                  {nombresIngresosOcultos.map((n, i) => <li key={i}>{n.nombre}: <b>{fm(n.mensual)}/mes</b></li>)}
                 </ul>
               )}
             </div>
@@ -1469,7 +1469,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
       <FreedomBarLive ip={simT.metMes?.ip ?? simT.ip} ob={simT.metMes?.ob ?? simT.ob}
         fl={simT.metMes?.fl ?? simT.fl} nivel={simT.metMes?.nivel ?? simT.nivel}
         ocultos={simT.metMes?.ocultos} mesMedido={simT.metMes?.mesMedido}
-        nombresIngresosOcultos={nombresOcultos(user.ingresos)} />
+        nombresIngresosOcultos={ingresosOcultos(user.ingresos, trm)} />
 
       {/* Scenario presets */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 20 }}>

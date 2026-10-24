@@ -4,6 +4,7 @@
 // Todo sale ahora de UN solo nivel (metrics.js → nivelLibertad) y de los mismos
 // umbrales en plata (umbralNivel). Este módulo solo arma las frases.
 import { NIVELES, umbralNivel, fmtPctEs } from "./metrics.js";
+import { montoPromedioMensual } from "./flowHelpers.js";
 
 /**
  * @param {{ip:number, ob:number, nivel:object|null}} p  nivel = salida de nivelLibertad
@@ -53,8 +54,11 @@ export function metaNivel(def, ctx) {
   return { tipo: "pasivo", monto: umbralNivel(def, ctx) };
 }
 
-/** Nombres de los ingresos ocultos (sim === false), sin montos. */
-export function nombresOcultos(ingresos = []) {
-  return (ingresos || []).filter((i) => i && i.sim === false)
-    .map((i) => String(i.nombre || i.categoria || "Ingreso sin nombre"));
+/** Ingresos ocultos (sim === false): nombre y monto mensual en COP. Solo para
+ *  mostrarle al usuario sus propios datos; no va a analytics ni a logs. */
+export function ingresosOcultos(ingresos = [], trm = 4200) {
+  return (ingresos || []).filter((i) => i && i.sim === false).map((i) => ({
+    nombre: String(i.nombre || i.categoria || "Ingreso sin nombre"),
+    mensual: (montoPromedioMensual(i) || 0) * (i.moneda === "USD" ? trm : 1),
+  }));
 }

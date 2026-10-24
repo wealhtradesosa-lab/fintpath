@@ -56,7 +56,7 @@ describe("auditoría ingreso pasivo", () => {
   });
 });
 
-import { posEnBarra, metaNivel, nombresOcultos, TOPE_BARRA } from "../../src/lib/nivelVista.js";
+import { posEnBarra, metaNivel, ingresosOcultos, TOPE_BARRA } from "../../src/lib/nivelVista.js";
 describe("escala de la barra y metas", () => {
   it("0–150%: 136% queda pasado de la marca de Abundancia y nada se corta", () => {
     expect(TOPE_BARRA).toBe(1.5);
@@ -69,8 +69,11 @@ describe("escala de la barra y metas", () => {
     expect(metaNivel(NIVELES[1])).toEqual({ tipo: "flujo", monto: 0 });
     expect(metaNivel(NIVELES[4], { ob })).toEqual({ tipo: "pasivo", monto: ob * 1.3 });
   });
-  it("lista solo los nombres de ingresos ocultos", () => {
-    expect(nombresOcultos([{ nombre: "Arriendo X", sim: false, mensual: 5 }, { nombre: "Salario" }, { categoria: "Dividendos", sim: false }]))
-      .toEqual(["Arriendo X", "Dividendos"]);
+  it("lista los ingresos ocultos con nombre y monto mensual (USD a COP)", () => {
+    expect(ingresosOcultos([
+      { nombre: "Arriendo X", sim: false, mensual: 5000000 },
+      { nombre: "Salario", mensual: 9 },
+      { categoria: "Dividendos", sim: false, mensual: 100, moneda: "USD" },
+    ], 4000)).toEqual([{ nombre: "Arriendo X", mensual: 5000000 }, { nombre: "Dividendos", mensual: 400000 }]);
   });
 });
