@@ -246,7 +246,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       )}
 
       <details style={card}>
-        <summary style={{ cursor: "pointer" }}>Supuestos usados (validados por Finanzas)</summary>
+        <summary style={{ cursor: "pointer" }}>Supuestos de referencia (estimaciones de largo plazo)</summary>
         <p style={{ color: C.tx2, fontSize: 12 }}>Puedes cambiar el escenario arriba, la valorización de cada activo en el paso 2 y la mezcla o el rendimiento de una inversión personalizada en el paso 3.</p>
         <TablaSupuestos esc={esc} />
       </details>
