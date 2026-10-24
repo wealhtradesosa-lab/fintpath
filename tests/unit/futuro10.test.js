@@ -371,3 +371,13 @@ describe("futuro10 · cada tipo de inversión pregunta lo suyo", () => {
     expect(r.reparto.find((x) => x.nombre === "Lote").valor).toBeCloseTo(1010e6 * 1.06 ** 10, -4);
   });
 });
+
+describe("futuro10 · ingreso futuro que sale de un activo", () => {
+  it("aplica la valorización al activo elegido y la renta entra desde el año dicho", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "loc", n: "Local", tp: "Local Comercial", va: 800e6 }, { id: "c", tp: "Cash", va: 100e6 }], ingresos: [], gas: {}, deu: [] };
+    const r = proyectarFuturo10(u, { futuros: { ingresos: [{ nombre: "Renta local", mensual: 5e6, desde: 2, activoId: "loc", valorizacionNomPct: 6 }], activos: [] } });
+    expect(r.reparto.find((x) => x.nombre === "Local").valor).toBeCloseTo(800e6 * 1.06 ** 10, -4);
+    expect(r.filas[1].rentaNueva).toBe(0);
+    expect(r.filas[2].rentaNueva).toBeGreaterThan(0);
+  });
+});

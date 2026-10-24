@@ -130,7 +130,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         </div>
         <div style={card}>
           <Seccion n={3} titulo="Lo que viene" sub="Lo que todavía no tienes y empieza más adelante: una pensión, una venta futura, un local que te entregan." />
-          <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} />
+          <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} />
         </div>
       </>)}
 
@@ -299,14 +299,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 }
 
 const ANIOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-function LoQueViene({ cfg, set, esc, owners }) {
+function LoQueViene({ cfg, set, esc, owners, activos = [] }) {
   const f = { ingresos: [], activos: [], ...(cfg.futuros || {}) };
   const put = (k, arr) => set("futuros", { ...f, [k]: arr });
   const upI = (i, v) => put("ingresos", f.ingresos.map((x, j) => (j === i ? { ...x, ...v } : x)));
   const upA = (i, v) => put("activos", f.activos.map((x, j) => (j === i ? { ...x, ...v } : x)));
   const lbl = { fontSize: 12, color: C.tx2 };
   const g = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 6, padding: "8px 0", borderTop: `1px solid ${C.bd}` };
-  const selAnio = (v, on, vacioTxt) => <select style={inp} value={v ?? ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}>{vacioTxt && <option value="">{vacioTxt}</option>}{ANIOS.map((y) => <option key={y} value={y}>Año {y}</option>)}</select>;
+  const selAnio = (v, on, vacioTxt) => <select style={inp} value={v ?? ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}>{vacioTxt && <option value="">{vacioTxt}</option>}{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>;
   const hintVal = (cl) => fmtPctEs(((1 + esc.inflacionPct / 100) * (1 + (cl === "inmueble" ? SUPUESTOS_F10.presets.fincaRaiz.valorizacionSpread : SUPUESTOS_F10.otrosRealSpread) / 100) - 1) * 100, 1);
   const fut = leerFuturos(f, esc); // mismo motor que la proyección
   const totalIng = fut.ingresos.reduce((sm, x) => sm + x.mensual, 0);
@@ -320,7 +320,7 @@ function LoQueViene({ cfg, set, esc, owners }) {
         <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
           <div style={{ fontSize: 11, color: C.tx2 }}>Ingresos futuros</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: totalIng > 0 ? C.gn : C.tx }}>{totalIng > 0 ? `${plata(totalIng)} al mes` : "Ninguno"}</div>
-          {fut.ingresos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{fut.ingresos.length} {fut.ingresos.length === 1 ? "ingreso" : "ingresos"} · el primero en el año {primerAnio}</div>}
+          {fut.ingresos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{fut.ingresos.length} {fut.ingresos.length === 1 ? "ingreso" : "ingresos"} · el primero {primerAnio === 1 ? "desde ya" : `en ${primerAnio - 1} año${primerAnio === 2 ? "" : "s"}`}</div>}
         </div>
         <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
           <div style={{ fontSize: 11, color: C.tx2 }}>Activos futuros</div>
@@ -328,14 +328,16 @@ function LoQueViene({ cfg, set, esc, owners }) {
           {f.activos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{f.activos.length} {f.activos.length === 1 ? "activo" : "activos"}</div>}
         </div>
       </div>
-      <div style={{ fontSize: 12, color: C.am, background: "rgba(245,158,11,0.08)", border: `1px solid rgba(245,158,11,0.3)`, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>¿La renta sale de construir o invertir en algo que ya tienes, como una bodega en tu lote? No la pongas aquí: ve a la sección 1, en ese activo toca «Le voy a invertir» y pon ahí la inversión y la renta.</div>
+      <div style={{ fontSize: 12, color: C.am, background: "rgba(245,158,11,0.08)", border: `1px solid rgba(245,158,11,0.3)`, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>¿La renta sale de un activo que ya tienes? Elígelo en «¿De dónde sale?». Si además le vas a meter plata (construir la bodega en el lote), hazlo en la sección 1, en ese activo, con «Le voy a invertir»: ahí van la inversión y la renta juntas.</div>
       <h4 style={{ margin: "8px 0" }}>Ingresos futuros</h4>
       {f.ingresos.map((x, i) => (
         <div key={i} style={g}>
           <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder="Ej.: pensión" onChange={(e) => upI(i, { nombre: e.target.value })} /></label>
           <label style={lbl}>Al mes ($, pesos de hoy)<NumberInput style={inp} value={x.mensual ?? ""} onChange={(v) => upI(i, { mensual: v })} />
-            <span style={{ fontSize: 11 }}>Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. Sube con la inflación.</span></label>
+            {!x.activoId && <span style={{ fontSize: 11 }}>Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. Sube con la inflación.</span>}</label>
+          <label style={lbl}>¿De dónde sale?<select style={inp} value={x.activoId || ""} onChange={(e) => upI(i, { activoId: e.target.value || null })}><option value="">No sale de un activo (pensión, honorarios…)</option>{activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>
           <label style={lbl}>Empieza{selAnio(x.desde || 1, (v) => upI(i, { desde: v || 1 }))}</label>
+          {x.activoId && <label style={lbl}>¿Cuánto se valoriza al año? (%, opcional)<InputDecimalEs style={inp} placeholder="Ej.: 5" value={x.valorizacionNomPct ?? ""} onChange={(v) => upI(i, { valorizacionNomPct: v })} /></label>}
           {/* 24-oct-2026 (Santiago, con la pensión puesta "termina año 7" sin querer:
               "no veo esa opción"). En el iPhone «Sigue» quedaba escondida arriba de la
               rueda. Ahora son dos botones y el año solo aparece si termina. */}
@@ -414,9 +416,10 @@ const vacio = (v) => v === "" || v == null;
 const textoIngresoFuturo = (x) => {
   const d = Math.max(1, Number(x.desde) || 1), h = vacio(x.hasta) ? null : Math.max(d, Number(x.hasta) || d);
   const monto = "$" + fmtMilesEs(Number(x.mensual) || 0);
-  if (h == null) return `Te llegan ${monto} al mes desde el año ${d}, siempre.`;
-  if (h === d) return `Te llegan ${monto} al mes solo durante el año ${d}.`;
-  return `Te llegan ${monto} al mes del año ${d} al año ${h} (${h - d + 1} años).`;
+  const cuando = (y) => (y === 1 ? "desde ya" : `dentro de ${y - 1} año${y === 2 ? "" : "s"}`);
+  if (h == null) return `Te llegan ${monto} al mes ${cuando(d)}, siempre.`;
+  if (h === d) return `Te llegan ${monto} al mes ${cuando(d)}, solo durante un año.`;
+  return `Te llegan ${monto} al mes ${cuando(d)}, durante ${h - d + 1} años.`;
 };
 
 // 24-oct-2026 (Santiago: "no veo la gráfica en el tiempo… no se visualiza muy

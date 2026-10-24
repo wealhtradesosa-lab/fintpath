@@ -304,6 +304,11 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   let liqAgotadaAnio = null;
   // ── Lo que viene: ingresos y activos que empiezan más adelante ──────────
   const fut = leerFuturos(cfg.futuros, esc, sup);
+  // 24-oct-2026 (Santiago: "tengo un activo que en un año empieza a rentar…
+  // debería poder elegir en el ingreso nuevo los activos existentes, y poner
+  // cuánto se valoriza"). Un ingreso futuro puede salir de un activo tuyo;
+  // si trae valorización, se aplica a ese activo.
+  fut.ingresos.forEach((x) => { const a = x.activoId && activos.find((y) => y.id === x.activoId); if (a && x.valorizacionNomPct != null) a.crec = x.valorizacionNomPct / 100; });
   fut.activos.forEach((x, k) => todos.push({ id: "futuro_" + k, nombre: x.nombre, clase: x.clase === "inmueble" ? "inmueble" : "otro", valor: 0, crec: x.crec, entrega: x.entrega, pagos: x.pagos, usd: false, invertible: true, rentaNuevaAnual: x.rentaMensual * 12, rentaDesdeMes: 12 * (Math.max(1, x.rentaDesde) - 1) }));
   let expUSD = canasta.crecimiento > 0;
   for (let t = 1; t <= N; t++) {
@@ -474,7 +479,7 @@ export function leerFuturos(f = {}, esc, sup = SUPUESTOS_F10) {
   const anio = (v, d = 1) => Math.min(10, Math.max(1, Math.round(n(v) || d)));
   const ingresos = (f?.ingresos || []).map((x) => {
     const desde = anio(x.desde);
-    return { nombre: String(x.nombre || "").trim() || "Ingreso futuro", mensual: Math.max(0, n(x.mensual)), desde, hasta: vacio(x.hasta) ? 99 : Math.max(desde, anio(x.hasta)), titular: x.titular || null };
+    return { nombre: String(x.nombre || "").trim() || "Ingreso futuro", mensual: Math.max(0, n(x.mensual)), desde, hasta: vacio(x.hasta) ? 99 : Math.max(desde, anio(x.hasta)), titular: x.titular || null, activoId: x.activoId || null, valorizacionNomPct: vacio(x.valorizacionNomPct) ? null : n(x.valorizacionNomPct) };
   }).filter((x) => x.mensual > 0);
   const activos = (f?.activos || []).map((x) => {
     const entrega = anio(x.entrega);
