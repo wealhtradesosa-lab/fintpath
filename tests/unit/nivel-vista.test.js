@@ -55,3 +55,22 @@ describe("auditoría ingreso pasivo", () => {
     expect(tipoIngreso({ categoria: "Pensión" })).toBe("pasivo");
   });
 });
+
+import { posEnBarra, metaNivel, nombresOcultos, TOPE_BARRA } from "../../src/lib/nivelVista.js";
+describe("escala de la barra y metas", () => {
+  it("0–150%: 136% queda pasado de la marca de Abundancia y nada se corta", () => {
+    expect(TOPE_BARRA).toBe(1.5);
+    expect(posEnBarra(1.36)).toBeGreaterThan(posEnBarra(1.3));
+    expect(posEnBarra(1.3)).toBeLessThan(100);
+    expect(posEnBarra(1)).toBeCloseTo(66.67, 1);
+  });
+  it("Estabilidad: meta de flujo ≥ $0; Déficit sin meta; las demás en ingreso pasivo", () => {
+    expect(metaNivel(NIVELES[0])).toBeNull();
+    expect(metaNivel(NIVELES[1])).toEqual({ tipo: "flujo", monto: 0 });
+    expect(metaNivel(NIVELES[4], { ob })).toEqual({ tipo: "pasivo", monto: ob * 1.3 });
+  });
+  it("lista solo los nombres de ingresos ocultos", () => {
+    expect(nombresOcultos([{ nombre: "Arriendo X", sim: false, mensual: 5 }, { nombre: "Salario" }, { categoria: "Dividendos", sim: false }]))
+      .toEqual(["Arriendo X", "Dividendos"]);
+  });
+});

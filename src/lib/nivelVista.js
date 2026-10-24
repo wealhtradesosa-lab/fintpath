@@ -33,3 +33,28 @@ export function estadoNivel(id, actual) {
   if (!actual) return "pendiente";
   return id < actual ? "pasado" : id === actual ? "actual" : "pendiente";
 }
+
+// Escala de la barra: 0–150%. Así Abundancia (130%) queda adentro con margen y
+// un 136% se ve pasado de esa marca, en vez de llenar la barra entera.
+export const TOPE_BARRA = 1.5;
+export function posEnBarra(cobertura) {
+  return Math.max(0, Math.min((cobertura / TOPE_BARRA) * 100, 100));
+}
+
+/**
+ * Meta de cada tarjeta. Déficit no tiene meta (es el punto de partida).
+ * Estabilidad usa la regla que ya existe en nivelLibertad: se llega con el
+ * flujo del mes ≥ $0 (lo que entra cubre lo que sale), no con ingreso pasivo.
+ * Seguridad / Independencia / Abundancia: ingreso pasivo de umbralNivel.
+ */
+export function metaNivel(def, ctx) {
+  if (!def || def.clave === "deficit") return null;
+  if (def.clave === "estabilidad") return { tipo: "flujo", monto: 0 };
+  return { tipo: "pasivo", monto: umbralNivel(def, ctx) };
+}
+
+/** Nombres de los ingresos ocultos (sim === false), sin montos. */
+export function nombresOcultos(ingresos = []) {
+  return (ingresos || []).filter((i) => i && i.sim === false)
+    .map((i) => String(i.nombre || i.categoria || "Ingreso sin nombre"));
+}

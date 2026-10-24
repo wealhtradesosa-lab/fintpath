@@ -3,7 +3,7 @@ import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
-import { vistaNivel, estadoNivel } from "../lib/nivelVista.js";
+import { vistaNivel, estadoNivel, TOPE_BARRA, metaNivel, nombresOcultos } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
@@ -150,7 +150,8 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
 }
 
 // ─── FREEDOM BAR (inline, reactive) ───
-function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
+function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [] }) {
+  const [verOcultos, setVerOcultos] = useState(false);
   const [expandedLvl, setExpandedLvl] = useState(null);
   const te = ob, ni = ip;
   const obEsencial = nivel?.obEsencial || ob;
@@ -160,7 +161,8 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
   const currentLevel = nivel?.nivel || 0;
   // La barra llega hasta Abundancia (1,3x), no hasta Independencia: si topara en
   // 100% el último escalón no tendría dónde dibujarse.
-  const TOPE = 1.3;
+  // 24-oct-2026 — Escala 0–150%: Abundancia (130%) queda adentro con margen.
+  const TOPE = TOPE_BARRA;
   const overallProg = Math.min((ratio / TOPE) * 100, 100);
   const pos = (l) => Math.min((umbral(l) / (ob * TOPE)) * 100, 100);
   const currentData = currentLevel > 0 ? LEVELS[currentLevel - 1] : null;
@@ -264,7 +266,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
           {/* 0-25% no es un punto: es la franja donde estas en Deficit o en
               Estabilidad segun tu flujo del mes. Antes se dibujaban como dos
               marcas (0% y un 10% inventado) y la escala no cuadraba. */}
-          <div style={{ position: "absolute", left: "12.5%", transform: "translateX(-50%)", textAlign: "center" }}>
+          <div style={{ position: "absolute", left: (LEVELS[2] ? pos(LEVELS[2]) / 2 : 12.5) + "%", transform: "translateX(-50%)", textAlign: "center" }}>
             <div style={{ fontSize: 9, fontWeight: currentLevel <= 2 ? 700 : 500, color: currentLevel === 1 ? LEVELS[0].color : currentLevel === 2 ? LEVELS[1].color : T.txt3 }}>
               {currentLevel === 1 ? "Déficit" : currentLevel === 2 ? "Estabilidad" : "Déficit · Estabilidad"}
             </div>
@@ -290,6 +292,18 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
           {ocultos.nGastos > 0 && ocultos.nIngresos > 0 && " y"}
           {ocultos.nIngresos > 0 && <> {ocultos.nIngresos} ingreso{ocultos.nIngresos > 1 ? "s" : ""} por <b>{fm(ocultos.ingresos)}/mes</b></>}
           . Si eso lo sigues pagando o cobrando, vuelve a mostrarlo en su sección para que el nivel sea real.
+          {nombresIngresosOcultos.length > 0 && (
+            <div style={{ marginTop: 6 }}>
+              <button onClick={() => setVerOcultos(!verOcultos)} style={{ background: "none", border: "none", padding: 0, color: T.gd, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                {verOcultos ? "Ocultar la lista ▴" : `Ver cuáles son los ${nombresIngresosOcultos.length} ingresos ▾`}
+              </button>
+              {verOcultos && (
+                <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                  {nombresIngresosOcultos.map((n, i) => <li key={i}>{n}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -327,14 +341,28 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
                 // las otras tres mostraban un monto. No se ganan con ingreso
                 // pasivo, así que no tienen umbral — pero sí tienen una cifra, y
                 // es el flujo del mes, que es justo lo que las separa.
+                // 24-oct-2026 — Estabilidad también muestra su meta: flujo del
+                // mes ≥ $0 (regla de nivelLibertad). Déficit es el punto de
+                // partida y no tiene meta.
+                metaNivel(l.def) ? (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                    {fm(fl)}<span style={{ fontSize: 9 }}>/m</span>
+                    Meta: {fm(0)}<span style={{ fontSize: 9 }}>/mes</span>
                   </div>
                   <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
-                    tu flujo del mes<br />{l.def.clave === "deficit" ? "en rojo = estás aquí" : "en verde = estás aquí"}
+                    de flujo o más<br />hoy: {fm(fl)}/mes
                   </div>
                 </>
+                ) : (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
+                    {fm(fl)}<span style={{ fontSize: 9 }}>/mes</span>
+                  </div>
+                  <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
+                    tu flujo del mes<br />en rojo = estás aquí
+                  </div>
+                </>
+                )
               )}
               <div style={{ fontSize: 9, color: T.txt3, marginTop: 3 }}>click para info ▾</div>
             </div>
@@ -1440,7 +1468,8 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
           no contra el promedio del año (simT.ob). Ver metrics.js. */}
       <FreedomBarLive ip={simT.metMes?.ip ?? simT.ip} ob={simT.metMes?.ob ?? simT.ob}
         fl={simT.metMes?.fl ?? simT.fl} nivel={simT.metMes?.nivel ?? simT.nivel}
-        ocultos={simT.metMes?.ocultos} mesMedido={simT.metMes?.mesMedido} />
+        ocultos={simT.metMes?.ocultos} mesMedido={simT.metMes?.mesMedido}
+        nombresIngresosOcultos={nombresOcultos(user.ingresos)} />
 
       {/* Scenario presets */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 20 }}>
