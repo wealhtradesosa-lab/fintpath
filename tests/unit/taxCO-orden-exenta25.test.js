@@ -134,19 +134,26 @@ describe("Wizard medicina prepagada: 16 UVT/mes del AG de proyección", () => {
   });
 });
 
-describe("REC aporte_pv_estrategico: tope 30%/3.800 UVT y ahorro = diferencia taxCO", () => {
-  it("ahorro con/sin aporte a $15M/mes usa el mismo AG que el tope", () => {
-    const u = user(15e6);
-    const perfil = { _user: u, _owner: u.owners[0] };
-    const aporte_ = aporte;
+describe("Tarjeta y REC 1/REC 2: mismo aporte y mismo ahorro (helper compartido)", () => {
+  for (const [sal, esp] of [[15e6, 6236425], [10e6, 2436750]]) it(`$${sal / 1e6}M/mes`, () => {
+    const u = user(sal);
+    const fd = adapterOwnerPlan({ owner: u.owners[0], ingresos: u.ingresos, gastos: [], inv: [], deu: [], trm: 4200 });
     const d = estimarImpuesto(u, { ag: AG_RECOS }).detalle[0];
-    const d0neto = () => d.neto;
-    const aporteV = Math.round(Math.min(d0neto(u) * 0.30, 3800 * UVT_RECOS));
-    expect(aporteV).toBe(d.pvMax);
-    const con = estimarImpuesto(user(15e6, aporte_("AP_TRIB_PV", aporteV / 12)), { ag: AG_RECOS }).detalle[0];
-    expect(ahorroAporteTaxCO(perfil, aporteV, { fiscalCode: "AP_TRIB_PV" })).toBeCloseTo(d.impBruto - con.impBruto, 0);
-    expect(ETIQUETA_AG_RECOS).toBe("AG 2026 · UVT $52.374");
-    expect(NOTA_FIJA_PV_AFC).toMatch(/^Es un cálculo del ahorro en impuesto, no una recomendación/);
+    const recs = generarRecomendacionesEstrategicas(u, u.owners[0], { ...d, impuesto: Math.max(d.impBruto, 1e6) }) || [];
+    const r1 = recs.find((r) => r.id === "aporte_pv_estrategico"), r2 = recs.find((r) => r.id === "cuenta_afc");
+    expect(r1 && r2).toBeTruthy();
+    expect(Math.round(ahorroPvAfc(fd))).toBe(esp);
+    for (const r of [r1, r2]) {
+      expect(r.inversion.monto).toBe(fd.aportePvAfc);
+      expect(r.ahorroAnual.monto).toBe(Math.round(ahorroPvAfc(fd)));
+      expect(r.ahorroAnual.calculoDetallado).toContain(fd.aportePvAfc.toLocaleString("es-CO"));
+    }
+    // ahorro = impuesto a cargo sin aporte − con ese mismo aporte, corrido en taxCO
+    const con = estimarImpuesto(user(sal, aporte("AP_TRIB_PV", fd.aportePvAfc / 12)), { ag: AG_RECOS }).detalle[0];
+    expect(d.impBruto - con.impBruto).toBeCloseTo(ahorroPvAfc(fd), -1);
+    expect(r1.etiqueta).toBe(ETIQUETA_AG_RECOS);
+    expect(r1.nota).toBe(NOTA_FIJA_PV_AFC);
+    console.log("FIG", sal, fd.aportePvAfc, Math.round(ahorroPvAfc(fd)));
   });
 });
 

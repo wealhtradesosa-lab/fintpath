@@ -25,6 +25,7 @@
 //     o null si no hay ingresos.
 
 import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "./taxCO.js";
+import { sugerenciaPvAfcDe } from "./sugerenciaPvAfc.js";
 import { totalAnualItem } from "./flowHelpers.js";
 import { GAS_JUR_NO_DEDUCIBLE } from "./fiscalCodes.js";
 
@@ -130,6 +131,8 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     ingAnual: d.ingreso,
     // FIX abr 2026 (mismo razonamiento que jurídica):
     // impSin/impCon ahora apuntan a impBruto/impOptBruto, no a saldo.
+    aportePvAfc: sugerenciaPvAfcDe(d).aporte,
+    ahorroPvAfc: sugerenciaPvAfcDe(d).ahorro,
     impSin: d.impBruto != null ? d.impBruto : d.impuesto,
     impCon: d.impOptBruto != null ? d.impOptBruto : d.impOptimizado,
     tasaSin: d.tasaBruta != null ? d.tasaBruta : d.tasa,
@@ -158,6 +161,7 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
 // ANTES de retenciones sin el aporte sugerido − con él (impBruto − impOptBruto).
 // No es saldo a pagar: las retenciones pueden cubrirlo.
 export function ahorroPvAfc(fiscalData) {
+  if (fiscalData?.ahorroPvAfc != null) return fiscalData.ahorroPvAfc;
   return Math.max(0, (Number(fiscalData?.impSin) || 0) - (Number(fiscalData?.impCon) || 0));
 }
 
