@@ -122,7 +122,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
         rentaMensual: mod.rentaNuevaMensual, rentaDesdeMes: mod.rentaNuevaDesdeMes,
         rentaPctAnual: total > 0 ? mod.rentaNuevaMensual * 12 / total * 100 : 0, valorizacionPct: crec == null ? null : crec * 100 };
     }
-    activos.push({ id: a.id, nombre: a.n || a.nombre || "Activo", clase, valor, crec, usd: fxA(a) !== 1, invertible: clase !== "vehiculo",
+    activos.push({ id: a.id, nombre: a.n || a.nombre || "Activo", clase, valor, crec, rentaAnual, usd: fxA(a) !== 1, invertible: clase !== "vehiculo",
       invMonto: mod ? mod.inversionMonto : 0, invAnio: mod ? mod.inversionAnio : 0,
       rentaNuevaAnual: mod ? mod.rentaNuevaMensual * 12 : 0, rentaDesdeMes: mod ? mod.rentaNuevaDesdeMes : 0, valorHoy: valor });
   });
@@ -212,6 +212,22 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     if (!a) return;
     const antes = a.valor;
     if (!vacio(r.valorizacionNomPct)) a.crec = n(r.valorizacionNomPct) / 100;
+    // 24-oct-2026 (Santiago: "según el tipo de inversión la plataforma debe
+    // saber si genera renta o se valoriza… en fondos o trade poner lo que
+    // estima que rinde al año y si se reinvierte o se saca una parte").
+    // Fuera de inmuebles: rendimiento anual (%) y qué parte te llega (%).
+    // Lo que te llega entra al flujo; el resto se reinvierte (interés
+    // compuesto). Describe el activo entero y reemplaza la renta que tuviera.
+    const esInm = a.clase === "inmueble";
+    const rendActual = (a.crec ?? 0) + (a.valor > 0 ? (a.rentaAnual || 0) / a.valor : 0);
+    let rendimientoPct = null, pctRecibe = null;
+    if (!esInm && (!vacio(r.rendimientoNomPct) || !vacio(r.pctRecibe))) {
+      const rend = !vacio(r.rendimientoNomPct) ? n(r.rendimientoNomPct) / 100 : rendActual;
+      const p = Math.min(1, Math.max(0, n(r.pctRecibe) / 100));
+      a.crec = rend * (1 - p); a.rentaPct = rend * p;
+      if (!a.rentaReemplazada) { rentaVendida += a.rentaAnual || 0; a.rentaReemplazada = true; }
+      rendimientoPct = rend * 100; pctRecibe = p * 100;
+    }
     const anioAporte = Math.min(10, Math.max(1, Math.round(n(r.anio) || 1)));
     let m = 0;
     if (anioAporte === 1) {
@@ -230,7 +246,12 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const rentaDesdeMes = Math.min(119, Math.max(0, Math.round(n(r.rentaDesdeMes))));
     if (rentaMensual > 0) (a.rentasExtra = a.rentasExtra || []).push({ anual: rentaMensual * 12, desdeMes: rentaDesdeMes });
     const totalConAporte = antes + (anioAporte === 1 ? m : n(r.monto));
-    reinversionesDetalle.push({ i: k, activoId: a.id, nombre: a.nombre, valorHoy: antes, aporte: anioAporte === 1 ? m : n(r.monto), anio: anioAporte, total: totalConAporte, rentaMensual, rentaDesdeMes, rentaPctAnual: totalConAporte > 0 ? rentaMensual * 12 / totalConAporte * 100 : 0 });
+    const rendUsado = rendimientoPct != null ? rendimientoPct : rendActual * 100;
+    const pUsado = pctRecibe != null ? pctRecibe : 0;
+    reinversionesDetalle.push({ i: k, activoId: a.id, nombre: a.nombre, clase: a.clase, valorHoy: antes, aporte: anioAporte === 1 ? m : n(r.monto), anio: anioAporte, total: totalConAporte, rentaMensual, rentaDesdeMes, rentaPctAnual: totalConAporte > 0 ? rentaMensual * 12 / totalConAporte * 100 : 0,
+      valorizacionPct: esInm ? (a.crec == null ? null : a.crec * 100) : null,
+      rendimientoPct: esInm ? null : rendUsado, pctRecibe: esInm ? null : pUsado,
+      rindeAnual: esInm ? 0 : totalConAporte * rendUsado / 100, teLlegaMes: esInm ? 0 : totalConAporte * rendUsado / 100 * pUsado / 100 / 12 });
   });
   const personalizadas = [];
   (cfg.nuevas || []).forEach((x, k) => {

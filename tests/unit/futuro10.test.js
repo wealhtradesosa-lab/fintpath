@@ -347,3 +347,27 @@ describe("futuro10 · la tabla trae el gasto del mes", () => {
     r.filas.slice(1).forEach((f) => { expect(Number.isFinite(f.gastosReal)).toBe(true); expect(f.gastosReal / 12).toBeGreaterThan(7e6); });
   });
 });
+
+describe("futuro10 · cada tipo de inversión pregunta lo suyo", () => {
+  const U = () => ({ inflacionPct: 4, inv: [{ id: "l", n: "Lote", tp: "Lote", va: 410e6 }, { id: "ib", n: "IBKR", tp: "ETF", va: 500e6 }, { id: "c", tp: "Cash", va: 3000e6 }], ingresos: [], gas: {}, deu: [] });
+  it("trading: rinde 20 %, todo se reinvierte → interés compuesto, nada al flujo", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [{ activoId: "ib", monto: 1500e6, rendimientoNomPct: 20, pctRecibe: 0 }] });
+    const d = r.reinversionesDetalle[0];
+    expect(d.total).toBeCloseTo(2000e6, 0); expect(d.rindeAnual).toBeCloseTo(400e6, 0); expect(d.teLlegaMes).toBe(0);
+    expect(r.reparto.find((x) => x.nombre === "IBKR").valor).toBeCloseTo(2000e6 * 1.2 ** 10, -4);
+    expect(r.filas[1].rentaNueva).toBe(0);
+  });
+  it("trading: te llega la mitad → entra al flujo y crece a la mitad", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [{ activoId: "ib", monto: 1500e6, rendimientoNomPct: 20, pctRecibe: 50 }] });
+    const d = r.reinversionesDetalle[0];
+    expect(d.teLlegaMes).toBeCloseTo(2000e6 * 0.2 * 0.5 / 12, 0);
+    expect(r.filas[1].rentaNueva).toBeCloseTo(2000e6 * 0.1, -3);
+    expect(r.reparto.find((x) => x.nombre === "IBKR").valor).toBeCloseTo(2000e6 * 1.1 ** 10, -4);
+  });
+  it("inmueble: lote 410 + 600 = 1.010, se valoriza al % que digas", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [{ activoId: "l", monto: 600e6, rentaMensual: 8.5e6, rentaDesdeMes: 12, valorizacionNomPct: 6 }] });
+    const d = r.reinversionesDetalle[0];
+    expect(d.total).toBeCloseTo(1010e6, 0); expect(d.valorizacionPct).toBeCloseTo(6, 6); expect(d.rendimientoPct).toBeNull();
+    expect(r.reparto.find((x) => x.nombre === "Lote").valor).toBeCloseTo(1010e6 * 1.06 ** 10, -4);
+  });
+});
