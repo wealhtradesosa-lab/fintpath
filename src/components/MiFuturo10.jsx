@@ -342,7 +342,17 @@ function LoQueViene({ cfg, set, esc, owners }) {
           <label style={lbl}>Al mes ($, pesos de hoy)<NumberInput style={inp} value={x.mensual ?? ""} onChange={(v) => upI(i, { mensual: v })} />
             <span style={{ fontSize: 11 }}>Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. Sube con la inflación.</span></label>
           <label style={lbl}>Empieza{selAnio(x.desde || 1, (v) => upI(i, { desde: v || 1 }))}</label>
-          <label style={lbl}>Termina (opcional){selAnio(x.hasta, (v) => upI(i, { hasta: v }), "Sigue")}</label>
+          {/* 24-oct-2026 (Santiago, con la pensión puesta "termina año 7" sin querer:
+              "no veo esa opción"). En el iPhone «Sigue» quedaba escondida arriba de la
+              rueda. Ahora son dos botones y el año solo aparece si termina. */}
+          <div style={lbl}>¿Hasta cuándo?
+            <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+              <button type="button" style={btn(vacio(x.hasta))} onClick={() => upI(i, { hasta: "" })}>Sigue siempre</button>
+              <button type="button" style={btn(!vacio(x.hasta))} onClick={() => upI(i, { hasta: vacio(x.hasta) ? Math.max(Number(x.desde) || 1, 10) : x.hasta })}>Termina</button>
+            </div>
+            {!vacio(x.hasta) && <div style={{ marginTop: 6 }}>{selAnio(x.hasta, (v) => upI(i, { hasta: v === "" ? Number(x.desde) || 1 : v }))}</div>}
+          </div>
+          {(Number(x.mensual) || 0) > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.gn }}>{textoIngresoFuturo(x)}</div>}
           {owners.length > 1 && <label style={lbl}>Titular (opcional)<select style={inp} value={x.titular || ""} onChange={(e) => upI(i, { titular: e.target.value || null })}><option value="">—</option>{owners.map((o) => <option key={o.id} value={o.id}>{o.name || o.nombre || o.n}</option>)}</select></label>}
           <button style={btn(false)} onClick={() => put("ingresos", f.ingresos.filter((_, j) => j !== i))}>Quitar</button>
         </div>))}
@@ -404,6 +414,16 @@ function Seccion({ n, titulo, sub }) {
     <div style={{ minWidth: 0 }}><h3 style={{ margin: "2px 0 2px" }}>{titulo}</h3><div style={{ color: C.tx2, fontSize: 12 }}>{sub}</div></div>
   </div>;
 }
+
+const vacio = (v) => v === "" || v == null;
+// Una línea en palabras para cada ingreso futuro: evita que «termina año 7» pase inadvertido.
+const textoIngresoFuturo = (x) => {
+  const d = Math.max(1, Number(x.desde) || 1), h = vacio(x.hasta) ? null : Math.max(d, Number(x.hasta) || d);
+  const monto = "$" + fmtMilesEs(Number(x.mensual) || 0);
+  if (h == null) return `Te llegan ${monto} al mes desde el año ${d}, siempre.`;
+  if (h === d) return `Te llegan ${monto} al mes solo durante el año ${d}.`;
+  return `Te llegan ${monto} al mes del año ${d} al año ${h} (${h - d + 1} años).`;
+};
 
 const MESES_RENTA = [0, 3, 6, 9, 12, 18, 24, 36, 48, 60, 72, 84, 96, 108];
 const opcionesMes = (actual) => (MESES_RENTA.includes(actual) ? MESES_RENTA : [...MESES_RENTA, actual].sort((a, b) => a - b));
