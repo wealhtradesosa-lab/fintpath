@@ -162,3 +162,78 @@ describe("futuro10", () => {
     });
   });
 });
+
+describe("futuro10 · deudas que se pagan con lo vendido", () => {
+  // Orlando: 800 M con hipoteca de 300 M (cuota 4 M/mes) que cuelga de él (campo `la`).
+  const U = () => ({ inflacionPct: 4,
+    inv: [{ id: "orl", n: "Orlando", tp: "Real Estate", va: 800e6 }, { id: "cta", n: "Cuenta", tp: "Cash", va: 200e6 }],
+    ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 30e6 }], gas: { Vida: [{ n: "Mercado", m: 5e6 }] },
+    deu: [{ id: "h", n: "Hipoteca Orlando", mt: 300e6, pg: 4e6, la: "orl" }, { id: "t", n: "Tarjeta", mt: 50e6, pg: 2e6 }] });
+
+  it("vender Orlando paga su deuda con esa venta, sin marcarla", () => {
+    const sin = proyectarFuturo10(U(), {});
+    const r = proyectarFuturo10(U(), { decisiones: { orl: { accion: "vende" } } });
+    const h = r.deudas.find((d) => d.id === "h");
+    expect(h.porVenta).toBe(true);
+    expect(h.pagado).toBeCloseTo(300e6, 0);
+    expect(r.bolsaDetalle.deudas).toBeCloseTo(300e6, 0);
+    expect(r.filas[0].deuda).toBeCloseTo(50e6, 0); // queda solo la tarjeta
+    expect(r.cuotasQueSalenMes).toBeCloseTo(4e6, 0);
+    // pagar deuda con la venta no cambia el patrimonio de hoy
+    expect(r.filas[0].patrimonio).toBeCloseTo(sin.filas[0].patrimonio, 0);
+  });
+
+  it("otra deuda marcada se paga con lo que queda de la venta", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { orl: { accion: "vende" } }, pagarDeudas: { t: true } });
+    expect(r.bolsaDetalle.deudas).toBeCloseTo(350e6, 0);
+    expect(r.filas[0].deuda).toBeCloseTo(0, 0);
+    expect(r.filas.every((f) => f.anio === 0 || f.gastos < 12 * 6e6 * 2)).toBe(true);
+  });
+
+  it("sin ventas, marcar una deuda no la paga (solo se paga con lo vendido)", () => {
+    const r = proyectarFuturo10(U(), { pagarDeudas: { t: true } });
+    expect(r.bolsaDetalle.deudas).toBe(0);
+    expect(r.filas[0].deuda).toBeCloseTo(350e6, 0);
+    expect(r.bolsaDetalle.deudaSinCubrir).toBeCloseTo(50e6, 0);
+  });
+
+  it("si la venta no alcanza, abona hasta donde llega", () => {
+    const u = U(); u.inv[0].va = 320e6;
+    const r = proyectarFuturo10(u, { decisiones: { orl: { accion: "vende" } }, pagarDeudas: { t: true } });
+    const t = r.deudas.find((d) => d.id === "t");
+    expect(t.pagado).toBeCloseTo(20e6, 0);
+    expect(r.filas[0].deuda).toBeCloseTo(30e6, 0);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(0, 0);
+  });
+});
+
+describe("futuro10 · inversiones nuevas se reflejan en el resultado", () => {
+  const U = () => ({ inflacionPct: 4, inv: [{ id: "cta", n: "Cuenta", tp: "Cash", va: 300e6 }, { id: "casa", n: "Casa", tp: "Real Estate", va: 500e6 }], ingresos: [], gas: {}, deu: [] });
+
+  it("sin vender nada, la inversión nueva sale de la liquidez y aparece en el reparto", () => {
+    const r = proyectarFuturo10(U(), { nuevas: [{ preset: "sp500", monto: 100e6, nombre: "IBKR" }] });
+    expect(r.bolsaDetalle.nuevas).toBeCloseTo(100e6, 0);
+    expect(r.bolsaDetalle.desdeLiquidez).toBeCloseTo(100e6, 0);
+    expect(r.reparto.some((x) => x.nombre === "IBKR" && x.valor > 100e6)).toBe(true);
+    // mover plata de la cuenta a la inversión no cambia el patrimonio de hoy
+    expect(r.filas[0].patrimonio).toBeCloseTo(800e6, 0);
+  });
+
+  it("reinvertir en lo que ya tienes sin ventas también usa la liquidez", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [{ activoId: "casa", monto: 50e6 }] });
+    expect(r.bolsaDetalle.reinvertido).toBeCloseTo(50e6, 0);
+    expect(r.filas[0].patrimonio).toBeCloseTo(800e6, 0);
+  });
+
+  it("si la liquidez no alcanza, asigna hasta donde llega y lo dice", () => {
+    const r = proyectarFuturo10(U(), { nuevas: [{ preset: "rfLargo", monto: 400e6 }] });
+    expect(r.bolsaDetalle.nuevas).toBeCloseTo(300e6, 0);
+    expect(r.bolsaDetalle.faltante).toBeCloseTo(100e6, 0);
+  });
+
+  it("la bolsa reporta el colchón de hoy, no el del año 10", () => {
+    const u = U(); u.gas = { Vida: [{ n: "Mercado", m: 10e6 }] }; u.inv[0].va = 0;
+    const r = proyectarFuturo10(u, { decisiones: { casa: { accion: "vende" } } });
+    expect(r.bolsaDetalle.colchon).toBeCloseTo(60e6, 0);
+  });
+});

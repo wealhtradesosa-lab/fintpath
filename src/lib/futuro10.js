@@ -120,31 +120,83 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
       rentaNuevaAnual: mod ? mod.rentaNuevaMensual * 12 : 0, rentaDesde: mod ? mod.rentaNuevaDesde : 0 });
   });
 
-  // ── Bolsa: colchón → reinversiones / nuevas → resto según la mezcla ─────
-  const obAnual = b.ob * 12;
-  const metaColchon = (b.ob * n(sup.colchonMeses));
-  const liquidosQueQuedan = activos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
-  const canasta = { liquidez: 0, renta: 0, crecimiento: 0 };
   // 24-oct-2026 (Santiago: "en Reinvierte necesito ver qué saldo me quedó de
   // lo que vendí, para ir sabiendo cuánto tengo para reinvertir"). Se lleva la
   // cuenta de la bolsa paso a paso y se devuelve en `bolsaDetalle`.
   const vendidoTotal = bolsa;
+
+  // ── Deudas que se pagan con lo vendido ───────────────────────────────────
+  // 24-oct-2026 (Santiago: "si vendo Orlando la idea es pagar la deuda de
+  // Orlando… incluso tengo otras deudas que me gustaría pagar con plata de los
+  // activos que se venden"). La sección vieja lo tenía y aquí se había perdido.
+  // Orden: 1) la deuda que cuelga de un activo vendido (campo `la`) se paga
+  // siempre con esa venta; 2) las que el usuario marque en `cfg.pagarDeudas`.
+  // Solo se paga con lo vendido, nunca con la liquidez de hoy. Si no alcanza,
+  // se abona lo que haya: el saldo baja y la cuota sigue igual (termina antes).
+  const vendidos = new Set((b.inv || []).filter((a) => dec[a.id]?.accion === "vende").map((a) => a.id));
+  const pagarCfg = cfg.pagarDeudas || {};
+  const deudasUser = (user.deudas || user.deu || []).filter((d) => d && d.sim !== false);
+  const deudas = deudasUser.map((d) => {
+    const activoId = d.la || d.link || null;
+    const porVenta = !!activoId && vendidos.has(activoId);
+    return { id: d.id, nombre: d.n || d.nombre || "Deuda", saldo: n(d.mt) * fxA(d), activoId, porVenta, pagar: porVenta || !!pagarCfg[d.id], pagado: 0, _d: d };
+  }).filter((d) => d.saldo > 0);
+  [...deudas.filter((d) => d.porVenta), ...deudas.filter((d) => !d.porVenta && d.pagar)].forEach((d) => {
+    const m = Math.min(bolsa, d.saldo);
+    d.pagado = m; bolsa -= m;
+  });
+  const deudasPagadasTotal = deudas.reduce((s, d) => s + d.pagado, 0);
+  const deudaSinCubrir = deudas.filter((d) => d.pagar).reduce((s, d) => s + d.saldo - d.pagado, 0);
+  // Lo que queda vivo, con la misma regla de cuota del resto de la app.
+  const pagadoPorId = Object.fromEntries(deudas.map((d) => [d.id, d]));
+  const deudasVivas = deudasUser.flatMap((d) => {
+    const x = pagadoPorId[d.id];
+    if (!x || x.pagado <= 0) return [d];
+    if (x.pagado >= x.saldo - 0.5) return [];
+    return [{ ...d, mt: (x.saldo - x.pagado) / fxA(d) }];
+  });
+  const bDeuda = deudasPagadasTotal > 0 ? calcularBase({ ...sinImp, gastos: user.gastos || user.gas, deu: deudasVivas, deudas: deudasVivas }, {}) : b;
+
+  // ── Bolsa: colchón → reinversiones / nuevas → resto según la mezcla ─────
+  // El colchón se mide con las obligaciones que quedan (sin las cuotas que se pagan hoy).
+  const obAnual = bDeuda.ob * 12;
+  const metaColchon = (bDeuda.ob * n(sup.colchonMeses));
+  const liquidosQueQuedan = activos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
+  const canasta = { liquidez: 0, renta: 0, crecimiento: 0 };
   let colchon = Math.min(bolsa, Math.max(0, metaColchon - liquidosQueQuedan));
   bolsa -= colchon;
+  const colchonInicial = colchon; // `colchon` cambia año a año; la bolsa reporta el de hoy
   const nuevas = [];
-  let reinvertidoTotal = 0, nuevasTotal = 0, pedidoTotal = 0;
+  let reinvertidoTotal = 0, nuevasTotal = 0, pedidoTotal = 0, desdeLiquidez = 0;
+  // 24-oct-2026 (Santiago: "añadí estas inversiones y cuando voy a ver el
+  // resultado no se ven ahí reflejadas"). Antes una inversión solo se
+  // financiaba con lo vendido: sin ventas, o si no alcanzaba, quedaba en $0 y
+  // desaparecía sin aviso, mientras la pantalla decía que saldría de la
+  // liquidez. Ahora toma primero de lo vendido y lo que falte sale de tus
+  // cuentas líquidas de hoy. Si tampoco alcanza, se asigna hasta donde llega.
+  const tomar = (monto, excluirId) => {
+    let falta = Math.max(0, monto);
+    const deBolsa = Math.min(bolsa, falta); bolsa -= deBolsa; falta -= deBolsa;
+    activos.filter((a) => a.clase === "liquido" && a.id !== excluirId).forEach((a) => {
+      const u = Math.min(a.valor, falta); a.valor -= u; falta -= u; desdeLiquidez += u;
+    });
+    return Math.max(0, monto) - falta;
+  };
   (cfg.reinversiones || []).forEach((r) => {
     pedidoTotal += Math.max(0, n(r.monto));
-    const m = Math.min(bolsa, Math.max(0, n(r.monto))); const a = activos.find((x) => x.id === r.activoId);
-    if (a && m > 0) { a.valor += m; bolsa -= m; reinvertidoTotal += m; }
+    const a = activos.find((x) => x.id === r.activoId);
+    if (!a || n(r.monto) <= 0) return;
+    const m = tomar(n(r.monto), a.id);
+    if (m > 0) { a.valor += m; reinvertidoTotal += m; }
   });
   const personalizadas = [];
   (cfg.nuevas || []).forEach((x, k) => {
     if (x.preset === "custom") { const c = leerPersonalizada(x, esc, sup); if (c.monto > 0) personalizadas.push({ ...c, id: "nueva_" + k }); return; }
     pedidoTotal += Math.max(0, n(x.monto));
-    const m = Math.min(bolsa, Math.max(0, n(x.monto)));
-    if (m <= 0 || !sup.presets[x.preset]) return;
-    bolsa -= m; nuevasTotal += m;
+    if (n(x.monto) <= 0 || !sup.presets[x.preset]) return;
+    const m = tomar(n(x.monto));
+    if (m <= 0) return;
+    nuevasTotal += m;
     nuevas.push({ id: "nueva_" + k, nombre: x.nombre || sup.presets[x.preset].nombre, clase: "nueva", valor: m, crec: rNom(x.preset), usd: !!sup.presets[x.preset].usd, invertible: true });
   });
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
@@ -152,7 +204,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   const rCan = { liquidez: rNom(sup.canastas.liquidez), renta: rNom(sup.canastas.renta), crecimiento: rNom(sup.canastas.crecimiento) };
 
   // ── Deuda: la cuota sigue nominal fija hasta saldar; saldo lineal ───────
-  let deuda = b.deudaTotal; const cuotaAnual = b.sd * 12;
+  let deuda = bDeuda.deudaTotal; const cuotaAnual = bDeuda.sd * 12;
   const aniosDeuda = cuotaAnual > 0 ? deuda / cuotaAnual : 0;
 
   let ingresos = (b.ia + b.ip) * 12 - rentaVendida;
@@ -240,9 +292,19 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     filas.push(f);
   }
   const fin = filas[filas.length - 1];
+  // Cómo queda repartida la plata al final, inversión por inversión.
+  const defl = fin.deflactor || 1;
+  const repartoFinal = [
+    ...todos.filter((a) => Math.abs(a.valor) > 0.5).map((a) => ({ id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor, valorReal: a.valor / defl })),
+    ...[["colchon", "Colchón de liquidez", colchon], ["liquidez", "Canasta liquidez", canasta.liquidez], ["renta", "Canasta renta", canasta.renta], ["crecimiento", "Canasta crecimiento", canasta.crecimiento]]
+      .filter(([, , v]) => Math.abs(v) > 0.5).map(([id, nombre, v]) => ({ id, nombre, clase: "canasta", valor: v, valorReal: v / defl })),
+  ].sort((x, y) => y.valor - x.valor);
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
-    bolsaDetalle: { vendido: vendidoTotal, colchon, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, faltante: Math.max(0, pedidoTotal - (vendidoTotal - colchon)) },
+    bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
+    reparto: repartoFinal,
+    deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, pagar, pagado }) => ({ id, nombre, saldo, activoId, porVenta, pagar, pagado })),
+    cuotasQueSalenMes: Math.max(0, b.sd - bDeuda.sd),
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses },
     activos: activos.map(({ id, nombre, clase, usd }) => ({ id, nombre, clase, usd })),
     hayUSD: todos.some((a) => a.usd && a.valor > 0) || [...activos, ...nuevas, ...personalizadas].some((a) => a.usd && (a.valor || a.monto) > 0) || expUSD,

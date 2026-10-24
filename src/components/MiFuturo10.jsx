@@ -126,7 +126,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               </div>
             );
           })}
-          <p style={{ color: C.tx2, fontSize: 12 }}>Lo que vendes va a una bolsa para reinvertir ({bolsa} activo{bolsa === 1 ? "" : "s"}). Primero se completa un colchón de {SUPUESTOS_F10.colchonMeses} meses de gastos.</p>
+          {(r.deudas || []).length > 0 && <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} />}
+          <p style={{ color: C.tx2, fontSize: 12 }}>Lo que vendes ({bolsa} activo{bolsa === 1 ? "" : "s"}) paga primero esas deudas; con el resto se completa un colchón de {SUPUESTOS_F10.colchonMeses} meses de gastos y lo demás pasa a Reinvierte.</p>
           <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} />
         </div>
       )}
@@ -139,13 +140,17 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               reinvertir"). La cuenta de la bolsa, siempre a la vista. */}
           {(() => { const bd = r.bolsaDetalle || {}; const hay = bd.vendido > 0;
             return <div style={{ ...card, background: C.bg, marginBottom: 12 }}>
-              {!hay ? <div style={{ fontSize: 12, color: C.tx2 }}>Todavía no vendes nada en el paso 2, así que no hay plata para reinvertir. Lo que pongas aquí saldría de tu liquidez.</div>
+              {!hay ? <div style={{ fontSize: 12, color: C.tx2 }}>
+                {bd.desdeLiquidez > 0 ? <>No vendes nada, así que estas inversiones salen de tu liquidez: <b style={{ color: C.tx }}>{plata(bd.desdeLiquidez)}</b>.</> : <>Todavía no vendes nada en el paso 2. Lo que pongas aquí sale de tu liquidez.</>}
+                {bd.faltante > 0 && <div style={{ color: C.am, marginTop: 4 }}>Pediste {plata(bd.pedido)} pero tu liquidez solo alcanza para {plata(bd.pedido - bd.faltante)}: se asigna hasta donde llega.</div>}
+              </div>
               : <>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 8 }}>
-                  {[["Vendiste", bd.vendido, C.tx], ["− Colchón", bd.colchon, C.tx2], ["− A lo que ya tienes", bd.reinvertido, C.tx2], ["− Inversiones nuevas", bd.nuevas, C.tx2], ["Te quedan", bd.restante, bd.restante > 0 ? C.gn : C.tx]].map(([l, v, col]) => <div key={l}><div style={{ fontSize: 11, color: C.tx2 }}>{l}</div><div style={{ fontSize: 15, fontWeight: 700, color: col, fontFamily: "monospace" }}>{plata(v || 0)}</div></div>)}
+                  {[["Vendiste", bd.vendido, C.tx], ...(bd.deudas > 0 ? [["− Deudas", bd.deudas, C.tx2]] : []), ["− Colchón", bd.colchon, C.tx2], ["− A lo que ya tienes", bd.reinvertido, C.tx2], ["− Inversiones nuevas", bd.nuevas, C.tx2], ...(bd.desdeLiquidez > 0 ? [["+ De tu liquidez", bd.desdeLiquidez, C.am]] : []), ["Te quedan", bd.restante, bd.restante > 0 ? C.gn : C.tx]].map(([l, v, col]) => <div key={l}><div style={{ fontSize: 11, color: C.tx2 }}>{l}</div><div style={{ fontSize: 15, fontWeight: 700, color: col, fontFamily: "monospace" }}>{plata(v || 0)}</div></div>)}
                 </div>
                 <div style={{ fontSize: 12, color: C.tx2, marginTop: 8 }}>
-                  {bd.faltante > 0 ? <span style={{ color: C.am }}>Pediste {plata(bd.pedido)} pero solo hay {plata(bd.vendido - bd.colchon)} después del colchón: se asigna hasta donde alcanza.</span>
+                  {bd.faltante > 0 ? <span style={{ color: C.am }}>Pediste {plata(bd.pedido)} y entre lo vendido y tu liquidez solo alcanza para {plata(bd.pedido - bd.faltante)}: se asigna hasta donde llega.</span>
+                  : bd.desdeLiquidez > 0 ? <>Lo vendido no alcanzó: <b style={{ color: C.tx }}>{plata(bd.desdeLiquidez)}</b> salen de tu liquidez de hoy.</>
                   : bd.restante > 0 ? <>Los <b style={{ color: C.tx }}>{plata(bd.restante)}</b> que quedan se reparten según el norte de abajo{bd.colchon > 0 ? `; el colchón de ${SUPUESTOS_F10.colchonMeses} meses se completa primero` : ""}.</>
                   : <>Todo lo vendido quedó asignado{bd.colchon > 0 ? ` (incluido el colchón de ${SUPUESTOS_F10.colchonMeses} meses)` : ""}.</>}
                 </div>
@@ -211,15 +216,23 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             ["Invertible vs. inflación", r.vsInflacionReal == null ? "—" : (r.vsInflacionReal >= 0 ? "+" : "") + fmtPctEs(r.vsInflacionReal)],
           ]} />
           <div style={{ overflowX: "auto", marginTop: 10 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 340 }}>
-              <thead><tr style={{ color: C.tx2, textAlign: "right" }}><th style={{ textAlign: "left" }}>Año</th><th>Ingreso/mes*</th><th>Gasto/mes*</th><th>Patrimonio*</th><th>Nominal</th></tr></thead>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 280 }}>
+              <thead><tr style={{ color: C.tx2, textAlign: "right" }}><th style={{ textAlign: "left" }}>Año</th><th>Ingreso/mes*</th><th>Gasto/mes*</th><th>Patrimonio*</th></tr></thead>
               <tbody>{r.filas.slice(1).map((f) => (
                 <tr key={f.anio} style={{ textAlign: "right", borderTop: `1px solid ${C.bd}`, color: f.cf < 0 ? C.rd : C.tx }}>
-                  <td style={{ textAlign: "left" }}>{f.anio}</td><td>{fmtPlataCortaEs(f.ingresosReal / 12)}</td><td>{fmtPlataCortaEs(f.gastosReal / 12)}</td><td>{fmtPlataCortaEs(f.patrimonioReal)}</td><td>{fmtPlataCortaEs(f.patrimonio)}</td>
+                  <td style={{ textAlign: "left" }}>{f.anio}</td><td>{fmtPlataCortaEs(f.ingresosReal / 12)}</td><td>{fmtPlataCortaEs(f.gastosReal / 12)}</td><td>{fmtPlataCortaEs(f.patrimonioReal)}</td>
                 </tr>))}</tbody>
             </table>
             <div style={{ color: C.tx2, fontSize: 11 }}>* En pesos de hoy (se descuenta la inflación una sola vez).</div>
           </div>
+          {(r.reparto || []).length > 0 && <div style={{ marginTop: 14 }}>
+            <h4 style={{ margin: "0 0 6px" }}>Cómo queda repartida tu plata en el año 10</h4>
+            {r.reparto.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "6px 0", borderTop: `1px solid ${C.bd}`, fontSize: 13 }}>
+              <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{x.nombre}{x.clase === "nueva" && <span style={{ color: C.gn, fontSize: 11 }}> · nueva</span>}</span>
+              <span style={{ whiteSpace: "nowrap", textAlign: "right" }}><b>{fmtPlataCortaEs(x.valorReal)}</b> <span style={{ color: C.tx2, fontSize: 11 }}>({fmtPlataCortaEs(x.valor)})</span></span>
+            </div>)}
+            <div style={{ color: C.tx2, fontSize: 11 }}>En pesos de hoy; entre paréntesis, nominal. Sin restar deudas.</div>
+          </div>}
           {r.alertas.length > 0 && <div style={{ ...card, borderColor: C.rd, marginTop: 10 }}>
             <b style={{ color: C.rd }}>Alertas de liquidez</b>
             {dedupe(r.alertas).map((a, i) => <div key={i} style={{ fontSize: 12 }}>{a.texto}</div>)}
@@ -317,6 +330,37 @@ function LoQueViene({ cfg, set, esc, owners }) {
           <button style={btn(false)} onClick={() => put("activos", f.activos.filter((_, j) => j !== i))}>Quitar</button>
         </div>))}
       <button style={btn(false)} onClick={() => put("activos", [...f.activos, { nombre: "", clase: "inmueble", valor: "", cuotaInicial: "", anioCuota: 1, entrega: 2, rentaMensual: "", rentaDesde: "" }])}>+ Activo futuro</button>
+    </div>
+  );
+}
+
+// 24-oct-2026 (Santiago: "si vendo Orlando la idea es pagar la deuda de
+// Orlando… tengo otras deudas que me gustaría pagar con plata de los activos
+// que se venden"). La deuda que cuelga de un activo vendido se paga sola con
+// esa venta; las demás se marcan aquí. Solo se pagan con lo vendido.
+function Deudas({ r, cfg, set, inv, bolsa }) {
+  const sel = cfg.pagarDeudas || {};
+  const nombreActivo = (id) => { const a = inv.find((x) => x.id === id); return a ? a.n || a.nombre : "el activo"; };
+  const bd = r.bolsaDetalle || {};
+  return (
+    <div style={{ marginTop: 12 }}>
+      <h4 style={{ margin: "8px 0" }}>Deudas</h4>
+      {r.deudas.map((d) => {
+        const corto = d.pagar && d.pagado < d.saldo - 0.5;
+        return (
+          <div key={d.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}><b>{d.nombre}</b><span style={{ color: C.tx2 }}>{plata(d.saldo)}</span></div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6, alignItems: "center" }}>
+              {d.porVenta
+                ? <span style={{ fontSize: 12, color: C.gn }}>Se paga con la venta de {nombreActivo(d.activoId)}</span>
+                : [[false, "Sigue"], [true, "Se paga"]].map(([v, l]) => <button key={l} style={btn(!!sel[d.id] === v)} onClick={() => set("pagarDeudas", { ...sel, [d.id]: v })}>{l}</button>)}
+              {corto && <span style={{ fontSize: 12, color: C.am }}>alcanza {plata(d.pagado)}</span>}
+            </div>
+          </div>
+        );
+      })}
+      {bolsa === 0 && <p style={{ color: C.tx2, fontSize: 12 }}>Para pagar una deuda, vende algo arriba: se paga con esa plata.</p>}
+      {bd.deudas > 0 && r.cuotasQueSalenMes > 0 && <p style={{ fontSize: 12, color: C.tx2 }}>Pagas {plata(bd.deudas)} y dejas de pagar <b style={{ color: C.gn }}>{plata(r.cuotasQueSalenMes)}</b> de cuotas al mes.</p>}
     </div>
   );
 }
