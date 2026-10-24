@@ -81,11 +81,13 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
   const marcas = []; ev.forEach((e) => { if (e.anio > 0 && !marcas.some((m) => m.anio === e.anio)) marcas.push({ anio: e.anio, txt: ev.filter((x) => x.anio === e.anio).map((x) => x.corto).slice(0, 2).join(" + ") }); });
 
   // ── Año a año: lo que produce ─────────────────────────────────────────────
-  const sR = series(filas.slice(1), "renta", 4), sC = series(filas.slice(1), "crece", 4);
+  const conSueltas = (f) => ({ ...f, porActivo: [...(f.porActivo || []), ...(f.rentasSueltas || [])] });
+  const sR = series(filas.slice(1).map(conSueltas), "renta", 6), sC = series(filas.slice(1), "crece", 4);
   const prod = filas.slice(1).map((f) => {
     const row = { anio: anioTxt(f.anio), total: f.produce / d(f), sale: f.gastos / d(f) };
     const pa = Object.fromEntries((f.porActivo || []).map((a) => [a.id, a]));
-    let rOtros = (f.rentas || 0); sR.top.forEach((s) => { const v = (pa[s.id]?.renta || 0); row["r_" + s.id] = v / d(f); rOtros -= v; });
+    const paR = Object.fromEntries(conSueltas(f).porActivo.map((a) => [a.id, a]));
+    let rOtros = (f.rentas || 0); sR.top.forEach((s) => { const v = (paR[s.id]?.renta || 0); row["r_" + s.id] = v / d(f); rOtros -= v; });
     row.r_otros = Math.max(0, rOtros) / d(f);
     let cOtros = (f.crece || 0); sC.top.forEach((s) => { const v = Math.max(0, pa[s.id]?.crece || 0); row["c_" + s.id] = v / d(f); cOtros -= v; });
     row.c_otros = Math.max(0, cOtros) / d(f);
@@ -231,8 +233,8 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
             <XAxis dataKey="anio" {...eje} />
             <YAxis {...eje} tickFormatter={fmEje} width={72} />
             <Tooltip content={<ChartTooltip formatter={tip} />} />
-            {sR.top.map((s, i) => <Bar key={"r" + s.id} dataKey={"r_" + s.id} stackId="p" name={`${s.nombre} (renta)`} fill={[INF.azul, INF.serie[4], INF.oliva, INF.navy][i % 4]} />)}
-            <Bar dataKey="r_otros" stackId="p" name="Otras rentas" fill={INF.gris} />
+            {sR.top.map((s, i) => <Bar key={"r" + s.id} dataKey={"r_" + s.id} stackId="p" name={`${s.nombre} (renta)`} fill={[INF.azul, INF.serie[4], INF.oliva, INF.navy, INF.serie[6], INF.serie[8]][i % 6]} />)}
+            <Bar dataKey="r_otros" stackId="p" name={sR.resto.length ? "Resto de rentas (más pequeñas)" : "Ajuste (costos de inmuebles sin ligar)"} fill={INF.gris} />
             {sC.top.map((s, i) => <Bar key={"c" + s.id} dataKey={"c_" + s.id} stackId="p" name={`${s.nombre} (crece)`} fill={[INF.navy, INF.morado, INF.dorado, INF.serie[6]][i % 4]} />)}
             <Bar dataKey="c_otros" stackId="p" name="Otro crecimiento" fill={INF.serie[9]}>
               <LabelList dataKey="total" position="top" formatter={(v) => fmM(v)} style={{ fill: INF.tx, fontSize: 11, fontWeight: 600 }} />

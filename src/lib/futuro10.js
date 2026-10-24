@@ -353,7 +353,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   (user.ingresos || []).forEach((i, k) => {
     if (!i || i.sim === false || (i.activoId && vendidosIds.has(i.activoId)) || fuera.has(`i:${k}`)) return;
     const v = montoPromedioMensual(i) * fxIng(i); if (!(v > 0.5)) return;
-    ingresosHoy.push({ key: `i:${k}`, nombre: i.nombre || i.categoria || "Ingreso", mensual: v, pasivo: tipoIngreso(i) === "pasivo" });
+    ingresosHoy.push({ key: `i:${k}`, nombre: i.nombre || i.categoria || "Ingreso", mensual: v, pasivo: tipoIngreso(i) === "pasivo", activoId: i.activoId || null });
   });
   const ingTerminan = cfg.ingresosTerminan || {};
   const ingSeVan = ingresosHoy.filter((x) => ingTerminan[x.key]).map((x) => ({ ...x, desde: Math.min(N, Math.max(1, Math.round(n(ingTerminan[x.key])) || 1)) }));
@@ -524,6 +524,14 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       { id: "c_renta", nombre: "Renta fija (lo que sobra)", clase: "canasta", valor: canasta.renta, renta: 0, crece: creceCan.renta },
       { id: "c_crecimiento", nombre: "Crecimiento (lo que sobra)", clase: "canasta", valor: canasta.crecimiento, renta: 0, crece: creceCan.crecimiento },
     ].filter((x) => Math.abs(x.valor) > 0.5 || x.renta > 0.5);
+    // 24-oct-2026 (Santiago: "no me queda claro qué son otras rentas y se ve un
+    // valor grande"). Las rentas que no están ligadas a un activo (PACAMANA,
+    // dividendos, fees de renta) y los ingresos futuros se nombran una a una.
+    f.rentasSueltas = [
+      ...ingresosHoy.filter((x) => x.pasivo && !(x.activoId && (bOp.rentaNetaPorActivo || {})[x.activoId] != null) && !ingSeVan.some((y) => y.key === x.key && y.desde <= t))
+        .map((x) => ({ id: "ing_" + x.key, nombre: x.nombre, clase: "ingreso", valor: 0, renta: x.mensual * 12 * Math.pow(1 + gIng, t - 1), crece: 0 })),
+      ...fut.ingresos.map((x, k) => ({ id: "fut_" + k, nombre: x.nombre, clase: "ingreso", valor: 0, renta: t >= x.desde && t <= x.hasta ? x.mensual * 12 * Math.pow(1 + inf, t) : 0, crece: 0 })),
+    ].filter((x) => x.renta > 0.5);
     f.patrimonio = activosT - deuda - deudaUnica;
     f.patrimonioReal = f.patrimonio / deflactor;
     f.invertibleReal = f.invertible / deflactor;
