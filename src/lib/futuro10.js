@@ -524,7 +524,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const entra = [];
     (user.ingresos || []).filter((i, k) => sigue(i) && !fuera.has(`i:${k}`)).forEach((i) => {
       if (i.activoId && conRenta.has(i.activoId) && tipoIngreso(i) === "pasivo") return; // va como renta neta del activo
-      const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: v, nota: tipoIngreso(i) === "pasivo" ? "renta" : "trabajo" });
+      const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: v, nota: tipoIngreso(i) === "pasivo" ? "renta · de tu página Ingresos" : "trabajo · de tu página Ingresos" });
     });
     Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada) return; if (v > 0.5) entra.push({ nombre: `Renta de ${nombreActivo(id)}`, mensual: v, nota: "neta de sus costos" }); });
     const ff = 1 + inf;
@@ -777,17 +777,20 @@ export function sugerirVinculados(user = {}, activoId) {
   if (!a) return out;
   const toks = sinTilde(a.n || a.nombre).split(/[^a-z0-9]+/).filter((t) => t.length >= 4 && !GENERICAS.has(t));
   const pega = (txt) => toks.length > 0 && toks.some((t) => sinTilde(txt).includes(t));
+  // Vínculo a un activo que ya no existe = sin vínculo (pasa con activos borrados y recreados).
+  const existe = new Set((user.inv || []).filter(Boolean).map((x) => x.id));
+  const suelto = (x) => !x.activoId || !existe.has(x.activoId);
   (user.ingresos || []).forEach((i, k) => {
     if (!i || i.sim === false) return;
     const nombre = i.nombre || i.categoria || "Ingreso", item = { key: `i:${k}`, nombre, mensual: montoPromedioMensual(i), moneda: i.moneda };
     if (i.activoId === activoId) out.auto.ingresos.push(item);
-    else if (!i.activoId) out.ingresos.push({ ...item, sugerido: pega(nombre) });
+    else out.ingresos.push({ ...item, sugerido: suelto(i) && pega(`${nombre} ${i.categoria || ""}`) });
   });
   Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g, idx) => {
     if (!g || g.sim === false) return;
     const nombre = g.c || g.n || g.nombre || cat, item = { key: `${cat}::${idx}`, nombre, cat, mensual: montoPromedioMensual(g), moneda: g.moneda };
     if (g.activoId === activoId) out.auto.gastos.push(item);
-    else if (!g.activoId) out.gastos.push({ ...item, sugerido: pega(nombre) });
+    else out.gastos.push({ ...item, sugerido: suelto(g) && pega(nombre) });
   }));
   return out;
 }

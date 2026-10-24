@@ -591,3 +591,11 @@ describe("lo que se va con una venta (rentas sin vincular)", () => {
     expect(r.filas[0].ingresos).toBeLessThan(base.filas[0].ingresos - 12 * 12e6);
   });
 });
+
+describe("vínculo a un activo borrado", () => {
+  it("se trata como suelto y se sugiere por nombre", async () => {
+    const { sugerirVinculados } = await import("../../src/lib/futuro10.js");
+    const user = { inv: [{ id: "o", n: "Casa Orlando", tipo: "inmueble", va: 400e6 }], ingresos: [{ nombre: "renta orlando", activoId: "viejo", mensual: 20e6, frecuencia: "mensual" }], gas: {} };
+    expect(sugerirVinculados(user, "o").ingresos[0].sugerido).toBe(true);
+  });
+});
