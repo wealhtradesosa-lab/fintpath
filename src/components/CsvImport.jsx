@@ -6,7 +6,16 @@ import { fetchAuth } from "../lib/apiFetch";
 // que excelExport.js ya hacía bien: bastaba un solo import estático en
 // cualquier archivo para que la librería viajara en la carga inicial.
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
-import { parseNumber } from "./NumberInput.jsx";
+import NumberInput, { parseNumber } from "./NumberInput.jsx";
+
+/** Texto con un solo punto que no encaja en es-CO («1234.567», «12.3456»): puede ser
+ *  separador de miles o decimales en formato inglés. Se lee como miles y se avisa. */
+export function celdaAmbigua(v) {
+  if (typeof v !== "string") return false;
+  const m = v.replace(/[$\s]/g, "").match(/^-?(\d+)\.(\d+)$/);
+  return !!m && m[2].length >= 3 && (m[1].length > 3 || m[2].length > 3);
+}
+export const textoAmbiguo = (leido) => `Revisa este monto: leímos ${"$" + fmtNumEs(leido, 0)}. Si eran decimales, corrígelo aquí`;
 
 /** Celda de Excel/CSV → número. Celdas numéricas quedan igual; texto en formato es-CO
  *  («6.500.000», «1.500,50», «$ 2.000.000») usa el parser de NumberInput. */
@@ -166,6 +175,7 @@ export default function CsvImport({ onImport, onClose }) {
   const [fileName, setFileName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [ambiguos, setAmbiguos] = useState([]); // [{ i, campo, original }]
   const fileRef = useRef();
 
   const handleFile = async (e) => {
@@ -191,26 +201,29 @@ export default function CsvImport({ onImport, onClose }) {
         setError("La IA no encontró datos válidos. Verifica que el archivo tenga la información correcta.");
       } else {
         // Coerce all numeric fields to actual numbers
+        const amb = [];
+        const numA = (v, i, campo) => { if (celdaAmbigua(v)) amb.push({ i, campo, original: String(v) }); return numCelda(v); };
         items.forEach((item, i) => {
           item.id = mod.key[0] + "_" + Date.now() + "_" + i;
           // Trading fields
-          if (item.sh !== undefined) item.sh = numCelda(item.sh);
-          if (item.cb !== undefined) item.cb = numCelda(item.cb);
-          if (item.pr !== undefined) item.pr = numCelda(item.pr);
-          if (item.tg !== undefined) item.tg = numCelda(item.tg);
+          if (item.sh !== undefined) item.sh = numA(item.sh, i, "sh");
+          if (item.cb !== undefined) item.cb = numA(item.cb, i, "cb");
+          if (item.pr !== undefined) item.pr = numA(item.pr, i, "pr");
+          if (item.tg !== undefined) item.tg = numA(item.tg, i, "tg");
           // Investment fields
-          if (item.va !== undefined) item.va = numCelda(item.va);
-          if (item.vc !== undefined) item.vc = numCelda(item.vc);
+          if (item.va !== undefined) item.va = numA(item.va, i, "va");
+          if (item.vc !== undefined) item.vc = numA(item.vc, i, "vc");
           // Income fields
-          if (item.mensual !== undefined) item.mensual = numCelda(item.mensual);
+          if (item.mensual !== undefined) item.mensual = numA(item.mensual, i, "mensual");
           // Expense fields
-          if (item.m !== undefined) item.m = numCelda(item.m);
+          if (item.m !== undefined) item.m = numA(item.m, i, "m");
           // Debt fields
-          if (item.mt !== undefined) item.mt = numCelda(item.mt);
-          if (item.pg !== undefined) item.pg = numCelda(item.pg);
-          if (item.ts !== undefined) item.ts = numCelda(item.ts);
+          if (item.mt !== undefined) item.mt = numA(item.mt, i, "mt");
+          if (item.pg !== undefined) item.pg = numA(item.pg, i, "pg");
+          if (item.ts !== undefined) item.ts = numA(item.ts, i, "ts");
         });
         setParsed(items);
+        setAmbiguos(amb);
       }
       setStep(3);
     } catch (err) {
@@ -344,6 +357,17 @@ export default function CsvImport({ onImport, onClose }) {
                   </span>
                 </div>
 
+                {ambiguos.length > 0 && (
+                  <div role="alert" style={{ background: T.bg3, border: `1px solid ${T.red}40`, borderRadius: 12, padding: 12, marginBottom: 16, fontSize: 13 }}>
+                    {ambiguos.map((a) => (
+                      <label key={a.i + a.campo} style={{ display: "block", marginBottom: 8, color: T.txt2 }}>
+                        Fila {a.i + 1} («{a.original}»): {textoAmbiguo(parsed[a.i]?.[a.campo] ?? 0)}
+                        <NumberInput value={parsed[a.i]?.[a.campo] ?? ""} onChange={(v) => setParsed((p) => p.map((it, j) => j === a.i ? { ...it, [a.campo]: v === "" ? 0 : v } : it))}
+                          style={{ display: "block", marginTop: 4, padding: "6px 8px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.bg2, color: T.txt, width: 200 }} />
+                      </label>
+                    ))}
+                  </div>
+                )}
                 <div style={{ overflowX: "auto", maxHeight: 360, borderRadius: 14, border: `1px solid ${T.border}`, marginBottom: 20 }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>

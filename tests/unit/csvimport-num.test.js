@@ -14,3 +14,17 @@ describe("import Excel/CSV: números es-CO", () => {
   });
   it("vacío o basura → 0", () => { expect(numCelda("")).toBe(0); expect(numCelda(null)).toBe(0); expect(numCelda("n/a")).toBe(0); });
 });
+import { celdaAmbigua, textoAmbiguo } from "../../src/components/CsvImport.jsx";
+describe("import: celdas ambiguas con punto", () => {
+  it("marca 1234.567 y 12.3456, no 1.500 ni 6.500.000 ni números", () => {
+    expect(celdaAmbigua("1234.567")).toBe(true);
+    expect(celdaAmbigua("12.3456")).toBe(true);
+    expect(celdaAmbigua("1.500")).toBe(false);
+    expect(celdaAmbigua("6.500.000")).toBe(false);
+    expect(celdaAmbigua("12.5")).toBe(false);
+    expect(celdaAmbigua(1234.567)).toBe(false);
+  });
+  it("copy accionable", () => {
+    expect(textoAmbiguo(1234567)).toBe("Revisa este monto: leímos $1.234.567. Si eran decimales, corrígelo aquí");
+  });
+});

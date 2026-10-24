@@ -262,6 +262,16 @@ const E2E={
   }
 };
 let _svT=null;
+// 24-oct-2026 (QA PR #56: «Quitar» y cerrar al segundo no guardaba). Un cambio
+// marcado como urgente (window «fp3-flush-save») se sube sin los 2 s de espera, y
+// al ocultar/cerrar la pestaña se sube lo que quede pendiente.
+let _svPend=null,_svUrgente=false;
+const _svFlush=()=>{if(_svPend){clearTimeout(_svT);const f=_svPend;_svPend=null;f();}};
+if(typeof window!=="undefined"){
+  window.addEventListener("fp3-flush-save",()=>{_svUrgente=true;_svFlush();});
+  window.addEventListener("pagehide",_svFlush);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")_svFlush();});
+}
 const takeSnapshot=(d)=>{
   try{
     const snaps=JSON.parse(localStorage.getItem("fp3_snapshots")||"[]");
@@ -295,7 +305,7 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
         return;
       }
       clearTimeout(_svT);
-      _svT=setTimeout(async()=>{
+      const subir=async()=>{_svPend=null;
         // Commit 12 Tarea 3 (BUG REPORTADO: 'no quedan guardados'): el catch
         // silencioso original ocultaba errores del upsert. Si Supabase rechazaba
         // el guardado (RLS, schema mismatch, tamaño), el usuario veia "✅ Guardado"
@@ -340,7 +350,10 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
           window.__fp3LastSaveError=e;
           try{const ev=new CustomEvent("fp3-save-error",{detail:e});window.dispatchEvent(ev)}catch{}
         }
-      },2000);
+      };
+      _svPend=subir;
+      if(_svUrgente){_svUrgente=false;_svT=null;subir();}
+      else _svT=setTimeout(subir,2000);
     }
   }catch(e){console.error("[fp3] localStorage save ERROR:",e)}
 };

@@ -9,7 +9,7 @@ describe("NumberInput: montos sin decimales (punto = miles es-CO) y tasas con de
     expect(monto("1.500")).toBe(1500);
     expect(monto("6.5")).toBe(65); // el punto nunca es decimal en un monto
     expect(monto("6.50")).toBe(650); // estado intermedio al teclear 6.500.000.000
-    expect(monto("1.500,50")).toBe(1501); // sin decimales: se redondea
+    expect(monto("1.500,50")).toBe(1500); // sin decimales: lo de después de la coma se descarta
     expect(monto("500M")).toBe(500e6);
   });
   it("con decimales permitidos", () => {

@@ -75,7 +75,8 @@ export const parseNumber = (str, { allowDecimals = true } = {}) => {
   // Un separador de miles nunca deja 1 o 2 dígitos sueltos al final, así que
   // la regla no rompe el caso de los montos.
   if (!allowDecimals) {
-    const num = parseFloat(trimmed.replace(/\./g, "").replace(",", "."));
+    // Monto: lo que va después de la coma (decimales) se descarta: «1.500,50» → 1500.
+    const num = parseFloat(trimmed.split(",")[0].replace(/\./g, ""));
     return isNaN(num) ? "" : Math.round(num);
   }
   const decimalConPunto = /^\d{1,3}\.\d{1,2}$/.test(trimmed);
@@ -116,6 +117,7 @@ export default function NumberInput({
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef(null);
   const pendingCursor = useRef(null);
+  const tecleado = useRef(false);
 
   // Sync desde el padre cuando no estamos editando (por si cambia value)
   useEffect(() => {
@@ -136,7 +138,9 @@ export default function NumberInput({
 
   const handleChange = (e) => {
     const input = e.target;
-    const rawInput = input.value;
+    // Monto: no se puede teclear la coma decimal; lo pegado tras la coma se descarta.
+    const rawInput = allowDecimals ? input.value : input.value.split(",")[0];
+    tecleado.current = true;
     const oldCursor = input.selectionStart;
     const oldDisplay = displayValue;
 
@@ -208,9 +212,14 @@ export default function NumberInput({
 
   const handleFocus = (e) => {
     setIsFocused(true);
-    // Seleccionar todo (patrón Excel: tocas y reescribes todo)
+    // Seleccionar todo (patrón Excel: tocas y reescribes todo).
+    // 24-oct-2026 (QA PR #56: teclear rápido tras el clic perdía el primer dígito): se
+    // selecciona ya, y el reintento diferido (Safari deselecciona en mouseup) solo corre
+    // si el usuario aún no escribió; si no, seleccionaba lo tecleado y el siguiente dígito lo pisaba.
+    tecleado.current = false;
+    try { e.target.select(); } catch { /* jsdom */ }
     setTimeout(() => {
-      if (inputRef.current) inputRef.current.select();
+      if (inputRef.current && !tecleado.current && document.activeElement === inputRef.current) inputRef.current.select();
     }, 0);
   };
 

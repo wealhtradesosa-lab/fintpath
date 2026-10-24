@@ -102,8 +102,8 @@ describe("Bug BTG Pactual: inversión nueva más grande que la plata disponible"
     expect(d.rentaMensual).toBeGreaterThan(0);
     // «Paga renta»: el 14% es NOMINAL sobre el capital; el capital queda nominal y se erosiona en pesos de hoy.
     expect(d.valorFinal).toBeCloseTo(6.5e9 / 1.05 ** 10, -6);
-    expect(r.filas[1].rentaPasivaReal - sin.filas[1].rentaPasivaReal).toBeCloseTo(910e6, -6); // año 1 ≈ $910M (~$76M/mes)
-    expect(r.filas[2].rentaPasivaReal - sin.filas[2].rentaPasivaReal).toBeCloseTo(910e6 / 1.05, -6);
+    expect(r.filas[1].rentaPasivaReal - sin.filas[1].rentaPasivaReal).toBeCloseTo(r.nuevasDetalle[0].rentaMensualFondeada * 12, -6); // año 1: solo la parte con plata
+    expect(r.filas[2].rentaPasivaReal - sin.filas[2].rentaPasivaReal).toBeCloseTo(r.nuevasDetalle[0].rentaMensualFondeada * 12 / 1.05, -6);
     const a = r.alertas.find((x) => x.tipo === "nueva_sin_plata");
     expect(a.texto).toMatch(/BTG Pactual: te faltan \$/);
     const h = txt(renderToString(<InversionesNuevas items={r.nuevasDetalle} />));
@@ -212,7 +212,7 @@ describe("Inversión nueva: una sola renta, un solo faltante, sin aviso USD para
     const d = r.nuevasDetalle[0];
     expect(d.rentaMensual).toBeCloseTo(6.5e9 * 0.14 / 12, 0);
     expect(d.rendimientoPct).toBeCloseTo(14, 6);
-    expect((r.filas[1].ingresosReal - sin.filas[1].ingresosReal) / 12).toBeCloseTo(d.rentaMensual, -3);
+    expect((r.filas[1].ingresosReal - sin.filas[1].ingresosReal) / 12).toBeCloseTo(d.rentaMensualFondeada, -3);
     const h = txt(renderToString(<InversionesNuevas items={r.nuevasDetalle} />));
     expect(h).toMatch(/14,0% anual/); expect(h).toContain("/mes en pesos del año 1");
     expect(r.hayUSD).toBe(false);

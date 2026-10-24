@@ -342,7 +342,8 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
       if (c.anio !== t) return;
       const antes = deficit;
       retirar(c.monto);
-      todos.push({ id: c.id, nombre: c.nombre, monto: c.monto, anio: t, faltante: (deficit - antes) / fIdx, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? 0 : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom : 0, /* paga renta: % NOMINAL sobre el capital, capital nominal */ rendPct: c.rendNom * 100, usd: c.usd, invertible: true });
+      const sinPlata = Math.min(c.monto, deficit - antes);
+      todos.push({ id: c.id, nombre: c.nombre, monto: c.monto, anio: t, faltante: (deficit - antes) / fIdx, fondeado: c.monto > 0 ? 1 - sinPlata / c.monto : 1, clase: "nueva", valor: c.monto, crec: c.pagaRenta ? 0 : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom : 0, /* paga renta: % NOMINAL sobre el capital, capital nominal */ rendPct: c.rendNom * 100, usd: c.usd, invertible: true });
     });
     // 1) ventas en su año (valor bruto, sin costos ni impuestos)
     activos.forEach((a) => {
@@ -394,7 +395,9 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
       const r = a.obra.rentaMensual * 12 * fIdx;
       if (a.obra.renta === "reinvierte") a.valor += r; else rentaNueva += r;
     });
-    rentaNueva += todos.reduce((s, a) => s + (a.rentaPct ? a.valor / (1 + a.crec) * a.rentaPct : 0), 0);
+    // 24-oct-2026 (QA PR #56): la renta de una inversión nueva solo entra al flujo por la parte
+    // que tiene plata cuando entra (convención Finanzas: lo que falta no está invertido y no rinde).
+    rentaNueva += todos.reduce((s, a) => s + (a.rentaPct ? a.valor / (1 + a.crec) * a.rentaPct * (a.fondeado ?? 1) : 0), 0);
     const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * (x.fijo ? 1 : fIdx) : 0), 0);
     const rentaFut = todos.reduce((s, a) => s + (a.rentaFutura > 0 && t >= a.rentaDesde ? a.rentaFutura * fIdx : 0), 0);
     rentaNueva += ingFuturo + rentaFut;
@@ -462,7 +465,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio, disponible: disp, metaColchon, hayVentas,
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses, rentaPasivaMensual: b.ip },
     activos: activos.filter((a) => a.anioVenta !== 1 || true).map(({ id, nombre, clase, usd, rentaAnual }) => ({ id, nombre, clase, usd, rentaMensual: rentaAnual / 12 })),
-    nuevasDetalle: todos.filter((a) => String(a.id).startsWith("nueva_")).map((a) => ({ id: a.id, nombre: a.nombre, monto: a.monto, anio: a.anio, faltante: a.faltante || 0, valorFinal: a.valor / fin.deflactor, rentaMensual: rentaMensualNuevaAnioN(a), rendimientoPct: a.rendPct, usd: !!a.usd })),
+    nuevasDetalle: todos.filter((a) => String(a.id).startsWith("nueva_")).map((a) => ({ id: a.id, nombre: a.nombre, monto: a.monto, anio: a.anio, faltante: a.faltante || 0, valorFinal: a.valor / fin.deflactor, rentaMensual: rentaMensualNuevaAnioN(a), rentaMensualFondeada: rentaMensualNuevaAnioN(a) * (a.fondeado ?? 1), rendimientoPct: a.rendPct, usd: !!a.usd })),
     // Aviso cambiario solo por activos/inversiones en USD; lo del norte (S&P 500) se avisa aparte.
     hayUSD: todos.some((a) => a.usd && a.valor > 0) || personalizadas.some((a) => a.usd), usdPorNorte: expUSD,
     final: fin,

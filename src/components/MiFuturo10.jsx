@@ -50,12 +50,27 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const ultimo = useRef({ guardado, onGuardar });
   ultimo.current = { guardado, onGuardar };
   const primera = useRef(true);
+  // 24-oct-2026 (QA PR #56): quitar una inversión se guarda de inmediato, y si el
+  // usuario sale de «Mi futuro» con un guardado pendiente, se escribe al desmontar.
+  const urgente = useRef(false);
+  const pendiente = useRef(null);
+  const escribirAhora = () => {
+    const { guardado: g, onGuardar: og } = ultimo.current;
+    const b = pendiente.current; pendiente.current = null;
+    if (!b || !og) return;
+    og({ ...g, borrador: { ...b, actualizado: new Date().toISOString() } });
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("fp3-flush-save"));
+  };
+  useEffect(() => () => { if (pendiente.current) escribirAhora(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (demo || !onGuardar) return undefined; // la demo nunca escribe
     if (primera.current) { primera.current = false; return undefined; }
+    pendiente.current = { cfg, paso };
+    if (urgente.current) { urgente.current = false; escribirAhora(); setEstadoGuardado("listo"); return undefined; }
     setEstadoGuardado("guardando");
     const escribir = () => {
       const { guardado: g, onGuardar: og } = ultimo.current;
+      pendiente.current = null;
       og && og({ ...g, borrador: { cfg, paso, actualizado: new Date().toISOString() } });
       setEstadoGuardado("listo");
     };
@@ -208,13 +223,13 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 return (<>
                   <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder="Ej.: negocio, CDT, finca" /></label>
                   <label style={lbl}>¿En qué año?<select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((y) => <option key={y} value={y}>Año {y}</option>)}</select></label>
-                  <CampoRendimiento estimado={hint} value={x.rendimientoNomPct} onChange={(v) => up({ rendimientoNomPct: v })} fuente={`${SUPUESTOS_F10.fuentes.rfCorto} (renta fija corto plazo del escenario)`} />
+                  <CampoRendimiento estimado={hint} value={x.rendimientoNomPct} onChange={(v) => up({ rendimientoNomPct: v })} />
                   <label style={lbl}>Moneda<select style={inp} value={x.moneda || "COP"} onChange={(e) => up({ moneda: e.target.value })}><option value="COP">COP</option><option value="USD">USD</option></select>
                     {x.moneda === "USD" && <span style={{ fontSize: 11, color: C.am }}>En dólares, el resultado en pesos también depende de cómo se mueva la tasa de cambio.</span>}</label>
                   <label style={lbl}>¿Cómo te da plata?<select style={inp} value={x.tipo || "valoriza"} onChange={(e) => up({ tipo: e.target.value })}><option value="renta">Paga renta (te entra al flujo)</option><option value="valoriza">Solo se valoriza (crece el valor)</option></select></label>
                 </>);
               })()}
-              <button style={btn(false)} onClick={() => set("nuevas", cfg.nuevas.filter((_, j) => j !== i))}>Quitar</button>
+              <button style={btn(false)} onClick={() => { urgente.current = true; set("nuevas", cfg.nuevas.filter((_, j) => j !== i)); }}>Quitar</button>
               {(() => { const dd = r.disponible[Math.min(10, Math.max(1, Number(x.anio) || 1)) - 1]; return Number(x.monto) > 0 && dd && dd.antesDeAsignar <= 0 ? <div role="alert" style={{ gridColumn: "1 / -1", color: C.rd, fontSize: 12 }}>{SIN_PLATA_ANIO}</div> : null; })()}
               <AlertaExceso disponible={r.disponible} tipo="nueva" idx={i} />
             </div>
@@ -483,7 +498,7 @@ export function InversionesNuevas({ items = [] }) {
       {items.map((x) => (
         <div key={x.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "6px 0", fontSize: 12 }}>
           <b>{x.nombre}</b> · {plata(x.monto)} en el año {x.anio}{Number.isFinite(x.rendimientoPct) ? ` · ${fmtPctEs(x.rendimientoPct, 1)} anual` : ""}{x.usd ? " · USD" : ""}
-          <div style={{ color: C.tx2 }}>{x.rentaMensual > 0 ? `Renta ${plata(x.rentaMensual)}/mes en pesos del año ${x.anio} · ` : ""}Valor a 10 años {plata(x.valorFinal)} en pesos de hoy</div>
+          <div style={{ color: C.tx2 }}>{x.rentaMensual > 0 ? `Renta ${plata(x.rentaMensual)}/mes en pesos del año ${x.anio} · ` : ""}Valor a 10 años {plata(x.valorFinal)} en pesos de hoy{x.rentaMensual > 0 && x.rentaMensualFondeada < x.rentaMensual - 1 && <span style={{ display: "block", color: C.am }}>A tu flujo solo entran {plata(x.rentaMensualFondeada)}/mes: la renta cuenta por la parte que tiene plata.</span>}</div>
           {x.faltante > 0 && <div role="alert" style={{ color: C.rd }}>Te faltan {plata(x.faltante)} para esta inversión.</div>}
         </div>))}
     </div>
