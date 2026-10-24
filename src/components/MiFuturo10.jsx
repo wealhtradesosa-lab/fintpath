@@ -84,6 +84,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
     setNombreEsc(""); setDescEsc("");
     track("futuro10_guardar", { escenario: cfg.escenario, norte: cfg.mezcla ? "personalizado" : cfg.norte, cantidad_escenarios: escenarios.length + 1 });
   };
+  const editarEsc = (id) => { const e = escenarios.find((x) => x.id === id); if (!e) return; setCfg(migrarModifica({ ...CONFIG_INICIAL, ...e.config })); setEditandoId(e.id); setNombreEsc(e.nombre || ""); setDescEsc(e.descripcion || ""); ir(1); };
+  const descartarBorrador = () => { setCfg(editandoEsc ? migrarModifica({ ...CONFIG_INICIAL, ...editandoEsc.config }) : { ...CONFIG_INICIAL, escenario: cfg.escenario }); setEditandoId(null); setNombreEsc(""); setDescEsc(""); };
   const borrar = (id) => !demo && onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.filter((e) => e.id !== id) });
 
   return (
@@ -241,7 +243,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           </div>
           {hayBorrador && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginTop: 8, padding: "8px 10px", border: `1px dashed ${C.am}`, borderRadius: 8, fontSize: 12 }}>
             <span style={{ flex: "1 1 200px", color: C.am }}>«{nombreBorrador}» aparece en la comparación porque no lo has guardado.</span>
-            <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => { setCfg(editandoEsc ? migrarModifica({ ...CONFIG_INICIAL, ...editandoEsc.config }) : { ...CONFIG_INICIAL, escenario: cfg.escenario }); setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>Descartar</button>
+            <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={descartarBorrador}>Descartar</button>
           </div>}
           {editando && <div style={{ fontSize: 12, color: C.gn, marginTop: 6 }}>Estás editando «{editando.nombre}». Cambia el nombre arriba si quieres y toca Guardar cambios. <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>Cancelar</button></div>}
           <input style={{ ...inp, marginTop: 6 }} placeholder={`Resumen en una frase (opcional). Si lo dejas vacío: «${resumenEscenario(r)}»`} value={descEsc} onChange={(e) => setDescEsc(e.target.value)} />
@@ -262,6 +264,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <div style={{ ...card, marginBottom: 14, borderTop: `3px solid ${verEsc.color || C.gn}` }}><h3 style={{ margin: 0 }}>{verEsc.nombre}</h3></div>
           <PlanInforme r={verEsc.r} nombre={verEsc.nombre} inflacionPct={esc.inflacionPct} />
         </> : <PlanComparador planes={planesComparar} inflacionPct={esc.inflacionPct} onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
+          onEditar={demo ? null : editarEsc} onBorrar={demo ? null : borrar}
+          onGuardarBorrador={demo ? null : () => { if (editandoEsc) guardarCambios(); else { window.scrollTo?.({ top: 0, behavior: "smooth" }); guardar(); } }} onDescartarBorrador={demo ? null : descartarBorrador}
           onRecomendar={demo ? null : (id) => onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.map((e) => ({ ...e, recomendado: e.id === id ? !e.recomendado : false })) })} />}
       </>)}
 

@@ -95,7 +95,7 @@ function Reparto({ m }) {
   );
 }
 
-export default function PlanComparador({ planes, inflacionPct = 4, onVer, onRecomendar }) {
+export default function PlanComparador({ planes, inflacionPct = 4, onVer, onRecomendar, onEditar, onBorrar, onGuardarBorrador, onDescartarBorrador }) {
   const [modo, setModo] = useState("nominal");
   const m = useMemo(() => planes.map((p, i) => ({ ...p, color: p.esHoy ? INF.gris : INF.serie[i % INF.serie.length], k: "p" + i, med: medir(p.r, inflacionPct) })), [planes, inflacionPct]);
   const d = (f) => (modo === "real" ? f.deflactor || 1 : 1);
@@ -126,6 +126,12 @@ export default function PlanComparador({ planes, inflacionPct = 4, onVer, onReco
             <div style={{ fontSize: 24, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 10 }}>{fmM(p.med.fin.patrimonio)}</div>
             <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.ok : INF.bad }}>año 10 · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} real`}</div>
             {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.teja : INF.tx2, fontSize: 11, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? "★ Recomendado" : "☆ Marcar como recomendado"}</button>}
+            {/* 24-oct-2026 (Santiago: "cada tarjeta debería tener su borrar, editar"). */}
+            {!p.esHoy && (p.id ? (onEditar || onBorrar) : (onGuardarBorrador || onDescartarBorrador)) && <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+              {(p.id ? [["Editar", onEditar], ["Borrar", onBorrar]] : [["Guardar", onGuardarBorrador], ["Descartar", onDescartarBorrador]]).filter(([, fn]) => fn).map(([t, fn]) => (
+                <button key={t} onClick={(e) => { e.stopPropagation(); if (t === "Borrar" && typeof window !== "undefined" && window.confirm && !window.confirm(`¿Borrar «${p.nombre}»?`)) return; fn(p.id); }}
+                  style={{ background: "none", border: `1px solid ${t === "Borrar" || t === "Descartar" ? INF.teja : INF.linea}`, borderRadius: 999, color: t === "Borrar" || t === "Descartar" ? INF.teja : INF.tx, fontSize: 12, padding: "4px 12px", cursor: "pointer" }}>{t}</button>))}
+            </div>}
           </div>;
         })}
       </div>
