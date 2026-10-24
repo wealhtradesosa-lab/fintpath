@@ -230,13 +230,16 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     }
     const anioAporte = Math.min(10, Math.max(1, Math.round(n(r.anio) || 1)));
     let m = 0;
+    let deVenta = 0, deLiquidez = 0, deAnio1 = 0;
     if (anioAporte === 1) {
+      const b0 = bolsa, l0 = desdeLiquidez;
       m = n(r.monto) > 0 ? tomar(n(r.monto), a.id) : 0;
+      deVenta = b0 - bolsa; deLiquidez = desdeLiquidez - l0;
       if (m > 0) { a.valor += m; reinvertidoTotal += m; }
       // Si lo vendido y la liquidez no alcanzan, el resto se paga con lo que
       // entre en el año 1 (la obra se hace igual): no se recorta.
       const resto = Math.max(0, n(r.monto)) - m;
-      if (resto > 0.5) { pedidoTotal -= resto; pendienteAnio1 += resto; (a.aportesFuturos = a.aportesFuturos || []).push({ monto: resto, anio: 1 }); m += resto; }
+      if (resto > 0.5) { pedidoTotal -= resto; pendienteAnio1 += resto; (a.aportesFuturos = a.aportesFuturos || []).push({ monto: resto, anio: 1 }); m += resto; deAnio1 = resto; }
     } else if (n(r.monto) > 0) {
       // Aporte de un año siguiente: se paga ese año con lo que haya (como una obra futura).
       pedidoTotal -= Math.max(0, n(r.monto)); programadasTotal += n(r.monto);
@@ -251,6 +254,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     reinversionesDetalle.push({ i: k, activoId: a.id, nombre: a.nombre, clase: a.clase, valorHoy: antes, aporte: anioAporte === 1 ? m : n(r.monto), anio: anioAporte, total: totalConAporte, rentaMensual, rentaDesdeMes, rentaPctAnual: totalConAporte > 0 ? rentaMensual * 12 / totalConAporte * 100 : 0,
       valorizacionPct: esInm ? (a.crec == null ? null : a.crec * 100) : null,
       rendimientoPct: esInm ? null : rendUsado, pctRecibe: esInm ? null : pUsado,
+      deVenta, deLiquidez, deAnio1,
       rindeAnual: esInm ? 0 : totalConAporte * rendUsado / 100, teLlegaMes: esInm ? 0 : totalConAporte * rendUsado / 100 * pUsado / 100 / 12 });
   });
   const personalizadas = [];
@@ -403,6 +407,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
     bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
     reparto: repartoFinal,
+    vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => ({ id: x.id, nombre: x.n || x.nombre || "Activo", valor: n(x.va) * fxA(x) })),
     reinversionesDetalle,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, pagar, pagado }) => ({ id, nombre, saldo, activoId, porVenta, pagar, pagado })),

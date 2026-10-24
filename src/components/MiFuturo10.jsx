@@ -118,7 +118,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
                   {[["continua", "Sigue igual"], ["vende", "Se vende"], ["invierte", "Le voy a invertir"]].map(([k, l]) => <button key={k} style={btn(accion === k)} onClick={() => elegir(k)}>{l}</button>)}
                 </div>
-                {accion === "invierte" && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} /></div>}
+                {accion === "invierte" && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} vendidos={r.vendidos || []} /></div>}
               </div>
             );
           })}
@@ -126,7 +126,13 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         <div style={card}>
           <Seccion n={2} titulo="Tus deudas" sub="La deuda de un activo que vendes se paga sola con esa venta. Las demás, márcalas si quieres pagarlas con lo vendido." />
           {(r.deudas || []).length > 0 ? <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} /> : <p style={{ color: C.tx2, fontSize: 13 }}>No tienes deudas con saldo.</p>}
-          <p style={{ color: C.tx2, fontSize: 12 }}>Lo que vendes ({bolsa} activo{bolsa === 1 ? "" : "s"}) paga primero esas deudas; con el resto se completa un colchón de {SUPUESTOS_F10.colchonMeses} meses de gastos y lo demás pasa al paso 3, Lo que te queda.</p>
+          {(() => { const bd = r.bolsaDetalle || {}; if (!(bd.vendido > 0)) return <p style={{ color: C.tx2, fontSize: 12 }}>Si vendes algo en la sección 1, con esa plata se pagan las deudas que marques y lo que les inviertas a tus activos; lo que sobre pasa al paso 3.</p>;
+            const filas = [[`Vendes ${(r.vendidos || []).map((v) => v.nombre).join(", ")}`, bd.vendido, C.tx], ...(bd.desdeLiquidez > 0 ? [["+ De tu liquidez", bd.desdeLiquidez, C.am]] : []), ...(bd.deudas > 0 ? [["− Pagas deudas", bd.deudas, C.tx2]] : []), ...(bd.colchon > 0 ? [["− Colchón de 6 meses", bd.colchon, C.tx2]] : []), ...(bd.reinvertido > 0 ? [["− Inviertes en tus activos", bd.reinvertido, C.tx2]] : []), ...(bd.nuevas > 0 ? [["− Inversiones nuevas (paso 3)", bd.nuevas, C.tx2]] : [])];
+            return <div style={{ background: C.bg, borderRadius: 8, padding: 10, marginTop: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>La plata de lo que vendes</div>
+              {filas.map(([l, v, col]) => <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, padding: "3px 0" }}><span style={{ color: col === C.tx ? C.tx : C.tx2, minWidth: 0 }}>{l}</span><span style={{ color: col, whiteSpace: "nowrap", fontFamily: "monospace" }}>{plata(v)}</span></div>)}
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 4, paddingTop: 6 }}><span>Te quedan para el paso 3</span><span style={{ color: bd.restante > 0 ? C.gn : C.tx, fontFamily: "monospace" }}>{plata(bd.restante)}</span></div>
+            </div>; })()}
         </div>
         <div style={card}>
           <Seccion n={3} titulo="Lo que viene" sub="Lo que todavía no tienes y empieza más adelante: una pensión, una venta futura, un local que te entregan." />
@@ -492,7 +498,7 @@ function Graficas({ r, cfg, user, escenarios }) {
 // llega (el resto se reinvierte: interés compuesto).
 const PARTES = [[0, "Nada: todo se reinvierte"], [25, "Una cuarta parte"], [50, "La mitad"], [75, "Tres cuartas partes"], [100, "Todo: me llega cada mes"]];
 const ETQ_TIPO = { inmueble: "Inmueble: da renta y se valoriza", liquido: "Renta fija o cuenta: rinde una tasa al año", acciones: "Fondos, trading o acciones: rinde al año", otro: "Otra inversión: rinde al año", vehiculo: "Vehículo" };
-function AporteCampos({ x, up, det, activos, conActivo = false }) {
+function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] }) {
   const lbl = { fontSize: 12, color: C.tx2 };
   const desdeMes = Number(x.rentaDesdeMes) || 0;
   const clase = (activos.find((a) => a.id === x.activoId) || {}).clase || "otro";
@@ -519,6 +525,15 @@ function AporteCampos({ x, up, det, activos, conActivo = false }) {
       {esInm && det.valorizacionPct != null && <div><div style={{ fontSize: 11, color: C.tx2 }}>Se valoriza</div><div style={{ fontSize: 16, fontWeight: 700 }}>{pct(det.valorizacionPct)} al año</div><div style={{ fontSize: 11, color: C.tx2 }}>≈ {plata(det.total * det.valorizacionPct / 100)} el primer año</div></div>}
       {!esInm && <div><div style={{ fontSize: 11, color: C.tx2 }}>Rinde al año</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.rindeAnual)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{pct(det.rendimientoPct)} sobre {plata(det.total)}</div></div>}
       {!esInm && <div><div style={{ fontSize: 11, color: C.tx2 }}>Te llega al mes</div><div style={{ fontSize: 16, fontWeight: 700, color: det.teLlegaMes > 0 ? C.gn : C.tx }}>{plata(det.teLlegaMes)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{det.pctRecibe >= 100 ? "no se reinvierte nada" : `se reinvierten ${plata(det.rindeAnual * (1 - det.pctRecibe / 100))} al año`}</div></div>}
+      {(() => {
+        const partes = [];
+        if (det.deVenta > 0) partes.push(`la venta de ${vendidos.map((v) => v.nombre).join(" y ") || "lo que vendes"}: ${plata(det.deVenta)}`);
+        if (det.deLiquidez > 0) partes.push(`tu liquidez de hoy: ${plata(det.deLiquidez)}`);
+        if (det.deAnio1 > 0) partes.push(`lo que entre en el año 1: ${plata(det.deAnio1)}`);
+        if (det.anio > 1 && det.aporte > 0) partes.push(`lo que tengas en ${det.anio - 1} año${det.anio === 2 ? "" : "s"}: ${plata(det.aporte)}`);
+        if (!partes.length) return null;
+        return <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2, borderTop: `1px solid ${C.bd}`, paddingTop: 6 }}><b style={{ color: C.tx }}>Sale de</b> {partes.join(" · ")}</div>;
+      })()}
     </div>}
   </>);
 }
