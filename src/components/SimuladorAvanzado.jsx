@@ -254,7 +254,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.txt3, marginTop: 4 }}>
-          <span>0% de tus gastos cubierto</span>
+          <span>0%</span>
           {vista?.desborde
             ? <span style={{ fontSize: 11, fontWeight: 800, color: currentData?.color || T.gd }}>{vista.desborde}</span>
             : <span>100% = tus gastos cubiertos</span>}
