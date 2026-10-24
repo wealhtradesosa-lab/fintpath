@@ -10,6 +10,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/datos-mercado"
+  to = "/.netlify/functions/datos-mercado"
+  status = 200
+
+[[redirects]]
   from = "/api/analyze-excel"
   to = "/.netlify/functions/analyze-excel"
   status = 200

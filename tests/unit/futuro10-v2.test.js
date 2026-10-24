@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { proyectarFuturo10, SUPUESTOS_F10, resolverEscenario, metaColchonF10, migrarConfigF10, avisoRetornoAlto, pareceIngresoFuturo, tasaDeuda } from "../../src/lib/futuro10.js";
 import { calcularBase } from "../../src/lib/metrics.js";
+import { ultimoDato, IPC_MANUAL } from "../../netlify/functions/datos-mercado.js";
 
 const cero = JSON.parse(JSON.stringify(SUPUESTOS_F10));
 cero.presets.rfCorto.realSpread = 0; cero.presets.rfLargo.realSpread = 0;
@@ -113,5 +114,13 @@ describe("Construir o mejorar", () => {
     expect(m.decisiones.l.obra.inversiones).toEqual([{ monto: 100e6, anio: 2 }, { monto: 20e6, anio: 1 }]);
     expect(migrarConfigF10(m)).toBe(m);
     expect(proyectarFuturo10(u, viejo).final.patrimonio).toBeCloseTo(proyectarFuturo10(u, m).final.patrimonio, 0);
+  });
+});
+
+describe("datos-mercado (BanRep)", () => {
+  it("lee el último dato de la serie y tiene respaldo manual con fuente y fecha", () => {
+    expect(ultimoDato([[Date.UTC(2026, 7, 15), 5.4], [Date.UTC(2026, 8, 15), 5.1]]).pct).toBe(5.1);
+    expect(ultimoDato({ data: [] })).toBeNull();
+    expect(IPC_MANUAL).toMatchObject({ fuente: expect.any(String), fecha: expect.any(String), manual: true });
   });
 });
