@@ -564,3 +564,30 @@ describe("futuro10 · monto por fuente y valor al terminar", () => {
     expect(r.filas[2].porActivo.find((x) => x.nombre === "Lote").valor).toBeCloseTo(1500e6, -3);
   });
 });
+
+describe("lo que se va con una venta (rentas sin vincular)", () => {
+  const user = {
+    trm: 4000, inflacionPct: 4,
+    inv: [{ id: "pm", n: "Puerto Madero", tipo: "inmueble", va: 3000e6 }, { id: "otro", n: "CDT", tipo: "cdt", va: 100e6 }],
+    ingresos: [{ nombre: "RENTA TRADICIONAL PUERTO MADERO", categoria: "arriendos", tipo: "pasivo", mensual: 13e6, frecuencia: "mensual" }, { nombre: "Salario", tipo: "activo", mensual: 20e6, frecuencia: "mensual" }],
+    gastos: { vivienda: [{ c: "Administración Madero", mensual: 2e6, frecuencia: "mensual" }, { c: "Mercado", mensual: 5e6, frecuencia: "mensual" }] },
+  };
+  it("sugiere por nombre y los quita al vender", async () => {
+    const { sugerirVinculados, vinculadosQueSeVan } = await import("../../src/lib/futuro10.js");
+    const s = sugerirVinculados(user, "pm");
+    expect(s.ingresos.find((x) => x.key === "i:0").sugerido).toBe(true);
+    expect(s.ingresos.find((x) => x.key === "i:1").sugerido).toBe(false);
+    expect(s.gastos.find((x) => x.key === "vivienda::0").sugerido).toBe(true);
+    const f = vinculadosQueSeVan(user, { decisiones: { pm: { accion: "vende" } } });
+    expect([...f].sort()).toEqual(["i:0", "vivienda::0"]);
+    const f2 = vinculadosQueSeVan(user, { decisiones: { pm: { accion: "vende", seVan: ["i:0"] } } });
+    expect([...f2]).toEqual(["i:0"]);
+  });
+  it("la renta vendida no aparece en lo que entra", () => {
+    const base = proyectarFuturo10(user, { escenario: "base", decisiones: {} });
+    const r = proyectarFuturo10(user, { escenario: "base", decisiones: { pm: { accion: "vende" } } });
+    expect(r.desglose.entra.some((x) => /MADERO/.test(x.nombre))).toBe(false);
+    expect(r.desglose.sale.some((x) => /Madero/.test(x.nombre))).toBe(false);
+    expect(r.filas[0].ingresos).toBeLessThan(base.filas[0].ingresos - 12 * 12e6);
+  });
+});

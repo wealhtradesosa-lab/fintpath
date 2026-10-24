@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, sugerirVinculados } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -116,6 +116,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                   {[["continua", "Sigue igual"], ["vende", "Se vende"]].map(([k, l]) => <button key={k} style={btn((k === "vende") === vende)} onClick={() => elegir(k)}>{l}</button>)}
                   {!vende && det && <span style={{ fontSize: 12, color: C.gn }}>Le inviertes {plata(det.aporte)} en el paso 3</span>}
                 </div>
+                {vende && <SeVaConVenta user={user} activoId={a.id} d={d} setD={(nx) => setCfg((p) => ({ ...p, decisiones: { ...p.decisiones, [a.id]: { ...d, ...nx } } }))} />}
               </div>
             );
           })}
@@ -593,4 +594,32 @@ function TablaSupuestos({ esc }) {
     <div key={a} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "2px 8px", padding: "4px 0", borderTop: `1px solid ${C.bd}` }}>
       <span style={{ color: C.tx2 }}>{a}</span><span style={{ textAlign: "right", overflowWrap: "anywhere", minWidth: 0 }}>{b}</span>
     </div>))}</div>;
+}
+
+// 24-oct-2026 (Santiago: "¿por qué aparece la renta de Puerto Madero si se
+// vende? Lo mismo Orlando… aparecen rentas que ya no van"). Al marcar «Se
+// vende», se ve y se confirma qué ingresos y gastos se van con la venta.
+function SeVaConVenta({ user, activoId, d, setD }) {
+  const [verTodo, setVerTodo] = useState(false);
+  const sug = sugerirVinculados(user, activoId);
+  const lista = [...sug.ingresos.map((x) => ({ ...x, tipo: "ing" })), ...sug.gastos.map((x) => ({ ...x, tipo: "gas" }))];
+  const elegidos = new Set(Array.isArray(d.seVan) ? d.seVan : lista.filter((x) => x.sugerido).map((x) => x.key));
+  const toggle = (k) => { const nx = new Set(elegidos); nx.has(k) ? nx.delete(k) : nx.add(k); setD({ seVan: [...nx] }); };
+  const auto = [...sug.auto.ingresos, ...sug.auto.gastos];
+  const visibles = verTodo ? lista : lista.filter((x) => elegidos.has(x.key));
+  const fila = (x, on, fijo) => (
+    <label key={x.key} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, padding: "3px 0", color: on ? C.tx : C.tx2 }}>
+      <input type="checkbox" checked={on} disabled={fijo} onChange={() => toggle(x.key)} />
+      <span style={{ flex: 1, minWidth: 0, textDecoration: on ? "line-through" : "none" }}>{x.nombre}</span>
+      <span style={{ whiteSpace: "nowrap" }}>{x.tipo === "gas" || x.cat ? "−" : "+"}{plata(Math.round(x.mensual))}{String(x.moneda).toUpperCase() === "USD" ? " USD" : ""}/mes</span>
+    </label>);
+  return (
+    <div style={{ marginTop: 8, padding: "8px 10px", border: `1px solid ${C.bd}`, borderRadius: 8 }}>
+      <div style={{ fontSize: 13, fontWeight: 600 }}>¿Qué se va con la venta?</div>
+      <div style={{ fontSize: 11, color: C.tx2, marginBottom: 4 }}>Marca las rentas y gastos de este activo. Dejan de contar desde la venta.</div>
+      {auto.map((x) => fila(x, true, true))}
+      {visibles.map((x) => fila(x, elegidos.has(x.key), false))}
+      {auto.length + visibles.length === 0 && <div style={{ fontSize: 12, color: C.tx2 }}>No encontré rentas ni gastos con este nombre. Búscalos abajo.</div>}
+      {lista.length > 0 && <button style={{ ...btn(false), marginTop: 6, fontSize: 12 }} onClick={() => setVerTodo(!verTodo)}>{verTodo ? "Ver solo los marcados" : "Buscar otro ingreso o gasto"}</button>}
+    </div>);
 }

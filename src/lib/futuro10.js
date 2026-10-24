@@ -322,9 +322,14 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   // ingresos vinculados. Antes solo se restaba la renta neta y el exceso de
   // costos se quedaba en los gastos para siempre.
   const vendidosIds = new Set((b.inv || []).filter((a) => dec[a.id]?.accion === "vende").map((a) => a.id));
-  const sinVendidos = (arr) => (arr || []).filter((x) => !(x && x.activoId && vendidosIds.has(x.activoId)));
-  const gastosSinVendidos = Object.fromEntries(Object.entries(user.gastos || user.gas || {}).map(([k, v]) => [k, sinVendidos(v)]));
-  const bOp = vendidosIds.size ? calcularBase({ ...sinImp, inv: (user.inv || []).filter((a) => !vendidosIds.has(a?.id)), ingresos: sinVendidos(user.ingresos), gastos: gastosSinVendidos, gas: gastosSinVendidos, deu: deudasVivas, deudas: deudasVivas }, {}) : bDeuda;
+  // 24-oct-2026 (Santiago: "¿por qué me aparece la renta de Puerto Madero si se
+  // vende? Lo mismo Orlando"). Muchas rentas se cargan en Ingresos sin
+  // vincularlas al activo. Al vender, también se van las que el usuario marca
+  // en «¿Qué se va con la venta?» (por defecto, las que llevan su nombre).
+  const fuera = vinculadosQueSeVan(user, cfg, vendidosIds);
+  const sinVendidos = (arr, pre) => (arr || []).filter((x, k) => !(x && x.activoId && vendidosIds.has(x.activoId)) && !fuera.has(`${pre}${k}`));
+  const gastosSinVendidos = Object.fromEntries(Object.entries(user.gastos || user.gas || {}).map(([k, v]) => [k, sinVendidos(v, `${k}::`)]));
+  const bOp = vendidosIds.size ? calcularBase({ ...sinImp, inv: (user.inv || []).filter((a) => !vendidosIds.has(a?.id)), ingresos: sinVendidos(user.ingresos, "i:"), gastos: gastosSinVendidos, gas: gastosSinVendidos, deu: deudasVivas, deudas: deudasVivas }, {}) : bDeuda;
   let ingresos = (bOp.ia + bOp.ip) * 12 - rentaVendida;
   let gastos = (bOp.ob - bOp.sd) * 12;
   // 24-oct-2026 (Santiago: "¿cómo quita uno items de gastos que ya no van?
@@ -335,7 +340,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   const conRentaOp = new Set(Object.keys(bOp.rentaNetaPorActivo || {}));
   const gastosHoy = [];
   Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g, idx) => {
-    if (!g || g.sim === false || (g.activoId && vendidosIds.has(g.activoId))) return;
+    if (!g || g.sim === false || (g.activoId && vendidosIds.has(g.activoId)) || fuera.has(`${cat}::${idx}`)) return;
     const v = montoPromedioMensual(g) * fxG(g); if (!(v > 0.5)) return;
     gastosHoy.push({ key: `${cat}::${idx}`, nombre: g.c || g.n || g.nombre || cat, cat, mensual: v, neteado: !!(g.activoId && conRentaOp.has(g.activoId)) });
   }));
@@ -517,7 +522,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const conRenta = new Set(Object.keys(bOp.rentaNetaPorActivo || {}));
     const nombreActivo = (id) => { const a = (user.inv || []).find((y) => y.id === id); return a ? a.n || a.nombre : "un activo"; };
     const entra = [];
-    (user.ingresos || []).filter(sigue).forEach((i) => {
+    (user.ingresos || []).filter((i, k) => sigue(i) && !fuera.has(`i:${k}`)).forEach((i) => {
       if (i.activoId && conRenta.has(i.activoId) && tipoIngreso(i) === "pasivo") return; // va como renta neta del activo
       const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: v, nota: tipoIngreso(i) === "pasivo" ? "renta" : "trabajo" });
     });
@@ -535,6 +540,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).filter(sigue).forEach((g) => {
       if (g.activoId && conRenta.has(g.activoId)) return; // ya restado de la renta de su activo
       const v = montoPromedioMensual(g) * fxI(g); const key = `${cat}::${(items || []).indexOf(g)}`;
+      if (fuera.has(key)) return;
       if (seVan.some((x) => x.key === key && x.desde <= 1)) return;
       if (v > 0.5) sale.push({ nombre: g.c || g.n || g.nombre || cat, mensual: v, nota: (g.c || g.n || g.nombre) ? cat : "" }); }));
     deudasVivas.filter((d) => d && d.sim !== false && !esUnica(d)).forEach((d) => { const v = montoPromedioMensual({ ...d, mensual: n(d.pg ?? d.pago) * fxI(d) }); if (v > 0.5) sale.push({ nombre: `Cuota ${d.n || d.nombre || "deuda"}`, mensual: v, nota: "deuda" }); });
@@ -754,4 +760,46 @@ export function leerFuentesPago(x = {}) {
   const lista = (Array.isArray(x.fuentes) ? x.fuentes : x.fuenteId ? [{ id: x.fuenteId, pct: 100 }] : []).map(conv);
   let usado = 0;
   return lista.filter((f) => f && f.id).map((f) => { const p = Math.max(0, Math.min(100 - usado, Number(f.pct) || 0)); usado += p; return { id: f.id, pct: p }; }).filter((f) => f.pct > 0);
+}
+
+// ── Lo que se va con una venta ─────────────────────────────────────────────
+// 24-oct-2026 (Santiago: "aparecen rentas que ya no van" — Puerto Madero y
+// Orlando vendidos seguían con su renta porque en Ingresos no estaban
+// vinculadas al activo). Ingresos de renta y gastos sin vínculo cuyo nombre
+// lleva una palabra propia del activo (Orlando, Madero…) se sugieren; el
+// usuario confirma o corrige en Decide. Claves: ingresos "i:<índice>",
+// gastos "<categoría>::<índice>" (las mismas de «Gastos que se acaban»).
+const GENERICAS = new Set(["renta", "rentas", "local", "locales", "apto", "apartamento", "casa", "lote", "bodega", "oficina", "finca", "cuenta", "fondo", "credito", "inversion", "inversiones", "arriendo", "edificio", "proyecto", "tradicional", "airbnb", "acciones", "unidad"]);
+const sinTilde = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+export function sugerirVinculados(user = {}, activoId) {
+  const a = (user.inv || []).find((x) => x && x.id === activoId);
+  const out = { auto: { ingresos: [], gastos: [] }, ingresos: [], gastos: [] };
+  if (!a) return out;
+  const toks = sinTilde(a.n || a.nombre).split(/[^a-z0-9]+/).filter((t) => t.length >= 4 && !GENERICAS.has(t));
+  const pega = (txt) => toks.length > 0 && toks.some((t) => sinTilde(txt).includes(t));
+  (user.ingresos || []).forEach((i, k) => {
+    if (!i || i.sim === false) return;
+    const nombre = i.nombre || i.categoria || "Ingreso", item = { key: `i:${k}`, nombre, mensual: montoPromedioMensual(i), moneda: i.moneda };
+    if (i.activoId === activoId) out.auto.ingresos.push(item);
+    else if (!i.activoId) out.ingresos.push({ ...item, sugerido: pega(nombre) });
+  });
+  Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g, idx) => {
+    if (!g || g.sim === false) return;
+    const nombre = g.c || g.n || g.nombre || cat, item = { key: `${cat}::${idx}`, nombre, cat, mensual: montoPromedioMensual(g), moneda: g.moneda };
+    if (g.activoId === activoId) out.auto.gastos.push(item);
+    else if (!g.activoId) out.gastos.push({ ...item, sugerido: pega(nombre) });
+  }));
+  return out;
+}
+/** Claves de ingresos/gastos sin vínculo que se van con las ventas del escenario. */
+export function vinculadosQueSeVan(user = {}, cfg = {}, vendidosIds) {
+  const ids = vendidosIds || new Set(Object.entries(cfg.decisiones || {}).filter(([, d]) => d?.accion === "vende").map(([id]) => id));
+  const fuera = new Set();
+  ids.forEach((id) => {
+    const d = (cfg.decisiones || {})[id] || {};
+    const sug = sugerirVinculados(user, id);
+    const elegidos = Array.isArray(d.seVan) ? d.seVan : [...sug.ingresos, ...sug.gastos].filter((x) => x.sugerido).map((x) => x.key);
+    elegidos.forEach((k) => fuera.add(k));
+  });
+  return fuera;
 }
