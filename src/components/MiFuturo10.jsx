@@ -88,9 +88,12 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         </div>
       )}
 
-      {paso === 1 && (
+      {paso === 1 && (<>
+        {/* 24-oct-2026 (Santiago: "es muy poco visible lo de ingresos futuros…
+            1 qué pasa con las inversiones actuales, 2 deudas, 3 ingresos
+            futuros"). Tres secciones numeradas, cada una en su tarjeta. */}
         <div style={card}>
-          <h3 style={{ marginTop: 0 }}>Decide por activo</h3>
+          <Seccion n={1} titulo="Tus inversiones de hoy" sub="De cada una: sigue igual, se vende o se modifica. Una obra sobre algo que ya tienes (la bodega en tu lote) va en «Se modifica»." />
           {(user.inv || []).filter((a) => a && a.sim !== false).map((a) => {
             const d = cfg.decisiones[a.id] || { accion: "continua" };
             const setD = (v) => set("decisiones", { ...cfg.decisiones, [a.id]: { ...d, ...v } });
@@ -107,6 +110,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                   const anios = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
                   return (
                     <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 8 }}>
+                      <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2 }}>Ejemplo: construir una bodega en el lote. Pon lo que cuesta la obra, la renta que dará y desde cuándo.</div>
                       <label style={lbl}>¿Cuánto crees que se valoriza al año? (%)
                         <InputDecimalEs style={inp} placeholder={fmtPctEs(hint, 1)} value={m.valorizacionNomPct == null ? "" : Math.round(m.valorizacionNomPct * 100) / 100} onChange={(v) => setD({ valorizacionNomPct: v, retornoRealPct: undefined })} />
                         <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {fmtPctEs(hint, 1)}. Es lo que sube el valor cada año, como lo dirías en la calle.</span></label>
@@ -132,11 +136,17 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               </div>
             );
           })}
-          {(r.deudas || []).length > 0 && <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} />}
+        </div>
+        <div style={card}>
+          <Seccion n={2} titulo="Tus deudas" sub="La deuda de un activo que vendes se paga sola con esa venta. Las demás, márcalas si quieres pagarlas con lo vendido." />
+          {(r.deudas || []).length > 0 ? <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} /> : <p style={{ color: C.tx2, fontSize: 13 }}>No tienes deudas con saldo.</p>}
           <p style={{ color: C.tx2, fontSize: 12 }}>Lo que vendes ({bolsa} activo{bolsa === 1 ? "" : "s"}) paga primero esas deudas; con el resto se completa un colchón de {SUPUESTOS_F10.colchonMeses} meses de gastos y lo demás pasa a Reinvierte.</p>
+        </div>
+        <div style={card}>
+          <Seccion n={3} titulo="Lo que viene" sub="Lo que todavía no tienes y empieza más adelante: una pensión, una venta futura, un local que te entregan." />
           <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} />
         </div>
-      )}
+      </>)}
 
       {paso === 2 && (
         <div style={card}>
@@ -305,11 +315,26 @@ function LoQueViene({ cfg, set, esc, owners }) {
   const g = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 6, padding: "8px 0", borderTop: `1px solid ${C.bd}` };
   const selAnio = (v, on, vacioTxt) => <select style={inp} value={v ?? ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}>{vacioTxt && <option value="">{vacioTxt}</option>}{ANIOS.map((y) => <option key={y} value={y}>Año {y}</option>)}</select>;
   const hintVal = (cl) => fmtPctEs(((1 + esc.inflacionPct / 100) * (1 + (cl === "inmueble" ? SUPUESTOS_F10.presets.fincaRaiz.valorizacionSpread : SUPUESTOS_F10.otrosRealSpread) / 100) - 1) * 100, 1);
+  const totalIng = f.ingresos.reduce((sm, x) => sm + (Number(x.mensual) || 0), 0);
+  const primerAnio = f.ingresos.length ? Math.min(...f.ingresos.map((x) => Number(x.desde) || 1)) : null;
+  const totalAct = f.activos.reduce((sm, x) => sm + (Number(x.valor) || 0), 0);
   return (
-    <div style={{ marginTop: 12 }}>
-      <h4 style={{ margin: "8px 0" }}>Lo que viene</h4>
-      <p style={{ color: C.tx2, fontSize: 12 }}>Ingresos o activos que empiezan más adelante: una pensión, un local que te entregan en 2 años.</p>
-      <b style={{ fontSize: 13 }}>Ingresos futuros</b>
+    <div>
+      {/* 24-oct-2026 (Santiago: "es muy poco visible lo de ingresos futuros;
+          debería verse muy bien"). Pasa a paso propio, con resumen arriba. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, margin: "10px 0 14px" }}>
+        <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
+          <div style={{ fontSize: 11, color: C.tx2 }}>Ingresos futuros</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: totalIng > 0 ? C.gn : C.tx }}>{totalIng > 0 ? `${plata(totalIng)} al mes` : "Ninguno"}</div>
+          {f.ingresos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{f.ingresos.length} {f.ingresos.length === 1 ? "ingreso" : "ingresos"} · el primero en el año {primerAnio}</div>}
+        </div>
+        <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
+          <div style={{ fontSize: 11, color: C.tx2 }}>Activos futuros</div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>{totalAct > 0 ? plata(totalAct) : "Ninguno"}</div>
+          {f.activos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{f.activos.length} {f.activos.length === 1 ? "activo" : "activos"}</div>}
+        </div>
+      </div>
+      <h4 style={{ margin: "8px 0" }}>Ingresos futuros</h4>
       {f.ingresos.map((x, i) => (
         <div key={i} style={g}>
           <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder="Ej.: pensión" onChange={(e) => upI(i, { nombre: e.target.value })} /></label>
@@ -320,8 +345,8 @@ function LoQueViene({ cfg, set, esc, owners }) {
           {owners.length > 1 && <label style={lbl}>Titular (opcional)<select style={inp} value={x.titular || ""} onChange={(e) => upI(i, { titular: e.target.value || null })}><option value="">—</option>{owners.map((o) => <option key={o.id} value={o.id}>{o.name || o.nombre || o.n}</option>)}</select></label>}
           <button style={btn(false)} onClick={() => put("ingresos", f.ingresos.filter((_, j) => j !== i))}>Quitar</button>
         </div>))}
-      <button style={btn(false)} onClick={() => put("ingresos", [...f.ingresos, { nombre: "", mensual: "", desde: 1, hasta: "" }])}>+ Ingreso futuro</button>
-      <div style={{ marginTop: 10 }}><b style={{ fontSize: 13 }}>Activos futuros</b></div>
+      <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("ingresos", [...f.ingresos, { nombre: "", mensual: "", desde: 1, hasta: "" }])}>+ Agregar ingreso futuro</button>
+      <h4 style={{ margin: "16px 0 8px" }}>Activos futuros</h4>
       {f.activos.map((x, i) => (
         <div key={i} style={g}>
           <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder="Ej.: local comercial" onChange={(e) => upA(i, { nombre: e.target.value })} /></label>
@@ -337,7 +362,7 @@ function LoQueViene({ cfg, set, esc, owners }) {
             <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {hintVal(x.clase || "inmueble")}.</span></label>
           <button style={btn(false)} onClick={() => put("activos", f.activos.filter((_, j) => j !== i))}>Quitar</button>
         </div>))}
-      <button style={btn(false)} onClick={() => put("activos", [...f.activos, { nombre: "", clase: "inmueble", valor: "", cuotaInicial: "", anioCuota: 1, entrega: 2, rentaMensual: "", rentaDesde: "" }])}>+ Activo futuro</button>
+      <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => put("activos", [...f.activos, { nombre: "", clase: "inmueble", valor: "", cuotaInicial: "", anioCuota: 1, entrega: 2, rentaMensual: "", rentaDesde: "" }])}>+ Agregar activo futuro</button>
     </div>
   );
 }
@@ -351,8 +376,7 @@ function Deudas({ r, cfg, set, inv, bolsa }) {
   const nombreActivo = (id) => { const a = inv.find((x) => x.id === id); return a ? a.n || a.nombre : "el activo"; };
   const bd = r.bolsaDetalle || {};
   return (
-    <div style={{ marginTop: 12 }}>
-      <h4 style={{ margin: "8px 0" }}>Deudas</h4>
+    <div>
       {r.deudas.map((d) => {
         const corto = d.pagar && d.pagado < d.saldo - 0.5;
         return (
@@ -371,6 +395,13 @@ function Deudas({ r, cfg, set, inv, bolsa }) {
       {bd.deudas > 0 && r.cuotasQueSalenMes > 0 && <p style={{ fontSize: 12, color: C.tx2 }}>Pagas {plata(bd.deudas)} y dejas de pagar <b style={{ color: C.gn }}>{plata(r.cuotasQueSalenMes)}</b> de cuotas al mes.</p>}
     </div>
   );
+}
+
+function Seccion({ n, titulo, sub }) {
+  return <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10 }}>
+    <div style={{ flex: "0 0 auto", width: 28, height: 28, borderRadius: 999, background: "rgba(34,197,94,0.15)", color: C.gn, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>{n}</div>
+    <div style={{ minWidth: 0 }}><h3 style={{ margin: "2px 0 2px" }}>{titulo}</h3><div style={{ color: C.tx2, fontSize: 12 }}>{sub}</div></div>
+  </div>;
 }
 
 const MESES_RENTA = [0, 3, 6, 9, 12, 18, 24, 36, 48, 60, 72, 84, 96, 108];
