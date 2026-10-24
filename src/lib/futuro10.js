@@ -181,9 +181,18 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   // desaparecía sin aviso, mientras la pantalla decía que saldría de la
   // liquidez. Ahora toma primero de lo vendido y lo que falte sale de tus
   // cuentas líquidas de hoy. Si tampoco alcanza, se asigna hasta donde llega.
-  const tomar = (monto, excluirId) => {
+  // 24-oct-2026 (Santiago: "si pongo que voy a invertir 600 M, el sistema
+  // debería saber de dónde vienen: capital nuevo o producto de venta de un
+  // activo"). Cada inversión trae su origen (`fuente`):
+  //   "venta" (por defecto) → lo vendido, luego tu liquidez
+  //   "liquidez"            → solo tus cuentas líquidas de hoy
+  //   "nuevo"               → capital nuevo, de afuera (ahorro, crédito):
+  //                           no sale de nada, suma al patrimonio.
+  let capitalNuevo = 0;
+  const tomar = (monto, excluirId, fuente = "venta") => {
     let falta = Math.max(0, monto);
-    const deBolsa = Math.min(bolsa, falta); bolsa -= deBolsa; falta -= deBolsa;
+    if (fuente === "nuevo") { capitalNuevo += falta; return falta; }
+    const deBolsa = fuente === "liquidez" ? 0 : Math.min(bolsa, falta); bolsa -= deBolsa; falta -= deBolsa;
     activos.filter((a) => a.clase === "liquido" && a.id !== excluirId).forEach((a) => {
       const u = Math.min(a.valor, falta); a.valor -= u; falta -= u; desdeLiquidez += u;
     });
@@ -230,11 +239,11 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     }
     const anioAporte = Math.min(10, Math.max(1, Math.round(n(r.anio) || 1)));
     let m = 0;
-    let deVenta = 0, deLiquidez = 0, deAnio1 = 0;
+    let deVenta = 0, deLiquidez = 0, deAnio1 = 0, deNuevo = 0;
     if (anioAporte === 1) {
-      const b0 = bolsa, l0 = desdeLiquidez;
-      m = n(r.monto) > 0 ? tomar(n(r.monto), a.id) : 0;
-      deVenta = b0 - bolsa; deLiquidez = desdeLiquidez - l0;
+      const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
+      m = n(r.monto) > 0 ? tomar(n(r.monto), a.id, r.fuente) : 0;
+      deVenta = b0 - bolsa; deLiquidez = desdeLiquidez - l0; deNuevo = capitalNuevo - c0;
       if (m > 0) { a.valor += m; reinvertidoTotal += m; }
       // Si lo vendido y la liquidez no alcanzan, el resto se paga con lo que
       // entre en el año 1 (la obra se hace igual): no se recorta.
@@ -243,7 +252,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     } else if (n(r.monto) > 0) {
       // Aporte de un año siguiente: se paga ese año con lo que haya (como una obra futura).
       pedidoTotal -= Math.max(0, n(r.monto)); programadasTotal += n(r.monto);
-      (a.aportesFuturos = a.aportesFuturos || []).push({ monto: n(r.monto), anio: anioAporte });
+      (a.aportesFuturos = a.aportesFuturos || []).push({ monto: n(r.monto), anio: anioAporte, nuevo: r.fuente === "nuevo" });
     }
     const rentaMensual = Math.max(0, n(r.rentaMensual));
     const rentaDesdeMes = Math.min(119, Math.max(0, Math.round(n(r.rentaDesdeMes))));
@@ -254,7 +263,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     reinversionesDetalle.push({ i: k, activoId: a.id, nombre: a.nombre, clase: a.clase, valorHoy: antes, aporte: anioAporte === 1 ? m : n(r.monto), anio: anioAporte, total: totalConAporte, rentaMensual, rentaDesdeMes, rentaPctAnual: totalConAporte > 0 ? rentaMensual * 12 / totalConAporte * 100 : 0,
       valorizacionPct: esInm ? (a.crec == null ? null : a.crec * 100) : null,
       rendimientoPct: esInm ? null : rendUsado, pctRecibe: esInm ? null : pUsado,
-      deVenta, deLiquidez, deAnio1,
+      deVenta, deLiquidez, deAnio1, deNuevo, fuente: r.fuente || "venta",
       rindeAnual: esInm ? 0 : totalConAporte * rendUsado / 100, teLlegaMes: esInm ? 0 : totalConAporte * rendUsado / 100 * pUsado / 100 / 12 });
   });
   const personalizadas = [];
@@ -269,7 +278,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
       // años siguientes se pagan ese año con lo que haya (programadas).
       if (c.anio === 1) {
         pedidoTotal += c.monto;
-        const m = tomar(c.monto);
+        const m = tomar(c.monto, null, x.fuente);
         if (m <= 0) return;
         nuevasTotal += m;
         nuevas.push({ id: "nueva_" + k, nombre: c.nombre, clase: "nueva", valor: m, crec: c.pagaRenta ? inf : c.rendNom, rentaPct: c.pagaRenta ? c.rendNom - inf : 0, usd: c.usd, invertible: true });
@@ -281,7 +290,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     }
     pedidoTotal += Math.max(0, n(x.monto));
     if (n(x.monto) <= 0 || !sup.presets[x.preset]) return;
-    const m = tomar(n(x.monto));
+    const m = tomar(n(x.monto), null, x.fuente);
     if (m <= 0) return;
     nuevasTotal += m;
     nuevas.push({ id: "nueva_" + k, nombre: x.nombre || sup.presets[x.preset].nombre, clase: "nueva", valor: m, crec: rNom(x.preset), usd: !!sup.presets[x.preset].usd, invertible: true });
@@ -371,7 +380,8 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     todos.forEach((a) => {
       (a.aportesFuturos || []).forEach((x) => {
         if (x.anio !== t) return;
-        retirar(x.monto); a.valor += x.monto;
+        if (!x.nuevo) retirar(x.monto);
+        a.valor += x.monto;
         alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En el año ${t} pasas plata de tu liquidez a ${a.nombre}.` });
       });
       if (a.invAnio === t && (a.invMonto > 0 || a.reserva > 0)) {
@@ -405,7 +415,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   ].sort((x, y) => y.valor - x.valor);
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
-    bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
+    bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
     reparto: repartoFinal,
     vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => ({ id: x.id, nombre: x.n || x.nombre || "Activo", valor: n(x.va) * fxA(x) })),
     reinversionesDetalle,

@@ -381,3 +381,28 @@ describe("futuro10 · ingreso futuro que sale de un activo", () => {
     expect(r.filas[2].rentaNueva).toBeGreaterThan(0);
   });
 });
+
+describe("futuro10 · de dónde sale la plata de cada inversión", () => {
+  const U = () => ({ inflacionPct: 4, inv: [{ id: "pm", n: "Puerto Madero", tp: "Real Estate", va: 1000e6 }, { id: "l", n: "Lote", tp: "Lote", va: 430e6 }, { id: "c", tp: "Cash", va: 200e6 }], ingresos: [], gas: {}, deu: [] });
+  it("de lo que vendo: sale de la venta de Puerto Madero", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { pm: { accion: "vende" } }, reinversiones: [{ activoId: "l", monto: 600e6, fuente: "venta" }] });
+    const d = r.reinversionesDetalle[0];
+    expect(d.deVenta).toBeCloseTo(600e6, 0); expect(d.deNuevo).toBe(0);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(400e6, 0);
+    expect(r.vendidos[0].nombre).toBe("Puerto Madero");
+  });
+  it("capital nuevo: no toca lo vendido y suma al patrimonio", () => {
+    const sin = proyectarFuturo10(U(), { decisiones: { pm: { accion: "vende" } } });
+    const r = proyectarFuturo10(U(), { decisiones: { pm: { accion: "vende" } }, reinversiones: [{ activoId: "l", monto: 600e6, fuente: "nuevo" }] });
+    expect(r.reinversionesDetalle[0].deNuevo).toBeCloseTo(600e6, 0);
+    expect(r.bolsaDetalle.capitalNuevo).toBeCloseTo(600e6, 0);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(sin.bolsaDetalle.restante, 0);
+    expect(r.filas[0].patrimonio - sin.filas[0].patrimonio).toBeCloseTo(600e6, 0);
+  });
+  it("de mi liquidez: no toca lo vendido", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { pm: { accion: "vende" } }, reinversiones: [{ activoId: "l", monto: 150e6, fuente: "liquidez" }] });
+    const d = r.reinversionesDetalle[0];
+    expect(d.deLiquidez).toBeCloseTo(150e6, 0); expect(d.deVenta).toBe(0);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(1000e6, 0);
+  });
+});
