@@ -86,6 +86,7 @@ import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { esDemo, leerCache, guardarReal, datosAlSalir } from "./lib/modoDemo";
+import { AVISO_NO_SINCRONIZADO, datosNoSincronizados, marcarNoSincronizados, alCambiarSincronizacion, leerUserData } from "./lib/sincronizacion";
 import { useAccount } from "./lib/useAccount";
 import { RoleProvider } from "./lib/RoleContext.jsx";
 import RoleBanner from "./components/RoleBanner";
@@ -128,30 +129,35 @@ const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(25
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>fmtPctEs(n);
 const SK="fp3";
-const sL=async(uid,accountId)=>{
-  try{
-    if(isSupabaseConfigured&&uid){
-      // Multi-cuenta (Fase 2): si tenemos accountId, leer por account_id.
-      // Sino, fallback legacy a leer por uid (período transitorio donde
-      // useAccount aun no resolvió, o usuario sin membresía multi-usuario).
-      const q=supabase.from("user_data").select("data,jurisdiction");
-      const{data,error}=accountId
-        ?await q.eq("account_id",accountId).maybeSingle()
-        :await q.eq("id",uid).maybeSingle();
-      if(!error&&data?.data){
-        let sd=data.data;
-        if(sd._encrypted&&sd.payload){
-          const encKey=localStorage.getItem("fp3_enc_key");
-          if(encKey){try{sd=await E2E.decrypt(sd.payload,encKey,uid)}catch{return null}}
-          else{return null}
-        }
-        sd=sanitize(sd);
-        if(data.jurisdiction)sd.jurisdiction=data.jurisdiction;
-        localStorage.setItem(SK,JSON.stringify(sd));return sd}
-    }
-    const r=leerCache(localStorage.getItem(SK));return r?sanitize(r):null;
-  }catch{return null}
+// sLR: lectura con estado. "error" (fallo, timeout o cifrado sin llave) nunca
+// se confunde con "nuevo" (el servidor respondió y no hay fila). En "error" la
+// copia local (fp3) solo se muestra para leer y se bloquean los guardados.
+const sLR=async(uid,accountId)=>{
+  const cache=()=>{try{const r=leerCache(localStorage.getItem(SK));return r?sanitize(r):null}catch{return null}};
+  if(!(isSupabaseConfigured&&uid))return{estado:"local",datos:cache()};
+  // Multi-cuenta (Fase 2): si tenemos accountId, leer por account_id.
+  // Sino, fallback legacy a leer por uid.
+  const r=await leerUserData({
+    leer:()=>{const q=supabase.from("user_data").select("data,jurisdiction");return accountId?q.eq("account_id",accountId).maybeSingle():q.eq("id",uid).maybeSingle()},
+    procesar:async(row)=>{
+      let sd=row.data;
+      if(sd._encrypted&&sd.payload){
+        const encKey=localStorage.getItem("fp3_enc_key");
+        if(!encKey)return null;
+        try{sd=await E2E.decrypt(sd.payload,encKey,uid)}catch{return null}
+      }
+      sd=sanitize(sd);
+      if(row.jurisdiction)sd.jurisdiction=row.jurisdiction;
+      return sd;
+    },
+  });
+  if(r.estado==="ok"){marcarNoSincronizados(false);try{localStorage.setItem(SK,JSON.stringify(r.datos))}catch{}return r}
+  if(r.estado==="nuevo"){marcarNoSincronizados(false);return r}
+  console.warn("[fp3] user_data no se pudo leer; solo lectura hasta reconectar:",r.error);
+  marcarNoSincronizados(true);
+  return{estado:"error",datos:cache(),error:r.error};
 };
+const sL=async(uid,accountId)=>{try{return(await sLR(uid,accountId)).datos}catch{return null}};
 
 // LoadingScreen: splash minimalista mientras el useEffect inicial resuelve.
 // El timeout defensivo (Promise.race 8s) en el useEffect garantiza que
@@ -284,6 +290,8 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
     localStorage.setItem(SK,JSON.stringify(d));
     takeSnapshot(d);
     if(isSupabaseConfigured&&uid){
+      // Copia vieja en pantalla (lectura falló): ningún PATCH/upsert a user_data.
+      if(datosNoSincronizados())return;
       // Fase 3 commit 5 — gating reader: si el usuario es READER en una
       // cuenta multi-usuario (no legacy), abortar el upsert antes del
       // setTimeout. RLS en BD ya bloquearía el UPDATE (policy account_admins
@@ -296,6 +304,7 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
       }
       clearTimeout(_svT);
       _svT=setTimeout(async()=>{
+        if(datosNoSincronizados())return;
         // Commit 12 Tarea 3 (BUG REPORTADO: 'no quedan guardados'): el catch
         // silencioso original ocultaba errores del upsert. Si Supabase rechazaba
         // el guardado (RLS, schema mismatch, tamaño), el usuario veia "✅ Guardado"
@@ -513,7 +522,8 @@ const unfmtNum=(v)=>String(v).replace(/,/g,"");
 const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div style={{display:"flex",flexDirection:"column",gap:5}}>{l&&<label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{l}</label>}{opts?<select value={v||""} onChange={e=>oc(e.target.value)} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}>{opts.map(o=><option key={o.v!=null?o.v:o} value={o.v!=null?o.v:o}>{o.l||o}</option>)}</select>:tp==="number"?<input type="text" inputMode="numeric" value={fmtNum(v)} onChange={e=>{const raw=unfmtNum(e.target.value);oc(raw)}} placeholder={ph} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}/>:<input type={tp||"text"} value={v!=null?v:""} onChange={e=>oc(e.target.value)} placeholder={ph} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",color:T.tx,fontSize:14,outline:"none"}}/>}</div>;
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
-export { sS as _sS, sL as _sL };
+export const AvisoNoSincronizado=({onReintentar,cargando})=><div role="alert" style={{background:"rgba(239,68,68,0.1)",borderBottom:"1px solid rgba(239,68,68,0.3)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",fontSize:12,color:"#fca5a5"}}><span>⚠️ {AVISO_NO_SINCRONIZADO}</span><button onClick={onReintentar} disabled={cargando} style={{background:"#ef4444",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>{cargando?"Reintentando…":"Reintentar"}</button></div>;
+export { sS as _sS, sL as _sL, sLR as _sLR };
 export default function FinPath(){
   const[pagoEstado,setPagoEstado]=useState(null);
   // Hallazgos que el usuario marcó como "ya lo sé". Se guardan aparte de sus
@@ -626,10 +636,20 @@ export default function FinPath(){
     // Switch real: recargar user_data con el nuevo accountId
     const uid=authUser.id;
     (async()=>{
-      try{const d=await sL(uid,accountId);if(d)setU(sanitize(d))}
+      try{const r=await sLR(uid,accountId);if(r.datos)setU(sanitize(r.datos))}
       catch(e){console.warn("[fp3] reload tras switch falló:",e)}
     })();
   },[accountId,accountLoading]);
+  // Copia vieja en pantalla: banner + solo lectura + [Reintentar].
+  const[noSinc,setNoSinc]=useState(datosNoSincronizados);
+  const[reintentando,setReintentando]=useState(false);
+  useEffect(()=>alCambiarSincronizacion(setNoSinc),[]);
+  const reintentarCarga=async()=>{
+    if(!authUser?.id||reintentando)return;
+    setReintentando(true);
+    try{const r=await sLR(authUser.id,accountIdRef.current);if(r.estado==="ok"&&r.datos)setU(sanitize(r.datos))}
+    finally{setReintentando(false)}
+  };
   // ═══ ADVISOR MODE STATE ═══
   // isAdvisor: true si el usuario loggeado existe en la tabla `advisors`
   // advisorProfile: datos del asesor (plan, max_clients, firm_name, etc.)
@@ -713,8 +733,8 @@ export default function FinPath(){
             // Multi-cuenta (Fase 2): pasar accountIdRef.current. En el primer
             // mount es null (useAccount aún no resolvió) → sL cae a path legacy.
             // Subsecuentemente, los saves usan los refs actualizados.
-            const d=await Promise.race([sL(session.user.id,accountIdRef.current),timeout]);
-            if(d)setU(sanitize(d));
+            const r=await sLR(session.user.id,accountIdRef.current);
+            if(r.datos)setU(sanitize(r.datos));
           }catch(e){if(typeof console!=="undefined")console.warn("[load] data load timeout:",e)}
           // ═══ Check if user is an advisor ═══
           try{
@@ -1020,13 +1040,13 @@ export default function FinPath(){
         }
         setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);
         try{
-          const d=await Promise.race([
-            // Multi-cuenta (Fase 2): paso accountIdRef.current. Inicialmente
-            // null porque useAccount no resolvió tras setAuthUser; sL cae a
-            // path legacy y trae los datos correctamente.
-            sL(data.user.id,accountIdRef.current),
-            new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout cargando datos")),10000))
-          ]);
+          // Multi-cuenta (Fase 2): paso accountIdRef.current. Inicialmente
+          // null porque useAccount no resolvió tras setAuthUser; sLR cae a
+          // path legacy. sLR ya trae timeout y distingue error de usuario nuevo.
+          const __r=await sLR(data.user.id,accountIdRef.current);
+          const d=__r.datos;
+          // Lectura fallida: nunca crear una cuenta en blanco encima de la real.
+          if(__r.estado==="error"&&!d)throw new Error("no pudimos leer tus datos");
           if(d){const __sd=sanitize(d);setU(__sd);setPg("dash");if(cuentaVacia(__sd))setShowOnboarding(true);}
           else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";
             // 20-oct-2026: si viene de /libertad con el norte calculado, las tres
@@ -3991,8 +4011,9 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
           El respaldo es sobrio a propósito — aparece por fracciones de segundo
           al entrar a una sección por primera vez, y un spinner llamativo se
           vería peor que un texto quieto. */}
+      {noSinc&&authUser&&<AvisoNoSincronizado onReintentar={reintentarCarga} cargando={reintentando}/>}
       <Suspense fallback={<div style={{padding:40,textAlign:"center",color:T.tx3,fontSize:13}}>Cargando…</div>}>
-        {rp()}
+        {noSinc&&authUser?<fieldset disabled style={{border:0,margin:0,padding:0,minWidth:0}}>{rp()}</fieldset>:rp()}
       </Suspense>
       </div>{showImport&&<Suspense fallback={null}><CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/></Suspense>}<PWAInstallPrompt/>{showOnboarding&&<OnboardingTour open={showOnboarding} userName={u?.p?.name||authUser?.user_metadata?.name||""} isPioneros={sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"} onSelectDemo={()=>{setShowOnboarding(false);setPg("dash");(u?.jurisdiction==="US"?demoUS:demo)();showToast("📊 Datos de ejemplo cargados — explora tranquilo")}} onSelectImport={()=>{setShowOnboarding(false);setShowImport(true)}} onSelectManual={()=>{setShowOnboarding(false);setPg("ing");showToast("✨ Paso 1 de 4 — registra lo que entra cada mes")}} onClose={()=>setShowOnboarding(false)}/>}{pagoEstado&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,display:"flex",justifyContent:"center",padding:"14px 12px",pointerEvents:"none"}}>
       <div style={{pointerEvents:"auto",maxWidth:520,width:"100%",background:pagoEstado.tipo==="exito"?"#0f2a1a":pagoEstado.tipo==="cancelado"?"#2a2416":"#12203a",border:"1px solid "+(pagoEstado.tipo==="exito"?"rgba(34,197,94,0.4)":pagoEstado.tipo==="cancelado"?"rgba(234,179,8,0.35)":"rgba(59,130,246,0.35)"),borderRadius:12,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",boxShadow:"0 8px 28px rgba(0,0,0,0.45)"}}>
