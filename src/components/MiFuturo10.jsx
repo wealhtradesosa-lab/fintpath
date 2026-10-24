@@ -1,6 +1,6 @@
 // FINPATHIA · Mi futuro a 10 años. Sección independiente del Simulador.
 // Motor: src/lib/futuro10.js. Escenarios guardados en user_data.data.futuro10.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
@@ -50,11 +50,36 @@ export const textoTasaUsada = (tasa = {}) => `Tasa usada: ${plata(tasa.trm)}${ta
 /** tasa: { estado: "cargando" | "ok" | "respaldo", trm, fecha }. Sin prop → se asume lista (pruebas, usos viejos). */
 export const tasaProvisional = (tasa) => !!tasa && tasa.estado === "cargando";
 
+export const MSG_SIN_TASA = "No pudimos traer la tasa del dólar y no tienes una tasa guardada. Las cifras en dólares se mostrarán cuando la tasa esté disponible.";
+/** Sin tasa real (ni la de hoy ni una guardada): nunca se calcula con el 4.200 por defecto. */
+export const tasaSinDato = (tasa) => !!tasa && tasa.estado === "respaldo" && !(Number(tasa.trm) > 0);
+
+// 24-oct-2026 (QA PR #56, faltante BTG no determinista): un monto se confirma al salir del
+// campo (o con Enter). Mientras se teclea no cambia cfg: no se recalcula, no se guarda y no
+// aparecen alertas con montos intermedios. El resultado es función pura del monto final.
+export const EdicionF10 = createContext({ editando: false, marcar: () => {} });
+export function MontoF10({ value, onChange, onKeyDown, ...p }) {
+  const foco = useRef(false);
+  const { marcar } = useContext(EdicionF10);
+  const cambio = (v) => { if (foco.current) return; if (v !== value) onChange(v); };
+  return (
+    <span style={{ display: "contents" }}
+      onFocusCapture={() => { foco.current = true; marcar(true); }}
+      onBlurCapture={() => { foco.current = false; marcar(false); }}>
+      <NumberInput {...p} value={value} onChange={cambio}
+        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); onKeyDown && onKeyDown(e); }} />
+    </span>
+  );
+}
+
 export const MSG_DEMO_F10 = "En modo demo no se guardan escenarios.";
 
 export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false, tasa = null }) {
   const provisional = tasaProvisional(tasa);
-  const ocultarCifras = provisional && usaDolar(user);
+  const sinTasa = tasaSinDato(tasa) && usaDolar(user);
+  const ocultarCifras = (provisional && usaDolar(user)) || sinTasa;
+  const [editando, setEditando] = useState(false);
+  const edicion = useMemo(() => ({ editando, marcar: setEditando }), [editando]);
   const provRef = useRef(provisional); provRef.current = provisional;
   const borrador = !demo && guardado?.borrador?.cfg ? guardado.borrador : null;
   const [paso, setPaso] = useState(borrador ? Math.min(PASOS.length - 1, Number(borrador.paso) || 0) : pasoInicial);
@@ -131,11 +156,13 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   if (ocultarCifras) return (
     <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
       <PageHeader label="Mi futuro a 10 años" title="¿Cómo se ve tu patrimonio en 10 años?" compact subtitle="Tienes datos en dólares: esperamos la tasa del día para calcular." />
-      <div role="status" data-testid="f10-cargando-trm" style={{ ...card, fontSize: 13, color: C.tx2 }}>{MSG_CARGANDO_TRM}</div>
+      {sinTasa
+        ? <div role="note" data-testid="f10-sin-tasa" style={{ ...card, fontSize: 13, color: C.tx2 }}>{MSG_SIN_TASA}</div>
+        : <div role="status" data-testid="f10-cargando-trm" style={{ ...card, fontSize: 13, color: C.tx2 }}>{MSG_CARGANDO_TRM}</div>}
     </div>
   );
 
-  return (
+  return (<EdicionF10.Provider value={edicion}>
     <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
       <PageHeader label="Mi futuro a 10 años" title="¿Cómo se ve tu patrimonio en 10 años?" compact
         subtitle="Decide qué hacer con cada activo, reinvierte y mira el resultado en pesos de hoy. Tus datos reales no se tocan." />
@@ -240,7 +267,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 {Object.entries(SUPUESTOS_F10.presets).map(([k, p]) => <option key={k} value={k}>{p.nombre}</option>)}
                 <option value="custom">Otra (personalizada)</option>
               </select>
-              <NumberInput allowDecimals={false} style={inp} placeholder="Monto" value={x.monto} onChange={(v) => set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, monto: v } : y))} />
+              <MontoF10 allowDecimals={false} style={inp} placeholder="Monto" value={x.monto} onChange={(v) => set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, monto: v } : y))} />
               {x.preset !== "custom" && <RendimientoPreset x={x} esc={esc} up={(v) => set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, ...v } : y))} />}
               {x.preset === "custom" && (() => {
                 const up = (v) => set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, ...v } : y));
@@ -256,7 +283,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 </>);
               })()}
               <button style={btn(false)} onClick={() => { urgente.current = true; set("nuevas", cfg.nuevas.filter((_, j) => j !== i)); }}>Quitar</button>
-              {(() => { const dd = r.disponible[Math.min(10, Math.max(1, Number(x.anio) || 1)) - 1]; return Number(x.monto) > 0 && dd && dd.antesDeAsignar <= 0 ? <div role="alert" style={{ gridColumn: "1 / -1", color: C.rd, fontSize: 12 }}>{SIN_PLATA_ANIO}</div> : null; })()}
+              {(() => { const dd = r.disponible[Math.min(10, Math.max(1, Number(x.anio) || 1)) - 1]; return !editando && Number(x.monto) > 0 && dd && dd.antesDeAsignar <= 0 ? <div role="alert" style={{ gridColumn: "1 / -1", color: C.rd, fontSize: 12 }}>{SIN_PLATA_ANIO}</div> : null; })()}
               <AlertaExceso disponible={r.disponible} tipo="nueva" idx={i} />
             </div>
           ))}
@@ -341,7 +368,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         <TablaSupuestos esc={esc} mercado={mercado} />
       </details>
     </div>
-  );
+  </EdicionF10.Provider>);
 }
 
 
@@ -358,7 +385,7 @@ export function Obra({ a, d, setD }) {
     <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 8 }}>
       {o.inversiones.map((iv, k) => (
         <div key={k} style={{ display: "grid", gridTemplateColumns: "1fr 90px", gap: 4 }}>
-          <label style={lbl}>Monto en pesos de hoy<NumberInput allowDecimals={false} style={inp} placeholder="0" value={iv.monto ?? ""} onChange={(v) => up({ inversiones: o.inversiones.map((x, j) => (j === k ? { ...x, monto: v } : x)) })} /></label>
+          <label style={lbl}>Monto en pesos de hoy<MontoF10 allowDecimals={false} style={inp} placeholder="0" value={iv.monto ?? ""} onChange={(v) => up({ inversiones: o.inversiones.map((x, j) => (j === k ? { ...x, monto: v } : x)) })} /></label>
           <label style={lbl}>Año<select style={inp} value={iv.anio || 1} onChange={(e) => up({ inversiones: o.inversiones.map((x, j) => (j === k ? { ...x, anio: Number(e.target.value) } : x)) })}>{ANIOS_SEL.map((y) => <option key={y} value={y}>{y}</option>)}</select></label>
         </div>))}
       <div style={{ display: "flex", alignItems: "end", gap: 6 }}>
@@ -366,9 +393,9 @@ export function Obra({ a, d, setD }) {
         {o.inversiones.length > 1 && <button style={btn(false)} onClick={() => up({ inversiones: o.inversiones.slice(0, -1) })}>Quitar año</button>}
       </div>
       <label style={lbl}>¿En qué año queda lista?<select style={inp} value={L.anioLista} onChange={(e) => up({ anioLista: Number(e.target.value) })}>{ANIOS_SEL.map((y) => <option key={y} value={y}>Año {y}</option>)}</select></label>
-      <label style={lbl}>Renta neta al mes desde ese año ($, pesos de hoy)<NumberInput allowDecimals={false} style={inp} placeholder="0" value={o.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>
+      <label style={lbl}>Renta neta al mes desde ese año ($, pesos de hoy)<MontoF10 allowDecimals={false} style={inp} placeholder="0" value={o.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>
       {L.rentaMensual > 0 && <div style={lbl}>Esa renta…<div style={{ display: "flex", gap: 6, marginTop: 4 }}>{[["retira", "La retiras"], ["reinvierte", "Se reinvierte"]].map(([k, l]) => <button key={k} style={btn(L.renta === k)} onClick={() => up({ renta: k })}>{l}</button>)}</div></div>}
-      <label style={lbl}>Valor estimado cuando quede lista ($, pesos de hoy)<NumberInput allowDecimals={false} style={inp} placeholder={plata(sugerido)} value={o.valorFinal ?? ""} onChange={(v) => up({ valorFinal: v })} />
+      <label style={lbl}>Valor estimado cuando quede lista ($, pesos de hoy)<MontoF10 allowDecimals={false} style={inp} placeholder={plata(sugerido)} value={o.valorFinal ?? ""} onChange={(v) => up({ valorFinal: v })} />
         <span style={{ fontSize: 11 }}>Si no sabes, déjalo vacío: valor de hoy + lo que inviertes ({plata(sugerido)}).</span></label>
       <label style={lbl}>¿Cambia el tipo de activo?<select style={inp} value={o.tipoNuevo || ""} onChange={(e) => up({ tipoNuevo: e.target.value })}>{TIPOS_OBRA.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
         <span style={{ fontSize: 11 }}>Por ejemplo, un lote que se vuelve bodega o local.</span></label>
@@ -431,7 +458,7 @@ export function LoQueViene({ cfg, set, esc, owners }) {
       {f.ingresos.map((x, i) => (
         <div key={i} style={g}>
           <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder={`Ingreso futuro ${i + 1}`} onChange={(e) => upI(i, { nombre: e.target.value })} /></label>
-          <label style={lbl}>Al mes ($, pesos de hoy)<NumberInput allowDecimals={false} style={inp} value={x.mensual ?? ""} onChange={(v) => upI(i, { mensual: v })} />
+          <label style={lbl}>Al mes ($, pesos de hoy)<MontoF10 allowDecimals={false} style={inp} value={x.mensual ?? ""} onChange={(v) => upI(i, { mensual: v })} />
             <span style={{ fontSize: 11 }}>Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. {x.fijo ? "Monto fijo: no sube con la inflación." : "Sube con la inflación."}</span></label>
           <label style={{ ...lbl, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={!!x.fijo} onChange={(e) => upI(i, { fijo: e.target.checked })} /> Monto fijo en pesos</label>
           <label style={lbl}>Empieza{selAnio(x.desde || 1, (v) => upI(i, { desde: v || 1 }))}</label>
@@ -448,12 +475,12 @@ export function LoQueViene({ cfg, set, esc, owners }) {
           <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder={`Activo futuro ${i + 1}`} onChange={(e) => upA(i, { nombre: e.target.value })} /></label>
           <label style={lbl}>Tipo<select style={inp} value={x.clase || "inmueble"} onChange={(e) => upA(i, { clase: e.target.value })}>{TIPOS_ACTIVO_FUTURO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
           {pareceIngresoFuturo(x.nombre) && <div role="note" style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am }}>Una pensión es un ingreso, no un activo. <button style={btn(false)} onClick={() => moverAIngresos(i)}>Mover a Ingresos futuros</button></div>}
-          <label style={lbl}>Valor total ($)<NumberInput allowDecimals={false} style={inp} value={x.valor ?? ""} onChange={(v) => upA(i, { valor: v })} /></label>
-          <label style={lbl}>Cuota inicial ($)<NumberInput allowDecimals={false} style={inp} value={x.cuotaInicial ?? ""} onChange={(v) => upA(i, { cuotaInicial: v })} /></label>
+          <label style={lbl}>Valor total ($)<MontoF10 allowDecimals={false} style={inp} value={x.valor ?? ""} onChange={(v) => upA(i, { valor: v })} /></label>
+          <label style={lbl}>Cuota inicial ($)<MontoF10 allowDecimals={false} style={inp} value={x.cuotaInicial ?? ""} onChange={(v) => upA(i, { cuotaInicial: v })} /></label>
           <label style={lbl}>Año de la cuota inicial{selAnio(x.anioCuota || 1, (v) => upA(i, { anioCuota: v || 1 }))}</label>
           <label style={lbl}>Año de entrega{selAnio(x.entrega || 1, (v) => upA(i, { entrega: v || 1 }))}
             <span style={{ fontSize: 11 }}>El resto se paga en la entrega. Los pagos salen de tu liquidez; desde la entrega se valoriza.</span></label>
-          <label style={lbl}>Renta neta al mes ($, pesos de hoy, opcional)<NumberInput allowDecimals={false} style={inp} value={x.rentaMensual ?? ""} onChange={(v) => upA(i, { rentaMensual: v })} /></label>
+          <label style={lbl}>Renta neta al mes ($, pesos de hoy, opcional)<MontoF10 allowDecimals={false} style={inp} value={x.rentaMensual ?? ""} onChange={(v) => upA(i, { rentaMensual: v })} /></label>
           <label style={lbl}>Renta desde{selAnio(x.rentaDesde || x.entrega || 1, (v) => upA(i, { rentaDesde: v || 1 }))}</label>
           <label style={lbl}>¿Cuánto crees que se valoriza al año? (%)<InputDecimalEs style={inp} placeholder={hintVal(x.clase || "inmueble")} value={x.valorizacionNomPct ?? ""} onChange={(v) => upA(i, { valorizacionNomPct: v })} />
             <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {hintVal(x.clase || "inmueble")}.</span></label>
@@ -520,6 +547,7 @@ export function BarraReinvertir({ disponible = [] }) {
 export const textoFaltanteNueva = (x) => `Faltan ${plata(x.faltante)} para ${x.nombre}. Quedaron invertidos ${plata(Math.max(0, x.invertido ?? 0))}${x.anio > 1 ? ` (pesos del año ${x.anio})` : ""}` +
   (x.rentaMensual > 0 ? `; esa parte renta ${plata(x.rentaMensualFondeada)}/mes.` : ".");
 export function InversionesNuevas({ items = [] }) {
+  const { editando } = useContext(EdicionF10);
   if (!items.length) return null;
   return (
     <div style={{ marginTop: 10 }}>
@@ -528,13 +556,15 @@ export function InversionesNuevas({ items = [] }) {
         <div key={x.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "6px 0", fontSize: 12 }}>
           <b>{x.nombre}</b> · {plata(x.monto)} en el año {x.anio}{Number.isFinite(x.rendimientoPct) ? ` · ${fmtPctEs(x.rendimientoPct, 1)} anual` : ""}{x.usd ? " · USD" : ""}
           <div style={{ color: C.tx2 }}>{x.rentaMensual > 0 ? `Renta ${plata(x.rentaMensual)}/mes en pesos del año ${x.anio} · ` : ""}Valor a 10 años {plata(x.valorFinal)} en pesos de hoy</div>
-          {x.faltante > 0 && <div role="alert" style={{ color: C.rd }}>{textoFaltanteNueva(x)}</div>}
+          {!editando && x.faltante > 0 && <div role="alert" style={{ color: C.rd }}>{textoFaltanteNueva(x)}</div>}
         </div>))}
     </div>
   );
 }
 
 export function AlertaExceso({ disponible = [], tipo, idx }) {
+  const { editando } = useContext(EdicionF10);
+  if (editando) return null;
   const d = disponible.find((x) => x.exceso > 0 && x.asignaciones.some((a) => a.tipo === tipo && a.idx === idx));
   return d ? <div role="alert" style={{ ...alertaSt, gridColumn: "1 / -1" }}>{textoExceso(d)}</div> : null;
 }
@@ -542,6 +572,7 @@ export function AlertaExceso({ disponible = [], tipo, idx }) {
 // «Plata disponible para invertir»: números del motor, en pesos de hoy.
 export function PlataDisponible({ disponible = [] }) {
   const [abierto, setAbierto] = useState(false);
+  const { editando } = useContext(EdicionF10);
   const d1 = disponible[0];
   if (!d1) return null;
   const lineas = (d) => [
@@ -562,7 +593,7 @@ export function PlataDisponible({ disponible = [] }) {
       <div style={{ ...fila, borderTop: `1px solid ${C.bd}`, marginTop: 4, paddingTop: 6 }}>
         <b>Queda para repartir según el norte</b><b style={{ fontSize: 18, color: d1.queda < 0 ? C.rd : C.gn }}>{plata(d1.queda)}</b>
       </div>
-      {excesos.map((d) => <div key={d.anio} role="alert" style={{ ...alertaSt, marginTop: 6 }}>{textoExceso(d)}</div>)}
+      {!editando && excesos.map((d) => <div key={d.anio} role="alert" style={{ ...alertaSt, marginTop: 6 }}>{textoExceso(d)}</div>)}
       <button style={{ ...btn(false), marginTop: 8 }} onClick={() => setAbierto(!abierto)}>{abierto ? "Ocultar años 1 a 10" : "Ver años 1 a 10"}</button>
       {abierto && disponible.map((d) => (
         <details key={d.anio} style={{ borderTop: `1px solid ${C.bd}`, padding: "6px 0" }}>

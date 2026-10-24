@@ -24,7 +24,7 @@ const CsvImport = lazy(() => import("./components/CsvImport"));
 const CalculadoraWizard = lazy(() => import("./components/CalculadoraWizard"));
 const SimuladorAvanzado = lazy(() => import("./components/SimuladorAvanzado"));
 const SimuladorFuturo = lazy(() => import("./components/SimuladorFuturo"));
-import { esTasaReal, resolverTasa } from "./lib/tasaDolar.js";
+import { esTasaReal, resolverTasa, traerTrm, TRM_TIMEOUT_MS } from "./lib/tasaDolar.js";
 const MiFuturo10 = lazy(() => import("./components/MiFuturo10"));
 const DeclaracionFlow = lazy(() => import("./components/DeclaracionFlow"));
 const PensionesColpensiones = lazy(() => import("./components/PensionesColpensiones"));
@@ -302,7 +302,7 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
       // clara. localStorage ya se guardó arriba (cache local OK), pero NO
       // se persiste a Supabase. Emitir evento para que App muestre toast.
       if(role==="reader"&&!isLegacy){
-        try{const ev=new CustomEvent("fp3-reader-blocked");window.dispatchEvent(ev)}catch{}
+        try{if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("fp3-reader-blocked"))}catch{}
         return;
       }
       clearTimeout(_svT);
@@ -334,22 +334,22 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
           }
           if(result.error){
             console.error("[fp3] Supabase save ERROR:",result.error);
-            window.__fp3LastSaveError=result.error;
+            if(typeof window!=="undefined")window.__fp3LastSaveError=result.error;
             // Toast visible al usuario para que sepa que hay un problema
-            try{const ev=new CustomEvent("fp3-save-error",{detail:result.error});window.dispatchEvent(ev)}catch{}
+            try{if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("fp3-save-error",{detail:result.error}))}catch{}
           }else{
-            window.__fp3LastSaveOk=new Date().toISOString();
+            if(typeof window!=="undefined")window.__fp3LastSaveOk=new Date().toISOString();
             // Commit 23 Tarea 3: notificar al usuario cuando el upsert a Supabase
             // se confirma. Resuelve la duda 'se guardo o no?' que tenia el usuario
             // (caso del bug reportado 'AGREGO SALARIOS PERO NO QUEDAN GUARDADOS'
             // - los datos SI se guardaban, pero el toast '✅ Guardado' se mostraba
             // antes del debounce de 2s, generando incertidumbre).
-            try{const ev=new CustomEvent("fp3-save-ok",{detail:{at:new Date().toISOString()}});window.dispatchEvent(ev)}catch{}
+            try{if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("fp3-save-ok",{detail:{at:new Date().toISOString()}}))}catch{}
           }
         }catch(e){
           console.error("[fp3] Supabase save EXCEPTION:",e);
-          window.__fp3LastSaveError=e;
-          try{const ev=new CustomEvent("fp3-save-error",{detail:e});window.dispatchEvent(ev)}catch{}
+          if(typeof window!=="undefined")window.__fp3LastSaveError=e;
+          try{if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("fp3-save-error",{detail:e}))}catch{}
         }
       };
       _svPend=subir;
@@ -544,8 +544,8 @@ const[u,_setU]=useState(null);const[trmCarga,setTrmCarga]=useState("cargando");c
   // 24-oct-2026 (PR #56): este bloque estaba DENTRO del callback de descartarHallazgo (llave sin cerrar):
   // trmPendiente no existía en el componente, la TRM de arranque nunca se aplicaba y la app quedaba en 4.200.
   const trmPendiente = useRef(null);
-  // 24-oct-2026 (PR #56): si la tasa no llega en 10 s, se pasa a la última guardada (con su fecha).
-  useEffect(() => { const id = setTimeout(() => setTrmCarga(c => (c === "cargando" ? "fallo" : c)), 10000); return () => clearTimeout(id); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 24-oct-2026 (PR #56): si la tasa no llega en 5 s, se pasa a la última guardada (con su fecha) o a la nota de respaldo.
+  useEffect(() => { const id = setTimeout(() => setTrmCarga(c => (c === "cargando" ? "fallo" : c)), TRM_TIMEOUT_MS); return () => clearTimeout(id); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Aplica la TRM que llegó antes de que existiera `u`. Sin esto, en la carga
   // normal (sesión más lenta que la petición) la tasa real se perdía.
   useEffect(() => {
@@ -569,8 +569,7 @@ const[u,_setU]=useState(null);const[trmCarga,setTrmCarga]=useState("cargando");c
     let vivo = true;
     const traer = async () => {
       try {
-        const r = await fetch("/api/trm");
-        const j = await r.json();
+        const j = await traerTrm();
         if (vivo && esTasaReal(j)) { setTrmCarga("ok"); setU(p => (p && p.trm !== j.trm) ? { ...p, trm: j.trm, trmSrc: j.source, trmFecha: j.date || null } : p); }
       } catch {}
     };
@@ -768,8 +767,7 @@ const[u,_setU]=useState(null);const[trmCarga,setTrmCarga]=useState("cargando");c
     // 4200 por defecto — 33,6% de desvío. Con el portafolio IBKR de Santiago
     // (USD 33.266) eso son $35 millones de más.
     try{
-      const r=await fetch('/api/trm');
-      const j=await r.json();
+      const j=await traerTrm();
       // 24-oct-2026 (PR #56): el 4.200 «default» de la función ya no pisa la última tasa guardada.
       if(esTasaReal(j)){
         trmPendiente.current={trm:j.trm,trmSrc:j.source,trmFecha:j.date||null};
@@ -835,6 +833,9 @@ const[u,_setU]=useState(null);const[trmCarga,setTrmCarga]=useState("cargando");c
   // NO al authUser.id del advisor. Esto evita que el advisor sobreescriba su propia data.
   useEffect(()=>{
     if(!u)return;
+    // 24-oct-2026 (QA PR #56): mientras la tasa del dólar está «cargando» no se escribe
+    // user_data (evita guardar con la TRM provisional). Al resolverse, este efecto corre de nuevo.
+    if(trmCarga==="cargando")return;
     // Guarda para prevenir race condition durante logout: si authUser ya fue
     // limpiado, no intentar guardar. Esto evita que sS() corra con un id
     // obsoleto justo cuando u está siendo limpiado a null.
@@ -849,7 +850,7 @@ const[u,_setU]=useState(null);const[trmCarga,setTrmCarga]=useState("cargando");c
     }else{
       sS(u,targetId,accountIdRef.current,isLegacyRef.current,roleRef.current);
     }
-  },[u]);
+  },[u,trmCarga]);
 
   // Commit 12 Tarea 3: listener de errores de Supabase para hacer visible al
   // usuario cuando un guardado falla. Antes el catch silencioso ocultaba el

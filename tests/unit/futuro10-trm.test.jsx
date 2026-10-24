@@ -18,8 +18,9 @@ describe("TRM provisional en Mi futuro", () => {
     expect(esTasaReal({ trm: 3900, source: "Banco de la República" })).toBe(true);
     expect(resolverTasa("cargando", { trm: 3900, trmSrc: "Banco de la República" }).estado).toBe("cargando");
     expect(resolverTasa("fallo", { trm: 3900, trmSrc: "Banco de la República", trmFecha: "2026-10-23T00:00:00.000" })).toEqual({ estado: "respaldo", trm: 3900, fecha: "2026-10-23T00:00:00.000" });
-    expect(resolverTasa("fallo", { trm: 4200 }).estado).toBe("cargando"); // sin tasa guardada real: no hay cifras
-    expect(resolverTasa("fallo", { trm: 4200, trmSrc: "default" }).estado).toBe("cargando");
+    // sin tasa guardada real: respaldo SIN número (nunca 4.200)
+    expect(resolverTasa("fallo", { trm: 4200 })).toEqual({ estado: "respaldo", trm: null, fecha: null });
+    expect(resolverTasa("fallo", { trm: 4200, trmSrc: "default" })).toEqual({ estado: "respaldo", trm: null, fecha: null });
   });
   it("tasa provisional + datos en dólares → «Cargando tasa del dólar…», ninguna cifra y nada se guarda", () => {
     vi.useFakeTimers();
