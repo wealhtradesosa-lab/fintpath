@@ -462,7 +462,7 @@ export function proyectarFuturo10(user = {}, cfgIn = {}) {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio, disponible: disp, metaColchon, hayVentas,
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses, rentaPasivaMensual: b.ip },
     activos: activos.filter((a) => a.anioVenta !== 1 || true).map(({ id, nombre, clase, usd, rentaAnual }) => ({ id, nombre, clase, usd, rentaMensual: rentaAnual / 12 })),
-    nuevasDetalle: todos.filter((a) => String(a.id).startsWith("nueva_")).map((a) => ({ id: a.id, nombre: a.nombre, monto: a.monto, anio: a.anio, faltante: a.faltante || 0, valorFinal: a.valor / fin.deflactor, rentaMensual: rentaMensualNuevaHoy(a, inf), rendimientoPct: a.rendPct, usd: !!a.usd })),
+    nuevasDetalle: todos.filter((a) => String(a.id).startsWith("nueva_")).map((a) => ({ id: a.id, nombre: a.nombre, monto: a.monto, anio: a.anio, faltante: a.faltante || 0, valorFinal: a.valor / fin.deflactor, rentaMensual: rentaMensualNuevaAnioN(a), rendimientoPct: a.rendPct, usd: !!a.usd })),
     // Aviso cambiario solo por activos/inversiones en USD; lo del norte (S&P 500) se avisa aparte.
     hayUSD: todos.some((a) => a.usd && a.valor > 0) || personalizadas.some((a) => a.usd), usdPorNorte: expUSD,
     final: fin,
@@ -518,12 +518,11 @@ export function leerModifica(d = {}, esc) {
   };
 }
 
-/** Renta mensual de una inversión nueva que paga renta, en pesos de hoy: monto × % nominal / 12,
- *  deflactada UNA vez al año en que entra ((1+i)^(año−1)). Única fuente para tarjeta y detalle. */
-export function rentaMensualNuevaHoy(x, inf) {
+/** Renta mensual NOMINAL de una inversión nueva que paga renta, en pesos del año en que entra
+ *  (Finanzas, 24-oct-2026): monto × % nominal / 12, sin deflactar. Única fuente para el detalle. */
+export function rentaMensualNuevaAnioN(x) {
   const pct = x.rentaPct != null ? x.rentaPct : (x.pagaRenta ? x.rendNom : 0);
-  if (!(pct > 0)) return 0;
-  return n(x.monto) * pct / 12 / Math.pow(1 + inf, Math.max(0, n(x.anio || 1) - 1));
+  return pct > 0 ? n(x.monto) * pct / 12 : 0;
 }
 
 /** Hint (% nominal) para una inversión personalizada: renta fija corto plazo del escenario. */

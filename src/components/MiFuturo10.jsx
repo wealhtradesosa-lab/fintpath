@@ -483,7 +483,7 @@ export function InversionesNuevas({ items = [] }) {
       {items.map((x) => (
         <div key={x.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "6px 0", fontSize: 12 }}>
           <b>{x.nombre}</b> · {plata(x.monto)} en el año {x.anio}{Number.isFinite(x.rendimientoPct) ? ` · ${fmtPctEs(x.rendimientoPct, 1)} anual` : ""}{x.usd ? " · USD" : ""}
-          <div style={{ color: C.tx2 }}>{x.rentaMensual > 0 ? `Renta ${plata(x.rentaMensual)}/mes en pesos de hoy (año ${x.anio}) · ` : ""}Valor a 10 años {plata(x.valorFinal)} en pesos de hoy</div>
+          <div style={{ color: C.tx2 }}>{x.rentaMensual > 0 ? `Renta ${plata(x.rentaMensual)}/mes en pesos del año ${x.anio} · ` : ""}Valor a 10 años {plata(x.valorFinal)} en pesos de hoy</div>
           {x.faltante > 0 && <div role="alert" style={{ color: C.rd }}>Te faltan {plata(x.faltante)} para esta inversión.</div>}
         </div>))}
     </div>

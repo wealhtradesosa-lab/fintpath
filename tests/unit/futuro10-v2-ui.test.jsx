@@ -214,7 +214,7 @@ describe("Inversión nueva: una sola renta, un solo faltante, sin aviso USD para
     expect(d.rendimientoPct).toBeCloseTo(14, 6);
     expect((r.filas[1].ingresosReal - sin.filas[1].ingresosReal) / 12).toBeCloseTo(d.rentaMensual, -3);
     const h = txt(renderToString(<InversionesNuevas items={r.nuevasDetalle} />));
-    expect(h).toMatch(/14,0% anual/); expect(h).toContain("en pesos de hoy");
+    expect(h).toMatch(/14,0% anual/); expect(h).toContain("/mes en pesos del año 1");
     expect(r.hayUSD).toBe(false);
   });
   it("faltante: mismo número en la inversión, la alerta y la barra", () => {

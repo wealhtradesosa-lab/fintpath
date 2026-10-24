@@ -6,6 +6,16 @@ import { fetchAuth } from "../lib/apiFetch";
 // que excelExport.js ya hacía bien: bastaba un solo import estático en
 // cualquier archivo para que la librería viajara en la carga inicial.
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
+import { parseNumber } from "./NumberInput.jsx";
+
+/** Celda de Excel/CSV → número. Celdas numéricas quedan igual; texto en formato es-CO
+ *  («6.500.000», «1.500,50», «$ 2.000.000») usa el parser de NumberInput. */
+export function numCelda(v) {
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  const t = String(v ?? "").replace(/[^0-9.,kKmM-]/g, "");
+  const x = parseNumber(t);
+  return typeof x === "number" && Number.isFinite(x) ? x : 0;
+}
 
 /* ═══════════════════════════════════════════════════
    EXCEL IMPORT — AI-Powered
@@ -184,21 +194,21 @@ export default function CsvImport({ onImport, onClose }) {
         items.forEach((item, i) => {
           item.id = mod.key[0] + "_" + Date.now() + "_" + i;
           // Trading fields
-          if (item.sh !== undefined) item.sh = parseFloat(String(item.sh).replace(/[^0-9.-]/g, "")) || 0;
-          if (item.cb !== undefined) item.cb = parseFloat(String(item.cb).replace(/[^0-9.-]/g, "")) || 0;
-          if (item.pr !== undefined) item.pr = parseFloat(String(item.pr).replace(/[^0-9.-]/g, "")) || 0;
-          if (item.tg !== undefined) item.tg = parseFloat(String(item.tg).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.sh !== undefined) item.sh = numCelda(item.sh);
+          if (item.cb !== undefined) item.cb = numCelda(item.cb);
+          if (item.pr !== undefined) item.pr = numCelda(item.pr);
+          if (item.tg !== undefined) item.tg = numCelda(item.tg);
           // Investment fields
-          if (item.va !== undefined) item.va = parseFloat(String(item.va).replace(/[^0-9.-]/g, "")) || 0;
-          if (item.vc !== undefined) item.vc = parseFloat(String(item.vc).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.va !== undefined) item.va = numCelda(item.va);
+          if (item.vc !== undefined) item.vc = numCelda(item.vc);
           // Income fields
-          if (item.mensual !== undefined) item.mensual = parseFloat(String(item.mensual).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.mensual !== undefined) item.mensual = numCelda(item.mensual);
           // Expense fields
-          if (item.m !== undefined) item.m = parseFloat(String(item.m).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.m !== undefined) item.m = numCelda(item.m);
           // Debt fields
-          if (item.mt !== undefined) item.mt = parseFloat(String(item.mt).replace(/[^0-9.-]/g, "")) || 0;
-          if (item.pg !== undefined) item.pg = parseFloat(String(item.pg).replace(/[^0-9.-]/g, "")) || 0;
-          if (item.ts !== undefined) item.ts = parseFloat(String(item.ts).replace(/[^0-9.-]/g, "")) || 0;
+          if (item.mt !== undefined) item.mt = numCelda(item.mt);
+          if (item.pg !== undefined) item.pg = numCelda(item.pg);
+          if (item.ts !== undefined) item.ts = numCelda(item.ts);
         });
         setParsed(items);
       }
