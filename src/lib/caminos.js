@@ -1096,7 +1096,27 @@ export function vigilarCamino(camino, cfg, resultado) {
     if (cond.has("no_apalancar") && mv.tipo === "deuda_nueva") roturas.push({ anio, que: "condicion", detalle: `Tomar deuda rompe "${CONDICION_LABEL.no_apalancar}"` });
   });
   if (cond.has("sin_deuda_cara")) resultado.deudas.filter((d) => !d.pagada && d.tasa >= DEUDA_CARA && d.saldo > 1).forEach((d) => roturas.push({ anio: 1, que: "deuda", detalle: `${d.nombre} sigue al ${d.tasa}%` }));
-  return { cumple: roturas.length === 0, roturas };
+  // 24-oct-2026 (Santiago: "sigo con dudas de los escenarios preestablecidos:
+  // uno no sabe si está cumpliendo dicho plan"). Las reglas del molde, una
+  // por una, con el valor de hoy y del año 10 y si se cumple o en qué año se
+  // rompe. Sin esto el molde era una etiqueta.
+  const ult = resultado.meses[resultado.meses.length - 1];
+  const mFin = medirCanastas(posMeta, ult.caja, (p) => ult.detalle[p.id]?.capital ?? 0);
+  const mHoy = medirCanastas(posMeta, 0, (p) => (p.nuevo ? 0 : p.capital));
+  const primera = (que) => roturas.find((x) => x.que === que)?.anio ?? null;
+  const pct = (v) => `${Math.round(v)}%`;
+  const reglas = [];
+  if (C.rentas?.min != null) reglas.push({ id: "rentas_min", texto: `Al menos ${C.rentas.min}% en lo que te paga`, hoy: pct(mHoy.rentasPct), fin: pct(mFin.rentasPct), rompe: primera("rentas") });
+  if (C.rentas?.max != null) reglas.push({ id: "rentas_max", texto: `Máximo ${C.rentas.max}% en lo que te paga`, hoy: pct(mHoy.rentasPct), fin: pct(mFin.rentasPct), rompe: primera("rentas") });
+  if (C.crecimiento?.min != null) reglas.push({ id: "crec_min", texto: `Al menos ${C.crecimiento.min}% en lo que crece`, hoy: pct(mHoy.crecimientoPct), fin: pct(mFin.crecimientoPct), rompe: primera("crecimiento") });
+  if (C.crecimiento?.max != null) reglas.push({ id: "crec_max", texto: `Máximo ${C.crecimiento.max}% en lo que crece`, hoy: pct(mHoy.crecimientoPct), fin: pct(mFin.crecimientoPct), rompe: primera("crecimiento") });
+  if (C.colchonMeses) { const g = ult.sale || 1; reglas.push({ id: "colchon", texto: `Colchón líquido de ${C.colchonMeses} meses de gastos`, hoy: `${Math.round(mHoy.colchon / Math.max(1, resultado.meses[0].sale || 1))} meses`, fin: `${Math.round(mFin.colchon / g)} meses`, rompe: primera("colchon") }); }
+  if (cond.has("sin_deuda_cara")) reglas.push({ id: "sin_deuda_cara", texto: CONDICION_LABEL.sin_deuda_cara, hoy: cfg.deudas.filter((d) => !d.pagar && d.tasa >= DEUDA_CARA && d.saldo > 1).length ? "tienes" : "ninguna", fin: resultado.deudas.filter((d) => !d.pagada && d.tasa >= DEUDA_CARA && d.saldo > 1).length ? "sigue" : "ninguna", rompe: primera("deuda") });
+  if (cond.has("no_vender_vivienda")) reglas.push({ id: "no_vender_vivienda", texto: CONDICION_LABEL.no_vender_vivienda, hoy: "—", fin: roturas.some((x) => x.que === "condicion" && /vivienda/i.test(x.detalle)) ? "se vende" : "no se vende", rompe: roturas.find((x) => x.que === "condicion" && /vivienda/i.test(x.detalle))?.anio ?? null });
+  if (cond.has("no_apalancar")) reglas.push({ id: "no_apalancar", texto: CONDICION_LABEL.no_apalancar, hoy: "—", fin: "sin deuda nueva", rompe: roturas.find((x) => x.que === "condicion" && /deuda/i.test(x.detalle))?.anio ?? null });
+  if (cond.has("todo_produce")) { const quieto = posMeta.filter((p) => !p.vivienda && canastaDe(p) === "uso" && (ult.detalle[p.id]?.capital ?? 0) > 1).map((p) => p.nombre); reglas.push({ id: "todo_produce", texto: CONDICION_LABEL.todo_produce, hoy: "—", fin: quieto.length ? `quieto: ${quieto.slice(0, 3).join(", ")}` : "todo produce", rompe: quieto.length ? 10 : null }); }
+  reglas.forEach((x) => { x.cumple = x.rompe == null; });
+  return { cumple: roturas.length === 0, roturas, reglas };
 }
 
 // ─── Lado a lado ─────────────────────────────────────────────────────────────

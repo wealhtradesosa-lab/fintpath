@@ -312,7 +312,7 @@ const Siguiente = ({ onClick, children }) => <div style={{ display: "flex", just
 // mes 0), no la decision de la persona. La decision es que ese activo deja de
 // ser lo que es para convertirse en otra cosa. Se llama por eso: "Para
 // reconvertir".
-function FilaActivo({ p, onFicha, onQuitar }) {
+function FilaActivo({ p, onFicha }) {
   const [abierto, setAbierto] = useState(false);
   const x = produce(p);
   const k = canastaDe(p);
@@ -327,7 +327,7 @@ function FilaActivo({ p, onFicha, onQuitar }) {
   else if (p.valorizacion < 0) partes.push(`pierde ${pctEs(-p.valorizacion)} al año`);
   const inp2 = { ...inputS, padding: "4px 6px", fontSize: 12, width: 70, textAlign: "right" };
   return (
-    <div style={{ borderTop: `1px solid ${C.border}`, padding: "12px 0", opacity: off ? 0.55 : 1 }}>
+    <div style={{ borderTop: `1px solid ${C.border}`, padding: "12px 0", opacity: off || p.fuera ? 0.55 : 1 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
         <div style={{ minWidth: 0, flex: "1 1 320px" }}>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>
@@ -348,10 +348,12 @@ function FilaActivo({ p, onFicha, onQuitar }) {
               sobre los $1.000 M"). Tres estados: continúa · se vende hoy · se
               transforma. La obra sale de la misma plata liberada hoy. */}
           <div style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 999, overflow: "hidden" }}>
-            {[["continua", "Continúa", C.ok], ["sale", "Se vende hoy", C.danger], ...(p.vehiculo || p.liquido ? [] : [["transforma", "Se transforma", CANASTA_COLOR.crecimiento]])].map(([e, l, col]) => { const on = (p.transforma ? "transforma" : off ? "sale" : "continua") === e; return <button key={e} onClick={() => onFicha({ estado: e })} style={{ background: on ? `${col}22` : "transparent", border: "none", borderRight: `1px solid ${C.border}`, padding: "5px 10px", fontSize: 12, fontWeight: on ? 700 : 500, color: on ? col : C.muted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{l}</button>; })}
+            {/* 24-oct-2026 (Santiago: "volver a incluir abajo no es práctico;
+                eso debería estar en el mismo ítem"). Cuarto estado en el
+                mismo control: Fuera. La fila se queda en su sitio, en gris. */}
+            {[["continua", "Sigue igual", C.ok], ["sale", "Se vende hoy", C.danger], ...(p.inmueble || /real estate|lote|bodega|local|casa|apartamento|finca|oficina/i.test(`${p.tipo} ${p.nombre}`) ? [["transforma", "Se transforma", CANASTA_COLOR.crecimiento]] : []), ["fuera", "Fuera", C.subtle]].map(([e, l, col]) => { const on = (p.fuera ? "fuera" : p.transforma ? "transforma" : off ? "sale" : "continua") === e; return <button key={e} onClick={() => onFicha({ estado: e })} style={{ background: on ? `${col}22` : "transparent", border: "none", borderRight: `1px solid ${C.border}`, padding: "5px 10px", fontSize: 12, fontWeight: on ? 700 : 500, color: on ? col : C.muted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{l}</button>; })}
           </div>
-          <button onClick={() => setAbierto((a) => !a)} style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>{abierto ? "cerrar" : "ajustar"}</button>
-          <button onClick={onQuitar} title="No va en el modelo: no lo tienes o no va acá. Sale del patrimonio y de lo que entra al mes; no libera plata, porque no se vende. Se puede volver a incluir." style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>quitar</button>
+          {!p.fuera && <button onClick={() => setAbierto((a) => !a)} style={{ background: "transparent", border: "none", color: C.subtle, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>{abierto ? "cerrar" : "ajustar"}</button>}
         </div>
       </div>
       {p.transforma && (() => { const t = p.transforma; const puesto = p.capital + (t.obra || 0); const vf = t.valorFinal || puesto; return (
@@ -451,21 +453,9 @@ function PasoHoy({ base, fichas, onFichas, onNext }) {
         </div>
         {revisar && <div style={{ marginTop: 6 }}>
           <div style={{ ...F.caption, marginBottom: 2 }}>De cada uno decides una cosa: si <b style={{ color: C.text }}>continúa</b> tal como está, o si <b style={{ color: C.text }}>se vende hoy</b> — esa plata queda a favor para pagar deudas o reinvertir desde el arranque. Una obra o transformación (el lote que pasa a bodega) no se marca aquí: el activo <b style={{ color: C.text }}>continúa</b> y la obra va en «¿Qué pasa después?». Lo demás ya está calculado — si algo no cuadra, "ajustar"; si algo no va en el modelo, "quitar".</div>
-          {[...base.posiciones].sort((a, b2) => b2.capital - a.capital).map((q) => <FilaActivo key={q.id} p={q} onFicha={(patch) => setF(q.id, patch)} onQuitar={() => setF(q.id, { estado: "fuera" })} />)}
+          {[...base.posiciones, ...(base.fuera || []).map((q) => ({ ...q, fuera: true }))].sort((a, b2) => b2.capital - a.capital).map((q) => <FilaActivo key={q.id} p={q} onFicha={(patch) => setF(q.id, patch)} />)}
         </div>}
-        {/* Lo quitado no se esconde: se dice, con su plata, y se puede
-            devolver. Un ítem que desaparece sin rastro es un patrimonio que
-            bajó sin explicación. */}
-        {capFuera.n > 0 && <div style={{ ...sub, marginTop: 10, borderColor: C.border }}>
-          <div style={F.label}>Fuera del modelo · {capFuera.n} {capFuera.n === 1 ? "cosa" : "cosas"} · {fmM(capFuera.capital)}</div>
-          <div style={{ ...F.caption, marginTop: 2 }}>No cuentan en ningún escenario: no suman al patrimonio, no rentan y no liberan plata (no se venden, no los tienes). Tus datos en Patrimonio e Ingresos quedaron intactos.</div>
-          <div style={{ display: "grid", gap: 5, marginTop: 8 }}>
-            {base.fuera.map((q) => <div key={q.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", borderTop: `1px solid ${C.border}`, paddingTop: 5 }}>
-              <span style={{ ...F.caption, color: C.muted }}>{q.nombre} · {fmM(q.capital)}{q.soloIngreso ? " · venía de un ingreso, no de Inversiones" : ""}</span>
-              <button style={{ ...btn(false), padding: "3px 10px" }} onClick={() => setF(q.id, { estado: "continua" })}>volver a incluir</button>
-            </div>)}
-          </div>
-        </div>}
+        {capFuera.n > 0 && <div style={{ ...F.caption, marginTop: 8 }}>Fuera del modelo: {capFuera.n} {capFuera.n === 1 ? "cosa" : "cosas"} ({fmM(capFuera.capital)}) que no cuentan en ningún escenario. Tus datos en Patrimonio e Ingresos quedan intactos.</div>}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 14 }}>
         {base.deudas.length > 0 && <div style={card}>
@@ -1734,6 +1724,14 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
           <div style={F.h3}>Lo que pasa en el tiempo</div>
           {eventos.length === 0 && <div style={{ ...F.body, marginTop: 6 }}>Nada programado después de hoy.</div>}
           <div style={{ display: "grid", gap: 6, marginTop: 6 }}>{eventos.map((m, i) => <div key={i} style={{ display: "flex", gap: 10, ...F.body, color: C.text }}><span style={{ ...chip(r.color), minWidth: 56, textAlign: "center" }}>{m.mes === 0 ? "hoy" : `año ${anioDe(m.mes)}`}</span><span>{describirMov(m, r.cfg.posiciones, r.cfg.flujos, r.cfg.deudas, r.cfg.movimientos).replace(/^Año \d+(, mes \d+)?: /, "")}</span></div>)}</div>
+          {/* 24-oct-2026 (Santiago: "uno no sabe si está cumpliendo dicho
+              plan"). Las reglas del molde, una por una, con hoy → año 10 y
+              ✓ o el año en que se rompe. */}
+          {(r.vigilancia.reglas || []).length > 0 && <div style={{ marginTop: 14 }}>
+            <div style={F.h3}>¿Cumple las reglas de «{r.nombre}»?</div>
+            <div style={{ display: "grid", gap: 4, marginTop: 6 }}>{r.vigilancia.reglas.map((x) => <div key={x.id} style={{ display: "flex", gap: 10, alignItems: "baseline", ...F.body, color: C.text, flexWrap: "wrap" }}><span style={{ ...chip(x.cumple ? C.ok : C.danger), minWidth: 84, textAlign: "center" }}>{x.cumple ? "✓ cumple" : `✗ año ${x.rompe}`}</span><span style={{ flex: 1, minWidth: 200 }}>{x.texto}</span><span style={{ ...F.caption, fontFamily: F.mono.fontFamily }}>hoy {x.hoy} → año 10 {x.fin}</span></div>)}</div>
+          </div>}
+          {(r.vigilancia.reglas || []).length === 0 && <div style={{ ...F.caption, marginTop: 12 }}>Este escenario no tiene reglas que vigilar: lo armaste a tu manera. Si quieres que se vigile algo (mínimo en rentas, colchón, sin deuda cara), está en «Reglas que este escenario se obliga a cumplir».</div>}
           {!r.vigilancia.cumple && <div style={{ marginTop: 12 }}><div style={{ ...F.h3, color: C.danger }}>Dónde se rompe</div>{r.vigilancia.roturas.slice(0, 5).map((x, i) => <div key={i} style={{ ...F.body, color: C.danger, marginTop: 4 }}>· Año {x.anio}: {x.detalle}</div>)}</div>}
         </div>
       </div>
@@ -1746,9 +1744,16 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
         {[[1, "qué vendes"], [2, "qué deudas pagas"], [3, "en qué reinviertes"], [4, "qué más va a pasar"]].map(([n, t]) =>
           <button key={n} style={{ ...btn(false), padding: "5px 12px" }} onClick={() => onEditar(n)}>✎ {t}</button>)}
       </div>}
+      {/* 24-oct-2026 (Santiago: "demos orden y jerarquía a las secciones y
+          etapas"). El resultado se lee en este orden: lo esencial arriba
+          (cifras, reparto, reglas, relato, línea de tiempo, mes a mes, activo
+          por activo) y los análisis de apoyo plegados bajo «Más análisis». */}
       <GraficaMesAMes r={r} perfil={perfil} base={base} onArreglar={onEditar && (() => onEditar(4))} />
       <LoQueFalta r={r} base={base} liq={liquidezEscenario(base, r)} perfil={perfil} />
       <ActivoPorActivo r={r} base={base} onFicha={onFicha} />
+      <details style={{ ...card, padding: 0, overflow: "hidden" }}>
+        <summary style={{ ...F.h3, cursor: "pointer", padding: "14px 18px", listStyle: "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>Más análisis</span><span style={F.caption}>¿gana a la inflación? · tu patrimonio como empresa · año a año</span></summary>
+        <div style={{ display: "grid", gap: 14, padding: "0 18px 18px" }}>
       <GanaALaInflacion r={r} perfil={perfil} base={base} onArreglar={onEditar && (() => onEditar(4))} />
       <ComoEmpresa r={r} />
       <div style={card}>
@@ -1760,6 +1765,8 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
           </table>
         </div>
       </div>
+        </div>
+      </details>
       <Siguiente onClick={onNext}>Siguiente: compara todos los escenarios</Siguiente>
     </div>
   );
