@@ -539,7 +539,9 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
       if (i.activoId && conRenta.has(i.activoId) && tipoIngreso(i) === "pasivo") return; // va como renta neta del activo
       const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: v, nota: tipoIngreso(i) === "pasivo" ? "renta · de tu página Ingresos" : "trabajo · de tu página Ingresos" });
     });
-    Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada) return; if (v > 0.5) entra.push({ nombre: `Renta de ${nombreActivo(id)}`, mensual: v, nota: "neta de sus costos" }); });
+    Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada) return; if (v > 0.5) { const br = (bOp.rentaPorActivo || {})[id] || v, mm = (x) => `$${(Math.round(x / 1e5) / 10).toLocaleString("es-CO")}M`;
+      // 24-oct-2026 (Santiago: "Rapicredit me da el 21 % de 3.288 M"): se muestra la cuenta, no solo el neto.
+      entra.push({ nombre: `Renta de ${nombreActivo(id)}`, mensual: v, nota: br - v > 0.5 ? `${mm(br)} de renta − ${mm(br - v)} de gastos ligados en Egresos` : "renta de tu página Ingresos" }); } });
     const ff = 1 + inf;
     todos.forEach((a) => {
       const p0 = (filas[0].porActivo || []).find((x) => x.id === a.id);
