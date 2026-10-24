@@ -45,10 +45,13 @@ describe("exenta 25 % después de PV/AFC y cesantías", () => {
 
 describe("tarjeta «Pensión voluntaria o AFC» del simulador", () => {
   it("ahorro de la tarjeta == diferencia de taxCO con y sin el aporte", () => {
-    for (const salMes of [10e6, 15e6, 30e6]) {
-      const u0 = user(salMes), d0 = det(u0);
+    // Mismo año que usa el simulador (default de taxCO). Con y sin aporte se
+    // compara el impuesto que muestra la tarjeta (saldo, después de retenciones).
+    const detD = (u) => estimarImpuesto(u).detalle.find((d) => d.name === "Luis");
+    for (const salMes of [10e6, 15e6, 30e6, 60e6]) {
+      const u0 = user(salMes), d0 = detD(u0);
       const fd = adapterOwnerPlan({ owner: u0.owners[0], ingresos: u0.ingresos, gastos: [], inv: [], deu: [], trm: 4200 });
-      const d1 = det(user(salMes, aporte("AP_TRIB_PV", d0.pensionVol / 12)));
+      const d1 = detD(user(salMes, aporte("AP_TRIB_PV", d0.pensionVol / 12)));
       expect(ahorroPvAfc(fd)).toBeCloseTo(d0.impuesto - d1.impuesto, -2);
     }
   });
