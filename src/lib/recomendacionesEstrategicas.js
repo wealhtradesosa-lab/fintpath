@@ -266,7 +266,7 @@ function recomendacionesNaturalLaboral(perfil) {
       titulo: "Pensión voluntaria o AFC",
       tope: textoTopePvAfc(sug),
       descripcion: `${textoSugerenciaPvAfc(sug)} Hasta $${Math.round(topeAnual / 12).toLocaleString("es-CO")}/mes en pensión voluntaria o AFC podría ser exento (hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
-      accion: sug.sinFlujo ? "Primero completa tu fondo de emergencia; luego revisa si te queda flujo para aportar." : `Si decides aportar, puedes hacerlo por nómina o directo al fondo: $${aporteSugerido.toLocaleString("es-CO")} al año.`,
+      accion: sug.sinFlujo ? textoSugerenciaPvAfc(sug) : `Si decides aportar, puedes hacerlo por nómina o directo al fondo: $${aporteSugerido.toLocaleString("es-CO")} al año.`,
       inversion: {
         monto: aporteSugerido,
         descripcion: "Sale de tu liquidez pero queda ahorrado a tu nombre.",

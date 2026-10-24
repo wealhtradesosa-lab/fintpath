@@ -174,10 +174,34 @@ describe("Regla Finanzas: aporte = min(flujo libre tras fondo de emergencia, esp
     const fd = adapterOwnerPlan({ owner: u.owners[0], ingresos: u.ingresos, gastos: gastosArr(gastoMes), inv: [], deu: [], trm: 4200 });
     const d = estimarImpuesto(u, { ag: AG_RECOS }).detalle[0];
     const recs = generarRecomendacionesEstrategicas(u, u.owners[0], { ...d, impuesto: Math.max(d.impBruto, 1e6) }) || [];
-    return { u, fd, r1: recs.find((r) => r.id === "aporte_pv_estrategico"), s: sugerenciaPvAfc(u, u.owners[0], { ag: AG_RECOS }) };
+    return { u, fd, r1: recs.find((r) => r.id === "aporte_pv_estrategico"), r2: recs.find((r) => r.id === "cuenta_afc"), s: sugerenciaPvAfc(u, u.owners[0], { ag: AG_RECOS }) };
   };
-  it("flujo libre bajo: tarjeta y REC 1 bajan igual, ahorro = taxCO con ESE aporte", () => {
-    const alto = casos(15e6, 0), bajo = casos(15e6, 11e6);
+  it("flujo libre NETO: resta retención (sin aporte), salud, pensión y FSP antes del fondo", () => {
+    const c = casos(15e6, 0), dq = c.s.descuentos;
+    const d0 = estimarImpuesto(c.u, { ag: AG_RECOS }).detalle[0];
+    expect(dq.retencion).toBe(d0.retefuenteNat);
+    expect(dq.pension).toBe(15e6 * 12 * 0.04);
+    expect(dq.salud).toBe(15e6 * 12 * 0.04);
+    expect(dq.fsp).toBe(15e6 * 12 * 0.01);
+    expect(c.s.flujoNetoAnual).toBe(15e6 * 12 - dq.total);
+    console.log("FIG desc", JSON.stringify(dq), c.s.flujoNetoAnual);
+  });
+  it("$15M con $11M de gastos: aporte < 15.000.000, tarjeta = REC 1 = REC 2", () => {
+    const c = casos(15e6, 11e6);
+    expect(c.s.aporte).toBeLessThan(15e6);
+    expect(c.fd.aportePvAfc).toBe(c.s.aporte);
+    expect(c.fd.ahorroPvAfc).toBe(c.s.ahorro || 0);
+    for (const r of [c.r1, c.r2].filter(Boolean)) { expect(r.inversion?.monto ?? 0).toBe(c.s.aporte); expect(r.ahorroAnual.monto).toBe(c.fd.ahorroPvAfc); }
+    if (c.s.aporte > 0) {
+      const sin = estimarImpuesto(c.u, { ag: AG_RECOS }).detalle[0];
+      const con = estimarImpuesto({ ...c.u, gas: { ...c.u.gas, ...aporte("AP_TRIB_PV", c.s.aporte / 12) } }, { ag: AG_RECOS }).detalle[0];
+      expect(c.fd.ahorroPvAfc).toBe(Math.round(sin.impBruto - con.impBruto));
+    }
+    console.log("FIG 11M", JSON.stringify({ motivo: c.s.motivo, neto: c.s.flujoNetoAnual, falt: c.s.faltanteEmergencia, libre: c.s.flujoLibreAnual, aporte: c.s.aporte, ahorro: c.s.ahorro }));
+  });
+  it("flujo libre bajo: tarjeta, REC 1 y REC 2 bajan igual, ahorro = taxCO con ESE aporte", () => {
+    const alto = casos(15e6, 0), bajo = casos(15e6, 9e6);
+    expect(bajo.r2.inversion.monto).toBe(bajo.s.aporte); expect(bajo.r2.ahorroAnual.monto).toBe(bajo.fd.ahorroPvAfc);
     expect(bajo.fd.aportePvAfc).toBeLessThan(alto.fd.aportePvAfc);
     expect(bajo.fd.aportePvAfc).toBe(bajo.s.aporte);
     expect(bajo.s.aporte).toBe(Math.round(Math.min(bajo.s.flujoLibreAnual, bajo.s.espacioFiscal)));
@@ -195,11 +219,20 @@ describe("Regla Finanzas: aporte = min(flujo libre tras fondo de emergencia, esp
   it("tope legal a $15M/mes = $4.320.000/mes", () => {
     expect(textoTopePvAfc(casos(15e6, 0).s)).toBe("Tope legal: $4.320.000/mes");
   });
-  it("sin flujo libre: no hay cifra de ahorro en tarjeta ni en REC 1", () => {
+  it("gastos superan ingresos (flujo neto <= 0): mensaje (a), sin cifra de ahorro", () => {
     const c = casos(15e6, 20e6);
-    expect(c.s.sinFlujo).toBe(true);
+    expect(c.s.sinFlujo).toBe(true); expect(c.s.motivo).toBe("gastos");
     expect(c.fd.aportePvAfc).toBe(0); expect(c.fd.ahorroPvAfc).toBe(0);
     expect(c.r1.ahorroAnual.monto).toBe(0);
-    expect(c.r1.descripcion).toMatch(/^Hoy no te queda flujo libre/);
+    expect(c.r1.descripcion.startsWith('Hoy tus gastos superan tus ingresos, así que no te sugerimos aportar. Revisa tus gastos en "Flujo de caja" y vuelve cuando te quede un margen.')).toBe(true);
+    expect(c.r1.descripcion).not.toMatch(/pagarías/);
+  });
+  it("flujo positivo pero todo va al fondo de emergencia: mensaje (b) con el faltante, sin cifra de ahorro", () => {
+    const c = casos(15e6, 11.5e6);
+    expect(c.s.flujoNetoAnual).toBeGreaterThan(0); expect(c.s.motivo).toBe("fondo");
+    expect(c.fd.aportePvAfc).toBe(0); expect(c.fd.ahorroPvAfc).toBe(0);
+    expect(c.r1.ahorroAnual.monto).toBe(0);
+    expect(c.r1.descripcion.startsWith(`Primero completa tu fondo de emergencia (te faltan $${c.s.faltanteEmergencia.toLocaleString("es-CO")}); después te sugerimos cuánto aportar.`)).toBe(true);
+    expect(c.r1.descripcion).not.toMatch(/pagarías/);
   });
 });
