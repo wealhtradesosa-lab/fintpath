@@ -258,6 +258,9 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
     const rentaMensual = Math.max(0, n(r.rentaMensual));
     const rentaDesdeMes = Math.min(119, Math.max(0, Math.round(n(r.rentaDesdeMes))));
     if (rentaMensual > 0) (a.rentasExtra = a.rentasExtra || []).push({ anual: rentaMensual * 12, desdeMes: rentaDesdeMes });
+    // «¿Cuánto queda valiendo al terminar la obra?»: el activo salta a ese valor
+    // el año en que termina (el de la renta, o el del aporte si no hay renta).
+    if (n(r.valorAlTerminar) > 0) (a.saltos = a.saltos || []).push({ t: Math.max(anioAporte, rentaMensual > 0 ? Math.floor(rentaDesdeMes / 12) + 1 : anioAporte), valor: n(r.valorAlTerminar) });
     const totalConAporte = antes + (anioAporte === 1 ? m : n(r.monto));
     const rendUsado = rendimientoPct != null ? rendimientoPct : rendActual * 100;
     const pUsado = pctRecibe != null ? pctRecibe : 0;
@@ -368,7 +371,7 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
   // cuánto se valoriza"). Un ingreso futuro puede salir de un activo tuyo;
   // si trae valorización, se aplica a ese activo.
   fut.ingresos.forEach((x) => { const a = x.activoId && activos.find((y) => y.id === x.activoId); if (a && x.valorizacionNomPct != null) a.crec = x.valorizacionNomPct / 100; });
-  fut.activos.forEach((x, k) => todos.push({ id: "futuro_" + k, nombre: x.nombre, clase: x.clase === "inmueble" ? "inmueble" : "otro", fuentesPago: x.fuentesPago, valor: 0, crec: x.crec, entrega: x.entrega, pagos: x.pagos, usd: false, invertible: true, rentaNuevaAnual: x.rentaMensual * 12, rentaDesdeMes: 12 * (Math.max(1, x.rentaDesde) - 1) }));
+  fut.activos.forEach((x, k) => todos.push({ id: "futuro_" + k, nombre: x.nombre, clase: x.clase === "inmueble" ? "inmueble" : "otro", fuentesPago: x.fuentesPago, saltos: x.valorAlTerminar > 0 ? [{ t: x.entrega, valor: x.valorAlTerminar }] : [], valor: 0, crec: x.crec, entrega: x.entrega, pagos: x.pagos, usd: false, invertible: true, rentaNuevaAnual: x.rentaMensual * 12, rentaDesdeMes: 12 * (Math.max(1, x.rentaDesde) - 1) }));
   let expUSD = canasta.crecimiento > 0;
   for (let t = 1; t <= N; t++) {
     // Saca plata en orden: colchón → liquidez → líquidos existentes → renta → crecimiento.
@@ -465,6 +468,14 @@ export function proyectarFuturo10(user = {}, cfg = {}) {
         alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En el año ${t} pasas plata de tu liquidez a ${a.nombre}.` });
       }
     });
+    // Salto de valor al terminar una obra o al recibir lo que se construye
+    // (Santiago: "hay activos que se valorizan al momento de la construcción
+    // de forma muy alta y después cada año"). Desde ahí sigue su % anual.
+    todos.forEach((a) => (a.saltos || []).forEach((sx) => {
+      if (sx.t !== t || !(sx.valor > a.valor)) return;
+      alertas.push({ tipo: "valorizacion_obra", anio: t, texto: `En el año ${t} ${a.nombre} queda valiendo ${Math.round(sx.valor / 1e6).toLocaleString("es-CO")} M al terminar.` });
+      a.valor = sx.valor;
+    }));
     if (canasta.crecimiento > 0) expUSD = true;
     const liquidez = colchon + canasta.liquidez + todos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
     const deflactor = Math.pow(1 + inf, t);
@@ -646,7 +657,7 @@ export function leerFuturos(f = {}, esc, sup = SUPUESTOS_F10) {
       pagos = [{ monto: cuota, anio: Math.min(anio(x.anioCuota), entrega) }, { monto: valor - cuota, anio: entrega }];
     }
     const def = ["inmueble", "vivienda", "lote"].includes(x.clase) ? (1 + inf) * (1 + n(sup.presets.fincaRaiz.valorizacionSpread) / 100) - 1 : (1 + inf) * (1 + n(sup.otrosRealSpread) / 100) - 1;
-    return { nombre: String(x.nombre || "").trim() || "Activo futuro", clase: ["inmueble", "vivienda", "lote"].includes(x.clase) ? "inmueble" : "otro", vivienda: x.clase === "vivienda", tipo: x.clase || "inmueble", fuentesPago: leerFuentesPago(x), entrega, pagos,
+    return { nombre: String(x.nombre || "").trim() || "Activo futuro", clase: ["inmueble", "vivienda", "lote"].includes(x.clase) ? "inmueble" : "otro", vivienda: x.clase === "vivienda", tipo: x.clase || "inmueble", fuentesPago: leerFuentesPago(x), valorAlTerminar: Math.max(0, n(x.valorAlTerminar)), entrega, pagos,
       crec: vacio(x.valorizacionNomPct) ? def : n(x.valorizacionNomPct) / 100,
       rentaMensual: Math.max(0, n(x.rentaMensual)), rentaDesde: anio(x.rentaDesde, entrega) };
   }).filter((x) => x.pagos.some((p) => p.monto > 0));
@@ -735,7 +746,12 @@ export function resumenEscenario(r) {
 
 /** Fuentes de pago de una compra futura: [{id, pct}] (compatibilidad: fuenteId = 100 %). */
 export function leerFuentesPago(x = {}) {
-  const lista = Array.isArray(x.fuentes) ? x.fuentes : x.fuenteId ? [{ id: x.fuenteId, pct: 100 }] : [];
+  // 24-oct-2026 (Santiago: "voy a comprarla con la plata de esto y esto, y el
+  // valor que voy a retirar de cada una"). Cada fuente puede decir un monto en
+  // pesos; se convierte a % del valor total para repartir cada pago.
+  const total = Number(x.valor) || 0;
+  const conv = (f) => (f && f.monto != null && f.monto !== "" && total > 0 ? { id: f.id, pct: Math.min(100, (Number(f.monto) || 0) / total * 100) } : f);
+  const lista = (Array.isArray(x.fuentes) ? x.fuentes : x.fuenteId ? [{ id: x.fuenteId, pct: 100 }] : []).map(conv);
   let usado = 0;
   return lista.filter((f) => f && f.id).map((f) => { const p = Math.max(0, Math.min(100 - usado, Number(f.pct) || 0)); usado += p; return { id: f.id, pct: p }; }).filter((f) => f.pct > 0);
 }

@@ -333,28 +333,33 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuent
         const renta = tipo === "inmueble" || tipo === "negocio";
         const total = Number(x.valor) || 0, antes = Math.min(total, Number(x.cuotaInicial) || 0);
         const cuando = (y) => (y === 1 ? "ya" : `en ${y - 1} año${y === 2 ? "" : "s"}`);
-        const fps = Array.isArray(x.fuentes) ? x.fuentes : x.fuenteId ? [{ id: x.fuenteId, pct: 100 }] : [];
-        const setFps = (arr) => upA(i, { fuentes: arr, fuenteId: null });
-        const sumaFps = fps.reduce((sm, z) => sm + (Number(z.pct) || 0), 0);
+        // Fuentes en pesos (Santiago: "el valor que voy a retirar de cada una").
+        // Escenarios con % se pasan a pesos sobre el valor total.
+        const fps = (Array.isArray(x.fuentes) ? x.fuentes : x.fuenteId ? [{ id: x.fuenteId, pct: 100 }] : []).map((z) => (z.monto == null && z.pct != null ? { id: z.id, monto: Math.round((Number(z.pct) || 0) / 100 * (Number(x.valor) || 0)) } : z));
+        const setFps = (arr) => upA(i, { fuentes: arr.map(({ id, monto }) => ({ id, monto })), fuenteId: null });
+        const sumaFps = fps.reduce((sm, z) => sm + (Number(z.monto) || 0), 0);
         const nomF = (id) => (fuentes.find((y) => y.id === id) || {}).nombre || "una inversión";
-        const validas = fps.filter((z) => z.id && Number(z.pct) > 0);
-        const fuenteNom = validas.length ? validas.map((z) => `${z.pct} % de ${nomF(z.id)}`).join(" y ") + (sumaFps < 100 ? ` y ${100 - sumaFps} % de tus cuentas de hoy` : "") : "tu liquidez";
+        const validas = fps.filter((z) => z.id && Number(z.monto) > 0);
+        const faltaF = Math.max(0, (Number(x.valor) || 0) - sumaFps);
+        const fuenteNom = validas.length ? validas.map((z) => `${plata(Number(z.monto))} de ${nomF(z.id)}`).join(" + ") + (faltaF > 0 ? ` + ${plata(faltaF)} de tus cuentas de hoy` : "") : "tu liquidez";
         return (
           <div key={i} style={g}>
             <label style={lbl}>¿Qué es?<select style={inp} value={tipo} onChange={(e) => upA(i, { clase: e.target.value })}>
               <option value="vivienda">Casa para vivir</option><option value="inmueble">Inmueble para rentar</option><option value="lote">Lote</option><option value="negocio">Negocio</option><option value="otro">Otro</option></select></label>
             <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder={tipo === "vivienda" ? "Ej.: casa finca" : "Ej.: local comercial"} onChange={(e) => upA(i, { nombre: e.target.value })} /></label>
             <label style={lbl}>¿Cuánto cuesta en total? ($)<NumberInput style={inp} value={x.valor ?? ""} onChange={(v) => upA(i, { valor: v })} /></label>
+            <label style={lbl}>¿Cuánto vale cuando está lista? ($, opcional)<NumberInput style={inp} placeholder="Si vale más de lo que cuesta" value={x.valorAlTerminar ?? ""} onChange={(v) => upA(i, { valorAlTerminar: v })} />
+              <span style={{ fontSize: 11 }}>Una construcción suele valer más al terminarla. Desde ahí sube con el % de abajo.</span></label>
             <label style={lbl}>¿Cuándo está lista?{selAnio(x.entrega || 1, (v) => upA(i, { entrega: v || 1, anioCuota: Math.min(Number(x.anioCuota) || 1, v || 1) }))}
               <span style={{ fontSize: 11 }}>Cuando la recibes o terminas de construir.</span></label>
             <div style={{ ...lbl, gridColumn: "1 / -1" }}>¿De dónde sale la plata?
               {fps.map((fp, k) => <div key={k} style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center" }}>
                 <select style={{ ...inp, flex: 1 }} value={fp.id || ""} onChange={(e) => setFps(fps.map((z, j) => (j === k ? { ...z, id: e.target.value } : z)))}><option value="">Elige una inversión</option>{fuentes.map((y) => <option key={y.id} value={y.id}>{y.nombre}</option>)}</select>
-                <span style={{ display: "flex", alignItems: "center", gap: 2, width: 76 }}><InputDecimalEs style={inp} value={fp.pct ?? ""} onChange={(v) => setFps(fps.map((z, j) => (j === k ? { ...z, pct: v } : z)))} />%</span>
+                <span style={{ width: 150 }}><NumberInput style={inp} placeholder="¿Cuánto sacas?" value={fp.monto ?? ""} onChange={(v) => setFps(fps.map((z, j) => (j === k ? { ...z, monto: v } : z)))} /></span>
                 <button style={{ ...btn(false), padding: "6px 8px" }} onClick={() => setFps(fps.filter((_, j) => j !== k))}>✕</button>
               </div>)}
-              <button style={{ ...btn(false), marginTop: 6 }} onClick={() => { const resto = 100 - sumaFps; if (resto > 0) setFps([...fps, { id: "", pct: resto }]); else { const n = fps.length + 1, base = Math.floor(100 / n); setFps([...fps, { id: "" }].map((z, j) => ({ ...z, pct: j === n - 1 ? 100 - base * (n - 1) : base }))); } }}>+ {fps.length ? "Otra inversión" : "Sale de una inversión"}</button>
-              <span style={{ display: "block", fontSize: 11, marginTop: 4 }}>{fps.length === 0 ? "Si no eliges, sale de tus cuentas de hoy (ahorros y efectivo)." : sumaFps < 100 ? `El ${100 - sumaFps} % restante sale de tus cuentas de hoy.` : sumaFps > 100 ? "Los porcentajes suman más de 100 %." : "Si alguna no alcanza, lo que falta sale de tus cuentas de hoy."}</span>
+              <button style={{ ...btn(false), marginTop: 6 }} onClick={() => setFps([...fps, { id: "", monto: faltaF || "" }])}>+ {fps.length ? "Otra inversión" : "Sale de una inversión"}</button>
+              <span style={{ display: "block", fontSize: 11, marginTop: 4 }}>{fps.length === 0 ? "Si no eliges, sale de tus cuentas de hoy (ahorros y efectivo)." : faltaF > 0 ? `Faltan ${plata(faltaF)}: salen de tus cuentas de hoy.` : sumaFps > (Number(x.valor) || 0) ? "Sacas más de lo que cuesta." : "Completo. Si alguna no alcanza, lo que falta sale de tus cuentas de hoy."}</span>
             </div>
             <label style={lbl}>¿Pagas una parte antes? ($, opcional)<NumberInput style={inp} value={x.cuotaInicial ?? ""} onChange={(v) => upA(i, { cuotaInicial: v })} />
               <span style={{ fontSize: 11 }}>Un anticipo o la primera etapa de la obra. Si no, todo se paga cuando está lista.</span></label>
@@ -368,6 +373,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], fuent
             {total > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am }}>
               {antes > 0 ? `Pagas ${plata(antes)} ${cuando(Number(x.anioCuota) || 1)} y ${plata(total - antes)} ${cuando(Number(x.entrega) || 1)}` : `Pagas ${plata(total)} ${cuando(Number(x.entrega) || 1)}`}: {validas.length ? fuenteNom : "de tus cuentas de hoy"}.
               {renta && (Number(x.rentaMensual) || 0) > 0 ? ` Renta ${plata(Number(x.rentaMensual))} al mes ${cuando(Number(x.rentaDesde) || Number(x.entrega) || 1)}.` : ""}
+              {(Number(x.valorAlTerminar) || 0) > total ? ` Al estar lista vale ${plata(Number(x.valorAlTerminar))} (+${plata(Number(x.valorAlTerminar) - total)}).` : ""}
               {tipo === "vivienda" ? " Si al mudarte dejas de pagar arriendo, márcalo en «Gastos que se acaban» desde ese año." : ""}</div>}
             <button style={btn(false)} onClick={() => put("activos", f.activos.filter((_, j) => j !== i))}>Quitar</button>
           </div>
@@ -494,7 +500,8 @@ function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] })
       {esInm ? <>
         <label style={lbl}>¿Va a dar renta? ($ al mes, opcional)<NumberInput style={inp} placeholder="Ej.: 8.500.000" value={x.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>
         {(Number(x.rentaMensual) || 0) > 0 && <label style={lbl}>¿Desde cuándo renta?<select style={inp} value={desdeMes} onChange={(e) => up({ rentaDesdeMes: Number(e.target.value) })}>{opcionesMes(desdeMes).map((mm) => <option key={mm} value={mm}>{textoMes(mm)}</option>)}</select></label>}
-        <label style={lbl}>¿Cuánto se valoriza al año? (%)<InputDecimalEs style={inp} placeholder={det && det.valorizacionPct != null ? pct(det.valorizacionPct) : ""} value={x.valorizacionNomPct ?? ""} onChange={(v) => up({ valorizacionNomPct: v })} /><span style={{ fontSize: 11 }}>Lo que sube el valor del inmueble cada año. Si no sabes, déjalo vacío.</span></label>
+        <label style={lbl}>¿Cuánto queda valiendo al terminar? ($, opcional)<NumberInput style={inp} placeholder="Ej.: 1.500.000.000" value={x.valorAlTerminar ?? ""} onChange={(v) => up({ valorAlTerminar: v })} /><span style={{ fontSize: 11 }}>Si con la obra vale más que lo que tenías más lo que inviertes.</span></label>
+        <label style={lbl}>¿Cuánto se valoriza al año? (%)<InputDecimalEs style={inp} placeholder={det && det.valorizacionPct != null ? pct(det.valorizacionPct) : ""} value={x.valorizacionNomPct ?? ""} onChange={(v) => up({ valorizacionNomPct: v })} /><span style={{ fontSize: 11 }}>Lo que sube el valor cada año{(Number(x.valorAlTerminar) || 0) > 0 ? ", desde que termina la obra" : ""}. Si no sabes, déjalo vacío.</span></label>
       </> : <>
         <label style={lbl}>¿Cuánto rinde al año? (%)<InputDecimalEs style={inp} placeholder={det && det.rendimientoPct != null ? pct(det.rendimientoPct) : ""} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} /><span style={{ fontSize: 11 }}>Lo que estimas que gana en un año, sobre todo lo que tiene.</span></label>
         <label style={lbl}>De lo que rinde, ¿cuánto te llega?<select style={inp} value={Number(x.pctRecibe) || 0} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{PARTES.map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select><span style={{ fontSize: 11 }}>Lo que no te llega se reinvierte y crece con interés compuesto.</span></label>

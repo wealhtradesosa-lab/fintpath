@@ -547,3 +547,20 @@ describe("futuro10 · una compra futura puede salir de varias inversiones", () =
     expect(leerFuentesPago({ fuentes: [{ id: "a", pct: 70 }, { id: "b", pct: 50 }] })).toEqual([{ id: "a", pct: 70 }, { id: "b", pct: 30 }]);
   });
 });
+
+describe("futuro10 · monto por fuente y valor al terminar", () => {
+  const U = () => ({ inflacionPct: 4, inv: [{ id: "pm", n: "PM", tp: "Real Estate", va: 9000e6 }, { id: "ib", n: "IBKR", tp: "ETF", va: 3000e6 }, { id: "l", n: "Lote", tp: "Lote", va: 400e6 }, { id: "c", tp: "Cash", va: 500e6 }], ingresos: [], gas: {}, deu: [] });
+  it("la casa sale con $2.400 M de BTG y $1.500 M de IBKR, y vale $5.400 M al terminar", () => {
+    const cfg = { decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "BTG", monto: 5000e6, rendimientoNomPct: 10, pctRecibe: 100 }],
+      futuros: { activos: [{ nombre: "Casa", clase: "vivienda", valor: 3900e6, entrega: 5, valorAlTerminar: 5400e6, valorizacionNomPct: 6, fuentes: [{ id: "nueva_0", monto: 2400e6 }, { id: "ib", monto: 1500e6 }] }] } };
+    const r = proyectarFuturo10(U(), cfg);
+    const v = (t, n) => r.filas[t].porActivo.find((x) => x.nombre === n).valor;
+    expect(v(4, "BTG") - v(5, "BTG")).toBeCloseTo(2400e6, -3);
+    expect(v(5, "Casa")).toBeCloseTo(5400e6, -3);
+    expect(v(6, "Casa")).toBeCloseTo(5400e6 * 1.06, -3);
+  });
+  it("la bodega: el lote queda valiendo $1.500 M cuando empieza a rentar", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [{ activoId: "l", monto: 600e6, rentaMensual: 8e6, rentaDesdeMes: 12, valorAlTerminar: 1500e6 }] });
+    expect(r.filas[2].porActivo.find((x) => x.nombre === "Lote").valor).toBeCloseTo(1500e6, -3);
+  });
+});
