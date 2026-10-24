@@ -910,7 +910,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           if (!badge) return null;
                           return (
                             <span
-                              title={`${badge.label} — ${badge.sub}`}
+                              title={badge.sub ? `${badge.label} — ${badge.sub}` : badge.label}
                               style={{
                                 fontSize: 9,
                                 fontWeight: 700,
@@ -925,7 +925,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                               }}
                             >
                               {badge.emoji} {badge.label}
-                              <span style={{ opacity: 0.7, fontWeight: 500 }}>· {badge.sub}</span>
+                              {badge.sub && <span style={{ opacity: 0.7, fontWeight: 500 }}>· {badge.sub}</span>}
                             </span>
                           );
                         })()}

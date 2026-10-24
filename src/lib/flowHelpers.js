@@ -263,7 +263,8 @@ export function labelVigenciaBadge(item) {
   }
 
   const mesPago = getMesPago(item);
-  const mesNombre = MESES_CORTOS[mesPago] || "Ene";
+  // mesSupuesto: el mes (dic) solo existe para el cálculo; la UI no lo afirma.
+  const mesNombre = item?.mesSupuesto ? null : (MESES_CORTOS[mesPago] || "Ene");
 
   if (freq === "anual") {
     return { emoji: "🎯", label: "Anual", sub: mesNombre, color: "#a78bfa" };
@@ -272,10 +273,10 @@ export function labelVigenciaBadge(item) {
     return { emoji: "💥", label: "Único", sub: mesNombre, color: "#f97316" };
   }
   if (freq === "semestral") {
-    return { emoji: "📆", label: "Semestral", sub: `desde ${mesNombre}`, color: "#22d3ee" };
+    return { emoji: "📆", label: "Semestral", sub: mesNombre ? `desde ${mesNombre}` : null, color: "#22d3ee" };
   }
   if (freq === "trimestral") {
-    return { emoji: "🗓️", label: "Trimestral", sub: `desde ${mesNombre}`, color: "#22d3ee" };
+    return { emoji: "🗓️", label: "Trimestral", sub: mesNombre ? `desde ${mesNombre}` : null, color: "#22d3ee" };
   }
   return null;
 }
