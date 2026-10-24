@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, valorizacionHintPct, leerModifica, rendimientoHintPct, validarMezcla } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, valorizacionHintPct, leerModifica, rendimientoHintPct, validarMezcla, leerFuturos } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 
 const C = { bg: "#111827", bg2: "#1f2937", bd: "rgba(255,255,255,0.1)", tx: "#e5e7eb", tx2: "#9ca3af", gn: "#22c55e", rd: "#ef4444", am: "#f59e0b" };
@@ -315,8 +315,9 @@ function LoQueViene({ cfg, set, esc, owners }) {
   const g = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 6, padding: "8px 0", borderTop: `1px solid ${C.bd}` };
   const selAnio = (v, on, vacioTxt) => <select style={inp} value={v ?? ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}>{vacioTxt && <option value="">{vacioTxt}</option>}{ANIOS.map((y) => <option key={y} value={y}>Año {y}</option>)}</select>;
   const hintVal = (cl) => fmtPctEs(((1 + esc.inflacionPct / 100) * (1 + (cl === "inmueble" ? SUPUESTOS_F10.presets.fincaRaiz.valorizacionSpread : SUPUESTOS_F10.otrosRealSpread) / 100) - 1) * 100, 1);
-  const totalIng = f.ingresos.reduce((sm, x) => sm + (Number(x.mensual) || 0), 0);
-  const primerAnio = f.ingresos.length ? Math.min(...f.ingresos.map((x) => Number(x.desde) || 1)) : null;
+  const fut = leerFuturos(f, esc); // mismo motor que la proyección
+  const totalIng = fut.ingresos.reduce((sm, x) => sm + x.mensual, 0);
+  const primerAnio = fut.ingresos.length ? Math.min(...fut.ingresos.map((x) => x.desde)) : null;
   const totalAct = f.activos.reduce((sm, x) => sm + (Number(x.valor) || 0), 0);
   return (
     <div>
@@ -326,7 +327,7 @@ function LoQueViene({ cfg, set, esc, owners }) {
         <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
           <div style={{ fontSize: 11, color: C.tx2 }}>Ingresos futuros</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: totalIng > 0 ? C.gn : C.tx }}>{totalIng > 0 ? `${plata(totalIng)} al mes` : "Ninguno"}</div>
-          {f.ingresos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{f.ingresos.length} {f.ingresos.length === 1 ? "ingreso" : "ingresos"} · el primero en el año {primerAnio}</div>}
+          {fut.ingresos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{fut.ingresos.length} {fut.ingresos.length === 1 ? "ingreso" : "ingresos"} · el primero en el año {primerAnio}</div>}
         </div>
         <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
           <div style={{ fontSize: 11, color: C.tx2 }}>Activos futuros</div>
