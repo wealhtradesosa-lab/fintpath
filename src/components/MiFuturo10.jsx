@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, cienMillones, valorizacionHintPct, leerModifica } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 
 const C = { bg: "#111827", bg2: "#1f2937", bd: "rgba(255,255,255,0.1)", tx: "#e5e7eb", tx2: "#9ca3af", gn: "#22c55e", rd: "#ef4444", am: "#f59e0b" };
@@ -84,8 +84,29 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
                   {[["continua", "Continúa"], ["vende", "Se vende"], ["modifica", "Se modifica"]].map(([k, l]) => <button key={k} style={btn(d.accion === k)} onClick={() => setD({ accion: k })}>{l}</button>)}
                 </div>
-                {d.accion === "modifica" && <label style={{ display: "block", marginTop: 6, fontSize: 12, color: C.tx2 }}>Crecimiento real anual del valor (%, sobre la inflación)
-                  <InputDecimalEs style={inp} value={d.retornoRealPct ?? ""} onChange={(v) => setD({ retornoRealPct: v })} /></label>}
+                {d.accion === "modifica" && (() => {
+                  const hint = valorizacionHintPct(a, esc);
+                  const m = leerModifica(d, esc);
+                  const lbl = { display: "block", marginTop: 6, fontSize: 12, color: C.tx2 };
+                  const anios = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                  return (
+                    <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 8 }}>
+                      <label style={lbl}>¿Cuánto crees que se valoriza al año? (%)
+                        <InputDecimalEs style={inp} placeholder={fmtPctEs(hint, 1)} value={m.valorizacionNomPct == null ? "" : Math.round(m.valorizacionNomPct * 100) / 100} onChange={(v) => setD({ valorizacionNomPct: v, retornoRealPct: undefined })} />
+                        <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {fmtPctEs(hint, 1)}. Es lo que sube el valor cada año, como lo dirías en la calle.</span></label>
+                      <label style={lbl}>Inversión adicional ($)
+                        <InputDecimalEs style={inp} value={d.inversionMonto ?? ""} onChange={(v) => setD({ inversionMonto: v })} />
+                        <span style={{ fontSize: 11 }}>Por ejemplo, una construcción. Sale de tu liquidez y se suma al valor del activo; desde ahí se valoriza todo.</span></label>
+                      <label style={lbl}>¿En qué año la haces?
+                        <select style={inp} value={m.inversionAnio} onChange={(e) => setD({ inversionAnio: Number(e.target.value) })}>{anios.map((y) => <option key={y} value={y}>Año {y}</option>)}</select></label>
+                      <label style={lbl}>Renta nueva al mes ($, pesos de hoy, opcional)
+                        <InputDecimalEs style={inp} value={d.rentaNuevaMensual ?? ""} onChange={(v) => setD({ rentaNuevaMensual: v })} />
+                        <span style={{ fontSize: 11 }}>Lo que te quedaría libre cada mes, por ejemplo un arriendo después de gastos. Sube con la inflación.</span></label>
+                      <label style={lbl}>¿Desde qué año recibes esa renta?
+                        <select style={inp} value={m.rentaNuevaDesde} onChange={(e) => setD({ rentaNuevaDesde: Number(e.target.value) })}>{anios.map((y) => <option key={y} value={y}>Año {y}</option>)}</select></label>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}
