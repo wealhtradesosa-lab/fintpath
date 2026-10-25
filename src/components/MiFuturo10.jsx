@@ -34,11 +34,23 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   // sigue siendo para dejar un escenario con nombre y compararlo.
   const [cfg, setCfg] = useState(() => migrarModifica(guardado.borrador ? { ...CONFIG_INICIAL, ...guardado.borrador } : CONFIG_INICIAL));
   const ultimoGuardado = useRef(JSON.stringify(guardado.borrador || null));
+  // 25-oct-2026: el guardado automático usaba una copia vieja de `guardado` y,
+  // si se guardaba un escenario justo después de un cambio, lo pisaba con la
+  // lista anterior (volvían fechas viejas). Ahora usa siempre la última.
+  const guardadoRef = useRef(guardado); guardadoRef.current = guardado;
+  const editandoRef = useRef(null);
   useEffect(() => {
     if (demo || !onGuardar) return;
     const json = JSON.stringify(cfg);
     if (json === ultimoGuardado.current || json === JSON.stringify(CONFIG_INICIAL)) return;
-    const t = setTimeout(() => { ultimoGuardado.current = json; onGuardar({ ...guardado, borrador: cfg }); }, 600);
+    const t = setTimeout(() => {
+      ultimoGuardado.current = json;
+      const g = guardadoRef.current || {};
+      // Si estás editando un escenario, cada cambio queda guardado en él.
+      const id = editandoRef.current;
+      const escs = id ? (g.escenarios || []).map((e) => (e.id === id ? { ...e, config: cfg, editado: new Date().toISOString() } : e)) : g.escenarios;
+      onGuardar({ ...g, borrador: cfg, ...(escs ? { escenarios: escs } : {}) });
+    }, 600);
     return () => clearTimeout(t);
   }, [cfg, demo]); // eslint-disable-line react-hooks/exhaustive-deps
   const [nombreEsc, setNombreEsc] = useState("");
@@ -46,6 +58,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   // nombre"). Al tocar Editar se carga su nombre y resumen, y se guarda sobre
   // el mismo escenario (o como uno nuevo).
   const [editandoId, setEditandoId] = useState(null);
+  editandoRef.current = editandoId;
   const [descEsc, setDescEsc] = useState("");
   const [verEsc, setVerEsc] = useState(null);
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
@@ -175,7 +188,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 <label style={lbl}>¿De dónde sale la plata?<FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} /></label>
                 {x.preset === "custom" && <>
                   <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder="Ej.: negocio, CDT, finca" /></label>
-                  <label style={lbl}>¿Cuándo?<select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select></label>
+                  <label style={lbl}>¿Cuándo?<select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>
                   <label style={lbl}>Rendimiento anual esperado (%)<InputDecimalEs style={inp} placeholder={fmtPctEs(hint, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />
                     <span style={{ fontSize: 11 }}>Si no sabes, usa {fmtPctEs(hint, 1)}.</span></label>
                   <label style={lbl}>Moneda<select style={inp} value={x.moneda || "COP"} onChange={(e) => up({ moneda: e.target.value })}><option value="COP">COP</option><option value="USD">USD</option></select>
@@ -247,7 +260,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               <button style={btn(false)} disabled={demo} onClick={guardar}>Guardar como nuevo</button>
             </> : <button style={btn(!demo)} disabled={demo} onClick={guardar}>Guardar este escenario</button>}
           </div>
-          {editando && <div style={{ fontSize: 12, color: C.gn, marginTop: 6 }}>Estás editando «{editando.nombre}». Aquí le cambias el nombre; toca Guardar cambios. <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>Cancelar</button></div>}
+          {editando && <div style={{ fontSize: 12, color: C.gn, marginTop: 6 }}>Estás editando «{editando.nombre}»: cada cambio se guarda solo en este escenario. Si le cambias el nombre arriba, toca Guardar cambios. <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>Cancelar</button></div>}
           <input style={{ ...inp, marginTop: 6 }} placeholder={`Resumen en una frase (opcional). Si lo dejas vacío: «${resumenEscenario(r)}»`} value={descEsc} onChange={(e) => setDescEsc(e.target.value)} />
           {demo && <p style={{ color: C.am, fontSize: 12 }}>{MSG_DEMO_F10}</p>}
         </div>
@@ -285,6 +298,10 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 }
 
 const ANIOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+// 25-oct-2026 (Santiago: "se cambian fechas… cosas que decía que se activaban
+// en X años"). El selector decía «En 5 años» y el resultado «desde el año 6»:
+// era lo mismo, pero parecía otra fecha. Ahora todo dice el año del plan.
+export const etqAnio = (y) => (y === 1 ? "Año 1 (ya)" : `Año ${y} (en ${y - 1} año${y === 2 ? "" : "s"})`);
 function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingresosHoy = [], fuentes = [], irHoy }) {
   const [verTodos, setVerTodos] = useState(false);
   const f = { ingresos: [], activos: [], gastos: [], ...(cfg.futuros || {}) };
@@ -294,7 +311,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
   const upG = (i, v) => put("gastos", (f.gastos || []).map((x, j) => (j === i ? { ...x, ...v } : x)));
   const lbl = { fontSize: 12, color: C.tx2 };
   const g = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 6, padding: "8px 0", borderTop: `1px solid ${C.bd}` };
-  const selAnio = (v, on, vacioTxt) => <select style={inp} value={v ?? ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}>{vacioTxt && <option value="">{vacioTxt}</option>}{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>;
+  const selAnio = (v, on, vacioTxt) => <select style={inp} value={v ?? ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}>{vacioTxt && <option value="">{vacioTxt}</option>}{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select>;
   const hintVal = (cl) => fmtPctEs(((1 + esc.inflacionPct / 100) * (1 + (cl === "inmueble" || cl === "vivienda" || cl === "lote" ? SUPUESTOS_F10.presets.fincaRaiz.valorizacionSpread : SUPUESTOS_F10.otrosRealSpread) / 100) - 1) * 100, 1);
   const fut = leerFuturos(f, esc); // mismo motor que la proyección
   const totalIng = fut.ingresos.reduce((sm, x) => sm + x.mensual, 0);
@@ -451,7 +468,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
               <span style={{ fontSize: 13, whiteSpace: "nowrap", color: C.tx2 }}>{plata(Math.round(g.mensual))}/mes</span>
               <button style={btn(!t)} onClick={() => setT(g.key, null)}>Sigue</button>
               <button style={btn(!!t)} onClick={() => setT(g.key, t || 1)}>Se acaba</button>
-              {t && <select style={{ ...inp, width: "auto" }} value={t} onChange={(e) => setT(g.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Desde ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>}
+              {t && <select style={{ ...inp, width: "auto" }} value={t} onChange={(e) => setT(g.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select>}
             </div>); })}
           {lista.length > 8 && <button style={{ ...btn(false), marginTop: 6 }} onClick={() => setVerTodos(!verTodos)}>{verTodos ? "Ver menos" : `Ver todos (${lista.length})`}</button>}
           {ahorro > 0 && <div style={{ fontSize: 12, color: C.gn, marginTop: 6 }}>Dejas de pagar {plata(Math.round(ahorro))} al mes en gastos que se acaban.</div>}
@@ -523,7 +540,7 @@ function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] })
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
       {conActivo && <label style={lbl}>¿A cuál?<select style={inp} value={x.activoId} onChange={(e) => up({ activoId: e.target.value })}>{activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
       <label style={lbl}>¿Cuánto le vas a invertir? ($)<NumberInput style={inp} placeholder="Ej.: 600.000.000" value={x.monto} onChange={(v) => up({ monto: v })} /></label>
-      <label style={lbl}>¿Cuándo?<select style={inp} value={Number(x.anio) || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select></label>
+      <label style={lbl}>¿Cuándo?<select style={inp} value={Number(x.anio) || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>
       <label style={lbl}>¿De dónde sale la plata?<FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} /></label>
       {esInm ? <>
         <label style={lbl}>¿Va a dar renta? ($ al mes, opcional)<NumberInput style={inp} placeholder="Ej.: 8.500.000" value={x.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>
@@ -710,7 +727,7 @@ function SeAcaba({ lista, term, setTerm, frase }) {
         <span style={{ fontSize: 13, whiteSpace: "nowrap", color: C.tx2 }}>{plata(Math.round(g.mensual))}/mes</span>
         <button style={btn(!t)} onClick={() => setT(g.key, null)}>Sigue</button>
         <button style={btn(!!t)} onClick={() => setT(g.key, t || 1)}>Se acaba</button>
-        {t && <select style={{ ...inp, width: "auto" }} value={t} onChange={(e) => setT(g.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Desde ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>}
+        {t && <select style={{ ...inp, width: "auto" }} value={t} onChange={(e) => setT(g.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select>}
       </div>); })}
     {orden.length > 8 && <button style={{ ...btn(false), marginTop: 6 }} onClick={() => setVerTodos(!verTodos)}>{verTodos ? "Ver menos" : `Ver todos (${orden.length})`}</button>}
     {total > 0 && <div style={{ fontSize: 12, color: C.am, marginTop: 6 }}>{frase} {plata(Math.round(total))} al mes.</div>}
@@ -797,7 +814,7 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
           {x.seVa !== "venta" && <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
             <button style={{ ...btn(!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, null)}>Sigue</button>
             <button style={{ ...btn(!!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, x.acabaAnio || 1)}>Se acaba</button>
-            {x.acabaAnio && <select style={{ ...inp, width: "auto" }} value={x.acabaAnio} onChange={(e) => setT(x.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Desde ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>}
+            {x.acabaAnio && <select style={{ ...inp, width: "auto" }} value={x.acabaAnio} onChange={(e) => setT(x.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select>}
           </div>}
         </div>))}
       <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Otros ingresos{sueltos.some((x) => x.seVa) ? " (sin los que se van)" : ""}</span><span>{plata(Math.round(totalSue))}/mes</span></div>
@@ -832,7 +849,7 @@ function Ciclos({ lista, set, det, destinos = [] }) {
             <span style={{ fontSize: 11 }}>Sugerido: {TARIFA_CICLO[reg].pct} %. {TARIFA_CICLO[reg].nota} Puedes cambiar el %. Es una estimación, confírmala con tu contador.</span>
             {cap > 0 && vf > cap && <span style={{ fontSize: 12, color: C.am }}>Impuesto estimado: {mm(imp)} por ciclo ({mm(imp * 12 / meses)} al año).</span>}
           </div>
-          <label style={lbl}>¿Desde cuándo?<select style={inp} value={x.desde || 1} onChange={(e) => up(i, { desde: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Desde ya (año 1)" : `Año ${y}`}</option>)}</select></label>
+          <label style={lbl}>¿Desde cuándo?<select style={inp} value={x.desde || 1} onChange={(e) => up(i, { desde: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>
           <div style={lbl}>¿Hasta cuándo?
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button style={btn(siempre)} onClick={() => up(i, { hasta: "" })}>Sigue siempre</button>
