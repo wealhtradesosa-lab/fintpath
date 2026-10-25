@@ -275,11 +275,13 @@ export default function HeroVariantC({ onGetStarted = () => {}, onLogin }) {
             {/* 20-oct-2026 (Santiago): "nosotros ayudamos a las personas a organizar,
                 a planear su bienestar". La frase anterior ("El Family Office con IA
                 que centraliza…") prometía privilegio y pedía trabajo. */}
-            Te ayudamos a organizar y planear tu bienestar financiero: ver dónde estás, a dónde vas y qué mover para llegar.
+            ¿Qué tan cerca estás de tu libertad financiera? Respóndelo en 1 minuto con 3 preguntas, sin registrarte.
           </p>
 
-          <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
-            <button onClick={onGetStarted} style={{
+          <div style={{ display: "flex", gap: 12, flexShrink: 0, flexWrap: "wrap" }}>
+            {/* 25-oct-2026 (Santiago: "necesitamos traer clientes, que entren fácil"): el botón principal lleva a la
+                calculadora de 1 minuto (/libertad); al final se crea la cuenta con el resultado ya cargado. */}
+            <button onClick={() => { try { window.gtag && window.gtag("event", "hero_calculadora_click"); } catch { /* noop */ } window.location.href = "/libertad"; }} style={{
               background: T.txt,
               color: "#000",
               border: "none",
@@ -300,9 +302,9 @@ export default function HeroVariantC({ onGetStarted = () => {}, onLogin }) {
               e.currentTarget.style.boxShadow = "none";
             }}
             >
-              Empezar gratis →
+              Descubre tu nivel en 1 minuto →
             </button>
-            <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{
+            <button onClick={onGetStarted} style={{
               background: "transparent",
               color: T.txt,
               border: `1px solid ${T.borderStrong}`,
@@ -313,7 +315,7 @@ export default function HeroVariantC({ onGetStarted = () => {}, onLogin }) {
               fontWeight: 500,
               whiteSpace: "nowrap",
             }}>
-              Ver demo
+              Crear cuenta gratis
             </button>
           </div>
         </div>

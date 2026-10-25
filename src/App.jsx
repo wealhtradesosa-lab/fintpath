@@ -979,6 +979,8 @@ export default function FinPath(){
   // 25-oct-2026 (Santiago: "ayúdame a mejorar el proceso en que llegan los clientes… para que sí se inscriban").
   // Quien viene de calcular su nivel en /libertad ve su resultado al crear la cuenta (no lo pierde de vista)
   // y no se le ofrecen desvíos (demo, explorar sin cuenta): el único paso es guardar su norte.
+  // 25-oct-2026: país por zona horaria (sin preguntar); se puede cambiar con un toque.
+  const __paisDetectado=(()=>{try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"";return /^America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Detroit|Indiana|Kentucky|Boise)|^Pacific\/Honolulu/.test(tz)?"US":"CO"}catch{return"CO"}})();
   const __norteLanding=(()=>{try{const n=leerNorte();if(!n)return null;const r=calcularNorte(n);return r&&r.ob>0?r:null}catch{return null}})();
   const auth=async()=>{
     if(!aF.e||!aF.p){setAuthError("Ingresa email y contraseña");return}
@@ -1034,7 +1036,7 @@ export default function FinPath(){
             new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout cargando datos")),10000))
           ]);
           if(d){const __sd=sanitize(d);setU(__sd);setPg("dash");if(cuentaVacia(__sd))setShowOnboarding(true);}
-          else{const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";
+          else{const nd=mkU(aF.n||(()=>{const x=(aF.e||"").split("@")[0].split(/[._\-+0-9]/)[0];return x?x.charAt(0).toUpperCase()+x.slice(1):"Usuario"})(),aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||__paisDetectado;
             // 20-oct-2026: si viene de /libertad con el norte calculado, las tres
             // cifras entran como ítems reales. Nada que repetir; el dashboard
             // muestra el nivel desde el primer segundo y el tour no hace falta.
@@ -1107,7 +1109,7 @@ export default function FinPath(){
         let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Prueba iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intenta de nuevo o escríbenos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verifica que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||"Usuario",aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||"CO";setU(nd);await sS(nd,data.user.id);
+        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||(()=>{const x=(aF.e||"").split("@")[0].split(/[._\-+0-9]/)[0];return x?x.charAt(0).toUpperCase()+x.slice(1):"Usuario"})(),aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||__paisDetectado;setU(nd);await sS(nd,data.user.id);
         // Sesión 4-may-2026: tracking GA4 — signup completed con metadata
         // de promo (Pioneros) y user_id para atribución cross-device.
         // 11-oct-2026: guardar UTM + ángulo ANTES de trackSignup (que borra
@@ -1750,7 +1752,8 @@ export default function FinPath(){
     </div>}
     <div style={{width:"100%",maxWidth:420,padding:"clamp(24px, 6vw, 40px) clamp(20px, 5vw, 32px)"}}>
       <div onClick={()=>setShowAuth(false)} style={{fontSize:13,color:T.tx3,cursor:"pointer",marginBottom:24}}>← Volver</div>
-      {!__enLandingPatrimonio&&<div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"12px 16px",marginBottom:20,fontSize:12,color:T.tx3,lineHeight:2}}>
+      {/* 25-oct-2026 (Santiago: "que se registren de una"): en registro el formulario va primero; la seguridad, en una línea debajo del botón. */}
+      {!__enLandingPatrimonio&&aM!=="signup"&&<div style={{background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:12,padding:"12px 16px",marginBottom:20,fontSize:12,color:T.tx3,lineHeight:2}}>
         <span style={{color:T.gn}}>✓</span> <strong style={{color:T.tx2}}>Conexión cifrada</strong> · tus datos viajan por HTTPS y se guardan cifrados en el servidor<br/>
         <span style={{color:T.gn}}>✓</span> Solo tu cuenta y las personas que invites pueden verlos en la app<br/>
         <span style={{color:T.gn}}>✓</span> No vendemos tus datos. Sin publicidad dentro de la app<br/>
@@ -1781,20 +1784,11 @@ export default function FinPath(){
           </div>
           <div style={{fontSize:10,color:T.tx3,marginTop:2}}>{loginRole==="advisor"?"Acceso al workspace de asesor (requiere plan Asesor)":"Acceso a tu dashboard personal"}</div>
         </div>}
-        {aM==="signup"&&<In l="Nombre" value={aF.n} onChange={v=>sAF(p=>({...p,n:v}))} placeholder="Tu nombre"/>}
         <In l="Email" value={aF.e} onChange={v=>sAF(p=>({...p,e:v}))} type="email" placeholder="tu@email.com"/>
         <In l={aM==="signup"?"Contraseña (mínimo 8 caracteres)":"Contraseña"} value={aF.p} onChange={v=>sAF(p=>({...p,p:v}))} type="password" placeholder="••••••••"/>
-        {aM==="signup"&&<div style={{display:"flex",flexDirection:"column",gap:5}}>
-          <label style={{fontSize:10,fontWeight:600,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>País / Country</label>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {[{code:"CO",flag:"🇨🇴",name:"Colombia"},{code:"US",flag:"🇺🇸",name:"United States"}].map(c=>{
-              const sel=(aF.country||"CO")===c.code;
-              return<button key={c.code} type="button" onClick={()=>sAF(p=>({...p,country:c.code}))} style={{padding:"12px",borderRadius:10,border:"2px solid "+(sel?T.gn:T.border),background:sel?T.gnB:T.bg2,cursor:"pointer",display:"flex",alignItems:"center",gap:8,color:sel?T.gn:T.tx2,fontWeight:sel?700:400,fontSize:13,transition:"all .15s"}}>
-                <span style={{fontSize:20}}>{c.flag}</span>{c.name}
-              </button>})}
-          </div>
-          <div style={{fontSize:10,color:T.tx3,marginTop:2}}>🇲🇽 México · 🇪🇸 España — Próximamente</div>
-        </div>}
+        {aM==="signup"&&(()=>{const pais=aF.country||__paisDetectado;return<div style={{fontSize:12,color:T.tx3}}>
+          {pais==="US"?"🇺🇸 United States":"🇨🇴 Colombia"} · <span role="button" onClick={()=>sAF(p=>({...p,country:pais==="US"?"CO":"US"}))} style={{color:T.gn,cursor:"pointer",fontWeight:600}}>{pais==="US"?"¿Vives en Colombia?":"¿Vives en Estados Unidos?"}</span>
+        </div>})()}
         {aM==="signup"&&<label style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 4px",cursor:"pointer",userSelect:"none"}}>
           <input
             type="checkbox"
@@ -1810,6 +1804,7 @@ export default function FinPath(){
       </div>
       <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"Activar mi acceso Pioneros — 3.5 meses gratis":"Crear cuenta — 14 días Pro gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:13,marginTop:12,padding:"12px 14px",background:T.rdB,border:`1px solid ${T.rd}30`,borderRadius:10,display:"flex",gap:10,alignItems:"flex-start"}}><span style={{fontSize:16,flexShrink:0}}>⚠️</span><div style={{flex:1}}><div style={{fontWeight:700,marginBottom:2}}>{aM==="login"?"No pudimos iniciar sesión":"No pudimos crear tu cuenta"}</div><div style={{fontSize:12,color:T.rd,opacity:0.9}}>{authError}</div></div></div>}
+      {aM==="signup"&&<p style={{textAlign:"center",marginTop:12,color:T.tx3,fontSize:11}}>🔒 Conexión cifrada · no vendemos tus datos · sin tarjeta</p>}
       <p style={{textAlign:"center",marginTop:16,color:T.tx3,fontSize:12}}>{aM==="login"?"¿Nuevo aquí? Usa la pestaña Crear cuenta arriba.":"¿Ya eres cliente? Usa la pestaña Ingresar arriba."}</p>
       {/* 25-oct-2026: al crear cuenta, sin demo ni "explorar sin cuenta": un solo camino. */}{!__enLandingPatrimonio&&aM!=="signup"&&<><div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
       <div style={{marginTop:16,padding:"16px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.12)",borderRadius:12,textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.orange,marginBottom:6}}>📊 ¿Quieres ver cómo funciona?</div><div style={{fontSize:11,color:T.tx3,marginBottom:10}}>Explora la plataforma con datos de ejemplo: patrimonio, ingresos, gastos, deudas, impuestos y simulador.</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}><button onClick={()=>{const nd=mkU("Pedro Pérez","demo@finpathia.com");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.demo=true;guardarReal(realAntesDemoRef,uRef.current);setU(nd);setTimeout(()=>demo(),500)}} style={{background:"linear-gradient(135deg,#f97316,#eab308)",color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇨🇴 Demo Colombia</button><button onClick={()=>demoUS()} style={{background:"linear-gradient(135deg,#3b82f6,#1d4ed8)",color:"#fff",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇺🇸 Demo USA</button></div></div></>}
