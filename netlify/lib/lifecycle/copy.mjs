@@ -87,7 +87,7 @@ export const COPY = {
   d13_urgencia: {
     asunto: "Tu prueba Pro vence mañana",
     cuerpo: [
-      "Mañana termina tu prueba Pro. Tus datos se quedan guardados y podrás verlos; para seguir agregando y editando necesitas un plan. En pesos: Básico {basico_cop} y Pro {pro_cop} al mes, o un solo pago al año con 2 meses gratis. En dólares: Pro {pro_mensual} USD/mes.",
+      "Mañana termina tu prueba Pro. Tus datos se quedan guardados y podrás verlos; para seguir agregando y editando activa FINPATHIA Pro: {pro_cop} al mes o {pro_cop_anual} al año (2 meses gratis). También en dólares: {pro_mensual} USD/mes.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",
@@ -100,7 +100,7 @@ export const COPY = {
       soloM: "Ya tienes {m} {activos} en Finpathia.",
     },
     cuerpo: [
-      "Mañana termina tu prueba Pro. Tus datos se quedan guardados y podrás verlos; para seguir agregando y editando necesitas un plan. En pesos: Básico {basico_cop} y Pro {pro_cop} al mes, o un solo pago al año con 2 meses gratis. En dólares: Pro {pro_mensual} USD/mes.",
+      "Mañana termina tu prueba Pro. Tus datos se quedan guardados y podrás verlos; para seguir agregando y editando activa FINPATHIA Pro: {pro_cop} al mes o {pro_cop_anual} al año (2 meses gratis). También en dólares: {pro_mensual} USD/mes.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",
@@ -108,7 +108,7 @@ export const COPY = {
   d16: {
     asunto: "Tu información sigue aquí",
     cuerpo: [
-      "Tu cuenta está en modo consulta: todo lo que cargaste sigue guardado y lo puedes ver. Para seguir agregando y editando, elige un plan desde {basico_cop} al mes en pesos.",
+      "Tu cuenta está en modo consulta: todo lo que cargaste sigue guardado y lo puedes ver. Para seguir agregando y editando, activa FINPATHIA Pro por {pro_cop} al mes.",
     ],
     cta: "Activar Pro",
     destino: "planes",

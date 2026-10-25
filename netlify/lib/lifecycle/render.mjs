@@ -14,6 +14,7 @@ export const PRECIOS = {
   familiar_personas: familiar?.maxMembers ?? 10,
   basico_cop: fmtCOP(PRECIOS_COP["Básico"].mensual),
   pro_cop: fmtCOP(PRECIOS_COP["Pro"].mensual),
+  pro_cop_anual: fmtCOP(PRECIOS_COP["Pro"].anual),
 };
 
 export const escaparHtml = (s) => String(s ?? "")

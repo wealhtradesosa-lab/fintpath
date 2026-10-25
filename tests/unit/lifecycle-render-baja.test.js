@@ -95,11 +95,11 @@ describe("correos", () => {
     expect(PRECIOS.pro_anual).toBe(pro.priceUSD.anual);
     const c = armarCorreo({ clave: "d13_urgencia", paso: "d13", utmContent: "urgencia", urlBaja: URL_BAJA });
     // 25-oct-2026: d13 muestra los precios en pesos (PRECIOS_COP) y el Pro en dólares.
-    expect(c.texto).toContain(`En dólares: Pro ${pro.priceUSD.mensual} USD/mes.`);
+    expect(c.texto).toContain(`También en dólares: ${pro.priceUSD.mensual} USD/mes.`);
     expect(c.texto).toContain(fmtCOP(PRECIOS_COP["Pro"].mensual));
     const v = armarCorreo({ clave: "d13_valor", paso: "d13", utmContent: "valor", vars: { conteos: { n: 2, m: 1 } }, urlBaja: URL_BAJA });
     expect(v.texto.startsWith("Ya tienes 2 registros y 1 activo en Finpathia.")).toBe(true);
-    expect(v.texto).toContain("En pesos: Básico $14.900 y Pro $24.900 al mes, o un solo pago al año con 2 meses gratis. En dólares: Pro 16 USD/mes.");
+    expect(v.texto).toContain("activa FINPATHIA Pro: $24.900 al mes o $249.000 al año (2 meses gratis). También en dólares: 16 USD/mes.");
     const d10 = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", urlBaja: URL_BAJA });
     expect(d10.texto).toContain("mientras más real sea tu información");
   });
@@ -160,8 +160,8 @@ describe("copy v3 literal (copy_secuencia_trial_v3_patrimonio.md)", () => {
       d5_sin_activo: "Tus cuentas, tu carro, tu CDT y tus deudas, juntos en una sola vista. Carga lo que tengas a la mano y mira tu patrimonio total.",
       d5_con_activo: "En Finpathia ves, activo por activo, cuánto vale, cuánto ha ganado y cuánta deuda tiene encima. Revisa los tuyos y completa los que falten.",
       d10: "Aprovecha estos días para dejar tu patrimonio completo: mientras más real sea tu información, más preciso tu plan.",
-      d13_urgencia: "Mañana termina tu prueba Pro. Tus datos se quedan guardados y podrás verlos; para seguir agregando y editando necesitas un plan. En pesos: Básico $14.900 y Pro $24.900 al mes, o un solo pago al año con 2 meses gratis. En dólares: Pro 16 USD/mes.",
-      d16: "Tu cuenta está en modo consulta: todo lo que cargaste sigue guardado y lo puedes ver. Para seguir agregando y editando, elige un plan desde $14.900 al mes en pesos.",
+      d13_urgencia: "Mañana termina tu prueba Pro. Tus datos se quedan guardados y podrás verlos; para seguir agregando y editando activa FINPATHIA Pro: $24.900 al mes o $249.000 al año (2 meses gratis). También en dólares: 16 USD/mes.",
+      d16: "Tu cuenta está en modo consulta: todo lo que cargaste sigue guardado y lo puedes ver. Para seguir agregando y editando, activa FINPATHIA Pro por $24.900 al mes.",
     };
     for (const [clave, cuerpo] of Object.entries(cuerpos)) expect(C(clave).texto.startsWith(cuerpo)).toBe(true);
     expect(C("d13_valor", { conteos: { n: 2, m: 1 } }).texto.startsWith("Ya tienes 2 registros y 1 activo en Finpathia.\n" + cuerpos.d13_urgencia)).toBe(true);

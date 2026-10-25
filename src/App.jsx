@@ -1899,7 +1899,7 @@ export default function FinPath(){
   }
 
   // Feature gating — inline, no separate component
-  const gateOverlay=(planNeeded)=><div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10,background:"rgba(12,12,15,0.5)",backdropFilter:"blur(2px)",borderRadius:16}}><div style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:20,padding:"40px 48px",textAlign:"center",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:340}}><div style={{width:56,height:56,borderRadius:16,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 16px"}}>🔒</div><div style={{fontSize:18,fontWeight:800,marginBottom:6,letterSpacing:"-0.02em"}}>{"Plan "+planNeeded}</div><div style={{fontSize:13,color:T.tx3,marginBottom:20,lineHeight:1.5}}>{"Desbloquea esta función con el plan "+planNeeded}</div><Bt onClick={()=>setPg("price")} st={{width:"100%",justifyContent:"center"}}>Upgrade a {planNeeded}</Bt></div></div>;
+  const gateOverlay=(planNeeded)=><div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10,background:"rgba(12,12,15,0.5)",backdropFilter:"blur(2px)",borderRadius:16}}><div style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:20,padding:"40px 48px",textAlign:"center",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:340}}><div style={{width:56,height:56,borderRadius:16,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 16px"}}>🔒</div><div style={{fontSize:18,fontWeight:800,marginBottom:6,letterSpacing:"-0.02em"}}>FINPATHIA Pro</div><div style={{fontSize:13,color:T.tx3,marginBottom:20,lineHeight:1.5}}>Todo FINPATHIA en un solo plan: $24.900 al mes o $249.000 al año.</div><Bt onClick={()=>setPg("price")} st={{width:"100%",justifyContent:"center"}}>Activar Pro</Bt></div></div>;
   const gated=(feat,planNeeded,content)=>{const ok=hasProAccess||(plan==="basico"&&["trd","pen","btc","sim","simf"].includes(feat));if(ok||plan===planNeeded)return content;return<div style={{position:"relative"}}><div style={{filter:"blur(4px)",pointerEvents:"none",opacity:.3,maxHeight:400,overflow:"hidden"}}>{content}</div>{gateOverlay(planNeeded)}</div>};
 
   const getCoach=id=>{
@@ -2202,7 +2202,7 @@ export default function FinPath(){
                 <div style={{minWidth:0}}>
                   <div style={{fontSize:14,fontWeight:700,color:T.rd}}>{modoConsulta?"Tu prueba de 14 días terminó · estás en modo consulta":"Tu prueba gratuita del plan Pro terminó"}</div>
                   <div style={{fontSize:12,color:T.tx3,marginTop:2,lineHeight:1.5}}>
-                    {modoConsulta?<>Puedes ver todos tus datos y tu nivel. Para <strong>agregar o editar</strong>, usar el <strong>Asesor IA</strong> y simular tu futuro, elige un plan. Desde <strong>$14.900 al mes en pesos</strong>.</>:<>Para seguir usando el <strong>motor fiscal</strong>, el <strong>Asesor IA</strong> y los <strong>Coaches</strong>, activa tu plan.
+                    {modoConsulta?<>Puedes ver todos tus datos y tu nivel. Para <strong>agregar o editar</strong>, usar el <strong>Asesor IA</strong> y simular tu futuro, activa FINPATHIA Pro: <strong>$24.900 al mes</strong> o $249.000 al año.</>:<>Para seguir usando el <strong>motor fiscal</strong>, el <strong>Asesor IA</strong> y los <strong>Coaches</strong>, activa tu plan.
                     <br/>Tus datos están intactos y tu cuenta sigue activa en el plan gratuito.</>}
                   </div>
                 </div>
@@ -3480,8 +3480,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         alert("No pudimos abrir Mercado Pago en este momento. Escríbenos a soporte@finpathia.com o intenta pagar en dólares.")};
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
-          <h2 style={{fontSize:28,fontWeight:800,margin:"0 0 8px"}}>{isUS?"Choose your plan":"Elige tu plan"}</h2>
-          <p style={{color:T.tx3,fontSize:15}}>{isUS?"Family office tools for everyone":"Herramientas de family office al alcance de todos"}</p>
+          <h2 style={{fontSize:28,fontWeight:800,margin:"0 0 8px"}}>{isUS?"One plan, everything included":"Un solo plan, todo incluido"}</h2>
+          <p style={{color:T.tx3,fontSize:15}}>{isUS?"Pay monthly or yearly. Cancel anytime.":"Paga mes a mes o una vez al año. Cancelas cuando quieras."}</p>
           <div style={{display:"inline-flex",background:T.bg3,borderRadius:10,padding:3,marginTop:16}}>
             {["mensual","anual"].map(c=>(
               <button key={c} onClick={()=>setBillingCycle(c)} style={{padding:"8px 24px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:billingCycle===c?T.gn:"transparent",color:billingCycle===c?"#000":T.tx3}}>{isUS?(c==="mensual"?"Monthly":"Annual (save 25%)"):(c==="mensual"?"Pago mensual":(monedaPago||"cop")==="cop"?"Pago anual · 2 meses gratis":"Pago anual · ahorra 25%")}</button>
@@ -3498,9 +3498,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               </button>)}
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(240px, 1fr))",gap:16,maxWidth:1200,margin:"0 auto"}}>
-          {/* 25-oct-2026 (Santiago: "¿quitamos el Pro Familiar? tal vez confunde"): solo Básico y Pro a la venta. */}
-          {plans.filter(pl=>!["Free","Pro Familiar"].includes(pl.n)||pl.cur).map(pl=>(
+        <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(300px, 1fr))",gap:16,maxWidth:480,margin:"0 auto"}}>
+                    {/* 25-oct-2026 (Santiago: "dejemos un plan que incluye todo, mensual o anual"). Solo Pro a la venta. */}
+          {plans.filter(pl=>pl.n==="Pro"||pl.cur).map(pl=>(
             <Cd key={pl.n} s={{border:pl.ac?"2px solid "+T.gn:pl.comingSoon?"1px dashed "+T.border:"1px solid "+T.border,position:"relative",opacity:pl.comingSoon?0.95:1}}>
               {pl.ac&&<div style={{background:"linear-gradient(135deg,"+T.gn+",#16a34a)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>MÁS POPULAR</div>}
               {pl.comingSoon&&<div style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>PRONTO DISPONIBLE</div>}
@@ -4064,7 +4064,7 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
       </Suspense>
       </div>{paywall&&<div onClick={()=>setPaywall(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:16,padding:"22px 22px",maxWidth:420,width:"100%"}}>
         <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>Estás en modo consulta</div>
-        <div style={{fontSize:13,color:T.tx2,lineHeight:1.5,marginBottom:14}}>Tu prueba de 14 días terminó. Tus datos siguen aquí y puedes verlos cuando quieras. Para agregar o editar, elige un plan: desde <strong>$14.900 al mes</strong> en pesos, o en dólares.</div>
+        <div style={{fontSize:13,color:T.tx2,lineHeight:1.5,marginBottom:14}}>Tu prueba de 14 días terminó. Tus datos siguen aquí y puedes verlos cuando quieras. Para agregar o editar, activa FINPATHIA Pro: <strong>$24.900 al mes</strong> o $249.000 al año (2 meses gratis).</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setPaywall(false);track("paywall_consulta_click");setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13}}>Ver planes →</button><button onClick={()=>setPaywall(false)} style={{background:"transparent",color:T.tx3,border:"1px solid "+T.border,padding:"11px 18px",borderRadius:10,cursor:"pointer",fontSize:13}}>Ahora no</button></div>
       </div></div>}{showImport&&<Suspense fallback={null}><CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/></Suspense>}<PWAInstallPrompt/>{showOnboarding&&<OnboardingTour open={showOnboarding} userName={u?.p?.name||authUser?.user_metadata?.name||""} isPioneros={sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"} onSelectDemo={()=>{setShowOnboarding(false);setPg("dash");(u?.jurisdiction==="US"?demoUS:demo)();showToast("📊 Datos de ejemplo cargados — explora tranquilo")}} onSelectImport={()=>{setShowOnboarding(false);setShowImport(true)}} onSelectManual={()=>{setShowOnboarding(false);setPg("inv");showToast("✨ Paso 1 de 4: agrega tus activos")}} onClose={()=>setShowOnboarding(false)}/>}{pagoEstado&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,display:"flex",justifyContent:"center",padding:"14px 12px",pointerEvents:"none"}}>
       <div style={{pointerEvents:"auto",maxWidth:520,width:"100%",background:pagoEstado.tipo==="exito"?"#0f2a1a":pagoEstado.tipo==="cancelado"?"#2a2416":"#12203a",border:"1px solid "+(pagoEstado.tipo==="exito"?"rgba(34,197,94,0.4)":pagoEstado.tipo==="cancelado"?"rgba(234,179,8,0.35)":"rgba(59,130,246,0.35)"),borderRadius:12,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",boxShadow:"0 8px 28px rgba(0,0,0,0.45)"}}>
