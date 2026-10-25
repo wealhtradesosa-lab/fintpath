@@ -92,7 +92,7 @@ import RoleBanner from "./components/RoleBanner";
 import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
-import { leerNorte, borrarNorte, itemsDesdeNorte } from "./lib/norteUnMinuto.js";
+import { leerNorte, borrarNorte, itemsDesdeNorte, calcularNorte } from "./lib/norteUnMinuto.js";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre, migrateInversionUnica } from "./lib/migrations";
 import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
@@ -974,6 +974,10 @@ export default function FinPath(){
   // /patrimonio (oct-2026): en esta landing el modal no muestra el bloque de
   // seguridad genérico, ni "Explorar sin cuenta" ni la demo (brief de la página).
   const __enLandingPatrimonio=typeof window!=="undefined"&&/^\/patrimonio\/?$/.test(window.location.pathname);
+  // 25-oct-2026 (Santiago: "ayúdame a mejorar el proceso en que llegan los clientes… para que sí se inscriban").
+  // Quien viene de calcular su nivel en /libertad ve su resultado al crear la cuenta (no lo pierde de vista)
+  // y no se le ofrecen desvíos (demo, explorar sin cuenta): el único paso es guardar su norte.
+  const __norteLanding=(()=>{try{const n=leerNorte();if(!n)return null;const r=calcularNorte(n);return r&&r.ob>0?r:null}catch{return null}})();
   const auth=async()=>{
     if(!aF.e||!aF.p){setAuthError("Ingresa email y contraseña");return}
     // Sesión 4-may-2026: subimos mínimo de 6 → 8 caracteres + validación
@@ -1749,6 +1753,12 @@ export default function FinPath(){
         <button type="button" role="tab" aria-selected={aM==="login"} onClick={()=>sAM("login")} style={{padding:"12px 10px",border:"none",borderBottom:aM==="login"?`3px solid ${T.gn}`:"3px solid transparent",background:aM==="login"?T.gnB:"transparent",color:aM==="login"?T.gn:T.tx3,fontWeight:700,fontSize:14,cursor:"pointer"}}>Ingresar</button>
       </div>
       <h2 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{aM==="login"?"Inicia sesión":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"🎁 Acceso Pioneros":"Crea tu cuenta gratis"}</h2>
+      {aM==="signup"&&__norteLanding&&<div style={{background:T.gnB,border:`1px solid ${T.gn}`,borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+        <div style={{fontSize:11,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>Tu norte</div>
+        <div style={{fontSize:18,fontWeight:800,color:T.gn}}>Nivel {__norteLanding.nivel} de 5 · {__norteLanding.nombre}</div>
+        <div style={{fontSize:13,color:T.tx2,marginTop:2}}>{__norteLanding.mesesCubiertos!=null?`${(Math.round(__norteLanding.mesesCubiertos*10)/10).toLocaleString("es-CO")} meses de vida cubiertos`:""}{__norteLanding.siguiente&&__norteLanding.añosConSobrante>0?` · ${Math.round(__norteLanding.añosConSobrante)} años para subir de nivel`:""}</div>
+        <div style={{fontSize:12,color:T.tx3,marginTop:4}}>Crea tu cuenta para guardarlo: tus tres cifras quedan cargadas y ves qué mover para llegar antes.</div>
+      </div>}
       <p style={{color:T.tx3,fontSize:14,marginBottom:28}}>{aM==="login"?"Accede a tu patrimonio":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"14 días de prueba + 3 meses gratis del Plan Pro":"14 días de acceso Pro incluidos"}</p>
       <div style={{display:"flex",flexDirection:"column",gap:16,marginBottom:24}}>
         {aM==="login"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -1792,7 +1802,7 @@ export default function FinPath(){
       <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"Activar mi acceso Pioneros — 3.5 meses gratis":"Crear cuenta — 14 días Pro gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:13,marginTop:12,padding:"12px 14px",background:T.rdB,border:`1px solid ${T.rd}30`,borderRadius:10,display:"flex",gap:10,alignItems:"flex-start"}}><span style={{fontSize:16,flexShrink:0}}>⚠️</span><div style={{flex:1}}><div style={{fontWeight:700,marginBottom:2}}>{aM==="login"?"No pudimos iniciar sesión":"No pudimos crear tu cuenta"}</div><div style={{fontSize:12,color:T.rd,opacity:0.9}}>{authError}</div></div></div>}
       <p style={{textAlign:"center",marginTop:16,color:T.tx3,fontSize:12}}>{aM==="login"?"¿Nuevo aquí? Usa la pestaña Crear cuenta arriba.":"¿Ya eres cliente? Usa la pestaña Ingresar arriba."}</p>
-      {!__enLandingPatrimonio&&<><div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
+      {!__enLandingPatrimonio&&!(aM==="signup"&&__norteLanding)&&<><div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
       <div style={{marginTop:16,padding:"16px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.12)",borderRadius:12,textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.orange,marginBottom:6}}>📊 ¿Quieres ver cómo funciona?</div><div style={{fontSize:11,color:T.tx3,marginBottom:10}}>Explora la plataforma con datos de ejemplo: patrimonio, ingresos, gastos, deudas, impuestos y simulador.</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}><button onClick={()=>{const nd=mkU("Pedro Pérez","demo@finpathia.com");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.demo=true;guardarReal(realAntesDemoRef,uRef.current);setU(nd);setTimeout(()=>demo(),500)}} style={{background:"linear-gradient(135deg,#f97316,#eab308)",color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇨🇴 Demo Colombia</button><button onClick={()=>demoUS()} style={{background:"linear-gradient(135deg,#3b82f6,#1d4ed8)",color:"#fff",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇺🇸 Demo USA</button></div></div></>}
       {aM==="login"&&<p style={{textAlign:"center",marginTop:14}}>
         <span onClick={()=>{
