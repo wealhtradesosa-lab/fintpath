@@ -124,6 +124,8 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 //   · #25d366 es el verde de marca de WhatsApp.
 //   · #0f2a1a / #2a2416 / #12203a son tintes de estado de pago, deliberados.
 // ═══════════════════════════════════════════════════════════════════════════
+// Link de pago de Mercado Pago para pioneros (Santiago, 25-oct-2026). Cambiar aquí precio o link.
+const PIONEROS_MP={url:"https://mpago.li/1EhDTCo",precio:"$24.900"};
 const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(255,255,255,0.08)",borderL:"rgba(255,255,255,0.15)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f97316",gd:"#eab308",ch:["#22c55e","#3b82f6","#f97316","#a78bfa","#ec4899","#06b6d4","#eab308"]};
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>fmtPctEs(n);
@@ -3451,6 +3453,16 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             ))}
           </div>
         </div>
+        {/* 25-oct-2026 (Santiago: validar si pagan antes de abrir la SAS). Pago en pesos con
+            link de Mercado Pago (tarjeta, PSE). Sin webhook todavía: la activación es manual,
+            por eso se pide pagar con el correo de la cuenta. */}
+        {isCO&&<div style={{maxWidth:720,margin:"0 auto 24px",border:"2px solid "+T.gn,borderRadius:16,padding:"18px 20px",background:T.gnB}}>
+          <div style={{fontSize:12,fontWeight:700,color:T.gn,letterSpacing:1,textTransform:"uppercase"}}>Precio pioneros · en pesos</div>
+          <div style={{fontSize:22,fontWeight:800,margin:"4px 0"}}>Plan Pro por <span style={{color:T.gn}}>{PIONEROS_MP.precio}</span> al mes</div>
+          <div style={{fontSize:13,color:T.tx2,lineHeight:1.5}}>Para los primeros que se suman. Pagas en pesos con tarjeta débito o crédito, PSE o saldo de Mercado Pago, sin cobros internacionales.</div>
+          <a href={PIONEROS_MP.url} target="_blank" rel="noopener noreferrer" onClick={()=>track("pioneros_mp_click",{plan})} style={{display:"inline-block",marginTop:12,background:T.gn,color:"#000",fontWeight:800,fontSize:15,padding:"12px 22px",borderRadius:12,textDecoration:"none"}}>Hazte pionero con Mercado Pago →</a>
+          <div style={{fontSize:12,color:T.tx3,marginTop:10}}>Paga con el mismo correo de tu cuenta FINPATHIA{u?.p?.email?` (${u.p.email})`:""}. Activamos tu plan Pro en menos de 24 horas.</div>
+        </div>}
         <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(240px, 1fr))",gap:16,maxWidth:1200,margin:"0 auto"}}>
           {plans.map(pl=>(
             <Cd key={pl.n} s={{border:pl.ac?"2px solid "+T.gn:pl.comingSoon?"1px dashed "+T.border:"1px solid "+T.border,position:"relative",opacity:pl.comingSoon?0.95:1}}>
