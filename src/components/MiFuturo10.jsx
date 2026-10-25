@@ -99,7 +99,11 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
       {paso === 0 && (
         <div style={card}>
-          <h3 style={{ marginTop: 0 }}>Hoy</h3>
+          <h3 style={{ marginTop: 0, marginBottom: 4 }}>Hoy: revisa y ajusta tus números</h3>
+          {/* 25-oct-2026 (Santiago: "deberíamos explicar que ahí se puede revisar y ajustar valores y rentabilidad de cada inversión"). */}
+          <div style={{ fontSize: 13, color: C.tx, background: "rgba(34,197,94,0.08)", border: `1px solid ${C.gn}`, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
+            El plan arranca de estos números. Abajo revisa <b>cuánto vale, cuánto renta y cuánto sube al año cada inversión</b>, y <b>cuánto te entra de cada ingreso</b>. Si algo no es real (una renta más alta, un rendimiento distinto al promedio), tócalo y corrígelo: solo cambia el plan, tus páginas no.
+          </div>
           <Grid items={[
             ["Patrimonio neto", plata(r.hoy.patrimonio)],
             ["Entra al mes", plata(r.hoy.ingresoMensual)],
