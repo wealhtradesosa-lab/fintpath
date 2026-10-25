@@ -325,7 +325,7 @@ describe("futuro10 · un solo camino para meterle plata a lo que ya tienes", () 
   });
   it("aporte en un año siguiente queda programado y entra ese año", () => {
     const r = proyectarFuturo10(U(), { reinversiones: [{ activoId: "l", monto: 100e6, anio: 3 }] });
-    expect(r.bolsaDetalle.programadas).toBeCloseTo(100e6, 0);
+    expect(r.bolsaDetalle.programadas + r.bolsaDetalle.reservado).toBeCloseTo(100e6, 0);
     expect(r.alertas.some((x) => x.tipo === "inversion_adicional" && x.anio === 3)).toBe(true);
   });
 });
@@ -684,5 +684,19 @@ describe("lo que sobra responde a cada inversión", () => {
     const c = proyectarFuturo10(user, { ...base, reinversiones: [{ activoId: "l", monto: 300e6, fuente: "liquidez" }] });
     expect(c.bolsaDetalle.usos[0].deCuentas).toBeCloseTo(300e6, -3);
     expect(c.bolsaDetalle.usos[0].deVenta).toBe(0);
+  });
+});
+
+describe("inversión de un año siguiente que sale de lo vendido", () => {
+  it("se aparta hoy: bajar el monto sube lo que sobra, y entra al activo ese año", () => {
+    const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "pm", n: "PM", tipo: "inmueble", va: 3000e6 }, { id: "l", n: "Ledger", tipo: "Cripto", va: 50e6 }], ingresos: [], gas: {} };
+    const base = { decisiones: { pm: { accion: "vende" } } };
+    const a = proyectarFuturo10(user, { ...base, reinversiones: [{ activoId: "l", monto: 500e6, anio: 2, fuente: "venta" }] });
+    const b = proyectarFuturo10(user, { ...base, reinversiones: [{ activoId: "l", monto: 400e6, anio: 2, fuente: "venta" }] });
+    expect(b.bolsaDetalle.restante - a.bolsaDetalle.restante).toBeCloseTo(100e6, -3);
+    expect(a.bolsaDetalle.reservado).toBeCloseTo(500e6, -3);
+    const v1 = a.filas[1].porActivo.find((x) => x.id === "l").valor, v2 = a.filas[2].porActivo.find((x) => x.id === "l").valor;
+    expect(v1).toBeGreaterThan(500e6); // valor + apartado
+    expect(v2).toBeGreaterThan(550e6);
   });
 });

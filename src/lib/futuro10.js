@@ -176,7 +176,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   bolsa -= colchon;
   const colchonInicial = colchon; // `colchon` cambia año a año; la bolsa reporta el de hoy
   const nuevas = [];
-  let excesoVentas = 0, excesoCubierto = 0, ciclosTotal = 0;
+  let excesoVentas = 0, excesoCubierto = 0, ciclosTotal = 0, reservadoTotal = 0;
   // 25-oct-2026 (Santiago: "invertí menos en Ledger y lo que me sobra no se
   // alteró"). Cada uso de plata con su origen, para que la cuenta se vea línea
   // por línea: solo lo que sale «de lo que vendo» mueve lo que sobra.
@@ -262,6 +262,19 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       // entre en el año 1 (la obra se hace igual): no se recorta.
       const resto = Math.max(0, n(r.monto)) - m;
       if (resto > 0.5) { pedidoTotal -= resto; pendienteAnio1 += resto; (a.aportesFuturos = a.aportesFuturos || []).push({ monto: resto, anio: 1 }); m += resto; deAnio1 = resto; }
+    } else if (n(r.monto) > 0 && (r.fuente || "venta") === "venta" && bolsa > 0.5) {
+      // 25-oct-2026 (Santiago: "le bajé 100 M a Ledger y sigue saliendo que me
+      // pasé"). Una inversión de un año siguiente que sale «de lo que vendo»
+      // se APARTA hoy de lo vendido (rinde como liquidez) y entra al activo ese
+      // año. Antes se pagaba ese año con lo que hubiera y no tocaba el saldo.
+      // Solo se aparta lo que alcance de lo vendido; el resto se paga ese año.
+      const m2 = Math.min(bolsa, n(r.monto)); bolsa -= m2;
+      const resto2 = n(r.monto) - m2;
+      if (resto2 > 0.5) { pedidoTotal -= resto2; programadasTotal += resto2; }
+      usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta: m2, deCuentas: 0, deNuevo: 0, anio: anioAporte, fuente: "venta", apartado: true, resto: resto2 });
+      reservadoTotal += m2;
+      a.reserva = (a.reserva || 0) + m2;
+      (a.aportesFuturos = a.aportesFuturos || []).push({ monto: n(r.monto), anio: anioAporte, apartado: m2 });
     } else if (n(r.monto) > 0) {
       usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta: 0, deCuentas: 0, deNuevo: 0, anio: anioAporte, fuente: r.fuente || "venta" });
       // Aporte de un año siguiente: se paga ese año con lo que haya (como una obra futura).
@@ -548,7 +561,12 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     todos.forEach((a) => {
       (a.aportesFuturos || []).forEach((x) => {
         if (x.anio !== t) return;
-        if (!x.nuevo) retirar(x.monto);
+        if (x.apartado != null) {
+          // Lo apartado de las ventas entra ahora; lo que falte, de tu liquidez.
+          const usa = Math.min(a.reserva || 0, x.monto);
+          a.reserva = (a.reserva || 0) - usa;
+          if (x.monto - usa > 0.5) retirar(x.monto - usa);
+        } else if (!x.nuevo) retirar(x.monto);
         a.valor += x.monto;
         alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En el año ${t} pasas plata de tu liquidez a ${a.nombre}.` });
       });
@@ -658,7 +676,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   ].sort((x, y) => y.valor - x.valor);
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
-    bolsaDetalle: { usos: [...usos, ...personalizadas.map((c) => ({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.anio, fuente: "liquidez" })), ...ciclos.filter((c) => c.desde > 1).map((c) => ({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.desde, fuente: c.fuente }))], excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal) },
+    bolsaDetalle: { reservado: reservadoTotal, usos: [...usos, ...personalizadas.map((c) => ({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.anio, fuente: "liquidez" })), ...ciclos.filter((c) => c.desde > 1).map((c) => ({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.desde, fuente: c.fuente }))], excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal - reservadoTotal) },
     reparto: repartoFinal,
     desglose,
     gastosHoy, seVan, ingresosHoy, ingSeVan,
