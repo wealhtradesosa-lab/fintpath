@@ -295,10 +295,15 @@ describe("futuro10 · inversión personalizada del año 1 sale de lo vendido", (
     expect(r.reparto.find((x) => x.nombre === "BTG").valor).toBeCloseTo(7500e6 * 1.14 ** 10, -3);
     expect(r.filas[0].patrimonio).toBeCloseTo(11887e6, 0);
   });
-  it("una personalizada de un año siguiente queda programada, no descuenta hoy", () => {
+  // 25-oct-2026: si sale «de lo que vendo», se aparta hoy (Santiago: "le bajé
+  // 100 M a Ledger y sigue saliendo que me pasé"). De tus cuentas: programada.
+  it("una personalizada de un año siguiente se aparta de lo vendido; de tus cuentas queda programada", () => {
     const r = proyectarFuturo10(U(), { decisiones: { f: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "Negocio", monto: 1000e6, anio: 3 }] });
-    expect(r.bolsaDetalle.programadas).toBeCloseTo(1000e6, 0);
-    expect(r.bolsaDetalle.restante).toBeCloseTo(11787e6, 0);
+    expect(r.bolsaDetalle.reservado).toBeCloseTo(1000e6, 0);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(10787e6, 0);
+    const l = proyectarFuturo10(U(), { decisiones: { f: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "Negocio", monto: 1000e6, anio: 3, fuente: "liquidez" }] });
+    expect(l.bolsaDetalle.programadas).toBeCloseTo(1000e6, 0);
+    expect(l.bolsaDetalle.restante).toBeCloseTo(11787e6, 0);
   });
 });
 
@@ -698,5 +703,19 @@ describe("inversión de un año siguiente que sale de lo vendido", () => {
     const v1 = a.filas[1].porActivo.find((x) => x.id === "l").valor, v2 = a.filas[2].porActivo.find((x) => x.id === "l").valor;
     expect(v1).toBeGreaterThan(500e6); // valor + apartado
     expect(v2).toBeGreaterThan(550e6);
+  });
+});
+
+describe("apartar de lo vendido para años siguientes (C y D)", () => {
+  it("una inversión nueva del año 3 y un negocio del año 2 bajan lo que sobra hoy", () => {
+    const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "pm", n: "PM", tipo: "inmueble", va: 3000e6 }], ingresos: [], gas: {} };
+    const base = { decisiones: { pm: { accion: "vende" } } };
+    const a = proyectarFuturo10(user, base);
+    const r = proyectarFuturo10(user, { ...base, nuevas: [{ preset: "custom", nombre: "BTG", monto: 500e6, anio: 3, rendimientoNomPct: 10 }], ciclos: [{ nombre: "Aso", capital: 1000e6, valorFinal: 1300e6, desde: 2, impuestoPct: 0 }] });
+    expect(a.bolsaDetalle.restante - r.bolsaDetalle.restante).toBeCloseTo(1500e6, -3);
+    expect(r.filas[1].porActivo.some((x) => /Apartado para BTG/.test(x.nombre))).toBe(true);
+    expect(r.filas[2].cicloReinv).toBeGreaterThan(0);
+    expect(r.filas[3].porActivo.find((x) => x.nombre === "BTG").valor).toBeGreaterThan(500e6);
+    expect(r.final.patrimonio).toBeGreaterThan(a.final.patrimonio);
   });
 });
