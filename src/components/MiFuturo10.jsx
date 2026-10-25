@@ -212,7 +212,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               <div style={{ marginTop: 4 }}><b style={{ color: C.tx }}>Compra o construcción (paso 2, Lo que viene):</b> algo que construyes o compras UNA vez y te quedas con él (tu casa, una bodega para rentar).</div>
             </div>
           </details>
-          <Ciclos lista={cfg.ciclos || []} set={(v) => set("ciclos", v)} det={r.ciclosDetalle || []} />
+          <Ciclos lista={cfg.ciclos || []} set={(v) => set("ciclos", v)} det={r.ciclosDetalle || []} destinos={[...(r.fuentes || []).filter((f) => !String(f.id).startsWith("ciclo_") && !String(f.id).startsWith("apartado_")), { id: "c_liquidez", nombre: "Liquidez" }]} />
         </div>
         <div style={card}>
           <Seccion n="E" titulo="El resto se reparte así" sub="Lo que quede de lo que vendes, después de todo lo anterior. Son ejemplos de mezcla, no recomendaciones." />
@@ -784,7 +784,7 @@ function HoyDetalle({ user, cfg, set }) {
   </>;
 }
 
-function Ciclos({ lista, set, det }) {
+function Ciclos({ lista, set, det, destinos = [] }) {
   const lbl = { fontSize: 12, color: C.tx2, display: "flex", flexDirection: "column", gap: 4 };
   const up = (i, v) => set(lista.map((y, j) => (j === i ? { ...y, ...v } : y)));
   const mm = (v) => `$${Math.round((Number(v) || 0) / 1e6).toLocaleString("es-CO")}M`;
@@ -819,14 +819,19 @@ function Ciclos({ lista, set, det }) {
               {!siempre && <select style={{ ...inp, width: "auto" }} value={x.hasta} onChange={(e) => up(i, { hasta: Number(e.target.value) })}>{ANIOS.filter((y) => y >= (Number(x.desde) || 1)).map((y) => <option key={y} value={y}>Último ciclo en el año {y}</option>)}</select>}
             </div></div>
           <label style={lbl}>¿De dónde sale el capital?<FuenteSel value={x.fuente} on={(v) => up(i, { fuente: v })} /><span style={{ fontSize: 11 }}>Sale una sola vez; después el mismo capital se vuelve a usar.</span></label>
-          <div style={lbl}>¿Qué haces con la ganancia?
+          <div style={{ ...lbl, gridColumn: "1 / -1" }}>¿Qué haces con la ganancia de cada ciclo? <span style={{ fontSize: 11 }}>El capital vuelve a entrar al negocio; esto es solo lo que ganas.</span>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              <button style={btn(x.destino !== "flujo")} onClick={() => up(i, { destino: "reinvierte" })}>Se reinvierte</button>
+              <button style={btn(x.destino !== "flujo")} onClick={() => up(i, { destino: "reinvierte" })}>La reinvierto</button>
               <button style={btn(x.destino === "flujo")} onClick={() => up(i, { destino: "flujo" })}>Me llega al mes</button>
             </div>
-            <span style={{ fontSize: 11 }}>{x.destino === "flujo" ? "Entra a tu flujo como un ingreso." : "Se suma a lo que sobra y se reparte como en E."}</span></div>
+            {x.destino !== "flujo" ? <label style={{ ...lbl, marginTop: 4 }}>¿En qué la reinviertes?
+              <select style={inp} value={x.destinoId || ""} onChange={(e) => up(i, { destinoId: e.target.value || null })}>
+                <option value="">En lo que sobra (se reparte como en E)</option>
+                {destinos.map((d) => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+              </select></label>
+            : <span style={{ fontSize: 11 }}>Entra a tu flujo como un ingreso.</span>}</div>
           {cap > 0 && vf > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 13, color: vf > cap ? C.gn : C.am }}>
-            {vf > cap ? <>Pones {mm(cap)} y recibes {mm(vf)} cada {meses === 12 ? "año" : `${meses} meses`}: te quedan <b>{mm(gan)}</b> por ciclo después de impuestos ({mm(anual)} al año, {(Math.round(anual / cap * 1000) / 10).toLocaleString("es-CO")} % sobre el capital). {x.destino === "flujo" ? "Te llega" : "Se reinvierte"} {siempre ? "todos los años" : `hasta el año ${x.hasta}`}{siempre ? "" : "; después el capital vuelve"}.</> : "Recibes menos de lo que pones: no hay ganancia."}
+            {vf > cap ? <>Pones {mm(cap)} y recibes {mm(vf)} cada {meses === 12 ? "año" : `${meses} meses`}: te quedan <b>{mm(gan)}</b> por ciclo después de impuestos ({mm(anual)} al año, {(Math.round(anual / cap * 1000) / 10).toLocaleString("es-CO")} % sobre el capital). {x.destino === "flujo" ? "Esa ganancia te llega" : `Esa ganancia se reinvierte en ${(destinos.find((d) => d.id === x.destinoId) || { nombre: "lo que sobra (E)" }).nombre}`} {siempre ? "todos los años" : `hasta el año ${x.hasta}`}{siempre ? "" : "; después el capital vuelve"}.</> : "Recibes menos de lo que pones: no hay ganancia."}
           </div>}
           <div style={{ gridColumn: "1 / -1" }}><button style={btn(false)} onClick={() => set(lista.filter((_, j) => j !== i))}>Quitar</button></div>
         </div>);

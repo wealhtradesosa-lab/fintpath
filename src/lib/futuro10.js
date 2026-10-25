@@ -369,7 +369,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       a.holder = apartar(c.nombre, c.capital, "D", c.desde);
     }
     nuevas.push(a);
-    ciclosDetalle.push({ id: a.id, nombre: c.nombre, capital: c.capital, valorFinal: c.valorFinal, meses: c.meses, desde: c.desde, hasta: c.hasta, fuente: c.fuente, destino: c.destino, costosPct: c.costosPct, regimen: c.regimen, impuestoPct: c.impuestoPct, impuestoAnual: c.impuestoAnual, gananciaCiclo: c.gananciaCiclo, gananciaAnual: c.gananciaAnual, rentabilidadPct: c.capital > 0 ? c.gananciaAnual / c.capital * 100 : 0 });
+    ciclosDetalle.push({ id: a.id, nombre: c.nombre, capital: c.capital, valorFinal: c.valorFinal, meses: c.meses, desde: c.desde, hasta: c.hasta, fuente: c.fuente, destino: c.destino, destinoId: c.destinoId, costosPct: c.costosPct, regimen: c.regimen, impuestoPct: c.impuestoPct, impuestoAnual: c.impuestoAnual, gananciaCiclo: c.gananciaCiclo, gananciaAnual: c.gananciaAnual, rentabilidadPct: c.capital > 0 ? c.gananciaAnual / c.capital * 100 : 0 });
   });
   apartados.forEach((h) => nuevas.push(h));
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
@@ -548,7 +548,19 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       a.cicloG = G;
       if (c.destino === "flujo") cicloFlujo += G; else cicloReinv += G;
     });
-    if (cicloReinv > 0) { Object.keys(canasta).forEach((k) => { canasta[k] += cicloReinv * mezcla[k] / 100; }); creceAnio += cicloReinv; }
+    // 25-oct-2026 (Santiago: "cuando uno elige «se reinvierte» no deja decir
+    // en qué"). La ganancia va a la inversión elegida; si no hay, al reparto E.
+    todos.forEach((a) => {
+      if (!a.ciclo || !(a.cicloG > 0) || a.ciclo.destino === "flujo") return;
+      const id = a.ciclo.destinoId;
+      const dest = id && todos.find((x) => x.id === id && !x.ciclo);
+      if (dest) dest.valor += a.cicloG;
+      else if (id === "c_crecimiento") canasta.crecimiento += a.cicloG;
+      else if (id === "c_renta") canasta.renta += a.cicloG;
+      else if (id === "c_liquidez") canasta.liquidez += a.cicloG;
+      else Object.keys(canasta).forEach((k) => { canasta[k] += a.cicloG * mezcla[k] / 100; });
+    });
+    if (cicloReinv > 0) creceAnio += cicloReinv;
     const cf = ingresos + rentaNueva + cicloFlujo - gastos - gastoFuturo - cuota;
     if (cf >= 0) {
       Object.keys(canasta).forEach((k) => { canasta[k] += cf * mezcla[k] / 100; });
@@ -1049,6 +1061,6 @@ export function leerCiclos(lista = [], N = 10) {
     const bruta = Math.max(0, valorFinal - capital) * (1 - costosPct / 100);
     const impuestoCiclo = bruta * impuestoPct / 100;
     const gananciaCiclo = bruta - impuestoCiclo;
-    return { nombre: String(x.nombre || "").trim() || "Negocio que se repite", capital, valorFinal, meses, desde, hasta, costosPct, regimen, impuestoPct, impuestoCiclo, impuestoAnual: impuestoCiclo * 12 / meses, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
+    return { nombre: String(x.nombre || "").trim() || "Negocio que se repite", capital, valorFinal, meses, desde, hasta, costosPct, regimen, impuestoPct, impuestoCiclo, impuestoAnual: impuestoCiclo * 12 / meses, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", destinoId: x.destinoId || null, gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
   }).filter((x) => x.capital > 0 && x.valorFinal > 0);
 }

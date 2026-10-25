@@ -719,3 +719,14 @@ describe("apartar de lo vendido para años siguientes (C y D)", () => {
     expect(r.final.patrimonio).toBeGreaterThan(a.final.patrimonio);
   });
 });
+
+describe("la ganancia del negocio se reinvierte en lo que elijas", () => {
+  it("va a la inversión elegida", () => {
+    const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "pm", n: "PM", tipo: "inmueble", va: 3000e6 }, { id: "ib", n: "IBKR", tipo: "Acciones", va: 100e6 }], ingresos: [], gas: {} };
+    const base = { decisiones: { pm: { accion: "vende" } } };
+    const a = proyectarFuturo10(user, { ...base, ciclos: [{ nombre: "Aso", capital: 1000e6, valorFinal: 1500e6, impuestoPct: 0 }] });
+    const r = proyectarFuturo10(user, { ...base, ciclos: [{ nombre: "Aso", capital: 1000e6, valorFinal: 1500e6, impuestoPct: 0, destinoId: "ib" }] });
+    const ibA = a.filas[3].porActivo.find((x) => x.id === "ib").valor, ibR = r.filas[3].porActivo.find((x) => x.id === "ib").valor;
+    expect(ibR - ibA).toBeGreaterThan(1400e6);
+  });
+});
