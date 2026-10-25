@@ -3601,6 +3601,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             </Cd>
           ))}
         </div>
+        {mon==="cop"&&<div style={{maxWidth:480,margin:"16px auto 0",fontSize:12,color:T.tx2,textAlign:"center",lineHeight:1.5}}>💡 En Mercado Pago entra con el mismo correo de tu cuenta FINPATHIA ({u?.p?.email||authUser?.email||"tu correo"}) para que tu plan se active solo.</div>}
         <div style={{textAlign:"center",marginTop:24,color:T.tx3,fontSize:13,lineHeight:1.8}}>
           🔒 {mon==="cop"?"Pagos seguros con Mercado Pago":"Pagos seguros con Stripe"} • Cancela cuando quieras • Sin compromisos<br/>
           {mon==="usd"&&isCO&&<><span style={{fontSize:11}}>🇨🇴 Conversión a TRM ≈ ${Math.round(trm||4200).toLocaleString("es-CO")} COP/USD · tu banco aplica su propia tasa al cargo en USD.</span><br/></>}
