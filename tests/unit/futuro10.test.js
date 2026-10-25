@@ -740,3 +740,15 @@ describe("lo que sobra cada mes va a donde elijas", () => {
     expect(d).toBeCloseTo(r.filas[1].cf * 0.5, -6);
   });
 });
+
+describe("una reinversión por activo", () => {
+  it("si hay dos para el mismo activo, cuenta la que se ve (la primera)", async () => {
+    const { migrarModifica } = await import("../../src/lib/futuro10.js");
+    const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "pm", n: "PM", tipo: "inmueble", va: 3000e6 }, { id: "l", n: "Ledger", tipo: "Cripto", va: 50e6 }], ingresos: [], gas: {} };
+    const base = { decisiones: { pm: { accion: "vende" } } };
+    const uno = proyectarFuturo10(user, { ...base, reinversiones: [{ activoId: "l", monto: 400e6 }] });
+    const dos = proyectarFuturo10(user, { ...base, reinversiones: [{ activoId: "l", monto: 400e6 }, { activoId: "l", monto: 600e6, anio: 2 }] });
+    expect(dos.bolsaDetalle.restante).toBeCloseTo(uno.bolsaDetalle.restante, -3);
+    expect(migrarModifica({ reinversiones: [{ activoId: "l", monto: 1 }, { activoId: "l", monto: 2 }] }).reinversiones.length).toBe(1);
+  });
+});

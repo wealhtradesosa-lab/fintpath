@@ -239,7 +239,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   // reinversión puede traer su renta (rentaMensual, pesos de hoy) y desde qué
   // mes; se devuelve el detalle hoy + aporte = total para la pantalla.
   const reinversionesDetalle = [];
-  (cfg.reinversiones || []).forEach((r, k) => {
+  unaPorActivo(cfg.reinversiones).forEach((r, k) => {
     pedidoTotal += Math.max(0, n(r.monto));
     const a = activos.find((x) => x.id === r.activoId);
     if (!a) return;
@@ -879,6 +879,18 @@ export function cienMillones(presetClave, esc, monto = 100e6, sup = SUPUESTOS_F1
  * (aporte, año, renta, desde qué mes, valorización) y deja el activo en
  * «continúa». No toca lo que ya estaba como reinversión.
  */
+// 25-oct-2026 (Santiago: "modifico algunas inversiones y no resta"). Un mismo
+// activo podía quedar dos veces en reinversiones (una de la migración de «Se
+// modifica» o de una versión anterior): la pantalla edita la primera y el
+// cálculo sumaba también la escondida. Vale una por activo: la que se ve.
+export function unaPorActivo(lista = []) {
+  const vistos = new Set();
+  return (Array.isArray(lista) ? lista : []).filter((r) => {
+    if (!r || !r.activoId) return false;
+    if (vistos.has(r.activoId)) return false;
+    vistos.add(r.activoId); return true;
+  });
+}
 export function migrarModifica(cfg = {}, esc) {
   const dec = cfg.decisiones || {};
   const extra = [];
@@ -893,8 +905,10 @@ export function migrarModifica(cfg = {}, esc) {
     }
     nuevasDec[id] = { accion: "continua" };
   });
-  if (!cambio) return cfg;
-  return { ...cfg, decisiones: nuevasDec, reinversiones: [...(cfg.reinversiones || []), ...extra] };
+  const ya = new Set((cfg.reinversiones || []).map((r) => r && r.activoId));
+  const lista = unaPorActivo([...(cfg.reinversiones || []), ...extra.filter((x) => !ya.has(x.activoId))]);
+  if (!cambio) return lista.length === (cfg.reinversiones || []).length ? cfg : { ...cfg, reinversiones: lista };
+  return { ...cfg, decisiones: nuevasDec, reinversiones: lista };
 }
 
 
