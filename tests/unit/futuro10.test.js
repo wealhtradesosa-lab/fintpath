@@ -510,7 +510,7 @@ describe("futuro10 · gastos que se acaban", () => {
   it("un mantenimiento que se acaba en 2 años deja de restar desde ese año", () => {
     const u = { inflacionPct: 4, inv: [{ id: "c", tp: "Cash", va: 2000e6 }], ingresos: [{ nombre: "S", categoria: "Salario", mensual: 50e6 }], gas: { Mantenimiento: [{ c: "Finca", m: 3e6 }], Vida: [{ c: "Mercado", m: 20e6 }] }, deu: [] };
     const sin = proyectarFuturo10(u, {});
-    expect(sin.gastosHoy.find((g) => g.key === "Mantenimiento::0").nombre).toBe("Finca");
+    expect(sin.gastosHoy.find((g) => g.key === "Mantenimiento::finca").nombre).toBe("Finca");
     const r = proyectarFuturo10(u, { gastosTerminan: { "Mantenimiento::0": 3 } });
     expect(r.filas[2].gastos).toBeCloseTo(sin.filas[2].gastos, 0);
     expect(sin.filas[3].gastos - r.filas[3].gastos).toBeCloseTo(3e6 * 12 * (1.04) ** 2, -2);
@@ -580,13 +580,13 @@ describe("lo que se va con una venta (rentas sin vincular)", () => {
   it("sugiere por nombre y los quita al vender", async () => {
     const { sugerirVinculados, vinculadosQueSeVan } = await import("../../src/lib/futuro10.js");
     const s = sugerirVinculados(user, "pm");
-    expect(s.ingresos.find((x) => x.key === "i:0").sugerido).toBe(true);
-    expect(s.ingresos.find((x) => x.key === "i:1").sugerido).toBe(false);
-    expect(s.gastos.find((x) => x.key === "vivienda::0").sugerido).toBe(true);
+    expect(s.ingresos.find((x) => x.nombre === "RENTA TRADICIONAL PUERTO MADERO").sugerido).toBe(true);
+    expect(s.ingresos.find((x) => x.nombre === "Salario").sugerido).toBe(false);
+    expect(s.gastos.find((x) => x.nombre === "Administración Madero").sugerido).toBe(true);
     const f = vinculadosQueSeVan(user, { decisiones: { pm: { accion: "vende" } } });
-    expect([...f].sort()).toEqual(["i:0", "vivienda::0"]);
-    const f2 = vinculadosQueSeVan(user, { decisiones: { pm: { accion: "vende", seVan: ["i:0"] } } });
-    expect([...f2]).toEqual(["i:0"]);
+    expect([...f].sort()).toEqual(["i:renta tradicional puerto madero", "vivienda::administracion madero"]);
+    const f2 = vinculadosQueSeVan(user, { decisiones: { pm: { accion: "vende", seVan: ["i:renta tradicional puerto madero"] } } });
+    expect([...f2]).toEqual(["i:renta tradicional puerto madero"]);
   });
   it("la renta vendida no aparece en lo que entra", () => {
     const base = proyectarFuturo10(user, { escenario: "base", decisiones: {} });
@@ -809,5 +809,16 @@ describe("dejar disponible lo que sobra de las ventas", () => {
     const p0 = r.filas[0].porActivo;
     expect((p0.find((x) => x.id === "c_renta") || { valor: 0 }).valor).toBe(0);
     expect(p0.find((x) => x.id === "c_liquidez").valor).toBeGreaterThan(990e6);
+  });
+});
+
+describe("claves estables: agregar un gasto no corre lo que se acaba", () => {
+  it("el mantenimiento sigue marcado aunque se agregue otro gasto antes", async () => {
+    const { migrarClaves } = await import("../../src/lib/futuro10.js");
+    const u1 = { inflacionPct: 4, inv: [], ingresos: [], gas: { Vida: [{ c: "Arriendo", m: 16e6 }, { c: "Mantenimiento", m: 3e6 }] } };
+    const cfg = migrarClaves({ gastosTerminan: { "Vida::1": 1 } }, u1);
+    const u2 = { ...u1, gas: { Vida: [{ c: "Colegio", m: 2e6 }, { c: "Arriendo", m: 16e6 }, { c: "Mantenimiento", m: 3e6 }] } };
+    const r = proyectarFuturo10(u2, cfg);
+    expect(r.seVan.map((x) => x.nombre)).toEqual(["Mantenimiento"]);
   });
 });

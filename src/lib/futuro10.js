@@ -88,7 +88,8 @@ export function claseActivo(a) {
  *                         mezcla:{liquidez,renta,crecimiento}, nuevas:[{nombre,preset,monto}],
  *                         reinversiones:[{activoId,monto}], supuestos }
  */
-export function proyectarFuturo10(userIn = {}, cfg = {}) {
+export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
+  const cfg = migrarClaves(cfgIn, userIn);
   const user = ajustarIngresos(paraPlan(userIn), cfg);
   const sup = cfg.supuestos || SUPUESTOS_F10;
   const esc = resolverEscenario(cfg.escenario || "base", user, sup);
@@ -411,7 +412,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   // vincularlas al activo. Al vender, también se van las que el usuario marca
   // en «¿Qué se va con la venta?» (por defecto, las que llevan su nombre).
   const fuera = vinculadosQueSeVan(user, cfg, vendidosIds);
-  const sinVendidos = (arr, pre) => (arr || []).filter((x, k) => !(x && x.activoId && vendidosIds.has(x.activoId)) && !fuera.has(`${pre}${k}`));
+  const sinVendidos = (arr, pre) => (arr || []).filter((x, k) => !(x && x.activoId && vendidosIds.has(x.activoId)) && !fuera.has(pre === "i:" ? claveIngreso(arr, k) : claveGasto(pre.slice(0, -2), arr, k)));
   const gastosSinVendidos = Object.fromEntries(Object.entries(user.gastos || user.gas || {}).map(([k, v]) => [k, sinVendidos(v, `${k}::`)]));
   const bOp = vendidosIds.size ? calcularBase({ ...sinImp, inv: (user.inv || []).filter((a) => !vendidosIds.has(a?.id)), ingresos: sinVendidos(user.ingresos, "i:"), gastos: gastosSinVendidos, gas: gastosSinVendidos, deu: deudasVivas, deudas: deudasVivas }, {}) : bDeuda;
   let ingresos = (bOp.ia + bOp.ip) * 12 - rentaVendida;
@@ -424,9 +425,9 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   const conRentaOp = new Set(Object.keys(bOp.rentaNetaPorActivo || {}));
   const gastosHoy = [];
   Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g, idx) => {
-    if (!g || g.sim === false || (g.activoId && vendidosIds.has(g.activoId)) || fuera.has(`${cat}::${idx}`)) return;
+    if (!g || g.sim === false || (g.activoId && vendidosIds.has(g.activoId)) || fuera.has(claveGasto(cat, items, idx))) return;
     const v = montoPromedioMensual(g) * fxG(g); if (!(v > 0.5)) return;
-    gastosHoy.push({ key: `${cat}::${idx}`, nombre: g.c || g.n || g.nombre || cat, cat, mensual: v, neteado: !!(g.activoId && conRentaOp.has(g.activoId)) });
+    gastosHoy.push({ key: claveGasto(cat, items, idx), nombre: g.c || g.n || g.nombre || cat, cat, mensual: v, neteado: !!(g.activoId && conRentaOp.has(g.activoId)) });
   }));
   // 24-oct-2026 (Santiago: "uno debería poder apagar y prender rentas que ya
   // no van, gastos que ya no van"). Igual que los gastos: cada ingreso de hoy
@@ -434,9 +435,9 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   const fxIng = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? b.trm : 1);
   const ingresosHoy = [];
   (user.ingresos || []).forEach((i, k) => {
-    if (!i || i.sim === false || (i.activoId && vendidosIds.has(i.activoId)) || fuera.has(`i:${k}`)) return;
+    if (!i || i.sim === false || (i.activoId && vendidosIds.has(i.activoId)) || fuera.has(claveIngreso(user.ingresos, k))) return;
     const v = montoPromedioMensual(i) * fxIng(i); if (!(v > 0.5)) return;
-    ingresosHoy.push({ key: `i:${k}`, nombre: i.nombre || i.categoria || "Ingreso", mensual: v, pasivo: tipoIngreso(i) === "pasivo", activoId: i.activoId || null });
+    ingresosHoy.push({ key: claveIngreso(user.ingresos, k), nombre: i.nombre || i.categoria || "Ingreso", mensual: v, pasivo: tipoIngreso(i) === "pasivo", activoId: i.activoId || null });
   });
   const ingTerminan = cfg.ingresosTerminan || {};
   const ingSeVan = ingresosHoy.filter((x) => ingTerminan[x.key]).map((x) => ({ ...x, desde: Math.min(N, Math.max(1, Math.round(n(ingTerminan[x.key])) || 1)) }));
@@ -514,11 +515,11 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
         else if (a.holder) { const usa = Math.min(a.holder.valor, K); a.holder.valor -= usa; if (K - usa > 0.5) retirar(K - usa); colchon += Math.max(0, a.holder.valor); a.holder.valor = 0; }
         else retirar(K);
         a.valor = K; a.tomado = true;
-        alertas.push({ tipo: "ciclo_inicio", anio: t, texto: `En el año ${t} arrancas «${c.nombre}» con ${Math.round(K / 1e6).toLocaleString("es-CO")} M.` });
+        alertas.push({ tipo: "ciclo_inicio", anio: t, texto: `En ${anioCal(t)} arrancas «${c.nombre}» con ${Math.round(K / 1e6).toLocaleString("es-CO")} M.` });
       }
       if (a.tomado && c.hasta < N && t === c.hasta + 1 && a.valor > 0) {
         Object.keys(canasta).forEach((k) => { canasta[k] += a.valor * mezcla[k] / 100; });
-        alertas.push({ tipo: "ciclo_fin", anio: t, texto: `En el año ${t} termina «${c.nombre}»: el capital vuelve y se reparte.` });
+        alertas.push({ tipo: "ciclo_fin", anio: t, texto: `En ${anioCal(t)} termina «${c.nombre}»: el capital vuelve y se reparte.` });
         a.valor = 0;
       }
     });
@@ -593,13 +594,13 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       if (restoPct > 0) { if (disponible) colchon += cf * restoPct / 100; else Object.keys(canasta).forEach((k) => { canasta[k] += cf * (restoPct / 100) * mezcla[k] / 100; }); }
     } else {
       retirar(-cf);
-      alertas.push({ tipo: "cf_negativo", anio: t, texto: `En el año ${t} sale más de lo que entra; se usa tu liquidez.` });
+      alertas.push({ tipo: "cf_negativo", anio: t, texto: `En ${anioCal(t)} sale más de lo que entra; se usa tu liquidez.` });
     }
     // Deuda sin intereses que se paga de una vez este año: sale de tu liquidez.
     unicas.forEach((d) => {
       if (d.t !== t || d.saldo <= 0) return;
       retirar(d.saldo); deudaUnica -= d.saldo;
-      alertas.push({ tipo: "pago_unico", anio: t, texto: `En el año ${t} pagas ${d.nombre} de una vez con tu liquidez.` });
+      alertas.push({ tipo: "pago_unico", anio: t, texto: `En ${anioCal(t)} pagas ${d.nombre} de una vez con tu liquidez.` });
       d.saldo = 0;
     });
     // Pagos de un activo futuro: pasan de tu liquidez al activo (no cambia el patrimonio).
@@ -622,14 +623,14 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
           if (antes > 0 && saco > 0 && src.rentaAnual > 0 && !src.rentaReemplazada) {
             const fr = saco / antes, menos = src.rentaAnual * Math.pow(1 + gIng, t - 1) * fr;
             ingresos = Math.max(0, ingresos - menos); pasivo = Math.max(0, pasivo - menos); src.rentaAnual *= 1 - fr;
-            if (menos > 0.5) alertas.push({ tipo: "renta_baja", anio: t, texto: `Desde el año ${t + 1}, ${src.nombre} renta ${Math.round(menos / 12 / 1e6).toLocaleString("es-CO")} M menos al mes porque sacaste plata de ahí.` });
+            if (menos > 0.5) alertas.push({ tipo: "renta_baja", anio: t, texto: `Desde ${anioCal(t + 1)}, ${src.nombre} renta ${Math.round(menos / 12 / 1e6).toLocaleString("es-CO")} M menos al mes porque sacaste plata de ahí.` });
           }
         } }
         if (saco > 0) { falta -= saco; partes.push(`${Math.round(saco / 1e6).toLocaleString("es-CO")} M de ${nom}`); }
       });
       if (falta > 0.5) retirar(falta);
       a.valor += pg.monto;
-      alertas.push({ tipo: "pago_futuro", anio: t, texto: partes.length ? `En el año ${t} pagas ${a.nombre}: ${partes.join(" y ")}${falta > 0.5 ? ", y el resto de tu liquidez" : ""}.` : `En el año ${t} pagas parte de ${a.nombre} con tu liquidez.` });
+      alertas.push({ tipo: "pago_futuro", anio: t, texto: partes.length ? `En ${anioCal(t)} pagas ${a.nombre}: ${partes.join(" y ")}${falta > 0.5 ? ", y el resto de tu liquidez" : ""}.` : `En ${anioCal(t)} pagas parte de ${a.nombre} con tu liquidez.` });
     }));
     // Inversión adicional (pesos de ese año): pasa de tu liquidez al activo. No cambia el patrimonio.
     todos.forEach((a) => {
@@ -642,13 +643,13 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
           if (x.monto - usa > 0.5) retirar(x.monto - usa);
         } else if (!x.nuevo) retirar(x.monto);
         a.valor += x.monto;
-        alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En el año ${t} pasas plata de tu liquidez a ${a.nombre}.` });
+        alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.` });
       });
       if (a.invAnio === t && (a.invMonto > 0 || a.reserva > 0)) {
         // lo apartado entra al activo; lo que rindió mientras tanto vuelve al colchón
         if (a.reserva > 0) { a.valor += a.reservaBase; colchon += a.reserva - a.reservaBase; a.reserva = 0; }
         if (a.invMonto > 0) { retirar(a.invMonto); a.valor += a.invMonto; }
-        alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En el año ${t} pasas plata de tu liquidez a ${a.nombre}.` });
+        alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.` });
       }
     });
     // Salto de valor al terminar una obra o al recibir lo que se construye
@@ -656,7 +657,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     // de forma muy alta y después cada año"). Desde ahí sigue su % anual.
     todos.forEach((a) => (a.saltos || []).forEach((sx) => {
       if (sx.t !== t || !(sx.valor > a.valor)) return;
-      alertas.push({ tipo: "valorizacion_obra", anio: t, texto: `En el año ${t} ${a.nombre} queda valiendo ${Math.round(sx.valor / 1e6).toLocaleString("es-CO")} M al terminar.` });
+      alertas.push({ tipo: "valorizacion_obra", anio: t, texto: `En ${anioCal(t)} ${a.nombre} queda valiendo ${Math.round(sx.valor / 1e6).toLocaleString("es-CO")} M al terminar.` });
       a.valor = sx.valor;
     }));
     if (canasta.crecimiento > 0) expUSD = true;
@@ -691,8 +692,8 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     f.invertibleReal = f.invertible / deflactor;
     f.ingresosReal = (ingresos + rentaNueva + cicloFlujo) / deflactor; // incluye la renta nueva (bodega, ingresos futuros)
     f.gastosReal = f.gastos / deflactor;
-    if (liquidez < 0 || todos.some((a) => a.valor < 0)) alertas.push({ tipo: "activo_negativo", anio: t, texto: `En el año ${t} un activo o tu liquidez queda en negativo.` });
-    else if (obAnual > 0 && liquidez < metaColchon) alertas.push({ tipo: "liquidez_baja", anio: t, texto: `En el año ${t} tu liquidez cubre menos de ${sup.colchonMeses} meses de gastos.` });
+    if (liquidez < 0 || todos.some((a) => a.valor < 0)) alertas.push({ tipo: "activo_negativo", anio: t, texto: `En ${anioCal(t)} un activo o tu liquidez queda en negativo.` });
+    else if (obAnual > 0 && liquidez < metaColchon) alertas.push({ tipo: "liquidez_baja", anio: t, texto: `En ${anioCal(t)} tu liquidez cubre menos de ${sup.colchonMeses} meses de gastos.` });
     filas.push(f);
   }
   const fin = filas[filas.length - 1];
@@ -709,7 +710,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     const conRenta = new Set(Object.keys(bOp.rentaNetaPorActivo || {}));
     const nombreActivo = (id) => { const a = (user.inv || []).find((y) => y.id === id); return a ? a.n || a.nombre : "un activo"; };
     const entra = [];
-    (user.ingresos || []).filter((i, k) => sigue(i) && !fuera.has(`i:${k}`) && !ingSeVan.some((x) => x.key === `i:${k}` && x.desde <= 1)).forEach((i) => {
+    (user.ingresos || []).filter((i, k) => sigue(i) && !fuera.has(claveIngreso(user.ingresos, k)) && !ingSeVan.some((x) => x.key === claveIngreso(user.ingresos, k) && x.desde <= 1)).forEach((i) => {
       if (i.activoId && conRenta.has(i.activoId) && tipoIngreso(i) === "pasivo") return; // va como renta neta del activo
       const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: v, nota: tipoIngreso(i) === "pasivo" ? "renta · de tu página Ingresos" : "trabajo · de tu página Ingresos" });
     });
@@ -730,7 +731,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     const sale = [];
     Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).filter(sigue).forEach((g) => {
       if (g.activoId && conRenta.has(g.activoId)) return; // ya restado de la renta de su activo
-      const v = montoPromedioMensual(g) * fxI(g); const key = `${cat}::${(items || []).indexOf(g)}`;
+      const v = montoPromedioMensual(g) * fxI(g); const key = claveGasto(cat, items, (items || []).indexOf(g));
       if (fuera.has(key)) return;
       if (seVan.some((x) => x.key === key && x.desde <= 1)) return;
       if (v > 0.5) sale.push({ nombre: g.c || g.n || g.nombre || cat, mensual: v, nota: (g.c || g.n || g.nombre) ? cat : "" }); }));
@@ -959,7 +960,7 @@ export function resumenEscenario(r) {
   const pagadas = (r.deudas || []).filter((d) => d.pagado > 0);
   if (pagadas.length) partes.push(pagadas.length === 1 ? `paga ${pagadas[0].nombre}` : `paga ${pagadas.length} deudas`);
   const fut = r.futuros || { ingresos: [] };
-  if ((fut.ingresos || []).length) partes.push(`${fut.ingresos[0].nombre} desde el año ${fut.ingresos[0].desde}`);
+  if ((fut.ingresos || []).length) partes.push(`${fut.ingresos[0].nombre} desde ${anioCal(fut.ingresos[0].desde)}`);
   if (!partes.length) return "Todo sigue como está hoy.";
   const t = partes.join(" · ");
   return t.charAt(0).toUpperCase() + t.slice(1);
@@ -998,13 +999,13 @@ export function sugerirVinculados(user = {}, activoId) {
   const suelto = (x) => !x.activoId || !existe.has(x.activoId);
   (user.ingresos || []).forEach((i, k) => {
     if (!i || i.sim === false) return;
-    const nombre = i.nombre || i.categoria || "Ingreso", item = { key: `i:${k}`, nombre, mensual: montoPromedioMensual(i), moneda: i.moneda };
+    const nombre = i.nombre || i.categoria || "Ingreso", item = { key: claveIngreso(user.ingresos, k), nombre, mensual: montoPromedioMensual(i), moneda: i.moneda };
     if (i.activoId === activoId) out.auto.ingresos.push(item);
     else out.ingresos.push({ ...item, sugerido: suelto(i) && pega(`${nombre} ${i.categoria || ""}`) });
   });
   Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g, idx) => {
     if (!g || g.sim === false) return;
-    const nombre = g.c || g.n || g.nombre || cat, item = { key: `${cat}::${idx}`, nombre, cat, mensual: montoPromedioMensual(g), moneda: g.moneda };
+    const nombre = g.c || g.n || g.nombre || cat, item = { key: claveGasto(cat, items, idx), nombre, cat, mensual: montoPromedioMensual(g), moneda: g.moneda };
     if (g.activoId === activoId) out.auto.gastos.push(item);
     else out.gastos.push({ ...item, sugerido: suelto(g) && pega(nombre) });
   }));
@@ -1054,7 +1055,8 @@ export function paraPlan(user = {}) {
 }
 
 /** Cada inversión hoy: cuánto vale y cuánto renta, con de dónde sale. */
-export function inversionesHoy(userIn = {}, cfg = {}) {
+export function inversionesHoy(userIn = {}, cfgIn = {}) {
+  const cfg = migrarClaves(cfgIn, userIn);
   const user = ajustarIngresos(paraPlan(userIn), cfg);
   const { impuestoNeto, retencionMensual, ...sinImp } = user;
   const b = calcularBase({ ...sinImp, gastos: user.gastos || user.gas }, {});
@@ -1082,13 +1084,14 @@ function ajustarIngresos(user, cfg = {}) {
   const aj = cfg.ingresoHoy || {};
   if (!Object.keys(aj).length) return user;
   return { ...user, ingresos: (user.ingresos || []).map((i, k) => {
-    const v = aj[`i:${k}`]; if (v == null || v === "" || !i) return i;
+    const v = aj[claveIngreso(user.ingresos, k)]; if (v == null || v === "" || !i) return i;
     const { montosMensuales, capital, tasa, montoModo, ...resto } = i;
     return { ...resto, mensual: Math.max(0, n(v)), moneda: "COP", frecuencia: "mensual", _corregido: true };
   }) };
 }
 /** Ingresos de hoy que no están ligados a una inversión (fees, salarios, rentas sueltas). */
-export function ingresosSueltosHoy(userIn = {}, cfg = {}) {
+export function ingresosSueltosHoy(userIn = {}, cfgIn = {}) {
+  const cfg = migrarClaves(cfgIn, userIn);
   const base = paraPlan(userIn), user = ajustarIngresos(base, cfg);
   const ids = new Set((user.inv || []).filter(Boolean).map((a) => a.id));
   const trm = n(user.trm) || 4200, fx = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? trm : 1);
@@ -1103,7 +1106,7 @@ export function ingresosSueltosHoy(userIn = {}, cfg = {}) {
     const o = base.ingresos[k];
     const enIngresos = montoPromedioMensual(o) * fx(o);
     const nota = o._vigencia?.variable ? `variable: promedio de los ${o._vigencia.meses} meses cargados` : o._vigencia ? `en Ingresos va de ${MES[o._vigencia.desde]} a ${MES[o._vigencia.hasta]}; aquí cuenta el mes completo` : (o.frecuencia && !["mensual", "variable"].includes(o.frecuencia) ? `pago ${o.frecuencia}, repartido por mes` : o.frecuencia === "variable" ? "variable: promedio de lo cargado en el año" : "");
-    const key = `i:${k}`;
+    const key = claveIngreso(user.ingresos, k);
     const seVa = fuera.has(key) || (i.activoId && vendidos.has(i.activoId)) ? "venta" : term[key] ? "acaba" : null;
     return { key, seVa, acabaAnio: term[key] || null, nombre: i.nombre || i.categoria || "Ingreso", renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
   }).filter(Boolean);
@@ -1141,3 +1144,47 @@ export function leerCiclos(lista = [], N = 10) {
     return { nombre: String(x.nombre || "").trim() || "Negocio que se repite", capital, valorFinal, meses, desde, hasta, costosPct, regimen, impuestoPct, impuestoCiclo, impuestoAnual: impuestoCiclo * 12 / meses, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", destinoId: x.destinoId || null, gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
   }).filter((x) => x.capital > 0 && x.valorFinal > 0);
 }
+
+// ── Claves estables de ingresos y gastos ───────────────────────────────────
+// 25-oct-2026 (Santiago: "se desconfigura cuando uno va a revisar el plan,
+// todos los datos los cambia… no guarda las configuraciones"). Los ingresos y
+// gastos que se acaban, los montos corregidos y «lo que se va con la venta» se
+// guardaban por POSICIÓN ("Vivienda::3", "i:5"). Al agregar o borrar algo en
+// Ingresos/Egresos las posiciones se corren y el escenario apuntaba a otros
+// conceptos (el arriendo marcado como que se acaba, etc.). Ahora la clave es el
+// id del concepto, o su nombre (con #n si hay nombres repetidos).
+const nomClave = (x) => String((x && (x.c || x.n || x.nombre || x.categoria)) || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+export function claveGasto(cat, items = [], idx) {
+  const g = (items || [])[idx];
+  if (g && g.id) return `${cat}::id:${g.id}`;
+  const nom = nomClave(g);
+  const rep = (items || []).slice(0, idx).filter((x) => !(x && x.id) && nomClave(x) === nom).length;
+  return `${cat}::${nom}${rep ? "#" + rep : ""}`;
+}
+export function claveIngreso(list = [], k) {
+  const i = (list || [])[k];
+  if (i && i.id) return `i:id:${i.id}`;
+  const nom = nomClave(i);
+  const rep = (list || []).slice(0, k).filter((x) => !(x && x.id) && nomClave(x) === nom).length;
+  return `i:${nom}${rep ? "#" + rep : ""}`;
+}
+/** Pasa las claves viejas por posición a claves estables (con los datos de hoy). */
+export function migrarClaves(cfg = {}, user = {}) {
+  if (!cfg || cfg._clavesV2) return cfg;
+  const gas = user.gastos || user.gas || {};
+  const ing = user.ingresos || [];
+  const conv = (k) => {
+    let m = /^i:(\d+)$/.exec(k);
+    if (m) return ing[+m[1]] ? claveIngreso(ing, +m[1]) : k;
+    m = /^(.*)::(\d+)$/.exec(k);
+    if (m && gas[m[1]] && gas[m[1]][+m[2]]) return claveGasto(m[1], gas[m[1]], +m[2]);
+    return k;
+  };
+  const mapa = (o) => (o && typeof o === "object" ? Object.fromEntries(Object.entries(o).map(([k, v]) => [conv(k), v])) : o);
+  const dec = Object.fromEntries(Object.entries(cfg.decisiones || {}).map(([id, d]) => [id, d && Array.isArray(d.seVan) ? { ...d, seVan: d.seVan.map(conv) } : d]));
+  return { ...cfg, _clavesV2: true, decisiones: dec, gastosTerminan: mapa(cfg.gastosTerminan), ingresosTerminan: mapa(cfg.ingresosTerminan), ingresoHoy: mapa(cfg.ingresoHoy) };
+}
+
+// 25-oct-2026 (Santiago: "año 5 en 4 años… qué enredo"). Los años del plan se
+// muestran como años de calendario: año 1 = este año.
+export const anioCal = (t) => new Date().getFullYear() + Math.round(Number(t) || 1) - 1;

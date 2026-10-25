@@ -10,6 +10,7 @@
 //   · ¿Da para vivir todos los años?
 //   · El patrimonio como empresa: cuánto factura y cuánto gana al año
 // ═══════════════════════════════════════════════════════════════════════════
+import { anioCal } from "../lib/futuro10.js";
 import { useMemo, useState } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
@@ -23,7 +24,7 @@ const eje = { tick: { fill: INF.tx2, fontSize: 11 }, axisLine: { stroke: INF.eje
 const grid = { strokeDasharray: "0", stroke: INF.grid, vertical: false };
 const th = { textAlign: "right", fontWeight: 600, color: INF.tx2, padding: "6px 8px", borderBottom: `1px solid ${INF.linea}`, whiteSpace: "nowrap" };
 const td = { textAlign: "right", padding: "6px 8px", borderBottom: `1px solid ${INF.linea}`, color: INF.tx, whiteSpace: "nowrap" };
-const anioTxt = (a) => (a === 0 ? "Hoy" : `Año ${a}`);
+const anioTxt = (a) => (a === 0 ? "Hoy" : String(anioCal(a)));
 
 /** Métricas de un plan para comparar. */
 function medir(r, inflacionPct) {
@@ -124,7 +125,7 @@ export default function PlanComparador({ planes, inflacionPct = 4, onVer, onReco
             <div style={{ fontSize: 16, fontWeight: 600, margin: "2px 0 4px" }}>{p.nombre}</div>
             <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.45, flex: 1 }}>{p.esHoy ? "Si nada cambia" : p.descripcion || resumenEscenario(p.r)}</div>
             <div style={{ fontSize: 24, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 10 }}>{fmM(p.med.fin.patrimonio)}</div>
-            <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.ok : INF.bad }}>año 10 · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} real`}</div>
+            <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.ok : INF.bad }}>{anioCal(10)} · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} real`}</div>
             {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.teja : INF.tx2, fontSize: 11, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? "★ Recomendado" : "☆ Marcar como recomendado"}</button>}
             {/* 24-oct-2026 (Santiago: "cada tarjeta debería tener su borrar, editar"). */}
             {!p.esHoy && (p.id ? (onEditar || onBorrar) : (onGuardarBorrador || onDescartarBorrador)) && <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
@@ -157,7 +158,7 @@ export default function PlanComparador({ planes, inflacionPct = 4, onVer, onReco
 
       <div style={card}>
         <h3 style={h3}>Hoy y los planes en cinco números</h3>
-        <p style={lead}>Al mes, en el año 1. «Crece invertido» es lo que producen las inversiones que no recibes (se reinvierte); «Produce en total» suma la renta que llega y lo que crece.</p>
+        <p style={lead}>Al mes, en {anioCal(1)}. «Crece invertido» es lo que producen las inversiones que no recibes (se reinvierte); «Produce en total» suma la renta que llega y lo que crece.</p>
         <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={280}>
           <BarChart data={seis} margin={{ top: 10, right: 6, left: 6, bottom: 0 }}>
             <CartesianGrid {...grid} />

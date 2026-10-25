@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, TARIFA_CICLO, regimenSugerido, sugerirVinculados, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, TARIFA_CICLO, regimenSugerido, sugerirVinculados, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -32,7 +32,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   // no quedan guardados"). Lo que uno va decidiendo se guarda solo como
   // borrador (`futuro10.borrador`) y vuelve al entrar; "Guardar en tu cuenta"
   // sigue siendo para dejar un escenario con nombre y compararlo.
-  const [cfg, setCfg] = useState(() => migrarModifica(guardado.borrador ? { ...CONFIG_INICIAL, ...guardado.borrador } : CONFIG_INICIAL));
+  const [cfg, setCfg] = useState(() => migrarClaves(migrarModifica(guardado.borrador ? { ...CONFIG_INICIAL, ...guardado.borrador } : CONFIG_INICIAL), user));
   const ultimoGuardado = useRef(JSON.stringify(guardado.borrador || null));
   // 25-oct-2026: el guardado automático usaba una copia vieja de `guardado` y,
   // si se guardaba un escenario justo después de un cambio, lo pisaba con la
@@ -42,7 +42,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   useEffect(() => {
     if (demo || !onGuardar) return;
     const json = JSON.stringify(cfg);
-    if (json === ultimoGuardado.current || json === JSON.stringify(CONFIG_INICIAL)) return;
+    if (json === ultimoGuardado.current || JSON.stringify({ ...cfg, _clavesV2: undefined }) === JSON.stringify(CONFIG_INICIAL)) return;
     const t = setTimeout(() => {
       ultimoGuardado.current = json;
       const g = guardadoRef.current || {};
@@ -72,8 +72,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   // 24-oct-2026 (Santiago: "a veces queda un plan fantasma que es lo que uno
   // está armando y no hay dónde quitarlo"). Ahora se nombra y se puede guardar
   // o descartar desde Tus escenarios.
-  const igualA = (c) => JSON.stringify({ ...migrarModifica({ ...CONFIG_INICIAL, ...c }), escenario: cfg.escenario }) === JSON.stringify({ ...cfg });
-  const hayBorrador = JSON.stringify({ ...cfg, escenario: CONFIG_INICIAL.escenario }) !== JSON.stringify(CONFIG_INICIAL) && !escenarios.some((e) => igualA(e.config));
+  const igualA = (c) => JSON.stringify({ ...migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...c }), user), escenario: cfg.escenario }) === JSON.stringify({ ...cfg, _clavesV2: true });
+  const hayBorrador = JSON.stringify({ ...cfg, escenario: CONFIG_INICIAL.escenario, _clavesV2: undefined }) !== JSON.stringify(CONFIG_INICIAL) && !escenarios.some((e) => igualA(e.config));
   const editandoEsc = escenarios.find((e) => e.id === editandoId) || null;
   const nombreBorrador = editandoEsc ? `${editandoEsc.nombre} (cambios sin guardar)` : "Sin guardar: lo que estás armando";
   const planesComparar = useMemo(() => {
@@ -99,8 +99,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
     setNombreEsc(""); setDescEsc("");
     track("futuro10_guardar", { escenario: cfg.escenario, norte: cfg.mezcla ? "personalizado" : cfg.norte, cantidad_escenarios: escenarios.length + 1 });
   };
-  const editarEsc = (id) => { const e = escenarios.find((x) => x.id === id); if (!e) return; setCfg(migrarModifica({ ...CONFIG_INICIAL, ...e.config })); setEditandoId(e.id); setNombreEsc(e.nombre || ""); setDescEsc(e.descripcion || ""); ir(1); };
-  const descartarBorrador = () => { setCfg(editandoEsc ? migrarModifica({ ...CONFIG_INICIAL, ...editandoEsc.config }) : { ...CONFIG_INICIAL, escenario: cfg.escenario }); setEditandoId(null); setNombreEsc(""); setDescEsc(""); };
+  const editarEsc = (id) => { const e = escenarios.find((x) => x.id === id); if (!e) return; setCfg(migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...e.config }), user)); setEditandoId(e.id); setNombreEsc(e.nombre || ""); setDescEsc(e.descripcion || ""); ir(1); };
+  const descartarBorrador = () => { setCfg(editandoEsc ? migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...editandoEsc.config }), user) : { ...CONFIG_INICIAL, escenario: cfg.escenario }); setEditandoId(null); setNombreEsc(""); setDescEsc(""); };
   const borrar = (id) => !demo && onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.filter((e) => e.id !== id) });
 
   return (
@@ -301,7 +301,7 @@ const ANIOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 // 25-oct-2026 (Santiago: "se cambian fechas… cosas que decía que se activaban
 // en X años"). El selector decía «En 5 años» y el resultado «desde el año 6»:
 // era lo mismo, pero parecía otra fecha. Ahora todo dice el año del plan.
-export const etqAnio = (y) => (y === 1 ? "Año 1 (ya)" : `Año ${y} (en ${y - 1} año${y === 2 ? "" : "s"})`);
+export const etqAnio = (y) => (y === 1 ? `Ya (${anioCal(1)})` : `En ${anioCal(y)}`);
 function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingresosHoy = [], fuentes = [], irHoy }) {
   const [verTodos, setVerTodos] = useState(false);
   const f = { ingresos: [], activos: [], gastos: [], ...(cfg.futuros || {}) };
@@ -563,7 +563,7 @@ function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] })
         if (det.deNuevo > 0) partes.push(`capital nuevo: ${plata(det.deNuevo)}`);
         if (det.deVenta > 0) partes.push(`la venta de ${vendidos.map((v) => v.nombre).join(" y ") || "lo que vendes"}: ${plata(det.deVenta)}`);
         if (det.deLiquidez > 0) partes.push(`tu liquidez de hoy: ${plata(det.deLiquidez)}`);
-        if (det.deAnio1 > 0) partes.push(`lo que entre en el año 1: ${plata(det.deAnio1)}`);
+        if (det.deAnio1 > 0) partes.push(`lo que entre en ${anioCal(1)}: ${plata(det.deAnio1)}`);
         if (det.anio > 1 && det.aporte > 0) partes.push(det.fuente === "nuevo" ? `capital nuevo en ${det.anio - 1} año${det.anio === 2 ? "" : "s"}: ${plata(det.aporte)}` : (det.fuente || "venta") === "venta" ? `lo que vendes (se aparta hoy y entra en ${det.anio - 1} año${det.anio === 2 ? "" : "s"}): ${plata(det.aporte)}` : `lo que tengas en ${det.anio - 1} año${det.anio === 2 ? "" : "s"}: ${plata(det.aporte)}`);
         if (!partes.length) return null;
         return <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2, borderTop: `1px solid ${C.bd}`, paddingTop: 6 }}><b style={{ color: C.tx }}>Sale de</b> {partes.join(" · ")}</div>;
@@ -629,7 +629,7 @@ function Saldo({ r }) {
         const resto = u.monto - u.deVenta - u.deCuentas - u.deNuevo;
         return <div key={k} style={{ fontSize: 12, padding: "4px 0", borderTop: `1px solid ${C.bd}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><span style={{ color: C.tx }}>{u.seccion}. {u.nombre}</span><span style={{ fontFamily: "monospace" }}>{plata(Math.round(u.monto))}</span></div>
-          <div style={{ color: u.anio > 1 ? C.tx2 : resto > 0.5 ? C.am : C.tx2 }}>{u.anio > 1 && u.apartado ? `${partes.join(" + ") || "—"}: se aparta hoy y se invierte en el año ${u.anio}${u.resto > 0.5 ? `; los ${plata(Math.round(u.resto))} que no alcanzan se pagan ese año con lo que haya` : ""}` : u.anio > 1 ? `En el año ${u.anio}: se paga ese año con lo que haya, no de lo que vendes hoy` : `${partes.join(" + ") || "—"}${resto > 0.5 ? ` · faltan ${plata(Math.round(resto))}` : ""}`}</div>
+          <div style={{ color: u.anio > 1 ? C.tx2 : resto > 0.5 ? C.am : C.tx2 }}>{u.anio > 1 && u.apartado ? `${partes.join(" + ") || "—"}: se aparta hoy y se invierte en ${anioCal(u.anio)}${u.resto > 0.5 ? `; los ${plata(Math.round(u.resto))} que no alcanzan se pagan ese año con lo que haya` : ""}` : u.anio > 1 ? `En el año ${u.anio}: se paga ese año con lo que haya, no de lo que vendes hoy` : `${partes.join(" + ") || "—"}${resto > 0.5 ? ` · faltan ${plata(Math.round(resto))}` : ""}`}</div>
         </div>;
       })}
     </details>}
@@ -804,7 +804,7 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
       {sueltos.map((x) => (
         <div key={x.key} style={fila}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b style={{ textDecoration: x.seVa ? "line-through" : "none", color: x.seVa ? C.tx2 : C.tx }}>{x.nombre}</b><span style={{ fontSize: 12, color: C.tx2 }}>{x.renta ? "renta" : "trabajo"}</span></div>
-          {x.seVa && <div style={{ fontSize: 12, color: C.am }}>{x.seVa === "venta" ? "Se va con una venta que marcaste arriba: no suma." : `Se acaba ${Number(x.acabaAnio) <= 1 ? "desde ya: no suma" : `en el año ${x.acabaAnio}`}.`}</div>}
+          {x.seVa && <div style={{ fontSize: 12, color: C.am }}>{x.seVa === "venta" ? "Se va con una venta que marcaste arriba: no suma." : `Se acaba ${Number(x.acabaAnio) <= 1 ? "desde ya: no suma" : `en ${anioCal(x.acabaAnio)}`}.`}</div>}
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
             <span style={{ width: 170 }}><NumberInput style={inp} placeholder={fmtMilesEs(Math.round(x.enIngresos))} value={ih[x.key] ?? ""} onChange={(v) => setI(x.key, v)} /></span>
             <span style={{ fontSize: 12, color: x.corregido ? C.gn : C.tx2 }}>{x.corregido ? `corregido (en Ingresos: ${plata(Math.round(x.enIngresos))})` : `${plata(Math.round(x.mensual))}/mes, de tu página Ingresos`}</span>
@@ -854,7 +854,7 @@ function Ciclos({ lista, set, det, destinos = [] }) {
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button style={btn(siempre)} onClick={() => up(i, { hasta: "" })}>Sigue siempre</button>
               <button style={btn(!siempre)} onClick={() => up(i, { hasta: Math.max(Number(x.desde) || 1, 5) })}>Termina</button>
-              {!siempre && <select style={{ ...inp, width: "auto" }} value={x.hasta} onChange={(e) => up(i, { hasta: Number(e.target.value) })}>{ANIOS.filter((y) => y >= (Number(x.desde) || 1)).map((y) => <option key={y} value={y}>Último ciclo en el año {y}</option>)}</select>}
+              {!siempre && <select style={{ ...inp, width: "auto" }} value={x.hasta} onChange={(e) => up(i, { hasta: Number(e.target.value) })}>{ANIOS.filter((y) => y >= (Number(x.desde) || 1)).map((y) => <option key={y} value={y}>Último ciclo en {anioCal(y)}</option>)}</select>}
             </div></div>
           <label style={lbl}>¿De dónde sale el capital?<FuenteSel value={x.fuente} on={(v) => up(i, { fuente: v })} /><span style={{ fontSize: 11 }}>Sale una sola vez; después el mismo capital se vuelve a usar.</span></label>
           <div style={{ ...lbl, gridColumn: "1 / -1" }}>¿Qué haces con la ganancia de cada ciclo? <span style={{ fontSize: 11 }}>El capital vuelve a entrar al negocio; esto es solo lo que ganas.</span>
@@ -869,7 +869,7 @@ function Ciclos({ lista, set, det, destinos = [] }) {
               </select></label>
             : <span style={{ fontSize: 11 }}>Entra a tu flujo como un ingreso.</span>}</div>
           {cap > 0 && vf > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 13, color: vf > cap ? C.gn : C.am }}>
-            {vf > cap ? <>Pones {mm(cap)} y recibes {mm(vf)} cada {meses === 12 ? "año" : `${meses} meses`}: te quedan <b>{mm(gan)}</b> por ciclo después de impuestos ({mm(anual)} al año, {(Math.round(anual / cap * 1000) / 10).toLocaleString("es-CO")} % sobre el capital). {x.destino === "flujo" ? "Esa ganancia te llega" : `Esa ganancia se reinvierte en ${(destinos.find((d) => d.id === x.destinoId) || { nombre: "lo que sobra (E)" }).nombre}`} {siempre ? "todos los años" : `hasta el año ${x.hasta}`}{siempre ? "" : "; después el capital vuelve"}.</> : "Recibes menos de lo que pones: no hay ganancia."}
+            {vf > cap ? <>Pones {mm(cap)} y recibes {mm(vf)} cada {meses === 12 ? "año" : `${meses} meses`}: te quedan <b>{mm(gan)}</b> por ciclo después de impuestos ({mm(anual)} al año, {(Math.round(anual / cap * 1000) / 10).toLocaleString("es-CO")} % sobre el capital). {x.destino === "flujo" ? "Esa ganancia te llega" : `Esa ganancia se reinvierte en ${(destinos.find((d) => d.id === x.destinoId) || { nombre: "lo que sobra (E)" }).nombre}`} {siempre ? "todos los años" : `hasta ${anioCal(x.hasta)}`}{siempre ? "" : "; después el capital vuelve"}.</> : "Recibes menos de lo que pones: no hay ganancia."}
           </div>}
           <div style={{ gridColumn: "1 / -1" }}><button style={btn(false)} onClick={() => set(lista.filter((_, j) => j !== i))}>Quitar</button></div>
         </div>);
@@ -899,7 +899,7 @@ function SobraMensual({ r, cfg, set, destinos }) {
       <span style={{ fontWeight: 700 }}>Cada mes te {sobra >= 0 ? "sobran" : "faltan"}</span>
       <span style={{ fontSize: 20, fontWeight: 800, color: sobra >= 0 ? C.gn : C.rd }}>{plata(Math.round(Math.abs(sobra)))}</span>
     </div>
-    <div style={{ fontSize: 12, color: C.tx2 }}>En el año 1: entra {plata(Math.round(tEntra))} y sale {plata(Math.round(tSale))}. {sobra < 0 ? "Lo que falta sale de tu liquidez." : ""}</div>
+    <div style={{ fontSize: 12, color: C.tx2 }}>En {anioCal(1)}: entra {plata(Math.round(tEntra))} y sale {plata(Math.round(tSale))}. {sobra < 0 ? "Lo que falta sale de tu liquidez." : ""}</div>
     <button style={{ ...btn(false), marginTop: 6, fontSize: 12, padding: "4px 10px" }} onClick={() => setVer(!ver)}>{ver ? "Ocultar" : "Ver"} de dónde sale cada peso</button>
     {ver && <div style={{ marginTop: 8 }}>
       <div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1 }}>Entra cada mes</div>

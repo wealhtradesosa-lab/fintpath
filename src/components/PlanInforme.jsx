@@ -15,6 +15,7 @@
 //   · 4 Año por año
 // Solo lee el resultado del motor (proyectarFuturo10); no calcula nada nuevo.
 // ═══════════════════════════════════════════════════════════════════════════
+import { anioCal } from "../lib/futuro10.js";
 import { useMemo, useState } from "react";
 import { ComposedChart, BarChart, Bar, Area, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, LabelList, Cell } from "recharts";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
@@ -28,7 +29,7 @@ const grid = { strokeDasharray: "0", stroke: INF.grid, vertical: false };
 const th = { textAlign: "right", fontWeight: 600, color: INF.tx2, padding: "6px 8px", borderBottom: `1px solid ${INF.linea}`, whiteSpace: "nowrap" };
 const td = { textAlign: "right", padding: "6px 8px", borderBottom: `1px solid ${INF.linea}`, color: INF.tx, whiteSpace: "nowrap" };
 const tdL = { ...td, textAlign: "left", whiteSpace: "normal" };
-const anioTxt = (a) => (a === 0 ? "Hoy" : `Año ${a}`);
+const anioTxt = (a) => (a === 0 ? "Hoy" : String(anioCal(a)));
 const tip = (v) => fmM(v);
 
 /** Lo que pasa cada año, en palabras (para las marcas y la columna «Qué cambia ese año»). */
@@ -45,7 +46,7 @@ export function eventosDelPlan(r) {
   fut.ingresos.forEach((x) => ev.push({ anio: x.desde, corto: x.nombre, texto: `${x.nombre}: +${fmM(x.mensual)}/mes` }));
   fut.activos.forEach((x) => ev.push({ anio: x.entrega, corto: x.nombre, texto: `Recibes ${x.nombre}` }));
   (fut.gastos || []).forEach((x) => { ev.push({ anio: x.desde, corto: x.nombre, texto: `Empieza ${x.nombre}: −${fmM(x.anual)}/año` }); if (x.hasta < 99) ev.push({ anio: x.hasta + 1, corto: `Fin ${x.nombre}`, texto: `Termina ${x.nombre}` }); });
-  (r.alertas || []).filter((a) => a.tipo === "pago_unico").forEach((a) => ev.push({ anio: a.anio, corto: "Pago único", texto: a.texto.replace(/^En el año \d+ /, "") }));
+  (r.alertas || []).filter((a) => a.tipo === "pago_unico").forEach((a) => ev.push({ anio: a.anio, corto: "Pago único", texto: a.texto.replace(/^En \d{4} /, "") }));
   return ev.sort((a, b) => a.anio - b.anio);
 }
 
@@ -145,7 +146,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
   return (
     <div style={{ color: INF.tx }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginBottom: 14 }}>
-        <Ficha l="Patrimonio en el año 10" v={fmM(fin.patrimonio / d(fin))} s={`hoy ${fmM(f0.patrimonio)}${cagr != null ? ` · crece ${fmPct(cagr, 1)} al año` : ""}`} />
+        <Ficha l={`Patrimonio en ${anioCal(10)}`} v={fmM(fin.patrimonio / d(fin))} s={`hoy ${fmM(f0.patrimonio)}${cagr != null ? ` · crece ${fmPct(cagr, 1)} al año` : ""}`} />
         <Ficha l="Produce al mes" v={fmM(produceMes)} s={`renta ${fmM(rentaMes)} + multiplica ${fmM(multiplicaMes)}`} />
         <Ficha l="Rendimiento del patrimonio" v={fmPct(rendimiento, 1)} s="anual, sobre lo que tienes" />
         <Ficha l="Sale al mes" v={fmM(saleMes)} s="gastos + cuotas" />
@@ -203,7 +204,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
         </div>
         <div style={card}>
           <h3 style={h3}>Cuánto produce cada activo</h3>
-          <p style={lead}>Al mes, en el año 1. Azul: renta que se recibe. Dorado: lo que multiplica (se reinvierte).</p>
+          <p style={lead}>Al mes, en {anioCal(1)}. Azul: renta que se recibe. Dorado: lo que multiplica (se reinvierte).</p>
           {produce.map((a) => <div key={a.id} style={{ display: "grid", gridTemplateColumns: "minmax(90px,38%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</span>
             <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
@@ -215,7 +216,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
       </div>
 
       {r.desglose && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
-        {[["3 · Lo que entra cada mes", "En el año 1, partida por partida. Las rentas de tus inmuebles van netas de sus costos.", r.desglose.entra, INF.azul, f1.ingresos / 12], ["Lo que sale cada mes", "En el año 1: tus gastos de Egresos, las cuotas de las deudas que siguen y los gastos futuros que ya empezaron.", r.desglose.sale, INF.teja, f1.gastos / 12]].map(([t, l, lista, col, tot]) => {
+        {[["3 · Lo que entra cada mes", `En ${anioCal(1)}, partida por partida. Las rentas de tus inmuebles van netas de sus costos.`, r.desglose.entra, INF.azul, f1.ingresos / 12], ["Lo que sale cada mes", "En el año 1: tus gastos de Egresos, las cuotas de las deudas que siguen y los gastos futuros que ya empezaron.", r.desglose.sale, INF.teja, f1.gastos / 12]].map(([t, l, lista, col, tot]) => {
           const mx = Math.max(1, ...lista.map((x) => Math.abs(x.mensual)));
           return <div key={t} style={card}>
             <h3 style={h3}>{t} · {fmM(tot)}</h3>
@@ -312,7 +313,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
         <p style={lead}>{nombre}. {modo === "real" ? "En pesos de hoy." : "En pesos de cada año."} Cobertura = lo que entra ÷ lo que sale.</p>
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 560 }}>
           <thead><tr><th style={{ ...th, textAlign: "left" }}>Año</th><th style={th}>Patrimonio</th>{sL.map((s) => <th key={s.id} style={th}>{(s.nombre || "").slice(0, 18)}</th>)}<th style={th}>Deuda</th><th style={th}>Cobertura</th></tr></thead>
-          <tbody>{filas.map((f, i) => <tr key={f.anio}><td style={tdL}>{f.anio === 0 ? "0 (hoy)" : f.anio}</td><td style={td}>{fmM(f.patrimonio / d(f))}</td>
+          <tbody>{filas.map((f, i) => <tr key={f.anio}><td style={tdL}>{f.anio === 0 ? "Hoy" : anioCal(f.anio)}</td><td style={td}>{fmM(f.patrimonio / d(f))}</td>
             {sL.map((s) => <td key={s.id} style={td}>{pat[i][s.id] ? fmM(pat[i][s.id]) : "—"}</td>)}
             <td style={td}>{f.deuda > 0 ? fmM(f.deuda / d(f)) : "—"}</td><td style={td}>{f.gastos > 0 ? fmPct(f.ingresos / f.gastos * 100, 0) : "—"}</td></tr>)}</tbody>
         </table></div>
