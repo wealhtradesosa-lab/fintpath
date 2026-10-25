@@ -621,7 +621,7 @@ function Saldo({ r }) {
 // Barra fija abajo en Tu plata: el veredicto siempre a la vista.
 function SaldoFijo({ r, onVer }) {
   const v = veredictoSaldo(r);
-  return <div onClick={onVer} style={{ position: "sticky", bottom: 8, zIndex: 5, margin: "8px 0", padding: "10px 14px", borderRadius: 10, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: v.ok ? "#0f2a1a" : "#3a1414", border: `1px solid ${v.ok ? C.gn : C.rd}`, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
+  return <div onClick={onVer} style={{ position: "sticky", bottom: 8, zIndex: 5, margin: "8px 0", padding: "10px 14px", borderRadius: 10, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: v.ok ? "rgba(15,42,26,0.97)" : "rgba(58,20,20,0.97)", border: `1px solid ${v.ok ? C.gn : C.rd}`, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
     <span style={{ fontWeight: 800, color: v.ok ? C.gn : C.rd }}>{v.corto}</span>
     <span style={{ fontSize: 12, color: C.tx2 }}>{v.ok ? "de lo que vendes" : "sale de tus cuentas"} · ver ↑</span>
   </div>;
