@@ -203,7 +203,9 @@ for ruta in sorted(glob.glob('netlify/functions/*')):
     #   stripe-webhook: firma de Stripe (constructEvent) — no hay usuario.
     #   send-email: origen del navegador; se dispara al registrarse, sin sesion.
     #   advisor-lead: formulario publico de la landing de asesores.
-    if nombre in ('stripe-webhook.cjs', 'send-email.cjs', 'advisor-lead.cjs'):
+    #   mp-webhook: aviso de Mercado Pago; no confia en el cuerpo, consulta la
+    #     suscripcion a la API de Mercado Pago con el token propio (25-oct-2026).
+    if nombre in ('stripe-webhook.cjs', 'send-email.cjs', 'advisor-lead.cjs', 'mp-webhook.cjs'):
         continue
     with open(ruta) as f:
         fn = f.read()

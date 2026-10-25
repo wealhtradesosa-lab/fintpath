@@ -40,6 +40,16 @@
   status = 200
 
 [[redirects]]
+  from = "/api/mp-suscribir"
+  to = "/.netlify/functions/mp-suscribir"
+  status = 200
+
+[[redirects]]
+  from = "/api/mp-webhook"
+  to = "/.netlify/functions/mp-webhook"
+  status = 200
+
+[[redirects]]
   from = "/api/ai-chat"
   to = "/.netlify/functions/ai-chat"
   status = 200
