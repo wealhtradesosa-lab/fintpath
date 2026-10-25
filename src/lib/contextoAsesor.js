@@ -40,7 +40,7 @@ export function bloqueInversionesYRentas(user) {
     const sueltos = ingresosSueltosHoy(user, {});
     if (sueltos.length) {
       ctx += "\nOTROS INGRESOS (no ligados a una inversión; monto mensual completo):\n";
-      sueltos.forEach((x) => { ctx += `• ${x.nombre}: ${fmC(x.mensual)}/mes (${x.renta ? "renta pasiva" : "trabajo/activo"})${x.nota ? ` — ${x.nota}` : ""}\n`; });
+      sueltos.forEach((x) => { ctx = ctx.concat(`• ${x.nombre}: ${fmC(x.mensual)}/mes (${x.renta ? "renta pasiva" : "trabajo/activo"})${x.nota ? ` — ${x.nota}` : ""}\n`); });
     }
   } catch { /* nunca rompe el chat */ }
   return ctx;
@@ -57,7 +57,7 @@ export function bloqueGastosDetalle(gas = {}, max = 25) {
   if (!items.length) return "";
   items.sort((a, b) => b.m - a.m);
   let ctx = `\nGASTOS MÁS GRANDES (promedio mensual; ${items.length} en total):\n`;
-  items.slice(0, max).forEach((x) => { ctx += `• ${x.nombre} (${x.cat}${x.frec !== "mensual" ? ", " + x.frec : ""}): ${fmC(x.m)}/mes\n`; });
+  items.slice(0, max).forEach((x) => { ctx = ctx.concat(`• ${x.nombre} (${x.cat}${x.frec !== "mensual" ? ", " + x.frec : ""}): ${fmC(x.m)}/mes\n`); });
   return ctx;
 }
 
@@ -106,10 +106,10 @@ function lineasPlan(nombre, cfg, user, extra = {}) {
   (r.nuevasDetalle || []).forEach((x) => { t += `  Inversión nueva: ${x.nombre} ${fmC(x.monto)} (año ${x.anio}), rinde ${pct(x.rendPct)}${x.pagaRenta ? ", paga renta al mes" : ", se reinvierte"}${x.fuente ? `, la plata sale de ${({ venta: "lo que vende", liquidez: "sus cuentas de hoy", nuevo: "capital nuevo de afuera" })[x.fuente] || x.fuente}` : ""}\n`; });
   const fut = r.futuros || {};
   (fut.activos || []).forEach((x) => { const total = x.pagos.reduce((s, p) => s + p.monto, 0); t += `  Compra/construye: ${x.nombre} (${x.tipo}) por ${fmC(total)}, lista en el año ${x.entrega}${x.valorAlTerminar > 0 ? `, vale ${fmC(x.valorAlTerminar)} al terminar` : ""}, se valoriza ${pct(x.crec * 100)} al año${x.rentaMensual > 0 ? `, renta ${fmC(x.rentaMensual)}/mes` : x.vivienda ? ", es vivienda propia (no renta)" : ""}\n`; });
-  (fut.ingresos || []).forEach((x) => { t += `  Ingreso futuro: ${x.nombre} ${fmC(x.mensual)}/mes desde el año ${x.desde}${x.hasta < 99 ? ` hasta el ${x.hasta}` : ""}\n`; });
+  (fut.ingresos || []).forEach((x) => { t = t.concat(`  Ingreso futuro: ${x.nombre} ${fmC(x.mensual)}/mes desde el año ${x.desde}${x.hasta < 99 ? ` hasta el ${x.hasta}` : ""}\n`); });
   (fut.gastos || []).forEach((x) => { t += `  Gasto futuro: ${x.nombre} ${fmC(x.anual)}/año desde el año ${x.desde}${x.hasta < 99 ? ` hasta el ${x.hasta}` : ""}\n`; });
-  (r.ingSeVan || []).forEach((x) => { t += `  Deja de recibir: ${x.nombre} ${fmC(x.mensual)}/mes desde el año ${x.desde}\n`; });
-  (r.seVan || []).forEach((x) => { t += `  Deja de pagar: ${x.nombre} ${fmC(x.mensual)}/mes desde el año ${x.desde}\n`; });
+  (r.ingSeVan || []).forEach((x) => { t = t.concat(`  Deja de recibir: ${x.nombre} ${fmC(x.mensual)}/mes desde el año ${x.desde}\n`); });
+  (r.seVan || []).forEach((x) => { t = t.concat(`  Deja de pagar: ${x.nombre} ${fmC(x.mensual)}/mes desde el año ${x.desde}\n`); });
   if (r.escenario?.nombre) t += `  Supuestos de mercado: ${r.escenario.nombre} (inflación ${pct(r.escenario.inflacionPct)})\n`;
   t += `  Resultado (pesos de hoy): patrimonio neto hoy ${fmC(f0.patrimonio)} → año 5 ${fmC(f5.patrimonioReal)} → año ${anios} ${fmC(fin.patrimonioReal)} (nominal ${fmC(fin.patrimonio)})${cagrReal != null ? `, crece ${pct(cagrReal)} real al año` : ""}\n`;
   t += `  Flujo mensual que sobra (pesos de hoy): año 1 ${flujoMes(f1)}, año 5 ${flujoMes(f5)}, año ${anios} ${flujoMes(fin)}\n`;
