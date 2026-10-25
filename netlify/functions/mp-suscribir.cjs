@@ -9,8 +9,9 @@
 //
 // ENV (Netlify):
 //   MP_ACCESS_TOKEN   (obligatoria) token de producción de Mercado Pago
-//   MP_PRECIO_PRO     (opcional) valor mensual en COP, por defecto 24900
-//   MP_RAZON          (opcional) texto que ve el cliente
+//   MP_PRECIO_BASICO / MP_PRECIO_BASICO_ANUAL  (opcional) 14900 / 149000 COP
+//   MP_PRECIO_PRO    / MP_PRECIO_PRO_ANUAL     (opcional) 24900 / 249000 COP
+//   Body: { plan: "basico"|"pro", ciclo: "mensual"|"anual" }
 // ═══════════════════════════════════════════════════════════════════════════
 const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
 
@@ -23,12 +24,26 @@ exports.handler = async (event) => {
   if (!token) return { statusCode: 503, headers, body: JSON.stringify({ error: "mp_no_configurado" }) };
   if (!quien.email) return { statusCode: 400, headers, body: JSON.stringify({ error: "Tu cuenta no tiene correo." }) };
 
-  const precio = Number(process.env.MP_PRECIO_PRO) || 24900;
+  let ciclo = "mensual", planPedido = "pro";
+  try {
+    const q = JSON.parse(event.body || "{}");
+    ciclo = q.ciclo === "anual" ? "anual" : "mensual";
+    planPedido = q.plan === "basico" ? "basico" : "pro";
+  } catch { /* por defecto Pro mensual */ }
+  // Precios en COP. Deben coincidir con src/lib/plans.js (PRECIOS_COP).
+  const PRECIOS_COP = {
+    basico: { mensual: Number(process.env.MP_PRECIO_BASICO) || 14900, anual: Number(process.env.MP_PRECIO_BASICO_ANUAL) || 149000 },
+    pro: { mensual: Number(process.env.MP_PRECIO_PRO) || 24900, anual: Number(process.env.MP_PRECIO_PRO_ANUAL) || 249000 },
+  };
+  const precio = PRECIOS_COP[planPedido][ciclo];
+  const nombre = planPedido === "basico" ? "Básico" : "Pro";
   const body = {
-    reason: process.env.MP_RAZON || "FINPATHIA Pro — Pioneros",
-    external_reference: quien.id,
+    reason: `FINPATHIA ${nombre} — ${ciclo === "anual" ? "anual (un cobro al año)" : "mensual"}`,
+    // "userId|plan": el webhook lee de aquí qué plan activar.
+    external_reference: `${quien.id}|${planPedido}`,
     payer_email: quien.email,
-    auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: precio, currency_id: "COP" },
+    // Anual = un solo cobro cada 12 meses.
+    auto_recurring: { frequency: ciclo === "anual" ? 12 : 1, frequency_type: "months", transaction_amount: precio, currency_id: "COP" },
     back_url: "https://finpathia.com/?mp=ok",
     status: "pending",
   };

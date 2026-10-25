@@ -6,7 +6,8 @@
 // del aviso: siempre se consulta la suscripción a la API de Mercado Pago con
 // nuestro token (un aviso falso no puede activar un plan).
 //
-//   authorized            → plan "pro" (update_user_plan_after_stripe)
+//   authorized            → plan "basico" o "pro" según external_reference
+//                           "userId|plan" (update_user_plan_after_stripe)
 //   cancelled / paused    → cancelación con periodo de gracia
 //                           (handle_subscription_canceled; el cron diario baja el plan)
 //
@@ -52,12 +53,14 @@ exports.handler = async (event) => {
     else if (/authorized_payment/.test(tipo)) { const pago = await mp(`/authorized_payments/${id}`); preId = pago.preapproval_id; }
     if (!preId) { console.log(`[mp-webhook] aviso ${tipo} ignorado`); return ok; }
     const s = await mp(`/preapproval/${preId}`);
-    const userId = s.external_reference, cliente = `mp_${s.id}`;
+    const [userId, planRef] = String(s.external_reference || "").split("|");
+    const planMp = planRef === "basico" ? "basico" : "pro";
+    const cliente = `mp_${s.id}`;
     console.log(`[mp-webhook] preapproval ${s.id} status=${s.status} user=${userId}`);
     if (!userId) return ok;
     if (s.status === "authorized") {
-      await rpc("update_user_plan_after_stripe", { p_user_id: userId, p_plan: "pro", p_stripe_customer_id: cliente });
-      console.log(`[mp-webhook] ✅ plan pro activo para ${userId}`);
+      await rpc("update_user_plan_after_stripe", { p_user_id: userId, p_plan: planMp, p_stripe_customer_id: cliente });
+      console.log(`[mp-webhook] ✅ plan ${planMp} activo para ${userId}`);
     } else if (s.status === "cancelled" || s.status === "paused") {
       await rpc("handle_subscription_canceled", { p_stripe_customer_id: cliente, p_canceled_at: new Date().toISOString() });
       console.log(`[mp-webhook] suscripción ${s.status} para ${userId}`);

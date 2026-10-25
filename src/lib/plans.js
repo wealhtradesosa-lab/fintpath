@@ -64,6 +64,17 @@ export const STRIPE_PRICE_IDS = {
   },
 };
 
+// ── Precios en pesos (Mercado Pago) ────────────────────────────────────────
+// 25-oct-2026 (Santiago: "que quien ingrese vea los planes y decida si paga en
+// pesos o dólares"). Precio fijo en COP, sin conversión. Pro Familiar todavía
+// solo en dólares (su activación crea la cuenta familiar en Stripe).
+// Deben coincidir con mp-suscribir.cjs (PRECIOS_COP).
+export const PRECIOS_COP = {
+  "Básico": { mensual: 14900, anual: 149000 },
+  "Pro": { mensual: 24900, anual: 249000 },
+};
+export const fmtCOP = (n) => "$" + Number(n).toLocaleString("es-CO");
+
 // ── Helper compartido USD → COP ────────────────────────────────────────────
 // Redondeo a centena para presentación limpia. Fallback TRM=4200 si no se cargó.
 export function usdToCop(usd, trm) {
@@ -299,12 +310,15 @@ export function getPlansForLanding({ trm }) {
     const sub = isFree
       ? null
       : "$" + b.priceUSD.anual + " USD/mes anual — Ahorra 25%";
+    // 25-oct-2026: en la landing (audiencia Colombia) se muestra primero el
+    // precio en pesos; el dólar queda como alternativa.
+    const cop = PRECIOS_COP[b.name];
     return {
       name: b.name,
-      price: "$" + b.priceUSD.mensual,
-      per: isFree ? "gratis" : "USD/mes",
-      sub,
-      copEquiv: isFree ? null : usdToCop(b.priceUSD.mensual, trm),
+      price: cop ? fmtCOP(cop.mensual) : "$" + b.priceUSD.mensual,
+      per: isFree ? "gratis" : cop ? "COP/mes" : "USD/mes",
+      sub: cop ? `o ${fmtCOP(cop.anual)} al año (2 meses gratis)` : sub,
+      copEquiv: isFree ? null : cop ? `o US$${b.priceUSD.mensual}/mes con tarjeta internacional` : usdToCop(b.priceUSD.mensual, trm),
       tag: b.tag,
       users: b.users,
       features,

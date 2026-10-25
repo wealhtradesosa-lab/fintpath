@@ -94,7 +94,7 @@ import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { leerNorte, borrarNorte, itemsDesdeNorte, calcularNorte } from "./lib/norteUnMinuto.js";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre, migrateInversionUnica } from "./lib/migrations";
-import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId } from "./lib/plans.js";
+import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId, PRECIOS_COP, fmtCOP } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
@@ -125,7 +125,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 //   · #0f2a1a / #2a2416 / #12203a son tintes de estado de pago, deliberados.
 // ═══════════════════════════════════════════════════════════════════════════
 // Link de pago de Mercado Pago para pioneros (Santiago, 25-oct-2026). Cambiar aquí precio o link.
-const PIONEROS_MP={url:"https://mpago.li/1EhDTCo",precio:"$24.900"};
+const PIONEROS_MP={url:"https://mpago.li/1EhDTCo"};
 const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(255,255,255,0.08)",borderL:"rgba(255,255,255,0.15)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f97316",gd:"#eab308",ch:["#22c55e","#3b82f6","#f97316","#a78bfa","#ec4899","#06b6d4","#eab308"]};
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>fmtPctEs(n);
@@ -561,7 +561,7 @@ export default function FinPath(){
     document.addEventListener("visibilitychange", alVolver);
     return () => { vivo = false; clearInterval(id); document.removeEventListener("visibilitychange", alVolver); };
   }, []);
-  });const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("mensual");const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
+  });const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("mensual");const[monedaPago,setMonedaPago]=useState(null);const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
   // Modo demo: copia de la cuenta real al entrar, y ref al u actual.
   const realAntesDemoRef=useRef(null);const uRef=useRef(null);uRef.current=u;
   // State para menús desplegables del sidebar (sesión 1-may-2026 v3:
@@ -3443,6 +3443,12 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // la misma definición. Cualquier cambio de precio/feature se hace
       // en plans.js únicamente.
       const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle,trialActive,trialDays});
+      // 25-oct-2026 (Santiago: "que quien ingrese vea los planes y decida si paga en pesos o dólares").
+      const mon=monedaPago||(isCO?"cop":"usd");
+      const pagarMP=async(pl)=>{const planMp=pl.n==="Básico"?"basico":"pro";trackCheckoutStarted({plan:pl.n,billingCycle,priceId:"mp_"+planMp});
+        try{const r=await fetchAuth("/api/mp-suscribir",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:planMp,ciclo:billingCycle})});const d=await r.json();if(d&&d.url){window.location.href=d.url;return}}catch{}
+        if(planMp==="pro"&&billingCycle==="mensual"){window.open(PIONEROS_MP.url,"_blank","noopener");return}
+        alert("No pudimos abrir Mercado Pago en este momento. Escríbenos a soporte@finpathia.com o intenta pagar en dólares.")};
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
           <h2 style={{fontSize:28,fontWeight:800,margin:"0 0 8px"}}>{isUS?"Choose your plan":"Elige tu plan"}</h2>
@@ -3453,21 +3459,16 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             ))}
           </div>
         </div>
-        {/* 25-oct-2026 (Santiago: validar si pagan antes de abrir la SAS). Pago en pesos con
-            link de Mercado Pago (tarjeta, PSE). Sin webhook todavía: la activación es manual,
-            por eso se pide pagar con el correo de la cuenta. */}
-        {isCO&&<div style={{maxWidth:720,margin:"0 auto 24px",border:"2px solid "+T.gn,borderRadius:16,padding:"18px 20px",background:T.gnB}}>
-          <div style={{fontSize:12,fontWeight:700,color:T.gn,letterSpacing:1,textTransform:"uppercase"}}>Precio pioneros · en pesos</div>
-          <div style={{fontSize:22,fontWeight:800,margin:"4px 0"}}>Plan Pro por <span style={{color:T.gn}}>{PIONEROS_MP.precio}</span> al mes</div>
-          <div style={{fontSize:13,color:T.tx2,lineHeight:1.5}}>Para los primeros que se suman. Pagas en pesos con tarjeta débito o crédito, PSE o saldo de Mercado Pago, sin cobros internacionales.</div>
-          <a href={PIONEROS_MP.url} target="_blank" rel="noopener noreferrer" onClick={async(e)=>{track("pioneros_mp_click",{plan});
-            // 25-oct-2026: cobro automático. Si hay sesión, se crea la suscripción de Mercado Pago a su nombre
-            // (se renueva sola cada mes y el plan se activa solo). Si falla, queda el link de pago de respaldo.
-            if(!authUser)return;e.preventDefault();
-            try{const r=await fetchAuth("/api/mp-suscribir",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});const d=await r.json();if(d&&d.url){window.location.href=d.url;return}}catch{}
-            window.open(PIONEROS_MP.url,"_blank","noopener")}} style={{display:"inline-block",marginTop:12,background:T.gn,color:"#000",fontWeight:800,fontSize:15,padding:"12px 22px",borderRadius:12,textDecoration:"none"}}>Hazte pionero con Mercado Pago →</a>
-          <div style={{fontSize:12,color:T.tx3,marginTop:10}}>Se cobra solo cada mes y puedes cancelar cuando quieras desde Mercado Pago. Tu plan Pro se activa apenas se apruebe el pago.</div>
-        </div>}
+        <div style={{maxWidth:720,margin:"0 auto 24px",textAlign:"center"}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>{isUS?"How do you want to pay?":"¿Cómo quieres pagar?"}</div>
+          <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
+            {[["cop","🇨🇴 En pesos colombianos","Mercado Pago: PSE, tarjeta débito o crédito. Sin cobros internacionales."],["usd","🌎 En dólares (USD)","Tarjeta internacional con Stripe. Tu banco convierte a su tasa."]].map(([k,t1,t2])=>
+              <button key={k} onClick={()=>setMonedaPago(k)} style={{textAlign:"left",padding:"12px 14px",borderRadius:12,cursor:"pointer",border:"2px solid "+(mon===k?T.gn:T.border),background:mon===k?T.gnB:"transparent",color:T.tx}}>
+                <div style={{fontSize:14,fontWeight:800}}>{mon===k?"● ":"○ "}{t1}</div>
+                <div style={{fontSize:12,color:T.tx3,marginTop:3,lineHeight:1.4}}>{t2}</div>
+              </button>)}
+          </div>
+        </div>
         <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(240px, 1fr))",gap:16,maxWidth:1200,margin:"0 auto"}}>
           {plans.map(pl=>(
             <Cd key={pl.n} s={{border:pl.ac?"2px solid "+T.gn:pl.comingSoon?"1px dashed "+T.border:"1px solid "+T.border,position:"relative",opacity:pl.comingSoon?0.95:1}}>
@@ -3476,6 +3477,14 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               <div style={{padding:24}}>
                 <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>{pl.n}</div>
                 <div style={{fontSize:12,color:T.tx3,marginBottom:14,lineHeight:1.4,minHeight:32}}>{pl.tag}</div>
+                {mon==="cop"&&PRECIOS_COP[pl.n]?(<div style={{marginBottom:12}}>
+                  <div style={{display:"flex",alignItems:"baseline",gap:4,flexWrap:"wrap"}}>
+                    <span style={{fontSize:32,fontWeight:800,color:pl.ac?T.gn:T.tx}}>{fmtCOP(PRECIOS_COP[pl.n][billingCycle])}</span>
+                    <span style={{color:T.tx3,fontSize:14,fontWeight:600}}>{billingCycle==="anual"?"/año":"/mes"}</span>
+                  </div>
+                  <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{billingCycle==="anual"?`Un solo cobro al año · 2 meses gratis (equivale a ${fmtCOP(Math.round(PRECIOS_COP[pl.n].anual/12/100)*100)}/mes)`:`En pesos · se cobra solo cada mes · o ${fmtCOP(PRECIOS_COP[pl.n].anual)} al año`}</div>
+                </div>):(<>
+                {mon==="cop"&&!pl.p.mensual.startsWith("$0")&&<div style={{fontSize:11,color:T.tx2,fontWeight:600,marginBottom:4}}>Por ahora solo en dólares</div>}
                 <div style={{marginBottom:4}}>
                   <div style={{display:"flex",alignItems:"baseline",gap:4,flexWrap:"wrap"}}>
                     <span style={{fontSize:pl.comingSoon?22:36,fontWeight:800,color:pl.ac?T.gn:pl.comingSoon?T.tx3:T.tx}}>{billingCycle==="anual"&&pl.pAnualTotal?pl.pAnualTotal:pl.p[billingCycle]}</span>
@@ -3498,6 +3507,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 </div>}
                 {billingCycle==="mensual"&&pl.save&&<div style={{fontSize:12,color:T.tx3,marginBottom:12}}>{isUS?"or pay annually & save 25%":"o paga anual y ahorra 25%"}</div>}
                 {!pl.save&&<div style={{marginBottom:12}}/>}
+                </>)}
                 <div className="fp-fo-ancho" style={{background:T.bg3,padding:"8px 12px",borderRadius:8,fontSize:11,color:T.tx2,marginBottom:14,fontWeight:600}}>👤 {pl.users}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
                   {pl.f.map(f=><div key={f} style={{fontSize:12,color:T.tx2,lineHeight:1.5}}><span style={{color:T.gn,marginRight:6,fontWeight:700}}>✓</span>{f}</div>)}
@@ -3506,7 +3516,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 {pl.comingSoon?(
                   <Bt v="s" sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{window.location.href="mailto:soporte@finpathia.com?subject=Plan Pro Familiar — interesado&body=Hola, quiero entrar a la lista de espera del plan Pro Familiar para mi familia/equipo. Mi email: "+(u?.p?.email||"")}}>Únete a la lista de espera</Bt>
                 ):(
-                <Bt v={pl.cur?"s":pl.rank>pl.rankActual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",opacity:(pl.cur||pl.rank===0)?0.55:1,cursor:(pl.cur||pl.rank===0)?"default":"pointer"}} onClick={()=>{if(!pl.cur&&pl.rank!==0)(async()=>{
+                <Bt v={pl.cur?"s":pl.rank>pl.rankActual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",opacity:(pl.cur||pl.rank===0)?0.55:1,cursor:(pl.cur||pl.rank===0)?"default":"pointer"}} onClick={()=>{if(!pl.cur&&pl.rank!==0&&mon==="cop"&&PRECIOS_COP[pl.n]){pagarMP(pl);return}
+                  if(!pl.cur&&pl.rank!==0)(async()=>{
                   try{
                     // PriceIds vienen de src/lib/plans.js (STRIPE_PRICE_IDS),
                     // source-of-truth única. Refactor item #9.
@@ -3561,8 +3572,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           ))}
         </div>
         <div style={{textAlign:"center",marginTop:24,color:T.tx3,fontSize:13,lineHeight:1.8}}>
-          🔒 Pagos seguros con Stripe • Cancela cuando quieras • Sin compromisos<br/>
-          {isCO&&<><span style={{fontSize:11}}>🇨🇴 Conversión a TRM ≈ ${Math.round(trm||4200).toLocaleString("es-CO")} COP/USD · tu banco aplica su propia tasa al cargo en USD.</span><br/></>}
+          🔒 {mon==="cop"?"Pagos seguros con Mercado Pago":"Pagos seguros con Stripe"} • Cancela cuando quieras • Sin compromisos<br/>
+          {mon==="usd"&&isCO&&<><span style={{fontSize:11}}>🇨🇴 Conversión a TRM ≈ ${Math.round(trm||4200).toLocaleString("es-CO")} COP/USD · tu banco aplica su propia tasa al cargo en USD.</span><br/></>}
           💬 ¿Preguntas? Escríbenos a soporte@finpathia.com
         </div>
         <div style={{marginTop:32,padding:"20px 24px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:14,textAlign:"center"}}>
