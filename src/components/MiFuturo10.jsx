@@ -137,7 +137,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         </div>
         <div style={card}>
           <Seccion n={2} titulo="Lo que viene" sub="Lo que empieza más adelante: una pensión, un local que te entregan, la universidad de los hijos." />
-          <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} gastosHoy={r.gastosHoy || []} ingresosHoy={r.ingresosHoy || []} fuentes={r.fuentes || []} />
+          <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} gastosHoy={r.gastosHoy || []} ingresosHoy={r.ingresosHoy || []} fuentes={r.fuentes || []} irHoy={() => { ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />
         </div>
       </>)}
 
@@ -294,7 +294,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 }
 
 const ANIOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingresosHoy = [], fuentes = [] }) {
+function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingresosHoy = [], fuentes = [], irHoy }) {
   const [verTodos, setVerTodos] = useState(false);
   const f = { ingresos: [], activos: [], gastos: [], ...(cfg.futuros || {}) };
   const put = (k, arr) => set("futuros", { ...f, [k]: arr });
@@ -442,7 +442,8 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
       {/* 24-oct-2026 (Santiago: "¿cómo quita uno items de gastos que ya no
           van? por ejemplo mantenimientos"). Solo cambia el escenario. */}
       <h4 style={{ margin: "16px 0 4px" }}>Ingresos que se acaban</h4>
-      <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Tus ingresos de hoy (de Ingresos). Apaga los que ya no van en este escenario y desde cuándo; tus datos de Ingresos no cambian.</div>
+      <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Tus ingresos de hoy (de Ingresos). Apaga los que ya no van en este escenario y desde cuándo; tus datos de Ingresos no cambian.
+        {irHoy && <> ¿Un monto no es el real? <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={irHoy}>Corrígelo en 1. Hoy</button></>}</div>
       <SeAcaba lista={ingresosHoy} term={cfg.ingresosTerminan || {}} setTerm={(nx) => set("ingresosTerminan", nx)} frase="Dejas de recibir" />
       <h4 style={{ margin: "16px 0 4px" }}>Gastos que se acaban</h4>
       <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Tus gastos de hoy (de Egresos). Marca los que dejas de pagar en este escenario y desde cuándo; tus datos de Egresos no cambian.</div>
