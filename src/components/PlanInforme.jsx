@@ -120,7 +120,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
     ...(r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => ({ destino: x.nombre, capital: x.aporte, tasa: x.rendimientoPct != null ? fmPct(x.rendimientoPct, 1) : x.rentaPctAnual > 0 ? fmPct(x.rentaPctAnual, 1) : "—", bolsillo: x.clase === "inmueble" || (x.pctRecibe || 0) > 0 ? "Sustento" : "Crecimiento", regla: [x.rentaMensual > 0 ? `Renta ${fmM(x.rentaMensual)}/mes desde ${x.rentaDesdeMes ? `el mes ${x.rentaDesdeMes}` : "ya"}` : null, x.teLlegaMes > 0 ? `Te llega ${fmM(x.teLlegaMes)}/mes` : null, x.anio > 1 ? `Se invierte en ${x.anio - 1} año${x.anio === 2 ? "" : "s"}` : null].filter(Boolean).join(" · ") || "Se valoriza" })),
     ...(r.nuevasDetalle || []).map((x) => ({ destino: x.nombre, capital: x.monto, tasa: fmPct(x.rendPct, 1), bolsillo: x.pagaRenta ? "Sustento" : "Crecimiento", regla: x.pagaRenta ? "Paga renta al flujo" : "Se reinvierte" })),
     ...(bd.colchon > 0 ? [{ destino: "Colchón", capital: bd.colchon, tasa: "—", bolsillo: "Protección", regla: "Meses de gastos a la mano" }] : []),
-    ...(bd.restante > 0 ? [{ destino: "Lo que sobra, reinvertido", capital: bd.restante, tasa: "—", bolsillo: "Mezcla", regla: "Se reparte según el norte que elegiste" }] : []),
+    ...(bd.restante > 0 ? [{ destino: "Lo que sobra de las ventas", capital: bd.restante, tasa: "—", bolsillo: "Mezcla", regla: r.destinoSobra || "Se reparte según el norte que elegiste" }] : []),
   ];
   const totalNueva = plataNueva.reduce((s, x) => s + (x.capital || 0), 0);
 
@@ -149,7 +149,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
         <Ficha l="Produce al mes" v={fmM(produceMes)} s={`renta ${fmM(rentaMes)} + multiplica ${fmM(multiplicaMes)}`} />
         <Ficha l="Rendimiento del patrimonio" v={fmPct(rendimiento, 1)} s="anual, sobre lo que tienes" />
         <Ficha l="Sale al mes" v={fmM(saleMes)} s="gastos + cuotas" />
-        <Ficha l="Queda al mes" v={`${entraMes - saleMes >= 0 ? "+" : ""}${fmM(entraMes - saleMes)}`} s="lo que entra menos lo que sale" col={entraMes - saleMes >= 0 ? INF.ok : INF.bad} />
+        <Ficha l={entraMes - saleMes >= 0 ? "Sobra al mes y se reinvierte" : "Falta al mes"} v={`${entraMes - saleMes >= 0 ? "+" : ""}${fmM(entraMes - saleMes)}`} s={entraMes - saleMes >= 0 ? (r.destinoSobra || "lo que entra menos lo que sale") : "sale de tu liquidez"} col={entraMes - saleMes >= 0 ? INF.ok : INF.bad} />
         <Ficha l="Le gana a la inflación" v={real == null ? "—" : `${real >= 0 ? "+" : ""}${fmPct(real, 1)}`} s={`real al año · en ${ganaN} de ${gana.length} años`} col={real != null && real >= 0 ? INF.ok : INF.bad} />
       </div>
 
@@ -163,7 +163,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
 
       <div style={card}>
         <h3 style={h3}>Mes a mes: ¿alcanza para vivir? Así se comporta el plan en el tiempo</h3>
-        <p style={lead}><b>Línea azul:</b> lo que entra cada mes. <b>Línea roja punteada:</b> lo que sale para vivir. <b>Franja verde:</b> lo que sobra. Las líneas verticales marcan los cambios. Mientras la azul esté por encima de la roja, el plan se sostiene solo.</p>
+        <p style={lead}><b>Línea azul:</b> lo que entra cada mes. <b>Línea roja punteada:</b> lo que sale para vivir. <b>Franja verde:</b> lo que sobra, que no se queda quieto: {r.destinoSobra || "se reinvierte"}. Las líneas verticales marcan los cambios. Mientras la azul esté por encima de la roja, el plan se sostiene solo.</p>
         <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={300}>
           <ComposedChart data={mes} margin={{ top: 40, right: 96, left: 6, bottom: 0 }}>
             <CartesianGrid {...grid} />
@@ -247,7 +247,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
           </ComposedChart>
         </ResponsiveContainer></div></div>
         <div style={{ overflowX: "auto", marginTop: 8 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 640 }}>
-          <thead><tr><th style={{ ...th, textAlign: "left" }}>Año</th><th style={th}>Llega a la cuenta</th><th style={th}>Crece invertido</th><th style={th}>Produce en total</th><th style={th}>Sale para vivir</th><th style={th}>Sobra al mes</th><th style={{ ...th, textAlign: "left" }}>Qué cambia ese año</th></tr></thead>
+          <thead><tr><th style={{ ...th, textAlign: "left" }}>Año</th><th style={th}>Llega a la cuenta</th><th style={th}>Crece invertido</th><th style={th}>Produce en total</th><th style={th}>Sale para vivir</th><th style={th}>Sobra al mes (se reinvierte)</th><th style={{ ...th, textAlign: "left" }}>Qué cambia ese año</th></tr></thead>
           <tbody>{filas.slice(1).map((f) => { const qe = ev.filter((e) => e.anio === f.anio).map((e) => e.texto); return <tr key={f.anio}>
             <td style={tdL}>{anioTxt(f.anio)}</td><td style={td}>{fmM(f.rentas / d(f))}</td><td style={td}>{fmM(f.crece / d(f))}</td><td style={td}>{fmM(f.produce / d(f))}</td><td style={td}>{fmM(f.gastos / d(f))}</td>
             <td style={{ ...td, color: f.ingresos - f.gastos >= 0 ? INF.tx : INF.bad }}>{fmM((f.ingresos - f.gastos) / 12 / d(f))}</td>

@@ -757,6 +757,15 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => ({ id: x.id, nombre: x.n || x.nombre || "Activo", valor: n(x.va) * fxA(x) })),
     reinversionesDetalle,
     ciclosDetalle,
+    // 25-oct-2026 (Santiago: "en el resumen final veo «sobra» y uno no entiende
+    // si se reinvierte"): a dónde va lo que sobra, en palabras.
+    destinoSobra: (() => {
+      const nom = (id) => id === "c_disponible" ? "disponible" : id === "c_liquidez" ? "liquidez" : id === "c_renta" ? "renta fija" : id === "c_crecimiento" ? "crecimiento" : ((todos.find((x) => x.id === id) || {}).nombre || id);
+      const partes = sobraDestinos.map((d) => `${Math.round(d.pct)} % a ${nom(d.id)}`);
+      const resto = 100 - sobraDestinos.reduce((sm, d) => sm + d.pct, 0);
+      if (resto > 0.5) partes.push(disponible ? `${Math.round(resto)} % queda disponible` : `${Math.round(resto)} % se reparte (${Math.round(mezcla.liquidez)} % liquidez, ${Math.round(mezcla.renta)} % renta fija, ${Math.round(mezcla.crecimiento)} % crecimiento)`);
+      return partes.join(" · ");
+    })(),
     nuevasDetalle: [...nuevas.filter((x) => x.clase !== "ciclo" && !x.apartadoDe).map((x) => ({ id: x.id, nombre: x.nombre, monto: x.montoInicial ?? 0, anio: 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0, fuente: x.fuente })), ...personalizadas.map((c) => ({ nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta, fuente: "liquidez" }))],
     futuros: fut,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
