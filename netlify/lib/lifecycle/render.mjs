@@ -1,6 +1,6 @@
 // FINPATHIA · Arma asunto + HTML + texto de un correo de la secuencia.
 // Puro (sin red): recibe la clave, las variables y la URL de baja.
-import { PLAN_BASE } from "../../../src/lib/plans.js";
+import { PLAN_BASE, PRECIOS_COP, fmtCOP } from "../../../src/lib/plans.js";
 import { COPY, CIERRE_MARCA, TEXTO_BAJA } from "./copy.mjs";
 import { conUtm, DESTINOS, BASE_APP } from "./enlaces.mjs";
 
@@ -12,6 +12,8 @@ export const PRECIOS = {
   familiar_mensual: familiar?.priceUSD?.mensual ?? 27,
   familiar_anual: familiar?.priceUSD?.anual ?? 20,
   familiar_personas: familiar?.maxMembers ?? 10,
+  basico_cop: fmtCOP(PRECIOS_COP["Básico"].mensual),
+  pro_cop: fmtCOP(PRECIOS_COP["Pro"].mensual),
 };
 
 export const escaparHtml = (s) => String(s ?? "")

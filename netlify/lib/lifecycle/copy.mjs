@@ -87,7 +87,7 @@ export const COPY = {
   d13_urgencia: {
     asunto: "Tu prueba Pro vence mañana",
     cuerpo: [
-      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos. Con Pro Familiar compartes tu Finpathia con hasta {familiar_personas} personas de tu familia. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual. Pro Familiar: {familiar_mensual} USD/mes o {familiar_anual} USD/mes en plan anual.",
+      "Mañana termina tu prueba Pro. Tus datos se quedan guardados y podrás verlos; para seguir agregando y editando necesitas un plan. En pesos: Básico {basico_cop} y Pro {pro_cop} al mes, o un solo pago al año con 2 meses gratis. En dólares: Pro {pro_mensual} USD/mes.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",
@@ -100,7 +100,7 @@ export const COPY = {
       soloM: "Ya tienes {m} {activos} en Finpathia.",
     },
     cuerpo: [
-      "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos. Con Pro Familiar compartes tu Finpathia con hasta {familiar_personas} personas de tu familia. Pro: {pro_mensual} USD/mes o {pro_anual} USD/mes en plan anual. Pro Familiar: {familiar_mensual} USD/mes o {familiar_anual} USD/mes en plan anual.",
+      "Mañana termina tu prueba Pro. Tus datos se quedan guardados y podrás verlos; para seguir agregando y editando necesitas un plan. En pesos: Básico {basico_cop} y Pro {pro_cop} al mes, o un solo pago al año con 2 meses gratis. En dólares: Pro {pro_mensual} USD/mes.",
     ],
     cta: "Seguir con Pro",
     destino: "planes",
@@ -108,7 +108,7 @@ export const COPY = {
   d16: {
     asunto: "Tu información sigue aquí",
     cuerpo: [
-      "Estás en el plan gratis y todo lo que cargaste sigue guardado. Cuando quieras las funciones Pro, actívalas en un clic.",
+      "Tu cuenta está en modo consulta: todo lo que cargaste sigue guardado y lo puedes ver. Para seguir agregando y editando, elige un plan desde {basico_cop} al mes en pesos.",
     ],
     cta: "Activar Pro",
     destino: "planes",

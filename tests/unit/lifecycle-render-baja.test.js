@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { armarCorreo, rellenar, PRECIOS } from "../../netlify/lib/lifecycle/render.mjs";
 import { COPY, CIERRE_MARCA } from "../../netlify/lib/lifecycle/copy.mjs";
 import { firmarTokenBaja, verificarTokenBaja } from "../../netlify/lib/lifecycle/tokenBaja.mjs";
-import { PLAN_BASE } from "../../src/lib/plans.js";
+import { PLAN_BASE, PRECIOS_COP, fmtCOP } from "../../src/lib/plans.js";
 
 const ID = "0f8a2c1e-1234-4abc-9def-0123456789ab";
 const URL_BAJA = "https://finpathia.com/api/email-unsubscribe?t=abc";
@@ -94,13 +94,12 @@ describe("correos", () => {
     expect(PRECIOS.pro_mensual).toBe(pro.priceUSD.mensual);
     expect(PRECIOS.pro_anual).toBe(pro.priceUSD.anual);
     const c = armarCorreo({ clave: "d13_urgencia", paso: "d13", utmContent: "urgencia", urlBaja: URL_BAJA });
-    expect(c.texto).toContain(`Pro: ${pro.priceUSD.mensual} USD/mes o ${pro.priceUSD.anual} USD/mes en plan anual.`);
-    const fam = PLAN_BASE.find((p) => p.name === "Pro Familiar");
-    expect(c.texto).toContain(`Pro Familiar: ${fam.priceUSD.mensual} USD/mes o ${fam.priceUSD.anual} USD/mes en plan anual.`);
-    expect(c.texto).toContain(`hasta ${fam.maxMembers} personas de tu familia`);
+    // 25-oct-2026: d13 muestra los precios en pesos (PRECIOS_COP) y el Pro en dólares.
+    expect(c.texto).toContain(`En dólares: Pro ${pro.priceUSD.mensual} USD/mes.`);
+    expect(c.texto).toContain(fmtCOP(PRECIOS_COP["Pro"].mensual));
     const v = armarCorreo({ clave: "d13_valor", paso: "d13", utmContent: "valor", vars: { conteos: { n: 2, m: 1 } }, urlBaja: URL_BAJA });
     expect(v.texto.startsWith("Ya tienes 2 registros y 1 activo en Finpathia.")).toBe(true);
-    expect(v.texto).toContain("Con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia. Pro: 16 USD/mes o 12 USD/mes en plan anual. Pro Familiar: 27 USD/mes o 20 USD/mes en plan anual.");
+    expect(v.texto).toContain("En pesos: Básico $14.900 y Pro $24.900 al mes, o un solo pago al año con 2 meses gratis. En dólares: Pro 16 USD/mes.");
     const d10 = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", urlBaja: URL_BAJA });
     expect(d10.texto).toContain("con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia.");
   });
@@ -161,8 +160,8 @@ describe("copy v3 literal (copy_secuencia_trial_v3_patrimonio.md)", () => {
       d5_sin_activo: "Tus cuentas, tu carro, tu CDT y tus deudas, juntos en una sola vista. Carga lo que tengas a la mano y mira tu patrimonio total.",
       d5_con_activo: "En Finpathia ves, activo por activo, cuánto vale, cuánto ha ganado y cuánta deuda tiene encima. Revisa los tuyos y completa los que falten.",
       d10: "Aprovecha estos días para dejar tu patrimonio completo. Si administras la plata en familia, con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia.",
-      d13_urgencia: "Mañana termina tu prueba Pro. Si no haces nada, pasas al plan gratis y conservas tus datos. Con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia. Pro: 16 USD/mes o 12 USD/mes en plan anual. Pro Familiar: 27 USD/mes o 20 USD/mes en plan anual.",
-      d16: "Estás en el plan gratis y todo lo que cargaste sigue guardado. Cuando quieras las funciones Pro, actívalas en un clic.",
+      d13_urgencia: "Mañana termina tu prueba Pro. Tus datos se quedan guardados y podrás verlos; para seguir agregando y editando necesitas un plan. En pesos: Básico $14.900 y Pro $24.900 al mes, o un solo pago al año con 2 meses gratis. En dólares: Pro 16 USD/mes.",
+      d16: "Tu cuenta está en modo consulta: todo lo que cargaste sigue guardado y lo puedes ver. Para seguir agregando y editando, elige un plan desde $14.900 al mes en pesos.",
     };
     for (const [clave, cuerpo] of Object.entries(cuerpos)) expect(C(clave).texto.startsWith(cuerpo)).toBe(true);
     expect(C("d13_valor", { conteos: { n: 2, m: 1 } }).texto.startsWith("Ya tienes 2 registros y 1 activo en Finpathia.\n" + cuerpos.d13_urgencia)).toBe(true);

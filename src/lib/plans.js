@@ -354,8 +354,8 @@ export function getPlansForLanding({ trm }) {
 // registrarse); Checkout cobra de inmediato. Por eso "Elegir …".
 function ctaForPlan(name) {
   if (name === "Free") return "Comenzar gratis";
-  if (name === "Básico") return "Elegir Básico";
-  if (name === "Pro") return "Elegir Pro";
+  if (name === "Básico") return "Probar 14 días gratis";
+  if (name === "Pro") return "Probar 14 días gratis";
   if (name === "Pro Familiar") return "Elegir Pro Familiar";
   return "Contactar";
 }

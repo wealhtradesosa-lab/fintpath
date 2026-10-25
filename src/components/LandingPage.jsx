@@ -212,10 +212,10 @@ export default function LandingPage({ onGetStarted, onLogin }) {
           <div style={{ textAlign: "center", marginBottom: "clamp(28px, 6vw, 48px)" }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: "1px solid " + T.border, borderRadius: 999, padding: "6px 16px", marginBottom: 20, fontSize: 13, color: T.txt2 }}>💰 Planes flexibles</div>
             <h2 style={{ fontSize: "clamp(24px, 6vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Proyecta tu futuro financiero hoy</h2>
-            <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Regístrate gratis y toma control de tu patrimonio</p>
+            <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Pruébalo 14 días gratis con todo incluido, sin tarjeta</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 16, maxWidth: 1280, margin: "0 auto" }}>
-            {plansData.map((p) => (
+            {plansData.filter((p) => p.name !== "Free").map((p) => (
               <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : p.advisor ? "1px solid rgba(59,130,246,0.35)" : p.comingSoon ? "1px dashed " + T.border : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative", opacity: p.comingSoon ? 0.95 : 1 }}>
                 {p.accent && <div style={{ background: T.grad, color: "#000", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>MÁS POPULAR</div>}
                 {p.advisor && <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>PARA PROFESIONALES</div>}
@@ -229,7 +229,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                     {p.per && <span style={{ color: T.txt3, fontSize: 14 }}>{p.per}</span>}
                   </div>
                   {p.sub && <div style={{ fontSize: 12, color: p.advisor ? T.blue : T.green, fontWeight: 600, marginBottom: 4 }}>{p.sub}</div>}
-                  {p.copEquiv && <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500, marginBottom: 14 }}>🇨🇴 {p.copEquiv}</div>}
+                  {p.copEquiv && <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500, marginBottom: 14 }}>{String(p.copEquiv).startsWith("o US") ? "🌎" : "🇨🇴"} {p.copEquiv}</div>}
                   {!p.sub && !p.copEquiv && <div style={{ marginBottom: 14 }} />}
                   {!p.copEquiv && p.sub && <div style={{ marginBottom: 10 }} />}
                   <div style={{ background: T.bg3, padding: "8px 12px", borderRadius: 8, fontSize: 11, color: T.txt2, marginBottom: 16, fontWeight: 600 }}>👤 {p.users}</div>

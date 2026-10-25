@@ -580,7 +580,7 @@ export default function FinPath(){
   // Sesión 4-may-2026: tour de bienvenida — se activa cuando un user nuevo
   // entra recién signup. Dura ~60 segundos y lo guía a su primer momento de
   // valor (importar Excel, demo, o cargar manualmente). Ver OnboardingTour.jsx.
-  const[showOnboarding,setShowOnboarding]=useState(false);const[extraADeudas,setExtraADeudas]=useState(0);
+  const[showOnboarding,setShowOnboarding]=useState(false);const[paywall,setPaywall]=useState(false);const[extraADeudas,setExtraADeudas]=useState(0);
   const[recoveryEmail,setRecoveryEmail]=useState("");
   // ═══ MULTI-USUARIO STATE (Fase 2 commit 1) ═══
   // useAccount detecta la cuenta activa del usuario y su rol. Si la migración
@@ -1465,7 +1465,8 @@ export default function FinPath(){
   //   2. sS() debounce 2s → upsert a Supabase
   //   3. Si OK → evento 'fp3-save-ok' → toast '☁️ Sincronizado'
   //   4. Si error → evento 'fp3-save-error' → toast '⚠️ Error guardando'
-  const upd=(k,v)=>{showToast("💾 Guardando…");setU(p=>p?{...p,[k]:v}:p);};
+  // 25-oct-2026: en modo consulta (prueba vencida, cuentas nuevas) no se guarda: se ofrece el plan.
+  const upd=(k,v)=>{if(modoConsulta){setPaywall(true);return}showToast("💾 Guardando…");setU(p=>p?{...p,[k]:v}:p);};
   const isAdmin=u?.p?.email==="santiagososa1@me.com";
   const INVITADOS=["andres.isaza@grupogiesas.com","renatomaestri76@hotmail.com"];
   const getTrialDays=(email)=>INVITADOS.includes(email)?30:14;
@@ -1488,6 +1489,12 @@ export default function FinPath(){
   // Usar este en gates de features. plan==="pro" es solo para "soy plan Pro
   // exacto" (ej. mostrar 'Plan actual' en pricing card del plan Pro).
   const hasProAccess=plan==="pro"||plan==="pro_familiar"||plan==="advisor_pro";
+  // ═══ 25-oct-2026 — MODO CONSULTA (Santiago: "que se registren, la usen y a los X días aviso de cobro") ═══
+  // Ya no hay plan gratis para elegir: todos entran con 14 días de Pro. Al vencer, la cuenta queda en
+  // consulta: ve todos sus datos, su nivel y su panel, pero para agregar o editar elige un plan.
+  // Aplica a toda prueba que vence desde el 26-oct-2026; quienes ya estaban en gratis siguen como estaban.
+  const CONSULTA_DESDE="2026-10-26";
+  const modoConsulta=!isAdmin&&plan==="free"&&!!trialEnd&&!trialActive&&String(trialEnd).slice(0,10)>=CONSULTA_DESDE&&!u?.p?.anonymous;
   const t=useMemo(()=>u?cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),u.trm||4200,u.inflacionPct):{},[u]);
   // ═══ 11-oct-2026 — ACTIVACIÓN = «primer activo cargado» (copy v3) ═══
   // Cuando la persona tiene al menos un activo en Patrimonio (u.inv), el
@@ -2190,17 +2197,15 @@ export default function FinPath(){
               <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                 <span style={{fontSize:18,flexShrink:0}}>🔒</span>
                 <div style={{minWidth:0}}>
-                  <div style={{fontSize:14,fontWeight:700,color:T.rd}}>Tu prueba gratuita del plan Pro terminó</div>
+                  <div style={{fontSize:14,fontWeight:700,color:T.rd}}>{modoConsulta?"Tu prueba de 14 días terminó · estás en modo consulta":"Tu prueba gratuita del plan Pro terminó"}</div>
                   <div style={{fontSize:12,color:T.tx3,marginTop:2,lineHeight:1.5}}>
-                    Para seguir usando el <strong>motor fiscal</strong>, el <strong>Asesor IA</strong> y los <strong>Coaches</strong>, activa tu plan.
-                    <br/>Tus datos están intactos y tu cuenta sigue activa en el plan gratuito.
+                    {modoConsulta?<>Puedes ver todos tus datos y tu nivel. Para <strong>agregar o editar</strong>, usar el <strong>Asesor IA</strong> y simular tu futuro, elige un plan. Desde <strong>$14.900 al mes en pesos</strong>.</>:<>Para seguir usando el <strong>motor fiscal</strong>, el <strong>Asesor IA</strong> y los <strong>Coaches</strong>, activa tu plan.
+                    <br/>Tus datos están intactos y tu cuenta sigue activa en el plan gratuito.</>}
                   </div>
                 </div>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Activar Pro Familiar — $27/mes</button>
-                <button onClick={()=>setPg("price")} style={{background:"transparent",color:T.gn,border:`1px solid ${T.gn}`,padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Pro — $16/mes</button>
-                <button onClick={()=>setPg("price")} style={{background:"transparent",color:T.tx2,border:`1px solid ${T.border}`,padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:12}}>Básico — $8/mes</button>
+                <button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Ver planes →</button>
               </div>
             </div>
           </div>}
@@ -2212,6 +2217,27 @@ export default function FinPath(){
         </div>
       </div>
 
+      {/* 25-oct-2026 — Primera pantalla: tu nivel y UNA acción. Mientras dura la prueba y hasta que la cierre. */}
+      {trialActive&&!u?.p?.bienvenidaVista&&!isUS&&(()=>{
+        const nv=t.nivel||{};
+        const hasInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0;
+        const hasIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>0;
+        const hasGas=Object.keys((u&&u.gas)||{}).length>0;
+        const acc=!hasIng?{t:"Registra lo que te entra cada mes",b:"Agregar mis ingresos",pg:"ing"}
+          :!hasGas?{t:"Registra lo que gastas al mes",b:"Agregar mis gastos",pg:"gas"}
+          :!hasInv?{t:"Agrega lo que tienes: ahorros, inversiones, propiedades",b:"Agregar mi patrimonio",pg:"inv"}
+          :{t:"Mira cómo sería tu plata en 10 años",b:"Ver mi futuro a 10 años",pg:"f10"};
+        const cerrar=()=>setU(p=>p?{...p,p:{...p.p,bienvenidaVista:true}}:p);
+        return <div style={{marginBottom:20,border:"2px solid "+T.gn,borderRadius:16,padding:"18px 20px",background:T.gnB}}>
+          <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}>
+            <div style={{fontSize:12,fontWeight:700,color:T.gn,letterSpacing:1,textTransform:"uppercase"}}>Bienvenido · {trialDays} días de Pro gratis</div>
+            <button onClick={cerrar} aria-label="Cerrar" style={{background:"transparent",border:"none",color:T.tx3,cursor:"pointer",fontSize:16}}>✕</button>
+          </div>
+          <div style={{fontSize:mb?20:24,fontWeight:800,margin:"6px 0 2px"}}>{nv.nivel?`Estás en el nivel ${nv.nivel} de 5 · ${nv.nombre}`:"Descubre en qué nivel de libertad financiera estás"}</div>
+          <div style={{fontSize:13,color:T.tx2,lineHeight:1.5}}>Tu siguiente paso: <strong>{acc.t}</strong>. Mientras más real sea tu información, más preciso tu nivel y tu plan.</div>
+          <button onClick={()=>{track("bienvenida_accion",{pg:acc.pg});setPg(acc.pg)}} style={{marginTop:12,background:T.gn,color:"#000",border:"none",padding:"12px 20px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14}}>{acc.b} →</button>
+        </div>;
+      })()}
       {(()=>{
         const hasIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>0;
         const hasGas=Object.keys((u&&u.gas)||{}).length>0;
@@ -3470,7 +3496,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(240px, 1fr))",gap:16,maxWidth:1200,margin:"0 auto"}}>
-          {plans.map(pl=>(
+          {plans.filter(pl=>pl.n!=="Free"||pl.cur).map(pl=>(
             <Cd key={pl.n} s={{border:pl.ac?"2px solid "+T.gn:pl.comingSoon?"1px dashed "+T.border:"1px solid "+T.border,position:"relative",opacity:pl.comingSoon?0.95:1}}>
               {pl.ac&&<div style={{background:"linear-gradient(135deg,"+T.gn+",#16a34a)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>MÁS POPULAR</div>}
               {pl.comingSoon&&<div style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>PRONTO DISPONIBLE</div>}
@@ -4032,7 +4058,11 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
       <Suspense fallback={<div style={{padding:40,textAlign:"center",color:T.tx3,fontSize:13}}>Cargando…</div>}>
         {rp()}
       </Suspense>
-      </div>{showImport&&<Suspense fallback={null}><CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/></Suspense>}<PWAInstallPrompt/>{showOnboarding&&<OnboardingTour open={showOnboarding} userName={u?.p?.name||authUser?.user_metadata?.name||""} isPioneros={sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"} onSelectDemo={()=>{setShowOnboarding(false);setPg("dash");(u?.jurisdiction==="US"?demoUS:demo)();showToast("📊 Datos de ejemplo cargados — explora tranquilo")}} onSelectImport={()=>{setShowOnboarding(false);setShowImport(true)}} onSelectManual={()=>{setShowOnboarding(false);setPg("ing");showToast("✨ Paso 1 de 4 — registra lo que entra cada mes")}} onClose={()=>setShowOnboarding(false)}/>}{pagoEstado&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,display:"flex",justifyContent:"center",padding:"14px 12px",pointerEvents:"none"}}>
+      </div>{paywall&&<div onClick={()=>setPaywall(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:16,padding:"22px 22px",maxWidth:420,width:"100%"}}>
+        <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>Estás en modo consulta</div>
+        <div style={{fontSize:13,color:T.tx2,lineHeight:1.5,marginBottom:14}}>Tu prueba de 14 días terminó. Tus datos siguen aquí y puedes verlos cuando quieras. Para agregar o editar, elige un plan: desde <strong>$14.900 al mes</strong> en pesos, o en dólares.</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setPaywall(false);track("paywall_consulta_click");setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13}}>Ver planes →</button><button onClick={()=>setPaywall(false)} style={{background:"transparent",color:T.tx3,border:"1px solid "+T.border,padding:"11px 18px",borderRadius:10,cursor:"pointer",fontSize:13}}>Ahora no</button></div>
+      </div></div>}{showImport&&<Suspense fallback={null}><CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/></Suspense>}<PWAInstallPrompt/>{showOnboarding&&<OnboardingTour open={showOnboarding} userName={u?.p?.name||authUser?.user_metadata?.name||""} isPioneros={sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"} onSelectDemo={()=>{setShowOnboarding(false);setPg("dash");(u?.jurisdiction==="US"?demoUS:demo)();showToast("📊 Datos de ejemplo cargados — explora tranquilo")}} onSelectImport={()=>{setShowOnboarding(false);setShowImport(true)}} onSelectManual={()=>{setShowOnboarding(false);setPg("ing");showToast("✨ Paso 1 de 4 — registra lo que entra cada mes")}} onClose={()=>setShowOnboarding(false)}/>}{pagoEstado&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,display:"flex",justifyContent:"center",padding:"14px 12px",pointerEvents:"none"}}>
       <div style={{pointerEvents:"auto",maxWidth:520,width:"100%",background:pagoEstado.tipo==="exito"?"#0f2a1a":pagoEstado.tipo==="cancelado"?"#2a2416":"#12203a",border:"1px solid "+(pagoEstado.tipo==="exito"?"rgba(34,197,94,0.4)":pagoEstado.tipo==="cancelado"?"rgba(234,179,8,0.35)":"rgba(59,130,246,0.35)"),borderRadius:12,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",boxShadow:"0 8px 28px rgba(0,0,0,0.45)"}}>
         <span style={{fontSize:20,flexShrink:0}}>{pagoEstado.tipo==="exito"?"✅":pagoEstado.tipo==="cancelado"?"↩️":"⏳"}</span>
         <div style={{flex:1,minWidth:0}}>
