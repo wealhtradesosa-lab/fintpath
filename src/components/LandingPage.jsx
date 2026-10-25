@@ -215,7 +215,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
             <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Pruébalo 14 días gratis con todo incluido, sin tarjeta</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 16, maxWidth: 1280, margin: "0 auto" }}>
-            {plansData.filter((p) => p.name !== "Free").map((p) => (
+            {plansData.filter((p) => p.name !== "Free" && p.name !== "Pro Familiar").map((p) => (
               <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : p.advisor ? "1px solid rgba(59,130,246,0.35)" : p.comingSoon ? "1px dashed " + T.border : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative", opacity: p.comingSoon ? 0.95 : 1 }}>
                 {p.accent && <div style={{ background: T.grad, color: "#000", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>MÁS POPULAR</div>}
                 {p.advisor && <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>PARA PROFESIONALES</div>}

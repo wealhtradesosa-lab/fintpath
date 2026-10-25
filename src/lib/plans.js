@@ -67,11 +67,13 @@ export const STRIPE_PRICE_IDS = {
 // ── Precios en pesos (Mercado Pago) ────────────────────────────────────────
 // 25-oct-2026 (Santiago: "que quien ingrese vea los planes y decida si paga en
 // pesos o dólares"). Precio fijo en COP, sin conversión. Pro Familiar todavía
-// solo en dólares (su activación crea la cuenta familiar en Stripe).
+// 25-oct-2026 (2): Pro Familiar también en pesos ("que se puedan pagar los
+// diferentes planes en pesos por Mercado Pago").
 // Deben coincidir con mp-suscribir.cjs (PRECIOS_COP).
 export const PRECIOS_COP = {
   "Básico": { mensual: 14900, anual: 149000 },
   "Pro": { mensual: 24900, anual: 249000 },
+  "Pro Familiar": { mensual: 44900, anual: 449000 },
 };
 export const fmtCOP = (n) => "$" + Number(n).toLocaleString("es-CO");
 
@@ -142,7 +144,7 @@ export const PLAN_BASE = [
   },
   {
     name: "Pro",
-    tag: "Como tener un asesor financiero personal",
+    tag: "Todo FINPATHIA, como tener un asesor financiero personal",
     priceUSD: { mensual: 16, anual: 12 },
     users: "Hasta 3 usuarios",
     usersDetail: "Hasta 3 usuarios (tú + pareja + contador)",
@@ -151,6 +153,8 @@ export const PLAN_BASE = [
     save: "Ahorra 25%",
     features: ({ isCO, isUS }) => [
       "👥 Hasta 3 usuarios (tú + pareja + contador)",
+      "🔐 Roles: tú editas, tu pareja o contador consultan",
+      "🎯 Mi futuro a 10 años: arma y compara tus escenarios",
       "📊 Dashboard con resumen patrimonial",
       "💰 Ingresos, gastos y deudas ilimitados",
       "🖥️ Simulador financiero con palancas",

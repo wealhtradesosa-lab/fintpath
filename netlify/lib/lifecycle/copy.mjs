@@ -76,7 +76,7 @@ export const COPY = {
   d10: {
     asunto: "Te quedan 4 días de Pro, {nombre}",
     cuerpo: [
-      "Aprovecha estos días para dejar tu patrimonio completo. Si administras la plata en familia, con Pro Familiar compartes tu Finpathia con hasta {familiar_personas} personas de tu familia.",
+      "Aprovecha estos días para dejar tu patrimonio completo: mientras más real sea tu información, más preciso tu plan.",
     ],
     cta: "Completar mi patrimonio",
     destino: "patrimonio",

@@ -54,12 +54,14 @@ exports.handler = async (event) => {
     if (!preId) { console.log(`[mp-webhook] aviso ${tipo} ignorado`); return ok; }
     const s = await mp(`/preapproval/${preId}`);
     const [userId, planRef] = String(s.external_reference || "").split("|");
-    const planMp = planRef === "basico" ? "basico" : "pro";
+    const planMp = ["basico", "pro", "pro_familiar"].includes(planRef) ? planRef : "pro";
     const cliente = `mp_${s.id}`;
     console.log(`[mp-webhook] preapproval ${s.id} status=${s.status} user=${userId}`);
     if (!userId) return ok;
     if (s.status === "authorized") {
-      await rpc("update_user_plan_after_stripe", { p_user_id: userId, p_plan: planMp, p_stripe_customer_id: cliente });
+      // Pro Familiar crea la cuenta familiar (idempotente), igual que en Stripe.
+      if (planMp === "pro_familiar") await rpc("activate_pro_familiar", { p_user_id: userId, p_stripe_customer_id: cliente, p_display_name: "Mi cuenta" });
+      else await rpc("update_user_plan_after_stripe", { p_user_id: userId, p_plan: planMp, p_stripe_customer_id: cliente });
       console.log(`[mp-webhook] ✅ plan ${planMp} activo para ${userId}`);
     } else if (s.status === "cancelled" || s.status === "paused") {
       await rpc("handle_subscription_canceled", { p_stripe_customer_id: cliente, p_canceled_at: new Date().toISOString() });

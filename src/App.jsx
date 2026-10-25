@@ -3471,7 +3471,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle,trialActive,trialDays});
       // 25-oct-2026 (Santiago: "que quien ingrese vea los planes y decida si paga en pesos o dólares").
       const mon=monedaPago||(isCO?"cop":"usd");
-      const pagarMP=async(pl)=>{const planMp=pl.n==="Básico"?"basico":"pro";trackCheckoutStarted({plan:pl.n,billingCycle,priceId:"mp_"+planMp});
+      const pagarMP=async(pl)=>{const planMp=pl.n==="Básico"?"basico":pl.n==="Pro Familiar"?"pro_familiar":"pro";trackCheckoutStarted({plan:pl.n,billingCycle,priceId:"mp_"+planMp});
         try{const r=await fetchAuth("/api/mp-suscribir",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:planMp,ciclo:billingCycle})});const d=await r.json();if(d&&d.url){window.location.href=d.url;return}}catch{}
         if(planMp==="pro"&&billingCycle==="mensual"){window.open(PIONEROS_MP.url,"_blank","noopener");return}
         alert("No pudimos abrir Mercado Pago en este momento. Escríbenos a soporte@finpathia.com o intenta pagar en dólares.")};
@@ -3496,7 +3496,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(240px, 1fr))",gap:16,maxWidth:1200,margin:"0 auto"}}>
-          {plans.filter(pl=>pl.n!=="Free"||pl.cur).map(pl=>(
+          {/* 25-oct-2026 (Santiago: "¿quitamos el Pro Familiar? tal vez confunde"): solo Básico y Pro a la venta. */}
+          {plans.filter(pl=>!["Free","Pro Familiar"].includes(pl.n)||pl.cur).map(pl=>(
             <Cd key={pl.n} s={{border:pl.ac?"2px solid "+T.gn:pl.comingSoon?"1px dashed "+T.border:"1px solid "+T.border,position:"relative",opacity:pl.comingSoon?0.95:1}}>
               {pl.ac&&<div style={{background:"linear-gradient(135deg,"+T.gn+",#16a34a)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>MÁS POPULAR</div>}
               {pl.comingSoon&&<div style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>PRONTO DISPONIBLE</div>}

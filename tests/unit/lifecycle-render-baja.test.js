@@ -101,7 +101,7 @@ describe("correos", () => {
     expect(v.texto.startsWith("Ya tienes 2 registros y 1 activo en Finpathia.")).toBe(true);
     expect(v.texto).toContain("En pesos: Básico $14.900 y Pro $24.900 al mes, o un solo pago al año con 2 meses gratis. En dólares: Pro 16 USD/mes.");
     const d10 = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", urlBaja: URL_BAJA });
-    expect(d10.texto).toContain("con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia.");
+    expect(d10.texto).toContain("mientras más real sea tu información");
   });
   it("{nombre}: con nombre y sin nombre (se borra ', {nombre}' limpio)", () => {
     const con = armarCorreo({ clave: "d10", paso: "d10", utmContent: "d10", vars: { nombre: "Ana María Pérez" }, urlBaja: URL_BAJA });
@@ -159,7 +159,7 @@ describe("copy v3 literal (copy_secuencia_trial_v3_patrimonio.md)", () => {
       d2_con_activo: "Suma tus otras cuentas, inversiones, propiedades y deudas. Entre más completo, más claro ves cuánto vale lo que tienes y cuánta deuda tiene encima.",
       d5_sin_activo: "Tus cuentas, tu carro, tu CDT y tus deudas, juntos en una sola vista. Carga lo que tengas a la mano y mira tu patrimonio total.",
       d5_con_activo: "En Finpathia ves, activo por activo, cuánto vale, cuánto ha ganado y cuánta deuda tiene encima. Revisa los tuyos y completa los que falten.",
-      d10: "Aprovecha estos días para dejar tu patrimonio completo. Si administras la plata en familia, con Pro Familiar compartes tu Finpathia con hasta 10 personas de tu familia.",
+      d10: "Aprovecha estos días para dejar tu patrimonio completo: mientras más real sea tu información, más preciso tu plan.",
       d13_urgencia: "Mañana termina tu prueba Pro. Tus datos se quedan guardados y podrás verlos; para seguir agregando y editando necesitas un plan. En pesos: Básico $14.900 y Pro $24.900 al mes, o un solo pago al año con 2 meses gratis. En dólares: Pro 16 USD/mes.",
       d16: "Tu cuenta está en modo consulta: todo lo que cargaste sigue guardado y lo puedes ver. Para seguir agregando y editando, elige un plan desde $14.900 al mes en pesos.",
     };

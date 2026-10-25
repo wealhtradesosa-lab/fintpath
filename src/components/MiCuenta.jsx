@@ -336,13 +336,13 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
           ) : plan === "managed" ? (
             <>👤 <strong style={{ color: T.txt }}>Cuenta gestionada por asesor:</strong> tu asesor configuró este espacio.</>
           ) : plan === "basico" ? (
-            <>👤 <strong style={{ color: T.txt }}>Plan Básico:</strong> 1 usuario por cuenta. Para compartir con familia o contador, sube a Pro Familiar.</>
+            <>👤 <strong style={{ color: T.txt }}>Plan Básico:</strong> 1 usuario por cuenta. Para compartir con familia o contador, sube a Pro.</>
           ) : (
             // 25-jul-2026 (Santiago): esta rama decía "Plan Básico" para
             // CUALQUIER plan que no fuera pro/pro_familiar/managed. Un usuario
             // gratuito veía el badge "Plan free" y debajo "Plan Básico" —
             // dos planes distintos en la misma tarjeta.
-            <>👤 <strong style={{ color: T.txt }}>Plan gratuito:</strong> 1 usuario por cuenta. Con Pro tienes el motor fiscal, el Asesor IA y los Coaches; con Pro Familiar, hasta 10 personas sobre los mismos datos.</>
+            <>👤 <strong style={{ color: T.txt }}>Plan gratuito:</strong> 1 usuario por cuenta. Con Pro tienes todo: el motor fiscal, el Asesor IA, los Coaches y hasta 3 personas sobre los mismos datos.</>
           )}
           {onUpgrade && plan !== "pro_familiar" && (
             <div style={{ marginTop: 10 }}>

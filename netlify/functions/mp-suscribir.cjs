@@ -11,7 +11,8 @@
 //   MP_ACCESS_TOKEN   (obligatoria) token de producción de Mercado Pago
 //   MP_PRECIO_BASICO / MP_PRECIO_BASICO_ANUAL  (opcional) 14900 / 149000 COP
 //   MP_PRECIO_PRO    / MP_PRECIO_PRO_ANUAL     (opcional) 24900 / 249000 COP
-//   Body: { plan: "basico"|"pro", ciclo: "mensual"|"anual" }
+//   MP_PRECIO_FAMILIAR / MP_PRECIO_FAMILIAR_ANUAL (opcional) 44900 / 449000 COP
+//   Body: { plan: "basico"|"pro"|"pro_familiar", ciclo: "mensual"|"anual" }
 // ═══════════════════════════════════════════════════════════════════════════
 const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
 
@@ -28,15 +29,16 @@ exports.handler = async (event) => {
   try {
     const q = JSON.parse(event.body || "{}");
     ciclo = q.ciclo === "anual" ? "anual" : "mensual";
-    planPedido = q.plan === "basico" ? "basico" : "pro";
+    planPedido = ["basico", "pro", "pro_familiar"].includes(q.plan) ? q.plan : "pro";
   } catch { /* por defecto Pro mensual */ }
   // Precios en COP. Deben coincidir con src/lib/plans.js (PRECIOS_COP).
   const PRECIOS_COP = {
     basico: { mensual: Number(process.env.MP_PRECIO_BASICO) || 14900, anual: Number(process.env.MP_PRECIO_BASICO_ANUAL) || 149000 },
     pro: { mensual: Number(process.env.MP_PRECIO_PRO) || 24900, anual: Number(process.env.MP_PRECIO_PRO_ANUAL) || 249000 },
+    pro_familiar: { mensual: Number(process.env.MP_PRECIO_FAMILIAR) || 44900, anual: Number(process.env.MP_PRECIO_FAMILIAR_ANUAL) || 449000 },
   };
   const precio = PRECIOS_COP[planPedido][ciclo];
-  const nombre = planPedido === "basico" ? "Básico" : "Pro";
+  const nombre = { basico: "Básico", pro: "Pro", pro_familiar: "Pro Familiar" }[planPedido];
   const body = {
     reason: `FINPATHIA ${nombre} — ${ciclo === "anual" ? "anual (un cobro al año)" : "mensual"}`,
     // "userId|plan": el webhook lee de aquí qué plan activar.
