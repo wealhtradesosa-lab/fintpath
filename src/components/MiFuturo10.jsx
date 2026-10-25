@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, sugerirVinculados, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, TARIFA_CICLO, regimenSugerido, sugerirVinculados, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -746,7 +746,10 @@ function Ciclos({ lista, set, det }) {
   return <>
     {lista.map((x, i) => {
       const cap = Number(x.capital) || 0, vf = Number(x.valorFinal) || 0, meses = Number(x.meses) || 12, costos = Number(x.costosPct) || 0;
-      const gan = Math.max(0, vf - cap) * (1 - costos / 100), anual = gan * 12 / meses;
+      const reg = TARIFA_CICLO[x.regimen] ? x.regimen : regimenSugerido(meses);
+      const impPct = x.impuestoPct == null || x.impuestoPct === "" ? TARIFA_CICLO[reg].pct : Number(x.impuestoPct) || 0;
+      const bruta = Math.max(0, vf - cap) * (1 - costos / 100), imp = bruta * impPct / 100;
+      const gan = bruta - imp, anual = gan * 12 / meses;
       const siempre = x.hasta == null || x.hasta === "";
       return (
         <div key={i} style={{ borderTop: `1px solid ${C.bd}`, padding: "10px 0", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
@@ -754,7 +757,15 @@ function Ciclos({ lista, set, det }) {
           <label style={lbl}>¿Cuánto capital pones? ($)<NumberInput style={inp} placeholder="1.350.000.000" value={x.capital ?? ""} onChange={(v) => up(i, { capital: v })} /></label>
           <label style={lbl}>¿Cuánto recibes al final de cada ciclo? ($)<NumberInput style={inp} placeholder="1.900.000.000" value={x.valorFinal ?? ""} onChange={(v) => up(i, { valorFinal: v })} /><span style={{ fontSize: 11 }}>Lo que vale o en lo que vendes al terminar.</span></label>
           <label style={lbl}>¿Cuánto dura cada ciclo?<select style={inp} value={meses} onChange={(e) => up(i, { meses: Number(e.target.value) })}>{[6, 9, 12, 18, 24, 36].map((m) => <option key={m} value={m}>{m === 12 ? "1 año" : m === 24 ? "2 años" : m === 36 ? "3 años" : `${m} meses`}</option>)}</select></label>
-          <label style={lbl}>Costos e impuestos sobre la ganancia (%, opcional)<InputDecimalEs style={inp} placeholder="0" value={x.costosPct ?? ""} onChange={(v) => up(i, { costosPct: v })} /></label>
+          <label style={lbl}>Otros costos sobre la ganancia (%, opcional)<InputDecimalEs style={inp} placeholder="0" value={x.costosPct ?? ""} onChange={(v) => up(i, { costosPct: v })} /><span style={{ fontSize: 11 }}>Comisiones, fiducia, escrituras.</span></label>
+          <div style={{ ...lbl, gridColumn: "1 / -1", border: `1px solid ${C.bd}`, borderRadius: 8, padding: 8 }}>Impuesto sobre la ganancia
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+              <select style={{ ...inp, flex: "1 1 220px", width: "auto" }} value={reg} onChange={(e) => up(i, { regimen: e.target.value, impuestoPct: "" })}>{Object.entries(TARIFA_CICLO).map(([k, t]) => <option key={k} value={k}>{t.nombre}{k !== "otro" ? ` · ${t.pct} %` : ""}</option>)}</select>
+              <span style={{ display: "flex", alignItems: "center", gap: 4, width: 110 }}><InputDecimalEs style={inp} placeholder={String(TARIFA_CICLO[reg].pct)} value={x.impuestoPct ?? ""} onChange={(v) => up(i, { impuestoPct: v })} />%</span>
+            </div>
+            <span style={{ fontSize: 11 }}>Sugerido: {TARIFA_CICLO[reg].pct} %. {TARIFA_CICLO[reg].nota} Puedes cambiar el %. Es una estimación, confírmala con tu contador.</span>
+            {cap > 0 && vf > cap && <span style={{ fontSize: 12, color: C.am }}>Impuesto estimado: {mm(imp)} por ciclo ({mm(imp * 12 / meses)} al año).</span>}
+          </div>
           <label style={lbl}>¿Desde cuándo?<select style={inp} value={x.desde || 1} onChange={(e) => up(i, { desde: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Desde ya (año 1)" : `Año ${y}`}</option>)}</select></label>
           <div style={lbl}>¿Hasta cuándo?
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -770,7 +781,7 @@ function Ciclos({ lista, set, det }) {
             </div>
             <span style={{ fontSize: 11 }}>{x.destino === "flujo" ? "Entra a tu flujo como un ingreso." : "Se suma a lo que sobra y se reparte como en E."}</span></div>
           {cap > 0 && vf > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 13, color: vf > cap ? C.gn : C.am }}>
-            {vf > cap ? <>Pones {mm(cap)} y recibes {mm(vf)} cada {meses === 12 ? "año" : `${meses} meses`}: ganas <b>{mm(gan)}</b> por ciclo ({mm(anual)} al año, {(Math.round(anual / cap * 1000) / 10).toLocaleString("es-CO")} % sobre el capital). {x.destino === "flujo" ? "Te llega" : "Se reinvierte"} {siempre ? "todos los años" : `hasta el año ${x.hasta}`}{siempre ? "" : "; después el capital vuelve"}.</> : "Recibes menos de lo que pones: no hay ganancia."}
+            {vf > cap ? <>Pones {mm(cap)} y recibes {mm(vf)} cada {meses === 12 ? "año" : `${meses} meses`}: te quedan <b>{mm(gan)}</b> por ciclo después de impuestos ({mm(anual)} al año, {(Math.round(anual / cap * 1000) / 10).toLocaleString("es-CO")} % sobre el capital). {x.destino === "flujo" ? "Te llega" : "Se reinvierte"} {siempre ? "todos los años" : `hasta el año ${x.hasta}`}{siempre ? "" : "; después el capital vuelve"}.</> : "Recibes menos de lo que pones: no hay ganancia."}
           </div>}
           <div style={{ gridColumn: "1 / -1" }}><button style={btn(false)} onClick={() => set(lista.filter((_, j) => j !== i))}>Quitar</button></div>
         </div>);

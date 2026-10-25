@@ -641,8 +641,13 @@ describe("negocio que se repite (asociativos)", () => {
   const base = { decisiones: { pm: { accion: "vende" } } };
   it("el capital sale una vez y la ganancia de cada año se reinvierte", () => {
     const a = proyectarFuturo10(user, base);
-    const r = proyectarFuturo10(user, { ...base, ciclos: [{ nombre: "Asociativos", capital: 1350e6, valorFinal: 1900e6, meses: 12, desde: 1, fuente: "venta" }] });
+    const r = proyectarFuturo10(user, { ...base, ciclos: [{ nombre: "Asociativos", capital: 1350e6, valorFinal: 1900e6, meses: 12, desde: 1, fuente: "venta", impuestoPct: 0 }] });
     expect(r.ciclosDetalle[0].gananciaAnual).toBeCloseTo(550e6, -3);
+    const t = proyectarFuturo10(user, { ...base, ciclos: [{ nombre: "A", capital: 1350e6, valorFinal: 1900e6, meses: 12 }] });
+    expect(t.ciclosDetalle[0].impuestoPct).toBe(39);
+    expect(t.ciclosDetalle[0].gananciaAnual).toBeCloseTo(550e6 * 0.61, -3);
+    const o = proyectarFuturo10(user, { ...base, ciclos: [{ nombre: "A", capital: 1350e6, valorFinal: 1900e6, meses: 24 }] });
+    expect(o.ciclosDetalle[0].impuestoPct).toBe(15);
     expect(r.bolsaDetalle.restante).toBeCloseTo(a.bolsaDetalle.restante - 1350e6, -3);
     // 10 ciclos de ~550 M (con inflación) reinvertidos: bastante más patrimonio que sin el negocio
     expect(r.final.patrimonioReal - a.final.patrimonioReal).toBeGreaterThan(5000e6);
@@ -650,7 +655,7 @@ describe("negocio que se repite (asociativos)", () => {
     expect(r.filas[1].porActivo.find((x) => x.id === "ciclo_0").valor).toBeGreaterThan(1350e6);
   });
   it("si la ganancia llega al mes, sube el flujo; si termina, el capital vuelve", () => {
-    const r = proyectarFuturo10(user, { ...base, ciclos: [{ nombre: "Asociativos", capital: 1350e6, valorFinal: 1900e6, meses: 12, desde: 1, hasta: 3, destino: "flujo" }] });
+    const r = proyectarFuturo10(user, { ...base, ciclos: [{ nombre: "Asociativos", capital: 1350e6, valorFinal: 1900e6, meses: 12, desde: 1, hasta: 3, destino: "flujo", impuestoPct: 0 }] });
     expect(r.filas[1].cicloFlujo).toBeGreaterThan(500e6);
     expect(r.filas[4].cicloFlujo || 0).toBe(0);
     expect((r.filas[4].porActivo.find((x) => x.id === "ciclo_0") || { valor: 0 }).valor).toBe(0);

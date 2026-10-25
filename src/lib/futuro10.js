@@ -317,7 +317,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       a.valor = m; a.tomado = true; nuevasTotal += m;
     }
     nuevas.push(a);
-    ciclosDetalle.push({ id: a.id, nombre: c.nombre, capital: c.capital, valorFinal: c.valorFinal, meses: c.meses, desde: c.desde, hasta: c.hasta, fuente: c.fuente, destino: c.destino, costosPct: c.costosPct, gananciaCiclo: c.gananciaCiclo, gananciaAnual: c.gananciaAnual, rentabilidadPct: c.capital > 0 ? c.gananciaAnual / c.capital * 100 : 0 });
+    ciclosDetalle.push({ id: a.id, nombre: c.nombre, capital: c.capital, valorFinal: c.valorFinal, meses: c.meses, desde: c.desde, hasta: c.hasta, fuente: c.fuente, destino: c.destino, costosPct: c.costosPct, regimen: c.regimen, impuestoPct: c.impuestoPct, impuestoAnual: c.impuestoAnual, gananciaCiclo: c.gananciaCiclo, gananciaAnual: c.gananciaAnual, rentabilidadPct: c.capital > 0 ? c.gananciaAnual / c.capital * 100 : 0 });
   });
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
   ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] = bolsa * mezcla[k] / 100; });
@@ -959,6 +959,20 @@ export function ingresosSueltosHoy(userIn = {}, cfg = {}) {
   }).filter(Boolean);
 }
 
+// Impuesto sobre la ganancia de un negocio que se repite (Colombia, 2026).
+// Sugerencias editables, no asesoría tributaria:
+//  · Persona natural, bien poseído menos de 2 años → renta ordinaria, cédula
+//    general, tarifa marginal hasta 39 % (Art. 241 ET; con ingresos altos se
+//    llega a la última franja).
+//  · Sociedad (SAS) → tarifa general de renta 35 % (Art. 240 ET).
+//  · Bien poseído 2 años o más → ganancia ocasional 15 % (Arts. 313-316 ET).
+export const TARIFA_CICLO = {
+  natural: { pct: 39, nombre: "Persona natural · menos de 2 años (renta)", nota: "Tarifa marginal de renta: hasta 39 %. Si tus ingresos son menores puede ser 33–37 %." },
+  sociedad: { pct: 35, nombre: "Sociedad (SAS) · renta", nota: "Tarifa general de renta de sociedades: 35 %." },
+  ocasional: { pct: 15, nombre: "Ganancia ocasional · 2 años o más", nota: "Si el bien se tuvo 2 años o más: ganancia ocasional al 15 %." },
+  otro: { pct: 0, nombre: "Otro / ya lo incluí", nota: "Pon el % que te indique tu contador." },
+};
+export const regimenSugerido = (meses) => (Number(meses) >= 24 ? "ocasional" : "natural");
 /** Negocios que se repiten: [{nombre, capital, valorFinal, meses, desde, hasta?, costosPct?, fuente, destino}] */
 export function leerCiclos(lista = [], N = 10) {
   return (Array.isArray(lista) ? lista : []).map((x) => {
@@ -967,7 +981,13 @@ export function leerCiclos(lista = [], N = 10) {
     const desde = Math.min(N, Math.max(1, Math.round(n(x.desde) || 1)));
     const hasta = vacio(x.hasta) ? N : Math.min(N, Math.max(desde, Math.round(n(x.hasta))));
     const costosPct = Math.min(100, Math.max(0, n(x.costosPct)));
-    const gananciaCiclo = Math.max(0, valorFinal - capital) * (1 - costosPct / 100);
-    return { nombre: String(x.nombre || "").trim() || "Negocio que se repite", capital, valorFinal, meses, desde, hasta, costosPct, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
+    // 25-oct-2026 (Santiago: "debe existir una franja para calcular el impuesto
+    // de este tipo de negocios… que se sugiera pero se pueda editar").
+    const regimen = TARIFA_CICLO[x.regimen] ? x.regimen : regimenSugerido(meses);
+    const impuestoPct = vacio(x.impuestoPct) ? TARIFA_CICLO[regimen].pct : Math.min(100, Math.max(0, n(x.impuestoPct)));
+    const bruta = Math.max(0, valorFinal - capital) * (1 - costosPct / 100);
+    const impuestoCiclo = bruta * impuestoPct / 100;
+    const gananciaCiclo = bruta - impuestoCiclo;
+    return { nombre: String(x.nombre || "").trim() || "Negocio que se repite", capital, valorFinal, meses, desde, hasta, costosPct, regimen, impuestoPct, impuestoCiclo, impuestoAnual: impuestoCiclo * 12 / meses, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
   }).filter((x) => x.capital > 0 && x.valorFinal > 0);
 }
