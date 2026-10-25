@@ -3484,7 +3484,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <p style={{color:T.tx3,fontSize:15}}>{isUS?"Pay monthly or yearly. Cancel anytime.":"Paga mes a mes o una vez al año. Cancelas cuando quieras."}</p>
           <div style={{display:"inline-flex",background:T.bg3,borderRadius:10,padding:3,marginTop:16}}>
             {["mensual","anual"].map(c=>(
-              <button key={c} onClick={()=>setBillingCycle(c)} style={{padding:"8px 24px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:billingCycle===c?T.gn:"transparent",color:billingCycle===c?"#000":T.tx3}}>{isUS?(c==="mensual"?"Monthly":"Annual (save 25%)"):(c==="mensual"?"Pago mensual":(monedaPago||"cop")==="cop"?"Pago anual · 2 meses gratis":"Pago anual · ahorra 25%")}</button>
+              <button key={c} onClick={()=>setBillingCycle(c)} style={{padding:"8px 24px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:billingCycle===c?T.gn:"transparent",color:billingCycle===c?"#000":T.tx3}}>{isUS?(c==="mensual"?"Monthly":"Annual · 2 months free"):(c==="mensual"?"Pago mensual":"Pago anual · 2 meses gratis")}</button>
             ))}
           </div>
         </div>
@@ -3532,10 +3532,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     se cobraba. Ahora manda el monto real del cobro y la
                     equivalencia mensual queda como referencia secundaria. */}
                 {billingCycle==="anual"&&pl.save&&<div style={{marginBottom:12}}>
-                  <div style={{fontSize:12,color:T.gn,fontWeight:600}}>{pl.save} vs plan mensual</div>
+                  <div style={{fontSize:12,color:T.gn,fontWeight:600}}>{pl.save}</div>
                   <div style={{fontSize:11,color:T.tx3,marginTop:2}}>Un solo pago · equivale a {pl.p.anual} USD/mes</div>
                 </div>}
-                {billingCycle==="mensual"&&pl.save&&<div style={{fontSize:12,color:T.tx3,marginBottom:12}}>{isUS?"or pay annually & save 25%":"o paga anual y ahorra 25%"}</div>}
+                {billingCycle==="mensual"&&pl.save&&<div style={{fontSize:12,color:T.tx3,marginBottom:12}}>{isUS?"or pay yearly: 2 months free":"o paga el año y llévate 2 meses gratis"}</div>}
                 {!pl.save&&<div style={{marginBottom:12}}/>}
                 </>)}
                 <div className="fp-fo-ancho" style={{background:T.bg3,padding:"8px 12px",borderRadius:8,fontSize:11,color:T.tx2,marginBottom:14,fontWeight:600}}>👤 {pl.users}</div>

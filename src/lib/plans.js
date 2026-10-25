@@ -54,9 +54,11 @@ export const STRIPE_PRICE_IDS = {
     mensual: "price_1TIGRWKEnhNr9wQd2oEgNin9",
     anual: "price_1TIGRWKEnhNr9wQdJTMTGfYa",
   },
+  // 25-oct-2026 (Santiago: "debemos bajar el plan de USA" → US$14/mes, US$140/año).
+  // Los precios viejos (US$16 / US$144) siguen en stripe-webhook para quien ya pagaba.
   "Pro": {
-    mensual: "price_1TIGRXKEnhNr9wQdC8eKj2xS",
-    anual: "price_1TIGRYKEnhNr9wQd7QTFxT6z",
+    mensual: "price_1UUZ2uKEnhNr9wQdG83ChLn4",
+    anual: "price_1UUZ2uKEnhNr9wQdL7CSoxRV",
   },
   "Pro Familiar": {
     mensual: "price_1TRC9mKEnhNr9wQdQr9gsRot",
@@ -145,12 +147,13 @@ export const PLAN_BASE = [
   {
     name: "Pro",
     tag: "Todo FINPATHIA, como tener un asesor financiero personal",
-    priceUSD: { mensual: 16, anual: 12 },
+    // anual = equivalente mensual del plan anual; anualTotal = lo que se cobra de una.
+    priceUSD: { mensual: 14, anual: 11.67, anualTotal: 140 },
     users: "Hasta 3 usuarios",
     usersDetail: "Hasta 3 usuarios (tú + pareja + contador)",
     maxMembers: 3,
     accent: true, // MÁS POPULAR badge
-    save: "Ahorra 25%",
+    save: "2 meses gratis",
     features: ({ isCO, isUS }) => [
       "👥 Hasta 3 usuarios (tú + pareja + contador)",
       "🔐 Roles: tú editas, tu pareja o contador consultan",
@@ -278,7 +281,7 @@ export function getPlansForApp({ plan, isUS, trm, billingCycle, trialActive = fa
       // Total anual real (12 × precio mensual del plan anual). La tarjeta
       // muestra el equivalente mensual, que es lo correcto para comparar,
       // pero el usuario debe saber cuánto le cobran de una antes de ir a Stripe.
-      pAnualTotal: b.priceUSD?.anual ? `$${b.priceUSD.anual * 12} USD` : null,
+      pAnualTotal: b.priceUSD?.anual ? `$${b.priceUSD.anualTotal ?? b.priceUSD.anual * 12} USD` : null,
       rank: PLAN_RANK[planNameToCanonical(b.name)] ?? 0,
       rankActual: PLAN_RANK[plan] ?? 0,
       enTrial: trialActive && plan === planNameToCanonical(b.name),
@@ -373,15 +376,20 @@ export function precioCobroUSD(planName, billingCycle) {
   const base = PLAN_BASE.find(b => b.name === planName);
   if (!base || !base.priceUSD) return null;
   const anual = billingCycle === "anual" || billingCycle === "annual" || billingCycle === "yearly";
-  const valor = anual ? base.priceUSD.anual * 12 : base.priceUSD.mensual;
+  const valor = anual ? (base.priceUSD.anualTotal ?? base.priceUSD.anual * 12) : base.priceUSD.mensual;
   return valor > 0 ? valor : null;
 }
 
 // priceId de Stripe → { plan, billingCycle } según STRIPE_PRICE_IDS.
 // null si el priceId no es de ningún plan conocido.
+// Precios que ya no se venden pero tienen suscriptores activos (el webhook los reconoce).
+export const STRIPE_PRICE_IDS_VIEJOS = {
+  "Pro": { mensual: "price_1TIGRXKEnhNr9wQdC8eKj2xS", anual: "price_1TIGRYKEnhNr9wQd7QTFxT6z" }, // US$16 / US$144 hasta 25-oct-2026
+};
+
 export function planDesdePriceId(priceId) {
   if (!priceId) return null;
-  for (const [plan, ids] of Object.entries(STRIPE_PRICE_IDS)) {
+  for (const [plan, ids] of [...Object.entries(STRIPE_PRICE_IDS), ...Object.entries(STRIPE_PRICE_IDS_VIEJOS)]) {
     if (ids.mensual === priceId) return { plan, billingCycle: "mensual" };
     if (ids.anual === priceId) return { plan, billingCycle: "anual" };
   }

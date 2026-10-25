@@ -67,6 +67,8 @@ const PRICE_FALLBACK = {
   // Pro
   "price_1TIGRXKEnhNr9wQdC8eKj2xS": "pro",          // mensual
   "price_1TIGRYKEnhNr9wQd7QTFxT6z": "pro",          // anual
+  "price_1UUZ2uKEnhNr9wQdG83ChLn4": "pro",          // mensual US$14 (25-oct-2026)
+  "price_1UUZ2uKEnhNr9wQdL7CSoxRV": "pro",          // anual US$140 (25-oct-2026)
   // Pro Familiar
   "price_1TRC9mKEnhNr9wQdQr9gsRot": "pro_familiar", // mensual
   "price_1TRCCaKEnhNr9wQdpWlaXP0r": "pro_familiar", // anual

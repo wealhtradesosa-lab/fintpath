@@ -29,12 +29,12 @@ describe("stripe-checkout: sin prueba en Checkout", () => {
 describe("plans: precio real del cobro", () => {
   it("mensual = precio del mes", () => {
     expect(precioCobroUSD("Básico", "mensual")).toBe(8);
-    expect(precioCobroUSD("Pro", "mensual")).toBe(16);
+    expect(precioCobroUSD("Pro", "mensual")).toBe(14);
     expect(precioCobroUSD("Pro Familiar", "mensual")).toBe(27);
   });
   it("anual = 12 × el mensual del plan anual", () => {
     expect(precioCobroUSD("Básico", "anual")).toBe(72);
-    expect(precioCobroUSD("Pro", "anual")).toBe(144);
+    expect(precioCobroUSD("Pro", "anual")).toBe(140);
     expect(precioCobroUSD("Pro Familiar", "anual")).toBe(240);
   });
   it("gratis o desconocido → null", () => {
@@ -114,7 +114,7 @@ describe("analytics: Purchase e InitiateCheckout", () => {
   it("InitiateCheckout usa el precio real del plan, no 27/243 fijo", () => {
     trackCheckoutStarted({ plan: "Pro", billingCycle: "mensual", priceId: "p" });
     const call = window.fbq.mock.calls.find((c) => c[1] === "InitiateCheckout");
-    expect(call[2]).toMatchObject({ content_name: "Pro", currency: "USD", value: 16 });
+    expect(call[2]).toMatchObject({ content_name: "Pro", currency: "USD", value: 14 });
     window.fbq.mockClear();
     trackCheckoutStarted({ plan: "Básico", billingCycle: "anual", priceId: "p" });
     expect(window.fbq.mock.calls.find((c) => c[1] === "InitiateCheckout")[2].value).toBe(72);

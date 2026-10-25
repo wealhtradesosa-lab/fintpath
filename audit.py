@@ -177,7 +177,8 @@ with open('netlify/functions/stripe-webhook.cjs') as f:
     ids_webhook = set(re.findall(r'"(price_[A-Za-z0-9]{14,})"', f.read()))
 faltan = ids_plans - ids_webhook
 sobran = ids_webhook - ids_plans
-if len(ids_plans) == 6 and not faltan and not sobran:
+# 25-oct-2026: 6 vigentes + 2 de Pro viejo (US$16/144) que siguen activos para suscriptores.
+if len(ids_plans) == 8 and not faltan and not sobran:
     ok += 1; print(f"  ✅ Precios Stripe: plans.js y webhook coinciden ({len(ids_plans)})")
 else:
     fail += 1; print(f"  ❌ Precios Stripe desalineados — plans.js:{len(ids_plans)} faltan en webhook:{sorted(faltan)} sobran:{sorted(sobran)}")
