@@ -3484,7 +3484,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <p style={{color:T.tx3,fontSize:15}}>{isUS?"Family office tools for everyone":"Herramientas de family office al alcance de todos"}</p>
           <div style={{display:"inline-flex",background:T.bg3,borderRadius:10,padding:3,marginTop:16}}>
             {["mensual","anual"].map(c=>(
-              <button key={c} onClick={()=>setBillingCycle(c)} style={{padding:"8px 24px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:billingCycle===c?T.gn:"transparent",color:billingCycle===c?"#000":T.tx3}}>{isUS?(c==="mensual"?"Monthly":"Annual (save 25%)"):(c==="mensual"?"Mensual":"Anual (ahorra 25%)")}</button>
+              <button key={c} onClick={()=>setBillingCycle(c)} style={{padding:"8px 24px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:billingCycle===c?T.gn:"transparent",color:billingCycle===c?"#000":T.tx3}}>{isUS?(c==="mensual"?"Monthly":"Annual (save 25%)"):(c==="mensual"?"Pago mensual":(monedaPago||"cop")==="cop"?"Pago anual · 2 meses gratis":"Pago anual · ahorra 25%")}</button>
             ))}
           </div>
         </div>
