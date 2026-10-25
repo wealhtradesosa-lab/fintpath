@@ -14,7 +14,11 @@ const C = { bg: "#111827", bg2: "#1f2937", bd: "rgba(255,255,255,0.1)", tx: "#e5
 const card = { background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 12, padding: 14, marginBottom: 12 };
 const btn = (on) => ({ padding: "8px 12px", borderRadius: 8, border: `1px solid ${on ? C.gn : C.bd}`, background: on ? "rgba(34,197,94,0.15)" : "transparent", color: on ? C.gn : C.tx, cursor: "pointer", fontSize: 13 });
 const inp = { width: "100%", boxSizing: "border-box", background: C.bg, color: C.tx, border: `1px solid ${C.bd}`, borderRadius: 6, padding: "6px 8px", fontSize: 13 };
-const PASOS = ["Hoy", "Decide", "Tu plata", "Resultado", "Escenarios"];
+// 25-oct-2026 (Santiago: "uno ve ese primer listado y cree que van a ser
+// tenidas en cuenta… no es intuitivo"). Cada cosa que tienes se revisa y se
+// decide en un solo lugar (paso 1): valor, renta, si sigue o se vende, si se
+// acaba. El paso 2 queda solo para lo que viene.
+const PASOS = ["Lo que tienes", "Lo que viene", "Tu plata", "Resultado", "Escenarios"];
 const plata = (v) => "$" + fmtMilesEs(v);
 export const AVISO_F10 = "Proyección ilustrativa, no asesoría. Proyección estimada con supuestos generales que puedes ajustar en algunos pasos; no es una recomendación de inversión. No incluye impuestos.";
 
@@ -89,7 +93,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
       <PageHeader label="Mi futuro a 10 años" title="¿Cómo se ve tu patrimonio en 10 años?" compact
-        subtitle="Decide qué hacer con cada activo, mueve tu plata y mira el resultado en pesos de hoy. Tus datos reales no se tocan." />
+        subtitle="1. Revisa lo que tienes y decide qué sigue · 2. Agrega lo que viene · 3. Mueve tu plata · 4. Mira el resultado. Tus datos reales no se tocan." />
       <div style={{ ...card, borderColor: C.am, fontSize: 12, color: C.tx2 }}>{AVISO_F10}</div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
@@ -99,10 +103,10 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
       {paso === 0 && (
         <div style={card}>
-          <h3 style={{ marginTop: 0, marginBottom: 4 }}>Hoy: revisa y ajusta tus números</h3>
+          <h3 style={{ marginTop: 0, marginBottom: 4 }}>Lo que tienes: revisa y decide</h3>
           {/* 25-oct-2026 (Santiago: "deberíamos explicar que ahí se puede revisar y ajustar valores y rentabilidad de cada inversión"). */}
           <div style={{ fontSize: 13, color: C.tx, background: "rgba(34,197,94,0.08)", border: `1px solid ${C.gn}`, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
-            El plan arranca de estos números. Abajo revisa <b>cuánto vale, cuánto renta y cuánto sube al año cada inversión</b>, y <b>cuánto te entra de cada ingreso</b>. Si algo no es real (una renta más alta, un rendimiento distinto al promedio), tócalo y corrígelo: solo cambia el plan, tus páginas no.
+            Todo lo que tienes, cosa por cosa. De cada inversión: <b>cuánto vale, cuánto renta y cuánto sube al año</b>, y si <b>sigue o se vende</b>. De cada ingreso: <b>cuánto te entra</b> y si <b>sigue o se acaba</b>. Lo tachado no cuenta en este escenario. Lo que corrijas solo cambia el plan; tus páginas no.
           </div>
           <Grid items={[
             ["Patrimonio neto", plata(r.hoy.patrimonio)],
@@ -114,33 +118,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <p style={{ color: C.tx2, fontSize: 12 }}>Las cifras de hoy no incluyen impuestos.</p>
         </div>
       )}
-      {paso === 0 && <HoyDetalle user={user} cfg={cfg} set={set} />}
+      {paso === 0 && <HoyDetalle user={user} cfg={cfg} set={set} setCfg={setCfg} r={r} />}
 
       {paso === 1 && (<>
         {/* 24-oct-2026 (Santiago: "veo que se pisan las mangueras de ambas
             secciones"). El paso 2 solo decide; todo lo que mueve plata va en
             el paso 3, Tu plata, con el saldo a la vista y el origen de cada peso. */}
         <div style={card}>
-          <Seccion n={1} titulo="Tus inversiones de hoy" sub="De cada una: sigue igual o se vende. Lo que le vayas a invertir (la bodega en tu lote) va en el paso 3, Tu plata." />
-          {(user.inv || []).filter((a) => a && a.sim !== false).map((a) => {
-            const d = cfg.decisiones[a.id] || { accion: "continua" };
-            const vende = d.accion === "vende";
-            const elegir = (k) => setCfg((p) => ({ ...p, decisiones: { ...p.decisiones, [a.id]: { accion: k } }, reinversiones: k === "vende" ? p.reinversiones.filter((x) => x.activoId !== a.id) : p.reinversiones }));
-            const det = (r.reinversionesDetalle || []).find((y) => y.activoId === a.id && (y.aporte > 0 || y.rentaMensual > 0 || y.rendimientoPct != null));
-            return (
-              <div key={a.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}><b>{a.n || a.nombre}</b><span style={{ color: C.tx2 }}>{plata(a.va)}{String(a.moneda).toUpperCase() === "USD" ? " USD" : ""}</span></div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6, alignItems: "center" }}>
-                  {[["continua", "Sigue igual"], ["vende", "Se vende"]].map(([k, l]) => <button key={k} style={btn((k === "vende") === vende)} onClick={() => elegir(k)}>{l}</button>)}
-                  {!vende && det && <span style={{ fontSize: 12, color: C.gn }}>Le inviertes {plata(det.aporte)} en el paso 3</span>}
-                </div>
-                {vende && <SeVaConVenta user={user} activoId={a.id} d={d} setD={(nx) => setCfg((p) => ({ ...p, decisiones: { ...p.decisiones, [a.id]: { ...d, ...nx } } }))} />}
-              </div>
-            );
-          })}
-        </div>
-        <div style={card}>
-          <Seccion n={2} titulo="Lo que viene" sub="Lo que empieza más adelante: una pensión, un local que te entregan, la universidad de los hijos." />
+          <Seccion n={2} titulo="Lo que viene" sub="Lo que empieza más adelante: una pensión, un local que te entregan, tu casa, la universidad de los hijos. Lo que ya tienes (vender, apagar rentas) se decide en el paso 1." />
           <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} gastosHoy={r.gastosHoy || []} ingresosHoy={r.ingresosHoy || []} fuentes={r.fuentes || []} irHoy={() => { ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />
         </div>
       </>)}
@@ -446,9 +431,9 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
       {/* 24-oct-2026 (Santiago: "¿cómo quita uno items de gastos que ya no
           van? por ejemplo mantenimientos"). Solo cambia el escenario. */}
       <h4 style={{ margin: "16px 0 4px" }}>Ingresos que se acaban</h4>
-      <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Tus ingresos de hoy (de Ingresos). Apaga los que ya no van en este escenario y desde cuándo; tus datos de Ingresos no cambian.
-        {irHoy && <> ¿Un monto no es el real? <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={irHoy}>Corrígelo en 1. Hoy</button></>}</div>
-      <SeAcaba lista={ingresosHoy} term={cfg.ingresosTerminan || {}} setTerm={(nx) => set("ingresosTerminan", nx)} frase="Dejas de recibir" />
+      <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Cada ingreso se revisa en un solo lugar: en <b style={{ color: C.tx }}>1. Lo que tienes</b> corriges cuánto te entra y marcas si sigue o se acaba.
+        {irHoy && <> <button style={{ ...btn(true), padding: "4px 10px", fontSize: 12 }} onClick={irHoy}>Ir a mis ingresos en 1. Lo que tienes</button></>}
+        {Object.keys(cfg.ingresosTerminan || {}).length > 0 && <div style={{ marginTop: 4, color: C.am }}>Tienes {Object.keys(cfg.ingresosTerminan || {}).length} que se acaban en este escenario.</div>}</div>
       <h4 style={{ margin: "16px 0 4px" }}>Gastos que se acaban</h4>
       <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Tus gastos de hoy (de Egresos). Marca los que dejas de pagar en este escenario y desde cuándo; tus datos de Egresos no cambian.</div>
       {(() => {
@@ -498,7 +483,7 @@ function Deudas({ r, cfg, set, inv, bolsa }) {
           </div>
         );
       })}
-      {bolsa === 0 && <p style={{ color: C.tx2, fontSize: 12 }}>Para pagar una deuda, vende algo en el paso 2: se paga con esa plata.</p>}
+      {bolsa === 0 && <p style={{ color: C.tx2, fontSize: 12 }}>Para pagar una deuda, vende algo en el paso 1: se paga con esa plata.</p>}
       {bd.deudas > 0 && r.cuotasQueSalenMes > 0 && <p style={{ fontSize: 12, color: C.tx2 }}>Pagas {plata(bd.deudas)} y dejas de pagar <b style={{ color: C.gn }}>{plata(r.cuotasQueSalenMes)}</b> de cuotas al mes.</p>}
     </div>
   );
@@ -735,7 +720,7 @@ function SeAcaba({ lista, term, setTerm, frase }) {
 // editar también los ingresos como fees, rentas de otras inversiones").
 // Hoy = revisar y corregir PARA EL PLAN lo que tienes y lo que te entra.
 // Las páginas Patrimonio, Ingresos y Egresos no se tocan.
-function HoyDetalle({ user, cfg, set }) {
+function HoyDetalle({ user, cfg, set, setCfg, r }) {
   const invs = inversionesHoy(user, cfg);
   const sueltos = ingresosSueltosHoy(user, cfg);
   const [abierto, setAbierto] = useState(null);
@@ -743,6 +728,7 @@ function HoyDetalle({ user, cfg, set }) {
   const rh = cfg.rentaHoy || {}, ih = cfg.ingresoHoy || {}, ch = cfg.crecHoy || {};
   const setC = (id, v) => { const nx = { ...ch }; if (v === "" || v == null) delete nx[id]; else nx[id] = v; set("crecHoy", nx); };
   const setR = (id, v) => { const nx = { ...rh }; if (v === "" || v == null) delete nx[id]; else nx[id] = v; set("rentaHoy", nx); };
+  const setT = (k, v) => { const t = { ...(cfg.ingresosTerminan || {}) }; if (v) t[k] = v; else delete t[k]; set("ingresosTerminan", t); };
   const setI = (k, v) => { const nx = { ...ih }; if (v === "" || v == null) delete nx[k]; else nx[k] = v; set("ingresoHoy", nx); };
   const pctTxt = (v) => `${(Math.round(v * 10) / 10).toLocaleString("es-CO")} % al año`;
   const fila = { borderTop: `1px solid ${C.bd}`, padding: "10px 0" };
@@ -754,14 +740,27 @@ function HoyDetalle({ user, cfg, set }) {
       {invs.map((x) => { const ab = abierto === x.id; return (
         <div key={x.id} style={fila}>
           <div onClick={() => setAbierto(ab ? null : x.id)} style={{ cursor: "pointer" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b>{x.nombre}</b><span>{plata(Math.round(x.valor))}</span></div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", fontSize: 13, color: x.usada > 0 ? C.gn : C.tx2 }}>
-              <span>{x.usada > 0 ? `Renta ${plata(Math.round(x.usada))}/mes${x.corregida ? " (corregida)" : ""}` : "Sin renta: crece de valor"}</span>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b style={{ textDecoration: x.vende ? "line-through" : "none", color: x.vende ? C.tx2 : C.tx }}>{x.nombre}</b><span style={{ color: x.vende ? C.tx2 : C.tx }}>{plata(Math.round(x.valor))}</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", fontSize: 13, color: x.usada > 0 && !x.vende ? C.gn : C.tx2, textDecoration: x.vende ? "line-through" : "none" }}>
+              <span>{x.usada > 0 ? `Renta ${plata(Math.round(x.usada))}/mes${x.corregida ? " (corregida)" : ""}${x.vende ? " · deja de entrar" : ""}` : x.crecPct == null ? "Sin renta" : "Sin renta: crece de valor"}</span>
               <span>{x.usada > 0 ? pctTxt(x.pctAnual) : ""} {ab ? "▴" : "▾"}</span>
             </div>
             <div style={{ fontSize: 12, color: C.tx2 }}>{x.crecPct == null ? "Se deprecia cada año" : `Su valor sube ${pctTxt(x.crecPct)}`}{x.crecPct != null ? (x.crecCorregido ? " · lo pusiste tú" : " · supuesto general, corrígelo") : ""}</div>
-            {x.vende && <div style={{ fontSize: 11, color: C.am }}>En este plan se vende (paso 2).</div>}
           </div>
+          {(() => {
+            const d = (cfg.decisiones || {})[x.id] || { accion: "continua" };
+            const elegir = (k) => setCfg((p) => ({ ...p, decisiones: { ...p.decisiones, [x.id]: { accion: k } }, reinversiones: k === "vende" ? (p.reinversiones || []).filter((y) => y.activoId !== x.id) : p.reinversiones }));
+            const det = (r.reinversionesDetalle || []).find((y) => y.activoId === x.id && y.aporte > 0);
+            return <>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6, alignItems: "center" }}>
+                <button style={{ ...btn(!x.vende), padding: "4px 10px" }} onClick={() => elegir("continua")}>Sigue</button>
+                <button style={{ ...btn(x.vende), padding: "4px 10px" }} onClick={() => elegir("vende")}>Se vende</button>
+                {x.vende && <span style={{ fontSize: 12, color: C.am }}>No cuenta: su valor pasa a lo que vendes y su renta deja de entrar.</span>}
+                {!x.vende && det && <span style={{ fontSize: 12, color: C.gn }}>Le inviertes {plata(det.aporte)} (paso 3)</span>}
+              </div>
+              {x.vende && <SeVaConVenta user={user} activoId={x.id} d={d} setD={(nx) => setCfg((p) => ({ ...p, decisiones: { ...p.decisiones, [x.id]: { ...d, ...nx } } }))} />}
+            </>;
+          })()}
           {ab && <div style={{ marginTop: 8, fontSize: 12, color: C.tx2 }}>
             {x.ingresos.length === 0 && x.gastos.length === 0 && <div>No tiene ingresos ni gastos ligados en tus páginas Ingresos y Egresos.</div>}
             {x.ingresos.map((y, k) => <div key={"i" + k} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><span>+ {y.nombre}{y.nota ? <i> · {y.nota}</i> : null}</span><span>{plata(Math.round(y.mensual))}</span></div>)}
@@ -779,19 +778,25 @@ function HoyDetalle({ user, cfg, set }) {
       <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Rentas de inversiones{invs.some((x) => x.vende) ? " (sin las que vendes)" : ""}</span><span>{plata(Math.round(totalInv))}/mes</span></div>
     </div>
     <div style={card}>
-      <h3 style={{ marginTop: 0, marginBottom: 2 }}>Otros ingresos: fees, salarios, rentas sueltas</h3>
-      <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>Lo que te entra y no está ligado a una inversión. Corrige el monto para el plan si no es lo que recibes cada mes. Si alguno se acaba, apágalo en el paso 2.</p>
+      <h3 style={{ marginTop: 0, marginBottom: 2 }}>Tus otros ingresos</h3>
+      {/* 25-oct-2026 (Santiago: "confunde… aquí no se pueden editar o quitar y después en el paso 2 aparecen otra vez"). Un ingreso, un lugar: aquí se corrige el monto y se decide si sigue o se acaba. */}
+      <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>Fees, salarios y rentas que no están ligados a una inversión de arriba. De cada uno: <b style={{ color: C.tx }}>cuánto te entra</b> (corrígelo si no es real) y <b style={{ color: C.tx }}>si sigue o se acaba</b> en este escenario.</p>
       {sueltos.length === 0 && <div style={{ fontSize: 13, color: C.tx2 }}>No tienes otros ingresos.</div>}
       {sueltos.map((x) => (
         <div key={x.key} style={fila}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b style={{ textDecoration: x.seVa ? "line-through" : "none", color: x.seVa ? C.tx2 : C.tx }}>{x.nombre}</b><span style={{ fontSize: 12, color: C.tx2 }}>{x.renta ? "renta" : "trabajo"}</span></div>
-          {x.seVa && <div style={{ fontSize: 12, color: C.am }}>{x.seVa === "venta" ? "Se va con la venta en este plan (paso 2): no suma." : `Se acaba ${Number(x.acabaAnio) <= 1 ? "desde ya" : `en el año ${x.acabaAnio}`} en este plan (paso 2).`}</div>}
+          {x.seVa && <div style={{ fontSize: 12, color: C.am }}>{x.seVa === "venta" ? "Se va con una venta que marcaste arriba: no suma." : `Se acaba ${Number(x.acabaAnio) <= 1 ? "desde ya: no suma" : `en el año ${x.acabaAnio}`}.`}</div>}
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
             <span style={{ width: 170 }}><NumberInput style={inp} placeholder={fmtMilesEs(Math.round(x.enIngresos))} value={ih[x.key] ?? ""} onChange={(v) => setI(x.key, v)} /></span>
             <span style={{ fontSize: 12, color: x.corregido ? C.gn : C.tx2 }}>{x.corregido ? `corregido (en Ingresos: ${plata(Math.round(x.enIngresos))})` : `${plata(Math.round(x.mensual))}/mes, de tu página Ingresos`}</span>
             {x.corregido && <button style={{ ...btn(false), fontSize: 12, padding: "4px 8px" }} onClick={() => setI(x.key, null)}>Quitar</button>}
           </div>
           {x.nota && !x.corregido && <div style={{ fontSize: 11, color: C.tx2, marginTop: 2 }}>{x.nota}</div>}
+          {x.seVa !== "venta" && <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
+            <button style={{ ...btn(!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, null)}>Sigue</button>
+            <button style={{ ...btn(!!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, x.acabaAnio || 1)}>Se acaba</button>
+            {x.acabaAnio && <select style={{ ...inp, width: "auto" }} value={x.acabaAnio} onChange={(e) => setT(x.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Desde ya" : `En ${y - 1} año${y === 2 ? "" : "s"}`}</option>)}</select>}
+          </div>}
         </div>))}
       <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Otros ingresos{sueltos.some((x) => x.seVa) ? " (sin los que se van)" : ""}</span><span>{plata(Math.round(totalSue))}/mes</span></div>
     </div>
