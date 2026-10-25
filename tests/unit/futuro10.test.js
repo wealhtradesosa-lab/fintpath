@@ -822,3 +822,16 @@ describe("claves estables: agregar un gasto no corre lo que se acaba", () => {
     expect(r.seVan.map((x) => x.nombre)).toEqual(["Mantenimiento"]);
   });
 });
+
+describe("corregir un gasto en Lo que tienes", () => {
+  it("el arriendo corregido cambia lo que sale", async () => {
+    const { gastosLista } = await import("../../src/lib/futuro10.js");
+    const u = { inflacionPct: 4, inv: [], ingresos: [{ nombre: "S", mensual: 100e6 }], gas: { Vivienda: [{ c: "ARRIENDO", m: 16e6 }] } };
+    const a = proyectarFuturo10(u, {});
+    const r = proyectarFuturo10(u, { gastoHoy: { "Vivienda::arriendo": 12e6 } });
+    expect((a.filas[1].gastos - r.filas[1].gastos) / 12).toBeCloseTo(4e6, -4);
+    const l = gastosLista(u, { gastoHoy: { "Vivienda::arriendo": 12e6 } });
+    expect(l[0].corregido).toBe(true);
+    expect(l[0].enEgresos).toBeCloseTo(16e6, -3);
+  });
+});

@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { fmtPctEs, fmtMilesEs, fmtPlataCortaEs } from "../lib/formato.js";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, TARIFA_CICLO, regimenSugerido, sugerirVinculados, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
+import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, TARIFA_CICLO, regimenSugerido, sugerirVinculados, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -453,27 +453,10 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
       <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Cada ingreso se revisa en un solo lugar: en <b style={{ color: C.tx }}>1. Lo que tienes</b> corriges cuánto te entra y marcas si sigue o se acaba.
         {irHoy && <> <button style={{ ...btn(true), padding: "4px 10px", fontSize: 12 }} onClick={irHoy}>Ir a mis ingresos en 1. Lo que tienes</button></>}
         {Object.keys(cfg.ingresosTerminan || {}).length > 0 && <div style={{ marginTop: 4, color: C.am }}>Tienes {Object.keys(cfg.ingresosTerminan || {}).length} que se acaban en este escenario.</div>}</div>
-      <h4 style={{ margin: "16px 0 4px" }}>Gastos que se acaban</h4>
-      <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Tus gastos de hoy (de Egresos). Marca los que dejas de pagar en este escenario y desde cuándo; tus datos de Egresos no cambian.</div>
-      {(() => {
-        const term = cfg.gastosTerminan || {};
-        const lista = gastosHoy.filter((g) => !g.neteado).sort((a, b) => (!!term[b.key] - !!term[a.key]) || b.mensual - a.mensual);
-        const visibles = verTodos ? lista : lista.slice(0, 8);
-        const setT = (k, v) => { const nx = { ...term }; if (v) nx[k] = v; else delete nx[k]; set("gastosTerminan", nx); };
-        const ahorro = lista.filter((g) => term[g.key]).reduce((sm, g) => sm + g.mensual, 0);
-        return <>
-          {visibles.map((g) => { const t = term[g.key]; return (
-            <div key={g.key} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "6px 0", borderTop: `1px solid ${C.bd}` }}>
-              <span style={{ flex: "1 1 160px", minWidth: 0 }}><span style={{ textDecoration: t ? "line-through" : "none", color: t ? C.tx2 : C.tx }}>{g.nombre}</span> <span style={{ fontSize: 11, color: C.tx2 }}>{g.cat !== g.nombre ? `· ${g.cat}` : ""}</span></span>
-              <span style={{ fontSize: 13, whiteSpace: "nowrap", color: C.tx2 }}>{plata(Math.round(g.mensual))}/mes</span>
-              <button style={btn(!t)} onClick={() => setT(g.key, null)}>Sigue</button>
-              <button style={btn(!!t)} onClick={() => setT(g.key, t || 1)}>Se acaba</button>
-              {t && <select style={{ ...inp, width: "auto" }} value={t} onChange={(e) => setT(g.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select>}
-            </div>); })}
-          {lista.length > 8 && <button style={{ ...btn(false), marginTop: 6 }} onClick={() => setVerTodos(!verTodos)}>{verTodos ? "Ver menos" : `Ver todos (${lista.length})`}</button>}
-          {ahorro > 0 && <div style={{ fontSize: 12, color: C.gn, marginTop: 6 }}>Dejas de pagar {plata(Math.round(ahorro))} al mes en gastos que se acaban.</div>}
-        </>;
-      })()}
+      <h4 style={{ margin: "16px 0 4px" }}>Gastos que se acaban o cambian</h4>
+      <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Igual que los ingresos: cada gasto de hoy se revisa en <b style={{ color: C.tx }}>1. Lo que tienes</b>, donde corriges cuánto sale y marcas si sigue o se acaba.
+        {irHoy && <> <button style={{ ...btn(true), padding: "4px 10px", fontSize: 12 }} onClick={irHoy}>Ir a mis gastos en 1. Lo que tienes</button></>}
+        {Object.keys(cfg.gastosTerminan || {}).length > 0 && <div style={{ marginTop: 4, color: C.am }}>Tienes {Object.keys(cfg.gastosTerminan || {}).length} que se acaban en este escenario.</div>}</div>
     </div>
   );
 }
@@ -819,6 +802,7 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
         </div>))}
       <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Otros ingresos{sueltos.some((x) => x.seVa) ? " (sin los que se van)" : ""}</span><span>{plata(Math.round(totalSue))}/mes</span></div>
     </div>
+    <TusGastos user={user} cfg={cfg} set={set} />
   </>;
 }
 
@@ -929,5 +913,45 @@ function SobraMensual({ r, cfg, set, destinos }) {
         {usado > 100 ? "Los porcentajes suman más de 100 %." : resto > 0 ? `${resto} % (${plata(Math.round(sobra * resto / 100))}/mes) ${cfg.repartoDisponible ? "queda disponible, como elegiste abajo." : "se reparte como lo de las ventas, abajo."}` : "Asignaste el 100 % de lo que sobra."}
       </div>
     </div>}
+  </div>;
+}
+
+// 25-oct-2026 (Santiago: "¿cómo edita uno los gastos si algún valor cambia?
+// Por ejemplo, el arriendo ya no es 16 M"). Igual que los ingresos: cada gasto
+// en un solo lugar, con su monto corregible y Sigue / Se acaba.
+function TusGastos({ user, cfg, set }) {
+  const [verTodos, setVerTodos] = useState(false);
+  const lista = gastosLista(user, cfg);
+  const gh = cfg.gastoHoy || {}, term = cfg.gastosTerminan || {};
+  const setG = (k, v) => { const nx = { ...gh }; if (v === "" || v == null) delete nx[k]; else nx[k] = v; set("gastoHoy", nx); };
+  const setT = (k, v) => { const nx = { ...term }; if (v) nx[k] = v; else delete nx[k]; set("gastosTerminan", nx); };
+  const orden = [...lista].sort((a, b) => (!!(b.corregido || b.seVa) - !!(a.corregido || a.seVa)) || b.mensual - a.mensual);
+  const visibles = verTodos ? orden : orden.slice(0, 10);
+  const cuenta = (x) => !(x.seVa === "venta" || (x.seVa === "acaba" && Number(x.acabaAnio) <= 1));
+  const total = lista.filter(cuenta).reduce((sm, x) => sm + x.mensual, 0);
+  const fila = { borderTop: `1px solid ${C.bd}`, padding: "10px 0" };
+  return <div style={card}>
+    <h3 style={{ marginTop: 0, marginBottom: 2 }}>Tus gastos</h3>
+    <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>De tu página Egresos. De cada uno: <b style={{ color: C.tx }}>cuánto sale al mes</b> (corrígelo si cambió, por ejemplo un arriendo nuevo) y <b style={{ color: C.tx }}>si sigue o se acaba</b>. Solo cambia el plan; Egresos no se toca. Los gastos futuros (la universidad) van en el paso 2.</p>
+    {visibles.map((x) => (
+      <div key={x.key} style={fila}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+          <b style={{ textDecoration: x.seVa ? "line-through" : "none", color: x.seVa ? C.tx2 : C.tx }}>{x.nombre}</b>
+          <span style={{ fontSize: 12, color: C.tx2 }}>{x.cat}{x.deActivo ? ` · de ${x.deActivo}` : ""}</span>
+        </div>
+        {x.seVa && <div style={{ fontSize: 12, color: C.am }}>{x.seVa === "venta" ? "Se va con una venta que marcaste arriba: no suma." : `Se acaba ${Number(x.acabaAnio) <= 1 ? "desde ya: no suma" : `en ${anioCal(x.acabaAnio)}`}.`}</div>}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
+          <span style={{ width: 170 }}><NumberInput style={inp} placeholder={fmtMilesEs(Math.round(x.enEgresos))} value={gh[x.key] ?? ""} onChange={(v) => setG(x.key, v)} /></span>
+          <span style={{ fontSize: 12, color: x.corregido ? C.gn : C.tx2 }}>{x.corregido ? `corregido (en Egresos: ${plata(Math.round(x.enEgresos))})` : `${plata(Math.round(x.mensual))}/mes, de tu página Egresos`}</span>
+          {x.corregido && <button style={{ ...btn(false), fontSize: 12, padding: "4px 8px" }} onClick={() => setG(x.key, null)}>Quitar</button>}
+        </div>
+        {x.seVa !== "venta" && <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
+          <button style={{ ...btn(!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, null)}>Sigue</button>
+          <button style={{ ...btn(!!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, x.acabaAnio || 1)}>Se acaba</button>
+          {x.acabaAnio && <select style={{ ...inp, width: "auto" }} value={x.acabaAnio} onChange={(e) => setT(x.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select>}
+        </div>}
+      </div>))}
+    {orden.length > 10 && <button style={{ ...btn(false), marginTop: 6 }} onClick={() => setVerTodos(!verTodos)}>{verTodos ? "Ver menos" : `Ver todos (${orden.length})`}</button>}
+    <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Gastos de hoy en el plan</span><span>{plata(Math.round(total))}/mes</span></div>
   </div>;
 }

@@ -90,7 +90,7 @@ export function claseActivo(a) {
  */
 export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const cfg = migrarClaves(cfgIn, userIn);
-  const user = ajustarIngresos(paraPlan(userIn), cfg);
+  const user = ajustarGastos(ajustarIngresos(paraPlan(userIn), cfg), cfg);
   const sup = cfg.supuestos || SUPUESTOS_F10;
   const esc = resolverEscenario(cfg.escenario || "base", user, sup);
   const N = n(cfg.anios) || sup.anios;
@@ -1064,7 +1064,7 @@ export function paraPlan(user = {}) {
 /** Cada inversión hoy: cuánto vale y cuánto renta, con de dónde sale. */
 export function inversionesHoy(userIn = {}, cfgIn = {}) {
   const cfg = migrarClaves(cfgIn, userIn);
-  const user = ajustarIngresos(paraPlan(userIn), cfg);
+  const user = ajustarGastos(ajustarIngresos(paraPlan(userIn), cfg), cfg);
   const { impuestoNeto, retencionMensual, ...sinImp } = user;
   const b = calcularBase({ ...sinImp, gastos: user.gastos || user.gas }, {});
   const trm = b.trm, fx = (x) => (String(x?.moneda || x?.currency || "").toUpperCase() === "USD" ? trm : 1);
@@ -1189,9 +1189,44 @@ export function migrarClaves(cfg = {}, user = {}) {
   };
   const mapa = (o) => (o && typeof o === "object" ? Object.fromEntries(Object.entries(o).map(([k, v]) => [conv(k), v])) : o);
   const dec = Object.fromEntries(Object.entries(cfg.decisiones || {}).map(([id, d]) => [id, d && Array.isArray(d.seVan) ? { ...d, seVan: d.seVan.map(conv) } : d]));
-  return { ...cfg, _clavesV2: true, decisiones: dec, gastosTerminan: mapa(cfg.gastosTerminan), ingresosTerminan: mapa(cfg.ingresosTerminan), ingresoHoy: mapa(cfg.ingresoHoy) };
+  return { ...cfg, _clavesV2: true, decisiones: dec, gastosTerminan: mapa(cfg.gastosTerminan), ingresosTerminan: mapa(cfg.ingresosTerminan), ingresoHoy: mapa(cfg.ingresoHoy), gastoHoy: mapa(cfg.gastoHoy) };
 }
 
 // 25-oct-2026 (Santiago: "año 5 en 4 años… qué enredo"). Los años del plan se
 // muestran como años de calendario: año 1 = este año.
 export const anioCal = (t) => new Date().getFullYear() + Math.round(Number(t) || 1) - 1;
+
+// 25-oct-2026 (Santiago: "¿cómo puede uno también editar los gastos si algún
+// valor cambia?"). En «Lo que tienes» se corrige para el plan cuánto sale de
+// cada gasto (cfg.gastoHoy: { clave: pesos al mes }). Egresos no se toca.
+function ajustarGastos(user, cfg = {}) {
+  const aj = cfg.gastoHoy || {};
+  if (!Object.keys(aj).length) return user;
+  const g = user.gastos || user.gas || {};
+  const nuevo = Object.fromEntries(Object.entries(g).map(([cat, items]) => [cat, (items || []).map((x, idx) => {
+    const v = aj[claveGasto(cat, items, idx)]; if (v == null || v === "" || !x) return x;
+    const { montosMensuales, ...resto } = x;
+    return { ...resto, m: Math.max(0, n(v)), mensual: Math.max(0, n(v)), moneda: "COP", frecuencia: "mensual", _corregido: true };
+  })]));
+  return { ...user, ...(user.gastos ? { gastos: nuevo } : {}), ...(user.gas ? { gas: nuevo } : {}) };
+}
+/** Tus gastos de hoy para «Lo que tienes»: monto, si se corrigió y si se acaba. */
+export function gastosLista(userIn = {}, cfgIn = {}) {
+  const cfg = migrarClaves(cfgIn, userIn);
+  const base = paraPlan(userIn), user = ajustarGastos(base, cfg);
+  const trm = n(user.trm) || 4200, fx = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? trm : 1);
+  const term = cfg.gastosTerminan || {}, fuera = vinculadosQueSeVan(user, cfg);
+  const vendidos = new Set(Object.entries(cfg.decisiones || {}).filter(([, d]) => d?.accion === "vende").map(([id]) => id));
+  const nomAct = (id) => { const a = (user.inv || []).find((x) => x && x.id === id); return a ? a.n || a.nombre : null; };
+  const out = [];
+  const gB = base.gastos || base.gas || {};
+  Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g, idx) => {
+    if (!g || g.sim === false) return;
+    const key = claveGasto(cat, items, idx), o = (gB[cat] || [])[idx] || g;
+    const enEgresos = montoPromedioMensual(o) * fx(o), mensual = montoPromedioMensual(g) * fx(g);
+    if (!(enEgresos > 0.5) && !g._corregido) return;
+    const seVa = fuera.has(key) || (g.activoId && vendidos.has(g.activoId)) ? "venta" : term[key] ? "acaba" : null;
+    out.push({ key, cat, nombre: g.c || g.n || g.nombre || cat, enEgresos, mensual, corregido: !!g._corregido, seVa, acabaAnio: term[key] || null, deActivo: g.activoId ? nomAct(g.activoId) : null });
+  }));
+  return out.sort((a, b) => b.mensual - a.mensual);
+}
