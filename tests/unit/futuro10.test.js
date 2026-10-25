@@ -792,3 +792,22 @@ describe("Hoy marca las rentas que se van con una venta", () => {
     expect(xs.find((x) => x.nombre === "Fee").seVa).toBe(null);
   });
 });
+
+describe("dejar disponible lo que sobra", () => {
+  it("va al colchón disponible", () => {
+    const user = { trm: 4000, inflacionPct: 4, inv: [], ingresos: [{ nombre: "Salario", mensual: 100e6, frecuencia: "mensual" }], gas: { Vida: [{ c: "Vida", mensual: 40e6, frecuencia: "mensual" }] } };
+    const r = proyectarFuturo10(user, { sobraDestinos: [{ id: "c_disponible", pct: 100 }] });
+    const c = r.filas[1].porActivo.find((x) => x.id === "c_liquidez");
+    expect(c.valor).toBeGreaterThan(r.filas[1].cf * 0.99);
+  });
+});
+
+describe("dejar disponible lo que sobra de las ventas", () => {
+  it("no se invierte en canastas", () => {
+    const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "pm", n: "PM", tipo: "inmueble", va: 1000e6 }], ingresos: [], gas: {} };
+    const r = proyectarFuturo10(user, { decisiones: { pm: { accion: "vende" } }, repartoDisponible: true });
+    const p0 = r.filas[0].porActivo;
+    expect((p0.find((x) => x.id === "c_renta") || { valor: 0 }).valor).toBe(0);
+    expect(p0.find((x) => x.id === "c_liquidez").valor).toBeGreaterThan(990e6);
+  });
+});

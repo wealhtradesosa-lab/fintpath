@@ -201,21 +201,23 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               <div style={{ marginTop: 4 }}><b style={{ color: C.tx }}>Compra o construcción (paso 2, Lo que viene):</b> algo que construyes o compras UNA vez y te quedas con él (tu casa, una bodega para rentar).</div>
             </div>
           </details>
-          <Ciclos lista={cfg.ciclos || []} set={(v) => set("ciclos", v)} det={r.ciclosDetalle || []} destinos={[...(r.fuentes || []).filter((f) => !String(f.id).startsWith("ciclo_") && !String(f.id).startsWith("apartado_")), { id: "c_liquidez", nombre: "Liquidez" }]} />
+          <Ciclos lista={cfg.ciclos || []} set={(v) => set("ciclos", v)} det={r.ciclosDetalle || []} destinos={[...(r.fuentes || []).filter((f) => !String(f.id).startsWith("ciclo_") && !String(f.id).startsWith("apartado_")), { id: "c_liquidez", nombre: "Liquidez" }, { id: "c_disponible", nombre: "Se deja disponible (para cualquier eventualidad)" }]} />
         </div>
         <div style={card}>
           <Seccion n="E" titulo="Lo que sobra y en qué lo reinviertes" sub="Dos cosas distintas: lo que sobra de las ventas (una vez) y lo que te sobra cada mes de tus rentas e ingresos." />
-          <SobraMensual r={r} cfg={cfg} set={set} destinos={[...(r.fuentes || []).filter((f) => !String(f.id).startsWith("ciclo_") && !String(f.id).startsWith("apartado_")), { id: "c_liquidez", nombre: "Liquidez" }]} />
+          <SobraMensual r={r} cfg={cfg} set={set} destinos={[...(r.fuentes || []).filter((f) => !String(f.id).startsWith("ciclo_") && !String(f.id).startsWith("apartado_")), { id: "c_liquidez", nombre: "Liquidez" }, { id: "c_disponible", nombre: "Se deja disponible (para cualquier eventualidad)" }]} />
           <div style={{ fontWeight: 700, marginTop: 14 }}>Lo que sobra de las ventas: {plata(Math.round((r.bolsaDetalle || {}).restante || 0))} <span style={{ fontWeight: 400, fontSize: 12, color: C.tx2 }}>(una sola vez)</span></div>
           <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Así se reparte. También es el reparto de lo que sobre cada mes y no asignes arriba. Son ejemplos de mezcla, no recomendaciones.</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {Object.entries(SUPUESTOS_F10.nortes).map(([k, nt]) => <button key={k} style={btn(!cfg.mezcla && cfg.norte === k)} onClick={() => setCfg((p) => ({ ...p, norte: k, mezcla: null }))}>{nt.nombre}</button>)}
-            <button style={btn(!!cfg.mezcla)} onClick={() => set("mezcla", { liquidez: mezcla.liquidez, renta: mezcla.renta, crecimiento: mezcla.crecimiento })}>Personalizado</button>
+            <button style={btn(!!cfg.repartoDisponible)} onClick={() => setCfg((p) => ({ ...p, repartoDisponible: true }))}>Dejarlo disponible</button>
+            {Object.entries(SUPUESTOS_F10.nortes).map(([k, nt]) => <button key={k} style={btn(!cfg.repartoDisponible && !cfg.mezcla && cfg.norte === k)} onClick={() => setCfg((p) => ({ ...p, norte: k, mezcla: null, repartoDisponible: false }))}>{nt.nombre}</button>)}
+            <button style={btn(!cfg.repartoDisponible && !!cfg.mezcla)} onClick={() => setCfg((p) => ({ ...p, repartoDisponible: false, mezcla: { liquidez: mezcla.liquidez, renta: mezcla.renta, crecimiento: mezcla.crecimiento } }))}>Personalizado</button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(100px,1fr))", gap: 8, marginTop: 10 }}>
+          {cfg.repartoDisponible && <div style={{ fontSize: 12, color: C.gn, marginTop: 6 }}>Queda disponible en tu cuenta para cualquier eventualidad (rinde como liquidez), sin invertirse.</div>}
+          {!cfg.repartoDisponible && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(100px,1fr))", gap: 8, marginTop: 10 }}>
             {["liquidez", "renta", "crecimiento"].map((k) => <label key={k} style={{ fontSize: 12, color: C.tx2 }}>{k[0].toUpperCase() + k.slice(1)} (%)
               {cfg.mezcla ? <InputDecimalEs style={inp} value={cfg.mezcla[k]} onChange={(v) => set("mezcla", { ...cfg.mezcla, [k]: v })} /> : <div style={{ color: C.tx, fontSize: 15 }}>{fmtPctEs(mezcla[k], 0)}</div>}</label>)}
-          </div>
+          </div>}
           {validarMezcla(cfg.mezcla) && <p role="alert" style={{ color: C.rd, fontSize: 12 }}>{validarMezcla(cfg.mezcla)}</p>}
         </div>
         <SaldoFijo r={r} onVer={() => document.getElementById("f10-saldo")?.scrollIntoView({ behavior: "smooth", block: "center" })} />
@@ -907,7 +909,7 @@ function SobraMensual({ r, cfg, set, destinos }) {
         </div>))}
       <button style={{ ...btn(true), marginTop: 8 }} onClick={() => set("sobraDestinos", [...lista, { id: "", pct: resto }])}>+ Reinvertir en una inversión</button>
       <div style={{ fontSize: 12, color: usado > 100 ? C.rd : C.tx2, marginTop: 6 }}>
-        {usado > 100 ? "Los porcentajes suman más de 100 %." : resto > 0 ? `${resto} % (${plata(Math.round(sobra * resto / 100))}/mes) se reparte como lo de las ventas, abajo.` : "Asignaste el 100 % de lo que sobra."}
+        {usado > 100 ? "Los porcentajes suman más de 100 %." : resto > 0 ? `${resto} % (${plata(Math.round(sobra * resto / 100))}/mes) ${cfg.repartoDisponible ? "queda disponible, como elegiste abajo." : "se reparte como lo de las ventas, abajo."}` : "Asignaste el 100 % de lo que sobra."}
       </div>
     </div>}
   </div>;

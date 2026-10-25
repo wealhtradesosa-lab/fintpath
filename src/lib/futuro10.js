@@ -379,7 +379,12 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   const sobraDestinos = (Array.isArray(cfg.sobraDestinos) ? cfg.sobraDestinos : []).filter((d) => d && d.id).map((d) => ({ id: d.id, pct: Math.min(100, Math.max(0, n(d.pct))) })).filter((d) => d.pct > 0);
   { let acum = 0; sobraDestinos.forEach((d) => { d.pct = Math.min(d.pct, 100 - acum); acum += d.pct; }); }
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
-  ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] = bolsa * mezcla[k] / 100; });
+  // 25-oct-2026 (Santiago: "quiero dejar esos 28 M disponibles"). Con
+  // cfg.repartoDisponible lo que sobra (de las ventas y lo no asignado de cada
+  // mes) queda disponible en el colchón, sin invertirse en las canastas.
+  const disponible = !!cfg.repartoDisponible;
+  if (disponible) { colchon += bolsa; ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] = 0; }); }
+  else ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] = bolsa * mezcla[k] / 100; });
   const rCan = { liquidez: rNom(sup.canastas.liquidez), renta: rNom(sup.canastas.renta), crecimiento: rNom(sup.canastas.crecimiento) };
 
   // ── Deuda: la cuota sigue nominal fija hasta saldar; saldo lineal ───────
@@ -564,6 +569,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       else if (id === "c_crecimiento") canasta.crecimiento += a.cicloG;
       else if (id === "c_renta") canasta.renta += a.cicloG;
       else if (id === "c_liquidez") canasta.liquidez += a.cicloG;
+      else if (id === "c_disponible") colchon += a.cicloG;
       else Object.keys(canasta).forEach((k) => { canasta[k] += a.cicloG * mezcla[k] / 100; });
     });
     if (cicloReinv > 0) creceAnio += cicloReinv;
@@ -581,9 +587,10 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
         else if (d.id === "c_crecimiento") canasta.crecimiento += v;
         else if (d.id === "c_renta") canasta.renta += v;
         else if (d.id === "c_liquidez") canasta.liquidez += v;
+        else if (d.id === "c_disponible") colchon += v; // 25-oct-2026: «se deja disponible para cualquier eventualidad»
         else restoPct += d.pct;
       });
-      if (restoPct > 0) Object.keys(canasta).forEach((k) => { canasta[k] += cf * (restoPct / 100) * mezcla[k] / 100; });
+      if (restoPct > 0) { if (disponible) colchon += cf * restoPct / 100; else Object.keys(canasta).forEach((k) => { canasta[k] += cf * (restoPct / 100) * mezcla[k] / 100; }); }
     } else {
       retirar(-cf);
       alertas.push({ tipo: "cf_negativo", anio: t, texto: `En el año ${t} sale más de lo que entra; se usa tu liquidez.` });
