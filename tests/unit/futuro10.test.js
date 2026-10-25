@@ -662,3 +662,14 @@ describe("negocio que se repite (asociativos)", () => {
     expect(r.desglose.entra.some((x) => x.nombre === "Asociativos")).toBe(true);
   });
 });
+
+describe("saldo de las ventas", () => {
+  it("dice cuánto te pasaste de lo vendido", () => {
+    const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "pm", n: "PM", tipo: "inmueble", va: 1000e6 }, { id: "c", n: "Cash", tipo: "liquidez", liquido: true, va: 800e6 }], ingresos: [], gas: {} };
+    const r = proyectarFuturo10(user, { decisiones: { pm: { accion: "vende" } }, ciclos: [{ nombre: "A", capital: 1350e6, valorFinal: 1900e6, fuente: "venta" }] });
+    const bd = r.bolsaDetalle;
+    expect(bd.ciclos).toBeCloseTo(1350e6, -3);
+    expect(bd.excesoVentas).toBeGreaterThan(300e6);
+    expect(bd.restante).toBe(0);
+  });
+});

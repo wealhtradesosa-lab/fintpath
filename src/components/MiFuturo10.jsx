@@ -145,7 +145,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         <div style={card}>
           <h3 style={{ marginTop: 0, marginBottom: 2 }}>Tu plata</h3>
           <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>Lo que tienes para mover: lo que vendes, capital nuevo que traigas de afuera o tu liquidez de hoy. Cada uso se descuenta y siempre ves cuánto te queda.</p>
-          <Saldo r={r} />
+          <div id="f10-saldo"><Saldo r={r} /></div>
         </div>
         <div style={card}>
           <Seccion n="A" titulo="Pagar deudas" sub="La deuda de un activo que vendes se paga sola con esa venta. Las demás, márcalas si quieres pagarlas con lo vendido." />
@@ -226,6 +226,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           </div>
           {validarMezcla(cfg.mezcla) && <p role="alert" style={{ color: C.rd, fontSize: 12 }}>{validarMezcla(cfg.mezcla)}</p>}
         </div>
+        <SaldoFijo r={r} onVer={() => document.getElementById("f10-saldo")?.scrollIntoView({ behavior: "smooth", block: "center" })} />
       </>)}
 
       {paso === 3 && (<>
@@ -569,29 +570,60 @@ function FuenteSel({ value, on }) {
 }
 
 // El saldo de Tu plata: de dónde viene y en qué se va, siempre a la vista.
+// 25-oct-2026 (Santiago: "se dificulta saber qué saldo le va quedando a uno de
+// las ventas… no sé si me pasé… uno no sabe si sobra o no"). La cuenta se
+// muestra como entra / sale / sobra, con un veredicto grande arriba.
+function veredictoSaldo(r) {
+  const bd = r.bolsaDetalle || {};
+  const exceso = bd.excesoVentas || 0, sobra = bd.restante || 0;
+  const cub = bd.excesoCubierto || 0, noAlcanza = Math.max(0, exceso - cub);
+  if (exceso > 0.5) return { ok: false, corto: `Te pasaste ${plata(Math.round(exceso))}`, largo: `Te pasaste ${plata(Math.round(exceso))} de lo que vendes.${cub > 0.5 ? ` ${plata(Math.round(cub))} salen de tus cuentas de hoy (ahorros y efectivo).` : ""}${noAlcanza > 0.5 ? ` ${plata(Math.round(noAlcanza))} no alcanzan: esa parte no se invierte. Baja montos o elige «Plata nueva de afuera».` : ""}` };
+  if ((bd.vendido || 0) + (bd.capitalNuevo || 0) <= 0) return { ok: true, corto: "Sin ventas", largo: "Todavía no vendes nada. Lo que inviertas sale de tus cuentas de hoy o de plata nueva." };
+  return { ok: true, corto: `Te sobran ${plata(Math.round(sobra))}`, largo: `Te sobran ${plata(Math.round(sobra))}: se reparten como digas en E.` };
+}
 function Saldo({ r }) {
   const bd = r.bolsaDetalle || {};
   const vend = (r.vendidos || []).map((v) => v.nombre).join(", ");
-  const filas = [
-    ...(bd.vendido > 0 ? [[`Vendes ${vend}`, bd.vendido, C.tx]] : []),
-    ...(bd.capitalNuevo > 0 ? [["+ Capital nuevo", bd.capitalNuevo, C.tx]] : []),
-    ...(bd.desdeLiquidez > 0 ? [["+ De tu liquidez de hoy", bd.desdeLiquidez, C.am]] : []),
-    ...(bd.deudas > 0 ? [["− Pagas deudas", bd.deudas, C.tx2]] : []),
-    ...(bd.colchon > 0 ? [[`− Colchón de ${SUPUESTOS_F10.colchonMeses} meses`, bd.colchon, C.tx2]] : []),
-    ...(bd.obras > 0 ? [["− Obras", bd.obras, C.tx2]] : []),
-    ...(bd.reinvertido > 0 ? [["− Inviertes en lo que ya tienes", bd.reinvertido, C.tx2]] : []),
-    ...(bd.nuevas > 0 ? [["− Inversiones nuevas", bd.nuevas, C.tx2]] : []),
+  const v = veredictoSaldo(r);
+  const elegidoLiquidez = Math.max(0, (bd.desdeLiquidez || 0) - (bd.excesoCubierto || 0));
+  const entra = [
+    ...(bd.vendido > 0 ? [[`Lo que vendes (${vend})`, bd.vendido]] : []),
+    ...(bd.capitalNuevo > 0 ? [["Plata nueva de afuera", bd.capitalNuevo]] : []),
+    ...(elegidoLiquidez > 0.5 ? [["De tus cuentas de hoy (lo elegiste)", elegidoLiquidez]] : []),
   ];
+  const sale = [
+    ...(bd.deudas > 0 ? [["Pagas deudas", bd.deudas]] : []),
+    ...(bd.colchon > 0 ? [[`Colchón de ${SUPUESTOS_F10.colchonMeses} meses`, bd.colchon]] : []),
+    ...(bd.obras > 0 ? [["Obras", bd.obras]] : []),
+    ...(bd.reinvertido > 0 ? [["B. Inviertes en lo que ya tienes", bd.reinvertido]] : []),
+    ...(bd.nuevas > 0 ? [["C. Inversiones nuevas", bd.nuevas]] : []),
+    ...(bd.ciclos > 0 ? [["D. Negocios que se repiten", bd.ciclos]] : []),
+  ];
+  const fila = ([l, val], col) => <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "3px 0" }}><span style={{ color: C.tx2, minWidth: 0 }}>{l}</span><span style={{ color: col, whiteSpace: "nowrap", fontFamily: "monospace" }}>{plata(Math.round(val))}</span></div>;
   return <div style={{ background: C.bg, borderRadius: 8, padding: 12 }}>
-    {filas.length === 0 ? <div style={{ fontSize: 12, color: C.tx2 }}>Todavía no vendes nada ni traes capital nuevo. Si vendes algo en el paso 2, aquí ves esa plata y en qué se va.</div>
-    : filas.map(([l, v, col]) => <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "3px 0" }}><span style={{ color: col === C.tx ? C.tx : C.tx2, minWidth: 0 }}>{l}</span><span style={{ color: col, whiteSpace: "nowrap", fontFamily: "monospace" }}>{plata(v)}</span></div>)}
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 15, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>Te queda para repartir</span><span style={{ color: bd.restante > 0 ? C.gn : C.tx, fontFamily: "monospace" }}>{plata(bd.restante || 0)}</span></div>
+    <div style={{ padding: "10px 12px", borderRadius: 8, marginBottom: 10, background: v.ok ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.14)", border: `1px solid ${v.ok ? C.gn : C.rd}` }}>
+      <div style={{ fontSize: 18, fontWeight: 800, color: v.ok ? C.gn : C.rd }}>{v.corto}</div>
+      <div style={{ fontSize: 12, color: C.tx }}>{v.largo}</div>
+    </div>
+    {entra.length > 0 && <><div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1 }}>Entra</div>{entra.map((x) => fila(x, C.tx))}</>}
+    {(bd.excesoCubierto || 0) > 0.5 && fila(["Faltó: sale de tus cuentas de hoy", bd.excesoCubierto], C.rd)}
+    {sale.length > 0 && <><div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1, marginTop: 8 }}>Sale</div>{sale.map((x) => fila(x, C.tx2))}</>}
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 15, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>Sobra para repartir (E)</span><span style={{ color: bd.restante > 0 ? C.gn : C.tx, fontFamily: "monospace" }}>{plata(Math.round(bd.restante || 0))}</span></div>
+    {(bd.excesoVentas || 0) - (bd.excesoCubierto || 0) > 0.5 && fila(["Pediste de más y no alcanza: no se invierte", (bd.excesoVentas || 0) - (bd.excesoCubierto || 0)], C.rd)}
     <div style={{ fontSize: 12, color: C.tx2, marginTop: 6 }}>
       {bd.pendienteAnio1 > 0 && <div style={{ color: C.am, marginTop: 4 }}>Lo que inviertes no alcanza con lo vendido y tu liquidez: los {plata(bd.pendienteAnio1)} que faltan salen de lo que vaya entrando en el año 1.</div>}
       {bd.programadas > 0 && <div style={{ marginTop: 4 }}>Además programaste {plata(bd.programadas)} para años siguientes: se pagan ese año.</div>}
       {bd.obrasPedido > bd.obras + 0.5 && <div style={{ color: C.am, marginTop: 4 }}>La obra pide {plata(bd.obrasPedido)}: {plata(bd.obras)} salen de aquí y {plata(bd.obrasPedido - bd.obras)} de lo que entre en el año 1.</div>}
-      {bd.faltante > 0 && <div style={{ color: C.am, marginTop: 4 }}>Pediste {plata(bd.pedido)} en inversiones nuevas y solo alcanza para {plata(bd.pedido - bd.faltante)}: se asigna hasta donde llega.</div>}
+
     </div>
+  </div>;
+}
+// Barra fija abajo en Tu plata: el veredicto siempre a la vista.
+function SaldoFijo({ r, onVer }) {
+  const v = veredictoSaldo(r);
+  return <div onClick={onVer} style={{ position: "sticky", bottom: 8, zIndex: 5, margin: "8px 0", padding: "10px 14px", borderRadius: 10, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: v.ok ? "#0f2a1a" : "#3a1414", border: `1px solid ${v.ok ? C.gn : C.rd}`, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
+    <span style={{ fontWeight: 800, color: v.ok ? C.gn : C.rd }}>{v.corto}</span>
+    <span style={{ fontSize: 12, color: C.tx2 }}>{v.ok ? "de lo que vendes" : "sale de tus cuentas"} · ver ↑</span>
   </div>;
 }
 

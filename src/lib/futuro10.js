@@ -176,6 +176,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   bolsa -= colchon;
   const colchonInicial = colchon; // `colchon` cambia año a año; la bolsa reporta el de hoy
   const nuevas = [];
+  let excesoVentas = 0, excesoCubierto = 0, ciclosTotal = 0;
   let reinvertidoTotal = 0, nuevasTotal = 0, pedidoTotal = 0, desdeLiquidez = 0, programadasTotal = 0, pendienteAnio1 = 0;
   // 24-oct-2026 (Santiago: "añadí estas inversiones y cuando voy a ver el
   // resultado no se ven ahí reflejadas"). Antes una inversión solo se
@@ -195,9 +196,14 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     let falta = Math.max(0, monto);
     if (fuente === "nuevo") { capitalNuevo += falta; return falta; }
     const deBolsa = fuente === "liquidez" ? 0 : Math.min(bolsa, falta); bolsa -= deBolsa; falta -= deBolsa;
+    // 25-oct-2026 (Santiago: "no sé si me pasé de las platas que tenía
+    // disponibles por ventas"). Lo que se pidió «de lo que vendo» y no alcanzó.
+    const antesLiq = falta;
+    if (fuente !== "liquidez" && falta > 0) excesoVentas += falta;
     activos.filter((a) => a.clase === "liquido" && a.id !== excluirId).forEach((a) => {
       const u = Math.min(a.valor, falta); a.valor -= u; falta -= u; desdeLiquidez += u;
     });
+    if (fuente !== "liquidez") excesoCubierto += antesLiq - falta;
     return Math.max(0, monto) - falta;
   };
   // 24-oct-2026 (Santiago: "voy a reinvertir 600 M en un lote para construir
@@ -314,7 +320,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     if (c.desde === 1) {
       pedidoTotal += c.capital;
       const m = tomar(c.capital, null, c.fuente);
-      a.valor = m; a.tomado = true; nuevasTotal += m;
+      a.valor = m; a.tomado = true; ciclosTotal += m;
     }
     nuevas.push(a);
     ciclosDetalle.push({ id: a.id, nombre: c.nombre, capital: c.capital, valorFinal: c.valorFinal, meses: c.meses, desde: c.desde, hasta: c.hasta, fuente: c.fuente, destino: c.destino, costosPct: c.costosPct, regimen: c.regimen, impuestoPct: c.impuestoPct, impuestoAnual: c.impuestoAnual, gananciaCiclo: c.gananciaCiclo, gananciaAnual: c.gananciaAnual, rentabilidadPct: c.capital > 0 ? c.gananciaAnual / c.capital * 100 : 0 });
@@ -640,7 +646,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   ].sort((x, y) => y.valor - x.valor);
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
-    bolsaDetalle: { vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal) },
+    bolsaDetalle: { excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal) },
     reparto: repartoFinal,
     desglose,
     gastosHoy, seVan, ingresosHoy, ingSeVan,
