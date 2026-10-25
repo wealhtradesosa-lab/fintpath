@@ -3502,7 +3502,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                     {/* 25-oct-2026 (Santiago: "dejemos un plan que incluye todo, mensual o anual"). Solo Pro a la venta. */}
           {plans.filter(pl=>pl.n==="Pro"||pl.cur).map(pl=>(
             <Cd key={pl.n} s={{border:pl.ac?"2px solid "+T.gn:pl.comingSoon?"1px dashed "+T.border:"1px solid "+T.border,position:"relative",opacity:pl.comingSoon?0.95:1}}>
-              {pl.ac&&<div style={{background:"linear-gradient(135deg,"+T.gn+",#16a34a)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>MÁS POPULAR</div>}
+              
               {pl.comingSoon&&<div style={{background:"linear-gradient(135deg,#a78bfa,#3b82f6)",color:"#fff",textAlign:"center",padding:"6px 0",fontSize:12,fontWeight:700}}>PRONTO DISPONIBLE</div>}
               <div style={{padding:24}}>
                 <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>{pl.n}</div>
