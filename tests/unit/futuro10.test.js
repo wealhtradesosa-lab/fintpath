@@ -763,3 +763,22 @@ describe("sacar plata de algo que renta baja su renta", () => {
     expect(r.alertas.some((x) => x.tipo === "renta_baja")).toBe(true);
   });
 });
+
+describe("cuánto sube cada inversión, corregido en Hoy", () => {
+  it("reemplaza el supuesto general", async () => {
+    const { inversionesHoy } = await import("../../src/lib/futuro10.js");
+    const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "ib", n: "IBKR", tipo: "Acciones", va: 100e6 }], ingresos: [], gas: {} };
+    const r = proyectarFuturo10(user, { crecHoy: { ib: 25 } });
+    expect(r.filas[1].porActivo.find((x) => x.id === "ib").valor).toBeCloseTo(125e6, -5);
+    expect(inversionesHoy(user, { crecHoy: { ib: 25 } })[0].crecPct).toBe(25);
+    expect(inversionesHoy(user, {})[0].crecCorregido).toBe(false);
+  });
+});
+
+describe("ingreso variable en el plan", () => {
+  it("usa el promedio de los meses con monto", async () => {
+    const { paraPlan } = await import("../../src/lib/futuro10.js");
+    const u = paraPlan({ ingresos: [{ nombre: "Fondo", frecuencia: "variable", montosMensuales: [0, 0, 0, 0, 0, 0, 57.5e6, 57.5e6, 57.5e6, 57.5e6, 0, 0] }] });
+    expect(u.ingresos[0].mensual).toBeCloseTo(57.5e6, -3);
+  });
+});

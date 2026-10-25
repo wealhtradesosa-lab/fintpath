@@ -735,7 +735,8 @@ function HoyDetalle({ user, cfg, set }) {
   const sueltos = ingresosSueltosHoy(user, cfg);
   const [abierto, setAbierto] = useState(null);
   const lbl = { fontSize: 12, color: C.tx2, display: "flex", flexDirection: "column", gap: 4 };
-  const rh = cfg.rentaHoy || {}, ih = cfg.ingresoHoy || {};
+  const rh = cfg.rentaHoy || {}, ih = cfg.ingresoHoy || {}, ch = cfg.crecHoy || {};
+  const setC = (id, v) => { const nx = { ...ch }; if (v === "" || v == null) delete nx[id]; else nx[id] = v; set("crecHoy", nx); };
   const setR = (id, v) => { const nx = { ...rh }; if (v === "" || v == null) delete nx[id]; else nx[id] = v; set("rentaHoy", nx); };
   const setI = (k, v) => { const nx = { ...ih }; if (v === "" || v == null) delete nx[k]; else nx[k] = v; set("ingresoHoy", nx); };
   const pctTxt = (v) => `${(Math.round(v * 10) / 10).toLocaleString("es-CO")} % al año`;
@@ -753,6 +754,7 @@ function HoyDetalle({ user, cfg, set }) {
               <span>{x.usada > 0 ? `Renta ${plata(Math.round(x.usada))}/mes${x.corregida ? " (corregida)" : ""}` : "Sin renta: crece de valor"}</span>
               <span>{x.usada > 0 ? pctTxt(x.pctAnual) : ""} {ab ? "▴" : "▾"}</span>
             </div>
+            <div style={{ fontSize: 12, color: C.tx2 }}>{x.crecPct == null ? "Se deprecia cada año" : `Su valor sube ${pctTxt(x.crecPct)}`}{x.crecPct != null ? (x.crecCorregido ? " · lo pusiste tú" : " · supuesto general, corrígelo") : ""}</div>
             {x.vende && <div style={{ fontSize: 11, color: C.am }}>En este plan se vende (paso 2).</div>}
           </div>
           {ab && <div style={{ marginTop: 8, fontSize: 12, color: C.tx2 }}>
@@ -764,6 +766,9 @@ function HoyDetalle({ user, cfg, set }) {
               <NumberInput style={inp} placeholder={x.neta > 0 ? fmtMilesEs(Math.round(x.neta)) : "Ej.: 57.500.000"} value={rh[x.id] ?? ""} onChange={(v) => setR(x.id, v)} />
               <span style={{ fontSize: 11 }}>Si lo dejas vacío se usa la renta de tus páginas. {x.valor > 0 ? "Ej.: 21 % al año de " + plata(Math.round(x.valor)) + " = " + plata(Math.round(x.valor * 0.21 / 12)) + "/mes." : ""}</span></label>
             {rh[x.id] != null && <button style={{ ...btn(false), marginTop: 6, fontSize: 12 }} onClick={() => setR(x.id, null)}>Volver a la de mis páginas</button>}
+            {x.crecDefaultPct != null && <label style={{ ...lbl, marginTop: 8 }}>¿Cuánto sube su valor al año? (%, opcional)
+              <InputDecimalEs style={inp} placeholder={(Math.round(x.crecDefaultPct * 10) / 10).toLocaleString("es-CO")} value={ch[x.id] ?? ""} onChange={(v) => setC(x.id, v)} />
+              <span style={{ fontSize: 11 }}>{x.clase === "inmueble" ? "Valorización del inmueble." : x.usada > 0 ? "Aparte de la renta que te llega. Si la renta ya es todo lo que gana, déjalo en la inflación." : "Lo que gana al año y se queda invertido (interés compuesto)."} Si lo dejas vacío se usa el supuesto general: {(Math.round(x.crecDefaultPct * 10) / 10).toLocaleString("es-CO")} %.</span></label>}
           </div>}
         </div>); })}
       <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Rentas de inversiones{invs.some((x) => x.vende) ? " (sin las que vendes)" : ""}</span><span>{plata(Math.round(totalInv))}/mes</span></div>

@@ -116,6 +116,10 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     const clase = claseActivo(a);
     // Crecimiento del VALOR (la renta vinculada ya entra al flujo de ingresos).
     let crec = crecimientoDefault(a, esc, sup, rentaAnual);
+    // 25-oct-2026 (Santiago: "unas inversiones rentan más y está cargando
+    // valores promedio"). En Hoy se corrige cuánto sube cada una al año.
+    const crecHoy = (cfg.crecHoy || {})[a.id];
+    if (!vacio(crecHoy) && crec != null) crec = n(crecHoy) / 100;
     const mod = d.accion === "modifica" ? leerModifica(d, esc) : null;
     if (mod && mod.valorizacionNomPct != null) crec = mod.valorizacionNomPct / 100;
     if (mod) {
@@ -1016,6 +1020,13 @@ const sinVigencia = (x) => {
   const f = x.frecuencia || "mensual";
   const out = { ...x };
   if (f === "mensual" && (x.desdeMes || x.hastaMes)) { out._vigencia = { desde: Number(x.desdeMes) || 1, hasta: Number(x.hastaMes) || 12 }; out.desdeMes = 1; out.hastaMes = 12; }
+  // Variable (un monto por mes): para proyectar se usa el promedio de los meses
+  // que SÍ tienen monto, no el total del año entre 12 (si arrancó en julio,
+  // repartirlo en 12 meses lo partía a la mitad).
+  if (f === "variable" && Array.isArray(x.montosMensuales)) {
+    const reales = x.montosMensuales.map((v) => Number(v) || 0).filter((v) => v > 0);
+    if (reales.length && reales.length < 12) { out._vigencia = { variable: true, meses: reales.length }; out.frecuencia = "mensual"; out.mensual = reales.reduce((s2, v) => s2 + v, 0) / reales.length; out.desdeMes = 1; out.hastaMes = 12; delete out.montosMensuales; }
+  }
   if (x.pagos) delete out.pagos;
   return out;
 };
@@ -1033,14 +1044,17 @@ export function inversionesHoy(userIn = {}, cfg = {}) {
   const b = calcularBase({ ...sinImp, gastos: user.gastos || user.gas }, {});
   const trm = b.trm, fx = (x) => (String(x?.moneda || x?.currency || "").toUpperCase() === "USD" ? trm : 1);
   const MES = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-  const nota = (x) => x._vigencia ? `en Ingresos/Egresos va de ${MES[x._vigencia.desde]} a ${MES[x._vigencia.hasta]}; aquí cuenta el mes completo` : (x.frecuencia && x.frecuencia !== "mensual" ? `pago ${x.frecuencia}, repartido por mes` : "");
+  const nota = (x) => x._vigencia?.variable ? `variable: promedio de los ${x._vigencia.meses} meses cargados` : x._vigencia ? `en Ingresos/Egresos va de ${MES[x._vigencia.desde]} a ${MES[x._vigencia.hasta]}; aquí cuenta el mes completo` : (x.frecuencia && x.frecuencia !== "mensual" ? `pago ${x.frecuencia}, repartido por mes` : "");
   return (user.inv || []).filter((a) => a && a.sim !== false).map((a) => {
     const ingresos = (user.ingresos || []).filter((i) => i && i.sim !== false && i.activoId === a.id).map((i) => ({ nombre: i.nombre || i.categoria || "Ingreso", mensual: montoPromedioMensual(i) * fx(i), nota: nota(i) }));
     const gastos = []; Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g) => { if (g && g.sim !== false && g.activoId === a.id) gastos.push({ nombre: g.c || g.n || g.nombre || cat, mensual: montoPromedioMensual(g) * fx(g), nota: nota(g) }); }));
     const valor = n(a.va) * fx(a), bruta = n(b.rentaPorActivo?.[a.id]), neta = n(b.rentaNetaPorActivo?.[a.id]);
     const corr = (cfg.rentaHoy || {})[a.id];
     const usada = corr != null && corr !== "" ? Math.max(0, n(corr)) : neta;
-    return { id: a.id, nombre: a.n || a.nombre || "Activo", clase: claseActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende" };
+    const esc = resolverEscenario(cfg.escenario || "base", user);
+    const def = crecimientoDefault(a, esc, SUPUESTOS_F10, usada * 12);
+    const ch = (cfg.crecHoy || {})[a.id];
+    return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || "Activo", clase: claseActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende" };
   });
 }
 
@@ -1067,7 +1081,7 @@ export function ingresosSueltosHoy(userIn = {}, cfg = {}) {
     if (!i || i.sim === false || (i.activoId && ids.has(i.activoId))) return null;
     const o = base.ingresos[k];
     const enIngresos = montoPromedioMensual(o) * fx(o);
-    const nota = o._vigencia ? `en Ingresos va de ${MES[o._vigencia.desde]} a ${MES[o._vigencia.hasta]}; aquí cuenta el mes completo` : (o.frecuencia && !["mensual", "variable"].includes(o.frecuencia) ? `pago ${o.frecuencia}, repartido por mes` : o.frecuencia === "variable" ? "variable: promedio de lo cargado en el año" : "");
+    const nota = o._vigencia?.variable ? `variable: promedio de los ${o._vigencia.meses} meses cargados` : o._vigencia ? `en Ingresos va de ${MES[o._vigencia.desde]} a ${MES[o._vigencia.hasta]}; aquí cuenta el mes completo` : (o.frecuencia && !["mensual", "variable"].includes(o.frecuencia) ? `pago ${o.frecuencia}, repartido por mes` : o.frecuencia === "variable" ? "variable: promedio de lo cargado en el año" : "");
     return { key: `i:${k}`, nombre: i.nombre || i.categoria || "Ingreso", renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
   }).filter(Boolean);
 }
