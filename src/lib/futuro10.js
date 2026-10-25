@@ -603,7 +603,17 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       (a.fuentesPago || []).forEach((fp) => {
         const quiero = pg.monto * fp.pct / 100; let saco = 0, nom = "";
         if (fp.id === "c_crecimiento" || fp.id === "c_renta") { const k = fp.id.slice(2); saco = Math.min(Math.max(0, canasta[k]), quiero); canasta[k] -= saco; nom = "lo que sobra reinvertido"; }
-        else { const src = todos.find((y) => y.id === fp.id); if (src) { saco = Math.min(Math.max(0, src.valor), quiero); src.valor -= saco; nom = src.nombre; } }
+        else { const src = todos.find((y) => y.id === fp.id); if (src) {
+          const antes = Math.max(0, src.valor);
+          saco = Math.min(antes, quiero); src.valor -= saco; nom = src.nombre;
+          // 25-oct-2026: si sacas plata de algo que te paga renta (Rapicredit),
+          // su renta baja en la misma proporción; antes seguía completa.
+          if (antes > 0 && saco > 0 && src.rentaAnual > 0 && !src.rentaReemplazada) {
+            const fr = saco / antes, menos = src.rentaAnual * Math.pow(1 + gIng, t - 1) * fr;
+            ingresos = Math.max(0, ingresos - menos); pasivo = Math.max(0, pasivo - menos); src.rentaAnual *= 1 - fr;
+            if (menos > 0.5) alertas.push({ tipo: "renta_baja", anio: t, texto: `Desde el año ${t + 1}, ${src.nombre} renta ${Math.round(menos / 12 / 1e6).toLocaleString("es-CO")} M menos al mes porque sacaste plata de ahí.` });
+          }
+        } }
         if (saco > 0) { falta -= saco; partes.push(`${Math.round(saco / 1e6).toLocaleString("es-CO")} M de ${nom}`); }
       });
       if (falta > 0.5) retirar(falta);

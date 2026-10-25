@@ -752,3 +752,14 @@ describe("una reinversión por activo", () => {
     expect(migrarModifica({ reinversiones: [{ activoId: "l", monto: 1 }, { activoId: "l", monto: 2 }] }).reinversiones.length).toBe(1);
   });
 });
+
+describe("sacar plata de algo que renta baja su renta", () => {
+  it("pagar la casa con Rapicredit baja la renta de Rapicredit", () => {
+    const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "rc", n: "Rapicredit", tipo: "otro", va: 3288e6 }], ingresos: [{ nombre: "Rapicredit", tipo: "pasivo", activoId: "rc", mensual: 57.5e6, frecuencia: "mensual" }], gas: {} };
+    const casa = { futuros: { ingresos: [], gastos: [], activos: [{ nombre: "Casa", clase: "vivienda", valor: 1644e6, entrega: 3, fuentes: [{ id: "rc", monto: 1644e6 }] }] } };
+    const a = proyectarFuturo10(user, {});
+    const r = proyectarFuturo10(user, casa);
+    const q = r.filas[4].ingresos / a.filas[4].ingresos; expect(q).toBeGreaterThan(0.5); expect(q).toBeLessThan(0.6);
+    expect(r.alertas.some((x) => x.tipo === "renta_baja")).toBe(true);
+  });
+});
