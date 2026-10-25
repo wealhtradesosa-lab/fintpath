@@ -760,6 +760,13 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     ciclosDetalle,
     // 25-oct-2026 (Santiago: "en el resumen final veo «sobra» y uno no entiende
     // si se reinvierte"): a dónde va lo que sobra, en palabras.
+    destinoSobraLista: (() => {
+      const nom = (id) => id === "c_disponible" ? "Disponible" : id === "c_liquidez" ? "Liquidez" : id === "c_renta" ? "Renta fija" : id === "c_crecimiento" ? "Crecimiento" : ((todos.find((x) => x.id === id) || {}).nombre || id);
+      const l = sobraDestinos.map((d) => ({ nombre: nom(d.id), pct: d.pct }));
+      const resto = 100 - sobraDestinos.reduce((sm, d) => sm + d.pct, 0);
+      if (resto > 0.5) { if (disponible) l.push({ nombre: "Disponible", pct: resto }); else ["liquidez", "renta", "crecimiento"].forEach((k) => { if (mezcla[k] > 0) l.push({ nombre: k === "liquidez" ? "Liquidez" : k === "renta" ? "Renta fija" : "Crecimiento", pct: resto * mezcla[k] / 100 }); }); }
+      return l;
+    })(),
     destinoSobra: (() => {
       const nom = (id) => id === "c_disponible" ? "disponible" : id === "c_liquidez" ? "liquidez" : id === "c_renta" ? "renta fija" : id === "c_crecimiento" ? "crecimiento" : ((todos.find((x) => x.id === id) || {}).nombre || id);
       const partes = sobraDestinos.map((d) => `${Math.round(d.pct)} % a ${nom(d.id)}`);

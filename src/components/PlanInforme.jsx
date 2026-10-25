@@ -16,6 +16,7 @@
 // Solo lee el resultado del motor (proyectarFuturo10); no calcula nada nuevo.
 // ═══════════════════════════════════════════════════════════════════════════
 import { anioCal } from "../lib/futuro10.js";
+import MesCompleto from "./MesCompleto.jsx";
 import { useMemo, useState } from "react";
 import { ComposedChart, BarChart, Bar, Area, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, LabelList, Cell } from "recharts";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
@@ -159,6 +160,8 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
         <p style={lead}>Estas inversiones producen, pero todo se reinvierte: hacen crecer el patrimonio y no suman a lo que entra cada mes. Si alguna te paga (una renta fija como BTG), cámbiala en el paso 3, Tu plata → «De lo que rinde, ¿cuánto te llega?».</p>
         {r.desglose.reinvierte.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${INF.linea}` }}><span>{x.nombre} <span style={{ color: INF.tx2, fontSize: 11 }}>· {fmPct(x.pct, 1)} al año</span></span><b style={{ color: INF.dorado, whiteSpace: "nowrap" }}>{fmM(x.mensual)}/mes se reinvierte</b></div>)}
       </div>}
+
+      <MesCompleto r={r} card={card} h3={h3} lead={lead} />
 
       <Toggle />
 
