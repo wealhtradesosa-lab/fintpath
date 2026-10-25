@@ -193,7 +193,7 @@ export default function OnboardingTour({
   onSelectManual,
   onClose,
 }) {
-  const [step, setStep] = useState(0);
+  const step = 0;
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -271,164 +271,37 @@ export default function OnboardingTour({
           Saltar →
         </button>
 
-        {/* STEP 0: Bienvenida */}
-        {step === 0 && (
-          <div style={{ textAlign: "center" }}>
-            {/* Pioneros badge si aplica */}
-            {isPioneros && (
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  background: "rgba(34,197,94,0.1)",
-                  border: `1px solid rgba(34,197,94,0.3)`,
-                  padding: "6px 14px",
-                  borderRadius: 999,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: T.green,
-                  marginBottom: 24,
-                  letterSpacing: 0.5,
-                  textTransform: "uppercase",
-                }}
-              >
-                <IconSparkles size={14} color={T.green} />
-                Acceso Pioneros 2026
-              </div>
-            )}
-
-            <h1
-              style={{
-                fontFamily: FONT_DISPLAY,
-                fontSize: "clamp(24px, 6vw, 36px)",
-                fontWeight: 800,
-                lineHeight: 1.1,
-                margin: "0 0 16px 0",
-                letterSpacing: -1,
-                color: T.txt,
-              }}
-            >
-              {greeting}
-            </h1>
-
-            <p
-              style={{
-                fontSize: 16,
-                color: T.txt2,
-                lineHeight: 1.6,
-                maxWidth: 500,
-                margin: "0 auto 32px",
-              }}
-            >
-              FINPATHIA es tu <strong style={{ color: T.txt }}>family office personal</strong> — el lugar donde
-              centralizas tu patrimonio, planeas tus impuestos y consultas con un asesor IA que ve
-              tus números reales.
-            </p>
-
-            <p
-              style={{
-                fontSize: 14,
-                color: T.txt3,
-                marginBottom: 28,
-                lineHeight: 1.5,
-              }}
-            >
-              En los próximos 60 segundos vas a estar viendo tu primera proyección.<br />
-              Solo necesitamos saber por dónde quieres empezar.
-            </p>
-
-            <button
-              onClick={() => {
-                setStep(1);
-                track("onboarding_step_completed", { step: 0 });
-              }}
-              style={{
-                background: `linear-gradient(135deg, ${T.green}, #16a34a)`,
-                color: "#000",
-                border: "none",
-                padding: "14px 32px",
-                borderRadius: 999,
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: FONT_DISPLAY,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              Vamos →
-            </button>
-          </div>
-        )}
-
-        {/* STEP 1: Selección de path */}
-        {step === 1 && (
-          <div>
-            <div style={{ textAlign: "center", marginBottom: 32 }}>
-              <h2
-                style={{
-                  fontFamily: FONT_DISPLAY,
-                  fontSize: 28,
-                  fontWeight: 800,
-                  margin: "0 0 12px 0",
-                  letterSpacing: -0.5,
-                  color: T.txt,
-                }}
-              >
-                ¿Por dónde empezamos?
-              </h2>
-              <p style={{ fontSize: 14, color: T.txt2, margin: 0, lineHeight: 1.5 }}>
-                Elige lo que mejor se ajuste a ti. Puedes cambiar en cualquier momento.
-              </p>
+        {/* 25-oct-2026 (Santiago): una sola bienvenida, sin demo. "Esto es muy fácil: ingresa tus activos,
+            tus ingresos mensuales, gastos mensuales y deudas. Si tienes un Excel, la IA lo lee y alimenta la
+            plataforma, o simplemente llenas cada dato manualmente." */}
+        <div style={{ textAlign: "center" }}>
+          {isPioneros && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", padding: "6px 14px", borderRadius: 999, fontSize: 11, fontWeight: 700, color: T.green, marginBottom: 20, letterSpacing: 0.5, textTransform: "uppercase" }}>
+              <IconSparkles size={14} color={T.green} /> Acceso Pioneros 2026
             </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr",
-                gap: 12,
-                marginBottom: 24,
-              }}
-            >
-              <PathCard
-                icon={IconUpload}
-                iconColor={T.blue}
-                title="Importar mi Excel"
-                description="Si ya manejas tu plata en una hoja de cálculo, impórtala en 1 click. Nuestra IA detecta inversiones, ingresos y gastos automáticamente."
-                onClick={() => handleSelect("import")}
-                recommended
-              />
-              <PathCard
-                icon={IconChart}
-                iconColor={T.green}
-                title="Explorar con datos de ejemplo"
-                description="Carga un patrimonio ficticio para entender qué hace FINPATHIA antes de meter tus datos reales. Lo borras cuando quieras."
-                onClick={() => handleSelect("demo")}
-              />
-              <PathCard
-                icon={IconEdit}
-                iconColor={T.purple}
-                title="Empezar de cero"
-                description="Carga tus inversiones, ingresos y gastos manualmente, paso a paso. Ideal si quieres total control desde el primer dato."
-                onClick={() => handleSelect("manual")}
-              />
+          )}
+          <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(26px, 6vw, 34px)", fontWeight: 800, lineHeight: 1.1, margin: "0 0 10px 0", letterSpacing: -1, color: T.txt }}>
+            {greeting} Esto es muy fácil
+          </h1>
+          <p style={{ fontSize: 15, color: T.txt2, lineHeight: 1.6, maxWidth: 480, margin: "0 auto 20px" }}>
+            Con 4 datos FINPATHIA te muestra en qué nivel de libertad financiera estás y qué mover para avanzar.
+          </p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 480, margin: "0 auto 24px" }}>
+          {[["🏦", "Tus activos"], ["💰", "Ingresos mensuales"], ["💳", "Gastos mensuales"], ["📋", "Tus deudas"]].map(([ic, tx], i) => (
+            <div key={tx} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: T.txt }}>
+              <span style={{ fontSize: 18 }}>{ic}</span><span><span style={{ color: T.txt3, marginRight: 4 }}>{i + 1}.</span>{tx}</span>
             </div>
-
-            <div
-              style={{
-                textAlign: "center",
-                fontSize: 12,
-                color: T.txt3,
-                lineHeight: 1.5,
-              }}
-            >
-              💡 <strong style={{ color: T.txt2 }}>Tip:</strong> sea cual sea tu opción, después vas a poder
-              hablar con el <strong style={{ color: T.green }}>Asesor IA</strong> sobre tus números.
-            </div>
-          </div>
-        )}
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, maxWidth: 480, margin: "0 auto" }}>
+          <PathCard icon={IconUpload} iconColor={T.blue} title="Tengo un Excel"
+            description="Súbelo y la IA lo lee: reconoce tus activos, ingresos, gastos y deudas y alimenta la plataforma."
+            onClick={() => handleSelect("import")} />
+          <PathCard icon={IconEdit} iconColor={T.green} title="Lo lleno a mano" recommended
+            description="Te guiamos dato por dato. Toma unos minutos y puedes completarlo cuando quieras."
+            onClick={() => handleSelect("manual")} />
+        </div>
       </div>
     </div>
   );

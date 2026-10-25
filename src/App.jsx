@@ -1811,7 +1811,7 @@ export default function FinPath(){
       <Bt sz="l" onClick={auth} dis={authLoading} st={{width:"100%",justifyContent:"center",borderRadius:12}}>{authLoading?"Cargando...":aM==="login"?"Ingresar":sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"?"Activar mi acceso Pioneros — 3.5 meses gratis":"Crear cuenta — 14 días Pro gratis"}</Bt>
       {authError&&<div style={{color:T.rd,fontSize:13,marginTop:12,padding:"12px 14px",background:T.rdB,border:`1px solid ${T.rd}30`,borderRadius:10,display:"flex",gap:10,alignItems:"flex-start"}}><span style={{fontSize:16,flexShrink:0}}>⚠️</span><div style={{flex:1}}><div style={{fontWeight:700,marginBottom:2}}>{aM==="login"?"No pudimos iniciar sesión":"No pudimos crear tu cuenta"}</div><div style={{fontSize:12,color:T.rd,opacity:0.9}}>{authError}</div></div></div>}
       <p style={{textAlign:"center",marginTop:16,color:T.tx3,fontSize:12}}>{aM==="login"?"¿Nuevo aquí? Usa la pestaña Crear cuenta arriba.":"¿Ya eres cliente? Usa la pestaña Ingresar arriba."}</p>
-      {!__enLandingPatrimonio&&!(aM==="signup"&&__norteLanding)&&<><div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
+      {/* 25-oct-2026: al crear cuenta, sin demo ni "explorar sin cuenta": un solo camino. */}{!__enLandingPatrimonio&&aM!=="signup"&&<><div style={{marginTop:24,textAlign:"center"}}><span onClick={()=>{const nd=mkU("Usuario","");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.anonymous=true;setU(nd)}} style={{fontSize:13,color:T.gn,cursor:"pointer",fontWeight:600}}>Explorar sin cuenta — 14 días gratis →</span></div>
       <div style={{marginTop:16,padding:"16px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.12)",borderRadius:12,textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.orange,marginBottom:6}}>📊 ¿Quieres ver cómo funciona?</div><div style={{fontSize:11,color:T.tx3,marginBottom:10}}>Explora la plataforma con datos de ejemplo: patrimonio, ingresos, gastos, deudas, impuestos y simulador.</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}><button onClick={()=>{const nd=mkU("Pedro Pérez","demo@finpathia.com");nd.p.plan="pro";nd.p.trialEnd=new Date(Date.now()+14*86400000).toISOString().split("T")[0];nd.p.demo=true;guardarReal(realAntesDemoRef,uRef.current);setU(nd);setTimeout(()=>demo(),500)}} style={{background:"linear-gradient(135deg,#f97316,#eab308)",color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇨🇴 Demo Colombia</button><button onClick={()=>demoUS()} style={{background:"linear-gradient(135deg,#3b82f6,#1d4ed8)",color:"#fff",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>🇺🇸 Demo USA</button></div></div></>}
       {aM==="login"&&<p style={{textAlign:"center",marginTop:14}}>
         <span onClick={()=>{
@@ -2131,6 +2131,9 @@ export default function FinPath(){
     const healthScore=t.salud.score;
     const healthColor=healthScore==null?T.tx3:healthScore>=80?T.gn:healthScore>=60?"#84cc16":healthScore>=40?"#eab308":T.rd;
     const healthLabel=t.salud.banda;
+    // 25-oct-2026 (Santiago: "el abordaje para un cliente nuevo es confuso"). Sin datos, el panel muestra
+    // solo la guía de 4 pasos: nada de gráficas en $0, Resumen, PDF ni avisos sueltos.
+    const sinDatos=!((u&&u.inv)||[]).length&&!((u&&u.ingresos)||[]).length&&!Object.keys((u&&u.gas)||{}).length&&!((u&&u.deu)||[]).length;
 
     return<div>
       {/* Greeting con PageHeader (estilo Optimus) — Sesión 2-may-2026 */}
@@ -2145,7 +2148,7 @@ export default function FinPath(){
             title={(u?.p?.name&&u?.p?.name!=="Usuario"&&u?.p?.name!=="")?(u?.p?.name||"").split(" ")[0]:(u?.p?.email||"").split("@")[0]}
             subtitle="Tu patrimonio y salud financiera, de un vistazo."
           />
-          {((u?.p?.name)==="Usuario"||!(u?.p?.name))&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"10px 14px",marginTop:10,fontSize:12,color:T.bl,cursor:"pointer"}} onClick={()=>setPg("set")}>👤 Configura tu nombre en <strong>⚙️ Config</strong> para personalizar tu experiencia</div>}
+          {!sinDatos&&((u?.p?.name)==="Usuario"||!(u?.p?.name))&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"10px 14px",marginTop:10,fontSize:12,color:T.bl,cursor:"pointer"}} onClick={()=>setPg("set")}>👤 Configura tu nombre en <strong>⚙️ Config</strong> para personalizar tu experiencia</div>}
           {/* Banner Pro Familiar — suscripción activa.
               11-oct-2026: Checkout ya no da prueba. Quien tiene planAccount
               === "pro_familiar" ya pagó (el primer cobro es inmediato),
@@ -2209,16 +2212,16 @@ export default function FinPath(){
               </div>
             </div>
           </div>}
-          <p style={{color:T.tx3,fontSize:13,margin:0}}>Resumen de tu situación financiera</p>
+          {!sinDatos&&<p style={{color:T.tx3,fontSize:13,margin:0}}>Resumen de tu situación financiera</p>}
         </div>
-        <div style={{display:"flex",gap:6,flexShrink:0,flexWrap:"wrap"}}>
+        {!sinDatos&&<div style={{display:"flex",gap:6,flexShrink:0,flexWrap:"wrap"}}>
           <button onClick={()=>setPg("resumen")} style={{background:T.bl,color:"#fff",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📋 Resumen</button>
           <button onClick={generatePDF} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>📄 Reporte PDF</button>
-        </div>
+        </div>}
       </div>
 
       {/* 25-oct-2026 — Primera pantalla: tu nivel y UNA acción. Mientras dura la prueba y hasta que la cierre. */}
-      {trialActive&&!u?.p?.bienvenidaVista&&!isUS&&(()=>{
+      {trialActive&&!u?.p?.bienvenidaVista&&!isUS&&((u&&u.inv)||[]).length>0&&((u&&u.ingresos)||[]).length>0&&Object.keys((u&&u.gas)||{}).length>0&&(()=>{
         const nv=t.nivel||{};
         const hasInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0;
         const hasIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>0;
@@ -2243,11 +2246,12 @@ export default function FinPath(){
         const hasGas=Object.keys((u&&u.gas)||{}).length>0;
         const hasInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0;
         const hasDeu=((u&&u.deu)||[]).length>0;
+        // 25-oct-2026: orden y texto de Santiago — activos, ingresos, gastos y deudas.
         const steps=[
-          {id:"ing",done:hasIng,icon:"💰",title:"Registra tus ingresos",desc:"Salario, rentas, dividendos — todo lo que entra cada mes",action:"Agregar ingresos",tip:"Usa 📸 para tomar foto de un recibo, 📥 para Excel, o agrega uno por uno"},
-          {id:"gas",done:hasGas,icon:"💳",title:"Registra tus gastos",desc:"Vivienda, educación, transporte, seguros, entretenimiento",action:"Agregar gastos",tip:"Solo gastos mensuales — créditos y cuotas de deudas van en el Paso 4"},
-          {id:"inv",done:hasInv,icon:"🏦",title:"Agrega tu patrimonio",desc:"Propiedades, fondos, acciones, CDTs, crypto, vehículos",action:"Agregar inversiones",tip:"Cada activo con su valor actual — propiedades, fondos, acciones, crypto"},
-          {id:"deu",done:hasDeu,icon:"📋",title:"Registra tus deudas",desc:"Hipotecas, préstamos, tarjetas — con saldo y cuota",action:"Agregar deudas",tip:"Incluye saldo pendiente, cuota mensual y tasa de interés"},
+          {id:"inv",done:hasInv,icon:"🏦",title:"Tus activos",desc:"Lo que tienes: cuentas, CDTs, fondos, acciones, propiedades, cripto, vehículos",action:"Activos cargados",tip:"Cada uno con su valor de hoy"},
+          {id:"ing",done:hasIng,icon:"💰",title:"Tus ingresos mensuales",desc:"Salario, arriendos, dividendos: todo lo que te entra cada mes",action:"Ingresos cargados",tip:"Lo que recibes en un mes normal"},
+          {id:"gas",done:hasGas,icon:"💳",title:"Tus gastos mensuales",desc:"Vivienda, colegios, transporte, seguros, mercado, salidas",action:"Gastos cargados",tip:"Las cuotas de créditos van en deudas"},
+          {id:"deu",done:hasDeu,icon:"📋",title:"Tus deudas",desc:"Hipotecas, créditos y tarjetas, con su saldo y su cuota",action:"Deudas cargadas",tip:"Si no tienes deudas, sáltalo"},
         ];
         const done=steps.filter(s=>s.done).length;
         const pct=Math.round((done/steps.length)*100);
@@ -2257,12 +2261,12 @@ export default function FinPath(){
           <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:T.bg3}}><div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#22c55e,#3b82f6)",borderRadius:3,transition:"width 0.5s"}}/></div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,flexWrap:"wrap",gap:12}}>
             <div>
-              <h3 style={{fontSize:22,fontWeight:800,margin:"0 0 6px",letterSpacing:"-0.02em"}}>Configura tu FINPATHIA</h3>
-              <p style={{color:T.tx3,fontSize:13,margin:0}}>{done===0?"Sigue estos 4 pasos para activar tu dashboard completo":"¡Vas bien! "+done+" de 4 pasos completados"}</p>
+              <h3 style={{fontSize:22,fontWeight:800,margin:"0 0 6px",letterSpacing:"-0.02em"}}>{done===0?"Es muy fácil: 4 datos y listo":"¡Vas bien! "+done+" de 4"}</h3>
+              <p style={{color:T.tx2,fontSize:13,margin:0,lineHeight:1.5}}>Ingresa tus activos, tus ingresos mensuales, tus gastos mensuales y tus deudas. Si tienes un Excel, la IA lo lee y alimenta la plataforma; si no, llenas cada dato a mano.</p>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <div style={{fontSize:13,fontWeight:700,color:T.gn}}>{pct}%</div>
-              <Bt sz="s" onClick={demo} st={{background:T.bg3,color:T.tx2}}>📊 Probar con datos demo</Bt>
+              <Bt sz="s" onClick={()=>{track("checklist_excel");setShowImport(true)}}>📥 Subir mi Excel</Bt>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
@@ -2281,14 +2285,12 @@ export default function FinPath(){
               </div>
             </button>)}
           </div>
-          {done===0&&<div style={{marginTop:16,padding:"14px 18px",background:"rgba(59,130,246,0.06)",borderRadius:12,display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:18}}>🧠</span>
-            <div style={{fontSize:12,color:T.tx2,lineHeight:1.5}}><strong>Tip:</strong> En cada sección encontrarás el botón <strong>📥 Importar</strong> para cargar Excel, o <strong>📸 Subir factura</strong> para tomar foto de un recibo o extracto. La IA lee y organiza los datos.</div>
-          </div>}
+
         </div>
       </div>;
       })()}
 
+      <div style={{display:sinDatos?"none":undefined}}>
       <SecH n={1} t="¿Dónde estoy?" s="Tu patrimonio hoy y qué dice tu family office"/>
       {/* ══════════ 1 · ¿DÓNDE ESTOY? ══════════
           Patrimonio neto y salud financiera. El número que resume todo. */}
@@ -3287,6 +3289,7 @@ export default function FinPath(){
       </>);
       })()}
 
+      </div>
     </div>}
         
 case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="assets" plan={plan} onUpgrade={()=>setPg("price")}/>:<InversionesModule owners={u?.owners||[]} inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdate={v=>upd("inv",v)} onCrearIngreso={(ing)=>upd("ingresos",[...((u&&u.ingresos)||[]),ing])} onSyncIngreso={(activoId,ing)=>{const lst=(u&&u.ingresos)||[];const hay=lst.some(x=>x&&x.activoId===activoId&&x.desdePatrimonio);let n;if(!ing)n=lst.filter(x=>!(x&&x.activoId===activoId&&x.desdePatrimonio));else if(hay)n=lst.map(x=>(x&&x.activoId===activoId&&x.desdePatrimonio)?{...x,...ing,id:x.id}:x);else n=[...lst,{...ing,id:"ing_"+Date.now()}];if(JSON.stringify(n)!==JSON.stringify(lst))upd("ingresos",n);}} fmt={fm} onImport={()=>setShowImport(true)} user={u} trm={trm||u?.trm||4200} plan={plan} onUpgrade={()=>setPg("price")}/>;
@@ -4063,7 +4066,7 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
         <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>Estás en modo consulta</div>
         <div style={{fontSize:13,color:T.tx2,lineHeight:1.5,marginBottom:14}}>Tu prueba de 14 días terminó. Tus datos siguen aquí y puedes verlos cuando quieras. Para agregar o editar, elige un plan: desde <strong>$14.900 al mes</strong> en pesos, o en dólares.</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setPaywall(false);track("paywall_consulta_click");setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13}}>Ver planes →</button><button onClick={()=>setPaywall(false)} style={{background:"transparent",color:T.tx3,border:"1px solid "+T.border,padding:"11px 18px",borderRadius:10,cursor:"pointer",fontSize:13}}>Ahora no</button></div>
-      </div></div>}{showImport&&<Suspense fallback={null}><CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/></Suspense>}<PWAInstallPrompt/>{showOnboarding&&<OnboardingTour open={showOnboarding} userName={u?.p?.name||authUser?.user_metadata?.name||""} isPioneros={sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"} onSelectDemo={()=>{setShowOnboarding(false);setPg("dash");(u?.jurisdiction==="US"?demoUS:demo)();showToast("📊 Datos de ejemplo cargados — explora tranquilo")}} onSelectImport={()=>{setShowOnboarding(false);setShowImport(true)}} onSelectManual={()=>{setShowOnboarding(false);setPg("ing");showToast("✨ Paso 1 de 4 — registra lo que entra cada mes")}} onClose={()=>setShowOnboarding(false)}/>}{pagoEstado&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,display:"flex",justifyContent:"center",padding:"14px 12px",pointerEvents:"none"}}>
+      </div></div>}{showImport&&<Suspense fallback={null}><CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/></Suspense>}<PWAInstallPrompt/>{showOnboarding&&<OnboardingTour open={showOnboarding} userName={u?.p?.name||authUser?.user_metadata?.name||""} isPioneros={sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"} onSelectDemo={()=>{setShowOnboarding(false);setPg("dash");(u?.jurisdiction==="US"?demoUS:demo)();showToast("📊 Datos de ejemplo cargados — explora tranquilo")}} onSelectImport={()=>{setShowOnboarding(false);setShowImport(true)}} onSelectManual={()=>{setShowOnboarding(false);setPg("inv");showToast("✨ Paso 1 de 4: agrega tus activos")}} onClose={()=>setShowOnboarding(false)}/>}{pagoEstado&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,display:"flex",justifyContent:"center",padding:"14px 12px",pointerEvents:"none"}}>
       <div style={{pointerEvents:"auto",maxWidth:520,width:"100%",background:pagoEstado.tipo==="exito"?"#0f2a1a":pagoEstado.tipo==="cancelado"?"#2a2416":"#12203a",border:"1px solid "+(pagoEstado.tipo==="exito"?"rgba(34,197,94,0.4)":pagoEstado.tipo==="cancelado"?"rgba(234,179,8,0.35)":"rgba(59,130,246,0.35)"),borderRadius:12,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",boxShadow:"0 8px 28px rgba(0,0,0,0.45)"}}>
         <span style={{fontSize:20,flexShrink:0}}>{pagoEstado.tipo==="exito"?"✅":pagoEstado.tipo==="cancelado"?"↩️":"⏳"}</span>
         <div style={{flex:1,minWidth:0}}>
