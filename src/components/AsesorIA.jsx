@@ -192,7 +192,12 @@ export default function AsesorIA({ user, totals, userId }) {
         body: JSON.stringify({ messages: apiMsgs, financialContext: ctx, userId: userId || "anon", jurisdiction, taxConfig }),
       });
 
-      const data = await res.json();
+      // 24-oct-2026: si el servidor tarda demasiado, Netlify responde una
+      // página HTML (504) y res.json() fallaba con "Unexpected token '<'".
+      const texto = await res.text();
+      let data;
+      try { data = JSON.parse(texto); }
+      catch { setError(res.status === 504 || res.status === 502 ? "El asesor tardó demasiado en responder. Intenta de nuevo o haz la pregunta más concreta (por ejemplo, sobre un plan)." : "No pude leer la respuesta del asesor. Intenta de nuevo."); setLoading(false); return; }
       trackUsage();
       if (data.error) {
         setError(data.mensaje || data.error);

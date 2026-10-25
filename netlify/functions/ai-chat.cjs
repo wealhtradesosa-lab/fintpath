@@ -422,7 +422,10 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5-20250929",
-        max_tokens: 2048,
+        // 24-oct-2026: con 2048 las respuestas largas pasaban de 30 s y el CDN
+        // devolvía 504 en HTML ("Unexpected token '<'"). 1024 ≈ 500 palabras,
+        // que es el tope que ya pide la regla 5.
+        max_tokens: 1024,
         system: systemPrompt,
         messages: messages,
       }),
