@@ -3461,7 +3461,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <div style={{fontSize:22,fontWeight:800,margin:"4px 0"}}>Plan Pro por <span style={{color:T.gn}}>{PIONEROS_MP.precio}</span> al mes</div>
           <div style={{fontSize:13,color:T.tx2,lineHeight:1.5}}>Para los primeros que se suman. Pagas en pesos con tarjeta débito o crédito, PSE o saldo de Mercado Pago, sin cobros internacionales.</div>
           <a href={PIONEROS_MP.url} target="_blank" rel="noopener noreferrer" onClick={()=>track("pioneros_mp_click",{plan})} style={{display:"inline-block",marginTop:12,background:T.gn,color:"#000",fontWeight:800,fontSize:15,padding:"12px 22px",borderRadius:12,textDecoration:"none"}}>Hazte pionero con Mercado Pago →</a>
-          <div style={{fontSize:12,color:T.tx3,marginTop:10}}>Paga con el mismo correo de tu cuenta FINPATHIA{u?.p?.email?` (${u.p.email})`:""}. Activamos tu plan Pro en menos de 24 horas.</div>
+          <div style={{fontSize:12,color:T.tx3,marginTop:10}}>Paga con el mismo correo de tu cuenta FINPATHIA{u?.p?.email?` (${u?.p?.email})`:""}. Activamos tu plan Pro en menos de 24 horas.</div>
         </div>}
         <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(240px, 1fr))",gap:16,maxWidth:1200,margin:"0 auto"}}>
           {plans.map(pl=>(
