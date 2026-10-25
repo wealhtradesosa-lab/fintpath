@@ -608,6 +608,18 @@ function Saldo({ r }) {
     {entra.length > 0 && <><div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1 }}>Entra</div>{entra.map((x) => fila(x, C.tx))}</>}
     {(bd.excesoCubierto || 0) > 0.5 && fila(["Faltó: sale de tus cuentas de hoy", bd.excesoCubierto], C.rd)}
     {sale.length > 0 && <><div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1, marginTop: 8 }}>Sale</div>{sale.map((x) => fila(x, C.tx2))}</>}
+    {(bd.usos || []).length > 0 && <details style={{ marginTop: 6 }}>
+      <summary style={{ cursor: "pointer", fontSize: 12, color: C.tx }}>Ver cada inversión y de dónde sale su plata</summary>
+      <div style={{ fontSize: 11, color: C.tx2, margin: "4px 0" }}>Solo lo que sale «de lo que vendes» cambia lo que sobra. Lo que sale de tus cuentas, de plata nueva o en años siguientes no lo mueve.</div>
+      {bd.usos.map((u, k) => {
+        const partes = [u.deVenta > 0.5 && `${plata(Math.round(u.deVenta))} de lo que vendes`, u.deCuentas > 0.5 && `${plata(Math.round(u.deCuentas))} de tus cuentas`, u.deNuevo > 0.5 && `${plata(Math.round(u.deNuevo))} plata nueva`].filter(Boolean);
+        const resto = u.monto - u.deVenta - u.deCuentas - u.deNuevo;
+        return <div key={k} style={{ fontSize: 12, padding: "4px 0", borderTop: `1px solid ${C.bd}` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><span style={{ color: C.tx }}>{u.seccion}. {u.nombre}</span><span style={{ fontFamily: "monospace" }}>{plata(Math.round(u.monto))}</span></div>
+          <div style={{ color: u.anio > 1 ? C.tx2 : resto > 0.5 ? C.am : C.tx2 }}>{u.anio > 1 ? `En el año ${u.anio}: se paga ese año con lo que haya, no de lo que vendes hoy` : `${partes.join(" + ") || "—"}${resto > 0.5 ? ` · faltan ${plata(Math.round(resto))}` : ""}`}</div>
+        </div>;
+      })}
+    </details>}
     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 15, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>Sobra para repartir (E)</span><span style={{ color: bd.restante > 0 ? C.gn : C.tx, fontFamily: "monospace" }}>{plata(Math.round(bd.restante || 0))}</span></div>
     {(bd.excesoVentas || 0) - (bd.excesoCubierto || 0) > 0.5 && fila(["Pediste de más y no alcanza: no se invierte", (bd.excesoVentas || 0) - (bd.excesoCubierto || 0)], C.rd)}
     <div style={{ fontSize: 12, color: C.tx2, marginTop: 6 }}>

@@ -177,6 +177,10 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   const colchonInicial = colchon; // `colchon` cambia año a año; la bolsa reporta el de hoy
   const nuevas = [];
   let excesoVentas = 0, excesoCubierto = 0, ciclosTotal = 0;
+  // 25-oct-2026 (Santiago: "invertí menos en Ledger y lo que me sobra no se
+  // alteró"). Cada uso de plata con su origen, para que la cuenta se vea línea
+  // por línea: solo lo que sale «de lo que vendo» mueve lo que sobra.
+  const usos = [];
   let reinvertidoTotal = 0, nuevasTotal = 0, pedidoTotal = 0, desdeLiquidez = 0, programadasTotal = 0, pendienteAnio1 = 0;
   // 24-oct-2026 (Santiago: "añadí estas inversiones y cuando voy a ver el
   // resultado no se ven ahí reflejadas"). Antes una inversión solo se
@@ -252,12 +256,14 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
       m = n(r.monto) > 0 ? tomar(n(r.monto), a.id, r.fuente) : 0;
       deVenta = b0 - bolsa; deLiquidez = desdeLiquidez - l0; deNuevo = capitalNuevo - c0;
+      usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta, deCuentas: deLiquidez, deNuevo, anio: 1, fuente: r.fuente || "venta" });
       if (m > 0) { a.valor += m; reinvertidoTotal += m; }
       // Si lo vendido y la liquidez no alcanzan, el resto se paga con lo que
       // entre en el año 1 (la obra se hace igual): no se recorta.
       const resto = Math.max(0, n(r.monto)) - m;
       if (resto > 0.5) { pedidoTotal -= resto; pendienteAnio1 += resto; (a.aportesFuturos = a.aportesFuturos || []).push({ monto: resto, anio: 1 }); m += resto; deAnio1 = resto; }
     } else if (n(r.monto) > 0) {
+      usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta: 0, deCuentas: 0, deNuevo: 0, anio: anioAporte, fuente: r.fuente || "venta" });
       // Aporte de un año siguiente: se paga ese año con lo que haya (como una obra futura).
       pedidoTotal -= Math.max(0, n(r.monto)); programadasTotal += n(r.monto);
       (a.aportesFuturos = a.aportesFuturos || []).push({ monto: n(r.monto), anio: anioAporte, nuevo: r.fuente === "nuevo" });
@@ -289,7 +295,9 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       // años siguientes se pagan ese año con lo que haya (programadas).
       if (c.anio === 1) {
         pedidoTotal += c.monto;
+        const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
         const m = tomar(c.monto, null, x.fuente);
+        usos.push({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: x.fuente || "venta" });
         if (m <= 0) return;
         nuevasTotal += m;
         nuevas.push({ id: "nueva_" + k, nombre: c.nombre, clase: "nueva", valor: m, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true, fuente: x.fuente || "venta", preset: "custom", montoInicial: m });
@@ -301,7 +309,9 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     }
     pedidoTotal += Math.max(0, n(x.monto));
     if (n(x.monto) <= 0 || !sup.presets[x.preset]) return;
+    const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
     const m = tomar(n(x.monto), null, x.fuente);
+    usos.push({ seccion: "C", nombre: x.nombre || sup.presets[x.preset].nombre, monto: n(x.monto), deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: x.fuente || "venta" });
     if (m <= 0) return;
     nuevasTotal += m;
     nuevas.push({ id: "nueva_" + k, nombre: x.nombre || sup.presets[x.preset].nombre, clase: "nueva", valor: m, crec: rNom(x.preset), usd: !!sup.presets[x.preset].usd, invertible: true, fuente: x.fuente || "venta", preset: x.preset, montoInicial: m });
@@ -319,7 +329,9 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     const a = { id: "ciclo_" + k, nombre: c.nombre, clase: "ciclo", valor: 0, crec: inf, usd: false, invertible: true, ciclo: c, tomado: false };
     if (c.desde === 1) {
       pedidoTotal += c.capital;
+      const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
       const m = tomar(c.capital, null, c.fuente);
+      usos.push({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: c.fuente });
       a.valor = m; a.tomado = true; ciclosTotal += m;
     }
     nuevas.push(a);
@@ -646,7 +658,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
   ].sort((x, y) => y.valor - x.valor);
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
-    bolsaDetalle: { excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal) },
+    bolsaDetalle: { usos: [...usos, ...personalizadas.map((c) => ({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.anio, fuente: "liquidez" })), ...ciclos.filter((c) => c.desde > 1).map((c) => ({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.desde, fuente: c.fuente }))], excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal) },
     reparto: repartoFinal,
     desglose,
     gastosHoy, seVan, ingresosHoy, ingSeVan,

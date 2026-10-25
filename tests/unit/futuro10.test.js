@@ -673,3 +673,16 @@ describe("saldo de las ventas", () => {
     expect(bd.restante).toBe(0);
   });
 });
+
+describe("lo que sobra responde a cada inversión", () => {
+  it("invertir menos de lo vendido sube lo que sobra; de tus cuentas no lo mueve", () => {
+    const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "pm", n: "PM", tipo: "inmueble", va: 3000e6 }, { id: "l", n: "Ledger", tipo: "Cripto", va: 200e6 }, { id: "c", n: "Cash", liquido: true, va: 500e6 }], ingresos: [], gas: {} };
+    const base = { decisiones: { pm: { accion: "vende" } } };
+    const a = proyectarFuturo10(user, { ...base, reinversiones: [{ activoId: "l", monto: 500e6, fuente: "venta" }] });
+    const b = proyectarFuturo10(user, { ...base, reinversiones: [{ activoId: "l", monto: 300e6, fuente: "venta" }] });
+    expect(b.bolsaDetalle.restante - a.bolsaDetalle.restante).toBeCloseTo(200e6, -3);
+    const c = proyectarFuturo10(user, { ...base, reinversiones: [{ activoId: "l", monto: 300e6, fuente: "liquidez" }] });
+    expect(c.bolsaDetalle.usos[0].deCuentas).toBeCloseTo(300e6, -3);
+    expect(c.bolsaDetalle.usos[0].deVenta).toBe(0);
+  });
+});
