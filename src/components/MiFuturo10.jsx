@@ -204,6 +204,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         <div style={card}>
           {/* 25-oct-2026 (Santiago: "asociativos… es un negocio cíclico que sale con un capital una vez pero se sigue haciendo y el dinero que sobra se reinvierte"). */}
           <Seccion n="D" titulo="Negocios que se repiten" sub="Pones un capital una vez y cada ciclo te deja una ganancia: asociativos, construir y vender, un proyecto que se repite. El capital vuelve a entrar en el siguiente ciclo." />
+          <details style={{ fontSize: 12, color: C.tx2, marginBottom: 8 }}>
+            <summary style={{ cursor: "pointer", color: C.tx }}>¿Cuándo uso esto y cuándo lo otro?</summary>
+            <div style={{ marginTop: 6, lineHeight: 1.5 }}>
+              <div><b style={{ color: C.tx }}>Negocio que se repite (aquí):</b> metes plata, al terminar la sacas con ganancia y la vuelves a meter. Ej.: asociativos de vivienda, comprar–remodelar–vender, un cultivo por cosecha. El capital es el mismo cada vez.</div>
+              <div style={{ marginTop: 4 }}><b style={{ color: C.tx }}>Inversión nueva (C):</b> la plata se queda invertida y rinde un % cada año (un CDT, un fondo, acciones). No hay ciclos.</div>
+              <div style={{ marginTop: 4 }}><b style={{ color: C.tx }}>Compra o construcción (paso 2, Lo que viene):</b> algo que construyes o compras UNA vez y te quedas con él (tu casa, una bodega para rentar).</div>
+            </div>
+          </details>
           <Ciclos lista={cfg.ciclos || []} set={(v) => set("ciclos", v)} det={r.ciclosDetalle || []} />
         </div>
         <div style={card}>
