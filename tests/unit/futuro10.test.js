@@ -635,3 +635,25 @@ describe("montos completos y cada inversión hoy", () => {
     expect(r.desglose.entra.find((x) => /RAPICREDIT/.test(x.nombre)).nota).toMatch(/corregiste/);
   });
 });
+
+describe("negocio que se repite (asociativos)", () => {
+  const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "pm", n: "Puerto Madero", tipo: "inmueble", va: 3000e6 }, { id: "c", n: "Cash", tipo: "liquidez", va: 100e6 }], ingresos: [{ nombre: "Salario", mensual: 50e6, frecuencia: "mensual" }], gas: { Vida: [{ c: "Vida", mensual: 40e6, frecuencia: "mensual" }] } };
+  const base = { decisiones: { pm: { accion: "vende" } } };
+  it("el capital sale una vez y la ganancia de cada año se reinvierte", () => {
+    const a = proyectarFuturo10(user, base);
+    const r = proyectarFuturo10(user, { ...base, ciclos: [{ nombre: "Asociativos", capital: 1350e6, valorFinal: 1900e6, meses: 12, desde: 1, fuente: "venta" }] });
+    expect(r.ciclosDetalle[0].gananciaAnual).toBeCloseTo(550e6, -3);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(a.bolsaDetalle.restante - 1350e6, -3);
+    // 10 ciclos de ~550 M (con inflación) reinvertidos: bastante más patrimonio que sin el negocio
+    expect(r.final.patrimonioReal - a.final.patrimonioReal).toBeGreaterThan(5000e6);
+    expect(r.filas[1].cicloReinv).toBeCloseTo(550e6 * 1, -6);
+    expect(r.filas[1].porActivo.find((x) => x.id === "ciclo_0").valor).toBeGreaterThan(1350e6);
+  });
+  it("si la ganancia llega al mes, sube el flujo; si termina, el capital vuelve", () => {
+    const r = proyectarFuturo10(user, { ...base, ciclos: [{ nombre: "Asociativos", capital: 1350e6, valorFinal: 1900e6, meses: 12, desde: 1, hasta: 3, destino: "flujo" }] });
+    expect(r.filas[1].cicloFlujo).toBeGreaterThan(500e6);
+    expect(r.filas[4].cicloFlujo || 0).toBe(0);
+    expect((r.filas[4].porActivo.find((x) => x.id === "ciclo_0") || { valor: 0 }).valor).toBe(0);
+    expect(r.desglose.entra.some((x) => x.nombre === "Asociativos")).toBe(true);
+  });
+});

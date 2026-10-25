@@ -300,6 +300,25 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     nuevasTotal += m;
     nuevas.push({ id: "nueva_" + k, nombre: x.nombre || sup.presets[x.preset].nombre, clase: "nueva", valor: m, crec: rNom(x.preset), usd: !!sup.presets[x.preset].usd, invertible: true, fuente: x.fuente || "venta", preset: x.preset, montoInicial: m });
   });
+  // 25-oct-2026 (Santiago: "asociativos: el primer año invierto 1.350 M en un
+  // lote con construcción de vivienda, al terminar vale 1.900 M y se vende; la
+  // ganancia la reinvierto y los mismos 1.350 M vuelven a entrar al segundo
+  // año, y así cada año… es un negocio cíclico"). El capital sale UNA vez (de
+  // donde diga la fuente), queda trabajando en el negocio y cada ciclo deja su
+  // ganancia: se reinvierte (en lo que sobra) o llega al flujo. Al terminar,
+  // el capital vuelve. Cifras en pesos de hoy; suben con la inflación.
+  const ciclos = leerCiclos(cfg.ciclos, N);
+  const ciclosDetalle = [];
+  ciclos.forEach((c, k) => {
+    const a = { id: "ciclo_" + k, nombre: c.nombre, clase: "ciclo", valor: 0, crec: inf, usd: false, invertible: true, ciclo: c, tomado: false };
+    if (c.desde === 1) {
+      pedidoTotal += c.capital;
+      const m = tomar(c.capital, null, c.fuente);
+      a.valor = m; a.tomado = true; nuevasTotal += m;
+    }
+    nuevas.push(a);
+    ciclosDetalle.push({ id: a.id, nombre: c.nombre, capital: c.capital, valorFinal: c.valorFinal, meses: c.meses, desde: c.desde, hasta: c.hasta, fuente: c.fuente, destino: c.destino, costosPct: c.costosPct, gananciaCiclo: c.gananciaCiclo, gananciaAnual: c.gananciaAnual, rentabilidadPct: c.capital > 0 ? c.gananciaAnual / c.capital * 100 : 0 });
+  });
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
   ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] = bolsa * mezcla[k] / 100; });
   const rCan = { liquidez: rNom(sup.canastas.liquidez), renta: rNom(sup.canastas.renta), crecimiento: rNom(sup.canastas.crecimiento) };
@@ -421,6 +440,21 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       // «Paga renta»: el valor sigue la inflación y el resto del rendimiento va al flujo.
       todos.push({ id: c.id, nombre: c.nombre, clase: "nueva", valor: c.monto, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true });
     });
+    // 0b) negocios que se repiten: arrancan (sale el capital) o terminan (vuelve).
+    todos.forEach((a) => {
+      const c = a.ciclo; if (!c) return;
+      if (!a.tomado && t === c.desde) {
+        const K = c.capital * Math.pow(1 + inf, t - 1);
+        if (c.fuente === "nuevo") capitalNuevo += K; else retirar(K);
+        a.valor = K; a.tomado = true;
+        alertas.push({ tipo: "ciclo_inicio", anio: t, texto: `En el año ${t} arrancas «${c.nombre}» con ${Math.round(K / 1e6).toLocaleString("es-CO")} M.` });
+      }
+      if (a.tomado && c.hasta < N && t === c.hasta + 1 && a.valor > 0) {
+        Object.keys(canasta).forEach((k) => { canasta[k] += a.valor * mezcla[k] / 100; });
+        alertas.push({ tipo: "ciclo_fin", anio: t, texto: `En el año ${t} termina «${c.nombre}»: el capital vuelve y se reparte.` });
+        a.valor = 0;
+      }
+    });
     // 1) rendimientos y depreciación del año
     let creceAnio = 0;
     const creceCan = { colchon: 0, liquidez: 0, renta: 0, crecimiento: 0 };
@@ -450,7 +484,16 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       - seVan.reduce((sm, g) => sm + (t >= g.desde ? g.mensual * 12 * Math.pow(1 + gGas, t - 1) : 0), 0);
     const cuota = deuda > 0 ? Math.min(cuotaAnual, cuotaAnual * Math.max(0, aniosDeuda - (t - 1))) : 0;
     deuda = Math.max(0, deuda - cuota);
-    const cf = ingresos + rentaNueva - gastos - gastoFuturo - cuota;
+    // Ganancia de los negocios que se repiten este año.
+    let cicloFlujo = 0, cicloReinv = 0;
+    todos.forEach((a) => {
+      const c = a.ciclo; a.cicloG = 0; if (!c || !(a.valor > 0) || t < c.desde || t > c.hasta) return;
+      const G = c.gananciaAnual * Math.pow(1 + inf, t - 1);
+      a.cicloG = G;
+      if (c.destino === "flujo") cicloFlujo += G; else cicloReinv += G;
+    });
+    if (cicloReinv > 0) { Object.keys(canasta).forEach((k) => { canasta[k] += cicloReinv * mezcla[k] / 100; }); creceAnio += cicloReinv; }
+    const cf = ingresos + rentaNueva + cicloFlujo - gastos - gastoFuturo - cuota;
     if (cf >= 0) {
       Object.keys(canasta).forEach((k) => { canasta[k] += cf * mezcla[k] / 100; });
     } else {
@@ -510,15 +553,16 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     const liquidez = colchon + canasta.liquidez + todos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
     const deflactor = Math.pow(1 + inf, t);
     const activosT = valorTotal();
-    const f = { anio: t, ingresos: ingresos + rentaNueva, rentaNueva, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: deuda + deudaUnica, liquidez, deflactor };
+    const f = { anio: t, ingresos: ingresos + rentaNueva + cicloFlujo, rentaNueva, cicloFlujo, cicloReinv, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: deuda + deudaUnica, liquidez, deflactor };
     // Lo que produce el patrimonio este año: renta que llega a la cuenta + lo que crece invertido.
-    f.rentas = pasivo + rentaNueva; f.laboral = Math.max(0, ingresos - pasivo); f.crece = creceAnio; f.produce = f.rentas + creceAnio;
+    f.rentas = pasivo + rentaNueva + cicloFlujo; f.laboral = Math.max(0, ingresos - pasivo); f.crece = creceAnio; f.produce = f.rentas + creceAnio;
     const fr = Math.pow(1 + gIng, t - 1);
     f.porActivo = [
       ...todos.map((a) => {
         const rentaBase = a.rentaReemplazada ? 0 : (a.rentaAnual || 0) * fr;
         const rentaExtra = (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * Math.pow(1 + inf, t) : 0) + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * Math.pow(1 + inf, t), 0) + (a.rentaPct ? a.valor / (1 + (a.crec || 0)) * a.rentaPct : 0);
-        return { id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: rentaBase + rentaExtra, crece: a.creceT || 0 };
+        const cg = a.ciclo ? a.cicloG || 0 : 0;
+        return { id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: rentaBase + rentaExtra + (a.ciclo && a.ciclo.destino === "flujo" ? cg : 0), crece: (a.creceT || 0) + (a.ciclo && a.ciclo.destino !== "flujo" ? cg : 0) };
       }),
       { id: "c_liquidez", nombre: "Liquidez y colchón", clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: creceCan.colchon + creceCan.liquidez },
       { id: "c_renta", nombre: "Renta fija (lo que sobra)", clase: "canasta", valor: canasta.renta, renta: 0, crece: creceCan.renta },
@@ -535,7 +579,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     f.patrimonio = activosT - deuda - deudaUnica;
     f.patrimonioReal = f.patrimonio / deflactor;
     f.invertibleReal = f.invertible / deflactor;
-    f.ingresosReal = (ingresos + rentaNueva) / deflactor; // incluye la renta nueva (bodega, ingresos futuros)
+    f.ingresosReal = (ingresos + rentaNueva + cicloFlujo) / deflactor; // incluye la renta nueva (bodega, ingresos futuros)
     f.gastosReal = f.gastos / deflactor;
     if (liquidez < 0 || todos.some((a) => a.valor < 0)) alertas.push({ tipo: "activo_negativo", anio: t, texto: `En el año ${t} un activo o tu liquidez queda en negativo.` });
     else if (obAnual > 0 && liquidez < metaColchon) alertas.push({ tipo: "liquidez_baja", anio: t, texto: `En el año ${t} tu liquidez cubre menos de ${sup.colchonMeses} meses de gastos.` });
@@ -572,6 +616,7 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
       (a.rentasExtra || []).forEach((x) => { if (frac(x.desdeMes) > 0) entra.push({ nombre: `${a.nombre} (renta nueva)`, mensual: x.anual * frac(x.desdeMes) * ff / 12, nota: n(x.desdeMes) > 0 ? `desde el mes ${n(x.desdeMes)}; promedio del año 1` : "" }); });
     });
     fut.ingresos.filter((x) => x.desde <= 1 && x.hasta >= 1).forEach((x) => entra.push({ nombre: x.nombre, mensual: x.mensual * ff, nota: "ingreso futuro" }));
+    ciclos.filter((c) => c.destino === "flujo" && c.desde <= 1).forEach((c) => entra.push({ nombre: c.nombre, mensual: c.gananciaAnual / 12, nota: "ganancia del negocio que se repite" }));
     const sale = [];
     Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).filter(sigue).forEach((g) => {
       if (g.activoId && conRenta.has(g.activoId)) return; // ya restado de la renta de su activo
@@ -601,7 +646,8 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     gastosHoy, seVan, ingresosHoy, ingSeVan,
     vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => ({ id: x.id, nombre: x.n || x.nombre || "Activo", valor: n(x.va) * fxA(x) })),
     reinversionesDetalle,
-    nuevasDetalle: [...nuevas.map((x) => ({ id: x.id, nombre: x.nombre, monto: x.montoInicial ?? 0, anio: 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0, fuente: x.fuente })), ...personalizadas.map((c) => ({ nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta, fuente: "liquidez" }))],
+    ciclosDetalle,
+    nuevasDetalle: [...nuevas.filter((x) => x.clase !== "ciclo").map((x) => ({ id: x.id, nombre: x.nombre, monto: x.montoInicial ?? 0, anio: 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0, fuente: x.fuente })), ...personalizadas.map((c) => ({ nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta, fuente: "liquidez" }))],
     futuros: fut,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, pagar, pagado }) => ({ id, nombre, saldo, activoId, porVenta, pagar, pagado })),
@@ -776,6 +822,7 @@ export function resumenEscenario(r) {
   if ((r.vendidos || []).length) partes.push(`Vende ${r.vendidos.map((v) => v.nombre).join(" y ")}`);
   const inv = [...(r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => ({ n: x.nombre, v: x.aporte })), ...(r.nuevasDetalle || []).map((x) => ({ n: x.nombre, v: x.monto }))].sort((a, b) => b.v - a.v);
   if (inv.length) partes.push(inv.slice(0, 2).map((x) => `${x.n} ${corto(x.v)}`).join(" + "));
+  (r.ciclosDetalle || []).forEach((c) => partes.push(`${c.nombre} ${corto(c.capital)} cada ${c.meses === 12 ? "año" : c.meses + " meses"}`));
   const pagadas = (r.deudas || []).filter((d) => d.pagado > 0);
   if (pagadas.length) partes.push(pagadas.length === 1 ? `paga ${pagadas[0].nombre}` : `paga ${pagadas.length} deudas`);
   const fut = r.futuros || { ingresos: [] };
@@ -910,4 +957,17 @@ export function ingresosSueltosHoy(userIn = {}, cfg = {}) {
     const nota = o._vigencia ? `en Ingresos va de ${MES[o._vigencia.desde]} a ${MES[o._vigencia.hasta]}; aquí cuenta el mes completo` : (o.frecuencia && !["mensual", "variable"].includes(o.frecuencia) ? `pago ${o.frecuencia}, repartido por mes` : o.frecuencia === "variable" ? "variable: promedio de lo cargado en el año" : "");
     return { key: `i:${k}`, nombre: i.nombre || i.categoria || "Ingreso", renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
   }).filter(Boolean);
+}
+
+/** Negocios que se repiten: [{nombre, capital, valorFinal, meses, desde, hasta?, costosPct?, fuente, destino}] */
+export function leerCiclos(lista = [], N = 10) {
+  return (Array.isArray(lista) ? lista : []).map((x) => {
+    const capital = Math.max(0, n(x.capital)), valorFinal = Math.max(0, n(x.valorFinal));
+    const meses = Math.min(120, Math.max(1, Math.round(n(x.meses) || 12)));
+    const desde = Math.min(N, Math.max(1, Math.round(n(x.desde) || 1)));
+    const hasta = vacio(x.hasta) ? N : Math.min(N, Math.max(desde, Math.round(n(x.hasta))));
+    const costosPct = Math.min(100, Math.max(0, n(x.costosPct)));
+    const gananciaCiclo = Math.max(0, valorFinal - capital) * (1 - costosPct / 100);
+    return { nombre: String(x.nombre || "").trim() || "Negocio que se repite", capital, valorFinal, meses, desde, hasta, costosPct, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
+  }).filter((x) => x.capital > 0 && x.valorFinal > 0);
 }

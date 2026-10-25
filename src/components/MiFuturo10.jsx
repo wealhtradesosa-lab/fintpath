@@ -202,7 +202,12 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <button style={{ ...btn(true), width: "100%", padding: "12px", marginTop: 6 }} onClick={() => set("nuevas", [...cfg.nuevas, { preset: "rfCorto", monto: "", fuente: "venta" }])}>+ Crear inversión nueva</button>
         </div>
         <div style={card}>
-          <Seccion n="D" titulo="El resto se reparte así" sub="Lo que quede de lo que vendes, después de todo lo anterior. Son ejemplos de mezcla, no recomendaciones." />
+          {/* 25-oct-2026 (Santiago: "asociativos… es un negocio cíclico que sale con un capital una vez pero se sigue haciendo y el dinero que sobra se reinvierte"). */}
+          <Seccion n="D" titulo="Negocios que se repiten" sub="Pones un capital una vez y cada ciclo te deja una ganancia: asociativos, construir y vender, un proyecto que se repite. El capital vuelve a entrar en el siguiente ciclo." />
+          <Ciclos lista={cfg.ciclos || []} set={(v) => set("ciclos", v)} det={r.ciclosDetalle || []} />
+        </div>
+        <div style={card}>
+          <Seccion n="E" titulo="El resto se reparte así" sub="Lo que quede de lo que vendes, después de todo lo anterior. Son ejemplos de mezcla, no recomendaciones." />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {Object.entries(SUPUESTOS_F10.nortes).map(([k, nt]) => <button key={k} style={btn(!cfg.mezcla && cfg.norte === k)} onClick={() => setCfg((p) => ({ ...p, norte: k, mezcla: null }))}>{nt.nombre}</button>)}
             <button style={btn(!!cfg.mezcla)} onClick={() => set("mezcla", { liquidez: mezcla.liquidez, renta: mezcla.renta, crecimiento: mezcla.crecimiento })}>Personalizado</button>
@@ -723,5 +728,45 @@ function HoyDetalle({ user, cfg, set }) {
         </div>))}
       <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Otros ingresos</span><span>{plata(Math.round(totalSue))}/mes</span></div>
     </div>
+  </>;
+}
+
+function Ciclos({ lista, set, det }) {
+  const lbl = { fontSize: 12, color: C.tx2, display: "flex", flexDirection: "column", gap: 4 };
+  const up = (i, v) => set(lista.map((y, j) => (j === i ? { ...y, ...v } : y)));
+  const mm = (v) => `$${Math.round((Number(v) || 0) / 1e6).toLocaleString("es-CO")}M`;
+  return <>
+    {lista.map((x, i) => {
+      const cap = Number(x.capital) || 0, vf = Number(x.valorFinal) || 0, meses = Number(x.meses) || 12, costos = Number(x.costosPct) || 0;
+      const gan = Math.max(0, vf - cap) * (1 - costos / 100), anual = gan * 12 / meses;
+      const siempre = x.hasta == null || x.hasta === "";
+      return (
+        <div key={i} style={{ borderTop: `1px solid ${C.bd}`, padding: "10px 0", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
+          <label style={lbl}>Nombre<input style={inp} placeholder="Ej.: Asociativos" value={x.nombre ?? ""} onChange={(e) => up(i, { nombre: e.target.value })} /></label>
+          <label style={lbl}>¿Cuánto capital pones? ($)<NumberInput style={inp} placeholder="1.350.000.000" value={x.capital ?? ""} onChange={(v) => up(i, { capital: v })} /></label>
+          <label style={lbl}>¿Cuánto recibes al final de cada ciclo? ($)<NumberInput style={inp} placeholder="1.900.000.000" value={x.valorFinal ?? ""} onChange={(v) => up(i, { valorFinal: v })} /><span style={{ fontSize: 11 }}>Lo que vale o en lo que vendes al terminar.</span></label>
+          <label style={lbl}>¿Cuánto dura cada ciclo?<select style={inp} value={meses} onChange={(e) => up(i, { meses: Number(e.target.value) })}>{[6, 9, 12, 18, 24, 36].map((m) => <option key={m} value={m}>{m === 12 ? "1 año" : m === 24 ? "2 años" : m === 36 ? "3 años" : `${m} meses`}</option>)}</select></label>
+          <label style={lbl}>Costos e impuestos sobre la ganancia (%, opcional)<InputDecimalEs style={inp} placeholder="0" value={x.costosPct ?? ""} onChange={(v) => up(i, { costosPct: v })} /></label>
+          <label style={lbl}>¿Desde cuándo?<select style={inp} value={x.desde || 1} onChange={(e) => up(i, { desde: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{y === 1 ? "Desde ya (año 1)" : `Año ${y}`}</option>)}</select></label>
+          <div style={lbl}>¿Hasta cuándo?
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <button style={btn(siempre)} onClick={() => up(i, { hasta: "" })}>Sigue siempre</button>
+              <button style={btn(!siempre)} onClick={() => up(i, { hasta: Math.max(Number(x.desde) || 1, 5) })}>Termina</button>
+              {!siempre && <select style={{ ...inp, width: "auto" }} value={x.hasta} onChange={(e) => up(i, { hasta: Number(e.target.value) })}>{ANIOS.filter((y) => y >= (Number(x.desde) || 1)).map((y) => <option key={y} value={y}>Último ciclo en el año {y}</option>)}</select>}
+            </div></div>
+          <label style={lbl}>¿De dónde sale el capital?<FuenteSel value={x.fuente} on={(v) => up(i, { fuente: v })} /><span style={{ fontSize: 11 }}>Sale una sola vez; después el mismo capital se vuelve a usar.</span></label>
+          <div style={lbl}>¿Qué haces con la ganancia?
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <button style={btn(x.destino !== "flujo")} onClick={() => up(i, { destino: "reinvierte" })}>Se reinvierte</button>
+              <button style={btn(x.destino === "flujo")} onClick={() => up(i, { destino: "flujo" })}>Me llega al mes</button>
+            </div>
+            <span style={{ fontSize: 11 }}>{x.destino === "flujo" ? "Entra a tu flujo como un ingreso." : "Se suma a lo que sobra y se reparte como en E."}</span></div>
+          {cap > 0 && vf > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 13, color: vf > cap ? C.gn : C.am }}>
+            {vf > cap ? <>Pones {mm(cap)} y recibes {mm(vf)} cada {meses === 12 ? "año" : `${meses} meses`}: ganas <b>{mm(gan)}</b> por ciclo ({mm(anual)} al año, {(Math.round(anual / cap * 1000) / 10).toLocaleString("es-CO")} % sobre el capital). {x.destino === "flujo" ? "Te llega" : "Se reinvierte"} {siempre ? "todos los años" : `hasta el año ${x.hasta}`}{siempre ? "" : "; después el capital vuelve"}.</> : "Recibes menos de lo que pones: no hay ganancia."}
+          </div>}
+          <div style={{ gridColumn: "1 / -1" }}><button style={btn(false)} onClick={() => set(lista.filter((_, j) => j !== i))}>Quitar</button></div>
+        </div>);
+    })}
+    <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => set([...lista, { nombre: "", capital: "", valorFinal: "", meses: 12, desde: 1, hasta: "", fuente: "venta", destino: "reinvierte" }])}>+ Agregar negocio que se repite</button>
   </>;
 }
