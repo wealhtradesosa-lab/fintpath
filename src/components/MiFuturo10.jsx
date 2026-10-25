@@ -250,23 +250,30 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       </>)}
 
       {paso === 4 && (<>
-        <div style={card}>
-          <h3 style={{ marginTop: 0 }}>Tus escenarios</h3>
-          <div style={{ fontSize: 12, color: C.tx2, marginBottom: 8 }}>Guarda lo que armaste con un nombre y compáralo con los otros. Toca una tarjeta para verla con todo; ahí mismo la editas o la borras.</div>
+        {/* 25-oct-2026 (Santiago: "le doy click al escenario que quiero ver y me
+            sale que le ponga nombre al plan"). Guardar solo aparece cuando hay
+            algo sin guardar o estás editando, y nunca encima de un informe. */}
+        {!verEsc && (hayBorrador || editando) && <div style={card}>
+          <h3 style={{ marginTop: 0 }}>{editando ? `Estás editando «${editando.nombre}»` : "Tienes un plan sin guardar"}</h3>
+          <div style={{ fontSize: 12, color: C.tx2, marginBottom: 8 }}>{editando ? "Cada cambio se guarda solo en este escenario. Aquí puedes cambiarle el nombre o guardarlo como uno nuevo." : "Lo que armaste en los pasos 1 a 3 todavía no tiene nombre. Ponle uno para guardarlo y compararlo con los otros."}</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <input style={{ ...inp, flex: "1 1 160px", width: "auto" }} placeholder="Nombre del escenario, ej.: Conservador + casa" value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />
             {editando ? <>
-              <button style={btn(!demo)} disabled={demo} onClick={guardarCambios}>Guardar cambios</button>
+              <button style={btn(!demo)} disabled={demo} onClick={guardarCambios}>Guardar nombre</button>
               <button style={btn(false)} disabled={demo} onClick={guardar}>Guardar como nuevo</button>
+              <button style={btn(false)} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>Terminar de editar</button>
             </> : <button style={btn(!demo)} disabled={demo} onClick={guardar}>Guardar este escenario</button>}
           </div>
-          {editando && <div style={{ fontSize: 12, color: C.gn, marginTop: 6 }}>Estás editando «{editando.nombre}»: cada cambio se guarda solo en este escenario. Si le cambias el nombre arriba, toca Guardar cambios. <button style={{ ...btn(false), padding: "2px 8px", fontSize: 12 }} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>Cancelar</button></div>}
           <input style={{ ...inp, marginTop: 6 }} placeholder={`Resumen en una frase (opcional). Si lo dejas vacío: «${resumenEscenario(r)}»`} value={descEsc} onChange={(e) => setDescEsc(e.target.value)} />
-          {demo && <p style={{ color: C.am, fontSize: 12 }}>{MSG_DEMO_F10}</p>}
-        </div>
+        </div>}
+        {!verEsc && demo && <p style={{ color: C.am, fontSize: 12 }}>{MSG_DEMO_F10}</p>}
+        {!verEsc && !hayBorrador && !editando && <div style={{ fontSize: 12, color: C.tx2, marginBottom: 10 }}>Toca una tarjeta para ver ese escenario completo. Para crear otro, cambia algo en los pasos 1 a 3 y vuelve aquí a guardarlo.</div>}
         {verEsc ? <>
-          <button style={{ ...btn(false), marginBottom: 10 }} onClick={() => setVerEsc(null)}>← Volver a comparar</button>
-          <div style={{ ...card, marginBottom: 14, borderTop: `3px solid ${verEsc.color || C.gn}` }}><h3 style={{ margin: 0 }}>{verEsc.nombre}</h3></div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+            <button style={btn(false)} onClick={() => setVerEsc(null)}>← Volver a comparar</button>
+            {verEsc.id && !demo && <button style={btn(true)} onClick={() => { setVerEsc(null); editarEsc(verEsc.id); }}>Editar este escenario</button>}
+          </div>
+          <div style={{ ...card, marginBottom: 14, borderTop: `3px solid ${verEsc.color || C.gn}` }}><h3 style={{ margin: 0 }}>{verEsc.nombre}</h3>{verEsc.descripcion ? <div style={{ fontSize: 12, color: C.tx2, marginTop: 4 }}>{verEsc.descripcion}</div> : null}</div>
           <PlanInforme r={verEsc.r} nombre={verEsc.nombre} inflacionPct={esc.inflacionPct} />
         </> : <PlanComparador planes={planesComparar} inflacionPct={esc.inflacionPct} onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
           onEditar={demo ? null : editarEsc} onBorrar={demo ? null : borrar}
