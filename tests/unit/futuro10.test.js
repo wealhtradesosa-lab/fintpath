@@ -782,3 +782,13 @@ describe("ingreso variable en el plan", () => {
     expect(u.ingresos[0].mensual).toBeCloseTo(57.5e6, -3);
   });
 });
+
+describe("Hoy marca las rentas que se van con una venta", () => {
+  it("la renta suelta de un activo vendido sale marcada", async () => {
+    const { ingresosSueltosHoy } = await import("../../src/lib/futuro10.js");
+    const user = { inv: [{ id: "o", n: "Casa Orlando", tipo: "inmueble", va: 400e6 }], ingresos: [{ nombre: "renta orlando", tipo: "pasivo", mensual: 20e6, frecuencia: "mensual" }, { nombre: "Fee", mensual: 13e6, frecuencia: "mensual" }], gas: {} };
+    const xs = ingresosSueltosHoy(user, { decisiones: { o: { accion: "vende" } } });
+    expect(xs.find((x) => x.nombre === "renta orlando").seVa).toBe("venta");
+    expect(xs.find((x) => x.nombre === "Fee").seVa).toBe(null);
+  });
+});

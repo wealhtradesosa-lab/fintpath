@@ -746,7 +746,7 @@ function HoyDetalle({ user, cfg, set }) {
   const setI = (k, v) => { const nx = { ...ih }; if (v === "" || v == null) delete nx[k]; else nx[k] = v; set("ingresoHoy", nx); };
   const pctTxt = (v) => `${(Math.round(v * 10) / 10).toLocaleString("es-CO")} % al año`;
   const fila = { borderTop: `1px solid ${C.bd}`, padding: "10px 0" };
-  const totalInv = invs.filter((x) => !x.vende).reduce((sm, x) => sm + x.usada, 0), totalSue = sueltos.reduce((sm, x) => sm + x.mensual, 0);
+  const totalInv = invs.filter((x) => !x.vende).reduce((sm, x) => sm + x.usada, 0), totalSue = sueltos.filter((x) => !(x.seVa === "venta" || (x.seVa === "acaba" && Number(x.acabaAnio) <= 1))).reduce((sm, x) => sm + x.mensual, 0);
   return <>
     <div style={card}>
       <h3 style={{ marginTop: 0, marginBottom: 2 }}>Cada inversión: cuánto vale y cuánto renta</h3>
@@ -784,7 +784,8 @@ function HoyDetalle({ user, cfg, set }) {
       {sueltos.length === 0 && <div style={{ fontSize: 13, color: C.tx2 }}>No tienes otros ingresos.</div>}
       {sueltos.map((x) => (
         <div key={x.key} style={fila}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b>{x.nombre}</b><span style={{ fontSize: 12, color: C.tx2 }}>{x.renta ? "renta" : "trabajo"}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b style={{ textDecoration: x.seVa ? "line-through" : "none", color: x.seVa ? C.tx2 : C.tx }}>{x.nombre}</b><span style={{ fontSize: 12, color: C.tx2 }}>{x.renta ? "renta" : "trabajo"}</span></div>
+          {x.seVa && <div style={{ fontSize: 12, color: C.am }}>{x.seVa === "venta" ? "Se va con la venta en este plan (paso 2): no suma." : `Se acaba ${Number(x.acabaAnio) <= 1 ? "desde ya" : `en el año ${x.acabaAnio}`} en este plan (paso 2).`}</div>}
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
             <span style={{ width: 170 }}><NumberInput style={inp} placeholder={fmtMilesEs(Math.round(x.enIngresos))} value={ih[x.key] ?? ""} onChange={(v) => setI(x.key, v)} /></span>
             <span style={{ fontSize: 12, color: x.corregido ? C.gn : C.tx2 }}>{x.corregido ? `corregido (en Ingresos: ${plata(Math.round(x.enIngresos))})` : `${plata(Math.round(x.mensual))}/mes, de tu página Ingresos`}</span>
@@ -792,7 +793,7 @@ function HoyDetalle({ user, cfg, set }) {
           </div>
           {x.nota && !x.corregido && <div style={{ fontSize: 11, color: C.tx2, marginTop: 2 }}>{x.nota}</div>}
         </div>))}
-      <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Otros ingresos</span><span>{plata(Math.round(totalSue))}/mes</span></div>
+      <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Otros ingresos{sueltos.some((x) => x.seVa) ? " (sin los que se van)" : ""}</span><span>{plata(Math.round(totalSue))}/mes</span></div>
     </div>
   </>;
 }

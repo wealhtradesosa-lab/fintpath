@@ -1077,12 +1077,19 @@ export function ingresosSueltosHoy(userIn = {}, cfg = {}) {
   const ids = new Set((user.inv || []).filter(Boolean).map((a) => a.id));
   const trm = n(user.trm) || 4200, fx = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? trm : 1);
   const MES = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  // 25-oct-2026: lo que se va con una venta o se acaba en este plan se marca
+  // (y no suma) para que el total de Hoy cuadre con lo que de verdad sigue.
+  const fuera = vinculadosQueSeVan(user, cfg);
+  const term = cfg.ingresosTerminan || {};
+  const vendidos = new Set(Object.entries(cfg.decisiones || {}).filter(([, d]) => d?.accion === "vende").map(([id]) => id));
   return (user.ingresos || []).map((i, k) => {
     if (!i || i.sim === false || (i.activoId && ids.has(i.activoId))) return null;
     const o = base.ingresos[k];
     const enIngresos = montoPromedioMensual(o) * fx(o);
     const nota = o._vigencia?.variable ? `variable: promedio de los ${o._vigencia.meses} meses cargados` : o._vigencia ? `en Ingresos va de ${MES[o._vigencia.desde]} a ${MES[o._vigencia.hasta]}; aquí cuenta el mes completo` : (o.frecuencia && !["mensual", "variable"].includes(o.frecuencia) ? `pago ${o.frecuencia}, repartido por mes` : o.frecuencia === "variable" ? "variable: promedio de lo cargado en el año" : "");
-    return { key: `i:${k}`, nombre: i.nombre || i.categoria || "Ingreso", renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
+    const key = `i:${k}`;
+    const seVa = fuera.has(key) || (i.activoId && vendidos.has(i.activoId)) ? "venta" : term[key] ? "acaba" : null;
+    return { key, seVa, acabaAnio: term[key] || null, nombre: i.nombre || i.categoria || "Ingreso", renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
   }).filter(Boolean);
 }
 
