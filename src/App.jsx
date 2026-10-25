@@ -717,6 +717,12 @@ export default function FinPath(){
             // Subsecuentemente, los saves usan los refs actualizados.
             const d=await Promise.race([sL(session.user.id,accountIdRef.current),timeout]);
             if(d)setU(sanitize(d));
+            else if(session.user.app_metadata?.provider==="google"||sessionStorage.getItem("fp3_oauth")){
+              // 25-oct-2026: regreso de "Entrar con Google" sin datos todavía → cuenta nueva.
+              const{data:fila}=await supabase.from("user_data").select("id").eq("id",session.user.id).maybeSingle();
+              if(!fila)await crearCuentaOAuth(session.user);
+            }
+            sessionStorage.removeItem("fp3_oauth");
           }catch(e){if(typeof console!=="undefined")console.warn("[load] data load timeout:",e)}
           // ═══ Check if user is an advisor ═══
           try{
@@ -982,6 +988,30 @@ export default function FinPath(){
   // 25-oct-2026: país por zona horaria (sin preguntar); se puede cambiar con un toque.
   const __paisDetectado=(()=>{try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"";return /^America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Detroit|Indiana|Kentucky|Boise)|^Pacific\/Honolulu/.test(tz)?"US":"CO"}catch{return"CO"}})();
   const __norteLanding=(()=>{try{const n=leerNorte();if(!n)return null;const r=calcularNorte(n);return r&&r.ob>0?r:null}catch{return null}})();
+  // ═══ 25-oct-2026 — Entrar con Google (Santiago: "que se registren de una") ═══
+  // Se prende con VITE_GOOGLE_LOGIN=true cuando el proveedor Google esté activo en Supabase.
+  const GOOGLE_LOGIN=import.meta.env.VITE_GOOGLE_LOGIN==="true";
+  const entrarConGoogle=async()=>{
+    try{
+      track("signup_google_click",{modo:aM});
+      sessionStorage.setItem("fp3_oauth","1");
+      const{error}=await supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+"/"}});
+      if(error)setAuthError("No pudimos abrir Google: "+error.message);
+    }catch(e){setAuthError("No pudimos abrir Google. Intenta con tu correo.")}
+  };
+  // Primera vez que entra con Google: no tiene user_data. Se crea igual que en el registro con correo.
+  const crearCuentaOAuth=async(user)=>{
+    const email=user.email||"";
+    const meta=user.user_metadata||{};
+    const nombre=(meta.full_name||meta.name||"").trim()||(()=>{const x=email.split("@")[0].split(/[._\-+0-9]/)[0];return x?x.charAt(0).toUpperCase()+x.slice(1):"Usuario"})();
+    const nd=mkU(nombre,email);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(email)*86400000).toISOString().split("T")[0];nd.jurisdiction=__paisDetectado;
+    const __norte=leerNorte();let __conNorte=false;
+    if(__norte){const it=itemsDesdeNorte(__norte,"own_1");if(it.ingresos.length||Object.keys(it.gas).length||it.inv.length){nd.owners=[{id:"own_1",name:nombre,type:"natural"}];nd.ingresos=it.ingresos;nd.gas=it.gas;nd.inv=it.inv;nd.deu=it.deu;__conNorte=true;}}
+    setU(nd);await sS(nd,user.id);setPg("dash");
+    try{guardarEntrada();trackSignup({method:"google",userId:user.id});}catch{}
+    if(__conNorte){borrarNorte();showToast("🧭 Tu norte quedó guardado. Esto es lo que tienes hoy.")}else{setShowOnboarding(true)}
+    fetch("/.netlify/functions/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:email,template:"welcome",vars:{name:nombre,isPioneros:false}})}).catch(()=>{});
+  };
   const auth=async()=>{
     if(!aF.e||!aF.p){setAuthError("Ingresa email y contraseña");return}
     // Sesión 4-may-2026: subimos mínimo de 6 → 8 caracteres + validación
@@ -1784,6 +1814,14 @@ export default function FinPath(){
           </div>
           <div style={{fontSize:10,color:T.tx3,marginTop:2}}>{loginRole==="advisor"?"Acceso al workspace de asesor (requiere plan Asesor)":"Acceso a tu dashboard personal"}</div>
         </div>}
+        {GOOGLE_LOGIN&&loginRole!=="advisor"&&<>
+          <button type="button" onClick={entrarConGoogle} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,width:"100%",padding:"13px",borderRadius:12,border:"1px solid "+T.border,background:"#fff",color:"#111",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="rgb(255,193,7)" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="rgb(255,61,0)" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="rgb(76,175,80)" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="rgb(25,118,210)" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+            {aM==="signup"?"Crear cuenta con Google":"Entrar con Google"}
+          </button>
+          {aM==="signup"&&<div style={{fontSize:11,color:T.tx3,textAlign:"center",marginTop:-8}}>Al continuar con Google aceptas los Términos y la Política de Privacidad.</div>}
+          <div style={{display:"flex",alignItems:"center",gap:10,color:T.tx3,fontSize:12}}><div style={{flex:1,height:1,background:T.border}}/>o con tu correo<div style={{flex:1,height:1,background:T.border}}/></div>
+        </>}
         <In l="Email" value={aF.e} onChange={v=>sAF(p=>({...p,e:v}))} type="email" placeholder="tu@email.com"/>
         <In l={aM==="signup"?"Contraseña (mínimo 8 caracteres)":"Contraseña"} value={aF.p} onChange={v=>sAF(p=>({...p,p:v}))} type="password" placeholder="••••••••"/>
         {aM==="signup"&&(()=>{const pais=aF.country||__paisDetectado;return<div style={{fontSize:12,color:T.tx3}}>
