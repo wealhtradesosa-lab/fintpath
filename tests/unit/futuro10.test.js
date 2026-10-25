@@ -730,3 +730,13 @@ describe("la ganancia del negocio se reinvierte en lo que elijas", () => {
     expect(ibR - ibA).toBeGreaterThan(1400e6);
   });
 });
+
+describe("lo que sobra cada mes va a donde elijas", () => {
+  it("el % elegido se suma a la inversión; el resto al reparto", () => {
+    const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "ib", n: "IBKR", tipo: "Acciones", va: 100e6 }], ingresos: [{ nombre: "Salario", mensual: 100e6, frecuencia: "mensual" }], gas: { Vida: [{ c: "Vida", mensual: 40e6, frecuencia: "mensual" }] } };
+    const a = proyectarFuturo10(user, {});
+    const r = proyectarFuturo10(user, { sobraDestinos: [{ id: "ib", pct: 50 }] });
+    const d = r.filas[1].porActivo.find((x) => x.id === "ib").valor - a.filas[1].porActivo.find((x) => x.id === "ib").valor;
+    expect(d).toBeCloseTo(r.filas[1].cf * 0.5, -6);
+  });
+});

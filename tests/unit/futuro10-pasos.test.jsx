@@ -12,11 +12,13 @@ const user = { inflacionPct: 4, trm: 4000,
 const cfg = { escenario: "base", norte: "equilibrio", decisiones: { pm: { accion: "vende" }, lote: { accion: "modifica", inversionMonto: 600e6, rentaNuevaMensual: 8e6 } }, pagarDeudas: { f: true },
   nuevas: [{ preset: "custom", nombre: "BTG", monto: 5000e6, anio: 1, rendimientoNomPct: 10.5, pctRecibe: 100 }, { preset: "rfCorto", monto: 100e6, fuente: "nuevo" }, { preset: "custom", nombre: "Viejo", monto: "1.000.000", tipo: "valoriza" }],
   reinversiones: [{ activoId: "ibkr", monto: 1500e6, rendimientoNomPct: 20, pctRecibe: 25 }, { activoId: "noexiste", monto: 1 }],
+  sobraDestinos: [{ id: "ibkr", pct: 40 }], ciclos: [{ nombre: "Aso", capital: 1350e6, valorFinal: 1900e6, destinoId: "ibkr" }, { nombre: "Aso2", capital: 500e6, valorFinal: 700e6, desde: 3, destino: "flujo" }], rentaHoy: { lote: 1e6 }, ingresoHoy: { "i:0": 40e6 }, ingresosTerminan: { "i:0": 4 },
   futuros: { ingresos: [{ nombre: "Pensión", mensual: 24e6, desde: 5, hasta: "" }], activos: [{ nombre: "Local", clase: "inmueble", valor: 800e6, cuotaInicial: 200e6, entrega: 2, rentaMensual: 5e6 }], gastos: [{ nombre: "Universidad", anual: 180e6, desde: 3, anios: 4 }] } };
 
 describe("Mi futuro a 10: cada paso abre sin errores", () => {
   [0, 1, 2, 3, 4].forEach((paso) => it(`paso ${paso + 1}`, () => {
     const html = renderToString(createElement(MiFuturo10, { user, guardado: { borrador: cfg, escenarios: [{ id: "e1", nombre: "Uno", config: cfg }] }, pasoInicial: paso }));
     expect(html.length).toBeGreaterThan(1000);
+    if (paso === 2) expect(html).toMatch(/En qué reinviertes lo que sobra cada mes/);
   }));
 });

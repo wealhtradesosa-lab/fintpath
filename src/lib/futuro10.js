@@ -372,6 +372,8 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     ciclosDetalle.push({ id: a.id, nombre: c.nombre, capital: c.capital, valorFinal: c.valorFinal, meses: c.meses, desde: c.desde, hasta: c.hasta, fuente: c.fuente, destino: c.destino, destinoId: c.destinoId, costosPct: c.costosPct, regimen: c.regimen, impuestoPct: c.impuestoPct, impuestoAnual: c.impuestoAnual, gananciaCiclo: c.gananciaCiclo, gananciaAnual: c.gananciaAnual, rentabilidadPct: c.capital > 0 ? c.gananciaAnual / c.capital * 100 : 0 });
   });
   apartados.forEach((h) => nuevas.push(h));
+  const sobraDestinos = (Array.isArray(cfg.sobraDestinos) ? cfg.sobraDestinos : []).filter((d) => d && d.id).map((d) => ({ id: d.id, pct: Math.min(100, Math.max(0, n(d.pct))) })).filter((d) => d.pct > 0);
+  { let acum = 0; sobraDestinos.forEach((d) => { d.pct = Math.min(d.pct, 100 - acum); acum += d.pct; }); }
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
   ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] = bolsa * mezcla[k] / 100; });
   const rCan = { liquidez: rNom(sup.canastas.liquidez), renta: rNom(sup.canastas.renta), crecimiento: rNom(sup.canastas.crecimiento) };
@@ -563,7 +565,21 @@ export function proyectarFuturo10(userIn = {}, cfg = {}) {
     if (cicloReinv > 0) creceAnio += cicloReinv;
     const cf = ingresos + rentaNueva + cicloFlujo - gastos - gastoFuturo - cuota;
     if (cf >= 0) {
-      Object.keys(canasta).forEach((k) => { canasta[k] += cf * mezcla[k] / 100; });
+      // 25-oct-2026 (Santiago: "que salga lo que sobra cada mes… me sobran al
+      // mes 100 M, en qué los quiero reinvertir, poder elegir"). Lo que sobra
+      // del año va a los destinos elegidos (cfg.sobraDestinos: [{id, pct}]);
+      // el % que no se asigne, como lo que sobra de las ventas (mezcla).
+      let restoPct = 100;
+      sobraDestinos.forEach((d) => {
+        const v = cf * d.pct / 100; restoPct -= d.pct;
+        const dest = todos.find((x) => x.id === d.id && !x.ciclo);
+        if (dest) dest.valor += v;
+        else if (d.id === "c_crecimiento") canasta.crecimiento += v;
+        else if (d.id === "c_renta") canasta.renta += v;
+        else if (d.id === "c_liquidez") canasta.liquidez += v;
+        else restoPct += d.pct;
+      });
+      if (restoPct > 0) Object.keys(canasta).forEach((k) => { canasta[k] += cf * (restoPct / 100) * mezcla[k] / 100; });
     } else {
       retirar(-cf);
       alertas.push({ tipo: "cf_negativo", anio: t, texto: `En el año ${t} sale más de lo que entra; se usa tu liquidez.` });

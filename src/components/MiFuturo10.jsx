@@ -215,7 +215,10 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <Ciclos lista={cfg.ciclos || []} set={(v) => set("ciclos", v)} det={r.ciclosDetalle || []} destinos={[...(r.fuentes || []).filter((f) => !String(f.id).startsWith("ciclo_") && !String(f.id).startsWith("apartado_")), { id: "c_liquidez", nombre: "Liquidez" }]} />
         </div>
         <div style={card}>
-          <Seccion n="E" titulo="El resto se reparte así" sub="Lo que quede de lo que vendes, después de todo lo anterior. Son ejemplos de mezcla, no recomendaciones." />
+          <Seccion n="E" titulo="Lo que sobra y en qué lo reinviertes" sub="Dos cosas distintas: lo que sobra de las ventas (una vez) y lo que te sobra cada mes de tus rentas e ingresos." />
+          <SobraMensual r={r} cfg={cfg} set={set} destinos={[...(r.fuentes || []).filter((f) => !String(f.id).startsWith("ciclo_") && !String(f.id).startsWith("apartado_")), { id: "c_liquidez", nombre: "Liquidez" }]} />
+          <div style={{ fontWeight: 700, marginTop: 14 }}>Lo que sobra de las ventas: {plata(Math.round((r.bolsaDetalle || {}).restante || 0))} <span style={{ fontWeight: 400, fontSize: 12, color: C.tx2 }}>(una sola vez)</span></div>
+          <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>Así se reparte. También es el reparto de lo que sobre cada mes y no asignes arriba. Son ejemplos de mezcla, no recomendaciones.</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {Object.entries(SUPUESTOS_F10.nortes).map(([k, nt]) => <button key={k} style={btn(!cfg.mezcla && cfg.norte === k)} onClick={() => setCfg((p) => ({ ...p, norte: k, mezcla: null }))}>{nt.nombre}</button>)}
             <button style={btn(!!cfg.mezcla)} onClick={() => set("mezcla", { liquidez: mezcla.liquidez, renta: mezcla.renta, crecimiento: mezcla.crecimiento })}>Personalizado</button>
@@ -838,4 +841,58 @@ function Ciclos({ lista, set, det, destinos = [] }) {
     })}
     <button style={{ ...btn(true), width: "100%", padding: "12px" }} onClick={() => set([...lista, { nombre: "", capital: "", valorFinal: "", meses: 12, desde: 1, hasta: "", fuente: "venta", destino: "reinvierte" }])}>+ Agregar negocio que se repite</button>
   </>;
+}
+
+// 25-oct-2026 (Santiago: "debería ser más clara la sección E, qué hacer con lo
+// que sobra cada mes, que salga lo que sobra por cada inversión o renta y que
+// sumen… me sobran al mes 100 M, en qué los quiero reinvertir, poder elegir").
+function SobraMensual({ r, cfg, set, destinos }) {
+  const [ver, setVer] = useState(false);
+  const d = r.desglose || { entra: [], sale: [] };
+  const f1 = (r.filas || [])[1] || {};
+  const entra = (d.entra || []).filter((x) => x.mensual > 0.5).sort((a, b) => b.mensual - a.mensual);
+  const tEntra = entra.reduce((sm, x) => sm + x.mensual, 0);
+  const tSale = (d.sale || []).reduce((sm, x) => sm + x.mensual, 0);
+  const sobra = (f1.cf || 0) / 12;
+  const lista = Array.isArray(cfg.sobraDestinos) ? cfg.sobraDestinos : [];
+  const up = (i, v) => set("sobraDestinos", lista.map((y, j) => (j === i ? { ...y, ...v } : y)));
+  const usado = lista.reduce((sm, x) => sm + (Number(x.pct) || 0), 0);
+  const resto = Math.max(0, 100 - usado);
+  const fila = (nombre, v, col, nota) => <div key={nombre + v} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, padding: "2px 0" }}><span style={{ color: C.tx2, minWidth: 0 }}>{nombre}{nota ? <span style={{ fontSize: 11 }}> · {nota}</span> : null}</span><span style={{ color: col, fontFamily: "monospace", whiteSpace: "nowrap" }}>{plata(Math.round(v))}</span></div>;
+  return <div style={{ background: C.bg, borderRadius: 8, padding: 12 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+      <span style={{ fontWeight: 700 }}>Cada mes te {sobra >= 0 ? "sobran" : "faltan"}</span>
+      <span style={{ fontSize: 20, fontWeight: 800, color: sobra >= 0 ? C.gn : C.rd }}>{plata(Math.round(Math.abs(sobra)))}</span>
+    </div>
+    <div style={{ fontSize: 12, color: C.tx2 }}>En el año 1: entra {plata(Math.round(tEntra))} y sale {plata(Math.round(tSale))}. {sobra < 0 ? "Lo que falta sale de tu liquidez." : ""}</div>
+    <button style={{ ...btn(false), marginTop: 6, fontSize: 12, padding: "4px 10px" }} onClick={() => setVer(!ver)}>{ver ? "Ocultar" : "Ver"} de dónde sale cada peso</button>
+    {ver && <div style={{ marginTop: 8 }}>
+      <div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1 }}>Entra cada mes</div>
+      {entra.map((x) => fila(x.nombre, x.mensual, C.tx, x.nota))}
+      <div style={{ borderTop: `1px solid ${C.bd}`, marginTop: 2 }}>{fila("Total que entra", tEntra, C.tx)}</div>
+      <div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1, marginTop: 6 }}>Sale cada mes</div>
+      {(d.sale || []).slice(0, 6).map((x) => fila(x.nombre, x.mensual, C.tx2))}
+      {(d.sale || []).length > 6 && fila(`y ${(d.sale || []).length - 6} gastos más`, (d.sale || []).slice(6).reduce((sm, x) => sm + x.mensual, 0), C.tx2)}
+      <div style={{ borderTop: `1px solid ${C.bd}`, marginTop: 2 }}>{fila("Total que sale", tSale, C.tx2)}</div>
+      <div style={{ borderTop: `1px solid ${C.bd}`, marginTop: 2, fontWeight: 700 }}>{fila(sobra >= 0 ? "Te sobra al mes" : "Te falta al mes", Math.abs(sobra), sobra >= 0 ? C.gn : C.rd)}</div>
+      {(d.reinvierte || []).length > 0 && <div style={{ fontSize: 11, color: C.tx2, marginTop: 4 }}>No cuenta lo que rinden y no te llega ({(d.reinvierte || []).map((x) => x.nombre).join(", ")}): eso ya se reinvierte solo.</div>}
+    </div>}
+    {sobra > 0 && <div style={{ marginTop: 12 }}>
+      <div style={{ fontWeight: 700 }}>¿En qué reinviertes lo que sobra cada mes?</div>
+      {lista.map((x, i) => (
+        <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
+          <select style={{ ...inp, flex: "1 1 160px", width: "auto" }} value={x.id || ""} onChange={(e) => up(i, { id: e.target.value })}>
+            <option value="">Elige una inversión</option>
+            {destinos.map((dd) => <option key={dd.id} value={dd.id}>{dd.nombre}</option>)}
+          </select>
+          <span style={{ display: "flex", alignItems: "center", gap: 4, width: 80 }}><InputDecimalEs style={inp} value={x.pct ?? ""} onChange={(v) => up(i, { pct: v })} />%</span>
+          <span style={{ fontSize: 12, color: C.gn, whiteSpace: "nowrap" }}>{plata(Math.round(sobra * (Number(x.pct) || 0) / 100))}/mes</span>
+          <button style={{ ...btn(false), padding: "4px 10px" }} onClick={() => set("sobraDestinos", lista.filter((_, j) => j !== i))} aria-label="Quitar">✕</button>
+        </div>))}
+      <button style={{ ...btn(true), marginTop: 8 }} onClick={() => set("sobraDestinos", [...lista, { id: "", pct: resto }])}>+ Reinvertir en una inversión</button>
+      <div style={{ fontSize: 12, color: usado > 100 ? C.rd : C.tx2, marginTop: 6 }}>
+        {usado > 100 ? "Los porcentajes suman más de 100 %." : resto > 0 ? `${resto} % (${plata(Math.round(sobra * resto / 100))}/mes) se reparte como lo de las ventas, abajo.` : "Asignaste el 100 % de lo que sobra."}
+      </div>
+    </div>}
+  </div>;
 }
