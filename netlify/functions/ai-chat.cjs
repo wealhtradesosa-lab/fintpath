@@ -315,7 +315,8 @@ REGLAS DE RESPUESTA:
 9. Prioriza: liquidez → protección → crecimiento → revisión fiscal
 10. Si no tienes datos suficientes, di exactamente qué falta
 11. Nunca digas "consulta un asesor" — TÚ eres el asesor
-12. Si el usuario pregunta algo fuera de finanzas, redirige amablemente`;
+12. Si el usuario pregunta algo fuera de finanzas, redirige amablemente
+13. Tienes los planes de «Mi futuro a 10 años» que armó el usuario (sección MI FUTURO A 10 AÑOS). Si pregunta por sus planes, compáralos con sus cifras: qué decide cada uno, por qué uno termina con más patrimonio (ventas, valorización de lo que compra o construye, rentas, gastos que entran o se acaban), qué supuestos lo sostienen y cuáles son optimistas, el flujo mensual año a año y los riesgos (liquidez, concentración, dólar). Di cuál te parece mejor para su situación y por qué, sin inventar datos que no estén en el contexto`;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -407,7 +408,10 @@ exports.handler = async (event) => {
     const pAsesorUsado = marcarAsesorUsado(userId, event.headers?.cookie || event.headers?.Cookie).catch(() => {});
 
     // System prompt según jurisdicción
-    const systemPrompt = buildSystemPrompt({ jurisdiction, financialContext, taxConfig });
+    // 24-oct-2026: el contexto ahora trae todas las secciones (planes incluidos);
+    // tope de tamaño para no disparar el costo con cuentas muy grandes.
+    const ctxSeguro = String(financialContext || "").slice(0, 60000);
+    const systemPrompt = buildSystemPrompt({ jurisdiction, financialContext: ctxSeguro, taxConfig });
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -418,7 +422,7 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5-20250929",
-        max_tokens: 1024,
+        max_tokens: 2048,
         system: systemPrompt,
         messages: messages,
       }),

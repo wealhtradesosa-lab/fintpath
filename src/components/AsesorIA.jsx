@@ -7,6 +7,7 @@ import Disclaimer from "./Disclaimer";
 import { montoPromedioMensual, promedioMesActivo } from "../lib/flowHelpers.js";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
 import PageHeader from "./PageHeader.jsx";
+import { contextoCompleto } from "../lib/contextoAsesor.js";
 
 const T = {
   bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
@@ -23,6 +24,7 @@ const SUGGESTIONS = [
   "Genera 3 escenarios para mejorar mi cash flow",
   "¿Qué gastos puedo recortar para ahorrar $5M/mes?",
   "¿Cuánto necesito para retirarme a los 55?",
+  "¿Qué opinas de mis planes a 10 años? ¿Cuál me conviene?",
 ];
 
 function buildContext(user, totals) {
@@ -53,8 +55,13 @@ function buildContext(user, totals) {
     });
   }
 
-  // Ingresos
-  if ((u.ingresos || []).length > 0) {
+  // 24-oct-2026: cada inversión con su renta, otros ingresos, gastos en detalle,
+  // metas, retiro, trading y los planes de Mi futuro a 10 años.
+  const extra = contextoCompleto(u);
+  ctx += extra;
+
+  // Ingresos (solo si el bloque completo no los trajo)
+  if (!extra && (u.ingresos || []).length > 0) {
     ctx += "\nINGRESOS MENSUALES:\n";
     (u.ingresos || []).forEach(i => {
       const mon = i.moneda === "USD" ? " (USD)" : "";
