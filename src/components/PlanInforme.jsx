@@ -76,7 +76,11 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
   const real = cagr == null ? null : ((1 + cagr / 100) / (1 + inflacionPct / 100) - 1) * 100;
 
   // ── Mes a mes ─────────────────────────────────────────────────────────────
-  const mes = filas.map((f) => { const e = (f.ingresos || 0) / 12 / d(f), s = (f.gastos || 0) / 12 / d(f); return { anio: anioTxt(f.anio), entra: e, sale: s, base: Math.min(e, s), sobra: Math.max(0, e - s) }; });
+  // 25-oct-2026 (Santiago: "en el año cero me sale que no ingresa BTG… no sé
+  // por qué no se ve de una"). El flujo mes a mes arranca en el año 1: el plan
+  // empieza ya y lo que produce se cuenta desde el primer mes. «Hoy» (antes del
+  // plan) solo confundía.
+  const mes = filas.slice(1).map((f) => { const e = (f.ingresos || 0) / 12 / d(f), s = (f.gastos || 0) / 12 / d(f); return { anio: anioTxt(f.anio), entra: e, sale: s, base: Math.min(e, s), sobra: Math.max(0, e - s) }; });
   const apretado = filas.slice(1).reduce((m, f) => { const s = (f.ingresos - f.gastos) / 12 / d(f); return m == null || s < m.s ? { s, f } : m; }, null);
   const marcas = []; ev.forEach((e) => { if (e.anio > 0 && !marcas.some((m) => m.anio === e.anio)) marcas.push({ anio: e.anio, txt: ev.filter((x) => x.anio === e.anio).map((x) => x.corto).slice(0, 2).join(" + ") }); });
 
