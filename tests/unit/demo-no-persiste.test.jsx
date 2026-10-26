@@ -8,6 +8,8 @@ globalThis.localStorage = {
   removeItem: (k) => _mem.delete(k),
   clear: () => _mem.clear(),
 };
+// El guardado de App.jsx escribe en window (entorno node): stub mínimo para que no haya errores no manejados.
+globalThis.window = globalThis.window || { dispatchEvent: () => true };
 vi.mock("../../src/lib/supabase", () => {
   const tabla = (nombre) => {
     const reg = (op) => (...args) => { llamadas.push({ nombre, op, args }); return q; };

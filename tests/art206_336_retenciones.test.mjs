@@ -1,9 +1,10 @@
 // ═════════════════════════════════════════════════════════════════════════
 // F1 / F2 / F3 — Art.206 25%, Art.336 (40% + 1340 UVT), retenciones→saldo
 // AG 2025 · UVT = 49.799
-// Ejecutar: node tests/art206_336_retenciones.test.mjs
+// Ejecutar: npm test (vitest). Cada bloque F es un it(); assert() lanza y falla el test.
 // ═════════════════════════════════════════════════════════════════════════
 
+import { describe, it } from "vitest";
 import {
   estimarImpuesto,
   uvtForYear,
@@ -19,21 +20,24 @@ const assert = (cond, msg) => {
 };
 const approx0 = (n, tol = 1) => Math.abs(n) <= tol;
 
+describe("Art.206 / 336 / retenciones (motor taxCO)", () => {
 console.log("═".repeat(70));
 console.log(`Fixtures Art.206 / 336 / retenciones — AG ${AG} UVT=${UVT}`);
 console.log("Pipeline: bruto → (−) no constit. → deducciones → 25% 206 (790 UVT/año)");
 console.log("          → tope 336 min(40%,1340 UVT) → Art.241 → (−) retenciones → saldo");
 console.log("═".repeat(70));
 
+it("UVT y topes AG 2025", () => {
 assert(UVT === 49799, "UVT AG 2025 = 49799");
 assert(TOPE_EXENTA25_UVT === 790, "tope Art.206 = 790 UVT/año");
 assert(TOPE_ART336_UVT === 1340, "tope Art.336 absoluto = 1340 UVT");
 assert(790 * UVT === 39_341_210, "790×49799 = 39_341_210");
 assert(1340 * UVT === 66_730_660, "1340×49799 = 66_730_660");
+});
 
 // ── F1 — Contador ~$0 (retenciones cubren a cargo) ───────────────────────
 console.log("\nF1 — neto laboral ~120M, retenciones ≥ a cargo → saldo ≈ 0");
-{
+it("F1 — neto ~120M, retenciones ≥ a cargo → saldo ≈ 0", () => {
   // Target neto ≈ 120M. Con aportes 4%+4% como no-const pensión (salud sí suma):
   // motor: noConstSalPens = aPens*12, noConstSalSalud = aSalud*12.
   // neto = sal - (pens+salud)*12. Para neto=120M con 4%+4%: sal = 120M/0.92.
@@ -76,11 +80,11 @@ console.log("\nF1 — neto laboral ~120M, retenciones ≥ a cargo → saldo ≈ 
     reteN: Math.round(d.reteN),
     saldo: Math.round(d.saldoAPagar ?? d.impuesto),
   });
-}
+});
 
 // ── F2 — 25% + tope 336 con bag que empuja el techo ───────────────────────
 console.log("\nF2 — high labor + dep + prepagada + PV → benef = min(suma, 40%, 1340 UVT)");
-{
+it("F2 — benef = min(suma, 40%, 1340 UVT)", () => {
   // Motor lee u.gas (por categoría), no u.gastos[].
   // Bag grande: 25% (790 UVT) + dep + prepagada + PV/AFC → debe pegar 1340 UVT
   // (40% de neto alto > 1340 UVT, así el absoluto es el que bindea).
@@ -124,11 +128,11 @@ console.log("\nF2 — high labor + dep + prepagada + PV → benef = min(suma, 40
     benAplic: Math.round(d.benAplic),
     exenta25: Math.round(d.exenta25),
   });
-}
+});
 
 // ── F3 — regresión sin Art.206 25% → a cargo debe subir vs F1 ────────────
 console.log("\nF3 — mismo F1 sin Art.206 → a cargo ↑");
-{
+it("F3 — sin Art.206 → a cargo ↑", () => {
   const netoTarget = 120_000_000;
   const mensual = Math.round((netoTarget / 0.92) / 12);
   const aportesMes = Math.round(mensual * 0.04);
@@ -149,8 +153,9 @@ console.log("\nF3 — mismo F1 sin Art.206 → a cargo ↑");
   assert(sin206.exenta25 === 0, "sin 206: exenta25 = 0");
   assert(aSin > aCon, `a cargo sin 206 (${Math.round(aSin)}) > con 206 (${Math.round(aCon)})`);
   console.log("   ", { aCargoCon206: Math.round(aCon), aCargoSin206: Math.round(aSin), delta: Math.round(aSin - aCon) });
-}
+});
 
 console.log("\n" + "═".repeat(70));
 console.log("ALL FIXTURES PASSED");
 console.log("═".repeat(70));
+});

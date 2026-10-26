@@ -1,14 +1,17 @@
 // ═════════════════════════════════════════════════════════════════════════
 // Tests de regresión del motor (taxCO.js)
 // ─────────────────────────────────────────────────────────────────────────
-// Capturan los IMPUESTOS calculados para casos típicos antes del Commit 3.
+// Capturan los IMPUESTOS calculados para casos típicos; cualquier cambio de cifra hace fallar el snapshot.
 // Sirven para verificar que casos sin LAB_PRESTACIONES_CESANTIAS se mantienen
 // idénticos post-cambio.
-// Ejecutar: node tests/motor-regresion.test.mjs
+// Ejecutar: npm test (vitest). Snapshot en tests/__snapshots__/; si cambia, falla.
 // ═════════════════════════════════════════════════════════════════════════
 
+import { describe, it, expect } from "vitest";
 import { estimarImpuesto } from "../src/lib/taxCO.js";
 
+describe("motor-regresion (taxCO)", () => {
+it("snapshots de impuestos por caso no cambian", () => {
 const snapshots = {};
 
 function capturar(nombre, det) {
@@ -19,6 +22,11 @@ function capturar(nombre, det) {
     deducDep: det.deducDep,
     impBruto: det.impBruto,
     impuesto: det.impuesto,
+    // a cargo (renglón 'impuesto neto de renta') vs retenciones vs saldo:
+    // 'impuesto' es el saldo tras retenciones, no el impuesto a cargo.
+    impuestoACargo: det.impuestoACargo,
+    retenciones: det.reteN ?? det.retefuenteNat ?? 0,
+    saldoACargo: det.saldoACargo,
   };
 }
 
@@ -62,9 +70,10 @@ const det4 = estimarImpuesto(user4).detalle.find(d => d.name === "EmpCes");
 capturar("caso4_con_cesantias", det4);
 
 console.log("═".repeat(70));
-console.log("Snapshots del motor (pre-Commit 3)");
+console.log("Snapshots del motor (taxCO)");
 console.log("═".repeat(70));
 console.log(JSON.stringify(snapshots, null, 2));
 console.log("═".repeat(70));
-console.log("Estos valores deben mantenerse IDÉNTICOS para casos 1, 2, 3");
-console.log("post-Commit 3. El caso 4 (con cesantías) DEBE cambiar (esperado).");
+expect(snapshots).toMatchSnapshot();
+});
+});
