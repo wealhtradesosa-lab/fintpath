@@ -2158,7 +2158,9 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                       <div style={{ fontSize: 11, fontWeight: 700, color: T.pr, margin: "10px 0 6px", textTransform: "uppercase" }}>📋 Deudas ({grp.deu.length})</div>
                       {grp.deu.map((d, di) => {
                         if (d.sim === false) return null;
-                        const idx = allDeu.findIndex(x=>x.id===d.id||(x.n===d.n&&x.mt===d.mt));
+                        // 26-oct-2026 (Santiago: "si bajo el crédito de Sufi a cero no se mueve el cash flow"). Las deudas sin id
+                        // caían todas en el índice 0 (undefined===undefined): el slider movía OTRA deuda. Se usa la posición real.
+                        const idx = Number.isInteger(d._idx) ? d._idx : allDeu.findIndex(x=>(d.id&&x.id===d.id)||(!d.id&&x.n===d.n&&x.mt===d.mt));
                         const cuota = d.pago||d.pg||0;
                         const saldo = d.mt||0;
                         const safeDebtIdx = idx >= 0 ? idx : "d"+gi+"_"+di;
