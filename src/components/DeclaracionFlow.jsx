@@ -470,7 +470,7 @@ const AREAS_NATURAL = [
     icono: "💼",
     titulo: "Aportes a Pensión Voluntaria o AFC",
     pregunta: "¿Aportas (o quieres empezar a aportar) a PV o AFC?",
-    explicacion: "Estos aportes son 100% deducibles (cap 25% del ingreso, máx 2.500 UVT/año). La palanca más potente para salarios altos.",
+    explicacion: "Estos aportes son exentos (hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC). La palanca más potente para salarios altos.",
     baseLegal: "Arts. 126-1 y 126-4 ET",
     estimarAhorro: (data, det) => {
       const mensual = Number(data.aporteMensual) || 0;

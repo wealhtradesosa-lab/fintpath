@@ -22,6 +22,7 @@ import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { useMemo, useState, useEffect } from "react";
 import { montoPromedioMensual, totalAnualItem } from "../lib/flowHelpers.js";
 import { estimarImpuesto, UVT } from "../lib/taxCO.js";
+import { AG_PROYECCION, topePvAfcAnual, etiquetaAG, topeMedicinaMensual } from "../lib/ownerPlanAdapter.js";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { GRUPOS_SIMPLE } from "../lib/regimenSimple.js";
 // Commit 21 Tarea 3: detector de palancas del Optimizador V2 para mostrar
@@ -1181,17 +1182,22 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
 //   - Dependientes: 10% ingreso, máximo 384 UVT/año
 function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
   const det = useMemo(() => {
-    const e = estimarImpuesto(user);
+    // El wizard proyecta con los ingresos/aportes actuales (mensual × 12), no la
+    // declaración F-210 AG 2025: usa el AG de proyección y la UVT de ese año.
+    const e = estimarImpuesto(user, { ag: AG_PROYECCION });
     return (e?.detalle || []).find((d) => d.name === selectedOwner?.name);
   }, [user, selectedOwner]);
 
   if (!det) return null;
 
   // Camino 1.5: montos máximos teóricos por deducción (para mostrar el tamaño del beneficio).
-  const MAX_DEP = Math.round(384 * UVT);                      // $20.1M (10% lab, máx 384 UVT)
-  const MAX_MEDICINA = Math.round(16 * UVT * 12);             // $10.05M (16 UVT/mes)
-  const MAX_VIVIENDA = Math.round(1200 * UVT);                // $62.85M (1.200 UVT/año)
-  const MAX_PV_AFC = Math.round(3800 * UVT);                  // $199.02M conjunto
+  const UVT_AG = topePvAfcAnual(AG_PROYECCION).uvt;
+  const ETIQUETA_AG = etiquetaAG({ ag: AG_PROYECCION });
+  const MAX_DEP = Math.round(384 * UVT_AG);                      // $20.1M (10% lab, máx 384 UVT)
+  const MED_MES = topeMedicinaMensual(AG_PROYECCION);          // 16 UVT/mes · AG 2026: $837.984/mes
+  const MAX_MEDICINA = MED_MES * 12;
+  const MAX_VIVIENDA = Math.round(1200 * UVT_AG);                // $62.85M (1.200 UVT/año)
+  const MAX_PV_AFC = topePvAfcAnual(AG_PROYECCION).tope;      // 3.800 UVT del AG de proyección (AG 2026: $199.021.200). Una declaración AG 2025 usaría $189.236.200.
 
   // Helper: ejecutar scroll suave a un id dentro del Paso 3 (mismo wizard step).
   const scrollTo = (id) => {
@@ -1223,7 +1229,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "💊",
       label: "Medicina prepagada / salud / vida",
       art: "Art. 387 #2 ET",
-      topeMensual: `Tope: 16 UVT/mes (~$${Math.round(16 * UVT / 1000)}k/mes, $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año)`,
+      topeMensual: `Tope: 16 UVT/mes (~$${fmtNumEs(MED_MES, 0)}/mes · ${ETIQUETA_AG}, $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año)`,
       valor: det.deducMedicina || 0,
       montoMaximoTexto: `Hasta $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año combinando medicina prepagada + seguros de salud + seguros de vida. Tope conjunto 16 UVT/mes.`,
       ctaTexto: "→ Cargar en Egresos",
@@ -1247,9 +1253,10 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "🏛️",
       label: "Pensión Voluntaria (PV)",
       art: "Art. 126-1 ET",
-      topeMensual: `Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M)`,
+      topeMensual: `Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M) · ${ETIQUETA_AG}`,
       valor: det.pensionVol || 0,
-      montoMaximoTexto: `Aportes 100% deducibles, tope conjunto con AFC del 30% del ingreso laboral o $${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M/año (lo menor). Si retiras antes de 10 años para algo distinto a vivienda, pierdes el beneficio.`,
+      montoMaximoTexto: `${ETIQUETA_AG}: hasta $${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M/año en pensión voluntaria o AFC podría ser exento (tope conjunto: 30% del ingreso laboral o 3.800 UVT, lo menor, dentro del tope del 40%). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
+      nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.",
       ctaTexto: "→ Cargar en Egresos",
       linkTexto: "Modificar PV →",
       accion: { tipo: "navigate", target: "egresos" },
@@ -1259,9 +1266,10 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "💰",
       label: "AFC (Ahorro Fomento Construcción)",
       art: "Art. 126-4 ET",
-      topeMensual: `Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M)`,
+      topeMensual: `Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M) · ${ETIQUETA_AG}`,
       valor: det.afc || 0,
-      montoMaximoTexto: `Aportes 100% deducibles, tope conjunto con PV. Si retiras antes de 10 años para algo distinto a vivienda, pierdes el beneficio.`,
+      montoMaximoTexto: `${ETIQUETA_AG}: hasta $${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M/año en pensión voluntaria o AFC podría ser exento (tope conjunto con la pensión voluntaria). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
+      nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.",
       ctaTexto: "→ Cargar en Egresos",
       linkTexto: "Modificar AFC →",
       accion: { tipo: "navigate", target: "egresos" },
@@ -1346,6 +1354,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
                   <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5, marginBottom: 8 }}>
                     {it.montoMaximoTexto}
                   </div>
+                  {it.nota && <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginBottom: 8 }}>{it.nota}</div>}
                   <button
                     type="button"
                     onClick={() => handleAccion(it.accion)}

@@ -24,7 +24,8 @@
 //     → { type, regimen, ingAnual, impActual, tasaActual, ..., gastosByCat, ... }
 //     o null si no hay ingresos.
 
-import { estimarImpuesto } from "./taxCO.js";
+import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "./taxCO.js";
+import { sugerenciaPvAfc } from "./sugerenciaPvAfc.js";
 import { totalAnualItem } from "./flowHelpers.js";
 import { GAS_JUR_NO_DEDUCIBLE } from "./fiscalCodes.js";
 
@@ -49,9 +50,12 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     componenteInflacionarioPct,
   };
 
-  const est = estimarImpuesto(userLike);
+  // Simulador y ahorro PV/AFC: AG por defecto; la UVT se deriva de ese año.
+  const est = estimarImpuesto(userLike, { ag: DEFAULT_AG });
   const d = est.detalle[0];
   if (!d) return null;
+  // Aporte sugerido (regla Finanzas) y ahorro: mismo helper que las recomendaciones.
+  const sugPV = sugerenciaPvAfc(userLike, owner, { ag: DEFAULT_AG });
 
   // ── Cosméticos locales derivados de los props (no tributarios) ──
   const patTotal = (inv || []).reduce((s, i) => s + (+i.va || 0), 0);
@@ -92,7 +96,7 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
 
   // ── Derivados específicos de natural (para UI de optimización) ──
   const benefCon = d.type === "natural"
-    ? (d.exenta25 || 0) + (d.totalDeducciones || 0) + (d.pvMax || 0) + (d.afcMax || 0)
+    ? (d.exenta25 || 0) + (d.totalDeducciones || 0) + (d.pvMax || 0) // pvMax = tope conjunto PV+AFC
     : 0;
   const benAplicCon = d.type === "natural"
     ? Math.min(benefCon, d.lim40 || 0)
@@ -129,11 +133,19 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     ingAnual: d.ingreso,
     // FIX abr 2026 (mismo razonamiento que jurídica):
     // impSin/impCon ahora apuntan a impBruto/impOptBruto, no a saldo.
+    sugPvAfc: sugPV,
+    aportePvAfc: sugPV.aporte,
+    ahorroPvAfc: sugPV.ahorro || 0,
     impSin: d.impBruto != null ? d.impBruto : d.impuesto,
     impCon: d.impOptBruto != null ? d.impOptBruto : d.impOptimizado,
     tasaSin: d.tasaBruta != null ? d.tasaBruta : d.tasa,
     tasaCon: d.ingreso > 0 ? ((d.impOptBruto != null ? d.impOptBruto : d.impOptimizado) / d.ingreso * 100) : 0,
     ahorro: d.ahorroOptimo,
+    ag: DEFAULT_AG,
+    uvt: uvtForYear(DEFAULT_AG),
+    saldoAPagar: d.saldoAPagar || 0,
+    saldoAFavor: d.saldoAFavor || 0,
+    saldoAFavorOpt: d.saldoAFavorOpt || 0,
     deducViv: d.deducVivienda,
     gastosDeducNat: d.totalDeducciones,
     // benefSin es lo mismo que benAplic del motor:
@@ -146,4 +158,40 @@ export function adapterOwnerPlan({ owner, ingresos, gastos, inv, deu, trm, compo
     patTotal, deuTotal, gastosByCat, ingByCat,
     gastosTotal, gastosDeducTotal,
   };
+}
+
+// Ahorro de la tarjeta «Pensión voluntaria o AFC» del simulador: impuesto
+// ANTES de retenciones sin el aporte sugerido − con él (impBruto − impOptBruto).
+// No es saldo a pagar: las retenciones pueden cubrirlo.
+export function ahorroPvAfc(fiscalData) {
+  if (fiscalData?.ahorroPvAfc != null) return fiscalData.ahorroPvAfc;
+  return Math.max(0, (Number(fiscalData?.impSin) || 0) - (Number(fiscalData?.impCon) || 0));
+}
+
+// Columna «(=) Saldo a pagar / a favor» del simulador: sale de taxCO.
+export function saldoResumen(fd, isJ) {
+  if (isJ) {
+    const imp = Number(fd?.impBruto) || 0, ret = Number(fd?.retefuenteCalc) || 0;
+    return { saldoAPagar: Math.max(0, imp - ret), saldoAFavor: Math.max(0, ret - imp) };
+  }
+  return { saldoAPagar: Number(fd?.saldoAPagar) || 0, saldoAFavor: Number(fd?.saldoAFavor) || 0 };
+}
+
+// Etiqueta «AG 2026 · UVT $52.374», derivada del año que se le pasó a taxCO.
+export function etiquetaAG(fd) {
+  const ag = fd?.ag || DEFAULT_AG, uvt = fd?.uvt || uvtForYear(ag);
+  return `AG ${ag} · UVT $${Math.round(uvt).toLocaleString("es-CO")}`;
+}
+
+// Proyección con los aportes de hoy (wizard, simulador): AG por defecto (2026).
+// La declaración F-210 AG 2025 debe pedir topePvAfcAnual(2025) → $189.236.200.
+export const AG_PROYECCION = DEFAULT_AG;
+export function topePvAfcAnual(ag = AG_PROYECCION) {
+  const uvt = uvtForYear(ag);
+  return { ag, uvt, tope: Math.round(3800 * uvt) };
+}
+
+// Medicina prepagada (Art. 387 ET): 16 UVT/mes del AG que se calcula.
+export function topeMedicinaMensual(ag = AG_PROYECCION) {
+  return Math.round(16 * uvtForYear(ag));
 }

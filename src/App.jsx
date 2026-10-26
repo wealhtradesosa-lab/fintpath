@@ -2525,6 +2525,7 @@ export default function FinPath(){
             <span style={{fontSize:18,fontWeight:800,color:T.pr,fontFamily:"monospace"}}>{fm(tx.total)}/año</span>
           </div>
           <div style={{fontSize:11,color:T.tx3,marginBottom:8}}>{fm(tx.mes)}/mes estimado</div>
+          {tx.detalle.some(d=>(d.pensionVoluntariaManualAnual||0)>0)&&<div style={{fontSize:10,color:T.tx3,background:T.bg3,borderRadius:6,padding:"6px 8px",marginBottom:8}}>Ajustamos el cálculo de la renta exenta del 25%. Si tienes AFC o pensión voluntaria, tu valor estimado puede subir.</div>}
           {tx.detalle.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid "+T.border,fontSize:11}}>
             <span style={{color:T.tx2}}>{d.type==="juridica"?"🏢":"👤"} {d.name}</span>
             <div style={{textAlign:"right"}}>

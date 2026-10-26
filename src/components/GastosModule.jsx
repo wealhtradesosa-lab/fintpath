@@ -134,7 +134,7 @@ function fiscalSubOptions(ownerType, cat) {
   if (cat === "Aporte tributario") {
     return {
       question: "🛡️ ¿Qué tipo de aporte tributario?",
-      help: "PV y AFC comparten tope 25% del neto laboral y 2500 UVT anuales (Arts. 126-1 y 126-4 ET). Salud prepagada entra al tope de 16 UVT mensuales junto con gastos médicos (Art. 387 #2 ET). Reducen la base gravable del impuesto de renta de persona natural.",
+      help: "PV y AFC comparten tope: 30% del ingreso, máximo 3.800 UVT al año (Arts. 126-1 y 126-4 ET). Salud prepagada entra al tope de 16 UVT mensuales junto con gastos médicos (Art. 387 #2 ET). Reducen la base gravable del impuesto de renta de persona natural.",
       options: [
         { v: "AP_TRIB_PV", l: "Pensión Voluntaria (Art. 126-1 ET)" },
         { v: "AP_TRIB_AFC", l: "AFC — Ahorro Fomento Construcción (Art. 126-4 ET)" },
