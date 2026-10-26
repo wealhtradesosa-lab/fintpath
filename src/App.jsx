@@ -201,6 +201,21 @@ function LoadingScreen(){
 // roto. No es una tasa real: no se guarda y, si viene guardado, se descarta.
 export const TRM_PROVISIONAL=4200;
 export const trmReal=(d)=>{const t=Number(d&&d.trm);return Number.isFinite(t)&&t>0&&t!==TRM_PROVISIONAL?t:null};
+// 26-oct-2026 — `fetch("/api/trm")` iba pelado: sin timeout ni AbortController.
+// Si la red cuelga, la promesa no se resuelve NUNCA y el `catch {}` tampoco
+// corre, así que la tasa no llega y nadie se entera. Importa desde que el #70
+// revivió el efecto (estaba después de un `return`, inalcanzable). Diseño
+// tomado del PR #56 (src/lib/tasaDolar.js), que no se mergeó.
+export const TRM_TIMEOUT_MS=5000;
+export async function traerTrm(ms=TRM_TIMEOUT_MS){
+  const ctl=typeof AbortController!=="undefined"?new AbortController():null;
+  let id;
+  const limite=new Promise((_,rej)=>{id=setTimeout(()=>{try{ctl&&ctl.abort()}catch{}rej(new Error("timeout /api/trm"))},ms)});
+  try{
+    const r=await Promise.race([fetch("/api/trm",ctl?{signal:ctl.signal}:undefined),limite]);
+    return await Promise.race([r.json(),limite]);
+  }finally{clearTimeout(id)}
+}
 export const trmDeApi=(j)=>j&&j.source!=="default"&&trmReal(j)?{trm:Number(j.trm),trmSrc:j.source,trmFecha:j.date||null}:null;
 const MESES_CORTOS=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 export const fechaTrmCorta=(f)=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(f||""));return m?`${m[3]}-${MESES_CORTOS[+m[2]-1]}`:null};
@@ -642,8 +657,7 @@ export default function FinPath(){
     let vivo = true;
     const traer = async () => {
       try {
-        const r = await fetch("/api/trm");
-        const j = await r.json();
+        const j = await traerTrm();
         const real = trmDeApi(j);
         if (vivo && real) { setTrmViva(true); setU(p => (p && p.trm !== real.trm) ? { ...p, ...real } : p); }
       } catch {}
@@ -861,8 +875,7 @@ export default function FinPath(){
     // 4200 por defecto — 33,6% de desvío. Con el portafolio IBKR de Santiago
     // (USD 33.266) eso son $35 millones de más.
     try{
-      const r=await fetch('/api/trm');
-      const j=await r.json();
+      const j=await traerTrm();
       // /api/trm devuelve {trm:4200,source:"default"} cuando falla: eso no es tasa.
       const real=trmDeApi(j);
       if(real){
